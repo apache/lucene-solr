@@ -36,7 +36,7 @@ import org.apache.lucene.index.SortedDocValues;
 import org.apache.lucene.index.SortedNumericDocValues;
 import org.apache.lucene.index.SortedSetDocValues;
 import org.apache.lucene.index.StoredFieldVisitor;
-import org.apache.lucene.index.Terms;
+import org.apache.lucene.index.FieldTerms;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.LuceneTestCase;
 
@@ -205,7 +205,7 @@ public class QueryUtils {
           }
 
           @Override
-          public Terms terms(String field) throws IOException {
+          public FieldTerms terms(String field) throws IOException {
             return null;
           }
 

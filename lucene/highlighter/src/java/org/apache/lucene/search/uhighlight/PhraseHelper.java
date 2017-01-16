@@ -44,7 +44,7 @@ import org.apache.lucene.index.NumericDocValues;
 import org.apache.lucene.index.PostingsEnum;
 import org.apache.lucene.index.SortedDocValues;
 import org.apache.lucene.index.Term;
-import org.apache.lucene.index.Terms;
+import org.apache.lucene.index.FieldTerms;
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.MatchAllDocsQuery;
@@ -122,7 +122,7 @@ public class PhraseHelper {
 
     boolean[] mustRewriteHolder = {false}; // boolean wrapped in 1-ary array so it's mutable from inner class
 
-    // For TermQueries or other position insensitive queries, collect the Terms.
+    // For TermQueries or other position insensitive queries, collect the FieldTerms.
     // For other Query types, WSTE will convert to an equivalent SpanQuery.  NOT extracting position spans here.
     new WeightedSpanTermExtractor(field) {
       //anonymous constructor
@@ -407,7 +407,7 @@ public class PhraseHelper {
   }
 
   /**
-   * Simple TreeSet that filters out Terms not matching the provided predicate on {@code add()}.
+   * Simple TreeSet that filters out FieldTerms not matching the provided predicate on {@code add()}.
    */
   private class FieldFilteringTermSet extends TreeSet<Term> {
     @Override
@@ -549,7 +549,7 @@ public class PhraseHelper {
     public Fields fields() throws IOException {
       return new FilterFields(super.fields()) {
         @Override
-        public Terms terms(String field) throws IOException {
+        public FieldTerms terms(String field) throws IOException {
           return super.terms(fieldName);
         }
 

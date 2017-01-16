@@ -25,7 +25,7 @@ import org.apache.lucene.analysis.tokenattributes.PackedTokenAttributeImpl;
 import org.apache.lucene.analysis.tokenattributes.PayloadAttribute;
 import org.apache.lucene.analysis.tokenattributes.PositionIncrementAttribute;
 import org.apache.lucene.index.PostingsEnum;
-import org.apache.lucene.index.Terms;
+import org.apache.lucene.index.FieldTerms;
 import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.util.AttributeFactory;
 import org.apache.lucene.util.BytesRef;
@@ -57,7 +57,7 @@ public final class TokenStreamFromTermVector extends TokenStream {
       AttributeFactory.getStaticImplementation(
           AttributeFactory.DEFAULT_ATTRIBUTE_FACTORY, PackedTokenAttributeImpl.class);
 
-  private final Terms vector;
+  private final FieldTerms vector;
 
   private final CharTermAttribute termAttribute;
 
@@ -84,11 +84,11 @@ public final class TokenStreamFromTermVector extends TokenStream {
    * Constructor. The uninversion doesn't happen here; it's delayed till the first call to
    * {@link #incrementToken}.
    *
-   * @param vector Terms that contains the data for
+   * @param vector FieldTerms that contains the data for
    *        creating the TokenStream. Must have positions and/or offsets.
    * @param maxStartOffset if a token's start offset exceeds this then the token is not added. -1 disables the limit.
    */
-  public TokenStreamFromTermVector(Terms vector, int maxStartOffset) throws IOException {
+  public TokenStreamFromTermVector(FieldTerms vector, int maxStartOffset) throws IOException {
     super(ATTRIBUTE_FACTORY);
     this.maxStartOffset = maxStartOffset < 0 ? Integer.MAX_VALUE : maxStartOffset;
     assert !hasAttribute(PayloadAttribute.class) : "AttributeFactory shouldn't have payloads *yet*";
@@ -101,7 +101,7 @@ public final class TokenStreamFromTermVector extends TokenStream {
     positionIncrementAttribute = addAttribute(PositionIncrementAttribute.class);
   }
 
-  public Terms getTermVectorTerms() { return vector; }
+  public FieldTerms getTermVectorTerms() { return vector; }
 
   @Override
   public void reset() throws IOException {

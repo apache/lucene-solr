@@ -70,7 +70,7 @@ public class FixBrokenOffsets {
             }
             return new FilterFields(termVectors) {
               @Override
-              public Terms terms(String field) throws IOException {
+              public FieldTerms terms(String field) throws IOException {
                 return new FilterTerms(super.terms(field)) {
                   @Override
                   public TermsEnum iterator() throws IOException {

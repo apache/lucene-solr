@@ -21,7 +21,7 @@ import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.MultiFields;
 import org.apache.lucene.index.Fields;
 import org.apache.lucene.index.TermsEnum;
-import org.apache.lucene.index.Terms;
+import org.apache.lucene.index.FieldTerms;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.FSDirectory;
 import org.apache.lucene.util.PriorityQueue;
@@ -98,7 +98,7 @@ public class HighFreqTerms {
     TermStatsQueue tiq = null;
     
     if (field != null) {
-      Terms terms = MultiFields.getTerms(reader, field);
+      FieldTerms terms = MultiFields.getTerms(reader, field);
       if (terms == null) {
         throw new RuntimeException("field " + field + " not found");
       }
@@ -113,7 +113,7 @@ public class HighFreqTerms {
       }
       tiq = new TermStatsQueue(numTerms, comparator);
       for (String fieldName : fields) {
-        Terms terms = fields.terms(fieldName);
+        FieldTerms terms = fields.terms(fieldName);
         if (terms != null) {
           tiq.fill(fieldName, terms.iterator());
         }

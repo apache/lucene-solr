@@ -173,8 +173,8 @@ public class TestMemoryIndexAgainstRAMDir extends BaseTokenStreamTestCase {
       throws IOException {
     Fields memFields = memIndexReader.fields();
     for (String field : MultiFields.getFields(other)) {
-      Terms memTerms = memFields.terms(field);
-      Terms iwTerms = memIndexReader.terms(field);
+      FieldTerms memTerms = memFields.terms(field);
+      FieldTerms iwTerms = memIndexReader.terms(field);
       if (iwTerms == null) {
         assertNull(memTerms);
       } else {
@@ -690,10 +690,10 @@ public class TestMemoryIndexAgainstRAMDir extends BaseTokenStreamTestCase {
     memIndex.addField(field_name, "foo bar foo bar foo", mockAnalyzer);
 
     //compare term vectors
-    Terms ramTv = reader.getTermVector(0, field_name);
+    FieldTerms ramTv = reader.getTermVector(0, field_name);
     IndexReader memIndexReader = memIndex.createSearcher().getIndexReader();
     TestUtil.checkReader(memIndexReader);
-    Terms memTv = memIndexReader.getTermVector(0, field_name);
+    FieldTerms memTv = memIndexReader.getTermVector(0, field_name);
 
     compareTermVectors(ramTv, memTv, field_name);
     memIndexReader.close();
@@ -702,7 +702,7 @@ public class TestMemoryIndexAgainstRAMDir extends BaseTokenStreamTestCase {
 
   }
 
-  protected void compareTermVectors(Terms terms, Terms memTerms, String field_name) throws IOException {
+  protected void compareTermVectors(FieldTerms terms, FieldTerms memTerms, String field_name) throws IOException {
 
     TermsEnum termEnum = terms.iterator();
     TermsEnum memTermEnum = memTerms.iterator();

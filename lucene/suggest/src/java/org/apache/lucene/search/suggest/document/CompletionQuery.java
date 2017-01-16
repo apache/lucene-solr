@@ -22,7 +22,7 @@ import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.LeafReader;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.Term;
-import org.apache.lucene.index.Terms;
+import org.apache.lucene.index.FieldTerms;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.suggest.BitsProducer;
 
@@ -96,7 +96,7 @@ public abstract class CompletionQuery extends Query {
   public Query rewrite(IndexReader reader) throws IOException {
     byte type = 0;
     boolean first = true;
-    Terms terms;
+    FieldTerms terms;
     for (LeafReaderContext context : reader.leaves()) {
       LeafReader leafReader = context.reader();
       try {

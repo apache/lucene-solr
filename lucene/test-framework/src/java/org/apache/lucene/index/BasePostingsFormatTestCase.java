@@ -160,7 +160,7 @@ public abstract class BasePostingsFormatTestCase extends BaseIndexFileFormatTest
     Collections.shuffle(postingsTester.allTerms, random());
     RandomPostingsTester.FieldAndTerm fieldAndTerm = postingsTester.allTerms.get(0);
 
-    Terms terms = fieldsProducer.terms(fieldAndTerm.field);
+    FieldTerms terms = fieldsProducer.terms(fieldAndTerm.field);
     TermsEnum te = terms.iterator();
 
     te.seekExact(fieldAndTerm.term);
@@ -197,7 +197,7 @@ public abstract class BasePostingsFormatTestCase extends BaseIndexFileFormatTest
     int fieldCount = fields.size();
     // -1 is allowed, if the codec doesn't implement fields.size():
     assertTrue(fieldCount == 1 || fieldCount == -1);
-    Terms terms = ar.terms("");
+    FieldTerms terms = ar.terms("");
     assertNotNull(terms);
     TermsEnum termsEnum = terms.iterator();
     assertNotNull(termsEnum.next());
@@ -222,7 +222,7 @@ public abstract class BasePostingsFormatTestCase extends BaseIndexFileFormatTest
     int fieldCount = fields.size();
     // -1 is allowed, if the codec doesn't implement fields.size():
     assertTrue(fieldCount == 1 || fieldCount == -1);
-    Terms terms = ar.terms("");
+    FieldTerms terms = ar.terms("");
     assertNotNull(terms);
     TermsEnum termsEnum = terms.iterator();
     assertNotNull(termsEnum.next());
@@ -300,7 +300,7 @@ public abstract class BasePostingsFormatTestCase extends BaseIndexFileFormatTest
     // Ghost busting terms dict impls will have
     // fields.size() == 0; all others must be == 1:
     assertTrue(fields.size() <= 1);
-    Terms terms = fields.terms("ghostField");
+    FieldTerms terms = fields.terms("ghostField");
     if (terms != null) {
       TermsEnum termsEnum = terms.iterator();
       BytesRef term = termsEnum.next();
@@ -342,7 +342,7 @@ public abstract class BasePostingsFormatTestCase extends BaseIndexFileFormatTest
     // first force merge creates a level 1 ghost field
     iw.forceMerge(1);
     
-    // second force merge creates a level 2 ghost field, causing MultiFields to include "suggest_field" in its iteration, yet a null Terms is returned (no documents have
+    // second force merge creates a level 2 ghost field, causing MultiFields to include "suggest_field" in its iteration, yet a null FieldTerms is returned (no documents have
     // this field anymore)
     iw.addDocument(new Document());
     iw.forceMerge(1);
@@ -424,7 +424,7 @@ public abstract class BasePostingsFormatTestCase extends BaseIndexFileFormatTest
                   //System.out.println("write isMerge=" + isMerge + " 2ndPass=" + addOnSecondPass);
 
                   // Gather our own stats:
-                  Terms terms = fields.terms("body");
+                  FieldTerms terms = fields.terms("body");
                   assert terms != null;
 
                   TermsEnum termsEnum = terms.iterator();
@@ -557,7 +557,7 @@ public abstract class BasePostingsFormatTestCase extends BaseIndexFileFormatTest
     IndexReader r = w.getReader();
     w.close();
 
-    Terms terms = MultiFields.getTerms(r, "body");
+    FieldTerms terms = MultiFields.getTerms(r, "body");
     assertEquals(sumDocFreq.get(), terms.getSumDocFreq());
     assertEquals(sumTotalTermFreq.get(), terms.getSumTotalTermFreq());
 

@@ -37,7 +37,7 @@ import org.apache.lucene.index.PrefixCodedTerms.TermIterator;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.index.TermContext;
 import org.apache.lucene.index.TermState;
-import org.apache.lucene.index.Terms;
+import org.apache.lucene.index.FieldTerms;
 import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.search.BooleanClause.Occur;
 import org.apache.lucene.util.Accountable;
@@ -269,7 +269,7 @@ public class TermInSetQuery extends Query implements Accountable {
 
         final Fields fields = reader.fields();
         String lastField = null;
-        Terms terms = null;
+        FieldTerms terms = null;
         TermsEnum termsEnum = null;
         PostingsEnum docs = null;
         TermIterator iterator = termData.iterator();

@@ -225,7 +225,7 @@ public class TestCodecs extends LuceneTestCase {
     final Iterator<String> fieldsEnum = reader.iterator();
     String fieldName = fieldsEnum.next();
     assertNotNull(fieldName);
-    final Terms terms2 = reader.terms(fieldName);
+    final FieldTerms terms2 = reader.terms(fieldName);
     assertNotNull(terms2);
 
     final TermsEnum termsEnum = terms2.iterator();
@@ -542,7 +542,7 @@ public class TestCodecs extends LuceneTestCase {
     }
 
     @Override
-    public Terms terms(String field) {
+    public FieldTerms terms(String field) {
       // Slow linear search:
       for(FieldData fieldData : fields) {
         if (fieldData.fieldInfo.name.equals(field)) {
@@ -558,7 +558,7 @@ public class TestCodecs extends LuceneTestCase {
     }
   }
 
-  private static class DataTerms extends Terms {
+  private static class DataTerms extends FieldTerms {
     final FieldData fieldData;
 
     public DataTerms(FieldData fieldData) {

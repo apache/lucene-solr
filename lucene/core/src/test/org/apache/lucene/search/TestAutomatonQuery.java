@@ -30,7 +30,7 @@ import org.apache.lucene.index.MultiFields;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.SingleTermsEnum;
 import org.apache.lucene.index.Term;
-import org.apache.lucene.index.Terms;
+import org.apache.lucene.index.FieldTerms;
 import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.BytesRef;
@@ -181,7 +181,7 @@ public class TestAutomatonQuery extends LuceneTestCase {
    */
   public void testRewriteSingleTerm() throws IOException {
     AutomatonQuery aq = new AutomatonQuery(newTerm("bogus"), Automata.makeString("piece"));
-    Terms terms = MultiFields.getTerms(searcher.getIndexReader(), FN);
+    FieldTerms terms = MultiFields.getTerms(searcher.getIndexReader(), FN);
     assertTrue(aq.getTermsEnum(terms) instanceof SingleTermsEnum);
     assertEquals(1, automatonQueryNrHits(aq));
   }
@@ -204,7 +204,7 @@ public class TestAutomatonQuery extends LuceneTestCase {
     AutomatonQuery aq = new AutomatonQuery(newTerm("bogus"), Automata.makeEmpty());
     // not yet available: assertTrue(aq.getEnum(searcher.getIndexReader())
     // instanceof EmptyTermEnum);
-    Terms terms = MultiFields.getTerms(searcher.getIndexReader(), FN);
+    FieldTerms terms = MultiFields.getTerms(searcher.getIndexReader(), FN);
     assertSame(TermsEnum.EMPTY, aq.getTermsEnum(terms));
     assertEquals(0, automatonQueryNrHits(aq));
   }

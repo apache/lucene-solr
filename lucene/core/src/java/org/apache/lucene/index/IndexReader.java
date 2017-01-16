@@ -311,7 +311,7 @@ public abstract class IndexReader implements Closeable {
    *  null if term vectors were not indexed.  The returned
    *  Fields instance acts like a single-document inverted
    *  index (the docID will be 0). */
-  public final Terms getTermVector(int docID, String field)
+  public final FieldTerms getTermVector(int docID, String field)
     throws IOException {
     Fields vectors = getTermVectors(docID);
     if (vectors == null) {
@@ -476,7 +476,7 @@ public abstract class IndexReader implements Closeable {
    * or -1 if this measure isn't stored by the codec. Note that, just like other
    * term measures, this measure does not take deleted documents into account.
    * 
-   * @see Terms#getSumDocFreq()
+   * @see FieldTerms#getSumDocFreq()
    */
   public abstract long getSumDocFreq(String field) throws IOException;
   
@@ -485,7 +485,7 @@ public abstract class IndexReader implements Closeable {
    * or -1 if this measure isn't stored by the codec. Note that, just like other
    * term measures, this measure does not take deleted documents into account.
    * 
-   * @see Terms#getDocCount()
+   * @see FieldTerms#getDocCount()
    */
   public abstract int getDocCount(String field) throws IOException;
 
@@ -495,7 +495,7 @@ public abstract class IndexReader implements Closeable {
    * omits term freq and positions). Note that, just like other term measures,
    * this measure does not take deleted documents into account.
    * 
-   * @see Terms#getSumTotalTermFreq()
+   * @see FieldTerms#getSumTotalTermFreq()
    */
   public abstract long getSumTotalTermFreq(String field) throws IOException;
 

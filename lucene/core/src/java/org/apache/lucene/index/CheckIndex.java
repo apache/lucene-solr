@@ -1104,9 +1104,9 @@ public final class CheckIndex implements Closeable {
     }
   }
 
-  /** Test Terms.intersect on this range, and validates that it returns the same doc ids as using non-intersect TermsEnum.  Returns true if
+  /** Test FieldTerms.intersect on this range, and validates that it returns the same doc ids as using non-intersect TermsEnum.  Returns true if
    *  any fake terms were seen. */
-  private static boolean checkSingleTermRange(String field, int maxDoc, Terms terms, BytesRef minTerm, BytesRef maxTerm, FixedBitSet normalDocs, FixedBitSet intersectDocs) throws IOException {
+  private static boolean checkSingleTermRange(String field, int maxDoc, FieldTerms terms, BytesRef minTerm, BytesRef maxTerm, FixedBitSet normalDocs, FixedBitSet intersectDocs) throws IOException {
     //System.out.println("    check minTerm=" + minTerm.utf8ToString() + " maxTerm=" + maxTerm.utf8ToString());
     assert minTerm.compareTo(maxTerm) <= 0;
 
@@ -1138,7 +1138,7 @@ public final class CheckIndex implements Closeable {
    *  interval of terms, at different boundaries, and then gradually decrease the interval.  This is not guaranteed to hit all non-real
    *  terms (doing that in general is non-trivial), but it should hit many of them, and validate their postings against the postings for the
    *  real terms. */
-  private static void checkTermRanges(String field, int maxDoc, Terms terms, long numTerms) throws IOException {
+  private static void checkTermRanges(String field, int maxDoc, FieldTerms terms, long numTerms) throws IOException {
 
     // We'll target this many terms in our interval for the current level:
     double currentInterval = numTerms;
@@ -1239,12 +1239,12 @@ public final class CheckIndex implements Closeable {
       }
       
       // TODO: really the codec should not return a field
-      // from FieldsEnum if it has no Terms... but we do
+      // from FieldsEnum if it has no FieldTerms... but we do
       // this today:
       // assert fields.terms(field) != null;
       computedFieldCount++;
       
-      final Terms terms = fields.terms(field);
+      final FieldTerms terms = fields.terms(field);
       if (terms == null) {
         continue;
       }
@@ -1293,7 +1293,7 @@ public final class CheckIndex implements Closeable {
 
       if (hasFreqs == false) {
         if (terms.getSumTotalTermFreq() != -1) {
-          throw new RuntimeException("field \"" + field + "\" hasFreqs is false, but Terms.getSumTotalTermFreq()=" + terms.getSumTotalTermFreq() + " (should be -1)");
+          throw new RuntimeException("field \"" + field + "\" hasFreqs is false, but FieldTerms.getSumTotalTermFreq()=" + terms.getSumTotalTermFreq() + " (should be -1)");
         }
       }
 
@@ -1414,7 +1414,7 @@ public final class CheckIndex implements Closeable {
             // consistently "lie" and pretend that freq was
             // 1:
             if (postings.freq() != 1) {
-              throw new RuntimeException("term " + term + ": doc " + doc + ": freq " + freq + " != 1 when Terms.hasFreqs() is false");
+              throw new RuntimeException("term " + term + ": doc " + doc + ": freq " + freq + " != 1 when FieldTerms.hasFreqs() is false");
             }
           }
           if (liveDocs == null || liveDocs.get(doc)) {
@@ -1600,10 +1600,10 @@ public final class CheckIndex implements Closeable {
         throw new RuntimeException("field=\"" + field + "\": minTerm is non-null yet we saw no terms: " + minTerm);
       }
 
-      final Terms fieldTerms = fields.terms(field);
+      final FieldTerms fieldTerms = fields.terms(field);
       if (fieldTerms == null) {
         // Unusual: the FieldsEnum returned a field but
-        // the Terms for that field is null; this should
+        // the FieldTerms for that field is null; this should
         // only happen if it's a ghost field (field with
         // no terms, eg there used to be terms but all
         // docs got deleted and then merged away):
@@ -2407,13 +2407,13 @@ public final class CheckIndex implements Closeable {
               }
               
               if (crossCheckTermVectors) {
-                Terms terms = tfv.terms(field);
+                FieldTerms terms = tfv.terms(field);
                 TermsEnum termsEnum = terms.iterator();
                 final boolean postingsHasFreq = fieldInfo.getIndexOptions().compareTo(IndexOptions.DOCS_AND_FREQS) >= 0;
                 final boolean postingsHasPayload = fieldInfo.hasPayloads();
                 final boolean vectorsHasPayload = terms.hasPayloads();
                 
-                Terms postingsTerms = postingsFields.terms(field);
+                FieldTerms postingsTerms = postingsFields.terms(field);
                 if (postingsTerms == null) {
                   throw new RuntimeException("vector field=" + field + " does not exist in postings; doc=" + j);
                 }

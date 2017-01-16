@@ -27,7 +27,7 @@ import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.MultiFields;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.Term;
-import org.apache.lucene.index.Terms;
+import org.apache.lucene.index.FieldTerms;
 
 import java.io.IOException;
 
@@ -116,7 +116,7 @@ public class TestWildcard extends LuceneTestCase {
     
     wq = new WildcardQuery(new Term("field", "*"));
     assertMatches(searcher, wq, 2);
-    Terms terms = MultiFields.getTerms(searcher.getIndexReader(), "field");
+    FieldTerms terms = MultiFields.getTerms(searcher.getIndexReader(), "field");
     assertFalse(wq.getTermsEnum(terms).getClass().getSimpleName().contains("AutomatonTermsEnum"));
     reader.close();
     indexStore.close();

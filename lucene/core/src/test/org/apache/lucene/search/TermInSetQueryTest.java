@@ -39,7 +39,7 @@ import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.LeafReader;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.Term;
-import org.apache.lucene.index.Terms;
+import org.apache.lucene.index.FieldTerms;
 import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.search.BooleanClause.Occur;
 import org.apache.lucene.store.Directory;
@@ -256,8 +256,8 @@ public class TermInSetQueryTest extends LuceneTestCase {
       public Fields fields() throws IOException {
         return new FilterFields(in.fields()) {
           @Override
-          public Terms terms(String field) throws IOException {
-            final Terms in = this.in.terms(field);
+          public FieldTerms terms(String field) throws IOException {
+            final FieldTerms in = this.in.terms(field);
             if (in == null) {
               return null;
             }

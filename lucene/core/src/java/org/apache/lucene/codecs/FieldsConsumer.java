@@ -48,7 +48,7 @@ public abstract class FieldsConsumer implements Closeable {
 
   // TODO: maybe we should factor out "limited" (only
   // iterables, no counts/stats) base classes from
-  // Fields/Terms/Docs/AndPositions?
+  // Fields/FieldTerms/Docs/AndPositions?
 
   /** Write all fields, terms and postings.  This the "pull"
    *  API, allowing you to iterate more than once over the

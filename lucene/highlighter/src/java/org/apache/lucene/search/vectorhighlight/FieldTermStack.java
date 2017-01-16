@@ -25,7 +25,7 @@ import org.apache.lucene.index.PostingsEnum;
 import org.apache.lucene.index.Fields;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.Term;
-import org.apache.lucene.index.Terms;
+import org.apache.lucene.index.FieldTerms;
 import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.CharsRefBuilder;
@@ -84,7 +84,7 @@ public class FieldTermStack {
       return;
     }
 
-    final Terms vector = vectors.terms(fieldName);
+    final FieldTerms vector = vectors.terms(fieldName);
     if (vector == null || vector.hasPositions() == false) {
       // null snippet
       return;

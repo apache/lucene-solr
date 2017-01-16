@@ -40,7 +40,7 @@ import org.apache.lucene.index.IndexFileNames;
 import org.apache.lucene.index.IndexOptions;
 import org.apache.lucene.index.SegmentReadState;
 import org.apache.lucene.index.SegmentWriteState;
-import org.apache.lucene.index.Terms;
+import org.apache.lucene.index.FieldTerms;
 import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.store.IndexOutput;
@@ -68,7 +68,7 @@ public final class RAMOnlyPostingsFormat extends PostingsFormat {
     final Map<String,RAMField> fieldToTerms = new TreeMap<>();
 
     @Override
-    public Terms terms(String field) {
+    public FieldTerms terms(String field) {
       return fieldToTerms.get(field);
     }
 
@@ -104,7 +104,7 @@ public final class RAMOnlyPostingsFormat extends PostingsFormat {
     public void checkIntegrity() throws IOException {}
   } 
 
-  static class RAMField extends Terms implements Accountable {
+  static class RAMField extends FieldTerms implements Accountable {
     final String field;
     final SortedMap<String,RAMTerm> termToDocs = new TreeMap<>();
     long sumTotalTermFreq;
@@ -230,7 +230,7 @@ public final class RAMOnlyPostingsFormat extends PostingsFormat {
     public void write(Fields fields) throws IOException {
       for(String field : fields) {
 
-        Terms terms = fields.terms(field);
+        FieldTerms terms = fields.terms(field);
         if (terms == null) {
           continue;
         }

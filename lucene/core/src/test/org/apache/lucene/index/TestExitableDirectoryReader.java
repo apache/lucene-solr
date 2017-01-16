@@ -32,7 +32,7 @@ import org.junit.Ignore;
 
 /**
  * Test that uses a default/lucene Implementation of {@link QueryTimeout}
- * to exit out long running queries that take too long to iterate over Terms.
+ * to exit out long running queries that take too long to iterate over FieldTerms.
  */
 public class TestExitableDirectoryReader extends LuceneTestCase {
   private static class TestReader extends FilterLeafReader {
@@ -43,13 +43,13 @@ public class TestExitableDirectoryReader extends LuceneTestCase {
       }
 
       @Override
-      public Terms terms(String field) throws IOException {
+      public FieldTerms terms(String field) throws IOException {
         return new TestTerms(super.terms(field));
       }
     }
 
     private static class TestTerms extends FilterTerms {
-      TestTerms(Terms in) {
+      TestTerms(FieldTerms in) {
         super(in);
       }
 

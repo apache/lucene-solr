@@ -31,7 +31,7 @@ import org.apache.lucene.codecs.PostingsFormat;
 import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.IndexFileNames;
 import org.apache.lucene.index.SegmentReadState;
-import org.apache.lucene.index.Terms;
+import org.apache.lucene.index.FieldTerms;
 import org.apache.lucene.store.ChecksumIndexInput;
 import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.util.Accountable;
@@ -161,8 +161,8 @@ final class CompletionFieldsProducer extends FieldsProducer {
   }
 
   @Override
-  public Terms terms(String field) throws IOException {
-    Terms terms = delegateFieldsProducer.terms(field) ;
+  public FieldTerms terms(String field) throws IOException {
+    FieldTerms terms = delegateFieldsProducer.terms(field) ;
     if (terms == null) {
       return null;
     }

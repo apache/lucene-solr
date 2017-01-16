@@ -29,11 +29,11 @@ import org.apache.lucene.util.automaton.CompiledAutomaton;
  * @lucene.experimental
  */
 
-public abstract class Terms {
+public abstract class FieldTerms {
 
   /** Sole constructor. (For invocation by subclass 
    *  constructors, typically implicit.) */
-  protected Terms() {
+  protected FieldTerms() {
   }
 
   /** Returns an iterator that will step through all
@@ -135,8 +135,8 @@ public abstract class Terms {
   /** Returns true if documents in this field store payloads. */
   public abstract boolean hasPayloads();
 
-  /** Zero-length array of {@link Terms}. */
-  public final static Terms[] EMPTY_ARRAY = new Terms[0];
+  /** Zero-length array of {@link FieldTerms}. */
+  public final static FieldTerms[] EMPTY_ARRAY = new FieldTerms[0];
   
   /** Returns the smallest term (in lexicographic order) in the field. 
    *  Note that, just like other term measures, this measure does not 
@@ -214,7 +214,7 @@ public abstract class Terms {
   }
   
   /** 
-   * Expert: returns additional information about this Terms instance
+   * Expert: returns additional information about this FieldTerms instance
    * for debugging purposes.
    */
   public Object getStats() throws IOException {

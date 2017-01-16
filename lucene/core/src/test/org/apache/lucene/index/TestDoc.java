@@ -251,7 +251,7 @@ public class TestDoc extends LuceneTestCase {
 
     Fields fields = reader.fields();
     for (String field : fields)  {
-      Terms terms = fields.terms(field);
+      FieldTerms terms = fields.terms(field);
       assertNotNull(terms);
       TermsEnum tis = terms.iterator();
       while(tis.next() != null) {

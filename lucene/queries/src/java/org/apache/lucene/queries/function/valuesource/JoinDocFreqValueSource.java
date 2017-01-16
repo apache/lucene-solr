@@ -25,7 +25,7 @@ import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.MultiFields;
 import org.apache.lucene.index.ReaderUtil;
-import org.apache.lucene.index.Terms;
+import org.apache.lucene.index.FieldTerms;
 import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.queries.function.FunctionValues;
 import org.apache.lucene.queries.function.docvalues.IntDocValues;
@@ -57,7 +57,7 @@ public class JoinDocFreqValueSource extends FieldCacheSource {
   {
     final BinaryDocValues terms = DocValues.getBinary(readerContext.reader(), field);
     final IndexReader top = ReaderUtil.getTopLevelContext(readerContext).reader();
-    Terms t = MultiFields.getTerms(top, qfield);
+    FieldTerms t = MultiFields.getTerms(top, qfield);
     final TermsEnum termsEnum = t == null ? TermsEnum.EMPTY : t.iterator();
     
     return new IntDocValues(this) {

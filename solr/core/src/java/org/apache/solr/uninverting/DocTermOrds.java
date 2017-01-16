@@ -31,7 +31,7 @@ import org.apache.lucene.index.LegacySortedSetDocValues;
 import org.apache.lucene.index.LegacySortedSetDocValuesWrapper;
 import org.apache.lucene.index.PostingsEnum;
 import org.apache.lucene.index.SortedSetDocValues;
-import org.apache.lucene.index.Terms;
+import org.apache.lucene.index.FieldTerms;
 import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.util.Accountable;
@@ -287,7 +287,7 @@ public class DocTermOrds implements Accountable {
     final int[] lastTerm = new int[maxDoc];    // last term we saw for this document
     final byte[][] bytes = new byte[maxDoc][]; // list of term numbers for the doc (delta encoded vInts)
 
-    final Terms terms = reader.terms(field);
+    final FieldTerms terms = reader.terms(field);
     if (terms == null) {
       // No terms
       return;

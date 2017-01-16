@@ -61,8 +61,8 @@ class SortingLeafReader extends FilterLeafReader {
     }
 
     @Override
-    public Terms terms(final String field) throws IOException {
-      Terms terms = in.terms(field);
+    public FieldTerms terms(final String field) throws IOException {
+      FieldTerms terms = in.terms(field);
       if (terms == null) {
         return null;
       } else {
@@ -77,7 +77,7 @@ class SortingLeafReader extends FilterLeafReader {
     private final Sorter.DocMap docMap;
     private final IndexOptions indexOptions;
 
-    public SortingTerms(final Terms in, IndexOptions indexOptions, final Sorter.DocMap docMap) {
+    public SortingTerms(final FieldTerms in, IndexOptions indexOptions, final Sorter.DocMap docMap) {
       super(in);
       this.docMap = docMap;
       this.indexOptions = indexOptions;

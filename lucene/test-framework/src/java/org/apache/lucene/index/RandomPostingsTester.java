@@ -434,7 +434,7 @@ public class RandomPostingsTester {
     }
 
     @Override
-    public Terms terms(String field) {
+    public FieldTerms terms(String field) {
       SortedMap<BytesRef,SeedAndOrd> terms = fields.get(field);
       if (terms == null) {
         return null;
@@ -449,7 +449,7 @@ public class RandomPostingsTester {
     }
   }
 
-  private static class SeedTerms extends Terms {
+  private static class SeedTerms extends FieldTerms {
     final SortedMap<BytesRef,SeedAndOrd> terms;
     final FieldInfo fieldInfo;
     final IndexOptions maxAllowed;
@@ -1076,7 +1076,7 @@ public class RandomPostingsTester {
         termState = termStates.get(idx);
       }
 
-      Terms terms = fieldsSource.terms(fieldAndTerm.field);
+      FieldTerms terms = fieldsSource.terms(fieldAndTerm.field);
       assertNotNull(terms);
       termsEnum = terms.iterator();
 
@@ -1161,7 +1161,7 @@ public class RandomPostingsTester {
       }
     }
 
-    // Test Terms.intersect:
+    // Test FieldTerms.intersect:
     for(String field : fields.keySet()) {
       while (true) {
         Automaton a = AutomatonTestUtil.randomAutomaton(random);

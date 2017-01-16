@@ -71,7 +71,7 @@ public class TestParallelTermEnum extends LuceneTestCase {
     super.tearDown();
   }
   
-  private void checkTerms(Terms terms, String... termsList) throws IOException {
+  private void checkTerms(FieldTerms terms, String... termsList) throws IOException {
     assertNotNull(terms);
     final TermsEnum te = terms.iterator();
     

@@ -54,7 +54,7 @@ import org.apache.lucene.index.MultiFields;
 import org.apache.lucene.index.PostingsEnum;
 import org.apache.lucene.index.SegmentReader;
 import org.apache.lucene.index.Term;
-import org.apache.lucene.index.Terms;
+import org.apache.lucene.index.FieldTerms;
 import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.search.similarities.Similarity;
@@ -306,7 +306,7 @@ public class LukeRequestHandler extends RequestHandlerBase
       // If we have a term vector, return that
       if( field.fieldType().storeTermVectors() ) {
         try {
-          Terms v = reader.getTermVector( docId, field.name() );
+          FieldTerms v = reader.getTermVector( docId, field.name() );
           if( v != null ) {
             SimpleOrderedMap<Integer> tfv = new SimpleOrderedMap<>();
             final TermsEnum termsEnum = v.iterator();
@@ -368,7 +368,7 @@ public class LukeRequestHandler extends RequestHandlerBase
       if (sfield != null && schema.isDynamicField(sfield.getName()) && schema.getDynamicPattern(sfield.getName()) != null) {
         fieldMap.add("dynamicBase", schema.getDynamicPattern(sfield.getName()));
       }
-      Terms terms = reader.fields().terms(fieldName);
+      FieldTerms terms = reader.fields().terms(fieldName);
       if (terms == null) { // Not indexed, so we need to report what we can (it made it through the fl param if specified)
         finfo.add( fieldName, fieldMap );
         continue;
@@ -407,7 +407,7 @@ public class LukeRequestHandler extends RequestHandlerBase
   // Just get a document with the term in it, the first one will do!
   // Is there a better way to do this? Shouldn't actually be very costly
   // to do it this way.
-  private static Document getFirstLiveDoc(Terms terms, LeafReader reader) throws IOException {
+  private static Document getFirstLiveDoc(FieldTerms terms, LeafReader reader) throws IOException {
     PostingsEnum postingsEnum = null;
     TermsEnum termsEnum = terms.iterator();
     BytesRef text;
@@ -647,7 +647,7 @@ public class LukeRequestHandler extends RequestHandlerBase
 
     final CharsRefBuilder spare = new CharsRefBuilder();
 
-    Terms terms = MultiFields.getTerms(req.getSearcher().getIndexReader(), field);
+    FieldTerms terms = MultiFields.getTerms(req.getSearcher().getIndexReader(), field);
     if (terms == null) {  // field does not exist
       return;
     }

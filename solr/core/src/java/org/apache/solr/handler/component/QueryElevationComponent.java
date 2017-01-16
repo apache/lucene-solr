@@ -25,7 +25,7 @@ import org.apache.lucene.index.PostingsEnum;
 import org.apache.lucene.index.Fields;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.Term;
-import org.apache.lucene.index.Terms;
+import org.apache.lucene.index.FieldTerms;
 import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.search.BooleanClause;
 import org.apache.lucene.search.BooleanQuery;
@@ -562,7 +562,7 @@ public class QueryElevationComponent extends SearchComponent implements SolrCore
         LeafReader reader = leaf.reader();
         int docBase = leaf.docBase;
         Bits liveDocs = reader.getLiveDocs();
-        Terms terms = reader.terms(fieldName);
+        FieldTerms terms = reader.terms(fieldName);
         TermsEnum termsEnum = terms.iterator();
         Iterator<BytesRef> it = localBoosts.iterator();
         while(it.hasNext()) {
@@ -679,7 +679,7 @@ public class QueryElevationComponent extends SearchComponent implements SolrCore
         ordSet.clear();
         Fields fields = context.reader().fields();
         if (fields == null) return;
-        Terms terms = fields.terms(idField);
+        FieldTerms terms = fields.terms(idField);
         if (terms == null) return;
         TermsEnum termsEnum = terms.iterator();
         BytesRefBuilder term = new BytesRefBuilder();

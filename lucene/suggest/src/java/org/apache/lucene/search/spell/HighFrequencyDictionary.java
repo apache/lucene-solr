@@ -21,7 +21,7 @@ import java.util.Set;
 
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.TermsEnum;
-import org.apache.lucene.index.Terms;
+import org.apache.lucene.index.FieldTerms;
 import org.apache.lucene.index.MultiFields;
 import org.apache.lucene.search.suggest.InputIterator;
 import org.apache.lucene.util.BytesRef;
@@ -46,7 +46,7 @@ public class HighFrequencyDictionary implements Dictionary {
    * Creates a new Dictionary, pulling source terms from
    * the specified <code>field</code> in the provided <code>reader</code>.
    * <p>
-   * Terms appearing in less than <code>thresh</code> percentage of documents
+   * FieldTerms appearing in less than <code>thresh</code> percentage of documents
    * will be excluded.
    */
   public HighFrequencyDictionary(IndexReader reader, String field, float thresh) {
@@ -67,7 +67,7 @@ public class HighFrequencyDictionary implements Dictionary {
     private long freq;
 
     HighFrequencyIterator() throws IOException {
-      Terms terms = MultiFields.getTerms(reader, field);
+      FieldTerms terms = MultiFields.getTerms(reader, field);
       if (terms != null) {
         termsEnum = terms.iterator();
       } else {

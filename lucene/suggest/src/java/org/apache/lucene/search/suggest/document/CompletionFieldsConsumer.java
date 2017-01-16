@@ -28,7 +28,7 @@ import org.apache.lucene.index.Fields;
 import org.apache.lucene.index.IndexFileNames;
 import org.apache.lucene.index.PostingsEnum;
 import org.apache.lucene.index.SegmentWriteState;
-import org.apache.lucene.index.Terms;
+import org.apache.lucene.index.FieldTerms;
 import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.store.ByteArrayDataInput;
@@ -85,7 +85,7 @@ final class CompletionFieldsConsumer extends FieldsConsumer {
 
     for (String field : fields) {
       CompletionTermWriter termWriter = new CompletionTermWriter();
-      Terms terms = fields.terms(field);
+      FieldTerms terms = fields.terms(field);
       if (terms == null) {
         // this can happen from ghost fields, where the incoming Fields iterator claims a field exists but it does not
         continue;

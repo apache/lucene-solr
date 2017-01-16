@@ -17,7 +17,7 @@
 package org.apache.lucene.queries.function.valuesource;
 
 import org.apache.lucene.index.LeafReaderContext;
-import org.apache.lucene.index.Terms;
+import org.apache.lucene.index.FieldTerms;
 import org.apache.lucene.queries.function.FunctionValues;
 import org.apache.lucene.queries.function.ValueSource;
 import org.apache.lucene.queries.function.docvalues.LongDocValues;
@@ -58,7 +58,7 @@ public class SumTotalTermFreqValueSource extends ValueSource {
   public void createWeight(Map context, IndexSearcher searcher) throws IOException {
     long sumTotalTermFreq = 0;
     for (LeafReaderContext readerContext : searcher.getTopReaderContext().leaves()) {
-      Terms terms = readerContext.reader().terms(indexedField);
+      FieldTerms terms = readerContext.reader().terms(indexedField);
       if (terms == null) continue;
       long v = terms.getSumTotalTermFreq();
       if (v == -1) {

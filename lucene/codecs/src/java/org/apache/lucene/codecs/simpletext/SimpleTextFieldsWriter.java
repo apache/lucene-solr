@@ -25,7 +25,7 @@ import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.FieldInfos;
 import org.apache.lucene.index.Fields;
 import org.apache.lucene.index.SegmentWriteState;
-import org.apache.lucene.index.Terms;
+import org.apache.lucene.index.FieldTerms;
 import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.store.IndexOutput;
 import org.apache.lucene.util.BytesRef;
@@ -64,7 +64,7 @@ class SimpleTextFieldsWriter extends FieldsConsumer {
 
     // for each field
     for(String field : fields) {
-      Terms terms = fields.terms(field);
+      FieldTerms terms = fields.terms(field);
       if (terms == null) {
         // Annoyingly, this can happen!
         continue;

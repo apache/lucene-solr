@@ -39,7 +39,7 @@ public class MappedMultiFields extends FilterFields {
   }
 
   @Override
-  public Terms terms(String field) throws IOException {
+  public FieldTerms terms(String field) throws IOException {
     MultiTerms terms = (MultiTerms) in.terms(field);
     if (terms == null) {
       return null;

@@ -26,7 +26,7 @@ import org.apache.lucene.classification.utils.ConfusionMatrixGenerator;
 import org.apache.lucene.index.LeafReader;
 import org.apache.lucene.index.MultiFields;
 import org.apache.lucene.index.Term;
-import org.apache.lucene.index.Terms;
+import org.apache.lucene.index.FieldTerms;
 import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.util.BytesRef;
@@ -124,7 +124,7 @@ public class SimpleNaiveBayesClassifierTest extends ClassificationTestBase<Bytes
       assertTrue(precision >= 0d);
       assertTrue(precision <= 1d);
 
-      Terms terms = MultiFields.getTerms(leafReader, categoryFieldName);
+      FieldTerms terms = MultiFields.getTerms(leafReader, categoryFieldName);
       TermsEnum iterator = terms.iterator();
       BytesRef term;
       while ((term = iterator.next()) != null) {

@@ -41,7 +41,7 @@ import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.LeafReader;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.RandomIndexWriter;
-import org.apache.lucene.index.Terms;
+import org.apache.lucene.index.FieldTerms;
 import org.apache.lucene.index.TermsEnum.SeekStatus;
 import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.search.DocIdSetIterator;
@@ -162,7 +162,7 @@ public class TestBlockPostingsFormat3 extends LuceneTestCase {
   
   // following code is almost an exact dup of code from TestDuelingCodecs: sorry!
   
-  public void assertTerms(Terms leftTerms, Terms rightTerms, boolean deep) throws Exception {
+  public void assertTerms(FieldTerms leftTerms, FieldTerms rightTerms, boolean deep) throws Exception {
     if (leftTerms == null || rightTerms == null) {
       assertNull(leftTerms);
       assertNull(rightTerms);
@@ -194,7 +194,7 @@ public class TestBlockPostingsFormat3 extends LuceneTestCase {
     }
   }
   
-  private void assertTermsSeeking(Terms leftTerms, Terms rightTerms) throws Exception {
+  private void assertTermsSeeking(FieldTerms leftTerms, FieldTerms rightTerms) throws Exception {
     TermsEnum leftEnum = null;
     TermsEnum rightEnum = null;
     
@@ -260,9 +260,9 @@ public class TestBlockPostingsFormat3 extends LuceneTestCase {
   }
   
   /** 
-   * checks collection-level statistics on Terms 
+   * checks collection-level statistics on FieldTerms 
    */
-  public void assertTermsStatistics(Terms leftTerms, Terms rightTerms) throws Exception {
+  public void assertTermsStatistics(FieldTerms leftTerms, FieldTerms rightTerms) throws Exception {
     if (leftTerms.getDocCount() != -1 && rightTerms.getDocCount() != -1) {
       assertEquals(leftTerms.getDocCount(), rightTerms.getDocCount());
     }

@@ -59,7 +59,7 @@ public class TestTermVectorsWriter extends LuceneTestCase {
     w.close();
 
     IndexReader r = DirectoryReader.open(dir);
-    Terms vector = r.getTermVectors(0).terms("field");
+    FieldTerms vector = r.getTermVectors(0).terms("field");
     assertNotNull(vector);
     TermsEnum termsEnum = vector.iterator();
     assertNotNull(termsEnum.next());

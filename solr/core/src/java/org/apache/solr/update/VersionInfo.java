@@ -24,7 +24,7 @@ import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 import org.apache.lucene.index.LeafReader;
 import org.apache.lucene.index.LeafReaderContext;
-import org.apache.lucene.index.Terms;
+import org.apache.lucene.index.FieldTerms;
 import org.apache.lucene.legacy.LegacyNumericUtils;
 import org.apache.lucene.queries.function.FunctionValues;
 import org.apache.lucene.queries.function.ValueSource;
@@ -229,11 +229,11 @@ public class VersionInfo {
     // if indexed, then we have terms to get the max from
     if (versionField.indexed()) {
       LeafReader leafReader = SlowCompositeReaderWrapper.wrap(searcher.getIndexReader());
-      Terms versionTerms = leafReader.terms(versionFieldName);
+      FieldTerms versionTerms = leafReader.terms(versionFieldName);
       Long max = (versionTerms != null) ? LegacyNumericUtils.getMaxLong(versionTerms) : null;
       if (max != null) {
         maxVersionInIndex = max.longValue();
-        log.debug("Found MAX value {} from Terms for {} in index", maxVersionInIndex, versionFieldName);
+        log.debug("Found MAX value {} from FieldTerms for {} in index", maxVersionInIndex, versionFieldName);
       } else {
         log.debug("No terms found for {}, cannot seed version bucket highest value from index", versionFieldName);
       }

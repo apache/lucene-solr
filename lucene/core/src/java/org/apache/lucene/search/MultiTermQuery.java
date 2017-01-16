@@ -25,7 +25,7 @@ import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.SingleTermsEnum;   // javadocs
 import org.apache.lucene.index.Term;
 import org.apache.lucene.index.TermContext;
-import org.apache.lucene.index.Terms;
+import org.apache.lucene.index.FieldTerms;
 import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.search.BooleanQuery.Builder;
 import org.apache.lucene.util.AttributeSource;
@@ -36,7 +36,7 @@ import org.apache.lucene.util.AttributeSource;
  * FilteredTermsEnum} enumeration.
  *
  * <p>This query cannot be used directly; you must subclass
- * it and define {@link #getTermsEnum(Terms,AttributeSource)} to provide a {@link
+ * it and define {@link #getTermsEnum(FieldTerms,AttributeSource)} to provide a {@link
  * FilteredTermsEnum} that iterates through the terms to be
  * matched.
  *
@@ -72,9 +72,9 @@ public abstract class MultiTermQuery extends Query {
     public abstract Query rewrite(IndexReader reader, MultiTermQuery query) throws IOException;
     /**
      * Returns the {@link MultiTermQuery}s {@link TermsEnum}
-     * @see MultiTermQuery#getTermsEnum(Terms, AttributeSource)
+     * @see MultiTermQuery#getTermsEnum(FieldTerms, AttributeSource)
      */
-    protected TermsEnum getTermsEnum(MultiTermQuery query, Terms terms, AttributeSource atts) throws IOException {
+    protected TermsEnum getTermsEnum(MultiTermQuery query, FieldTerms terms, AttributeSource atts) throws IOException {
       return query.getTermsEnum(terms, atts); // allow RewriteMethod subclasses to pull a TermsEnum from the MTQ 
     }
   }
@@ -290,19 +290,19 @@ public abstract class MultiTermQuery extends Query {
    * provide attributes, the rewrite method uses to inform about e.g. maximum competitive boosts.
    * This is currently only used by {@link TopTermsRewrite}
    */
-  protected abstract TermsEnum getTermsEnum(Terms terms, AttributeSource atts) throws IOException;
+  protected abstract TermsEnum getTermsEnum(FieldTerms terms, AttributeSource atts) throws IOException;
 
   /** Convenience method, if no attributes are needed:
    * This simply passes empty attributes and is equal to:
    * <code>getTermsEnum(terms, new AttributeSource())</code>
    */
-  protected final TermsEnum getTermsEnum(Terms terms) throws IOException {
+  protected final TermsEnum getTermsEnum(FieldTerms terms) throws IOException {
     return getTermsEnum(terms, new AttributeSource());
   }
 
   /**
    * To rewrite to a simpler form, instead return a simpler
-   * enum from {@link #getTermsEnum(Terms, AttributeSource)}.  For example,
+   * enum from {@link #getTermsEnum(FieldTerms, AttributeSource)}.  For example,
    * to rewrite to a single term, return a {@link SingleTermsEnum}
    */
   @Override

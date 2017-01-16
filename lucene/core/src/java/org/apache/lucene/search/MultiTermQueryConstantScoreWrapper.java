@@ -27,7 +27,7 @@ import org.apache.lucene.index.PostingsEnum;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.index.TermContext;
 import org.apache.lucene.index.TermState;
-import org.apache.lucene.index.Terms;
+import org.apache.lucene.index.FieldTerms;
 import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.search.BooleanClause.Occur;
 import org.apache.lucene.util.BytesRef;
@@ -132,7 +132,7 @@ final class MultiTermQueryConstantScoreWrapper<Q extends MultiTermQuery> extends
        * there are few terms, or build a bitset containing matching docs.
        */
       private WeightOrDocIdSet rewrite(LeafReaderContext context) throws IOException {
-        final Terms terms = context.reader().terms(query.field);
+        final FieldTerms terms = context.reader().terms(query.field);
         if (terms == null) {
           // field does not exist
           return new WeightOrDocIdSet((DocIdSet) null);

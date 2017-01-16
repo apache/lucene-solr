@@ -36,7 +36,7 @@ import org.apache.lucene.index.FilteredTermsEnum;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.LeafReaderContext;
-import org.apache.lucene.index.Terms;
+import org.apache.lucene.index.FieldTerms;
 import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.RAMDirectory;
@@ -89,9 +89,9 @@ public class TestMultiTermsEnum extends LuceneTestCase {
       }
 
       @Override
-      public Terms terms(String field) throws IOException {
+      public FieldTerms terms(String field) throws IOException {
         if ("deleted".equals(field)) {
-          Terms deletedTerms = super.terms("deleted");
+          FieldTerms deletedTerms = super.terms("deleted");
           if (deletedTerms != null) {
             return new ValueFilteredTerms(deletedTerms, new BytesRef("1"));
           }
@@ -106,12 +106,12 @@ public class TestMultiTermsEnum extends LuceneTestCase {
         return new MigratingFieldsProducer(delegate, newFieldInfo);
       }
 
-      private static class ValueFilteredTerms extends Terms {
+      private static class ValueFilteredTerms extends FieldTerms {
 
-        private final Terms delegate;
+        private final FieldTerms delegate;
         private final BytesRef value;
 
-        public ValueFilteredTerms(Terms delegate, BytesRef value) {
+        public ValueFilteredTerms(FieldTerms delegate, BytesRef value) {
           this.delegate = delegate;
           this.value = value;
         }
@@ -232,7 +232,7 @@ public class TestMultiTermsEnum extends LuceneTestCase {
       }
 
       @Override
-      public Terms terms(String field) throws IOException {
+      public FieldTerms terms(String field) throws IOException {
         return delegate.terms(field);
       }
 

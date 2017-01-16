@@ -32,8 +32,8 @@ import org.apache.lucene.util.automaton.CompiledAutomaton;
  * @lucene.experimental
  */
 
-public final class MultiTerms extends Terms {
-  private final Terms[] subs;
+public final class MultiTerms extends FieldTerms {
+  private final FieldTerms[] subs;
   private final ReaderSlice[] subSlices;
   private final boolean hasFreqs;
   private final boolean hasOffsets;
@@ -42,11 +42,11 @@ public final class MultiTerms extends Terms {
 
   /** Sole constructor.
    *
-   * @param subs The {@link Terms} instances of all sub-readers. 
+   * @param subs The {@link FieldTerms} instances of all sub-readers. 
    * @param subSlices A parallel array (matching {@code
    *        subs}) describing the sub-reader slices.
    */
-  public MultiTerms(Terms[] subs, ReaderSlice[] subSlices) throws IOException {
+  public MultiTerms(FieldTerms[] subs, ReaderSlice[] subSlices) throws IOException {
     this.subs = subs;
     this.subSlices = subSlices;
     
@@ -68,12 +68,12 @@ public final class MultiTerms extends Terms {
     hasPayloads = hasPositions && _hasPayloads; // if all subs have pos, and at least one has payloads.
   }
 
-  /** Expert: returns the Terms being merged. */
-  public Terms[] getSubTerms() {
+  /** Expert: returns the FieldTerms being merged. */
+  public FieldTerms[] getSubTerms() {
     return subs;
   }
 
-  /** Expert: returns  pointers to the sub-readers corresponding to the Terms being merged. */
+  /** Expert: returns  pointers to the sub-readers corresponding to the FieldTerms being merged. */
   public ReaderSlice[] getSubSlices() {
     return subSlices;
   }
@@ -98,7 +98,7 @@ public final class MultiTerms extends Terms {
   @Override
   public BytesRef getMin() throws IOException {
     BytesRef minTerm = null;
-    for(Terms terms : subs) {
+    for(FieldTerms terms : subs) {
       BytesRef term = terms.getMin();
       if (minTerm == null || term.compareTo(minTerm) < 0) {
         minTerm = term;
@@ -111,7 +111,7 @@ public final class MultiTerms extends Terms {
   @Override
   public BytesRef getMax() throws IOException {
     BytesRef maxTerm = null;
-    for(Terms terms : subs) {
+    for(FieldTerms terms : subs) {
       BytesRef term = terms.getMax();
       if (maxTerm == null || term.compareTo(maxTerm) > 0) {
         maxTerm = term;
@@ -147,7 +147,7 @@ public final class MultiTerms extends Terms {
   @Override
   public long getSumTotalTermFreq() throws IOException {
     long sum = 0;
-    for(Terms terms : subs) {
+    for(FieldTerms terms : subs) {
       final long v = terms.getSumTotalTermFreq();
       if (v == -1) {
         return -1;
@@ -160,7 +160,7 @@ public final class MultiTerms extends Terms {
   @Override
   public long getSumDocFreq() throws IOException {
     long sum = 0;
-    for(Terms terms : subs) {
+    for(FieldTerms terms : subs) {
       final long v = terms.getSumDocFreq();
       if (v == -1) {
         return -1;
@@ -173,7 +173,7 @@ public final class MultiTerms extends Terms {
   @Override
   public int getDocCount() throws IOException {
     int sum = 0;
-    for(Terms terms : subs) {
+    for(FieldTerms terms : subs) {
       final int v = terms.getDocCount();
       if (v == -1) {
         return -1;

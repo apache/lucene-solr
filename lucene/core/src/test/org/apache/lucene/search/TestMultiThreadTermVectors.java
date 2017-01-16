@@ -25,7 +25,7 @@ import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.Fields;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
-import org.apache.lucene.index.Terms;
+import org.apache.lucene.index.FieldTerms;
 import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.English;
@@ -171,7 +171,7 @@ class MultiThreadTermVectorsReader implements Runnable {
       verifyVectors(vectors, docId);
       
       start = System.currentTimeMillis();
-      Terms vector = reader.getTermVectors(docId).terms("field");
+      FieldTerms vector = reader.getTermVectors(docId).terms("field");
       timeElapsed += System.currentTimeMillis()-start;
       
       verifyVector(vector.iterator(), docId);
@@ -180,7 +180,7 @@ class MultiThreadTermVectorsReader implements Runnable {
   
   private void verifyVectors(Fields vectors, int num) throws IOException {
     for (String field : vectors) {
-      Terms terms = vectors.terms(field);
+      FieldTerms terms = vectors.terms(field);
       assert terms != null;
       verifyVector(terms.iterator(), num);
     }

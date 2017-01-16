@@ -178,7 +178,7 @@ public class TestTermsEnum extends LuceneTestCase {
     return c.runAutomaton.isAccept(state);
   }
 
-  // Tests Terms.intersect
+  // Tests FieldTerms.intersect
   public void testIntersectRandom() throws IOException {
     final Directory dir = newDirectory();
     final RandomIndexWriter w = new RandomIndexWriter(random(), dir);
@@ -511,7 +511,7 @@ public class TestTermsEnum extends LuceneTestCase {
     w.close();
     assertEquals(1, r.numDocs());
     assertEquals(1, r.maxDoc());
-    Terms terms = MultiFields.getTerms(r, "field");
+    FieldTerms terms = MultiFields.getTerms(r, "field");
     if (terms != null) {
       assertNull(terms.iterator().next());
     }
@@ -738,7 +738,7 @@ public class TestTermsEnum extends LuceneTestCase {
     DirectoryReader r = w.getReader();
     w.close();
     LeafReader sub = getOnlyLeafReader(r);
-    Terms terms = sub.fields().terms("field");
+    FieldTerms terms = sub.fields().terms("field");
     Automaton automaton = new RegExp(".*", RegExp.NONE).toAutomaton();
     CompiledAutomaton ca = new CompiledAutomaton(automaton, false, false);    
     TermsEnum te = terms.intersect(ca, null);
@@ -792,7 +792,7 @@ public class TestTermsEnum extends LuceneTestCase {
     DirectoryReader r = w.getReader();
     w.close();
     LeafReader sub = getOnlyLeafReader(r);
-    Terms terms = sub.fields().terms("field");
+    FieldTerms terms = sub.fields().terms("field");
 
     Automaton automaton = new RegExp(".*d", RegExp.NONE).toAutomaton();
     CompiledAutomaton ca = new CompiledAutomaton(automaton, false, false);    
@@ -846,7 +846,7 @@ public class TestTermsEnum extends LuceneTestCase {
     DirectoryReader r = w.getReader();
     w.close();
     LeafReader sub = getOnlyLeafReader(r);
-    Terms terms = sub.fields().terms("field");
+    FieldTerms terms = sub.fields().terms("field");
 
     Automaton automaton = new RegExp(".*", RegExp.NONE).toAutomaton();  // accept ALL
     CompiledAutomaton ca = new CompiledAutomaton(automaton, false, false);    
@@ -1009,7 +1009,7 @@ public class TestTermsEnum extends LuceneTestCase {
     IndexReader r = w.getReader();
     Fields fields = MultiFields.getFields(r);
     CompiledAutomaton automaton = new CompiledAutomaton(new RegExp("do_not_match_anything").toAutomaton());
-    Terms terms = fields.terms("field");
+    FieldTerms terms = fields.terms("field");
     String message = expectThrows(IllegalArgumentException.class, () -> {terms.intersect(automaton, null);}).getMessage();
     assertEquals("please use CompiledAutomaton.getTermsEnum instead", message);
     r.close();

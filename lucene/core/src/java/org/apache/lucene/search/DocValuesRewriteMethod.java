@@ -23,7 +23,7 @@ import org.apache.lucene.index.DocValues;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.SortedSetDocValues;
-import org.apache.lucene.index.Terms;
+import org.apache.lucene.index.FieldTerms;
 import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.util.LongBitSet;
 
@@ -77,7 +77,7 @@ public final class DocValuesRewriteMethod extends MultiTermQuery.RewriteMethod {
         @Override
         public Scorer scorer(LeafReaderContext context) throws IOException {
           final SortedSetDocValues fcsi = DocValues.getSortedSet(context.reader(), query.field);
-          TermsEnum termsEnum = query.getTermsEnum(new Terms() {
+          TermsEnum termsEnum = query.getTermsEnum(new FieldTerms() {
             
             @Override
             public TermsEnum iterator() throws IOException {

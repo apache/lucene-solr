@@ -35,7 +35,7 @@ import org.apache.lucene.index.PostingsEnum;
 import org.apache.lucene.index.SegmentReadState;
 import org.apache.lucene.index.SegmentWriteState;
 import org.apache.lucene.index.TermState;
-import org.apache.lucene.index.Terms;
+import org.apache.lucene.index.FieldTerms;
 import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.RAMOutputStream;
@@ -88,7 +88,7 @@ public final class DirectPostingsFormat extends PostingsFormat {
   }
 
   /** minSkipCount is how many terms in a row must have the
-   *  same prefix before we put a skip pointer down.  Terms
+   *  same prefix before we put a skip pointer down.  FieldTerms
    *  with docFreq &lt;= lowFreqCutoff will use a single int[]
    *  to hold all docs, freqs, position and offsets; terms
    *  with higher docFreq will use separate arrays. */
@@ -136,7 +136,7 @@ public final class DirectPostingsFormat extends PostingsFormat {
     }
 
     @Override
-    public Terms terms(String field) {
+    public FieldTerms terms(String field) {
       return fields.get(field);
     }
 
@@ -176,7 +176,7 @@ public final class DirectPostingsFormat extends PostingsFormat {
     }
   }
 
-  private final static class DirectField extends Terms implements Accountable {
+  private final static class DirectField extends FieldTerms implements Accountable {
 
     private static final long BASE_RAM_BYTES_USED = RamUsageEstimator.shallowSizeOfInstance(DirectField.class);
 
@@ -299,7 +299,7 @@ public final class DirectPostingsFormat extends PostingsFormat {
       }
     }
 
-    public DirectField(SegmentReadState state, String field, Terms termsIn, int minSkipCount, int lowFreqCutoff) throws IOException {
+    public DirectField(SegmentReadState state, String field, FieldTerms termsIn, int minSkipCount, int lowFreqCutoff) throws IOException {
       final FieldInfo fieldInfo = state.fieldInfos.fieldInfo(field);
 
       sumTotalTermFreq = termsIn.getSumTotalTermFreq();
@@ -308,7 +308,7 @@ public final class DirectPostingsFormat extends PostingsFormat {
 
       final int numTerms = (int) termsIn.size();
       if (numTerms == -1) {
-        throw new IllegalArgumentException("codec does not provide Terms.size()");
+        throw new IllegalArgumentException("codec does not provide FieldTerms.size()");
       }
       terms = new TermAndSkip[numTerms];
       termOffsets = new int[1+numTerms];

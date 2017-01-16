@@ -34,7 +34,7 @@ import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexableField;
 import org.apache.lucene.index.MultiFields;
 import org.apache.lucene.index.Term;
-import org.apache.lucene.index.Terms;
+import org.apache.lucene.index.FieldTerms;
 import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.search.BooleanClause;
 import org.apache.lucene.search.BooleanQuery;
@@ -731,7 +731,7 @@ public final class MoreLikeThis {
     Map<String, Map<String, Int>> field2termFreqMap = new HashMap<>();
     for (String fieldName : fieldNames) {
       final Fields vectors = ir.getTermVectors(docNum);
-      final Terms vector;
+      final FieldTerms vector;
       if (vectors != null) {
         vector = vectors.terms(fieldName);
       } else {
@@ -781,7 +781,7 @@ public final class MoreLikeThis {
    * @param field2termFreqMap a Map of terms and their frequencies per field
    * @param vector List of terms and their frequencies for a doc/field
    */
-  private void addTermFrequencies(Map<String, Map<String, Int>> field2termFreqMap, Terms vector, String fieldName) throws IOException {
+  private void addTermFrequencies(Map<String, Map<String, Int>> field2termFreqMap, FieldTerms vector, String fieldName) throws IOException {
     Map<String, Int> termFreqMap = field2termFreqMap.get(fieldName);
     if (termFreqMap == null) {
       termFreqMap = new HashMap<>();

@@ -22,7 +22,7 @@ import java.util.Map;
 import org.apache.lucene.index.PostingsEnum;
 import org.apache.lucene.index.Fields;
 import org.apache.lucene.index.LeafReaderContext;
-import org.apache.lucene.index.Terms;
+import org.apache.lucene.index.FieldTerms;
 import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.queries.function.FunctionValues;
 import org.apache.lucene.queries.function.docvalues.FloatDocValues;
@@ -51,7 +51,7 @@ public class TFValueSource extends TermFreqValueSource {
   @Override
   public FunctionValues getValues(Map context, LeafReaderContext readerContext) throws IOException {
     Fields fields = readerContext.reader().fields();
-    final Terms terms = fields.terms(indexedField);
+    final FieldTerms terms = fields.terms(indexedField);
     IndexSearcher searcher = (IndexSearcher)context.get("searcher");
     final TFIDFSimilarity similarity = IDFValueSource.asTFIDF(searcher.getSimilarity(true), indexedField);
     if (similarity == null) {

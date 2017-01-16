@@ -54,7 +54,7 @@ import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.LogByteSizeMergePolicy;
 import org.apache.lucene.index.ReaderManager;
 import org.apache.lucene.index.SegmentInfos;
-import org.apache.lucene.index.Terms;
+import org.apache.lucene.index.FieldTerms;
 import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.index.TieredMergePolicy;
 import org.apache.lucene.store.AlreadyClosedException;
@@ -382,7 +382,7 @@ public class DirectoryTaxonomyWriter implements TaxonomyWriter {
       final BytesRef catTerm = new BytesRef(FacetsConfig.pathToString(categoryPath.components, categoryPath.length));
       PostingsEnum docs = null; // reuse
       for (LeafReaderContext ctx : reader.leaves()) {
-        Terms terms = ctx.reader().terms(Consts.FULL);
+        FieldTerms terms = ctx.reader().terms(Consts.FULL);
         if (terms != null) {
           // TODO: share per-segment TermsEnum here!
           TermsEnum termsEnum = terms.iterator();
@@ -693,7 +693,7 @@ public class DirectoryTaxonomyWriter implements TaxonomyWriter {
     try {
       PostingsEnum postingsEnum = null;
       for (LeafReaderContext ctx : reader.leaves()) {
-        Terms terms = ctx.reader().terms(Consts.FULL);
+        FieldTerms terms = ctx.reader().terms(Consts.FULL);
         if (terms != null) { // cannot really happen, but be on the safe side
           // TODO: share per-segment TermsEnum here!
           TermsEnum termsEnum = terms.iterator();
@@ -790,7 +790,7 @@ public class DirectoryTaxonomyWriter implements TaxonomyWriter {
       PostingsEnum docs = null;
       for (final LeafReaderContext ctx : r.leaves()) {
         final LeafReader ar = ctx.reader();
-        final Terms terms = ar.terms(Consts.FULL);
+        final FieldTerms terms = ar.terms(Consts.FULL);
         // TODO: share per-segment TermsEnum here!
         TermsEnum te = terms.iterator();
         while (te.next() != null) {

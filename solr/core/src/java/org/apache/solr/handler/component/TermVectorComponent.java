@@ -34,7 +34,7 @@ import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.PostingsEnum;
 import org.apache.lucene.index.StoredFieldVisitor;
 import org.apache.lucene.index.Term;
-import org.apache.lucene.index.Terms;
+import org.apache.lucene.index.FieldTerms;
 import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.util.BytesRef;
 import org.apache.solr.common.SolrException;
@@ -312,7 +312,7 @@ public class TermVectorComponent extends SearchComponent implements SolrCoreAwar
       if ( null != fields ) {
         for (Map.Entry<String, FieldOptions> entry : fieldOptions.entrySet()) {
           final String field = entry.getKey();
-          final Terms vector = reader.getTermVector(docId, field);
+          final FieldTerms vector = reader.getTermVector(docId, field);
           if (vector != null) {
             TermsEnum termsEnum = vector.iterator();
             mapOneVector(docNL, entry.getValue(), reader, docId, termsEnum, field);
@@ -322,7 +322,7 @@ public class TermVectorComponent extends SearchComponent implements SolrCoreAwar
         // extract all fields
         final Fields vectors = reader.getTermVectors(docId);
         for (String field : vectors) {
-          Terms terms = vectors.terms(field);
+          FieldTerms terms = vectors.terms(field);
           if (terms != null) {
             TermsEnum termsEnum = terms.iterator();
             mapOneVector(docNL, allFields, reader, docId, termsEnum, field);

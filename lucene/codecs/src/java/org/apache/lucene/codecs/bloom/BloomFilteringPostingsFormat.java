@@ -37,7 +37,7 @@ import org.apache.lucene.index.Fields;
 import org.apache.lucene.index.IndexFileNames;
 import org.apache.lucene.index.SegmentReadState;
 import org.apache.lucene.index.SegmentWriteState;
-import org.apache.lucene.index.Terms;
+import org.apache.lucene.index.FieldTerms;
 import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.store.ChecksumIndexInput;
 import org.apache.lucene.store.DataOutput;
@@ -200,12 +200,12 @@ public final class BloomFilteringPostingsFormat extends PostingsFormat {
     }
     
     @Override
-    public Terms terms(String field) throws IOException {
+    public FieldTerms terms(String field) throws IOException {
       FuzzySet filter = bloomsByFieldName.get(field);
       if (filter == null) {
         return delegateFieldsProducer.terms(field);
       } else {
-        Terms result = delegateFieldsProducer.terms(field);
+        FieldTerms result = delegateFieldsProducer.terms(field);
         if (result == null) {
           return null;
         }
@@ -218,11 +218,11 @@ public final class BloomFilteringPostingsFormat extends PostingsFormat {
       return delegateFieldsProducer.size();
     }
     
-    class BloomFilteredTerms extends Terms {
-      private Terms delegateTerms;
+    class BloomFilteredTerms extends FieldTerms {
+      private FieldTerms delegateTerms;
       private FuzzySet filter;
       
-      public BloomFilteredTerms(Terms terms, FuzzySet filter) {
+      public BloomFilteredTerms(FieldTerms terms, FuzzySet filter) {
         this.delegateTerms = terms;
         this.filter = filter;
       }
@@ -290,16 +290,16 @@ public final class BloomFilteringPostingsFormat extends PostingsFormat {
     }
     
     final class BloomFilteredTermsEnum extends TermsEnum {
-      private Terms delegateTerms;
+      private FieldTerms delegateTerms;
       private TermsEnum delegateTermsEnum;
       private final FuzzySet filter;
       
-      public BloomFilteredTermsEnum(Terms delegateTerms, FuzzySet filter) throws IOException {
+      public BloomFilteredTermsEnum(FieldTerms delegateTerms, FuzzySet filter) throws IOException {
         this.delegateTerms = delegateTerms;
         this.filter = filter;
       }
       
-      void reset(Terms delegateTerms) throws IOException {
+      void reset(FieldTerms delegateTerms) throws IOException {
         this.delegateTerms = delegateTerms;
         this.delegateTermsEnum = null;
       }
@@ -427,7 +427,7 @@ public final class BloomFilteringPostingsFormat extends PostingsFormat {
       delegateFieldsConsumer.write(fields);
 
       for(String field : fields) {
-        Terms terms = fields.terms(field);
+        FieldTerms terms = fields.terms(field);
         if (terms == null) {
           continue;
         }

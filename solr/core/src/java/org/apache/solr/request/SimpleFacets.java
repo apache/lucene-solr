@@ -41,7 +41,7 @@ import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.MultiPostingsEnum;
 import org.apache.lucene.index.PostingsEnum;
 import org.apache.lucene.index.Term;
-import org.apache.lucene.index.Terms;
+import org.apache.lucene.index.FieldTerms;
 import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.search.BooleanClause.Occur;
 import org.apache.lucene.search.BooleanQuery;
@@ -850,7 +850,7 @@ public class SimpleFacets {
     throws IOException {
 
     /* :TODO: potential optimization...
-    * cache the Terms with the highest docFreq and try them first
+    * cache the FieldTerms with the highest docFreq and try them first
     * don't enum if we get our max from them
     */
 
@@ -885,7 +885,7 @@ public class SimpleFacets {
     }
 
     Fields fields = r.fields();
-    Terms terms = fields==null ? null : fields.terms(field);
+    FieldTerms terms = fields==null ? null : fields.terms(field);
     TermsEnum termsEnum = null;
     SolrIndexSearcher.DocsEnumState deState = null;
     BytesRef term = null;

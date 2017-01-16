@@ -144,7 +144,7 @@ public abstract class LeafReader extends IndexReader {
 
   @Override
   public final int docFreq(Term term) throws IOException {
-    final Terms terms = terms(term.field());
+    final FieldTerms terms = terms(term.field());
     if (terms == null) {
       return 0;
     }
@@ -163,7 +163,7 @@ public abstract class LeafReader extends IndexReader {
    * away. */
   @Override
   public final long totalTermFreq(Term term) throws IOException {
-    final Terms terms = terms(term.field());
+    final FieldTerms terms = terms(term.field());
     if (terms == null) {
       return 0;
     }
@@ -177,7 +177,7 @@ public abstract class LeafReader extends IndexReader {
 
   @Override
   public final long getSumDocFreq(String field) throws IOException {
-    final Terms terms = terms(field);
+    final FieldTerms terms = terms(field);
     if (terms == null) {
       return 0;
     }
@@ -186,7 +186,7 @@ public abstract class LeafReader extends IndexReader {
 
   @Override
   public final int getDocCount(String field) throws IOException {
-    final Terms terms = terms(field);
+    final FieldTerms terms = terms(field);
     if (terms == null) {
       return 0;
     }
@@ -195,7 +195,7 @@ public abstract class LeafReader extends IndexReader {
 
   @Override
   public final long getSumTotalTermFreq(String field) throws IOException {
-    final Terms terms = terms(field);
+    final FieldTerms terms = terms(field);
     if (terms == null) {
       return 0;
     }
@@ -203,7 +203,7 @@ public abstract class LeafReader extends IndexReader {
   }
 
   /** This may return null if the field does not exist.*/
-  public final Terms terms(String field) throws IOException {
+  public final FieldTerms terms(String field) throws IOException {
     return fields().terms(field);
   }
 
@@ -215,7 +215,7 @@ public abstract class LeafReader extends IndexReader {
   public final PostingsEnum postings(Term term, int flags) throws IOException {
     assert term.field() != null;
     assert term.bytes() != null;
-    final Terms terms = terms(term.field());
+    final FieldTerms terms = terms(term.field());
     if (terms != null) {
       final TermsEnum termsEnum = terms.iterator();
       if (termsEnum.seekExact(term.bytes())) {

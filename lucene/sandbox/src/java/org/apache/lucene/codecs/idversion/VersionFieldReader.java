@@ -22,7 +22,7 @@ import java.util.Collections;
 
 import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.IndexOptions;
-import org.apache.lucene.index.Terms;
+import org.apache.lucene.index.FieldTerms;
 import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.store.ByteArrayDataInput;
 import org.apache.lucene.store.IndexInput;
@@ -32,9 +32,9 @@ import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.fst.FST;
 import org.apache.lucene.util.fst.PairOutputs.Pair;
 
-/** BlockTree's implementation of {@link Terms}. */
+/** BlockTree's implementation of {@link FieldTerms}. */
 // public for CheckIndex:
-final class VersionFieldReader extends Terms implements Accountable {
+final class VersionFieldReader extends FieldTerms implements Accountable {
   final long numTerms;
   final FieldInfo fieldInfo;
   final long sumTotalTermFreq;

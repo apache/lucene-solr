@@ -39,7 +39,7 @@ import org.apache.lucene.index.IndexOptions;
 import org.apache.lucene.index.SegmentInfo;
 import org.apache.lucene.index.SegmentReadState;
 import org.apache.lucene.index.TermState;
-import org.apache.lucene.index.Terms;
+import org.apache.lucene.index.FieldTerms;
 import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.store.ByteArrayDataInput;
 import org.apache.lucene.store.IndexInput;
@@ -140,7 +140,7 @@ public class FSTTermsReader extends FieldsProducer {
   }
 
   @Override
-  public Terms terms(String field) throws IOException {
+  public FieldTerms terms(String field) throws IOException {
     assert field != null;
     return fields.get(field);
   }
@@ -160,7 +160,7 @@ public class FSTTermsReader extends FieldsProducer {
   }
 
   private static final long BASE_RAM_BYTES_USED = RamUsageEstimator.shallowSizeOfInstance(TermsReader.class);
-  final class TermsReader extends Terms implements Accountable {
+  final class TermsReader extends FieldTerms implements Accountable {
 
     final FieldInfo fieldInfo;
     final long numTerms;

@@ -34,7 +34,7 @@ import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.index.TermContext;
-import org.apache.lucene.index.Terms;
+import org.apache.lucene.index.FieldTerms;
 import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.search.BooleanClause.Occur;
 import org.apache.lucene.search.BooleanClause;
@@ -402,7 +402,7 @@ public class CommonTermsQueryTest extends LuceneTestCase {
     DirectoryReader reader = w.getReader();
     LeafReader wrapper = getOnlyLeafReader(reader);
     String field = "body";
-    Terms terms = wrapper.terms(field);
+    FieldTerms terms = wrapper.terms(field);
     PriorityQueue<TermAndFreq> lowFreqQueue = new PriorityQueue<CommonTermsQueryTest.TermAndFreq>(
         5) {
       

@@ -20,9 +20,9 @@ package org.apache.lucene.search;
 import org.apache.lucene.util.Attribute;
 import org.apache.lucene.util.AttributeSource; // javadocs only
 import org.apache.lucene.index.TermsEnum; // javadocs only
-import org.apache.lucene.index.Terms; // javadocs only
+import org.apache.lucene.index.FieldTerms; // javadocs only
 
-/** Add this {@link Attribute} to a {@link TermsEnum} returned by {@link MultiTermQuery#getTermsEnum(Terms,AttributeSource)}
+/** Add this {@link Attribute} to a {@link TermsEnum} returned by {@link MultiTermQuery#getTermsEnum(FieldTerms,AttributeSource)}
  * and update the boost on each returned term. This enables to control the boost factor
  * for each matching term in {@link MultiTermQuery#SCORING_BOOLEAN_REWRITE} or
  * {@link TopTermsRewrite} mode.

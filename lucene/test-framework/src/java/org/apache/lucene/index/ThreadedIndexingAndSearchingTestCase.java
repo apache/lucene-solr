@@ -350,7 +350,7 @@ public abstract class ThreadedIndexingAndSearchingTestCase extends LuceneTestCas
                   if (s.getIndexReader().numDocs() > 0) {
                     smokeTestSearcher(s);
                     Fields fields = MultiFields.getFields(s.getIndexReader());
-                    Terms terms = fields.terms("body");
+                    FieldTerms terms = fields.terms("body");
                     if (terms == null) {
                       continue;
                     }

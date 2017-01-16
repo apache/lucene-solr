@@ -17,7 +17,7 @@
 package org.apache.lucene.search.join;
 
 import org.apache.lucene.index.FilteredTermsEnum;
-import org.apache.lucene.index.Terms;
+import org.apache.lucene.index.FieldTerms;
 import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.search.MultiTermQuery;
 import org.apache.lucene.search.Query;
@@ -51,7 +51,7 @@ class TermsQuery extends MultiTermQuery {
   }
 
   @Override
-  protected TermsEnum getTermsEnum(Terms terms, AttributeSource atts) throws IOException {
+  protected TermsEnum getTermsEnum(FieldTerms terms, AttributeSource atts) throws IOException {
     if (this.terms.size() == 0) {
       return TermsEnum.EMPTY;
     }

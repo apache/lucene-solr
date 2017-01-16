@@ -22,7 +22,7 @@ import java.util.Arrays;
 import java.util.List;
 
 import org.apache.lucene.index.PointValues;
-import org.apache.lucene.index.Terms;
+import org.apache.lucene.index.FieldTerms;
 import org.apache.lucene.search.DocIdSet;
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.util.packed.PackedInts;
@@ -108,8 +108,8 @@ public final class DocIdSetBuilder {
   }
 
   /** Create a {@link DocIdSetBuilder} instance that is optimized for
-   *  accumulating docs that match the given {@link Terms}. */
-  public DocIdSetBuilder(int maxDoc, Terms terms) throws IOException {
+   *  accumulating docs that match the given {@link FieldTerms}. */
+  public DocIdSetBuilder(int maxDoc, FieldTerms terms) throws IOException {
     this(maxDoc, terms.getDocCount(), terms.getSumDocFreq());
   }
 

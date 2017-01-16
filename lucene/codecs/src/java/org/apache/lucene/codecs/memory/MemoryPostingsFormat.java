@@ -38,7 +38,7 @@ import org.apache.lucene.index.IndexFileNames;
 import org.apache.lucene.index.IndexOptions;
 import org.apache.lucene.index.SegmentReadState;
 import org.apache.lucene.index.SegmentWriteState;
-import org.apache.lucene.index.Terms;
+import org.apache.lucene.index.FieldTerms;
 import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.store.ByteArrayDataInput;
 import org.apache.lucene.store.ChecksumIndexInput;
@@ -290,7 +290,7 @@ public final class MemoryPostingsFormat extends PostingsFormat {
     public void write(Fields fields) throws IOException {
       for(String field : fields) {
 
-        Terms terms = fields.terms(field);
+        FieldTerms terms = fields.terms(field);
         if (terms == null) {
           continue;
         }
@@ -857,7 +857,7 @@ public final class MemoryPostingsFormat extends PostingsFormat {
     }
   }
 
-  private final static class TermsReader extends Terms implements Accountable {
+  private final static class TermsReader extends FieldTerms implements Accountable {
 
     private final long sumTotalTermFreq;
     private final long sumDocFreq;
@@ -982,7 +982,7 @@ public final class MemoryPostingsFormat extends PostingsFormat {
       }
 
       @Override
-      public Terms terms(String field) {
+      public FieldTerms terms(String field) {
         return fields.get(field);
       }
       

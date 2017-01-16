@@ -42,7 +42,7 @@ import org.apache.lucene.index.PostingsEnum;
 import org.apache.lucene.index.ReaderUtil;
 import org.apache.lucene.index.StoredFieldVisitor;
 import org.apache.lucene.index.Term;
-import org.apache.lucene.index.Terms;
+import org.apache.lucene.index.FieldTerms;
 import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
@@ -503,7 +503,7 @@ public class PostingsHighlighter {
       
       // if the segment has changed, we must initialize new enums.
       if (leaf != lastLeaf) {
-        Terms t = r.terms(field);
+        FieldTerms t = r.terms(field);
         if (t != null) {
           if (!t.hasOffsets()) {
             // no offsets available

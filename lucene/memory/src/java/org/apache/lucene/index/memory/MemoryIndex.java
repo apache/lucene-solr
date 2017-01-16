@@ -835,11 +835,11 @@ public class MemoryIndex {
      * Term strings and their positions for this field: Map &lt;String
      * termText, ArrayIntList positions&gt;
      */
-    private BytesRefHash terms; // note unfortunate variable name class with Terms type
+    private BytesRefHash terms; // note unfortunate variable name class with FieldTerms type
     
     private SliceByteStartArray sliceArray;
 
-    /** Terms sorted ascending by term text; computed on demand */
+    /** FieldTerms sorted ascending by term text; computed on demand */
     private transient int[] sortedTerms;
     
     /** Number of added tokens for this field */
@@ -1230,13 +1230,13 @@ public class MemoryIndex {
       }
 
       @Override
-      public Terms terms(final String field) {
+      public FieldTerms terms(final String field) {
         final Info info = fields.get(field);
         if (info == null || info.numTokens <= 0) {
           return null;
         }
 
-        return new Terms() {
+        return new FieldTerms() {
           @Override
           public TermsEnum iterator() {
             return new MemoryTermsEnum(info);

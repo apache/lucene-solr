@@ -316,7 +316,7 @@ public class TestStressIndexing2 extends LuceneTestCase {
       assertNull(MultiFields.getFields(r2));
       return;
     }
-    final Terms terms1 = f1.terms(idField);
+    final FieldTerms terms1 = f1.terms(idField);
     if (terms1 == null) {
       assertTrue(MultiFields.getFields(r2) == null ||
                  MultiFields.getFields(r2).terms(idField) == null);
@@ -328,7 +328,7 @@ public class TestStressIndexing2 extends LuceneTestCase {
     final Bits liveDocs2 = MultiFields.getLiveDocs(r2);
     
     Fields fields = MultiFields.getFields(r2);
-    Terms terms2 = fields.terms(idField);
+    FieldTerms terms2 = fields.terms(idField);
     if (fields.size() == 0 || terms2 == null) {
       // make sure r1 is in fact empty (eg has only all
       // deleted docs):
@@ -398,7 +398,7 @@ public class TestStressIndexing2 extends LuceneTestCase {
           PostingsEnum dEnum = null;
           for (String field : tv1) {
             System.out.println("    " + field + ":");
-            Terms terms3 = tv1.terms(field);
+            FieldTerms terms3 = tv1.terms(field);
             assertNotNull(terms3);
             TermsEnum termsEnum3 = terms3.iterator();
             BytesRef term2;
@@ -430,7 +430,7 @@ public class TestStressIndexing2 extends LuceneTestCase {
           PostingsEnum dEnum = null;
           for (String field : tv2) {
             System.out.println("    " + field + ":");
-            Terms terms3 = tv2.terms(field);
+            FieldTerms terms3 = tv2.terms(field);
             assertNotNull(terms3);
             TermsEnum termsEnum3 = terms3.iterator();
             BytesRef term2;
@@ -490,7 +490,7 @@ public class TestStressIndexing2 extends LuceneTestCase {
             break;
           }
           field1 = fields1Enum.next();
-          Terms terms = fields1.terms(field1);
+          FieldTerms terms = fields1.terms(field1);
           if (terms == null) {
             continue;
           }
@@ -526,7 +526,7 @@ public class TestStressIndexing2 extends LuceneTestCase {
             break;
           }
           field2 = fields2Enum.next();
-          Terms terms = fields2.terms(field2);
+          FieldTerms terms = fields2.terms(field2);
           if (terms == null) {
             continue;
           }
@@ -612,11 +612,11 @@ public class TestStressIndexing2 extends LuceneTestCase {
       String field2 = fieldsEnum2.next();
       assertEquals(field1, field2);
 
-      Terms terms1 = d1.terms(field1);
+      FieldTerms terms1 = d1.terms(field1);
       assertNotNull(terms1);
       TermsEnum termsEnum1 = terms1.iterator();
 
-      Terms terms2 = d2.terms(field2);
+      FieldTerms terms2 = d2.terms(field2);
       assertNotNull(terms2);
       TermsEnum termsEnum2 = terms2.iterator();
 

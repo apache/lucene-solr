@@ -17,7 +17,7 @@
 package org.apache.lucene.search.similarities;
 
 
-import org.apache.lucene.index.Terms;
+import org.apache.lucene.index.FieldTerms;
 
 /**
  * Stores all statistics commonly used ranking methods.
@@ -61,7 +61,7 @@ public class BasicStats extends Similarity.SimWeight {
   
   /**
    * Returns the total number of tokens in the field.
-   * @see Terms#getSumTotalTermFreq()
+   * @see FieldTerms#getSumTotalTermFreq()
    */
   public long getNumberOfFieldTokens() {
     return numberOfFieldTokens;
@@ -69,7 +69,7 @@ public class BasicStats extends Similarity.SimWeight {
   
   /**
    * Sets the total number of tokens in the field.
-   * @see Terms#getSumTotalTermFreq()
+   * @see FieldTerms#getSumTotalTermFreq()
    */
   public void setNumberOfFieldTokens(long numberOfFieldTokens) {
     this.numberOfFieldTokens = numberOfFieldTokens;

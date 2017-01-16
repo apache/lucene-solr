@@ -30,7 +30,7 @@ import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexableField;
 import org.apache.lucene.index.MultiFields;
 import org.apache.lucene.index.Term;
-import org.apache.lucene.index.Terms;
+import org.apache.lucene.index.FieldTerms;
 import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.search.BooleanClause;
 import org.apache.lucene.search.BooleanQuery;
@@ -59,7 +59,7 @@ import org.apache.lucene.util.fst.Util;
 public class BooleanPerceptronClassifier implements Classifier<Boolean> {
 
   private final Double threshold;
-  private final Terms textTerms;
+  private final FieldTerms textTerms;
   private final Analyzer analyzer;
   private final String textFieldName;
   private FST<Long> fst;
@@ -155,7 +155,7 @@ public class BooleanPerceptronClassifier implements Classifier<Boolean> {
     TermsEnum cte = textTerms.iterator();
 
     // get the doc term vectors
-    Terms terms = indexReader.getTermVector(docId, textFieldName);
+    FieldTerms terms = indexReader.getTermVector(docId, textFieldName);
 
     if (terms == null) {
       throw new IOException("term vectors must be stored for field "

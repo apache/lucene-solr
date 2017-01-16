@@ -40,7 +40,7 @@ import org.apache.lucene.index.PostingsEnum;
 import org.apache.lucene.index.SegmentReader;
 import org.apache.lucene.index.SortedDocValues;
 import org.apache.lucene.index.SortedSetDocValues;
-import org.apache.lucene.index.Terms;
+import org.apache.lucene.index.FieldTerms;
 import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.util.Accountable;
@@ -323,7 +323,7 @@ public class FieldCacheImpl implements FieldCache {
     
     final void uninvertPostings(LeafReader reader, String field) throws IOException {
       final int maxDoc = reader.maxDoc();
-      Terms terms = reader.terms(field);
+      FieldTerms terms = reader.terms(field);
       if (terms != null) {
         final boolean setDocsWithField;
         final int termsDocCount = terms.getDocCount();
@@ -365,7 +365,7 @@ public class FieldCacheImpl implements FieldCache {
       }
     }
 
-    protected abstract TermsEnum termsEnum(Terms terms) throws IOException;
+    protected abstract TermsEnum termsEnum(FieldTerms terms) throws IOException;
     protected abstract void visitTerm(BytesRef term);
     protected abstract void visitDoc(int docID);
   }
@@ -524,7 +524,7 @@ public class FieldCacheImpl implements FieldCache {
       // otherwise a no-op uninvert!
       Uninvert u = new Uninvert(true) {
         @Override
-        protected TermsEnum termsEnum(Terms terms) throws IOException {
+        protected TermsEnum termsEnum(FieldTerms terms) throws IOException {
           throw new AssertionError();
         }
 
@@ -544,7 +544,7 @@ public class FieldCacheImpl implements FieldCache {
 
       // Visit all docs that have terms for this field
       FixedBitSet res = null;
-      Terms terms = reader.terms(field);
+      FieldTerms terms = reader.terms(field);
       if (terms != null) {
         final int termsDocCount = terms.getDocCount();
         assert termsDocCount <= maxDoc;
@@ -758,7 +758,7 @@ public class FieldCacheImpl implements FieldCache {
           }
           
           @Override
-          protected TermsEnum termsEnum(Terms terms) throws IOException {
+          protected TermsEnum termsEnum(FieldTerms terms) throws IOException {
             return parser.termsEnum(terms);
           }
         };
@@ -927,7 +927,7 @@ public class FieldCacheImpl implements FieldCache {
 
       final int maxDoc = reader.maxDoc();
 
-      Terms terms = reader.terms(key.field);
+      FieldTerms terms = reader.terms(key.field);
 
       final float acceptableOverheadRatio = ((Float) key.custom).floatValue();
 
@@ -1128,7 +1128,7 @@ public class FieldCacheImpl implements FieldCache {
       // that instead, to avoid insanity
 
       final int maxDoc = reader.maxDoc();
-      Terms terms = reader.terms(key.field);
+      FieldTerms terms = reader.terms(key.field);
 
       final float acceptableOverheadRatio = ((Float) key.custom).floatValue();
 
@@ -1235,7 +1235,7 @@ public class FieldCacheImpl implements FieldCache {
     
     // ok we need to uninvert. check if we can optimize a bit.
     
-    Terms terms = reader.terms(field);
+    FieldTerms terms = reader.terms(field);
     if (terms == null) {
       return DocValues.emptySortedSet();
     } else {

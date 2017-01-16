@@ -293,7 +293,7 @@ public final class SlowCodecReaderWrapper {
       }
 
       @Override
-      public Terms terms(String field) throws IOException {
+      public FieldTerms terms(String field) throws IOException {
         return fields.terms(field);
       }
 

@@ -119,7 +119,7 @@ final class SortingTermVectorsConsumer extends TermVectorsConsumer {
       assert lastFieldName == null || fieldName.compareTo(lastFieldName) > 0: "lastFieldName=" + lastFieldName + " fieldName=" + fieldName;
       lastFieldName = fieldName;
 
-      final Terms terms = vectors.terms(fieldName);
+      final FieldTerms terms = vectors.terms(fieldName);
       if (terms == null) {
         // FieldsEnum shouldn't lie...
         continue;
@@ -132,7 +132,7 @@ final class SortingTermVectorsConsumer extends TermVectorsConsumer {
 
       int numTerms = (int) terms.size();
       if (numTerms == -1) {
-        // count manually. It is stupid, but needed, as Terms.size() is not a mandatory statistics function
+        // count manually. It is stupid, but needed, as FieldTerms.size() is not a mandatory statistics function
         numTerms = 0;
         termsEnum = terms.iterator();
         while(termsEnum.next() != null) {

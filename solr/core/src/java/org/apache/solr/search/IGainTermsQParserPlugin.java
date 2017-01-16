@@ -26,7 +26,7 @@ import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.MultiFields;
 import org.apache.lucene.index.NumericDocValues;
 import org.apache.lucene.index.PostingsEnum;
-import org.apache.lucene.index.Terms;
+import org.apache.lucene.index.FieldTerms;
 import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.search.IndexSearcher;
@@ -162,7 +162,7 @@ public class IGainTermsQParserPlugin extends QParserPlugin {
       double pc = numPositiveDocs / numDocs;
       double entropyC = binaryEntropy(pc);
 
-      Terms terms = MultiFields.getFields(searcher.getIndexReader()).terms(field);
+      FieldTerms terms = MultiFields.getFields(searcher.getIndexReader()).terms(field);
       TermsEnum termsEnum = terms.iterator();
       BytesRef term;
       PostingsEnum postingsEnum = null;

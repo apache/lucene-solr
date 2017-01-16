@@ -31,7 +31,7 @@ import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.MultiFields;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.index.TermContext;
-import org.apache.lucene.index.Terms;
+import org.apache.lucene.index.FieldTerms;
 import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.search.BooleanClause;
 import org.apache.lucene.search.BooleanQuery;
@@ -188,7 +188,7 @@ public class FuzzyLikeThisQuery extends Query
 
   private void addTerms(IndexReader reader, FieldVals f, ScoreTermQueue q) throws IOException {
     if (f.queryString == null) return;
-    final Terms terms = MultiFields.getTerms(reader, f.fieldName);
+    final FieldTerms terms = MultiFields.getTerms(reader, f.fieldName);
     if (terms == null) {
       return;
     }
@@ -259,7 +259,7 @@ public class FuzzyLikeThisQuery extends Query
       // equal to 1
       TermContext context = new TermContext(reader.getContext());
       for (LeafReaderContext leafContext : reader.leaves()) {
-        Terms terms = leafContext.reader().terms(term.field());
+        FieldTerms terms = leafContext.reader().terms(term.field());
         if (terms != null) {
           TermsEnum termsEnum = terms.iterator();
           if (termsEnum.seekExact(term.bytes())) {

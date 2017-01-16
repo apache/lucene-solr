@@ -23,7 +23,7 @@ import java.util.Collections;
 
 import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.IndexOptions;
-import org.apache.lucene.index.Terms;
+import org.apache.lucene.index.FieldTerms;
 import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.store.ByteArrayDataInput;
 import org.apache.lucene.store.IndexInput;
@@ -36,10 +36,10 @@ import org.apache.lucene.util.fst.ByteSequenceOutputs;
 import org.apache.lucene.util.fst.FST;
 
 /**
- * BlockTree's implementation of {@link Terms}.
+ * BlockTree's implementation of {@link FieldTerms}.
  * @lucene.internal
  */
-public final class FieldReader extends Terms implements Accountable {
+public final class FieldReader extends FieldTerms implements Accountable {
 
   // private final boolean DEBUG = BlockTreeTermsWriter.DEBUG;
 
