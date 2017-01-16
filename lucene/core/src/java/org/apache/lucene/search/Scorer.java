@@ -77,9 +77,17 @@ public abstract class Scorer {
     return weight;
   }
   
-  /** Returns child sub-scorers
-   * @lucene.experimental */
-  public Collection<ChildScorer> getChildren() {
+  /**
+   * Returns child sub-scorers positioned on the current document
+   *
+   * Note that this method should not be called on Scorers passed to {@link LeafCollector#setScorer(Scorer)},
+   * as these may be synthetic Scorers produced by {@link BulkScorer} which will throw an Exception.
+   *
+   * This method should only be called when the Scorer is positioned
+   *
+   * @lucene.experimental
+   */
+  public Collection<ChildScorer> getChildren() throws IOException {
     return Collections.emptyList();
   }
   
