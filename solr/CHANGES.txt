@@ -29,9 +29,11 @@ Apache UIMA 2.3.1
 Apache ZooKeeper 3.4.6
 Jetty 9.3.14.v20161028
 
+Detailed Change List
+----------------------
 
-(No Changes)
-
+Optimizations
+----------------------
 
 * SOLR-9941: Clear the deletes lists at UpdateLog before replaying from log. This prevents redundantly pre-applying
   DBQs, during the log replay, to every update in the log as if the DBQs were out of order. (hossman, Ishan Chattopadhyaya)
