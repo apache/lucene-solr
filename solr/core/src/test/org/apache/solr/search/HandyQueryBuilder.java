@@ -20,9 +20,12 @@ import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.queryparser.xml.DOMUtils;
 import org.apache.lucene.queryparser.xml.ParserException;
 import org.apache.lucene.queryparser.xml.QueryBuilder;
+import org.apache.lucene.queryparser.xml.builders.SpanQueryBuilder;
 import org.apache.lucene.search.BooleanClause;
 import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.Query;
+import org.apache.lucene.search.spans.SpanOrQuery;
+import org.apache.lucene.search.spans.SpanQuery;
 import org.apache.solr.request.SolrQueryRequest;
 import org.w3c.dom.Element;
 
@@ -31,8 +34,8 @@ import org.w3c.dom.Element;
 public class HandyQueryBuilder extends SolrQueryBuilder {
 
   public HandyQueryBuilder(String defaultField, Analyzer analyzer,
-      SolrQueryRequest req, QueryBuilder queryFactory) {
-    super(defaultField, analyzer, req, queryFactory);
+      SolrQueryRequest req, QueryBuilder queryFactory, SpanQueryBuilder spanFactory) {
+    super(defaultField, analyzer, req, queryFactory, spanFactory);
   }
 
   @Override
@@ -45,9 +48,25 @@ public class HandyQueryBuilder extends SolrQueryBuilder {
     return bq.build();
   }
 
+  @Override
+  public SpanQuery getSpanQuery(Element e) throws ParserException {
+    SpanQuery subQueries[] = {
+        getSubSpanQuery(e, "Left"),
+        getSubSpanQuery(e, "Right"),
+    };
+
+    return new SpanOrQuery(subQueries);
+  }
+
   private Query getSubQuery(Element e, String name) throws ParserException {
     Element subE = DOMUtils.getChildByTagOrFail(e, name);
     subE = DOMUtils.getFirstChildOrFail(subE);
     return queryFactory.getQuery(subE);
+  }
+
+  private SpanQuery getSubSpanQuery(Element e, String name) throws ParserException {
+    Element subE = DOMUtils.getChildByTagOrFail(e, name);
+    subE = DOMUtils.getFirstChildOrFail(subE);
+    return spanFactory.getSpanQuery(subE);
   }
 }

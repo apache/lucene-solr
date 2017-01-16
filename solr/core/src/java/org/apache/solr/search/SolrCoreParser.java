@@ -21,6 +21,8 @@ import java.util.Map;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.queryparser.xml.CoreParser;
 import org.apache.lucene.queryparser.xml.QueryBuilder;
+import org.apache.lucene.queryparser.xml.builders.SpanQueryBuilder;
+import org.apache.solr.common.SolrException;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.core.SolrResourceLoader;
 import org.apache.solr.request.SolrQueryRequest;
@@ -42,7 +44,7 @@ public class SolrCoreParser extends CoreParser implements NamedListInitializedPl
   }
 
   @Override
-  public void init(NamedList initArgs) {
+  public void init(@SuppressWarnings("rawtypes") NamedList initArgs) {
     if (initArgs == null || initArgs.size() == 0) {
       return;
     }
@@ -53,19 +55,29 @@ public class SolrCoreParser extends CoreParser implements NamedListInitializedPl
       loader = req.getCore().getResourceLoader();
     }
 
+    @SuppressWarnings("unchecked")
     final Iterable<Map.Entry<String,Object>> args = initArgs;
     for (final Map.Entry<String,Object> entry : args) {
       final String queryName = entry.getKey();
       final String queryBuilderClassName = (String)entry.getValue();
 
-      final SolrQueryBuilder queryBuilder = loader.newInstance(
-          queryBuilderClassName,
-          SolrQueryBuilder.class,
-          null,
-          new Class[] {String.class, Analyzer.class, SolrQueryRequest.class, QueryBuilder.class},
-          new Object[] {defaultField, analyzer, req, this});
-
-      this.queryFactory.addBuilder(queryName, queryBuilder);
+      try {
+        final SolrQueryBuilder queryBuilder = loader.newInstance(
+            queryBuilderClassName,
+            SolrQueryBuilder.class,
+            null,
+            new Class[] {String.class, Analyzer.class, SolrQueryRequest.class, QueryBuilder.class},
+            new Object[] {defaultField, analyzer, req, this});
+        this.queryFactory.addBuilder(queryName, queryBuilder);
+      } catch (SolrException ex) {
+        final SolrQueryBuilder queryBuilder = loader.newInstance(
+            queryBuilderClassName,
+            SolrQueryBuilder.class,
+            null,
+            new Class[] {String.class, Analyzer.class, SolrQueryRequest.class, QueryBuilder.class, SpanQueryBuilder.class},
+            new Object[] {defaultField, analyzer, req, this, this});
+        this.queryFactory.addBuilder(queryName, queryBuilder);
+      }
     }
   }
 
