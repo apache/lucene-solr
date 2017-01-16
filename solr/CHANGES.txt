@@ -77,6 +77,23 @@ Optimizations
 * SOLR-9941: Clear the deletes lists at UpdateLog before replaying from log. This prevents redundantly pre-applying
   DBQs, during the log replay, to every update in the log as if the DBQs were out of order. (hossman, Ishan Chattopadhyaya)
 
+==================  6.5.0 ==================
+
+Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release.
+
+Versions of Major Components
+---------------------
+Apache Tika 1.13
+Carrot2 3.15.0
+Velocity 1.7 and Velocity Tools 2.0
+Apache UIMA 2.3.1
+Apache ZooKeeper 3.4.6
+Jetty 9.3.14.v20161028
+
+
+(No Changes)
+
+
 ==================  6.4.0 ==================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release.
@@ -196,14 +213,16 @@ New Features
 
 * SOLR-9805: Use metrics-jvm library to instrument jvm internals such as GC, memory usage and others. (shalin)
 
-* SOLR-9812: SOLR-9911: Added a new /admin/metrics API to return all metrics collected by Solr via API.
-  API supports three optional parameters:
+* SOLR-9812: SOLR-9911, SOLR-9960: Added a new /admin/metrics API to return all metrics collected by Solr via API.
+  API supports four optional multi-valued parameters:
   * 'group' (all,jvm,jetty,node,core),
-  * 'type' (all,counter,timer,gauge,histogram) both of which are multi-valued
-  * 'prefix' that filters the returned metrics
+  * 'type' (all,counter,timer,gauge,histogram),
+  * 'prefix' that filters the returned metrics,
+  * 'registry' that selects one or more registries by prefix (eg. solr.jvm,solr.core.collection1)
   Example: http://localhost:8983/solr/admin/metrics?group=jvm,jetty&type=counter
-  Example: http://localhost:8983/solr/admin/metrics?group=jvm&prefix=buffers
-  (shalin)
+  Example: http://localhost:8983/solr/admin/metrics?group=jvm&prefix=buffers,os
+  Example: http://localhost:8983/solr/admin/metrics?registry=solr.node,solr.core&prefix=ADMIN
+  (shalin, ab)
 
 * SOLR-9884: Add version to segments handler output (Steven Bower via Erick Erickson)
 
@@ -434,6 +453,9 @@ Other Changes
 
 * SOLR-9934: SolrTestCase.clearIndex has been improved to take advantage of low level test specific logic that
   clears the index metadata more completely then a normal *:* DBQ can due to update versioning.  (hossman)
+
+* SOLR-9893: Update Mockito to version 2.6.2 for Java 9 support. Disable all legacy EasyMock tests when running
+  on Java 9 until they were migrated to Mockito. (Uwe Schindler)
 
 ==================  6.3.0 ==================
 

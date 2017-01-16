@@ -93,31 +93,37 @@ public class SolrMetricManager {
    * with names that start with a prefix.
    */
   public static class PrefixFilter implements MetricFilter {
-    private final String prefix;
+    private final String[] prefixes;
     private final Set<String> matched = new HashSet<>();
+    private boolean allMatch = false;
 
     /**
      * Create a filter that uses the provided prefix.
-     * @param prefix prefix to use, must not be null. If empty then any
-     *               name will match.
+     * @param prefixes prefixes to use, must not be null. If empty then any
+     *               name will match, if not empty then match on any prefix will
+     *                 succeed (logical OR).
      */
-    public PrefixFilter(String prefix) {
-      Objects.requireNonNull(prefix);
-      this.prefix = prefix;
+    public PrefixFilter(String... prefixes) {
+      Objects.requireNonNull(prefixes);
+      this.prefixes = prefixes;
+      if (prefixes.length == 0) {
+        allMatch = true;
+      }
     }
 
     @Override
     public boolean matches(String name, Metric metric) {
-      if (prefix.isEmpty()) {
+      if (allMatch) {
         matched.add(name);
         return true;
       }
-      if (name.startsWith(prefix)) {
-        matched.add(name);
-        return true;
-      } else {
-        return false;
+      for (String prefix : prefixes) {
+        if (name.startsWith(prefix)) {
+          matched.add(name);
+          return true;
+        }
       }
+      return false;
     }
 
     /**

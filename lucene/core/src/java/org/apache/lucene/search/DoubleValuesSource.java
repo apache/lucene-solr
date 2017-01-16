@@ -20,7 +20,9 @@ package org.apache.lucene.search;
 import java.io.IOException;
 import java.util.Objects;
 import java.util.function.DoubleToLongFunction;
+import java.util.function.DoubleUnaryOperator;
 import java.util.function.LongToDoubleFunction;
+import java.util.function.ToDoubleBiFunction;
 
 import org.apache.lucene.index.DocValues;
 import org.apache.lucene.index.LeafReaderContext;
@@ -173,6 +175,69 @@ public abstract class DoubleValuesSource {
       public boolean needsScores() {
         return false;
       }
+
+      @Override
+      public String toString() {
+        return "constant(" + value + ")";
+      }
+    };
+  }
+
+  /**
+   * Creates a DoubleValuesSource that is a function of another DoubleValuesSource
+   */
+  public static DoubleValuesSource function(DoubleValuesSource in, DoubleUnaryOperator function) {
+    return new DoubleValuesSource() {
+      @Override
+      public DoubleValues getValues(LeafReaderContext ctx, DoubleValues scores) throws IOException {
+        DoubleValues inputs = in.getValues(ctx, scores);
+        return new DoubleValues() {
+          @Override
+          public double doubleValue() throws IOException {
+            return function.applyAsDouble(inputs.doubleValue());
+          }
+
+          @Override
+          public boolean advanceExact(int doc) throws IOException {
+            return inputs.advanceExact(doc);
+          }
+        };
+      }
+
+      @Override
+      public boolean needsScores() {
+        return in.needsScores();
+      }
+    };
+  }
+
+  /**
+   * Creates a DoubleValuesSource that is a function of another DoubleValuesSource and a score
+   * @param in        the DoubleValuesSource to use as an input
+   * @param function  a function of the form (source, score) == result
+   */
+  public static DoubleValuesSource scoringFunction(DoubleValuesSource in, ToDoubleBiFunction<Double, Double> function) {
+    return new DoubleValuesSource() {
+      @Override
+      public DoubleValues getValues(LeafReaderContext ctx, DoubleValues scores) throws IOException {
+        DoubleValues inputs = in.getValues(ctx, scores);
+        return new DoubleValues() {
+          @Override
+          public double doubleValue() throws IOException {
+            return function.applyAsDouble(inputs.doubleValue(), scores.doubleValue());
+          }
+
+          @Override
+          public boolean advanceExact(int doc) throws IOException {
+            return inputs.advanceExact(doc);
+          }
+        };
+      }
+
+      @Override
+      public boolean needsScores() {
+        return true;
+      }
     };
   }
 
@@ -221,7 +286,17 @@ public abstract class DoubleValuesSource {
     @Override
     public DoubleValues getValues(LeafReaderContext ctx, DoubleValues scores) throws IOException {
       final NumericDocValues values = DocValues.getNumeric(ctx.reader(), field);
-      return toDoubleValues(values, decoder::applyAsDouble);
+      return new DoubleValues() {
+        @Override
+        public double doubleValue() throws IOException {
+          return decoder.applyAsDouble(values.longValue());
+        }
+
+        @Override
+        public boolean advanceExact(int target) throws IOException {
+          return values.advanceExact(target);
+        }
+      };
     }
 
     @Override
@@ -286,21 +361,6 @@ public abstract class DoubleValuesSource {
         }
       };
     }
-  }
-
-  private static DoubleValues toDoubleValues(NumericDocValues in, LongToDoubleFunction map) {
-    return new DoubleValues() {
-      @Override
-      public double doubleValue() throws IOException {
-        return map.applyAsDouble(in.longValue());
-      }
-
-      @Override
-      public boolean advanceExact(int target) throws IOException {
-        return in.advanceExact(target);
-      }
-
-    };
   }
 
   private static NumericDocValues asNumericDocValues(DoubleValuesHolder in, DoubleToLongFunction converter) {

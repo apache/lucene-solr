@@ -27,6 +27,7 @@ import java.util.Map;
 import java.util.Properties;
 import java.util.Set;
 
+import org.apache.lucene.util.Constants;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.cloud.CloudDescriptor;
 import org.apache.solr.cloud.ZkController;
@@ -35,6 +36,7 @@ import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.util.Utils;
 import org.apache.solr.core.CoreSorter.CountsForEachShard;
 import org.apache.solr.util.MockCoreContainer;
+import org.junit.BeforeClass;
 
 import static java.util.stream.Collectors.toList;
 import static org.apache.solr.core.CoreSorter.getShardName;
@@ -47,6 +49,11 @@ public class CoreSorterTest extends SolrTestCaseJ4 {
   Map<String, Boolean> nodes = new LinkedHashMap<>();
   Set<String> liveNodes = new HashSet<>();
 
+  @BeforeClass
+  public static void beforeClass() throws Exception {
+    assumeFalse("SOLR-9893: EasyMock does not work with Java 9", Constants.JRE_IS_MINIMUM_JAVA9);
+  }
+  
   public void testComparator() {
     List<CountsForEachShard> l = new ArrayList<>();
     //                           DOWN LIVE  MY

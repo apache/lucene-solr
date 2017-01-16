@@ -31,8 +31,10 @@ public class MultiCollectorManager implements CollectorManager<MultiCollectorMan
 
   final private CollectorManager<Collector, ?>[] collectorManagers;
 
-  public MultiCollectorManager(final CollectorManager... collectorManagers) {
-    this.collectorManagers = collectorManagers;
+  @SafeVarargs
+  @SuppressWarnings({"varargs", "unchecked"})
+  public MultiCollectorManager(final CollectorManager<? extends Collector, ?>... collectorManagers) {
+    this.collectorManagers = (CollectorManager[]) collectorManagers;
   }
 
   @Override

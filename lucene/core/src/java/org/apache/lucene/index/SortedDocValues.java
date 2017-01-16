@@ -20,6 +20,7 @@ package org.apache.lucene.index;
 import java.io.IOException;
 
 import org.apache.lucene.util.BytesRef;
+import org.apache.lucene.util.automaton.CompiledAutomaton;
 
 /**
  * A per-document byte[] with presorted values.  This is fundamentally an
@@ -108,6 +109,27 @@ public abstract class SortedDocValues extends BinaryDocValues {
    */
   public TermsEnum termsEnum() throws IOException {
     return new SortedDocValuesTermsEnum(this);
+  }
+
+  /**
+   * Returns a {@link TermsEnum} over the values, filtered by a {@link CompiledAutomaton}
+   * The enum supports {@link TermsEnum#ord()}.
+   */
+  public TermsEnum intersect(CompiledAutomaton automaton) throws IOException {
+    TermsEnum in = termsEnum();
+    switch (automaton.type) {
+      case NONE:
+        return TermsEnum.EMPTY;
+      case ALL:
+        return in;
+      case SINGLE:
+        return new SingleTermsEnum(in, automaton.term);
+      case NORMAL:
+        return new AutomatonTermsEnum(in, automaton);
+      default:
+        // unreachable
+        throw new RuntimeException("unhandled case");
+    }
   }
 
 }

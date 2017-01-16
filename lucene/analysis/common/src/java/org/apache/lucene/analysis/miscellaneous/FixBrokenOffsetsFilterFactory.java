@@ -14,46 +14,26 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.lucene.index;
 
+package org.apache.lucene.analysis.miscellaneous;
 
-import java.io.IOException;
+import java.util.Map;
 
-import org.apache.lucene.store.Directory;
-import org.junit.Test;
+import org.apache.lucene.analysis.TokenStream;
+import org.apache.lucene.analysis.util.TokenFilterFactory;
 
-public class TestCheckIndex extends BaseTestCheckIndex {
-  private Directory directory;
+/**
+ * Factory for {@link FixBrokenOffsetsFilter}.
+ */
+public class FixBrokenOffsetsFilterFactory extends TokenFilterFactory {
 
-  @Override
-  public void setUp() throws Exception {
-    super.setUp();
-    directory = newDirectory();
+  /** Sole constructor */
+  public FixBrokenOffsetsFilterFactory(Map<String,String> args) {
+    super(args);
   }
 
   @Override
-  public void tearDown() throws Exception {
-    directory.close();
-    super.tearDown();
-  }
-  
-  @Test
-  public void testDeletedDocs() throws IOException {
-    testDeletedDocs(directory);
-  }
-  
-  @Test
-  public void testChecksumsOnly() throws IOException {
-    testChecksumsOnly(directory);
-  }
-  
-  @Test
-  public void testChecksumsOnlyVerbose() throws IOException {
-    testChecksumsOnlyVerbose(directory);
-  }
-
-  @Test
-  public void testObtainsLock() throws IOException {
-    testObtainsLock(directory);
+  public TokenStream create(TokenStream input) {
+    return new FixBrokenOffsetsFilter(input);
   }
 }

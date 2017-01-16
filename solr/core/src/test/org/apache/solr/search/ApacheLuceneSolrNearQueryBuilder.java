@@ -35,7 +35,6 @@ public class ApacheLuceneSolrNearQueryBuilder extends SolrQueryBuilder {
     super(defaultField, analyzer, req, queryFactory);
   }
 
-  @Override
   public Query getQuery(Element e) throws ParserException {
     final String fieldName = DOMUtils.getAttributeWithInheritanceOrFail(e, "fieldName");
     final SpanQuery[] spanQueries = new SpanQuery[]{

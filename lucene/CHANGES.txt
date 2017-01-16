@@ -29,6 +29,9 @@ API Changes
 
 Bug Fixes
 
+* LUCENE-7626: IndexWriter will no longer accept broken token offsets
+  (Mike McCandless)
+
 Improvements
 
 * LUCENE-7489: Better storage of sparse doc-values fields with the default
@@ -57,6 +60,18 @@ Other
 * LUCENE-7328: Remove LegacyNumericEncoding from GeoPointField. (Nick Knize)
 
 * LUCENE-7360: Remove Explanation.toHtml() (Alan Woodward)
+
+======================= Lucene 6.5.0 =======================
+
+New Features
+
+* LUCENE-7623: Add FunctionScoreQuery and FunctionMatchQuery (Alan Woodward,
+  Adrien Grand, David Smiley)
+
+Bug Fixes
+
+* LUCENE-7630: Fix (Edge)NGramTokenFilter to no longer drop payloads
+  and preserve all attributes. (Nathan Gass via Uwe Schindler)
 
 ======================= Lucene 6.4.0 =======================
 
@@ -111,8 +126,7 @@ New features
 
 * LUCENE-5325: Added LongValuesSource and DoubleValuesSource, intended as
   type-safe replacements for ValueSource in the queries module.  These
-  expose per-segment LongValues or DoubleValues iterators, similar to the
-  existing DocValues iterator API. (Alan Woodward, Adrien Grand)
+  expose per-segment LongValues or DoubleValues iterators. (Alan Woodward, Adrien Grand)
 
 * LUCENE-7603: Graph token streams are now handled accurately by query
   parsers, by enumerating all paths and creating the corresponding
@@ -122,6 +136,10 @@ New features
   supports an IndexSearcher using an executor service to run each query
   concurrently across all segments in the index (Emmanuel Keller via
   Mike McCandless)
+
+* LUCENE-7627: Added .intersect methods to SortedDocValues and 
+  SortedSetDocValues to allow filtering their TermsEnums with a
+  CompiledAutomaton (Alan Woodward, Mike McCandless)
 
 Bug Fixes
 
@@ -166,6 +184,9 @@ Bug Fixes
 
 Improvements
 
+* LUCENE-7532: Add back lost codec file format documentation
+  (Shinichiro Abe via Mike McCandless)
+
 * LUCENE-6824: TermAutomatonQuery now rewrites to TermQuery,
   PhraseQuery or MultiPhraseQuery when the word automaton is simple
   (Mike McCandless)
@@ -192,13 +213,13 @@ Improvements
   which can be overridden to return false to eek out more speed in some cases.
   (Timothy M. Rodriguez, David Smiley)
 
-* LUCENE-7537: Index time sorting now supports multi-valued sorts
-  using selectors (MIN, MAX, etc.) (Jim Ferenczi via Mike McCandless)
-
 * LUCENE-7560: QueryBuilder.createFieldQuery is no longer final,
   giving custom query parsers subclassing QueryBuilder more freedom to
   control how text is analyzed and converted into a query (Matt Weber
   via Mike McCandless)
+
+* LUCENE-7537: Index time sorting now supports multi-valued sorts
+  using selectors (MIN, MAX, etc.) (Jim Ferenczi via Mike McCandless)
 
 * LUCENE-7575: UnifiedHighlighter can now highlight fields with queries that don't
   necessarily refer to that field (AKA requireFieldMatch==false). Disabled by default.
@@ -239,11 +260,6 @@ Optimizations
   (Mike McCandless)
 
 * LUCENE-7572: Doc values queries now cache their hash code. (Adrien Grand)
-
-* LUCENE-7579: Segments are now also sorted during flush, and merging
-  on a sorted index is substantially faster by using some of the same
-  bulk merge optimizations that non-sorted merging uses (Jim Ferenczi
-  via Mike McCandless)
 
 Other
 
