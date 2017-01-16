@@ -22,6 +22,8 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
+import java.util.stream.LongStream;
+import java.util.stream.StreamSupport;
 
 import org.apache.lucene.util.PriorityQueue;
 
@@ -47,7 +49,7 @@ import static org.apache.lucene.search.DisiPriorityQueue.rightNode;
  */
 final class MinShouldMatchSumScorer extends Scorer {
 
-  private static long cost(Collection<Scorer> scorers, int minShouldMatch) {
+  static long cost(LongStream costs, int numScorers, int minShouldMatch) {
     // the idea here is the following: a boolean query c1,c2,...cn with minShouldMatch=m
     // could be rewritten to:
     // (c1 AND (c2..cn|msm=m-1)) OR (!c1 AND (c2..cn|msm=m))
@@ -61,20 +63,14 @@ final class MinShouldMatchSumScorer extends Scorer {
 
     // If we recurse infinitely, we find out that the cost of a msm query is the sum of the
     // costs of the num_scorers - minShouldMatch + 1 least costly scorers
-    final PriorityQueue<Scorer> pq = new PriorityQueue<Scorer>(scorers.size() - minShouldMatch + 1) {
+    final PriorityQueue<Long> pq = new PriorityQueue<Long>(numScorers - minShouldMatch + 1) {
       @Override
-      protected boolean lessThan(Scorer a, Scorer b) {
-        return a.iterator().cost() > b.iterator().cost();
+      protected boolean lessThan(Long a, Long b) {
+        return a > b;
       }
     };
-    for (Scorer scorer : scorers) {
-      pq.insertWithOverflow(scorer);
-    }
-    long cost = 0;
-    for (Scorer scorer = pq.pop(); scorer != null; scorer = pq.pop()) {
-      cost += scorer.iterator().cost();
-    }
-    return cost;
+    costs.forEach(pq::insertWithOverflow);
+    return StreamSupport.stream(pq.spliterator(), false).mapToLong(Number::longValue).sum();
   }
 
   final int minShouldMatch;
@@ -124,7 +120,7 @@ final class MinShouldMatchSumScorer extends Scorer {
       children.add(new ChildScorer(scorer, "SHOULD"));
     }
     this.childScorers = Collections.unmodifiableCollection(children);
-    this.cost = cost(scorers, minShouldMatch);
+    this.cost = cost(scorers.stream().map(Scorer::iterator).mapToLong(DocIdSetIterator::cost), scorers.size(), minShouldMatch);
   }
 
   @Override

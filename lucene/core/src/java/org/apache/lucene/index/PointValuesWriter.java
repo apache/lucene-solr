@@ -91,6 +91,11 @@ class PointValuesWriter {
       }
 
       @Override
+      public long estimatePointCount(IntersectVisitor visitor) {
+        throw new UnsupportedOperationException();
+      }
+
+      @Override
       public byte[] getMinPackedValue() {
         throw new UnsupportedOperationException();
       }
@@ -206,6 +211,11 @@ class PointValuesWriter {
           return visitor.compare(minPackedValue, maxPackedValue);
         }
       });
+    }
+
+    @Override
+    public long estimatePointCount(IntersectVisitor visitor) {
+      return in.estimatePointCount(visitor);
     }
 
     @Override

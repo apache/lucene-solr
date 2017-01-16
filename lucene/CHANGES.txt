@@ -73,6 +73,13 @@ Bug Fixes
 * LUCENE-7630: Fix (Edge)NGramTokenFilter to no longer drop payloads
   and preserve all attributes. (Nathan Gass via Uwe Schindler)
 
+Improvements
+
+* LUCENE-7055: Added Weight#scorerSupplier, which allows to estimate the cost
+  of a Scorer before actually building it, in order to optimize how the query
+  should be run, eg. using points or doc values depending on costs of other
+  parts of the query. (Adrien Grand)
+
 ======================= Lucene 6.4.0 =======================
 
 API Changes

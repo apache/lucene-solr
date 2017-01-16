@@ -328,6 +328,11 @@ class SortingLeafReader extends FilterLeafReader {
     }
 
     @Override
+    public long estimatePointCount(IntersectVisitor visitor) {
+      return in.estimatePointCount(visitor);
+    }
+
+    @Override
     public byte[] getMinPackedValue() throws IOException {
       return in.getMinPackedValue();
     }

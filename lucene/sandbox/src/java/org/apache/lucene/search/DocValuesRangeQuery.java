@@ -23,8 +23,10 @@ import org.apache.lucene.index.DocValues;
 import org.apache.lucene.index.DocValuesType;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.LeafReaderContext;
+import org.apache.lucene.index.PointValues;
 import org.apache.lucene.index.SortedNumericDocValues;
 import org.apache.lucene.index.SortedSetDocValues;
+import org.apache.lucene.index.Terms;
 import org.apache.lucene.util.BytesRef;
 
 /**
@@ -33,10 +35,11 @@ import org.apache.lucene.util.BytesRef;
  * dense case where most documents match this query, it <b>might</b> be as
  * fast or faster than a regular {@link PointRangeQuery}.
  *
- * <p>
- * <b>NOTE</b>: be very careful using this query: it is
- * typically much slower than using {@code TermsQuery},
- * but in certain specialized cases may be faster.
+ * <b>NOTE:</b> This query is typically best used within a
+ * {@link IndexOrDocValuesQuery} alongside a query that uses an indexed
+ * structure such as {@link PointValues points} or {@link Terms terms},
+ * which allows to run the query on doc values when that would be more
+ * efficient, and using an index otherwise.
  *
  * @lucene.experimental
  */
