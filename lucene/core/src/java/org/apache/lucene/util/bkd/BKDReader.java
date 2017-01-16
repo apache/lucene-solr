@@ -487,6 +487,10 @@ public final class BKDReader implements Accountable {
     intersect(getIntersectState(visitor), minPackedValue, maxPackedValue);
   }
 
+  public long estimatePointCount(IntersectVisitor visitor) {
+    return estimatePointCount(getIntersectState(visitor), minPackedValue, maxPackedValue);
+  }
+
   /** Fast path: this is called when the query box fully encompasses all cells under this node. */
   private void addAll(IntersectState state) throws IOException {
     //System.out.println("R: addAll nodeID=" + nodeID);
@@ -694,6 +698,59 @@ public final class BKDReader implements Accountable {
       state.index.pushRight();
       intersect(state, splitPackedValue, cellMaxPacked);
       state.index.pop();
+    }
+  }
+
+  private long estimatePointCount(IntersectState state, byte[] cellMinPacked, byte[] cellMaxPacked) {
+
+    /*
+    System.out.println("\nR: intersect nodeID=" + state.index.getNodeID());
+    for(int dim=0;dim<numDims;dim++) {
+      System.out.println("  dim=" + dim + "\n    cellMin=" + new BytesRef(cellMinPacked, dim*bytesPerDim, bytesPerDim) + "\n    cellMax=" + new BytesRef(cellMaxPacked, dim*bytesPerDim, bytesPerDim));
+    }
+    */
+
+    Relation r = state.visitor.compare(cellMinPacked, cellMaxPacked);
+
+    if (r == Relation.CELL_OUTSIDE_QUERY) {
+      // This cell is fully outside of the query shape: stop recursing
+      return 0L;
+    } else if (state.index.isLeafNode()) {
+      // Assume all points match and there are no dups
+      return maxPointsInLeafNode;
+    } else {
+      
+      // Non-leaf node: recurse on the split left and right nodes
+      int splitDim = state.index.getSplitDim();
+      assert splitDim >= 0: "splitDim=" + splitDim;
+      assert splitDim < numDims;
+
+      byte[] splitPackedValue = state.index.getSplitPackedValue();
+      BytesRef splitDimValue = state.index.getSplitDimValue();
+      assert splitDimValue.length == bytesPerDim;
+      //System.out.println("  splitDimValue=" + splitDimValue + " splitDim=" + splitDim);
+
+      // make sure cellMin <= splitValue <= cellMax:
+      assert StringHelper.compare(bytesPerDim, cellMinPacked, splitDim*bytesPerDim, splitDimValue.bytes, splitDimValue.offset) <= 0: "bytesPerDim=" + bytesPerDim + " splitDim=" + splitDim + " numDims=" + numDims;
+      assert StringHelper.compare(bytesPerDim, cellMaxPacked, splitDim*bytesPerDim, splitDimValue.bytes, splitDimValue.offset) >= 0: "bytesPerDim=" + bytesPerDim + " splitDim=" + splitDim + " numDims=" + numDims;
+
+      // Recurse on left sub-tree:
+      System.arraycopy(cellMaxPacked, 0, splitPackedValue, 0, packedBytesLength);
+      System.arraycopy(splitDimValue.bytes, splitDimValue.offset, splitPackedValue, splitDim*bytesPerDim, bytesPerDim);
+      state.index.pushLeft();
+      final long leftCost = estimatePointCount(state, cellMinPacked, splitPackedValue);
+      state.index.pop();
+
+      // Restore the split dim value since it may have been overwritten while recursing:
+      System.arraycopy(splitPackedValue, splitDim*bytesPerDim, splitDimValue.bytes, splitDimValue.offset, bytesPerDim);
+
+      // Recurse on right sub-tree:
+      System.arraycopy(cellMinPacked, 0, splitPackedValue, 0, packedBytesLength);
+      System.arraycopy(splitDimValue.bytes, splitDimValue.offset, splitPackedValue, splitDim*bytesPerDim, bytesPerDim);
+      state.index.pushRight();
+      final long rightCost = estimatePointCount(state, splitPackedValue, cellMaxPacked);
+      state.index.pop();
+      return leftCost + rightCost;
     }
   }
 

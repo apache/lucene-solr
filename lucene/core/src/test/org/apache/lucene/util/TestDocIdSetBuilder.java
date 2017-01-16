@@ -312,6 +312,11 @@ public class TestDocIdSetBuilder extends LuceneTestCase {
     }
 
     @Override
+    public long estimatePointCount(String fieldName, IntersectVisitor visitor) {
+      throw new UnsupportedOperationException();
+    }
+
+    @Override
     public byte[] getMinPackedValue(String fieldName) throws IOException {
       throw new UnsupportedOperationException();
     }

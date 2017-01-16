@@ -344,6 +344,19 @@ public class ParallelLeafReader extends LeafReader {
       }
 
       @Override
+      public long estimatePointCount(String fieldName, IntersectVisitor visitor) {
+        LeafReader reader = fieldToReader.get(fieldName);
+        if (reader == null) {
+          return 0;
+        }
+        PointValues dimValues = reader.getPointValues();
+        if (dimValues == null) {
+          return 0;
+        }
+        return dimValues.estimatePointCount(fieldName, visitor);
+      }
+
+      @Override
       public byte[] getMinPackedValue(String fieldName) throws IOException {
         LeafReader reader = fieldToReader.get(fieldName);
         if (reader == null) {

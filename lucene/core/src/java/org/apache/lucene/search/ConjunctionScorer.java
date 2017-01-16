@@ -20,7 +20,6 @@ package org.apache.lucene.search;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.List;
 
 /** Scorer for conjunctions, sets of queries, all of which are required. */
 class ConjunctionScorer extends Scorer {
@@ -29,12 +28,8 @@ class ConjunctionScorer extends Scorer {
   final Scorer[] scorers;
   final float coord;
 
-  ConjunctionScorer(Weight weight, List<Scorer> required, List<Scorer> scorers) {
-    this(weight, required, scorers, 1f);
-  }
-
   /** Create a new {@link ConjunctionScorer}, note that {@code scorers} must be a subset of {@code required}. */
-  ConjunctionScorer(Weight weight, List<Scorer> required, List<Scorer> scorers, float coord) {
+  ConjunctionScorer(Weight weight, Collection<Scorer> required, Collection<Scorer> scorers, float coord) {
     super(weight);
     assert required.containsAll(scorers);
     this.coord = coord;

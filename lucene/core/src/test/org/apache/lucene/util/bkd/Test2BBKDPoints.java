@@ -133,6 +133,12 @@ public class Test2BBKDPoints extends LuceneTestCase {
     }
 
     @Override
+    public long estimatePointCount(String fieldNameIn, IntersectVisitor visitor) {
+      verifyFieldName(fieldNameIn);
+      return bkdReader.estimatePointCount(visitor);
+    }
+
+    @Override
     public byte[] getMinPackedValue(String fieldNameIn) throws IOException {
       verifyFieldName(fieldNameIn);
       return bkdReader.getMinPackedValue();

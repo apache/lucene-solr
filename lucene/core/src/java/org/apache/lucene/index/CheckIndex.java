@@ -42,6 +42,8 @@ import org.apache.lucene.codecs.TermVectorsReader;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.DocumentStoredFieldVisitor;
 import org.apache.lucene.index.CheckIndex.Status.DocValuesStatus;
+import org.apache.lucene.index.PointValues.IntersectVisitor;
+import org.apache.lucene.index.PointValues.Relation;
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.search.LeafFieldComparator;
 import org.apache.lucene.search.Sort;
@@ -1805,6 +1807,19 @@ public final class CheckIndex implements Closeable {
             long size = values.size(fieldInfo.name);
             int docCount = values.getDocCount(fieldInfo.name);
 
+            final long crossCost = values.estimatePointCount(fieldInfo.name, new ConstantRelationIntersectVisitor(Relation.CELL_CROSSES_QUERY));
+            if (crossCost < size) {
+              throw new RuntimeException("estimatePointCount should return >= size when all cells match");
+            }
+            final long insideCost = values.estimatePointCount(fieldInfo.name, new ConstantRelationIntersectVisitor(Relation.CELL_INSIDE_QUERY));
+            if (insideCost < size) {
+              throw new RuntimeException("estimatePointCount should return >= size when all cells fully match");
+            }
+            final long outsideCost = values.estimatePointCount(fieldInfo.name, new ConstantRelationIntersectVisitor(Relation.CELL_OUTSIDE_QUERY));
+            if (outsideCost != 0) {
+              throw new RuntimeException("estimatePointCount should return 0 when no cells match");
+            }
+
             VerifyPointsVisitor visitor = new VerifyPointsVisitor(fieldInfo.name, reader.maxDoc(), values);
             values.intersect(fieldInfo.name, visitor);
 
@@ -1997,6 +2012,28 @@ public final class CheckIndex implements Closeable {
     }
   }
 
+  private static class ConstantRelationIntersectVisitor implements IntersectVisitor {
+    private final Relation relation;
+
+    ConstantRelationIntersectVisitor(Relation relation) {
+      this.relation = relation;
+    }
+
+    @Override
+    public void visit(int docID) throws IOException {
+      throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public void visit(int docID, byte[] packedValue) throws IOException {
+      throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public Relation compare(byte[] minPackedValue, byte[] maxPackedValue) {
+      return relation;
+    }
+  }
   
   /**
    * Test stored fields.

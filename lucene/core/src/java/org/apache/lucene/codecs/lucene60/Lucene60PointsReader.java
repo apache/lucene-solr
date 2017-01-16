@@ -143,6 +143,19 @@ public class Lucene60PointsReader extends PointsReader implements Closeable {
   }
 
   @Override
+  public long estimatePointCount(String fieldName, IntersectVisitor visitor) {
+    BKDReader bkdReader = getBKDReader(fieldName);
+
+    if (bkdReader == null) {
+      // Schema ghost corner case!  This field did index points in the past, but
+      // now all docs having this point field were deleted in this segment:
+      return 0;
+    }
+
+    return bkdReader.estimatePointCount(visitor);
+  }
+
+  @Override
   public long ramBytesUsed() {
     long sizeInBytes = 0;
     for(BKDReader reader : readers.values()) {

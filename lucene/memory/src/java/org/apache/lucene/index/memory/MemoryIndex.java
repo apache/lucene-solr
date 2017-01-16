@@ -1510,6 +1510,11 @@ public class MemoryIndex {
       }
 
       @Override
+      public long estimatePointCount(String fieldName, IntersectVisitor visitor) {
+        return 1;
+      }
+
+      @Override
       public byte[] getMinPackedValue(String fieldName) throws IOException {
         Info info = fields.get(fieldName);
         if (info == null) {

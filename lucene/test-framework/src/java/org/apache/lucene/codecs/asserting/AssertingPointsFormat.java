@@ -175,6 +175,13 @@ public final class AssertingPointsFormat extends PointsFormat {
     }
 
     @Override
+    public long estimatePointCount(String fieldName, IntersectVisitor visitor) {
+      final long value = in.estimatePointCount(fieldName, visitor);
+      assert value >= 0;
+      return value;
+    }
+
+    @Override
     public long ramBytesUsed() {
       long v = in.ramBytesUsed();
       assert v >= 0;

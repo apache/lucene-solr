@@ -151,6 +151,11 @@ public final class SlowCodecReaderWrapper {
       }
 
       @Override
+      public long estimatePointCount(String fieldName, IntersectVisitor visitor) {
+        return values.estimatePointCount(fieldName, visitor);
+      }
+
+      @Override
       public void checkIntegrity() throws IOException {
         // We already checkIntegrity the entire reader up front
       }

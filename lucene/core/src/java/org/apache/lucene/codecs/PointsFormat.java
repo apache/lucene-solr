@@ -77,6 +77,11 @@ public abstract class PointsFormat {
           }
 
           @Override
+          public long estimatePointCount(String fieldName, IntersectVisitor visitor) {
+            throw new IllegalArgumentException("field=\"" + fieldName + "\" was not indexed with points");
+          }
+
+          @Override
           public byte[] getMinPackedValue(String fieldName) {
             throw new IllegalArgumentException("field=\"" + fieldName + "\" was not indexed with points");
           }

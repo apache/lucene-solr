@@ -95,7 +95,7 @@ class BooleanTopLevelScorers {
     private final Scorer opt;
     
     CoordinatingConjunctionScorer(Weight weight, float coords[], Scorer req, int reqCount, Scorer opt) {
-      super(weight, Arrays.asList(req, opt), Arrays.asList(req, opt));
+      super(weight, Arrays.asList(req, opt), Arrays.asList(req, opt), 1f);
       this.coords = coords;
       this.req = req;
       this.reqCount = reqCount;

@@ -26,6 +26,7 @@ import org.apache.lucene.document.Field;
 import org.apache.lucene.document.FloatPoint;
 import org.apache.lucene.document.IntPoint;
 import org.apache.lucene.document.LongPoint;
+import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.util.StringHelper;
 import org.apache.lucene.util.bkd.BKDWriter;
 
@@ -225,6 +226,12 @@ public abstract class PointValues {
    *  This method does not enforce live documents, so it's up to the caller
    *  to test whether each document is deleted, if necessary. */
   public abstract void intersect(String fieldName, IntersectVisitor visitor) throws IOException;
+
+  /** Estimate the number of points that would be visited by {@link #intersect}
+   * with the given {@link IntersectVisitor}. This should run many times faster
+   * than {@link #intersect(String, IntersectVisitor)}.
+   * @see DocIdSetIterator#cost */
+  public abstract long estimatePointCount(String fieldName, IntersectVisitor visitor);
 
   /** Returns minimum value for each dimension, packed, or null if {@link #size} is <code>0</code> */
   public abstract byte[] getMinPackedValue(String fieldName) throws IOException;

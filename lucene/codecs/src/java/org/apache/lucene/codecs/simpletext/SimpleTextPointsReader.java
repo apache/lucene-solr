@@ -208,6 +208,17 @@ class SimpleTextPointsReader extends PointsReader {
   }
 
   @Override
+  public long estimatePointCount(String fieldName, IntersectVisitor visitor) {
+    SimpleTextBKDReader bkdReader = getBKDReader(fieldName);
+    if (bkdReader == null) {
+      // Schema ghost corner case!  This field did index points in the past, but
+      // now all docs having this field were deleted in this segment:
+      return 0L;
+    }
+    return bkdReader.estimatePointCount(visitor);
+  }
+
+  @Override
   public void checkIntegrity() throws IOException {
     BytesRefBuilder scratch = new BytesRefBuilder();
     IndexInput clone = dataIn.clone();

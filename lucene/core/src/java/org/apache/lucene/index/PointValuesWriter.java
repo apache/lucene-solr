@@ -108,6 +108,11 @@ class PointValuesWriter {
       }
 
       @Override
+      public long estimatePointCount(String fieldName, IntersectVisitor visitor) {
+        throw new UnsupportedOperationException();
+      }
+
+      @Override
       public byte[] getMinPackedValue(String fieldName) {
         throw new UnsupportedOperationException();
       }
@@ -274,4 +279,5 @@ class PointValuesWriter {
       return in.ramBytesUsed();
     }
   }
+
 }
