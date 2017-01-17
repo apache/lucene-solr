@@ -28,6 +28,7 @@ import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
 import org.apache.lucene.analysis.tokenattributes.PositionIncrementAttribute;
 import org.apache.lucene.analysis.tokenattributes.TypeAttribute;
+import org.apache.lucene.search.PhraseQuery;
 import org.apache.lucene.util.ArrayUtil;
 import org.apache.lucene.util.AttributeSource;
 import org.apache.lucene.util.InPlaceMergeSorter;
@@ -80,7 +81,12 @@ import org.apache.lucene.util.InPlaceMergeSorter;
  * the current {@link StandardTokenizer} immediately removes many intra-word
  * delimiters, it is recommended that this filter be used after a tokenizer that
  * does not do this (such as {@link WhitespaceTokenizer}).
+ *
+ * @deprecated Use {@link WordDelimiterGraphFilter} instead: it produces a correct
+ * token graph so that e.g. {@link PhraseQuery} works correctly when it's used in
+ * the search time analyzer.
  */
+@Deprecated
 public final class WordDelimiterFilter extends TokenFilter {
   
   public static final int LOWER = 0x01;
@@ -116,7 +122,7 @@ public final class WordDelimiterFilter extends TokenFilter {
   /**
    * Causes maximum runs of word parts to be catenated:
    * <p>
-   * "wi-fi" =&gt; "wifi"
+   * "500-42" =&gt; "50042"
    */
   public static final int CATENATE_NUMBERS = 8;
 
@@ -494,7 +500,6 @@ public final class WordDelimiterFilter extends TokenFilter {
   private void generatePart(boolean isSingleWord) {
     clearAttributes();
     termAttribute.copyBuffer(savedBuffer, iterator.current, iterator.end - iterator.current);
-
     int startOffset = savedStartOffset + iterator.current;
     int endOffset = savedStartOffset + iterator.end;
     
