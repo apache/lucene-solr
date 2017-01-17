@@ -184,6 +184,42 @@ public class SpellCheckComponentTest extends SolrTestCaseJ4 {
   
 
   @Test
+  public void testCollateExtendedResultsWithJsonNl() throws Exception {
+    final String q = "documemtsss broens";
+    final String jsonNl = "map";
+    final boolean collateExtendedResults = random().nextBoolean();
+    final List<String> testsList = new ArrayList<String>();
+    if (collateExtendedResults) {
+      testsList.add("/spellcheck/collations/collation/collationQuery=='document brown'");
+      testsList.add("/spellcheck/collations/collation/hits==0");
+      switch (jsonNl) {
+        case "map":
+          testsList.add("/spellcheck/collations/collation/misspellingsAndCorrections/documemtsss=='document'");
+          testsList.add("/spellcheck/collations/collation/misspellingsAndCorrections/broens=='brown'");
+          break;
+        default:
+          fail("unexpected json.nl choice: "+jsonNl);
+          break;
+      }
+    } else {
+      testsList.add("/spellcheck/collations/collation=='document brown'");
+    }
+    final String[] testsArray = new String[testsList.size()];
+    implTestCollateExtendedResultsWithJsonNl(q, jsonNl, collateExtendedResults, testsList.toArray(testsArray));
+  }
+
+  private void implTestCollateExtendedResultsWithJsonNl(String q, String jsonNl, boolean collateExtendedResults, String ... tests) throws Exception {
+    final SolrQueryRequest solrQueryRequest = req(
+        CommonParams.QT, rh,
+        CommonParams.Q, q,
+        "json.nl", jsonNl,
+        SpellCheckComponent.COMPONENT_NAME, "true",
+        SpellingParams.SPELLCHECK_COLLATE_EXTENDED_RESULTS, Boolean.toString(collateExtendedResults),
+        SpellingParams.SPELLCHECK_COLLATE, "true");
+    assertJQ(solrQueryRequest, tests);
+  }
+
+  @Test
   public void testCorrectSpelling() throws Exception {
     // Make sure correct spellings are signaled in the response
     assertJQ(req("json.nl","map", "qt",rh, SpellCheckComponent.COMPONENT_NAME, "true",
