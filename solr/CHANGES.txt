@@ -49,6 +49,8 @@ Optimizations
 Bug Fixes
 ----------------------
 
+* SOLR-9976: Fix init bug in SegmentsInfoRequestHandlerTest (hossman)
+
 Other Changes
 ----------------------
 
