@@ -5,6 +5,14 @@ http://s.apache.org/luceneversions
 
 ======================= Lucene 6.5.0 =======================
 
+API Changes
+
+* LUCENE-7624: TermsQuery has been renamed as TermInSetQuery and moved to core.
+  (Alan Woodward)
+
+* LUCENE-7637: TermInSetQuery requires that all terms come from the same field.
+  (Adrien Grand)
+
 New Features
 
 * LUCENE-7623: Add FunctionScoreQuery and FunctionMatchQuery (Alan Woodward,

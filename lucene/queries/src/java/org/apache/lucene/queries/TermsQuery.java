@@ -16,25 +16,61 @@
  */
 package org.apache.lucene.queries;
 
+import java.io.IOException;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
 
+import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.Term;
+import org.apache.lucene.search.BooleanQuery;
+import org.apache.lucene.search.ConstantScoreQuery;
+import org.apache.lucene.search.Query;
 import org.apache.lucene.search.TermInSetQuery;
+import org.apache.lucene.search.BooleanClause.Occur;
+import org.apache.lucene.util.Accountable;
 import org.apache.lucene.util.BytesRef;
 
 /**
  * @deprecated Use {@link org.apache.lucene.search.TermInSetQuery}
  */
 @Deprecated
-public class TermsQuery extends TermInSetQuery {
+public class TermsQuery extends Query implements Accountable {
+
+  private final Query rewritten;
+  private final long ramBytesUsed;
 
   /**
    * Creates a new {@link TermsQuery} from the given collection. It
    * can contain duplicate terms and multiple fields.
    */
   public TermsQuery(Collection<Term> terms) {
-    super(terms);
+    Map<String, List<BytesRef>> termsPerField = new HashMap<>();
+    for (Term term : terms) {
+      List<BytesRef> t = termsPerField.computeIfAbsent(term.field(), s -> new ArrayList<>());
+      t.add(term.bytes());
+    }
+    if (termsPerField.size() == 1) {
+      Map.Entry<String, List<BytesRef>> entry = termsPerField.entrySet().iterator().next();
+      TermInSetQuery tisq = new TermInSetQuery(entry.getKey(), entry.getValue());
+      rewritten = tisq;
+      ramBytesUsed = tisq.ramBytesUsed();
+    } else {
+      BooleanQuery.Builder bq = new BooleanQuery.Builder()
+          .setDisableCoord(true);
+      long ramBytesUsed = 0;
+      for (Map.Entry<String, List<BytesRef>> entry : termsPerField.entrySet()) {
+        TermInSetQuery tisq = new TermInSetQuery(entry.getKey(), entry.getValue());
+        bq.add(tisq, Occur.SHOULD);
+        ramBytesUsed += tisq.ramBytesUsed();
+      }
+      rewritten = new ConstantScoreQuery(bq.build());
+      this.ramBytesUsed = ramBytesUsed;
+    }
   }
 
   /**
@@ -42,7 +78,9 @@ public class TermsQuery extends TermInSetQuery {
    * a single field. It can contain duplicate terms.
    */
   public TermsQuery(String field, Collection<BytesRef> terms) {
-    super(field, terms);
+    TermInSetQuery tisq = new TermInSetQuery(field, terms);
+    rewritten = tisq;
+    ramBytesUsed = tisq.ramBytesUsed();
   }
 
   /**
@@ -61,4 +99,31 @@ public class TermsQuery extends TermInSetQuery {
     this(Arrays.asList(terms));
   }
 
+  @Override
+  public Query rewrite(IndexReader reader) throws IOException {
+    return rewritten;
+  }
+
+  @Override
+  public boolean equals(Object obj) {
+    if (sameClassAs(obj) == false) {
+      return false;
+    }
+    return Objects.equals(rewritten, ((TermsQuery) obj).rewritten);
+  }
+
+  @Override
+  public int hashCode() {
+    return 31 * classHash() + rewritten.hashCode();
+  }
+
+  @Override
+  public String toString(String field) {
+    return rewritten.toString(field);
+  }
+
+  @Override
+  public long ramBytesUsed() {
+    return ramBytesUsed;
+  }
 }
