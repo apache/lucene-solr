@@ -195,6 +195,7 @@ public final class WordDelimiterGraphFilter extends TokenFilter {
   private int savedStartOffset;
   private int savedEndOffset;
   private AttributeSource.State savedState;
+  private int lastStartOffset;
   
   // if length by start + end offsets doesn't match the term text then assume
   // this is a synonym and don't adjust the offsets.
@@ -373,11 +374,23 @@ public final class WordDelimiterGraphFilter extends TokenFilter {
         int endPart = bufferedParts[4*bufferedPos+3];
         bufferedPos++;
 
+        int startOffset;
+        int endOffset;
+
         if (hasIllegalOffsets) {
-          offsetAttribute.setOffset(savedStartOffset, savedEndOffset);
+          startOffset = savedStartOffset;
+          endOffset = savedEndOffset;
         } else {
-          offsetAttribute.setOffset(savedStartOffset + startPart, savedStartOffset + endPart);
+          startOffset = savedStartOffset + startPart;
+          endOffset = savedStartOffset + endPart;
         }
+
+        // never let offsets go backwards:
+        startOffset = Math.max(startOffset, lastStartOffset);
+        endOffset = Math.max(endOffset, lastStartOffset);
+
+        offsetAttribute.setOffset(startOffset, endOffset);
+        lastStartOffset = startOffset;
 
         if (termPart == null) {
           termAttribute.copyBuffer(savedTermBuffer, startPart, endPart - startPart);
@@ -402,6 +415,7 @@ public final class WordDelimiterGraphFilter extends TokenFilter {
     super.reset();
     accumPosInc = 0;
     savedState = null;
+    lastStartOffset = 0;
     concat.clear();
     concatAll.clear();
   }
