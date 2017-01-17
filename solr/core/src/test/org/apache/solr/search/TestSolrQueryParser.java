@@ -259,6 +259,21 @@ public class TestSolrQueryParser extends SolrTestCaseJ4 {
     }
     assertEquals(26, ((TermInSetQuery)qq).getTermData().size());
 
+    // test terms queries of two different fields (LUCENE-7637 changed to require all terms be in the same field)
+    StringBuilder sb = new StringBuilder();
+    for (int i=0; i<17; i++) {
+      char letter = (char)('a'+i);
+      sb.append("foo_s:" + letter + " bar_s:" + letter + " ");
+    }
+    qParser = QParser.getParser(sb.toString(), req);
+    qParser.setIsFilter(true); // this may change in the future
+    q = qParser.getQuery();
+    assertEquals(2, ((BooleanQuery)q).clauses().size());
+    for (BooleanClause clause : ((BooleanQuery)q).clauses()) {
+      qq = clause.getQuery();
+      assertEquals(17, ((TermInSetQuery)qq).getTermData().size());
+    }
+
     req.close();
   }
 
