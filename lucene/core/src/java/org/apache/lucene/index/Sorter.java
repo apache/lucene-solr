@@ -139,7 +139,7 @@ final class Sorter {
   }
 
   /** Computes the old-to-new permutation over the given comparator. */
-  private static Sorter.DocMap sort(final int maxDoc, DocComparator comparator) {
+  static Sorter.DocMap sort(final int maxDoc, DocComparator comparator) {
     // check if the index is sorted
     boolean sorted = true;
     for (int i = 1; i < maxDoc; ++i) {
@@ -252,7 +252,7 @@ final class Sorter {
     SortField fields[] = sort.getSort();
     final int reverseMul[] = new int[fields.length];
     final LeafFieldComparator comparators[] = new LeafFieldComparator[fields.length];
-    
+
     for (int i = 0; i < fields.length; i++) {
       reverseMul[i] = fields[i].getReverse() ? -1 : 1;
       comparators[i] = fields[i].getComparator(1, i).getLeafComparator(reader.getContext());

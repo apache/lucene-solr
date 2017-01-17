@@ -22,7 +22,7 @@ import java.util.Iterator;
 import java.util.NoSuchElementException;
 
 import org.apache.lucene.codecs.DocValuesConsumer;
-import org.apache.lucene.store.DataInput;
+import org.apache.lucene.search.SortField;
 import org.apache.lucene.store.DataOutput;
 import org.apache.lucene.util.ArrayUtil;
 import org.apache.lucene.util.BytesRef;
@@ -107,18 +107,43 @@ class BinaryDocValuesWriter extends DocValuesWriter {
 
   @Override
   public void finish(int maxDoc) {
+
   }
 
   @Override
-  public void flush(SegmentWriteState state, DocValuesConsumer dvConsumer) throws IOException {
+  Sorter.DocComparator getDocComparator(int numDoc, SortField sortField) throws IOException {
+    throw new IllegalArgumentException("It is forbidden to sort on a binary field");
+  }
+
+  @Override
+  public void flush(SegmentWriteState state, Sorter.DocMap sortMap, DocValuesConsumer dvConsumer) throws IOException {
     final int maxDoc = state.segmentInfo.maxDoc();
     bytes.freeze(false);
     final PackedLongValues lengths = this.lengths.build();
+
+    final long[] starts;
+    if (sortMap != null) {
+      starts = new long[maxDoc];
+      PackedLongValues.Iterator it = lengths.iterator();
+      long ptr = 0;
+      int doc = 0;
+      while (it.hasNext()) {
+        starts[doc++] = ptr;
+        ptr += it.next();
+      }
+    } else {
+      starts = null;
+    }
+
     dvConsumer.addBinaryField(fieldInfo,
                               new Iterable<BytesRef>() {
                                 @Override
                                 public Iterator<BytesRef> iterator() {
-                                   return new BytesIterator(maxDoc, lengths);
+                                  if (sortMap == null) {
+                                    return new BytesIterator(maxDoc, lengths);
+                                  } else {
+                                    return new SortingBytesIterator(maxDoc, lengths, sortMap, starts);
+                                  }
                                 }
                               });
   }
@@ -127,7 +152,7 @@ class BinaryDocValuesWriter extends DocValuesWriter {
   private class BytesIterator implements Iterator<BytesRef> {
     final BytesRefBuilder value = new BytesRefBuilder();
     final PackedLongValues.Iterator lengthsIterator;
-    final DataInput bytesIterator = bytes.getDataInput();
+    final PagedBytes.PagedBytesDataInput bytesIterator = (PagedBytes.PagedBytesDataInput) bytes.getDataInput();
     final int size = (int) lengths.size();
     final int maxDoc;
     int upto;
@@ -149,15 +174,67 @@ class BinaryDocValuesWriter extends DocValuesWriter {
       }
       final BytesRef v;
       if (upto < size) {
-        int length = (int) lengthsIterator.next();
+        final int length = (int) lengthsIterator.next();
         value.grow(length);
         value.setLength(length);
-        try {
-          bytesIterator.readBytes(value.bytes(), 0, value.length());
-        } catch (IOException ioe) {
-          // Should never happen!
-          throw new RuntimeException(ioe);
+        bytesIterator.readBytes(value.bytes(), 0, value.length());
+        if (docsWithField.get(upto)) {
+          v = value.get();
+        } else {
+          v = null;
         }
+      } else {
+        v = null;
+      }
+      upto++;
+      return v;
+    }
+
+    @Override
+    public void remove() {
+      throw new UnsupportedOperationException();
+    }
+  }
+
+  // sort the values we have in ram according to the provided sort map
+  private class SortingBytesIterator implements Iterator<BytesRef> {
+    final BytesRefBuilder value = new BytesRefBuilder();
+    final PackedLongValues values;
+    final PackedLongValues.Iterator lengthsIterator;
+    final long[] starts;
+    final PagedBytes.PagedBytesDataInput bytesIterator = (PagedBytes.PagedBytesDataInput) bytes.getDataInput();
+    final Sorter.DocMap sortMap;
+    final int size = (int) lengths.size();
+    final int maxDoc;
+    int upto;
+
+    SortingBytesIterator(int maxDoc, PackedLongValues lengths, Sorter.DocMap sortMap, long[] starts) {
+      this.maxDoc = maxDoc;
+      this.lengthsIterator = lengths.iterator();
+      this.values = lengths;
+      this.sortMap = sortMap;
+      this.starts = starts;
+    }
+
+    @Override
+    public boolean hasNext() {
+      return upto < maxDoc;
+    }
+
+    @Override
+    public BytesRef next() {
+      if (!hasNext()) {
+        throw new NoSuchElementException();
+      }
+      final BytesRef v;
+      if (upto < size) {
+        int oldID = sortMap.newToOld(upto);
+        int length = (int) values.get(oldID);
+        long pos = starts[oldID];
+        bytesIterator.setPosition(pos);
+        value.grow(length);
+        value.setLength(length);
+        bytesIterator.readBytes(value.bytes(), 0, value.length());
         if (docsWithField.get(upto)) {
           v = value.get();
         } else {
