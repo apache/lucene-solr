@@ -152,7 +152,7 @@ class BinaryDocValuesWriter extends DocValuesWriter {
   private class BytesIterator implements Iterator<BytesRef> {
     final BytesRefBuilder value = new BytesRefBuilder();
     final PackedLongValues.Iterator lengthsIterator;
-    final PagedBytes.PagedBytesDataInput bytesIterator = (PagedBytes.PagedBytesDataInput) bytes.getDataInput();
+    final PagedBytes.PagedBytesDataInput bytesIterator = bytes.getDataInput();
     final int size = (int) lengths.size();
     final int maxDoc;
     int upto;
@@ -202,7 +202,7 @@ class BinaryDocValuesWriter extends DocValuesWriter {
     final PackedLongValues values;
     final PackedLongValues.Iterator lengthsIterator;
     final long[] starts;
-    final PagedBytes.PagedBytesDataInput bytesIterator = (PagedBytes.PagedBytesDataInput) bytes.getDataInput();
+    final PagedBytes.PagedBytesDataInput bytesIterator = bytes.getDataInput();
     final Sorter.DocMap sortMap;
     final int size = (int) lengths.size();
     final int maxDoc;

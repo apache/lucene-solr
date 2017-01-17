@@ -121,9 +121,8 @@ final class DefaultIndexingChain extends DocConsumer {
         return Integer.compare(docID1, docID2); // docid order tiebreak
       }
     };
-    Sorter sorter = new Sorter(indexSort);
     // returns null if documents are already sorted
-    return sorter.sort(state.segmentInfo.maxDoc(), docComparator);
+    return Sorter.sort(state.segmentInfo.maxDoc(), docComparator);
   }
 
   @Override

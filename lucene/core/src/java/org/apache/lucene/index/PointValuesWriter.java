@@ -19,7 +19,6 @@ package org.apache.lucene.index;
 import java.io.IOException;
 
 import org.apache.lucene.codecs.MutablePointsReader;
-import org.apache.lucene.codecs.PointsReader;
 import org.apache.lucene.codecs.PointsWriter;
 import org.apache.lucene.util.ArrayUtil;
 import org.apache.lucene.util.ByteBlockPool;
@@ -212,6 +211,11 @@ class PointValuesWriter {
           return visitor.compare(minPackedValue, maxPackedValue);
         }
       });
+    }
+
+    @Override
+    public long estimatePointCount(String fieldName, IntersectVisitor visitor) {
+      return Long.MAX_VALUE;
     }
 
     @Override
