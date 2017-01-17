@@ -30,8 +30,7 @@ public class PositionLengthAttributeImpl extends AttributeImpl implements Positi
   @Override
   public void setPositionLength(int positionLength) {
     if (positionLength < 1) {
-      throw new IllegalArgumentException
-        ("Position length must be 1 or greater: got " + positionLength);
+      throw new IllegalArgumentException("Position length must be 1 or greater; got " + positionLength);
     }
     this.positionLength = positionLength;
   }

@@ -446,4 +446,73 @@ public class TestWordDelimiterFilter extends BaseTokenStreamTestCase {
       a.close();
     }
   }
+
+  /*
+  public void testToDot() throws Exception {
+    int flags = GENERATE_WORD_PARTS | GENERATE_NUMBER_PARTS | CATENATE_ALL | SPLIT_ON_CASE_CHANGE | SPLIT_ON_NUMERICS | STEM_ENGLISH_POSSESSIVE | PRESERVE_ORIGINAL | CATENATE_WORDS | CATENATE_NUMBERS | STEM_ENGLISH_POSSESSIVE;
+    String text = "PowerSystem2000-5-Shot's";
+    WordDelimiterFilter wdf = new WordDelimiterFilter(new CannedTokenStream(new Token(text, 0, text.length())), DEFAULT_WORD_DELIM_TABLE, flags, null);
+    //StringWriter sw = new StringWriter();
+    // TokenStreamToDot toDot = new TokenStreamToDot(text, wdf, new PrintWriter(sw));
+    PrintWriter pw = new PrintWriter("/x/tmp/before.dot");
+    TokenStreamToDot toDot = new TokenStreamToDot(text, wdf, pw);
+    toDot.toDot();
+    pw.close();
+    System.out.println("TEST DONE");
+    //System.out.println("DOT:\n" + sw.toString());
+  }
+  */
+
+  public void testOnlyNumbers() throws Exception {
+    int flags = GENERATE_WORD_PARTS | SPLIT_ON_CASE_CHANGE | SPLIT_ON_NUMERICS;
+    Analyzer a = new Analyzer() {
+        
+      @Override
+      protected TokenStreamComponents createComponents(String fieldName) {
+        Tokenizer tokenizer = new MockTokenizer(MockTokenizer.WHITESPACE, false);
+        return new TokenStreamComponents(tokenizer, new WordDelimiterFilter(tokenizer, flags, null));
+      }
+    };
+
+    assertAnalyzesTo(a, "7-586", 
+                     new String[] {},
+                     new int[] {},
+                     new int[] {},
+                     null,
+                     new int[] {},
+                     null,
+                     false);
+  }
+
+  public void testNumberPunct() throws Exception {
+    int flags = GENERATE_WORD_PARTS | SPLIT_ON_CASE_CHANGE | SPLIT_ON_NUMERICS;
+    Analyzer a = new Analyzer() {
+        
+      @Override
+      protected TokenStreamComponents createComponents(String fieldName) {
+        Tokenizer tokenizer = new MockTokenizer(MockTokenizer.WHITESPACE, false);
+        return new TokenStreamComponents(tokenizer, new WordDelimiterFilter(tokenizer, flags, null));
+      }
+    };
+
+    assertAnalyzesTo(a, "6-", 
+                     new String[] {"6"},
+                     new int[] {0},
+                     new int[] {1},
+                     null,
+                     new int[] {1},
+                     null,
+                     false);
+  }
+
+  private Analyzer getAnalyzer(final int flags) {
+    return new Analyzer() {
+        
+      @Override
+      protected TokenStreamComponents createComponents(String fieldName) {
+        Tokenizer tokenizer = new MockTokenizer(MockTokenizer.WHITESPACE, false);
+        return new TokenStreamComponents(tokenizer, new WordDelimiterFilter(tokenizer, flags, null));
+      }
+    };
+  }
 }

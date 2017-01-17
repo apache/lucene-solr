@@ -76,6 +76,11 @@ New Features
 * LUCENE-7623: Add FunctionScoreQuery and FunctionMatchQuery (Alan Woodward,
   Adrien Grand, David Smiley)
 
+* LUCENE-7619: Add WordDelimiterGraphFilter, just like
+  WordDelimiterFilter except it produces correct token graphs so that
+  proximity queries at search time will produce correct results (Mike
+  McCandless)
+
 Bug Fixes
 
 * LUCENE-7630: Fix (Edge)NGramTokenFilter to no longer drop payloads
