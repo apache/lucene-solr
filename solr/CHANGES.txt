@@ -90,6 +90,11 @@ Jetty 9.3.14.v20161028
 Detailed Change List
 ----------------------
 
+Bug Fixes
+----------------------
+
+* SOLR-9976: Fix init bug in SegmentsInfoRequestHandlerTest (hossman)
+
 Optimizations
 ----------------------
 

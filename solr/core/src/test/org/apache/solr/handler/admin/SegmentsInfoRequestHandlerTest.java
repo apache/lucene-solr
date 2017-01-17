@@ -16,9 +16,11 @@
  */
 package org.apache.solr.handler.admin;
 
+import org.apache.lucene.index.LogDocMergePolicy;
 import org.apache.lucene.util.Version;
+import org.apache.solr.index.LogDocMergePolicyFactory;
 import org.apache.solr.util.AbstractSolrTestCase;
-import org.junit.Before;
+
 import org.junit.BeforeClass;
 import org.junit.Test;
 
@@ -32,13 +34,17 @@ public class SegmentsInfoRequestHandlerTest extends AbstractSolrTestCase {
   
   @BeforeClass
   public static void beforeClass() throws Exception {
-    System.setProperty("enable.update.log", "false");
-    System.setProperty("solr.tests.useMergePolicy", "false");
-    initCore("solrconfig.xml", "schema12.xml");
-  }
 
-  @Before
-  public void before() throws Exception {
+    // we need a consistent segmentation to ensure we don't get a random
+    // merge that reduces the total num docs in all segments, or the number of deletes
+    //
+    systemSetPropertySolrTestsMergePolicy(LogDocMergePolicy.class.getName());
+    systemSetPropertySolrTestsMergePolicyFactory(LogDocMergePolicyFactory.class.getName());
+    
+    System.setProperty("enable.update.log", "false"); // no _version_ in our schema
+    initCore("solrconfig.xml", "schema12.xml"); // segments API shouldn't depend on _version_ or ulog
+    
+    // build up an index with at least 2 segments and some deletes
     for (int i = 0; i < DOC_COUNT; i++) {
       assertU(adoc("id","SOLR100" + i, "name","Apache Solr:" + i));
     }
