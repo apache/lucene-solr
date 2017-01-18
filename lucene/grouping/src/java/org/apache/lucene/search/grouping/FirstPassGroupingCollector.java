@@ -67,10 +67,9 @@ abstract public class FirstPassGroupingCollector<T> extends SimpleCollector {
    *    ie, if you want to groupSort by relevance use
    *    Sort.RELEVANCE.
    *  @param topNGroups How many top groups to keep.
-   *  @throws IOException If I/O related errors occur
    */
   @SuppressWarnings({"unchecked", "rawtypes"})
-  public FirstPassGroupingCollector(Sort groupSort, int topNGroups) throws IOException {
+  public FirstPassGroupingCollector(Sort groupSort, int topNGroups) {
     if (topNGroups < 1) {
       throw new IllegalArgumentException("topNGroups must be >= 1 (got " + topNGroups + ")");
     }

@@ -149,13 +149,7 @@ public class ShardFieldSortedHitQueue extends PriorityQueue<ShardDoc> {
   }
 
   Comparator<ShardDoc> comparatorFieldComparator(SortField sortField) {
-    final FieldComparator fieldComparator;
-    try {
-      fieldComparator = sortField.getComparator(0, 0);
-    } catch (IOException e) {
-      throw new RuntimeException("Unable to get FieldComparator for sortField " + sortField);
-    }
-
+    final FieldComparator fieldComparator = sortField.getComparator(0, 0);
     return new ShardComparator(sortField) {
       // Since the PriorityQueue keeps the biggest elements by default,
       // we need to reverse the field compare ordering so that the

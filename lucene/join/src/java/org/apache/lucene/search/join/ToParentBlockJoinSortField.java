@@ -87,7 +87,7 @@ public class ToParentBlockJoinSortField extends SortField {
   }
 
   @Override
-  public FieldComparator<?> getComparator(int numHits, int sortPos) throws IOException {
+  public FieldComparator<?> getComparator(int numHits, int sortPos) {
     switch (getType()) {
       case STRING:
         return getStringComparator(numHits);

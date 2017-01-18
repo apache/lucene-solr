@@ -16,7 +16,6 @@
  */
 package org.apache.lucene.search.grouping;
 
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -167,7 +166,7 @@ public class SearchGroup<T> {
     public final int[] reversed;
 
     @SuppressWarnings({"unchecked", "rawtypes"})
-    public GroupComparator(Sort groupSort) throws IOException {
+    public GroupComparator(Sort groupSort) {
       final SortField[] sortFields = groupSort.getSort();
       comparators = new FieldComparator[sortFields.length];
       reversed = new int[sortFields.length];
@@ -208,7 +207,7 @@ public class SearchGroup<T> {
     private final NavigableSet<MergedGroup<T>> queue;
     private final Map<T,MergedGroup<T>> groupsSeen;
 
-    public GroupMerger(Sort groupSort) throws IOException {
+    public GroupMerger(Sort groupSort) {
       groupComp = new GroupComparator<>(groupSort);
       queue = new TreeSet<>(groupComp);
       groupsSeen = new HashMap<>();
@@ -340,8 +339,7 @@ public class SearchGroup<T> {
    *
    * <p>NOTE: this returns null if the topGroups is empty.
    */
-  public static <T> Collection<SearchGroup<T>> merge(List<Collection<SearchGroup<T>>> topGroups, int offset, int topN, Sort groupSort)
-    throws IOException {
+  public static <T> Collection<SearchGroup<T>> merge(List<Collection<SearchGroup<T>>> topGroups, int offset, int topN, Sort groupSort) {
     if (topGroups.isEmpty()) {
       return null;
     } else {
