@@ -295,6 +295,13 @@ public class UnifiedSolrHighlighter extends SolrHighlighter implements PluginInf
 
     @Override
     protected BreakIterator getBreakIterator(String field) {
+      // Use a default fragsize the same as the regex Fragmenter (original Highlighter) since we're
+      //  both likely shooting for sentence-like patterns.
+      int fragsize = params.getFieldInt(field, HighlightParams.FRAGSIZE, LuceneRegexFragmenter.DEFAULT_FRAGMENT_SIZE);
+      if (fragsize == 0) { // special value; no fragmenting
+        return new WholeBreakIterator();
+      }
+
       String language = params.getFieldParam(field, HighlightParams.BS_LANGUAGE);
       String country = params.getFieldParam(field, HighlightParams.BS_COUNTRY);
       String variant = params.getFieldParam(field, HighlightParams.BS_VARIANT);
@@ -302,9 +309,6 @@ public class UnifiedSolrHighlighter extends SolrHighlighter implements PluginInf
       String type = params.getFieldParam(field, HighlightParams.BS_TYPE);
       BreakIterator baseBI = parseBreakIterator(type, locale);
 
-      // Use a default fragsize the same as the regex Fragmenter (original Highlighter) since we're
-      //  both likely shooting for sentence-like patterns.
-      int fragsize = params.getFieldInt(field, HighlightParams.FRAGSIZE, LuceneRegexFragmenter.DEFAULT_FRAGMENT_SIZE);
       if (fragsize <= 1 || baseBI instanceof WholeBreakIterator) { // no real minimum size
         return baseBI;
       }

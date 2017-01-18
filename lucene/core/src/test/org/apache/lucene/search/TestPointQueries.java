@@ -69,6 +69,7 @@ import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.NumericUtils;
 import org.apache.lucene.util.StringHelper;
 import org.apache.lucene.util.TestUtil;
+import org.apache.lucene.util.bkd.BKDWriter;
 import org.junit.BeforeClass;
 
 public class TestPointQueries extends LuceneTestCase {
@@ -2079,5 +2080,39 @@ public class TestPointQueries extends LuceneTestCase {
     assertTrue(Float.compare(Float.NEGATIVE_INFINITY, FloatPoint.nextDown(-Float.MAX_VALUE)) == 0);
     assertTrue(Float.compare(Float.NEGATIVE_INFINITY, FloatPoint.nextDown(Float.NEGATIVE_INFINITY)) == 0);
     assertTrue(Float.compare(Float.MAX_VALUE, FloatPoint.nextDown(Float.POSITIVE_INFINITY)) == 0);
+  }
+
+  public void testInversePointRange() throws IOException {
+    Directory dir = newDirectory();
+    IndexWriter w = new IndexWriter(dir, newIndexWriterConfig());
+    final int numDims = TestUtil.nextInt(random(), 1, 3);
+    final int numDocs = atLeast(10 * BKDWriter.DEFAULT_MAX_POINTS_IN_LEAF_NODE); // we need multiple leaves to enable this optimization
+    for (int i = 0; i < numDocs; ++i) {
+      Document doc = new Document();
+      int[] values = new int[numDims];
+      Arrays.fill(values, i);
+      doc.add(new IntPoint("f", values));
+      w.addDocument(doc);
+    }
+    w.forceMerge(1);
+    IndexReader r = DirectoryReader.open(w);
+    w.close();
+
+    IndexSearcher searcher = newSearcher(r);
+    int[] low = new int[numDims];
+    int[] high = new int[numDims];
+    Arrays.fill(high, numDocs - 2);
+    assertEquals(high[0] - low[0] + 1, searcher.count(IntPoint.newRangeQuery("f", low, high)));
+    Arrays.fill(low, 1);
+    assertEquals(high[0] - low[0] + 1, searcher.count(IntPoint.newRangeQuery("f", low, high)));
+    Arrays.fill(high, numDocs - 1);
+    assertEquals(high[0] - low[0] + 1, searcher.count(IntPoint.newRangeQuery("f", low, high)));
+    Arrays.fill(low, BKDWriter.DEFAULT_MAX_POINTS_IN_LEAF_NODE + 1);
+    assertEquals(high[0] - low[0] + 1, searcher.count(IntPoint.newRangeQuery("f", low, high)));
+    Arrays.fill(high, numDocs - BKDWriter.DEFAULT_MAX_POINTS_IN_LEAF_NODE);
+    assertEquals(high[0] - low[0] + 1, searcher.count(IntPoint.newRangeQuery("f", low, high)));
+
+    r.close();
+    dir.close();
   }
 }

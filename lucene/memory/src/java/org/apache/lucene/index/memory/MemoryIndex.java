@@ -1522,6 +1522,11 @@ public class MemoryIndex {
       }
 
       @Override
+      public long estimatePointCount(IntersectVisitor visitor) {
+        return 1L;
+      }
+
+      @Override
       public byte[] getMinPackedValue() throws IOException {
         BytesRef[] values = info.pointValues;
         if (values != null) {

@@ -18,15 +18,12 @@ package org.apache.lucene.search;
 
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import com.carrotsearch.randomizedtesting.generators.RandomPicks;
 import com.carrotsearch.randomizedtesting.generators.RandomStrings;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field.Store;
@@ -53,25 +50,25 @@ public class TermInSetQueryTest extends LuceneTestCase {
 
   public void testDuel() throws IOException {
     final int iters = atLeast(2);
+    final String field = "f";
     for (int iter = 0; iter < iters; ++iter) {
-      final List<Term> allTerms = new ArrayList<>();
+      final List<BytesRef> allTerms = new ArrayList<>();
       final int numTerms = TestUtil.nextInt(random(), 1, 1 << TestUtil.nextInt(random(), 1, 10));
       for (int i = 0; i < numTerms; ++i) {
-        final String field = usually() ? "f" : "g";
         final String value = TestUtil.randomAnalysisString(random(), 10, true);
-        allTerms.add(new Term(field, value));
+        allTerms.add(new BytesRef(value));
       }
       Directory dir = newDirectory();
       RandomIndexWriter iw = new RandomIndexWriter(random(), dir);
       final int numDocs = atLeast(100);
       for (int i = 0; i < numDocs; ++i) {
         Document doc = new Document();
-        final Term term = allTerms.get(random().nextInt(allTerms.size()));
-        doc.add(new StringField(term.field(), term.text(), Store.NO));
+        final BytesRef term = allTerms.get(random().nextInt(allTerms.size()));
+        doc.add(new StringField(field, term, Store.NO));
         iw.addDocument(doc);
       }
       if (numTerms > 1 && random().nextBoolean()) {
-        iw.deleteDocuments(new TermQuery(allTerms.get(0)));
+        iw.deleteDocuments(new TermQuery(new Term(field, allTerms.get(0))));
       }
       iw.commit();
       final IndexReader reader = iw.getReader();
@@ -87,16 +84,16 @@ public class TermInSetQueryTest extends LuceneTestCase {
       for (int i = 0; i < 100; ++i) {
         final float boost = random().nextFloat() * 10;
         final int numQueryTerms = TestUtil.nextInt(random(), 1, 1 << TestUtil.nextInt(random(), 1, 8));
-        List<Term> queryTerms = new ArrayList<>();
+        List<BytesRef> queryTerms = new ArrayList<>();
         for (int j = 0; j < numQueryTerms; ++j) {
           queryTerms.add(allTerms.get(random().nextInt(allTerms.size())));
         }
         final BooleanQuery.Builder bq = new BooleanQuery.Builder();
-        for (Term t : queryTerms) {
-          bq.add(new TermQuery(t), Occur.SHOULD);
+        for (BytesRef t : queryTerms) {
+          bq.add(new TermQuery(new Term(field, t)), Occur.SHOULD);
         }
         final Query q1 = new ConstantScoreQuery(bq.build());
-        final Query q2 = new TermInSetQuery(queryTerms);
+        final Query q2 = new TermInSetQuery(field, queryTerms);
         assertSameMatches(searcher, new BoostQuery(q1, boost), new BoostQuery(q2, boost), true);
       }
 
@@ -118,103 +115,72 @@ public class TermInSetQueryTest extends LuceneTestCase {
     }
   }
 
-  private TermInSetQuery termsQuery(boolean singleField, Term...terms) {
-    return termsQuery(singleField, Arrays.asList(terms));
-  }
-
-  private TermInSetQuery termsQuery(boolean singleField, Collection<Term> termList) {
-    if (!singleField) {
-      return new TermInSetQuery(new ArrayList<>(termList));
-    }
-    final TermInSetQuery filter;
-    List<BytesRef> bytes = new ArrayList<>();
-    String field = null;
-    for (Term term : termList) {
-        bytes.add(term.bytes());
-        if (field != null) {
-          assertEquals(term.field(), field);
-        }
-        field = term.field();
-    }
-    assertNotNull(field);
-    filter = new TermInSetQuery(field, bytes);
-    return filter;
-  }
-
   public void testHashCodeAndEquals() {
     int num = atLeast(100);
-    final boolean singleField = random().nextBoolean();
-    List<Term> terms = new ArrayList<>();
-    Set<Term> uniqueTerms = new HashSet<>();
+    List<BytesRef> terms = new ArrayList<>();
+    Set<BytesRef> uniqueTerms = new HashSet<>();
     for (int i = 0; i < num; i++) {
-      String field = "field" + (singleField ? "1" : random().nextInt(100));
       String string = TestUtil.randomRealisticUnicodeString(random());
-      terms.add(new Term(field, string));
-      uniqueTerms.add(new Term(field, string));
-      TermInSetQuery left = termsQuery(singleField ? random().nextBoolean() : false, uniqueTerms);
+      terms.add(new BytesRef(string));
+      uniqueTerms.add(new BytesRef(string));
+      TermInSetQuery left = new TermInSetQuery("field", uniqueTerms);
       Collections.shuffle(terms, random());
-      TermInSetQuery right = termsQuery(singleField ? random().nextBoolean() : false, terms);
+      TermInSetQuery right = new TermInSetQuery("field", terms);
       assertEquals(right, left);
       assertEquals(right.hashCode(), left.hashCode());
       if (uniqueTerms.size() > 1) {
-        List<Term> asList = new ArrayList<>(uniqueTerms);
+        List<BytesRef> asList = new ArrayList<>(uniqueTerms);
         asList.remove(0);
-        TermInSetQuery notEqual = termsQuery(singleField ? random().nextBoolean() : false, asList);
+        TermInSetQuery notEqual = new TermInSetQuery("field", asList);
         assertFalse(left.equals(notEqual));
         assertFalse(right.equals(notEqual));
       }
     }
 
-    TermInSetQuery tq1 = new TermInSetQuery(new Term("thing", "apple"));
-    TermInSetQuery tq2 = new TermInSetQuery(new Term("thing", "orange"));
+    TermInSetQuery tq1 = new TermInSetQuery("thing", new BytesRef("apple"));
+    TermInSetQuery tq2 = new TermInSetQuery("thing", new BytesRef("orange"));
     assertFalse(tq1.hashCode() == tq2.hashCode());
 
     // different fields with the same term should have differing hashcodes
-    tq1 = new TermInSetQuery(new Term("thing1", "apple"));
-    tq2 = new TermInSetQuery(new Term("thing2", "apple"));
+    tq1 = new TermInSetQuery("thing", new BytesRef("apple"));
+    tq2 = new TermInSetQuery("thing2", new BytesRef("apple"));
     assertFalse(tq1.hashCode() == tq2.hashCode());
   }
 
-  public void testSingleFieldEquals() {
+  public void testSimpleEquals() {
     // Two terms with the same hash code
     assertEquals("AaAaBB".hashCode(), "BBBBBB".hashCode());
-    TermInSetQuery left = termsQuery(true, new Term("id", "AaAaAa"), new Term("id", "AaAaBB"));
-    TermInSetQuery right = termsQuery(true, new Term("id", "AaAaAa"), new Term("id", "BBBBBB"));
+    TermInSetQuery left = new TermInSetQuery("id", new BytesRef("AaAaAa"), new BytesRef("AaAaBB"));
+    TermInSetQuery right = new TermInSetQuery("id", new BytesRef("AaAaAa"), new BytesRef("BBBBBB"));
     assertFalse(left.equals(right));
   }
 
   public void testToString() {
-    TermInSetQuery termsQuery = new TermInSetQuery(new Term("field1", "a"),
-                                              new Term("field1", "b"),
-                                              new Term("field1", "c"));
+    TermInSetQuery termsQuery = new TermInSetQuery("field1",
+        new BytesRef("a"), new BytesRef("b"), new BytesRef("c"));
     assertEquals("field1:a field1:b field1:c", termsQuery.toString());
   }
 
   public void testDedup() {
-    Query query1 = new TermInSetQuery(new Term("foo", "bar"));
-    Query query2 = new TermInSetQuery(new Term("foo", "bar"), new Term("foo", "bar"));
+    Query query1 = new TermInSetQuery("foo", new BytesRef("bar"));
+    Query query2 = new TermInSetQuery("foo", new BytesRef("bar"), new BytesRef("bar"));
     QueryUtils.checkEqual(query1, query2);
   }
 
   public void testOrderDoesNotMatter() {
     // order of terms if different
-    Query query1 = new TermInSetQuery(new Term("foo", "bar"), new Term("foo", "baz"));
-    Query query2 = new TermInSetQuery(new Term("foo", "baz"), new Term("foo", "bar"));
-    QueryUtils.checkEqual(query1, query2);
-
-    // order of fields is different
-    query1 = new TermInSetQuery(new Term("foo", "bar"), new Term("bar", "bar"));
-    query2 = new TermInSetQuery(new Term("bar", "bar"), new Term("foo", "bar"));
+    Query query1 = new TermInSetQuery("foo", new BytesRef("bar"), new BytesRef("baz"));
+    Query query2 = new TermInSetQuery("foo", new BytesRef("baz"), new BytesRef("bar"));
     QueryUtils.checkEqual(query1, query2);
   }
 
   public void testRamBytesUsed() {
-    List<Term> terms = new ArrayList<>();
+    List<BytesRef> terms = new ArrayList<>();
     final int numTerms = 1000 + random().nextInt(1000);
     for (int i = 0; i < numTerms; ++i) {
-      terms.add(new Term("f", RandomStrings.randomUnicodeOfLength(random(), 10)));
+      terms.add(new BytesRef(RandomStrings.randomUnicodeOfLength(random(), 10)));
     }
-    TermInSetQuery query = new TermInSetQuery(terms);
+    TermInSetQuery query = new TermInSetQuery("f", terms);
     final long actualRamBytesUsed = RamUsageTester.sizeOf(query);
     final long expectedRamBytesUsed = query.ramBytesUsed();
     // error margin within 5%
@@ -281,43 +247,40 @@ public class TermInSetQueryTest extends LuceneTestCase {
 
   }
 
-  public void testPullOneTermsEnumPerField() throws Exception {
+  public void testPullOneTermsEnum() throws Exception {
     Directory dir = newDirectory();
     RandomIndexWriter w = new RandomIndexWriter(random(), dir);
     Document doc = new Document();
     doc.add(new StringField("foo", "1", Store.NO));
-    doc.add(new StringField("bar", "2", Store.NO));
-    doc.add(new StringField("baz", "3", Store.NO));
     w.addDocument(doc);
     DirectoryReader reader = w.getReader();
     w.close();
     final AtomicInteger counter = new AtomicInteger();
     DirectoryReader wrapped = new TermsCountingDirectoryReaderWrapper(reader, counter);
 
-    final List<Term> terms = new ArrayList<>();
-    final Set<String> fields = new HashSet<>();
+    final List<BytesRef> terms = new ArrayList<>();
     // enough terms to avoid the rewrite
     final int numTerms = TestUtil.nextInt(random(), TermInSetQuery.BOOLEAN_REWRITE_TERM_COUNT_THRESHOLD + 1, 100);
     for (int i = 0; i < numTerms; ++i) {
-      final String field = RandomPicks.randomFrom(random(), new String[] {"foo", "bar", "baz"});
       final BytesRef term = new BytesRef(RandomStrings.randomUnicodeOfCodepointLength(random(), 10));
-      fields.add(field);
-      terms.add(new Term(field, term));
+      terms.add(term);
     }
 
-    new IndexSearcher(wrapped).count(new TermInSetQuery(terms));
-    assertEquals(fields.size(), counter.get());
+    assertEquals(0, new IndexSearcher(wrapped).count(new TermInSetQuery("bar", terms)));
+    assertEquals(0, counter.get()); // missing field
+    new IndexSearcher(wrapped).count(new TermInSetQuery("foo", terms));
+    assertEquals(1, counter.get());
     wrapped.close();
     dir.close();
   }
   
   public void testBinaryToString() {
-    TermInSetQuery query = new TermInSetQuery(new Term("field", new BytesRef(new byte[] { (byte) 0xff, (byte) 0xfe })));
+    TermInSetQuery query = new TermInSetQuery("field", new BytesRef(new byte[] { (byte) 0xff, (byte) 0xfe }));
     assertEquals("field:[ff fe]", query.toString());
   }
 
   public void testIsConsideredCostlyByQueryCache() throws IOException {
-    TermInSetQuery query = new TermInSetQuery(new Term("foo", "bar"), new Term("foo", "baz"));
+    TermInSetQuery query = new TermInSetQuery("foo", new BytesRef("bar"), new BytesRef("baz"));
     UsageTrackingQueryCachingPolicy policy = new UsageTrackingQueryCachingPolicy();
     assertFalse(policy.shouldCache(query));
     policy.onUse(query);

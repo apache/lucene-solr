@@ -313,10 +313,7 @@ final class DefaultIndexingChain extends DocConsumer {
 
   @Override
   public void abort() {
-    try {
-      storedFieldsConsumer.abort();
-    } catch (Throwable t) {
-    }
+    storedFieldsConsumer.abort();
 
     try {
       // E.g. close any open files in the term vectors writer:

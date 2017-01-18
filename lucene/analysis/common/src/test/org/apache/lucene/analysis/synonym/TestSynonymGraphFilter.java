@@ -17,14 +17,22 @@
 
 package org.apache.lucene.analysis.synonym;
 
+import java.io.IOException;
+import java.io.StringReader;
+import java.text.ParseException;
+import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
+
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.BaseTokenStreamTestCase;
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.analysis.MockGraphTokenFilter;
 import org.apache.lucene.analysis.MockTokenizer;
 import org.apache.lucene.analysis.TokenStream;
-import org.apache.lucene.analysis.TokenStreamToAutomaton;
 import org.apache.lucene.analysis.Tokenizer;
+import org.apache.lucene.analysis.core.FlattenGraphFilter;
 import org.apache.lucene.analysis.tokenattributes.*;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
@@ -35,7 +43,6 @@ import org.apache.lucene.search.PhraseQuery;
 import org.apache.lucene.store.ByteArrayDataInput;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.BytesRef;
-import org.apache.lucene.util.BytesRefBuilder;
 import org.apache.lucene.util.CharsRef;
 import org.apache.lucene.util.CharsRefBuilder;
 import org.apache.lucene.util.IOUtils;
@@ -48,15 +55,6 @@ import org.apache.lucene.util.automaton.Operations;
 import org.apache.lucene.util.automaton.TooComplexToDeterminizeException;
 import org.apache.lucene.util.automaton.Transition;
 import org.apache.lucene.util.fst.Util;
-
-import java.io.IOException;
-import java.io.StringReader;
-import java.text.ParseException;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
 
 public class TestSynonymGraphFilter extends BaseTokenStreamTestCase {
 
@@ -1832,7 +1830,7 @@ public class TestSynonymGraphFilter extends BaseTokenStreamTestCase {
                      new int[]      {1,        1,   0,        0,     0,        1,   0,        0,   1,    0,         1,    1,         1},
                      new int[]      {1,        1,   1,        1,     4,        3,   1,        1,   2,    1,         1,    1,         1});
     
-    assertAllStrings(analyzer, "the usa is wealthy", new String[] {
+    assertGraphStrings(analyzer, "the usa is wealthy", new String[] {
         "the usa is wealthy",
         "the united states is wealthy",
         "the u s a is wealthy",
@@ -1923,34 +1921,5 @@ public class TestSynonymGraphFilter extends BaseTokenStreamTestCase {
         new String[]{"z", "xc", "x", "c", "$"},
         new int[]{1, 1, 0, 1, 1});
     a.close();
-  }
-
-  /**
-   * Helper method to validate all strings that can be generated from a token stream.
-   * Uses {@link TokenStreamToAutomaton} to create an automaton. Asserts the finite strings of the automaton are all
-   * and only the given valid strings.
-   * @param analyzer analyzer containing the SynonymFilter under test.
-   * @param text text to be analyzed.
-   * @param expectedStrings all expected finite strings.
-   */
-  public void assertAllStrings(Analyzer analyzer, String text, String[] expectedStrings) throws IOException {
-    TokenStream tokenStream = analyzer.tokenStream("dummy", text);
-    try {
-      Automaton automaton = new TokenStreamToAutomaton().toAutomaton(tokenStream);
-      Set<IntsRef> finiteStrings = AutomatonTestUtil.getFiniteStringsRecursive(automaton, -1);
-
-      assertEquals("Invalid resulting strings count. Expected " + expectedStrings.length + " was " + finiteStrings.size(),
-          expectedStrings.length, finiteStrings.size());
-
-      Set<String> expectedStringsSet = new HashSet<>(Arrays.asList(expectedStrings));
-
-      BytesRefBuilder scratchBytesRefBuilder = new BytesRefBuilder();
-      for (IntsRef ir: finiteStrings) {
-        String s = Util.toBytesRef(ir, scratchBytesRefBuilder).utf8ToString().replace((char) TokenStreamToAutomaton.POS_SEP, ' ');
-        assertTrue("Unexpected string found: " + s, expectedStringsSet.contains(s));
-      }
-    } finally {
-      tokenStream.close();
-    }
   }
 }

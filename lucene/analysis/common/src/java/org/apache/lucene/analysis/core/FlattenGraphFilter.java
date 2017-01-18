@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.lucene.analysis.synonym;
+package org.apache.lucene.analysis.core;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -23,6 +23,7 @@ import java.util.List;
 
 import org.apache.lucene.analysis.TokenFilter;
 import org.apache.lucene.analysis.TokenStream;
+import org.apache.lucene.analysis.synonym.SynonymGraphFilter;
 import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
 import org.apache.lucene.analysis.tokenattributes.PositionIncrementAttribute;
 import org.apache.lucene.analysis.tokenattributes.PositionLengthAttribute;
@@ -410,8 +411,8 @@ public final class FlattenGraphFilter extends TokenFilter {
     maxLookaheadUsed = 0;
   }
 
-  // for testing
-  int getMaxLookaheadUsed() {
+  /** For testing */
+  public int getMaxLookaheadUsed() {
     return maxLookaheadUsed;
   }
 }

@@ -19,9 +19,9 @@ package org.apache.lucene.facet;
 import java.util.ArrayList;
 import java.util.Collection;
 
-import org.apache.lucene.index.Term;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.TermInSetQuery;
+import org.apache.lucene.util.BytesRef;
 
 /**
  * A multi-terms {@link Query} over a {@link FacetField}.
@@ -38,7 +38,7 @@ public class MultiFacetQuery extends TermInSetQuery {
    * Creates a new {@code MultiFacetQuery} filtering the query on the given dimension.
    */
   public MultiFacetQuery(final FacetsConfig facetsConfig, final String dimension, final String[]... paths) {
-    super(toTerms(facetsConfig.getDimConfig(dimension), dimension, paths));
+    super(facetsConfig.getDimConfig(dimension).indexFieldName, toTerms(dimension, paths));
   }
 
   /**
@@ -47,14 +47,13 @@ public class MultiFacetQuery extends TermInSetQuery {
    * <b>NOTE:</b>Uses FacetsConfig.DEFAULT_DIM_CONFIG.
    */
   public MultiFacetQuery(final String dimension, final String[]... paths) {
-    super(toTerms(FacetsConfig.DEFAULT_DIM_CONFIG, dimension, paths));
+    super(FacetsConfig.DEFAULT_DIM_CONFIG.indexFieldName, toTerms(dimension, paths));
   }
 
-  static Collection<Term> toTerms(final FacetsConfig.DimConfig dimConfig, final String dimension,
-          final String[]... paths) {
-    final Collection<Term> terms = new ArrayList<>(paths.length);
+  static Collection<BytesRef> toTerms(final String dimension, final String[]... paths) {
+    final Collection<BytesRef> terms = new ArrayList<>(paths.length);
     for (String[] path : paths)
-      terms.add(FacetQuery.toTerm(dimConfig, dimension, path));
+      terms.add(new BytesRef(FacetsConfig.pathToString(dimension, path)));
     return terms;
   }
 

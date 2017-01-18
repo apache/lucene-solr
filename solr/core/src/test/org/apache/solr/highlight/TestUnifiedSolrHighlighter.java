@@ -79,7 +79,7 @@ public class TestUnifiedSolrHighlighter extends SolrTestCaseJ4 {
     assertU(commit());
     assertQ("multiple snippets test",
         req("q", "text:document", "sort", "id asc", "hl", "true", "hl.snippets", "2", "hl.bs.type", "SENTENCE",
-            "hl.fragsize", "0"),
+            "hl.fragsize", "-1"),
         "count(//lst[@name='highlighting']/lst[@name='101']/arr[@name='text']/*)=2",
         "//lst[@name='highlighting']/lst[@name='101']/arr/str[1]='<em>Document</em> snippet one. '",
         "//lst[@name='highlighting']/lst[@name='101']/arr/str[2]='<em>Document</em> snippet two.'");
@@ -214,8 +214,11 @@ public class TestUnifiedSolrHighlighter extends SolrTestCaseJ4 {
   public void testBreakIteratorWhole() {
     assertU(adoc("text", "Document one has a first sentence. Document two has a second sentence.", "id", "103"));
     assertU(commit());
-    assertQ("different breakiterator", 
+    assertQ("WHOLE breakiterator",
         req("q", "text:document", "sort", "id asc", "hl", "true", "hl.bs.type", "WHOLE", "hl.fragsize", "-1"),
+        "//lst[@name='highlighting']/lst[@name='103']/arr[@name='text']/str='<em>Document</em> one has a first sentence. <em>Document</em> two has a second sentence.'");
+    assertQ("hl.fragsize 0 is equivalent to WHOLE",
+        req("q", "text:document", "sort", "id asc", "hl", "true", "hl.fragsize", "0"),
         "//lst[@name='highlighting']/lst[@name='103']/arr[@name='text']/str='<em>Document</em> one has a first sentence. <em>Document</em> two has a second sentence.'");
   }
 

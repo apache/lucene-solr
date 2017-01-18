@@ -31,30 +31,25 @@ import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.util.ResourceLoader;
 import org.apache.lucene.analysis.util.ResourceLoaderAware;
 import org.apache.lucene.analysis.util.TokenFilterFactory;
-import org.apache.lucene.search.PhraseQuery;
 
-import static org.apache.lucene.analysis.miscellaneous.WordDelimiterFilter.*;
+import static org.apache.lucene.analysis.miscellaneous.WordDelimiterGraphFilter.*;
+import static org.apache.lucene.analysis.miscellaneous.WordDelimiterIterator.*;
 
 /**
- * Factory for {@link WordDelimiterFilter}.
+ * Factory for {@link WordDelimiterGraphFilter}.
  * <pre class="prettyprint">
  * &lt;fieldType name="text_wd" class="solr.TextField" positionIncrementGap="100"&gt;
  *   &lt;analyzer&gt;
  *     &lt;tokenizer class="solr.WhitespaceTokenizerFactory"/&gt;
- *     &lt;filter class="solr.WordDelimiterFilterFactory" protected="protectedword.txt"
+ *     &lt;filter class="solr.WordDelimiterGraphFilterFactory" protected="protectedword.txt"
  *             preserveOriginal="0" splitOnNumerics="1" splitOnCaseChange="1"
  *             catenateWords="0" catenateNumbers="0" catenateAll="0"
  *             generateWordParts="1" generateNumberParts="1" stemEnglishPossessive="1"
  *             types="wdfftypes.txt" /&gt;
  *   &lt;/analyzer&gt;
  * &lt;/fieldType&gt;</pre>
- *
- * @deprecated Use {@link WordDelimiterGraphFilterFactory} instead: it produces a correct
- * token graph so that e.g. {@link PhraseQuery} works correctly when it's used in
- * the search time analyzer.
  */
-@Deprecated
-public class WordDelimiterFilterFactory extends TokenFilterFactory implements ResourceLoaderAware {
+public class WordDelimiterGraphFilterFactory extends TokenFilterFactory implements ResourceLoaderAware {
   public static final String PROTECTED_TOKENS = "protected";
   public static final String TYPES = "types";
 
@@ -64,8 +59,8 @@ public class WordDelimiterFilterFactory extends TokenFilterFactory implements Re
   byte[] typeTable = null;
   private CharArraySet protectedWords = null;
   
-  /** Creates a new WordDelimiterFilterFactory */
-  public WordDelimiterFilterFactory(Map<String, String> args) {
+  /** Creates a new WordDelimiterGraphFilterFactory */
+  public WordDelimiterGraphFilterFactory(Map<String, String> args) {
     super(args);
     int flags = 0;
     if (getInt(args, "generateWordParts", 1) != 0) {
@@ -121,8 +116,8 @@ public class WordDelimiterFilterFactory extends TokenFilterFactory implements Re
 
   @Override
   public TokenFilter create(TokenStream input) {
-    return new WordDelimiterFilter(input, typeTable == null ? WordDelimiterIterator.DEFAULT_WORD_DELIM_TABLE : typeTable,
-                                   flags, protectedWords);
+    return new WordDelimiterGraphFilter(input, typeTable == null ? WordDelimiterIterator.DEFAULT_WORD_DELIM_TABLE : typeTable,
+                                        flags, protectedWords);
   }
   
   // source => type

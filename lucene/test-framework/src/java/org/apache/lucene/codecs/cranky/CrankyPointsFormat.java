@@ -134,6 +134,11 @@ class CrankyPointsFormat extends PointsFormat {
         }
 
         @Override
+        public long estimatePointCount(IntersectVisitor visitor) {
+          return delegate.estimatePointCount(visitor);
+        }
+
+        @Override
         public byte[] getMinPackedValue() throws IOException {
           if (random.nextInt(100) == 0) {
             throw new IOException("Fake IOException");

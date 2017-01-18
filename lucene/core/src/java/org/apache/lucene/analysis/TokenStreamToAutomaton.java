@@ -39,6 +39,7 @@ import org.apache.lucene.util.automaton.Automaton;
 public class TokenStreamToAutomaton {
 
   private boolean preservePositionIncrements;
+  private boolean finalOffsetGapAsHole;
   private boolean unicodeArcs;
 
   /** Sole constructor. */
@@ -49,6 +50,11 @@ public class TokenStreamToAutomaton {
   /** Whether to generate holes in the automaton for missing positions, <code>true</code> by default. */
   public void setPreservePositionIncrements(boolean enablePositionIncrements) {
     this.preservePositionIncrements = enablePositionIncrements;
+  }
+
+  /** If true, any final offset gaps will result in adding a position hole. */
+  public void setFinalOffsetGapAsHole(boolean finalOffsetGapAsHole) {
+    this.finalOffsetGapAsHole = finalOffsetGapAsHole;
   }
 
   /** Whether to make transition labels Unicode code points instead of UTF8 bytes, 
@@ -118,7 +124,7 @@ public class TokenStreamToAutomaton {
     int maxOffset = 0;
     while (in.incrementToken()) {
       int posInc = posIncAtt.getPositionIncrement();
-      if (!preservePositionIncrements && posInc > 1) {
+      if (preservePositionIncrements == false && posInc > 1) {
         posInc = 1;
       }
       assert pos > -1 || posInc > 0;
@@ -201,10 +207,35 @@ public class TokenStreamToAutomaton {
     }
 
     in.end();
+
     int endState = -1;
-    if (offsetAtt.endOffset() > maxOffset) {
+
+    int endPosInc = posIncAtt.getPositionIncrement();
+
+    if (endPosInc == 0 && finalOffsetGapAsHole && offsetAtt.endOffset() > maxOffset) {
+      endPosInc = 1;
+    }
+    
+    if (endPosInc > 0) {
+      // there were hole(s) after the last token
       endState = builder.createState();
-      builder.setAccept(endState, true);
+
+      // add trailing holes now:
+      int lastState = endState;
+      while (true) {
+        int state1 = builder.createState();
+        builder.addTransition(lastState, state1, HOLE);
+        endPosInc--;
+        if (endPosInc == 0) {
+          builder.setAccept(state1, true);
+          break;
+        }
+        int state2 = builder.createState();
+        builder.addTransition(state1, state2, POS_SEP);
+        lastState = state2;
+      }
+    } else {
+      endState = -1;
     }
 
     pos++;
@@ -219,7 +250,7 @@ public class TokenStreamToAutomaton {
       }
       pos++;
     }
-
+    
     return builder.finish();
   }
 

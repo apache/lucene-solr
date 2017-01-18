@@ -93,7 +93,10 @@ public class TokenStreamToDot {
         final int endOffset = offsetAtt.endOffset();
         //System.out.println("start=" + startOffset + " end=" + endOffset + " len=" + inputText.length());
         if (inputText != null) {
-          arcLabel += " / " + inputText.substring(startOffset, endOffset);
+          String fragment = inputText.substring(startOffset, endOffset);
+          if (fragment.equals(termAtt.toString()) == false) {
+            arcLabel += " / " + fragment;
+          }
         } else {
           arcLabel += " / " + startOffset + "-" + endOffset;
         }

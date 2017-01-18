@@ -63,15 +63,41 @@ Other
 
 ======================= Lucene 6.5.0 =======================
 
+API Changes
+
+* LUCENE-7624: TermsQuery has been renamed as TermInSetQuery and moved to core.
+  (Alan Woodward)
+
+* LUCENE-7637: TermInSetQuery requires that all terms come from the same field.
+  (Adrien Grand)
+
 New Features
 
 * LUCENE-7623: Add FunctionScoreQuery and FunctionMatchQuery (Alan Woodward,
   Adrien Grand, David Smiley)
 
+* LUCENE-7619: Add WordDelimiterGraphFilter, just like
+  WordDelimiterFilter except it produces correct token graphs so that
+  proximity queries at search time will produce correct results (Mike
+  McCandless)
+
 Bug Fixes
 
 * LUCENE-7630: Fix (Edge)NGramTokenFilter to no longer drop payloads
   and preserve all attributes. (Nathan Gass via Uwe Schindler)
+
+Improvements
+
+* LUCENE-7055: Added Weight#scorerSupplier, which allows to estimate the cost
+  of a Scorer before actually building it, in order to optimize how the query
+  should be run, eg. using points or doc values depending on costs of other
+  parts of the query. (Adrien Grand)
+
+Optimizations
+
+* LUCENE-7641: Optimized point range queries to compute documents that do not
+  match the range on single-valued fields when more than half the documents in
+  the index would match. (Adrien Grand)
 
 ======================= Lucene 6.4.0 =======================
 
@@ -99,9 +125,6 @@ API Changes
 
 * LUCENE-7611: DocumentValueSourceDictionary now takes a LongValuesSource
   as a parameter, and the ValueSource equivalent is deprecated (Alan Woodward)
-
-* LUCENE-7624: TermsQuery has been renamed as TermInSetQuery and moved to core.
-  (Alan Woodward)
 
 New features
 

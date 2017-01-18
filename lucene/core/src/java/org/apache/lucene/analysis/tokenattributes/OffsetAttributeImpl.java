@@ -43,7 +43,7 @@ public class OffsetAttributeImpl extends AttributeImpl implements OffsetAttribut
     // OffsetAtt
 
     if (startOffset < 0 || endOffset < startOffset) {
-      throw new IllegalArgumentException("startOffset must be non-negative, and endOffset must be >= startOffset, "
+      throw new IllegalArgumentException("startOffset must be non-negative, and endOffset must be >= startOffset; got "
           + "startOffset=" + startOffset + ",endOffset=" + endOffset);
     }
 

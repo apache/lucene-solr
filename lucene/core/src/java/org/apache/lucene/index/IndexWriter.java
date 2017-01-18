@@ -1034,17 +1034,17 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
 
   /** Confirms that the incoming index sort (if any) matches the existing index sort (if any).
    *  This is unfortunately just best effort, because it could be the old index only has unsorted flushed segments built
-   *  before {@link Version#LUCENE_7_0_0} (flushed segments are sorted in Lucene 7.0).  */
-  private void validateIndexSort() {
+   *  before {@link Version#LUCENE_6_5_0} (flushed segments are sorted in Lucene 7.0).  */
+  private void validateIndexSort() throws CorruptIndexException {
     Sort indexSort = config.getIndexSort();
     if (indexSort != null) {
       for(SegmentCommitInfo info : segmentInfos) {
         Sort segmentIndexSort = info.info.getIndexSort();
         if (segmentIndexSort != null && indexSort.equals(segmentIndexSort) == false) {
           throw new IllegalArgumentException("cannot change previous indexSort=" + segmentIndexSort + " (from segment=" + info + ") to new indexSort=" + indexSort);
-        } else if (segmentIndexSort == null) {
-          // Flushed segments are not sorted if they were built with a version prior to 7.0
-          assert info.info.getVersion().onOrAfter(Version.LUCENE_7_0_0) == false;
+        } else if (segmentIndexSort == null && info.info.getVersion().onOrAfter(Version.LUCENE_6_5_0)) {
+          // Flushed segments are not sorted if they were built with a version prior to 6.5.0
+          throw new CorruptIndexException("segment not sorted with indexSort=" + segmentIndexSort, info.info.toString());
         }
       }
     }

@@ -74,9 +74,6 @@ Optimizations
 * SOLR-9584: Support Solr being proxied with another endpoint than default /solr, by using relative links
   in AdminUI javascripts (Yun Jie Zhou via janhoy)
 
-* SOLR-9941: Clear the deletes lists at UpdateLog before replaying from log. This prevents redundantly pre-applying
-  DBQs, during the log replay, to every update in the log as if the DBQs were out of order. (hossman, Ishan Chattopadhyaya)
-
 ==================  6.5.0 ==================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release.
@@ -90,9 +87,22 @@ Apache UIMA 2.3.1
 Apache ZooKeeper 3.4.6
 Jetty 9.3.14.v20161028
 
+Detailed Change List
+----------------------
 
-(No Changes)
+Bug Fixes
+----------------------
 
+* SOLR-9976: Fix init bug in SegmentsInfoRequestHandlerTest (hossman)
+
+* SOLR-9977: Fix config bug in DistribDocExpirationUpdateProcessorTest that allowed false assumptions
+  about when index version changes (hossman)
+
+Optimizations
+----------------------
+
+* SOLR-9941: Clear the deletes lists at UpdateLog before replaying from log. This prevents redundantly pre-applying
+  DBQs, during the log replay, to every update in the log as if the DBQs were out of order. (hossman, Ishan Chattopadhyaya)
 
 ==================  6.4.0 ==================
 
