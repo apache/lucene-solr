@@ -90,6 +90,12 @@ Jetty 9.3.14.v20161028
 Detailed Change List
 ----------------------
 
+New Features
+----------------------
+
+* SOLR-9836: Add ability to recover from leader when index corruption is detected on SolrCore creation.
+  (Mike Drob via Mark Miller)
+
 Bug Fixes
 ----------------------
 

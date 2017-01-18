@@ -21,7 +21,6 @@ import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.InputStreamReader;
 import java.io.OutputStreamWriter;
 import java.io.Writer;
 import java.lang.invoke.MethodHandles;
@@ -92,7 +91,6 @@ import org.apache.solr.update.UpdateLog;
 import org.apache.solr.update.VersionInfo;
 import org.apache.solr.util.DefaultSolrThreadFactory;
 import org.apache.solr.util.FileUtils;
-import org.apache.solr.util.PropertiesInputStream;
 import org.apache.solr.util.PropertiesOutputStream;
 import org.apache.solr.util.RTimer;
 import org.apache.solr.util.RefCounted;
@@ -460,7 +458,7 @@ public class IndexFetcher {
             reloadCore = true;
             downloadConfFiles(confFilesToDownload, latestGeneration);
             if (isFullCopyNeeded) {
-              successfulInstall = IndexFetcher.modifyIndexProps(solrCore, tmpIdxDirName);
+              successfulInstall = solrCore.modifyIndexProps(tmpIdxDirName);
               deleteTmpIdxDir = false;
             } else {
               successfulInstall = moveIndexFiles(tmpIndexDir, indexDir);
@@ -488,7 +486,7 @@ public class IndexFetcher {
           } else {
             terminateAndWaitFsyncService();
             if (isFullCopyNeeded) {
-              successfulInstall = IndexFetcher.modifyIndexProps(solrCore, tmpIdxDirName);
+              successfulInstall = solrCore.modifyIndexProps(tmpIdxDirName);
               deleteTmpIdxDir = false;
             } else {
               successfulInstall = moveIndexFiles(tmpIndexDir, indexDir);
@@ -1187,60 +1185,6 @@ public class IndexFetcher {
 
   private String getDateAsStr(Date d) {
     return new SimpleDateFormat(SnapShooter.DATE_FMT, Locale.ROOT).format(d);
-  }
-
-  /**
-   * If the index is stale by any chance, load index from a different dir in the data dir.
-   */
-  protected static boolean modifyIndexProps(SolrCore solrCore, String tmpIdxDirName) {
-    LOG.info("New index installed. Updating index properties... index="+tmpIdxDirName);
-    Properties p = new Properties();
-    Directory dir = null;
-    try {
-      dir = solrCore.getDirectoryFactory().get(solrCore.getDataDir(), DirContext.META_DATA, solrCore.getSolrConfig().indexConfig.lockType);
-      if (slowFileExists(dir, IndexFetcher.INDEX_PROPERTIES)){
-        final IndexInput input = dir.openInput(IndexFetcher.INDEX_PROPERTIES, DirectoryFactory.IOCONTEXT_NO_CACHE);
-
-        final InputStream is = new PropertiesInputStream(input);
-        try {
-          p.load(new InputStreamReader(is, StandardCharsets.UTF_8));
-        } catch (Exception e) {
-          LOG.error("Unable to load " + IndexFetcher.INDEX_PROPERTIES, e);
-        } finally {
-          IOUtils.closeQuietly(is);
-        }
-      }
-
-      String tmpFileName = IndexFetcher.INDEX_PROPERTIES + "." + System.nanoTime();
-      final IndexOutput out = dir.createOutput(tmpFileName, DirectoryFactory.IOCONTEXT_NO_CACHE);
-      p.put("index", tmpIdxDirName);
-      Writer os = null;
-      try {
-        os = new OutputStreamWriter(new PropertiesOutputStream(out), StandardCharsets.UTF_8);
-        p.store(os, tmpFileName);
-        dir.sync(Collections.singleton(tmpFileName));
-      } catch (Exception e) {
-        throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,
-            "Unable to write " + IndexFetcher.INDEX_PROPERTIES, e);
-      } finally {
-        IOUtils.closeQuietly(os);
-      }
-      
-      solrCore.getDirectoryFactory().renameWithOverwrite(dir, tmpFileName, IndexFetcher.INDEX_PROPERTIES);
-      return true;
-
-    } catch (IOException e1) {
-      throw new RuntimeException(e1);
-    } finally {
-      if (dir != null) {
-        try {
-          solrCore.getDirectoryFactory().release(dir);
-        } catch (IOException e) {
-          SolrException.log(LOG, "", e);
-        }
-      }
-    }
-
   }
 
   private final Map<String, FileInfo> confFileInfoCache = new HashMap<>();

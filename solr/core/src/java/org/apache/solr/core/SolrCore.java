@@ -23,6 +23,8 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.OutputStream;
+import java.io.OutputStreamWriter;
+import java.io.Writer;
 import java.lang.invoke.MethodHandles;
 import java.lang.reflect.Constructor;
 import java.net.URL;
@@ -67,6 +69,7 @@ import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.IndexInput;
+import org.apache.lucene.store.IndexOutput;
 import org.apache.lucene.store.LockObtainFailedException;
 import org.apache.solr.client.solrj.impl.BinaryResponseParser;
 import org.apache.solr.cloud.CloudDescriptor;
@@ -148,6 +151,7 @@ import org.apache.solr.update.processor.UpdateRequestProcessorFactory;
 import org.apache.solr.util.DefaultSolrThreadFactory;
 import org.apache.solr.util.NumberUtils;
 import org.apache.solr.util.PropertiesInputStream;
+import org.apache.solr.util.PropertiesOutputStream;
 import org.apache.solr.util.RefCounted;
 import org.apache.solr.util.plugin.NamedListInitializedPlugin;
 import org.apache.solr.util.plugin.PluginInfoInitialized;
@@ -646,27 +650,7 @@ public final class SolrCore implements SolrInfoMBean, Closeable {
   }
 
   private DirectoryFactory initDirectoryFactory() {
-    final PluginInfo info = solrConfig.getPluginInfo(DirectoryFactory.class.getName());
-    final DirectoryFactory dirFactory;
-    if (info != null) {
-      log.debug(info.className);
-      dirFactory = getResourceLoader().newInstance(info.className, DirectoryFactory.class);
-      // allow DirectoryFactory instances to access the CoreContainer
-      dirFactory.initCoreContainer(getCoreDescriptor().getCoreContainer());
-      dirFactory.init(info.initArgs);
-    } else {
-      log.debug("solr.NRTCachingDirectoryFactory");
-      dirFactory = new NRTCachingDirectoryFactory();
-      dirFactory.initCoreContainer(getCoreDescriptor().getCoreContainer());
-    }
-    if (solrConfig.indexConfig.metricsInfo != null && solrConfig.indexConfig.metricsInfo.isEnabled()) {
-      final DirectoryFactory factory = new MetricsDirectoryFactory(coreDescriptor.getCoreContainer().getMetricManager(),
-          coreMetricManager.getRegistryName(), dirFactory);
-        factory.init(solrConfig.indexConfig.metricsInfo.initArgs);
-      return factory;
-    } else {
-      return dirFactory;
-    }
+    return DirectoryFactory.loadDirectoryFactory(solrConfig, getCoreDescriptor().getCoreContainer(), coreMetricManager.getRegistryName());
   }
 
   private void initIndexReaderFactory() {
@@ -1145,6 +1129,26 @@ public final class SolrCore implements SolrInfoMBean, Closeable {
   }
 
   private String initDataDir(String dataDir, SolrConfig config, CoreDescriptor coreDescriptor) {
+    return findDataDir(getDirectoryFactory(), dataDir, config, coreDescriptor);
+  }
+
+  /**
+   * Locate the data directory for a given config and core descriptor.
+   *
+   * @param directoryFactory
+   *          The directory factory to use if necessary to calculate an absolute path. Should be the same as what will
+   *          be used to open the data directory later.
+   * @param dataDir
+   *          An optional hint to the data directory location. Will be normalized and used if not null.
+   * @param config
+   *          A solr config to retrieve the default data directory location, if used.
+   * @param coreDescriptor
+   *          descriptor to load the actual data dir from, if not using the defualt.
+   * @return a normalized data directory name
+   * @throws SolrException
+   *           if the data directory cannot be loaded from the core descriptor
+   */
+  static String findDataDir(DirectoryFactory directoryFactory, String dataDir, SolrConfig config, CoreDescriptor coreDescriptor) {
     if (dataDir == null) {
       if (coreDescriptor.usingDefaultDataDir()) {
         dataDir = config.getDataDir();
@@ -1161,6 +1165,80 @@ public final class SolrCore implements SolrInfoMBean, Closeable {
       }
     }
     return SolrResourceLoader.normalizeDir(dataDir);
+  }
+
+
+  public boolean modifyIndexProps(String tmpIdxDirName) {
+    return SolrCore.modifyIndexProps(getDirectoryFactory(), getDataDir(), getSolrConfig(), tmpIdxDirName);
+  }
+  
+  /**
+   * Update the index.properties file with the new index sub directory name
+   */
+  // package private
+  static boolean modifyIndexProps(DirectoryFactory directoryFactory, String dataDir, SolrConfig solrConfig, String tmpIdxDirName) {
+    log.info("Updating index properties... index="+tmpIdxDirName);
+    Directory dir = null;
+    try {
+      dir = directoryFactory.get(dataDir, DirContext.META_DATA, solrConfig.indexConfig.lockType);
+      String tmpIdxPropName = IndexFetcher.INDEX_PROPERTIES + "." + System.nanoTime();
+      writeNewIndexProps(dir, tmpIdxPropName, tmpIdxDirName);
+      directoryFactory.renameWithOverwrite(dir, tmpIdxPropName, IndexFetcher.INDEX_PROPERTIES);
+      return true;
+    } catch (IOException e1) {
+      throw new RuntimeException(e1);
+    } finally {
+      if (dir != null) {
+        try {
+          directoryFactory.release(dir);
+        } catch (IOException e) {
+          SolrException.log(log, "", e);
+        }
+      }
+    }
+  }
+  
+  /**
+   * Write the index.properties file with the new index sub directory name
+   * @param dir a data directory (containing an index.properties file)
+   * @param tmpFileName the file name to write the new index.properties to
+   * @param tmpIdxDirName new index directory name
+   */
+  private static void writeNewIndexProps(Directory dir, String tmpFileName, String tmpIdxDirName) {
+    if (tmpFileName == null) {
+      tmpFileName = IndexFetcher.INDEX_PROPERTIES;
+    }
+    final Properties p = new Properties();
+    
+    // Read existing properties
+    try {
+      final IndexInput input = dir.openInput(IndexFetcher.INDEX_PROPERTIES, DirectoryFactory.IOCONTEXT_NO_CACHE);
+      final InputStream is = new PropertiesInputStream(input);
+      try {
+        p.load(new InputStreamReader(is, StandardCharsets.UTF_8));
+      } catch (Exception e) {
+        log.error("Unable to load " + IndexFetcher.INDEX_PROPERTIES, e);
+      } finally {
+        IOUtils.closeQuietly(is);
+      }
+    } catch (IOException e) {
+      // ignore; file does not exist
+    }
+    
+    p.put("index", tmpIdxDirName);
+
+    // Write new properties
+    Writer os = null;
+    try {
+      IndexOutput out = dir.createOutput(tmpFileName, DirectoryFactory.IOCONTEXT_NO_CACHE);
+      os = new OutputStreamWriter(new PropertiesOutputStream(out), StandardCharsets.UTF_8);
+      p.store(os, IndexFetcher.INDEX_PROPERTIES);
+      dir.sync(Collections.singleton(tmpFileName));
+    } catch (Exception e) {
+      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Unable to write " + IndexFetcher.INDEX_PROPERTIES, e);
+    } finally {
+      IOUtils.closeQuietly(os);
+    }
   }
 
   private String initUpdateLogDir(CoreDescriptor coreDescriptor) {
