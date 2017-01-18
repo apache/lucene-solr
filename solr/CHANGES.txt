@@ -58,6 +58,7 @@ Bug Fixes
 
 Other Changes
 ----------------------
+* SOLR-9980: Expose configVersion in core admin status (Jessica Cheng Mallet via Tomás Fernández Löbbe)
 
 ==================  6.4.0 ==================
 
