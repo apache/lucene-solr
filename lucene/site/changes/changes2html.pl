@@ -26,7 +26,6 @@ use warnings;
 
 my $jira_url_prefix = 'http://issues.apache.org/jira/browse/';
 my $github_pull_request_prefix = 'https://github.com/apache/lucene-solr/pull/';
-my $bugzilla_url_prefix = 'http://issues.apache.org/bugzilla/show_bug.cgi?id=';
 my $month_regex = &setup_month_regex;
 my %month_nums = &setup_month_nums;
 my %lucene_bugzilla_jira_map = &setup_lucene_bugzilla_jira_map;
@@ -643,6 +642,7 @@ sub markup_trailing_attribution {
                            (?!inverse\ )
                            (?![Tt]he\ )
                            (?!use\ the\ bug\ number)
+                           (?!e\.?g\.?\b)
                      [^()"]+?\))\s*$}
                     {\n${extra_newline}<span class="attrib">$1</span>}x) {
     # If attribution is not found, then look for attribution with a
@@ -668,6 +668,7 @@ sub markup_trailing_attribution {
                       (?!inverse\ )
                       (?![Tt]he\ )
                       (?!use\ the\ bug\ number)
+                      (?!e\.?g\.?\b)
                  [^()"]+?\)))
                 ((?:\.|(?i:\.?\s*Issue\s+\d{3,}|LUCENE-\d+)\.?)\s*)$}
               {
