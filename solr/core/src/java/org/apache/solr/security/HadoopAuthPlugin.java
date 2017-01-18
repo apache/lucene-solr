@@ -34,6 +34,7 @@ import javax.servlet.ServletContext;
 import javax.servlet.ServletException;
 import javax.servlet.ServletRequest;
 import javax.servlet.ServletResponse;
+import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import javax.servlet.http.HttpServletResponseWrapper;
 
@@ -111,6 +112,12 @@ public class HadoopAuthPlugin extends AuthenticationPlugin {
    * This configuration is expressed as a collection of key-value pairs  (i.e. property-name : value).
    */
   public static final String PROXY_USER_CONFIGS = "proxyUserConfigs";
+
+  /**
+   * This parameter is used to debug the authentication related issues during development.
+   * This should not be used in production.
+   */
+  private static final boolean TRACE_HTTP = Boolean.getBoolean("hadoopauth.tracehttp");
 
   private AuthenticationFilter authFilter;
   protected final CoreContainer coreContainer;
@@ -204,6 +211,23 @@ public class HadoopAuthPlugin extends AuthenticationPlugin {
       throws Exception {
     final HttpServletResponse frsp = (HttpServletResponse)response;
 
+    if (TRACE_HTTP) {
+      HttpServletRequest req = (HttpServletRequest) request;
+      log.info("----------HTTP Request---------");
+      log.info("{} : {}", req.getMethod(), req.getRequestURI());
+      log.info("Query : {}", req.getQueryString());
+      log.info("Headers :");
+      Enumeration<String> headers = req.getHeaderNames();
+      while (headers.hasMoreElements()) {
+        String name = headers.nextElement();
+        Enumeration<String> hvals = req.getHeaders(name);
+        while (hvals.hasMoreElements()) {
+          log.info("{} : {}", name, hvals.nextElement());
+        }
+      }
+      log.info("-------------------------------");
+    }
+
     // Workaround until HADOOP-13346 is fixed.
     HttpServletResponse rspCloseShield = new HttpServletResponseWrapper(frsp) {
       @SuppressForbidden(reason = "Hadoop DelegationTokenAuthenticationFilter uses response writer, this" +
@@ -218,6 +242,19 @@ public class HadoopAuthPlugin extends AuthenticationPlugin {
       }
     };
     authFilter.doFilter(request, rspCloseShield, filterChain);
+
+    if (TRACE_HTTP) {
+      log.info("----------HTTP Response---------");
+      log.info("Status : {}", frsp.getStatus());
+      log.info("Headers :");
+      for (String name : frsp.getHeaderNames()) {
+        for (String value : frsp.getHeaders(name)) {
+          log.info("{} : {}", name, value);
+        }
+      }
+      log.info("-------------------------------");
+    }
+
 
     if (authFilter instanceof HadoopAuthFilter) { // delegation token mgmt.
       String requestContinuesAttr = (String)request.getAttribute(REQUEST_CONTINUES_ATTR);

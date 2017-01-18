@@ -22,6 +22,7 @@ import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Optional;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 import java.util.zip.GZIPInputStream;
@@ -111,28 +112,46 @@ public class HttpClientUtil {
   // cannot be established within x ms. with a
   // java.net.SocketTimeoutException: Connection timed out
   public static final String PROP_CONNECTION_TIMEOUT = "connTimeout";
-  
+
+  /**
+   * A Java system property to select the {@linkplain HttpClientBuilderFactory} used for
+   * configuring the {@linkplain HttpClientBuilder} instance by default.
+   */
+  public static final String SYS_PROP_HTTP_CLIENT_BUILDER_FACTORY = "solr.httpclient.builder.factory";
+
   static final DefaultHttpRequestRetryHandler NO_RETRY = new DefaultHttpRequestRetryHandler(
       0, false);
 
   private static volatile SolrHttpClientBuilder httpClientBuilder;
-  
+
   private static SolrHttpClientContextBuilder httpClientRequestContextBuilder = new SolrHttpClientContextBuilder();
-  
+
+  private static volatile SchemaRegistryProvider schemaRegistryProvider;
+  private static volatile String cookiePolicy;
+  private static final List<HttpRequestInterceptor> interceptors = Collections.synchronizedList(new ArrayList<HttpRequestInterceptor>());
+
+
   static {
     resetHttpClientBuilder();
+
+    // Configure the HttpClientBuilder if user has specified the factory type.
+    String factoryClassName = System.getProperty(SYS_PROP_HTTP_CLIENT_BUILDER_FACTORY);
+    if (factoryClassName != null) {
+      logger.debug ("Using " + factoryClassName);
+      try {
+        HttpClientBuilderFactory factory = (HttpClientBuilderFactory)Class.forName(factoryClassName).newInstance();
+        httpClientBuilder = factory.getHttpClientBuilder(Optional.of(SolrHttpClientBuilder.create()));
+      } catch (InstantiationException | IllegalAccessException | ClassNotFoundException e) {
+        throw new RuntimeException("Unable to instantiate Solr HttpClientBuilderFactory", e);
+      }
+    }
   }
 
   public static abstract class SchemaRegistryProvider {
     /** Must be non-null */
     public abstract Registry<ConnectionSocketFactory> getSchemaRegistry();
   }
-  
-  private static volatile SchemaRegistryProvider schemaRegistryProvider;
-  private static volatile String cookiePolicy;
 
-  private static final List<HttpRequestInterceptor> interceptors = Collections.synchronizedList(new ArrayList<HttpRequestInterceptor>());
-  
   private static class DynamicInterceptor implements HttpRequestInterceptor {
 
     @Override
@@ -151,7 +170,7 @@ public class HttpClientUtil {
 
     }
   }
-  
+
   public static void setHttpClientBuilder(SolrHttpClientBuilder newHttpClientBuilder) {
     httpClientBuilder = newHttpClientBuilder;
   }

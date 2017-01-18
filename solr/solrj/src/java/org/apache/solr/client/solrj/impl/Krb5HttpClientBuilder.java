@@ -138,8 +138,11 @@ public class Krb5HttpClientBuilder implements HttpClientBuilderFactory {
         });
         HttpClientUtil.addRequestInterceptor(bufferedEntityInterceptor);
       }
+    } else {
+      logger.warn("{} is configured without specifying system property '{}'",
+          getClass().getName(), LOGIN_CONFIG_PROP);
     }
-    
+
     return builder;
   }
 

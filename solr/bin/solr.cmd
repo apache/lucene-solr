@@ -117,12 +117,43 @@ IF DEFINED SOLR_SSL_KEY_STORE (
 )
 
 REM Authentication options
+
+IF NOT DEFINED SOLR_AUTH_TYPE (
+  IF DEFINED SOLR_AUTHENTICATION_OPTS (
+    echo WARNING: SOLR_AUTHENTICATION_OPTS variable configured without associated SOLR_AUTH_TYPE variable
+    echo          Please configure SOLR_AUTH_TYPE variable with the authentication type to be used.
+    echo          Currently supported authentication types are [kerberos, basic]
+  )
+)
+
+IF DEFINED SOLR_AUTH_TYPE (
+  IF DEFINED SOLR_AUTHENTICATION_CLIENT_BUILDER (
+    echo WARNING: SOLR_AUTHENTICATION_CLIENT_BUILDER and SOLR_AUTH_TYPE variables are configured together
+    echo          Use SOLR_AUTH_TYPE variable to configure authentication type to be used
+    echo          Currently supported authentication types are [kerberos, basic]
+    echo          The value of SOLR_AUTHENTICATION_CLIENT_BUILDER configuration variable will be ignored
+  )
+)
+
+IF DEFINED SOLR_AUTH_TYPE (
+  IF /I "%SOLR_AUTH_TYPE%" == "basic" (
+    set SOLR_AUTHENTICATION_CLIENT_BUILDER="org.apache.solr.client.solrj.impl.PreemptiveBasicAuthClientBuilderFactory"
+  ) ELSE (
+    IF /I "%SOLR_AUTH_TYPE%" == "kerberos" (
+      set SOLR_AUTHENTICATION_CLIENT_BUILDER="org.apache.solr.client.solrj.impl.PreemptiveBasicAuthClientBuilderFactory"
+    ) ELSE (
+      echo ERROR: Value specified for SOLR_AUTH_TYPE configuration variable is invalid.
+      goto err
+    )
+  )
+)
+
 IF DEFINED SOLR_AUTHENTICATION_CLIENT_CONFIGURER (
   echo WARNING: Found unsupported configuration variable SOLR_AUTHENTICATION_CLIENT_CONFIGURER
-  echo          Please start using SOLR_AUTHENTICATION_CLIENT_BUILDER instead
+  echo          Please start using SOLR_AUTH_TYPE instead
 )
 IF DEFINED SOLR_AUTHENTICATION_CLIENT_BUILDER (
-  set AUTHC_CLIENT_BUILDER_ARG="-Dsolr.authentication.httpclient.builder=%SOLR_AUTHENTICATION_CLIENT_BUILDER%"
+  set AUTHC_CLIENT_BUILDER_ARG="-Dsolr.httpclient.builder.factory=%SOLR_AUTHENTICATION_CLIENT_BUILDER%"
 )
 set "AUTHC_OPTS=%AUTHC_CLIENT_BUILDER_ARG% %SOLR_AUTHENTICATION_OPTS%"
 
@@ -1154,7 +1185,7 @@ for /f "usebackq" %%i in (`dir /b "%SOLR_TIP%\bin" ^| findstr /i "^solr-.*\.port
           @echo.
           set has_info=1
           echo Found Solr process %%k running on port !SOME_SOLR_PORT!
-          "%JAVA%" %SOLR_SSL_OPTS% %AUTHC_OPTS% %SOLR_ZK_CREDS_AND_ACLS% -Dsolr.install.dir="%SOLR_TIP%" ^ 
+          "%JAVA%" %SOLR_SSL_OPTS% %AUTHC_OPTS% %SOLR_ZK_CREDS_AND_ACLS% -Dsolr.install.dir="%SOLR_TIP%" ^
             -Dlog4j.configuration="file:%DEFAULT_SERVER_DIR%\scripts\cloud-scripts\log4j.properties" ^
             -classpath "%DEFAULT_SERVER_DIR%\solr-webapp\webapp\WEB-INF\lib\*;%DEFAULT_SERVER_DIR%\lib\ext\*" ^
             org.apache.solr.util.SolrCLI status -solr !SOLR_URL_SCHEME!://%SOLR_TOOL_HOST%:!SOME_SOLR_PORT!/solr
