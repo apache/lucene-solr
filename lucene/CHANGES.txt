@@ -93,6 +93,12 @@ Improvements
   should be run, eg. using points or doc values depending on costs of other
   parts of the query. (Adrien Grand)
 
+Optimizations
+
+* LUCENE-7641: Optimized point range queries to compute documents that do not
+  match the range on single-valued fields when more than half the documents in
+  the index would match. (Adrien Grand)
+
 ======================= Lucene 6.4.0 =======================
 
 API Changes

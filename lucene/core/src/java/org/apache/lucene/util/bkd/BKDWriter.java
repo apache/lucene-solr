@@ -487,7 +487,7 @@ public class BKDWriter implements Closeable {
     assert Arrays.equals(parentSplits, new int[numDims]);
 
     long indexFP = out.getFilePointer();
-    writeIndex(out, leafBlockFPs, splitPackedValues);
+    writeIndex(out, Math.toIntExact(countPerLeaf), leafBlockFPs, splitPackedValues);
     return indexFP;
   }
 
@@ -645,7 +645,7 @@ public class BKDWriter implements Closeable {
       for(int i=0;i<leafBlockFPs.size();i++) {
         arr[i] = leafBlockFPs.get(i);
       }
-      writeIndex(out, arr, index);
+      writeIndex(out, maxPointsInLeafNode, arr, index);
       return indexFP;
     }
 
@@ -1035,7 +1035,7 @@ public class BKDWriter implements Closeable {
 
     // Write index:
     long indexFP = out.getFilePointer();
-    writeIndex(out, leafBlockFPs, splitPackedValues);
+    writeIndex(out, Math.toIntExact(countPerLeaf), leafBlockFPs, splitPackedValues);
     return indexFP;
   }
 
@@ -1241,16 +1241,16 @@ public class BKDWriter implements Closeable {
     return result;
   }
 
-  private void writeIndex(IndexOutput out, long[] leafBlockFPs, byte[] splitPackedValues) throws IOException {
+  private void writeIndex(IndexOutput out, int countPerLeaf, long[] leafBlockFPs, byte[] splitPackedValues) throws IOException {
     byte[] packedIndex = packIndex(leafBlockFPs, splitPackedValues);
-    writeIndex(out, leafBlockFPs.length, packedIndex);
+    writeIndex(out, countPerLeaf, leafBlockFPs.length, packedIndex);
   }
   
-  private void writeIndex(IndexOutput out, int numLeaves, byte[] packedIndex) throws IOException {
+  private void writeIndex(IndexOutput out, int countPerLeaf, int numLeaves, byte[] packedIndex) throws IOException {
     
     CodecUtil.writeHeader(out, CODEC_NAME, VERSION_CURRENT);
     out.writeVInt(numDims);
-    out.writeVInt(maxPointsInLeafNode);
+    out.writeVInt(countPerLeaf);
     out.writeVInt(bytesPerDim);
 
     assert numLeaves > 0;
