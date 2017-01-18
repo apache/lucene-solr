@@ -154,8 +154,37 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
   private static DirectoryReader wrapReader(SolrCore core, DirectoryReader reader) throws IOException {
     assert reader != null;
     return ExitableDirectoryReader.wrap(
-        UninvertingReader.wrap(reader, core.getLatestSchema().getUninversionMap(reader)),
+        new UninvertingDirectoryReaderMappingPerSegment(reader, core),
         SolrQueryTimeoutImpl.getInstance());
+  }
+
+  /**
+   * Without per segment mappings an IllegalStateException will be thrown if 
+   * there exists a mix of segments, some with doc values and some without.
+   * 
+   * The way {@link IndexSchema#getUninversionMap(IndexReader)} works, is to check whether
+   * there is a ANY segment in the index which contains docvalues for a given field. If it does
+   * it does not get added to the uninverting map for use with the UninvertingReader. If there is
+   * no mapping for a field UninvertingReader will not use fieldcache. Having a map per segment
+   * will allow us to decide more fine grained when to use field cache.
+   */
+  static class UninvertingDirectoryReaderMappingPerSegment extends FilterDirectoryReader {
+    final SolrCore core;
+    
+    public UninvertingDirectoryReaderMappingPerSegment(DirectoryReader in, final SolrCore core) throws IOException {
+      super(in, new FilterDirectoryReader.SubReaderWrapper() {
+        @Override
+        public LeafReader wrap(LeafReader reader) {
+          return new UninvertingReader(reader, core.getLatestSchema().getUninversionMap(reader));
+        }
+      });
+      this.core = core;
+    }
+
+    @Override
+    protected DirectoryReader doWrapDirectoryReader(DirectoryReader in) throws IOException {
+      return new UninvertingDirectoryReaderMappingPerSegment(in, core);
+    }
   }
 
   /**
