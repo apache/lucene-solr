@@ -256,8 +256,8 @@ public class TestLucene60PointsFormat extends BasePointsFormatTestCase {
           @Override
           public Relation compare(byte[] minPackedValue, byte[] maxPackedValue) {
             for (int dim = 0; dim < 2; ++dim) {
-              if (StringHelper.compare(3, uniquePointValue[0], 0, maxPackedValue, dim * 3) > 0 ||
-                  StringHelper.compare(3, uniquePointValue[0], 0, minPackedValue, dim * 3) < 0) {
+              if (StringHelper.compare(3, uniquePointValue[dim], 0, maxPackedValue, dim * 3) > 0 ||
+                  StringHelper.compare(3, uniquePointValue[dim], 0, minPackedValue, dim * 3) < 0) {
                 return Relation.CELL_OUTSIDE_QUERY;
               }
             }
