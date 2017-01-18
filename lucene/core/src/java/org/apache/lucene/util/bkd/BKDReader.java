@@ -716,8 +716,12 @@ public final class BKDReader implements Accountable {
       // This cell is fully outside of the query shape: stop recursing
       return 0L;
     } else if (state.index.isLeafNode()) {
-      // Assume all points match and there are no dups
-      return maxPointsInLeafNode;
+      if (r == Relation.CELL_INSIDE_QUERY) {
+        return maxPointsInLeafNode;
+      } else {
+        // Assume half the points matched
+        return (maxPointsInLeafNode + 1) / 2;
+      }
     } else {
       
       // Non-leaf node: recurse on the split left and right nodes

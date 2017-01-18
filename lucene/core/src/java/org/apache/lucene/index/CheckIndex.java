@@ -1808,8 +1808,8 @@ public final class CheckIndex implements Closeable {
             int docCount = values.getDocCount(fieldInfo.name);
 
             final long crossCost = values.estimatePointCount(fieldInfo.name, new ConstantRelationIntersectVisitor(Relation.CELL_CROSSES_QUERY));
-            if (crossCost < size) {
-              throw new RuntimeException("estimatePointCount should return >= size when all cells match");
+            if (crossCost < size / 2) {
+              throw new RuntimeException("estimatePointCount should return >= size/2 when all cells match");
             }
             final long insideCost = values.estimatePointCount(fieldInfo.name, new ConstantRelationIntersectVisitor(Relation.CELL_INSIDE_QUERY));
             if (insideCost < size) {
