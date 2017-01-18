@@ -335,6 +335,7 @@ enum CoreAdminOperation implements CoreAdminOp {
           info.add("uptime", core.getUptimeMs());
           if (cores.isZooKeeperAware()) {
             info.add("lastPublished", core.getCoreDescriptor().getCloudDescriptor().getLastPublished().toString().toLowerCase(Locale.ROOT));
+            info.add("configVersion", core.getSolrConfig().getZnodeVersion());
           }
           if (isIndexInfoNeeded) {
             RefCounted<SolrIndexSearcher> searcher = core.getSearcher();
