@@ -16,11 +16,9 @@
  */
 package org.apache.lucene.document;
 
-import java.io.IOException;
-
+import org.apache.lucene.geo.GeoUtils;
 import org.apache.lucene.search.FieldComparator;
 import org.apache.lucene.search.SortField;
-import org.apache.lucene.geo.GeoUtils;
 
 /**
  * Sorts by distance from an origin location.
@@ -42,7 +40,7 @@ final class LatLonPointSortField extends SortField {
   }
   
   @Override
-  public FieldComparator<?> getComparator(int numHits, int sortPos) throws IOException {
+  public FieldComparator<?> getComparator(int numHits, int sortPos) {
     return new LatLonPointDistanceComparator(getField(), latitude, longitude, numHits);
   }
 

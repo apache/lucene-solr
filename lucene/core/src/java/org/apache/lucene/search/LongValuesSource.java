@@ -172,7 +172,7 @@ public abstract class LongValuesSource {
 
     @Override
     public FieldComparator<Long> newComparator(String fieldname, int numHits,
-                                                 int sortPos, boolean reversed) throws IOException {
+                                                 int sortPos, boolean reversed) {
       return new FieldComparator.LongComparator(numHits, fieldname, 0L){
 
         LeafReaderContext ctx;

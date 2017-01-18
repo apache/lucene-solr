@@ -2652,7 +2652,7 @@ public class CollapsingQParserPlugin extends QParserPlugin {
      * Constructs an instance based on the the (raw, un-rewritten) SortFields to be used, 
      * and an initial number of expected groups (will grow as needed).
      */
-    public SortFieldsCompare(SortField[] sorts, int initNumGroups) throws IOException {
+    public SortFieldsCompare(SortField[] sorts, int initNumGroups) {
       this.sorts = sorts;
       numClauses = sorts.length;
       fieldComparators = new FieldComparator[numClauses];

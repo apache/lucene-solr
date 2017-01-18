@@ -343,7 +343,7 @@ public abstract class DoubleValuesSource {
 
     @Override
     public FieldComparator<Double> newComparator(String fieldname, int numHits,
-                                               int sortPos, boolean reversed) throws IOException {
+                                               int sortPos, boolean reversed) {
       return new FieldComparator.DoubleComparator(numHits, fieldname, 0.0){
 
         LeafReaderContext ctx;

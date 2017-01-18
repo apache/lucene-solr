@@ -19,8 +19,6 @@ package org.apache.lucene.search;
 
 import org.apache.lucene.util.PriorityQueue;
 
-import java.io.IOException;
-
 /** Represents hits returned by {@link
  * IndexSearcher#search(Query,int)}. */
 public class TopDocs {
@@ -123,7 +121,7 @@ public class TopDocs {
     final FieldComparator<?>[] comparators;
     final int[] reverseMul;
 
-    public MergeSortQueue(Sort sort, TopDocs[] shardHits) throws IOException {
+    public MergeSortQueue(Sort sort, TopDocs[] shardHits) {
       super(shardHits.length);
       this.shardHits = new ScoreDoc[shardHits.length][];
       for(int shardIDX=0;shardIDX<shardHits.length;shardIDX++) {
@@ -196,7 +194,7 @@ public class TopDocs {
    *  the provided TopDocs, sorting by score. Each {@link TopDocs}
    *  instance must be sorted.
    *  @lucene.experimental */
-  public static TopDocs merge(int topN, TopDocs[] shardHits) throws IOException {
+  public static TopDocs merge(int topN, TopDocs[] shardHits) {
     return merge(0, topN, shardHits);
   }
 
@@ -205,7 +203,7 @@ public class TopDocs {
    * {@code start} top docs. This is typically useful for pagination.
    * @lucene.experimental
    */
-  public static TopDocs merge(int start, int topN, TopDocs[] shardHits) throws IOException {
+  public static TopDocs merge(int start, int topN, TopDocs[] shardHits) {
     return mergeAux(null, start, topN, shardHits);
   }
 
@@ -216,7 +214,7 @@ public class TopDocs {
    *  filled (ie, <code>fillFields=true</code> must be
    *  passed to {@link TopFieldCollector#create}).
    * @lucene.experimental */
-  public static TopFieldDocs merge(Sort sort, int topN, TopFieldDocs[] shardHits) throws IOException {
+  public static TopFieldDocs merge(Sort sort, int topN, TopFieldDocs[] shardHits) {
     return merge(sort, 0, topN, shardHits);
   }
 
@@ -225,7 +223,7 @@ public class TopDocs {
    * {@code start} top docs. This is typically useful for pagination.
    * @lucene.experimental
    */
-  public static TopFieldDocs merge(Sort sort, int start, int topN, TopFieldDocs[] shardHits) throws IOException {
+  public static TopFieldDocs merge(Sort sort, int start, int topN, TopFieldDocs[] shardHits) {
     if (sort == null) {
       throw new IllegalArgumentException("sort must be non-null when merging field-docs");
     }
@@ -234,7 +232,7 @@ public class TopDocs {
 
   /** Auxiliary method used by the {@link #merge} impls. A sort value of null
    *  is used to indicate that docs should be sorted by score. */
-  private static TopDocs mergeAux(Sort sort, int start, int size, TopDocs[] shardHits) throws IOException {
+  private static TopDocs mergeAux(Sort sort, int start, int size, TopDocs[] shardHits) {
     final PriorityQueue<ShardRef> queue;
     if (sort == null) {
       queue = new ScoreMergeSortQueue(shardHits);

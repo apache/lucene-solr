@@ -16,8 +16,6 @@
  */
 package org.apache.lucene.search.grouping;
 
-import java.io.IOException;
-
 import org.apache.lucene.search.ScoreDoc;
 import org.apache.lucene.search.Sort;
 import org.apache.lucene.search.SortField;
@@ -97,8 +95,7 @@ public class TopGroups<T> {
    * <b>NOTE</b>: the topDocs in each GroupDocs is actually
    * an instance of TopDocsAndShards
    */
-  public static <T> TopGroups<T> merge(TopGroups<T>[] shardGroups, Sort groupSort, Sort docSort, int docOffset, int docTopN, ScoreMergeMode scoreMergeMode)
-    throws IOException {
+  public static <T> TopGroups<T> merge(TopGroups<T>[] shardGroups, Sort groupSort, Sort docSort, int docOffset, int docTopN, ScoreMergeMode scoreMergeMode) {
 
     //System.out.println("TopGroups.merge");
 

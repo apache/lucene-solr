@@ -71,6 +71,9 @@ API Changes
 * LUCENE-7637: TermInSetQuery requires that all terms come from the same field.
   (Adrien Grand)
 
+* LUCENE-7644: FieldComparatorSource.newComparator() and
+  SortField.getComparator() no longer throw IOException (Alan Woodward)
+
 New Features
 
 * LUCENE-7623: Add FunctionScoreQuery and FunctionMatchQuery (Alan Woodward,
