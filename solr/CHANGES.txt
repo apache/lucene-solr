@@ -95,6 +95,9 @@ Bug Fixes
 
 * SOLR-9976: Fix init bug in SegmentsInfoRequestHandlerTest (hossman)
 
+* SOLR-9977: Fix config bug in DistribDocExpirationUpdateProcessorTest that allowed false assumptions
+  about when index version changes (hossman)
+
 Optimizations
 ----------------------
 
