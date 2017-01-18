@@ -41,6 +41,8 @@ New Features
 * SOLR-9977: Fix config bug in DistribDocExpirationUpdateProcessorTest that allowed false assumptions
   about when index version changes (hossman)
 
+* SOLR-9979: Macro expansion should not be done in shard requests (Tomás Fernández Löbbe)
+
 Optimizations
 ----------------------
 * SOLR-9941: Clear the deletes lists at UpdateLog before replaying from log. This prevents redundantly pre-applying
