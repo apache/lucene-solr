@@ -1104,4 +1104,94 @@ public class TestBKD extends LuceneTestCase {
     in.close();
     dir.close();
   }
+
+  public void testEstimatePointCount() throws IOException {
+    Directory dir = newDirectory();
+    final int numValues = atLeast(10000); // make sure to have multiple leaves
+    final int maxPointsInLeafNode = TestUtil.nextInt(random(), 50, 500);
+    final int numBytesPerDim = TestUtil.nextInt(random(), 1, 4);
+    final byte[] pointValue = new byte[numBytesPerDim];
+    final byte[] uniquePointValue = new byte[numBytesPerDim];
+    random().nextBytes(uniquePointValue);
+
+    BKDWriter w = new BKDWriter(numValues, dir, "_temp", 1, numBytesPerDim, maxPointsInLeafNode,
+        BKDWriter.DEFAULT_MAX_MB_SORT_IN_HEAP, numValues, true);
+    for (int i = 0; i < numValues; ++i) {
+      if (i == numValues / 2) {
+        w.add(uniquePointValue, i);
+      } else {
+        do {
+          random().nextBytes(pointValue);
+        } while (Arrays.equals(pointValue, uniquePointValue));
+        w.add(pointValue, i);
+      }
+    }
+    final long indexFP;
+    try (IndexOutput out = dir.createOutput("bkd", IOContext.DEFAULT)) {
+      indexFP = w.finish(out);
+      w.close();
+    }
+    
+    IndexInput pointsIn = dir.openInput("bkd", IOContext.DEFAULT);
+    pointsIn.seek(indexFP);
+    BKDReader points = new BKDReader(pointsIn);
+
+    int actualMaxPointsInLeafNode = numValues;
+    while (actualMaxPointsInLeafNode > maxPointsInLeafNode) {
+      actualMaxPointsInLeafNode = (actualMaxPointsInLeafNode + 1) / 2;
+    }
+
+    // If all points match, then the point count is numLeaves * maxPointsInLeafNode
+    final int numLeaves = Integer.highestOneBit((numValues - 1) / actualMaxPointsInLeafNode) << 1;
+    assertEquals(numLeaves * actualMaxPointsInLeafNode,
+        points.estimatePointCount(new IntersectVisitor() {
+          @Override
+          public void visit(int docID, byte[] packedValue) throws IOException {}
+          
+          @Override
+          public void visit(int docID) throws IOException {}
+          
+          @Override
+          public Relation compare(byte[] minPackedValue, byte[] maxPackedValue) {
+            return Relation.CELL_INSIDE_QUERY;
+          }
+        }));
+
+    // Return 0 if no points match
+    assertEquals(0,
+        points.estimatePointCount(new IntersectVisitor() {
+          @Override
+          public void visit(int docID, byte[] packedValue) throws IOException {}
+          
+          @Override
+          public void visit(int docID) throws IOException {}
+          
+          @Override
+          public Relation compare(byte[] minPackedValue, byte[] maxPackedValue) {
+            return Relation.CELL_OUTSIDE_QUERY;
+          }
+        }));
+
+    // If only one point matches, then the point count is (actualMaxPointsInLeafNode + 1) / 2
+    assertEquals((actualMaxPointsInLeafNode + 1) / 2,
+        points.estimatePointCount(new IntersectVisitor() {
+          @Override
+          public void visit(int docID, byte[] packedValue) throws IOException {}
+          
+          @Override
+          public void visit(int docID) throws IOException {}
+          
+          @Override
+          public Relation compare(byte[] minPackedValue, byte[] maxPackedValue) {
+            if (StringHelper.compare(3, uniquePointValue, 0, maxPackedValue, 0) > 0 ||
+                StringHelper.compare(3, uniquePointValue, 0, minPackedValue, 0) < 0) {
+              return Relation.CELL_OUTSIDE_QUERY;
+            }
+            return Relation.CELL_CROSSES_QUERY;
+          }
+        }));
+
+    pointsIn.close();
+    dir.close();
+  }
 }

@@ -224,6 +224,41 @@ public final class BKDReader implements Accountable {
     
     /** Only valid after pushLeft or pushRight, not pop! */
     public abstract long getLeafBlockFP();
+
+    /** Return the number of leaves below the current node. */
+    public int getNumLeaves() {
+      int leftMostLeafNode = nodeID;
+      while (leftMostLeafNode < leafNodeOffset) {
+        leftMostLeafNode = leftMostLeafNode * 2;
+      }
+      int rightMostLeafNode = nodeID;
+      while (rightMostLeafNode < leafNodeOffset) {
+        rightMostLeafNode = rightMostLeafNode * 2 + 1;
+      }
+      final int numLeaves;
+      if (rightMostLeafNode >= leftMostLeafNode) {
+        // both are on the same level
+        numLeaves = rightMostLeafNode - leftMostLeafNode + 1;
+      } else {
+        // left is one level deeper than right
+        numLeaves = rightMostLeafNode - leftMostLeafNode + 1 + leafNodeOffset;
+      }
+      assert numLeaves == getNumLeavesSlow(nodeID) : numLeaves + " " + getNumLeavesSlow(nodeID);
+      return numLeaves;
+    }
+
+    // for assertions
+    private int getNumLeavesSlow(int node) {
+      if (node >= 2 * leafNodeOffset) {
+        return 0;
+      } else if (node >= leafNodeOffset) {
+        return 1;
+      } else {
+        final int leftCount = getNumLeavesSlow(node * 2);
+        final int rightCount = getNumLeavesSlow(node * 2 + 1);
+        return leftCount + rightCount;
+      }
+    }
   }
 
   /** Reads the original simple yet heap-heavy index format */
@@ -715,13 +750,11 @@ public final class BKDReader implements Accountable {
     if (r == Relation.CELL_OUTSIDE_QUERY) {
       // This cell is fully outside of the query shape: stop recursing
       return 0L;
+    } else if (r == Relation.CELL_INSIDE_QUERY) {
+      return (long) maxPointsInLeafNode * state.index.getNumLeaves();
     } else if (state.index.isLeafNode()) {
-      if (r == Relation.CELL_INSIDE_QUERY) {
-        return maxPointsInLeafNode;
-      } else {
-        // Assume half the points matched
-        return (maxPointsInLeafNode + 1) / 2;
-      }
+      // Assume half the points matched
+      return (maxPointsInLeafNode + 1) / 2;
     } else {
       
       // Non-leaf node: recurse on the split left and right nodes
