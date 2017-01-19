@@ -31,7 +31,9 @@ import org.apache.lucene.index.BasePointsFormatTestCase;
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
+import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.LeafReader;
+import org.apache.lucene.index.MockRandomMergePolicy;
 import org.apache.lucene.index.PointValues;
 import org.apache.lucene.index.SegmentReadState;
 import org.apache.lucene.index.SegmentWriteState;
@@ -97,7 +99,13 @@ public class TestLucene60PointsFormat extends BasePointsFormatTestCase {
 
   public void testEstimatePointCount() throws IOException {
     Directory dir = newDirectory();
-    IndexWriter w = new IndexWriter(dir, newIndexWriterConfig());
+    IndexWriterConfig iwc = newIndexWriterConfig();
+    // Avoid mockRandomMP since it may cause non-optimal merges that make the
+    // number of points per leaf hard to predict
+    while (iwc.getMergePolicy() instanceof MockRandomMergePolicy) {
+      iwc.setMergePolicy(newMergePolicy());
+    }
+    IndexWriter w = new IndexWriter(dir, iwc);
     byte[] pointValue = new byte[3];
     byte[] uniquePointValue = new byte[3];
     random().nextBytes(uniquePointValue);
