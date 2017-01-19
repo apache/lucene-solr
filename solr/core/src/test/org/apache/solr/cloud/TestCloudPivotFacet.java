@@ -29,6 +29,7 @@ import java.util.Set;
 import org.apache.commons.lang.StringUtils;
 import org.apache.lucene.util.TestUtil;
 import org.apache.solr.SolrTestCaseJ4.SuppressSSL;
+import org.apache.solr.SolrTestCaseJ4.SuppressPointFields;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.response.FieldStatsInfo;
 import org.apache.solr.client.solrj.response.PivotField;
@@ -78,6 +79,7 @@ import static org.apache.solr.common.params.FacetParams.FACET_DISTRIB_MCO;
  *
  */
 @SuppressSSL // Too Slow
+@SuppressPointFields
 public class TestCloudPivotFacet extends AbstractFullDistribZkTestBase {
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());

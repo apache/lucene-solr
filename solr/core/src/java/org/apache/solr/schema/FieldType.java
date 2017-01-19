@@ -126,6 +126,10 @@ public abstract class FieldType extends FieldProperties {
   public boolean isPolyField(){
     return false;
   }
+  
+  public boolean isPointField() {
+    return false;
+  }
 
   /**
    * Returns true if the fields' docValues should be used for obtaining stored value
@@ -395,7 +399,10 @@ public abstract class FieldType extends FieldProperties {
     return toInternal(val);
   }
 
-  /** Given the readable value, return the term value that will match it. */
+  /** Given the readable value, return the term value that will match it.
+   * This method will modify the size and length of the {@code result} 
+   * parameter and write from offset 0
+   */
   public void readableToIndexed(CharSequence val, BytesRefBuilder result) {
     final String internal = readableToIndexed(val.toString());
     result.copyChars(internal);

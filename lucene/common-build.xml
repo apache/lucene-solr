@@ -1073,6 +1073,7 @@
                 <propertyref prefix="tests.leaveTemporary" />
                 <propertyref prefix="tests.leavetemporary" />
                 <propertyref prefix="solr.test.leavetmpdir" />
+                <propertyref prefix="solr.tests.preferPointFields"/>
             </syspropertyset>
 
             <!-- Pass randomized settings to the forked JVM. -->

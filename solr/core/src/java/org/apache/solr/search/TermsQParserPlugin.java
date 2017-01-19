@@ -17,6 +17,7 @@
 package org.apache.solr.search;
 
 import java.util.Arrays;
+import java.util.Locale;
 import java.util.regex.Pattern;
 
 import org.apache.lucene.index.Term;
@@ -35,6 +36,7 @@ import org.apache.lucene.util.automaton.Automaton;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.schema.FieldType;
+import org.apache.solr.schema.PointField;
 
 /**
  * Finds documents whose specified field has any of the specified values. It's like
@@ -110,6 +112,14 @@ public class TermsQParserPlugin extends QParserPlugin {
           return new MatchNoDocsQuery();
         final String[] splitVals = sepIsSpace ? qstr.split("\\s+") : qstr.split(Pattern.quote(separator), -1);
         assert splitVals.length > 0;
+        
+        if (ft.isPointField()) {
+          if (localParams.get(METHOD) != null) {
+            throw new IllegalArgumentException(
+                String.format(Locale.ROOT, "Method '%s' not supported in TermsQParser when using PointFields", localParams.get(METHOD)));
+          }
+          return ((PointField)ft).getSetQuery(this, req.getSchema().getField(fname), Arrays.asList(splitVals));
+        }
 
         BytesRef[] bytesRefs = new BytesRef[splitVals.length];
         BytesRefBuilder term = new BytesRefBuilder();
