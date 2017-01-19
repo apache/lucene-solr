@@ -43,7 +43,7 @@ import org.apache.lucene.queries.function.valuesource.DoubleFieldSource;
 import org.apache.lucene.queries.function.valuesource.FloatFieldSource;
 import org.apache.lucene.queries.function.valuesource.IntFieldSource;
 import org.apache.lucene.queries.function.valuesource.LongFieldSource;
-import org.apache.lucene.search.DocValuesRangeQuery;
+import org.apache.lucene.search.MatchNoDocsQuery;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.SortField;
 import org.apache.lucene.search.SortedSetSelector;
@@ -376,9 +376,9 @@ public class TrieField extends PrimitiveFieldType {
     switch (type) {
       case INTEGER:
         if (matchOnly) {
-          query = DocValuesRangeQuery.newLongRange(field.getName(),
-                min == null ? null : (long) Integer.parseInt(min),
-                max == null ? null : (long) Integer.parseInt(max),
+          query = numericDocValuesRangeQuery(field.getName(),
+                min == null ? null : Integer.parseInt(min),
+                max == null ? null : Integer.parseInt(max),
                 minInclusive, maxInclusive);
         } else {
           query = LegacyNumericRangeQuery.newIntRange(field.getName(), ps,
@@ -399,7 +399,7 @@ public class TrieField extends PrimitiveFieldType {
         break;
       case LONG:
         if (matchOnly) {
-          query = DocValuesRangeQuery.newLongRange(field.getName(),
+          query = numericDocValuesRangeQuery(field.getName(),
                 min == null ? null : Long.parseLong(min),
                 max == null ? null : Long.parseLong(max),
                 minInclusive, maxInclusive);
@@ -422,7 +422,7 @@ public class TrieField extends PrimitiveFieldType {
         break;
       case DATE:
         if (matchOnly) {
-          query = DocValuesRangeQuery.newLongRange(field.getName(),
+          query = numericDocValuesRangeQuery(field.getName(),
                 min == null ? null : DateMathParser.parseMath(null, min).getTime(),
                 max == null ? null : DateMathParser.parseMath(null, max).getTime(),
                 minInclusive, maxInclusive);
@@ -438,6 +438,35 @@ public class TrieField extends PrimitiveFieldType {
     }
 
     return query;
+  }
+
+  private static Query numericDocValuesRangeQuery(
+      String field,
+      Number lowerValue, Number upperValue,
+      boolean lowerInclusive, boolean upperInclusive) {
+
+    long actualLowerValue = Long.MIN_VALUE;
+    if (lowerValue != null) {
+      actualLowerValue = lowerValue.longValue();
+      if (lowerInclusive == false) {
+        if (actualLowerValue == Long.MAX_VALUE) {
+          return new MatchNoDocsQuery();
+        }
+        ++actualLowerValue;
+      }
+    }
+
+    long actualUpperValue = Long.MAX_VALUE;
+    if (upperValue != null) {
+      actualUpperValue = upperValue.longValue();
+      if (upperInclusive == false) {
+        if (actualUpperValue == Long.MIN_VALUE) {
+          return new MatchNoDocsQuery();
+        }
+        --actualUpperValue;
+      }
+    }
+    return NumericDocValuesField.newRangeQuery(field, actualLowerValue, actualUpperValue);
   }
 
   private static long FLOAT_NEGATIVE_INFINITY_BITS = (long)Float.floatToIntBits(Float.NEGATIVE_INFINITY);
@@ -476,10 +505,10 @@ public class TrieField extends PrimitiveFieldType {
     } else { // If both max and min are negative (or -0d), then issue range query with max and min reversed
       if ((minVal == null || minVal.doubleValue() < 0d || minBits == minusZeroBits) &&
           (maxVal != null && (maxVal.doubleValue() < 0d || maxBits == minusZeroBits))) {
-        query = DocValuesRangeQuery.newLongRange
+        query = numericDocValuesRangeQuery
             (fieldName, maxBits, (min == null ? negativeInfinityBits : minBits), maxInclusive, minInclusive);
       } else { // If both max and min are positive, then issue range query
-        query = DocValuesRangeQuery.newLongRange
+        query = numericDocValuesRangeQuery
             (fieldName, minBits, (max == null ? positiveInfinityBits : maxBits), minInclusive, maxInclusive);
       }
     }

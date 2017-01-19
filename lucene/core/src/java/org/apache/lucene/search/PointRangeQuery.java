@@ -281,7 +281,7 @@ public abstract class PointRangeQuery extends Query {
 
             @Override
             public Scorer get(boolean randomAccess) throws IOException {
-              if (values.getDocCount() == reader.maxDoc()
+              if (false && values.getDocCount() == reader.maxDoc()
                   && values.getDocCount() == values.size()
                   && cost() > reader.maxDoc() / 2) {
                 // If all docs have exactly one value and the cost is greater

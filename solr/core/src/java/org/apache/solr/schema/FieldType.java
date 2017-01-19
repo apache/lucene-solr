@@ -36,13 +36,13 @@ import org.apache.lucene.analysis.util.CharFilterFactory;
 import org.apache.lucene.analysis.util.TokenFilterFactory;
 import org.apache.lucene.analysis.util.TokenizerFactory;
 import org.apache.lucene.document.Field;
+import org.apache.lucene.document.SortedSetDocValuesField;
 import org.apache.lucene.index.IndexableField;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.legacy.LegacyNumericType;
 import org.apache.lucene.queries.function.ValueSource;
 import org.apache.lucene.search.BooleanClause;
 import org.apache.lucene.search.BooleanQuery;
-import org.apache.lucene.search.DocValuesRangeQuery;
 import org.apache.lucene.search.DocValuesRewriteMethod;
 import org.apache.lucene.search.MultiTermQuery;
 import org.apache.lucene.search.PrefixQuery;
@@ -720,17 +720,17 @@ public abstract class FieldType extends FieldProperties {
    */
   public Query getRangeQuery(QParser parser, SchemaField field, String part1, String part2, boolean minInclusive, boolean maxInclusive) {
     // TODO: change these all to use readableToIndexed/bytes instead (e.g. for unicode collation)
+    final BytesRef miValue = part1 == null ? null : new BytesRef(toInternal(part1));
+    final BytesRef maxValue = part2 == null ? null : new BytesRef(toInternal(part2));
     if (field.hasDocValues() && !field.indexed()) {
-      return DocValuesRangeQuery.newBytesRefRange(
-          field.getName(),
-          part1 == null ? null : new BytesRef(toInternal(part1)),
-          part2 == null ? null : new BytesRef(toInternal(part2)),
-          minInclusive, maxInclusive);
+      return SortedSetDocValuesField.newRangeQuery(
+            field.getName(),
+            miValue, maxValue,
+            minInclusive, maxInclusive);
     } else {
       SolrRangeQuery rangeQuery = new SolrRangeQuery(
             field.getName(),
-            part1 == null ? null : new BytesRef(toInternal(part1)),
-            part2 == null ? null : new BytesRef(toInternal(part2)),
+            miValue, maxValue,
             minInclusive, maxInclusive);
       return rangeQuery;
     }

@@ -32,7 +32,6 @@ import org.apache.lucene.collation.ICUCollationKeyAnalyzer;
 import org.apache.lucene.document.SortedDocValuesField;
 import org.apache.lucene.document.SortedSetDocValuesField;
 import org.apache.lucene.index.IndexableField;
-import org.apache.lucene.search.DocValuesRangeQuery;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.SortField;
 import org.apache.lucene.search.TermRangeQuery;
@@ -272,13 +271,8 @@ public class ICUCollationField extends FieldType {
     BytesRef low = part1 == null ? null : getCollationKey(f, part1);
     BytesRef high = part2 == null ? null : getCollationKey(f, part2);
     if (!field.indexed() && field.hasDocValues()) {
-      if (field.multiValued()) {
-          return DocValuesRangeQuery.newBytesRefRange(
-              field.getName(), low, high, minInclusive, maxInclusive);
-        } else {
-          return DocValuesRangeQuery.newBytesRefRange(
-              field.getName(), low, high, minInclusive, maxInclusive);
-        } 
+      return SortedSetDocValuesField.newRangeQuery(
+          field.getName(), low, high, minInclusive, maxInclusive);
     } else {
       return new TermRangeQuery(field.getName(), low, high, minInclusive, maxInclusive);
     }

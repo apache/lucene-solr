@@ -74,6 +74,9 @@ API Changes
 * LUCENE-7644: FieldComparatorSource.newComparator() and
   SortField.getComparator() no longer throw IOException (Alan Woodward)
 
+* LUCENE-7643: Replaced doc-values queries in lucene/sandbox with factory
+  methods on the *DocValuesField classes. (Adrien Grand)
+
 New Features
 
 * LUCENE-7623: Add FunctionScoreQuery and FunctionMatchQuery (Alan Woodward,
@@ -95,6 +98,10 @@ Improvements
   of a Scorer before actually building it, in order to optimize how the query
   should be run, eg. using points or doc values depending on costs of other
   parts of the query. (Adrien Grand)
+
+* LUCENE-7643: IndexOrDocValuesQuery allows to execute range queries using
+  either points or doc values depending on which one is more efficient.
+  (Adrien Grand)
 
 Optimizations
 
