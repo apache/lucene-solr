@@ -383,4 +383,31 @@ public abstract class DirectoryFactory implements NamedListInitializedPlugin,
     
     return baseDir;
   }
+
+  /**
+   * Create a new DirectoryFactory instance from the given SolrConfig and tied to the specified core container.
+   */
+  static DirectoryFactory loadDirectoryFactory(SolrConfig config, CoreContainer cc, String registryName) {
+    final PluginInfo info = config.getPluginInfo(DirectoryFactory.class.getName());
+    final DirectoryFactory dirFactory;
+    if (info != null) {
+      log.debug(info.className);
+      dirFactory = config.getResourceLoader().newInstance(info.className, DirectoryFactory.class);
+      // allow DirectoryFactory instances to access the CoreContainer
+      dirFactory.initCoreContainer(cc);
+      dirFactory.init(info.initArgs);
+    } else {
+      log.debug("solr.NRTCachingDirectoryFactory");
+      dirFactory = new NRTCachingDirectoryFactory();
+      dirFactory.initCoreContainer(cc);
+    }
+    if (config.indexConfig.metricsInfo != null && config.indexConfig.metricsInfo.isEnabled()) {
+      final DirectoryFactory factory = new MetricsDirectoryFactory(cc.getMetricManager(),
+          registryName, dirFactory);
+        factory.init(config.indexConfig.metricsInfo.initArgs);
+      return factory;
+    } else {
+      return dirFactory;
+    }
+  }
 }

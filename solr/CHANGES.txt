@@ -43,6 +43,9 @@ New Features
 
 * SOLR-9979: Macro expansion should not be done in shard requests (Tomás Fernández Löbbe)
 
+* SOLR-9836: Add ability to recover from leader when index corruption is detected on SolrCore creation.
+  (Mike Drob via Mark Miller)
+
 Optimizations
 ----------------------
 * SOLR-9941: Clear the deletes lists at UpdateLog before replaying from log. This prevents redundantly pre-applying
