@@ -1480,11 +1480,12 @@ if [ ! -e "$SOLR_HOME" ]; then
   echo -e "\nSolr home directory $SOLR_HOME not found!\n"
   exit 1
 fi
-
-run_tool utils -s "$DEFAULT_SERVER_DIR" -l "$SOLR_LOGS_DIR" -remove_old_solr_logs 7 || echo "Failed removing old solr logs"
-run_tool utils -s "$DEFAULT_SERVER_DIR" -l "$SOLR_LOGS_DIR" -archive_gc_logs        || echo "Failed archiving old GC logs"
-run_tool utils -s "$DEFAULT_SERVER_DIR" -l "$SOLR_LOGS_DIR" -archive_console_logs   || echo "Failed archiving old console logs"
-run_tool utils -s "$DEFAULT_SERVER_DIR" -l "$SOLR_LOGS_DIR" -rotate_solr_logs 9     || echo "Failed rotating old solr logs"
+if [ "${SOLR_LOG_PRESTART_ROTATION:=true}" == "true" ]; then
+  run_tool utils -s "$DEFAULT_SERVER_DIR" -l "$SOLR_LOGS_DIR" -remove_old_solr_logs 7 || echo "Failed removing old solr logs"
+  run_tool utils -s "$DEFAULT_SERVER_DIR" -l "$SOLR_LOGS_DIR" -archive_gc_logs        || echo "Failed archiving old GC logs"
+  run_tool utils -s "$DEFAULT_SERVER_DIR" -l "$SOLR_LOGS_DIR" -archive_console_logs   || echo "Failed archiving old console logs"
+  run_tool utils -s "$DEFAULT_SERVER_DIR" -l "$SOLR_LOGS_DIR" -rotate_solr_logs 9     || echo "Failed rotating old solr logs"
+fi
 
 java_ver_out=`echo "$("$JAVA" -version 2>&1)"`
 JAVA_VERSION=`echo $java_ver_out | grep "java version" | awk '{ print substr($3, 2, length($3)-2); }'`

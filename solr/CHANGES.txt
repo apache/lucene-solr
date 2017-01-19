@@ -102,6 +102,8 @@ New Features
 
 * SOLR-9926: Allow passing arbitrary java system properties to zkcli. (Hrishikesh Gadre via Mark Miller)
 
+* SOLR-9885: Allow pre-startup Solr log management in Solr bin scripts to be disabled. (Mano Kovacs via Mark Miller)
+
 Bug Fixes
 ----------------------
 
