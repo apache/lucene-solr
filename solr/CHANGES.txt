@@ -100,6 +100,8 @@ New Features
 * SOLR-9836: Add ability to recover from leader when index corruption is detected on SolrCore creation.
   (Mike Drob via Mark Miller)
 
+* SOLR-9926: Allow passing arbitrary java system properties to zkcli. (Hrishikesh Gadre via Mark Miller)
+
 Bug Fixes
 ----------------------
 
