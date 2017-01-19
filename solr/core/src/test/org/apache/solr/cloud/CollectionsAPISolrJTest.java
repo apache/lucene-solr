@@ -21,7 +21,6 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.List;
 import java.util.Map;
 
 import org.apache.lucene.util.LuceneTestCase;
@@ -252,39 +251,6 @@ public class CollectionsAPISolrJTest extends SolrCloudTestCase {
     CollectionAdminRequest.setClusterProperty(ZkStateReader.LEGACY_CLOUD, null).process(cluster.getSolrClient());
     assertEquals("Cluster property was not unset", props.getClusterProperty(ZkStateReader.LEGACY_CLOUD, "true"), "true");
 
-  }
-
-  @Test
-  @SuppressWarnings("unchecked")
-  public void testAddAndRemoveRole() throws InterruptedException, IOException, SolrServerException {
-
-    String node = cluster.getRandomJetty(random()).getNodeName();
-
-    CollectionAdminRequest.addRole(node, "overseer").process(cluster.getSolrClient());
-
-    CollectionAdminResponse response = CollectionAdminRequest.getClusterStatus().process(cluster.getSolrClient());
-
-    NamedList<Object> rsp = response.getResponse();
-    NamedList<Object> cs = (NamedList<Object>) rsp.get("cluster");
-    assertNotNull("Cluster state should not be null", cs);
-    Map<String, Object> roles = (Map<String, Object>) cs.get("roles");
-    assertNotNull("Role information should not be null", roles);
-    List<String> overseer = (List<String>) roles.get("overseer");
-    assertNotNull(overseer);
-    assertEquals(1, overseer.size());
-    assertTrue(overseer.contains(node));
-    
-    // Remove role
-    CollectionAdminRequest.removeRole(node, "overseer").process(cluster.getSolrClient());
-
-    response = CollectionAdminRequest.getClusterStatus().process(cluster.getSolrClient());
-    rsp = response.getResponse();
-    cs = (NamedList<Object>) rsp.get("cluster");
-    assertNotNull("Cluster state should not be null", cs);
-    roles = (Map<String, Object>) cs.get("roles");
-    assertNotNull("Role information should not be null", roles);
-    overseer = (List<String>) roles.get("overseer");
-    assertFalse(overseer.contains(node));
   }
 
   @Test
