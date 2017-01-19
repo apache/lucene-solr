@@ -19,6 +19,8 @@ package org.apache.lucene.search;
 import java.io.IOException;
 import java.util.Objects;
 
+import org.apache.lucene.document.SortedNumericDocValuesField;
+import org.apache.lucene.document.SortedSetDocValuesField;
 import org.apache.lucene.index.DocValues;
 import org.apache.lucene.index.DocValuesType;
 import org.apache.lucene.index.IndexReader;
@@ -42,20 +44,24 @@ import org.apache.lucene.util.BytesRef;
  * which allows to run the query on doc values when that would be more
  * efficient, and using an index otherwise.
  *
- * @lucene.experimental
+ * @deprecated Use factory method on doc value field classes
  */
+@Deprecated
 public final class DocValuesRangeQuery extends Query {
 
   /** Create a new numeric range query on a numeric doc-values field. The field
    *  must has been indexed with either {@link DocValuesType#NUMERIC} or
-   *  {@link DocValuesType#SORTED_NUMERIC} doc values. */
+   *  {@link DocValuesType#SORTED_NUMERIC} doc values.
+   *  @deprecated use {@link SortedNumericDocValuesField#newRangeQuery} */
+  @Deprecated
   public static Query newLongRange(String field, Long lowerVal, Long upperVal, boolean includeLower, boolean includeUpper) {
     return new DocValuesRangeQuery(field, lowerVal, upperVal, includeLower, includeUpper);
   }
 
   /** Create a new numeric range query on a numeric doc-values field. The field
    *  must has been indexed with {@link DocValuesType#SORTED} or
-   *  {@link DocValuesType#SORTED_SET} doc values. */
+   *  {@link DocValuesType#SORTED_SET} doc values.
+   *  @deprecated use {@link SortedSetDocValuesField#newRangeQuery} */
   public static Query newBytesRefRange(String field, BytesRef lowerVal, BytesRef upperVal, boolean includeLower, boolean includeUpper) {
     return new DocValuesRangeQuery(field, deepCopyOf(lowerVal), deepCopyOf(upperVal), includeLower, includeUpper);
   }
