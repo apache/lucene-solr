@@ -94,6 +94,12 @@ Jetty 9.3.14.v20161028
 Detailed Change List
 ----------------------
 
+Upgrade Notes
+----------------------
+
+* SOLR-9984: GenericHadoopAuthPlugin is deprecated in favor of HadoopAuthPlugin. Simply changing the
+  name of the class in the security configurations should suffice while upgrading.
+
 New Features
 ----------------------
 
@@ -121,6 +127,8 @@ Optimizations
 Other Changes
 ----------------------
 * SOLR-9980: Expose configVersion in core admin status (Jessica Cheng Mallet via Tomás Fernández Löbbe)
+
+* SOLR-9984: Deprecate GenericHadoopAuthPlugin in favor of HadoopAuthPlugin (Ishan Chattopadhyaya)
 
 ==================  6.4.0 ==================
 
