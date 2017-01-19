@@ -1183,8 +1183,8 @@ public class TestBKD extends LuceneTestCase {
           
           @Override
           public Relation compare(byte[] minPackedValue, byte[] maxPackedValue) {
-            if (StringHelper.compare(3, uniquePointValue, 0, maxPackedValue, 0) > 0 ||
-                StringHelper.compare(3, uniquePointValue, 0, minPackedValue, 0) < 0) {
+            if (StringHelper.compare(numBytesPerDim, uniquePointValue, 0, maxPackedValue, 0) > 0 ||
+                StringHelper.compare(numBytesPerDim, uniquePointValue, 0, minPackedValue, 0) < 0) {
               return Relation.CELL_OUTSIDE_QUERY;
             }
             return Relation.CELL_CROSSES_QUERY;
