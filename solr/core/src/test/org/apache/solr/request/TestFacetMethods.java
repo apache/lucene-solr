@@ -17,7 +17,9 @@
 
 package org.apache.solr.request;
 
+import org.apache.solr.request.SimpleFacets.FacetMethod;
 import org.apache.solr.schema.BoolField;
+import org.apache.solr.schema.IntPointField;
 import org.apache.solr.schema.SchemaField;
 import org.apache.solr.schema.StrField;
 import org.apache.solr.schema.TrieIntField;
@@ -202,6 +204,16 @@ public class TestFacetMethods {
     assertEquals(SimpleFacets.FacetMethod.ENUM, SimpleFacets.selectFacetMethod(field, null, 0));
     assertEquals(SimpleFacets.FacetMethod.ENUM, SimpleFacets.selectFacetMethod(field, null, 1));
 
+  }
+  
+  @Test
+  public void testPointFields() {
+    // Methods other than FCS are not currently supported for PointFields
+    SchemaField field = new SchemaField("foo", new IntPointField());
+    assertEquals(SimpleFacets.FacetMethod.FCS, SimpleFacets.selectFacetMethod(field, null, 0));
+    assertEquals(SimpleFacets.FacetMethod.FCS, SimpleFacets.selectFacetMethod(field, FacetMethod.ENUM, 0));
+    assertEquals(SimpleFacets.FacetMethod.FCS, SimpleFacets.selectFacetMethod(field, FacetMethod.FC, 0));
+    assertEquals(SimpleFacets.FacetMethod.FCS, SimpleFacets.selectFacetMethod(field, FacetMethod.FCS, 0));
   }
 
 }

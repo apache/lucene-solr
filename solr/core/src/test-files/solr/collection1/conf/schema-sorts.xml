@@ -45,30 +45,30 @@ NOTE: Tests expect every field in this schema to be sortable.
   <field name="int" type="int"/>
   <field name="int_last" type="int_last"/>
   <field name="int_first" type="int_first"/>
-  <field name="int_dv" type="int_dv"/>
-  <field name="int_dv_last" type="int_dv_last"/>
-  <field name="int_dv_first" type="int_dv_first"/>
+  <field name="int_dv" type="${solr.tests.intClass:pint}_dv"/>
+  <field name="int_dv_last" type="${solr.tests.intClass:pint}_dv_last"/>
+  <field name="int_dv_first" type="${solr.tests.intClass:pint}_dv_first"/>
 
   <field name="long" type="long"/>
   <field name="long_last" type="long_last"/>
   <field name="long_first" type="long_first"/>
-  <field name="long_dv" type="long_dv"/>
-  <field name="long_dv_last" type="long_dv_last"/>
-  <field name="long_dv_first" type="long_dv_first"/>
+  <field name="long_dv" type="${solr.tests.longClass:plong}_dv"/>
+  <field name="long_dv_last" type="${solr.tests.longClass:plong}_dv_last"/>
+  <field name="long_dv_first" type="${solr.tests.longClass:plong}_dv_first"/>
 
   <field name="float" type="float"/>
   <field name="float_last" type="float_last"/>
   <field name="float_first" type="float_first"/>
-  <field name="float_dv" type="float_dv"/>
-  <field name="float_dv_last" type="float_dv_last"/>
-  <field name="float_dv_first" type="float_dv_first"/>
+  <field name="float_dv" type="${solr.tests.floatClass:pfloat}_dv"/>
+  <field name="float_dv_last" type="${solr.tests.floatClass:pfloat}_dv_last"/>
+  <field name="float_dv_first" type="${solr.tests.floatClass:pfloat}_dv_first"/>
 
   <field name="double" type="double"/>
   <field name="double_last" type="double_last"/>
   <field name="double_first" type="double_first"/>
-  <field name="double_dv" type="double_dv"/>
-  <field name="double_dv_last" type="double_dv_last"/>
-  <field name="double_dv_first" type="double_dv_first"/>
+  <field name="double_dv" type="${solr.tests.doubleClass:pdouble}_dv"/>
+  <field name="double_dv_last" type="${solr.tests.doubleClass:pdouble}_dv_last"/>
+  <field name="double_dv_first" type="${solr.tests.doubleClass:pdouble}_dv_first"/>
 
   <field name="date" type="date"/>
   <field name="date_last" type="date_last"/>
@@ -220,6 +220,11 @@ NOTE: Tests expect every field in this schema to be sortable.
              sortMissingLast="true"/>
   <fieldType name="int_dv_first" class="solr.TrieIntField" stored="true" indexed="false" docValues="true"
              sortMissingFirst="true"/>
+  <fieldType name="pint_dv" class="solr.IntPointField" stored="true" indexed="false" docValues="true"/>
+  <fieldType name="pint_dv_last" class="solr.IntPointField" stored="true" indexed="false" docValues="true"
+             sortMissingLast="true"/>
+  <fieldType name="pint_dv_first" class="solr.IntPointField" stored="true" indexed="false" docValues="true"
+             sortMissingFirst="true"/>
 
   <fieldType name="long" class="solr.TrieLongField" stored="true" indexed="true"/>
   <fieldType name="long_last" class="solr.TrieLongField" stored="true" indexed="true" sortMissingLast="true"/>
@@ -228,6 +233,11 @@ NOTE: Tests expect every field in this schema to be sortable.
   <fieldType name="long_dv_last" class="solr.TrieLongField" stored="true" indexed="false" docValues="true"
              sortMissingLast="true"/>
   <fieldType name="long_dv_first" class="solr.TrieLongField" stored="true" indexed="false" docValues="true"
+             sortMissingFirst="true"/>
+  <fieldType name="plong_dv" class="solr.LongPointField" stored="true" indexed="false" docValues="true"/>
+  <fieldType name="plong_dv_last" class="solr.LongPointField" stored="true" indexed="false" docValues="true"
+             sortMissingLast="true"/>
+  <fieldType name="plong_dv_first" class="solr.LongPointField" stored="true" indexed="false" docValues="true"
              sortMissingFirst="true"/>
 
   <fieldType name="float" class="solr.TrieFloatField" stored="true" indexed="true"/>
@@ -238,6 +248,11 @@ NOTE: Tests expect every field in this schema to be sortable.
              sortMissingLast="true"/>
   <fieldType name="float_dv_first" class="solr.TrieFloatField" stored="true" indexed="false" docValues="true"
              sortMissingFirst="true"/>
+  <fieldType name="pfloat_dv" class="solr.FloatPointField" stored="true" indexed="false" docValues="true"/>
+  <fieldType name="pfloat_dv_last" class="solr.FloatPointField" stored="true" indexed="false" docValues="true"
+             sortMissingLast="true"/>
+  <fieldType name="pfloat_dv_first" class="solr.FloatPointField" stored="true" indexed="false" docValues="true"
+             sortMissingFirst="true"/>
 
   <fieldType name="double" class="solr.TrieDoubleField" stored="true" indexed="true"/>
   <fieldType name="double_last" class="solr.TrieDoubleField" stored="true" indexed="true" sortMissingLast="true"/>
@@ -246,6 +261,11 @@ NOTE: Tests expect every field in this schema to be sortable.
   <fieldType name="double_dv_last" class="solr.TrieDoubleField" stored="true" indexed="false" docValues="true"
              sortMissingLast="true"/>
   <fieldType name="double_dv_first" class="solr.TrieDoubleField" stored="true" indexed="false" docValues="true"
+             sortMissingFirst="true"/>
+  <fieldType name="pdouble_dv" class="solr.DoublePointField" stored="true" indexed="false" docValues="true"/>
+  <fieldType name="pdouble_dv_last" class="solr.DoublePointField" stored="true" indexed="false" docValues="true"
+             sortMissingLast="true"/>
+  <fieldType name="pdouble_dv_first" class="solr.DoublePointField" stored="true" indexed="false" docValues="true"
              sortMissingFirst="true"/>
 
   <fieldType name="date" class="solr.TrieDateField" stored="true" indexed="true"/>

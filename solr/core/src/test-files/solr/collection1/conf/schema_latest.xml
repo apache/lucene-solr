@@ -202,7 +202,7 @@
   <!-- docvalues and stored are exclusive -->
   <dynamicField name="*_i" type="int" indexed="true" stored="true"/>
   <dynamicField name="*_is" type="int" indexed="true" stored="true" multiValued="true"/>
-  <dynamicField name="*_id" type="int" indexed="true" stored="false" docValues="true"/>
+  <dynamicField name="*_id" type="${solr.tests.intClass:pint}" indexed="true" stored="false" docValues="true"/>
   <dynamicField name="*_ids" type="int" indexed="true" stored="false" multiValued="true" docValues="true"/>
   <dynamicField name="*_s" type="string" indexed="true" stored="true"/>
   <dynamicField name="*_s1" type="string" indexed="true" stored="true"/>
@@ -215,11 +215,11 @@
   <dynamicField name="*_lds" type="long" indexed="true" stored="false" multiValued="true" docValues="true"/>
   <dynamicField name="*_f" type="float" indexed="true" stored="true"/>
   <dynamicField name="*_fs" type="float" indexed="true" stored="true" multiValued="true"/>
-  <dynamicField name="*_fd" type="float" indexed="true" stored="false" docValues="true"/>
+  <dynamicField name="*_fd" type="${solr.tests.floatClass:pfloat}" indexed="true" stored="false" docValues="true"/>
   <dynamicField name="*_fds" type="float" indexed="true" stored="false" multiValued="true" docValues="true"/>
   <dynamicField name="*_d" type="double" indexed="true" stored="true"/>
   <dynamicField name="*_ds" type="double" indexed="true" stored="true" multiValued="true"/>
-  <dynamicField name="*_dd" type="double" indexed="true" stored="false" docValues="true"/>
+  <dynamicField name="*_dd" type="${solr.tests.doubleClass:pdouble}" indexed="true" stored="false" docValues="true"/>
   <dynamicField name="*_dds" type="double" indexed="true" stored="false" multiValued="true" docValues="true"/>
   <dynamicField name="*_dt" type="date" indexed="true" stored="true"/>
   <dynamicField name="*_dts" type="date" indexed="true" stored="true" multiValued="true"/>
@@ -227,15 +227,15 @@
   <dynamicField name="*_dtds" type="date" indexed="true" stored="false" multiValued="true" docValues="true"/>
 
   <!-- docvalues and stored (S suffix) -->
-  <dynamicField name="*_idS" type="int" indexed="true" stored="true" docValues="true"/>
+  <dynamicField name="*_idS" type="${solr.tests.intClass:pint}" indexed="true" stored="true" docValues="true"/>
   <dynamicField name="*_idsS" type="int" indexed="true" stored="true" multiValued="true" docValues="true"/>
   <dynamicField name="*_sdS" type="string" indexed="true" stored="true" docValues="true"/>
   <dynamicField name="*_sdsS" type="string" indexed="true" stored="true" multiValued="true" docValues="true"/>
-  <dynamicField name="*_ldS" type="long" indexed="true" stored="true" docValues="true"/>
+  <dynamicField name="*_ldS" type="${solr.tests.longClass:plong}" indexed="true" stored="true" docValues="true"/>
   <dynamicField name="*_ldsS" type="long" indexed="true" stored="true" multiValued="true" docValues="true"/>
-  <dynamicField name="*_fdS" type="float" indexed="true" stored="true" docValues="true"/>
+  <dynamicField name="*_fdS" type="${solr.tests.floatClass:pfloat}" indexed="true" stored="true" docValues="true"/>
   <dynamicField name="*_fdsS" type="float" indexed="true" stored="true" multiValued="true" docValues="true"/>
-  <dynamicField name="*_ddS" type="double" indexed="true" stored="true" docValues="true"/>
+  <dynamicField name="*_ddS" type="${solr.tests.doubleClass:pdouble}" indexed="true" stored="true" docValues="true"/>
   <dynamicField name="*_ddsS" type="double" indexed="true" stored="true" multiValued="true" docValues="true"/>
   <dynamicField name="*_dtdS" type="date" indexed="true" stored="true" docValues="true"/>
   <dynamicField name="*_dtdsS" type="date" indexed="true" stored="true" multiValued="true" docValues="true"/>
@@ -394,6 +394,13 @@
   <fieldType name="tfloat" class="solr.TrieFloatField" precisionStep="8" positionIncrementGap="0"/>
   <fieldType name="tlong" class="solr.TrieLongField" precisionStep="8" positionIncrementGap="0"/>
   <fieldType name="tdouble" class="solr.TrieDoubleField" precisionStep="8" positionIncrementGap="0"/>
+  
+  <!-- Point Fields -->
+  <fieldType name="pint" class="solr.IntPointField"/>
+  <fieldType name="plong" class="solr.LongPointField"/>
+  <fieldType name="pdouble" class="solr.DoublePointField"/>
+  <fieldType name="pfloat" class="solr.FloatPointField"/>
+  
 
   <!-- The format for this date field is of the form 1995-12-31T23:59:59Z, and
        is a more restricted form of the canonical representation of dateTime
