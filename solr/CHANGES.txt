@@ -105,6 +105,8 @@ Bug Fixes
 
 * SOLR-10124: Replication can skip removing a temporary index directory in some cases when it should not. (Mark Miller)
 
+* SOLR-9996: Unstored IntPointField returns Long type (Ishan Chattopadhyaya)
+
 Other Changes
 ----------------------
 * SOLR-9980: Expose configVersion in core admin status (Jessica Cheng Mallet via Tomás Fernández Löbbe)
