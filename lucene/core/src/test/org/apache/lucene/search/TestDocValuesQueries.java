@@ -30,6 +30,7 @@ import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.LuceneTestCase;
+import org.apache.lucene.util.NumericUtils;
 import org.apache.lucene.util.TestUtil;
 
 public class TestDocValuesQueries extends LuceneTestCase {
@@ -235,4 +236,36 @@ public class TestDocValuesQueries extends LuceneTestCase {
     reader.close();
     dir.close();
   }
+
+  public void testSortedNumericNPE() throws IOException {
+    Directory dir = newDirectory();
+    RandomIndexWriter iw = new RandomIndexWriter(random(), dir);
+    double[] nums = {-1.7147449030215377E-208, -1.6887024655302576E-11, 1.534911516604164E113, 0.0,
+        2.6947996404505155E-166, -2.649722021970773E306, 6.138239235731689E-198, 2.3967090122610808E111};
+    for (int i = 0; i < nums.length; ++i) {
+      Document doc = new Document();
+      doc.add(new SortedNumericDocValuesField("dv", NumericUtils.doubleToSortableLong(nums[i])));
+      iw.addDocument(doc);
+    }
+    iw.commit();
+    final IndexReader reader = iw.getReader();
+    final IndexSearcher searcher = newSearcher(reader);
+    iw.close();
+
+    final long lo = NumericUtils.doubleToSortableLong(8.701032080293731E-226);
+    final long hi = NumericUtils.doubleToSortableLong(2.0801416404385346E-41);
+    
+    Query query = SortedNumericDocValuesField.newRangeQuery("dv", lo, hi);
+    // TODO: assert expected matches
+    searcher.search(query, searcher.reader.maxDoc(), Sort.INDEXORDER);
+
+    // swap order, should still work
+    query = SortedNumericDocValuesField.newRangeQuery("dv", hi, lo);
+    // TODO: assert expected matches
+    searcher.search(query, searcher.reader.maxDoc(), Sort.INDEXORDER);
+    
+    reader.close();
+    dir.close();
+  }
+   
 }

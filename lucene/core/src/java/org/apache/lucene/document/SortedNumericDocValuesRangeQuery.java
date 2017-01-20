@@ -19,7 +19,6 @@ package org.apache.lucene.document;
 import java.io.IOException;
 import java.util.Objects;
 
-import org.apache.lucene.index.DocValues;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.LeafReader;
 import org.apache.lucene.index.LeafReaderContext;
@@ -100,9 +99,11 @@ abstract class SortedNumericDocValuesRangeQuery extends Query {
         if (values == null) {
           return null;
         }
-        final NumericDocValues singleton = DocValues.unwrapSingleton(values);
+        final NumericDocValues singleton = null; // TODO: LUCENE-7649, re-consider optimization that broke SOLR-10013
+        // final NumericDocValues singleton = DocValues.unwrapSingleton(values);
         final TwoPhaseIterator iterator;
         if (singleton != null) {
+          assert false : "imposible code -- or: someone re-enabled singleton optinization w/o reading the whole method";
           iterator = new TwoPhaseIterator(singleton) {
             @Override
             public boolean matches() throws IOException {
