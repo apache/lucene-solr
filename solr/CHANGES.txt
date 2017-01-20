@@ -140,6 +140,9 @@ Other Changes
 * SOLR-9972: SpellCheckComponent collations and suggestions returned as a JSON object rather than a list
   (Christine Poerschke in response to bug report from Ricky Oktavianus Lazuardy)
 
+* SOLR-9996: Fixing NullPointerException failure by TestManagedSchemaThreadSafety 
+  adding check for Zookeeper session expiration (Steve Rowe, Mikhail Khludnev)
+
 ==================  6.4.1 ==================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release.

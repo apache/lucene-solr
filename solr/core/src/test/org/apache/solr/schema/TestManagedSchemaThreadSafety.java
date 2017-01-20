@@ -28,17 +28,20 @@ import java.util.concurrent.Future;
 import java.util.concurrent.atomic.AtomicReference;
 
 import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.cloud.MockZkController;
 import org.apache.solr.cloud.ZkController;
 import org.apache.solr.cloud.ZkSolrResourceLoader;
 import org.apache.solr.cloud.ZkTestServer;
 import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.common.util.NamedList;
+import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.SolrConfig;
 import org.apache.solr.core.SolrResourceLoader;
 import org.apache.solr.util.LogLevel;
 import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.KeeperException.NoNodeException;
+import org.apache.zookeeper.KeeperException.SessionExpiredException;
 import org.apache.zookeeper.Watcher;
 import org.apache.zookeeper.data.Stat;
 import org.junit.AfterClass;
@@ -106,14 +109,14 @@ public class TestManagedSchemaThreadSafety extends SolrTestCaseJ4 {
 
     final String configsetName = "managed-config";//
 
-    try (SolrZkClient client = new SuspendingZkClient(zkServer.getZkHost(), 30)) {
+    try (SolrZkClient client = new SuspendingZkClient(zkServer.getZkHost(), 30000)) {
       // we can pick any to load configs, I suppose, but here we check
       client.upConfig(configset("cloud-managed-upgrade"), configsetName);
     }
 
     ExecutorService executor = ExecutorUtil.newMDCAwareCachedThreadPool("threadpool");
     
-    try (SolrZkClient raceJudge = new SuspendingZkClient(zkServer.getZkHost(), 30)) {
+    try (SolrZkClient raceJudge = new SuspendingZkClient(zkServer.getZkHost(), 30000)) {
 
       ZkController zkController = createZkController(raceJudge);
 
@@ -132,14 +135,35 @@ public class TestManagedSchemaThreadSafety extends SolrTestCaseJ4 {
   }
 
   private ZkController createZkController(SolrZkClient client) throws KeeperException, InterruptedException {
-    ZkController zkController = mock(ZkController.class,
+    
+    CoreContainer mockAlwaysUpCoreContainer = mock(CoreContainer.class, 
         Mockito.withSettings().defaultAnswer(Mockito.CALLS_REAL_METHODS));
+    when(mockAlwaysUpCoreContainer.isShutDown()).thenReturn(Boolean.FALSE);  // Allow retry on session expiry
+    
+    
+    MockZkController zkController = mock(MockZkController.class,
+        Mockito.withSettings().defaultAnswer(Mockito.CALLS_REAL_METHODS));
+
+    when(zkController.getCoreContainer()).thenReturn(mockAlwaysUpCoreContainer);
 
     when(zkController.getZkClient()).thenReturn(client);
     Mockito.doAnswer(new Answer<Boolean>() {
+      volatile boolean sessionExpired=false;
+      
       @Override
       public Boolean answer(InvocationOnMock invocation) throws Throwable {
-        return client.exists((String) invocation.getArguments()[0], true);
+        String path = (String) invocation.getArguments()[0];
+        perhapsExpired();
+        Boolean exists = client.exists(path, true);
+        perhapsExpired();
+        return exists;
+      }
+
+      private void perhapsExpired() throws SessionExpiredException {
+        if (!sessionExpired && rarely()) {
+          sessionExpired = true;
+          throw new KeeperException.SessionExpiredException();
+        }
       }
     }).when(zkController).pathExists(Mockito.anyString());
     return zkController;
