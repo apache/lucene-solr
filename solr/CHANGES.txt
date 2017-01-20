@@ -74,6 +74,8 @@ Optimizations
 * SOLR-9584: Support Solr being proxied with another endpoint than default /solr, by using relative links
   in AdminUI javascripts (Yun Jie Zhou via janhoy)
 
+* SOLR-9996: Unstored IntPointField returns Long type (Ishan Chattopadhyaya)
+
 Other Changes
 ----------------------
 * SOLR-8396: Add support for PointFields in Solr (Ishan Chattopadhyaya, Tomás Fernández Löbbe)

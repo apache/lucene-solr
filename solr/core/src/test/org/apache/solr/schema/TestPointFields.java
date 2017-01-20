@@ -785,6 +785,11 @@ public class TestPointFields extends SolrTestCaseJ4 {
     for (int i=0; i < values.length; i++) {
       assertU(adoc("id", String.valueOf(i), field, values[i]));
     }
+    // Check using RTG
+    for (int i = 0; i < values.length; i++) {
+      assertQ(req("qt", "/get", "id", String.valueOf(i)),
+      "//doc/" + type + "[@name='" + field + "'][.='" + values[i] + "']");
+    }
     assertU(commit());
     String[] expected = new String[values.length + 1];
     expected[0] = "//*[@numFound='" + values.length + "']"; 
@@ -792,6 +797,12 @@ public class TestPointFields extends SolrTestCaseJ4 {
       expected[i] = "//result/doc[" + i + "]/" + type + "[@name='" + field + "'][.='" + values[i-1] + "']";
     }
     assertQ(req("q", "*:*", "fl", "id, " + field, "rows", String.valueOf(values.length)), expected);
+
+    // Check using RTG
+    for (int i = 0; i < values.length; i++) {
+      assertQ(req("qt", "/get", "id", String.valueOf(i)),
+      "//doc/" + type + "[@name='" + field + "'][.='" + values[i] + "']");
+    }
   }
 
   private void doTestIntPointFieldRangeQuery(String fieldName, String type, boolean testLong) throws Exception {
