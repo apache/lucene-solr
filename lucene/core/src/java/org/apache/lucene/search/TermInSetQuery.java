@@ -50,7 +50,7 @@ import org.apache.lucene.util.RamUsageEstimator;
  * Specialization for a disjunction over many terms that behaves like a
  * {@link ConstantScoreQuery} over a {@link BooleanQuery} containing only
  * {@link org.apache.lucene.search.BooleanClause.Occur#SHOULD} clauses.
- * <p>For instance in the following example, both @{code q1} and {@code q2}
+ * <p>For instance in the following example, both {@code q1} and {@code q2}
  * would yield the same scores:
  * <pre class="prettyprint">
  * Query q1 = new TermInSetQuery(new Term("field", "foo"), new Term("field", "bar"));
@@ -116,7 +116,7 @@ public class TermInSetQuery extends Query implements Accountable {
       BooleanQuery.Builder bq = new BooleanQuery.Builder();
       TermIterator iterator = termData.iterator();
       for (BytesRef term = iterator.next(); term != null; term = iterator.next()) {
-        bq.add(new TermQuery(new Term(iterator.field(), BytesRef.deepCopyOf(term))), Occur.SHOULD);
+        bq.add(new TermQuery(new Term(iterator.field(), term)), Occur.SHOULD);
       }
       return new ConstantScoreQuery(bq.build());
     }
