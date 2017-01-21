@@ -786,9 +786,11 @@ public class TestPointFields extends SolrTestCaseJ4 {
       assertU(adoc("id", String.valueOf(i), field, values[i]));
     }
     // Check using RTG
-    for (int i = 0; i < values.length; i++) {
-      assertQ(req("qt", "/get", "id", String.valueOf(i)),
-      "//doc/" + type + "[@name='" + field + "'][.='" + values[i] + "']");
+    if (Boolean.getBoolean("enable.update.log")) {
+      for (int i = 0; i < values.length; i++) {
+        assertQ(req("qt", "/get", "id", String.valueOf(i)),
+            "//doc/" + type + "[@name='" + field + "'][.='" + values[i] + "']");
+      }
     }
     assertU(commit());
     String[] expected = new String[values.length + 1];
@@ -799,9 +801,11 @@ public class TestPointFields extends SolrTestCaseJ4 {
     assertQ(req("q", "*:*", "fl", "id, " + field, "rows", String.valueOf(values.length)), expected);
 
     // Check using RTG
-    for (int i = 0; i < values.length; i++) {
-      assertQ(req("qt", "/get", "id", String.valueOf(i)),
-      "//doc/" + type + "[@name='" + field + "'][.='" + values[i] + "']");
+    if (Boolean.getBoolean("enable.update.log")) {
+      for (int i = 0; i < values.length; i++) {
+        assertQ(req("qt", "/get", "id", String.valueOf(i)),
+            "//doc/" + type + "[@name='" + field + "'][.='" + values[i] + "']");
+      }
     }
   }
 
