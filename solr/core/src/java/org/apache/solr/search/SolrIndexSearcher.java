@@ -99,6 +99,7 @@ import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.schema.BoolField;
 import org.apache.solr.schema.EnumField;
 import org.apache.solr.schema.IndexSchema;
+import org.apache.solr.schema.NumericFieldType;
 import org.apache.solr.schema.PointField;
 import org.apache.solr.schema.SchemaField;
 import org.apache.solr.schema.TrieDateField;
@@ -808,7 +809,7 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
             Long val = ndv.get(localId);
             Object newVal = val;
             if (schemaField.getType().isPointField()) {
-              PointField.PointTypes type = ((PointField)schemaField.getType()).getType(); 
+              NumericFieldType.NumberType type = ((PointField)schemaField.getType()).getType(); 
               switch (type) {
                 case INTEGER:
                   newVal = val.intValue();

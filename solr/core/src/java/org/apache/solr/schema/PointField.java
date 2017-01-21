@@ -49,15 +49,7 @@ import org.slf4j.LoggerFactory;
  * {@code DocValues} are supported for single-value cases ({@code NumericDocValues}).
  * {@code FieldCache} is not supported for {@code PointField}s, so sorting, faceting, etc on these fields require the use of {@code docValues="true"} in the schema.
  */
-public abstract class PointField extends PrimitiveFieldType {
-  
-  public enum PointTypes {
-    INTEGER,
-    LONG,
-    FLOAT,
-    DOUBLE,
-    DATE
-  }
+public abstract class PointField extends NumericFieldType {
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
@@ -117,11 +109,6 @@ public abstract class PointField extends PrimitiveFieldType {
     return false;
   }
 
-  /**
-   * @return the type of this field
-   */
-  public abstract PointTypes getType();
-  
   @Override
   public abstract Query getSetQuery(QParser parser, SchemaField field, Collection<String> externalVals);
 
@@ -136,6 +123,19 @@ public abstract class PointField extends PrimitiveFieldType {
   }
 
   protected abstract Query getExactQuery(SchemaField field, String externalVal);
+
+  public abstract Query getPointRangeQuery(QParser parser, SchemaField field, String min, String max, boolean minInclusive,
+      boolean maxInclusive);
+
+  @Override
+  public Query getRangeQuery(QParser parser, SchemaField field, String min, String max, boolean minInclusive,
+      boolean maxInclusive) {
+    if (!field.indexed() && field.hasDocValues() && !field.multiValued()) {
+      return getDocValuesRangeQuery(parser, field, min, max, minInclusive, maxInclusive);
+    } else {
+      return getPointRangeQuery(parser, field, min, max, minInclusive, maxInclusive);
+    }
+  }
 
   @Override
   public String storedToReadable(IndexableField f) {

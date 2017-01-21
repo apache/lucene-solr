@@ -70,7 +70,7 @@ class GroupConverter {
     for (SearchGroup<BytesRef> original : values) {
       SearchGroup<MutableValue> converted = new SearchGroup<MutableValue>();
       converted.sortValues = original.sortValues; // ?
-      TrieField.TrieTypes type = ((TrieField)fieldType).getType();
+      TrieField.NumberType type = ((TrieField)fieldType).getType();
       final MutableValue v;
       switch (type) {
         case INTEGER:
