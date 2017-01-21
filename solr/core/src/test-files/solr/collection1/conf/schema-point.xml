@@ -79,6 +79,10 @@
    <dynamicField name="*_p_l_dv_ns"  type="plong"    indexed="true"  stored="false" docValues="true" useDocValuesAsStored="true"/>
    <dynamicField name="*_p_d_dv_ns"  type="pdouble"    indexed="true"  stored="false" docValues="true" useDocValuesAsStored="true"/>
    <dynamicField name="*_p_f_dv_ns"  type="pfloat"    indexed="true"  stored="false" docValues="true" useDocValuesAsStored="true"/>
+   <dynamicField name="*_p_i_ni_ns_dv" type="pint"    indexed="false"  stored="false" docValues="true" useDocValuesAsStored="true"/>
+   <dynamicField name="*_p_l_ni_ns_dv" type="plong"   indexed="false"  stored="false" docValues="true" useDocValuesAsStored="true"/>
+   <dynamicField name="*_p_d_ni_ns_dv" type="pdouble" indexed="false"  stored="false" docValues="true" useDocValuesAsStored="true"/>
+   <dynamicField name="*_p_f_ni_ns_dv" type="pfloat"  indexed="false"  stored="false" docValues="true" useDocValuesAsStored="true"/>
 
  </fields>
 

@@ -80,6 +80,11 @@ Other Changes
 ----------------------
 * SOLR-8396: Add support for PointFields in Solr (Ishan Chattopadhyaya, Tomás Fernández Löbbe)
 
+* SOLR-10011: Refactor PointField & TrieField to now have a common base class, NumericFieldType. The
+  TrieField.TrieTypes and PointField.PointTypes are now consolidated to NumericFieldType.NumberType. This
+  refactoring also fixes a bug whereby PointFields were not using DocValues for range queries for
+  indexed=false, docValues=true fields.
+
 ==================  6.5.0 ==================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release.

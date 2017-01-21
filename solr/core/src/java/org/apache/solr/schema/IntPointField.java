@@ -44,6 +44,10 @@ public class IntPointField extends PointField implements IntValueFieldType {
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
+  public IntPointField() {
+    type = NumberType.INTEGER;
+  }
+
   @Override
   public Object toNativeType(Object val) {
     if (val == null) return null;
@@ -58,7 +62,7 @@ public class IntPointField extends PointField implements IntValueFieldType {
   }
 
   @Override
-  public Query getRangeQuery(QParser parser, SchemaField field, String min, String max, boolean minInclusive,
+  public Query getPointRangeQuery(QParser parser, SchemaField field, String min, String max, boolean minInclusive,
       boolean maxInclusive) {
     int actualMin, actualMax;
     if (min == null) {
@@ -179,8 +183,4 @@ public class IntPointField extends PointField implements IntValueFieldType {
     return new StoredField(sf.getName(), (Integer) this.toNativeType(value));
   }
 
-  @Override
-  public PointTypes getType() {
-    return PointTypes.INTEGER;
-  }
 }

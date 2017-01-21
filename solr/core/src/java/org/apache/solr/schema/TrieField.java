@@ -43,7 +43,6 @@ import org.apache.lucene.queries.function.valuesource.DoubleFieldSource;
 import org.apache.lucene.queries.function.valuesource.FloatFieldSource;
 import org.apache.lucene.queries.function.valuesource.IntFieldSource;
 import org.apache.lucene.queries.function.valuesource.LongFieldSource;
-import org.apache.lucene.search.MatchNoDocsQuery;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.SortField;
 import org.apache.lucene.search.SortedSetSelector;
@@ -56,9 +55,7 @@ import org.apache.lucene.util.mutable.MutableValueDate;
 import org.apache.lucene.util.mutable.MutableValueLong;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.response.TextResponseWriter;
-import org.apache.solr.search.FunctionRangeQuery;
 import org.apache.solr.search.QParser;
-import org.apache.solr.search.function.ValueSourceRangeFilter;
 import org.apache.solr.uninverting.UninvertingReader.Type;
 import org.apache.solr.util.DateMathParser;
 import org.slf4j.Logger;
@@ -84,12 +81,11 @@ import org.slf4j.LoggerFactory;
  * @see org.apache.lucene.legacy.LegacyNumericRangeQuery
  * @since solr 1.4
  */
-public class TrieField extends PrimitiveFieldType {
+public class TrieField extends NumericFieldType {
   public static final int DEFAULT_PRECISION_STEP = 8;
 
   protected int precisionStepArg = TrieField.DEFAULT_PRECISION_STEP;  // the one passed in or defaulted
   protected int precisionStep;     // normalized
-  protected TrieTypes type;
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
@@ -107,7 +103,7 @@ public class TrieField extends PrimitiveFieldType {
 
     if (t != null) {
       try {
-        type = TrieTypes.valueOf(t.toUpperCase(Locale.ROOT));
+        type = NumberType.valueOf(t.toUpperCase(Locale.ROOT));
       } catch (IllegalArgumentException e) {
         throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,
                 "Invalid type specified in schema.xml for field: " + args.get("name"), e);
@@ -139,7 +135,7 @@ public class TrieField extends PrimitiveFieldType {
       }
 
       // normal stored case
-      return (type == TrieTypes.DATE) ? new Date(val.longValue()) : val;
+      return (type == NumberType.DATE) ? new Date(val.longValue()) : val;
     } else {
       // multi-valued numeric docValues currently use SortedSet on the indexed terms.
       BytesRef term = f.binaryValue();
@@ -340,13 +336,6 @@ public class TrieField extends PrimitiveFieldType {
     return precisionStepArg;
   }
 
-  /**
-   * @return the type of this field
-   */
-  public TrieTypes getType() {
-    return type;
-  }
-
   @Override
   public LegacyNumericType getNumericType() {
     switch (type) {
@@ -372,146 +361,46 @@ public class TrieField extends PrimitiveFieldType {
     }
     int ps = precisionStep;
     Query query;
-    final boolean matchOnly = field.hasDocValues() && !field.indexed();
+
+    if (field.hasDocValues() && !field.indexed()) {
+      return getDocValuesRangeQuery(parser, field, min, max, minInclusive, maxInclusive);
+    }
+
     switch (type) {
       case INTEGER:
-        if (matchOnly) {
-          query = numericDocValuesRangeQuery(field.getName(),
-                min == null ? null : Integer.parseInt(min),
-                max == null ? null : Integer.parseInt(max),
-                minInclusive, maxInclusive);
-        } else {
-          query = LegacyNumericRangeQuery.newIntRange(field.getName(), ps,
-              min == null ? null : Integer.parseInt(min),
-              max == null ? null : Integer.parseInt(max),
-              minInclusive, maxInclusive);
-        }
+        query = LegacyNumericRangeQuery.newIntRange(field.getName(), ps,
+            min == null ? null : Integer.parseInt(min),
+            max == null ? null : Integer.parseInt(max),
+            minInclusive, maxInclusive);
         break;
       case FLOAT:
-        if (matchOnly) {
-          return getRangeQueryForFloatDoubleDocValues(field, min, max, minInclusive, maxInclusive);
-        } else {
-          query = LegacyNumericRangeQuery.newFloatRange(field.getName(), ps,
-              min == null ? null : Float.parseFloat(min),
-              max == null ? null : Float.parseFloat(max),
-              minInclusive, maxInclusive);
-        }
+        query = LegacyNumericRangeQuery.newFloatRange(field.getName(), ps,
+            min == null ? null : Float.parseFloat(min),
+            max == null ? null : Float.parseFloat(max),
+            minInclusive, maxInclusive);
         break;
       case LONG:
-        if (matchOnly) {
-          query = numericDocValuesRangeQuery(field.getName(),
-                min == null ? null : Long.parseLong(min),
-                max == null ? null : Long.parseLong(max),
-                minInclusive, maxInclusive);
-        } else {
-          query = LegacyNumericRangeQuery.newLongRange(field.getName(), ps,
-              min == null ? null : Long.parseLong(min),
-              max == null ? null : Long.parseLong(max),
-              minInclusive, maxInclusive);
-        }
+        query = LegacyNumericRangeQuery.newLongRange(field.getName(), ps,
+            min == null ? null : Long.parseLong(min),
+            max == null ? null : Long.parseLong(max),
+            minInclusive, maxInclusive);
         break;
       case DOUBLE:
-        if (matchOnly) {
-          return getRangeQueryForFloatDoubleDocValues(field, min, max, minInclusive, maxInclusive);
-        } else {
-          query = LegacyNumericRangeQuery.newDoubleRange(field.getName(), ps,
-              min == null ? null : Double.parseDouble(min),
-              max == null ? null : Double.parseDouble(max),
-              minInclusive, maxInclusive);
-        }
+        query = LegacyNumericRangeQuery.newDoubleRange(field.getName(), ps,
+            min == null ? null : Double.parseDouble(min),
+            max == null ? null : Double.parseDouble(max),
+            minInclusive, maxInclusive);
         break;
       case DATE:
-        if (matchOnly) {
-          query = numericDocValuesRangeQuery(field.getName(),
-                min == null ? null : DateMathParser.parseMath(null, min).getTime(),
-                max == null ? null : DateMathParser.parseMath(null, max).getTime(),
-                minInclusive, maxInclusive);
-        } else {
-          query = LegacyNumericRangeQuery.newLongRange(field.getName(), ps,
-              min == null ? null : DateMathParser.parseMath(null, min).getTime(),
-              max == null ? null : DateMathParser.parseMath(null, max).getTime(),
-              minInclusive, maxInclusive);
-        }
+        query = LegacyNumericRangeQuery.newLongRange(field.getName(), ps,
+            min == null ? null : DateMathParser.parseMath(null, min).getTime(),
+            max == null ? null : DateMathParser.parseMath(null, max).getTime(),
+            minInclusive, maxInclusive);
         break;
       default:
         throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Unknown type for trie field");
     }
 
-    return query;
-  }
-
-  private static Query numericDocValuesRangeQuery(
-      String field,
-      Number lowerValue, Number upperValue,
-      boolean lowerInclusive, boolean upperInclusive) {
-
-    long actualLowerValue = Long.MIN_VALUE;
-    if (lowerValue != null) {
-      actualLowerValue = lowerValue.longValue();
-      if (lowerInclusive == false) {
-        if (actualLowerValue == Long.MAX_VALUE) {
-          return new MatchNoDocsQuery();
-        }
-        ++actualLowerValue;
-      }
-    }
-
-    long actualUpperValue = Long.MAX_VALUE;
-    if (upperValue != null) {
-      actualUpperValue = upperValue.longValue();
-      if (upperInclusive == false) {
-        if (actualUpperValue == Long.MIN_VALUE) {
-          return new MatchNoDocsQuery();
-        }
-        --actualUpperValue;
-      }
-    }
-    return NumericDocValuesField.newRangeQuery(field, actualLowerValue, actualUpperValue);
-  }
-
-  private static long FLOAT_NEGATIVE_INFINITY_BITS = (long)Float.floatToIntBits(Float.NEGATIVE_INFINITY);
-  private static long DOUBLE_NEGATIVE_INFINITY_BITS = Double.doubleToLongBits(Double.NEGATIVE_INFINITY);
-  private static long FLOAT_POSITIVE_INFINITY_BITS = (long)Float.floatToIntBits(Float.POSITIVE_INFINITY);
-  private static long DOUBLE_POSITIVE_INFINITY_BITS = Double.doubleToLongBits(Double.POSITIVE_INFINITY);
-  private static long FLOAT_MINUS_ZERO_BITS = (long)Float.floatToIntBits(-0f);
-  private static long DOUBLE_MINUS_ZERO_BITS = Double.doubleToLongBits(-0d);
-  private static long FLOAT_ZERO_BITS = (long)Float.floatToIntBits(0f);
-  private static long DOUBLE_ZERO_BITS = Double.doubleToLongBits(0d);
-
-  private Query getRangeQueryForFloatDoubleDocValues(SchemaField sf, String min, String max, boolean minInclusive, boolean maxInclusive) {
-    Query query;
-    String fieldName = sf.getName();
-
-    Number minVal = min == null ? null : type == TrieTypes.FLOAT ? Float.parseFloat(min): Double.parseDouble(min);
-    Number maxVal = max == null ? null : type == TrieTypes.FLOAT ? Float.parseFloat(max): Double.parseDouble(max);
-    
-    Long minBits = 
-        min == null ? null : type == TrieTypes.FLOAT ? (long) Float.floatToIntBits(minVal.floatValue()): Double.doubleToLongBits(minVal.doubleValue());
-    Long maxBits = 
-        max == null ? null : type == TrieTypes.FLOAT ? (long) Float.floatToIntBits(maxVal.floatValue()): Double.doubleToLongBits(maxVal.doubleValue());
-    
-    long negativeInfinityBits = type == TrieTypes.FLOAT ? FLOAT_NEGATIVE_INFINITY_BITS : DOUBLE_NEGATIVE_INFINITY_BITS;
-    long positiveInfinityBits = type == TrieTypes.FLOAT ? FLOAT_POSITIVE_INFINITY_BITS : DOUBLE_POSITIVE_INFINITY_BITS;
-    long minusZeroBits = type == TrieTypes.FLOAT ? FLOAT_MINUS_ZERO_BITS : DOUBLE_MINUS_ZERO_BITS;
-    long zeroBits = type == TrieTypes.FLOAT ? FLOAT_ZERO_BITS : DOUBLE_ZERO_BITS;
-    
-    // If min is negative (or -0d) and max is positive (or +0d), then issue a FunctionRangeQuery
-    if ((minVal == null || minVal.doubleValue() < 0d || minBits == minusZeroBits) && 
-        (maxVal == null || (maxVal.doubleValue() > 0d || maxBits == zeroBits))) {
-
-      ValueSource vs = getValueSource(sf, null);
-      query = new FunctionRangeQuery(new ValueSourceRangeFilter(vs, min, max, minInclusive, maxInclusive));
-
-    } else { // If both max and min are negative (or -0d), then issue range query with max and min reversed
-      if ((minVal == null || minVal.doubleValue() < 0d || minBits == minusZeroBits) &&
-          (maxVal != null && (maxVal.doubleValue() < 0d || maxBits == minusZeroBits))) {
-        query = numericDocValuesRangeQuery
-            (fieldName, maxBits, (min == null ? negativeInfinityBits : minBits), maxInclusive, minInclusive);
-      } else { // If both max and min are positive, then issue range query
-        query = numericDocValuesRangeQuery
-            (fieldName, minBits, (max == null ? positiveInfinityBits : maxBits), minInclusive, maxInclusive);
-      }
-    }
     return query;
   }
 
@@ -579,7 +468,7 @@ public class TrieField extends PrimitiveFieldType {
 
   @Override
   public String toExternal(IndexableField f) {
-    return (type == TrieTypes.DATE)
+    return (type == NumberType.DATE)
       ? ((Date) toObject(f)).toInstant().toString()
       : toObject(f).toString();
   }
@@ -792,15 +681,6 @@ public class TrieField extends PrimitiveFieldType {
     }
   }
 
-  public enum TrieTypes {
-    INTEGER,
-    LONG,
-    FLOAT,
-    DOUBLE,
-    DATE
-  }
-
-
   static final String INT_PREFIX = new String(new char[]{LegacyNumericUtils.SHIFT_START_INT});
   static final String LONG_PREFIX = new String(new char[]{LegacyNumericUtils.SHIFT_START_LONG});
 
@@ -863,7 +743,6 @@ class TrieDateFieldSource extends LongFieldSource {
   public long externalToLong(String extVal) {
     return DateMathParser.parseMath(null, extVal).getTime();
   }
-
 }
 
 

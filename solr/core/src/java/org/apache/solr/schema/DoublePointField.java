@@ -45,6 +45,10 @@ public class DoublePointField extends PointField implements DoubleValueFieldType
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
+  public DoublePointField() {
+    type = NumberType.DOUBLE;
+  }
+
   @Override
   public Object toNativeType(Object val) {
     if (val == null) return null;
@@ -54,7 +58,7 @@ public class DoublePointField extends PointField implements DoubleValueFieldType
   }
 
   @Override
-  public Query getRangeQuery(QParser parser, SchemaField field, String min, String max, boolean minInclusive,
+  public Query getPointRangeQuery(QParser parser, SchemaField field, String min, String max, boolean minInclusive,
       boolean maxInclusive) {
     double actualMin, actualMax;
     if (min == null) {
@@ -178,10 +182,5 @@ public class DoublePointField extends PointField implements DoubleValueFieldType
   @Override
   protected StoredField getStoredField(SchemaField sf, Object value) {
     return new StoredField(sf.getName(), (Double) this.toNativeType(value));
-  }
-
-  @Override
-  public PointTypes getType() {
-    return PointTypes.DOUBLE;
   }
 }
