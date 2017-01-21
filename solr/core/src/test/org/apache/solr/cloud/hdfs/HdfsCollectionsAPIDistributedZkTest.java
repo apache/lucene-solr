@@ -42,6 +42,7 @@ public class HdfsCollectionsAPIDistributedZkTest extends CollectionsAPIDistribut
 
     ZkConfigManager configManager = new ZkConfigManager(zkClient());
     configManager.uploadConfigDir(configset("cloud-hdfs"), "conf");
+    configManager.uploadConfigDir(configset("cloud-hdfs"), "conf2");
 
     System.setProperty("solr.hdfs.home", HdfsTestUtil.getDataDir(dfsCluster, "data"));
   }
