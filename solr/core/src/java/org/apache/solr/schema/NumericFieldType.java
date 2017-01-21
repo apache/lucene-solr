@@ -79,7 +79,7 @@ public abstract class NumericFieldType extends PrimitiveFieldType {
               max == null ? null : DateMathParser.parseMath(null, max).getTime(),
               minInclusive, maxInclusive);
       default:
-        throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Unknown type for point field");
+        throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Unknown type for numeric field");
     }
   }
   
