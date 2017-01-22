@@ -36,6 +36,11 @@ Build
 * LUCENE-7596: Update Groovy to version 2.4.8 to allow building with Java 9
   build 148+. Also update JGit version for working-copy checks. (Uwe Schindler)
 
+* LUCENE-7651: Fix Javadocs build for Java 8u121 by injecting "Google Code
+  Prettify" without adding Javascript to Javadocs's -bottom parameter.
+  Also update Prettify to latest version to fix Google Chrome issue.
+  (Uwe Schindler)
+
 ======================= Lucene 5.5.3 =======================
 
 (No Changes)
