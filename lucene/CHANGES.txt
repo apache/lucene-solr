@@ -3,6 +3,14 @@ Lucene Change Log
 For more information on past and future Lucene versions, please see:
 http://s.apache.org/luceneversions
 
+======================= Lucene 6.4.1 =======================
+Build
+
+* LUCENE-7651: Fix Javadocs build for Java 8u121 by injecting "Google Code
+  Prettify" without adding Javascript to Javadocs's -bottom parameter.
+  Also update Prettify to latest version to fix Google Chrome issue.
+  (Uwe Schindler)
+
 ======================= Lucene 6.4.0 =======================
 
 API Changes
