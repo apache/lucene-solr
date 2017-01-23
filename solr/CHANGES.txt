@@ -121,6 +121,8 @@ Bug Fixes
 
 * SOLR-9979: Macro expansion should not be done in shard requests (Tomás Fernández Löbbe)
 
+* SOLR-9114: NPE using TermVectorComponent, MoreLikeThisComponent in combination with ExactStatsCache (Cao Manh Dat, Varun Thacker)
+
 Optimizations
 ----------------------
 

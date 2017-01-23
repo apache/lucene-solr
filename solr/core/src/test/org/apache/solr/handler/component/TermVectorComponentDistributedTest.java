@@ -18,9 +18,14 @@ package org.apache.solr.handler.component;
 
 import org.apache.lucene.util.Constants;
 
+import org.apache.lucene.util.TestUtil;
 import org.apache.solr.BaseDistributedSearchTestCase;
 import org.apache.solr.common.params.ShardParams;
 import org.apache.solr.common.params.TermVectorParams;
+import org.apache.solr.search.stats.ExactStatsCache;
+import org.apache.solr.search.stats.LRUStatsCache;
+import org.apache.solr.search.stats.LocalStatsCache;
+import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
@@ -29,6 +34,19 @@ public class TermVectorComponentDistributedTest extends BaseDistributedSearchTes
   public static void betterNotBeJ9() {
     assumeFalse("FIXME: SOLR-5792: This test fails under IBM J9", 
                 Constants.JAVA_VENDOR.startsWith("IBM"));
+    int statsType = TestUtil.nextInt(random(), 1, 3);
+    if (statsType == 1) {
+      System.setProperty("solr.statsCache", ExactStatsCache.class.getName());
+    } else if (statsType == 2) {
+      System.setProperty("solr.statsCache", LRUStatsCache.class.getName());
+    } else {
+      System.setProperty("solr.statsCache", LocalStatsCache.class.getName());
+    }
+  }
+
+  @AfterClass
+  public static void afterClass() {
+    System.clearProperty("solr.statsCache");
   }
 
   @Test
