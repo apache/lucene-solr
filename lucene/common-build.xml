@@ -976,6 +976,7 @@
             shuffleOnSlave="true"
             leaveTemporary="${junit4.leaveTemporary}"
             seed="${tests.seed}"
+            onNonEmptyWorkDirectory="wipe"
 
             heartbeat="${tests.heartbeat}"
             uniqueSuiteNames="false"
