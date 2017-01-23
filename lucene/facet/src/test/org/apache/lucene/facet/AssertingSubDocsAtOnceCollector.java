@@ -16,7 +16,6 @@
  */
 package org.apache.lucene.facet;
 
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -33,7 +32,7 @@ class AssertingSubDocsAtOnceCollector extends SimpleCollector {
   List<Scorer> allScorers;
 
   @Override
-  public void setScorer(Scorer s) throws IOException {
+  public void setScorer(Scorer s) {
     // Gathers all scorers, including s and "under":
     allScorers = new ArrayList<>();
     allScorers.add(s);

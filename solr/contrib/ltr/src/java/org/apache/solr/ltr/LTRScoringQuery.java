@@ -502,7 +502,7 @@ public class LTRScoringQuery extends Query {
       }
 
       @Override
-      public Collection<ChildScorer> getChildren() throws IOException {
+      public Collection<ChildScorer> getChildren() {
         return featureTraversalScorer.getChildren();
       }
 
