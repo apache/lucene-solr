@@ -78,7 +78,6 @@ public class AssertingScorer extends Scorer {
     // collectors (e.g. ToParentBlockJoinCollector) that
     // need to walk the scorer tree will miss/skip the
     // Scorer we wrap:
-    assert iterating();
     return Collections.singletonList(new ChildScorer(in, "SHOULD"));
   }
 

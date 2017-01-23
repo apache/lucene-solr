@@ -68,6 +68,7 @@ public class TestSubScorerFreqs extends LuceneTestCase {
   private static class CountingCollector extends FilterCollector {
     public final Map<Integer, Map<Query, Float>> docCounts = new HashMap<>();
 
+    private final Map<Query, Scorer> subScorers = new HashMap<>();
     private final Set<String> relationships;
 
     public CountingCollector(Collector other) {
@@ -78,29 +79,24 @@ public class TestSubScorerFreqs extends LuceneTestCase {
       super(other);
       this.relationships = relationships;
     }
-
-    private Map<Query, Scorer> getSubScorers(Scorer scorer) throws IOException {
-      Map<Query, Scorer> collected = new HashMap<>();
+    
+    public void setSubScorers(Scorer scorer, String relationship) {
       for (ChildScorer child : scorer.getChildren()) {
         if (scorer instanceof AssertingScorer || relationships.contains(child.relationship)) {
-          collected.put(scorer.getWeight().getQuery(), scorer);
+          setSubScorers(child.child, child.relationship);
         }
-        collected.putAll(getSubScorers(child.child));
       }
-      return collected;
+      subScorers.put(scorer.getWeight().getQuery(), scorer);
     }
     
     public LeafCollector getLeafCollector(LeafReaderContext context)
         throws IOException {
       final int docBase = context.docBase;
       return new FilterLeafCollector(super.getLeafCollector(context)) {
-
-        Scorer scorer;
-
+        
         @Override
         public void collect(int doc) throws IOException {
           final Map<Query, Float> freqs = new HashMap<Query, Float>();
-          final Map<Query, Scorer> subScorers = getSubScorers(scorer);
           for (Map.Entry<Query, Scorer> ent : subScorers.entrySet()) {
             Scorer value = ent.getValue();
             int matchId = value.docID();
@@ -113,7 +109,8 @@ public class TestSubScorerFreqs extends LuceneTestCase {
         @Override
         public void setScorer(Scorer scorer) throws IOException {
           super.setScorer(scorer);
-          this.scorer = scorer;
+          subScorers.clear();
+          setSubScorers(scorer, "TOP");
         }
         
       };
