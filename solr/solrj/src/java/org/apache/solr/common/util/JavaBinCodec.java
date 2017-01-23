@@ -189,7 +189,7 @@ public class JavaBinCodec implements PushWriter {
 
   public SimpleOrderedMap<Object> readOrderedMap(DataInputInputStream dis) throws IOException {
     int sz = readSize(dis);
-    SimpleOrderedMap<Object> nl = new SimpleOrderedMap<>();
+    SimpleOrderedMap<Object> nl = new SimpleOrderedMap<>(sz);
     for (int i = 0; i < sz; i++) {
       String name = (String) readVal(dis);
       Object val = readVal(dis);
@@ -200,7 +200,7 @@ public class JavaBinCodec implements PushWriter {
 
   public NamedList<Object> readNamedList(DataInputInputStream dis) throws IOException {
     int sz = readSize(dis);
-    NamedList<Object> nl = new NamedList<>();
+    NamedList<Object> nl = new NamedList<>(sz);
     for (int i = 0; i < sz; i++) {
       String name = (String) readVal(dis);
       Object val = readVal(dis);
@@ -610,7 +610,7 @@ public class JavaBinCodec implements PushWriter {
   public Map<Object,Object> readMap(DataInputInputStream dis)
           throws IOException {
     int sz = readVInt(dis);
-    Map<Object,Object> m = new LinkedHashMap<>();
+    Map<Object,Object> m = new LinkedHashMap<>(sz);
     for (int i = 0; i < sz; i++) {
       Object key = readVal(dis);
       Object val = readVal(dis);
