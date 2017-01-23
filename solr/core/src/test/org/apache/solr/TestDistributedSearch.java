@@ -84,6 +84,7 @@ public class TestDistributedSearch extends BaseDistributedSearchTestCase {
   String tdate_b = "b_n_tdt";
   
   String oddField="oddField_s";
+  String s1="a_s";
   String missingField="ignore_exception__missing_but_valid_field_t";
   String invalidField="ignore_exception__invalid_field_not_in_schema";
 
@@ -111,44 +112,49 @@ public class TestDistributedSearch extends BaseDistributedSearchTestCase {
            "foo_sev_enum", "Medium",
            tdate_a, "2010-04-20T11:00:00Z",
            tdate_b, "2009-08-20T11:00:00Z",
-           "foo_f", 1.414f, "foo_b", "true", "foo_d", 1.414d);
+           "foo_f", 1.414f, "foo_b", "true", "foo_d", 1.414d, 
+           s1, "z${foo}");
     indexr(id,2, i1, 50 , tlong, 50,t1,"to come to the aid of their country.",
            "foo_sev_enum", "Medium",
            "foo_sev_enum", "High",
            tdate_a, "2010-05-02T11:00:00Z",
-           tdate_b, "2009-11-02T11:00:00Z");
+           tdate_b, "2009-11-02T11:00:00Z",
+           s1, "z${foo}");
     indexr(id,3, i1, 2, tlong, 2,t1,"how now brown cow",
-           tdate_a, "2010-05-03T11:00:00Z");
+           tdate_a, "2010-05-03T11:00:00Z",
+           s1, "z${foo}");
     indexr(id,4, i1, -100 ,tlong, 101,
            t1,"the quick fox jumped over the lazy dog", 
            tdate_a, "2010-05-03T11:00:00Z",
-           tdate_b, "2010-05-03T11:00:00Z");
+           tdate_b, "2010-05-03T11:00:00Z",
+           s1, "a");
     indexr(id,5, i1, 500, tlong, 500 ,
            t1,"the quick fox jumped way over the lazy dog", 
-           tdate_a, "2010-05-05T11:00:00Z");
-    indexr(id,6, i1, -600, tlong, 600 ,t1,"humpty dumpy sat on a wall");
-    indexr(id,7, i1, 123, tlong, 123 ,t1,"humpty dumpy had a great fall");
+           tdate_a, "2010-05-05T11:00:00Z",
+           s1, "b");
+    indexr(id,6, i1, -600, tlong, 600 ,t1,"humpty dumpy sat on a wall", s1, "c");
+    indexr(id,7, i1, 123, tlong, 123 ,t1,"humpty dumpy had a great fall", s1, "d");
     indexr(id,8, i1, 876, tlong, 876,
            tdate_b, "2010-01-05T11:00:00Z",
            "foo_sev_enum", "High",
-           t1,"all the kings horses and all the kings men");
-    indexr(id,9, i1, 7, tlong, 7,t1,"couldn't put humpty together again");
+           t1,"all the kings horses and all the kings men", s1, "e");
+    indexr(id,9, i1, 7, tlong, 7,t1,"couldn't put humpty together again", s1, "f");
 
     commit();  // try to ensure there's more than one segment
 
-    indexr(id,10, i1, 4321, tlong, 4321,t1,"this too shall pass");
+    indexr(id,10, i1, 4321, tlong, 4321,t1,"this too shall pass", s1, "g");
     indexr(id,11, i1, -987, tlong, 987,
            "foo_sev_enum", "Medium",
-           t1,"An eye for eye only ends up making the whole world blind.");
+           t1,"An eye for eye only ends up making the whole world blind.", s1, "h");
     indexr(id,12, i1, 379, tlong, 379,
-           t1,"Great works are performed, not by strength, but by perseverance.");
+           t1,"Great works are performed, not by strength, but by perseverance.", s1, "i");
     indexr(id,13, i1, 232, tlong, 232,
            t1,"no eggs on wall, lesson learned", 
-           oddField, "odd man out");
+           oddField, "odd man out", s1, "j");
 
-    indexr(id, "1001", "lowerfilt", "toyota"); // for spellcheck
+    indexr(id, "1001", "lowerfilt", "toyota", s1, "k"); // for spellcheck
 
-    indexr(id, 14, "SubjectTerms_mfacet", new String[]  {"mathematical models", "mathematical analysis"});
+    indexr(id, 14, "SubjectTerms_mfacet", new String[]  {"mathematical models", "mathematical analysis"}, s1, "l");
     indexr(id, 15, "SubjectTerms_mfacet", new String[]  {"test 1", "test 2", "test3"});
     indexr(id, 16, "SubjectTerms_mfacet", new String[]  {"test 1", "test 2", "test3"});
     String[] vals = new String[100];
@@ -867,13 +873,19 @@ public class TestDistributedSearch extends BaseDistributedSearchTestCase {
     // Try to get better coverage for refinement queries by turning off over requesting.
     // This makes it much more likely that we may not get the top facet values and hence
     // we turn of that checking.
-    handle.put("facet_fields", SKIPVAL);    
+    handle.put("facet_fields", SKIPVAL);
     query("q","*:*", "rows",0, "facet","true", "facet.field",t1,"facet.limit",5, "facet.shard.limit",5);
     // check a complex key name
     query("q","*:*", "rows",0, "facet","true", "facet.field","{!key='$a b/c \\' \\} foo'}"+t1,"facet.limit",5, "facet.shard.limit",5);
     query("q","*:*", "rows",0, "facet","true", "facet.field","{!key='$a'}"+t1,"facet.limit",5, "facet.shard.limit",5);
     handle.remove("facet_fields");
-
+    // Make sure there is no macro expansion for field values
+    query("q","*:*", "rows",0, "facet","true", "facet.field",s1,"facet.limit",5, "facet.shard.limit",5);
+    query("q","*:*", "rows",0, "facet","true", "facet.field",s1,"facet.limit",5, "facet.shard.limit",5, "expandMacros", "true");
+    query("q","*:*", "rows",0, "facet","true", "facet.field",s1,"facet.limit",5, "facet.shard.limit",5, "expandMacros", "false");
+    // Macro expansion should still work for the parameters
+    query("q","*:*", "rows",0, "facet","true", "facet.field","${foo}", "f.${foo}.mincount", 1, "foo", s1);
+    query("q","*:*", "rows",0, "facet","true", "facet.field","${foo}", "f.${foo}.mincount", 1, "foo", s1, "expandMacros", "true");
 
     // index the same document to two servers and make sure things
     // don't blow up.

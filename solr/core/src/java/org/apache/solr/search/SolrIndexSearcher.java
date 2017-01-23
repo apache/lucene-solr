@@ -98,6 +98,8 @@ import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.schema.BoolField;
 import org.apache.solr.schema.EnumField;
 import org.apache.solr.schema.IndexSchema;
+import org.apache.solr.schema.NumericFieldType;
+import org.apache.solr.schema.PointField;
 import org.apache.solr.schema.SchemaField;
 import org.apache.solr.schema.TrieDateField;
 import org.apache.solr.schema.TrieDoubleField;
@@ -821,16 +823,39 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
               continue;
             }
             Object newVal = val;
-            if (schemaField.getType() instanceof TrieIntField) {
-              newVal = val.intValue();
-            } else if (schemaField.getType() instanceof TrieFloatField) {
-              newVal = Float.intBitsToFloat(val.intValue());
-            } else if (schemaField.getType() instanceof TrieDoubleField) {
-              newVal = Double.longBitsToDouble(val);
-            } else if (schemaField.getType() instanceof TrieDateField) {
-              newVal = new Date(val);
-            } else if (schemaField.getType() instanceof EnumField) {
-              newVal = ((EnumField) schemaField.getType()).intValueToStringValue(val.intValue());
+            if (schemaField.getType().isPointField()) {
+              NumericFieldType.NumberType type = ((PointField)schemaField.getType()).getType(); 
+              switch (type) {
+                case INTEGER:
+                  newVal = val.intValue();
+                  break;
+                case LONG:
+                  newVal = val.longValue();
+                  break;
+                case FLOAT:
+                  newVal = Float.intBitsToFloat(val.intValue());
+                  break;
+                case DOUBLE:
+                  newVal = Double.longBitsToDouble(val);
+                  break;
+                case DATE:
+                  newVal = new Date(val);
+                  break;
+                default:
+                  throw new AssertionError("Unexpected PointType: " + type);
+              }
+            } else {
+              if (schemaField.getType() instanceof TrieIntField) {
+                newVal = val.intValue();
+              } else if (schemaField.getType() instanceof TrieFloatField) {
+                newVal = Float.intBitsToFloat(val.intValue());
+              } else if (schemaField.getType() instanceof TrieDoubleField) {
+                newVal = Double.longBitsToDouble(val);
+              } else if (schemaField.getType() instanceof TrieDateField) {
+                newVal = new Date(val);
+              } else if (schemaField.getType() instanceof EnumField) {
+                newVal = ((EnumField) schemaField.getType()).intValueToStringValue(val.intValue());
+              }
             }
             doc.addField(fieldName, newVal);
             break;

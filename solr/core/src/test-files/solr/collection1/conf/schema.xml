@@ -43,6 +43,12 @@
   <fieldType name="tfloat" class="solr.TrieFloatField" precisionStep="8" omitNorms="true" positionIncrementGap="0"/>
   <fieldType name="tlong" class="solr.TrieLongField" precisionStep="8" omitNorms="true" positionIncrementGap="0"/>
   <fieldType name="tdouble" class="solr.TrieDoubleField" precisionStep="8" omitNorms="true" positionIncrementGap="0"/>
+  
+  <!-- Point Fields -->
+  <fieldType name="pint" class="solr.IntPointField" docValues="true"/>
+  <fieldType name="plong" class="solr.LongPointField" docValues="true"/>
+  <fieldType name="pdouble" class="solr.DoublePointField" docValues="true"/>
+  <fieldType name="pfloat" class="solr.FloatPointField" docValues="true"/>
 
   <!-- Field type demonstrating an Analyzer failure -->
   <fieldType name="failtype1" class="solr.TextField">
@@ -550,7 +556,7 @@
   <field name="dateRange" type="dateRange" multiValued="true"/>
 
   <field name="cat" type="string" indexed="true" stored="true" multiValued="true"/>
-  <field name="price" type="float" indexed="true" stored="true" multiValued="false"/>
+  <field name="price" type="${solr.tests.floatClass:pfloat}" indexed="true" stored="true" multiValued="false"/>
   <field name="inStock" type="boolean" indexed="true" stored="true"/>
 
   <field name="subword" type="subword" indexed="true" stored="true"/>
@@ -599,7 +605,7 @@
   -->
   <dynamicField name="*_i" type="int" indexed="true" stored="true"/>
   <dynamicField name="*_i1" type="int" indexed="true" stored="true" multiValued="false" sortMissingLast="true"/>
-  <dynamicField name="*_idv" type="int" indexed="true" stored="true" docValues="true" multiValued="false"/>
+  <dynamicField name="*_idv" type="${solr.tests.intClass:pint}" indexed="true" stored="true" docValues="true" multiValued="false"/>
 
 
   <dynamicField name="*_s" type="string" indexed="true" stored="true"/>
@@ -610,9 +616,9 @@
   <dynamicField name="*_b" type="boolean" indexed="true" stored="true"/>
   <dynamicField name="*_b1" type="boolean" indexed="true" stored="true" multiValued="false"/>
   <dynamicField name="*_f" type="float" indexed="true" stored="true"/>
-  <dynamicField name="*_f1" type="float" indexed="true" stored="true" multiValued="false"/>
+  <dynamicField name="*_f1" type="${solr.tests.floatClass:pfloat}" indexed="true" stored="true" multiValued="false"/>
   <dynamicField name="*_d" type="double" indexed="true" stored="true"/>
-  <dynamicField name="*_d1" type="double" indexed="true" stored="true" multiValued="false"/>
+  <dynamicField name="*_d1" type="${solr.tests.doubleClass:pdouble}" indexed="true" stored="true" multiValued="false"/>
   <dynamicField name="*_dt" type="date" indexed="true" stored="true"/>
   <dynamicField name="*_dt1" type="date" indexed="true" stored="true" multiValued="false"/>
 
@@ -662,7 +668,7 @@
   <dynamicField name="*_mfacet" type="string" indexed="true" stored="false" multiValued="true"/>
 
   <!-- Type used to index the lat and lon components for the "location" FieldType -->
-  <dynamicField name="*_coordinate" type="tdouble" indexed="true" stored="false" omitNorms="true"/>
+  <dynamicField name="*_coordinate" type="${solr.tests.doubleClass:pdouble}" indexed="true" stored="false" omitNorms="true"/>
 
   <dynamicField name="*_path" type="path" indexed="true" stored="true" omitNorms="true" multiValued="true"/>
   <dynamicField name="*_ancestor" type="ancestor_path" indexed="true" stored="true" omitNorms="true"
@@ -676,12 +682,12 @@
   <dynamicField name="*_f_dv" type="float" indexed="true" stored="true" docValues="true"/>
   <dynamicField name="*_d_dv" type="double" indexed="true" stored="true" docValues="true"/>
   <dynamicField name="*_dt_dv" type="date" indexed="true" stored="true" docValues="true"/>
-  <dynamicField name="*_f1_dv" type="float" indexed="true" stored="true" docValues="true" multiValued="false"/>
+  <dynamicField name="*_f1_dv" type="${solr.tests.floatClass:pfloat}" indexed="true" stored="true" docValues="true" multiValued="false"/>
 
   <!--  Non-stored, DocValues=true -->
-  <dynamicField name="*_i_dvo" multiValued="false" type="int" docValues="true" indexed="true" stored="false"
+  <dynamicField name="*_i_dvo" multiValued="false" type="${solr.tests.intClass:pint}" docValues="true" indexed="true" stored="false"
                 useDocValuesAsStored="true"/>
-  <dynamicField name="*_d_dvo" multiValued="false" type="double" docValues="true" indexed="true" stored="false"
+  <dynamicField name="*_d_dvo" multiValued="false" type="${solr.tests.doubleClass:pdouble}" docValues="true" indexed="true" stored="false"
                 useDocValuesAsStored="true"/>
   <dynamicField name="*_s_dvo" multiValued="false" type="string" docValues="true" indexed="true" stored="false"
                 useDocValuesAsStored="true"/>
@@ -691,8 +697,8 @@
                 useDocValuesAsStored="true"/>
 
   <!--  Non-stored, DocValues=true, useDocValuesAsStored=false -->
-  <field name="single_i_dvn" multiValued="false" type="int" indexed="true" stored="true"/>
-  <field name="single_d_dvn" multiValued="false" type="double" indexed="true" stored="true"/>
+  <field name="single_i_dvn" multiValued="false" type="${solr.tests.intClass:pint}" indexed="true" stored="true"/>
+  <field name="single_d_dvn" multiValued="false" type="${solr.tests.doubleClass:pdouble}" indexed="true" stored="true"/>
   <field name="single_s_dvn" multiValued="false" type="string" indexed="true" stored="true"/>
   <field name="copy_single_i_dvn" multiValued="false" type="int" docValues="true" indexed="true" stored="false"
          useDocValuesAsStored="false"/>

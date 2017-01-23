@@ -135,7 +135,7 @@ public class HadoopAuthPlugin extends AuthenticationPlugin {
       authFilter.init(conf);
 
     } catch (ServletException e) {
-      throw new SolrException(ErrorCode.SERVER_ERROR, "Error initializing GenericHadoopAuthPlugin: "+e);
+      throw new SolrException(ErrorCode.SERVER_ERROR, "Error initializing " + getClass().getName() + ": "+e);
     }
   }
 

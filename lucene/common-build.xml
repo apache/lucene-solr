@@ -976,6 +976,7 @@
             shuffleOnSlave="true"
             leaveTemporary="${junit4.leaveTemporary}"
             seed="${tests.seed}"
+            onNonEmptyWorkDirectory="wipe"
 
             heartbeat="${tests.heartbeat}"
             uniqueSuiteNames="false"
@@ -1073,6 +1074,7 @@
                 <propertyref prefix="tests.leaveTemporary" />
                 <propertyref prefix="tests.leavetemporary" />
                 <propertyref prefix="solr.test.leavetmpdir" />
+                <propertyref prefix="solr.tests.preferPointFields"/>
             </syspropertyset>
 
             <!-- Pass randomized settings to the forked JVM. -->
@@ -2077,7 +2079,7 @@ ${ant.project.name}.test.dependencies=${test.classpath.list}
       </condition>
       <antcall target="download-java8-javadoc-packagelist"/>
       <delete file="@{destdir}/stylesheet.css" failonerror="false"/>
-      <copy todir="@{destdir}" file="${prettify.dir}/prettify.js" overwrite="false" />
+      <delete file="@{destdir}/script.js" failonerror="false"/>
       <record name="@{destdir}/log_javadoc.txt" action="start" append="no"/>
       <javadoc
           overview="@{overview}"
@@ -2106,20 +2108,6 @@ ${ant.project.name}.test.dependencies=${test.classpath.list}
         <link offline="true" href="${javadoc.link}" packagelistLoc="${javadoc.packagelist.dir}/java8"/>
         <bottom><![CDATA[
           <i>Copyright &copy; ${year} Apache Software Foundation.  All Rights Reserved.</i>
-          <script src='{@docRoot}/prettify.js' type='text/javascript'></script>
-          <script type='text/javascript'>
-            (function(){
-              var oldonload = window.onload;
-              if (typeof oldonload != 'function') {
-                window.onload = prettyPrint;
-              } else {
-                window.onload = function() {
-                  oldonload();
-                  prettyPrint();
-                }
-              }
-            })();
-          </script>
         ]]></bottom>
         
         <sources />
@@ -2130,10 +2118,14 @@ ${ant.project.name}.test.dependencies=${test.classpath.list}
       </javadoc>
       <record name="@{destdir}/log_javadoc.txt" action="stop"/>
       
-      <!-- append prettify.css -->
-      <concat destfile="@{destdir}/stylesheet.css" append="true">
+      <!-- append prettify to scripts and css -->
+      <concat destfile="@{destdir}/stylesheet.css" append="true" fixlastline="true" encoding="UTF-8">
         <filelist dir="${prettify.dir}" files="prettify.css"/>
       </concat>
+      <concat destfile="@{destdir}/script.js" append="true" fixlastline="true" encoding="UTF-8">
+        <filelist dir="${prettify.dir}" files="prettify.js inject-javadocs.js"/>
+      </concat>
+      <fixcrlf srcdir="@{destdir}" includes="stylesheet.css script.js" eol="lf" fixlast="true" encoding="UTF-8" />
 
       <delete>
         <fileset file="@{destdir}/log_javadoc.txt">

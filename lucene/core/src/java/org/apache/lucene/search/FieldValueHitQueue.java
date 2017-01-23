@@ -58,8 +58,7 @@ public abstract class FieldValueHitQueue<T extends FieldValueHitQueue.Entry> ext
     private final int oneReverseMul;
     private final FieldComparator<?> oneComparator;
     
-    public OneComparatorFieldValueHitQueue(SortField[] fields, int size)
-        throws IOException {
+    public OneComparatorFieldValueHitQueue(SortField[] fields, int size) {
       super(fields, size);
 
       assert fields.length == 1;
@@ -96,8 +95,7 @@ public abstract class FieldValueHitQueue<T extends FieldValueHitQueue.Entry> ext
    */
   private static final class MultiComparatorsFieldValueHitQueue<T extends FieldValueHitQueue.Entry> extends FieldValueHitQueue<T> {
 
-    public MultiComparatorsFieldValueHitQueue(SortField[] fields, int size)
-        throws IOException {
+    public MultiComparatorsFieldValueHitQueue(SortField[] fields, int size) {
       super(fields, size);
     }
   
@@ -123,7 +121,7 @@ public abstract class FieldValueHitQueue<T extends FieldValueHitQueue.Entry> ext
   }
   
   // prevent instantiation and extension.
-  private FieldValueHitQueue(SortField[] fields, int size) throws IOException {
+  private FieldValueHitQueue(SortField[] fields, int size) {
     super(size);
     // When we get here, fields.length is guaranteed to be > 0, therefore no
     // need to check it again.
@@ -154,9 +152,8 @@ public abstract class FieldValueHitQueue<T extends FieldValueHitQueue.Entry> ext
    *          priority first); cannot be <code>null</code> or empty
    * @param size
    *          The number of hits to retain. Must be greater than zero.
-   * @throws IOException if there is a low-level IO error
    */
-  public static <T extends FieldValueHitQueue.Entry> FieldValueHitQueue<T> create(SortField[] fields, int size) throws IOException {
+  public static <T extends FieldValueHitQueue.Entry> FieldValueHitQueue<T> create(SortField[] fields, int size) {
 
     if (fields.length == 0) {
       throw new IllegalArgumentException("Sort must contain at least one field");

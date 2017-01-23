@@ -31,7 +31,9 @@ import org.apache.lucene.index.BasePointsFormatTestCase;
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
+import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.LeafReader;
+import org.apache.lucene.index.MockRandomMergePolicy;
 import org.apache.lucene.index.PointValues;
 import org.apache.lucene.index.SegmentReadState;
 import org.apache.lucene.index.SegmentWriteState;
@@ -97,7 +99,13 @@ public class TestLucene60PointsFormat extends BasePointsFormatTestCase {
 
   public void testEstimatePointCount() throws IOException {
     Directory dir = newDirectory();
-    IndexWriter w = new IndexWriter(dir, newIndexWriterConfig());
+    IndexWriterConfig iwc = newIndexWriterConfig();
+    // Avoid mockRandomMP since it may cause non-optimal merges that make the
+    // number of points per leaf hard to predict
+    while (iwc.getMergePolicy() instanceof MockRandomMergePolicy) {
+      iwc.setMergePolicy(newMergePolicy());
+    }
+    IndexWriter w = new IndexWriter(dir, iwc);
     byte[] pointValue = new byte[3];
     byte[] uniquePointValue = new byte[3];
     random().nextBytes(uniquePointValue);
@@ -245,25 +253,28 @@ public class TestLucene60PointsFormat extends BasePointsFormatTestCase {
         }));
 
     // If only one point matches, then the point count is (actualMaxPointsInLeafNode + 1) / 2
-    assertEquals((actualMaxPointsInLeafNode + 1) / 2,
-        points.estimatePointCount(new IntersectVisitor() {
-          @Override
-          public void visit(int docID, byte[] packedValue) throws IOException {}
-          
-          @Override
-          public void visit(int docID) throws IOException {}
-          
-          @Override
-          public Relation compare(byte[] minPackedValue, byte[] maxPackedValue) {
-            for (int dim = 0; dim < 2; ++dim) {
-              if (StringHelper.compare(3, uniquePointValue[0], 0, maxPackedValue, dim * 3) > 0 ||
-                  StringHelper.compare(3, uniquePointValue[0], 0, minPackedValue, dim * 3) < 0) {
-                return Relation.CELL_OUTSIDE_QUERY;
-              }
+    // in general, or maybe 2x that if the point is a split value
+    final long pointCount = points.estimatePointCount(new IntersectVisitor() {
+        @Override
+        public void visit(int docID, byte[] packedValue) throws IOException {}
+        
+        @Override
+        public void visit(int docID) throws IOException {}
+        
+        @Override
+        public Relation compare(byte[] minPackedValue, byte[] maxPackedValue) {
+          for (int dim = 0; dim < 2; ++dim) {
+            if (StringHelper.compare(3, uniquePointValue[dim], 0, maxPackedValue, dim * 3) > 0 ||
+                StringHelper.compare(3, uniquePointValue[dim], 0, minPackedValue, dim * 3) < 0) {
+              return Relation.CELL_OUTSIDE_QUERY;
             }
-            return Relation.CELL_CROSSES_QUERY;
           }
-        }));
+          return Relation.CELL_CROSSES_QUERY;
+        }
+      });
+    assertTrue(""+pointCount,
+        pointCount == (actualMaxPointsInLeafNode + 1) / 2 || // common case
+        pointCount == 2*((actualMaxPointsInLeafNode + 1) / 2)); // if the point is a split value
 
     r.close();
     dir.close();

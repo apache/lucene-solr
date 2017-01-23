@@ -77,7 +77,12 @@
   <fieldType name="float" class="solr.TrieFloatField" precisionStep="0" positionIncrementGap="0"/>
   <fieldType name="long" class="solr.TrieLongField" precisionStep="0" positionIncrementGap="0"/>
   <fieldType name="double" class="solr.TrieDoubleField" precisionStep="0" positionIncrementGap="0"/>
-
+  
+  <!-- Point Fields -->
+  <fieldType name="pint" class="solr.IntPointField" docValues="true"/>
+  <fieldType name="plong" class="solr.LongPointField" docValues="true"/>
+  <fieldType name="pdouble" class="solr.DoublePointField" docValues="true"/>
+  <fieldType name="pfloat" class="solr.FloatPointField" docValues="true"/>
 
     <!-- The format for this date field is of the form 1995-12-31T23:59:59Z, and
          is a more restricted form of the canonical representation of dateTime
@@ -340,15 +345,15 @@ valued. -->
    <dynamicField name="*_s_dv"  type="string"  indexed="true"  stored="true" docValues="true"/>
    <dynamicField name="*_ss"    type="string"  indexed="true"  stored="true" multiValued="true"/>
    <dynamicField name="*_sS"   type="string"  indexed="false" stored="true"/>
-   <dynamicField name="*_i"    type="int"    indexed="true"  stored="true"/>
+   <dynamicField name="*_i"    type="${solr.tests.intClass:pint}"    indexed="true"  stored="true"/>
    <dynamicField name="*_ii"   type="int"    indexed="true"  stored="true" multiValued="true"/>
-   <dynamicField name="*_l"    type="long"   indexed="true"  stored="true"/>
-   <dynamicField name="*_f"    type="float"  indexed="true"  stored="true"/>
-   <dynamicField name="*_d"    type="double" indexed="true"  stored="true"/>
+   <dynamicField name="*_l"    type="${solr.tests.longClass:plong}"   indexed="true"  stored="true"/>
+   <dynamicField name="*_f"    type="${solr.tests.floatClass:pfloat}"  indexed="true"  stored="true"/>
+   <dynamicField name="*_d"    type="${solr.tests.doubleClass:pdouble}" indexed="true"  stored="true"/>
 
    <dynamicField name="*_ti"      type="tint"    indexed="true"  stored="true"/>
-   <dynamicField name="*_ti_dv"   type="int"    indexed="true"  stored="true" docValues="true"/>
-   <dynamicField name="*_ti_ni_dv"   type="int"    indexed="true"  stored="true" docValues="true"/>
+   <dynamicField name="*_ti_dv"   type="tint"    indexed="true"  stored="true" docValues="true"/>
+   <dynamicField name="*_ti_ni_dv"   type="tint"    indexed="true"  stored="true" docValues="true"/>
    <dynamicField name="*_tl"      type="tlong"   indexed="true"  stored="true"/>
    <dynamicField name="*_tl_dv"    type="tlong"   indexed="true"  stored="true" docValues="true"/>
    <dynamicField name="*_tl_ni_dv"   type="tlong"   indexed="false"  stored="true" docValues="true"/>

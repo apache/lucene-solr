@@ -24,6 +24,7 @@ import org.apache.lucene.util.LuceneTestCase.SuppressCodecs;
 import org.apache.lucene.util.TestUtil;
 import org.apache.solr.CursorPagingTest;
 import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.SolrTestCaseJ4.SuppressPointFields;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.embedded.EmbeddedSolrServer;
 import org.apache.solr.client.solrj.response.QueryResponse;
@@ -38,6 +39,7 @@ import org.junit.BeforeClass;
 
 //We want codecs that support DocValues, and ones supporting blank/empty values.
 @SuppressCodecs({"Appending","Lucene3x","Lucene40","Lucene41","Lucene42"})
+@SuppressPointFields
 public class TestRandomCollapseQParserPlugin extends SolrTestCaseJ4 {
 
   /** Full SolrServer instance for arbitrary introspection of response data and adding fqs */

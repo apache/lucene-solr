@@ -20,9 +20,12 @@ import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.Date;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -39,22 +42,29 @@ import com.google.common.collect.Maps;
 import org.apache.http.auth.AuthSchemeProvider;
 import org.apache.http.client.CredentialsProvider;
 import org.apache.http.config.Lookup;
+import org.apache.lucene.index.CorruptIndexException;
+import org.apache.lucene.store.Directory;
 import org.apache.solr.client.solrj.impl.HttpClientUtil;
 import org.apache.solr.client.solrj.impl.SolrHttpClientBuilder;
 import org.apache.solr.client.solrj.impl.SolrHttpClientContextBuilder;
 import org.apache.solr.client.solrj.impl.SolrHttpClientContextBuilder.AuthSchemeRegistryProvider;
 import org.apache.solr.client.solrj.impl.SolrHttpClientContextBuilder.CredentialsProviderProvider;
 import org.apache.solr.client.solrj.util.SolrIdentifierValidator;
+import org.apache.solr.cloud.CloudDescriptor;
 import org.apache.solr.cloud.Overseer;
 import org.apache.solr.cloud.ZkController;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
+import org.apache.solr.common.cloud.Replica;
+import org.apache.solr.common.cloud.Replica.State;
 import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.common.util.IOUtils;
 import org.apache.solr.common.util.Utils;
+import org.apache.solr.core.DirectoryFactory.DirContext;
 import org.apache.solr.core.backup.repository.BackupRepository;
 import org.apache.solr.core.backup.repository.BackupRepositoryFactory;
 import org.apache.solr.handler.RequestHandlerBase;
+import org.apache.solr.handler.SnapShooter;
 import org.apache.solr.handler.admin.CollectionsHandler;
 import org.apache.solr.handler.admin.ConfigSetsHandler;
 import org.apache.solr.handler.admin.CoreAdminHandler;
@@ -165,6 +175,8 @@ public class CoreContainer {
   protected SolrMetricManager metricManager;
 
   protected MetricsHandler metricsHandler;
+
+  private enum CoreInitFailedAction { fromleader, none }
 
   /**
    * This method instantiates a new instance of {@linkplain BackupRepository}.
@@ -911,7 +923,11 @@ public class CoreContainer {
 
       ConfigSet coreConfig = coreConfigService.getConfig(dcore);
       log.info("Creating SolrCore '{}' using configuration from {}", dcore.getName(), coreConfig.getName());
-      core = new SolrCore(dcore, coreConfig);
+      try {
+        core = new SolrCore(dcore, coreConfig);
+      } catch (SolrException e) {
+        core = processCoreCreateException(e, dcore, coreConfig);
+      }
 
       // always kick off recovery if we are in non-Cloud mode
       if (!isZooKeeperAware() && core.getUpdateHandler().getUpdateLog() != null) {
@@ -923,14 +939,12 @@ public class CoreContainer {
       return core;
     } catch (Exception e) {
       coreInitFailures.put(dcore.getName(), new CoreLoadFailure(dcore, e));
-      log.error("Error creating core [{}]: {}", dcore.getName(), e.getMessage(), e);
       final SolrException solrException = new SolrException(ErrorCode.SERVER_ERROR, "Unable to create core [" + dcore.getName() + "]", e);
       if(core != null && !core.isClosed())
         IOUtils.closeQuietly(core);
       throw solrException;
     } catch (Throwable t) {
       SolrException e = new SolrException(ErrorCode.SERVER_ERROR, "JVM Error creating core [" + dcore.getName() + "]: " + t.getMessage(), t);
-      log.error("Error creating core [{}]: {}", dcore.getName(), t.getMessage(), t);
       coreInitFailures.put(dcore.getName(), new CoreLoadFailure(dcore, e));
       if(core != null && !core.isClosed())
         IOUtils.closeQuietly(core);
@@ -938,7 +952,96 @@ public class CoreContainer {
     } finally {
       MDCLoggingContext.clear();
     }
+  }
+  
+  /**
+   * Take action when we failed to create a SolrCore. If error is due to corrupt index, try to recover. Various recovery
+   * strategies can be specified via system properties "-DCoreInitFailedAction={fromleader, none}"
+   *
+   * @see CoreInitFailedAction
+   *
+   * @param original
+   *          the problem seen when loading the core the first time.
+   * @param dcore
+   *          core descriptor for the core to create
+   * @param coreConfig
+   *          core config for the core to create
+   * @return if possible
+   * @throws SolrException
+   *           rethrows the original exception if we will not attempt to recover, throws a new SolrException with the
+   *           original exception as a suppressed exception if there is a second problem creating the solr core.
+   */
+  private SolrCore processCoreCreateException(SolrException original, CoreDescriptor dcore, ConfigSet coreConfig) {
+    // Traverse full chain since CIE may not be root exception
+    Throwable cause = original;
+    while ((cause = cause.getCause()) != null) {
+      if (cause instanceof CorruptIndexException) {
+        break;
+      }
+    }
+    
+    // If no CorruptIndexExeption, nothing we can try here
+    if (cause == null) throw original;
+    
+    CoreInitFailedAction action = CoreInitFailedAction.valueOf(System.getProperty(CoreInitFailedAction.class.getSimpleName(), "none"));
+    log.debug("CorruptIndexException while creating core, will attempt to repair via {}", action);
+    
+    switch (action) {
+      case fromleader: // Recovery from leader on a CorruptedIndexException
+        if (isZooKeeperAware()) {
+          CloudDescriptor desc = dcore.getCloudDescriptor();
+          try {
+            Replica leader = getZkController().getClusterState()
+                .getCollection(desc.getCollectionName())
+                .getSlice(desc.getShardId())
+                .getLeader();
+            if (leader != null && leader.getState() == State.ACTIVE) {
+              log.info("Found active leader, will attempt to create fresh core and recover.");
+              resetIndexDirectory(dcore, coreConfig);
+              return new SolrCore(dcore, coreConfig);
+            }
+          } catch (SolrException se) {
+            se.addSuppressed(original);
+            throw se;
+          }
+        }
+        throw original;
+      case none:
+        throw original;
+      default:
+        log.warn("Failed to create core, and did not recognize specified 'CoreInitFailedAction': [{}]. Valid options are {}.",
+            action, Arrays.asList(CoreInitFailedAction.values()));
+        throw original;
+    }
+  }
 
+  /**
+   * Write a new index directory for the a SolrCore, but do so without loading it.
+   */
+  private void resetIndexDirectory(CoreDescriptor dcore, ConfigSet coreConfig) {
+    SolrConfig config = coreConfig.getSolrConfig();
+
+    String registryName = SolrMetricManager.getRegistryName(SolrInfoMBean.Group.core, dcore.getName());
+    DirectoryFactory df = DirectoryFactory.loadDirectoryFactory(config, this, registryName);
+    String dataDir = SolrCore.findDataDir(df, null, config, dcore);
+
+    String tmpIdxDirName = "index." + new SimpleDateFormat(SnapShooter.DATE_FMT, Locale.ROOT).format(new Date());
+    SolrCore.modifyIndexProps(df, dataDir, config, tmpIdxDirName);
+
+    // Free the directory object that we had to create for this
+    Directory dir = null;
+    try {
+      dir = df.get(dataDir, DirContext.META_DATA, config.indexConfig.lockType);
+    } catch (IOException e) {
+      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
+    } finally {
+      try {
+        df.release(dir);
+        df.doneWithDirectory(dir);
+      } catch (IOException e) {
+        SolrException.log(log, e);
+      }
+    }
   }
 
   /**

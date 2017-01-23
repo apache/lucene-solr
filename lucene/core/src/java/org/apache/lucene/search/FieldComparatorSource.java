@@ -17,8 +17,6 @@
 package org.apache.lucene.search;
 
 
-import java.io.IOException;
-
 /**
  * Provides a {@link FieldComparator} for custom field sorting.
  *
@@ -33,9 +31,7 @@ public abstract class FieldComparatorSource {
    * @param fieldname
    *          Name of the field to create comparator for.
    * @return FieldComparator.
-   * @throws IOException
-   *           If an error occurs reading the index.
    */
-  public abstract FieldComparator<?> newComparator(String fieldname, int numHits, int sortPos, boolean reversed)
-      throws IOException;
+  public abstract FieldComparator<?> newComparator(String fieldname, int numHits, int sortPos, boolean reversed);
+
 }

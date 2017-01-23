@@ -475,11 +475,9 @@ public abstract class TopFieldCollector extends TopDocsCollector<Entry> {
    *          <code>trackDocScores</code> to true as well.
    * @return a {@link TopFieldCollector} instance which will sort the results by
    *         the sort criteria.
-   * @throws IOException if there is a low-level I/O error
    */
   public static TopFieldCollector create(Sort sort, int numHits, FieldDoc after,
-      boolean fillFields, boolean trackDocScores, boolean trackMaxScore)
-      throws IOException {
+      boolean fillFields, boolean trackDocScores, boolean trackMaxScore) {
 
     if (sort.fields.length == 0) {
       throw new IllegalArgumentException("Sort must contain at least one field");

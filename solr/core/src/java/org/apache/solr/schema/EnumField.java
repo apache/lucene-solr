@@ -43,7 +43,6 @@ import org.apache.lucene.legacy.LegacyNumericUtils;
 import org.apache.lucene.queries.function.ValueSource;
 import org.apache.lucene.queries.function.valuesource.EnumFieldSource;
 import org.apache.lucene.search.ConstantScoreQuery;
-import org.apache.lucene.search.DocValuesRangeQuery;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.SortField;
 import org.apache.lucene.util.BytesRef;
@@ -253,10 +252,21 @@ public class EnumField extends PrimitiveFieldType {
     Query query = null;
     final boolean matchOnly = field.hasDocValues() && !field.indexed();
     if (matchOnly) {
-      query = new ConstantScoreQuery(DocValuesRangeQuery.newLongRange(field.getName(),
-              min == null ? null : minValue.longValue(),
-              max == null ? null : maxValue.longValue(),
-              minInclusive, maxInclusive));
+      long lowerValue = Long.MIN_VALUE;
+      long upperValue = Long.MAX_VALUE;
+      if (minValue != null) {
+        lowerValue = minValue.longValue();
+        if (minInclusive == false) {
+          ++lowerValue;
+        }
+      }
+      if (maxValue != null) {
+        upperValue = maxValue.longValue();
+        if (maxInclusive == false) {
+          --upperValue;
+        }
+      }
+      query = new ConstantScoreQuery(NumericDocValuesField.newRangeQuery(field.getName(), lowerValue, upperValue));
     } else {
       query = LegacyNumericRangeQuery.newIntRange(field.getName(), DEFAULT_PRECISION_STEP,
           min == null ? null : minValue,

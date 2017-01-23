@@ -116,7 +116,7 @@ public class ToParentBlockJoinCollector implements Collector {
    *  not be null.  If you pass true trackScores, all
    *  ToParentBlockQuery instances must not use
    *  ScoreMode.None. */
-  public ToParentBlockJoinCollector(Sort sort, int numParentHits, boolean trackScores, boolean trackMaxScore) throws IOException {
+  public ToParentBlockJoinCollector(Sort sort, int numParentHits, boolean trackScores, boolean trackMaxScore) {
     // TODO: allow null sort to be specialized to relevance
     // only collector
     this.sort = sort;

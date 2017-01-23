@@ -16,18 +16,18 @@
  */
 package org.apache.solr.handler.admin;
 
+import java.util.Arrays;
+import java.util.EnumSet;
+
 import org.apache.solr.common.luke.FieldFlag;
 import org.apache.solr.request.SolrQueryRequest;
-import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.schema.CustomAnalyzerStrField; // jdoc
+import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.util.AbstractSolrTestCase;
 import org.apache.solr.util.TestHarness;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
-
-import java.util.Arrays;
-import java.util.EnumSet;
 
 /**
  * :TODO: currently only tests some of the utilities in the LukeRequestHandler
