@@ -116,6 +116,8 @@ Build
   Also update Prettify to latest version to fix Google Chrome issue.
   (Uwe Schindler)
 
+* LUCENE-7653: Update randomizedtesting to version 2.5.0. (Dawid Weiss)
+
 ======================= Lucene 6.4.0 =======================
 
 API Changes
