@@ -30,24 +30,36 @@ import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.LuceneTestCase;
-import org.apache.lucene.util.NumericUtils;
 import org.apache.lucene.util.TestUtil;
 
 public class TestDocValuesQueries extends LuceneTestCase {
 
   public void testDuelPointRangeSortedNumericRangeQuery() throws IOException {
-    doTestDuelPointRangeNumericRangeQuery(true, 1);
+    doTestDuelPointRangeNumericRangeQuery(true, 0, 1);
+  }
+
+  // We test the all-set case explicitly since it triggers different code paths
+  // given that the docsWithField will be null in that case
+  public void testDuelPointRangeSortedNumericRangeQueryAllSet() throws IOException {
+    doTestDuelPointRangeNumericRangeQuery(true, 1, 1);
   }
 
   public void testDuelPointRangeMultivaluedSortedNumericRangeQuery() throws IOException {
-    doTestDuelPointRangeNumericRangeQuery(true, 3);
+    doTestDuelPointRangeNumericRangeQuery(true, 0, 3);
   }
 
   public void testDuelPointRangeNumericRangeQuery() throws IOException {
-    doTestDuelPointRangeNumericRangeQuery(false, 1);
+    doTestDuelPointRangeNumericRangeQuery(false, 0, 1);
   }
 
-  private void doTestDuelPointRangeNumericRangeQuery(boolean sortedNumeric, int maxValuesPerDoc) throws IOException {
+  // We test the all-set case explicitly since it triggers different code paths
+  // given that the docsWithField will be null in that case
+  public void testDuelPointRangeNumericRangeQueryAllSet() throws IOException {
+    doTestDuelPointRangeNumericRangeQuery(false, 1, 1);
+  }
+
+  private void doTestDuelPointRangeNumericRangeQuery(boolean sortedNumeric,
+      int minValuesPerDoc, int maxValuesPerDoc) throws IOException {
     final int iters = atLeast(10);
     for (int iter = 0; iter < iters; ++iter) {
       Directory dir = newDirectory();
@@ -55,7 +67,7 @@ public class TestDocValuesQueries extends LuceneTestCase {
       final int numDocs = atLeast(100);
       for (int i = 0; i < numDocs; ++i) {
         Document doc = new Document();
-        final int numValues = TestUtil.nextInt(random(), 0, maxValuesPerDoc);
+        final int numValues = TestUtil.nextInt(random(), minValuesPerDoc, maxValuesPerDoc);
         for (int j = 0; j < numValues; ++j) {
           final long value = TestUtil.nextLong(random(), -100, 10000);
           if (sortedNumeric) {
@@ -233,37 +245,6 @@ public class TestDocValuesQueries extends LuceneTestCase {
       Weight w = searcher.createNormalizedWeight(query, random().nextBoolean());
       assertNull(w.scorer(searcher.getIndexReader().leaves().get(0)));
     }
-    reader.close();
-    dir.close();
-  }
-
-  public void testSortedNumericNPE() throws IOException {
-    Directory dir = newDirectory();
-    RandomIndexWriter iw = new RandomIndexWriter(random(), dir);
-    double[] nums = {-1.7147449030215377E-208, -1.6887024655302576E-11, 1.534911516604164E113, 0.0,
-        2.6947996404505155E-166, -2.649722021970773E306, 6.138239235731689E-198, 2.3967090122610808E111};
-    for (int i = 0; i < nums.length; ++i) {
-      Document doc = new Document();
-      doc.add(new SortedNumericDocValuesField("dv", NumericUtils.doubleToSortableLong(nums[i])));
-      iw.addDocument(doc);
-    }
-    iw.commit();
-    final IndexReader reader = iw.getReader();
-    final IndexSearcher searcher = newSearcher(reader);
-    iw.close();
-
-    final long lo = NumericUtils.doubleToSortableLong(8.701032080293731E-226);
-    final long hi = NumericUtils.doubleToSortableLong(2.0801416404385346E-41);
-    
-    Query query = SortedNumericDocValuesField.newRangeQuery("dv", lo, hi);
-    // TODO: assert expected matches
-    searcher.search(query, searcher.reader.maxDoc(), Sort.INDEXORDER);
-
-    // swap order, should still work
-    query = SortedNumericDocValuesField.newRangeQuery("dv", hi, lo);
-    // TODO: assert expected matches
-    searcher.search(query, searcher.reader.maxDoc(), Sort.INDEXORDER);
-    
     reader.close();
     dir.close();
   }

@@ -102,18 +102,16 @@ abstract class SortedNumericDocValuesRangeQuery extends Query {
         if (values == null) {
           return null;
         }
-        final NumericDocValues singleton = null; // TODO: LUCENE-7649, re-consider optimization that broke SOLR-10013
-        // final NumericDocValues singleton = DocValues.unwrapSingleton(values);
+        final NumericDocValues singleton = DocValues.unwrapSingleton(values);
         final TwoPhaseIterator iterator;
         final DocIdSetIterator approximation = DocIdSetIterator.all(context.reader().maxDoc());
         if (singleton != null) {
-          assert false : "imposible code -- or: someone re-enabled singleton optinization w/o reading the whole method";
           final Bits docsWithField = DocValues.unwrapSingletonBits(values);
           iterator = new TwoPhaseIterator(approximation) {
             @Override
             public boolean matches() throws IOException {
               final long value = singleton.get(approximation.docID());
-              return (value != 0 || docsWithField.get(approximation.docID()))
+              return (value != 0 || docsWithField == null || docsWithField.get(approximation.docID()))
                   && value >= lowerValue && value <= upperValue;
             }
 
