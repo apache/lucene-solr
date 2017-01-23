@@ -20,11 +20,17 @@ import java.util.HashMap;
 import java.util.Map;
 
 import org.apache.lucene.util.LuceneTestCase.Slow;
+import org.apache.lucene.util.TestUtil;
 import org.apache.solr.BaseDistributedSearchTestCase;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.common.SolrDocumentList;
 import org.apache.solr.common.params.MoreLikeThisParams;
 import org.apache.solr.common.util.NamedList;
+import org.apache.solr.search.stats.ExactStatsCache;
+import org.apache.solr.search.stats.LRUStatsCache;
+import org.apache.solr.search.stats.LocalStatsCache;
+import org.junit.AfterClass;
+import org.junit.BeforeClass;
 import org.junit.Test;
 
 /**
@@ -48,6 +54,23 @@ public class DistributedMLTComponentTest extends BaseDistributedSearchTestCase {
   public void distribSetUp() throws Exception {
     requestHandlerName = "mltrh";
     super.distribSetUp();
+  }
+
+  @BeforeClass
+  public static void beforeClass() {
+    int statsType = TestUtil.nextInt(random(), 1, 3);
+    if (statsType == 1) {
+      System.setProperty("solr.statsCache", ExactStatsCache.class.getName());
+    } else if (statsType == 2) {
+      System.setProperty("solr.statsCache", LRUStatsCache.class.getName());
+    } else {
+      System.setProperty("solr.statsCache", LocalStatsCache.class.getName());
+    }
+  }
+
+  @AfterClass
+  public static void afterClass() {
+    System.clearProperty("solr.statsCache");
   }
   
   @Test

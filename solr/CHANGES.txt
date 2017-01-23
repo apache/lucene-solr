@@ -63,6 +63,8 @@ Bug Fixes
 
 * SOLR-9976: Fix init bug in SegmentsInfoRequestHandlerTest (hossman)
 
+* SOLR-9114: NPE using TermVectorComponent, MoreLikeThisComponent in combination with ExactStatsCache (Cao Manh Dat, Varun Thacker)
+
 Other Changes
 ----------------------
 * SOLR-9980: Expose configVersion in core admin status (Jessica Cheng Mallet via Tomás Fernández Löbbe)

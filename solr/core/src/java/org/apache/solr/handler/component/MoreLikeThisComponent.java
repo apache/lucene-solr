@@ -221,7 +221,17 @@ public class MoreLikeThisComponent extends SearchComponent {
     }
     super.finishStage(rb);
   }
-  
+
+  @Override
+  public void modifyRequest(ResponseBuilder rb, SearchComponent who, ShardRequest sreq) {
+    SolrParams params = rb.req.getParams();
+    if (!params.getBool(COMPONENT_NAME, false)) return;
+    if ((sreq.purpose & ShardRequest.PURPOSE_GET_MLT_RESULTS) == 0
+        && (sreq.purpose & ShardRequest.PURPOSE_GET_TOP_IDS) == 0) {
+      sreq.params.set(COMPONENT_NAME, "false");
+    }
+  }
+
   /**
    * Returns NamedList based on the order of
    * resultIds.shardDoc.positionInResponse
