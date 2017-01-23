@@ -194,9 +194,9 @@ abstract class DisjunctionScorer extends Scorer {
   protected abstract float score(DisiWrapper topList) throws IOException;
 
   @Override
-  public final Collection<ChildScorer> getChildren() throws IOException {
+  public final Collection<ChildScorer> getChildren() {
     ArrayList<ChildScorer> children = new ArrayList<>();
-    for (DisiWrapper scorer = getSubMatches(); scorer != null; scorer = scorer.next) {
+    for (DisiWrapper scorer : subScorers) {
       children.add(new ChildScorer(scorer.scorer, "SHOULD"));
     }
     return children;
