@@ -1173,23 +1173,26 @@ public class TestBKD extends LuceneTestCase {
         }));
 
     // If only one point matches, then the point count is (actualMaxPointsInLeafNode + 1) / 2
-    assertEquals((actualMaxPointsInLeafNode + 1) / 2,
-        points.estimatePointCount(new IntersectVisitor() {
-          @Override
-          public void visit(int docID, byte[] packedValue) throws IOException {}
-          
-          @Override
-          public void visit(int docID) throws IOException {}
-          
-          @Override
-          public Relation compare(byte[] minPackedValue, byte[] maxPackedValue) {
-            if (StringHelper.compare(numBytesPerDim, uniquePointValue, 0, maxPackedValue, 0) > 0 ||
-                StringHelper.compare(numBytesPerDim, uniquePointValue, 0, minPackedValue, 0) < 0) {
-              return Relation.CELL_OUTSIDE_QUERY;
-            }
-            return Relation.CELL_CROSSES_QUERY;
-          }
-        }));
+    // in general, or maybe 2x that if the point is a split value
+    final long pointCount = points.estimatePointCount(new IntersectVisitor() {
+      @Override
+      public void visit(int docID, byte[] packedValue) throws IOException {}
+
+      @Override
+      public void visit(int docID) throws IOException {}
+
+      @Override
+      public Relation compare(byte[] minPackedValue, byte[] maxPackedValue) {
+        if (StringHelper.compare(numBytesPerDim, uniquePointValue, 0, maxPackedValue, 0) > 0 ||
+            StringHelper.compare(numBytesPerDim, uniquePointValue, 0, minPackedValue, 0) < 0) {
+          return Relation.CELL_OUTSIDE_QUERY;
+        }
+        return Relation.CELL_CROSSES_QUERY;
+      }
+    });
+    assertTrue(""+pointCount,
+        pointCount == (actualMaxPointsInLeafNode + 1) / 2 || // common case
+        pointCount == 2*((actualMaxPointsInLeafNode + 1) / 2)); // if the point is a split value
 
     pointsIn.close();
     dir.close();

@@ -253,25 +253,28 @@ public class TestLucene60PointsFormat extends BasePointsFormatTestCase {
         }));
 
     // If only one point matches, then the point count is (actualMaxPointsInLeafNode + 1) / 2
-    assertEquals((actualMaxPointsInLeafNode + 1) / 2,
-        points.estimatePointCount(new IntersectVisitor() {
-          @Override
-          public void visit(int docID, byte[] packedValue) throws IOException {}
-          
-          @Override
-          public void visit(int docID) throws IOException {}
-          
-          @Override
-          public Relation compare(byte[] minPackedValue, byte[] maxPackedValue) {
-            for (int dim = 0; dim < 2; ++dim) {
-              if (StringHelper.compare(3, uniquePointValue[dim], 0, maxPackedValue, dim * 3) > 0 ||
-                  StringHelper.compare(3, uniquePointValue[dim], 0, minPackedValue, dim * 3) < 0) {
-                return Relation.CELL_OUTSIDE_QUERY;
-              }
+    // in general, or maybe 2x that if the point is a split value
+    final long pointCount = points.estimatePointCount(new IntersectVisitor() {
+        @Override
+        public void visit(int docID, byte[] packedValue) throws IOException {}
+        
+        @Override
+        public void visit(int docID) throws IOException {}
+        
+        @Override
+        public Relation compare(byte[] minPackedValue, byte[] maxPackedValue) {
+          for (int dim = 0; dim < 2; ++dim) {
+            if (StringHelper.compare(3, uniquePointValue[dim], 0, maxPackedValue, dim * 3) > 0 ||
+                StringHelper.compare(3, uniquePointValue[dim], 0, minPackedValue, dim * 3) < 0) {
+              return Relation.CELL_OUTSIDE_QUERY;
             }
-            return Relation.CELL_CROSSES_QUERY;
           }
-        }));
+          return Relation.CELL_CROSSES_QUERY;
+        }
+      });
+    assertTrue(""+pointCount,
+        pointCount == (actualMaxPointsInLeafNode + 1) / 2 || // common case
+        pointCount == 2*((actualMaxPointsInLeafNode + 1) / 2)); // if the point is a split value
 
     r.close();
     dir.close();
