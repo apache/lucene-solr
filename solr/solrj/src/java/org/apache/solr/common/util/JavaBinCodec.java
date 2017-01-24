@@ -189,7 +189,7 @@ public class JavaBinCodec implements PushWriter {
 
   public SimpleOrderedMap<Object> readOrderedMap(DataInputInputStream dis) throws IOException {
     int sz = readSize(dis);
-    SimpleOrderedMap<Object> nl = new SimpleOrderedMap<>();
+    SimpleOrderedMap<Object> nl = new SimpleOrderedMap<>(sz);
     for (int i = 0; i < sz; i++) {
       String name = (String) readVal(dis);
       Object val = readVal(dis);
@@ -200,7 +200,7 @@ public class JavaBinCodec implements PushWriter {
 
   public NamedList<Object> readNamedList(DataInputInputStream dis) throws IOException {
     int sz = readSize(dis);
-    NamedList<Object> nl = new NamedList<>();
+    NamedList<Object> nl = new NamedList<>(sz);
     for (int i = 0; i < sz; i++) {
       String name = (String) readVal(dis);
       Object val = readVal(dis);
@@ -512,7 +512,7 @@ public class JavaBinCodec implements PushWriter {
   public SolrDocument readSolrDocument(DataInputInputStream dis) throws IOException {
     tagByte = dis.readByte();
     int size = readSize(dis);
-    SolrDocument doc = new SolrDocument();
+    SolrDocument doc = new SolrDocument(new LinkedHashMap<>(size));
     for (int i = 0; i < size; i++) {
       String fieldName;
       Object obj = readVal(dis); // could be a field name, or a child document
@@ -555,7 +555,7 @@ public class JavaBinCodec implements PushWriter {
   public SolrInputDocument readSolrInputDocument(DataInputInputStream dis) throws IOException {
     int sz = readVInt(dis);
     float docBoost = (Float)readVal(dis);
-    SolrInputDocument sdoc = new SolrInputDocument();
+    SolrInputDocument sdoc = new SolrInputDocument(new LinkedHashMap<>(sz));
     sdoc.setDocumentBoost(docBoost);
     for (int i = 0; i < sz; i++) {
       float boost = 1.0f;
@@ -610,7 +610,7 @@ public class JavaBinCodec implements PushWriter {
   public Map<Object,Object> readMap(DataInputInputStream dis)
           throws IOException {
     int sz = readVInt(dis);
-    Map<Object,Object> m = new LinkedHashMap<>();
+    Map<Object,Object> m = new LinkedHashMap<>(sz);
     for (int i = 0; i < sz; i++) {
       Object key = readVal(dis);
       Object val = readVal(dis);
