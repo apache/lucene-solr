@@ -20,6 +20,10 @@ import static org.apache.lucene.util.SloppyMath.TO_RADIANS;
 import static org.apache.lucene.util.SloppyMath.cos;
 import static org.apache.lucene.util.SloppyMath.haversinMeters;
 
+import org.apache.lucene.index.PointValues;
+import org.apache.lucene.index.PointValues.Relation;
+import org.apache.lucene.util.SloppyMath;
+
 /**
  * Basic reusable geo-spatial utility methods
  *
@@ -123,5 +127,40 @@ public final class GeoUtils {
     double ceil = Double.longBitsToDouble(lo);
     assert haversinMeters(ceil) > radius;
     return ceil;
+  }
+
+  /**
+   * Compute the relation between the provided box and distance query.
+   * This only works for boxes that do not cross the dateline.
+   */
+  public static PointValues.Relation relate(
+      double minLat, double maxLat, double minLon, double maxLon,
+      double lat, double lon, double distanceSortKey, double axisLat) {
+
+    if (minLon > maxLon) {
+      throw new IllegalArgumentException("Box crosses the dateline");
+    }
+
+    if ((lon < minLon || lon > maxLon) && (axisLat + Rectangle.AXISLAT_ERROR < minLat || axisLat - Rectangle.AXISLAT_ERROR > maxLat)) {
+      // circle not fully inside / crossing axis
+      if (SloppyMath.haversinSortKey(lat, lon, minLat, minLon) > distanceSortKey &&
+          SloppyMath.haversinSortKey(lat, lon, minLat, maxLon) > distanceSortKey &&
+          SloppyMath.haversinSortKey(lat, lon, maxLat, minLon) > distanceSortKey &&
+          SloppyMath.haversinSortKey(lat, lon, maxLat, maxLon) > distanceSortKey) {
+        // no points inside
+        return Relation.CELL_OUTSIDE_QUERY;
+      }
+    }
+
+    if (maxLon - lon < 90 && lon - minLon < 90 &&
+        SloppyMath.haversinSortKey(lat, lon, minLat, minLon) <= distanceSortKey &&
+        SloppyMath.haversinSortKey(lat, lon, minLat, maxLon) <= distanceSortKey &&
+        SloppyMath.haversinSortKey(lat, lon, maxLat, minLon) <= distanceSortKey &&
+        SloppyMath.haversinSortKey(lat, lon, maxLat, maxLon) <= distanceSortKey) {
+      // we are fully enclosed, collect everything within this subtree
+      return Relation.CELL_INSIDE_QUERY;
+    }
+
+    return Relation.CELL_CROSSES_QUERY;
   }
 }

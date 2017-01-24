@@ -92,6 +92,11 @@ New Features
   proximity queries at search time will produce correct results (Mike
   McCandless)
 
+* LUCENE-7656: Added the LatLonDocValuesField.new(Box/Distance)Query() factory
+  methods that are the equivalent of factory methods on LatLonPoint but operate
+  on doc values. These new methods should be wrapped in an IndexOrDocValuesQuery
+  for best performance. (Adrien Grand)
+
 Bug Fixes
 
 * LUCENE-7630: Fix (Edge)NGramTokenFilter to no longer drop payloads
@@ -113,6 +118,9 @@ Optimizations
 * LUCENE-7641: Optimized point range queries to compute documents that do not
   match the range on single-valued fields when more than half the documents in
   the index would match. (Adrien Grand)
+
+* LUCENE-7656: Speed up for LatLonPointDistanceQuery by computing distances even
+  less often. (Adrien Grand)
 
 Build
 
