@@ -32,7 +32,12 @@ public abstract class IndexReaderContext {
   public final int docBaseInParent;
   /** the ord for this reader in the parent, <tt>0</tt> if parent is null */
   public final int ordInParent;
-  
+
+  // An object that uniquely identifies this context without referencing
+  // segments. The goal is to make it fine to have references to this
+  // identity object, even after the index reader has been closed
+  final Object identity = new Object();
+
   IndexReaderContext(CompositeReaderContext parent, int ordInParent, int docBaseInParent) {
     if (!(this instanceof CompositeReaderContext || this instanceof LeafReaderContext))
       throw new Error("This class should never be extended by custom code!");

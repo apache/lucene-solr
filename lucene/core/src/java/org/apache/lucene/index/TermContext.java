@@ -33,12 +33,8 @@ import java.util.Arrays;
  */
 public final class TermContext {
 
-  /** Holds the {@link IndexReaderContext} of the top-level
-   *  {@link IndexReader}, used internally only for
-   *  asserting.
-   *
-   *  @lucene.internal */
-  public final IndexReaderContext topReaderContext;
+  // Important: do NOT keep hard references to index readers
+  private final Object topReaderContextIdentity;
   private final TermState[] states;
   private int docFreq;
   private long totalTermFreq;
@@ -50,7 +46,7 @@ public final class TermContext {
    */
   public TermContext(IndexReaderContext context) {
     assert context != null && context.isTopLevel;
-    topReaderContext = context;
+    topReaderContextIdentity = context.identity;
     docFreq = 0;
     totalTermFreq = 0;
     final int len;
@@ -61,7 +57,16 @@ public final class TermContext {
     }
     states = new TermState[len];
   }
-  
+
+  /**
+   * Expert: Return whether this {@link TermContext} was built for the given
+   * {@link IndexReaderContext}. This is typically used for assertions.
+   * @lucene.internal
+   */
+  public boolean wasBuiltFor(IndexReaderContext context) {
+    return topReaderContextIdentity == context.identity;
+  }
+
   /**
    * Creates a {@link TermContext} with an initial {@link TermState},
    * {@link IndexReader} pair.

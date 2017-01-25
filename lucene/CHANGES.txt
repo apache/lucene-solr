@@ -4,12 +4,18 @@ For more information on past and future Lucene versions, please see:
 http://s.apache.org/luceneversions
 
 ======================= Lucene 6.4.1 =======================
+
 Build
 
 * LUCENE-7651: Fix Javadocs build for Java 8u121 by injecting "Google Code
   Prettify" without adding Javascript to Javadocs's -bottom parameter.
   Also update Prettify to latest version to fix Google Chrome issue.
   (Uwe Schindler)
+
+Bug Fixes
+
+* LUCENE-7657: Fixed potential memory leak in the case that a (Span)TermQuery
+  with a TermContext is cached. (Adrien Grand)
 
 ======================= Lucene 6.4.0 =======================
 
