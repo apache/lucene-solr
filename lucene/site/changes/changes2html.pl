@@ -44,7 +44,11 @@ my @lines = <STDIN>;                        # Get all input at once
 #
 # Cmdline args:  <LUCENE|SOLR>  <project-DOAP-rdf-file>  <lucene-javadoc-url>(only from Solr)
 #
-my $product = $ARGV[0];
+my $product = uc($ARGV[0]);
+if ($product !~ /^(LUCENE|SOLR)$/) {
+  print STDERR "Unknown product name '$ARGV[0]'\n";
+  exit(1);
+}
 my %release_dates = &setup_release_dates($ARGV[1]);
 my $lucene_javadoc_url = ($product eq 'SOLR' ? $ARGV[2] : ''); # Only Solr supplies this on the cmdline
 my $in_major_component_versions_section = 0;
@@ -825,7 +829,6 @@ sub get_release_date {
 sub setup_release_dates {
   my %release_dates = ();
   my $file = shift;
-print STDERR "file: $file\n";
   open(FILE, "<$file") || die "could not open $file: $!";
   my $version_list = <FILE>;
   my $created_list = <FILE>;
