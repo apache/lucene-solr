@@ -81,7 +81,7 @@ public final class CompressingStoredFieldsWriter extends StoredFieldsWriter {
   private CompressingStoredFieldsIndexWriter indexWriter;
   private IndexOutput fieldsStream;
 
-  private final Compressor compressor;
+  private Compressor compressor;
   private final CompressionMode compressionMode;
   private final int chunkSize;
   private final int maxDocsPerChunk;
@@ -141,10 +141,11 @@ public final class CompressingStoredFieldsWriter extends StoredFieldsWriter {
   @Override
   public void close() throws IOException {
     try {
-      IOUtils.close(fieldsStream, indexWriter);
+      IOUtils.close(fieldsStream, indexWriter, compressor);
     } finally {
       fieldsStream = null;
       indexWriter = null;
+      compressor = null;
     }
   }
 
