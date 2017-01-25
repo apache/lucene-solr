@@ -146,9 +146,9 @@ Apache UIMA 2.3.1
 Apache ZooKeeper 3.4.6
 Jetty 9.3.14.v20161028
 
-
-(No Changes)
-
+Bug Fixes
+----------------------
+* SOLR-9969: "Plugin/Stats" section of the UI doesn't display empty metric types (Tomás Fernández Löbbe)
 
 ==================  6.4.0 ==================
 
