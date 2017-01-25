@@ -147,9 +147,13 @@ public final class IndexUpgrader {
     this.iwc = iwc;
     this.deletePriorCommits = deletePriorCommits;
   }
+  
+  public void upgrade() throws IOException {
+    this.upgrade(1);
+  }
 
   /** Perform the upgrade. */
-  public void upgrade() throws IOException {
+  public void upgrade(int maxSegements) throws IOException {
     if (!DirectoryReader.indexExists(dir)) {
       throw new IndexNotFoundException(dir.toString());
     }
@@ -161,7 +165,9 @@ public final class IndexUpgrader {
       }
     }
     
-    iwc.setMergePolicy(new UpgradeIndexMergePolicy(iwc.getMergePolicy()));
+    UpgradeIndexMergePolicy uimp = new UpgradeIndexMergePolicy(iwc.getMergePolicy());
+    uimp.setIgnoreNewSegments(true);
+    iwc.setMergePolicy(uimp);
     iwc.setIndexDeletionPolicy(new KeepOnlyLastCommitDeletionPolicy());
     
     try (final IndexWriter w = new IndexWriter(dir, iwc)) {
@@ -169,7 +175,7 @@ public final class IndexUpgrader {
       if (infoStream.isEnabled(LOG_PREFIX)) {
         infoStream.message(LOG_PREFIX, "Upgrading all pre-" + Version.LATEST + " segments of index directory '" + dir + "' to version " + Version.LATEST + "...");
       }
-      w.forceMerge(1);
+      w.forceMerge(maxSegements);
       if (infoStream.isEnabled(LOG_PREFIX)) {
         infoStream.message(LOG_PREFIX, "All segments upgraded to version " + Version.LATEST);
         infoStream.message(LOG_PREFIX, "Enforcing commit to rewrite all index metadata...");

@@ -260,7 +260,7 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
         writer.commit(); // flush every 10 docs
       }
     }
-    
+      
     // first segment: no updates
     
     // second segment: update two fields, same gen
@@ -437,6 +437,8 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
 
   // TODO: on 6.0.0 release, gen the single segment indices and add here:
   final static String[] oldSingleSegmentNames = {
+    "6.0.0.singlesegment-cfs",
+    "6.0.0.singlesegment-nocfs"
   };
   
   static Map<String,Directory> oldIndexDirs;
@@ -464,8 +466,9 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
     oldIndexDirs = new HashMap<>();
     for (String name : names) {
       Path dir = createTempDir(name);
-      InputStream resource = TestBackwardsCompatibility.class.getResourceAsStream("index." + name + ".zip");
-      assertNotNull("Index name " + name + " not found", resource);
+      String nameOnDisk = "index." + name + ".zip";
+      InputStream resource = TestBackwardsCompatibility.class.getResourceAsStream(nameOnDisk);
+      assertNotNull("Index name " + nameOnDisk + " not found", resource);
       TestUtil.unzip(resource, dir);
       oldIndexDirs.put(name, newFSDirectory(dir));
     }
@@ -1337,16 +1340,24 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
     }
   }
   
-  private int checkAllSegmentsUpgraded(Directory dir, int indexCreatedVersion) throws IOException {
+
+  private int checkAllSegmentsUpgraded(Directory dir, int indexCreatedVersionMajor) throws IOException {
+    return this.checkAllSegmentsUpgraded(dir, Version.LATEST, indexCreatedVersionMajor);
+  }
+  
+  private int checkAllSegmentsUpgraded(Directory dir, Version upgradedVersion, int indexCreatedVersionMajor) throws IOException {
+
     final SegmentInfos infos = SegmentInfos.readLatestCommit(dir);
     if (VERBOSE) {
-      System.out.println("checkAllSegmentsUpgraded: " + infos);
+      System.out.println("checkAllSegmentsUpgraded: " + indexCreatedVersionMajor + "-" + infos);
     }
     for (SegmentCommitInfo si : infos) {
-      assertEquals(Version.LATEST, si.info.getVersion());
+      assertEquals(upgradedVersion, si.info.getVersion());
     }
-    assertEquals(Version.LATEST, infos.getCommitLuceneVersion());
-    assertEquals(indexCreatedVersion, infos.getIndexCreatedVersionMajor());
+
+    assertEquals(upgradedVersion, infos.getCommitLuceneVersion());
+    assertEquals(indexCreatedVersionMajor, infos.getIndexCreatedVersionMajor());
+
     return infos.size();
   }
   
@@ -1364,15 +1375,66 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
         System.out.println("testUpgradeOldIndex: index=" +name);
       }
       Directory dir = newDirectory(oldIndexDirs.get(name));
+
       int indexCreatedVersion = SegmentInfos.readLatestCommit(dir).getIndexCreatedVersionMajor();
+      
+      int numSegmentsBefore = SegmentInfos.readLatestCommit(dir).size();
+      
+      newIndexUpgrader(dir).upgrade(Integer.MAX_VALUE);
 
-      newIndexUpgrader(dir).upgrade();
-
-      checkAllSegmentsUpgraded(dir, indexCreatedVersion);
+      assertEquals(numSegmentsBefore, checkAllSegmentsUpgraded(dir, indexCreatedVersion));
       
       dir.close();
     }
   }
+  
+  public void testUpgradeWithExcplicitUpgrades() throws Exception {
+    List<String> names = new ArrayList<>(oldNames.length + oldSingleSegmentNames.length);
+    names.addAll(Arrays.asList(oldNames));
+    names.addAll(Arrays.asList(oldSingleSegmentNames));
+    for(String name : names) {
+      if (VERBOSE) {
+        System.out.println("testUpgradeWithExcplicitUpgrades: index=" +name);
+      }
+      Directory dir = newDirectory(oldIndexDirs.get(name));
+
+      SegmentInfos infosBefore = SegmentInfos.readLatestCommit(dir);
+      int numSegmentsBefore = infosBefore.size();
+      Version versionBefore = infosBefore.getCommitLuceneVersion();
+      int createdVersionBefore = infosBefore.getIndexCreatedVersionMajor();
+
+      assertFalse("Excpected these segments to be an old version", versionBefore.equals(Version.LATEST));
+
+      UpgradeIndexMergePolicy uimp = new UpgradeIndexMergePolicy(NoMergePolicy.INSTANCE);
+      
+      uimp.setRequireExplicitUpgrades(true);
+      uimp.setIgnoreNewSegments(true);
+
+      assertEquals(numSegmentsBefore, checkAllSegmentsUpgraded(dir, versionBefore, createdVersionBefore));
+      
+      try (IndexWriter w = new IndexWriter(dir, new IndexWriterConfig(new MockAnalyzer(random())).setMergePolicy(uimp))) {
+        w.forceMerge(numSegmentsBefore); // Don't optimize just upgrade
+      }
+      
+      // Upgrade should not have happened yet
+      assertEquals(numSegmentsBefore, checkAllSegmentsUpgraded(dir, versionBefore, createdVersionBefore));
+
+      uimp.setUpgradeInProgress(true); // Turn on upgrades
+      
+      try (IndexWriter w = new IndexWriter(dir, new IndexWriterConfig(new MockAnalyzer(random())).setMergePolicy(uimp))) {
+        w.forceMerge(numSegmentsBefore); // Don't optimize just upgrade
+      }
+
+      // Upgrade should now have happened.
+      int indexCreatedVersionAfter = SegmentInfos.readLatestCommit(dir).getIndexCreatedVersionMajor();
+      
+      assertEquals(numSegmentsBefore, checkAllSegmentsUpgraded(dir, indexCreatedVersionAfter));
+
+      dir.close();
+    }
+  }
+  
+  // Write a test that checks that the underlying policy gets delegated to??
 
   public void testCommandLineArgs() throws Exception {
 

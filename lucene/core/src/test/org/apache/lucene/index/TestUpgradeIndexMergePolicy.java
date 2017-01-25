@@ -16,7 +16,6 @@
  */
 package org.apache.lucene.index;
 
-
 public class TestUpgradeIndexMergePolicy extends BaseMergePolicyTestCase {
 
   public MergePolicy mergePolicy() {
