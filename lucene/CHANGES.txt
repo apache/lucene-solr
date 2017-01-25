@@ -11,6 +11,9 @@ Bug Fixes
   trying to highlight a query containing a degenerate case of a MultiPhraseQuery with one
   term.  (Thomas Kappler via David Smiley)
 
+* LUCENE-7657: Fixed potential memory leak in the case that a (Span)TermQuery
+  with a TermContext is cached. (Adrien Grand)
+
 Build
 
 * LUCENE-7543: Make changes-to-html target an offline operation, by moving the

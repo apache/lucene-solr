@@ -22,6 +22,7 @@ import java.util.Arrays;
 import java.util.List;
 
 import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.index.IndexReaderContext;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.index.TermContext;
@@ -271,7 +272,7 @@ public final class BlendedTermQuery extends Query {
     }
     final TermContext[] contexts = Arrays.copyOf(this.contexts, this.contexts.length);
     for (int i = 0; i < contexts.length; ++i) {
-      if (contexts[i] == null || contexts[i].topReaderContext != reader.getContext()) {
+      if (contexts[i] == null || contexts[i].wasBuiltFor(reader.getContext()) == false) {
         contexts[i] = TermContext.build(reader.getContext(), terms[i]);
       }
     }
@@ -291,7 +292,7 @@ public final class BlendedTermQuery extends Query {
     }
 
     for (int i = 0; i < contexts.length; ++i) {
-      contexts[i] = adjustFrequencies(contexts[i], df, ttf);
+      contexts[i] = adjustFrequencies(reader.getContext(), contexts[i], df, ttf);
     }
 
     Query[] termQueries = new Query[terms.length];
@@ -304,15 +305,16 @@ public final class BlendedTermQuery extends Query {
     return rewriteMethod.rewrite(termQueries);
   }
 
-  private static TermContext adjustFrequencies(TermContext ctx, int artificialDf, long artificialTtf) {
-    List<LeafReaderContext> leaves = ctx.topReaderContext.leaves();
+  private static TermContext adjustFrequencies(IndexReaderContext readerContext,
+      TermContext ctx, int artificialDf, long artificialTtf) {
+    List<LeafReaderContext> leaves = readerContext.leaves();
     final int len;
     if (leaves == null) {
       len = 1;
     } else {
       len = leaves.size();
     }
-    TermContext newCtx = new TermContext(ctx.topReaderContext);
+    TermContext newCtx = new TermContext(readerContext);
     for (int i = 0; i < len; ++i) {
       TermState termState = ctx.get(i);
       if (termState == null) {

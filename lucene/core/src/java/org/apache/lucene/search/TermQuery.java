@@ -98,7 +98,7 @@ public class TermQuery extends Query {
 
     @Override
     public Scorer scorer(LeafReaderContext context) throws IOException {
-      assert termStates.topReaderContext == ReaderUtil.getTopLevelContext(context) : "The top-reader used to create Weight (" + termStates.topReaderContext + ") is not the same as the current reader's top-reader (" + ReaderUtil.getTopLevelContext(context);
+      assert termStates.wasBuiltFor(ReaderUtil.getTopLevelContext(context)) : "The top-reader used to create Weight is not the same as the current reader's top-reader (" + ReaderUtil.getTopLevelContext(context);
       final TermsEnum termsEnum = getTermsEnum(context);
       if (termsEnum == null) {
         return null;
@@ -186,7 +186,7 @@ public class TermQuery extends Query {
     final IndexReaderContext context = searcher.getTopReaderContext();
     final TermContext termState;
     if (perReaderTermState == null
-        || perReaderTermState.topReaderContext != context) {
+        || perReaderTermState.wasBuiltFor(context) == false) {
       // make TermQuery single-pass if we don't have a PRTS or if the context
       // differs!
       termState = TermContext.build(context, term);
