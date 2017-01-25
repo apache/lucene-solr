@@ -17,6 +17,7 @@
 package org.apache.lucene.codecs.compressing;
 
 
+import java.io.Closeable;
 import java.io.IOException;
 
 import org.apache.lucene.store.DataOutput;
@@ -24,7 +25,7 @@ import org.apache.lucene.store.DataOutput;
 /**
  * A data compressor.
  */
-public abstract class Compressor {
+public abstract class Compressor implements Closeable {
 
   /** Sole constructor, typically called from sub-classes. */
   protected Compressor() {}
