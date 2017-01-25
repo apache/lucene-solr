@@ -79,6 +79,9 @@ public class DummyCompressingCodec extends CompressingCodec {
       out.writeBytes(bytes, off, len);
     }
 
+    @Override
+    public void close() throws IOException {};
+
   };
 
   /** Constructor that allows to configure the chunk size. */

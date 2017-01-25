@@ -125,6 +125,10 @@ Bug Fixes
 * LUCENE-7657: Fixed potential memory leak in the case that a (Span)TermQuery
   with a TermContext is cached. (Adrien Grand)
 
+* LUCENE-7647: Made stored fields reclaim native memory more aggressively when
+  configured with BEST_COMPRESSION. This could otherwise result in out-of-memory
+  issues. (Adrien Grand)
+
 ======================= Lucene 6.4.0 =======================
 
 API Changes
