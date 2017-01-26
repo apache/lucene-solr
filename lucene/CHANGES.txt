@@ -77,6 +77,11 @@ API Changes
 * LUCENE-7643: Replaced doc-values queries in lucene/sandbox with factory
   methods on the *DocValuesField classes. (Adrien Grand)
 
+* LUCENE-7659: Added a IndexWriter#getFieldNames() method (experimental) to return
+  all field names as visible from the IndexWriter. This would be useful for
+  IndexWriter#updateDocValues() calls, to prevent calling with non-existent
+  docValues fields (Ishan Chattopadhyaya, Adrien Grand, Mike McCandless)
+
 New Features
 
 * LUCENE-7623: Add FunctionScoreQuery and FunctionMatchQuery (Alan Woodward,
