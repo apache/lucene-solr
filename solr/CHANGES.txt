@@ -137,6 +137,9 @@ Other Changes
 ----------------------
 * SOLR-9980: Expose configVersion in core admin status (Jessica Cheng Mallet via Tomás Fernández Löbbe)
 
+* SOLR-9972: SpellCheckComponent collations and suggestions returned as a JSON object rather than a list
+  (Christine Poerschke in response to bug report from Ricky Oktavianus Lazuardy)
+
 ==================  6.4.1 ==================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release.
