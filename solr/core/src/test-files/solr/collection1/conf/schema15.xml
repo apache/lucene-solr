@@ -529,7 +529,7 @@
   <field name="copyfield_source" type="string" indexed="true" stored="true" multiValued="true"/>
 
   <!-- for versioning -->
-  <field name="_version_" type="long" indexed="true" stored="true"/>
+  <field name="_version_" type="long" indexed="false" stored="false" docValues="true"/>
   <!-- points to the root document of a block of nested documents -->
   <field name="_root_" type="string" indexed="true" stored="true"/>
 
@@ -545,6 +545,11 @@
   <dynamicField name="tv_mv_*" type="text" indexed="true" stored="true" multiValued="true"
                 termVectors="true" termPositions="true" termOffsets="true"/>
 
+  <!-- for in-place updates -->
+  <dynamicField name="*_i_dvo" multiValued="false" type="int"   docValues="true" indexed="false" stored="false"/>
+  <dynamicField name="*_f_dvo" multiValued="false" type="float" docValues="true" indexed="false" stored="false"/>
+  <dynamicField name="*_l_dvo" multiValued="false" type="long"  docValues="true" indexed="false" stored="false"/>
+  
   <dynamicField name="*_mfacet" type="string" indexed="true" stored="false" multiValued="true"/>
 
   <dynamicField name="*_sw" type="text_sw" indexed="true" stored="true" multiValued="true"/>

@@ -26,8 +26,9 @@
     <mergePolicyFactory class="org.apache.solr.index.SortingMergePolicyFactory">
       <str name="wrapped.prefix">in</str>
       <str name="in.class">org.apache.solr.util.RandomForceMergePolicyFactory</str>
-      <str name="sort">timestamp desc</str>
+      <str name="sort">timestamp_i_dvo desc</str>
     </mergePolicyFactory>
+    <lockType>${solr.tests.lockType:single}</lockType>
   </indexConfig>
 
   <requestHandler name="standard" class="solr.StandardRequestHandler"></requestHandler>

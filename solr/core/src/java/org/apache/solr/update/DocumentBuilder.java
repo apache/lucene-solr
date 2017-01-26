@@ -21,6 +21,7 @@ import java.util.Set;
 
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
+import org.apache.lucene.document.NumericDocValuesField;
 import org.apache.lucene.index.IndexableField;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrInputDocument;
@@ -37,15 +38,46 @@ import com.google.common.collect.Sets;
  */
 public class DocumentBuilder {
 
-  private static void addField(Document doc, SchemaField field, Object val, float boost) {
+  /**
+   * Add a field value to a given document.
+   * @param doc Document that the field needs to be added to
+   * @param field The schema field object for the field
+   * @param val The value for the field to be added
+   * @param boost Boost value for the field
+   * @param forInPlaceUpdate Whether the field is to be added for in-place update. If true,
+   *        only numeric docValues based fields are added to the document. This can be true
+   *        when constructing a Lucene document for writing an in-place update, and we don't need
+   *        presence of non-updatable fields (non NDV) in such a document.
+   */
+  private static void addField(Document doc, SchemaField field, Object val, float boost, 
+      boolean forInPlaceUpdate) {
     if (val instanceof IndexableField) {
+      if (forInPlaceUpdate) {
+        assert val instanceof NumericDocValuesField: "Expected in-place update to be done on"
+            + " NDV fields only.";
+      }
       // set boost to the calculated compound boost
       ((Field)val).setBoost(boost);
       doc.add((Field)val);
       return;
     }
     for (IndexableField f : field.getType().createFields(field, val, boost)) {
-      if (f != null) doc.add((Field) f); // null fields are not added
+      if (f != null) { // null fields are not added
+        // HACK: workaround for SOLR-9809
+        // even though at this point in the code we know the field is single valued and DV only
+        // TrieField.createFields() may still return (usless) IndexableField instances that are not
+        // NumericDocValuesField instances.
+        //
+        // once SOLR-9809 is resolved, we should be able to replace this conditional with...
+        //    assert f instanceof NumericDocValuesField
+        if (forInPlaceUpdate) {
+          if (f instanceof NumericDocValuesField) {
+            doc.add((Field) f);
+          }
+        } else {
+          doc.add((Field) f);
+        }
+      }
     }
   }
   
@@ -60,6 +92,14 @@ public class DocumentBuilder {
   }
 
   /**
+   * @see DocumentBuilder#toDocument(SolrInputDocument, IndexSchema, boolean)
+   */
+  public static Document toDocument( SolrInputDocument doc, IndexSchema schema )
+  {
+    return toDocument(doc, schema, false);
+  }
+  
+  /**
    * Convert a SolrInputDocument to a lucene Document.
    * 
    * This function should go elsewhere.  This builds the Document without an
@@ -72,9 +112,19 @@ public class DocumentBuilder {
    * moved to an independent function
    * 
    * @since solr 1.3
+   * 
+   * @param doc SolrInputDocument from which the document has to be built
+   * @param schema Schema instance
+   * @param forInPlaceUpdate Whether the output document would be used for an in-place update or not. When this is true,
+   *        default fields values and copy fields targets are not populated.
+   * @return Built Lucene document
+
    */
-  public static Document toDocument( SolrInputDocument doc, IndexSchema schema )
-  { 
+  public static Document toDocument( SolrInputDocument doc, IndexSchema schema, boolean forInPlaceUpdate )
+  {
+    final SchemaField uniqueKeyField = schema.getUniqueKeyField();
+    final String uniqueKeyFieldName = null == uniqueKeyField ? null : uniqueKeyField.getName();
+    
     Document out = new Document();
     final float docBoost = doc.getDocumentBoost();
     Set<String> usedFields = Sets.newHashSet();
@@ -84,7 +134,6 @@ public class DocumentBuilder {
       String name = field.getName();
       SchemaField sfield = schema.getFieldOrNull(name);
       boolean used = false;
-
       
       // Make sure it has the correct number
       if( sfield!=null && !sfield.multiValued() && field.getValueCount() > 1 ) {
@@ -119,45 +168,51 @@ public class DocumentBuilder {
           hasField = true;
           if (sfield != null) {
             used = true;
-            addField(out, sfield, v, applyBoost ? compoundBoost : 1f);
+            addField(out, sfield, v, applyBoost ? compoundBoost : 1f, 
+                     name.equals(uniqueKeyFieldName) ? false : forInPlaceUpdate);
             // record the field as having a value
             usedFields.add(sfield.getName());
           }
   
           // Check if we should copy this field value to any other fields.
           // This could happen whether it is explicit or not.
-          if( copyFields != null ){
-            for (CopyField cf : copyFields) {
-              SchemaField destinationField = cf.getDestination();
-  
-              final boolean destHasValues = usedFields.contains(destinationField.getName());
-  
-              // check if the copy field is a multivalued or not
-              if (!destinationField.multiValued() && destHasValues) {
-                throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,
-                        "ERROR: "+getID(doc, schema)+"multiple values encountered for non multiValued copy field " +
-                                destinationField.getName() + ": " + v);
+          if (copyFields != null) {
+            // Do not copy this field if this document is to be used for an in-place update,
+            // and this is the uniqueKey field (because the uniqueKey can't change so no need to "update" the copyField).
+            if ( ! (forInPlaceUpdate && name.equals(uniqueKeyFieldName)) ) {
+              for (CopyField cf : copyFields) {
+                SchemaField destinationField = cf.getDestination();
+
+                final boolean destHasValues = usedFields.contains(destinationField.getName());
+
+                // check if the copy field is a multivalued or not
+                if (!destinationField.multiValued() && destHasValues) {
+                  throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,
+                      "ERROR: "+getID(doc, schema)+"multiple values encountered for non multiValued copy field " +
+                          destinationField.getName() + ": " + v);
+                }
+
+                used = true;
+
+                // Perhaps trim the length of a copy field
+                Object val = v;
+                if( val instanceof String && cf.getMaxChars() > 0 ) {
+                  val = cf.getLimitedValue((String)val);
+                }
+
+                // we can't copy any boost unless the dest field is 
+                // indexed & !omitNorms, but which boost we copy depends
+                // on whether the dest field already contains values (we
+                // don't want to apply the compounded docBoost more then once)
+                final float destBoost = 
+                    (destinationField.indexed() && !destinationField.omitNorms()) ?
+                        (destHasValues ? fieldBoost : compoundBoost) : 1.0F;
+
+                addField(out, destinationField, val, destBoost, 
+                         destinationField.getName().equals(uniqueKeyFieldName) ? false : forInPlaceUpdate);
+                // record the field as having a value
+                usedFields.add(destinationField.getName());
               }
-    
-              used = true;
-              
-              // Perhaps trim the length of a copy field
-              Object val = v;
-              if( val instanceof String && cf.getMaxChars() > 0 ) {
-                val = cf.getLimitedValue((String)val);
-              }
-  
-              // we can't copy any boost unless the dest field is 
-              // indexed & !omitNorms, but which boost we copy depends
-              // on whether the dest field already contains values (we
-              // don't want to apply the compounded docBoost more then once)
-              final float destBoost = 
-                (destinationField.indexed() && !destinationField.omitNorms()) ?
-                (destHasValues ? fieldBoost : compoundBoost) : 1.0F;
-              
-              addField(out, destinationField, val, destBoost);
-              // record the field as having a value
-              usedFields.add(destinationField.getName());
             }
           }
 
@@ -187,14 +242,20 @@ public class DocumentBuilder {
         
     // Now validate required fields or add default values
     // fields with default values are defacto 'required'
-    for (SchemaField field : schema.getRequiredFields()) {
-      if (out.getField(field.getName() ) == null) {
-        if (field.getDefaultValue() != null) {
-          addField(out, field, field.getDefaultValue(), 1.0f);
-        } 
-        else {
-          String msg = getID(doc, schema) + "missing required field: " + field.getName();
-          throw new SolrException( SolrException.ErrorCode.BAD_REQUEST, msg );
+
+    // Note: We don't need to add default fields if this document is to be used for
+    // in-place updates, since this validation and population of default fields would've happened
+    // during the full indexing initially.
+    if (!forInPlaceUpdate) {
+      for (SchemaField field : schema.getRequiredFields()) {
+        if (out.getField(field.getName() ) == null) {
+          if (field.getDefaultValue() != null) {
+            addField(out, field, field.getDefaultValue(), 1.0f, false);
+          } 
+          else {
+            String msg = getID(doc, schema) + "missing required field: " + field.getName();
+            throw new SolrException( SolrException.ErrorCode.BAD_REQUEST, msg );
+          }
         }
       }
     }
