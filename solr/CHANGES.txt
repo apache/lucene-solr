@@ -76,6 +76,10 @@ Optimizations
 
 * SOLR-9996: Unstored IntPointField returns Long type (Ishan Chattopadhyaya)
 
+* SOLR-5944: In-place updates of Numeric DocValues. To leverage this, the _version_ field and the updated
+  field must both be stored=false, indexed=false, docValues=true. (Ishan Chattopadhyaya, hossman, noble,
+  shalin, yonik)
+
 Other Changes
 ----------------------
 * SOLR-8396: Add support for PointFields in Solr (Ishan Chattopadhyaya, Tomás Fernández Löbbe)

@@ -16,25 +16,34 @@
  */
 package org.apache.solr.update.processor;
 
+import java.io.IOException;
 import java.lang.invoke.MethodHandles;
-
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.LinkedHashSet;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import org.apache.lucene.index.IndexWriter;
+import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.BytesRefBuilder;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.SolrInputField;
+import org.apache.solr.core.SolrCore;
+import org.apache.solr.handler.component.RealTimeGetComponent;
 import org.apache.solr.request.SolrQueryRequest;
+import org.apache.solr.schema.CopyField;
 import org.apache.solr.schema.IndexSchema;
+import org.apache.solr.schema.NumericValueFieldType;
 import org.apache.solr.schema.SchemaField;
 import org.apache.solr.update.AddUpdateCommand;
+import org.apache.solr.util.RefCounted;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -123,7 +132,178 @@ public class AtomicUpdateDocumentMerger {
     
     return toDoc;
   }
+
+  /**
+   * Given a schema field, return whether or not such a field is supported for an in-place update.
+   * Note: If an update command has updates to only supported fields (and _version_ is also supported),
+   * only then is such an update command executed as an in-place update.
+   */
+  private static boolean isSupportedFieldForInPlaceUpdate(SchemaField schemaField) {
+    return !(schemaField.indexed() || schemaField.stored() || !schemaField.hasDocValues() || 
+        schemaField.multiValued() || !(schemaField.getType() instanceof NumericValueFieldType));
+  }
   
+  /**
+   * Given an add update command, compute a list of fields that can be updated in-place. If there is even a single
+   * field in the update that cannot be updated in-place, the entire update cannot be executed in-place (and empty set
+   * will be returned in that case).
+   * 
+   * @return Return a set of fields that can be in-place updated.
+   */
+  public static Set<String> computeInPlaceUpdatableFields(AddUpdateCommand cmd) throws IOException {
+    SolrInputDocument sdoc = cmd.getSolrInputDocument();
+    IndexSchema schema = cmd.getReq().getSchema();
+    
+    final SchemaField uniqueKeyField = schema.getUniqueKeyField();
+    final String uniqueKeyFieldName = null == uniqueKeyField ? null : uniqueKeyField.getName();
+
+    final Set<String> candidateFields = new HashSet<>();
+
+    // if _version_ field is not supported for in-place update, bail out early
+    SchemaField versionField = schema.getFieldOrNull(DistributedUpdateProcessor.VERSION_FIELD);
+    if (versionField == null || !isSupportedFieldForInPlaceUpdate(versionField)) {
+      return Collections.emptySet();
+    }
+    
+    // first pass, check the things that are virtually free,
+    // and bail out early if anything is obviously not a valid in-place update
+    for (String fieldName : sdoc.getFieldNames()) {
+      if (fieldName.equals(uniqueKeyFieldName)
+          || fieldName.equals(DistributedUpdateProcessor.VERSION_FIELD)) {
+        continue;
+      }
+      Object fieldValue = sdoc.getField(fieldName).getValue();
+      if (! (fieldValue instanceof Map) ) {
+        // not an in-place update if there are fields that are not maps
+        return Collections.emptySet();
+      }
+      // else it's a atomic update map...
+      for (String op : ((Map<String, Object>)fieldValue).keySet()) {
+        if (!op.equals("set") && !op.equals("inc")) {
+          // not a supported in-place update op
+          return Collections.emptySet();
+        }
+      }
+      candidateFields.add(fieldName);
+    }
+
+    if (candidateFields.isEmpty()) {
+      return Collections.emptySet();
+    }
+
+    // second pass over the candidates for in-place updates
+    // this time more expensive checks involving schema/config settings
+    for (String fieldName: candidateFields) {
+      SchemaField schemaField = schema.getField(fieldName);
+
+      if (!isSupportedFieldForInPlaceUpdate(schemaField)) {
+        return Collections.emptySet();
+      } 
+
+      // if this field has copy target which is not supported for in place, then empty
+      for (CopyField copyField: schema.getCopyFieldsList(fieldName)) {
+        if (!isSupportedFieldForInPlaceUpdate(copyField.getDestination()))
+          return Collections.emptySet();
+      }
+    }
+    
+    // third pass: requiring checks against the actual IndexWriter due to internal DV update limitations
+    SolrCore core = cmd.getReq().getCore();
+    RefCounted<IndexWriter> holder = core.getSolrCoreState().getIndexWriter(core);
+    Set<String> fieldNamesFromIndexWriter = null;
+    Set<String> segmentSortingFields = null;
+    try {
+      IndexWriter iw = holder.get();
+      fieldNamesFromIndexWriter = iw.getFieldNames();
+      segmentSortingFields = iw.getConfig().getIndexSortFields();
+    } finally {
+      holder.decref();
+    }
+    for (String fieldName: candidateFields) {
+      if (! fieldNamesFromIndexWriter.contains(fieldName) ) {
+        return Collections.emptySet(); // if this field doesn't exist, DV update can't work
+      }
+      if (segmentSortingFields.contains(fieldName) ) {
+        return Collections.emptySet(); // if this is used for segment sorting, DV updates can't work
+      }
+    }
+    
+    return candidateFields;
+  }
+  
+  /**
+   * Given an AddUpdateCommand containing update operations (e.g. set, inc), merge and resolve the operations into
+   * a partial document that can be used for indexing the in-place updates. The AddUpdateCommand is modified to contain
+   * the partial document (instead of the original document which contained the update operations) and also
+   * the prevVersion that this in-place update depends on.
+   * Note: updatedFields passed into the method can be changed, i.e. the version field can be added to the set.
+   * @return If in-place update cannot succeed, e.g. if the old document is deleted recently, then false is returned. A false
+   *        return indicates that this update can be re-tried as a full atomic update. Returns true if the in-place update
+   *        succeeds.
+   */
+  public boolean doInPlaceUpdateMerge(AddUpdateCommand cmd, Set<String> updatedFields) throws IOException {
+    SolrInputDocument inputDoc = cmd.getSolrInputDocument();
+    BytesRef idBytes = cmd.getIndexedId();
+
+    updatedFields.add(DistributedUpdateProcessor.VERSION_FIELD); // add the version field so that it is fetched too
+    SolrInputDocument oldDocument = RealTimeGetComponent.getInputDocument
+      (cmd.getReq().getCore(), idBytes,
+       null, // don't want the version to be returned
+       true, // avoid stored fields from index
+       updatedFields,
+       true); // resolve the full document
+                                              
+    if (oldDocument == RealTimeGetComponent.DELETED || oldDocument == null) {
+      // This doc was deleted recently. In-place update cannot work, hence a full atomic update should be tried.
+      return false;
+    }
+
+    if (oldDocument.containsKey(DistributedUpdateProcessor.VERSION_FIELD) == false) {
+      throw new SolrException (ErrorCode.INVALID_STATE, "There is no _version_ in previous document. id=" + 
+          cmd.getPrintableId());
+    }
+    Long oldVersion = (Long) oldDocument.remove(DistributedUpdateProcessor.VERSION_FIELD).getValue();
+
+    // If the oldDocument contains any other field apart from updatedFields (or id/version field), then remove them.
+    // This can happen, despite requesting for these fields in the call to RTGC.getInputDocument, if the document was
+    // fetched from the tlog and had all these fields (possibly because it was a full document ADD operation).
+    if (updatedFields != null) {
+      Collection<String> names = new HashSet<String>(oldDocument.getFieldNames());
+      for (String fieldName: names) {
+        if (fieldName.equals(DistributedUpdateProcessor.VERSION_FIELD)==false && fieldName.equals("id")==false && updatedFields.contains(fieldName)==false) {
+          oldDocument.remove(fieldName);
+        }
+      }
+    }
+    // Copy over all supported DVs from oldDocument to partialDoc
+    //
+    // Assuming multiple updates to the same doc: field 'dv1' in one update, then field 'dv2' in a second
+    // update, and then again 'dv1' in a third update (without commits in between), the last update would
+    // fetch from the tlog the partial doc for the 2nd (dv2) update. If that doc doesn't copy over the
+    // previous updates to dv1 as well, then a full resolution (by following previous pointers) would
+    // need to be done to calculate the dv1 value -- so instead copy all the potentially affected DV fields.
+    SolrInputDocument partialDoc = new SolrInputDocument();
+    String uniqueKeyField = schema.getUniqueKeyField().getName();
+    for (String fieldName : oldDocument.getFieldNames()) {
+      SchemaField schemaField = schema.getField(fieldName);
+      if (fieldName.equals(uniqueKeyField) || isSupportedFieldForInPlaceUpdate(schemaField)) {
+        partialDoc.addField(fieldName, oldDocument.getFieldValue(fieldName));
+      }
+    }
+    
+    merge(inputDoc, partialDoc);
+
+    // Populate the id field if not already populated (this can happen since stored fields were avoided during fetch from RTGC)
+    if (!partialDoc.containsKey(schema.getUniqueKeyField().getName())) {
+      partialDoc.addField(idField.getName(), 
+          inputDoc.getField(schema.getUniqueKeyField().getName()).getFirstValue());
+    }
+
+    cmd.prevVersion = oldVersion;
+    cmd.solrDoc = partialDoc;
+    return true;
+  }
+
   protected void doSet(SolrInputDocument toDoc, SolrInputField sif, Object fieldVal) {
     SchemaField sf = schema.getField(sif.getName());
     toDoc.setField(sif.getName(), sf.getType().toNativeType(fieldVal), sif.getBoost());

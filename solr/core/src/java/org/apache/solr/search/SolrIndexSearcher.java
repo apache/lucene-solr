@@ -809,7 +809,11 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
           }
         }
       } else {
-        final DocValuesType dvType = fieldInfos.fieldInfo(fieldName).getDocValuesType();
+        FieldInfo fi = fieldInfos.fieldInfo(fieldName);
+        if (fi == null) {
+          continue; // Searcher doesn't have info about this field, hence ignore it.
+        }
+        final DocValuesType dvType = fi.getDocValuesType();
         switch (dvType) {
           case NUMERIC:
             final NumericDocValues ndv = leafReader.getNumericDocValues(fieldName);

@@ -828,6 +828,16 @@ public class PeerSync implements SolrMetricProducer {
             proc.processDelete(cmd);
             break;
           }
+          case UpdateLog.UPDATE_INPLACE:
+          {
+            AddUpdateCommand cmd = UpdateLog.convertTlogEntryToAddUpdateCommand(req, entry, oper, version);
+            cmd.setFlags(UpdateCommand.PEER_SYNC | UpdateCommand.IGNORE_AUTOCOMMIT);
+            if (debug) {
+              log.debug(msg() + "inplace update " + cmd + " prevVersion=" + cmd.prevVersion + ", doc=" + cmd.solrDoc);
+            }
+            proc.processAdd(cmd);
+            break;
+          }
 
           default:
             throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,  "Unknown Operation! " + oper);

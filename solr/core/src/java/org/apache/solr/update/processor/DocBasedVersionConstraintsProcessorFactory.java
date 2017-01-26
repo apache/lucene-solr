@@ -261,7 +261,7 @@ public class DocBasedVersionConstraintsProcessorFactory extends UpdateRequestPro
       SolrInputDocument oldDoc = null;
 
       if (useFieldCache) {
-        oldDoc = RealTimeGetComponent.getInputDocumentFromTlog(core, indexedDocId);
+        oldDoc = RealTimeGetComponent.getInputDocumentFromTlog(core, indexedDocId, null, null, true);
         if (oldDoc == RealTimeGetComponent.DELETED) {
           return true;
         }
