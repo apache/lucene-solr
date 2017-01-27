@@ -17,19 +17,26 @@
 package org.apache.solr.cloud;
 
 import java.lang.invoke.MethodHandles;
+import java.nio.file.Paths;
 import java.util.HashMap;
 import java.util.Map;
 
-import org.apache.lucene.index.TieredMergePolicy;
-import org.apache.solr.SolrTestCaseJ4;
+import org.apache.lucene.util.TestUtil;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
+import org.apache.solr.client.solrj.request.schema.SchemaRequest.Field;
+import org.apache.solr.client.solrj.response.RequestStatusState;
+
 import org.apache.solr.common.cloud.ZkStateReader;
+import org.apache.solr.common.SolrDocumentList;
 import org.apache.solr.core.CoreDescriptor;
-import org.apache.solr.index.TieredMergePolicyFactory;
 
 import org.junit.After;
+import org.junit.Before;
 import org.junit.BeforeClass;
+import org.junit.Rule;
+import org.junit.rules.TestName;
+
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -40,78 +47,55 @@ public class TestSegmentSorting extends SolrCloudTestCase {
   private static final int NUM_SERVERS = 5;
   private static final int NUM_SHARDS = 2;
   private static final int REPLICATION_FACTOR = 2;
-
+  private static final String configName = MethodHandles.lookup().lookupClass() + "_configSet";
+  
   @BeforeClass
   public static void setupCluster() throws Exception {
-    configureCluster(NUM_SERVERS).configure();
+    configureCluster(NUM_SERVERS)
+      .addConfig(configName, Paths.get(TEST_HOME(), "collection1", "conf"))
+      .configure();
   }
-
+  
+  @Rule public TestName testName = new TestName();
+  
   @After
   public void ensureClusterEmpty() throws Exception {
     cluster.deleteAllCollections();
     cluster.getSolrClient().setDefaultCollection(null);
   }
-  
-  private void createCollection(MiniSolrCloudCluster miniCluster, String collectionName, String createNodeSet, String asyncId,
-      Boolean indexToPersist, Map<String,String> collectionProperties) throws Exception {
-    String configName = "solrCloudCollectionConfig";
-    miniCluster.uploadConfigSet(SolrTestCaseJ4.TEST_PATH().resolve("collection1").resolve("conf"), configName);
 
-    final boolean persistIndex = (indexToPersist != null ? indexToPersist.booleanValue() : random().nextBoolean());
-    if (collectionProperties == null) {
-      collectionProperties = new HashMap<>();
-    }
-    collectionProperties.putIfAbsent(CoreDescriptor.CORE_CONFIG, "solrconfig-tlog.xml");
-    collectionProperties.putIfAbsent("solr.tests.maxBufferedDocs", "100000");
-    collectionProperties.putIfAbsent("solr.tests.ramBufferSizeMB", "100");
-    // use non-test classes so RandomizedRunner isn't necessary
-    if (random().nextBoolean()) {
-      collectionProperties.putIfAbsent(SolrTestCaseJ4.SYSTEM_PROPERTY_SOLR_TESTS_MERGEPOLICY, TieredMergePolicy.class.getName());
-      collectionProperties.putIfAbsent(SolrTestCaseJ4.SYSTEM_PROPERTY_SOLR_TESTS_USEMERGEPOLICY, "true");
-      collectionProperties.putIfAbsent(SolrTestCaseJ4.SYSTEM_PROPERTY_SOLR_TESTS_USEMERGEPOLICYFACTORY, "false");
-    } else {
-      collectionProperties.putIfAbsent(SolrTestCaseJ4.SYSTEM_PROPERTY_SOLR_TESTS_MERGEPOLICYFACTORY, TieredMergePolicyFactory.class.getName());
-      collectionProperties.putIfAbsent(SolrTestCaseJ4.SYSTEM_PROPERTY_SOLR_TESTS_USEMERGEPOLICYFACTORY, "true");
-      collectionProperties.putIfAbsent(SolrTestCaseJ4.SYSTEM_PROPERTY_SOLR_TESTS_USEMERGEPOLICY, "false");
-    }
-    collectionProperties.putIfAbsent("solr.tests.mergeScheduler", "org.apache.lucene.index.ConcurrentMergeScheduler");
-    collectionProperties.putIfAbsent("solr.directoryFactory", (persistIndex ? "solr.StandardDirectoryFactory" : "solr.RAMDirectoryFactory"));
+  @Before
+  public void createCollection() throws Exception {
 
-    if (asyncId == null) {
-      CollectionAdminRequest.createCollection(collectionName, configName, NUM_SHARDS, REPLICATION_FACTOR)
-          .setCreateNodeSet(createNodeSet)
-          .setProperties(collectionProperties)
-          .process(miniCluster.getSolrClient());
-    }
-    else {
-      CollectionAdminRequest.createCollection(collectionName, configName, NUM_SHARDS, REPLICATION_FACTOR)
-          .setCreateNodeSet(createNodeSet)
-          .setProperties(collectionProperties)
-          .processAndWait(miniCluster.getSolrClient(), 30);
-    }
-  }
-
-
-  public void testSegmentTerminateEarly() throws Exception {
-
-    final String collectionName = "testSegmentTerminateEarlyCollection";
-
-    final SegmentTerminateEarlyTestState tstes = new SegmentTerminateEarlyTestState(random());
-    
+    final String collectionName = testName.getMethodName();
     final CloudSolrClient cloudSolrClient = cluster.getSolrClient();
-    cloudSolrClient.setDefaultCollection(collectionName);
+    
+    final Map<String, String> collectionProperties = new HashMap<>();
+    collectionProperties.put(CoreDescriptor.CORE_CONFIG, "solrconfig-sortingmergepolicyfactory.xml");
+    
+    CollectionAdminRequest.Create cmd = 
+      CollectionAdminRequest.createCollection(collectionName, configName,
+                                              NUM_SHARDS, REPLICATION_FACTOR)
+      .setProperties(collectionProperties);
 
-    // create collection
-    {
-      final String asyncId = (random().nextBoolean() ? null : "asyncId("+collectionName+".create)="+random().nextInt());
-      final Map<String, String> collectionProperties = new HashMap<>();
-      collectionProperties.put(CoreDescriptor.CORE_CONFIG, "solrconfig-sortingmergepolicyfactory.xml");
-      createCollection(cluster, collectionName, null, asyncId, Boolean.TRUE, collectionProperties);
+    if (random().nextBoolean()) {
+      assertTrue( cmd.process(cloudSolrClient).isSuccess() );
+    } else { // async
+      assertEquals(RequestStatusState.COMPLETED, cmd.processAndWait(cloudSolrClient, 30));
     }
     
     ZkStateReader zkStateReader = cloudSolrClient.getZkStateReader();
     AbstractDistribZkTestBase.waitForRecoveriesToFinish(collectionName, zkStateReader, true, true, 330);
     
+    cloudSolrClient.setDefaultCollection(collectionName);
+  }
+
+
+  public void testSegmentTerminateEarly() throws Exception {
+
+    final SegmentTerminateEarlyTestState tstes = new SegmentTerminateEarlyTestState(random());
+    final CloudSolrClient cloudSolrClient = cluster.getSolrClient();
+
     // add some documents, then optimize to get merged-sorted segments
     tstes.addDocuments(cloudSolrClient, 10, 10, true);
     
@@ -129,5 +113,72 @@ public class TestSegmentSorting extends SolrCloudTestCase {
     tstes.queryTimestampDescendingSegmentTerminateEarlyYesGrouped(cloudSolrClient);
     tstes.queryTimestampAscendingSegmentTerminateEarlyYes(cloudSolrClient); // uses a sort order that is _not_ compatible with the merge sort order
     
+  }
+
+  /** 
+   * Verify that atomic updates against our (DVO) segment sort field doesn't cause errors.
+   * In this situation, the updates should *NOT* be done inplace, because that would
+   * break the index sorting
+   */
+  public void testAtomicUpdateOfSegmentSortField() throws Exception {
+
+    final CloudSolrClient cloudSolrClient = cluster.getSolrClient();
+    final String updateField = SegmentTerminateEarlyTestState.timestampField;
+
+    // sanity check that updateField is in fact a DocValues only field, meaning it
+    // would normally be eligable for inplace updates -- if it weren't also used for merge sorting
+    final Map<String,Object> schemaOpts
+      = new Field(updateField, params("includeDynamic", "true",
+                                      "showDefaults","true")).process(cloudSolrClient).getField();
+    assertEquals(true, schemaOpts.get("docValues"));
+    assertEquals(false, schemaOpts.get("indexed"));
+    assertEquals(false, schemaOpts.get("stored"));
+    
+    // add some documents
+    final int numDocs = atLeast(1000);
+    for (int id = 1; id <= numDocs; id++) {
+      cloudSolrClient.add(sdoc("id", id, updateField, random().nextInt(60)));
+                               
+    }
+    cloudSolrClient.commit();
+
+    // do some random iterations of replacing docs, atomic updates against segment sort field, and commits
+    // (at this point we're just sanity checking no serious failures)
+    for (int iter = 0; iter < 20; iter++) {
+      final int iterSize = atLeast(20);
+      for (int i = 0; i < iterSize; i++) {
+        // replace
+        cloudSolrClient.add(sdoc("id", TestUtil.nextInt(random(), 1, numDocs),
+                                 updateField, random().nextInt(60)));
+        // atomic update
+        cloudSolrClient.add(sdoc("id", TestUtil.nextInt(random(), 1, numDocs),
+                                 updateField, map("set", random().nextInt(60))));
+      }
+      cloudSolrClient.commit();
+    }
+
+    
+    // pick a random doc, and verify that doing an atomic update causes the docid to change
+    // ie: not an inplace update
+    final int id = TestUtil.nextInt(random(), 1, numDocs);
+    final int oldDocId = (Integer) cloudSolrClient.getById(""+id, params("fl","[docid]")).get("[docid]");
+    
+    cloudSolrClient.add(sdoc("id", id, updateField, map("inc","666")));
+    cloudSolrClient.commit();
+    
+    // loop incase we're waiting for a newSearcher to be opened
+    int newDocId = -1;
+    int attempts = 10;
+    while ((newDocId < 0) && (0 < attempts--)) {
+      SolrDocumentList docs = cloudSolrClient.query(params("q", "id:"+id,
+                                                           "fl","[docid]",
+                                                           "fq", updateField + "[666 TO *]")).getResults();
+      if (0 < docs.size()) {
+        newDocId = (Integer)docs.get(0).get("[docid]");
+      } else {
+        Thread.sleep(50);
+      }
+    }
+    assertTrue(oldDocId != newDocId);
   }
 }

@@ -199,8 +199,7 @@ public class SpellCheckComponent extends SearchComponent implements SolrCoreAwar
         boolean isCorrectlySpelled = hits > (maxResultsForSuggest==null ? 0 : maxResultsForSuggest);
 
         NamedList response = new SimpleOrderedMap();
-        NamedList suggestions = toNamedList(shardRequest, spellingResult, q, extendedResults);
-        response.add("suggestions", suggestions);
+        response.add("suggestions", toNamedList(shardRequest, spellingResult, q, extendedResults));
 
         if (extendedResults) {
           response.add("correctlySpelled", isCorrectlySpelled);
@@ -300,7 +299,7 @@ public class SpellCheckComponent extends SearchComponent implements SolrCoreAwar
     //even in cases when the internal rank is the same.
     Collections.sort(collations);
 
-    NamedList collationList = new NamedList();
+    NamedList collationList = new SimpleOrderedMap();
     for (SpellCheckCollation collation : collations) {
       if (collationExtendedResults) {
         NamedList extendedResult = new SimpleOrderedMap();
@@ -424,8 +423,7 @@ public class SpellCheckComponent extends SearchComponent implements SolrCoreAwar
 
     NamedList response = new SimpleOrderedMap();
 
-    NamedList suggestions = toNamedList(false, result, origQuery, extendedResults);
-    response.add("suggestions", suggestions);
+    response.add("suggestions", toNamedList(false, result, origQuery, extendedResults));
 
     if (extendedResults) {
       response.add("correctlySpelled", isCorrectlySpelled);
@@ -436,7 +434,7 @@ public class SpellCheckComponent extends SearchComponent implements SolrCoreAwar
           .toArray(new SpellCheckCollation[mergeData.collations.size()]);
       Arrays.sort(sortedCollations);
 
-      NamedList collations = new NamedList();
+      NamedList collations = new SimpleOrderedMap();
       int i = 0;
       while (i < maxCollations && i < sortedCollations.length) {
         SpellCheckCollation collation = sortedCollations[i];
@@ -636,7 +634,7 @@ public class SpellCheckComponent extends SearchComponent implements SolrCoreAwar
 
   protected NamedList toNamedList(boolean shardRequest,
       SpellingResult spellingResult, String origQuery, boolean extendedResults) {
-    NamedList result = new NamedList();
+    NamedList result = new SimpleOrderedMap();
     Map<Token,LinkedHashMap<String,Integer>> suggestions = spellingResult
         .getSuggestions();
     boolean hasFreqInfo = spellingResult.hasTokenFrequencyInfo();

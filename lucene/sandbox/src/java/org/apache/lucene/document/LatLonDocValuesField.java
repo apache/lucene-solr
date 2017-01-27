@@ -24,6 +24,9 @@ import static org.apache.lucene.geo.GeoEncodingUtils.encodeLongitude;
 import org.apache.lucene.index.DocValuesType;
 import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.search.FieldDoc;
+import org.apache.lucene.search.IndexOrDocValuesQuery;
+import org.apache.lucene.search.MatchNoDocsQuery;
+import org.apache.lucene.search.Query;
 import org.apache.lucene.search.SortField;
 
 /** 
@@ -131,5 +134,48 @@ public class LatLonDocValuesField extends Field {
    */
   public static SortField newDistanceSort(String field, double latitude, double longitude) {
     return new LatLonPointSortField(field, latitude, longitude);
+  }
+
+  /**
+   * Create a query for matching a bounding box using doc values.
+   * This query is usually slow as it does not use an index structure and needs
+   * to verify documents one-by-one in order to know whether they match. It is
+   * best used wrapped in an {@link IndexOrDocValuesQuery} alongside a
+   * {@link LatLonPoint#newBoxQuery}.
+   */
+  public static Query newBoxQuery(String field, double minLatitude, double maxLatitude, double minLongitude, double maxLongitude) {
+    // exact double values of lat=90.0D and lon=180.0D must be treated special as they are not represented in the encoding
+    // and should not drag in extra bogus junk! TODO: should encodeCeil just throw ArithmeticException to be less trappy here?
+    if (minLatitude == 90.0) {
+      // range cannot match as 90.0 can never exist
+      return new MatchNoDocsQuery("LatLonDocValuesField.newBoxQuery with minLatitude=90.0");
+    }
+    if (minLongitude == 180.0) {
+      if (maxLongitude == 180.0) {
+        // range cannot match as 180.0 can never exist
+        return new MatchNoDocsQuery("LatLonDocValuesField.newBoxQuery with minLongitude=maxLongitude=180.0");
+      } else if (maxLongitude < minLongitude) {
+        // encodeCeil() with dateline wrapping!
+        minLongitude = -180.0;
+      }
+    }
+    return new LatLonDocValuesBoxQuery(field, minLatitude, maxLatitude, minLongitude, maxLongitude);
+  }
+
+  /**
+   * Create a query for matching points within the specified distance of the supplied location.
+   * This query is usually slow as it does not use an index structure and needs
+   * to verify documents one-by-one in order to know whether they match. It is
+   * best used wrapped in an {@link IndexOrDocValuesQuery} alongside a
+   * {@link LatLonPoint#newDistanceQuery}.
+   * @param field field name. must not be null.
+   * @param latitude latitude at the center: must be within standard +/-90 coordinate bounds.
+   * @param longitude longitude at the center: must be within standard +/-180 coordinate bounds.
+   * @param radiusMeters maximum distance from the center in meters: must be non-negative and finite.
+   * @return query matching points within this distance
+   * @throws IllegalArgumentException if {@code field} is null, location has invalid coordinates, or radius is invalid.
+   */
+  public static Query newDistanceQuery(String field, double latitude, double longitude, double radiusMeters) {
+    return new LatLonDocValuesDistanceQuery(field, latitude, longitude, radiusMeters);
   }
 }

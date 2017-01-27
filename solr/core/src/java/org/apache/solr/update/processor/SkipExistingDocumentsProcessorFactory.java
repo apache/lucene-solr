@@ -34,6 +34,7 @@ import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
+import java.util.Collections;
 
 import static org.apache.solr.common.SolrException.ErrorCode.SERVER_ERROR;
 import static org.apache.solr.update.processor.DistributingUpdateProcessorFactory.DISTRIB_UPDATE_PARAM;
@@ -183,7 +184,9 @@ public class SkipExistingDocumentsProcessorFactory extends UpdateRequestProcesso
     boolean doesDocumentExist(BytesRef indexedDocId) throws IOException {
       assert null != indexedDocId;
 
-      SolrInputDocument oldDoc = RealTimeGetComponent.getInputDocumentFromTlog(core, indexedDocId);
+      // we don't need any fields populated, we just need to know if the doc is in the tlog...
+      SolrInputDocument oldDoc = RealTimeGetComponent.getInputDocumentFromTlog(core, indexedDocId, null,
+                                                                               Collections.<String>emptySet(), false);
       if (oldDoc == RealTimeGetComponent.DELETED) {
         return false;
       }

@@ -77,6 +77,11 @@ API Changes
 * LUCENE-7643: Replaced doc-values queries in lucene/sandbox with factory
   methods on the *DocValuesField classes. (Adrien Grand)
 
+* LUCENE-7659: Added a IndexWriter#getFieldNames() method (experimental) to return
+  all field names as visible from the IndexWriter. This would be useful for
+  IndexWriter#updateDocValues() calls, to prevent calling with non-existent
+  docValues fields (Ishan Chattopadhyaya, Adrien Grand, Mike McCandless)
+
 New Features
 
 * LUCENE-7623: Add FunctionScoreQuery and FunctionMatchQuery (Alan Woodward,
@@ -86,6 +91,11 @@ New Features
   WordDelimiterFilter except it produces correct token graphs so that
   proximity queries at search time will produce correct results (Mike
   McCandless)
+
+* LUCENE-7656: Added the LatLonDocValuesField.new(Box/Distance)Query() factory
+  methods that are the equivalent of factory methods on LatLonPoint but operate
+  on doc values. These new methods should be wrapped in an IndexOrDocValuesQuery
+  for best performance. (Adrien Grand)
 
 Bug Fixes
 
@@ -109,6 +119,9 @@ Optimizations
   match the range on single-valued fields when more than half the documents in
   the index would match. (Adrien Grand)
 
+* LUCENE-7656: Speed up for LatLonPointDistanceQuery by computing distances even
+  less often. (Adrien Grand)
+
 Build
 
 * LUCENE-7651: Fix Javadocs build for Java 8u121 by injecting "Google Code
@@ -117,6 +130,17 @@ Build
   (Uwe Schindler)
 
 * LUCENE-7653: Update randomizedtesting to version 2.5.0. (Dawid Weiss)
+
+======================= Lucene 6.4.1 =======================
+
+Bug Fixes
+
+* LUCENE-7657: Fixed potential memory leak in the case that a (Span)TermQuery
+  with a TermContext is cached. (Adrien Grand)
+
+* LUCENE-7647: Made stored fields reclaim native memory more aggressively when
+  configured with BEST_COMPRESSION. This could otherwise result in out-of-memory
+  issues. (Adrien Grand)
 
 ======================= Lucene 6.4.0 =======================
 

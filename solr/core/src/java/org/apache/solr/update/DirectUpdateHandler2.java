@@ -27,9 +27,11 @@ import java.util.concurrent.Future;
 import java.util.concurrent.atomic.LongAdder;
 
 import org.apache.lucene.document.Document;
+import org.apache.lucene.document.Field;
 import org.apache.lucene.index.CodecReader;
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexWriter;
+import org.apache.lucene.index.IndexableField;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.SlowCodecReaderWrapper;
 import org.apache.lucene.index.Term;
@@ -274,9 +276,7 @@ public class DirectUpdateHandler2 extends UpdateHandler implements SolrCoreState
       if (cmd.isBlock()) {
         writer.updateDocuments(updateTerm, cmd);
       } else {
-        Document luceneDocument = cmd.getLuceneDocument();
-        // SolrCore.verbose("updateDocument",updateTerm,luceneDocument,writer);
-        writer.updateDocument(updateTerm, luceneDocument);
+        updateDocOrDocValues(cmd, writer, updateTerm);
       }
       // SolrCore.verbose("updateDocument",updateTerm,"DONE");
 
@@ -331,7 +331,8 @@ public class DirectUpdateHandler2 extends UpdateHandler implements SolrCoreState
 
       // see comment in deleteByQuery
       synchronized (solrCoreState.getUpdateLock()) {
-        writer.updateDocument(idTerm, luceneDocument);
+        updateDocOrDocValues(cmd, writer, idTerm);
+
         for (Query q : dbqList) {
           writer.deleteDocuments(new DeleteByQueryWrapper(q, core.getLatestSchema()));
         }
@@ -450,6 +451,11 @@ public class DirectUpdateHandler2 extends UpdateHandler implements SolrCoreState
       // as we use around ulog.preCommit... also see comments in ulog.postSoftCommit)
       //
       synchronized (solrCoreState.getUpdateLock()) {
+
+        // We are reopening a searcher before applying the deletes to overcome LUCENE-7344.
+        // Once LUCENE-7344 is resolved, we can consider removing this.
+        if (ulog != null) ulog.openRealtimeSearcher();
+
         if (delAll) {
           deleteAll();
         } else {
@@ -830,6 +836,44 @@ public class DirectUpdateHandler2 extends UpdateHandler implements SolrCoreState
     splitter.split();
   }
 
+  /**
+   * Calls either {@link IndexWriter#updateDocValues} or {@link IndexWriter#updateDocument} as 
+   * needed based on {@link AddUpdateCommand#isInPlaceUpdate}.
+   * <p>
+   * If the this is an UPDATE_INPLACE cmd, then all fields inclued in 
+   * {@link AddUpdateCommand#getLuceneDocument} must either be the uniqueKey field, or be DocValue 
+   * only fields.
+   * </p>
+   *
+   * @param cmd - cmd apply to IndexWriter
+   * @param writer - IndexWriter to use
+   * @param updateTerm - used if this cmd results in calling {@link IndexWriter#updateDocument}
+   */
+  private void updateDocOrDocValues(AddUpdateCommand cmd, IndexWriter writer, Term updateTerm) throws IOException {
+    assert null != cmd;
+    final SchemaField uniqueKeyField = cmd.req.getSchema().getUniqueKeyField();
+    final String uniqueKeyFieldName = null == uniqueKeyField ? null : uniqueKeyField.getName();
+
+    if (cmd.isInPlaceUpdate()) {
+      Document luceneDocument = cmd.getLuceneDocument(true);
+
+      final List<IndexableField> origDocFields = luceneDocument.getFields();
+      final List<Field> fieldsToUpdate = new ArrayList<>(origDocFields.size());
+      for (IndexableField field : origDocFields) {
+        if (! field.name().equals(uniqueKeyFieldName) ) {
+          fieldsToUpdate.add((Field)field);
+        }
+      }
+      log.debug("updateDocValues({})", cmd);
+      writer.updateDocValues(updateTerm, fieldsToUpdate.toArray(new Field[fieldsToUpdate.size()]));
+    } else {
+      Document luceneDocument = cmd.getLuceneDocument(false);
+      log.debug("updateDocument({})", cmd);
+      writer.updateDocument(updateTerm, luceneDocument);
+    }
+  }
+
+  
   /////////////////////////////////////////////////////////////////////
   // SolrInfoMBean stuff: Statistics and Module Info
   /////////////////////////////////////////////////////////////////////

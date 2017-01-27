@@ -67,7 +67,7 @@ public class SpanTermQuery extends SpanQuery {
   public SpanWeight createWeight(IndexSearcher searcher, boolean needsScores, float boost) throws IOException {
     final TermContext context;
     final IndexReaderContext topContext = searcher.getTopReaderContext();
-    if (termContext == null || termContext.topReaderContext != topContext) {
+    if (termContext == null || termContext.wasBuiltFor(topContext) == false) {
       context = TermContext.build(topContext, term);
     }
     else {
@@ -99,7 +99,7 @@ public class SpanTermQuery extends SpanQuery {
     @Override
     public Spans getSpans(final LeafReaderContext context, Postings requiredPostings) throws IOException {
 
-      assert termContext.topReaderContext == ReaderUtil.getTopLevelContext(context) : "The top-reader used to create Weight (" + termContext.topReaderContext + ") is not the same as the current reader's top-reader (" + ReaderUtil.getTopLevelContext(context);
+      assert termContext.wasBuiltFor(ReaderUtil.getTopLevelContext(context)) : "The top-reader used to create Weight is not the same as the current reader's top-reader (" + ReaderUtil.getTopLevelContext(context);
 
       final TermState state = termContext.get(context.ord);
       if (state == null) { // term is not present in that reader

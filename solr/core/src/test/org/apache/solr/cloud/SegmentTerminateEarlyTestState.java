@@ -17,8 +17,6 @@
 
 package org.apache.solr.cloud;
 
-import java.time.ZoneOffset;
-import java.time.ZonedDateTime;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
@@ -37,9 +35,13 @@ import org.apache.solr.response.SolrQueryResponse;
 class SegmentTerminateEarlyTestState {
 
   final String keyField = "id";
-  final String timestampField = "timestamp";
-  final String oddField = "odd_l1"; // <dynamicField name="*_l1"  type="long"   indexed="true"  stored="true" multiValued="false"/>
-  final String quadField = "quad_l1"; // <dynamicField name="*_l1"  type="long"   indexed="true"  stored="true" multiValued="false"/>
+
+  // for historic reasons, this is refered to as a "timestamp" field, but in actuallity is just an int
+  // value representing a number of "minutes" between 0-60.
+  // aka: I decided not to rename a million things while refactoring this test
+  public static final String timestampField = "timestamp_i_dvo";
+  public static final String oddField = "odd_l1"; // <dynamicField name="*_l1"  type="long"   indexed="true"  stored="true" multiValued="false"/>
+  public static final String quadField = "quad_l1"; // <dynamicField name="*_l1"  type="long"   indexed="true"  stored="true" multiValued="false"/>
 
   final Set<Integer> minTimestampDocKeys = new HashSet<>();
   final Set<Integer> maxTimestampDocKeys = new HashSet<>();
@@ -77,7 +79,7 @@ class SegmentTerminateEarlyTestState {
           maxTimestampMM = new Integer(MM);
           maxTimestampDocKeys.add(docKey);
         }
-        doc.setField(timestampField, ZonedDateTime.of(2016, 1, 1, 0, MM, 0, 0, ZoneOffset.UTC).toInstant().toString());
+        doc.setField(timestampField, (Integer)MM);
         doc.setField(oddField, ""+(numDocs % 2));
         doc.setField(quadField, ""+(numDocs % 4)+1);
         cloudSolrClient.add(doc);
