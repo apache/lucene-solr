@@ -34,6 +34,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Date;
+import java.util.List;
 import java.util.Properties;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
@@ -1401,6 +1402,21 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
     assertTrue(timeTakenInSeconds - approximateTimeInSeconds > 0);
   }
 
+  @Test
+  public void doTestIllegalFilePaths() throws Exception {
+    // Loop through the file=, cf=, tlogFile= params and prove that it throws exception for path traversal attempts
+    List<String> illegalFilenames = Arrays.asList("/foo/bar", "../dir/traversal", "illegal\rfile\nname\t");
+    List<String> params = Arrays.asList(ReplicationHandler.FILE, ReplicationHandler.CONF_FILE_SHORT);
+    for (String param : params) {
+      for (String filename : illegalFilenames) {
+        try {
+          invokeReplicationCommand(masterJetty.getLocalPort(), "filecontent&" + param + "=" + filename);
+          fail("Should have thrown exception on illegal path for param " + param + " and file name " + filename);
+        } catch (Exception e) {}
+      }
+    }
+  }
+  
   private class AddExtraDocs implements Runnable {
 
     SolrClient masterClient;
