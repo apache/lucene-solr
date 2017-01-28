@@ -67,8 +67,10 @@ import org.apache.solr.common.cloud.ImplicitDocRouter;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.cloud.ZkCoreNodeProps;
-import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.cloud.ZkStateReader;
+import org.apache.solr.common.cloud.rule.ClientSnitchContext;
+import org.apache.solr.common.cloud.rule.ImplicitSnitch;
+import org.apache.solr.common.cloud.rule.SnitchContext;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.ShardParams;
 import org.apache.solr.common.params.SolrParams;
@@ -1271,65 +1273,12 @@ public class CloudSolrClient extends SolrClient {
       }
       Set<String> liveNodes = stateProvider.liveNodes();
 
-      List<String> leaderUrlList = null;
-      List<String> urlList = null;
-      List<String> replicasList = null;
-      
-      // build a map of unique nodes
-      // TODO: allow filtering by group, role, etc
-      Map<String,ZkNodeProps> nodes = new HashMap<>();
-      List<String> urlList2 = new ArrayList<>();
-      for (Slice slice : slices.values()) {
-        for (ZkNodeProps nodeProps : slice.getReplicasMap().values()) {
-          ZkCoreNodeProps coreNodeProps = new ZkCoreNodeProps(nodeProps);
-          String node = coreNodeProps.getNodeName();
-          if (!liveNodes.contains(coreNodeProps.getNodeName())
-              || Replica.State.getState(coreNodeProps.getState()) != Replica.State.ACTIVE) continue;
-          if (nodes.put(node, nodeProps) == null) {
-            if (!sendToLeaders || coreNodeProps.isLeader()) {
-              String url;
-              if (reqParams.get(UpdateParams.COLLECTION) == null) {
-                url = ZkCoreNodeProps.getCoreUrl(nodeProps.getStr(ZkStateReader.BASE_URL_PROP), collection);
-              } else {
-                url = coreNodeProps.getCoreUrl();
-              }
-              urlList2.add(url);
-            } else {
-              String url;
-              if (reqParams.get(UpdateParams.COLLECTION) == null) {
-                url = ZkCoreNodeProps.getCoreUrl(nodeProps.getStr(ZkStateReader.BASE_URL_PROP), collection);
-              } else {
-                url = coreNodeProps.getCoreUrl();
-              }
-              replicas.add(url);
-            }
-          }
-        }
-      }
-      
-      if (sendToLeaders) {
-        leaderUrlList = urlList2;
-        replicasList = replicas;
-      } else {
-        urlList = urlList2;
-      }
-      
-      if (sendToLeaders) {
-        theUrlList = new ArrayList<>(leaderUrlList.size());
-        theUrlList.addAll(leaderUrlList);
-      } else {
-        theUrlList = new ArrayList<>(urlList.size());
-        theUrlList.addAll(urlList);
-      }
+      ImplicitSnitch snitch = new ImplicitSnitch();
+      SnitchContext context = new ClientSnitchContext(null, null, new HashMap<>());
 
-      Collections.shuffle(theUrlList, rand);
-      if (sendToLeaders) {
-        ArrayList<String> theReplicas = new ArrayList<>(
-            replicasList.size());
-        theReplicas.addAll(replicasList);
-        Collections.shuffle(theReplicas, rand);
-        theUrlList.addAll(theReplicas);
-      }
+      SolrUrlListBuilder urlSelector = new SolrUrlListBuilder(snitch,context);
+      theUrlList = urlSelector.buildUrlList(slices, liveNodes, sendToLeaders, reqParams, collection);
+
       
       if (theUrlList.isEmpty()) {
         for (String s : collectionNames) {

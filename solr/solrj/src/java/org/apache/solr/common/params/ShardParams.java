@@ -56,4 +56,7 @@ public interface ShardParams {
 
   /** Force a single-pass distributed query? (true/false) */
   public static final String DISTRIB_SINGLE_PASS = "distrib.singlePass";
+
+  /** Routing Rules */
+  public static final String ROUTING_RULE = "routingRule";
 }
