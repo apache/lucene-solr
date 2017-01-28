@@ -98,7 +98,7 @@ public class WeightedSpanTermExtractor {
    * Fills a <code>Map</code> with {@link WeightedSpanTerm}s using the terms from the supplied <code>Query</code>.
    * 
    * @param query
-   *          Query to extract IndexedField from
+   *          Query to extract terms from
    * @param terms
    *          Map to place created WeightedSpanTerms in
    * @throws IOException If there is a low-level I/O error
@@ -263,7 +263,7 @@ public class WeightedSpanTermExtractor {
    * @param terms
    *          Map to place created WeightedSpanTerms in
    * @param spanQuery
-   *          SpanQuery to extract IndexedField from
+   *          SpanQuery to extract terms from
    * @throws IOException If there is a low-level I/O error
    */
   protected void extractWeightedSpanTerms(Map<String,WeightedSpanTerm> terms, SpanQuery spanQuery, float boost) throws IOException {

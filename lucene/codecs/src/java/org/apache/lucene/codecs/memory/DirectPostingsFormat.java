@@ -88,7 +88,7 @@ public final class DirectPostingsFormat extends PostingsFormat {
   }
 
   /** minSkipCount is how many terms in a row must have the
-   *  same prefix before we put a skip pointer down.  IndexedField
+   *  same prefix before we put a skip pointer down.  Terms
    *  with docFreq &lt;= lowFreqCutoff will use a single int[]
    *  to hold all docs, freqs, position and offsets; terms
    *  with higher docFreq will use separate arrays. */
