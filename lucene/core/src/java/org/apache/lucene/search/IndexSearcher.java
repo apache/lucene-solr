@@ -42,7 +42,7 @@ import org.apache.lucene.index.ReaderUtil;
 import org.apache.lucene.index.StoredFieldVisitor;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.index.TermContext;
-import org.apache.lucene.index.Terms;
+import org.apache.lucene.index.IndexedField;
 import org.apache.lucene.search.similarities.BM25Similarity;
 import org.apache.lucene.search.similarities.Similarity;
 import org.apache.lucene.store.NIOFSDirectory;    // javadoc
@@ -792,7 +792,7 @@ public class IndexSearcher {
 
     assert field != null;
     
-    Terms terms = MultiFields.getTerms(reader, field);
+    IndexedField terms = MultiFields.getIndexedField(reader, field);
     if (terms == null) {
       docCount = 0;
       sumTotalTermFreq = 0;

@@ -27,7 +27,7 @@ import org.apache.lucene.index.FilteredTermsEnum;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.Term;
-import org.apache.lucene.index.Terms;
+import org.apache.lucene.index.IndexedField;
 import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.AttributeSource;
@@ -84,8 +84,8 @@ public class TestPrefixRandom extends LuceneTestCase {
     }
     
     @Override
-    protected TermsEnum getTermsEnum(Terms terms, AttributeSource atts) throws IOException {
-      return new SimplePrefixTermsEnum(terms.iterator(), prefix);
+    protected TermsEnum getTermsEnum(IndexedField terms, AttributeSource atts) throws IOException {
+      return new SimplePrefixTermsEnum(terms.getTermsEnum(), prefix);
     }
 
     private class SimplePrefixTermsEnum extends FilteredTermsEnum {

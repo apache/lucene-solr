@@ -55,7 +55,7 @@ final class SortingTermVectorsConsumer extends TermVectorsConsumer {
       try {
         reader.checkIntegrity();
         for (int docID = 0; docID < state.segmentInfo.maxDoc(); docID++) {
-          Fields vectors = mergeReader.get(sortMap.newToOld(docID));
+          IndexedFields vectors = mergeReader.get(sortMap.newToOld(docID));
           writeTermVectors(writer, vectors, state.fieldInfos);
         }
         writer.finish(state.fieldInfos, state.segmentInfo.maxDoc());
@@ -88,7 +88,7 @@ final class SortingTermVectorsConsumer extends TermVectorsConsumer {
   }
 
   /** Safe (but, slowish) default method to copy every vector field in the provided {@link TermVectorsWriter}. */
-  private static void writeTermVectors(TermVectorsWriter writer, Fields vectors, FieldInfos fieldInfos) throws IOException {
+  private static void writeTermVectors(TermVectorsWriter writer, IndexedFields vectors, FieldInfos fieldInfos) throws IOException {
     if (vectors == null) {
       writer.startDocument(0);
       writer.finishDocument();
@@ -97,7 +97,7 @@ final class SortingTermVectorsConsumer extends TermVectorsConsumer {
 
     int numFields = vectors.size();
     if (numFields == -1) {
-      // count manually! TODO: Maybe enforce that Fields.size() returns something valid?
+      // count manually! TODO: Maybe enforce that IndexedFields.size() returns something valid?
       numFields = 0;
       for (final Iterator<String> it = vectors.iterator(); it.hasNext(); ) {
         it.next();
@@ -119,7 +119,7 @@ final class SortingTermVectorsConsumer extends TermVectorsConsumer {
       assert lastFieldName == null || fieldName.compareTo(lastFieldName) > 0: "lastFieldName=" + lastFieldName + " fieldName=" + fieldName;
       lastFieldName = fieldName;
 
-      final Terms terms = vectors.terms(fieldName);
+      final IndexedField terms = vectors.indexedField(fieldName);
       if (terms == null) {
         // FieldsEnum shouldn't lie...
         continue;
@@ -132,16 +132,16 @@ final class SortingTermVectorsConsumer extends TermVectorsConsumer {
 
       int numTerms = (int) terms.size();
       if (numTerms == -1) {
-        // count manually. It is stupid, but needed, as Terms.size() is not a mandatory statistics function
+        // count manually. It is stupid, but needed, as IndexedField.size() is not a mandatory statistics function
         numTerms = 0;
-        termsEnum = terms.iterator();
+        termsEnum = terms.getTermsEnum();
         while(termsEnum.next() != null) {
           numTerms++;
         }
       }
 
       writer.startField(fieldInfo, numTerms, hasPositions, hasOffsets, hasPayloads);
-      termsEnum = terms.iterator();
+      termsEnum = terms.getTermsEnum();
 
       int termCount = 0;
       while(termsEnum.next() != null) {

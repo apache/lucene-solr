@@ -17,7 +17,7 @@
 package org.apache.lucene.search;
 
 import org.apache.lucene.index.IndexReader; // javadocs
-import org.apache.lucene.index.Terms;       // javadocs
+import org.apache.lucene.index.IndexedField;       // javadocs
 
 
 /**
@@ -57,19 +57,19 @@ public class CollectionStatistics {
   
   /** returns the total number of documents that
    * have at least one term for this field. 
-   * @see Terms#getDocCount() */
+   * @see IndexedField#getDocCount() */
   public final long docCount() {
     return docCount;
   }
   
   /** returns the total number of tokens for this field
-   * @see Terms#getSumTotalTermFreq() */
+   * @see IndexedField#getSumTotalTermFreq() */
   public final long sumTotalTermFreq() {
     return sumTotalTermFreq;
   }
   
   /** returns the total number of postings for this field 
-   * @see Terms#getSumDocFreq() */
+   * @see IndexedField#getSumDocFreq() */
   public final long sumDocFreq() {
     return sumDocFreq;
   }

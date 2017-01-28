@@ -24,7 +24,7 @@ import java.util.Collections;
 import org.apache.lucene.codecs.blocktreeords.FSTOrdsOutputs.Output;
 import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.IndexOptions;
-import org.apache.lucene.index.Terms;
+import org.apache.lucene.index.IndexedField;
 import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.store.ByteArrayDataInput;
 import org.apache.lucene.store.IndexInput;
@@ -34,8 +34,8 @@ import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.automaton.CompiledAutomaton;
 import org.apache.lucene.util.fst.FST;
 
-/** BlockTree's implementation of {@link Terms}. */
-final class OrdsFieldReader extends Terms implements Accountable {
+/** BlockTree's implementation of {@link IndexedField}. */
+final class OrdsFieldReader extends IndexedField implements Accountable {
   final long numTerms;
   final FieldInfo fieldInfo;
   final long sumTotalTermFreq;
@@ -137,7 +137,7 @@ final class OrdsFieldReader extends Terms implements Accountable {
   }
 
   @Override
-  public TermsEnum iterator() throws IOException {
+  public TermsEnum getTermsEnum() throws IOException {
     return new OrdsSegmentTermsEnum(this);
   }
 

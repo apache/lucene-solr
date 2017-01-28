@@ -37,24 +37,24 @@ public class TestFilterLeafReader extends LuceneTestCase {
 
     /** Filter that only permits terms containing 'e'.*/
     private static class TestFields extends FilterFields {
-      TestFields(Fields in) {
+      TestFields(IndexedFields in) {
         super(in);
       }
 
       @Override
-      public Terms terms(String field) throws IOException {
-        return new TestTerms(super.terms(field));
+      public IndexedField indexedField(String field) throws IOException {
+        return new TestTerms(super.indexedField(field));
       }
     }
 
-    private static class TestTerms extends FilterTerms {
-      TestTerms(Terms in) {
+    private static class TestTerms extends FilterField {
+      TestTerms(IndexedField in) {
         super(in);
       }
 
       @Override
-      public TermsEnum iterator() throws IOException {
-        return new TestTermsEnum(super.iterator());
+      public TermsEnum getTermsEnum() throws IOException {
+        return new TestTermsEnum(super.getTermsEnum());
       }
     }
 
@@ -103,7 +103,7 @@ public class TestFilterLeafReader extends LuceneTestCase {
     }
 
     @Override
-    public Fields fields() throws IOException {
+    public IndexedFields fields() throws IOException {
       return new TestFields(super.fields());
     }
   }
@@ -143,7 +143,7 @@ public class TestFilterLeafReader extends LuceneTestCase {
     writer.close();
     IndexReader reader = DirectoryReader.open(target);
     
-    TermsEnum terms = MultiFields.getTerms(reader, "default").iterator();
+    TermsEnum terms = MultiFields.getIndexedField(reader, "default").getTermsEnum();
     while (terms.next() != null) {
       assertTrue(terms.term().utf8ToString().indexOf('e') != -1);
     }
@@ -185,7 +185,7 @@ public class TestFilterLeafReader extends LuceneTestCase {
   public void testOverrideMethods() throws Exception {
     checkOverrideMethods(FilterLeafReader.class);
     checkOverrideMethods(FilterLeafReader.FilterFields.class);
-    checkOverrideMethods(FilterLeafReader.FilterTerms.class);
+    checkOverrideMethods(FilterLeafReader.FilterField.class);
     checkOverrideMethods(FilterLeafReader.FilterTermsEnum.class);
     checkOverrideMethods(FilterLeafReader.FilterPostingsEnum.class);
   }

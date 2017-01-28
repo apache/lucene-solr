@@ -45,7 +45,7 @@ public class SimpleMergedSegmentWarmer extends IndexReaderWarmer {
     int normsCount = 0;
     for (FieldInfo info : reader.getFieldInfos()) {
       if (info.getIndexOptions() != IndexOptions.NONE) {
-        reader.terms(info.name); 
+        reader.indexedField(info.name); 
         indexedCount++;
         
         if (info.hasNorms()) {

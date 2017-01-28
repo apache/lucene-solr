@@ -18,7 +18,7 @@ package org.apache.lucene.index;
 
 
 import org.apache.lucene.index.FilterLeafReader.FilterFields;
-import org.apache.lucene.index.FilterLeafReader.FilterTerms;
+import org.apache.lucene.index.FilterLeafReader.FilterField;
 import org.apache.lucene.index.FilterLeafReader.FilterTermsEnum;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.automaton.CompiledAutomaton;
@@ -79,8 +79,8 @@ public class ExitableDirectoryReader extends FilterDirectoryReader {
     }
 
     @Override
-    public Fields fields() throws IOException {
-      Fields fields = super.fields();
+    public IndexedFields fields() throws IOException {
+      IndexedFields fields = super.fields();
       if (queryTimeout.isTimeoutEnabled()) {
         return new ExitableFields(fields, queryTimeout);
       }
@@ -102,21 +102,21 @@ public class ExitableDirectoryReader extends FilterDirectoryReader {
   }
 
   /**
-   * Wrapper class for another Fields implementation that is used by the ExitableFilterAtomicReader.
+   * Wrapper class for another IndexedFields implementation that is used by the ExitableFilterAtomicReader.
    */
   public static class ExitableFields extends FilterFields {
     
     private QueryTimeout queryTimeout;
 
     /** Constructor **/
-    public ExitableFields(Fields fields, QueryTimeout queryTimeout) {
+    public ExitableFields(IndexedFields fields, QueryTimeout queryTimeout) {
       super(fields);
       this.queryTimeout = queryTimeout;
     }
 
     @Override
-    public Terms terms(String field) throws IOException {
-      Terms terms = in.terms(field);
+    public IndexedField indexedField(String field) throws IOException {
+      IndexedField terms = in.indexedField(field);
       if (terms == null) {
         return null;
       }
@@ -125,14 +125,14 @@ public class ExitableDirectoryReader extends FilterDirectoryReader {
   }
 
   /**
-   * Wrapper class for another Terms implementation that is used by ExitableFields.
+   * Wrapper class for another IndexedField implementation that is used by ExitableFields.
    */
-  public static class ExitableTerms extends FilterTerms {
+  public static class ExitableTerms extends FilterField {
 
     private QueryTimeout queryTimeout;
     
     /** Constructor **/
-    public ExitableTerms(Terms terms, QueryTimeout queryTimeout) {
+    public ExitableTerms(IndexedField terms, QueryTimeout queryTimeout) {
       super(terms);
       this.queryTimeout = queryTimeout;
     }
@@ -143,8 +143,8 @@ public class ExitableDirectoryReader extends FilterDirectoryReader {
     }
 
     @Override
-    public TermsEnum iterator() throws IOException {
-      return new ExitableTermsEnum(in.iterator(), queryTimeout);
+    public TermsEnum getTermsEnum() throws IOException {
+      return new ExitableTermsEnum(in.getTermsEnum(), queryTimeout);
     }
   }
 

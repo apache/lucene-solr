@@ -54,15 +54,15 @@ class SortingLeafReader extends FilterLeafReader {
     private final Sorter.DocMap docMap;
     private final FieldInfos infos;
 
-    public SortingFields(final Fields in, FieldInfos infos, Sorter.DocMap docMap) {
+    public SortingFields(final IndexedFields in, FieldInfos infos, Sorter.DocMap docMap) {
       super(in);
       this.docMap = docMap;
       this.infos = infos;
     }
 
     @Override
-    public Terms terms(final String field) throws IOException {
-      Terms terms = in.terms(field);
+    public IndexedField indexedField(final String field) throws IOException {
+      IndexedField terms = in.indexedField(field);
       if (terms == null) {
         return null;
       } else {
@@ -72,20 +72,20 @@ class SortingLeafReader extends FilterLeafReader {
 
   }
 
-  private static class SortingTerms extends FilterTerms {
+  private static class SortingTerms extends FilterField {
 
     private final Sorter.DocMap docMap;
     private final IndexOptions indexOptions;
 
-    public SortingTerms(final Terms in, IndexOptions indexOptions, final Sorter.DocMap docMap) {
+    public SortingTerms(final IndexedField in, IndexOptions indexOptions, final Sorter.DocMap docMap) {
       super(in);
       this.docMap = docMap;
       this.indexOptions = indexOptions;
     }
 
     @Override
-    public TermsEnum iterator() throws IOException {
-      return new SortingTermsEnum(in.iterator(), docMap, indexOptions, hasPositions());
+    public TermsEnum getTermsEnum() throws IOException {
+      return new SortingTermsEnum(in.getTermsEnum(), docMap, indexOptions, hasPositions());
     }
 
     @Override
@@ -1042,7 +1042,7 @@ class SortingLeafReader extends FilterLeafReader {
   }
 
   @Override
-  public Fields fields() throws IOException {
+  public IndexedFields fields() throws IOException {
     return new SortingFields(in.fields(), in.getFieldInfos(), docMap);
   }
 
@@ -1238,7 +1238,7 @@ class SortingLeafReader extends FilterLeafReader {
   }
 
   @Override
-  public Fields getTermVectors(final int docID) throws IOException {
+  public IndexedFields getTermVectors(final int docID) throws IOException {
     return in.getTermVectors(docMap.newToOld(docID));
   }
 

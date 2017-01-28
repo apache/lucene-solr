@@ -59,7 +59,7 @@ import org.apache.lucene.index.SortedDocValues;
 import org.apache.lucene.index.SortedNumericDocValues;
 import org.apache.lucene.index.SortedSetDocValues;
 import org.apache.lucene.index.Term;
-import org.apache.lucene.index.Terms;
+import org.apache.lucene.index.IndexedField;
 import org.apache.lucene.index.TermsEnum.SeekStatus;
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.index.TermsEnum;
@@ -333,11 +333,11 @@ public class TestLucene54DocValuesFormat extends BaseCompressingDocValuesFormatT
     DirectoryReader ir = writer.getReader();
     for (LeafReaderContext context : ir.leaves()) {
       LeafReader r = context.reader();
-      Terms terms = r.terms("indexed");
+      IndexedField terms = r.indexedField("indexed");
       if (terms != null) {
         SortedSetDocValues ssdv = r.getSortedSetDocValues("dv");
         assertEquals(terms.size(), ssdv.getValueCount());
-        TermsEnum expected = terms.iterator();
+        TermsEnum expected = terms.getTermsEnum();
         TermsEnum actual = r.getSortedSetDocValues("dv").termsEnum();
         assertEquals(terms.size(), expected, actual);
 
@@ -351,10 +351,10 @@ public class TestLucene54DocValuesFormat extends BaseCompressingDocValuesFormatT
     // now compare again after the merge
     ir = writer.getReader();
     LeafReader ar = getOnlyLeafReader(ir);
-    Terms terms = ar.terms("indexed");
+    IndexedField terms = ar.indexedField("indexed");
     if (terms != null) {
       assertEquals(terms.size(), ar.getSortedSetDocValues("dv").getValueCount());
-      TermsEnum expected = terms.iterator();
+      TermsEnum expected = terms.getTermsEnum();
       TermsEnum actual = ar.getSortedSetDocValues("dv").termsEnum();
       assertEquals(terms.size(), expected, actual);
     }

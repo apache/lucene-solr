@@ -32,7 +32,7 @@ import org.apache.lucene.index.FieldInfos;
 import org.apache.lucene.index.IndexOptions;
 import org.apache.lucene.index.PostingsEnum;
 import org.apache.lucene.index.SegmentReadState;
-import org.apache.lucene.index.Terms;
+import org.apache.lucene.index.IndexedField;
 import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.store.BufferedChecksumIndexInput;
 import org.apache.lucene.store.ChecksumIndexInput;
@@ -521,7 +521,7 @@ class SimpleTextFieldsReader extends FieldsProducer {
       RamUsageEstimator.shallowSizeOfInstance(SimpleTextTerms.class)
           + RamUsageEstimator.shallowSizeOfInstance(BytesRef.class)
           + RamUsageEstimator.shallowSizeOfInstance(CharsRef.class);
-  private class SimpleTextTerms extends Terms implements Accountable {
+  private class SimpleTextTerms extends IndexedField implements Accountable {
     private final long termsStart;
     private final FieldInfo fieldInfo;
     private final int maxDoc;
@@ -622,7 +622,7 @@ class SimpleTextFieldsReader extends FieldsProducer {
     }
 
     @Override
-    public TermsEnum iterator() throws IOException {
+    public TermsEnum getTermsEnum() throws IOException {
       if (fst != null) {
         return new SimpleTextTermsEnum(fst, fieldInfo.getIndexOptions());
       } else {
@@ -679,7 +679,7 @@ class SimpleTextFieldsReader extends FieldsProducer {
   private final Map<String,SimpleTextTerms> termsCache = new HashMap<>();
 
   @Override
-  synchronized public Terms terms(String field) throws IOException {
+  synchronized public IndexedField indexedField(String field) throws IOException {
     SimpleTextTerms terms = termsCache.get(field);
     if (terms == null) {
       Long fp = fields.get(field);

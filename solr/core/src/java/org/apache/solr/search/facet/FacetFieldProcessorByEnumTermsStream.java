@@ -22,12 +22,12 @@ import java.io.IOException;
 import java.util.Iterator;
 import java.util.List;
 
-import org.apache.lucene.index.Fields;
+import org.apache.lucene.index.IndexedFields;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.MultiPostingsEnum;
 import org.apache.lucene.index.PostingsEnum;
 import org.apache.lucene.index.Term;
-import org.apache.lucene.index.Terms;
+import org.apache.lucene.index.IndexedField;
 import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.search.TermQuery;
@@ -156,8 +156,8 @@ class FacetFieldProcessorByEnumTermsStream extends FacetFieldProcessor implement
       }
     }
 
-    Fields fields = fcontext.searcher.getSlowAtomicReader().fields();
-    Terms terms = fields == null ? null : fields.terms(sf.getName());
+    IndexedFields fields = fcontext.searcher.getSlowAtomicReader().fields();
+    IndexedField terms = fields == null ? null : fields.indexedField(sf.getName());
 
     termsEnum = null;
     deState = null;
@@ -166,7 +166,7 @@ class FacetFieldProcessorByEnumTermsStream extends FacetFieldProcessor implement
 
     if (terms != null) {
 
-      termsEnum = terms.iterator();
+      termsEnum = terms.getTermsEnum();
 
       // TODO: OPT: if seek(ord) is supported for this termsEnum, then we could use it for
       // facet.offset when sorting by index order.

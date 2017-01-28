@@ -22,7 +22,7 @@ import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field.Store;
 import org.apache.lucene.document.StringField;
 import org.apache.lucene.index.DirectoryReader;
-import org.apache.lucene.index.Fields;
+import org.apache.lucene.index.IndexedFields;
 import org.apache.lucene.index.FilterDirectoryReader;
 import org.apache.lucene.index.FilterLeafReader;
 import org.apache.lucene.index.LeafReader;
@@ -32,7 +32,7 @@ import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.index.TermContext;
 import org.apache.lucene.index.TermState;
-import org.apache.lucene.index.Terms;
+import org.apache.lucene.index.IndexedField;
 import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.BytesRef;
@@ -118,14 +118,14 @@ public class TestTermQuery extends LuceneTestCase {
     }
 
     @Override
-    public Fields fields() throws IOException {
+    public IndexedFields fields() throws IOException {
       return new FilterFields(super.fields()) {
         @Override
-        public Terms terms(String field) throws IOException {
-          return new FilterTerms(super.terms(field)) {
+        public IndexedField indexedField(String field) throws IOException {
+          return new FilterField(super.indexedField(field)) {
             @Override
-            public TermsEnum iterator() throws IOException {
-              return new FilterTermsEnum(super.iterator()) {
+            public TermsEnum getTermsEnum() throws IOException {
+              return new FilterTermsEnum(super.getTermsEnum()) {
                 @Override
                 public SeekStatus seekCeil(BytesRef text) throws IOException {
                   throw new AssertionError("no seek");

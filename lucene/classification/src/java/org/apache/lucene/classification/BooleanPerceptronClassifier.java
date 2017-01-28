@@ -30,7 +30,7 @@ import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexableField;
 import org.apache.lucene.index.MultiFields;
 import org.apache.lucene.index.Term;
-import org.apache.lucene.index.Terms;
+import org.apache.lucene.index.IndexedField;
 import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.search.BooleanClause;
 import org.apache.lucene.search.BooleanQuery;
@@ -59,7 +59,7 @@ import org.apache.lucene.util.fst.Util;
 public class BooleanPerceptronClassifier implements Classifier<Boolean> {
 
   private final Double threshold;
-  private final Terms textTerms;
+  private final IndexedField textTerms;
   private final Analyzer analyzer;
   private final String textFieldName;
   private FST<Long> fst;
@@ -80,7 +80,7 @@ public class BooleanPerceptronClassifier implements Classifier<Boolean> {
    */
   public BooleanPerceptronClassifier(IndexReader indexReader, Analyzer analyzer, Query query, Integer batchSize,
                                      Double threshold, String classFieldName, String textFieldName) throws IOException {
-    this.textTerms = MultiFields.getTerms(indexReader, textFieldName);
+    this.textTerms = MultiFields.getIndexedField(indexReader, textFieldName);
 
     if (textTerms == null) {
       throw new IOException("term vectors need to be available for field " + textFieldName);
@@ -106,7 +106,7 @@ public class BooleanPerceptronClassifier implements Classifier<Boolean> {
     // TODO : remove this map as soon as we have a writable FST
     SortedMap<String, Double> weights = new ConcurrentSkipListMap<>();
 
-    TermsEnum termsEnum = textTerms.iterator();
+    TermsEnum termsEnum = textTerms.getTermsEnum();
     BytesRef textTerm;
     while ((textTerm = termsEnum.next()) != null) {
       weights.put(textTerm.utf8ToString(), (double) termsEnum.totalTermFreq());
@@ -152,17 +152,17 @@ public class BooleanPerceptronClassifier implements Classifier<Boolean> {
   private void updateWeights(IndexReader indexReader,
                              int docId, Boolean assignedClass, SortedMap<String, Double> weights,
                              double modifier, boolean updateFST) throws IOException {
-    TermsEnum cte = textTerms.iterator();
+    TermsEnum cte = textTerms.getTermsEnum();
 
     // get the doc term vectors
-    Terms terms = indexReader.getTermVector(docId, textFieldName);
+    IndexedField terms = indexReader.getTermVector(docId, textFieldName);
 
     if (terms == null) {
       throw new IOException("term vectors must be stored for field "
               + textFieldName);
     }
 
-    TermsEnum termsEnum = terms.iterator();
+    TermsEnum termsEnum = terms.getTermsEnum();
 
     BytesRef term;
 

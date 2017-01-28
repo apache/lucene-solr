@@ -21,13 +21,13 @@ import java.util.Iterator;
 import java.util.List;
 
 import org.apache.lucene.index.DirectoryReader;
-import org.apache.lucene.index.Fields;
+import org.apache.lucene.index.IndexedFields;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.LeafReader;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.PostingsEnum;
 import org.apache.lucene.index.Term;
-import org.apache.lucene.index.Terms;
+import org.apache.lucene.index.IndexedField;
 import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.search.BooleanClause;
 import org.apache.lucene.search.BooleanQuery;
@@ -124,10 +124,10 @@ public class DocSetUtil {
     for (LeafReaderContext ctx : leaves) {
       assert leaves.get(ctx.ord) == ctx;
       LeafReader r = ctx.reader();
-      Fields f = r.fields();
-      Terms t = f.terms(field);
+      IndexedFields f = r.fields();
+      IndexedField t = f.indexedField(field);
       if (t == null) continue;  // field is missing
-      TermsEnum te = t.iterator();
+      TermsEnum te = t.getTermsEnum();
       if (te.seekExact(termVal)) {
         maxCount += te.docFreq();
         postList[ctx.ord] = te.postings(null, PostingsEnum.NONE);

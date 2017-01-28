@@ -22,12 +22,12 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
 
-import org.apache.lucene.index.Fields;
+import org.apache.lucene.index.IndexedFields;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.index.TermContext;
-import org.apache.lucene.index.Terms;
+import org.apache.lucene.index.IndexedField;
 import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.search.BooleanClause.Occur;
 import org.apache.lucene.search.BooleanQuery;
@@ -214,16 +214,16 @@ public class CommonTermsQuery extends Query {
       Term[] queryTerms) throws IOException {
     TermsEnum termsEnum = null;
     for (LeafReaderContext context : leaves) {
-      final Fields fields = context.reader().fields();
+      final IndexedFields fields = context.reader().fields();
       for (int i = 0; i < queryTerms.length; i++) {
         Term term = queryTerms[i];
         TermContext termContext = contextArray[i];
-        final Terms terms = fields.terms(term.field());
+        final IndexedField terms = fields.indexedField(term.field());
         if (terms == null) {
           // field does not exist
           continue;
         }
-        termsEnum = terms.iterator();
+        termsEnum = terms.getTermsEnum();
         assert termsEnum != null;
         
         if (termsEnum == TermsEnum.EMPTY) continue;

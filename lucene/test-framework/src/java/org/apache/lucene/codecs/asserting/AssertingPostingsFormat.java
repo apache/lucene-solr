@@ -25,13 +25,13 @@ import org.apache.lucene.codecs.FieldsProducer;
 import org.apache.lucene.codecs.PostingsFormat;
 import org.apache.lucene.index.AssertingLeafReader;
 import org.apache.lucene.index.FieldInfo;
-import org.apache.lucene.index.Fields;
+import org.apache.lucene.index.IndexedFields;
 import org.apache.lucene.index.IndexOptions;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.PostingsEnum;
 import org.apache.lucene.index.SegmentReadState;
 import org.apache.lucene.index.SegmentWriteState;
-import org.apache.lucene.index.Terms;
+import org.apache.lucene.index.IndexedField;
 import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.util.Accountable;
 import org.apache.lucene.util.BytesRef;
@@ -83,9 +83,9 @@ public final class AssertingPostingsFormat extends PostingsFormat {
     }
 
     @Override
-    public Terms terms(String field) throws IOException {
-      Terms terms = in.terms(field);
-      return terms == null ? null : new AssertingLeafReader.AssertingTerms(terms);
+    public IndexedField indexedField(String field) throws IOException {
+      IndexedField terms = in.indexedField(field);
+      return terms == null ? null : new AssertingLeafReader.AssertingField(terms);
     }
 
     @Override
@@ -133,13 +133,13 @@ public final class AssertingPostingsFormat extends PostingsFormat {
     }
     
     @Override
-    public void write(Fields fields) throws IOException {
+    public void write(IndexedFields fields) throws IOException {
       in.write(fields);
 
       // TODO: more asserts?  can we somehow run a
       // "limited" CheckIndex here???  Or ... can we improve
       // AssertingFieldsProducer and us it also to wrap the
-      // incoming Fields here?
+      // incoming IndexedFields here?
  
       String lastField = null;
 
@@ -150,13 +150,13 @@ public final class AssertingPostingsFormat extends PostingsFormat {
         assert lastField == null || lastField.compareTo(field) < 0;
         lastField = field;
 
-        Terms terms = fields.terms(field);
+        IndexedField terms = fields.indexedField(field);
         if (terms == null) {
           continue;
         }
         assert terms != null;
 
-        TermsEnum termsEnum = terms.iterator();
+        TermsEnum termsEnum = terms.getTermsEnum();
         BytesRefBuilder lastTerm = null;
         PostingsEnum postingsEnum = null;
 

@@ -56,7 +56,7 @@ public class TestSegmentTermDocs extends LuceneTestCase {
     SegmentReader reader = new SegmentReader(info, newIOContext(random()));
     assertTrue(reader != null);
 
-    TermsEnum terms = reader.fields().terms(DocHelper.TEXT_FIELD_2_KEY).iterator();
+    TermsEnum terms = reader.fields().indexedField(DocHelper.TEXT_FIELD_2_KEY).getTermsEnum();
     terms.seekCeil(new BytesRef("field"));
     PostingsEnum termDocs = TestUtil.docs(random(), terms, null, PostingsEnum.FREQS);
     if (termDocs.nextDoc() != DocIdSetIterator.NO_MORE_DOCS)    {

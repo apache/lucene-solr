@@ -32,7 +32,7 @@ import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.LeafReader;
 import org.apache.lucene.index.NumericDocValues;
 import org.apache.lucene.index.RandomIndexWriter;
-import org.apache.lucene.index.Terms;
+import org.apache.lucene.index.IndexedField;
 import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.legacy.LegacyDoubleField;
 import org.apache.lucene.legacy.LegacyFloatField;
@@ -115,8 +115,8 @@ public class TestLegacyFieldCache extends LuceneTestCase {
       cache.getNumerics(reader, "theDouble", FieldCache.LEGACY_DOUBLE_PARSER);
       cache.getNumerics(reader, "theDouble", new FieldCache.Parser() {
         @Override
-        public TermsEnum termsEnum(Terms terms) throws IOException {
-          return LegacyNumericUtils.filterPrefixCodedLongs(terms.iterator());
+        public TermsEnum termsEnum(IndexedField terms) throws IOException {
+          return LegacyNumericUtils.filterPrefixCodedLongs(terms.getTermsEnum());
         }
         @Override
         public long parseValue(BytesRef term) {

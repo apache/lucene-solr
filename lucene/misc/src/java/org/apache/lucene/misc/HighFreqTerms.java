@@ -19,9 +19,9 @@ package org.apache.lucene.misc;
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.MultiFields;
-import org.apache.lucene.index.Fields;
+import org.apache.lucene.index.IndexedFields;
 import org.apache.lucene.index.TermsEnum;
-import org.apache.lucene.index.Terms;
+import org.apache.lucene.index.IndexedField;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.FSDirectory;
 import org.apache.lucene.util.PriorityQueue;
@@ -98,24 +98,24 @@ public class HighFreqTerms {
     TermStatsQueue tiq = null;
     
     if (field != null) {
-      Terms terms = MultiFields.getTerms(reader, field);
+      IndexedField terms = MultiFields.getIndexedField(reader, field);
       if (terms == null) {
         throw new RuntimeException("field " + field + " not found");
       }
 
-      TermsEnum termsEnum = terms.iterator();
+      TermsEnum termsEnum = terms.getTermsEnum();
       tiq = new TermStatsQueue(numTerms, comparator);
       tiq.fill(field, termsEnum);
     } else {
-      Fields fields = MultiFields.getFields(reader);
+      IndexedFields fields = MultiFields.getFields(reader);
       if (fields.size() == 0) {
         throw new RuntimeException("no fields found for this index");
       }
       tiq = new TermStatsQueue(numTerms, comparator);
       for (String fieldName : fields) {
-        Terms terms = fields.terms(fieldName);
+        IndexedField terms = fields.indexedField(fieldName);
         if (terms != null) {
-          tiq.fill(fieldName, terms.iterator());
+          tiq.fill(fieldName, terms.getTermsEnum());
         }
       }
     }

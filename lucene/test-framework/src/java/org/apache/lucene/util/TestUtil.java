@@ -83,7 +83,7 @@ import org.apache.lucene.index.MultiFields;
 import org.apache.lucene.index.PostingsEnum;
 import org.apache.lucene.index.SegmentReader;
 import org.apache.lucene.index.SlowCodecReaderWrapper;
-import org.apache.lucene.index.Terms;
+import org.apache.lucene.index.IndexedField;
 import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.index.TieredMergePolicy;
 import org.apache.lucene.mockfile.FilterFileSystem;
@@ -1103,11 +1103,11 @@ public final class TestUtil {
   // DocsAndFreqsEnum, DocsAndPositionsEnum.  Returns null
   // if field/term doesn't exist:
   public static PostingsEnum docs(Random random, IndexReader r, String field, BytesRef term, PostingsEnum reuse, int flags) throws IOException {
-    final Terms terms = MultiFields.getTerms(r, field);
+    final IndexedField terms = MultiFields.getIndexedField(r, field);
     if (terms == null) {
       return null;
     }
-    final TermsEnum termsEnum = terms.iterator();
+    final TermsEnum termsEnum = terms.getTermsEnum();
     if (!termsEnum.seekExact(term)) {
       return null;
     }

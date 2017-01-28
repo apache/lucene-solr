@@ -33,7 +33,7 @@ final class FreqProxTermsWriter extends TermsHash {
     super(docWriter, true, termVectors);
   }
 
-  private void applyDeletes(SegmentWriteState state, Fields fields) throws IOException {
+  private void applyDeletes(SegmentWriteState state, IndexedFields fields) throws IOException {
 
     // Process any pending Term deletes for this newly
     // flushed segment:
@@ -47,9 +47,9 @@ final class FreqProxTermsWriter extends TermsHash {
       for(Term deleteTerm : deleteTerms) {
         if (deleteTerm.field().equals(lastField) == false) {
           lastField = deleteTerm.field();
-          Terms terms = fields.terms(lastField);
+          IndexedField terms = fields.indexedField(lastField);
           if (terms != null) {
-            termsEnum = terms.iterator();
+            termsEnum = terms.getTermsEnum();
           } else {
             termsEnum = null;
           }
@@ -97,7 +97,7 @@ final class FreqProxTermsWriter extends TermsHash {
     // Sort by field name
     CollectionUtil.introSort(allFields);
 
-    Fields fields = new FreqProxFields(allFields);
+    IndexedFields fields = new FreqProxFields(allFields);
     applyDeletes(state, fields);
     if (sortMap != null) {
       fields = new SortingLeafReader.SortingFields(fields, state.fieldInfos, sortMap);

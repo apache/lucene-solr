@@ -25,7 +25,7 @@ import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.PostingsEnum;
 import org.apache.lucene.index.Term;
-import org.apache.lucene.index.Terms;
+import org.apache.lucene.index.IndexedField;
 import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.search.Explanation;
@@ -113,9 +113,9 @@ class TermsIncludingScoreQuery extends Query {
 
       @Override
       public Explanation explain(LeafReaderContext context, int doc) throws IOException {
-        Terms terms = context.reader().terms(field);
+        IndexedField terms = context.reader().indexedField(field);
         if (terms != null) {
-          TermsEnum segmentTermsEnum = terms.iterator();
+          TermsEnum segmentTermsEnum = terms.getTermsEnum();
           BytesRef spare = new BytesRef();
           PostingsEnum postingsEnum = null;
           for (int i = 0; i < TermsIncludingScoreQuery.this.terms.size(); i++) {
@@ -133,7 +133,7 @@ class TermsIncludingScoreQuery extends Query {
 
       @Override
       public Scorer scorer(LeafReaderContext context) throws IOException {
-        Terms terms = context.reader().terms(field);
+        IndexedField terms = context.reader().indexedField(field);
         if (terms == null) {
           return null;
         }
@@ -141,7 +141,7 @@ class TermsIncludingScoreQuery extends Query {
         // what is the runtime...seems ok?
         final long cost = context.reader().maxDoc() * terms.size();
 
-        TermsEnum segmentTermsEnum = terms.iterator();
+        TermsEnum segmentTermsEnum = terms.getTermsEnum();
         if (multipleValuesPerDocument) {
           return new MVInOrderScorer(this, segmentTermsEnum, context.reader().maxDoc(), cost);
         } else {

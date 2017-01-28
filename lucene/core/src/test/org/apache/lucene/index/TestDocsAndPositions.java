@@ -91,9 +91,9 @@ public class TestDocsAndPositions extends LuceneTestCase {
 
   public PostingsEnum getDocsAndPositions(LeafReader reader,
       BytesRef bytes) throws IOException {
-    Terms terms = reader.terms(fieldName);
+    IndexedField terms = reader.indexedField(fieldName);
     if (terms != null) {
-      TermsEnum te = terms.iterator();
+      TermsEnum te = terms.getTermsEnum();
       if (te.seekExact(bytes)) {
         return te.postings(null, PostingsEnum.ALL);
       }
@@ -341,7 +341,7 @@ public class TestDocsAndPositions extends LuceneTestCase {
     assertTrue(disi.nextDoc() != DocIdSetIterator.NO_MORE_DOCS);
     
     // now reuse and check again
-    TermsEnum te = r.terms("foo").iterator();
+    TermsEnum te = r.indexedField("foo").getTermsEnum();
     assertTrue(te.seekExact(new BytesRef("bar")));
     disi = TestUtil.docs(random(), te, disi, PostingsEnum.NONE);
     docid = disi.docID();
@@ -366,7 +366,7 @@ public class TestDocsAndPositions extends LuceneTestCase {
     assertTrue(disi.nextDoc() != DocIdSetIterator.NO_MORE_DOCS);
     
     // now reuse and check again
-    TermsEnum te = r.terms("foo").iterator();
+    TermsEnum te = r.indexedField("foo").getTermsEnum();
     assertTrue(te.seekExact(new BytesRef("bar")));
     disi = te.postings(disi, PostingsEnum.ALL);
     docid = disi.docID();

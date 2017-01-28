@@ -24,7 +24,7 @@ import org.apache.lucene.index.BinaryDocValues;
 import org.apache.lucene.index.DocValuesType;
 import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.FieldInfos;
-import org.apache.lucene.index.Fields;
+import org.apache.lucene.index.IndexedFields;
 import org.apache.lucene.index.IndexOptions;
 import org.apache.lucene.index.LeafReader;
 import org.apache.lucene.index.NumericDocValues;
@@ -33,29 +33,29 @@ import org.apache.lucene.index.SortedDocValues;
 import org.apache.lucene.index.SortedNumericDocValues;
 import org.apache.lucene.index.SortedSetDocValues;
 import org.apache.lucene.index.StoredFieldVisitor;
-import org.apache.lucene.index.Terms;
+import org.apache.lucene.index.IndexedField;
 import org.apache.lucene.search.Sort;
 import org.apache.lucene.util.Bits;
 
 /**
- * Wraps a Terms with a {@link org.apache.lucene.index.LeafReader}, typically from term vectors.
+ * Wraps a IndexedField with a {@link org.apache.lucene.index.LeafReader}, typically from term vectors.
  *
  * @lucene.experimental
  */
 public class TermVectorLeafReader extends LeafReader {
 
-  private final Fields fields;
+  private final IndexedFields fields;
   private final FieldInfos fieldInfos;
 
-  public TermVectorLeafReader(String field, Terms terms) {
-    fields = new Fields() {
+  public TermVectorLeafReader(String field, IndexedField terms) {
+    fields = new IndexedFields() {
       @Override
       public Iterator<String> iterator() {
         return Collections.singletonList(field).iterator();
       }
 
       @Override
-      public Terms terms(String fld) throws IOException {
+      public IndexedField indexedField(String fld) throws IOException {
         if (!field.equals(fld)) {
           return null;
         }
@@ -99,7 +99,7 @@ public class TermVectorLeafReader extends LeafReader {
   }
 
   @Override
-  public Fields fields() throws IOException {
+  public IndexedFields fields() throws IOException {
     return fields;
   }
 
@@ -153,7 +153,7 @@ public class TermVectorLeafReader extends LeafReader {
   }
 
   @Override
-  public Fields getTermVectors(int docID) throws IOException {
+  public IndexedFields getTermVectors(int docID) throws IOException {
     if (docID != 0) {
       return null;
     }

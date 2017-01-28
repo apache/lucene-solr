@@ -20,7 +20,7 @@ import java.io.IOException;
 
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.PointValues.Relation;
-import org.apache.lucene.index.Terms;
+import org.apache.lucene.index.IndexedField;
 import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.search.MultiTermQuery;
 import org.apache.lucene.search.Query;
@@ -85,8 +85,8 @@ abstract class GeoPointMultiTermQuery extends MultiTermQuery {
   };
 
   @Override @SuppressWarnings("unchecked")
-  protected TermsEnum getTermsEnum(final Terms terms, AttributeSource atts) throws IOException {
-    return new GeoPointTermsEnum(terms.iterator(), this);
+  protected TermsEnum getTermsEnum(final IndexedField terms, AttributeSource atts) throws IOException {
+    return new GeoPointTermsEnum(terms.getTermsEnum(), this);
   }
 
   /**

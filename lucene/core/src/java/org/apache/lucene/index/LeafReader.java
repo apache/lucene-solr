@@ -137,18 +137,18 @@ public abstract class LeafReader extends IndexReader {
   public abstract void removeCoreClosedListener(CoreClosedListener listener);
 
   /**
-   * Returns {@link Fields} for this reader.
+   * Returns {@link IndexedFields} for this reader.
    * This method will not return null.
    */
-  public abstract Fields fields() throws IOException;
+  public abstract IndexedFields fields() throws IOException;
 
   @Override
   public final int docFreq(Term term) throws IOException {
-    final Terms terms = terms(term.field());
+    final IndexedField terms = indexedField(term.field());
     if (terms == null) {
       return 0;
     }
-    final TermsEnum termsEnum = terms.iterator();
+    final TermsEnum termsEnum = terms.getTermsEnum();
     if (termsEnum.seekExact(term.bytes())) {
       return termsEnum.docFreq();
     } else {
@@ -163,11 +163,11 @@ public abstract class LeafReader extends IndexReader {
    * away. */
   @Override
   public final long totalTermFreq(Term term) throws IOException {
-    final Terms terms = terms(term.field());
+    final IndexedField terms = indexedField(term.field());
     if (terms == null) {
       return 0;
     }
-    final TermsEnum termsEnum = terms.iterator();
+    final TermsEnum termsEnum = terms.getTermsEnum();
     if (termsEnum.seekExact(term.bytes())) {
       return termsEnum.totalTermFreq();
     } else {
@@ -177,7 +177,7 @@ public abstract class LeafReader extends IndexReader {
 
   @Override
   public final long getSumDocFreq(String field) throws IOException {
-    final Terms terms = terms(field);
+    final IndexedField terms = indexedField(field);
     if (terms == null) {
       return 0;
     }
@@ -186,7 +186,7 @@ public abstract class LeafReader extends IndexReader {
 
   @Override
   public final int getDocCount(String field) throws IOException {
-    final Terms terms = terms(field);
+    final IndexedField terms = indexedField(field);
     if (terms == null) {
       return 0;
     }
@@ -195,7 +195,7 @@ public abstract class LeafReader extends IndexReader {
 
   @Override
   public final long getSumTotalTermFreq(String field) throws IOException {
-    final Terms terms = terms(field);
+    final IndexedField terms = indexedField(field);
     if (terms == null) {
       return 0;
     }
@@ -203,8 +203,8 @@ public abstract class LeafReader extends IndexReader {
   }
 
   /** This may return null if the field does not exist.*/
-  public final Terms terms(String field) throws IOException {
-    return fields().terms(field);
+  public final IndexedField indexedField(String field) throws IOException {
+    return fields().indexedField(field);
   }
 
   /** Returns {@link PostingsEnum} for the specified term.
@@ -215,9 +215,9 @@ public abstract class LeafReader extends IndexReader {
   public final PostingsEnum postings(Term term, int flags) throws IOException {
     assert term.field() != null;
     assert term.bytes() != null;
-    final Terms terms = terms(term.field());
+    final IndexedField terms = indexedField(term.field());
     if (terms != null) {
-      final TermsEnum termsEnum = terms.iterator();
+      final TermsEnum termsEnum = terms.getTermsEnum();
       if (termsEnum.seekExact(term.bytes())) {
         return termsEnum.postings(null, flags);
       }

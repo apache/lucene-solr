@@ -26,7 +26,6 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.SortedSet;
 
-import org.apache.lucene.index.Fields;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.LeafReader;
 import org.apache.lucene.index.LeafReaderContext;
@@ -36,7 +35,8 @@ import org.apache.lucene.index.PrefixCodedTerms.TermIterator;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.index.TermContext;
 import org.apache.lucene.index.TermState;
-import org.apache.lucene.index.Terms;
+import org.apache.lucene.index.IndexedFields;
+import org.apache.lucene.index.IndexedField;
 import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.search.BooleanClause.Occur;
 import org.apache.lucene.util.Accountable;
@@ -224,12 +224,12 @@ public class TermInSetQuery extends Query implements Accountable {
       private WeightOrDocIdSet rewrite(LeafReaderContext context) throws IOException {
         final LeafReader reader = context.reader();
 
-        final Fields fields = reader.fields();
-        Terms terms = fields.terms(field);
+        final IndexedFields fields = reader.fields();
+        IndexedField terms = fields.indexedField(field);
         if (terms == null) {
           return null;
         }
-        TermsEnum termsEnum = terms.iterator();
+        TermsEnum termsEnum = terms.getTermsEnum();
         PostingsEnum docs = null;
         TermIterator iterator = termData.iterator();
 

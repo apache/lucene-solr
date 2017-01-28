@@ -24,7 +24,7 @@ import java.util.Random;
 import org.apache.lucene.index.BinaryDocValues;
 import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.FieldInfos;
-import org.apache.lucene.index.Fields;
+import org.apache.lucene.index.IndexedFields;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexReaderContext;
 import org.apache.lucene.index.LeafReader;
@@ -408,12 +408,12 @@ public class TestDocSet extends LuceneTestCase {
       }
 
       @Override
-      public Fields fields() {
+      public IndexedFields fields() {
         return null;
       }
 
       @Override
-      public Fields getTermVectors(int doc) {
+      public IndexedFields getTermVectors(int doc) {
         return null;
       }
 

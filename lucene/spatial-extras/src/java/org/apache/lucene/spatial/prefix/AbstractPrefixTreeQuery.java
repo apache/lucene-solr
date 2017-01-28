@@ -21,7 +21,7 @@ import java.io.IOException;
 import org.apache.lucene.index.LeafReader;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.PostingsEnum;
-import org.apache.lucene.index.Terms;
+import org.apache.lucene.index.IndexedField;
 import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.search.ConstantScoreScorer;
 import org.apache.lucene.search.ConstantScoreWeight;
@@ -103,7 +103,7 @@ public abstract class AbstractPrefixTreeQuery extends Query {
     protected final LeafReaderContext context;
     protected final int maxDoc;
 
-    protected final Terms terms; // maybe null
+    protected final IndexedField terms; // maybe null
     protected final TermsEnum termsEnum;//remember to check for null!
     protected PostingsEnum postingsEnum;
 
@@ -111,9 +111,9 @@ public abstract class AbstractPrefixTreeQuery extends Query {
       this.context = context;
       LeafReader reader = context.reader();
       this.maxDoc = reader.maxDoc();
-      terms = reader.terms(fieldName);
+      terms = reader.indexedField(fieldName);
       if (terms != null) {
-        this.termsEnum = terms.iterator();
+        this.termsEnum = terms.getTermsEnum();
       } else {
         this.termsEnum = null;
       }

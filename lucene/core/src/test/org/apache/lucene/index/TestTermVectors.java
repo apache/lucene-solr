@@ -107,7 +107,7 @@ public class TestTermVectors extends LuceneTestCase {
     IndexReader r = DirectoryReader.open(dir);
     int numDocs = r.numDocs();
     for (int i = 0; i < numDocs; i++) {
-      assertNotNull("term vectors should not have been null for document " + i, r.getTermVectors(i).terms("c"));
+      assertNotNull("term vectors should not have been null for document " + i, r.getTermVectors(i).indexedField("c"));
     }
     r.close();
   }

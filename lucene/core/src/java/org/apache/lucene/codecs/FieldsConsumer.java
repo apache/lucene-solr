@@ -22,7 +22,7 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
-import org.apache.lucene.index.Fields;
+import org.apache.lucene.index.IndexedFields;
 import org.apache.lucene.index.MappedMultiFields;
 import org.apache.lucene.index.MergeState;
 import org.apache.lucene.index.MultiFields;
@@ -48,7 +48,7 @@ public abstract class FieldsConsumer implements Closeable {
 
   // TODO: maybe we should factor out "limited" (only
   // iterables, no counts/stats) base classes from
-  // Fields/Terms/Docs/AndPositions?
+  // IndexedFields/IndexedField/Docs/AndPositions?
 
   /** Write all fields, terms and postings.  This the "pull"
    *  API, allowing you to iterate more than once over the
@@ -65,26 +65,26 @@ public abstract class FieldsConsumer implements Closeable {
    *
    *    <li> You must skip terms that have no docs and
    *         fields that have no terms, even though the provided
-   *         Fields API will expose them; this typically
+   *         IndexedFields API will expose them; this typically
    *         requires lazily writing the field or term until
    *         you've actually seen the first term or
    *         document.
    *
-   *    <li> The provided Fields instance is limited: you
+   *    <li> The provided IndexedFields instance is limited: you
    *         cannot call any methods that return
    *         statistics/counts; you cannot pass a non-null
    *         live docs when pulling docs/positions enums.
    *  </ul>
    */
-  public abstract void write(Fields fields) throws IOException;
+  public abstract void write(IndexedFields fields) throws IOException;
   
   /** Merges in the fields from the readers in 
    *  <code>mergeState</code>. The default implementation skips
-   *  and maps around deleted documents, and calls {@link #write(Fields)}.
+   *  and maps around deleted documents, and calls {@link #write(IndexedFields)}.
    *  Implementations can override this method for more sophisticated
    *  merging (bulk-byte copying, etc). */
   public void merge(MergeState mergeState) throws IOException {
-    final List<Fields> fields = new ArrayList<>();
+    final List<IndexedFields> fields = new ArrayList<>();
     final List<ReaderSlice> slices = new ArrayList<>();
 
     int docBase = 0;
@@ -99,8 +99,8 @@ public abstract class FieldsConsumer implements Closeable {
       docBase += maxDoc;
     }
 
-    Fields mergedFields = new MappedMultiFields(mergeState, 
-                                                new MultiFields(fields.toArray(Fields.EMPTY_ARRAY),
+    IndexedFields mergedFields = new MappedMultiFields(mergeState, 
+                                                new MultiFields(fields.toArray(IndexedFields.EMPTY_ARRAY),
                                                                 slices.toArray(ReaderSlice.EMPTY_ARRAY)));
     write(mergedFields);
   }

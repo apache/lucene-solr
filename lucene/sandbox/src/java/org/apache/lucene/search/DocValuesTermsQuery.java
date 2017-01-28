@@ -52,7 +52,7 @@ import org.apache.lucene.util.LongBitSet;
  *
  * <p>
  * With each search, this query translates the specified
- * set of Terms into a private {@link LongBitSet} keyed by
+ * set of IndexedField into a private {@link LongBitSet} keyed by
  * term number per unique {@link IndexReader} (normally one
  * reader per segment).  Then, during matching, the term
  * number for each docID is retrieved from the cache and
@@ -79,9 +79,9 @@ import org.apache.lucene.util.LongBitSet;
  * <p>
  * Generally, this filter will be slower on the first
  * invocation for a given field, but subsequent invocations,
- * even if you change the allowed set of Terms, should be
+ * even if you change the allowed set of IndexedField, should be
  * faster than TermsQuery, especially as the number of
- * Terms being matched increases.  If you are matching only
+ * IndexedField being matched increases.  If you are matching only
  * a very small number of terms, and those terms in turn
  * match a very small number of documents, TermsQuery may
  * perform faster.

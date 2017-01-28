@@ -28,10 +28,10 @@ import org.apache.lucene.codecs.PostingsWriterBase;
 import org.apache.lucene.index.IndexOptions;
 import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.FieldInfos;
-import org.apache.lucene.index.Fields;
+import org.apache.lucene.index.IndexedFields;
 import org.apache.lucene.index.IndexFileNames;
 import org.apache.lucene.index.SegmentWriteState;
-import org.apache.lucene.index.Terms;
+import org.apache.lucene.index.IndexedField;
 import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.store.DataOutput;
 import org.apache.lucene.store.IndexOutput;
@@ -158,15 +158,15 @@ public class FSTTermsWriter extends FieldsConsumer {
   }
 
   @Override
-  public void write(Fields fields) throws IOException {
+  public void write(IndexedFields fields) throws IOException {
     for(String field : fields) {
-      Terms terms = fields.terms(field);
+      IndexedField terms = fields.indexedField(field);
       if (terms == null) {
         continue;
       }
       FieldInfo fieldInfo = fieldInfos.fieldInfo(field);
       boolean hasFreq = fieldInfo.getIndexOptions().compareTo(IndexOptions.DOCS_AND_FREQS) >= 0;
-      TermsEnum termsEnum = terms.iterator();
+      TermsEnum termsEnum = terms.getTermsEnum();
       TermsWriter termsWriter = new TermsWriter(fieldInfo);
 
       long sumTotalTermFreq = 0;

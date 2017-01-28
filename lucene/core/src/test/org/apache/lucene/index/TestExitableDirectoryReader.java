@@ -32,30 +32,30 @@ import org.junit.Ignore;
 
 /**
  * Test that uses a default/lucene Implementation of {@link QueryTimeout}
- * to exit out long running queries that take too long to iterate over Terms.
+ * to exit out long running queries that take too long to iterate over IndexedField.
  */
 public class TestExitableDirectoryReader extends LuceneTestCase {
   private static class TestReader extends FilterLeafReader {
 
     private static class TestFields extends FilterFields {
-      TestFields(Fields in) {
+      TestFields(IndexedFields in) {
         super(in);
       }
 
       @Override
-      public Terms terms(String field) throws IOException {
-        return new TestTerms(super.terms(field));
+      public IndexedField indexedField(String field) throws IOException {
+        return new TestTerms(super.indexedField(field));
       }
     }
 
-    private static class TestTerms extends FilterTerms {
-      TestTerms(Terms in) {
+    private static class TestTerms extends FilterField {
+      TestTerms(IndexedField in) {
         super(in);
       }
 
       @Override
-      public TermsEnum iterator() throws IOException {
-        return new TestTermsEnum(super.iterator());
+      public TermsEnum getTermsEnum() throws IOException {
+        return new TestTermsEnum(super.getTermsEnum());
       }
     }
 
@@ -83,7 +83,7 @@ public class TestExitableDirectoryReader extends LuceneTestCase {
     }
 
     @Override
-    public Fields fields() throws IOException {
+    public IndexedFields fields() throws IOException {
       return new TestFields(super.fields());
     }
   }

@@ -310,25 +310,25 @@ public class TestStressIndexing2 extends LuceneTestCase {
     int[] r2r1 = new int[r2.maxDoc()];   // r2 id to r1 id mapping
 
     // create mapping from id2 space to id2 based on idField
-    final Fields f1 = MultiFields.getFields(r1);
+    final IndexedFields f1 = MultiFields.getFields(r1);
     if (f1 == null) {
       // make sure r2 is empty
       assertNull(MultiFields.getFields(r2));
       return;
     }
-    final Terms terms1 = f1.terms(idField);
+    final IndexedField terms1 = f1.indexedField(idField);
     if (terms1 == null) {
       assertTrue(MultiFields.getFields(r2) == null ||
-                 MultiFields.getFields(r2).terms(idField) == null);
+                 MultiFields.getFields(r2).indexedField(idField) == null);
       return;
     }
-    final TermsEnum termsEnum = terms1.iterator();
+    final TermsEnum termsEnum = terms1.getTermsEnum();
 
     final Bits liveDocs1 = MultiFields.getLiveDocs(r1);
     final Bits liveDocs2 = MultiFields.getLiveDocs(r2);
     
-    Fields fields = MultiFields.getFields(r2);
-    Terms terms2 = fields.terms(idField);
+    IndexedFields fields = MultiFields.getFields(r2);
+    IndexedField terms2 = fields.indexedField(idField);
     if (fields.size() == 0 || terms2 == null) {
       // make sure r1 is in fact empty (eg has only all
       // deleted docs):
@@ -342,7 +342,7 @@ public class TestStressIndexing2 extends LuceneTestCase {
       }
       return;
     }
-    TermsEnum termsEnum2 = terms2.iterator();
+    TermsEnum termsEnum2 = terms2.getTermsEnum();
 
     PostingsEnum termDocs1 = null;
     PostingsEnum termDocs2 = null;
@@ -391,16 +391,16 @@ public class TestStressIndexing2 extends LuceneTestCase {
         verifyEquals(r1.getTermVectors(id1), r2.getTermVectors(id2));
       } catch (Throwable e) {
         System.out.println("FAILED id=" + term + " id1=" + id1 + " id2=" + id2);
-        Fields tv1 = r1.getTermVectors(id1);
+        IndexedFields tv1 = r1.getTermVectors(id1);
         System.out.println("  d1=" + tv1);
         if (tv1 != null) {
           PostingsEnum dpEnum = null;
           PostingsEnum dEnum = null;
           for (String field : tv1) {
             System.out.println("    " + field + ":");
-            Terms terms3 = tv1.terms(field);
+            IndexedField terms3 = tv1.indexedField(field);
             assertNotNull(terms3);
-            TermsEnum termsEnum3 = terms3.iterator();
+            TermsEnum termsEnum3 = terms3.getTermsEnum();
             BytesRef term2;
             while((term2 = termsEnum3.next()) != null) {
               System.out.println("      " + term2.utf8ToString() + ": freq=" + termsEnum3.totalTermFreq());
@@ -423,16 +423,16 @@ public class TestStressIndexing2 extends LuceneTestCase {
           }
         }
         
-        Fields tv2 = r2.getTermVectors(id2);
+        IndexedFields tv2 = r2.getTermVectors(id2);
         System.out.println("  d2=" + tv2);
         if (tv2 != null) {
           PostingsEnum dpEnum = null;
           PostingsEnum dEnum = null;
           for (String field : tv2) {
             System.out.println("    " + field + ":");
-            Terms terms3 = tv2.terms(field);
+            IndexedField terms3 = tv2.indexedField(field);
             assertNotNull(terms3);
-            TermsEnum termsEnum3 = terms3.iterator();
+            TermsEnum termsEnum3 = terms3.getTermsEnum();
             BytesRef term2;
             while((term2 = termsEnum3.next()) != null) {
               System.out.println("      " + term2.utf8ToString() + ": freq=" + termsEnum3.totalTermFreq());
@@ -463,9 +463,9 @@ public class TestStressIndexing2 extends LuceneTestCase {
 
     // Verify postings
     //System.out.println("TEST: create te1");
-    final Fields fields1 = MultiFields.getFields(r1);
+    final IndexedFields fields1 = MultiFields.getFields(r1);
     final Iterator<String> fields1Enum = fields1.iterator();
-    final Fields fields2 = MultiFields.getFields(r2);
+    final IndexedFields fields2 = MultiFields.getFields(r2);
     final Iterator<String> fields2Enum = fields2.iterator();
 
 
@@ -490,11 +490,11 @@ public class TestStressIndexing2 extends LuceneTestCase {
             break;
           }
           field1 = fields1Enum.next();
-          Terms terms = fields1.terms(field1);
+          IndexedField terms = fields1.indexedField(field1);
           if (terms == null) {
             continue;
           }
-          termsEnum1 = terms.iterator();
+          termsEnum1 = terms.getTermsEnum();
         }
         term1 = termsEnum1.next();
         if (term1 == null) {
@@ -526,11 +526,11 @@ public class TestStressIndexing2 extends LuceneTestCase {
             break;
           }
           field2 = fields2Enum.next();
-          Terms terms = fields2.terms(field2);
+          IndexedField terms = fields2.indexedField(field2);
           if (terms == null) {
             continue;
           }
-          termsEnum2 = terms.iterator();
+          termsEnum2 = terms.getTermsEnum();
         }
         term2 = termsEnum2.next();
         if (term2 == null) {
@@ -599,7 +599,7 @@ public class TestStressIndexing2 extends LuceneTestCase {
       }
     }
 
-  public static void verifyEquals(Fields d1, Fields d2) throws IOException {
+  public static void verifyEquals(IndexedFields d1, IndexedFields d2) throws IOException {
     if (d1 == null) {
       assertTrue(d2 == null || d2.size() == 0);
       return;
@@ -612,13 +612,13 @@ public class TestStressIndexing2 extends LuceneTestCase {
       String field2 = fieldsEnum2.next();
       assertEquals(field1, field2);
 
-      Terms terms1 = d1.terms(field1);
+      IndexedField terms1 = d1.indexedField(field1);
       assertNotNull(terms1);
-      TermsEnum termsEnum1 = terms1.iterator();
+      TermsEnum termsEnum1 = terms1.getTermsEnum();
 
-      Terms terms2 = d2.terms(field2);
+      IndexedField terms2 = d2.indexedField(field2);
       assertNotNull(terms2);
-      TermsEnum termsEnum2 = terms2.iterator();
+      TermsEnum termsEnum2 = terms2.getTermsEnum();
 
       PostingsEnum dpEnum1 = null;
       PostingsEnum dpEnum2 = null;

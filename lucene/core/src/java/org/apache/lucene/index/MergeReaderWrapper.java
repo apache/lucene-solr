@@ -81,7 +81,7 @@ class MergeReaderWrapper extends LeafReader {
   }
 
   @Override
-  public Fields fields() throws IOException {
+  public IndexedFields fields() throws IOException {
     return fields;
   }
 
@@ -187,7 +187,7 @@ class MergeReaderWrapper extends LeafReader {
   }
 
   @Override
-  public Fields getTermVectors(int docID) throws IOException {
+  public IndexedFields getTermVectors(int docID) throws IOException {
     ensureOpen();
     checkBounds(docID);
     if (vectors == null) {

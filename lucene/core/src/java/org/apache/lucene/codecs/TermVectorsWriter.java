@@ -25,10 +25,10 @@ import java.util.List;
 import org.apache.lucene.index.DocIDMerger;
 import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.FieldInfos;
-import org.apache.lucene.index.Fields;
+import org.apache.lucene.index.IndexedFields;
 import org.apache.lucene.index.MergeState;
 import org.apache.lucene.index.PostingsEnum;
-import org.apache.lucene.index.Terms;
+import org.apache.lucene.index.IndexedField;
 import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.store.DataInput;
@@ -216,7 +216,7 @@ public abstract class TermVectorsWriter implements Closeable {
 
       // NOTE: it's very important to first assign to vectors then pass it to
       // termVectorsWriter.addAllDocVectors; see LUCENE-1282
-      Fields vectors;
+      IndexedFields vectors;
       if (sub.reader == null) {
         vectors = null;
       } else {
@@ -231,7 +231,7 @@ public abstract class TermVectorsWriter implements Closeable {
   
   /** Safe (but, slowish) default method to write every
    *  vector field in the document. */
-  protected final void addAllDocVectors(Fields vectors, MergeState mergeState) throws IOException {
+  protected final void addAllDocVectors(IndexedFields vectors, MergeState mergeState) throws IOException {
     if (vectors == null) {
       startDocument(0);
       finishDocument();
@@ -240,7 +240,7 @@ public abstract class TermVectorsWriter implements Closeable {
 
     int numFields = vectors.size();
     if (numFields == -1) {
-      // count manually! TODO: Maybe enforce that Fields.size() returns something valid?
+      // count manually! TODO: Maybe enforce that IndexedFields.size() returns something valid?
       numFields = 0;
       for (final Iterator<String> it = vectors.iterator(); it.hasNext(); ) {
         it.next();
@@ -262,7 +262,7 @@ public abstract class TermVectorsWriter implements Closeable {
       assert lastFieldName == null || fieldName.compareTo(lastFieldName) > 0: "lastFieldName=" + lastFieldName + " fieldName=" + fieldName;
       lastFieldName = fieldName;
 
-      final Terms terms = vectors.terms(fieldName);
+      final IndexedField terms = vectors.indexedField(fieldName);
       if (terms == null) {
         // FieldsEnum shouldn't lie...
         continue;
@@ -275,16 +275,16 @@ public abstract class TermVectorsWriter implements Closeable {
       
       int numTerms = (int) terms.size();
       if (numTerms == -1) {
-        // count manually. It is stupid, but needed, as Terms.size() is not a mandatory statistics function
+        // count manually. It is stupid, but needed, as IndexedField.size() is not a mandatory statistics function
         numTerms = 0;
-        termsEnum = terms.iterator();
+        termsEnum = terms.getTermsEnum();
         while(termsEnum.next() != null) {
           numTerms++;
         }
       }
       
       startField(fieldInfo, numTerms, hasPositions, hasOffsets, hasPayloads);
-      termsEnum = terms.iterator();
+      termsEnum = terms.getTermsEnum();
 
       int termCount = 0;
       while(termsEnum.next() != null) {

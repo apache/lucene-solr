@@ -22,7 +22,7 @@ import java.nio.file.Paths;
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.TermsEnum;
-import org.apache.lucene.index.Terms;
+import org.apache.lucene.index.IndexedField;
 import org.apache.lucene.index.MultiFields;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.FSDirectory;
@@ -90,9 +90,9 @@ public class QualityQueriesFinder {
     IndexReader ir = DirectoryReader.open(dir);
     try {
       int threshold = ir.maxDoc() / 10; // ignore words too common.
-      Terms terms = MultiFields.getTerms(ir, field);
+      IndexedField terms = MultiFields.getIndexedField(ir, field);
       if (terms != null) {
-        TermsEnum termsEnum = terms.iterator();
+        TermsEnum termsEnum = terms.getTermsEnum();
         while (termsEnum.next() != null) {
           int df = termsEnum.docFreq();
           if (df<threshold) {

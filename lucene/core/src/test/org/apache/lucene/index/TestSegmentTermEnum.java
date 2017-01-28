@@ -80,7 +80,7 @@ public class TestSegmentTermEnum extends LuceneTestCase {
     addDoc(writer, "aaa bbb");
     writer.close();
     LeafReader reader = getOnlyLeafReader(DirectoryReader.open(dir));
-    TermsEnum terms = reader.fields().terms("content").iterator();
+    TermsEnum terms = reader.fields().indexedField("content").getTermsEnum();
     assertNotNull(terms.next());
     assertEquals("aaa", terms.term().utf8ToString());
     assertNotNull(terms.next());
@@ -104,7 +104,7 @@ public class TestSegmentTermEnum extends LuceneTestCase {
       throws IOException
   {
       IndexReader reader = DirectoryReader.open(dir);
-      TermsEnum termEnum = MultiFields.getTerms(reader, "content").iterator();
+      TermsEnum termEnum = MultiFields.getIndexedField(reader, "content").getTermsEnum();
 
     // create enumeration of all terms
     // go to the first term (aaa)

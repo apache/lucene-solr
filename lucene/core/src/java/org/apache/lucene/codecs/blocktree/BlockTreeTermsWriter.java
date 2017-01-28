@@ -27,11 +27,11 @@ import org.apache.lucene.codecs.FieldsConsumer;
 import org.apache.lucene.codecs.PostingsWriterBase;
 import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.FieldInfos;
-import org.apache.lucene.index.Fields;
+import org.apache.lucene.index.IndexedFields;
 import org.apache.lucene.index.IndexFileNames;
 import org.apache.lucene.index.IndexOptions;
 import org.apache.lucene.index.SegmentWriteState;
-import org.apache.lucene.index.Terms;
+import org.apache.lucene.index.IndexedField;
 import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.store.DataOutput;
 import org.apache.lucene.store.IndexOutput;
@@ -315,7 +315,7 @@ public final class BlockTreeTermsWriter extends FieldsConsumer {
   }
 
   @Override
-  public void write(Fields fields) throws IOException {
+  public void write(IndexedFields fields) throws IOException {
     //if (DEBUG) System.out.println("\nBTTW.write seg=" + segment);
 
     String lastField = null;
@@ -324,12 +324,12 @@ public final class BlockTreeTermsWriter extends FieldsConsumer {
       lastField = field;
 
       //if (DEBUG) System.out.println("\nBTTW.write seg=" + segment + " field=" + field);
-      Terms terms = fields.terms(field);
+      IndexedField terms = fields.indexedField(field);
       if (terms == null) {
         continue;
       }
 
-      TermsEnum termsEnum = terms.iterator();
+      TermsEnum termsEnum = terms.getTermsEnum();
       TermsWriter termsWriter = new TermsWriter(fieldInfos.fieldInfo(field));
       while (true) {
         BytesRef term = termsEnum.next();
@@ -750,7 +750,7 @@ public final class BlockTreeTermsWriter extends FieldsConsumer {
 
             // For non-leaf block we borrow 1 bit to record
             // if entry is term or sub-block, and 1 bit to record if
-            // it's a prefix term.  Terms cannot be larger than ~32 KB
+            // it's a prefix term.  IndexedField cannot be larger than ~32 KB
             // so we won't run out of bits:
 
             suffixWriter.writeVInt(suffix << 1);

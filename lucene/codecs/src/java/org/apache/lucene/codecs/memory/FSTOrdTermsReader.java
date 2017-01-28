@@ -40,7 +40,7 @@ import org.apache.lucene.index.IndexOptions;
 import org.apache.lucene.index.SegmentInfo;
 import org.apache.lucene.index.SegmentReadState;
 import org.apache.lucene.index.TermState;
-import org.apache.lucene.index.Terms;
+import org.apache.lucene.index.IndexedField;
 import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.store.ByteArrayDataInput;
 import org.apache.lucene.store.ChecksumIndexInput;
@@ -160,7 +160,7 @@ public class FSTOrdTermsReader extends FieldsProducer {
   }
 
   @Override
-  public Terms terms(String field) throws IOException {
+  public IndexedField indexedField(String field) throws IOException {
     assert field != null;
     return fields.get(field);
   }
@@ -179,7 +179,7 @@ public class FSTOrdTermsReader extends FieldsProducer {
     }
   }
 
-  final class TermsReader extends Terms implements Accountable {
+  final class TermsReader extends IndexedField implements Accountable {
     final FieldInfo fieldInfo;
     final long numTerms;
     final long sumTotalTermFreq;
@@ -264,7 +264,7 @@ public class FSTOrdTermsReader extends FieldsProducer {
     }
 
     @Override
-    public TermsEnum iterator() throws IOException {
+    public TermsEnum getTermsEnum() throws IOException {
       return new SegmentTermsEnum();
     }
 

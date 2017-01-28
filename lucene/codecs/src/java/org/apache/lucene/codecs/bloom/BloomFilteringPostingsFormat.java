@@ -33,11 +33,11 @@ import org.apache.lucene.codecs.PostingsFormat;
 import org.apache.lucene.codecs.bloom.FuzzySet.ContainsResult;
 import org.apache.lucene.index.PostingsEnum;
 import org.apache.lucene.index.FieldInfo;
-import org.apache.lucene.index.Fields;
+import org.apache.lucene.index.IndexedFields;
 import org.apache.lucene.index.IndexFileNames;
 import org.apache.lucene.index.SegmentReadState;
 import org.apache.lucene.index.SegmentWriteState;
-import org.apache.lucene.index.Terms;
+import org.apache.lucene.index.IndexedField;
 import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.store.ChecksumIndexInput;
 import org.apache.lucene.store.DataOutput;
@@ -200,12 +200,12 @@ public final class BloomFilteringPostingsFormat extends PostingsFormat {
     }
     
     @Override
-    public Terms terms(String field) throws IOException {
+    public IndexedField indexedField(String field) throws IOException {
       FuzzySet filter = bloomsByFieldName.get(field);
       if (filter == null) {
-        return delegateFieldsProducer.terms(field);
+        return delegateFieldsProducer.indexedField(field);
       } else {
-        Terms result = delegateFieldsProducer.terms(field);
+        IndexedField result = delegateFieldsProducer.indexedField(field);
         if (result == null) {
           return null;
         }
@@ -218,11 +218,11 @@ public final class BloomFilteringPostingsFormat extends PostingsFormat {
       return delegateFieldsProducer.size();
     }
     
-    class BloomFilteredTerms extends Terms {
-      private Terms delegateTerms;
+    class BloomFilteredTerms extends IndexedField {
+      private IndexedField delegateTerms;
       private FuzzySet filter;
       
-      public BloomFilteredTerms(Terms terms, FuzzySet filter) {
+      public BloomFilteredTerms(IndexedField terms, FuzzySet filter) {
         this.delegateTerms = terms;
         this.filter = filter;
       }
@@ -234,7 +234,7 @@ public final class BloomFilteringPostingsFormat extends PostingsFormat {
       }
       
       @Override
-      public TermsEnum iterator() throws IOException {
+      public TermsEnum getTermsEnum() throws IOException {
         return new BloomFilteredTermsEnum(delegateTerms, filter);
       }
       
@@ -290,16 +290,16 @@ public final class BloomFilteringPostingsFormat extends PostingsFormat {
     }
     
     final class BloomFilteredTermsEnum extends TermsEnum {
-      private Terms delegateTerms;
+      private IndexedField delegateTerms;
       private TermsEnum delegateTermsEnum;
       private final FuzzySet filter;
       
-      public BloomFilteredTermsEnum(Terms delegateTerms, FuzzySet filter) throws IOException {
+      public BloomFilteredTermsEnum(IndexedField delegateTerms, FuzzySet filter) throws IOException {
         this.delegateTerms = delegateTerms;
         this.filter = filter;
       }
       
-      void reset(Terms delegateTerms) throws IOException {
+      void reset(IndexedField delegateTerms) throws IOException {
         this.delegateTerms = delegateTerms;
         this.delegateTermsEnum = null;
       }
@@ -310,7 +310,7 @@ public final class BloomFilteringPostingsFormat extends PostingsFormat {
            * this can be a relativly heavy operation depending on the 
            * delegate postings format and they underlying directory
            * (clone IndexInput) */
-          delegateTermsEnum = delegateTerms.iterator();
+          delegateTermsEnum = delegateTerms.getTermsEnum();
         }
         return delegateTermsEnum;
       }
@@ -416,7 +416,7 @@ public final class BloomFilteringPostingsFormat extends PostingsFormat {
     }
 
     @Override
-    public void write(Fields fields) throws IOException {
+    public void write(IndexedFields fields) throws IOException {
 
       // Delegate must write first: it may have opened files
       // on creating the class
@@ -427,12 +427,12 @@ public final class BloomFilteringPostingsFormat extends PostingsFormat {
       delegateFieldsConsumer.write(fields);
 
       for(String field : fields) {
-        Terms terms = fields.terms(field);
+        IndexedField terms = fields.indexedField(field);
         if (terms == null) {
           continue;
         }
         FieldInfo fieldInfo = state.fieldInfos.fieldInfo(field);
-        TermsEnum termsEnum = terms.iterator();
+        TermsEnum termsEnum = terms.getTermsEnum();
 
         FuzzySet bloomFilter = null;
 

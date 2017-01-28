@@ -191,7 +191,7 @@ public final class SynonymQuery extends Query {
       for (int i = 0; i < terms.length; i++) {
         TermState state = termContexts[i].get(context.ord);
         if (state != null) {
-          TermsEnum termsEnum = context.reader().terms(terms[i].field()).iterator();
+          TermsEnum termsEnum = context.reader().indexedField(terms[i].field()).getTermsEnum();
           termsEnum.seekExact(terms[i].bytes(), state);
           PostingsEnum postings = termsEnum.postings(null, PostingsEnum.FREQS);
           subScorers.add(new TermScorer(this, postings, simScorer));

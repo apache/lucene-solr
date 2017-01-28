@@ -34,12 +34,12 @@ import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
 import org.apache.lucene.analysis.tokenattributes.PositionIncrementAttribute;
 import org.apache.lucene.document.Document;
-import org.apache.lucene.index.Fields;
+import org.apache.lucene.index.IndexedFields;
 import org.apache.lucene.index.FilterLeafReader;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexableField;
 import org.apache.lucene.index.LeafReader;
-import org.apache.lucene.index.Terms;
+import org.apache.lucene.index.IndexedField;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.highlight.Encoder;
 import org.apache.lucene.search.highlight.Formatter;
@@ -221,7 +221,7 @@ public class DefaultSolrHighlighter extends SolrHighlighter implements PluginInf
     try {
       // It'd be nice to know if payloads are on the tokenStream but the presence of the attribute isn't a good
       // indicator.
-      final Terms terms = request.getSearcher().getSlowAtomicReader().fields().terms(fieldName);
+      final IndexedField terms = request.getSearcher().getSlowAtomicReader().fields().indexedField(fieldName);
       if (terms != null) {
         defaultPayloads = terms.hasPayloads();
       }
@@ -546,7 +546,7 @@ public class DefaultSolrHighlighter extends SolrHighlighter implements PluginInf
 
     //Try term vectors, which is faster
     //  note: offsets are minimally sufficient for this HL.
-    final Fields tvFields = schemaField.storeTermOffsets() ? reader.getTermVectors(docId) : null;
+    final IndexedFields tvFields = schemaField.storeTermOffsets() ? reader.getTermVectors(docId) : null;
     final TokenStream tvStream =
         TokenSources.getTermVectorTokenStreamOrNull(fieldName, tvFields, maxCharsToAnalyze - 1);
     //  We need to wrap in OffsetWindowTokenFilter if multi-valued
@@ -647,7 +647,7 @@ public class DefaultSolrHighlighter extends SolrHighlighter implements PluginInf
    */
   protected List<String> getFieldValues(Document doc, String fieldName, int maxValues, int maxCharsToAnalyze,
                                         SolrQueryRequest req) {
-    // Collect the Fields we will examine (could be more than one if multi-valued)
+    // Collect the IndexedFields we will examine (could be more than one if multi-valued)
     List<String> result = new ArrayList<>();
     for (IndexableField thisField : doc.getFields()) {
       if (! thisField.name().equals(fieldName)) {
@@ -900,14 +900,14 @@ final class OffsetWindowTokenFilter extends TokenFilter {
 class TermVectorReusingLeafReader extends FilterLeafReader {
 
   private int lastDocId = -1;
-  private Fields tvFields;
+  private IndexedFields tvFields;
 
   public TermVectorReusingLeafReader(LeafReader in) {
     super(in);
   }
 
   @Override
-  public Fields getTermVectors(int docID) throws IOException {
+  public IndexedFields getTermVectors(int docID) throws IOException {
     if (docID != lastDocId) {
       lastDocId = docID;
       tvFields = in.getTermVectors(docID);

@@ -25,20 +25,20 @@ import org.apache.lucene.util.BytesRefBuilder;
 import org.apache.lucene.util.automaton.CompiledAutomaton;
 
 /**
- * Access to the terms in a specific field.  See {@link Fields}.
+ * Access to the terms in a specific field.  See {@link IndexedFields}.
  * @lucene.experimental
  */
 
-public abstract class Terms {
+public abstract class IndexedField {
 
   /** Sole constructor. (For invocation by subclass 
    *  constructors, typically implicit.) */
-  protected Terms() {
+  protected IndexedField() {
   }
 
   /** Returns an iterator that will step through all
    *  terms. This method will not return null. */
-  public abstract TermsEnum iterator() throws IOException;
+  public abstract TermsEnum getTermsEnum() throws IOException;
 
   /** Returns a TermsEnum that iterates over all terms and
    *  documents that are accepted by the provided {@link
@@ -73,7 +73,7 @@ public abstract class Terms {
     // the returned enum, instead of only being able to seek
     // at the start
 
-    TermsEnum termsEnum = iterator();
+    TermsEnum termsEnum = getTermsEnum();
 
     if (compiled.type != CompiledAutomaton.AUTOMATON_TYPE.NORMAL) {
       throw new IllegalArgumentException("please use CompiledAutomaton.getTermsEnum instead");
@@ -135,15 +135,15 @@ public abstract class Terms {
   /** Returns true if documents in this field store payloads. */
   public abstract boolean hasPayloads();
 
-  /** Zero-length array of {@link Terms}. */
-  public final static Terms[] EMPTY_ARRAY = new Terms[0];
+  /** Zero-length array of {@link IndexedField}. */
+  public final static IndexedField[] EMPTY_ARRAY = new IndexedField[0];
   
   /** Returns the smallest term (in lexicographic order) in the field. 
    *  Note that, just like other term measures, this measure does not 
    *  take deleted documents into account.  This returns
    *  null when there are no terms. */
   public BytesRef getMin() throws IOException {
-    return iterator().next();
+    return getTermsEnum().next();
   }
 
   /** Returns the largest term (in lexicographic order) in the field. 
@@ -160,7 +160,7 @@ public abstract class Terms {
     } else if (size >= 0) {
       // try to seek-by-ord
       try {
-        TermsEnum iterator = iterator();
+        TermsEnum iterator = getTermsEnum();
         iterator.seekExact(size - 1);
         return iterator.term();
       } catch (UnsupportedOperationException e) {
@@ -169,7 +169,7 @@ public abstract class Terms {
     }
     
     // otherwise: binary search
-    TermsEnum iterator = iterator();
+    TermsEnum iterator = getTermsEnum();
     BytesRef v = iterator.next();
     if (v == null) {
       // empty: only possible from a FilteredTermsEnum...
@@ -214,7 +214,7 @@ public abstract class Terms {
   }
   
   /** 
-   * Expert: returns additional information about this Terms instance
+   * Expert: returns additional information about this IndexedField instance
    * for debugging purposes.
    */
   public Object getStats() throws IOException {

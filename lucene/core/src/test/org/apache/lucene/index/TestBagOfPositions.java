@@ -134,10 +134,10 @@ public class TestBagOfPositions extends LuceneTestCase {
     DirectoryReader ir = iw.getReader();
     assertEquals(1, ir.leaves().size());
     LeafReader air = ir.leaves().get(0).reader();
-    Terms terms = air.terms("field");
+    IndexedField terms = air.indexedField("field");
     // numTerms-1 because there cannot be a term 0 with 0 postings:
     assertEquals(numTerms-1, terms.size());
-    TermsEnum termsEnum = terms.iterator();
+    TermsEnum termsEnum = terms.getTermsEnum();
     BytesRef term;
     while ((term = termsEnum.next()) != null) {
       int value = Integer.parseInt(term.utf8ToString());

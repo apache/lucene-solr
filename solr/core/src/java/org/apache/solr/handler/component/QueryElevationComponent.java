@@ -40,13 +40,13 @@ import com.carrotsearch.hppc.IntIntHashMap;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
-import org.apache.lucene.index.Fields;
+import org.apache.lucene.index.IndexedFields;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.LeafReader;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.PostingsEnum;
 import org.apache.lucene.index.Term;
-import org.apache.lucene.index.Terms;
+import org.apache.lucene.index.IndexedField;
 import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.search.BooleanClause;
 import org.apache.lucene.search.BooleanQuery;
@@ -560,8 +560,8 @@ public class QueryElevationComponent extends SearchComponent implements SolrCore
         LeafReader reader = leaf.reader();
         int docBase = leaf.docBase;
         Bits liveDocs = reader.getLiveDocs();
-        Terms terms = reader.terms(fieldName);
-        TermsEnum termsEnum = terms.iterator();
+        IndexedField terms = reader.indexedField(fieldName);
+        TermsEnum termsEnum = terms.getTermsEnum();
         Iterator<BytesRef> it = localBoosts.iterator();
         while(it.hasNext()) {
           BytesRef ref = it.next();
@@ -675,11 +675,11 @@ public class QueryElevationComponent extends SearchComponent implements SolrCore
       protected void doSetNextReader(LeafReaderContext context) throws IOException {
         //convert the ids to Lucene doc ids, the ordSet and termValues needs to be the same size as the number of elevation docs we have
         ordSet.clear();
-        Fields fields = context.reader().fields();
+        IndexedFields fields = context.reader().fields();
         if (fields == null) return;
-        Terms terms = fields.terms(idField);
+        IndexedField terms = fields.indexedField(idField);
         if (terms == null) return;
-        TermsEnum termsEnum = terms.iterator();
+        TermsEnum termsEnum = terms.getTermsEnum();
         BytesRefBuilder term = new BytesRefBuilder();
         Bits liveDocs = context.reader().getLiveDocs();
 

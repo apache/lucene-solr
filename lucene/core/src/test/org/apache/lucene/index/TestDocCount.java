@@ -26,7 +26,7 @@ import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.TestUtil;
 
 /**
- * Tests the Terms.docCount statistic
+ * Tests the IndexedField.docCount statistic
  */
 public class TestDocCount extends LuceneTestCase {
   public void testSimple() throws Exception {
@@ -57,15 +57,15 @@ public class TestDocCount extends LuceneTestCase {
   }
   
   private void verifyCount(IndexReader ir) throws Exception {
-    Fields fields = MultiFields.getFields(ir);
+    IndexedFields fields = MultiFields.getFields(ir);
     for (String field : fields) {
-      Terms terms = fields.terms(field);
+      IndexedField terms = fields.indexedField(field);
       if (terms == null) {
         continue;
       }
       int docCount = terms.getDocCount();
       FixedBitSet visited = new FixedBitSet(ir.maxDoc());
-      TermsEnum te = terms.iterator();
+      TermsEnum te = terms.getTermsEnum();
       while (te.next() != null) {
         PostingsEnum de = TestUtil.docs(random(), te, null, PostingsEnum.NONE);
         while (de.nextDoc() != DocIdSetIterator.NO_MORE_DOCS) {

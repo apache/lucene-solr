@@ -41,7 +41,7 @@ import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.LeafReader;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.RandomIndexWriter;
-import org.apache.lucene.index.Terms;
+import org.apache.lucene.index.IndexedField;
 import org.apache.lucene.index.TermsEnum.SeekStatus;
 import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.search.DocIdSetIterator;
@@ -150,19 +150,19 @@ public class TestBlockPostingsFormat3 extends LuceneTestCase {
     DirectoryReader ir = DirectoryReader.open(dir);
     for (LeafReaderContext leaf : ir.leaves()) {
       LeafReader leafReader = leaf.reader();
-      assertTerms(leafReader.terms("field1docs"), leafReader.terms("field2freqs"), true);
-      assertTerms(leafReader.terms("field3positions"), leafReader.terms("field4offsets"), true);
-      assertTerms(leafReader.terms("field4offsets"), leafReader.terms("field5payloadsFixed"), true);
-      assertTerms(leafReader.terms("field5payloadsFixed"), leafReader.terms("field6payloadsVariable"), true);
-      assertTerms(leafReader.terms("field6payloadsVariable"), leafReader.terms("field7payloadsFixedOffsets"), true);
-      assertTerms(leafReader.terms("field7payloadsFixedOffsets"), leafReader.terms("field8payloadsVariableOffsets"), true);
+      assertTerms(leafReader.indexedField("field1docs"), leafReader.indexedField("field2freqs"), true);
+      assertTerms(leafReader.indexedField("field3positions"), leafReader.indexedField("field4offsets"), true);
+      assertTerms(leafReader.indexedField("field4offsets"), leafReader.indexedField("field5payloadsFixed"), true);
+      assertTerms(leafReader.indexedField("field5payloadsFixed"), leafReader.indexedField("field6payloadsVariable"), true);
+      assertTerms(leafReader.indexedField("field6payloadsVariable"), leafReader.indexedField("field7payloadsFixedOffsets"), true);
+      assertTerms(leafReader.indexedField("field7payloadsFixedOffsets"), leafReader.indexedField("field8payloadsVariableOffsets"), true);
     }
     ir.close();
   }
   
   // following code is almost an exact dup of code from TestDuelingCodecs: sorry!
   
-  public void assertTerms(Terms leftTerms, Terms rightTerms, boolean deep) throws Exception {
+  public void assertTerms(IndexedField leftTerms, IndexedField rightTerms, boolean deep) throws Exception {
     if (leftTerms == null || rightTerms == null) {
       assertNull(leftTerms);
       assertNull(rightTerms);
@@ -173,8 +173,8 @@ public class TestBlockPostingsFormat3 extends LuceneTestCase {
     // NOTE: we don't assert hasOffsets/hasPositions/hasPayloads because they are allowed to be different
 
     boolean bothHavePositions = leftTerms.hasPositions() && rightTerms.hasPositions();
-    TermsEnum leftTermsEnum = leftTerms.iterator();
-    TermsEnum rightTermsEnum = rightTerms.iterator();
+    TermsEnum leftTermsEnum = leftTerms.getTermsEnum();
+    TermsEnum rightTermsEnum = rightTerms.getTermsEnum();
     assertTermsEnum(leftTermsEnum, rightTermsEnum, true, bothHavePositions);
     
     assertTermsSeeking(leftTerms, rightTerms);
@@ -194,7 +194,7 @@ public class TestBlockPostingsFormat3 extends LuceneTestCase {
     }
   }
   
-  private void assertTermsSeeking(Terms leftTerms, Terms rightTerms) throws Exception {
+  private void assertTermsSeeking(IndexedField leftTerms, IndexedField rightTerms) throws Exception {
     TermsEnum leftEnum = null;
     TermsEnum rightEnum = null;
     
@@ -206,7 +206,7 @@ public class TestBlockPostingsFormat3 extends LuceneTestCase {
     HashSet<BytesRef> tests = new HashSet<>();
     int numPasses = 0;
     while (numPasses < 10 && tests.size() < numTests) {
-      leftEnum = leftTerms.iterator();
+      leftEnum = leftTerms.getTermsEnum();
       BytesRef term = null;
       while ((term = leftEnum.next()) != null) {
         int code = random.nextInt(10);
@@ -234,8 +234,8 @@ public class TestBlockPostingsFormat3 extends LuceneTestCase {
     Collections.shuffle(shuffledTests, random);
     
     for (BytesRef b : shuffledTests) {
-      leftEnum = leftTerms.iterator();
-      rightEnum = rightTerms.iterator();
+      leftEnum = leftTerms.getTermsEnum();
+      rightEnum = rightTerms.getTermsEnum();
       
       assertEquals(leftEnum.seekExact(b), rightEnum.seekExact(b));
       assertEquals(leftEnum.seekExact(b), rightEnum.seekExact(b));
@@ -260,9 +260,9 @@ public class TestBlockPostingsFormat3 extends LuceneTestCase {
   }
   
   /** 
-   * checks collection-level statistics on Terms 
+   * checks collection-level statistics on IndexedField 
    */
-  public void assertTermsStatistics(Terms leftTerms, Terms rightTerms) throws Exception {
+  public void assertTermsStatistics(IndexedField leftTerms, IndexedField rightTerms) throws Exception {
     if (leftTerms.getDocCount() != -1 && rightTerms.getDocCount() != -1) {
       assertEquals(leftTerms.getDocCount(), rightTerms.getDocCount());
     }

@@ -40,7 +40,7 @@ import org.apache.lucene.document.FieldType;
 import org.apache.lucene.index.BaseCompositeReader;
 import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.FieldInfos;
-import org.apache.lucene.index.Fields;
+import org.apache.lucene.index.IndexedFields;
 import org.apache.lucene.index.FilterLeafReader;
 import org.apache.lucene.index.IndexOptions;
 import org.apache.lucene.index.IndexReader;
@@ -1051,14 +1051,14 @@ public class UnifiedHighlighter {
     }
 
     private int lastDocId = -1;
-    private Fields tvFields;
+    private IndexedFields tvFields;
 
     TermVectorReusingLeafReader(LeafReader in) {
       super(in);
     }
 
     @Override
-    public Fields getTermVectors(int docID) throws IOException {
+    public IndexedFields getTermVectors(int docID) throws IOException {
       if (docID != lastDocId) {
         lastDocId = docID;
         tvFields = in.getTermVectors(docID);

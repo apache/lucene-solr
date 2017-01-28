@@ -56,8 +56,8 @@ public final class FieldFilterLeafReader extends FilterLeafReader {
   }
 
   @Override
-  public Fields getTermVectors(int docID) throws IOException {
-    Fields f = super.getTermVectors(docID);
+  public IndexedFields getTermVectors(int docID) throws IOException {
+    IndexedFields f = super.getTermVectors(docID);
     if (f == null) {
       return null;
     }
@@ -108,8 +108,8 @@ public final class FieldFilterLeafReader extends FilterLeafReader {
   }
 
   @Override
-  public Fields fields() throws IOException {
-    final Fields f = super.fields();
+  public IndexedFields fields() throws IOException {
+    final IndexedFields f = super.fields();
     return (f == null) ? null : new FieldFilterFields(f);
   }
   
@@ -148,7 +148,7 @@ public final class FieldFilterLeafReader extends FilterLeafReader {
   
   private class FieldFilterFields extends FilterFields {
 
-    public FieldFilterFields(Fields in) {
+    public FieldFilterFields(IndexedFields in) {
       super(in);
     }
 
@@ -169,8 +169,8 @@ public final class FieldFilterLeafReader extends FilterLeafReader {
     }
 
     @Override
-    public Terms terms(String field) throws IOException {
-      return hasField(field) ? super.terms(field) : null;
+    public IndexedField indexedField(String field) throws IOException {
+      return hasField(field) ? super.indexedField(field) : null;
     }
     
   }

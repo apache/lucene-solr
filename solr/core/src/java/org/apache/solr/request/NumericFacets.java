@@ -32,7 +32,7 @@ import org.apache.lucene.index.FilterNumericDocValues;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.NumericDocValues;
 import org.apache.lucene.index.ReaderUtil;
-import org.apache.lucene.index.Terms;
+import org.apache.lucene.index.IndexedField;
 import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.legacy.LegacyNumericType;
 import org.apache.lucene.queries.function.FunctionValues;
@@ -266,7 +266,7 @@ final class NumericFacets {
         for (int i = 0; i < result.size(); ++i) {
           alreadySeen.add(result.getName(i));
         }
-        final Terms terms = searcher.getSlowAtomicReader().terms(fieldName);
+        final IndexedField terms = searcher.getSlowAtomicReader().indexedField(fieldName);
         if (terms != null) {
           final String prefixStr = TrieField.getMainValuePrefix(ft);
           final BytesRef prefix;
@@ -275,7 +275,7 @@ final class NumericFacets {
           } else {
             prefix = new BytesRef();
           }
-          final TermsEnum termsEnum = terms.iterator();
+          final TermsEnum termsEnum = terms.getTermsEnum();
           BytesRef term;
           switch (termsEnum.seekCeil(prefix)) {
             case FOUND:
@@ -319,7 +319,7 @@ final class NumericFacets {
         final FunctionValues values = vs.getValues(Collections.emptyMap(), leaves.get(readerIdx));
         counts.put(values.strVal(entry.docID - leaves.get(readerIdx).docBase), entry.count);
       }
-      final Terms terms = searcher.getSlowAtomicReader().terms(fieldName);
+      final IndexedField terms = searcher.getSlowAtomicReader().indexedField(fieldName);
       if (terms != null) {
         final String prefixStr = TrieField.getMainValuePrefix(ft);
         final BytesRef prefix;
@@ -328,7 +328,7 @@ final class NumericFacets {
         } else {
           prefix = new BytesRef();
         }
-        final TermsEnum termsEnum = terms.iterator();
+        final TermsEnum termsEnum = terms.getTermsEnum();
         BytesRef term;
         switch (termsEnum.seekCeil(prefix)) {
           case FOUND:

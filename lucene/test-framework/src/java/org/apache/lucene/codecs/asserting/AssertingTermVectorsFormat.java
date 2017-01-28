@@ -25,7 +25,7 @@ import org.apache.lucene.codecs.TermVectorsWriter;
 import org.apache.lucene.index.AssertingLeafReader;
 import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.FieldInfos;
-import org.apache.lucene.index.Fields;
+import org.apache.lucene.index.IndexedFields;
 import org.apache.lucene.index.SegmentInfo;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IOContext;
@@ -67,8 +67,8 @@ public class AssertingTermVectorsFormat extends TermVectorsFormat {
     }
 
     @Override
-    public Fields get(int doc) throws IOException {
-      Fields fields = in.get(doc);
+    public IndexedFields get(int doc) throws IOException {
+      IndexedFields fields = in.get(doc);
       return fields == null ? null : new AssertingLeafReader.AssertingFields(fields);
     }
 

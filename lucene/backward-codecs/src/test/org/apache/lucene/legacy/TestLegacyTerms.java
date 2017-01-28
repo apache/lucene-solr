@@ -21,7 +21,7 @@ import org.apache.lucene.document.Field;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.MultiFields;
 import org.apache.lucene.index.RandomIndexWriter;
-import org.apache.lucene.index.Terms;
+import org.apache.lucene.index.IndexedField;
 import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.legacy.LegacyDoubleField;
 import org.apache.lucene.legacy.LegacyFloatField;
@@ -55,7 +55,7 @@ public class TestLegacyTerms extends LuceneTestCase {
     }
     
     IndexReader r = w.getReader();
-    Terms terms = MultiFields.getTerms(r, "field");
+    IndexedField terms = MultiFields.getIndexedField(r, "field");
     assertEquals(new Integer(minValue), LegacyNumericUtils.getMinInt(terms));
     assertEquals(new Integer(maxValue), LegacyNumericUtils.getMaxInt(terms));
 
@@ -86,7 +86,7 @@ public class TestLegacyTerms extends LuceneTestCase {
     
     IndexReader r = w.getReader();
 
-    Terms terms = MultiFields.getTerms(r, "field");
+    IndexedField terms = MultiFields.getIndexedField(r, "field");
     assertEquals(new Long(minValue), LegacyNumericUtils.getMinLong(terms));
     assertEquals(new Long(maxValue), LegacyNumericUtils.getMaxLong(terms));
 
@@ -111,7 +111,7 @@ public class TestLegacyTerms extends LuceneTestCase {
     }
     
     IndexReader r = w.getReader();
-    Terms terms = MultiFields.getTerms(r, "field");
+    IndexedField terms = MultiFields.getIndexedField(r, "field");
     assertEquals(minValue, NumericUtils.sortableIntToFloat(LegacyNumericUtils.getMinInt(terms)), 0.0f);
     assertEquals(maxValue, NumericUtils.sortableIntToFloat(LegacyNumericUtils.getMaxInt(terms)), 0.0f);
 
@@ -137,7 +137,7 @@ public class TestLegacyTerms extends LuceneTestCase {
     
     IndexReader r = w.getReader();
 
-    Terms terms = MultiFields.getTerms(r, "field");
+    IndexedField terms = MultiFields.getIndexedField(r, "field");
 
     assertEquals(minValue, NumericUtils.sortableLongToDouble(LegacyNumericUtils.getMinLong(terms)), 0.0);
     assertEquals(maxValue, NumericUtils.sortableLongToDouble(LegacyNumericUtils.getMaxLong(terms)), 0.0);
@@ -148,10 +148,10 @@ public class TestLegacyTerms extends LuceneTestCase {
   }
 
   /**
-   * A complete empty Terms instance that has no terms in it and supports no optional statistics
+   * A complete empty IndexedField instance that has no terms in it and supports no optional statistics
    */
-  private static Terms EMPTY_TERMS = new Terms() {
-    public TermsEnum iterator() { return TermsEnum.EMPTY; }
+  private static IndexedField EMPTY_TERMS = new IndexedField() {
+    public TermsEnum getTermsEnum() { return TermsEnum.EMPTY; }
     public long size() { return -1; }
     public long getSumTotalTermFreq() { return -1; }
     public long getSumDocFreq() { return -1; }

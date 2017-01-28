@@ -301,23 +301,23 @@ public abstract class IndexReader implements Closeable {
   }
 
   /** Retrieve term vectors for this document, or null if
-   *  term vectors were not indexed.  The returned Fields
+   *  term vectors were not indexed.  The returned IndexedFields
    *  instance acts like a single-document inverted index
    *  (the docID will be 0). */
-  public abstract Fields getTermVectors(int docID)
+  public abstract IndexedFields getTermVectors(int docID)
           throws IOException;
 
   /** Retrieve term vector for this document and field, or
    *  null if term vectors were not indexed.  The returned
-   *  Fields instance acts like a single-document inverted
+   *  IndexedField instance acts like a single-document inverted
    *  index (the docID will be 0). */
-  public final Terms getTermVector(int docID, String field)
+  public final IndexedField getTermVector(int docID, String field)
     throws IOException {
-    Fields vectors = getTermVectors(docID);
+    IndexedFields vectors = getTermVectors(docID);
     if (vectors == null) {
       return null;
     }
-    return vectors.terms(field);
+    return vectors.indexedField(field);
   }
 
   /** Returns the number of documents in this index. */
@@ -476,7 +476,7 @@ public abstract class IndexReader implements Closeable {
    * or -1 if this measure isn't stored by the codec. Note that, just like other
    * term measures, this measure does not take deleted documents into account.
    * 
-   * @see Terms#getSumDocFreq()
+   * @see IndexedField#getSumDocFreq()
    */
   public abstract long getSumDocFreq(String field) throws IOException;
   
@@ -485,7 +485,7 @@ public abstract class IndexReader implements Closeable {
    * or -1 if this measure isn't stored by the codec. Note that, just like other
    * term measures, this measure does not take deleted documents into account.
    * 
-   * @see Terms#getDocCount()
+   * @see IndexedField#getDocCount()
    */
   public abstract int getDocCount(String field) throws IOException;
 
@@ -495,7 +495,7 @@ public abstract class IndexReader implements Closeable {
    * omits term freq and positions). Note that, just like other term measures,
    * this measure does not take deleted documents into account.
    * 
-   * @see Terms#getSumTotalTermFreq()
+   * @see IndexedField#getSumTotalTermFreq()
    */
   public abstract long getSumTotalTermFreq(String field) throws IOException;
 

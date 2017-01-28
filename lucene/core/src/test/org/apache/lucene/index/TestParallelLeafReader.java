@@ -188,10 +188,10 @@ public class TestParallelLeafReader extends LuceneTestCase {
     assertNull(pr.document(0).get("f3"));
     assertNull(pr.document(0).get("f4"));
     // check that fields are there
-    assertNotNull(pr.terms("f1"));
-    assertNotNull(pr.terms("f2"));
-    assertNotNull(pr.terms("f3"));
-    assertNotNull(pr.terms("f4"));
+    assertNotNull(pr.indexedField("f1"));
+    assertNotNull(pr.indexedField("f2"));
+    assertNotNull(pr.indexedField("f3"));
+    assertNotNull(pr.indexedField("f4"));
     pr.close();
     
     // no stored fields at all
@@ -203,10 +203,10 @@ public class TestParallelLeafReader extends LuceneTestCase {
     assertNull(pr.document(0).get("f3"));
     assertNull(pr.document(0).get("f4"));
     // check that fields are there
-    assertNull(pr.terms("f1"));
-    assertNull(pr.terms("f2"));
-    assertNotNull(pr.terms("f3"));
-    assertNotNull(pr.terms("f4"));
+    assertNull(pr.indexedField("f1"));
+    assertNull(pr.indexedField("f2"));
+    assertNotNull(pr.indexedField("f3"));
+    assertNotNull(pr.indexedField("f4"));
     pr.close();
     
     // without overlapping
@@ -218,10 +218,10 @@ public class TestParallelLeafReader extends LuceneTestCase {
     assertNull(pr.document(0).get("f3"));
     assertNull(pr.document(0).get("f4"));
     // check that fields are there
-    assertNull(pr.terms("f1"));
-    assertNull(pr.terms("f2"));
-    assertNotNull(pr.terms("f3"));
-    assertNotNull(pr.terms("f4"));
+    assertNull(pr.indexedField("f1"));
+    assertNull(pr.indexedField("f2"));
+    assertNotNull(pr.indexedField("f3"));
+    assertNotNull(pr.indexedField("f4"));
     pr.close();
     
     // no main readers

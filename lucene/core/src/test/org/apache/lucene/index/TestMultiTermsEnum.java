@@ -36,7 +36,7 @@ import org.apache.lucene.index.FilteredTermsEnum;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.LeafReaderContext;
-import org.apache.lucene.index.Terms;
+import org.apache.lucene.index.IndexedField;
 import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.RAMDirectory;
@@ -89,15 +89,15 @@ public class TestMultiTermsEnum extends LuceneTestCase {
       }
 
       @Override
-      public Terms terms(String field) throws IOException {
+      public IndexedField indexedField(String field) throws IOException {
         if ("deleted".equals(field)) {
-          Terms deletedTerms = super.terms("deleted");
+          IndexedField deletedTerms = super.indexedField("deleted");
           if (deletedTerms != null) {
             return new ValueFilteredTerms(deletedTerms, new BytesRef("1"));
           }
           return null;
         } else {
-          return super.terms(field);
+          return super.indexedField(field);
         }
       }
 
@@ -106,19 +106,19 @@ public class TestMultiTermsEnum extends LuceneTestCase {
         return new MigratingFieldsProducer(delegate, newFieldInfo);
       }
 
-      private static class ValueFilteredTerms extends Terms {
+      private static class ValueFilteredTerms extends IndexedField {
 
-        private final Terms delegate;
+        private final IndexedField delegate;
         private final BytesRef value;
 
-        public ValueFilteredTerms(Terms delegate, BytesRef value) {
+        public ValueFilteredTerms(IndexedField delegate, BytesRef value) {
           this.delegate = delegate;
           this.value = value;
         }
 
         @Override
-        public TermsEnum iterator() throws IOException {
-          return new FilteredTermsEnum(delegate.iterator()) {
+        public TermsEnum getTermsEnum() throws IOException {
+          return new FilteredTermsEnum(delegate.getTermsEnum()) {
 
             @Override
             protected AcceptStatus accept(BytesRef term) {
@@ -232,8 +232,8 @@ public class TestMultiTermsEnum extends LuceneTestCase {
       }
 
       @Override
-      public Terms terms(String field) throws IOException {
-        return delegate.terms(field);
+      public IndexedField indexedField(String field) throws IOException {
+        return delegate.indexedField(field);
       }
 
       @Override

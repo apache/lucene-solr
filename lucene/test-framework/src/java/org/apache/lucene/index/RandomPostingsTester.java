@@ -415,7 +415,7 @@ public class RandomPostingsTester {
     }
   }
 
-  private static class SeedFields extends Fields {
+  private static class SeedFields extends IndexedFields {
     final Map<String,SortedMap<BytesRef,SeedAndOrd>> fields;
     final FieldInfos fieldInfos;
     final IndexOptions maxAllowed;
@@ -434,7 +434,7 @@ public class RandomPostingsTester {
     }
 
     @Override
-    public Terms terms(String field) {
+    public IndexedField indexedField(String field) {
       SortedMap<BytesRef,SeedAndOrd> terms = fields.get(field);
       if (terms == null) {
         return null;
@@ -449,7 +449,7 @@ public class RandomPostingsTester {
     }
   }
 
-  private static class SeedTerms extends Terms {
+  private static class SeedTerms extends IndexedField {
     final SortedMap<BytesRef,SeedAndOrd> terms;
     final FieldInfo fieldInfo;
     final IndexOptions maxAllowed;
@@ -463,7 +463,7 @@ public class RandomPostingsTester {
     }
 
     @Override
-    public TermsEnum iterator() {
+    public TermsEnum getTermsEnum() {
       SeedTermsEnum termsEnum = new SeedTermsEnum(terms, maxAllowed, allowPayloads);
       termsEnum.reset();
 
@@ -651,7 +651,7 @@ public class RandomPostingsTester {
                                                          segmentInfo, newFieldInfos,
                                                          null, new IOContext(new FlushInfo(maxDoc, bytes)));
 
-    Fields seedFields = new SeedFields(fields, newFieldInfos, maxAllowed, allowPayloads);
+    IndexedFields seedFields = new SeedFields(fields, newFieldInfos, maxAllowed, allowPayloads);
 
     FieldsConsumer consumer = codec.postingsFormat().fieldsConsumer(writeState);
     boolean success = false;
@@ -978,7 +978,7 @@ public class RandomPostingsTester {
   }
 
   private static class TestThread extends Thread {
-    private Fields fieldsSource;
+    private IndexedFields fieldsSource;
     private EnumSet<Option> options;
     private IndexOptions maxIndexOptions;
     private IndexOptions maxTestOptions;
@@ -986,7 +986,7 @@ public class RandomPostingsTester {
     private RandomPostingsTester postingsTester;
     private Random random;
 
-    public TestThread(Random random, RandomPostingsTester postingsTester, Fields fieldsSource, EnumSet<Option> options, IndexOptions maxTestOptions,
+    public TestThread(Random random, RandomPostingsTester postingsTester, IndexedFields fieldsSource, EnumSet<Option> options, IndexOptions maxTestOptions,
                       IndexOptions maxIndexOptions, boolean alwaysTestMax) {
       this.random = random;
       this.fieldsSource = fieldsSource;
@@ -1012,7 +1012,7 @@ public class RandomPostingsTester {
     }
   }
 
-  public void testTerms(final Fields fieldsSource, final EnumSet<Option> options,
+  public void testTerms(final IndexedFields fieldsSource, final EnumSet<Option> options,
                         final IndexOptions maxTestOptions,
                         final IndexOptions maxIndexOptions,
                         final boolean alwaysTestMax) throws Exception {
@@ -1032,7 +1032,7 @@ public class RandomPostingsTester {
     }
   }
 
-  private void testTermsOneThread(Random random, Fields fieldsSource, EnumSet<Option> options,
+  private void testTermsOneThread(Random random, IndexedFields fieldsSource, EnumSet<Option> options,
                                   IndexOptions maxTestOptions,
                                   IndexOptions maxIndexOptions, boolean alwaysTestMax) throws IOException {
 
@@ -1076,9 +1076,9 @@ public class RandomPostingsTester {
         termState = termStates.get(idx);
       }
 
-      Terms terms = fieldsSource.terms(fieldAndTerm.field);
+      IndexedField terms = fieldsSource.indexedField(fieldAndTerm.field);
       assertNotNull(terms);
-      termsEnum = terms.iterator();
+      termsEnum = terms.getTermsEnum();
 
       if (!useTermState) {
         if (useTermOrd) {
@@ -1161,7 +1161,7 @@ public class RandomPostingsTester {
       }
     }
 
-    // Test Terms.intersect:
+    // Test IndexedField.intersect:
     for(String field : fields.keySet()) {
       while (true) {
         Automaton a = AutomatonTestUtil.randomAutomaton(random);
@@ -1188,7 +1188,7 @@ public class RandomPostingsTester {
             continue;
           }
         }
-        TermsEnum intersected = fieldsSource.terms(field).intersect(ca, startTerm);
+        TermsEnum intersected = fieldsSource.indexedField(field).intersect(ca, startTerm);
 
         Set<BytesRef> intersectedTerms = new HashSet<BytesRef>();
         BytesRef term;
@@ -1227,13 +1227,13 @@ public class RandomPostingsTester {
     }
   }
   
-  public void testFields(Fields fields) throws Exception {
+  public void testFields(IndexedFields fields) throws Exception {
     Iterator<String> iterator = fields.iterator();
     while (iterator.hasNext()) {
       iterator.next();
       try {
         iterator.remove();
-        throw new AssertionError("Fields.iterator() allows for removal");
+        throw new AssertionError("IndexedFields.iterator() allows for removal");
       } catch (UnsupportedOperationException expected) {
         // expected;
       }

@@ -986,10 +986,10 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
    * @return the first document number containing the term
    */
   public int getFirstMatch(Term t) throws IOException {
-    Terms terms = leafReader.terms(t.field());
+    IndexedField terms = leafReader.indexedField(t.field());
     if (terms == null) return -1;
     BytesRef termBytes = t.bytes();
-    final TermsEnum termsEnum = terms.iterator();
+    final TermsEnum termsEnum = terms.getTermsEnum();
     if (!termsEnum.seekExact(termBytes)) {
       return -1;
     }
@@ -1012,10 +1012,10 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
       final LeafReaderContext leaf = leafContexts.get(i);
       final LeafReader reader = leaf.reader();
 
-      final Terms terms = reader.terms(field);
+      final IndexedField terms = reader.indexedField(field);
       if (terms == null) continue;
 
-      TermsEnum te = terms.iterator();
+      TermsEnum te = terms.getTermsEnum();
       if (te.seekExact(idBytes)) {
         PostingsEnum docs = te.postings(null, PostingsEnum.NONE);
         docs = BitsFilteredPostingsEnum.wrap(docs, reader.getLiveDocs());

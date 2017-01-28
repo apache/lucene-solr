@@ -129,13 +129,13 @@ public class ParallelLeafReader extends LeafReader {
     fieldInfos = builder.finish();
     this.indexSort = indexSort;
     
-    // build Fields instance
+    // build IndexedFields instance
     for (final LeafReader reader : this.parallelReaders) {
-      final Fields readerFields = reader.fields();
+      final IndexedFields readerFields = reader.fields();
       for (String field : readerFields) {
         // only add if the reader responsible for that field name is the current:
         if (fieldToReader.get(field) == reader) {
-          this.fields.addField(field, readerFields.terms(field));
+          this.fields.addField(field, readerFields.indexedField(field));
         }
       }
     }
@@ -170,13 +170,13 @@ public class ParallelLeafReader extends LeafReader {
   }
 
   // Single instance of this, per ParallelReader instance
-  private final class ParallelFields extends Fields {
-    final Map<String,Terms> fields = new TreeMap<>();
+  private final class ParallelFields extends IndexedFields {
+    final Map<String,IndexedField> fields = new TreeMap<>();
     
     ParallelFields() {
     }
     
-    void addField(String fieldName, Terms terms) {
+    void addField(String fieldName, IndexedField terms) {
       fields.put(fieldName, terms);
     }
     
@@ -186,7 +186,7 @@ public class ParallelLeafReader extends LeafReader {
     }
     
     @Override
-    public Terms terms(String field) {
+    public IndexedField indexedField(String field) {
       return fields.get(field);
     }
     
@@ -216,7 +216,7 @@ public class ParallelLeafReader extends LeafReader {
   }
   
   @Override
-  public Fields fields() {
+  public IndexedFields fields() {
     ensureOpen();
     return fields;
   }
@@ -242,12 +242,12 @@ public class ParallelLeafReader extends LeafReader {
   }
   
   @Override
-  public Fields getTermVectors(int docID) throws IOException {
+  public IndexedFields getTermVectors(int docID) throws IOException {
     ensureOpen();
     ParallelFields fields = null;
     for (Map.Entry<String,LeafReader> ent : tvFieldToReader.entrySet()) {
       String fieldName = ent.getKey();
-      Terms vector = ent.getValue().getTermVector(docID, fieldName);
+      IndexedField vector = ent.getValue().getTermVector(docID, fieldName);
       if (vector != null) {
         if (fields == null) {
           fields = new ParallelFields();

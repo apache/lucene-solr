@@ -31,7 +31,7 @@ import org.apache.lucene.codecs.PostingsFormat;
 import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.IndexFileNames;
 import org.apache.lucene.index.SegmentReadState;
-import org.apache.lucene.index.Terms;
+import org.apache.lucene.index.IndexedField;
 import org.apache.lucene.store.ChecksumIndexInput;
 import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.util.Accountable;
@@ -51,7 +51,7 @@ import static org.apache.lucene.search.suggest.document.CompletionPostingsFormat
  * </p>
  * <p>
  * Completion dictionary (.lkp) is opened at instantiation and a field's FST is loaded
- * into memory the first time it is requested via {@link #terms(String)}.
+ * into memory the first time it is requested via {@link #indexedField(String)}.
  * </p>
  * <p>
  * NOTE: Only the footer is validated for Completion dictionary (.lkp) and not the checksum due
@@ -161,8 +161,8 @@ final class CompletionFieldsProducer extends FieldsProducer {
   }
 
   @Override
-  public Terms terms(String field) throws IOException {
-    Terms terms = delegateFieldsProducer.terms(field) ;
+  public IndexedField indexedField(String field) throws IOException {
+    IndexedField terms = delegateFieldsProducer.indexedField(field) ;
     if (terms == null) {
       return null;
     }

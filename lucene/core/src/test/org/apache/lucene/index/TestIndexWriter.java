@@ -693,7 +693,7 @@ public class TestIndexWriter extends LuceneTestCase {
     writer.close();
     DirectoryReader reader = DirectoryReader.open(dir);
     LeafReader subreader = getOnlyLeafReader(reader);
-    TermsEnum te = subreader.fields().terms("").iterator();
+    TermsEnum te = subreader.fields().indexedField("").getTermsEnum();
     assertEquals(new BytesRef("a"), te.next());
     assertEquals(new BytesRef("b"), te.next());
     assertEquals(new BytesRef("c"), te.next());
@@ -714,7 +714,7 @@ public class TestIndexWriter extends LuceneTestCase {
     writer.close();
     DirectoryReader reader = DirectoryReader.open(dir);
     LeafReader subreader = getOnlyLeafReader(reader);
-    TermsEnum te = subreader.fields().terms("").iterator();
+    TermsEnum te = subreader.fields().indexedField("").getTermsEnum();
     assertEquals(new BytesRef(""), te.next());
     assertEquals(new BytesRef("a"), te.next());
     assertEquals(new BytesRef("b"), te.next());
@@ -823,8 +823,8 @@ public class TestIndexWriter extends LuceneTestCase {
     w.close();
 
     IndexReader r = DirectoryReader.open(dir);
-    Terms tpv = r.getTermVectors(0).terms("field");
-    TermsEnum termsEnum = tpv.iterator();
+    IndexedField tpv = r.getTermVectors(0).indexedField("field");
+    TermsEnum termsEnum = tpv.getTermsEnum();
     assertNotNull(termsEnum.next());
     PostingsEnum dpEnum = termsEnum.postings(null, PostingsEnum.ALL);
     assertNotNull(dpEnum);

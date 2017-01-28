@@ -31,7 +31,7 @@ import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.MultiFields;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.Term;
-import org.apache.lucene.index.Terms;
+import org.apache.lucene.index.IndexedField;
 import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.BytesRef;
@@ -61,9 +61,9 @@ public class TestSameScoresWithThreads extends LuceneTestCase {
     w.close();
 
     final IndexSearcher s = newSearcher(r);
-    Terms terms = MultiFields.getFields(r).terms("body");
+    IndexedField terms = MultiFields.getFields(r).indexedField("body");
     int termCount = 0;
-    TermsEnum termsEnum = terms.iterator();
+    TermsEnum termsEnum = terms.getTermsEnum();
     while(termsEnum.next() != null) {
       termCount++;
     }
@@ -71,7 +71,7 @@ public class TestSameScoresWithThreads extends LuceneTestCase {
     
     // Target ~10 terms to search:
     double chance = 10.0 / termCount;
-    termsEnum = terms.iterator();
+    termsEnum = terms.getTermsEnum();
     final Map<BytesRef,TopDocs> answers = new HashMap<>();
     while(termsEnum.next() != null) {
       if (random().nextDouble() <= chance) {

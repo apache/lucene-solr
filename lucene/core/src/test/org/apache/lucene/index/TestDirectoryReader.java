@@ -69,7 +69,7 @@ public class TestDirectoryReader extends LuceneTestCase {
     Document newDoc2 = reader.document(1);
     assertTrue(newDoc2 != null);
     assertTrue(DocHelper.numFields(newDoc2) == DocHelper.numFields(doc2) - DocHelper.unstored.size());
-    Terms vector = reader.getTermVectors(0).terms(DocHelper.TEXT_FIELD_2_KEY);
+    IndexedField vector = reader.getTermVectors(0).indexedField(DocHelper.TEXT_FIELD_2_KEY);
     assertNotNull(vector);
 
     reader.close();
@@ -92,7 +92,7 @@ public class TestDirectoryReader extends LuceneTestCase {
     MultiReader mr3 = new MultiReader(readers2);
 
     // test mixing up TermDocs and TermEnums from different readers.
-    TermsEnum te2 = MultiFields.getTerms(mr2, "body").iterator();
+    TermsEnum te2 = MultiFields.getIndexedField(mr2, "body").getTermsEnum();
     te2.seekCeil(new BytesRef("wow"));
     PostingsEnum td = TestUtil.docs(random(), mr2,
         "body",
@@ -100,7 +100,7 @@ public class TestDirectoryReader extends LuceneTestCase {
         null,
         0);
 
-    TermsEnum te3 = MultiFields.getTerms(mr3, "body").iterator();
+    TermsEnum te3 = MultiFields.getIndexedField(mr3, "body").getTermsEnum();
     te3.seekCeil(new BytesRef("wow"));
     td = TestUtil.docs(random(), te3,
         td,
@@ -618,21 +618,21 @@ public class TestDirectoryReader extends LuceneTestCase {
     }
     
     // check dictionary and posting lists
-    Fields fields1 = MultiFields.getFields(index1);
-    Fields fields2 = MultiFields.getFields(index2);
+    IndexedFields fields1 = MultiFields.getFields(index1);
+    IndexedFields fields2 = MultiFields.getFields(index2);
     Iterator<String> fenum2 = fields2.iterator();
     for (String field1 : fields1) {
       assertEquals("Different fields", field1, fenum2.next());
-      Terms terms1 = fields1.terms(field1);
+      IndexedField terms1 = fields1.indexedField(field1);
       if (terms1 == null) {
-        assertNull(fields2.terms(field1));
+        assertNull(fields2.indexedField(field1));
         continue;
       }
-      TermsEnum enum1 = terms1.iterator();
+      TermsEnum enum1 = terms1.getTermsEnum();
 
-      Terms terms2 = fields2.terms(field1);
+      IndexedField terms2 = fields2.indexedField(field1);
       assertNotNull(terms2);
-      TermsEnum enum2 = terms2.iterator();
+      TermsEnum enum2 = terms2.getTermsEnum();
 
       while(enum1.next() != null) {
         assertEquals("Different terms", enum1.term(), enum2.next());
@@ -768,8 +768,8 @@ public class TestDirectoryReader extends LuceneTestCase {
   
     DirectoryReader r = DirectoryReader.open(dir);
     LeafReader r1 = getOnlyLeafReader(r);
-    assertEquals(26, r1.terms("field").size());
-    assertEquals(10, r1.terms("number").size());
+    assertEquals(26, r1.indexedField("field").size());
+    assertEquals(10, r1.indexedField("number").size());
     writer.addDocument(doc);
     writer.commit();
     DirectoryReader r2 = DirectoryReader.openIfChanged(r);
@@ -777,8 +777,8 @@ public class TestDirectoryReader extends LuceneTestCase {
     r.close();
   
     for(LeafReaderContext s : r2.leaves()) {
-      assertEquals(26, s.reader().terms("field").size());
-      assertEquals(10, s.reader().terms("number").size());
+      assertEquals(26, s.reader().indexedField("field").size());
+      assertEquals(10, s.reader().indexedField("number").size());
     }
     r2.close();
     writer.close();

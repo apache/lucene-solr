@@ -805,9 +805,9 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
           assertEquals("field with non-ascii name", f.stringValue());
         }
 
-        Fields tfvFields = reader.getTermVectors(i);
+        IndexedFields tfvFields = reader.getTermVectors(i);
         assertNotNull("i=" + i, tfvFields);
-        Terms tfv = tfvFields.terms("utf8");
+        IndexedField tfv = tfvFields.indexedField("utf8");
         assertNotNull("docID=" + i + " index=" + oldName, tfv);
       } else {
         // Only ID 7 is deleted
@@ -1148,7 +1148,7 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
     for (String name : oldNames) {
       Directory dir = oldIndexDirs.get(name);
       IndexReader r = DirectoryReader.open(dir);
-      TermsEnum terms = MultiFields.getFields(r).terms("content").iterator();
+      TermsEnum terms = MultiFields.getFields(r).indexedField("content").getTermsEnum();
       BytesRef t = terms.next();
       assertNotNull(t);
 
@@ -1262,15 +1262,15 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
       assertEquals("wrong number of hits", 34, hits.length);
       
       // check decoding of terms
-      Terms terms = MultiFields.getTerms(searcher.getIndexReader(), "trieInt");
-      TermsEnum termsEnum = LegacyNumericUtils.filterPrefixCodedInts(terms.iterator());
+      IndexedField terms = MultiFields.getIndexedField(searcher.getIndexReader(), "trieInt");
+      TermsEnum termsEnum = LegacyNumericUtils.filterPrefixCodedInts(terms.getTermsEnum());
       while (termsEnum.next() != null) {
         int val = LegacyNumericUtils.prefixCodedToInt(termsEnum.term());
         assertTrue("value in id bounds", val >= 0 && val < 35);
       }
       
-      terms = MultiFields.getTerms(searcher.getIndexReader(), "trieLong");
-      termsEnum = LegacyNumericUtils.filterPrefixCodedLongs(terms.iterator());
+      terms = MultiFields.getIndexedField(searcher.getIndexReader(), "trieLong");
+      termsEnum = LegacyNumericUtils.filterPrefixCodedLongs(terms.getTermsEnum());
       while (termsEnum.next() != null) {
         long val = LegacyNumericUtils.prefixCodedToLong(termsEnum.term());
         assertTrue("value in id bounds", val >= 0L && val < 35L);

@@ -54,7 +54,7 @@ public class TestTermsEnum extends LuceneTestCase {
     w.close();
 
     final List<BytesRef> terms = new ArrayList<>();
-    final TermsEnum termsEnum = MultiFields.getTerms(r, "body").iterator();
+    final TermsEnum termsEnum = MultiFields.getIndexedField(r, "body").getTermsEnum();
     BytesRef term;
     while((term = termsEnum.next()) != null) {
       terms.add(BytesRef.deepCopyOf(term));
@@ -178,7 +178,7 @@ public class TestTermsEnum extends LuceneTestCase {
     return c.runAutomaton.isAccept(state);
   }
 
-  // Tests Terms.intersect
+  // Tests IndexedField.intersect
   public void testIntersectRandom() throws IOException {
     final Directory dir = newDirectory();
     final RandomIndexWriter w = new RandomIndexWriter(random(), dir);
@@ -302,7 +302,7 @@ public class TestTermsEnum extends LuceneTestCase {
           }
         }
 
-        final TermsEnum te = MultiFields.getTerms(r, "f").intersect(c, startTerm);
+        final TermsEnum te = MultiFields.getIndexedField(r, "f").intersect(c, startTerm);
 
         int loc;
         if (startTerm == null) {
@@ -481,7 +481,7 @@ public class TestTermsEnum extends LuceneTestCase {
     assertEquals(1, docFreq(r, "xx"));
     assertEquals(1, docFreq(r, "aa4"));
 
-    final TermsEnum te = MultiFields.getTerms(r, FIELD).iterator();
+    final TermsEnum te = MultiFields.getIndexedField(r, FIELD).getTermsEnum();
     while(te.next() != null) {
       //System.out.println("TEST: next term=" + te.term().utf8ToString());
     }
@@ -511,9 +511,9 @@ public class TestTermsEnum extends LuceneTestCase {
     w.close();
     assertEquals(1, r.numDocs());
     assertEquals(1, r.maxDoc());
-    Terms terms = MultiFields.getTerms(r, "field");
+    IndexedField terms = MultiFields.getIndexedField(r, "field");
     if (terms != null) {
-      assertNull(terms.iterator().next());
+      assertNull(terms.getTermsEnum().next());
     }
     r.close();
     d.close();
@@ -613,7 +613,7 @@ public class TestTermsEnum extends LuceneTestCase {
         System.out.println("  " + t.utf8ToString() + " " + t);
       }
     }
-    final TermsEnum te = MultiFields.getTerms(r, FIELD).iterator();
+    final TermsEnum te = MultiFields.getIndexedField(r, FIELD).getTermsEnum();
 
     final int END_LOC = -validTerms.length-1;
     
@@ -738,7 +738,7 @@ public class TestTermsEnum extends LuceneTestCase {
     DirectoryReader r = w.getReader();
     w.close();
     LeafReader sub = getOnlyLeafReader(r);
-    Terms terms = sub.fields().terms("field");
+    IndexedField terms = sub.fields().indexedField("field");
     Automaton automaton = new RegExp(".*", RegExp.NONE).toAutomaton();
     CompiledAutomaton ca = new CompiledAutomaton(automaton, false, false);    
     TermsEnum te = terms.intersect(ca, null);
@@ -792,7 +792,7 @@ public class TestTermsEnum extends LuceneTestCase {
     DirectoryReader r = w.getReader();
     w.close();
     LeafReader sub = getOnlyLeafReader(r);
-    Terms terms = sub.fields().terms("field");
+    IndexedField terms = sub.fields().indexedField("field");
 
     Automaton automaton = new RegExp(".*d", RegExp.NONE).toAutomaton();
     CompiledAutomaton ca = new CompiledAutomaton(automaton, false, false);    
@@ -846,7 +846,7 @@ public class TestTermsEnum extends LuceneTestCase {
     DirectoryReader r = w.getReader();
     w.close();
     LeafReader sub = getOnlyLeafReader(r);
-    Terms terms = sub.fields().terms("field");
+    IndexedField terms = sub.fields().indexedField("field");
 
     Automaton automaton = new RegExp(".*", RegExp.NONE).toAutomaton();  // accept ALL
     CompiledAutomaton ca = new CompiledAutomaton(automaton, false, false);    
@@ -905,7 +905,7 @@ public class TestTermsEnum extends LuceneTestCase {
       System.out.println("\nTEST: reader=" + r);
     }
 
-    TermsEnum termsEnum = MultiFields.getTerms(r, "id").iterator();
+    TermsEnum termsEnum = MultiFields.getIndexedField(r, "id").getTermsEnum();
     PostingsEnum postingsEnum = null;
     PerThreadPKLookup pkLookup = new PerThreadPKLookup(r, "id");
 
@@ -986,7 +986,7 @@ public class TestTermsEnum extends LuceneTestCase {
       w.addDocument(doc);
       IndexReader r = w.getReader();
       assertEquals(1, r.leaves().size());
-      TermsEnum te = r.leaves().get(0).reader().fields().terms("field").iterator();
+      TermsEnum te = r.leaves().get(0).reader().fields().indexedField("field").getTermsEnum();
       for(int i=0;i<=termCount;i++) {
         assertTrue("term '" + termsList.get(i).utf8ToString() + "' should exist but doesn't", te.seekExact(termsList.get(i)));
       }
@@ -1007,9 +1007,9 @@ public class TestTermsEnum extends LuceneTestCase {
     doc.add(newStringField("field", "foobar", Field.Store.NO));
     w.addDocument(doc);
     IndexReader r = w.getReader();
-    Fields fields = MultiFields.getFields(r);
+    IndexedFields fields = MultiFields.getFields(r);
     CompiledAutomaton automaton = new CompiledAutomaton(new RegExp("do_not_match_anything").toAutomaton());
-    Terms terms = fields.terms("field");
+    IndexedField terms = fields.indexedField("field");
     String message = expectThrows(IllegalArgumentException.class, () -> {terms.intersect(automaton, null);}).getMessage();
     assertEquals("please use CompiledAutomaton.getTermsEnum instead", message);
     r.close();

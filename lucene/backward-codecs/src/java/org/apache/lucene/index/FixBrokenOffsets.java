@@ -63,18 +63,18 @@ public class FixBrokenOffsets {
     for(int i=0;i<leaves.size();i++) {
       filtered[i] = SlowCodecReaderWrapper.wrap(new FilterLeafReader(leaves.get(i).reader()) {
           @Override
-          public Fields getTermVectors(int docID) throws IOException {
-            Fields termVectors = in.getTermVectors(docID);
+          public IndexedFields getTermVectors(int docID) throws IOException {
+            IndexedFields termVectors = in.getTermVectors(docID);
             if (termVectors == null) {
               return null;
             }
             return new FilterFields(termVectors) {
               @Override
-              public Terms terms(String field) throws IOException {
-                return new FilterTerms(super.terms(field)) {
+              public IndexedField indexedField(String field) throws IOException {
+                return new FilterField(super.indexedField(field)) {
                   @Override
-                  public TermsEnum iterator() throws IOException {
-                    return new FilterTermsEnum(super.iterator()) {
+                  public TermsEnum getTermsEnum() throws IOException {
+                    return new FilterTermsEnum(super.getTermsEnum()) {
                       @Override
                       public PostingsEnum postings(PostingsEnum reuse, int flags) throws IOException {
                         return new FilterPostingsEnum(super.postings(reuse, flags)) {

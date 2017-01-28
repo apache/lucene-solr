@@ -26,10 +26,10 @@ import java.util.TreeMap;
 
 import org.apache.lucene.codecs.TermVectorsReader;
 import org.apache.lucene.index.PostingsEnum;
-import org.apache.lucene.index.Fields;
+import org.apache.lucene.index.IndexedFields;
 import org.apache.lucene.index.IndexFileNames;
 import org.apache.lucene.index.SegmentInfo;
-import org.apache.lucene.index.Terms;
+import org.apache.lucene.index.IndexedField;
 import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.store.AlreadyClosedException;
 import org.apache.lucene.store.BufferedChecksumIndexInput;
@@ -106,7 +106,7 @@ public class SimpleTextTermVectorsReader extends TermVectorsReader {
   }
 
   @Override
-  public Fields get(int doc) throws IOException {
+  public IndexedFields get(int doc) throws IOException {
     SortedMap<String,SimpleTVTerms> fields = new TreeMap<>();
     in.seek(offsets[doc]);
     readLine();
@@ -239,7 +239,7 @@ public class SimpleTextTermVectorsReader extends TermVectorsReader {
     return scratchUTF16.toString();
   }
 
-  private class SimpleTVFields extends Fields {
+  private class SimpleTVFields extends IndexedFields {
     private final SortedMap<String,SimpleTVTerms> fields;
 
     SimpleTVFields(SortedMap<String,SimpleTVTerms> fields) {
@@ -252,7 +252,7 @@ public class SimpleTextTermVectorsReader extends TermVectorsReader {
     }
 
     @Override
-    public Terms terms(String field) throws IOException {
+    public IndexedField indexedField(String field) throws IOException {
       return fields.get(field);
     }
 
@@ -262,7 +262,7 @@ public class SimpleTextTermVectorsReader extends TermVectorsReader {
     }
   }
 
-  private static class SimpleTVTerms extends Terms {
+  private static class SimpleTVTerms extends IndexedField {
     final SortedMap<BytesRef,SimpleTVPostings> terms;
     final boolean hasOffsets;
     final boolean hasPositions;
@@ -276,7 +276,7 @@ public class SimpleTextTermVectorsReader extends TermVectorsReader {
     }
 
     @Override
-    public TermsEnum iterator() throws IOException {
+    public TermsEnum getTermsEnum() throws IOException {
       // TODO: reuse
       return new SimpleTVTermsEnum(terms);
     }

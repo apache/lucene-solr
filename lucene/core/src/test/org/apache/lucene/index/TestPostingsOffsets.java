@@ -291,7 +291,7 @@ public class TestPostingsOffsets extends LuceneTestCase {
       // TODO: improve this
       LeafReader sub = ctx.reader();
       //System.out.println("\nsub=" + sub);
-      final TermsEnum termsEnum = sub.fields().terms("content").iterator();
+      final TermsEnum termsEnum = sub.fields().indexedField("content").getTermsEnum();
       PostingsEnum docs = null;
       PostingsEnum docsAndPositions = null;
       PostingsEnum docsAndPositionsAndOffsets = null;

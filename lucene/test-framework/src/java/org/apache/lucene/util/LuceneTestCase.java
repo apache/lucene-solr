@@ -498,7 +498,7 @@ public abstract class LuceneTestCase extends Assert {
   };
   
   // -----------------------------------------------------------------
-  // Fields initialized in class or instance rules.
+  // IndexedFields initialized in class or instance rules.
   // -----------------------------------------------------------------
 
 
@@ -1985,10 +1985,10 @@ public abstract class LuceneTestCase extends Assert {
   }
 
   /** 
-   * Fields api equivalency 
+   * IndexedFields api equivalency 
    */
-  public void assertFieldsEquals(String info, IndexReader leftReader, Fields leftFields, Fields rightFields, boolean deep) throws IOException {
-    // Fields could be null if there are no postings,
+  public void assertFieldsEquals(String info, IndexReader leftReader, IndexedFields leftFields, IndexedFields rightFields, boolean deep) throws IOException {
+    // IndexedFields could be null if there are no postings,
     // but then it must be null for both
     if (leftFields == null || rightFields == null) {
       assertNull(info, leftFields);
@@ -2003,24 +2003,24 @@ public abstract class LuceneTestCase extends Assert {
     while (leftEnum.hasNext()) {
       String field = leftEnum.next();
       assertEquals(info, field, rightEnum.next());
-      assertTermsEquals(info, leftReader, leftFields.terms(field), rightFields.terms(field), deep);
+      assertTermsEquals(info, leftReader, leftFields.indexedField(field), rightFields.indexedField(field), deep);
     }
     assertFalse(rightEnum.hasNext());
   }
 
   /** 
-   * checks that top-level statistics on Fields are the same 
+   * checks that top-level statistics on IndexedFields are the same 
    */
-  public void assertFieldStatisticsEquals(String info, Fields leftFields, Fields rightFields) throws IOException {
+  public void assertFieldStatisticsEquals(String info, IndexedFields leftFields, IndexedFields rightFields) throws IOException {
     if (leftFields.size() != -1 && rightFields.size() != -1) {
       assertEquals(info, leftFields.size(), rightFields.size());
     }
   }
 
   /** 
-   * Terms api equivalency 
+   * IndexedField api equivalency 
    */
-  public void assertTermsEquals(String info, IndexReader leftReader, Terms leftTerms, Terms rightTerms, boolean deep) throws IOException {
+  public void assertTermsEquals(String info, IndexReader leftReader, IndexedField leftTerms, IndexedField rightTerms, boolean deep) throws IOException {
     if (leftTerms == null || rightTerms == null) {
       assertNull(info, leftTerms);
       assertNull(info, rightTerms);
@@ -2031,8 +2031,8 @@ public abstract class LuceneTestCase extends Assert {
     assertEquals("hasPositions", leftTerms.hasPositions(), rightTerms.hasPositions());
     assertEquals("hasPayloads", leftTerms.hasPayloads(), rightTerms.hasPayloads());
 
-    TermsEnum leftTermsEnum = leftTerms.iterator();
-    TermsEnum rightTermsEnum = rightTerms.iterator();
+    TermsEnum leftTermsEnum = leftTerms.getTermsEnum();
+    TermsEnum rightTermsEnum = rightTerms.getTermsEnum();
     assertTermsEnumEquals(info, leftReader, leftTermsEnum, rightTermsEnum, true);
     
     assertTermsSeekingEquals(info, leftTerms, rightTerms);
@@ -2053,9 +2053,9 @@ public abstract class LuceneTestCase extends Assert {
   }
 
   /** 
-   * checks collection-level statistics on Terms 
+   * checks collection-level statistics on IndexedField 
    */
-  public void assertTermsStatisticsEquals(String info, Terms leftTerms, Terms rightTerms) throws IOException {
+  public void assertTermsStatisticsEquals(String info, IndexedField leftTerms, IndexedField rightTerms) throws IOException {
     if (leftTerms.getDocCount() != -1 && rightTerms.getDocCount() != -1) {
       assertEquals(info, leftTerms.getDocCount(), rightTerms.getDocCount());
     }
@@ -2260,7 +2260,7 @@ public abstract class LuceneTestCase extends Assert {
   }
 
   
-  private void assertTermsSeekingEquals(String info, Terms leftTerms, Terms rightTerms) throws IOException {
+  private void assertTermsSeekingEquals(String info, IndexedField leftTerms, IndexedField rightTerms) throws IOException {
 
     // just an upper bound
     int numTests = atLeast(20);
@@ -2272,7 +2272,7 @@ public abstract class LuceneTestCase extends Assert {
     HashSet<BytesRef> tests = new HashSet<>();
     int numPasses = 0;
     while (numPasses < 10 && tests.size() < numTests) {
-      leftEnum = leftTerms.iterator();
+      leftEnum = leftTerms.getTermsEnum();
       BytesRef term = null;
       while ((term = leftEnum.next()) != null) {
         int code = random.nextInt(10);
@@ -2310,7 +2310,7 @@ public abstract class LuceneTestCase extends Assert {
       numPasses++;
     }
 
-    TermsEnum rightEnum = rightTerms.iterator();
+    TermsEnum rightEnum = rightTerms.getTermsEnum();
 
     ArrayList<BytesRef> shuffledTests = new ArrayList<>(tests);
     Collections.shuffle(shuffledTests, random);
@@ -2318,8 +2318,8 @@ public abstract class LuceneTestCase extends Assert {
     for (BytesRef b : shuffledTests) {
       if (rarely()) {
         // make new enums
-        leftEnum = leftTerms.iterator();
-        rightEnum = rightTerms.iterator();
+        leftEnum = leftTerms.getTermsEnum();
+        rightEnum = rightTerms.getTermsEnum();
       }
 
       final boolean seekExact = random().nextBoolean();
@@ -2352,9 +2352,9 @@ public abstract class LuceneTestCase extends Assert {
    * checks that norms are the same across all fields 
    */
   public void assertNormsEquals(String info, IndexReader leftReader, IndexReader rightReader) throws IOException {
-    Fields leftFields = MultiFields.getFields(leftReader);
-    Fields rightFields = MultiFields.getFields(rightReader);
-    // Fields could be null if there are no postings,
+    IndexedFields leftFields = MultiFields.getFields(leftReader);
+    IndexedFields rightFields = MultiFields.getFields(rightReader);
+    // IndexedFields could be null if there are no postings,
     // but then it must be null for both
     if (leftFields == null || rightFields == null) {
       assertNull(info, leftFields);
@@ -2426,8 +2426,8 @@ public abstract class LuceneTestCase extends Assert {
   public void assertTermVectorsEquals(String info, IndexReader leftReader, IndexReader rightReader) throws IOException {
     assert leftReader.maxDoc() == rightReader.maxDoc();
     for (int i = 0; i < leftReader.maxDoc(); i++) {
-      Fields leftFields = leftReader.getTermVectors(i);
-      Fields rightFields = rightReader.getTermVectors(i);
+      IndexedFields leftFields = leftReader.getTermVectors(i);
+      IndexedFields rightFields = rightReader.getTermVectors(i);
       assertFieldsEquals(info, leftReader, leftFields, rightFields, rarely());
     }
   }

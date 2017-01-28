@@ -36,7 +36,7 @@ import org.apache.lucene.document.FieldType;
 import org.apache.lucene.document.TextField;
 import org.apache.lucene.index.BaseTermVectorsFormatTestCase;
 import org.apache.lucene.index.DirectoryReader;
-import org.apache.lucene.index.Fields;
+import org.apache.lucene.index.IndexedFields;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.RandomIndexWriter;
@@ -461,7 +461,7 @@ public class TokenSourcesTest extends BaseTokenStreamTestCase {
       reader = writer.getReader();
     }
     try {
-      Fields tvFields = reader.getTermVectors(0);
+      IndexedFields tvFields = reader.getTermVectors(0);
       for (int maxStartOffset = -1; maxStartOffset <= TEXT.length(); maxStartOffset++) {
         TokenStream tvStream = TokenSources.getTokenStream("fld_tv", tvFields, TEXT, analyzer, maxStartOffset);
         TokenStream anaStream = TokenSources.getTokenStream("fld_notv", tvFields, TEXT, analyzer, maxStartOffset);

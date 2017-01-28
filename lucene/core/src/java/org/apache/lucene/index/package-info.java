@@ -22,8 +22,8 @@
  *     <ol>
  *         <li><a href="#postings">Postings APIs</a>
  *             <ul>
- *                 <li><a href="#fields">Fields</a></li>
- *                 <li><a href="#terms">Terms</a></li>
+ *                 <li><a href="#fields">IndexedFields</a></li>
+ *                 <li><a href="#terms">IndexedField</a></li>
  *                 <li><a href="#documents">Documents</a></li>
  *                 <li><a href="#positions">Positions</a></li>
  *             </ul>
@@ -41,32 +41,32 @@
  * <h2>Postings APIs</h2>
  * <a name="fields"></a>
  * <h3>
- *     Fields
+ *     IndexedFields
  * </h3>
  * <p>
- * {@link org.apache.lucene.index.Fields} is the initial entry point into the 
+ * {@link org.apache.lucene.index.IndexedFields} is the initial entry point into the 
  * postings APIs, this can be obtained in several ways:
  * <pre class="prettyprint">
  * // access indexed fields for an index segment
- * Fields fields = reader.fields();
+ * IndexedFields fields = reader.fields();
  * // access term vector fields for a specified document
- * Fields fields = reader.getTermVectors(docid);
+ * IndexedFields fields = reader.getTermVectors(docid);
  * </pre>
- * Fields implements Java's Iterable interface, so it's easy to enumerate the
+ * IndexedFields implements Java's Iterable interface, so it's easy to enumerate the
  * list of fields:
  * <pre class="prettyprint">
  * // enumerate list of fields
  * for (String field : fields) {
  *   // access the terms for this field
- *   Terms terms = fields.terms(field);
+ *   IndexedField terms = fields.indexedField(field);
  * }
  * </pre>
  * <a name="terms"></a>
  * <h3>
- *     Terms
+ *     IndexedField
  * </h3>
  * <p>
- * {@link org.apache.lucene.index.Terms} represents the collection of terms
+ * {@link org.apache.lucene.index.IndexedField} represents the collection of terms
  * within a field, exposes some metadata and <a href="#fieldstats">statistics</a>,
  * and an API for enumeration.
  * <pre class="prettyprint">
@@ -160,23 +160,23 @@
  *     Field statistics
  * </h3>
  *     <ul>
- *        <li>{@link org.apache.lucene.index.Terms#size}: Returns the number of 
+ *        <li>{@link org.apache.lucene.index.IndexedField#size}: Returns the number of 
  *            unique terms in the field. This statistic may be unavailable 
- *            (returns <code>-1</code>) for some Terms implementations such as
- *            {@link org.apache.lucene.index.MultiTerms}, where it cannot be efficiently
+ *            (returns <code>-1</code>) for some IndexedField implementations such as
+ *            {@link org.apache.lucene.index.MultiField}, where it cannot be efficiently
  *            computed.  Note that this count also includes terms that appear only
  *            in deleted documents: when segments are merged such terms are also merged
  *            away and the statistic is then updated.
- *        <li>{@link org.apache.lucene.index.Terms#getDocCount}: Returns the number of
+ *        <li>{@link org.apache.lucene.index.IndexedField#getDocCount}: Returns the number of
  *            documents that contain at least one occurrence of any term for this field.
  *            This can be thought of as a Field-level docFreq(). Like docFreq() it will
  *            also count deleted documents.
- *        <li>{@link org.apache.lucene.index.Terms#getSumDocFreq}: Returns the number of
+ *        <li>{@link org.apache.lucene.index.IndexedField#getSumDocFreq}: Returns the number of
  *            postings (term-document mappings in the inverted index) for the field. This
  *            can be thought of as the sum of {@link org.apache.lucene.index.TermsEnum#docFreq}
  *            across all terms in the field, and like docFreq() it will also count postings
  *            that appear in deleted documents.
- *        <li>{@link org.apache.lucene.index.Terms#getSumTotalTermFreq}: Returns the number
+ *        <li>{@link org.apache.lucene.index.IndexedField#getSumTotalTermFreq}: Returns the number
  *            of tokens for the field. This can be thought of as the sum of 
  *            {@link org.apache.lucene.index.TermsEnum#totalTermFreq} across all terms in the
  *            field, and like totalTermFreq() it will also count occurrences that appear in
@@ -196,7 +196,7 @@
  *            of live documents (excluding deleted documents) in the index.
  *        <li>{@link org.apache.lucene.index.IndexReader#numDeletedDocs}: Returns the
  *            number of deleted documents in the index.
- *        <li>{@link org.apache.lucene.index.Fields#size}: Returns the number of indexed
+ *        <li>{@link org.apache.lucene.index.IndexedFields#size}: Returns the number of indexed
  *            fields.
  *     </ul>
  * <a name="documentstats"></a>

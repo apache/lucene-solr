@@ -30,7 +30,7 @@ import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.index.TermContext;
-import org.apache.lucene.index.Terms;
+import org.apache.lucene.index.IndexedField;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
 
@@ -203,7 +203,7 @@ public class SpanNearQuery extends SpanQuery implements Cloneable {
     @Override
     public Spans getSpans(final LeafReaderContext context, Postings requiredPostings) throws IOException {
 
-      Terms terms = context.reader().terms(field);
+      IndexedField terms = context.reader().indexedField(field);
       if (terms == null) {
         return null; // field does not exist
       }

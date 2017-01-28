@@ -20,7 +20,7 @@ package org.apache.lucene.util;
 import java.io.IOException;
 
 import org.apache.lucene.index.PointValues;
-import org.apache.lucene.index.Terms;
+import org.apache.lucene.index.IndexedField;
 import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.search.DocIdSet;
 import org.apache.lucene.search.DocIdSetIterator;
@@ -204,7 +204,7 @@ public class TestDocIdSetBuilder extends LuceneTestCase {
     assertTrue(builder.multivalued);
 
     // single-valued terms
-    Terms terms = new DummyTerms(42, 42);
+    IndexedField terms = new DummyTerms(42, 42);
     builder = new DocIdSetBuilder(100, terms);
     assertEquals(1d, builder.numValuesPerDoc, 0d);
     assertFalse(builder.multivalued);
@@ -239,7 +239,7 @@ public class TestDocIdSetBuilder extends LuceneTestCase {
     assertTrue(builder.multivalued);
   }
 
-  private static class DummyTerms extends Terms {
+  private static class DummyTerms extends IndexedField {
 
     private final int docCount;
     private final long numValues;
@@ -250,7 +250,7 @@ public class TestDocIdSetBuilder extends LuceneTestCase {
     }
 
     @Override
-    public TermsEnum iterator() throws IOException {
+    public TermsEnum getTermsEnum() throws IOException {
       throw new UnsupportedOperationException();
     }
 

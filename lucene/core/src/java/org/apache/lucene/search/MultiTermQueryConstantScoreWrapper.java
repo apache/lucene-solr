@@ -27,7 +27,7 @@ import org.apache.lucene.index.PostingsEnum;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.index.TermContext;
 import org.apache.lucene.index.TermState;
-import org.apache.lucene.index.Terms;
+import org.apache.lucene.index.IndexedField;
 import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.search.BooleanClause.Occur;
 import org.apache.lucene.util.BytesRef;
@@ -132,7 +132,7 @@ final class MultiTermQueryConstantScoreWrapper<Q extends MultiTermQuery> extends
        * there are few terms, or build a bitset containing matching docs.
        */
       private WeightOrDocIdSet rewrite(LeafReaderContext context) throws IOException {
-        final Terms terms = context.reader().terms(query.field);
+        final IndexedField terms = context.reader().indexedField(query.field);
         if (terms == null) {
           // field does not exist
           return new WeightOrDocIdSet((DocIdSet) null);
@@ -160,7 +160,7 @@ final class MultiTermQueryConstantScoreWrapper<Q extends MultiTermQuery> extends
         // Too many terms: go back to the terms we already collected and start building the bit set
         DocIdSetBuilder builder = new DocIdSetBuilder(context.reader().maxDoc(), terms);
         if (collectedTerms.isEmpty() == false) {
-          TermsEnum termsEnum2 = terms.iterator();
+          TermsEnum termsEnum2 = terms.getTermsEnum();
           for (TermAndState t : collectedTerms) {
             termsEnum2.seekExact(t.term, t.state);
             docs = termsEnum2.postings(docs, PostingsEnum.NONE);

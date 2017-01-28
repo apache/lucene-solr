@@ -22,7 +22,7 @@ import org.apache.lucene.index.LeafReader;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.PostingsEnum;
 import org.apache.lucene.index.SortedNumericDocValues;
-import org.apache.lucene.index.Terms;
+import org.apache.lucene.index.IndexedField;
 import org.apache.lucene.search.ConstantScoreScorer;
 import org.apache.lucene.search.ConstantScoreWeight;
 import org.apache.lucene.search.DocIdSet;
@@ -80,7 +80,7 @@ final class GeoPointTermQueryConstantScoreWrapper <Q extends GeoPointMultiTermQu
 
       @Override
       public Scorer scorer(LeafReaderContext context) throws IOException {
-        final Terms terms = context.reader().terms(query.getField());
+        final IndexedField terms = context.reader().indexedField(query.getField());
         if (terms == null) {
           return null;
         }

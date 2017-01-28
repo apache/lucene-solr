@@ -25,7 +25,7 @@ import java.util.Random;
 import org.apache.lucene.index.BinaryDocValues;
 import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.FieldInfos;
-import org.apache.lucene.index.Fields;
+import org.apache.lucene.index.IndexedFields;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.LeafReader;
 import org.apache.lucene.index.LeafReaderContext;
@@ -36,7 +36,7 @@ import org.apache.lucene.index.SortedDocValues;
 import org.apache.lucene.index.SortedNumericDocValues;
 import org.apache.lucene.index.SortedSetDocValues;
 import org.apache.lucene.index.StoredFieldVisitor;
-import org.apache.lucene.index.Terms;
+import org.apache.lucene.index.IndexedField;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.LuceneTestCase;
 
@@ -197,15 +197,15 @@ public class QueryUtils {
       public void removeCoreClosedListener(CoreClosedListener listener) {}
 
       @Override
-      public Fields fields() throws IOException {
-        return new Fields() {
+      public IndexedFields fields() throws IOException {
+        return new IndexedFields() {
           @Override
           public Iterator<String> iterator() {
             return Collections.<String>emptyList().iterator();
           }
 
           @Override
-          public Terms terms(String field) throws IOException {
+          public IndexedField indexedField(String field) throws IOException {
             return null;
           }
 
@@ -266,7 +266,7 @@ public class QueryUtils {
       public void checkIntegrity() throws IOException {}
 
       @Override
-      public Fields getTermVectors(int docID) throws IOException {
+      public IndexedFields getTermVectors(int docID) throws IOException {
         return null;
       }
 

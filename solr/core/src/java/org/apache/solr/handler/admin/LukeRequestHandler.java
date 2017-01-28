@@ -54,7 +54,7 @@ import org.apache.lucene.index.MultiFields;
 import org.apache.lucene.index.PostingsEnum;
 import org.apache.lucene.index.SegmentReader;
 import org.apache.lucene.index.Term;
-import org.apache.lucene.index.Terms;
+import org.apache.lucene.index.IndexedField;
 import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.search.similarities.Similarity;
@@ -307,10 +307,10 @@ public class LukeRequestHandler extends RequestHandlerBase
       // If we have a term vector, return that
       if( field.fieldType().storeTermVectors() ) {
         try {
-          Terms v = reader.getTermVector( docId, field.name() );
+          IndexedField v = reader.getTermVector( docId, field.name() );
           if( v != null ) {
             SimpleOrderedMap<Integer> tfv = new SimpleOrderedMap<>();
-            final TermsEnum termsEnum = v.iterator();
+            final TermsEnum termsEnum = v.getTermsEnum();
             BytesRef text;
             while((text = termsEnum.next()) != null) {
               final int freq = (int) termsEnum.totalTermFreq();
@@ -369,7 +369,7 @@ public class LukeRequestHandler extends RequestHandlerBase
       if (sfield != null && schema.isDynamicField(sfield.getName()) && schema.getDynamicPattern(sfield.getName()) != null) {
         fieldMap.add("dynamicBase", schema.getDynamicPattern(sfield.getName()));
       }
-      Terms terms = reader.fields().terms(fieldName);
+      IndexedField terms = reader.fields().indexedField(fieldName);
       if (terms == null) { // Not indexed, so we need to report what we can (it made it through the fl param if specified)
         finfo.add( fieldName, fieldMap );
         continue;
@@ -408,9 +408,9 @@ public class LukeRequestHandler extends RequestHandlerBase
   // Just get a document with the term in it, the first one will do!
   // Is there a better way to do this? Shouldn't actually be very costly
   // to do it this way.
-  private static Document getFirstLiveDoc(Terms terms, LeafReader reader) throws IOException {
+  private static Document getFirstLiveDoc(IndexedField terms, LeafReader reader) throws IOException {
     PostingsEnum postingsEnum = null;
-    TermsEnum termsEnum = terms.iterator();
+    TermsEnum termsEnum = terms.getTermsEnum();
     BytesRef text;
     // Deal with the chance that the first bunch of terms are in deleted documents. Is there a better way?
     for (int idx = 0; idx < 1000 && postingsEnum == null; ++idx) {
@@ -648,11 +648,11 @@ public class LukeRequestHandler extends RequestHandlerBase
 
     final CharsRefBuilder spare = new CharsRefBuilder();
 
-    Terms terms = MultiFields.getTerms(req.getSearcher().getIndexReader(), field);
+    IndexedField terms = MultiFields.getIndexedField(req.getSearcher().getIndexReader(), field);
     if (terms == null) {  // field does not exist
       return;
     }
-    TermsEnum termsEnum = terms.iterator();
+    TermsEnum termsEnum = terms.getTermsEnum();
     BytesRef text;
     int[] buckets = new int[HIST_ARRAY_SIZE];
     while ((text = termsEnum.next()) != null) {

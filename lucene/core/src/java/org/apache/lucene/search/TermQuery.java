@@ -29,7 +29,7 @@ import org.apache.lucene.index.ReaderUtil;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.index.TermContext;
 import org.apache.lucene.index.TermState;
-import org.apache.lucene.index.Terms;
+import org.apache.lucene.index.IndexedField;
 import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.search.similarities.Similarity;
 import org.apache.lucene.search.similarities.Similarity.SimScorer;
@@ -109,16 +109,16 @@ public class TermQuery extends Query {
           assert termNotInReader(context.reader(), term) : "no termstate found but term exists in reader term=" + term;
           return null;
         }
-        final TermsEnum termsEnum = context.reader().terms(term.field()).iterator();
+        final TermsEnum termsEnum = context.reader().indexedField(term.field()).getTermsEnum();
         termsEnum.seekExact(term.bytes(), state);
         return termsEnum;
       } else {
         // TermQuery used as a filter, so the term states have not been built up front
-        Terms terms = context.reader().terms(term.field());
+        IndexedField terms = context.reader().indexedField(term.field());
         if (terms == null) {
           return null;
         }
-        final TermsEnum termsEnum = terms.iterator();
+        final TermsEnum termsEnum = terms.getTermsEnum();
         if (termsEnum.seekExact(term.bytes())) {
           return termsEnum;
         } else {

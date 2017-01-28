@@ -23,12 +23,12 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
 
-import org.apache.lucene.index.Fields;
+import org.apache.lucene.index.IndexedFields;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.MultiPostingsEnum;
 import org.apache.lucene.index.PostingsEnum;
-import org.apache.lucene.index.Terms;
+import org.apache.lucene.index.IndexedField;
 import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.search.ConstantScoreScorer;
 import org.apache.lucene.search.ConstantScoreWeight;
@@ -300,18 +300,18 @@ class JoinQuery extends Query {
         fastForRandomSet = new HashDocSet(sset.getDocs(), 0, sset.size());
       }
 
-      Fields fromFields = fromSearcher.getSlowAtomicReader().fields();
-      Fields toFields = fromSearcher==toSearcher ? fromFields : toSearcher.getSlowAtomicReader().fields();
+      IndexedFields fromFields = fromSearcher.getSlowAtomicReader().fields();
+      IndexedFields toFields = fromSearcher==toSearcher ? fromFields : toSearcher.getSlowAtomicReader().fields();
       if (fromFields == null) return DocSet.EMPTY;
-      Terms terms = fromFields.terms(fromField);
-      Terms toTerms = toFields.terms(toField);
+      IndexedField terms = fromFields.indexedField(fromField);
+      IndexedField toTerms = toFields.indexedField(toField);
       if (terms == null || toTerms==null) return DocSet.EMPTY;
       String prefixStr = TrieField.getMainValuePrefix(fromSearcher.getSchema().getFieldType(fromField));
       BytesRef prefix = prefixStr == null ? null : new BytesRef(prefixStr);
 
       BytesRef term = null;
-      TermsEnum  termsEnum = terms.iterator();
-      TermsEnum  toTermsEnum = toTerms.iterator();
+      TermsEnum  termsEnum = terms.getTermsEnum();
+      TermsEnum  toTermsEnum = toTerms.getTermsEnum();
       SolrIndexSearcher.DocsEnumState fromDeState = null;
       SolrIndexSearcher.DocsEnumState toDeState = null;
 

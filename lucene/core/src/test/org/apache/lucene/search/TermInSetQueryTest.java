@@ -29,14 +29,14 @@ import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field.Store;
 import org.apache.lucene.document.StringField;
 import org.apache.lucene.index.DirectoryReader;
-import org.apache.lucene.index.Fields;
+import org.apache.lucene.index.IndexedFields;
 import org.apache.lucene.index.FilterDirectoryReader;
 import org.apache.lucene.index.FilterLeafReader;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.LeafReader;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.Term;
-import org.apache.lucene.index.Terms;
+import org.apache.lucene.index.IndexedField;
 import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.search.BooleanClause.Occur;
 import org.apache.lucene.store.Directory;
@@ -219,19 +219,19 @@ public class TermInSetQueryTest extends LuceneTestCase {
       }
 
       @Override
-      public Fields fields() throws IOException {
+      public IndexedFields fields() throws IOException {
         return new FilterFields(in.fields()) {
           @Override
-          public Terms terms(String field) throws IOException {
-            final Terms in = this.in.terms(field);
+          public IndexedField indexedField(String field) throws IOException {
+            final IndexedField in = this.in.indexedField(field);
             if (in == null) {
               return null;
             }
-            return new FilterTerms(in) {
+            return new FilterField(in) {
               @Override
-              public TermsEnum iterator() throws IOException {
+              public TermsEnum getTermsEnum() throws IOException {
                 counter.incrementAndGet();
-                return super.iterator();
+                return super.getTermsEnum();
               }
             };
           }

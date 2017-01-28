@@ -46,7 +46,7 @@ import org.apache.lucene.util.Bits;
 public final class SlowCompositeReaderWrapper extends LeafReader {
 
   private final CompositeReader in;
-  private final Fields fields;
+  private final IndexedFields fields;
   private final boolean merging;
   
   /** This method is sugar for getting an {@link LeafReader} from
@@ -86,7 +86,7 @@ public final class SlowCompositeReaderWrapper extends LeafReader {
   }
 
   @Override
-  public Fields fields() {
+  public IndexedFields fields() {
     ensureOpen();
     return fields;
   }
@@ -204,7 +204,7 @@ public final class SlowCompositeReaderWrapper extends LeafReader {
   }
   
   @Override
-  public Fields getTermVectors(int docID) throws IOException {
+  public IndexedFields getTermVectors(int docID) throws IOException {
     ensureOpen();
     return in.getTermVectors(docID);
   }

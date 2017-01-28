@@ -26,7 +26,7 @@ import org.apache.lucene.index.LeafReader;
 import org.apache.lucene.index.NumericDocValues;
 import org.apache.lucene.index.SortedDocValues;
 import org.apache.lucene.index.SortedSetDocValues;
-import org.apache.lucene.index.Terms;
+import org.apache.lucene.index.IndexedField;
 import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.legacy.LegacyNumericUtils;
 import org.apache.lucene.util.Accountable;
@@ -66,16 +66,16 @@ public interface FieldCache {
   public interface Parser {
     
     /**
-     * Pulls a {@link TermsEnum} from the given {@link Terms}. This method allows certain parsers
+     * Pulls a {@link TermsEnum} from the given {@link IndexedField}. This method allows certain parsers
      * to filter the actual TermsEnum before the field cache is filled.
      * 
-     * @param terms the {@link Terms} instance to create the {@link TermsEnum} from.
+     * @param terms the {@link IndexedField} instance to create the {@link TermsEnum} from.
      * @return a possibly filtered {@link TermsEnum} instance, this method must not return <code>null</code>.
      * @throws IOException if an {@link IOException} occurs
      * @deprecated index with Points instead
      */
     @Deprecated
-    public TermsEnum termsEnum(Terms terms) throws IOException;
+    public TermsEnum termsEnum(IndexedField terms) throws IOException;
     
     /** Parse's this field's value */
     public long parseValue(BytesRef term);
@@ -88,7 +88,7 @@ public interface FieldCache {
    * This abstraction can be cleaned up when Parser.termsEnum is removed.
    */
   public abstract class PointParser implements Parser {
-    public final TermsEnum termsEnum(Terms terms) throws IOException {
+    public final TermsEnum termsEnum(IndexedField terms) throws IOException {
       throw new UnsupportedOperationException("makes no sense for parsing points");
     }
   }
@@ -173,8 +173,8 @@ public interface FieldCache {
     }
     
     @Override
-    public TermsEnum termsEnum(Terms terms) throws IOException {
-      return LegacyNumericUtils.filterPrefixCodedInts(terms.iterator());
+    public TermsEnum termsEnum(IndexedField terms) throws IOException {
+      return LegacyNumericUtils.filterPrefixCodedInts(terms.getTermsEnum());
     }
     
     @Override
@@ -203,8 +203,8 @@ public interface FieldCache {
     }
     
     @Override
-    public TermsEnum termsEnum(Terms terms) throws IOException {
-      return LegacyNumericUtils.filterPrefixCodedInts(terms.iterator());
+    public TermsEnum termsEnum(IndexedField terms) throws IOException {
+      return LegacyNumericUtils.filterPrefixCodedInts(terms.getTermsEnum());
     }
   };
 
@@ -225,8 +225,8 @@ public interface FieldCache {
     }
     
     @Override
-    public TermsEnum termsEnum(Terms terms) throws IOException {
-      return LegacyNumericUtils.filterPrefixCodedLongs(terms.iterator());
+    public TermsEnum termsEnum(IndexedField terms) throws IOException {
+      return LegacyNumericUtils.filterPrefixCodedLongs(terms.getTermsEnum());
     }
   };
 
@@ -249,8 +249,8 @@ public interface FieldCache {
     }
     
     @Override
-    public TermsEnum termsEnum(Terms terms) throws IOException {
-      return LegacyNumericUtils.filterPrefixCodedLongs(terms.iterator());
+    public TermsEnum termsEnum(IndexedField terms) throws IOException {
+      return LegacyNumericUtils.filterPrefixCodedLongs(terms.getTermsEnum());
     }
   };
   

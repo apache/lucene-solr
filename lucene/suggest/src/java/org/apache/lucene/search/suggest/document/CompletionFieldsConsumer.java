@@ -24,11 +24,11 @@ import org.apache.lucene.codecs.CodecUtil;
 import org.apache.lucene.codecs.FieldsConsumer;
 import org.apache.lucene.codecs.PostingsFormat;
 import org.apache.lucene.index.FieldInfo;
-import org.apache.lucene.index.Fields;
+import org.apache.lucene.index.IndexedFields;
 import org.apache.lucene.index.IndexFileNames;
 import org.apache.lucene.index.PostingsEnum;
 import org.apache.lucene.index.SegmentWriteState;
-import org.apache.lucene.index.Terms;
+import org.apache.lucene.index.IndexedField;
 import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.store.ByteArrayDataInput;
@@ -44,7 +44,7 @@ import static org.apache.lucene.search.suggest.document.CompletionPostingsFormat
 
 /**
  * <p>
- * Weighted FSTs for any indexed {@link SuggestField} is built on {@link #write(Fields)}.
+ * Weighted FSTs for any indexed {@link SuggestField} is built on {@link #write(IndexedFields)}.
  * A weighted FST maps the analyzed forms of a field to its
  * surface form and document id. FSTs are stored in the CompletionDictionary (.lkp).
  * </p>
@@ -80,17 +80,17 @@ final class CompletionFieldsConsumer extends FieldsConsumer {
   }
 
   @Override
-  public void write(Fields fields) throws IOException {
+  public void write(IndexedFields fields) throws IOException {
     delegateFieldsConsumer.write(fields);
 
     for (String field : fields) {
       CompletionTermWriter termWriter = new CompletionTermWriter();
-      Terms terms = fields.terms(field);
+      IndexedField terms = fields.indexedField(field);
       if (terms == null) {
-        // this can happen from ghost fields, where the incoming Fields iterator claims a field exists but it does not
+        // this can happen from ghost fields, where the incoming IndexedFields iterator claims a field exists but it does not
         continue;
       }
-      TermsEnum termsEnum = terms.iterator();
+      TermsEnum termsEnum = terms.getTermsEnum();
 
       // write terms
       BytesRef term;

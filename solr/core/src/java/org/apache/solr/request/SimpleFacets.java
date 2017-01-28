@@ -35,13 +35,13 @@ import java.util.concurrent.SynchronousQueue;
 import java.util.concurrent.TimeUnit;
 
 import org.apache.commons.lang.StringUtils;
-import org.apache.lucene.index.Fields;
+import org.apache.lucene.index.IndexedFields;
 import org.apache.lucene.index.LeafReader;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.MultiPostingsEnum;
 import org.apache.lucene.index.PostingsEnum;
 import org.apache.lucene.index.Term;
-import org.apache.lucene.index.Terms;
+import org.apache.lucene.index.IndexedField;
 import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.search.BooleanClause.Occur;
 import org.apache.lucene.search.BooleanQuery;
@@ -866,7 +866,7 @@ public class SimpleFacets {
     throws IOException {
     
     /* :TODO: potential optimization...
-    * cache the Terms with the highest docFreq and try them first
+    * cache the IndexedField with the highest docFreq and try them first
     * don't enum if we get our max from them
     */
 
@@ -902,13 +902,13 @@ public class SimpleFacets {
       prefixTermBytes = new BytesRef(indexedPrefix);
     }
 
-    Fields fields = r.fields();
-    Terms terms = fields==null ? null : fields.terms(field);
+    IndexedFields fields = r.fields();
+    IndexedField terms = fields==null ? null : fields.indexedField(field);
     TermsEnum termsEnum = null;
     SolrIndexSearcher.DocsEnumState deState = null;
     BytesRef term = null;
     if (terms != null) {
-      termsEnum = terms.iterator();
+      termsEnum = terms.getTermsEnum();
 
       // TODO: OPT: if seek(ord) is supported for this termsEnum, then we could use it for
       // facet.offset when sorting by index order.

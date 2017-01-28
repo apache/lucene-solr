@@ -18,14 +18,14 @@
 
 package org.apache.solr.search;
 
-import org.apache.lucene.index.Fields;
+import org.apache.lucene.index.IndexedFields;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.LeafReader;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.PostingsEnum;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.index.TermContext;
-import org.apache.lucene.index.Terms;
+import org.apache.lucene.index.IndexedField;
 import org.apache.lucene.index.TermState;
 import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.search.BulkScorer;
@@ -220,12 +220,12 @@ public class GraphTermsQParserPlugin extends QParserPlugin {
 
         private WeightOrDocIdSet rewrite(LeafReaderContext context) throws IOException {
           final LeafReader reader = context.reader();
-          final Fields fields = reader.fields();
-          Terms terms = fields.terms(field);
+          final IndexedFields fields = reader.fields();
+          IndexedField terms = fields.indexedField(field);
           if(terms == null) {
             return new WeightOrDocIdSet(new BitDocIdSet(new FixedBitSet(reader.maxDoc()), 0));
           }
-          TermsEnum  termsEnum = terms.iterator();
+          TermsEnum  termsEnum = terms.getTermsEnum();
           PostingsEnum docs = null;
           DocIdSetBuilder builder = new DocIdSetBuilder(reader.maxDoc(), terms);
           for (int i=0; i<finalContexts.size(); i++) {
@@ -285,13 +285,13 @@ public class GraphTermsQParserPlugin extends QParserPlugin {
       TermsEnum termsEnum = null;
       for (LeafReaderContext context : leaves) {
 
-        Terms terms = context.reader().terms(this.field);
+        IndexedField terms = context.reader().indexedField(this.field);
         if (terms == null) {
           // field does not exist
           continue;
         }
 
-        termsEnum = terms.iterator();
+        termsEnum = terms.getTermsEnum();
 
         if (termsEnum == TermsEnum.EMPTY) continue;
 

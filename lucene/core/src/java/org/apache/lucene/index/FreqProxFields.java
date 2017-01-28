@@ -29,11 +29,11 @@ import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.BytesRefBuilder;
 
 /** Implements limited (iterators only, no stats) {@link
- *  Fields} interface over the in-RAM buffered
+ *  IndexedFields} interface over the in-RAM buffered
  *  fields/terms/postings, to flush postings through the
  *  PostingsFormat. */
 
-class FreqProxFields extends Fields {
+class FreqProxFields extends IndexedFields {
   final Map<String,FreqProxTermsWriterPerField> fields = new LinkedHashMap<>();
 
   public FreqProxFields(List<FreqProxTermsWriterPerField> fieldList) {
@@ -48,7 +48,7 @@ class FreqProxFields extends Fields {
   }
 
   @Override
-  public Terms terms(String field) throws IOException {
+  public IndexedField indexedField(String field) throws IOException {
     FreqProxTermsWriterPerField perField = fields.get(field);
     return perField == null ? null : new FreqProxTerms(perField);
   }
@@ -59,7 +59,7 @@ class FreqProxFields extends Fields {
     throw new UnsupportedOperationException();
   }
 
-  private static class FreqProxTerms extends Terms {
+  private static class FreqProxTerms extends IndexedField {
     final FreqProxTermsWriterPerField terms;
 
     public FreqProxTerms(FreqProxTermsWriterPerField terms) {
@@ -67,7 +67,7 @@ class FreqProxFields extends Fields {
     }
 
     @Override
-    public TermsEnum iterator() {
+    public TermsEnum getTermsEnum() {
       FreqProxTermsEnum termsEnum = new FreqProxTermsEnum(terms);
       termsEnum.reset();
       return termsEnum;

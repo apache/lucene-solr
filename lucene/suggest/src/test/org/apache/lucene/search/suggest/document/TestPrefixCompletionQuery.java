@@ -320,7 +320,7 @@ public class TestPrefixCompletionQuery extends LuceneTestCase {
     // first force merge is OK
     iw.forceMerge(1);
     
-    // second force merge causes MultiFields to include "suggest_field" in its iteration, yet a null Terms is returned (no documents have
+    // second force merge causes MultiFields to include "suggest_field" in its iteration, yet a null IndexedField is returned (no documents have
     // this field anymore)
     iw.addDocument(new Document());
     iw.forceMerge(1);

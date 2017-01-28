@@ -22,7 +22,7 @@ import java.util.Set;
 import org.apache.lucene.index.LeafReader;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.Term;
-import org.apache.lucene.index.Terms;
+import org.apache.lucene.index.IndexedField;
 import org.apache.lucene.search.BulkScorer;
 import org.apache.lucene.search.Explanation;
 import org.apache.lucene.search.Scorer;
@@ -70,9 +70,9 @@ public class CompletionWeight extends Weight {
   @Override
   public BulkScorer bulkScorer(final LeafReaderContext context) throws IOException {
     final LeafReader reader = context.reader();
-    final Terms terms;
+    final IndexedField terms;
     final NRTSuggester suggester;
-    if ((terms = reader.terms(completionQuery.getField())) == null) {
+    if ((terms = reader.indexedField(completionQuery.getField())) == null) {
       return null;
     }
     if (terms instanceof CompletionTerms) {

@@ -46,12 +46,12 @@ import org.apache.lucene.util.MergedIterator;
  * @lucene.experimental
  */
 
-public final class MultiFields extends Fields {
-  private final Fields[] subs;
+public final class MultiFields extends IndexedFields {
+  private final IndexedFields[] subs;
   private final ReaderSlice[] subSlices;
-  private final Map<String,Terms> terms = new ConcurrentHashMap<>();
+  private final Map<String,IndexedField> terms = new ConcurrentHashMap<>();
 
-  /** Returns a single {@link Fields} instance for this
+  /** Returns a single {@link IndexedFields} instance for this
    *  reader, merging fields/terms/docs/positions on the
    *  fly.  This method will return null if the reader 
    *  has no postings.
@@ -59,25 +59,25 @@ public final class MultiFields extends Fields {
    *  <p><b>NOTE</b>: this is a slow way to access postings.
    *  It's better to get the sub-readers and iterate through them
    *  yourself. */
-  public static Fields getFields(IndexReader reader) throws IOException {
+  public static IndexedFields getFields(IndexReader reader) throws IOException {
     final List<LeafReaderContext> leaves = reader.leaves();
     switch (leaves.size()) {
       case 1:
         // already an atomic reader / reader with one leave
         return leaves.get(0).reader().fields();
       default:
-        final List<Fields> fields = new ArrayList<>(leaves.size());
+        final List<IndexedFields> fields = new ArrayList<>(leaves.size());
         final List<ReaderSlice> slices = new ArrayList<>(leaves.size());
         for (final LeafReaderContext ctx : leaves) {
           final LeafReader r = ctx.reader();
-          final Fields f = r.fields();
+          final IndexedFields f = r.fields();
           fields.add(f);
           slices.add(new ReaderSlice(ctx.docBase, r.maxDoc(), fields.size()-1));
         }
         if (fields.size() == 1) {
           return fields.get(0);
         } else {
-          return new MultiFields(fields.toArray(Fields.EMPTY_ARRAY),
+          return new MultiFields(fields.toArray(IndexedFields.EMPTY_ARRAY),
                                          slices.toArray(ReaderSlice.EMPTY_ARRAY));
         }
     }
@@ -116,8 +116,8 @@ public final class MultiFields extends Fields {
   }
 
   /**  This method may return null if the field does not exist.*/
-  public static Terms getTerms(IndexReader r, String field) throws IOException {
-    return getFields(r).terms(field);
+  public static IndexedField getIndexedField(IndexReader r, String field) throws IOException {
+    return getFields(r).indexedField(field);
   }
   
   /** Returns {@link PostingsEnum} for the specified field and
@@ -136,9 +136,9 @@ public final class MultiFields extends Fields {
   public static PostingsEnum getTermDocsEnum(IndexReader r, String field, BytesRef term, int flags) throws IOException {
     assert field != null;
     assert term != null;
-    final Terms terms = getTerms(r, field);
+    final IndexedField terms = getIndexedField(r, field);
     if (terms != null) {
-      final TermsEnum termsEnum = terms.iterator();
+      final TermsEnum termsEnum = terms.getTermsEnum();
       if (termsEnum.seekExact(term)) {
         return termsEnum.postings(null, flags);
       }
@@ -163,9 +163,9 @@ public final class MultiFields extends Fields {
   public static PostingsEnum getTermPositionsEnum(IndexReader r, String field, BytesRef term, int flags) throws IOException {
     assert field != null;
     assert term != null;
-    final Terms terms = getTerms(r, field);
+    final IndexedField terms = getIndexedField(r, field);
     if (terms != null) {
-      final TermsEnum termsEnum = terms.iterator();
+      final TermsEnum termsEnum = terms.getTermsEnum();
       if (termsEnum.seekExact(term)) {
         return termsEnum.postings(null, flags);
       }
@@ -178,7 +178,7 @@ public final class MultiFields extends Fields {
    * @lucene.internal
    */
   // TODO: why is this public?
-  public MultiFields(Fields[] subs, ReaderSlice[] subSlices) {
+  public MultiFields(IndexedFields[] subs, ReaderSlice[] subSlices) {
     this.subs = subs;
     this.subSlices = subSlices;
   }
@@ -194,20 +194,20 @@ public final class MultiFields extends Fields {
   }
 
   @Override
-  public Terms terms(String field) throws IOException {
-    Terms result = terms.get(field);
+  public IndexedField indexedField(String field) throws IOException {
+    IndexedField result = terms.get(field);
     if (result != null)
       return result;
 
 
     // Lazy init: first time this field is requested, we
     // create & add to terms:
-    final List<Terms> subs2 = new ArrayList<>();
+    final List<IndexedField> subs2 = new ArrayList<>();
     final List<ReaderSlice> slices2 = new ArrayList<>();
 
     // Gather all sub-readers that share this field
     for(int i=0;i<subs.length;i++) {
-      final Terms terms = subs[i].terms(field);
+      final IndexedField terms = subs[i].indexedField(field);
       if (terms != null) {
         subs2.add(terms);
         slices2.add(subSlices[i]);
@@ -218,7 +218,7 @@ public final class MultiFields extends Fields {
       // don't cache this case with an unbounded cache, since the number of fields that don't exist
       // is unbounded.
     } else {
-      result = new MultiTerms(subs2.toArray(Terms.EMPTY_ARRAY),
+      result = new MultiField(subs2.toArray(IndexedField.EMPTY_ARRAY),
           slices2.toArray(ReaderSlice.EMPTY_ARRAY));
       terms.put(field, result);
     }

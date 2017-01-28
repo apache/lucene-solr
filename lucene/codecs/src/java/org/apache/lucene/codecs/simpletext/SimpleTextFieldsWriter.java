@@ -23,9 +23,9 @@ import org.apache.lucene.codecs.FieldsConsumer;
 import org.apache.lucene.index.PostingsEnum;
 import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.FieldInfos;
-import org.apache.lucene.index.Fields;
+import org.apache.lucene.index.IndexedFields;
 import org.apache.lucene.index.SegmentWriteState;
-import org.apache.lucene.index.Terms;
+import org.apache.lucene.index.IndexedField;
 import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.store.IndexOutput;
 import org.apache.lucene.util.BytesRef;
@@ -56,15 +56,15 @@ class SimpleTextFieldsWriter extends FieldsConsumer {
   }
 
   @Override
-  public void write(Fields fields) throws IOException {
+  public void write(IndexedFields fields) throws IOException {
     write(writeState.fieldInfos, fields);
   }
 
-  public void write(FieldInfos fieldInfos, Fields fields) throws IOException {
+  public void write(FieldInfos fieldInfos, IndexedFields fields) throws IOException {
 
     // for each field
     for(String field : fields) {
-      Terms terms = fields.terms(field);
+      IndexedField terms = fields.indexedField(field);
       if (terms == null) {
         // Annoyingly, this can happen!
         continue;
@@ -93,7 +93,7 @@ class SimpleTextFieldsWriter extends FieldsConsumer {
         }
       }
 
-      TermsEnum termsEnum = terms.iterator();
+      TermsEnum termsEnum = terms.getTermsEnum();
       PostingsEnum postingsEnum = null;
 
       // for each term in field

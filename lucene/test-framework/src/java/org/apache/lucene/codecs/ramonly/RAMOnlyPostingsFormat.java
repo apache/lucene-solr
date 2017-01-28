@@ -35,12 +35,12 @@ import org.apache.lucene.codecs.PostingsFormat;
 import org.apache.lucene.codecs.TermStats;
 import org.apache.lucene.index.PostingsEnum;
 import org.apache.lucene.index.FieldInfo;
-import org.apache.lucene.index.Fields;
+import org.apache.lucene.index.IndexedFields;
 import org.apache.lucene.index.IndexFileNames;
 import org.apache.lucene.index.IndexOptions;
 import org.apache.lucene.index.SegmentReadState;
 import org.apache.lucene.index.SegmentWriteState;
-import org.apache.lucene.index.Terms;
+import org.apache.lucene.index.IndexedField;
 import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.store.IndexOutput;
@@ -68,7 +68,7 @@ public final class RAMOnlyPostingsFormat extends PostingsFormat {
     final Map<String,RAMField> fieldToTerms = new TreeMap<>();
 
     @Override
-    public Terms terms(String field) {
+    public IndexedField indexedField(String field) {
       return fieldToTerms.get(field);
     }
 
@@ -104,7 +104,7 @@ public final class RAMOnlyPostingsFormat extends PostingsFormat {
     public void checkIntegrity() throws IOException {}
   } 
 
-  static class RAMField extends Terms implements Accountable {
+  static class RAMField extends IndexedField implements Accountable {
     final String field;
     final SortedMap<String,RAMTerm> termToDocs = new TreeMap<>();
     long sumTotalTermFreq;
@@ -147,7 +147,7 @@ public final class RAMOnlyPostingsFormat extends PostingsFormat {
     }
 
     @Override
-    public TermsEnum iterator() {
+    public TermsEnum getTermsEnum() {
       return new RAMTermsEnum(RAMOnlyPostingsFormat.RAMField.this);
     }
 
@@ -227,15 +227,15 @@ public final class RAMOnlyPostingsFormat extends PostingsFormat {
     }
 
     @Override
-    public void write(Fields fields) throws IOException {
+    public void write(IndexedFields fields) throws IOException {
       for(String field : fields) {
 
-        Terms terms = fields.terms(field);
+        IndexedField terms = fields.indexedField(field);
         if (terms == null) {
           continue;
         }
 
-        TermsEnum termsEnum = terms.iterator();
+        TermsEnum termsEnum = terms.getTermsEnum();
 
         FieldInfo fieldInfo = state.fieldInfos.fieldInfo(field);
         if (fieldInfo.getIndexOptions().compareTo(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS_AND_OFFSETS) >= 0) {

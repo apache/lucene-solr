@@ -41,7 +41,7 @@ import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.PostingsEnum;
-import org.apache.lucene.index.Terms;
+import org.apache.lucene.index.IndexedField;
 import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.store.Directory;
@@ -95,9 +95,9 @@ public class TestTeeSinkTokenFilter extends BaseTokenStreamTestCase {
     w.close();
 
     IndexReader r = DirectoryReader.open(dir);
-    Terms vector = r.getTermVectors(0).terms("field");
+    IndexedField vector = r.getTermVectors(0).indexedField("field");
     assertEquals(1, vector.size());
-    TermsEnum termsEnum = vector.iterator();
+    TermsEnum termsEnum = vector.getTermsEnum();
     termsEnum.next();
     assertEquals(2, termsEnum.totalTermFreq());
     PostingsEnum positions = termsEnum.postings(null, PostingsEnum.ALL);

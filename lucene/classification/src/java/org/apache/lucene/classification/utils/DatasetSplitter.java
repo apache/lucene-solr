@@ -95,7 +95,7 @@ public class DatasetSplitter {
       }
       if (classValues == null) {
         // approximate with no. of terms
-        noOfClasses += leave.reader().terms(classFieldName).size();
+        noOfClasses += leave.reader().indexedField(classFieldName).size();
       }
       noOfClasses += valueCount;
     }

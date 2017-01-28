@@ -33,7 +33,7 @@ import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.IndexFileNames;
 import org.apache.lucene.index.IndexOptions;
 import org.apache.lucene.index.SegmentReadState;
-import org.apache.lucene.index.Terms;
+import org.apache.lucene.index.IndexedField;
 import org.apache.lucene.search.PrefixQuery;  // javadocs
 import org.apache.lucene.search.TermRangeQuery;  // javadocs
 import org.apache.lucene.store.IndexInput;
@@ -60,12 +60,12 @@ import org.apache.lucene.util.fst.Outputs;
  *  much memory the terms index uses.</p>
  *
  *  <p>If auto-prefix terms were indexed (see
- *  {@link BlockTreeTermsWriter}), then the {@link Terms#intersect}
+ *  {@link BlockTreeTermsWriter}), then the {@link IndexedField#intersect}
  *  implementation here will make use of these terms only if the
  *  automaton has a binary sink state, i.e. an accept state
  *  which has a transition to itself accepting all byte values.
  *  For example, both {@link PrefixQuery} and {@link TermRangeQuery}
- *  pass such automata to {@link Terms#intersect}.</p>
+ *  pass such automata to {@link IndexedField#intersect}.</p>
  *
  *  <p>The data structure used by this implementation is very
  *  similar to a burst trie
@@ -287,7 +287,7 @@ public final class BlockTreeTermsReader extends FieldsProducer {
   }
 
   @Override
-  public Terms terms(String field) throws IOException {
+  public IndexedField indexedField(String field) throws IOException {
     assert field != null;
     return fields.get(field);
   }

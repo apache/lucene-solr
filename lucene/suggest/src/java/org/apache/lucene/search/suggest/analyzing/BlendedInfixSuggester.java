@@ -31,7 +31,7 @@ import org.apache.lucene.index.BinaryDocValues;
 import org.apache.lucene.index.IndexOptions;
 import org.apache.lucene.index.MultiDocValues;
 import org.apache.lucene.index.PostingsEnum;
-import org.apache.lucene.index.Terms;
+import org.apache.lucene.index.IndexedField;
 import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.search.BooleanClause;
 import org.apache.lucene.search.BooleanQuery;
@@ -271,8 +271,8 @@ public class BlendedInfixSuggester extends AnalyzingInfixSuggester {
    */
   private double createCoefficient(IndexSearcher searcher, int doc, Set<String> matchedTokens, String prefixToken) throws IOException {
 
-    Terms tv = searcher.getIndexReader().getTermVector(doc, TEXT_FIELD_NAME);
-    TermsEnum it = tv.iterator();
+    IndexedField tv = searcher.getIndexReader().getTermVector(doc, TEXT_FIELD_NAME);
+    TermsEnum it = tv.getTermsEnum();
 
     Integer position = Integer.MAX_VALUE;
     BytesRef term;

@@ -36,7 +36,7 @@ import org.apache.lucene.index.IndexFileNames;
 import org.apache.lucene.index.IndexOptions;
 import org.apache.lucene.index.SegmentReadState;
 import org.apache.lucene.index.TermState;
-import org.apache.lucene.index.Terms;
+import org.apache.lucene.index.IndexedField;
 import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.store.ByteArrayDataInput;
 import org.apache.lucene.store.IndexInput;
@@ -202,7 +202,7 @@ public class BlockTermsReader extends FieldsProducer {
   }
 
   @Override
-  public Terms terms(String field) throws IOException {
+  public IndexedField indexedField(String field) throws IOException {
     assert field != null;
     return fields.get(field);
   }
@@ -213,7 +213,7 @@ public class BlockTermsReader extends FieldsProducer {
   }
 
   private static final long FIELD_READER_RAM_BYTES_USED = RamUsageEstimator.shallowSizeOfInstance(FieldReader.class);
-  private class FieldReader extends Terms implements Accountable {
+  private class FieldReader extends IndexedField implements Accountable {
     final long numTerms;
     final FieldInfo fieldInfo;
     final long termsStartPointer;
@@ -239,7 +239,7 @@ public class BlockTermsReader extends FieldsProducer {
     }
 
     @Override
-    public TermsEnum iterator() throws IOException {
+    public TermsEnum getTermsEnum() throws IOException {
       return new SegmentTermsEnum();
     }
 

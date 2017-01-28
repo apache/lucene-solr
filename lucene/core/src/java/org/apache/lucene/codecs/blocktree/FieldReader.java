@@ -23,7 +23,7 @@ import java.util.Collections;
 
 import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.IndexOptions;
-import org.apache.lucene.index.Terms;
+import org.apache.lucene.index.IndexedField;
 import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.store.ByteArrayDataInput;
 import org.apache.lucene.store.IndexInput;
@@ -36,10 +36,10 @@ import org.apache.lucene.util.fst.ByteSequenceOutputs;
 import org.apache.lucene.util.fst.FST;
 
 /**
- * BlockTree's implementation of {@link Terms}.
+ * BlockTree's implementation of {@link IndexedField}.
  * @lucene.internal
  */
-public final class FieldReader extends Terms implements Accountable {
+public final class FieldReader extends IndexedField implements Accountable {
 
   // private final boolean DEBUG = BlockTreeTermsWriter.DEBUG;
 
@@ -152,7 +152,7 @@ public final class FieldReader extends Terms implements Accountable {
   }
 
   @Override
-  public TermsEnum iterator() throws IOException {
+  public TermsEnum getTermsEnum() throws IOException {
     return new SegmentTermsEnum(this);
   }
 

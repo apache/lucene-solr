@@ -33,12 +33,12 @@ import org.apache.lucene.index.CorruptIndexException;
 import org.apache.lucene.index.PostingsEnum;
 import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.FieldInfos;
-import org.apache.lucene.index.Fields;
+import org.apache.lucene.index.IndexedFields;
 import org.apache.lucene.index.IndexFileNames;
 import org.apache.lucene.index.IndexOptions;
 import org.apache.lucene.index.SegmentReadState;
 import org.apache.lucene.index.SegmentWriteState;
-import org.apache.lucene.index.Terms;
+import org.apache.lucene.index.IndexedField;
 import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.store.ByteArrayDataInput;
 import org.apache.lucene.store.ChecksumIndexInput;
@@ -287,15 +287,15 @@ public final class MemoryPostingsFormat extends PostingsFormat {
     }
 
     @Override
-    public void write(Fields fields) throws IOException {
+    public void write(IndexedFields fields) throws IOException {
       for(String field : fields) {
 
-        Terms terms = fields.terms(field);
+        IndexedField terms = fields.indexedField(field);
         if (terms == null) {
           continue;
         }
 
-        TermsEnum termsEnum = terms.iterator();
+        TermsEnum termsEnum = terms.getTermsEnum();
 
         FieldInfo fieldInfo = state.fieldInfos.fieldInfo(field);
         TermsWriter termsWriter = new TermsWriter(out, fieldInfo);
@@ -857,7 +857,7 @@ public final class MemoryPostingsFormat extends PostingsFormat {
     }
   }
 
-  private final static class TermsReader extends Terms implements Accountable {
+  private final static class TermsReader extends IndexedField implements Accountable {
 
     private final long sumTotalTermFreq;
     private final long sumDocFreq;
@@ -905,7 +905,7 @@ public final class MemoryPostingsFormat extends PostingsFormat {
     }
 
     @Override
-    public TermsEnum iterator() {
+    public TermsEnum getTermsEnum() {
       return new FSTTermsEnum(field, fst);
     }
 
@@ -982,7 +982,7 @@ public final class MemoryPostingsFormat extends PostingsFormat {
       }
 
       @Override
-      public Terms terms(String field) {
+      public IndexedField indexedField(String field) {
         return fields.get(field);
       }
       

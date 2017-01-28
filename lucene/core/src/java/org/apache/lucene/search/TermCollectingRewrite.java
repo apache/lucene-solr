@@ -24,7 +24,7 @@ import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexReaderContext;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.index.TermContext;
-import org.apache.lucene.index.Terms;
+import org.apache.lucene.index.IndexedField;
 import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.util.AttributeSource;
 import org.apache.lucene.util.BytesRef;
@@ -49,7 +49,7 @@ abstract class TermCollectingRewrite<B> extends MultiTermQuery.RewriteMethod {
   final void collectTerms(IndexReader reader, MultiTermQuery query, TermCollector collector) throws IOException {
     IndexReaderContext topReaderContext = reader.getContext();
     for (LeafReaderContext context : topReaderContext.leaves()) {
-      final Terms terms = context.reader().terms(query.field);
+      final IndexedField terms = context.reader().indexedField(query.field);
       if (terms == null) {
         // field does not exist
         continue;

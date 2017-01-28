@@ -71,9 +71,9 @@ public class TestParallelTermEnum extends LuceneTestCase {
     super.tearDown();
   }
   
-  private void checkTerms(Terms terms, String... termsList) throws IOException {
+  private void checkTerms(IndexedField terms, String... termsList) throws IOException {
     assertNotNull(terms);
-    final TermsEnum te = terms.iterator();
+    final TermsEnum te = terms.getTermsEnum();
     
     for (String t : termsList) {
       BytesRef b = te.next();
@@ -90,20 +90,20 @@ public class TestParallelTermEnum extends LuceneTestCase {
   public void test1() throws IOException {
     ParallelLeafReader pr = new ParallelLeafReader(ir1, ir2);
 
-    Fields fields = pr.fields();
+    IndexedFields fields = pr.fields();
     Iterator<String> fe = fields.iterator();
 
     String f = fe.next();
     assertEquals("field1", f);
-    checkTerms(fields.terms(f), "brown", "fox", "jumps", "quick", "the");
+    checkTerms(fields.indexedField(f), "brown", "fox", "jumps", "quick", "the");
 
     f = fe.next();
     assertEquals("field2", f);
-    checkTerms(fields.terms(f), "brown", "fox", "jumps", "quick", "the");
+    checkTerms(fields.indexedField(f), "brown", "fox", "jumps", "quick", "the");
 
     f = fe.next();
     assertEquals("field3", f);
-    checkTerms(fields.terms(f), "dog", "fox", "jumps", "lazy", "over", "the");
+    checkTerms(fields.indexedField(f), "dog", "fox", "jumps", "lazy", "over", "the");
 
     assertFalse(fe.hasNext());
   }

@@ -68,9 +68,9 @@ public class TestPayloadsOnVectors extends LuceneTestCase {
     writer.addDocument(doc);
     
     DirectoryReader reader = writer.getReader();
-    Terms terms = reader.getTermVector(1, "field");
+    IndexedField terms = reader.getTermVector(1, "field");
     assert terms != null;
-    TermsEnum termsEnum = terms.iterator();
+    TermsEnum termsEnum = terms.getTermsEnum();
     assertTrue(termsEnum.seekExact(new BytesRef("withPayload")));
     PostingsEnum de = termsEnum.postings(null, PostingsEnum.ALL);
     assertEquals(0, de.nextDoc());
@@ -110,9 +110,9 @@ public class TestPayloadsOnVectors extends LuceneTestCase {
     doc.add(field3);
     writer.addDocument(doc);
     DirectoryReader reader = writer.getReader();
-    Terms terms = reader.getTermVector(0, "field");
+    IndexedField terms = reader.getTermVector(0, "field");
     assert terms != null;
-    TermsEnum termsEnum = terms.iterator();
+    TermsEnum termsEnum = terms.getTermsEnum();
     assertTrue(termsEnum.seekExact(new BytesRef("withPayload")));
     PostingsEnum de = termsEnum.postings(null, PostingsEnum.ALL);
     assertEquals(0, de.nextDoc());

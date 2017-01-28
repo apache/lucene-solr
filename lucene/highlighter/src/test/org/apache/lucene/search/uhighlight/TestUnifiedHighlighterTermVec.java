@@ -122,7 +122,7 @@ public class TestUnifiedHighlighterTermVec extends LuceneTestCase {
           BitSet seenDocIDs = new BitSet();
 
           @Override
-          public Fields getTermVectors(int docID) throws IOException {
+          public IndexedFields getTermVectors(int docID) throws IOException {
             // if we're invoked by ParallelLeafReader then we can't do our assertion. TODO see LUCENE-6868
             if (calledBy(ParallelLeafReader.class) == false
                 && calledBy(CheckIndex.class) == false) {

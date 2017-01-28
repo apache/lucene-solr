@@ -18,11 +18,11 @@ package org.apache.lucene.search.uhighlight;
 
 import java.io.IOException;
 
-import org.apache.lucene.index.Fields;
+import org.apache.lucene.index.IndexedFields;
 import org.apache.lucene.index.FilterLeafReader;
 import org.apache.lucene.index.LeafReader;
 import org.apache.lucene.index.PostingsEnum;
-import org.apache.lucene.index.Terms;
+import org.apache.lucene.index.IndexedField;
 import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.automaton.CompiledAutomaton;
@@ -37,7 +37,7 @@ import org.apache.lucene.util.automaton.CompiledAutomaton;
 final class TermVectorFilteredLeafReader extends FilterLeafReader {
   // NOTE: super ("in") is baseLeafReader
 
-  private final Terms filterTerms;
+  private final IndexedField filterTerms;
 
   /**
    * <p>Construct a FilterLeafReader based on the specified base reader.
@@ -46,38 +46,38 @@ final class TermVectorFilteredLeafReader extends FilterLeafReader {
    * @param baseLeafReader full/original reader.
    * @param filterTerms set of terms to filter by -- probably from a TermVector or MemoryIndex.
    */
-  TermVectorFilteredLeafReader(LeafReader baseLeafReader, Terms filterTerms) {
+  TermVectorFilteredLeafReader(LeafReader baseLeafReader, IndexedField filterTerms) {
     super(baseLeafReader);
     this.filterTerms = filterTerms;
   }
 
   @Override
-  public Fields fields() throws IOException {
+  public IndexedFields fields() throws IOException {
     return new TermVectorFilteredFields(in.fields(), filterTerms);
   }
 
   private static final class TermVectorFilteredFields extends FilterLeafReader.FilterFields {
     // NOTE: super ("in") is baseFields
 
-    private final Terms filterTerms;
+    private final IndexedField filterTerms;
 
-    TermVectorFilteredFields(Fields baseFields, Terms filterTerms) {
+    TermVectorFilteredFields(IndexedFields baseFields, IndexedField filterTerms) {
       super(baseFields);
       this.filterTerms = filterTerms;
     }
 
     @Override
-    public Terms terms(String field) throws IOException {
-      return new TermsFilteredTerms(in.terms(field), filterTerms);
+    public IndexedField indexedField(String field) throws IOException {
+      return new TermsFilteredTerms(in.indexedField(field), filterTerms);
     }
   }
 
-  private static final class TermsFilteredTerms extends FilterLeafReader.FilterTerms {
+  private static final class TermsFilteredTerms extends FilterLeafReader.FilterField {
     // NOTE: super ("in") is the baseTerms
 
-    private final Terms filterTerms;
+    private final IndexedField filterTerms;
 
-    TermsFilteredTerms(Terms baseTerms, Terms filterTerms) {
+    TermsFilteredTerms(IndexedField baseTerms, IndexedField filterTerms) {
       super(baseTerms);
       this.filterTerms = filterTerms;
     }
@@ -87,13 +87,13 @@ final class TermVectorFilteredLeafReader extends FilterLeafReader {
     //TODO delegate getMin, getMax to filterTerms
 
     @Override
-    public TermsEnum iterator() throws IOException {
-      return new TermVectorFilteredTermsEnum(in.iterator(), filterTerms.iterator());
+    public TermsEnum getTermsEnum() throws IOException {
+      return new TermVectorFilteredTermsEnum(in.getTermsEnum(), filterTerms.getTermsEnum());
     }
 
     @Override
     public TermsEnum intersect(CompiledAutomaton compiled, BytesRef startTerm) throws IOException {
-      return new TermVectorFilteredTermsEnum(in.iterator(), filterTerms.intersect(compiled, startTerm));
+      return new TermVectorFilteredTermsEnum(in.getTermsEnum(), filterTerms.intersect(compiled, startTerm));
     }
   }
 

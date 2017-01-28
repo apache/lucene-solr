@@ -24,7 +24,7 @@ import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.PostingsEnum;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.index.TermContext;
-import org.apache.lucene.index.Terms;
+import org.apache.lucene.index.IndexedField;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.similarities.Similarity;
 import org.apache.lucene.search.spans.FilterSpans;
@@ -105,7 +105,7 @@ public class SpanPayloadCheckQuery extends SpanQuery {
       if (field == null)
         return null;
 
-      Terms terms = context.reader().terms(field);
+      IndexedField terms = context.reader().indexedField(field);
       if (terms != null && terms.hasPositions() == false) {
         throw new IllegalStateException("field \"" + field + "\" was indexed without position data; cannot run SpanQuery (query=" + parentQuery + ")");
       }

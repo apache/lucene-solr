@@ -835,11 +835,11 @@ public class MemoryIndex {
      * Term strings and their positions for this field: Map &lt;String
      * termText, ArrayIntList positions&gt;
      */
-    private BytesRefHash terms; // note unfortunate variable name class with Terms type
+    private BytesRefHash terms; // note unfortunate variable name class with IndexedField type
     
     private SliceByteStartArray sliceArray;
 
-    /** Terms sorted ascending by term text; computed on demand */
+    /** IndexedField sorted ascending by term text; computed on demand */
     private transient int[] sortedTerms;
     
     /** Number of added tokens for this field */
@@ -1072,7 +1072,7 @@ public class MemoryIndex {
    */
   private final class MemoryIndexReader extends LeafReader {
 
-    private Fields memoryFields = new MemoryFields(fields);
+    private IndexedFields memoryFields = new MemoryFields(fields);
 
     private MemoryIndexReader() {
       super(); // avoid as much superclass baggage as possible
@@ -1209,11 +1209,11 @@ public class MemoryIndex {
     }
 
     @Override
-    public Fields fields() {
+    public IndexedFields fields() {
       return memoryFields;
     }
 
-    private class MemoryFields extends Fields {
+    private class MemoryFields extends IndexedFields {
 
       private final Map<String, Info> fields;
 
@@ -1230,15 +1230,15 @@ public class MemoryIndex {
       }
 
       @Override
-      public Terms terms(final String field) {
+      public IndexedField indexedField(final String field) {
         final Info info = fields.get(field);
         if (info == null || info.numTokens <= 0) {
           return null;
         }
 
-        return new Terms() {
+        return new IndexedField() {
           @Override
-          public TermsEnum iterator() {
+          public TermsEnum getTermsEnum() {
             return new MemoryTermsEnum(info);
           }
 
@@ -1564,7 +1564,7 @@ public class MemoryIndex {
     }
     
     @Override
-    public Fields getTermVectors(int docID) {
+    public IndexedFields getTermVectors(int docID) {
       if (docID == 0) {
         return fields();
       } else {

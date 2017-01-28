@@ -56,19 +56,19 @@ public abstract class FilterLeafReader extends LeafReader {
     return reader;
   }
 
-  /** Base class for filtering {@link Fields}
+  /** Base class for filtering {@link IndexedFields}
    *  implementations. */
-  public abstract static class FilterFields extends Fields {
-    /** The underlying Fields instance. */
-    protected final Fields in;
+  public abstract static class FilterFields extends IndexedFields {
+    /** The underlying IndexedFields instance. */
+    protected final IndexedFields in;
 
     /**
      * Creates a new FilterFields.
-     * @param in the underlying Fields instance.
+     * @param in the underlying IndexedFields instance.
      */
-    public FilterFields(Fields in) {
+    public FilterFields(IndexedFields in) {
       if (in == null) {
-        throw new NullPointerException("incoming Fields must not be null");
+        throw new NullPointerException("incoming IndexedFields must not be null");
       }
       this.in = in;
     }
@@ -79,8 +79,8 @@ public abstract class FilterLeafReader extends LeafReader {
     }
 
     @Override
-    public Terms terms(String field) throws IOException {
-      return in.terms(field);
+    public IndexedField indexedField(String field) throws IOException {
+      return in.indexedField(field);
     }
 
     @Override
@@ -89,29 +89,29 @@ public abstract class FilterLeafReader extends LeafReader {
     }
   }
 
-  /** Base class for filtering {@link Terms} implementations.
+  /** Base class for filtering {@link IndexedField} implementations.
    * <p><b>NOTE</b>: If the order of terms and documents is not changed, and if
    * these terms are going to be intersected with automata, you could consider
    * overriding {@link #intersect} for better performance.
    */
-  public abstract static class FilterTerms extends Terms {
-    /** The underlying Terms instance. */
-    protected final Terms in;
+  public abstract static class FilterField extends IndexedField {
+    /** The underlying IndexedField instance. */
+    protected final IndexedField in;
 
     /**
-     * Creates a new FilterTerms
-     * @param in the underlying Terms instance.
+     * Creates a new FilterField
+     * @param in the underlying IndexedField instance.
      */
-    public FilterTerms(Terms in) {
+    public FilterField(IndexedField in) {
       if (in == null) {
-        throw new NullPointerException("incoming Terms must not be null");
+        throw new NullPointerException("incoming IndexedField must not be null");
       }
       this.in = in;
     }
 
     @Override
-    public TermsEnum iterator() throws IOException {
-      return in.iterator();
+    public TermsEnum getTermsEnum() throws IOException {
+      return in.getTermsEnum();
     }
 
     @Override
@@ -387,7 +387,7 @@ public abstract class FilterLeafReader extends LeafReader {
   }
 
   @Override
-  public Fields getTermVectors(int docID)
+  public IndexedFields getTermVectors(int docID)
           throws IOException {
     ensureOpen();
     return in.getTermVectors(docID);
@@ -417,7 +417,7 @@ public abstract class FilterLeafReader extends LeafReader {
   }
   
   @Override
-  public Fields fields() throws IOException {
+  public IndexedFields fields() throws IOException {
     ensureOpen();
     return in.fields();
   }

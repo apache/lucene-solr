@@ -93,7 +93,7 @@ public abstract class BaseCompositeReader<R extends IndexReader> extends Composi
   }
 
   @Override
-  public final Fields getTermVectors(int docID) throws IOException {
+  public final IndexedFields getTermVectors(int docID) throws IOException {
     ensureOpen();
     final int i = readerIndex(docID);        // find subreader num
     return subReaders[i].getTermVectors(docID - starts[i]); // dispatch to subreader

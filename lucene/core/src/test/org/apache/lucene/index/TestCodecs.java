@@ -225,10 +225,10 @@ public class TestCodecs extends LuceneTestCase {
     final Iterator<String> fieldsEnum = reader.iterator();
     String fieldName = fieldsEnum.next();
     assertNotNull(fieldName);
-    final Terms terms2 = reader.terms(fieldName);
+    final IndexedField terms2 = reader.indexedField(fieldName);
     assertNotNull(terms2);
 
-    final TermsEnum termsEnum = terms2.iterator();
+    final TermsEnum termsEnum = terms2.getTermsEnum();
 
     PostingsEnum postingsEnum = null;
     for(int i=0;i<NUM_TERMS;i++) {
@@ -301,12 +301,12 @@ public class TestCodecs extends LuceneTestCase {
   }
 
   private class Verify extends Thread {
-    final Fields termsDict;
+    final IndexedFields termsDict;
     final FieldData[] fields;
     final SegmentInfo si;
     volatile boolean failed;
 
-    Verify(final SegmentInfo si, final FieldData[] fields, final Fields termsDict) {
+    Verify(final SegmentInfo si, final FieldData[] fields, final IndexedFields termsDict) {
       this.fields = fields;
       this.termsDict = termsDict;
       this.si = si;
@@ -357,7 +357,7 @@ public class TestCodecs extends LuceneTestCase {
 
       for(int iter=0;iter<NUM_TEST_ITER;iter++) {
         final FieldData field = fields[random().nextInt(fields.length)];
-        final TermsEnum termsEnum = termsDict.terms(field.fieldInfo.name).iterator();
+        final TermsEnum termsEnum = termsDict.indexedField(field.fieldInfo.name).getTermsEnum();
 
         int upto = 0;
         // Test straight enum of the terms:
@@ -510,7 +510,7 @@ public class TestCodecs extends LuceneTestCase {
     }
   }
 
-  private static class DataFields extends Fields {
+  private static class DataFields extends IndexedFields {
     private final FieldData[] fields;
 
     public DataFields(FieldData[] fields) {
@@ -542,7 +542,7 @@ public class TestCodecs extends LuceneTestCase {
     }
 
     @Override
-    public Terms terms(String field) {
+    public IndexedField indexedField(String field) {
       // Slow linear search:
       for(FieldData fieldData : fields) {
         if (fieldData.fieldInfo.name.equals(field)) {
@@ -558,7 +558,7 @@ public class TestCodecs extends LuceneTestCase {
     }
   }
 
-  private static class DataTerms extends Terms {
+  private static class DataTerms extends IndexedField {
     final FieldData fieldData;
 
     public DataTerms(FieldData fieldData) {
@@ -566,7 +566,7 @@ public class TestCodecs extends LuceneTestCase {
     }
 
     @Override
-    public TermsEnum iterator() {
+    public TermsEnum getTermsEnum() {
       return new DataTermsEnum(fieldData);
     }
 

@@ -30,7 +30,7 @@ import org.apache.lucene.index.ReaderUtil;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.index.TermContext;
 import org.apache.lucene.index.TermState;
-import org.apache.lucene.index.Terms;
+import org.apache.lucene.index.IndexedField;
 import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.search.IndexSearcher;
 
@@ -107,13 +107,13 @@ public class SpanTermQuery extends SpanQuery {
         return null;
       }
 
-      final Terms terms = context.reader().terms(term.field());
+      final IndexedField terms = context.reader().indexedField(term.field());
       if (terms == null)
         return null;
       if (terms.hasPositions() == false)
         throw new IllegalStateException("field \"" + term.field() + "\" was indexed without position data; cannot run SpanTermQuery (term=" + term.text() + ")");
 
-      final TermsEnum termsEnum = terms.iterator();
+      final TermsEnum termsEnum = terms.getTermsEnum();
       termsEnum.seekExact(term.bytes(), state);
 
       final PostingsEnum postings = termsEnum.postings(null, requiredPostings.getRequiredPostings());

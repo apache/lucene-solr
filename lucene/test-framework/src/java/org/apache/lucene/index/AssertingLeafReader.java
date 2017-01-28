@@ -59,21 +59,21 @@ public class AssertingLeafReader extends FilterLeafReader {
   }
 
   @Override
-  public Fields fields() throws IOException {
+  public IndexedFields fields() throws IOException {
     return new AssertingFields(super.fields());
   }
   
   @Override
-  public Fields getTermVectors(int docID) throws IOException {
-    Fields fields = super.getTermVectors(docID);
+  public IndexedFields getTermVectors(int docID) throws IOException {
+    IndexedFields fields = super.getTermVectors(docID);
     return fields == null ? null : new AssertingFields(fields);
   }
 
   /**
-   * Wraps a Fields but with additional asserts
+   * Wraps a IndexedFields but with additional asserts
    */
   public static class AssertingFields extends FilterFields {
-    public AssertingFields(Fields in) {
+    public AssertingFields(IndexedFields in) {
       super(in);
     }
 
@@ -85,17 +85,17 @@ public class AssertingLeafReader extends FilterLeafReader {
     }
 
     @Override
-    public Terms terms(String field) throws IOException {
-      Terms terms = super.terms(field);
-      return terms == null ? null : new AssertingTerms(terms);
+    public IndexedField indexedField(String field) throws IOException {
+      IndexedField terms = super.indexedField(field);
+      return terms == null ? null : new AssertingField(terms);
     }
   }
   
   /**
-   * Wraps a Terms but with additional asserts
+   * Wraps an IndexedField with additional asserts
    */
-  public static class AssertingTerms extends FilterTerms {
-    public AssertingTerms(Terms in) {
+  public static class AssertingField extends FilterField {
+    public AssertingField(IndexedField in) {
       super(in);
     }
 
@@ -122,15 +122,15 @@ public class AssertingLeafReader extends FilterLeafReader {
     }
 
     @Override
-    public TermsEnum iterator() throws IOException {
-      TermsEnum termsEnum = super.iterator();
+    public TermsEnum getTermsEnum() throws IOException {
+      TermsEnum termsEnum = super.getTermsEnum();
       assert termsEnum != null;
       return new AssertingTermsEnum(termsEnum);
     }
 
     @Override
     public String toString() {
-      return "AssertingTerms(" + in + ")";
+      return "AssertingField(" + in + ")";
     }
   }
   
@@ -149,7 +149,7 @@ public class AssertingLeafReader extends FilterLeafReader {
 
     @Override
     public PostingsEnum postings(PostingsEnum reuse, int flags) throws IOException {
-      assertThread("Terms enums", creationThread);
+      assertThread("IndexedField enums", creationThread);
       assert state == State.POSITIONED: "docs(...) called on unpositioned TermsEnum";
 
       // reuse if the codec reused
@@ -174,7 +174,7 @@ public class AssertingLeafReader extends FilterLeafReader {
     // someone should not call next() after it returns null!!!!
     @Override
     public BytesRef next() throws IOException {
-      assertThread("Terms enums", creationThread);
+      assertThread("IndexedField enums", creationThread);
       assert state == State.INITIAL || state == State.POSITIONED: "next() called on unpositioned TermsEnum";
       BytesRef result = super.next();
       if (result == null) {
@@ -188,28 +188,28 @@ public class AssertingLeafReader extends FilterLeafReader {
 
     @Override
     public long ord() throws IOException {
-      assertThread("Terms enums", creationThread);
+      assertThread("IndexedField enums", creationThread);
       assert state == State.POSITIONED : "ord() called on unpositioned TermsEnum";
       return super.ord();
     }
 
     @Override
     public int docFreq() throws IOException {
-      assertThread("Terms enums", creationThread);
+      assertThread("IndexedField enums", creationThread);
       assert state == State.POSITIONED : "docFreq() called on unpositioned TermsEnum";
       return super.docFreq();
     }
 
     @Override
     public long totalTermFreq() throws IOException {
-      assertThread("Terms enums", creationThread);
+      assertThread("IndexedField enums", creationThread);
       assert state == State.POSITIONED : "totalTermFreq() called on unpositioned TermsEnum";
       return super.totalTermFreq();
     }
 
     @Override
     public BytesRef term() throws IOException {
-      assertThread("Terms enums", creationThread);
+      assertThread("IndexedField enums", creationThread);
       assert state == State.POSITIONED : "term() called on unpositioned TermsEnum";
       BytesRef ret = super.term();
       assert ret == null || ret.isValid();
@@ -218,14 +218,14 @@ public class AssertingLeafReader extends FilterLeafReader {
 
     @Override
     public void seekExact(long ord) throws IOException {
-      assertThread("Terms enums", creationThread);
+      assertThread("IndexedField enums", creationThread);
       super.seekExact(ord);
       state = State.POSITIONED;
     }
 
     @Override
     public SeekStatus seekCeil(BytesRef term) throws IOException {
-      assertThread("Terms enums", creationThread);
+      assertThread("IndexedField enums", creationThread);
       assert term.isValid();
       SeekStatus result = super.seekCeil(term);
       if (result == SeekStatus.END) {
@@ -238,7 +238,7 @@ public class AssertingLeafReader extends FilterLeafReader {
 
     @Override
     public boolean seekExact(BytesRef text) throws IOException {
-      assertThread("Terms enums", creationThread);
+      assertThread("IndexedField enums", creationThread);
       assert text.isValid();
       boolean result;
       if (delegateOverridesSeekExact) {
@@ -256,14 +256,14 @@ public class AssertingLeafReader extends FilterLeafReader {
 
     @Override
     public TermState termState() throws IOException {
-      assertThread("Terms enums", creationThread);
+      assertThread("IndexedField enums", creationThread);
       assert state == State.POSITIONED : "termState() called on unpositioned TermsEnum";
       return in.termState();
     }
 
     @Override
     public void seekExact(BytesRef term, TermState state) throws IOException {
-      assertThread("Terms enums", creationThread);
+      assertThread("IndexedField enums", creationThread);
       assert term.isValid();
       in.seekExact(term, state);
       this.state = State.POSITIONED;

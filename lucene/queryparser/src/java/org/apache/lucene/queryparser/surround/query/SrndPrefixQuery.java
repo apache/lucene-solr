@@ -16,7 +16,7 @@
  */
 package org.apache.lucene.queryparser.surround.query;
 import org.apache.lucene.index.Term;
-import org.apache.lucene.index.Terms;
+import org.apache.lucene.index.IndexedField;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.StringHelper;
 import org.apache.lucene.index.TermsEnum;
@@ -61,9 +61,9 @@ public class SrndPrefixQuery extends SimpleTerm {
     MatchingTermVisitor mtv) throws IOException
   {
     /* inspired by PrefixQuery.rewrite(): */
-    Terms terms = MultiFields.getTerms(reader, fieldName);
+    IndexedField terms = MultiFields.getIndexedField(reader, fieldName);
     if (terms != null) {
-      TermsEnum termsEnum = terms.iterator();
+      TermsEnum termsEnum = terms.getTermsEnum();
 
       boolean skip = false;
       TermsEnum.SeekStatus status = termsEnum.seekCeil(new BytesRef(getPrefix()));

@@ -75,7 +75,8 @@ public class TestIDVersionPostingsFormat extends LuceneTestCase {
     doc.add(makeIDField("id1", 110));
     w.addDocument(doc);
     IndexReader r = w.getReader();
-    IDVersionSegmentTermsEnum termsEnum = (IDVersionSegmentTermsEnum) r.leaves().get(0).reader().fields().terms("id").iterator();
+    IDVersionSegmentTermsEnum termsEnum = (IDVersionSegmentTermsEnum)
+            r.leaves().get(0).reader().fields().indexedField("id").getTermsEnum();
     assertTrue(termsEnum.seekExact(new BytesRef("id0"), 50));
     assertTrue(termsEnum.seekExact(new BytesRef("id0"), 100));
     assertFalse(termsEnum.seekExact(new BytesRef("id0"), 101));

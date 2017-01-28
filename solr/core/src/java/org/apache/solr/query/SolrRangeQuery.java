@@ -26,7 +26,7 @@ import org.apache.lucene.index.PostingsEnum;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.index.TermContext;
 import org.apache.lucene.index.TermState;
-import org.apache.lucene.index.Terms;
+import org.apache.lucene.index.IndexedField;
 import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.search.BooleanClause;
 import org.apache.lucene.search.BooleanQuery;
@@ -178,11 +178,11 @@ public final class SolrRangeQuery extends ExtendedQueryBase implements DocSetPro
     BytesRef curr;
     boolean positioned;
 
-    public RangeTermsEnum(Terms terms) throws IOException {
+    public RangeTermsEnum(IndexedField terms) throws IOException {
       if (terms == null) {
         positioned = true;
       } else {
-        te = terms.iterator();
+        te = terms.getTermsEnum();
         if (lower != null) {
           TermsEnum.SeekStatus status = te.seekCeil(lower);
           if (status == TermsEnum.SeekStatus.END) {
@@ -279,7 +279,7 @@ public final class SolrRangeQuery extends ExtendedQueryBase implements DocSetPro
 
 
   public TermsEnum getTermsEnum(LeafReaderContext ctx) throws IOException {
-    return new RangeTermsEnum( ctx.reader().terms(getField()) );
+    return new RangeTermsEnum( ctx.reader().indexedField(getField()) );
   }
 
 
@@ -379,7 +379,7 @@ public final class SolrRangeQuery extends ExtendedQueryBase implements DocSetPro
         return segStates[context.ord] = new SegState(filter.getDocIdSet(context, null));
       }
 
-      final Terms terms = context.reader().terms(SolrRangeQuery.this.getField());
+      final IndexedField terms = context.reader().indexedField(SolrRangeQuery.this.getField());
       if (terms == null) {
         return segStates[context.ord] = new SegState((DocIdSet) null);
       }
@@ -418,7 +418,7 @@ public final class SolrRangeQuery extends ExtendedQueryBase implements DocSetPro
 
       DocSetBuilder builder = new DocSetBuilder(searcher.getIndexReader().maxDoc());
       if (!collectedTerms.isEmpty()) {
-        TermsEnum termsEnum2 = terms.iterator();
+        TermsEnum termsEnum2 = terms.getTermsEnum();
         for (TermAndState t : collectedTerms) {
           termsEnum2.seekExact(t.term, t.state);
           docs = termsEnum2.postings(docs, PostingsEnum.NONE);
@@ -432,7 +432,7 @@ public final class SolrRangeQuery extends ExtendedQueryBase implements DocSetPro
       DocIdSetBuilder builder = new DocIdSetBuilder(context.reader().maxDoc(), terms);
       builder.grow((int)Math.min(Integer.MAX_VALUE,count));
       if (collectedTerms.isEmpty() == false) {
-        TermsEnum termsEnum2 = terms.iterator();
+        TermsEnum termsEnum2 = terms.getTermsEnum();
         for (TermAndState t : collectedTerms) {
           termsEnum2.seekExact(t.term, t.state);
           docs = termsEnum2.postings(docs, PostingsEnum.NONE);

@@ -54,7 +54,7 @@ import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.LogByteSizeMergePolicy;
 import org.apache.lucene.index.ReaderManager;
 import org.apache.lucene.index.SegmentInfos;
-import org.apache.lucene.index.Terms;
+import org.apache.lucene.index.IndexedField;
 import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.index.TieredMergePolicy;
 import org.apache.lucene.store.AlreadyClosedException;
@@ -382,10 +382,10 @@ public class DirectoryTaxonomyWriter implements TaxonomyWriter {
       final BytesRef catTerm = new BytesRef(FacetsConfig.pathToString(categoryPath.components, categoryPath.length));
       PostingsEnum docs = null; // reuse
       for (LeafReaderContext ctx : reader.leaves()) {
-        Terms terms = ctx.reader().terms(Consts.FULL);
+        IndexedField terms = ctx.reader().indexedField(Consts.FULL);
         if (terms != null) {
           // TODO: share per-segment TermsEnum here!
-          TermsEnum termsEnum = terms.iterator();
+          TermsEnum termsEnum = terms.getTermsEnum();
           if (termsEnum.seekExact(catTerm)) {
             // liveDocs=null because the taxonomy has no deletes
             docs = termsEnum.postings(docs, 0 /* freqs not required */);
@@ -693,10 +693,10 @@ public class DirectoryTaxonomyWriter implements TaxonomyWriter {
     try {
       PostingsEnum postingsEnum = null;
       for (LeafReaderContext ctx : reader.leaves()) {
-        Terms terms = ctx.reader().terms(Consts.FULL);
+        IndexedField terms = ctx.reader().indexedField(Consts.FULL);
         if (terms != null) { // cannot really happen, but be on the safe side
           // TODO: share per-segment TermsEnum here!
-          TermsEnum termsEnum = terms.iterator();
+          TermsEnum termsEnum = terms.getTermsEnum();
           while (termsEnum.next() != null) {
             if (!cache.isFull()) {
               BytesRef t = termsEnum.term();
@@ -790,9 +790,9 @@ public class DirectoryTaxonomyWriter implements TaxonomyWriter {
       PostingsEnum docs = null;
       for (final LeafReaderContext ctx : r.leaves()) {
         final LeafReader ar = ctx.reader();
-        final Terms terms = ar.terms(Consts.FULL);
+        final IndexedField terms = ar.indexedField(Consts.FULL);
         // TODO: share per-segment TermsEnum here!
-        TermsEnum te = terms.iterator();
+        TermsEnum te = terms.getTermsEnum();
         while (te.next() != null) {
           FacetLabel cp = new FacetLabel(FacetsConfig.stringToPath(te.term().utf8ToString()));
           final int ordinal = addCategory(cp);

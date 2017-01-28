@@ -20,11 +20,11 @@ package org.apache.lucene.index;
 import java.io.IOException;
 
 import static org.apache.lucene.index.FilterLeafReader.FilterFields;
-import static org.apache.lucene.index.FilterLeafReader.FilterTerms;
+import static org.apache.lucene.index.FilterLeafReader.FilterField;
 import static org.apache.lucene.index.FilterLeafReader.FilterTermsEnum;
 
-/** A {@link Fields} implementation that merges multiple
- *  Fields into one, and maps around deleted documents.
+/** A {@link IndexedFields} implementation that merges multiple
+ *  IndexedFields into one, and maps around deleted documents.
  *  This is used for merging. 
  *  @lucene.internal
  */
@@ -39,8 +39,8 @@ public class MappedMultiFields extends FilterFields {
   }
 
   @Override
-  public Terms terms(String field) throws IOException {
-    MultiTerms terms = (MultiTerms) in.terms(field);
+  public IndexedField indexedField(String field) throws IOException {
+    MultiField terms = (MultiField) in.indexedField(field);
     if (terms == null) {
       return null;
     } else {
@@ -48,19 +48,19 @@ public class MappedMultiFields extends FilterFields {
     }
   }
 
-  private static class MappedMultiTerms extends FilterTerms {
+  private static class MappedMultiTerms extends FilterField {
     final MergeState mergeState;
     final String field;
 
-    public MappedMultiTerms(String field, MergeState mergeState, MultiTerms multiTerms) {
-      super(multiTerms);
+    public MappedMultiTerms(String field, MergeState mergeState, MultiField multiField) {
+      super(multiField);
       this.field = field;
       this.mergeState = mergeState;
     }
 
     @Override
-    public TermsEnum iterator() throws IOException {
-      TermsEnum iterator = in.iterator();
+    public TermsEnum getTermsEnum() throws IOException {
+      TermsEnum iterator = in.getTermsEnum();
       if (iterator == TermsEnum.EMPTY) {
         // LUCENE-6826
         return TermsEnum.EMPTY;

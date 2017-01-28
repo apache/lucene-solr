@@ -22,7 +22,7 @@ import java.util.Collections;
 
 import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.IndexOptions;
-import org.apache.lucene.index.Terms;
+import org.apache.lucene.index.IndexedField;
 import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.store.ByteArrayDataInput;
 import org.apache.lucene.store.IndexInput;
@@ -32,9 +32,9 @@ import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.fst.FST;
 import org.apache.lucene.util.fst.PairOutputs.Pair;
 
-/** BlockTree's implementation of {@link Terms}. */
+/** BlockTree's implementation of {@link IndexedField}. */
 // public for CheckIndex:
-final class VersionFieldReader extends Terms implements Accountable {
+final class VersionFieldReader extends IndexedField implements Accountable {
   final long numTerms;
   final FieldInfo fieldInfo;
   final long sumTotalTermFreq;
@@ -133,7 +133,7 @@ final class VersionFieldReader extends Terms implements Accountable {
   }
 
   @Override
-  public TermsEnum iterator() throws IOException {
+  public TermsEnum getTermsEnum() throws IOException {
     return new IDVersionSegmentTermsEnum(this);
   }
 

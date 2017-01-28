@@ -25,7 +25,7 @@ import java.util.Map;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.LeafReader;
 import org.apache.lucene.index.PostingsEnum;
-import org.apache.lucene.index.Terms;
+import org.apache.lucene.index.IndexedField;
 import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.search.spans.Spans;
 import org.apache.lucene.util.BytesRef;
@@ -65,7 +65,7 @@ public abstract class FieldOffsetStrategy {
   public abstract List<OffsetsEnum> getOffsetsEnums(IndexReader reader, int docId, String content) throws IOException;
 
   protected List<OffsetsEnum> createOffsetsEnumsFromReader(LeafReader leafReader, int doc) throws IOException {
-    final Terms termsIndex = leafReader.terms(field);
+    final IndexedField termsIndex = leafReader.indexedField(field);
     if (termsIndex == null) {
       return Collections.emptyList();
     }
@@ -82,7 +82,7 @@ public abstract class FieldOffsetStrategy {
 
     // Handle sourceTerms:
     if (!sourceTerms.isEmpty()) {
-      TermsEnum termsEnum = termsIndex.iterator();//does not return null
+      TermsEnum termsEnum = termsIndex.getTermsEnum();//does not return null
       for (BytesRef term : sourceTerms) {
         if (termsEnum.seekExact(term)) {
           PostingsEnum postingsEnum = termsEnum.postings(null, PostingsEnum.OFFSETS);
@@ -110,13 +110,13 @@ public abstract class FieldOffsetStrategy {
     return offsetsEnums;
   }
 
-  protected List<OffsetsEnum> createAutomataOffsetsFromTerms(Terms termsIndex, int doc) throws IOException {
+  protected List<OffsetsEnum> createAutomataOffsetsFromTerms(IndexedField termsIndex, int doc) throws IOException {
     List<List<PostingsEnum>> automataPostings = new ArrayList<>(automata.length);
     for (int i = 0; i < automata.length; i++) {
       automataPostings.add(new ArrayList<>());
     }
 
-    TermsEnum termsEnum = termsIndex.iterator();
+    TermsEnum termsEnum = termsIndex.getTermsEnum();
     BytesRef term;
     CharsRefBuilder refBuilder = new CharsRefBuilder();
     while ((term = termsEnum.next()) != null) {

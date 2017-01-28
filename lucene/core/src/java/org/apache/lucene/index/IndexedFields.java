@@ -23,11 +23,11 @@ import java.util.Iterator;
 /** Flex API for access to fields and terms
  *  @lucene.experimental */
 
-public abstract class Fields implements Iterable<String> {
+public abstract class IndexedFields implements Iterable<String> {
 
-  /** Sole constructor. (For invocation by subclass 
+  /** Sole constructor. (For invocation by subclass
    *  constructors, typically implicit.) */
-  protected Fields() {
+  protected IndexedFields() {
   }
 
   /** Returns an iterator that will step through all fields
@@ -35,15 +35,15 @@ public abstract class Fields implements Iterable<String> {
   @Override
   public abstract Iterator<String> iterator();
 
-  /** Get the {@link Terms} for this field.  This will return
+  /** Get the {@link IndexedField} for this field.  This will return
    *  null if the field does not exist. */
-  public abstract Terms terms(String field) throws IOException;
+  public abstract IndexedField indexedField(String field) throws IOException;
 
   /** Returns the number of fields or -1 if the number of
    * distinct field names is unknown. If &gt;= 0,
    * {@link #iterator} will return as many field names. */
   public abstract int size();
-  
-  /** Zero-length {@code Fields} array. */
-  public final static Fields[] EMPTY_ARRAY = new Fields[0];
+
+  /** Zero-length {@code IndexedFields} array. */
+  public final static IndexedFields[] EMPTY_ARRAY = new IndexedFields[0];
 }

@@ -259,7 +259,7 @@ public final class SlowCodecReaderWrapper {
   private static TermVectorsReader readerToTermVectorsReader(final LeafReader reader) {
     return new TermVectorsReader() {
       @Override
-      public Fields get(int docID) throws IOException {
+      public IndexedFields get(int docID) throws IOException {
         return reader.getTermVectors(docID);
       }
 
@@ -285,7 +285,7 @@ public final class SlowCodecReaderWrapper {
   }
 
   private static FieldsProducer readerToFieldsProducer(final LeafReader reader) throws IOException {
-    final Fields fields = reader.fields();
+    final IndexedFields fields = reader.fields();
     return new FieldsProducer() {
       @Override
       public Iterator<String> iterator() {
@@ -293,8 +293,8 @@ public final class SlowCodecReaderWrapper {
       }
 
       @Override
-      public Terms terms(String field) throws IOException {
-        return fields.terms(field);
+      public IndexedField indexedField(String field) throws IOException {
+        return fields.indexedField(field);
       }
 
       @Override

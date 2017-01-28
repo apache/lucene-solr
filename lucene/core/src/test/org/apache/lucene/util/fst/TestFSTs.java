@@ -49,7 +49,7 @@ import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.MultiFields;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.Term;
-import org.apache.lucene.index.Terms;
+import org.apache.lucene.index.IndexedField;
 import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.TermQuery;
@@ -337,10 +337,10 @@ public class TestFSTs extends LuceneTestCase {
         System.out.println("FST stores docFreq");
       }
     }
-    Terms terms = MultiFields.getTerms(r, "body");
+    IndexedField terms = MultiFields.getIndexedField(r, "body");
     if (terms != null) {
       final IntsRefBuilder scratchIntsRef = new IntsRefBuilder();
-      final TermsEnum termsEnum = terms.iterator();
+      final TermsEnum termsEnum = terms.getTermsEnum();
       if (VERBOSE) {
         System.out.println("TEST: got termsEnum=" + termsEnum);
       }
@@ -917,7 +917,7 @@ public class TestFSTs extends LuceneTestCase {
       }
 
       // Verify w/ MultiTermsEnum
-      final TermsEnum termsEnum = MultiFields.getTerms(r, "id").iterator();
+      final TermsEnum termsEnum = MultiFields.getIndexedField(r, "id").getTermsEnum();
       for(int iter=0;iter<2*NUM_IDS;iter++) {
         final String id;
         final String nextID;

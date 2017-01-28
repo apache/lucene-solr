@@ -28,7 +28,7 @@ import org.apache.lucene.index.IndexReaderContext;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.index.TermContext;
 import org.apache.lucene.index.TermState;
-import org.apache.lucene.index.Terms;
+import org.apache.lucene.index.IndexedField;
 import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.search.similarities.Similarity.SimScorer;
 import org.apache.lucene.search.similarities.Similarity;
@@ -41,7 +41,7 @@ import org.apache.lucene.util.PriorityQueue;
  * adding more than one term at the same position that are treated as a disjunction (OR).
  * To use this class to search for the phrase "Microsoft app*" first create a Builder and use
  * {@link Builder#add(Term)} on the term "microsoft" (assuming lowercase analysis), then
- * find all terms that have "app" as prefix using {@link LeafReader#terms(String)},
+ * find all terms that have "app" as prefix using {@link LeafReader#indexedField(String)},
  * seeking to "app" then iterating and collecting terms until there is no longer
  * that prefix, and finally use {@link Builder#add(Term[])} to add them.
  * {@link Builder#build()} returns the fully constructed (and immutable) MultiPhraseQuery.
@@ -226,7 +226,7 @@ public class MultiPhraseQuery extends Query {
 
       PhraseQuery.PostingsAndFreq[] postingsFreqs = new PhraseQuery.PostingsAndFreq[termArrays.length];
 
-      final Terms fieldTerms = reader.terms(field);
+      final IndexedField fieldTerms = reader.indexedField(field);
       if (fieldTerms == null) {
         return null;
       }
@@ -238,7 +238,7 @@ public class MultiPhraseQuery extends Query {
       }
 
       // Reuse single TermsEnum below:
-      final TermsEnum termsEnum = fieldTerms.iterator();
+      final TermsEnum termsEnum = fieldTerms.getTermsEnum();
       float totalMatchCost = 0;
 
       for (int pos=0; pos<postingsFreqs.length; pos++) {

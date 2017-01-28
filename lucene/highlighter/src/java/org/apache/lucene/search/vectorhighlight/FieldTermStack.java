@@ -22,10 +22,10 @@ import java.util.LinkedList;
 import java.util.Set;
 
 import org.apache.lucene.index.PostingsEnum;
-import org.apache.lucene.index.Fields;
+import org.apache.lucene.index.IndexedFields;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.Term;
-import org.apache.lucene.index.Terms;
+import org.apache.lucene.index.IndexedField;
 import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.CharsRefBuilder;
@@ -78,20 +78,20 @@ public class FieldTermStack {
     // just return to make null snippet if un-matched fieldName specified when fieldMatch == true
     if( termSet == null ) return;
 
-    final Fields vectors = reader.getTermVectors(docId);
+    final IndexedFields vectors = reader.getTermVectors(docId);
     if (vectors == null) {
       // null snippet
       return;
     }
 
-    final Terms vector = vectors.terms(fieldName);
+    final IndexedField vector = vectors.indexedField(fieldName);
     if (vector == null || vector.hasPositions() == false) {
       // null snippet
       return;
     }
 
     final CharsRefBuilder spare = new CharsRefBuilder();
-    final TermsEnum termsEnum = vector.iterator();
+    final TermsEnum termsEnum = vector.getTermsEnum();
     PostingsEnum dpEnum = null;
     BytesRef text;
     

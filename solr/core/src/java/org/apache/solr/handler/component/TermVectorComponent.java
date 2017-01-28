@@ -29,12 +29,12 @@ import java.util.Map;
 import java.util.Set;
 
 import org.apache.lucene.index.FieldInfo;
-import org.apache.lucene.index.Fields;
+import org.apache.lucene.index.IndexedFields;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.PostingsEnum;
 import org.apache.lucene.index.StoredFieldVisitor;
 import org.apache.lucene.index.Term;
-import org.apache.lucene.index.Terms;
+import org.apache.lucene.index.IndexedField;
 import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.util.BytesRef;
 import org.apache.solr.common.SolrException;
@@ -312,19 +312,19 @@ public class TermVectorComponent extends SearchComponent implements SolrCoreAwar
       if ( null != fields ) {
         for (Map.Entry<String, FieldOptions> entry : fieldOptions.entrySet()) {
           final String field = entry.getKey();
-          final Terms vector = reader.getTermVector(docId, field);
+          final IndexedField vector = reader.getTermVector(docId, field);
           if (vector != null) {
-            TermsEnum termsEnum = vector.iterator();
+            TermsEnum termsEnum = vector.getTermsEnum();
             mapOneVector(docNL, entry.getValue(), reader, docId, termsEnum, field);
           }
         }
       } else {
         // extract all fields
-        final Fields vectors = reader.getTermVectors(docId);
+        final IndexedFields vectors = reader.getTermVectors(docId);
         for (String field : vectors) {
-          Terms terms = vectors.terms(field);
+          IndexedField terms = vectors.indexedField(field);
           if (terms != null) {
-            TermsEnum termsEnum = terms.iterator();
+            TermsEnum termsEnum = terms.getTermsEnum();
             mapOneVector(docNL, allFields, reader, docId, termsEnum, field);
           }
         }

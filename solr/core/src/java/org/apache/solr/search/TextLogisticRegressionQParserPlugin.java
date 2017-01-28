@@ -29,7 +29,7 @@ import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.MultiFields;
 import org.apache.lucene.index.NumericDocValues;
 import org.apache.lucene.index.PostingsEnum;
-import org.apache.lucene.index.Terms;
+import org.apache.lucene.index.IndexedField;
 import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.search.IndexSearcher;
@@ -173,8 +173,8 @@ public class TextLogisticRegressionQParserPlugin extends QParserPlugin {
     public void finish() throws IOException {
 
       Map<Integer, double[]> docVectors = new HashMap<>();
-      Terms terms = MultiFields.getFields(searcher.getIndexReader()).terms(trainingParams.feature);
-      TermsEnum termsEnum = terms.iterator();
+      IndexedField terms = MultiFields.getFields(searcher.getIndexReader()).indexedField(trainingParams.feature);
+      TermsEnum termsEnum = terms.getTermsEnum();
       PostingsEnum postingsEnum = null;
       int termIndex = 0;
       for (String termStr : trainingParams.terms) {

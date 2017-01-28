@@ -21,7 +21,7 @@ import java.io.IOException;
 
 import org.apache.lucene.index.SingleTermsEnum;
 import org.apache.lucene.index.Term;
-import org.apache.lucene.index.Terms;
+import org.apache.lucene.index.IndexedField;
 import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.util.AttributeSource;
 import org.apache.lucene.util.automaton.LevenshteinAutomata;
@@ -147,9 +147,9 @@ public class FuzzyQuery extends MultiTermQuery {
   }
 
   @Override
-  protected TermsEnum getTermsEnum(Terms terms, AttributeSource atts) throws IOException {
+  protected TermsEnum getTermsEnum(IndexedField terms, AttributeSource atts) throws IOException {
     if (maxEdits == 0 || prefixLength >= term.text().length()) {  // can only match if it's exact
-      return new SingleTermsEnum(terms.iterator(), term.bytes());
+      return new SingleTermsEnum(terms.getTermsEnum(), term.bytes());
     }
     return new FuzzyTermsEnum(terms, atts, getTerm(), maxEdits, prefixLength, transpositions);
   }

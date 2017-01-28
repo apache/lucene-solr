@@ -19,23 +19,23 @@ package org.apache.lucene.search.suggest.document;
 import java.io.IOException;
 
 import org.apache.lucene.index.FilterLeafReader;
-import org.apache.lucene.index.Terms;
+import org.apache.lucene.index.IndexedField;
 
 /**
- * Wrapped {@link org.apache.lucene.index.Terms}
+ * Wrapped {@link org.apache.lucene.index.IndexedField}
  * used by {@link SuggestField} and {@link ContextSuggestField}
  * to access corresponding suggester and their attributes
  *
  * @lucene.experimental
  */
-public final class CompletionTerms extends FilterLeafReader.FilterTerms {
+public final class CompletionTerms extends FilterLeafReader.FilterField {
 
   private final CompletionsTermsReader reader;
 
   /**
    * Creates a completionTerms based on {@link CompletionsTermsReader}
    */
-  CompletionTerms(Terms in, CompletionsTermsReader reader) {
+  CompletionTerms(IndexedField in, CompletionsTermsReader reader) {
     super(in);
     this.reader = reader;
   }

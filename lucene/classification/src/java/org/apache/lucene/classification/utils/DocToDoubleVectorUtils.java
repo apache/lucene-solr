@@ -18,7 +18,7 @@ package org.apache.lucene.classification.utils;
 
 import java.io.IOException;
 
-import org.apache.lucene.index.Terms;
+import org.apache.lucene.index.IndexedField;
 import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.util.BytesRef;
 
@@ -39,18 +39,18 @@ public class DocToDoubleVectorUtils {
    * @return a sparse vector of <code>Double</code>s as an array
    * @throws IOException in case accessing the underlying index fails
    */
-  public static Double[] toSparseLocalFreqDoubleArray(Terms docTerms, Terms fieldTerms) throws IOException {
-    TermsEnum fieldTermsEnum = fieldTerms.iterator();
+  public static Double[] toSparseLocalFreqDoubleArray(IndexedField docTerms, IndexedField fieldTerms) throws IOException {
+    TermsEnum fieldTermsEnum = fieldTerms.getTermsEnum();
     Double[] freqVector = null;
     if (docTerms != null && fieldTerms.size() > -1) {
       freqVector = new Double[(int) fieldTerms.size()];
       int i = 0;
-      TermsEnum docTermsEnum = docTerms.iterator();
+      TermsEnum docTermsEnum = docTerms.getTermsEnum();
       BytesRef term;
       while ((term = fieldTermsEnum.next()) != null) {
         TermsEnum.SeekStatus seekStatus = docTermsEnum.seekCeil(term);
         if (seekStatus.equals(TermsEnum.SeekStatus.END)) {
-          docTermsEnum = docTerms.iterator();
+          docTermsEnum = docTerms.getTermsEnum();
         }
         if (seekStatus.equals(TermsEnum.SeekStatus.FOUND)) {
           long termFreqLocal = docTermsEnum.totalTermFreq(); // the total number of occurrences of this term in the given document
@@ -71,12 +71,12 @@ public class DocToDoubleVectorUtils {
    * @return a dense vector of <code>Double</code>s as an array
    * @throws IOException in case accessing the underlying index fails
    */
-  public static Double[] toDenseLocalFreqDoubleArray(Terms docTerms) throws IOException {
+  public static Double[] toDenseLocalFreqDoubleArray(IndexedField docTerms) throws IOException {
     Double[] freqVector = null;
     if (docTerms != null) {
       freqVector = new Double[(int) docTerms.size()];
       int i = 0;
-      TermsEnum docTermsEnum = docTerms.iterator();
+      TermsEnum docTermsEnum = docTerms.getTermsEnum();
 
       while (docTermsEnum.next() != null) {
         long termFreqLocal = docTermsEnum.totalTermFreq(); // the total number of occurrences of this term in the given document

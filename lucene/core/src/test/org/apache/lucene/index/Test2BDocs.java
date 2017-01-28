@@ -91,9 +91,9 @@ public class Test2BDocs extends LuceneTestCase {
       LeafReader reader = context.reader();
       int lim = context.reader().maxDoc();
 
-      Terms terms = reader.fields().terms("f1");
+      IndexedField terms = reader.fields().indexedField("f1");
       for (int i=0; i<10000; i++) {
-        TermsEnum te = terms.iterator();
+        TermsEnum te = terms.getTermsEnum();
         assertTrue( te.seekExact(term) );
         PostingsEnum docs = te.postings(null);
 

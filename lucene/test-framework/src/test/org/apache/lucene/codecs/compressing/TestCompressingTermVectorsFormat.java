@@ -33,7 +33,7 @@ import org.apache.lucene.index.LeafReader;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.NoMergePolicy;
 import org.apache.lucene.index.RandomIndexWriter;
-import org.apache.lucene.index.Terms;
+import org.apache.lucene.index.IndexedField;
 import org.apache.lucene.index.TermsEnum.SeekStatus;
 import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.store.Directory;
@@ -56,9 +56,9 @@ public class TestCompressingTermVectorsFormat extends BaseTermVectorsFormatTestC
     doc.add(new Field("foo", "this is a test", ft));
     iw.addDocument(doc);
     LeafReader ir = getOnlyLeafReader(iw.getReader());
-    Terms terms = ir.getTermVector(0, "foo");
+    IndexedField terms = ir.getTermVector(0, "foo");
     assertNotNull(terms);
-    TermsEnum termsEnum = terms.iterator();
+    TermsEnum termsEnum = terms.getTermsEnum();
     assertEquals(SeekStatus.FOUND, termsEnum.seekCeil(new BytesRef("this")));
     try {
       termsEnum.ord();

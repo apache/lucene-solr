@@ -41,7 +41,7 @@ import org.apache.lucene.document.StringField;
 import org.apache.lucene.document.TextField;
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.FieldInfo;
-import org.apache.lucene.index.Fields;
+import org.apache.lucene.index.IndexedFields;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriterConfig.OpenMode;
@@ -407,7 +407,7 @@ public class TestPerFieldPostingsFormat2 extends LuceneTestCase {
       final FieldsConsumer consumer = delegate.fieldsConsumer(state);
       return new FieldsConsumer() {
         @Override
-        public void write(Fields fields) throws IOException {
+        public void write(IndexedFields fields) throws IOException {
           consumer.write(fields);
         }
 

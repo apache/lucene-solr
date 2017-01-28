@@ -27,7 +27,7 @@ import org.apache.lucene.document.IntPoint;
 import org.apache.lucene.document.LongPoint;
 import org.apache.lucene.index.FilteredTermsEnum;
 import org.apache.lucene.index.PointValues;
-import org.apache.lucene.index.Terms;
+import org.apache.lucene.index.IndexedField;
 import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.MultiTermQuery;
@@ -303,12 +303,12 @@ public final class LegacyNumericRangeQuery<T extends Number> extends MultiTermQu
   }
 
   @Override @SuppressWarnings("unchecked")
-  protected TermsEnum getTermsEnum(final Terms terms, AttributeSource atts) throws IOException {
+  protected TermsEnum getTermsEnum(final IndexedField terms, AttributeSource atts) throws IOException {
     // very strange: java.lang.Number itself is not Comparable, but all subclasses used here are
     if (min != null && max != null && ((Comparable<T>) min).compareTo(max) > 0) {
       return TermsEnum.EMPTY;
     }
-    return new NumericRangeTermsEnum(terms.iterator());
+    return new NumericRangeTermsEnum(terms.getTermsEnum());
   }
 
   /** Returns <code>true</code> if the lower endpoint is inclusive */

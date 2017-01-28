@@ -34,7 +34,7 @@ import org.apache.lucene.index.PostingsEnum;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.index.TermContext;
 import org.apache.lucene.index.TermState;
-import org.apache.lucene.index.Terms;
+import org.apache.lucene.index.IndexedField;
 import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.search.similarities.Similarity;
 import org.apache.lucene.search.similarities.Similarity.SimScorer;
@@ -392,7 +392,7 @@ public class PhraseQuery extends Query {
       final LeafReader reader = context.reader();
       PostingsAndFreq[] postingsFreqs = new PostingsAndFreq[terms.length];
 
-      final Terms fieldTerms = reader.terms(field);
+      final IndexedField fieldTerms = reader.indexedField(field);
       if (fieldTerms == null) {
         return null;
       }
@@ -402,7 +402,7 @@ public class PhraseQuery extends Query {
       }
 
       // Reuse single TermsEnum below:
-      final TermsEnum te = fieldTerms.iterator();
+      final TermsEnum te = fieldTerms.getTermsEnum();
       float totalMatchCost = 0;
       
       for (int i = 0; i < terms.length; i++) {

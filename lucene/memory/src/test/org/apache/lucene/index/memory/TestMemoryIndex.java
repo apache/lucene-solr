@@ -125,7 +125,7 @@ public class TestMemoryIndex extends LuceneTestCase {
     mi.addField("field", "some terms be here", analyzer);
     IndexSearcher searcher = mi.createSearcher();
     LeafReader reader = (LeafReader) searcher.getIndexReader();
-    TermsEnum terms = reader.fields().terms("field").iterator();
+    TermsEnum terms = reader.fields().indexedField("field").getTermsEnum();
     terms.seekExact(0);
     assertEquals("be", terms.term().utf8ToString());
     TestUtil.checkReader(reader);
@@ -315,7 +315,7 @@ public class TestMemoryIndex extends LuceneTestCase {
     doc.add(new TextField("text", "quick brown fox", Field.Store.NO));
     MemoryIndex mi = MemoryIndex.fromDocument(doc, analyzer, true, true);
     LeafReader leafReader = mi.createSearcher().getIndexReader().leaves().get(0).reader();
-    TermsEnum tenum = leafReader.terms("text").iterator();
+    TermsEnum tenum = leafReader.indexedField("text").getTermsEnum();
 
     assertEquals("brown", tenum.next().utf8ToString());
     PostingsEnum penum = tenum.postings(null, PostingsEnum.OFFSETS);
@@ -412,7 +412,7 @@ public class TestMemoryIndex extends LuceneTestCase {
     mi.addField(new BinaryPoint("text", "quick".getBytes(StandardCharsets.UTF_8)), analyzer, 5f);
     mi.addField(new BinaryPoint("text", "brown".getBytes(StandardCharsets.UTF_8)), analyzer, 5f);
     LeafReader leafReader = mi.createSearcher().getIndexReader().leaves().get(0).reader();
-    TermsEnum tenum = leafReader.terms("text").iterator();
+    TermsEnum tenum = leafReader.indexedField("text").getTermsEnum();
 
     assertEquals("brown", tenum.next().utf8ToString());
     PostingsEnum penum = tenum.postings(null, PostingsEnum.OFFSETS);

@@ -744,7 +744,7 @@ public final class CheckIndex implements Closeable {
           // Test the Term Index
           segInfoStat.termIndexStatus = testPostings(reader, infoStream, verbose, failFast, version);
 
-          // Test Stored Fields
+          // Test Stored IndexedFields
           segInfoStat.storedFieldStatus = testStoredFields(reader, infoStream, failFast);
 
           // Test Term Vectors
@@ -1106,13 +1106,13 @@ public final class CheckIndex implements Closeable {
     }
   }
 
-  /** Test Terms.intersect on this range, and validates that it returns the same doc ids as using non-intersect TermsEnum.  Returns true if
+  /** Test IndexedField.intersect on this range, and validates that it returns the same doc ids as using non-intersect TermsEnum.  Returns true if
    *  any fake terms were seen. */
-  private static boolean checkSingleTermRange(String field, int maxDoc, Terms terms, BytesRef minTerm, BytesRef maxTerm, FixedBitSet normalDocs, FixedBitSet intersectDocs) throws IOException {
+  private static boolean checkSingleTermRange(String field, int maxDoc, IndexedField terms, BytesRef minTerm, BytesRef maxTerm, FixedBitSet normalDocs, FixedBitSet intersectDocs) throws IOException {
     //System.out.println("    check minTerm=" + minTerm.utf8ToString() + " maxTerm=" + maxTerm.utf8ToString());
     assert minTerm.compareTo(maxTerm) <= 0;
 
-    TermsEnum termsEnum = terms.iterator();
+    TermsEnum termsEnum = terms.getTermsEnum();
     TermsEnum.SeekStatus status = termsEnum.seekCeil(minTerm);
     if (status != TermsEnum.SeekStatus.FOUND) {
       throw new RuntimeException("failed to seek to existing term field=" + field + " term=" + minTerm);
@@ -1140,7 +1140,7 @@ public final class CheckIndex implements Closeable {
    *  interval of terms, at different boundaries, and then gradually decrease the interval.  This is not guaranteed to hit all non-real
    *  terms (doing that in general is non-trivial), but it should hit many of them, and validate their postings against the postings for the
    *  real terms. */
-  private static void checkTermRanges(String field, int maxDoc, Terms terms, long numTerms) throws IOException {
+  private static void checkTermRanges(String field, int maxDoc, IndexedField terms, long numTerms) throws IOException {
 
     // We'll target this many terms in our interval for the current level:
     double currentInterval = numTerms;
@@ -1154,7 +1154,7 @@ public final class CheckIndex implements Closeable {
       //System.out.println("  cycle interval=" + currentInterval);
 
       // We iterate this terms enum to locate min/max term for each sliding/overlapping interval we test at the current level:
-      TermsEnum termsEnum = terms.iterator();
+      TermsEnum termsEnum = terms.getTermsEnum();
 
       long termCount = 0;
 
@@ -1204,10 +1204,10 @@ public final class CheckIndex implements Closeable {
   }
 
   /**
-   * checks Fields api is consistent with itself.
+   * checks IndexedFields api is consistent with itself.
    * searcher is optional, to verify with queries. Can be null.
    */
-  private static Status.TermIndexStatus checkFields(Fields fields, Bits liveDocs, int maxDoc, FieldInfos fieldInfos, boolean doPrint, boolean isVectors, PrintStream infoStream, boolean verbose, Version version) throws IOException {
+  private static Status.TermIndexStatus checkFields(IndexedFields fields, Bits liveDocs, int maxDoc, FieldInfos fieldInfos, boolean doPrint, boolean isVectors, PrintStream infoStream, boolean verbose, Version version) throws IOException {
     // TODO: we should probably return our own stats thing...?!
     long startNS;
     if (doPrint) {
@@ -1241,12 +1241,12 @@ public final class CheckIndex implements Closeable {
       }
       
       // TODO: really the codec should not return a field
-      // from FieldsEnum if it has no Terms... but we do
+      // from FieldsEnum if it has no IndexedField... but we do
       // this today:
-      // assert fields.terms(field) != null;
+      // assert fields.indexedField(field) != null;
       computedFieldCount++;
       
-      final Terms terms = fields.terms(field);
+      final IndexedField terms = fields.indexedField(field);
       if (terms == null) {
         continue;
       }
@@ -1295,7 +1295,7 @@ public final class CheckIndex implements Closeable {
 
       if (hasFreqs == false) {
         if (terms.getSumTotalTermFreq() != -1) {
-          throw new RuntimeException("field \"" + field + "\" hasFreqs is false, but Terms.getSumTotalTermFreq()=" + terms.getSumTotalTermFreq() + " (should be -1)");
+          throw new RuntimeException("field \"" + field + "\" hasFreqs is false, but IndexedField.getSumTotalTermFreq()=" + terms.getSumTotalTermFreq() + " (should be -1)");
         }
       }
 
@@ -1316,7 +1316,7 @@ public final class CheckIndex implements Closeable {
         }
       }
 
-      final TermsEnum termsEnum = terms.iterator();
+      final TermsEnum termsEnum = terms.getTermsEnum();
 
       boolean hasOrd = true;
       final long termCountStart = status.delTermCount + status.termCount;
@@ -1416,7 +1416,7 @@ public final class CheckIndex implements Closeable {
             // consistently "lie" and pretend that freq was
             // 1:
             if (postings.freq() != 1) {
-              throw new RuntimeException("term " + term + ": doc " + doc + ": freq " + freq + " != 1 when Terms.hasFreqs() is false");
+              throw new RuntimeException("term " + term + ": doc " + doc + ": freq " + freq + " != 1 when IndexedField.hasFreqs() is false");
             }
           }
           if (liveDocs == null || liveDocs.get(doc)) {
@@ -1602,10 +1602,10 @@ public final class CheckIndex implements Closeable {
         throw new RuntimeException("field=\"" + field + "\": minTerm is non-null yet we saw no terms: " + minTerm);
       }
 
-      final Terms fieldTerms = fields.terms(field);
+      final IndexedField fieldTerms = fields.indexedField(field);
       if (fieldTerms == null) {
         // Unusual: the FieldsEnum returned a field but
-        // the Terms for that field is null; this should
+        // the IndexedField for that field is null; this should
         // only happen if it's a ghost field (field with
         // no terms, eg there used to be terms but all
         // docs got deleted and then merged away):
@@ -1628,14 +1628,14 @@ public final class CheckIndex implements Closeable {
         status.blockTreeStats.put(field, stats);
 
         if (sumTotalTermFreq != 0) {
-          final long v = fields.terms(field).getSumTotalTermFreq();
+          final long v = fields.indexedField(field).getSumTotalTermFreq();
           if (v != -1 && sumTotalTermFreq != v) {
             throw new RuntimeException("sumTotalTermFreq for field " + field + "=" + v + " != recomputed sumTotalTermFreq=" + sumTotalTermFreq);
           }
         }
         
         if (sumDocFreq != 0) {
-          final long v = fields.terms(field).getSumDocFreq();
+          final long v = fields.indexedField(field).getSumDocFreq();
           if (v != -1 && sumDocFreq != v) {
             throw new RuntimeException("sumDocFreq for field " + field + "=" + v + " != recomputed sumDocFreq=" + sumDocFreq);
           }
@@ -1670,7 +1670,7 @@ public final class CheckIndex implements Closeable {
         long termCount = -1;
         
         if (fieldTermCount > 0) {
-          termCount = fields.terms(field).size();
+          termCount = fields.indexedField(field).size();
           
           if (termCount != -1 && termCount != fieldTermCount) {
             throw new RuntimeException("termCount mismatch " + termCount + " vs " + fieldTermCount);
@@ -1764,7 +1764,7 @@ public final class CheckIndex implements Closeable {
         infoStream.print("    test: terms, freq, prox...");
       }
 
-      final Fields fields = reader.getPostingsReader().getMergeInstance();
+      final IndexedFields fields = reader.getPostingsReader().getMergeInstance();
       final FieldInfos fieldInfos = reader.getFieldInfos();
       status = checkFields(fields, reader.getLiveDocs(), maxDoc, fieldInfos, true, false, infoStream, verbose, version);
     } catch (Throwable e) {
@@ -2400,7 +2400,7 @@ public final class CheckIndex implements Closeable {
 
       final Bits liveDocs = reader.getLiveDocs();
 
-      final Fields postingsFields;
+      final IndexedFields postingsFields;
       // TODO: testTermsIndex
       if (crossCheckTermVectors) {
         postingsFields = reader.getPostingsReader().getMergeInstance();
@@ -2416,7 +2416,7 @@ public final class CheckIndex implements Closeable {
           // Intentionally pull/visit (but don't count in
           // stats) deleted documents to make sure they too
           // are not corrupt:
-          Fields tfv = vectorsReader.get(j);
+          IndexedFields tfv = vectorsReader.get(j);
           
           // TODO: can we make a IS(FIR) that searches just
           // this term vector... to pass for searcher?
@@ -2444,17 +2444,17 @@ public final class CheckIndex implements Closeable {
               }
               
               if (crossCheckTermVectors) {
-                Terms terms = tfv.terms(field);
-                TermsEnum termsEnum = terms.iterator();
+                IndexedField terms = tfv.indexedField(field);
+                TermsEnum termsEnum = terms.getTermsEnum();
                 final boolean postingsHasFreq = fieldInfo.getIndexOptions().compareTo(IndexOptions.DOCS_AND_FREQS) >= 0;
                 final boolean postingsHasPayload = fieldInfo.hasPayloads();
                 final boolean vectorsHasPayload = terms.hasPayloads();
                 
-                Terms postingsTerms = postingsFields.terms(field);
+                IndexedField postingsTerms = postingsFields.indexedField(field);
                 if (postingsTerms == null) {
                   throw new RuntimeException("vector field=" + field + " does not exist in postings; doc=" + j);
                 }
-                TermsEnum postingsTermsEnum = postingsTerms.iterator();
+                TermsEnum postingsTermsEnum = postingsTerms.getTermsEnum();
                 
                 final boolean hasProx = terms.hasOffsets() || terms.hasPositions();
                 BytesRef term = null;

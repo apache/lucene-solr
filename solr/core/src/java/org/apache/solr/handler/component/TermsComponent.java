@@ -137,13 +137,13 @@ public class TermsComponent extends SearchComponent {
 
 
     final LeafReader indexReader = rb.req.getSearcher().getSlowAtomicReader();
-    Fields lfields = indexReader.fields();
+    IndexedFields lfields = indexReader.fields();
 
     for (String field : fields) {
       NamedList<Integer> fieldTerms = new NamedList<>();
       termsResult.add(field, fieldTerms);
 
-      Terms terms = lfields.terms(field);
+      IndexedField terms = lfields.indexedField(field);
       if (terms == null) {
         // field does not exist
         continue;
@@ -180,7 +180,7 @@ public class TermsComponent extends SearchComponent {
       }
 
 
-     TermsEnum termsEnum = terms.iterator();
+     TermsEnum termsEnum = terms.getTermsEnum();
      BytesRef term = null;
 
       if (lowerBytes != null) {
@@ -546,16 +546,16 @@ public class TermsComponent extends SearchComponent {
                                  Term[] queryTerms) throws IOException {
     TermsEnum termsEnum = null;
     for (LeafReaderContext context : leaves) {
-      final Fields fields = context.reader().fields();
+      final IndexedFields fields = context.reader().fields();
       for (int i = 0; i < queryTerms.length; i++) {
         Term term = queryTerms[i];
         TermContext termContext = contextArray[i];
-        final Terms terms = fields.terms(term.field());
+        final IndexedField terms = fields.indexedField(term.field());
         if (terms == null) {
           // field does not exist
           continue;
         }
-        termsEnum = terms.iterator();
+        termsEnum = terms.getTermsEnum();
         assert termsEnum != null;
 
         if (termsEnum == TermsEnum.EMPTY) continue;

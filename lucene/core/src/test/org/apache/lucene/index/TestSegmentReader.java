@@ -114,11 +114,11 @@ public class TestSegmentReader extends LuceneTestCase {
   } 
   
   public void testTerms() throws IOException {
-    Fields fields = MultiFields.getFields(reader);
+    IndexedFields fields = MultiFields.getFields(reader);
     for (String field : fields) {
-      Terms terms = fields.terms(field);
+      IndexedField terms = fields.indexedField(field);
       assertNotNull(terms);
-      TermsEnum termsEnum = terms.iterator();
+      TermsEnum termsEnum = terms.getTermsEnum();
       while(termsEnum.next() != null) {
         BytesRef term = termsEnum.term();
         assertTrue(term != null);
@@ -186,10 +186,10 @@ public class TestSegmentReader extends LuceneTestCase {
   }
   
   public void testTermVectors() throws IOException {
-    Terms result = reader.getTermVectors(0).terms(DocHelper.TEXT_FIELD_2_KEY);
+    IndexedField result = reader.getTermVectors(0).indexedField(DocHelper.TEXT_FIELD_2_KEY);
     assertNotNull(result);
     assertEquals(3, result.size());
-    TermsEnum termsEnum = result.iterator();
+    TermsEnum termsEnum = result.getTermsEnum();
     while(termsEnum.next() != null) {
       String term = termsEnum.term().utf8ToString();
       int freq = (int) termsEnum.totalTermFreq();
@@ -197,7 +197,7 @@ public class TestSegmentReader extends LuceneTestCase {
       assertTrue(freq > 0);
     }
 
-    Fields results = reader.getTermVectors(0);
+    IndexedFields results = reader.getTermVectors(0);
     assertTrue(results != null);
     assertEquals("We do not have 3 term freq vectors", 3, results.size());
   }    

@@ -20,9 +20,9 @@ import java.io.IOException;
 import java.util.Map;
 
 import org.apache.lucene.index.PostingsEnum;
-import org.apache.lucene.index.Fields;
+import org.apache.lucene.index.IndexedFields;
 import org.apache.lucene.index.LeafReaderContext;
-import org.apache.lucene.index.Terms;
+import org.apache.lucene.index.IndexedField;
 import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.queries.function.FunctionValues;
 import org.apache.lucene.queries.function.docvalues.FloatDocValues;
@@ -50,8 +50,8 @@ public class TFValueSource extends TermFreqValueSource {
 
   @Override
   public FunctionValues getValues(Map context, LeafReaderContext readerContext) throws IOException {
-    Fields fields = readerContext.reader().fields();
-    final Terms terms = fields.terms(indexedField);
+    IndexedFields fields = readerContext.reader().fields();
+    final IndexedField terms = fields.indexedField(indexedField);
     IndexSearcher searcher = (IndexSearcher)context.get("searcher");
     final TFIDFSimilarity similarity = IDFValueSource.asTFIDF(searcher.getSimilarity(true), indexedField);
     if (similarity == null) {
@@ -69,7 +69,7 @@ public class TFValueSource extends TermFreqValueSource {
         // no one should call us for deleted docs?
         
         if (terms != null) {
-          final TermsEnum termsEnum = terms.iterator();
+          final TermsEnum termsEnum = terms.getTermsEnum();
           if (termsEnum.seekExact(indexedBytes)) {
             docs = termsEnum.postings(null);
           } else {

@@ -84,7 +84,7 @@ public abstract class CodecReader extends LeafReader implements Accountable {
   }
   
   @Override
-  public final Fields getTermVectors(int docID) throws IOException {
+  public final IndexedFields getTermVectors(int docID) throws IOException {
     TermVectorsReader termVectorsReader = getTermVectorsReader();
     if (termVectorsReader == null) {
       return null;
@@ -100,7 +100,7 @@ public abstract class CodecReader extends LeafReader implements Accountable {
   }
   
   @Override
-  public final Fields fields() {
+  public final IndexedFields fields() {
     return getPostingsReader();
   }
   

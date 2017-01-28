@@ -61,9 +61,9 @@ public abstract class ShapeFieldCacheProvider<T extends Shape> {
     idx = new ShapeFieldCache<>(reader.maxDoc(),defaultSize);
     int count = 0;
     PostingsEnum docs = null;
-    Terms terms = reader.terms(shapeField);
+    IndexedField terms = reader.indexedField(shapeField);
     if (terms != null) {
-      TermsEnum te = terms.iterator();
+      TermsEnum te = terms.getTermsEnum();
       BytesRef term = te.next();
       while (term != null) {
         T shape = readShape(term);

@@ -38,7 +38,7 @@ import org.apache.lucene.collation.CollationKeyAnalyzer;
 import org.apache.lucene.facet.taxonomy.TaxonomyReader;
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.PostingsEnum;
-import org.apache.lucene.index.Fields;
+import org.apache.lucene.index.IndexedFields;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriterConfig.OpenMode;
@@ -48,7 +48,7 @@ import org.apache.lucene.index.LogMergePolicy;
 import org.apache.lucene.index.MultiFields;
 import org.apache.lucene.index.SegmentInfos;
 import org.apache.lucene.index.SerialMergeScheduler;
-import org.apache.lucene.index.Terms;
+import org.apache.lucene.index.IndexedField;
 import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.store.Directory;
@@ -373,17 +373,17 @@ public class TestPerfTasksLogic extends BenchmarkTestCase {
 
     int totalTokenCount2 = 0;
 
-    Fields fields = MultiFields.getFields(reader);
+    IndexedFields fields = MultiFields.getFields(reader);
 
     for (String fieldName : fields) {
       if (fieldName.equals(DocMaker.ID_FIELD) || fieldName.equals(DocMaker.DATE_MSEC_FIELD) || fieldName.equals(DocMaker.TIME_SEC_FIELD)) {
         continue;
       }
-      Terms terms = fields.terms(fieldName);
+      IndexedField terms = fields.indexedField(fieldName);
       if (terms == null) {
         continue;
       }
-      TermsEnum termsEnum = terms.iterator();
+      TermsEnum termsEnum = terms.getTermsEnum();
       PostingsEnum docs = null;
       while(termsEnum.next() != null) {
         docs = TestUtil.docs(random(), termsEnum, docs, PostingsEnum.FREQS);
@@ -637,7 +637,7 @@ public class TestPerfTasksLogic extends BenchmarkTestCase {
     writer.close();
     Directory dir = benchmark.getRunData().getDirectory();
     IndexReader reader = DirectoryReader.open(dir);
-    Fields tfv = reader.getTermVectors(0);
+    IndexedFields tfv = reader.getTermVectors(0);
     assertNotNull(tfv);
     assertTrue(tfv.size() > 0);
     reader.close();

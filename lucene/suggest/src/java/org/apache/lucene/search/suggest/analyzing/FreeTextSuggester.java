@@ -50,7 +50,7 @@ import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.MultiFields;
-import org.apache.lucene.index.Terms;
+import org.apache.lucene.index.IndexedField;
 import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.search.suggest.InputIterator;
 import org.apache.lucene.search.suggest.Lookup;
@@ -295,13 +295,13 @@ public class FreeTextSuggester extends Lookup implements Accountable {
       }
       reader = DirectoryReader.open(writer);
 
-      Terms terms = MultiFields.getTerms(reader, "body");
+      IndexedField terms = MultiFields.getIndexedField(reader, "body");
       if (terms == null) {
         throw new IllegalArgumentException("need at least one suggestion");
       }
 
       // Move all ngrams into an FST:
-      TermsEnum termsEnum = terms.iterator();
+      TermsEnum termsEnum = terms.getTermsEnum();
 
       Outputs<Long> outputs = PositiveIntOutputs.getSingleton();
       Builder<Long> builder = new Builder<>(FST.INPUT_TYPE.BYTE1, outputs);

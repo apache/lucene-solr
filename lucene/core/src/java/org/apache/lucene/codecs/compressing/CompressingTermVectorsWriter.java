@@ -31,7 +31,7 @@ import org.apache.lucene.codecs.TermVectorsWriter;
 import org.apache.lucene.index.CorruptIndexException;
 import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.FieldInfos;
-import org.apache.lucene.index.Fields;
+import org.apache.lucene.index.IndexedFields;
 import org.apache.lucene.index.IndexFileNames;
 import org.apache.lucene.index.MergeState;
 import org.apache.lucene.index.SegmentInfo;
@@ -828,7 +828,7 @@ public final class CompressingTermVectorsWriter extends TermVectorsWriter {
           if (liveDocs != null && liveDocs.get(i) == false) {
             continue;
           }
-          Fields vectors;
+          IndexedFields vectors;
           if (vectorsReader == null) {
             vectors = null;
           } else {

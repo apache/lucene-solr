@@ -36,14 +36,14 @@ import org.apache.lucene.codecs.FieldsConsumer;
 import org.apache.lucene.codecs.FieldsProducer;
 import org.apache.lucene.codecs.PostingsFormat;
 import org.apache.lucene.index.FieldInfo;
-import org.apache.lucene.index.Fields;
+import org.apache.lucene.index.IndexedFields;
 import org.apache.lucene.index.FilterLeafReader.FilterFields;
 import org.apache.lucene.index.IndexOptions;
 import org.apache.lucene.index.MergeState;
 import org.apache.lucene.index.MultiFields;
 import org.apache.lucene.index.SegmentReadState;
 import org.apache.lucene.index.SegmentWriteState;
-import org.apache.lucene.index.Terms;
+import org.apache.lucene.index.IndexedField;
 import org.apache.lucene.util.Accountable;
 import org.apache.lucene.util.Accountables;
 import org.apache.lucene.util.IOUtils;
@@ -117,7 +117,7 @@ public abstract class PerFieldPostingsFormat extends PostingsFormat {
     }
 
     @Override
-    public void write(Fields fields) throws IOException {
+    public void write(IndexedFields fields) throws IOException {
       Map<PostingsFormat, FieldsGroup> formatToGroups = buildFieldsGroupMapping(fields);
 
       // Write postings
@@ -128,7 +128,7 @@ public abstract class PerFieldPostingsFormat extends PostingsFormat {
           final FieldsGroup group = ent.getValue();
 
           // Exposes only the fields from this group:
-          Fields maskedFields = new FilterFields(fields) {
+          IndexedFields maskedFields = new FilterFields(fields) {
             @Override
             public Iterator<String> iterator() {
               return group.fields.iterator();
@@ -172,7 +172,7 @@ public abstract class PerFieldPostingsFormat extends PostingsFormat {
       }
     }
 
-    private Map<PostingsFormat, FieldsGroup> buildFieldsGroupMapping(Fields fields) {
+    private Map<PostingsFormat, FieldsGroup> buildFieldsGroupMapping(IndexedFields fields) {
       // Maps a PostingsFormat instance to the suffix it
       // should use
       Map<PostingsFormat,FieldsGroup> formatToGroups = new HashMap<>();
@@ -311,9 +311,9 @@ public abstract class PerFieldPostingsFormat extends PostingsFormat {
     }
 
     @Override
-    public Terms terms(String field) throws IOException {
+    public IndexedField indexedField(String field) throws IOException {
       FieldsProducer fieldsProducer = fields.get(field);
-      return fieldsProducer == null ? null : fieldsProducer.terms(field);
+      return fieldsProducer == null ? null : fieldsProducer.indexedField(field);
     }
     
     @Override

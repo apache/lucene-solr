@@ -168,7 +168,7 @@
  * <caption>
  *   query = das alte testament (The Old Testament)
  * </caption>
- * <tr><th>Terms in fragment</th><th>sum-of-distinct-weights</th><th>sum-of-boosts</th></tr>
+ * <tr><th>IndexedField in fragment</th><th>sum-of-distinct-weights</th><th>sum-of-boosts</th></tr>
  * <tr><td>das alte testament</td><td>5.339621</td><td>3.0</td></tr>
  * <tr><td>das alte testament</td><td>5.339621</td><td>3.0</td></tr>
  * <tr><td>das testament alte</td><td>5.339621</td><td>3.0</td></tr>

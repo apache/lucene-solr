@@ -249,11 +249,11 @@ public class TestDoc extends LuceneTestCase {
     for (int i = 0; i < reader.numDocs(); i++)
       out.println(reader.document(i));
 
-    Fields fields = reader.fields();
+    IndexedFields fields = reader.fields();
     for (String field : fields)  {
-      Terms terms = fields.terms(field);
+      IndexedField terms = fields.indexedField(field);
       assertNotNull(terms);
-      TermsEnum tis = terms.iterator();
+      TermsEnum tis = terms.getTermsEnum();
       while(tis.next() != null) {
 
         out.print("  term=" + field + ":" + tis.term());

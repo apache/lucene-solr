@@ -22,10 +22,10 @@ import java.io.IOException;
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.*;
 import org.apache.lucene.index.DirectoryReader;
-import org.apache.lucene.index.Fields;
+import org.apache.lucene.index.IndexedFields;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
-import org.apache.lucene.index.Terms;
+import org.apache.lucene.index.IndexedField;
 import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.English;
@@ -164,25 +164,25 @@ class MultiThreadTermVectorsReader implements Runnable {
     long start = 0L;
     for (int docId = 0; docId < numDocs; docId++) {
       start = System.currentTimeMillis();
-      Fields vectors = reader.getTermVectors(docId);
+      IndexedFields vectors = reader.getTermVectors(docId);
       timeElapsed += System.currentTimeMillis()-start;
       
       // verify vectors result
       verifyVectors(vectors, docId);
       
       start = System.currentTimeMillis();
-      Terms vector = reader.getTermVectors(docId).terms("field");
+      IndexedField vector = reader.getTermVectors(docId).indexedField("field");
       timeElapsed += System.currentTimeMillis()-start;
       
-      verifyVector(vector.iterator(), docId);
+      verifyVector(vector.getTermsEnum(), docId);
     }
   }
   
-  private void verifyVectors(Fields vectors, int num) throws IOException {
+  private void verifyVectors(IndexedFields vectors, int num) throws IOException {
     for (String field : vectors) {
-      Terms terms = vectors.terms(field);
+      IndexedField terms = vectors.indexedField(field);
       assert terms != null;
-      verifyVector(terms.iterator(), num);
+      verifyVector(terms.getTermsEnum(), num);
     }
   }
 

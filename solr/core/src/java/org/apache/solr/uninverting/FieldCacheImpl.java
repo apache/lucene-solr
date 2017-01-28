@@ -40,7 +40,7 @@ import org.apache.lucene.index.PostingsEnum;
 import org.apache.lucene.index.SegmentReader;
 import org.apache.lucene.index.SortedDocValues;
 import org.apache.lucene.index.SortedSetDocValues;
-import org.apache.lucene.index.Terms;
+import org.apache.lucene.index.IndexedField;
 import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.util.Accountable;
@@ -323,7 +323,7 @@ public class FieldCacheImpl implements FieldCache {
     
     final void uninvertPostings(LeafReader reader, String field) throws IOException {
       final int maxDoc = reader.maxDoc();
-      Terms terms = reader.terms(field);
+      IndexedField terms = reader.indexedField(field);
       if (terms != null) {
         final boolean setDocsWithField;
         final int termsDocCount = terms.getDocCount();
@@ -365,7 +365,7 @@ public class FieldCacheImpl implements FieldCache {
       }
     }
 
-    protected abstract TermsEnum termsEnum(Terms terms) throws IOException;
+    protected abstract TermsEnum termsEnum(IndexedField terms) throws IOException;
     protected abstract void visitTerm(BytesRef term);
     protected abstract void visitDoc(int docID);
   }
@@ -524,7 +524,7 @@ public class FieldCacheImpl implements FieldCache {
       // otherwise a no-op uninvert!
       Uninvert u = new Uninvert(true) {
         @Override
-        protected TermsEnum termsEnum(Terms terms) throws IOException {
+        protected TermsEnum termsEnum(IndexedField terms) throws IOException {
           throw new AssertionError();
         }
 
@@ -544,7 +544,7 @@ public class FieldCacheImpl implements FieldCache {
 
       // Visit all docs that have terms for this field
       FixedBitSet res = null;
-      Terms terms = reader.terms(field);
+      IndexedField terms = reader.indexedField(field);
       if (terms != null) {
         final int termsDocCount = terms.getDocCount();
         assert termsDocCount <= maxDoc;
@@ -552,7 +552,7 @@ public class FieldCacheImpl implements FieldCache {
           // Fast case: all docs have this field:
           return new BitsEntry(new Bits.MatchAllBits(maxDoc));
         }
-        final TermsEnum termsEnum = terms.iterator();
+        final TermsEnum termsEnum = terms.getTermsEnum();
         PostingsEnum docs = null;
         while(true) {
           final BytesRef term = termsEnum.next();
@@ -630,7 +630,7 @@ public class FieldCacheImpl implements FieldCache {
         }
       }
 
-      return ((LongsFromArray) caches.get(Long.TYPE).get(reader, new CacheKey(field, parser))).iterator();
+      return ((LongsFromArray) caches.get(Long.TYPE).get(reader, new CacheKey(field, parser))).getTermsEnum();
     }
   }
 
@@ -652,7 +652,7 @@ public class FieldCacheImpl implements FieldCache {
       return values.ramBytesUsed() + RamUsageEstimator.NUM_BYTES_OBJECT_REF + Long.BYTES;
     }
 
-    public NumericDocValues iterator() {
+    public NumericDocValues getTermsEnum() {
       return new NumericDocValues() {
         int docID = -1;
 
@@ -758,7 +758,7 @@ public class FieldCacheImpl implements FieldCache {
           }
           
           @Override
-          protected TermsEnum termsEnum(Terms terms) throws IOException {
+          protected TermsEnum termsEnum(IndexedField terms) throws IOException {
             return parser.termsEnum(terms);
           }
         };
@@ -787,7 +787,7 @@ public class FieldCacheImpl implements FieldCache {
       this.numOrd = numOrd;
     }
 
-    public SortedDocValues iterator() {
+    public SortedDocValues getTermsEnum() {
       return new Iter();
     }
 
@@ -912,7 +912,7 @@ public class FieldCacheImpl implements FieldCache {
         return DocValues.emptySorted();
       }
       SortedDocValuesImpl impl = (SortedDocValuesImpl) caches.get(SortedDocValues.class).get(reader, new CacheKey(field, acceptableOverheadRatio));
-      return impl.iterator();
+      return impl.getTermsEnum();
     }
   }
 
@@ -927,7 +927,7 @@ public class FieldCacheImpl implements FieldCache {
 
       final int maxDoc = reader.maxDoc();
 
-      Terms terms = reader.terms(key.field);
+      IndexedField terms = reader.indexedField(key.field);
 
       final float acceptableOverheadRatio = ((Float) key.custom).floatValue();
 
@@ -962,7 +962,7 @@ public class FieldCacheImpl implements FieldCache {
       // TODO: use Uninvert?
 
       if (terms != null) {
-        final TermsEnum termsEnum = terms.iterator();
+        final TermsEnum termsEnum = terms.getTermsEnum();
         PostingsEnum docs = null;
 
         while(true) {
@@ -1004,7 +1004,7 @@ public class FieldCacheImpl implements FieldCache {
       this.docsWithField = docsWithField;
     }
     
-    public BinaryDocValues iterator() {
+    public BinaryDocValues getTermsEnum() {
       return new BinaryDocValues() {
 
         final BytesRef term = new BytesRef();
@@ -1111,7 +1111,7 @@ public class FieldCacheImpl implements FieldCache {
     }
 
     BinaryDocValuesImpl impl = (BinaryDocValuesImpl) caches.get(BinaryDocValues.class).get(reader, new CacheKey(field, acceptableOverheadRatio));
-    return impl.iterator();
+    return impl.getTermsEnum();
   }
 
   static final class BinaryDocValuesCache extends Cache {
@@ -1128,7 +1128,7 @@ public class FieldCacheImpl implements FieldCache {
       // that instead, to avoid insanity
 
       final int maxDoc = reader.maxDoc();
-      Terms terms = reader.terms(key.field);
+      IndexedField terms = reader.indexedField(key.field);
 
       final float acceptableOverheadRatio = ((Float) key.custom).floatValue();
 
@@ -1163,7 +1163,7 @@ public class FieldCacheImpl implements FieldCache {
 
       if (terms != null) {
         int termCount = 0;
-        final TermsEnum termsEnum = terms.iterator();
+        final TermsEnum termsEnum = terms.getTermsEnum();
         PostingsEnum docs = null;
         while(true) {
           if (termCount++ == termCountHardLimit) {
@@ -1235,7 +1235,7 @@ public class FieldCacheImpl implements FieldCache {
     
     // ok we need to uninvert. check if we can optimize a bit.
     
-    Terms terms = reader.terms(field);
+    IndexedField terms = reader.indexedField(field);
     if (terms == null) {
       return DocValues.emptySortedSet();
     } else {

@@ -24,7 +24,7 @@ import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.LeafReader;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.ReaderUtil;
-import org.apache.lucene.index.Terms;
+import org.apache.lucene.index.IndexedField;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.automaton.CharacterRunAutomaton;
 
@@ -51,7 +51,7 @@ public class PostingsWithTermVectorsOffsetStrategy extends FieldOffsetStrategy {
       docId -= LeafReaderContext.docBase; // adjust 'doc' to be within this atomic reader
     }
 
-    Terms docTerms = leafReader.getTermVector(docId, field);
+    IndexedField docTerms = leafReader.getTermVector(docId, field);
     if (docTerms == null) {
       return Collections.emptyList();
     }

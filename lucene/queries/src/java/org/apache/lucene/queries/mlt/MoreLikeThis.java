@@ -29,12 +29,12 @@ import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.document.Document;
-import org.apache.lucene.index.Fields;
+import org.apache.lucene.index.IndexedFields;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexableField;
 import org.apache.lucene.index.MultiFields;
 import org.apache.lucene.index.Term;
-import org.apache.lucene.index.Terms;
+import org.apache.lucene.index.IndexedField;
 import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.search.BooleanClause;
 import org.apache.lucene.search.BooleanQuery;
@@ -730,10 +730,10 @@ public final class MoreLikeThis {
   private PriorityQueue<ScoreTerm> retrieveTerms(int docNum) throws IOException {
     Map<String, Map<String, Int>> field2termFreqMap = new HashMap<>();
     for (String fieldName : fieldNames) {
-      final Fields vectors = ir.getTermVectors(docNum);
-      final Terms vector;
+      final IndexedFields vectors = ir.getTermVectors(docNum);
+      final IndexedField vector;
       if (vectors != null) {
-        vector = vectors.terms(fieldName);
+        vector = vectors.indexedField(fieldName);
       } else {
         vector = null;
       }
@@ -781,13 +781,13 @@ public final class MoreLikeThis {
    * @param field2termFreqMap a Map of terms and their frequencies per field
    * @param vector List of terms and their frequencies for a doc/field
    */
-  private void addTermFrequencies(Map<String, Map<String, Int>> field2termFreqMap, Terms vector, String fieldName) throws IOException {
+  private void addTermFrequencies(Map<String, Map<String, Int>> field2termFreqMap, IndexedField vector, String fieldName) throws IOException {
     Map<String, Int> termFreqMap = field2termFreqMap.get(fieldName);
     if (termFreqMap == null) {
       termFreqMap = new HashMap<>();
       field2termFreqMap.put(fieldName, termFreqMap);
     }
-    final TermsEnum termsEnum = vector.iterator();
+    final TermsEnum termsEnum = vector.getTermsEnum();
     final CharsRefBuilder spare = new CharsRefBuilder();
     BytesRef text;
     while((text = termsEnum.next()) != null) {

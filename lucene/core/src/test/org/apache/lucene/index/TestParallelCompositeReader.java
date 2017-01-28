@@ -291,11 +291,11 @@ public class TestParallelCompositeReader extends LuceneTestCase {
     assertNull(pr.document(0).get("f3"));
     assertNull(pr.document(0).get("f4"));
     // check that fields are there
-    Fields slow = MultiFields.getFields(pr);
-    assertNotNull(slow.terms("f1"));
-    assertNotNull(slow.terms("f2"));
-    assertNotNull(slow.terms("f3"));
-    assertNotNull(slow.terms("f4"));
+    IndexedFields slow = MultiFields.getFields(pr);
+    assertNotNull(slow.indexedField("f1"));
+    assertNotNull(slow.indexedField("f2"));
+    assertNotNull(slow.indexedField("f3"));
+    assertNotNull(slow.indexedField("f4"));
     pr.close();
     
     // no stored fields at all
@@ -308,10 +308,10 @@ public class TestParallelCompositeReader extends LuceneTestCase {
     assertNull(pr.document(0).get("f4"));
     // check that fields are there
     slow = MultiFields.getFields(pr);
-    assertNull(slow.terms("f1"));
-    assertNull(slow.terms("f2"));
-    assertNotNull(slow.terms("f3"));
-    assertNotNull(slow.terms("f4"));
+    assertNull(slow.indexedField("f1"));
+    assertNull(slow.indexedField("f2"));
+    assertNotNull(slow.indexedField("f3"));
+    assertNotNull(slow.indexedField("f4"));
     pr.close();
     
     // without overlapping
@@ -324,10 +324,10 @@ public class TestParallelCompositeReader extends LuceneTestCase {
     assertNull(pr.document(0).get("f4"));
     // check that fields are there
     slow = MultiFields.getFields(pr);
-    assertNull(slow.terms("f1"));
-    assertNull(slow.terms("f2"));
-    assertNotNull(slow.terms("f3"));
-    assertNotNull(slow.terms("f4"));
+    assertNull(slow.indexedField("f1"));
+    assertNull(slow.indexedField("f2"));
+    assertNotNull(slow.indexedField("f3"));
+    assertNotNull(slow.indexedField("f4"));
     pr.close();
     
     // no main readers
@@ -380,7 +380,7 @@ public class TestParallelCompositeReader extends LuceneTestCase {
     }
   }
 
-  // Fields 1-4 indexed together:
+  // IndexedFields 1-4 indexed together:
   private IndexSearcher single(Random random, boolean compositeComposite) throws IOException {
     dir = newDirectory();
     IndexWriter w = new IndexWriter(dir, newIndexWriterConfig(new MockAnalyzer(random)));
@@ -419,7 +419,7 @@ public class TestParallelCompositeReader extends LuceneTestCase {
     return newSearcher(ir);
   }
 
-  // Fields 1 & 2 in one index, 3 & 4 in other, with ParallelReader:
+  // IndexedFields 1 & 2 in one index, 3 & 4 in other, with ParallelReader:
   private IndexSearcher parallel(Random random, boolean compositeComposite) throws IOException {
     dir1 = getDir1(random);
     dir2 = getDir2(random);

@@ -32,8 +32,8 @@ import org.apache.lucene.util.automaton.CompiledAutomaton;
  * @lucene.experimental
  */
 
-public final class MultiTerms extends Terms {
-  private final Terms[] subs;
+public final class MultiField extends IndexedField {
+  private final IndexedField[] subs;
   private final ReaderSlice[] subSlices;
   private final boolean hasFreqs;
   private final boolean hasOffsets;
@@ -42,15 +42,15 @@ public final class MultiTerms extends Terms {
 
   /** Sole constructor.
    *
-   * @param subs The {@link Terms} instances of all sub-readers. 
+   * @param subs The {@link IndexedField} instances of all sub-readers. 
    * @param subSlices A parallel array (matching {@code
    *        subs}) describing the sub-reader slices.
    */
-  public MultiTerms(Terms[] subs, ReaderSlice[] subSlices) throws IOException {
+  public MultiField(IndexedField[] subs, ReaderSlice[] subSlices) throws IOException {
     this.subs = subs;
     this.subSlices = subSlices;
     
-    assert subs.length > 0 : "inefficient: don't use MultiTerms over one sub";
+    assert subs.length > 0 : "inefficient: don't use MultiField over one sub";
     boolean _hasFreqs = true;
     boolean _hasOffsets = true;
     boolean _hasPositions = true;
@@ -68,12 +68,12 @@ public final class MultiTerms extends Terms {
     hasPayloads = hasPositions && _hasPayloads; // if all subs have pos, and at least one has payloads.
   }
 
-  /** Expert: returns the Terms being merged. */
-  public Terms[] getSubTerms() {
+  /** Expert: returns the IndexedField being merged. */
+  public IndexedField[] getSubTerms() {
     return subs;
   }
 
-  /** Expert: returns  pointers to the sub-readers corresponding to the Terms being merged. */
+  /** Expert: returns  pointers to the sub-readers corresponding to the IndexedField being merged. */
   public ReaderSlice[] getSubSlices() {
     return subSlices;
   }
@@ -98,7 +98,7 @@ public final class MultiTerms extends Terms {
   @Override
   public BytesRef getMin() throws IOException {
     BytesRef minTerm = null;
-    for(Terms terms : subs) {
+    for(IndexedField terms : subs) {
       BytesRef term = terms.getMin();
       if (minTerm == null || term.compareTo(minTerm) < 0) {
         minTerm = term;
@@ -111,7 +111,7 @@ public final class MultiTerms extends Terms {
   @Override
   public BytesRef getMax() throws IOException {
     BytesRef maxTerm = null;
-    for(Terms terms : subs) {
+    for(IndexedField terms : subs) {
       BytesRef term = terms.getMax();
       if (maxTerm == null || term.compareTo(maxTerm) > 0) {
         maxTerm = term;
@@ -122,11 +122,11 @@ public final class MultiTerms extends Terms {
   }
 
   @Override
-  public TermsEnum iterator() throws IOException {
+  public TermsEnum getTermsEnum() throws IOException {
 
     final List<MultiTermsEnum.TermsEnumIndex> termsEnums = new ArrayList<>();
     for(int i=0;i<subs.length;i++) {
-      final TermsEnum termsEnum = subs[i].iterator();
+      final TermsEnum termsEnum = subs[i].getTermsEnum();
       if (termsEnum != null) {
         termsEnums.add(new MultiTermsEnum.TermsEnumIndex(termsEnum, i));
       }
@@ -147,7 +147,7 @@ public final class MultiTerms extends Terms {
   @Override
   public long getSumTotalTermFreq() throws IOException {
     long sum = 0;
-    for(Terms terms : subs) {
+    for(IndexedField terms : subs) {
       final long v = terms.getSumTotalTermFreq();
       if (v == -1) {
         return -1;
@@ -160,7 +160,7 @@ public final class MultiTerms extends Terms {
   @Override
   public long getSumDocFreq() throws IOException {
     long sum = 0;
-    for(Terms terms : subs) {
+    for(IndexedField terms : subs) {
       final long v = terms.getSumDocFreq();
       if (v == -1) {
         return -1;
@@ -173,7 +173,7 @@ public final class MultiTerms extends Terms {
   @Override
   public int getDocCount() throws IOException {
     int sum = 0;
-    for(Terms terms : subs) {
+    for(IndexedField terms : subs) {
       final int v = terms.getDocCount();
       if (v == -1) {
         return -1;

@@ -28,14 +28,14 @@ import org.apache.lucene.codecs.FieldsProducer;
 import org.apache.lucene.codecs.PostingsFormat;
 import org.apache.lucene.codecs.lucene50.Lucene50PostingsFormat;
 import org.apache.lucene.index.FieldInfo;
-import org.apache.lucene.index.Fields;
+import org.apache.lucene.index.IndexedFields;
 import org.apache.lucene.index.IndexOptions;
 import org.apache.lucene.index.OrdTermState;
 import org.apache.lucene.index.PostingsEnum;
 import org.apache.lucene.index.SegmentReadState;
 import org.apache.lucene.index.SegmentWriteState;
 import org.apache.lucene.index.TermState;
-import org.apache.lucene.index.Terms;
+import org.apache.lucene.index.IndexedField;
 import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.RAMOutputStream;
@@ -88,7 +88,7 @@ public final class DirectPostingsFormat extends PostingsFormat {
   }
 
   /** minSkipCount is how many terms in a row must have the
-   *  same prefix before we put a skip pointer down.  Terms
+   *  same prefix before we put a skip pointer down.  IndexedField
    *  with docFreq &lt;= lowFreqCutoff will use a single int[]
    *  to hold all docs, freqs, position and offsets; terms
    *  with higher docFreq will use separate arrays. */
@@ -124,9 +124,9 @@ public final class DirectPostingsFormat extends PostingsFormat {
   private static final class DirectFields extends FieldsProducer {
     private final Map<String,DirectField> fields = new TreeMap<>();
 
-    public DirectFields(SegmentReadState state, Fields fields, int minSkipCount, int lowFreqCutoff) throws IOException {
+    public DirectFields(SegmentReadState state, IndexedFields fields, int minSkipCount, int lowFreqCutoff) throws IOException {
       for (String field : fields) {
-        this.fields.put(field, new DirectField(state, field, fields.terms(field), minSkipCount, lowFreqCutoff));
+        this.fields.put(field, new DirectField(state, field, fields.indexedField(field), minSkipCount, lowFreqCutoff));
       }
     }
 
@@ -136,7 +136,7 @@ public final class DirectPostingsFormat extends PostingsFormat {
     }
 
     @Override
-    public Terms terms(String field) {
+    public IndexedField indexedField(String field) {
       return fields.get(field);
     }
 
@@ -176,7 +176,7 @@ public final class DirectPostingsFormat extends PostingsFormat {
     }
   }
 
-  private final static class DirectField extends Terms implements Accountable {
+  private final static class DirectField extends IndexedField implements Accountable {
 
     private static final long BASE_RAM_BYTES_USED = RamUsageEstimator.shallowSizeOfInstance(DirectField.class);
 
@@ -299,7 +299,7 @@ public final class DirectPostingsFormat extends PostingsFormat {
       }
     }
 
-    public DirectField(SegmentReadState state, String field, Terms termsIn, int minSkipCount, int lowFreqCutoff) throws IOException {
+    public DirectField(SegmentReadState state, String field, IndexedField termsIn, int minSkipCount, int lowFreqCutoff) throws IOException {
       final FieldInfo fieldInfo = state.fieldInfos.fieldInfo(field);
 
       sumTotalTermFreq = termsIn.getSumTotalTermFreq();
@@ -308,7 +308,7 @@ public final class DirectPostingsFormat extends PostingsFormat {
 
       final int numTerms = (int) termsIn.size();
       if (numTerms == -1) {
-        throw new IllegalArgumentException("codec does not provide Terms.size()");
+        throw new IllegalArgumentException("codec does not provide IndexedField.size()");
       }
       terms = new TermAndSkip[numTerms];
       termOffsets = new int[1+numTerms];
@@ -325,7 +325,7 @@ public final class DirectPostingsFormat extends PostingsFormat {
       BytesRef term;
       PostingsEnum postingsEnum = null;
       PostingsEnum docsAndPositionsEnum = null;
-      final TermsEnum termsEnum = termsIn.iterator();
+      final TermsEnum termsEnum = termsIn.getTermsEnum();
       int termOffset = 0;
 
       final IntArrayWriter scratch = new IntArrayWriter();
@@ -653,7 +653,7 @@ public final class DirectPostingsFormat extends PostingsFormat {
     }
 
     @Override
-    public TermsEnum iterator() {
+    public TermsEnum getTermsEnum() {
       return new DirectTermsEnum();
     }
 
