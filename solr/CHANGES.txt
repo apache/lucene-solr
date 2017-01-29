@@ -115,6 +115,9 @@ New Features
 
 * SOLR-9885: Allow pre-startup Solr log management in Solr bin scripts to be disabled. (Mano Kovacs via Mark Miller)
 
+* SOLR-9481: Authentication and Authorization plugins now work in standalone mode if security.json is placed in
+  SOLR_HOME on every node. Editing config through API is supported but affects only that one node. (janhoy)
+
 Bug Fixes
 ----------------------
 
@@ -228,10 +231,6 @@ New Features
 
 * SOLR-9442, SOLR-9787: Adds Array of Name Type Value (json.nl=arrntv) style to JSONResponseWriter.
   (Jonny Marks, Christine Poerschke, hossman)
-
-* SOLR-9481: Authentication and Authorization plugins now work in standalone mode if security.json is placed in
-  SOLR_HOME on every node. Editing config through API is supported but affects only that one node. 
-  (janhoy)
 
 * SOLR-8542: Adds Solr Learning to Rank (LTR) plugin for reranking results with machine learning models.
   (Michael Nilsson, Diego Ceccarelli, Joshua Pantony, Jon Dorando, Naveen Santhapuri, Alessandro Benedetti, David Grohmann, Christine Poerschke)
