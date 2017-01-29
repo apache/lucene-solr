@@ -161,6 +161,8 @@ Bug Fixes
 * SOLR-9969: "Plugin/Stats" section of the UI doesn't display empty metric types (Tomás Fernández Löbbe)
 * SOLR-8491: solr.cmd SOLR_SSL_OPTS is overwritten (Sam Yi, Andy Hind, Marcel Berteler, Kevin Risden)
 
+* SOLR-10031: Validation of filename params in ReplicationHandler (Hrishikesh Gadre, janhoy)
+
 ==================  6.4.0 ==================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release.
