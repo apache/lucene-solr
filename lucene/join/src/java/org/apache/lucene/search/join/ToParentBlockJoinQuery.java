@@ -30,8 +30,6 @@ import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.Scorer;
 import org.apache.lucene.search.Weight;
-import org.apache.lucene.search.grouping.TopGroups;
-import org.apache.lucene.util.ArrayUtil;
 import org.apache.lucene.util.BitSet;
 
 /**
@@ -56,20 +54,6 @@ import org.apache.lucene.util.BitSet;
  * <p>The child documents must be orthogonal to the parent
  * documents: the wrapped child query must never
  * return a parent document.</p>
- *
- * If you'd like to retrieve {@link TopGroups} for the
- * resulting query, use the {@link ToParentBlockJoinCollector}.
- * Note that this is not necessary, ie, if you simply want
- * to collect the parent documents and don't need to see
- * which child documents matched under that parent, then
- * you can use any collector.
- *
- * <p><b>NOTE</b>: If the overall query contains parent-only
- * matches, for example you OR a parent-only query with a
- * joined child-only query, then the resulting collected documents
- * will be correct, however the {@link TopGroups} you get
- * from {@link ToParentBlockJoinCollector} will not contain every
- * child for parents that had matched.
  *
  * <p>See {@link org.apache.lucene.search.join} for an
  * overview. </p>
@@ -171,39 +155,7 @@ public class ToParentBlockJoinQuery extends Query {
     }
   }
   
-  /** 
-   * Ascendant for {@link ToParentBlockJoinQuery}'s scorer. 
-   * @lucene.experimental it might be removed at <b>6.0</b>
-   * */
-  public static abstract class ChildrenMatchesScorer extends Scorer{
-    
-    /** inherited constructor */
-    protected ChildrenMatchesScorer(Weight weight) {
-      super(weight);
-    }
-    
-    /** 
-     * enables children matches recording 
-     * */
-    public abstract void trackPendingChildHits() ;
-    
-    /**
-     * reports matched children 
-     * @return number of recorded matched children docs 
-     * */
-    public abstract int getChildCount() ;
-    
-    /**
-     * reports matched children 
-     * @param other array for recording matching children docs of next parent,
-     * it might be null (that's slower) or the same array which was returned 
-     * from the previous call
-     * @return array with {@link #getChildCount()} matched children docnums
-     *  */
-    public abstract int[] swapChildDocs(int[] other);
-  }
-  
-  static class BlockJoinScorer extends ChildrenMatchesScorer {
+  static class BlockJoinScorer extends Scorer {
     private final Scorer childScorer;
     private final BitSet parentBits;
     private final ScoreMode scoreMode;
@@ -212,8 +164,6 @@ public class ToParentBlockJoinQuery extends Query {
     private float parentScore;
     private int parentFreq;
     private int nextChildDoc;
-    private int[] pendingChildDocs;
-    private float[] pendingChildScores;
     private int childDocUpto;
 
     public BlockJoinScorer(Weight weight, Scorer childScorer, BitSet parentBits, int firstChildDoc, ScoreMode scoreMode) {
@@ -228,39 +178,6 @@ public class ToParentBlockJoinQuery extends Query {
     @Override
     public Collection<ChildScorer> getChildren() {
       return Collections.singleton(new ChildScorer(childScorer, "BLOCK_JOIN"));
-    }
-
-    @Override
-    public int getChildCount() {
-      return childDocUpto;
-    }
-
-    int getParentDoc() {
-      return parentDoc;
-    }
-
-    @Override
-    public int[] swapChildDocs(int[] other) {
-      final int[] ret = pendingChildDocs;
-      if (other == null) {
-        pendingChildDocs = new int[5];
-      } else {
-        pendingChildDocs = other;
-      }
-      return ret;
-    }
-
-    float[] swapChildScores(float[] other) {
-      if (scoreMode == ScoreMode.None) {
-        throw new IllegalStateException("ScoreMode is None; you must pass trackScores=false to ToParentBlockJoinCollector");
-      }
-      final float[] ret = pendingChildScores;
-      if (other == null) {
-        pendingChildScores = new float[5];
-      } else {
-        pendingChildScores = other;
-      }
-      return ret;
     }
 
     @Override
@@ -297,22 +214,10 @@ public class ToParentBlockJoinQuery extends Query {
           do {
 
             //System.out.println("  c=" + nextChildDoc);
-            if (pendingChildDocs != null && pendingChildDocs.length == childDocUpto) {
-              pendingChildDocs = ArrayUtil.grow(pendingChildDocs);
-            }
-            if (pendingChildScores != null && scoreMode != ScoreMode.None && pendingChildScores.length == childDocUpto) {
-              pendingChildScores = ArrayUtil.grow(pendingChildScores);
-            }
-            if (pendingChildDocs != null) {
-              pendingChildDocs[childDocUpto] = nextChildDoc;
-            }
             if (scoreMode != ScoreMode.None) {
               // TODO: specialize this into dedicated classes per-scoreMode
               final float childScore = childScorer.score();
               final int childFreq = childScorer.freq();
-              if (pendingChildScores != null) {
-                pendingChildScores[childDocUpto] = childScore;
-              }
               maxScore = Math.max(childScore, maxScore);
               minScore = Math.min(childScore, minScore);
               totalScore += childScore;
@@ -439,17 +344,6 @@ public class ToParentBlockJoinQuery extends Query {
       return Explanation.match(score(), String.format(Locale.ROOT,
           "Score based on %d child docs in range from %d to %d, best match:", matches, start, end), bestChild
       );
-    }
-
-    /**
-     * Instructs this scorer to keep track of the child docIds and score ids for retrieval purposes.
-     */
-    @Override
-    public void trackPendingChildHits() {
-      pendingChildDocs = new int[5];
-      if (scoreMode != ScoreMode.None) {
-        pendingChildScores = new float[5];
-      }
     }
   }
 

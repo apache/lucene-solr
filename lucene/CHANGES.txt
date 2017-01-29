@@ -82,6 +82,12 @@ API Changes
   IndexWriter#updateDocValues() calls, to prevent calling with non-existent
   docValues fields (Ishan Chattopadhyaya, Adrien Grand, Mike McCandless)
 
+* LUCENE-6959: Removed ToParentBlockJoinCollector in favour of
+  ParentChildrenBlockJoinQuery, that can return the matching children documents per
+  parent document. This query should be executed for each matching parent document
+  after the main query has been executed. (Adrien Grand, Martijn van Groningen,
+  Mike McCandless)
+
 New Features
 
 * LUCENE-7623: Add FunctionScoreQuery and FunctionMatchQuery (Alan Woodward,
