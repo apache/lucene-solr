@@ -21,7 +21,6 @@ import org.apache.calcite.plan.*;
 import org.apache.calcite.rel.RelCollations;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.convert.ConverterRule;
-import org.apache.calcite.rel.core.Aggregate;
 import org.apache.calcite.rel.core.Sort;
 import org.apache.calcite.rel.logical.LogicalAggregate;
 import org.apache.calcite.rel.logical.LogicalFilter;
@@ -206,8 +205,8 @@ class SolrRules {
    * Rule to convert an {@link LogicalAggregate} to an {@link SolrAggregate}.
    */
   private static class SolrAggregateRule extends SolrConverterRule {
-    private static final Predicate<RelNode> AGGREGATE_PREDICTE = relNode ->
-        Aggregate.IS_SIMPLE.apply(((LogicalAggregate)relNode));// &&
+//    private static final Predicate<RelNode> AGGREGATE_PREDICTE = relNode ->
+//        Aggregate.IS_SIMPLE.apply(((LogicalAggregate)relNode));// &&
 //        !((LogicalAggregate)relNode).containsDistinctCall();
 
     private static final RelOptRule AGGREGATE_RULE = new SolrAggregateRule();

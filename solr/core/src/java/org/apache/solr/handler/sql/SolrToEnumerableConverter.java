@@ -126,8 +126,7 @@ class SolrToEnumerableConverter extends ConverterImpl implements EnumerableRel {
   }
 
   /**
-   * E.g. {@code constantList("x", "y")} returns
-   * {@code {ConstantExpression("x"), ConstantExpression("y")}}.
+   * E.g. {@code constantList("x", "y")} returns "{ConstantExpression("x"), ConstantExpression("y")}".
    */
   private static <T> List<Expression> constantList(List<T> values) {
     return Lists.transform(values, Expressions::constant);

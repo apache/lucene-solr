@@ -34,7 +34,6 @@ import java.io.IOException;
 import java.util.EnumSet;
 import java.util.Map;
 import java.util.Properties;
-import java.util.Set;
 
 class SolrSchema extends AbstractSchema {
   final Properties properties;
