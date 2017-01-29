@@ -458,67 +458,7 @@ public class TestJoinUtil extends LuceneTestCase {
 
   public void testMinMaxScore() throws Exception {
     String priceField = "price";
-    // FunctionQuery would be helpful, but join module doesn't depend on queries module.
-    Query priceQuery = new Query() {
-
-      private final Query fieldQuery = new FieldValueQuery(priceField);
-
-      @Override
-      public Weight createWeight(IndexSearcher searcher, boolean needsScores) throws IOException {
-        Weight fieldWeight = fieldQuery.createWeight(searcher, false);
-        return new Weight(this) {
-
-          @Override
-          public void extractTerms(Set<Term> terms) {
-          }
-
-          @Override
-          public Explanation explain(LeafReaderContext context, int doc) throws IOException {
-            return null;
-          }
-
-          @Override
-          public float getValueForNormalization() throws IOException {
-            return 0;
-          }
-
-          @Override
-          public void normalize(float norm, float topLevelBoost) {
-          }
-
-          @Override
-          public Scorer scorer(LeafReaderContext context) throws IOException {
-            Scorer fieldScorer = fieldWeight.scorer(context);
-            if (fieldScorer == null) {
-              return null;
-            }
-            NumericDocValues price = context.reader().getNumericDocValues(priceField);
-            return new FilterScorer(fieldScorer, this) {
-              @Override
-              public float score() throws IOException {
-                return (float) price.get(in.docID());
-              }
-            };
-          }
-        };
-      }
-
-      @Override
-      public String toString(String field) {
-        return fieldQuery.toString(field);
-      }
-
-      @Override
-      public boolean equals(Object o) {
-        return o == this;
-      }
-
-      @Override
-      public int hashCode() {
-        return System.identityHashCode(this);
-      }
-
-    };
+    Query priceQuery = numericDocValuesScoreQuery(priceField);
 
     Directory dir = newDirectory();
     RandomIndexWriter iw = new RandomIndexWriter(
@@ -589,6 +529,70 @@ public class TestJoinUtil extends LuceneTestCase {
 
     searcher.getIndexReader().close();
     dir.close();
+  }
+
+  // FunctionQuery would be helpful, but join module doesn't depend on queries module.
+  static Query numericDocValuesScoreQuery(final String field) {
+    return new Query() {
+
+        private final Query fieldQuery = new FieldValueQuery(field);
+
+        @Override
+        public Weight createWeight(IndexSearcher searcher, boolean needsScores) throws IOException {
+          Weight fieldWeight = fieldQuery.createWeight(searcher, false);
+          return new Weight(this) {
+
+            @Override
+            public void extractTerms(Set<Term> terms) {
+            }
+
+            @Override
+            public Explanation explain(LeafReaderContext context, int doc) throws IOException {
+              return null;
+            }
+
+            @Override
+            public float getValueForNormalization() throws IOException {
+              return 0;
+            }
+
+            @Override
+            public void normalize(float norm, float boost) {
+            }
+
+            @Override
+            public Scorer scorer(LeafReaderContext context) throws IOException {
+              Scorer fieldScorer = fieldWeight.scorer(context);
+              if (fieldScorer == null) {
+                return null;
+              }
+              NumericDocValues price = context.reader().getNumericDocValues(field);
+              return new FilterScorer(fieldScorer, this) {
+                @Override
+                public float score() throws IOException {
+                  return (float) price.get(in.docID());
+                }
+              };
+            }
+          };
+        }
+
+        @Override
+        public String toString(String field) {
+          return fieldQuery.toString(field);
+        }
+
+        @Override
+        public boolean equals(Object o) {
+          return o == this;
+        }
+
+        @Override
+        public int hashCode() {
+          return System.identityHashCode(this);
+        }
+
+      };
   }
 
   public void testMinMaxDocs() throws Exception {
