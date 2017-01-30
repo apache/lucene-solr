@@ -135,6 +135,10 @@ Optimizations
   whether BKD cells are entirely within the distance close to the dateline.
   (Adrien Grand)
 
+* LUCENE-7654: ToParentBlockJoinQuery now implements two-phase iteration and
+  computes scores lazily in order to be faster when used in conjunctions.
+  (Adrien Grand)
+
 Build
 
 * LUCENE-7651: Fix Javadocs build for Java 8u121 by injecting "Google Code
