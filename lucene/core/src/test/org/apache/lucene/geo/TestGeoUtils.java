@@ -293,4 +293,16 @@ public class TestGeoUtils extends LuceneTestCase {
 
     return false;
   }
+
+  public void testWithin90LonDegrees() {
+    assertTrue(GeoUtils.within90LonDegrees(0, -80, 80));
+    assertFalse(GeoUtils.within90LonDegrees(0, -100, 80));
+    assertFalse(GeoUtils.within90LonDegrees(0, -80, 100));
+
+    assertTrue(GeoUtils.within90LonDegrees(-150, 140, 170));
+    assertFalse(GeoUtils.within90LonDegrees(-150, 120, 150));
+
+    assertTrue(GeoUtils.within90LonDegrees(150, -170, -140));
+    assertFalse(GeoUtils.within90LonDegrees(150, -150, -120));
+  }
 }
