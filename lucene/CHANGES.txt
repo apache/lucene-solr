@@ -148,6 +148,9 @@ Build
 
 * LUCENE-7653: Update randomizedtesting to version 2.5.0. (Dawid Weiss)
 
+* LUCENE-7665: Remove grouping dependency from the join module.
+  (Martijn van Groningen)
+
 Other
 
 * LUCENE-7666: Fix typos in lucene-join package info javadoc.
