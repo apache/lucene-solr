@@ -153,6 +153,9 @@ Other
 * LUCENE-7666: Fix typos in lucene-join package info javadoc.
   (Tom Saleeba via Christine Poerschke)
 
+* LUCENE-7658: queryparser/xml CoreParser now implements SpanQueryBuilder interface.
+  (Daniel Collins, Christine Poerschke)
+
 ======================= Lucene 6.4.1 =======================
 
 Bug Fixes
