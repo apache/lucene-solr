@@ -113,7 +113,7 @@ final class LatLonDocValuesDistanceQuery extends Query {
               final long value = values.valueAt(i);
               final int lat = (int) (value >>> 32);
               final int lon = (int) (value & 0xFFFFFFFF);
-              if (distancePredicate.apply(lat, lon)) {
+              if (distancePredicate.test(lat, lon)) {
                 return true;
               }
             }
