@@ -671,7 +671,7 @@ public class TestBlockJoin extends LuceneTestCase {
         System.out.println("TEST: iter=" + (1+iter) + " of " + iters);
       }
 
-      final Query childQuery;
+      Query childQuery;
       if (random().nextInt(3) == 2) {
         final int childFieldID = random().nextInt(childFields.length);
         childQuery = new TermQuery(new Term("child" + childFieldID,
@@ -705,6 +705,9 @@ public class TestBlockJoin extends LuceneTestCase {
         bq.add(new TermQuery(new Term("child" + childFieldID, childFields[childFieldID][random().nextInt(childFields[childFieldID].length)])),
                random().nextBoolean() ? BooleanClause.Occur.MUST : BooleanClause.Occur.MUST_NOT);
         childQuery = bq.build();
+      }
+      if (random().nextBoolean()) {
+        childQuery = new RandomApproximationQuery(childQuery, random());
       }
 
 
