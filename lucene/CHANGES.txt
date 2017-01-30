@@ -128,6 +128,9 @@ Optimizations
 * LUCENE-7656: Speed up for LatLonPointDistanceQuery by computing distances even
   less often. (Adrien Grand)
 
+* LUCENE-7661: Speed up for LatLonPointInPolygonQuery by pre-computing the
+  relation of the polygon with a grid. (Adrien Grand)
+
 Build
 
 * LUCENE-7651: Fix Javadocs build for Java 8u121 by injecting "Google Code
