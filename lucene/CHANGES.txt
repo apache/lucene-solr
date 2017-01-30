@@ -148,6 +148,11 @@ Build
 
 * LUCENE-7653: Update randomizedtesting to version 2.5.0. (Dawid Weiss)
 
+Other
+
+* LUCENE-7666: Fix typos in lucene-join package info javadoc.
+  (Tom Saleeba via Christine Poerschke)
+
 ======================= Lucene 6.4.1 =======================
 
 Bug Fixes

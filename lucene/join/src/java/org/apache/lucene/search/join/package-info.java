@@ -91,9 +91,9 @@
  * </p>
  * <pre class="prettyprint">
  *   String fromField = "from"; // Name of the from field
- *   boolean multipleValuesPerDocument = false; // Set only yo true in the case when your fromField has multiple values per document in your index
+ *   boolean multipleValuesPerDocument = false; // Set only to true in the case when your fromField has multiple values per document in your index
  *   String toField = "to"; // Name of the to field
- *   ScoreMode scoreMode = ScoreMode.Max // Defines how the scores are translated into the other side of the join.
+ *   ScoreMode scoreMode = ScoreMode.Max; // Defines how the scores are translated into the other side of the join.
  *   Query fromQuery = new TermQuery(new Term("content", searchTerm)); // Query executed to collect from values to join to the to values
  * 
  *   Query joinQuery = JoinUtil.createJoinQuery(fromField, multipleValuesPerDocument, toField, fromQuery, fromSearcher, scoreMode);
