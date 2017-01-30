@@ -131,6 +131,10 @@ Optimizations
 * LUCENE-7661: Speed up for LatLonPointInPolygonQuery by pre-computing the
   relation of the polygon with a grid. (Adrien Grand)
 
+* LUCENE-7660: Speed up LatLonPointDistanceQuery by improving the detection of
+  whether BKD cells are entirely within the distance close to the dateline.
+  (Adrien Grand)
+
 Build
 
 * LUCENE-7651: Fix Javadocs build for Java 8u121 by injecting "Google Code
