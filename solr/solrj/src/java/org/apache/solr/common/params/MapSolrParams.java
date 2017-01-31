@@ -45,7 +45,9 @@ public class MapSolrParams extends SolrParams {
   @Override
   public String[] getParams(String name) {
     Object val = map.get(name);
-    if (val instanceof String[]) return (String[]) val;
+    // if map is defined as Map<String, String> why would value be ever of type String[], 
+    // should we fix map definition to be Map<String, Object> ?
+    if (val instanceof String[]) return (String[]) val;  
     return val==null ? null : new String[]{String.valueOf(val)};
   }
 

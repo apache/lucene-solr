@@ -157,7 +157,8 @@ public class ConcurrentLFUCache<K, V> implements Cache<K,V> {
     try {
       long lowHitCount = this.lowHitCount;
       isCleaning = true;
-      this.lowHitCount = lowHitCount; // volatile write to make isCleaning visible
+      // (can't we just make isCleaning volatile?, besides lowHitCount is not volatile at all)
+      this.lowHitCount = lowHitCount; // volatile write to make isCleaning visible 
       
       int sz = stats.size.get();
       if (sz <= upperWaterMark) {

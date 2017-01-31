@@ -35,7 +35,9 @@ public class MedianCalculator {
     select(list, .5 * size, 0, size);
 
     int firstIdx = (int) (Math.floor(.5 * size));
-    int secondIdx = (firstIdx <= size && size % 2 == 1) ? firstIdx + 1 : firstIdx;
+    // from findbug bug info: 
+    // The code uses x % 2 == 1 to check to see if a value is odd, but this won't work for negative numbers (e.g., (-5) % 2 == -1). If this code is intending to check for oddness, consider using x & 1 == 1, or x % 2 != 0. 
+    int secondIdx = (firstIdx <= size && size % 2 != 0) ? firstIdx + 1 : firstIdx;
     double result = list.get(firstIdx).doubleValue() * .5 + list.get(secondIdx).doubleValue() * .5;
 
     return result;

@@ -67,10 +67,11 @@ public class TestConfigOverlay extends LuceneTestCase {
     ConfigOverlay overlay = new ConfigOverlay(Collections.EMPTY_MAP,0);
     overlay = overlay.setProperty("query.filterCache.initialSize",100);
     assertEquals(100, overlay.getXPathProperty("query/filterCache/@initialSize"));
-    Map<String, String> map = overlay.getEditableSubProperties("query/filterCache");
+    Map<String, Object> map = overlay.getEditableSubProperties("query/filterCache");
     assertNotNull(map);
     assertEquals(1,map.size());
-    assertEquals(100,map.get("initialSize"));
+    assertEquals(Integer.valueOf(100), (Integer)map.get("initialSize"));
+    
   }
 
 

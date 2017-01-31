@@ -357,7 +357,7 @@ class XLSXWriter extends TextResponseWriter {
       if (v instanceof IndexableField) {
         IndexableField f = (IndexableField)v;
         if (v instanceof Date) {
-          output.append(((Date) val).toInstant().toString() + "; ");
+          output.append(((Date) v).toInstant().toString() + "; ");
         } else {
           output.append(f.stringValue() + "; ");
         }

@@ -246,7 +246,7 @@ public class CSVConfig {
      */
     @Override
     public boolean equals(Object obj) {
-        if (obj == null && !(obj instanceof CSVConfig)) {
+        if (!(obj instanceof CSVConfig)) {
             return false;
         }
         return super.equals(obj);

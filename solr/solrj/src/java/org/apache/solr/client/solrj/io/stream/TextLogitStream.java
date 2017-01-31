@@ -103,7 +103,7 @@ public class TextLogitStream extends TupleStream implements Expressible {
                      double threshold,
                      int maxIterations) throws IOException {
 
-    init(collectionName, zkHost, params, name, field, termsStream, weights, outcome, positiveLabel, threshold, maxIterations, iteration);
+    init(collectionName, zkHost, params, name, field, termsStream, weights, outcome, positiveLabel, threshold, maxIterations, 0);
   }
 
   /**

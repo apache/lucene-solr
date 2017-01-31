@@ -382,7 +382,7 @@ public class UpdateRequest extends AbstractUpdateRequest {
           overwrite = (Boolean) entry.getValue().get(OVERWRITE);
           commitWithin = (Integer) entry.getValue().get(COMMIT_WITHIN);
         }
-        if (overwrite != lastOverwrite || commitWithin != lastCommitWithin
+        if (overwrite != lastOverwrite || (commitWithin != null &&  !commitWithin.equals(lastCommitWithin))
             || docLists.size() == 0) {
           docList = new LinkedHashMap<>();
           docLists.add(docList);

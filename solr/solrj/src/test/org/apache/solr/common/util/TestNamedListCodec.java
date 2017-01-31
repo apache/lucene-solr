@@ -96,7 +96,6 @@ public class TestNamedListCodec  extends LuceneTestCase {
     String sval = "12qwaszx";
 
     // Set up a simple document
-    NamedList r = new NamedList();
     List list =     new ArrayList();
 
     SolrDocument doc = new SolrDocument();

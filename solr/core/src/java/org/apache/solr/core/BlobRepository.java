@@ -110,7 +110,8 @@ public class BlobRepository {
   private <T> BlobContentRef<T> getBlobIncRef(String key, Callable<BlobContent<T>> blobCreator) {
     BlobContent<T> aBlob;
     if (this.coreContainer.isZooKeeperAware()) {
-      synchronized (blobs) {
+    	//do we really need lock on a concurrent map?
+    	//synchronized (blobs) {
         aBlob = blobs.get(key);
         if (aBlob == null) {
           try {
@@ -119,7 +120,7 @@ public class BlobRepository {
             throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Blob loading failed: "+e.getMessage(), e);
           }
         }
-      }
+      //}
     } else {
       throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Blob loading is not supported in non-cloud mode");
       // todo

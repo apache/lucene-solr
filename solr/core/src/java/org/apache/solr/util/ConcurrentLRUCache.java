@@ -262,7 +262,8 @@ public class ConcurrentLRUCache<K,V> implements Cache<K,V>, Accountable {
   private void markAndSweepByCacheSize() {
     long oldestEntry = this.oldestEntry;
     isCleaning = true;
-    this.oldestEntry = oldestEntry;     // volatile write to make isCleaning visible
+    //  (can't we just make isCleaning volatile?, besides lowHitCount is not volatile at all)
+    this.oldestEntry = oldestEntry;     // volatile write to make isCleaning visible,
 
     long timeCurrent = stats.accessCounter.longValue();
     int sz = stats.size.get();

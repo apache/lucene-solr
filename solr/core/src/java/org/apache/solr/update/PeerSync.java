@@ -840,12 +840,12 @@ public class PeerSync implements SolrMetricProducer {
       // TODO: should this be handled separately as a problem with us?
       // I guess it probably already will by causing replication to be kicked off.
       sreq.updateException = e;
-      log.error(msg() + "Error applying updates from " + sreq.shards + " ,update=" + o, e);
+      log.error(msg() + "Error applying updates from " + sreq.shards[0] + " ,update=" + o, e);
       return false;
     }
     catch (Exception e) {
       sreq.updateException = e;
-      log.error(msg() + "Error applying updates from " + sreq.shards + " ,update=" + o, e);
+      log.error(msg() + "Error applying updates from " + sreq.shards[0] + " ,update=" + o, e);
       return false;
     }
     finally {
@@ -853,7 +853,7 @@ public class PeerSync implements SolrMetricProducer {
         proc.finish();
       } catch (Exception e) {
         sreq.updateException = e;
-        log.error(msg() + "Error applying updates from " + sreq.shards + " ,finish()", e);
+        log.error(msg() + "Error applying updates from " + sreq.shards[0] + " ,finish()", e);
         return false;
       }
     }

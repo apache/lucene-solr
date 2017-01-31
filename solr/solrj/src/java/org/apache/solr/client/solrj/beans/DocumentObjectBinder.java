@@ -119,9 +119,10 @@ public class DocumentObjectBinder {
   private List<DocField> getDocFields(Class clazz) {
     List<DocField> fields = infocache.get(clazz);
     if (fields == null) {
-      synchronized(infocache) {
+    	//do we really need lock on a concurrent hashmap
+      //synchronized(infocache) { 
         infocache.put(clazz, fields = collectInfo(clazz));
-      }
+      //}
     }
     return fields;
   }

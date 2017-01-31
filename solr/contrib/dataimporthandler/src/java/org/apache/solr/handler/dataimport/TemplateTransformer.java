@@ -60,7 +60,6 @@ public class TemplateTransformer extends Transformer {
     // Add current row to the copy of resolver map
 
     for (Map<String, String> map : context.getAllEntityFields()) {
-      map.entrySet();
       String expr = map.get(TEMPLATE);
       if (expr == null)
         continue;

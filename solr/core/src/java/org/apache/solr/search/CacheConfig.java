@@ -90,7 +90,7 @@ public class CacheConfig implements MapSerializable{
   public static CacheConfig getConfig(SolrConfig solrConfig, String xpath) {
     Node node = solrConfig.getNode(xpath, false);
     if(node == null) {
-      Map<String, String> m = solrConfig.getOverlay().getEditableSubProperties(xpath);
+      Map<String, Object> m = solrConfig.getOverlay().getEditableSubProperties(xpath);
       if(m==null) return null;
       List<String> parts = StrUtils.splitSmart(xpath, '/');
       return getConfig(solrConfig,parts.get(parts.size()-1) , Collections.EMPTY_MAP,xpath);
@@ -109,10 +109,10 @@ public class CacheConfig implements MapSerializable{
     attrs = attrsCopy;
     config.args = attrs;
 
-    Map<String, String> map = xpath == null ? null : solrConfig.getOverlay().getEditableSubProperties(xpath);
+    Map<String, Object> map = xpath == null ? null : solrConfig.getOverlay().getEditableSubProperties(xpath);
     if(map != null){
       HashMap<String, String> mapCopy = new HashMap<>(config.args);
-      for (Map.Entry<String, String> e : map.entrySet()) {
+      for (Map.Entry<String, Object> e : map.entrySet()) {
         mapCopy.put(e.getKey(),String.valueOf(e.getValue()));
       }
       config.args = mapCopy;

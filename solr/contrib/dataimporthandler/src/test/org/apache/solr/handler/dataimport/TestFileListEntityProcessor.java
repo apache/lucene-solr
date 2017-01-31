@@ -70,8 +70,9 @@ public class TestFileListEntityProcessor extends AbstractDataImportHandlerTestCa
   @Test
   public void testBiggerSmallerFiles() throws IOException {
     File tmpdir = createTempDir().toFile();
-
-    long minLength = Long.MAX_VALUE;
+    // array length can never be great than Integer.MAX_VALUE, 
+   // was using Long.MAX_VALUE intentional
+    int minLength = Integer.MAX_VALUE;
     String smallestFile = "";
     byte[] content = "abcdefgij".getBytes(StandardCharsets.UTF_8);
     createFile(tmpdir, "a.xml", content, false);

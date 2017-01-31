@@ -758,8 +758,8 @@ public class CdcrUpdateLog extends UpdateLog {
      */
     public long getNumberOfRemainingRecords() {
       long numRemainingRecords = 0;
-
-      synchronized (tlogs) {
+      // do we really need lock on a LinkedBlockingQueue ?
+      synchronized (tlogs) { 
         for (TransactionLog tlog : tlogs) {
           numRemainingRecords += tlog.numRecords() - 1; // minus 1 as the number of records returned by the tlog includes the header
         }

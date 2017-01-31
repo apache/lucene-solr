@@ -59,7 +59,8 @@ public class TestDocSet extends LuceneTestCase {
 
   // test the DocSetCollector
   public void collect(DocSet set, int maxDoc) {
-    int smallSetSize = maxDoc >> 64 + 3;
+    // why are we shifting 32 bit integer 67 times ?
+    int smallSetSize = maxDoc >> 64 + 3; 
     if (set.size() > 1) {
       if (random().nextBoolean()) {
         smallSetSize = set.size() + random().nextInt(3) - 1;  // test the bounds around smallSetSize

@@ -112,11 +112,9 @@ public class FieldFacetStats {
     int arrIdx = term;
     if (arrIdx >= 0 && arrIdx < topLevelSortedValues.getValueCount()) {
       final String key;
-      if (term == -1) {
-        key = null;
-      } else {
-        key = topLevelSortedValues.lookupOrd(term).utf8ToString();
-      }
+      // if arrIdx > 0 and with had we had assigned term to  arrIdx  (on line 112 -> arrIdx = term)
+      // aren't we sure that term > -1
+      key = topLevelSortedValues.lookupOrd(term).utf8ToString();
       while (facetStatsTerms.size() <= statsTermNum) {
         facetStatsTerms.add(new HashMap<String, Integer>());
       }

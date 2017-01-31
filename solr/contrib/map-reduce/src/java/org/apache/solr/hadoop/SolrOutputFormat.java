@@ -257,12 +257,13 @@ public class SolrOutputFormat<K, V> extends FileOutputFormat<K, V> {
       files.add(dir);
       return;
     }
-    
-    for (File f : list) {
-      if (f.isFile()) {
-        files.add(f);
-      } else {
-        listFiles(f, files);
+    if(list != null) {
+      for (File f : list) {
+        if (f.isFile()) {
+          files.add(f);
+        } else {
+          listFiles(f, files);
+        }
       }
     }
   }

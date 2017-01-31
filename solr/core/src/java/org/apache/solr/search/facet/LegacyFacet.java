@@ -296,7 +296,7 @@ public class LegacyFacet {
       required = new RequiredSolrParams(params);
 
       // remove local params unless it's a query
-      if (type != FacetParams.FACET_QUERY) {
+      if (!FacetParams.FACET_QUERY.equals(type)) {
         facetValue = localParams.get(CommonParams.VALUE);
       }
 

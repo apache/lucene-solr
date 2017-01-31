@@ -296,7 +296,9 @@ public class CreateCollectionCmd implements Cmd {
           configName = configNames.get(0);
           // no config set named, but there is only 1 - use it
           log.info("Only one config set found in zk - using it:" + configName);
-        } else if (configNames.contains(coll)) {
+        }
+        // make sure that we haven't reached here due to (configNames != null) check failed (i.e. configNames is null) 
+        else if (configNames != null && configNames.contains(coll)) {
           configName = coll;
         }
       } catch (KeeperException.NoNodeException e) {

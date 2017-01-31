@@ -251,7 +251,7 @@ public class ParsingFieldUpdateProcessorsTest extends UpdateProcessorTestBase {
     assertNotNull(d);
     boolean foundDouble = false;
     for (Object o : d.getFieldValues("not_in_schema")) {
-      if (extraDouble == o) {
+      if (extraDouble.equals(o)) {
         foundDouble = true;
       } else {
         assertTrue(o instanceof String);
@@ -349,7 +349,7 @@ public class ParsingFieldUpdateProcessorsTest extends UpdateProcessorTestBase {
     assertNotNull(d);
     boolean foundFloat = false;
     for (Object o : d.getFieldValues("not_in_schema")) {
-      if (floatVal == o) {
+      if (floatVal.equals(o)) {
         foundFloat = true;
       } else {
         assertTrue(o instanceof String);
@@ -432,7 +432,7 @@ public class ParsingFieldUpdateProcessorsTest extends UpdateProcessorTestBase {
     assertNotNull(d);
     boolean foundFloat = false;
     for (Object o : d.getFieldValues("not_in_schema")) {
-      if (floatVal == o) {
+      if (floatVal.equals(o)) {
         foundFloat = true;
       } else {
         assertTrue(o instanceof String);
@@ -534,7 +534,7 @@ public class ParsingFieldUpdateProcessorsTest extends UpdateProcessorTestBase {
     assertNotNull(d);
     boolean foundLong = false;
     for (Object o : d.getFieldValues("not_in_schema")) {
-      if (longVal == o) {
+      if (longVal.equals(o)) {
         foundLong = true;
       } else {
         assertTrue(o instanceof String);
@@ -618,7 +618,7 @@ public class ParsingFieldUpdateProcessorsTest extends UpdateProcessorTestBase {
     assertNotNull(d);
     boolean foundLong = false;
     for (Object o : d.getFieldValues("not_in_schema")) {
-      if (longVal == o) {
+      if (longVal.equals(o)) {
         foundLong = true;
       } else {
         assertTrue(o instanceof String);
@@ -720,7 +720,7 @@ public class ParsingFieldUpdateProcessorsTest extends UpdateProcessorTestBase {
     assertNotNull(d);
     boolean foundLong = false;
     for (Object o : d.getFieldValues("not_in_schema")) {
-      if (longVal == o) {
+      if (longVal.equals(o)) {
         foundLong = true;
       } else {
         assertTrue(o instanceof String);

@@ -207,7 +207,7 @@ public class SimpleFacets {
     SolrParams required = new RequiredSolrParams(params);
 
     // remove local params unless it's a query
-    if (type != FacetParams.FACET_QUERY) { // TODO Cut over to an Enum here
+    if (!FacetParams.FACET_QUERY.equals(type)) { // TODO Cut over to an Enum here
       facetValue = localParams.get(CommonParams.VALUE);
     }
 

@@ -272,7 +272,8 @@ public class TestStressRecovery extends TestRTGBase {
           try {
             while (operations.get() > 0) {
               // throttle reads (don't completely stop)
-              readPermission.tryAcquire(10, TimeUnit.MILLISECONDS);
+              // should not we make sure that we acquired a permit ?
+              readPermission.tryAcquire(10, TimeUnit.MILLISECONDS); 
 
 
               // bias toward a recently changed doc

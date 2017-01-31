@@ -83,6 +83,7 @@ public class TestLeaderInitiatedRecoveryThread extends AbstractFullDistribZkTest
       LeaderInitiatedRecoveryThread thread = new LeaderInitiatedRecoveryThread(zkController, coreContainer,
           DEFAULT_COLLECTION, SHARD1, replicaCoreNodeProps, 1, cd);
       assertFalse(zkController.isReplicaInRecoveryHandling(replicaCoreNodeProps.getCoreUrl()));
+      // did we mean thread.start() ???
       thread.run();
       fail("publishDownState should not have succeeded because replica url is not marked in leader initiated recovery in ZkController");
     } catch (SolrException e) {

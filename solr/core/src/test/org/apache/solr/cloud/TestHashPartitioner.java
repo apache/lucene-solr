@@ -57,9 +57,10 @@ public class TestHashPartitioner extends SolrTestCaseJ4 {
 
     for (int i = 1; i <= 30000; i++) {
       // start skipping at higher numbers
-      if (i > 100) i+=13;
+      // if we are doing > comparison, shouldn't we compare starting form 5000 down to 100?
+      if (i > 5000) i+=101;
       else if (i > 1000) i+=31;
-      else if (i > 5000) i+=101;
+      else if (i > 100) i+=13; 
 
       long rangeSize = 0x0000000100000000L / i;
 

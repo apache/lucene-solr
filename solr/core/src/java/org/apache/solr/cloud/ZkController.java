@@ -1197,12 +1197,10 @@ public class ZkController {
       }
       try (SolrCore core = cc.getCore(cd.getName())) {
         if (core != null && core.getDirectoryFactory().isSharedStorage()) {
-          if (core != null && core.getDirectoryFactory().isSharedStorage()) {
-            props.put("dataDir", core.getDataDir());
-            UpdateLog ulog = core.getUpdateHandler().getUpdateLog();
-            if (ulog != null) {
-              props.put("ulogDir", ulog.getLogDir());
-            }
+          props.put("dataDir", core.getDataDir());
+          UpdateLog ulog = core.getUpdateHandler().getUpdateLog();
+          if (ulog != null) {
+            props.put("ulogDir", ulog.getLogDir());
           }
         }
       }
@@ -1753,16 +1751,18 @@ public class ZkController {
         if (prevContext != null) prevContext.cancelElection();
         
         ZkNodeProps zkProps = new ZkNodeProps(BASE_URL_PROP, baseUrl, CORE_NAME_PROP, coreName, NODE_NAME_PROP, getNodeName(), CORE_NODE_NAME_PROP, coreNodeName);
-            
-        LeaderElector elect = ((ShardLeaderElectionContextBase) prevContext).getLeaderElector();
-        ShardLeaderElectionContext context = new ShardLeaderElectionContext(elect, shardId, collectionName,
-            coreNodeName, zkProps, this, getCoreContainer());
-            
-        context.leaderSeqPath = context.electionPath + LeaderElector.ELECTION_NODE + "/" + electionNode;
-        elect.setup(context);
-        electionContexts.put(contextKey, context);
         
-        elect.retryElection(context, params.getBool(REJOIN_AT_HEAD_PROP, false));
+        if(prevContext != null) {
+          LeaderElector elect = ((ShardLeaderElectionContextBase) prevContext).getLeaderElector();
+          ShardLeaderElectionContext context = new ShardLeaderElectionContext(elect, shardId, collectionName,
+              coreNodeName, zkProps, this, getCoreContainer());
+              
+          context.leaderSeqPath = context.electionPath + LeaderElector.ELECTION_NODE + "/" + electionNode;
+          elect.setup(context);
+          electionContexts.put(contextKey, context);
+          
+          elect.retryElection(context, params.getBool(REJOIN_AT_HEAD_PROP, false));
+        }
       }
     } catch (Exception e) {
       throw new SolrException(ErrorCode.SERVER_ERROR, "Unable to rejoin election", e);

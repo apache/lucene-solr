@@ -113,7 +113,7 @@ public class OrdFieldSource extends ValueSource {
           return -1;
         }
       }
-      
+ 
       protected String toTerm(String readableValue) {
         return readableValue;
       }

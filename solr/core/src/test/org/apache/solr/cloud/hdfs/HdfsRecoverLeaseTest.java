@@ -217,6 +217,7 @@ public class HdfsRecoverLeaseTest extends SolrTestCaseJ4 {
     for (int i = 0; i < threadCount; i++) {
       WriterThread wt = new WriterThread(i);
       writerThreads.add(wt);
+      // did we mean wt.start() ???
       wt.run();
     }
     

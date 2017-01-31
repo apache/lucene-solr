@@ -503,6 +503,7 @@ public class IntegrationTestGenerator {
      *         ({@link #LOG2M}, {@link #REGWIDTH}, {@link #EXPLICIT_THRESHOLD},
      *         and {@link #SPARSE_THRESHOLD}) specified above.
      */
+    // aren't we in an infinite loop here?
     private static HLL newHLL(final HLLType type) {
         return newHLL(type);
     }
