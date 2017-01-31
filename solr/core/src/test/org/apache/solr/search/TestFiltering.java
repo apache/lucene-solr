@@ -18,6 +18,7 @@ package org.apache.solr.search;
 
 
 import org.apache.lucene.search.DocIdSetIterator;
+import org.apache.lucene.search.Query;
 import org.apache.lucene.util.FixedBitSet;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.SolrInputDocument;
@@ -42,8 +43,63 @@ public class TestFiltering extends SolrTestCaseJ4 {
     initCore("solrconfig.xml","schema_latest.xml");
   }
 
+  @Test
+  public void testLiveDocsSharing() throws Exception {
+    clearIndex();
+    for (int i=0; i<20; i++) {
+      for (int repeat=0; repeat < (i%5==0 ? 2 : 1); repeat++) {
+        assertU(adoc("id", Integer.toString(i), "foo_s", "foo", "val_i", Integer.toString(i), "val_s", Character.toString((char)('A' + i))));
+      }
+    }
+    assertU(commit());
 
-  public void testCaching() throws Exception {
+    String[] queries = {
+        "foo_s:foo",
+        "foo_s:f*",
+        "*:*",
+        "id:[* TO *]",
+        "id:[0 TO 99]",
+        "val_i:[0 TO 20]",
+        "val_s:[A TO z]"
+    };
+
+    SolrQueryRequest req = req();
+    try {
+      SolrIndexSearcher searcher = req.getSearcher();
+
+      DocSet live = null;
+      for (String qstr :  queries) {
+        Query q = QParser.getParser(qstr, null, req).getQuery();
+        // System.out.println("getting set for " + q);
+        DocSet set = searcher.getDocSet(q);
+        if (live == null) {
+          live = searcher.getLiveDocs();
+        }
+        assertTrue( set == live);
+
+        QueryCommand cmd = new QueryCommand();
+        cmd.setQuery( QParser.getParser(qstr, null, req).getQuery() );
+        cmd.setLen(random().nextInt(30));
+        cmd.setNeedDocSet(true);
+        QueryResult res = new QueryResult();
+        searcher.search(res, cmd);
+        set = res.getDocSet();
+        assertTrue( set == live );
+
+        cmd.setQuery( QParser.getParser(qstr + " OR id:0", null, req).getQuery() );
+        cmd.setFilterList( QParser.getParser(qstr + " OR id:1", null, req).getQuery() );
+        res = new QueryResult();
+        searcher.search(res, cmd);
+        set = res.getDocSet();
+        assertTrue( set == live );
+      }
+
+    } finally {
+      req.close();
+    }
+  }
+
+    public void testCaching() throws Exception {
     clearIndex();
     assertU(adoc("id","4", "val_i","1"));
     assertU(adoc("id","1", "val_i","2"));
