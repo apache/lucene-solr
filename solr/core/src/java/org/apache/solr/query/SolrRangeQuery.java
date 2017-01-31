@@ -49,6 +49,7 @@ import org.apache.solr.search.BitDocSet;
 import org.apache.solr.search.DocSet;
 import org.apache.solr.search.DocSetBuilder;
 import org.apache.solr.search.DocSetProducer;
+import org.apache.solr.search.DocSetUtil;
 import org.apache.solr.search.ExtendedQueryBase;
 import org.apache.solr.search.Filter;
 import org.apache.solr.search.SolrIndexSearcher;
@@ -168,7 +169,8 @@ public final class SolrRangeQuery extends ExtendedQueryBase implements DocSetPro
       maxTermsPerSegment = Math.max(maxTermsPerSegment, termsVisited);
     }
 
-    return maxTermsPerSegment <= 1 ? builder.buildUniqueInOrder(liveBits) : builder.build(liveBits);
+    DocSet set =  maxTermsPerSegment <= 1 ? builder.buildUniqueInOrder(liveBits) : builder.build(liveBits);
+    return DocSetUtil.getDocSet(set, searcher);
   }
 
 
