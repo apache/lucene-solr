@@ -249,9 +249,7 @@ public class AnalyzingInfixSuggester extends Lookup implements Closeable {
 
     if (DirectoryReader.indexExists(dir)) {
       // Already built; open it:
-      writer = new IndexWriter(dir,
-                               getIndexWriterConfig(getGramAnalyzer(), IndexWriterConfig.OpenMode.APPEND));
-      searcherMgr = new SearcherManager(writer, null);
+      searcherMgr = new SearcherManager(dir, null);
     }
   }
 

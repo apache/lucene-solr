@@ -1360,7 +1360,8 @@ public class AnalyzingInfixSuggesterTest extends LuceneTestCase {
     // * SearcherManager's IndexWriter reference should be closed 
     //   (as evidenced by maybeRefreshBlocking() throwing AlreadyClosedException)
     Analyzer a = new MockAnalyzer(random(), MockTokenizer.WHITESPACE, false);
-    MyAnalyzingInfixSuggester suggester = new MyAnalyzingInfixSuggester(newDirectory(), a, a, 3, false,
+    Path tempDir = createTempDir("analyzingInfixContext");
+    final MyAnalyzingInfixSuggester suggester = new MyAnalyzingInfixSuggester(newFSDirectory(tempDir), a, a, 3, false,
         AnalyzingInfixSuggester.DEFAULT_ALL_TERMS_REQUIRED, AnalyzingInfixSuggester.DEFAULT_HIGHLIGHT, true);
     suggester.build(new InputArrayIterator(sharedInputs));
     assertNull(suggester.getIndexWriter());
@@ -1368,6 +1369,16 @@ public class AnalyzingInfixSuggesterTest extends LuceneTestCase {
     expectThrows(AlreadyClosedException.class, () -> suggester.getSearcherManager().maybeRefreshBlocking());
     
     suggester.close();
+
+    // After instantiating from an already-built suggester dir:
+    // * The IndexWriter should be null
+    // * The SearcherManager should be non-null
+    final MyAnalyzingInfixSuggester suggester2 = new MyAnalyzingInfixSuggester(newFSDirectory(tempDir), a, a, 3, false,
+        AnalyzingInfixSuggester.DEFAULT_ALL_TERMS_REQUIRED, AnalyzingInfixSuggester.DEFAULT_HIGHLIGHT, true);
+    assertNull(suggester2.getIndexWriter());
+    assertNotNull(suggester2.getSearcherManager());
+
+    suggester2.close();
     a.close();
   }
   
