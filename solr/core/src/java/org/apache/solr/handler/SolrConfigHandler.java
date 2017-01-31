@@ -76,6 +76,8 @@ import org.apache.solr.util.DefaultSolrThreadFactory;
 import org.apache.solr.util.RTimer;
 import org.apache.solr.util.SolrPluginUtils;
 import org.apache.solr.util.plugin.SolrCoreAware;
+import org.apache.solr.api.Api;
+import org.apache.solr.api.ApiBag;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -894,5 +896,19 @@ public class SolrConfigHandler extends RequestHandlerBase implements SolrCoreAwa
     protected SolrResponse createResponse(SolrClient client) {
       return null;
     }
+  }
+
+  @Override
+  public Collection<Api> getApis() {
+    return ApiBag.wrapRequestHandlers(this,
+        "core.config",
+        "core.config.Commands",
+        "core.config.Params",
+        "core.config.Params.Commands");
+  }
+
+  @Override
+  public Boolean registerV2() {
+    return Boolean.TRUE;
   }
 }

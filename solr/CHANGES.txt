@@ -118,6 +118,9 @@ New Features
 * SOLR-9481: Authentication and Authorization plugins now work in standalone mode if security.json is placed in
   SOLR_HOME on every node. Editing config through API is supported but affects only that one node. (janhoy)
 
+* SOLR-8029: Added new style APIs and a framework for creating new APIs and mapping old APIs to new
+  (noble, Steve Rowe, Cassandra Targett, Timothy Potter)
+
 Bug Fixes
 ----------------------
 

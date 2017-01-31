@@ -18,6 +18,7 @@ package org.apache.solr.handler.admin;
 
 import java.io.File;
 import java.lang.invoke.MethodHandles;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Iterator;
@@ -28,6 +29,7 @@ import java.util.concurrent.ExecutorService;
 
 import com.google.common.collect.ImmutableMap;
 import org.apache.commons.lang.StringUtils;
+import org.apache.solr.api.Api;
 import org.apache.solr.cloud.CloudDescriptor;
 import org.apache.solr.cloud.ZkController;
 import org.apache.solr.common.SolrException;
@@ -66,6 +68,7 @@ public class CoreAdminHandler extends RequestHandlerBase implements PermissionNa
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   protected final CoreContainer coreContainer;
   protected final Map<String, Map<String, TaskObject>> requestStatusMap;
+  private final CoreAdminHandlerApi coreAdminHandlerApi;
 
   protected ExecutorService parallelExecutor = ExecutorUtil.newMDCAwareFixedThreadPool(50,
       new DefaultSolrThreadFactory("parallelCoreAdminExecutor"));
@@ -88,6 +91,7 @@ public class CoreAdminHandler extends RequestHandlerBase implements PermissionNa
     map.put(COMPLETED, Collections.synchronizedMap(new LinkedHashMap<String, TaskObject>()));
     map.put(FAILED, Collections.synchronizedMap(new LinkedHashMap<String, TaskObject>()));
     requestStatusMap = Collections.unmodifiableMap(map);
+    coreAdminHandlerApi = new CoreAdminHandlerApi(this);
   }
 
 
@@ -103,6 +107,7 @@ public class CoreAdminHandler extends RequestHandlerBase implements PermissionNa
     map.put(COMPLETED, Collections.synchronizedMap(new LinkedHashMap<String, TaskObject>()));
     map.put(FAILED, Collections.synchronizedMap(new LinkedHashMap<String, TaskObject>()));
     requestStatusMap = Collections.unmodifiableMap(map);
+    coreAdminHandlerApi = new CoreAdminHandlerApi(this);
   }
 
 
@@ -118,6 +123,10 @@ public class CoreAdminHandler extends RequestHandlerBase implements PermissionNa
     super.initializeMetrics(manager, registryName, scope);
     parallelExecutor = MetricUtils.instrumentedExecutorService(parallelExecutor, manager.registry(registryName),
         SolrMetricManager.mkName("parallelCoreAdminExecutor", getCategory().name(),scope, "threadPool"));
+  }
+  @Override
+  public Boolean registerV2() {
+    return Boolean.TRUE;
   }
 
   /**
@@ -379,6 +388,11 @@ public class CoreAdminHandler extends RequestHandlerBase implements PermissionNa
       op.execute(this);
     }
 
+  }
+
+  @Override
+  public Collection<Api> getApis() {
+    return coreAdminHandlerApi.getApis();
   }
 
   static {

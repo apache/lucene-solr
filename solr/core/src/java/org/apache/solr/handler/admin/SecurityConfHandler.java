@@ -20,12 +20,15 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 
+import com.google.common.collect.ImmutableList;
+import org.apache.solr.api.ApiBag;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.util.Utils;
@@ -34,10 +37,16 @@ import org.apache.solr.handler.RequestHandlerBase;
 import org.apache.solr.handler.SolrConfigHandler;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
+import org.apache.solr.security.AuthenticationPlugin;
 import org.apache.solr.security.AuthorizationContext;
+import org.apache.solr.security.AuthorizationPlugin;
 import org.apache.solr.security.ConfigEditablePlugin;
 import org.apache.solr.security.PermissionNameProvider;
 import org.apache.solr.util.CommandOperation;
+import org.apache.solr.api.Api;
+import org.apache.solr.api.ApiBag.ReqHandlerToApi;
+import org.apache.solr.api.SpecProvider;
+import org.apache.solr.util.JsonSchemaValidator;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -243,6 +252,67 @@ public abstract class SecurityConfHandler extends RequestHandlerBase implements 
     public String toString() {
       return "SecurityConfig: version=" + version + ", data=" + Utils.toJSONString(data);
     } 
+  }
+
+  private Collection<Api> apis;
+  private AuthenticationPlugin authcPlugin;
+  private AuthorizationPlugin authzPlugin;
+
+  @Override
+  public Collection<Api> getApis() {
+    if (apis == null) {
+      synchronized (this) {
+        if (apis == null) {
+          Collection<Api> apis = new ArrayList<>();
+          final SpecProvider authcCommands = ApiBag.getSpec("cluster.security.authentication.Commands");
+          final SpecProvider authzCommands = ApiBag.getSpec("cluster.security.authorization.Commands");
+          apis.add(new ReqHandlerToApi(this, ApiBag.getSpec("cluster.security.authentication")));
+          apis.add(new ReqHandlerToApi(this, ApiBag.getSpec("cluster.security.authorization")));
+          SpecProvider authcSpecProvider = () -> {
+            AuthenticationPlugin authcPlugin = cores.getAuthenticationPlugin();
+            return authcPlugin != null && authcPlugin instanceof SpecProvider ?
+                ((SpecProvider) authcPlugin).getSpec() :
+                authcCommands.getSpec();
+          };
+
+          apis.add(new ReqHandlerToApi(this, authcSpecProvider) {
+            @Override
+            public synchronized Map<String, JsonSchemaValidator> getCommandSchema() {
+              //it is possible that the Authentication plugin is modified since the last call. invalidate the
+              // the cached commandSchema
+              if(SecurityConfHandler.this.authcPlugin != cores.getAuthenticationPlugin()) commandSchema = null;
+              SecurityConfHandler.this.authcPlugin = cores.getAuthenticationPlugin();
+              return super.getCommandSchema();
+            }
+          });
+
+          SpecProvider authzSpecProvider = () -> {
+            AuthorizationPlugin authzPlugin = cores.getAuthorizationPlugin();
+            return authzPlugin != null && authzPlugin instanceof SpecProvider ?
+                ((SpecProvider) authzPlugin).getSpec() :
+                authzCommands.getSpec();
+          };
+          apis.add(new ApiBag.ReqHandlerToApi(this, authzSpecProvider) {
+            @Override
+            public synchronized Map<String, JsonSchemaValidator> getCommandSchema() {
+              //it is possible that the Authorization plugin is modified since the last call. invalidate the
+              // the cached commandSchema
+              if(SecurityConfHandler.this.authzPlugin != cores.getAuthorizationPlugin()) commandSchema = null;
+              SecurityConfHandler.this.authzPlugin = cores.getAuthorizationPlugin();
+              return super.getCommandSchema();
+            }
+          });
+
+          this.apis = ImmutableList.copyOf(apis);
+        }
+      }
+    }
+    return this.apis;
+  }
+
+  @Override
+  public Boolean registerV2() {
+    return Boolean.TRUE;
   }
 }
 
