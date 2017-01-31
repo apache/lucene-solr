@@ -295,6 +295,7 @@ public class SolrSnapshotsTool implements Closeable {
       Optional<String> asyncReqId) {
     try {
       CollectionAdminRequest.Backup backup = new CollectionAdminRequest.Backup(collectionName, snapshotName);
+      backup.setCommitName(snapshotName);
       backup.setIndexBackupStrategy(CollectionAdminParams.COPY_FILES_STRATEGY);
       backup.setLocation(destPath);
       if (backupRepo.isPresent()) {
@@ -350,29 +351,29 @@ public class SolrSnapshotsTool implements Closeable {
 
     if (cmd.hasOption(CREATE) || cmd.hasOption(DELETE) || cmd.hasOption(LIST) || cmd.hasOption(DESCRIBE)
         || cmd.hasOption(PREPARE_FOR_EXPORT) || cmd.hasOption(EXPORT_SNAPSHOT)) {
-      try (SolrSnapshotsTool tool = new SolrSnapshotsTool(cmd.getOptionValue(SOLR_ZK_ENSEMBLE))) {
+      try (SolrSnapshotsTool tool = new SolrSnapshotsTool(requiredArg(options, cmd, SOLR_ZK_ENSEMBLE))) {
         if (cmd.hasOption(CREATE)) {
           String snapshotName = cmd.getOptionValue(CREATE);
-          String collectionName = cmd.getOptionValue(COLLECTION);
+          String collectionName = requiredArg(options, cmd, COLLECTION);
           tool.createSnapshot(collectionName, snapshotName);
 
         } else if (cmd.hasOption(DELETE)) {
           String snapshotName = cmd.getOptionValue(DELETE);
-          String collectionName = cmd.getOptionValue(COLLECTION);
+          String collectionName = requiredArg(options, cmd, COLLECTION);
           tool.deleteSnapshot(collectionName, snapshotName);
 
         } else if (cmd.hasOption(LIST)) {
-          String collectionName = cmd.getOptionValue(COLLECTION);
+          String collectionName = requiredArg(options, cmd, COLLECTION);
           tool.listSnapshots(collectionName);
 
         } else if (cmd.hasOption(DESCRIBE)) {
           String snapshotName = cmd.getOptionValue(DESCRIBE);
-          String collectionName = cmd.getOptionValue(COLLECTION);
+          String collectionName = requiredArg(options, cmd, COLLECTION);
           tool.describeSnapshot(collectionName, snapshotName);
 
         } else if (cmd.hasOption(PREPARE_FOR_EXPORT)) {
           String snapshotName = cmd.getOptionValue(PREPARE_FOR_EXPORT);
-          String collectionName = cmd.getOptionValue(COLLECTION);
+          String collectionName = requiredArg(options, cmd, COLLECTION);
           String localFsDir = requiredArg(options, cmd, TEMP_DIR);
           String hdfsOpDir = requiredArg(options, cmd, DEST_DIR);
           Optional<String> pathPrefix = Optional.ofNullable(cmd.getOptionValue(HDFS_PATH_PREFIX));
@@ -391,7 +392,7 @@ public class SolrSnapshotsTool implements Closeable {
 
         }  else if (cmd.hasOption(EXPORT_SNAPSHOT)) {
           String snapshotName = cmd.getOptionValue(EXPORT_SNAPSHOT);
-          String collectionName = cmd.getOptionValue(COLLECTION);
+          String collectionName = requiredArg(options, cmd, COLLECTION);
           String destDir = requiredArg(options, cmd, DEST_DIR);
           Optional<String> backupRepo = Optional.ofNullable(cmd.getOptionValue(BACKUP_REPO_NAME));
           Optional<String> asyncReqId = Optional.ofNullable(cmd.getOptionValue(ASYNC_REQ_ID));

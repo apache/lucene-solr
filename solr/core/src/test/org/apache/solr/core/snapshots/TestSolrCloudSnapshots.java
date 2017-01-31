@@ -249,6 +249,24 @@ public class TestSolrCloudSnapshots extends SolrCloudTestCase {
     // Verify all core-level snapshots are deleted.
     assertTrue("The cores remaining " + snapshotByCoreName, snapshotByCoreName.isEmpty());
     assertTrue(listCollectionSnapshots(solrClient, collectionName).isEmpty());
+
+    // Verify if the collection deletion result in proper cleanup of snapshot metadata.
+    {
+      String commitName_2 = commitName + "_2";
+
+      CollectionAdminRequest.CreateSnapshot createSnap_2 = new CollectionAdminRequest.CreateSnapshot(collectionName, commitName_2);
+      assertEquals(0, createSnap_2.process(solrClient).getStatus());
+
+      Collection<CollectionSnapshotMetaData> collectionSnaps_2 = listCollectionSnapshots(solrClient, collectionName);
+      assertEquals(1, collectionSnaps.size());
+      assertEquals(commitName_2, collectionSnaps_2.iterator().next().getName());
+
+      // Delete collection
+      CollectionAdminRequest.Delete deleteCol = CollectionAdminRequest.deleteCollection(collectionName);
+      assertEquals(0, deleteCol.process(solrClient).getStatus());
+      assertTrue(SolrSnapshotManager.listSnapshots(solrClient.getZkStateReader().getZkClient(), collectionName).isEmpty());
+    }
+
   }
 
   private Collection<CollectionSnapshotMetaData> listCollectionSnapshots(SolrClient adminClient, String collectionName) throws Exception {

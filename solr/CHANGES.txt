@@ -130,6 +130,8 @@ Bug Fixes
 
 * SOLR-9114: NPE using TermVectorComponent, MoreLikeThisComponent in combination with ExactStatsCache (Cao Manh Dat, Varun Thacker)
 
+* SOLR-10049: Collection deletion leaves behind the snapshot metadata (Hrishikesh Gadre via yonik)
+
 Optimizations
 ----------------------
 
