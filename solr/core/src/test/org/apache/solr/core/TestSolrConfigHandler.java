@@ -201,7 +201,8 @@ public class TestSolrConfigHandler extends RestTestBase {
         10);
 
     payload = "{\n" +
-        "'update-requesthandler' : { 'name' : '/x', 'class': 'org.apache.solr.handler.DumpRequestHandler' , 'startup' : 'lazy' , 'a':'b' , 'defaults': {'def_a':'def A val', 'multival':['a','b','c']}}\n" +
+        "'update-requesthandler' : { 'name' : '/x', 'class': 'org.apache.solr.handler.DumpRequestHandler' ,registerPath :'/,/v2', " +
+        " 'startup' : 'lazy' , 'a':'b' , 'defaults': {'def_a':'def A val', 'multival':['a','b','c']}}\n" +
         "}";
     runConfigCommand(writeHarness, "/config?wt=json", payload);
 
@@ -441,7 +442,8 @@ public class TestSolrConfigHandler extends RestTestBase {
     payload = "{\n" +
         "    'add-requesthandler': {\n" +
         "        name : '/dump100',\n" +
-        "        class : 'org.apache.solr.handler.DumpRequestHandler'," +
+        "       registerPath :'/,/v2',"+
+    "        class : 'org.apache.solr.handler.DumpRequestHandler'," +
         "        suggester: [{name: s1,lookupImpl: FuzzyLookupFactory, dictionaryImpl : DocumentDictionaryFactory}," +
         "                    {name: s2,lookupImpl: FuzzyLookupFactory , dictionaryImpl : DocumentExpressionDictionaryFactory}]" +
         "    }\n" +
@@ -457,13 +459,15 @@ public class TestSolrConfigHandler extends RestTestBase {
 
     map = getRespMap("/dump100?wt=json&json.nl=arrmap&initArgs=true", writeHarness);
     List initArgs = (List) map.get("initArgs");
+    assertNotNull(initArgs);
     assertTrue(initArgs.size() >= 2);
-    assertTrue(((Map)initArgs.get(0)).containsKey("suggester"));
+    assertTrue(((Map)initArgs.get(2)).containsKey("suggester"));
     assertTrue(((Map)initArgs.get(1)).containsKey("suggester"));
 
     payload = "{\n" +
         "'add-requesthandler' : { 'name' : '/dump101', 'class': " +
-        "'" + CacheTest.class.getName() + "' " +
+        "'" + CacheTest.class.getName() + "', " +
+        "    registerPath :'/,/v2'"+
         ", 'startup' : 'lazy'}\n" +
         "}";
     runConfigCommand(writeHarness, "/config?wt=json", payload);
