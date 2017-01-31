@@ -312,7 +312,7 @@ public class TestRuleBasedAuthorizationPlugin extends SolrTestCaseJ4 {
     perms.runCmd("{set-permission : {name: config-edit, role: admin } }", true);
     assertEquals("config-edit",  getObjectByPath(perms.conf, false, "permissions[0]/name"));
     assertEquals(1 , perms.getVal("permissions[0]/index"));
-    assertEquals("admin" ,  perms.getVal("permissions[0]/role"));
+    assertEquals("admin", perms.getVal("permissions[0]/role"));
     perms.runCmd("{set-permission : {name: config-edit, role: [admin, dev], index:2 } }", false);
     perms.runCmd("{set-permission : {name: config-edit, role: [admin, dev], index:1}}", true);
     Collection roles = (Collection) perms.getVal("permissions[0]/role");
@@ -324,19 +324,19 @@ public class TestRuleBasedAuthorizationPlugin extends SolrTestCaseJ4 {
     assertEquals("x", perms.getVal("permissions[1]/collection"));
     assertEquals("/a/b", perms.getVal("permissions[1]/path"));
     perms.runCmd("{update-permission : {index : 2, method : POST }}", true);
-    assertEquals("POST" , perms.getVal("permissions[1]/method"));
+    assertEquals("POST", perms.getVal("permissions[1]/method"));
     perms.runCmd("{set-permission : {name : read, collection : y, role:[guest, dev] ,  before :2}}", true);
     assertNotNull(perms.getVal("permissions[2]"));
     assertEquals("y", perms.getVal("permissions[1]/collection"));
     assertEquals("read", perms.getVal("permissions[1]/name"));
     perms.runCmd("{delete-permission : 3}", true);
     assertTrue(captureErrors(perms.parsedCommands).isEmpty());
-    assertEquals("y",perms.getVal("permissions[1]/collection"));
+    assertEquals("y", perms.getVal("permissions[1]/collection"));
   }
 
   static class  Perms {
     Map conf =  new HashMap<>();
-    RuleBasedAuthorizationPlugin plugin = new RuleBasedAuthorizationPlugin();
+    ConfigEditablePlugin plugin = new RuleBasedAuthorizationPlugin();
     List<CommandOperation> parsedCommands;
 
     public void runCmd(String cmds, boolean failOnError) throws IOException {

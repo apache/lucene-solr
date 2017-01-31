@@ -143,13 +143,13 @@ public class SolrMetricManagerTest extends SolrTestCaseJ4 {
 
     assertEquals(metrics.size() * 3, metricManager.registry(registryName).getMetrics().size());
 
-    // clear "foo.bar"
-    Set<String> removed = metricManager.clearMetrics(registryName, "foo", "bar");
+    // clear all metrics with prefix "foo.bar."
+    Set<String> removed = metricManager.clearMetrics(registryName, "foo", "bar.");
     assertEquals(metrics.size(), removed.size());
     for (String s : removed) {
       assertTrue(s.startsWith("foo.bar."));
     }
-    removed = metricManager.clearMetrics(registryName, "foo", "baz");
+    removed = metricManager.clearMetrics(registryName, "foo", "baz.");
     assertEquals(metrics.size(), removed.size());
     for (String s : removed) {
       assertTrue(s.startsWith("foo.baz."));

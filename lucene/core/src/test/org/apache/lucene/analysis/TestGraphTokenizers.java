@@ -21,16 +21,22 @@ import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Random;
+import java.util.Set;
 
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
 import org.apache.lucene.analysis.tokenattributes.PositionIncrementAttribute;
 import org.apache.lucene.analysis.tokenattributes.PositionLengthAttribute;
+import org.apache.lucene.util.BytesRefBuilder;
+import org.apache.lucene.util.IntsRef;
 import org.apache.lucene.util.automaton.Automata;
 import org.apache.lucene.util.automaton.Automaton;
+import org.apache.lucene.util.automaton.AutomatonTestUtil;
 import org.apache.lucene.util.automaton.Operations;
+import org.apache.lucene.util.fst.Util;
 
 import static org.apache.lucene.util.automaton.Operations.DEFAULT_MAX_DETERMINIZED_STATES;
 
@@ -565,7 +571,13 @@ public class TestGraphTokenizers extends BaseTokenStreamTestCase {
     assertSameLanguage(join(HOLE_A, SEP_A, s2a("abc")), ts);
   }
 
-  // TODO: testEndsWithHole... but we need posInc to set in TS.end()
+  public void testEndsWithHole() throws Exception {
+    final TokenStream ts = new CannedTokenStream(1, 0,
+                                                 new Token[] {
+                                                   token("abc", 2, 1),
+                                                 });
+    assertSameLanguage(join(HOLE_A, SEP_A, s2a("abc"), SEP_A, HOLE_A), ts);
+  }
 
   public void testSynHangingOverEnd() throws Exception {
     final TokenStream ts = new CannedTokenStream(
@@ -576,14 +588,47 @@ public class TestGraphTokenizers extends BaseTokenStreamTestCase {
     assertSameLanguage(Operations.union(s2a("a"), s2a("X")), ts);
   }
 
+  /** Returns all paths */
+  private Set<String> toPathStrings(Automaton a) {
+    BytesRefBuilder scratchBytesRefBuilder = new BytesRefBuilder();
+    Set<String> paths = new HashSet<>();
+    for (IntsRef ir: AutomatonTestUtil.getFiniteStringsRecursive(a, -1)) {
+      paths.add(Util.toBytesRef(ir, scratchBytesRefBuilder).utf8ToString().replace((char) TokenStreamToAutomaton.POS_SEP, ' '));
+    }
+    return paths;
+  }
+
   private void assertSameLanguage(Automaton expected, TokenStream ts) throws IOException {
     assertSameLanguage(expected, new TokenStreamToAutomaton().toAutomaton(ts));
   }
 
   private void assertSameLanguage(Automaton expected, Automaton actual) {
-    assertTrue(Operations.sameLanguage(
-      Operations.determinize(Operations.removeDeadStates(expected), DEFAULT_MAX_DETERMINIZED_STATES),
-      Operations.determinize(Operations.removeDeadStates(actual), DEFAULT_MAX_DETERMINIZED_STATES)));
+    Automaton expectedDet = Operations.determinize(Operations.removeDeadStates(expected), DEFAULT_MAX_DETERMINIZED_STATES);
+    Automaton actualDet = Operations.determinize(Operations.removeDeadStates(actual), DEFAULT_MAX_DETERMINIZED_STATES);
+    if (Operations.sameLanguage(expectedDet, actualDet) == false) {
+      Set<String> expectedPaths = toPathStrings(expectedDet);
+      Set<String> actualPaths = toPathStrings(actualDet);
+      StringBuilder b = new StringBuilder();
+      b.append("expected:\n");
+      for(String path : expectedPaths) {
+        b.append("  ");
+        b.append(path);
+        if (actualPaths.contains(path) == false) {
+          b.append(" [missing!]");
+        }
+        b.append('\n');
+      }
+      b.append("actual:\n");
+      for(String path : actualPaths) {
+        b.append("  ");
+        b.append(path);
+        if (expectedPaths.contains(path) == false) {
+          b.append(" [unexpected!]");
+        }
+        b.append('\n');
+      }
+      fail("accepted language is different:\n\n" + b.toString());
+    }
   }
 
   public void testTokenStreamGraphWithHoles() throws Exception {

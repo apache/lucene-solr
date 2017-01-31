@@ -33,13 +33,18 @@ public class StrUtils {
   public static final char[] HEX_DIGITS = { '0', '1', '2', '3', '4', '5', '6',
       '7', '8', '9', 'a', 'b', 'c', 'd', 'e', 'f' };
 
+  public static List<String> splitSmart(String s, char separator) {
+    ArrayList<String> lst = new ArrayList<>(4);
+    splitSmart(s, separator, lst);
+    return lst;
+
+  }
   /**
    * Split a string based on a separator, but don't split if it's inside
    * a string.  Assume '\' escapes the next char both inside and
    * outside strings.
    */
-  public static List<String> splitSmart(String s, char separator) {
-    ArrayList<String> lst = new ArrayList<>(4);
+  public static void splitSmart(String s, char separator, List<String> lst) {
     int pos=0, start=0, end=s.length();
     char inString=0;
     char ch=0;
@@ -72,7 +77,6 @@ public class StrUtils {
     }
     ***/
 
-    return lst;
   }
 
   /** Splits a backslash escaped string on the separator.

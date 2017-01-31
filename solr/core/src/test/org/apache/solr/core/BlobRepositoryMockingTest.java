@@ -25,10 +25,13 @@ import java.nio.charset.Charset;
 import java.util.concurrent.ConcurrentHashMap;
 
 import org.apache.commons.io.IOUtils;
+import org.apache.lucene.util.Constants;
+import org.apache.lucene.util.LuceneTestCase;
 import org.apache.solr.common.SolrException;
 import org.easymock.EasyMock;
 import org.junit.After;
 import org.junit.Before;
+import org.junit.BeforeClass;
 import org.junit.Test;
 
 import static org.easymock.EasyMock.anyObject;
@@ -64,7 +67,11 @@ public class BlobRepositoryMockingTest {
   boolean blobFetched = false;
   String blobKey = "";
 
-
+  @BeforeClass
+  public static void beforeClass() throws Exception {
+    LuceneTestCase.assumeFalse("SOLR-9893: EasyMock does not work with Java 9", Constants.JRE_IS_MINIMUM_JAVA9);
+  }
+  
   @Before
   public void setUp() throws IllegalAccessException, NoSuchFieldException {
     blobFetched = false;

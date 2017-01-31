@@ -584,4 +584,9 @@ public class TermsComponent extends SearchComponent {
   public String getDescription() {
     return "A Component for working with Term Enumerators";
   }
+
+  @Override
+  public Category getCategory() {
+    return Category.QUERY;
+  }
 }

@@ -221,6 +221,11 @@ public class TestMutablePointsReaderUtils extends LuceneTestCase {
     }
 
     @Override
+    public long estimatePointCount(IntersectVisitor visitor) {
+      throw new UnsupportedOperationException();
+    }
+
+    @Override
     public byte[] getMinPackedValue() throws IOException {
       throw new UnsupportedOperationException();
     }

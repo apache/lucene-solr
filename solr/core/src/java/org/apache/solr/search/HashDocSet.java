@@ -290,7 +290,7 @@ public final class HashDocSet extends DocSetBase {
   }
 
   @Override
-  protected HashDocSet clone() {
+  public HashDocSet clone() {
     return new HashDocSet(this);
   }
 

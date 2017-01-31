@@ -21,7 +21,6 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Objects;
 import java.util.Set;
@@ -73,39 +72,12 @@ public class TermInSetQuery extends Query implements Accountable {
   // Same threshold as MultiTermQueryConstantScoreWrapper
   static final int BOOLEAN_REWRITE_TERM_COUNT_THRESHOLD = 16;
 
-  private final boolean singleField; // whether all terms are from the same field
+  private final String field;
   private final PrefixCodedTerms termData;
   private final int termDataHashCode; // cached hashcode of termData
 
   /**
-   * Creates a new {@link TermInSetQuery} from the given collection. It
-   * can contain duplicate terms and multiple fields.
-   */
-  public TermInSetQuery(Collection<Term> terms) {
-    Term[] sortedTerms = terms.toArray(new Term[terms.size()]);
-    // already sorted if we are a SortedSet with natural order
-    boolean sorted = terms instanceof SortedSet && ((SortedSet<Term>)terms).comparator() == null;
-    if (!sorted) {
-      ArrayUtil.timSort(sortedTerms);
-    }
-    PrefixCodedTerms.Builder builder = new PrefixCodedTerms.Builder();
-    Set<String> fields = new HashSet<>();
-    Term previous = null;
-    for (Term term : sortedTerms) {
-      if (term.equals(previous) == false) {
-        fields.add(term.field());
-        builder.add(term);
-      }
-      previous = term;
-    }
-    singleField = fields.size() == 1;
-    termData = builder.finish();
-    termDataHashCode = termData.hashCode();
-  }
-
-  /**
-   * Creates a new {@link TermInSetQuery} from the given collection for
-   * a single field. It can contain duplicate terms.
+   * Creates a new {@link TermInSetQuery} from the given collection of terms.
    */
   public TermInSetQuery(String field, Collection<BytesRef> terms) {
     BytesRef[] sortedTerms = terms.toArray(new BytesRef[terms.size()]);
@@ -125,25 +97,16 @@ public class TermInSetQuery extends Query implements Accountable {
       builder.add(field, term);
       previous.copyBytes(term);
     }
-    singleField = true;
+    this.field = field;
     termData = builder.finish();
     termDataHashCode = termData.hashCode();
   }
 
   /**
-   * Creates a new {@link TermInSetQuery} from the given {@link BytesRef} array for
-   * a single field.
+   * Creates a new {@link TermInSetQuery} from the given array of terms.
    */
   public TermInSetQuery(String field, BytesRef...terms) {
     this(field, Arrays.asList(terms));
-  }
-
-  /**
-   * Creates a new {@link TermInSetQuery} from the given array. The array can
-   * contain duplicate terms and multiple fields.
-   */
-  public TermInSetQuery(final Term... terms) {
-    this(Arrays.asList(terms));
   }
 
   @Override
@@ -167,6 +130,7 @@ public class TermInSetQuery extends Query implements Accountable {
   }
 
   private boolean equalsTo(TermInSetQuery other) {
+    // no need to check 'field' explicitly since it is encoded in 'termData'
     // termData might be heavy to compare so check the hash code first
     return termDataHashCode == other.termDataHashCode &&
         termData.equals(other.termData);
@@ -260,6 +224,15 @@ public class TermInSetQuery extends Query implements Accountable {
       private WeightOrDocIdSet rewrite(LeafReaderContext context) throws IOException {
         final LeafReader reader = context.reader();
 
+        final Fields fields = reader.fields();
+        Terms terms = fields.terms(field);
+        if (terms == null) {
+          return null;
+        }
+        TermsEnum termsEnum = terms.iterator();
+        PostingsEnum docs = null;
+        TermIterator iterator = termData.iterator();
+
         // We will first try to collect up to 'threshold' terms into 'matchingTerms'
         // if there are two many terms, we will fall back to building the 'builder'
         final int threshold = Math.min(BOOLEAN_REWRITE_TERM_COUNT_THRESHOLD, BooleanQuery.getMaxClauseCount());
@@ -267,25 +240,9 @@ public class TermInSetQuery extends Query implements Accountable {
         List<TermAndState> matchingTerms = new ArrayList<>(threshold);
         DocIdSetBuilder builder = null;
 
-        final Fields fields = reader.fields();
-        String lastField = null;
-        Terms terms = null;
-        TermsEnum termsEnum = null;
-        PostingsEnum docs = null;
-        TermIterator iterator = termData.iterator();
         for (BytesRef term = iterator.next(); term != null; term = iterator.next()) {
-          String field = iterator.field();
-          // comparing references is fine here
-          if (field != lastField) {
-            terms = fields.terms(field);
-            if (terms == null) {
-              termsEnum = null;
-            } else {
-              termsEnum = terms.iterator();
-            }
-            lastField = field;
-          }
-          if (termsEnum != null && termsEnum.seekExact(term)) {
+          assert field.equals(iterator.field());
+          if (termsEnum.seekExact(term)) {
             if (matchingTerms == null) {
               docs = termsEnum.postings(docs, PostingsEnum.NONE);
               builder.add(docs);
@@ -293,15 +250,7 @@ public class TermInSetQuery extends Query implements Accountable {
               matchingTerms.add(new TermAndState(field, termsEnum));
             } else {
               assert matchingTerms.size() == threshold;
-              if (singleField) {
-                // common case: all terms are in the same field
-                // use an optimized builder that leverages terms stats to be more efficient
-                builder = new DocIdSetBuilder(reader.maxDoc(), terms);
-              } else {
-                // corner case: different fields
-                // don't make assumptions about the docs we will get
-                builder = new DocIdSetBuilder(reader.maxDoc());
-              }
+              builder = new DocIdSetBuilder(reader.maxDoc(), terms);
               docs = termsEnum.postings(docs, PostingsEnum.NONE);
               builder.add(docs);
               for (TermAndState t : matchingTerms) {
@@ -344,7 +293,9 @@ public class TermInSetQuery extends Query implements Accountable {
       @Override
       public BulkScorer bulkScorer(LeafReaderContext context) throws IOException {
         final WeightOrDocIdSet weightOrBitSet = rewrite(context);
-        if (weightOrBitSet.weight != null) {
+        if (weightOrBitSet == null) {
+          return null;
+        } else if (weightOrBitSet.weight != null) {
           return weightOrBitSet.weight.bulkScorer(context);
         } else {
           final Scorer scorer = scorer(weightOrBitSet.set);
@@ -358,7 +309,9 @@ public class TermInSetQuery extends Query implements Accountable {
       @Override
       public Scorer scorer(LeafReaderContext context) throws IOException {
         final WeightOrDocIdSet weightOrBitSet = rewrite(context);
-        if (weightOrBitSet.weight != null) {
+        if (weightOrBitSet == null) {
+          return null;
+        } else if (weightOrBitSet.weight != null) {
           return weightOrBitSet.weight.scorer(context);
         } else {
           return scorer(weightOrBitSet.set);

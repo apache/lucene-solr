@@ -223,6 +223,41 @@ public final class BKDReader extends PointValues implements Accountable {
     
     /** Only valid after pushLeft or pushRight, not pop! */
     public abstract long getLeafBlockFP();
+
+    /** Return the number of leaves below the current node. */
+    public int getNumLeaves() {
+      int leftMostLeafNode = nodeID;
+      while (leftMostLeafNode < leafNodeOffset) {
+        leftMostLeafNode = leftMostLeafNode * 2;
+      }
+      int rightMostLeafNode = nodeID;
+      while (rightMostLeafNode < leafNodeOffset) {
+        rightMostLeafNode = rightMostLeafNode * 2 + 1;
+      }
+      final int numLeaves;
+      if (rightMostLeafNode >= leftMostLeafNode) {
+        // both are on the same level
+        numLeaves = rightMostLeafNode - leftMostLeafNode + 1;
+      } else {
+        // left is one level deeper than right
+        numLeaves = rightMostLeafNode - leftMostLeafNode + 1 + leafNodeOffset;
+      }
+      assert numLeaves == getNumLeavesSlow(nodeID) : numLeaves + " " + getNumLeavesSlow(nodeID);
+      return numLeaves;
+    }
+
+    // for assertions
+    private int getNumLeavesSlow(int node) {
+      if (node >= 2 * leafNodeOffset) {
+        return 0;
+      } else if (node >= leafNodeOffset) {
+        return 1;
+      } else {
+        final int leftCount = getNumLeavesSlow(node * 2);
+        final int rightCount = getNumLeavesSlow(node * 2 + 1);
+        return leftCount + rightCount;
+      }
+    }
   }
 
   /** Reads the original simple yet heap-heavy index format */
@@ -482,8 +517,14 @@ public final class BKDReader extends PointValues implements Accountable {
     }
   }
 
+  @Override
   public void intersect(IntersectVisitor visitor) throws IOException {
     intersect(getIntersectState(visitor), minPackedValue, maxPackedValue);
+  }
+
+  @Override
+  public long estimatePointCount(IntersectVisitor visitor) {
+    return estimatePointCount(getIntersectState(visitor), minPackedValue, maxPackedValue);
   }
 
   /** Fast path: this is called when the query box fully encompasses all cells under this node. */
@@ -693,6 +734,61 @@ public final class BKDReader extends PointValues implements Accountable {
       state.index.pushRight();
       intersect(state, splitPackedValue, cellMaxPacked);
       state.index.pop();
+    }
+  }
+
+  private long estimatePointCount(IntersectState state, byte[] cellMinPacked, byte[] cellMaxPacked) {
+
+    /*
+    System.out.println("\nR: intersect nodeID=" + state.index.getNodeID());
+    for(int dim=0;dim<numDims;dim++) {
+      System.out.println("  dim=" + dim + "\n    cellMin=" + new BytesRef(cellMinPacked, dim*bytesPerDim, bytesPerDim) + "\n    cellMax=" + new BytesRef(cellMaxPacked, dim*bytesPerDim, bytesPerDim));
+    }
+    */
+
+    Relation r = state.visitor.compare(cellMinPacked, cellMaxPacked);
+
+    if (r == Relation.CELL_OUTSIDE_QUERY) {
+      // This cell is fully outside of the query shape: stop recursing
+      return 0L;
+    } else if (r == Relation.CELL_INSIDE_QUERY) {
+      return (long) maxPointsInLeafNode * state.index.getNumLeaves();
+    } else if (state.index.isLeafNode()) {
+      // Assume half the points matched
+      return (maxPointsInLeafNode + 1) / 2;
+    } else {
+      
+      // Non-leaf node: recurse on the split left and right nodes
+      int splitDim = state.index.getSplitDim();
+      assert splitDim >= 0: "splitDim=" + splitDim;
+      assert splitDim < numDims;
+
+      byte[] splitPackedValue = state.index.getSplitPackedValue();
+      BytesRef splitDimValue = state.index.getSplitDimValue();
+      assert splitDimValue.length == bytesPerDim;
+      //System.out.println("  splitDimValue=" + splitDimValue + " splitDim=" + splitDim);
+
+      // make sure cellMin <= splitValue <= cellMax:
+      assert StringHelper.compare(bytesPerDim, cellMinPacked, splitDim*bytesPerDim, splitDimValue.bytes, splitDimValue.offset) <= 0: "bytesPerDim=" + bytesPerDim + " splitDim=" + splitDim + " numDims=" + numDims;
+      assert StringHelper.compare(bytesPerDim, cellMaxPacked, splitDim*bytesPerDim, splitDimValue.bytes, splitDimValue.offset) >= 0: "bytesPerDim=" + bytesPerDim + " splitDim=" + splitDim + " numDims=" + numDims;
+
+      // Recurse on left sub-tree:
+      System.arraycopy(cellMaxPacked, 0, splitPackedValue, 0, packedBytesLength);
+      System.arraycopy(splitDimValue.bytes, splitDimValue.offset, splitPackedValue, splitDim*bytesPerDim, bytesPerDim);
+      state.index.pushLeft();
+      final long leftCost = estimatePointCount(state, cellMinPacked, splitPackedValue);
+      state.index.pop();
+
+      // Restore the split dim value since it may have been overwritten while recursing:
+      System.arraycopy(splitPackedValue, splitDim*bytesPerDim, splitDimValue.bytes, splitDimValue.offset, bytesPerDim);
+
+      // Recurse on right sub-tree:
+      System.arraycopy(cellMinPacked, 0, splitPackedValue, 0, packedBytesLength);
+      System.arraycopy(splitDimValue.bytes, splitDimValue.offset, splitPackedValue, splitDim*bytesPerDim, bytesPerDim);
+      state.index.pushRight();
+      final long rightCost = estimatePointCount(state, splitPackedValue, cellMaxPacked);
+      state.index.pop();
+      return leftCost + rightCost;
     }
   }
 

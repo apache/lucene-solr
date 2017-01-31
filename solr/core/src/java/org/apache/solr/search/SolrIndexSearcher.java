@@ -98,6 +98,8 @@ import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.schema.BoolField;
 import org.apache.solr.schema.EnumField;
 import org.apache.solr.schema.IndexSchema;
+import org.apache.solr.schema.NumericFieldType;
+import org.apache.solr.schema.PointField;
 import org.apache.solr.schema.SchemaField;
 import org.apache.solr.schema.TrieDateField;
 import org.apache.solr.schema.TrieDoubleField;
@@ -425,6 +427,10 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
 
   public final int maxDoc() {
     return reader.maxDoc();
+  }
+
+  public final int numDocs() {
+    return reader.numDocs();
   }
 
   public final int docFreq(Term term) throws IOException {
@@ -807,7 +813,11 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
           }
         }
       } else {
-        final DocValuesType dvType = fieldInfos.fieldInfo(fieldName).getDocValuesType();
+        FieldInfo fi = fieldInfos.fieldInfo(fieldName);
+        if (fi == null) {
+          continue; // Searcher doesn't have info about this field, hence ignore it.
+        }
+        final DocValuesType dvType = fi.getDocValuesType();
         switch (dvType) {
           case NUMERIC:
             final NumericDocValues ndv = leafReader.getNumericDocValues(fieldName);
@@ -821,16 +831,39 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
               continue;
             }
             Object newVal = val;
-            if (schemaField.getType() instanceof TrieIntField) {
-              newVal = val.intValue();
-            } else if (schemaField.getType() instanceof TrieFloatField) {
-              newVal = Float.intBitsToFloat(val.intValue());
-            } else if (schemaField.getType() instanceof TrieDoubleField) {
-              newVal = Double.longBitsToDouble(val);
-            } else if (schemaField.getType() instanceof TrieDateField) {
-              newVal = new Date(val);
-            } else if (schemaField.getType() instanceof EnumField) {
-              newVal = ((EnumField) schemaField.getType()).intValueToStringValue(val.intValue());
+            if (schemaField.getType().isPointField()) {
+              NumericFieldType.NumberType type = ((PointField)schemaField.getType()).getType(); 
+              switch (type) {
+                case INTEGER:
+                  newVal = val.intValue();
+                  break;
+                case LONG:
+                  newVal = val.longValue();
+                  break;
+                case FLOAT:
+                  newVal = Float.intBitsToFloat(val.intValue());
+                  break;
+                case DOUBLE:
+                  newVal = Double.longBitsToDouble(val);
+                  break;
+                case DATE:
+                  newVal = new Date(val);
+                  break;
+                default:
+                  throw new AssertionError("Unexpected PointType: " + type);
+              }
+            } else {
+              if (schemaField.getType() instanceof TrieIntField) {
+                newVal = val.intValue();
+              } else if (schemaField.getType() instanceof TrieFloatField) {
+                newVal = Float.intBitsToFloat(val.intValue());
+              } else if (schemaField.getType() instanceof TrieDoubleField) {
+                newVal = Double.longBitsToDouble(val);
+              } else if (schemaField.getType() instanceof TrieDateField) {
+                newVal = new Date(val);
+              } else if (schemaField.getType() instanceof EnumField) {
+                newVal = ((EnumField) schemaField.getType()).intValueToStringValue(val.intValue());
+              }
             }
             doc.addField(fieldName, newVal);
             break;
@@ -1034,19 +1067,24 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
     getDocSet(query);
   }
 
-  public BitDocSet getDocSetBits(Query q) throws IOException {
-    DocSet answer = getDocSet(q);
-    if (answer instanceof BitDocSet) {
-      return (BitDocSet) answer;
-    }
-
+  private BitDocSet makeBitDocSet(DocSet answer) {
+    // TODO: this should be implemented in DocSet, most likely with a getBits method that takes a maxDoc argument
+    // or make DocSet instances remember maxDoc
     FixedBitSet bs = new FixedBitSet(maxDoc());
     DocIterator iter = answer.iterator();
     while (iter.hasNext()) {
       bs.set(iter.nextDoc());
     }
 
-    BitDocSet answerBits = new BitDocSet(bs, answer.size());
+    return new BitDocSet(bs, answer.size());
+  }
+
+  public BitDocSet getDocSetBits(Query q) throws IOException {
+    DocSet answer = getDocSet(q);
+    if (answer instanceof BitDocSet) {
+      return (BitDocSet) answer;
+    }
+    BitDocSet answerBits = makeBitDocSet(answer);
     if (filterCache != null) {
       filterCache.put(q, answerBits);
     }
@@ -1109,14 +1147,33 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
   }
 
   private static Query matchAllDocsQuery = new MatchAllDocsQuery();
-  private BitDocSet liveDocs;
+  private volatile BitDocSet liveDocs;
 
+  /** @lucene.internal the type of DocSet returned may change in the future */
   public BitDocSet getLiveDocs() throws IOException {
-    // going through the filter cache will provide thread safety here
+    // Going through the filter cache will provide thread safety here if we only had getLiveDocs,
+    // but the addition of setLiveDocs means we needed to add volatile to "liveDocs".
     if (liveDocs == null) {
       liveDocs = getDocSetBits(matchAllDocsQuery);
     }
+    assert liveDocs.size() == numDocs();
     return liveDocs;
+  }
+
+  /** @lucene.internal */
+  public boolean isLiveDocsInstantiated() {
+    return liveDocs != null;
+  }
+
+  /** @lucene.internal */
+  public void setLiveDocs(DocSet docs) {
+    // a few places currently expect BitDocSet
+    assert docs.size() == numDocs();
+    if (docs instanceof BitDocSet) {
+      this.liveDocs = (BitDocSet)docs;
+    } else {
+      this.liveDocs = makeBitDocSet(docs);
+    }
   }
 
   public static class ProcessedFilter {
@@ -1149,8 +1206,7 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
       ((DelegatingCollector) collector).finish();
     }
 
-    DocSet docSet = setCollector.getDocSet();
-    return docSet;
+    return DocSetUtil.getDocSet(setCollector, this);
   }
 
   /**
@@ -1222,7 +1278,7 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
       ((DelegatingCollector) collector).finish();
     }
 
-    return setCollector.getDocSet();
+    return DocSetUtil.getDocSet(setCollector, this);
   }
 
   public ProcessedFilter getProcessedFilter(DocSet setFilter, List<Query> queries) throws IOException {
@@ -1930,7 +1986,7 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
 
       buildAndRunCollectorChain(qr, query, collector, cmd, pf.postFilter);
 
-      set = setCollector.getDocSet();
+      set = DocSetUtil.getDocSet(setCollector, this);
 
       nDocsReturned = 0;
       ids = new int[nDocsReturned];
@@ -1947,7 +2003,7 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
 
       buildAndRunCollectorChain(qr, query, collector, cmd, pf.postFilter);
 
-      set = setCollector.getDocSet();
+      set = DocSetUtil.getDocSet(setCollector, this);
 
       totalHits = topCollector.getTotalHits();
       assert (totalHits == set.size());

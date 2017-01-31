@@ -30,9 +30,10 @@ import org.apache.solr.common.util.NamedList;
 public interface SolrInfoMBean {
 
   /**
-   * Category of {@link SolrCore} component.
+   * Category of Solr component.
    */
-  enum Category { CORE, QUERYHANDLER, UPDATEHANDLER, CACHE, HIGHLIGHTING, QUERYPARSER, SEARCHER, REPLICATION, TLOG, INDEX, DIRECTORY, HTTP, OTHER }
+  enum Category { CONTAINER, ADMIN, CORE, QUERY, UPDATE, CACHE, HIGHLIGHTER, QUERYPARSER, SPELLCHECKER,
+    SEARCHER, REPLICATION, TLOG, INDEX, DIRECTORY, HTTP, OTHER }
 
   /**
    * Top-level group of beans for a subsystem.

@@ -18,9 +18,10 @@
 package org.apache.solr.handler.admin;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 import com.codahale.metrics.Counter;
@@ -34,7 +35,6 @@ import org.apache.solr.common.SolrException;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.core.CoreContainer;
-import org.apache.solr.core.SolrCore;
 import org.apache.solr.handler.RequestHandlerBase;
 import org.apache.solr.metrics.SolrMetricManager;
 import org.apache.solr.request.SolrQueryRequest;
@@ -74,59 +74,85 @@ public class MetricsHandler extends RequestHandlerBase implements PermissionName
     MetricFilter mustMatchFilter = parseMustMatchFilter(req);
     List<MetricType> metricTypes = parseMetricTypes(req);
     List<MetricFilter> metricFilters = metricTypes.stream().map(MetricType::asMetricFilter).collect(Collectors.toList());
-    List<Group> requestedGroups = parseGroups(req);
+    Set<String> requestedRegistries = parseRegistries(req);
 
     NamedList response = new NamedList();
-    for (Group group : requestedGroups) {
-      String registryName = SolrMetricManager.getRegistryName(group);
-      if (group == Group.core) {
-        // this requires special handling because of the way we create registry name for a core (deeply nested)
-        container.getAllCoreNames().forEach(s -> {
-          String coreRegistryName;
-          try (SolrCore core = container.getCore(s)) {
-            coreRegistryName = core.getCoreMetricManager().getRegistryName();
-          }
-          MetricRegistry registry = metricManager.registry(coreRegistryName);
-          response.add(coreRegistryName, MetricUtils.toNamedList(registry, metricFilters, mustMatchFilter));
-        });
-      } else {
-        MetricRegistry registry = metricManager.registry(registryName);
-        response.add(registryName, MetricUtils.toNamedList(registry, metricFilters, mustMatchFilter));
-      }
+    for (String registryName : requestedRegistries) {
+      MetricRegistry registry = metricManager.registry(registryName);
+      response.add(registryName, MetricUtils.toNamedList(registry, metricFilters, mustMatchFilter));
     }
     rsp.getValues().add("metrics", response);
   }
 
   private MetricFilter parseMustMatchFilter(SolrQueryRequest req) {
-    String prefix = req.getParams().get("prefix");
+    String[] prefixes = req.getParams().getParams("prefix");
     MetricFilter mustMatchFilter;
-    if (prefix != null) {
-      mustMatchFilter = new SolrMetricManager.PrefixFilter(prefix.trim());
+    if (prefixes != null && prefixes.length > 0) {
+      Set<String> prefixSet = new HashSet<>();
+      for (String prefix : prefixes) {
+        prefixSet.addAll(StrUtils.splitSmart(prefix, ','));
+      }
+      mustMatchFilter = new SolrMetricManager.PrefixFilter((String[])prefixSet.toArray(new String[prefixSet.size()]));
     } else  {
       mustMatchFilter = MetricFilter.ALL;
     }
     return mustMatchFilter;
   }
 
-  private List<Group> parseGroups(SolrQueryRequest req) {
+  private Set<String> parseRegistries(SolrQueryRequest req) {
     String[] groupStr = req.getParams().getParams("group");
-    List<String> groups = Collections.emptyList();
+    String[] registryStr = req.getParams().getParams("registry");
+    if ((groupStr == null || groupStr.length == 0) && (registryStr == null || registryStr.length == 0)) {
+      // return all registries
+      return container.getMetricManager().registryNames();
+    }
+    boolean allRegistries = false;
+    Set<String> initialPrefixes = Collections.emptySet();
     if (groupStr != null && groupStr.length > 0) {
-      groups = new ArrayList<>();
+      initialPrefixes = new HashSet<>();
       for (String g : groupStr) {
-        groups.addAll(StrUtils.splitSmart(g, ','));
+        List<String> split = StrUtils.splitSmart(g, ',');
+        for (String s : split) {
+          if (s.trim().equals("all")) {
+            allRegistries = true;
+            break;
+          }
+          initialPrefixes.add(SolrMetricManager.overridableRegistryName(s.trim()));
+        }
+        if (allRegistries) {
+          return container.getMetricManager().registryNames();
+        }
       }
     }
 
-    List<Group> requestedGroups = Arrays.asList(Group.values()); // by default we return all groups
-    try {
-      if (groups.size() > 0 && !groups.contains("all")) {
-        requestedGroups = groups.stream().map(String::trim).map(Group::valueOf).collect(Collectors.toList());
+    if (registryStr != null && registryStr.length > 0) {
+      if (initialPrefixes.isEmpty()) {
+        initialPrefixes = new HashSet<>();
       }
-    } catch (IllegalArgumentException e) {
-      throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Invalid group in: " + groups + " specified. Must be one of (all, jvm, jetty, http, node, core)", e);
+      for (String r : registryStr) {
+        List<String> split = StrUtils.splitSmart(r, ',');
+        for (String s : split) {
+          if (s.trim().equals("all")) {
+            allRegistries = true;
+            break;
+          }
+          initialPrefixes.add(SolrMetricManager.overridableRegistryName(s.trim()));
+        }
+        if (allRegistries) {
+          return container.getMetricManager().registryNames();
+        }
+      }
     }
-    return requestedGroups;
+    Set<String> validRegistries = new HashSet<>();
+    for (String r : container.getMetricManager().registryNames()) {
+      for (String prefix : initialPrefixes) {
+        if (r.startsWith(prefix)) {
+          validRegistries.add(r);
+          break;
+        }
+      }
+    }
+    return validRegistries;
   }
 
   private List<MetricType> parseMetricTypes(SolrQueryRequest req) {
@@ -153,6 +179,11 @@ public class MetricsHandler extends RequestHandlerBase implements PermissionName
   @Override
   public String getDescription() {
     return "A handler to return all the metrics gathered by Solr";
+  }
+
+  @Override
+  public Category getCategory() {
+    return Category.ADMIN;
   }
 
   enum MetricType {

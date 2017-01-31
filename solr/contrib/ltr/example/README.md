@@ -1,6 +1,6 @@
 This README file is only about this example directory's content.
 
-Please refer to the Solr Reference Guide's section on [Result Reranking](https://cwiki.apache.org/confluence/display/solr/Result+Reranking) section for broader information on Learning to Rank (LTR) with Apache Solr.
+Please refer to the Solr Reference Guide's section on [Learning To Rank](https://cwiki.apache.org/confluence/display/solr/Learning+To+Rank) section for broader information on Learning to Rank (LTR) with Apache Solr.
 
 # Start Solr with the LTR plugin enabled
 

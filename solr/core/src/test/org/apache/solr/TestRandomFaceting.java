@@ -184,7 +184,6 @@ public class TestRandomFaceting extends SolrTestCaseJ4 {
     SolrQueryRequest req = req();
     try {
       Random rand = random();
-      boolean validate = validateResponses;
       ModifiableSolrParams params = params("facet","true", "wt","json", "indent","true", "omitHeader","true");
       params.add("q","*:*");  // TODO: select subsets
       params.add("rows","0");
@@ -244,8 +243,9 @@ public class TestRandomFaceting extends SolrTestCaseJ4 {
 
       List<String> methods = multiValued ? multiValuedMethods : singleValuedMethods;
       List<String> responses = new ArrayList<>(methods.size());
+      
       for (String method : methods) {
-        for (boolean exists : new boolean [] {false, true}) {
+        for (boolean exists : new boolean[]{false, true}) {
           // params.add("facet.field", "{!key="+method+"}" + ftype.fname);
           // TODO: allow method to be passed on local params?
           if (method!=null) {
@@ -253,7 +253,6 @@ public class TestRandomFaceting extends SolrTestCaseJ4 {
           } else {
             params.remove("facet.method");
           }
-          
           params.set("facet.exists", ""+exists);
           if (!exists && rand.nextBoolean()) {
             params.remove("facet.exists");
@@ -273,6 +272,13 @@ public class TestRandomFaceting extends SolrTestCaseJ4 {
             if ((notEnum || trieField) && exists) {
               assertQEx("facet.exists only when enum or ommitted", 
                   "facet.exists", req(params), ErrorCode.BAD_REQUEST);
+              continue;
+            }
+            if (exists && sf.getType().isPointField()) {
+              // PointFields don't yet support "enum" method or the "facet.exists" parameter
+              assertQEx("Expecting failure, since ", 
+                  "facet.exists=true is requested, but facet.method=enum can't be used with " + sf.getName(), 
+                  req(params), ErrorCode.BAD_REQUEST);
               continue;
             }
           }

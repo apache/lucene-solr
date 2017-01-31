@@ -17,8 +17,6 @@
 package org.apache.solr.metrics.reporters;
 
 import javax.management.MBeanServer;
-import javax.management.MalformedObjectNameException;
-import javax.management.ObjectName;
 
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
@@ -26,9 +24,7 @@ import java.lang.management.ManagementFactory;
 import java.util.Locale;
 
 import com.codahale.metrics.JmxReporter;
-import com.codahale.metrics.ObjectNameFactory;
 import org.apache.solr.core.PluginInfo;
-import org.apache.solr.metrics.SolrMetricInfo;
 import org.apache.solr.metrics.SolrMetricManager;
 import org.apache.solr.metrics.SolrMetricReporter;
 import org.apache.solr.util.JmxUtil;
@@ -178,107 +174,6 @@ public class SolrJmxReporter extends SolrMetricReporter {
   public String toString() {
     return String.format(Locale.ENGLISH, "[%s@%s: domain = %s, service url = %s, agent id = %s]",
         getClass().getName(), Integer.toHexString(hashCode()), domain, serviceUrl, agentId);
-  }
-
-  /**
-   * Factory to create MBean names for a given metric.
-   */
-  private static class JmxObjectNameFactory implements ObjectNameFactory {
-
-    private final String domain;
-    private final String[] subdomains;
-    private final String reporterName;
-
-    JmxObjectNameFactory(String reporterName, String domain) {
-      this.reporterName = reporterName;
-      this.domain = domain;
-      this.subdomains = domain.split("\\.");
-    }
-
-    /**
-     * Create a hierarchical name of a metric.
-     *
-     * @param type    metric class, eg. "counters"
-     * @param currentDomain  JMX domain
-     * @param name    metric name
-     */
-    @Override
-    public ObjectName createName(String type, String currentDomain, String name) {
-      SolrMetricInfo metricInfo = SolrMetricInfo.of(name);
-
-      // It turns out that ObjectName(String) mostly preserves key ordering
-      // as specified in the constructor (except for the 'type' key that ends
-      // up at top level) - unlike ObjectName(String, Map) constructor
-      // that seems to have a mind of its own...
-      StringBuilder sb = new StringBuilder();
-      if (domain.equals(currentDomain)) {
-        if (subdomains != null && subdomains.length > 1) {
-          // use only first segment as domain
-          sb.append(subdomains[0]);
-          sb.append(':');
-          // use remaining segments as properties
-          for (int i = 1; i < subdomains.length; i++) {
-            if (i > 1) {
-              sb.append(',');
-            }
-            sb.append("dom");
-            sb.append(String.valueOf(i));
-            sb.append('=');
-            sb.append(subdomains[i]);
-          }
-          sb.append(','); // separate from other properties
-        } else {
-          sb.append(currentDomain);
-          sb.append(':');
-        }
-      } else {
-        sb.append(currentDomain);
-        sb.append(':');
-      }
-      sb.append("reporter=");
-      sb.append(reporterName);
-      sb.append(',');
-      if (metricInfo != null) {
-        sb.append("category=");
-        sb.append(metricInfo.category.toString());
-        sb.append(",scope=");
-        sb.append(metricInfo.scope);
-        // we could also split by type, but don't call it 'type' :)
-        // sb.append(",class=");
-        //sb.append(type);
-        sb.append(",name=");
-        sb.append(metricInfo.name);
-      } else {
-        // make dotted names into hierarchies
-        String[] path = name.split("\\.");
-        for (int i = 0; i < path.length - 1; i++) {
-          if (i > 0) {
-            sb.append(',');
-          }
-          sb.append("name"); sb.append(String.valueOf(i));
-          sb.append('=');
-          sb.append(path[i]);
-        }
-        if (path.length > 1) {
-          sb.append(',');
-        }
-        // split by type
-        // sb.append("class=");
-        // sb.append(type);
-        sb.append("name=");
-        sb.append(path[path.length - 1]);
-      }
-
-      ObjectName objectName;
-
-      try {
-        objectName = new ObjectName(sb.toString());
-      } catch (MalformedObjectNameException e) {
-        throw new RuntimeException(sb.toString(), e);
-      }
-
-      return objectName;
-    }
   }
 
 }

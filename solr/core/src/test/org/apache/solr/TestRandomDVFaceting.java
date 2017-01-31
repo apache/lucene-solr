@@ -62,7 +62,9 @@ public class TestRandomDVFaceting extends SolrTestCaseJ4 {
     types = new ArrayList<>();
     types.add(new FldType("id",ONE_ONE, new SVal('A','Z',4,4)));
     types.add(new FldType("score_f",ONE_ONE, new FVal(1,100)));
+    types.add(new FldType("score_d",ONE_ONE, new FVal(1,100)));
     types.add(new FldType("foo_i",ZERO_ONE, new IRange(0,indexSize)));
+    types.add(new FldType("foo_l",ZERO_ONE, new IRange(0,indexSize)));
     types.add(new FldType("small_s",ZERO_ONE, new SVal('a',(char)('c'+indexSize/3),1,1)));
     types.add(new FldType("small2_s",ZERO_ONE, new SVal('a',(char)('c'+indexSize/3),1,1)));
     types.add(new FldType("small2_ss",ZERO_TWO, new SVal('a',(char)('c'+indexSize/3),1,1)));
@@ -229,6 +231,12 @@ public class TestRandomDVFaceting extends SolrTestCaseJ4 {
         // Object realResponse = ObjectBuilder.fromJSON(strResponse);
         // System.out.println(strResponse);
 
+        responses.add(strResponse);
+      }
+      // If there is a PointField option for this test, also test it
+      if (h.getCore().getLatestSchema().getFieldOrNull(facet_field + "_p") != null) {
+        params.set("facet.field", "{!key="+facet_field+"}"+facet_field+"_p");
+        String strResponse = h.query(req(params));
         responses.add(strResponse);
       }
 

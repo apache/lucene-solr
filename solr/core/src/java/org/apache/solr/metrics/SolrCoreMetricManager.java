@@ -127,8 +127,7 @@ public class SolrCoreMetricManager implements Closeable {
     return registryName;
   }
 
-  /* package visibility for tests. */
-  String createRegistryName(String collectionName, String coreName) {
+  public static String createRegistryName(String collectionName, String coreName) {
     if (collectionName == null || (collectionName != null && !coreName.startsWith(collectionName + "_"))) {
       // single core, or unknown naming scheme
       return SolrMetricManager.getRegistryName(SolrInfoMBean.Group.core, coreName);

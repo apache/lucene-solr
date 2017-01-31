@@ -45,7 +45,7 @@ import org.apache.lucene.util.mutable.MutableValueInt;
  */
 public class TrieIntField extends TrieField implements IntValueFieldType {
   {
-    type=TrieTypes.INTEGER;
+    type = NumberType.INTEGER;
   }
 
   @Override

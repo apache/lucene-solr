@@ -23,6 +23,7 @@ import java.net.ConnectException;
 import java.net.SocketException;
 import java.nio.file.Path;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
@@ -83,7 +84,11 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.slf4j.MDC;
 
-import static org.apache.solr.common.params.CommonParams.ADMIN_PATHS;
+import static org.apache.solr.common.params.CommonParams.AUTHC_PATH;
+import static org.apache.solr.common.params.CommonParams.AUTHZ_PATH;
+import static org.apache.solr.common.params.CommonParams.COLLECTIONS_HANDLER_PATH;
+import static org.apache.solr.common.params.CommonParams.CONFIGSETS_HANDLER_PATH;
+import static org.apache.solr.common.params.CommonParams.CORES_HANDLER_PATH;
 
 /**
  * SolrJ client class to communicate with SolrCloud.
@@ -1036,6 +1041,15 @@ public class CloudSolrClient extends SolrClient {
       collection = (reqParams != null) ? reqParams.get("collection", getDefaultCollection()) : getDefaultCollection();
     return requestWithRetryOnStaleState(request, 0, collection);
   }
+  private static final Set<String> ADMIN_PATHS = new HashSet<>(Arrays.asList(
+      CORES_HANDLER_PATH,
+      COLLECTIONS_HANDLER_PATH,
+      CONFIGSETS_HANDLER_PATH,
+      AUTHC_PATH,
+      AUTHZ_PATH,
+      "/v2/cluster/security/authentication",
+      "/v2/cluster/security/authorization"
+      ));
 
   /**
    * As this class doesn't watch external collections on the client side,

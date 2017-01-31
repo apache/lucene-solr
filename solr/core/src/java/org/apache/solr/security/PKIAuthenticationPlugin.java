@@ -235,6 +235,12 @@ public class PKIAuthenticationPlugin extends AuthenticationPlugin implements Htt
       public String getDescription() {
         return "Return the public key of this server";
       }
+
+      @Override
+      public Category getCategory() {
+        return Category.ADMIN;
+      }
+
     };
   }
 

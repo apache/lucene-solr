@@ -378,7 +378,7 @@ public class TermAutomatonQuery extends Query {
       boolean any = false;
       for(Map.Entry<Integer,TermContext> ent : termStates.entrySet()) {
         TermContext termContext = ent.getValue();
-        assert termContext.topReaderContext == ReaderUtil.getTopLevelContext(context) : "The top-reader used to create Weight (" + termContext.topReaderContext + ") is not the same as the current reader's top-reader (" + ReaderUtil.getTopLevelContext(context);
+        assert termContext.wasBuiltFor(ReaderUtil.getTopLevelContext(context)) : "The top-reader used to create Weight is not the same as the current reader's top-reader (" + ReaderUtil.getTopLevelContext(context);
         BytesRef term = idToTerm.get(ent.getKey());
         TermState state = termContext.get(context.ord);
         if (state != null) {

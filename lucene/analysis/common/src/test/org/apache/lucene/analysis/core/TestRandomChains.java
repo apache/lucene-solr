@@ -80,6 +80,7 @@ import org.apache.lucene.analysis.miscellaneous.LimitTokenPositionFilter;
 import org.apache.lucene.analysis.miscellaneous.StemmerOverrideFilter.StemmerOverrideMap;
 import org.apache.lucene.analysis.miscellaneous.StemmerOverrideFilter;
 import org.apache.lucene.analysis.miscellaneous.WordDelimiterFilter;
+import org.apache.lucene.analysis.miscellaneous.WordDelimiterGraphFilter;
 import org.apache.lucene.analysis.path.PathHierarchyTokenizer;
 import org.apache.lucene.analysis.path.ReversePathHierarchyTokenizer;
 import org.apache.lucene.analysis.payloads.IdentityEncoder;
@@ -152,6 +153,8 @@ public class TestRandomChains extends BaseTokenStreamTestCase {
           ValidatingTokenFilter.class, 
           // TODO: needs to be a tokenizer, doesnt handle graph inputs properly (a shingle or similar following will then cause pain)
           WordDelimiterFilter.class,
+          // Cannot correct offsets when a char filter had changed them:
+          WordDelimiterGraphFilter.class,
           // clones of core's filters:
           org.apache.lucene.analysis.core.StopFilter.class,
           org.apache.lucene.analysis.core.LowerCaseFilter.class)) {

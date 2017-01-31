@@ -34,10 +34,13 @@ import org.apache.solr.common.util.SolrjNamedThreadFactory;
 import org.apache.solr.core.SolrInfoMBean;
 import org.apache.solr.metrics.SolrMetricManager;
 import org.apache.solr.metrics.SolrMetricProducer;
+import org.apache.solr.util.stats.HttpClientMetricNameStrategy;
 import org.apache.solr.util.stats.InstrumentedHttpRequestExecutor;
 import org.apache.solr.util.stats.InstrumentedPoolingHttpClientConnectionManager;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import static org.apache.solr.util.stats.InstrumentedHttpRequestExecutor.KNOWN_METRIC_NAME_STRATEGIES;
 
 public class UpdateShardHandler implements SolrMetricProducer, SolrInfoMBean {
   
@@ -74,7 +77,16 @@ public class UpdateShardHandler implements SolrMetricProducer, SolrInfoMBean {
       clientParams.set(HttpClientUtil.PROP_SO_TIMEOUT, cfg.getDistributedSocketTimeout());
       clientParams.set(HttpClientUtil.PROP_CONNECTION_TIMEOUT, cfg.getDistributedConnectionTimeout());
     }
-    httpRequestExecutor = new InstrumentedHttpRequestExecutor();
+    HttpClientMetricNameStrategy metricNameStrategy = KNOWN_METRIC_NAME_STRATEGIES.get(UpdateShardHandlerConfig.DEFAULT_METRICNAMESTRATEGY);
+    if (cfg != null)  {
+      metricNameStrategy = KNOWN_METRIC_NAME_STRATEGIES.get(cfg.getMetricNameStrategy());
+      if (metricNameStrategy == null) {
+        throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,
+            "Unknown metricNameStrategy: " + cfg.getMetricNameStrategy() + " found. Must be one of: " + KNOWN_METRIC_NAME_STRATEGIES.keySet());
+      }
+    }
+
+    httpRequestExecutor = new InstrumentedHttpRequestExecutor(metricNameStrategy);
     client = HttpClientUtil.createClient(clientParams, clientConnectionManager, false, httpRequestExecutor);
 
     // following is done only for logging complete configuration.
@@ -116,7 +128,7 @@ public class UpdateShardHandler implements SolrMetricProducer, SolrInfoMBean {
 
   @Override
   public Category getCategory() {
-    return Category.HTTP;
+    return Category.UPDATE;
   }
 
   @Override

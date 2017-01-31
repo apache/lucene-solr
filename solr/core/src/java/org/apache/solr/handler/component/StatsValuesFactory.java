@@ -65,7 +65,7 @@ public class StatsValuesFactory {
     
     if (TrieDateField.class.isInstance(fieldType)) {
       return new DateStatsValues(statsField);
-    } else if (TrieField.class.isInstance(fieldType)) {
+    } else if (TrieField.class.isInstance(fieldType) || PointField.class.isInstance(fieldType)) {
       return new NumericStatsValues(statsField);
     } else if (StrField.class.isInstance(fieldType)) {
       return new StringStatsValues(statsField);

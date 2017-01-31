@@ -74,6 +74,111 @@ Optimizations
 * SOLR-9584: Support Solr being proxied with another endpoint than default /solr, by using relative links
   in AdminUI javascripts (Yun Jie Zhou via janhoy)
 
+* SOLR-9996: Unstored IntPointField returns Long type (Ishan Chattopadhyaya)
+
+* SOLR-5944: In-place updates of Numeric DocValues. To leverage this, the _version_ field and the updated
+  field must both be stored=false, indexed=false, docValues=true. (Ishan Chattopadhyaya, hossman, noble,
+  shalin, yonik)
+
+Other Changes
+----------------------
+* SOLR-8396: Add support for PointFields in Solr (Ishan Chattopadhyaya, Tomás Fernández Löbbe)
+
+* SOLR-10011: Refactor PointField & TrieField to now have a common base class, NumericFieldType. The
+  TrieField.TrieTypes and PointField.PointTypes are now consolidated to NumericFieldType.NumberType. This
+  refactoring also fixes a bug whereby PointFields were not using DocValues for range queries for
+  indexed=false, docValues=true fields.
+
+==================  6.5.0 ==================
+
+Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release.
+
+Versions of Major Components
+---------------------
+Apache Tika 1.13
+Carrot2 3.15.0
+Velocity 1.7 and Velocity Tools 2.0
+Apache UIMA 2.3.1
+Apache ZooKeeper 3.4.6
+Jetty 9.3.14.v20161028
+
+Detailed Change List
+----------------------
+
+New Features
+----------------------
+
+* SOLR-9836: Add ability to recover from leader when index corruption is detected on SolrCore creation.
+  (Mike Drob via Mark Miller)
+
+* SOLR-9926: Allow passing arbitrary java system properties to zkcli. (Hrishikesh Gadre via Mark Miller)
+
+* SOLR-9885: Allow pre-startup Solr log management in Solr bin scripts to be disabled. (Mano Kovacs via Mark Miller)
+
+* SOLR-9481: Authentication and Authorization plugins now work in standalone mode if security.json is placed in
+  SOLR_HOME on every node. Editing config through API is supported but affects only that one node. (janhoy)
+
+* SOLR-8029: Added new style APIs and a framework for creating new APIs and mapping old APIs to new
+  (noble, Steve Rowe, Cassandra Targett, Timothy Potter)
+
+* SOLR-9933: SolrCoreParser now supports configuration of custom SpanQueryBuilder classes.
+  (Daniel Collins, Christine Poerschke)
+
+Bug Fixes
+----------------------
+
+* SOLR-9976: Fix init bug in SegmentsInfoRequestHandlerTest (hossman)
+
+* SOLR-9977: Fix config bug in DistribDocExpirationUpdateProcessorTest that allowed false assumptions
+  about when index version changes (hossman)
+
+* SOLR-9979: Macro expansion should not be done in shard requests (Tomás Fernández Löbbe)
+
+* SOLR-9114: NPE using TermVectorComponent, MoreLikeThisComponent in combination with ExactStatsCache (Cao Manh Dat, Varun Thacker)
+
+* SOLR-10049: Collection deletion leaves behind the snapshot metadata (Hrishikesh Gadre via yonik)
+
+Optimizations
+----------------------
+
+* SOLR-9941: Clear the deletes lists at UpdateLog before replaying from log. This prevents redundantly pre-applying
+  DBQs, during the log replay, to every update in the log as if the DBQs were out of order. (hossman, Ishan Chattopadhyaya)
+
+* SOLR-9764: All filters that which all documents in the index now share the same memory (DocSet).
+  (Michael Sun, yonik)
+
+Other Changes
+----------------------
+* SOLR-9980: Expose configVersion in core admin status (Jessica Cheng Mallet via Tomás Fernández Löbbe)
+
+* SOLR-9972: SpellCheckComponent collations and suggestions returned as a JSON object rather than a list
+  (Christine Poerschke in response to bug report from Ricky Oktavianus Lazuardy)
+
+* SOLR-9983: Fixing NullPointerException failure by TestManagedSchemaThreadSafety 
+  adding check for Zookeeper session expiration (Steve Rowe, Mikhail Khludnev)
+
+* SOLR-10043: Reduce logging of pre-start log rotation (janhoy)
+
+==================  6.4.1 ==================
+
+Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release.
+
+Versions of Major Components
+---------------------
+Apache Tika 1.13
+Carrot2 3.15.0
+Velocity 1.7 and Velocity Tools 2.0
+Apache UIMA 2.3.1
+Apache ZooKeeper 3.4.6
+Jetty 9.3.14.v20161028
+
+Bug Fixes
+----------------------
+* SOLR-9969: "Plugin/Stats" section of the UI doesn't display empty metric types (Tomás Fernández Löbbe)
+* SOLR-8491: solr.cmd SOLR_SSL_OPTS is overwritten (Sam Yi, Andy Hind, Marcel Berteler, Kevin Risden)
+
+* SOLR-10031: Validation of filename params in ReplicationHandler (Hrishikesh Gadre, janhoy)
+
 ==================  6.4.0 ==================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release.
@@ -126,6 +231,9 @@ Upgrade Notes
 
 New Features
 ----------------------
+* SOLR-9918: Add SkipExistingDocumentsProcessor that skips duplicate inserts and ignores updates to missing docs
+  (Tim Owen via koji)
+
 * SOLR-9293: Solrj client support for hierarchical clusters and other topics 
   marker. (Dawid Weiss)
 
@@ -136,10 +244,6 @@ New Features
 
 * SOLR-9442, SOLR-9787: Adds Array of Name Type Value (json.nl=arrntv) style to JSONResponseWriter.
   (Jonny Marks, Christine Poerschke, hossman)
-
-* SOLR-9481: Authentication and Authorization plugins now work in standalone mode if security.json is placed in
-  SOLR_HOME on every node. Editing config through API is supported but affects only that one node. 
-  (janhoy)
 
 * SOLR-8542: Adds Solr Learning to Rank (LTR) plugin for reranking results with machine learning models.
   (Michael Nilsson, Diego Ceccarelli, Joshua Pantony, Jon Dorando, Naveen Santhapuri, Alessandro Benedetti, David Grohmann, Christine Poerschke)
@@ -190,20 +294,24 @@ New Features
 
 * SOLR-9805: Use metrics-jvm library to instrument jvm internals such as GC, memory usage and others. (shalin)
 
-* SOLR-9812: SOLR-9911: Added a new /admin/metrics API to return all metrics collected by Solr via API.
-  API supports three optional parameters:
-  * 'group' (all,jvm,jetty,node,core),
-  * 'type' (all,counter,timer,gauge,histogram) both of which are multi-valued
-  * 'prefix' that filters the returned metrics
-  Example: http://localhost:8983/solr/admin/metrics?group=jvm,jetty&type=counter
-  Example: http://localhost:8983/solr/admin/metrics?group=jvm&prefix=buffers
-  (shalin)
+* SOLR-9812, SOLR-9911, SOLR-9960: Added a new /admin/metrics API to return all metrics collected by Solr via API.
+  API supports four optional multi-valued parameters:
+  - 'group' (all,jvm,jetty,node,core),
+  - 'type' (all,counter,timer,gauge,histogram),
+  - 'prefix' that filters the returned metrics,
+  - 'registry' that selects one or more registries by prefix (eg. solr.jvm,solr.core.collection1)
+  - Example: http://localhost:8983/solr/admin/metrics?group=jvm,jetty&type=counter
+  - Example: http://localhost:8983/solr/admin/metrics?group=jvm&prefix=buffers,os
+  - Example: http://localhost:8983/solr/admin/metrics?registry=solr.node,solr.core&prefix=ADMIN
+  (shalin, ab)
 
 * SOLR-9884: Add version to segments handler output (Steven Bower via Erick Erickson)
 
 * SOLR-9725: Substitute properties into JdbcDataSource configuration ( Jamie Jackson, Yuri Sashevsky via Mikhail Khludnev)
 
-* SOLR-9877: SOLR-9923: Use instrumented http client and connection pool. (shalin)
+* SOLR-9877: SOLR-9923: SOLR-9948: Use instrumented http client and connection pool in HttpShardHandler and
+  UpdateShardHandler. The metrics are collected per query-less URL and method by default but it can be configured
+  to host/method and per-method as well. (shalin)
 
 * SOLR-9880: Add Ganglia, Graphite and SLF4J metrics reporters. (ab)
 
@@ -233,6 +341,9 @@ New Features
 * SOLR-9856: Collect metrics for shard replication and tlog replay on replicas (ab).
 
 * SOLR-9886: Add a 'enable' flag to caches to enable/disable them (Pushkar Raste, noble)
+
+* SOLR-9947: Clean up some SolrInfoMBean categories. Add an alternative hierarchical view in JMX
+  for SolrInfoMBeans, which uses similar conventions to SolrJmxReporter. (ab)
 
 Optimizations
 ----------------------
@@ -353,6 +464,9 @@ Bug Fixes
   and CloudMLTQParser included extra strings from the field definitions in the query.
   (Ere Maijala via Anshum Gupta)
 
+* SOLR-9954: Prevent against failure during failed snapshot cleanup from swallowing the actual cause
+  for the snapshot to fail. (thelabdude)
+
 Other Changes
 ----------------------
 
@@ -420,6 +534,9 @@ Other Changes
 
 * SOLR-9934: SolrTestCase.clearIndex has been improved to take advantage of low level test specific logic that
   clears the index metadata more completely then a normal *:* DBQ can due to update versioning.  (hossman)
+
+* SOLR-9893: Update Mockito to version 2.6.2 for Java 9 support. Disable all legacy EasyMock tests when running
+  on Java 9 until they were migrated to Mockito. (Uwe Schindler)
 
 ==================  6.3.0 ==================
 

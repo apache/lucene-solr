@@ -42,6 +42,7 @@ import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.request.IntervalFacets.FacetInterval;
 import org.apache.solr.schema.FieldType;
+import org.apache.solr.schema.PointField;
 import org.apache.solr.schema.SchemaField;
 import org.apache.solr.schema.TrieDateField;
 import org.apache.solr.search.DocIterator;
@@ -624,6 +625,9 @@ public class IntervalFacets implements Iterable<FacetInterval> {
     private BytesRef getLimitFromString(SchemaField schemaField, String value) {
       if ("*".equals(value)) {
         return null;
+      }
+      if (schemaField.getType().isPointField()) {
+        return ((PointField)schemaField.getType()).toInternalByteRef(value);
       }
       return new BytesRef(schemaField.getType().toInternal(value));
     }

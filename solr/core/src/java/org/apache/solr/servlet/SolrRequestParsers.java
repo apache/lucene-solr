@@ -33,6 +33,7 @@ import java.security.Principal;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.LinkedList;
@@ -45,6 +46,7 @@ import org.apache.commons.fileupload.servlet.ServletFileUpload;
 import org.apache.commons.io.FileCleaningTracker;
 import org.apache.commons.io.input.CloseShieldInputStream;
 import org.apache.lucene.util.IOUtils;
+import org.apache.solr.api.V2HttpCall;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.params.CommonParams;
@@ -58,6 +60,7 @@ import org.apache.solr.core.SolrConfig;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.request.SolrQueryRequestBase;
+import org.apache.solr.util.CommandOperation;
 import org.apache.solr.util.RTimerTree;
 import org.apache.solr.util.SolrFileCleaningTracker;
 
@@ -224,10 +227,32 @@ public class SolrRequestParsers
       }
     }
 
+    final HttpSolrCall httpSolrCall = req == null ? null : (HttpSolrCall) req.getAttribute(HttpSolrCall.class.getName());
     SolrQueryRequestBase q = new SolrQueryRequestBase(core, params, requestTimer) {
       @Override
       public Principal getUserPrincipal() {
         return req == null ? null : req.getUserPrincipal();
+      }
+
+      @Override
+      public List<CommandOperation> getCommands(boolean validateInput) {
+        if (httpSolrCall != null) {
+          return httpSolrCall.getCommands(validateInput);
+        }
+        return Collections.emptyList();
+      }
+
+      @Override
+      public Map<String, String> getPathTemplateValues() {
+        if (httpSolrCall != null && httpSolrCall instanceof V2HttpCall) {
+          return ((V2HttpCall) httpSolrCall).getUrlParts();
+        }
+        return Collections.EMPTY_MAP;
+      }
+
+      @Override
+      public HttpSolrCall getHttpSolrCall() {
+        return httpSolrCall;
       }
     };
     if( streams != null && streams.size() > 0 ) {

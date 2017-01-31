@@ -63,7 +63,7 @@ public class SolrIndexMetricsTest extends SolrTestCaseJ4 {
 
     assertTrue(metrics.entrySet().stream().filter(e -> e.getKey().startsWith("INDEX")).count() >= 12);
     // this is variable, depending on the codec and the number of created files
-    assertTrue(metrics.entrySet().stream().filter(e -> e.getKey().startsWith("DIRECTORY")).count() > 50);
+    assertTrue(metrics.entrySet().stream().filter(e -> e.getKey().startsWith("DIRECTORY")).count() > 20);
 
     // check basic index meters
     Timer timer = (Timer)metrics.get("INDEX.merge.minor");

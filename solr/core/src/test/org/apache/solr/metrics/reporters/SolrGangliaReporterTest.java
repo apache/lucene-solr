@@ -75,7 +75,7 @@ public class SolrGangliaReporterTest extends SolrTestCaseJ4 {
     assertTrue(names.size() >= 3);
     String[] frozenNames = (String[])names.toArray(new String[names.size()]);
     for (String name : frozenNames) {
-      assertTrue(name, name.startsWith("test.solr.node.cores."));
+      assertTrue(name, name.startsWith("test.solr.node.CONTAINER.cores."));
     }
   }
 

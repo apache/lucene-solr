@@ -1,0 +1,20 @@
+{
+  "methods": [
+    "GET"
+  ],
+  "url": {
+    "paths": [
+      "/cluster/command-status"
+    ],
+    "params": {
+      "flush": {
+        "type": "boolean",
+        "default": false
+      },
+      "id":{
+        "type":"string",
+        "description": "The command id"
+      }
+    }
+  }
+}

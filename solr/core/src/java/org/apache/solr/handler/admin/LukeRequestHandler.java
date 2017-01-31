@@ -289,8 +289,6 @@ public class LukeRequestHandler extends RequestHandlerBase
       f.add( "schema", getFieldFlags( sfield ) );
       f.add( "flags", getFieldFlags( field ) );
 
-      Term t = new Term(field.name(), ftype!=null ? ftype.storedToIndexed(field) : field.stringValue());
-
       f.add( "value", (ftype==null)?null:ftype.toExternal( field ) );
 
       // TODO: this really should be "stored"
@@ -301,7 +299,10 @@ public class LukeRequestHandler extends RequestHandlerBase
         f.add( "binary", Base64.byteArrayToBase64(bytes.bytes, bytes.offset, bytes.length));
       }
       f.add( "boost", field.boost() );
-      f.add( "docFreq", t.text()==null ? 0 : reader.docFreq( t ) ); // this can be 0 for non-indexed fields
+      if (!ftype.isPointField()) {
+        Term t = new Term(field.name(), ftype!=null ? ftype.storedToIndexed(field) : field.stringValue());
+        f.add( "docFreq", t.text()==null ? 0 : reader.docFreq( t ) ); // this can be 0 for non-indexed fields
+      }// TODO: Calculate docFreq for point fields
 
       // If we have a term vector, return that
       if( field.fieldType().storeTermVectors() ) {
@@ -700,6 +701,11 @@ public class LukeRequestHandler extends RequestHandlerBase
   @Override
   public String getDescription() {
     return "Lucene Index Browser.  Inspired and modeled after Luke: http://www.getopt.org/luke/";
+  }
+
+  @Override
+  public Category getCategory() {
+    return Category.ADMIN;
   }
 
   @Override

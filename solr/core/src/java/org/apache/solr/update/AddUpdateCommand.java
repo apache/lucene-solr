@@ -39,9 +39,19 @@ public class AddUpdateCommand extends UpdateCommand implements Iterable<Document
    // it will be obtained from the doc.
    private BytesRef indexedId;
 
-   // Higher level SolrInputDocument, normally used to construct the Lucene Document
-   // to index.
+   /**
+    * Higher level SolrInputDocument, normally used to construct the Lucene Document
+    * to index.
+    */
    public SolrInputDocument solrDoc;
+
+   /**
+    * This is the version of a document, previously indexed, on which the current
+    * update depends on. This version could be that of a previous in-place update
+    * or a full update. A negative value here, e.g. -1, indicates that this add
+    * update does not depend on a previous update.
+    */
+   public long prevVersion = -1;
 
    public boolean overwrite = true;
    
@@ -76,10 +86,19 @@ public class AddUpdateCommand extends UpdateCommand implements Iterable<Document
    }
 
   /** Creates and returns a lucene Document to index.  Any changes made to the returned Document
-   * will not be reflected in the SolrInputDocument, or future calls to this method.
+   * will not be reflected in the SolrInputDocument, or future calls to this method. This defaults
+   * to false for the inPlaceUpdate parameter of {@link #getLuceneDocument(boolean)}.
    */
    public Document getLuceneDocument() {
-     return DocumentBuilder.toDocument(getSolrInputDocument(), req.getSchema());
+     return getLuceneDocument(false);
+   }
+
+   /** Creates and returns a lucene Document to index.  Any changes made to the returned Document
+    * will not be reflected in the SolrInputDocument, or future calls to this method.
+    * @param inPlaceUpdate Whether this document will be used for in-place updates.
+    */
+   public Document getLuceneDocument(boolean inPlaceUpdate) {
+     return DocumentBuilder.toDocument(getSolrInputDocument(), req.getSchema(), inPlaceUpdate);
    }
 
   /** Returns the indexed ID for this document.  The returned BytesRef is retained across multiple calls, and should not be modified. */
@@ -212,7 +231,6 @@ public class AddUpdateCommand extends UpdateCommand implements Iterable<Document
     unwrappedDocs.add(currentDoc);
   }
 
-
   @Override
   public String toString() {
      StringBuilder sb = new StringBuilder(super.toString());
@@ -223,5 +241,11 @@ public class AddUpdateCommand extends UpdateCommand implements Iterable<Document
      return sb.toString();
    }
 
-
+  /**
+   * Is this add update an in-place update? An in-place update is one where only docValues are
+   * updated, and a new docment is not indexed.
+   */
+  public boolean isInPlaceUpdate() {
+    return (prevVersion >= 0);
+  }
 }

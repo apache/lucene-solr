@@ -286,6 +286,56 @@ final class SimpleTextBKDReader extends PointValues implements Accountable {
     }
   }
 
+  @Override
+  public long estimatePointCount(IntersectVisitor visitor) {
+    return estimatePointCount(getIntersectState(visitor), 1, minPackedValue, maxPackedValue);
+  }
+
+  private long estimatePointCount(IntersectState state,
+      int nodeID, byte[] cellMinPacked, byte[] cellMaxPacked) {
+    Relation r = state.visitor.compare(cellMinPacked, cellMaxPacked);
+
+    if (r == Relation.CELL_OUTSIDE_QUERY) {
+      // This cell is fully outside of the query shape: stop recursing
+      return 0L;
+    } else if (nodeID >= leafNodeOffset) {
+      // Assume all points match and there are no dups
+      return maxPointsInLeafNode;
+    } else {
+      
+      // Non-leaf node: recurse on the split left and right nodes
+
+      int address = nodeID * bytesPerIndexEntry;
+      int splitDim;
+      if (numDims == 1) {
+        splitDim = 0;
+      } else {
+        splitDim = splitPackedValues[address++] & 0xff;
+      }
+      
+      assert splitDim < numDims;
+
+      // TODO: can we alloc & reuse this up front?
+
+      byte[] splitPackedValue = new byte[packedBytesLength];
+
+      // Recurse on left sub-tree:
+      System.arraycopy(cellMaxPacked, 0, splitPackedValue, 0, packedBytesLength);
+      System.arraycopy(splitPackedValues, address, splitPackedValue, splitDim*bytesPerDim, bytesPerDim);
+      final long leftCost = estimatePointCount(state,
+                2*nodeID,
+                cellMinPacked, splitPackedValue);
+
+      // Recurse on right sub-tree:
+      System.arraycopy(cellMinPacked, 0, splitPackedValue, 0, packedBytesLength);
+      System.arraycopy(splitPackedValues, address, splitPackedValue, splitDim*bytesPerDim, bytesPerDim);
+      final long rightCost = estimatePointCount(state,
+                2*nodeID+1,
+                splitPackedValue, cellMaxPacked);
+      return leftCost + rightCost;
+    }
+  }
+
   /** Copies the split value for this node into the provided byte array */
   public void copySplitValue(int nodeID, byte[] splitPackedValue) {
     int address = nodeID * bytesPerIndexEntry;

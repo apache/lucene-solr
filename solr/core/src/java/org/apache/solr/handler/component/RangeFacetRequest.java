@@ -34,6 +34,7 @@ import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.schema.DateRangeField;
 import org.apache.solr.schema.FieldType;
 import org.apache.solr.schema.IndexSchema;
+import org.apache.solr.schema.PointField;
 import org.apache.solr.schema.SchemaField;
 import org.apache.solr.schema.TrieDateField;
 import org.apache.solr.schema.TrieField;
@@ -89,6 +90,11 @@ public class RangeFacetRequest extends FacetComponent.FacetBase {
       // the user has explicitly selected the FacetRangeMethod.DV method
       log.warn("Range facet method '" + FacetParams.FacetRangeMethod.DV + "' is not supported together with field type '" +
           DateRangeField.class + "'. Will use method '" + FacetParams.FacetRangeMethod.FILTER + "' instead");
+      method = FacetParams.FacetRangeMethod.FILTER;
+    }
+    if (method.equals(FacetParams.FacetRangeMethod.DV) && !schemaField.hasDocValues() && (schemaField.getType().isPointField())) {
+      log.warn("Range facet method '" + FacetParams.FacetRangeMethod.DV + "' is not supported on PointFields without docValues." +
+          "Will use method '" + FacetParams.FacetRangeMethod.FILTER + "' instead");
       method = FacetParams.FacetRangeMethod.FILTER;
     }
 
@@ -159,10 +165,33 @@ public class RangeFacetRequest extends FacetComponent.FacetBase {
         default:
           throw new SolrException
               (SolrException.ErrorCode.BAD_REQUEST,
-                  "Unable to range facet on tried field of unexpected type:" + this.facetOn);
+                  "Unable to range facet on Trie field of unexpected type:" + this.facetOn);
       }
     } else if (ft instanceof DateRangeField) {
       calc = new DateRangeEndpointCalculator(this, null);
+    } else if (ft.isPointField()) {
+      final PointField pointField = (PointField) ft;
+      switch (pointField.getType()) {
+        case FLOAT:
+          calc = new FloatRangeEndpointCalculator(this);
+          break;
+        case DOUBLE:
+          calc = new DoubleRangeEndpointCalculator(this);
+          break;
+        case INTEGER:
+          calc = new IntegerRangeEndpointCalculator(this);
+          break;
+        case LONG:
+          calc = new LongRangeEndpointCalculator(this);
+          break;
+        case DATE:
+          calc = new DateRangeEndpointCalculator(this, null);
+          break;
+        default:
+          throw new SolrException
+              (SolrException.ErrorCode.BAD_REQUEST,
+                  "Unable to range facet on Point field of unexpected type:" + this.facetOn);
+      }
     } else {
       throw new SolrException
           (SolrException.ErrorCode.BAD_REQUEST,

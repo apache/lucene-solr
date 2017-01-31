@@ -107,7 +107,7 @@ public class PackedTokenAttributeImpl extends CharTermAttributeImpl
   @Override
   public void setOffset(int startOffset, int endOffset) {
     if (startOffset < 0 || endOffset < startOffset) {
-      throw new IllegalArgumentException("startOffset must be non-negative, and endOffset must be >= startOffset, "
+      throw new IllegalArgumentException("startOffset must be non-negative, and endOffset must be >= startOffset; got "
           + "startOffset=" + startOffset + ",endOffset=" + endOffset);
     }
     this.startOffset = startOffset;

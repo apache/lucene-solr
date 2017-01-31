@@ -103,6 +103,31 @@ public abstract class Weight {
   public abstract Scorer scorer(LeafReaderContext context) throws IOException;
 
   /**
+   * Optional method.
+   * Get a {@link ScorerSupplier}, which allows to know the cost of the {@link Scorer}
+   * before building it. The default implementation calls {@link #scorer} and
+   * builds a {@link ScorerSupplier} wrapper around it.
+   * @see #scorer
+   */
+  public ScorerSupplier scorerSupplier(LeafReaderContext context) throws IOException {
+    final Scorer scorer = scorer(context);
+    if (scorer == null) {
+      return null;
+    }
+    return new ScorerSupplier() {
+      @Override
+      public Scorer get(boolean randomAccess) {
+        return scorer;
+      }
+
+      @Override
+      public long cost() {
+        return scorer.iterator().cost();
+      }
+    };
+  }
+
+  /**
    * Optional method, to return a {@link BulkScorer} to
    * score the query and send hits to a {@link Collector}.
    * Only queries that have a different top-level approach

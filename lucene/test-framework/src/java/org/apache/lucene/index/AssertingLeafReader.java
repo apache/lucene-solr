@@ -884,6 +884,13 @@ public class AssertingLeafReader extends FilterLeafReader {
     }
 
     @Override
+    public long estimatePointCount(IntersectVisitor visitor) {
+      long cost = in.estimatePointCount(visitor);
+      assert cost >= 0;
+      return cost;
+    }
+
+    @Override
     public byte[] getMinPackedValue() throws IOException {
       return Objects.requireNonNull(in.getMinPackedValue());
     }

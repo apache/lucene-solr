@@ -1,0 +1,16 @@
+{
+  "methods": [
+    "GET"
+  ],
+  "url": {
+    "paths": [
+      "/node/invoke"
+    ],
+    "params": {
+      "class": {
+        "type": "string",
+        "description": "Name of the class that must be invoked. "
+      }
+    }
+  }
+}

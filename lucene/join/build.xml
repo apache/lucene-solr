@@ -24,25 +24,4 @@
 
   <import file="../module-build.xml"/>
 
-  <path id="classpath">
-    <pathelement path="${grouping.jar}"/>
-    <path refid="base.classpath"/>
-  </path>
-
-  <path id="run.classpath">
-    <path refid="classpath"/>
-    <pathelement location="${build.dir}/classes/java"/>
-  </path>
-
-  <target name="init" depends="module-build.init,jar-grouping"/>
-
-  <target name="javadocs" depends="javadocs-grouping,compile-core,check-javadocs-uptodate"
-          unless="javadocs-uptodate-${name}">
-    <invoke-module-javadoc>
-      <links>
-        <link href="../grouping"/>
-      </links>
-    </invoke-module-javadoc>
-  </target>
-
 </project>

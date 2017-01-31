@@ -101,7 +101,7 @@ public class RestoreCore implements Callable<Boolean> {
         }
       }
       log.debug("Switching directories");
-      IndexFetcher.modifyIndexProps(core, restoreIndexName);
+      core.modifyIndexProps(restoreIndexName);
 
       boolean success;
       try {

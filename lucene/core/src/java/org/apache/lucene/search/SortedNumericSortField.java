@@ -136,7 +136,7 @@ public class SortedNumericSortField extends SortField {
   }
   
   @Override
-  public FieldComparator<?> getComparator(int numHits, int sortPos) throws IOException {
+  public FieldComparator<?> getComparator(int numHits, int sortPos) {
     switch(type) {
       case INT:
         return new FieldComparator.IntComparator(numHits, getField(), (Integer) missingValue) {

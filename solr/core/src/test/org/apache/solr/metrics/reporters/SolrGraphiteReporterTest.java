@@ -71,7 +71,7 @@ public class SolrGraphiteReporterTest extends SolrTestCaseJ4 {
       assertTrue(mock.lines.size() >= 3);
       String[] frozenLines = (String[])mock.lines.toArray(new String[mock.lines.size()]);
       for (String line : frozenLines) {
-        assertTrue(line, line.startsWith("test.solr.node.cores."));
+        assertTrue(line, line.startsWith("test.solr.node.CONTAINER.cores."));
       }
     } finally {
       mock.close();
