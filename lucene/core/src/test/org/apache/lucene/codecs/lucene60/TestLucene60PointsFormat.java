@@ -160,8 +160,8 @@ public class TestLucene60PointsFormat extends BasePointsFormatTestCase {
         }));
 
     // If only one point matches, then the point count is (maxPointsInLeafNode + 1) / 2
-    assertEquals((maxPointsInLeafNode + 1) / 2,
-        points.estimatePointCount(new IntersectVisitor() {
+    // in general, or maybe 2x that if the point is a split value
+    final long pointCount = points.estimatePointCount(new IntersectVisitor() {
           @Override
           public void visit(int docID, byte[] packedValue) throws IOException {}
           
@@ -176,7 +176,10 @@ public class TestLucene60PointsFormat extends BasePointsFormatTestCase {
             }
             return Relation.CELL_CROSSES_QUERY;
           }
-        }));
+        });
+    assertTrue(""+pointCount,
+        pointCount == (maxPointsInLeafNode + 1) / 2 || // common case
+        pointCount == 2*((maxPointsInLeafNode + 1) / 2)); // if the point is a split value
 
     r.close();
     dir.close();
