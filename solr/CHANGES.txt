@@ -121,6 +121,9 @@ New Features
 * SOLR-8029: Added new style APIs and a framework for creating new APIs and mapping old APIs to new
   (noble, Steve Rowe, Cassandra Targett, Timothy Potter)
 
+* SOLR-9933: SolrCoreParser now supports configuration of custom SpanQueryBuilder classes.
+  (Daniel Collins, Christine Poerschke)
+
 Bug Fixes
 ----------------------
 
