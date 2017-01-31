@@ -146,6 +146,8 @@ Other Changes
 * SOLR-9983: Fixing NullPointerException failure by TestManagedSchemaThreadSafety 
   adding check for Zookeeper session expiration (Steve Rowe, Mikhail Khludnev)
 
+* SOLR-10043: Reduce logging of pre-start log rotation (janhoy)
+
 ==================  6.4.1 ==================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release.
