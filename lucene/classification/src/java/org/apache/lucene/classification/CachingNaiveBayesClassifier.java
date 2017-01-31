@@ -88,11 +88,17 @@ public class CachingNaiveBayesClassifier extends SimpleNaiveBayesClassifier {
     return asignedClassesNorm;
   }
 
+  private double calculateLogPrior(BytesRef cclass) throws IOException {
+    Term term = new Term(this.classFieldName, cclass);
+    int docsWithC = indexReader.docFreq(term);
+    return Math.log((double) docsWithC) - Math.log(docsWithClassSize);
+  }
+
   private List<ClassificationResult<BytesRef>> calculateLogLikelihood(String[] tokenizedText) throws IOException {
     // initialize the return List
     ArrayList<ClassificationResult<BytesRef>> ret = new ArrayList<>();
     for (BytesRef cclass : cclasses) {
-      ClassificationResult<BytesRef> cr = new ClassificationResult<>(cclass, 0d);
+      ClassificationResult<BytesRef> cr = new ClassificationResult<>(cclass, calculateLogPrior(cclass));
       ret.add(cr);
     }
     // for each word
