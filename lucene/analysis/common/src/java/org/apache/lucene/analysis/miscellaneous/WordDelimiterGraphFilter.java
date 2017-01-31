@@ -27,7 +27,6 @@ import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
 import org.apache.lucene.analysis.tokenattributes.PositionIncrementAttribute;
 import org.apache.lucene.analysis.tokenattributes.PositionLengthAttribute;
-import org.apache.lucene.analysis.tokenattributes.TypeAttribute;
 import org.apache.lucene.search.PhraseQuery;
 import org.apache.lucene.util.ArrayUtil;
 import org.apache.lucene.util.AttributeSource;
@@ -173,7 +172,6 @@ public final class WordDelimiterGraphFilter extends TokenFilter {
   private final OffsetAttribute offsetAttribute = addAttribute(OffsetAttribute.class);
   private final PositionIncrementAttribute posIncAttribute = addAttribute(PositionIncrementAttribute.class);
   private final PositionLengthAttribute posLenAttribute = addAttribute(PositionLengthAttribute.class);
-  private final TypeAttribute typeAttribute = addAttribute(TypeAttribute.class);
 
   // used for iterating word delimiter breaks
   private final WordDelimiterIterator iterator;
