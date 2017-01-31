@@ -20,6 +20,9 @@ Bug Fixes
 * LUCENE-7647: Made stored fields reclaim native memory more aggressively when
   configured with BEST_COMPRESSION. This could otherwise result in out-of-memory
   issues. (Adrien Grand)
+  
+* LUCENE-7670: AnalyzingInfixSuggester should not immediately open an
+  IndexWriter over an already-built index. (Steve Rowe)
 
 ======================= Lucene 6.4.0 =======================
 
