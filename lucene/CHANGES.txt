@@ -108,6 +108,9 @@ Bug Fixes
 * LUCENE-7630: Fix (Edge)NGramTokenFilter to no longer drop payloads
   and preserve all attributes. (Nathan Gass via Uwe Schindler)
 
+* LUCENE-7670: AnalyzingInfixSuggester should not immediately open an
+  IndexWriter over an already-built index. (Steve Rowe)
+
 Improvements
 
 * LUCENE-7055: Added Weight#scorerSupplier, which allows to estimate the cost
