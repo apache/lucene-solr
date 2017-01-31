@@ -22,33 +22,41 @@ import org.apache.lucene.queryparser.xml.DOMUtils;
 import org.apache.lucene.queryparser.xml.ParserException;
 import org.apache.lucene.queryparser.xml.builders.SpanQueryBuilder;
 import org.apache.lucene.search.Query;
-import org.apache.lucene.search.spans.SpanNearQuery;
+import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.search.spans.SpanQuery;
 import org.apache.lucene.search.spans.SpanTermQuery;
 import org.apache.solr.request.SolrQueryRequest;
 import org.w3c.dom.Element;
+import org.w3c.dom.Node;
 
-public class ApacheLuceneSolrNearQueryBuilder extends SolrSpanQueryBuilder {
+public class ChooseOneWordQueryBuilder extends SolrSpanQueryBuilder {
 
-  public ApacheLuceneSolrNearQueryBuilder(String defaultField, Analyzer analyzer,
-      SolrQueryRequest req, SpanQueryBuilder spanFactory) {
+  public ChooseOneWordQueryBuilder(String defaultField, Analyzer analyzer, SolrQueryRequest req,
+      SpanQueryBuilder spanFactory) {
     super(defaultField, analyzer, req, spanFactory);
   }
 
   public Query getQuery(Element e) throws ParserException {
-    return getSpanQuery(e);
+    return implGetQuery(e, false);
   }
 
   public SpanQuery getSpanQuery(Element e) throws ParserException {
-    final String fieldName = DOMUtils.getAttributeWithInheritanceOrFail(e, "fieldName");
-    final SpanQuery[] spanQueries = new SpanQuery[]{
-        new SpanTermQuery(new Term(fieldName, "Apache")),
-        new SpanTermQuery(new Term(fieldName, "Lucene")),
-        new SpanTermQuery(new Term(fieldName, "Solr"))
-    };
-    final int slop = 42;
-    final boolean inOrder = false;
-    return new SpanNearQuery(spanQueries, slop, inOrder);
+    return (SpanQuery)implGetQuery(e, true);
   }
 
+  public Query implGetQuery(Element e, boolean span) throws ParserException {
+    Term term = null;
+    final String fieldName = DOMUtils.getAttributeWithInheritanceOrFail(e, "fieldName");
+    for (Node node = e.getFirstChild(); node != null; node = node.getNextSibling()) {
+      if (node.getNodeType() == Node.ELEMENT_NODE &&
+          node.getNodeName().equals("Word")) {
+        final String word = DOMUtils.getNonBlankTextOrFail((Element) node);
+        final Term t = new Term(fieldName, word);
+        if (term == null || term.text().length() < t.text().length()) {
+          term = t;
+        }
+      }
+    }
+    return (span ? new SpanTermQuery(term) : new TermQuery(term));
+  }
 }

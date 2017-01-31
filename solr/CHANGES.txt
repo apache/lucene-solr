@@ -61,6 +61,9 @@ Optimizations
 * SOLR-9764: All filters that which all documents in the index now share the same memory (DocSet).
   (Michael Sun, yonik)
 
+* SOLR-9933: SolrCoreParser now supports configuration of custom SpanQueryBuilder classes.
+  (Daniel Collins, Christine Poerschke)
+
 Bug Fixes
 ----------------------
 
