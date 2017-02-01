@@ -73,9 +73,6 @@ public class SolrCoreMetricManager implements Closeable {
     }
     // close old reporters
     metricManager.closeReporters(oldRegistryName);
-    metricManager.moveMetrics(oldRegistryName, registryName, null);
-    // old registry is no longer used - we have moved the metrics
-    metricManager.removeRegistry(oldRegistryName);
     // load reporters again, using the new core name
     loadReporters();
   }
