@@ -33,6 +33,7 @@ import java.io.StringReader;
 import java.net.URL;
 import java.text.NumberFormat;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Set;
@@ -45,6 +46,21 @@ import java.util.HashSet;
  */
 @SuppressWarnings("unchecked")
 public class SolrInfoMBeanHandler extends RequestHandlerBase {
+
+  // back-compat names, only needed in 6.x - see SOLR-10035
+  static final Map<String, String> newToOldCategories = new HashMap<String, String>() {{
+    put(Category.QUERY.toString(), "QUERYHANDLER");
+    put(Category.UPDATE.toString(), "UPDATEHANDLER");
+    put(Category.HIGHLIGHTER.toString(), "HIGHLIGHTING");
+  }};
+  static final Map<String, String> oldToNewCategories = new HashMap<String, String>() {{
+    put("QUERYHANDLER", Category.QUERY.toString());
+    put("UPDATEHANDLER", Category.UPDATE.toString());
+    put("HIGHLIGHTING", Category.HIGHLIGHTER.toString());
+  }};
+
+  static final boolean useOnlyNewNaming = Boolean.valueOf(System.getProperty("solr.mbeans.useOnlyNewNaming", "false"));
+
 
   /**
    * Take an array of any type and generate a Set containing the toString.
@@ -120,9 +136,22 @@ public class SolrInfoMBeanHandler extends RequestHandlerBase {
       for (SolrInfoMBean.Category cat : SolrInfoMBean.Category.values()) {
         cats.add(cat.name(), new SimpleOrderedMap<NamedList<Object>>());
       }
+      if (!useOnlyNewNaming) {
+        for (String oldName : newToOldCategories.values()) {
+          cats.add(oldName, new SimpleOrderedMap<NamedList<Object>>());
+        }
+      }
     } else {
       for (String catName : requestedCats) {
         cats.add(catName,new SimpleOrderedMap<NamedList<Object>>());
+        if (!useOnlyNewNaming) {
+          if (newToOldCategories.containsKey(catName)) {
+            cats.add(newToOldCategories.get(catName), new SimpleOrderedMap<NamedList<Object>>());
+          }
+          if (oldToNewCategories.containsKey(catName)) {
+            cats.add(oldToNewCategories.get(catName), new SimpleOrderedMap<NamedList<Object>>());
+          }
+        }
       }
     }
          
@@ -130,18 +159,28 @@ public class SolrInfoMBeanHandler extends RequestHandlerBase {
     
     Map<String, SolrInfoMBean> reg = req.getCore().getInfoRegistry();
     for (Map.Entry<String, SolrInfoMBean> entry : reg.entrySet()) {
-      addMBean(req, cats, requestedKeys, entry.getKey(),entry.getValue());
+      String cat = entry.getValue().getCategory().name();
+      addMBean(req, cat, cats, requestedKeys, entry.getKey(),entry.getValue());
+      // add it also under back-compat name
+      if (!useOnlyNewNaming && newToOldCategories.containsKey(cat)) {
+        addMBean(req, newToOldCategories.get(cat), cats, requestedKeys, entry.getKey(),entry.getValue());
+      }
     }
 
     for (SolrInfoMBean infoMBean : req.getCore().getCoreDescriptor().getCoreContainer().getResourceLoader().getInfoMBeans()) {
-      addMBean(req,cats,requestedKeys,infoMBean.getName(),infoMBean);
+      String cat = infoMBean.getCategory().name();
+      addMBean(req,cat, cats,requestedKeys,infoMBean.getName(),infoMBean);
+      // add it also under back-compat name
+      if (!useOnlyNewNaming && newToOldCategories.containsKey(cat)) {
+        addMBean(req, newToOldCategories.get(cat), cats, requestedKeys, infoMBean.getName(), infoMBean);
+      }
     }
     return cats;
   }
 
-  private void addMBean(SolrQueryRequest req, NamedList<NamedList<NamedList<Object>>> cats, Set<String> requestedKeys, String key, SolrInfoMBean m) {
+  private void addMBean(SolrQueryRequest req, String categoryName, NamedList<NamedList<NamedList<Object>>> cats, Set<String> requestedKeys, String key, SolrInfoMBean m) {
     if ( ! ( requestedKeys.isEmpty() || requestedKeys.contains(key) ) ) return;
-    NamedList<NamedList<Object>> catInfo = cats.get(m.getCategory().name());
+    NamedList<NamedList<Object>> catInfo = cats.get(categoryName);
     if ( null == catInfo ) return;
     NamedList<Object> mBeanInfo = new SimpleOrderedMap<>();
     mBeanInfo.add("class", m.getName());

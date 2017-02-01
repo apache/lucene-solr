@@ -25,6 +25,7 @@ import org.apache.solr.common.util.ContentStream;
 import org.apache.solr.common.util.ContentStreamBase;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.request.LocalSolrQueryRequest;
+import org.apache.solr.request.SolrQueryRequest;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
@@ -83,5 +84,39 @@ public class MBeansHandlerTest extends SolrTestCaseJ4 {
     NamedList<NamedList<NamedList<Object>>> nl = SolrInfoMBeanHandler.fromXML(xml);
 
     assertTrue("external entity ignored properly", true);
+  }
+
+  @Test
+  public void testBackCompatNames() throws Exception {
+    SolrQueryRequest req = req(
+        CommonParams.QT,"/admin/mbeans",
+        CommonParams.WT,"xml"
+    );
+    h.validateQuery(req,
+        "boolean(//lst[@name='QUERY'])",
+        "boolean(//lst[@name='QUERYHANDLER'])",
+        "boolean(//lst[@name='UPDATE'])",
+        "boolean(//lst[@name='UPDATEHANDLER'])",
+        "boolean(//lst[@name='HIGHLIGHTING'])",
+        "boolean(//lst[@name='HIGHLIGHTER'])"
+    );
+    req = req(
+        CommonParams.QT,"/admin/mbeans",
+        CommonParams.WT,"xml",
+        "cat", "QUERYHANDLER"
+    );
+    h.validateQuery(req,
+        "boolean(//lst[@name='QUERY'])",
+        "boolean(//lst[@name='QUERYHANDLER'])"
+    );
+    req = req(
+        CommonParams.QT,"/admin/mbeans",
+        CommonParams.WT,"xml",
+        "cat", "UPDATE"
+    );
+    h.validateQuery(req,
+        "boolean(//lst[@name='UPDATE'])",
+        "boolean(//lst[@name='UPDATEHANDLER'])"
+    );
   }
 }

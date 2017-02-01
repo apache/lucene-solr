@@ -25,9 +25,12 @@ limitations under the License.
 #content #plugins #navigation .cache a { background-image: url( ../../img/ico/disk-black.png ); }
 #content #plugins #navigation .core a { background-image: url( ../../img/ico/wooden-box.png ); }
 #content #plugins #navigation .other a { background-image: url( ../../img/ico/zone.png ); }
-#content #plugins #navigation .highlighting a { background-image: url( ../../img/ico/highlighter-text.png ); }
-#content #plugins #navigation .updatehandler a{ background-image: url( ../../img/ico/arrow-circle.png ); }
-#content #plugins #navigation .queryhandler a { background-image: url( ../../img/ico/magnifier.png ); }
+#content #plugins #navigation .highlighting a { text-decoration: line-through; background-image: url( ../../img/ico/highlighter-text.png ); }
+#content #plugins #navigation .highlighter a { background-image: url( ../../img/ico/highlighter-text.png ); }
+#content #plugins #navigation .updatehandler a{ text-decoration: line-through; background-image: url( ../../img/ico/arrow-circle.png ); }
+#content #plugins #navigation .update a{ background-image: url( ../../img/ico/arrow-circle.png ); }
+#content #plugins #navigation .queryhandler a { text-decoration: line-through; background-image: url( ../../img/ico/magnifier.png ); }
+#content #plugins #navigation .query a { background-image: url( ../../img/ico/magnifier.png ); }
 #content #plugins #navigation .queryparser a { background-image: url( ../../img/ico/asterisk.png ); }
 
 #content #plugins #navigation .PLUGINCHANGES { margin-top: 20px; }
