@@ -85,6 +85,7 @@ public class SolrMetricManager {
   private final Map<String, Map<String, SolrMetricReporter>> reporters = new HashMap<>();
 
   private final Lock reportersLock = new ReentrantLock();
+  private final Lock swapLock = new ReentrantLock();
 
   public SolrMetricManager() { }
 
@@ -178,18 +179,27 @@ public class SolrMetricManager {
     if (isSharedRegistry(registry)) {
       return SharedMetricRegistries.getOrCreate(registry);
     } else {
-      final MetricRegistry existing = registries.get(registry);
-      if (existing == null) {
-        final MetricRegistry created = new MetricRegistry();
-        final MetricRegistry raced = registries.putIfAbsent(registry, created);
-        if (raced == null) {
-          return created;
-        } else {
-          return raced;
-        }
-      } else {
-        return existing;
+      swapLock.lock();
+      try {
+        return getOrCreate(registries, registry);
+      } finally {
+        swapLock.unlock();
       }
+    }
+  }
+
+  private static MetricRegistry getOrCreate(ConcurrentMap<String, MetricRegistry> map, String registry) {
+    final MetricRegistry existing = map.get(registry);
+    if (existing == null) {
+      final MetricRegistry created = new MetricRegistry();
+      final MetricRegistry raced = map.putIfAbsent(registry, created);
+      if (raced == null) {
+        return created;
+      } else {
+        return raced;
+      }
+    } else {
+      return existing;
     }
   }
 
@@ -205,34 +215,47 @@ public class SolrMetricManager {
     if (isSharedRegistry(registry)) {
       SharedMetricRegistries.remove(registry);
     } else {
-      registries.remove(registry);
+      swapLock.lock();
+      try {
+        registries.remove(registry);
+      } finally {
+        swapLock.unlock();
+      }
     }
   }
 
   /**
-   * Move all matching metrics from one registry to another. This is useful eg. during
-   * {@link org.apache.solr.core.SolrCore} rename or swap operations.
-   * @param fromRegistry source registry
-   * @param toRegistry target registry
-   * @param filter optional {@link MetricFilter} to select what metrics to move. If null
-   *               then all metrics will be moved.
+   * Swap registries. This is useful eg. during
+   * {@link org.apache.solr.core.SolrCore} rename or swap operations. NOTE:
+   * this operation is not supported for shared registries.
+   * @param registry1 source registry
+   * @param registry2 target registry. Note: when used after core rename the target registry doesn't
+   *                  exist, so the swap operation will only rename the existing registry without creating
+   *                  an empty one under the previous name.
    */
-  public void moveMetrics(String fromRegistry, String toRegistry, MetricFilter filter) {
-    MetricRegistry from = registry(fromRegistry);
-    MetricRegistry to = registry(toRegistry);
-    if (from == to) {
-      return;
+  public void swapRegistries(String registry1, String registry2) {
+    registry1 = overridableRegistryName(registry1);
+    registry2 = overridableRegistryName(registry2);
+    if (isSharedRegistry(registry1) || isSharedRegistry(registry2)) {
+      throw new UnsupportedOperationException("Cannot swap shared registry: " + registry1 + ", " + registry2);
     }
-    if (filter == null) {
-      to.registerAll(from);
-      from.removeMatching(MetricFilter.ALL);
-    } else {
-      for (Map.Entry<String, Metric> entry : from.getMetrics().entrySet()) {
-        if (filter.matches(entry.getKey(), entry.getValue())) {
-          to.register(entry.getKey(), entry.getValue());
-        }
+    swapLock.lock();
+    try {
+      MetricRegistry from = registries.get(registry1);
+      MetricRegistry to = registries.get(registry2);
+      if (from == to) {
+        return;
       }
-      from.removeMatching(filter);
+      MetricRegistry reg1 = registries.remove(registry1);
+      MetricRegistry reg2 = registries.remove(registry2);
+      if (reg2 != null) {
+        registries.put(registry1, reg2);
+      }
+      if (reg1 != null) {
+        registries.put(registry2, reg1);
+      }
+    } finally {
+      swapLock.unlock();
     }
   }
 

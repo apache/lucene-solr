@@ -18,21 +18,29 @@ package org.apache.solr.client.solrj.request;
 
 import java.io.File;
 import java.lang.invoke.MethodHandles;
+import java.util.Collection;
 
 import com.carrotsearch.randomizedtesting.annotations.ThreadLeakFilters;
 import com.carrotsearch.randomizedtesting.rules.SystemPropertiesRestoreRule;
+import com.codahale.metrics.MetricRegistry;
 import org.apache.commons.io.FileUtils;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.solr.SolrIgnoredThreadsFilter;
 import org.apache.solr.client.solrj.SolrClient;
+import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.embedded.AbstractEmbeddedSolrServerTestCase;
 import org.apache.solr.client.solrj.embedded.EmbeddedSolrServer;
 import org.apache.solr.client.solrj.request.CoreAdminRequest.Create;
 import org.apache.solr.client.solrj.response.CoreAdminResponse;
+import org.apache.solr.client.solrj.response.QueryResponse;
+import org.apache.solr.common.SolrDocumentList;
 import org.apache.solr.common.SolrException;
+import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.core.SolrCore;
+import org.apache.solr.metrics.SolrCoreMetricManager;
+import org.apache.solr.metrics.SolrMetricManager;
 import org.junit.After;
 import org.junit.BeforeClass;
 import org.junit.Rule;
@@ -185,6 +193,93 @@ public class TestCoreAdmin extends AbstractEmbeddedSolrServerTestCase {
       assertTrue(exceptionMessage.contains("invalid$core@name"));
       assertTrue(exceptionMessage.contains("must consist entirely of periods, underscores, hyphens, and alphanumerics"));
     }
+  }
+
+  @Test
+  public void testValidCoreRename() throws Exception {
+    Collection<String> names = cores.getAllCoreNames();
+    assertFalse(names.toString(), names.contains("coreRenamed"));
+    assertTrue(names.toString(), names.contains("core1"));
+    CoreAdminRequest.renameCore("core1", "coreRenamed", getSolrAdmin());
+    names = cores.getAllCoreNames();
+    assertTrue(names.toString(), names.contains("coreRenamed"));
+    assertFalse(names.toString(), names.contains("core1"));
+    // rename it back
+    CoreAdminRequest.renameCore("coreRenamed", "core1", getSolrAdmin());
+    names = cores.getAllCoreNames();
+    assertFalse(names.toString(), names.contains("coreRenamed"));
+    assertTrue(names.toString(), names.contains("core1"));
+  }
+
+  @Test
+  public void testCoreSwap() throws Exception {
+    // index marker docs to core0
+    SolrClient cli0 = getSolrCore0();
+    SolrInputDocument d = new SolrInputDocument("id", "core0-0");
+    cli0.add(d);
+    d = new SolrInputDocument("id", "core0-1");
+    cli0.add(d);
+    cli0.commit();
+    // index a marker doc to core1
+    SolrClient cli1 = getSolrCore1();
+    d = new SolrInputDocument("id", "core1-0");
+    cli1.add(d);
+    cli1.commit();
+
+    // initial state assertions
+    SolrQuery q = new SolrQuery("*:*");
+    QueryResponse rsp = cli0.query(q);
+    SolrDocumentList docs = rsp.getResults();
+    assertEquals(2, docs.size());
+    docs.forEach(doc -> {
+      assertTrue(doc.toString(), doc.getFieldValue("id").toString().startsWith("core0-"));
+    });
+
+    rsp = cli1.query(q);
+    docs = rsp.getResults();
+    assertEquals(1, docs.size());
+    docs.forEach(doc -> {
+      assertTrue(doc.toString(), doc.getFieldValue("id").toString().startsWith("core1-"));
+    });
+
+    // assert initial metrics
+    SolrMetricManager metricManager = cores.getMetricManager();
+    String core0RegistryName = SolrCoreMetricManager.createRegistryName(null, "core0");
+    String core1RegistryName = SolrCoreMetricManager.createRegistryName(null, "core1");
+    MetricRegistry core0Registry = metricManager.registry(core0RegistryName);
+    MetricRegistry core1Registry = metricManager.registry(core1RegistryName);
+
+    // 2 docs + 1 commit
+    assertEquals(3, core0Registry.counter("UPDATE./update.requests").getCount());
+    // 1 doc + 1 commit
+    assertEquals(2, core1Registry.counter("UPDATE./update.requests").getCount());
+
+    // swap
+    CoreAdminRequest.swapCore("core0", "core1", getSolrAdmin());
+
+    // assert state after swap
+    cli0 = getSolrCore0();
+    cli1 = getSolrCore1();
+
+    rsp = cli0.query(q);
+    docs = rsp.getResults();
+    assertEquals(1, docs.size());
+    docs.forEach(doc -> {
+      assertTrue(doc.toString(), doc.getFieldValue("id").toString().startsWith("core1-"));
+    });
+
+    rsp = cli1.query(q);
+    docs = rsp.getResults();
+    assertEquals(2, docs.size());
+    docs.forEach(doc -> {
+      assertTrue(doc.toString(), doc.getFieldValue("id").toString().startsWith("core0-"));
+    });
+
+    core0Registry = metricManager.registry(core0RegistryName);
+    core1Registry = metricManager.registry(core1RegistryName);
+
+    assertEquals(2, core0Registry.counter("UPDATE./update.requests").getCount());
+    assertEquals(3, core1Registry.counter("UPDATE./update.requests").getCount());
   }
   
   @BeforeClass
