@@ -98,6 +98,13 @@ Apache UIMA 2.3.1
 Apache ZooKeeper 3.4.6
 Jetty 9.3.14.v20161028
 
+Upgrade Notes
+----------------------
+* SOLR-10035: Category names of some SolrInfoMBeans have been changed in release 6.4.0. This issue
+  changes the /admin/mbeans handler to return these beans both under the new and the old back-compatible
+  names. Old names are deprecated and will be eventually removed in Solr 7.0. They can be also removed via
+  system property "-Dsolr.mbeans.useOnlyNewNaming=true". (ab, Shawn Heisey, Jan Høydahl)
+
 Bug Fixes
 ----------------------
 * SOLR-9969: "Plugin/Stats" section of the UI doesn't display empty metric types (Tomás Fernández Löbbe)
