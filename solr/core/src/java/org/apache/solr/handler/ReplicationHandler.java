@@ -29,6 +29,8 @@ import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.NoSuchFileException;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -1418,9 +1420,10 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
       params = solrParams;
       delPolicy = core.getDeletionPolicy();
 
-      fileName = params.get(FILE);
-      cfileName = params.get(CONF_FILE_SHORT);
-      tlogFileName = params.get(TLOG_FILE);
+      fileName = validateFilenameOrError(params.get(FILE));
+      cfileName = validateFilenameOrError(params.get(CONF_FILE_SHORT));
+      tlogFileName = validateFilenameOrError(params.get(TLOG_FILE));
+      
       sOffset = params.get(OFFSET);
       sLen = params.get(LEN);
       compress = params.get(COMPRESSION);
@@ -1432,6 +1435,22 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
       //No throttle if MAX_WRITE_PER_SECOND is not specified
       double maxWriteMBPerSec = params.getDouble(MAX_WRITE_PER_SECOND, Double.MAX_VALUE);
       rateLimiter = new RateLimiter.SimpleRateLimiter(maxWriteMBPerSec);
+    }
+
+    // Throw exception on directory traversal attempts 
+    protected String validateFilenameOrError(String filename) {
+      if (filename != null) {
+        Path filePath = Paths.get(filename);
+        filePath.forEach(subpath -> {
+          if ("..".equals(subpath.toString())) {
+            throw new SolrException(ErrorCode.FORBIDDEN, "File name cannot contain ..");
+          }
+        });
+        if (filePath.isAbsolute()) {
+          throw new SolrException(ErrorCode.FORBIDDEN, "File name must be relative");
+        }
+        return filename;
+      } else return null;
     }
 
     protected void initWrite() throws IOException {

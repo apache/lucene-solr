@@ -58,6 +58,7 @@ import org.apache.commons.io.output.CloseShieldOutputStream;
 import org.apache.commons.lang.StringUtils;
 import org.apache.http.client.HttpClient;
 import org.apache.lucene.util.Version;
+import org.apache.solr.api.V2HttpCall;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.cloud.SolrZkClient;
@@ -93,6 +94,7 @@ public class SolrDispatchFilter extends BaseSolrFilter {
   
   // Effectively immutable
   private Boolean testMode = null;
+  private boolean isV2Enabled = !"true".equals(System.getProperty("disable.v2.api", "false"));
 
   /**
    * Enum to define action that needs to be processed.
@@ -102,7 +104,7 @@ public class SolrDispatchFilter extends BaseSolrFilter {
    *  This is generally when an error is set and returned.
    * RETRY:Retry the request. In cases when a core isn't found to work with, this is set.
    */
-  enum Action {
+  public enum Action {
     PASSTHROUGH, FORWARD, RETURN, RETRY, ADMIN, REMOTEQUERY, PROCESS
   }
   
@@ -136,7 +138,7 @@ public class SolrDispatchFilter extends BaseSolrFilter {
     log.trace("SolrDispatchFilter.init(): {}", this.getClass().getClassLoader());
 
     SolrRequestParsers.fileCleaningTracker = new SolrFileCleaningTracker();
-    
+
     StartupLoggingUtils.checkLogDir();
     logWelcomeBanner();
     String muteConsole = System.getProperty(SOLR_LOG_MUTECONSOLE);
@@ -380,7 +382,17 @@ public class SolrDispatchFilter extends BaseSolrFilter {
    * want to add attributes to the request and send errors differently
    */
   protected HttpSolrCall getHttpSolrCall(HttpServletRequest request, HttpServletResponse response, boolean retry) {
-    return new HttpSolrCall(this, cores, request, response, retry);
+    String path = request.getServletPath();
+    if (request.getPathInfo() != null) {
+      // this lets you handle /update/commit when /update is a servlet
+      path += request.getPathInfo();
+    }
+
+    if (isV2Enabled && (path.startsWith("/v2/") || path.equals("/v2"))) {
+      return new V2HttpCall(this, cores, request, response, false);
+    } else {
+      return new HttpSolrCall(this, cores, request, response, retry);
+    }
   }
 
   private boolean authenticateRequest(ServletRequest request, ServletResponse response, final AtomicReference<ServletRequest> wrappedRequest) throws IOException {

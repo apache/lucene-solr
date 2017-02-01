@@ -850,7 +850,7 @@
     </requestHandler>
 
   <!-- A request handler that returns indented JSON by default -->
-  <requestHandler name="/query" class="solr.SearchHandler">
+  <requestHandler name="/query" class="solr.SearchHandler" registerPath="/,/v2">
      <lst name="defaults">
        <str name="echoParams">explicit</str>
        <str name="wt">json</str>
@@ -958,7 +958,7 @@
   </requestHandler>
 
 
-  <initParams path="/update/**,/query,/select,/tvrh,/elevate,/spell,/browse">
+  <initParams path="/update/**,/query,/select,/tvrh,/elevate,/spell,/browse,update">
     <lst name="defaults">
       <str name="df">text</str>
     </lst>
@@ -966,12 +966,12 @@
 
   <!-- The following are implicitly added
   <requestHandler name="/update/json" class="solr.UpdateRequestHandler">
-        <lst name="defaults">
+        <lst name="invariants">
          <str name="stream.contentType">application/json</str>
        </lst>
   </requestHandler>
   <requestHandler name="/update/csv" class="solr.UpdateRequestHandler">
-        <lst name="defaults">
+        <lst name="invariants">
          <str name="stream.contentType">application/csv</str>
        </lst>
   </requestHandler>

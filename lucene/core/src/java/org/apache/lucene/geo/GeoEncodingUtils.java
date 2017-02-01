@@ -27,6 +27,8 @@ import static org.apache.lucene.geo.GeoUtils.MIN_LAT_INCL;
 import static org.apache.lucene.geo.GeoUtils.checkLatitude;
 import static org.apache.lucene.geo.GeoUtils.checkLongitude;
 
+import java.util.function.Function;
+
 /**
  * reusable geopoint encoding methods
  *
@@ -158,10 +160,47 @@ public final class GeoEncodingUtils {
    *  @lucene.internal */
   public static DistancePredicate createDistancePredicate(double lat, double lon, double radiusMeters) {
     final Rectangle boundingBox = Rectangle.fromPointDistance(lat, lon, radiusMeters);
+    final double axisLat = Rectangle.axisLat(lat, radiusMeters);
+    final double distanceSortKey = GeoUtils.distanceQuerySortKey(radiusMeters);
+    final Function<Rectangle, Relation> boxToRelation = box -> GeoUtils.relate(
+        box.minLat, box.maxLat, box.minLon, box.maxLon, lat, lon, distanceSortKey, axisLat);
+    final Grid subBoxes = createSubBoxes(boundingBox, boxToRelation);
+
+    return new DistancePredicate(
+        subBoxes.latShift, subBoxes.lonShift,
+        subBoxes.latBase, subBoxes.lonBase,
+        subBoxes.maxLatDelta, subBoxes.maxLonDelta,
+        subBoxes.relations,
+        lat, lon, distanceSortKey);
+  }
+
+  /** Create a predicate that checks whether points are within a polygon.
+   *  It works the same way as {@link #createDistancePredicate}.
+   *  @lucene.internal */
+  public static PolygonPredicate createPolygonPredicate(Polygon[] polygons, Polygon2D tree) {
+    final Rectangle boundingBox = Rectangle.fromPolygon(polygons);
+    final Function<Rectangle, Relation> boxToRelation = box -> tree.relate(
+        box.minLat, box.maxLat, box.minLon, box.maxLon);
+    final Grid subBoxes = createSubBoxes(boundingBox, boxToRelation);
+
+    return new PolygonPredicate(
+        subBoxes.latShift, subBoxes.lonShift,
+        subBoxes.latBase, subBoxes.lonBase,
+        subBoxes.maxLatDelta, subBoxes.maxLonDelta,
+        subBoxes.relations,
+        tree);
+  }
+
+  private static Grid createSubBoxes(Rectangle boundingBox, Function<Rectangle, Relation> boxToRelation) {
     final int minLat = encodeLatitudeCeil(boundingBox.minLat);
     final int maxLat = encodeLatitude(boundingBox.maxLat);
     final int minLon = encodeLongitudeCeil(boundingBox.minLon);
     final int maxLon = encodeLongitude(boundingBox.maxLon);
+
+    if (maxLat < minLat || (boundingBox.crossesDateline() == false && maxLon < minLon)) {
+      // the box cannot match any quantized point
+      return new Grid(1, 1, 0, 0, 0, 0, new byte[0]);
+    }
 
     final int latShift, lonShift;
     final int latBase, lonBase;
@@ -186,8 +225,6 @@ public final class GeoEncodingUtils {
       assert maxLonDelta > 0;
     }
 
-    final double axisLat = Rectangle.axisLat(lat, radiusMeters);
-    final double distanceSortKey = GeoUtils.distanceQuerySortKey(radiusMeters);
     final byte[] relations = new byte[maxLatDelta * maxLonDelta];
     for (int i = 0; i < maxLatDelta; ++i) {
       for (int j = 0; j < maxLonDelta; ++j) {
@@ -196,46 +233,67 @@ public final class GeoEncodingUtils {
         final int boxMaxLat = boxMinLat + (1 << latShift) - 1;
         final int boxMaxLon = boxMinLon + (1 << lonShift) - 1;
 
-        relations[i * maxLonDelta + j] = (byte) GeoUtils.relate(
+        relations[i * maxLonDelta + j] = (byte) boxToRelation.apply(new Rectangle(
             decodeLatitude(boxMinLat), decodeLatitude(boxMaxLat),
-            decodeLongitude(boxMinLon), decodeLongitude(boxMaxLon),
-            lat, lon, distanceSortKey, axisLat).ordinal();
+            decodeLongitude(boxMinLon), decodeLongitude(boxMaxLon))).ordinal();
       }
     }
 
-    return new DistancePredicate(
+    return new Grid(
         latShift, lonShift,
         latBase, lonBase,
         maxLatDelta, maxLonDelta,
-        relations,
-        lat, lon, distanceSortKey);
+        relations);
   }
 
   /** Compute the minimum shift value so that
    * {@code (b>>>shift)-(a>>>shift)} is less that {@code ARITY}. */
   private static int computeShift(long a, long b) {
-    assert a < b;
+    assert a <= b;
     // We enforce a shift of at least 1 so that when we work with unsigned ints
     // by doing (lat - MIN_VALUE), the result of the shift (lat - MIN_VALUE) >>> shift
     // can be used for comparisons without particular care: the sign bit has
     // been cleared so comparisons work the same for signed and unsigned ints
     for (int shift = 1; ; ++shift) {
       final long delta = (b >>> shift) - (a >>> shift);
-      if (delta >= 0 && delta < DistancePredicate.ARITY) {
+      if (delta >= 0 && delta < Grid.ARITY) {
         return shift;
       }
     }
   }
 
+  private static class Grid {
+    static final int ARITY = 64;
+
+    final int latShift, lonShift;
+    final int latBase, lonBase;
+    final int maxLatDelta, maxLonDelta;
+    final byte[] relations;
+
+    private Grid(
+        int latShift, int lonShift,
+        int latBase, int lonBase,
+        int maxLatDelta, int maxLonDelta,
+        byte[] relations) {
+      if (latShift < 1 || latShift > 31) {
+        throw new IllegalArgumentException();
+      }
+      if (lonShift < 1 || lonShift > 31) {
+        throw new IllegalArgumentException();
+      }
+      this.latShift = latShift;
+      this.lonShift = lonShift;
+      this.latBase = latBase;
+      this.lonBase = lonBase;
+      this.maxLatDelta = maxLatDelta;
+      this.maxLonDelta = maxLonDelta;
+      this.relations = relations;
+    }
+  }
+
   /** A predicate that checks whether a given point is within a distance of another point. */
-  public static class DistancePredicate {
+  public static class DistancePredicate extends Grid {
 
-    private static final int ARITY = 64;
-
-    private final int latShift, lonShift;
-    private final int latBase, lonBase;
-    private final int maxLatDelta, maxLonDelta;
-    private final byte[] relations;
     private final double lat, lon;
     private final double distanceKey;
 
@@ -245,13 +303,7 @@ public final class GeoEncodingUtils {
         int maxLatDelta, int maxLonDelta,
         byte[] relations,
         double lat, double lon, double distanceKey) {
-      this.latShift = latShift;
-      this.lonShift = lonShift;
-      this.latBase = latBase;
-      this.lonBase = lonBase;
-      this.maxLatDelta = maxLatDelta;
-      this.maxLonDelta = maxLonDelta;
-      this.relations = relations;
+      super(latShift, lonShift, latBase, lonBase, maxLatDelta, maxLonDelta, relations);
       this.lat = lat;
       this.lon = lon;
       this.distanceKey = distanceKey;
@@ -259,16 +311,17 @@ public final class GeoEncodingUtils {
 
     /** Check whether the given point is within a distance of another point.
      *  NOTE: this operates directly on the encoded representation of points. */
-    public boolean apply(int lat, int lon) {
+    public boolean test(int lat, int lon) {
       final int lat2 = ((lat - Integer.MIN_VALUE) >>> latShift);
       if (lat2 < latBase || lat2 >= latBase + maxLatDelta) {
         return false;
       }
       int lon2 = ((lon - Integer.MIN_VALUE) >>> lonShift);
       if (lon2 < lonBase) { // wrap
-        lon2 += 1L << (32 - lonShift);
-        assert lon2 >= lonBase;
+        lon2 += 1 << (32 - lonShift);
       }
+      assert Integer.toUnsignedLong(lon2) >= lonBase;
+      assert lon2 - lonBase >= 0;
       if (lon2 - lonBase >= maxLonDelta) {
         return false;
       }
@@ -284,4 +337,44 @@ public final class GeoEncodingUtils {
     }
   }
 
+  /** A predicate that checks whether a given point is within a polygon. */
+  public static class PolygonPredicate extends Grid {
+
+    private final Polygon2D tree;
+
+    private PolygonPredicate(
+        int latShift, int lonShift,
+        int latBase, int lonBase,
+        int maxLatDelta, int maxLonDelta,
+        byte[] relations,
+        Polygon2D tree) {
+      super(latShift, lonShift, latBase, lonBase, maxLatDelta, maxLonDelta, relations);
+      this.tree = tree;
+    }
+
+    /** Check whether the given point is within the considered polygon.
+     *  NOTE: this operates directly on the encoded representation of points. */
+    public boolean test(int lat, int lon) {
+      final int lat2 = ((lat - Integer.MIN_VALUE) >>> latShift);
+      if (lat2 < latBase || lat2 >= latBase + maxLatDelta) {
+        return false;
+      }
+      int lon2 = ((lon - Integer.MIN_VALUE) >>> lonShift);
+      if (lon2 < lonBase) { // wrap
+        lon2 += 1 << (32 - lonShift);
+      }
+      assert Integer.toUnsignedLong(lon2) >= lonBase;
+      assert lon2 - lonBase >= 0;
+      if (lon2 - lonBase >= maxLonDelta) {
+        return false;
+      }
+
+      final int relation = relations[(lat2 - latBase) * maxLonDelta + (lon2 - lonBase)];
+      if (relation == Relation.CELL_CROSSES_QUERY.ordinal()) {
+        return tree.contains(decodeLatitude(lat), decodeLongitude(lon));
+      } else {
+        return relation == Relation.CELL_INSIDE_QUERY.ordinal();
+      }
+    }
+  }
 }

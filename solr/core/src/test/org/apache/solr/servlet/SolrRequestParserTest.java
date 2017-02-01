@@ -55,6 +55,7 @@ import org.apache.solr.servlet.SolrRequestParsers.MultipartRequestParser;
 import org.apache.solr.servlet.SolrRequestParsers.FormDataRequestParser;
 import org.apache.solr.servlet.SolrRequestParsers.RawRequestParser;
 import org.apache.solr.servlet.SolrRequestParsers.StandardRequestParser;
+import org.easymock.EasyMock;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -481,6 +482,7 @@ public class SolrRequestParserTest extends SolrTestCaseJ4 {
     // we dont pass a content-length to let the security mechanism limit it:
     expect(request.getQueryString()).andReturn("foo=1&bar=2").anyTimes();
     expect(request.getInputStream()).andReturn(new ByteServletInputStream(body.getBytes(StandardCharsets.US_ASCII)));
+    expect(request.getAttribute(EasyMock.anyObject(String.class))).andReturn(null).anyTimes();
     replay(request);
 
     SolrRequestParsers parsers = new SolrRequestParsers(h.getCore().getSolrConfig());
@@ -518,7 +520,7 @@ public class SolrRequestParserTest extends SolrTestCaseJ4 {
     expect(request.getRequestURI()).andReturn(uri).anyTimes();
     expect(request.getContentType()).andReturn(contentType).anyTimes();
     expect(request.getContentLength()).andReturn(contentLength).anyTimes();
-    expect(request.getAttribute(SolrRequestParsers.REQUEST_TIMER_SERVLET_ATTRIBUTE)).andReturn(null).anyTimes();
+    expect(request.getAttribute(EasyMock.anyObject(String.class))).andReturn(null).anyTimes();
     return request;
   }
 

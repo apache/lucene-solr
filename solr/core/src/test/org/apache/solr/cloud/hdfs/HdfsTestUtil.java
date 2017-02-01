@@ -75,7 +75,7 @@ public class HdfsTestUtil {
     
     if (!HA_TESTING_ENABLED) haTesting = false;
     
-    int dataNodes = 2;
+    int dataNodes = Integer.getInteger("tests.hdfs.numdatanodes", 2);
     
     Configuration conf = new Configuration();
     conf.set("dfs.block.access.token.enable", "false");

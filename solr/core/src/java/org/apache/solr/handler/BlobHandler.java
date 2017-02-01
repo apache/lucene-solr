@@ -22,6 +22,7 @@ import java.lang.invoke.MethodHandles;
 import java.math.BigInteger;
 import java.nio.ByteBuffer;
 import java.security.MessageDigest;
+import java.util.Collection;
 import java.util.Date;
 import java.util.List;
 import java.util.Map;
@@ -34,6 +35,8 @@ import org.apache.lucene.search.SortField;
 import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.search.TopDocs;
 import org.apache.lucene.search.TopFieldDocs;
+import org.apache.solr.api.Api;
+import org.apache.solr.api.ApiBag;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.params.CommonParams;
@@ -72,7 +75,7 @@ public class BlobHandler extends RequestHandlerBase implements PluginInfoInitial
 
   @Override
   public void handleRequestBody(final SolrQueryRequest req, SolrQueryResponse rsp) throws Exception {
-    String httpMethod = (String) req.getContext().get("httpMethod");
+    String httpMethod = req.getHttpMethod();
     String path = (String) req.getContext().get("path");
     SolrConfigHandler.setWt(req, JSON);
 
@@ -277,4 +280,13 @@ public class BlobHandler extends RequestHandlerBase implements PluginInfoInitial
     req.getCore().getRequestHandler(handler).handleRequest(r, rsp);
   }
 
+  @Override
+  public Boolean registerV2() {
+    return Boolean.TRUE;
+  }
+
+  @Override
+  public Collection<Api> getApis() {
+    return ApiBag.wrapRequestHandlers(this, "core.system.blob", "core.system.blob.upload");
+  }
 }

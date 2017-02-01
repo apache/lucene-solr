@@ -1219,10 +1219,12 @@ goto done
 
 :run_utils
 set "TOOL_CMD=%~1"
+set q="-q"
+IF "%verbose%"=="1"  set q=""
 "%JAVA%" %SOLR_SSL_OPTS% %SOLR_ZK_CREDS_AND_ACLS% -Dsolr.install.dir="%SOLR_TIP%" ^
   -Dlog4j.configuration="file:%DEFAULT_SERVER_DIR%\scripts\cloud-scripts\log4j.properties" ^
   -classpath "%DEFAULT_SERVER_DIR%\solr-webapp\webapp\WEB-INF\lib\*;%DEFAULT_SERVER_DIR%\lib\ext\*" ^
-  org.apache.solr.util.SolrCLI utils -s "%DEFAULT_SERVER_DIR%" -l "%SOLR_LOGS_DIR%" %TOOL_CMD%
+  org.apache.solr.util.SolrCLI utils -s "%DEFAULT_SERVER_DIR%" -l "%SOLR_LOGS_DIR%" %q:"=% %TOOL_CMD%
 if errorlevel 1 (
    exit /b 1
 )

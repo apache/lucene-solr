@@ -51,7 +51,7 @@ public class SolrMetricManagerTest extends SolrTestCaseJ4 {
   }
 
   @Test
-  public void testMoveMetrics() throws Exception {
+  public void testSwapRegistries() throws Exception {
     Random r = random();
 
     SolrMetricManager metricManager = new SolrMetricManager();
@@ -65,13 +65,14 @@ public class SolrMetricManagerTest extends SolrTestCaseJ4 {
       metricManager.register(fromName, entry.getValue(), false, entry.getKey(), "metrics1");
     }
     for (Map.Entry<String, Counter> entry : metrics2.entrySet()) {
-      metricManager.register(fromName, entry.getValue(), false, entry.getKey(), "metrics2");
+      metricManager.register(toName, entry.getValue(), false, entry.getKey(), "metrics2");
     }
-    assertEquals(metrics1.size() + metrics2.size(), metricManager.registry(fromName).getMetrics().size());
+    assertEquals(metrics1.size(), metricManager.registry(fromName).getMetrics().size());
+    assertEquals(metrics2.size(), metricManager.registry(toName).getMetrics().size());
 
-    // move metrics1
-    metricManager.moveMetrics(fromName, toName, new SolrMetricManager.PrefixFilter("metrics1"));
-    // check the remaining metrics
+    // swap
+    metricManager.swapRegistries(fromName, toName);
+    // check metrics
     Map<String, Metric> fromMetrics = metricManager.registry(fromName).getMetrics();
     assertEquals(metrics2.size(), fromMetrics.size());
     for (Map.Entry<String, Counter> entry : metrics2.entrySet()) {
@@ -79,7 +80,6 @@ public class SolrMetricManagerTest extends SolrTestCaseJ4 {
       assertNotNull(value);
       assertEquals(entry.getValue(), value);
     }
-    // check the moved metrics
     Map<String, Metric> toMetrics = metricManager.registry(toName).getMetrics();
     assertEquals(metrics1.size(), toMetrics.size());
     for (Map.Entry<String, Counter> entry : metrics1.entrySet()) {
@@ -87,13 +87,6 @@ public class SolrMetricManagerTest extends SolrTestCaseJ4 {
       assertNotNull(value);
       assertEquals(entry.getValue(), value);
     }
-
-    // move all remaining metrics
-    metricManager.moveMetrics(fromName, toName, null);
-    fromMetrics = metricManager.registry(fromName).getMetrics();
-    assertEquals(0, fromMetrics.size());
-    toMetrics = metricManager.registry(toName).getMetrics();
-    assertEquals(metrics1.size() + metrics2.size(), toMetrics.size());
   }
 
   @Test
@@ -143,13 +136,13 @@ public class SolrMetricManagerTest extends SolrTestCaseJ4 {
 
     assertEquals(metrics.size() * 3, metricManager.registry(registryName).getMetrics().size());
 
-    // clear "foo.bar"
-    Set<String> removed = metricManager.clearMetrics(registryName, "foo", "bar");
+    // clear all metrics with prefix "foo.bar."
+    Set<String> removed = metricManager.clearMetrics(registryName, "foo", "bar.");
     assertEquals(metrics.size(), removed.size());
     for (String s : removed) {
       assertTrue(s.startsWith("foo.bar."));
     }
-    removed = metricManager.clearMetrics(registryName, "foo", "baz");
+    removed = metricManager.clearMetrics(registryName, "foo", "baz.");
     assertEquals(metrics.size(), removed.size());
     for (String s : removed) {
       assertTrue(s.startsWith("foo.baz."));

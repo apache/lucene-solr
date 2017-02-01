@@ -429,6 +429,10 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
     return reader.maxDoc();
   }
 
+  public final int numDocs() {
+    return reader.numDocs();
+  }
+
   public final int docFreq(Term term) throws IOException {
     return reader.docFreq(term);
   }
@@ -1063,19 +1067,24 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
     getDocSet(query);
   }
 
-  public BitDocSet getDocSetBits(Query q) throws IOException {
-    DocSet answer = getDocSet(q);
-    if (answer instanceof BitDocSet) {
-      return (BitDocSet) answer;
-    }
-
+  private BitDocSet makeBitDocSet(DocSet answer) {
+    // TODO: this should be implemented in DocSet, most likely with a getBits method that takes a maxDoc argument
+    // or make DocSet instances remember maxDoc
     FixedBitSet bs = new FixedBitSet(maxDoc());
     DocIterator iter = answer.iterator();
     while (iter.hasNext()) {
       bs.set(iter.nextDoc());
     }
 
-    BitDocSet answerBits = new BitDocSet(bs, answer.size());
+    return new BitDocSet(bs, answer.size());
+  }
+
+  public BitDocSet getDocSetBits(Query q) throws IOException {
+    DocSet answer = getDocSet(q);
+    if (answer instanceof BitDocSet) {
+      return (BitDocSet) answer;
+    }
+    BitDocSet answerBits = makeBitDocSet(answer);
     if (filterCache != null) {
       filterCache.put(q, answerBits);
     }
@@ -1138,14 +1147,33 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
   }
 
   private static Query matchAllDocsQuery = new MatchAllDocsQuery();
-  private BitDocSet liveDocs;
+  private volatile BitDocSet liveDocs;
 
+  /** @lucene.internal the type of DocSet returned may change in the future */
   public BitDocSet getLiveDocs() throws IOException {
-    // going through the filter cache will provide thread safety here
+    // Going through the filter cache will provide thread safety here if we only had getLiveDocs,
+    // but the addition of setLiveDocs means we needed to add volatile to "liveDocs".
     if (liveDocs == null) {
       liveDocs = getDocSetBits(matchAllDocsQuery);
     }
+    assert liveDocs.size() == numDocs();
     return liveDocs;
+  }
+
+  /** @lucene.internal */
+  public boolean isLiveDocsInstantiated() {
+    return liveDocs != null;
+  }
+
+  /** @lucene.internal */
+  public void setLiveDocs(DocSet docs) {
+    // a few places currently expect BitDocSet
+    assert docs.size() == numDocs();
+    if (docs instanceof BitDocSet) {
+      this.liveDocs = (BitDocSet)docs;
+    } else {
+      this.liveDocs = makeBitDocSet(docs);
+    }
   }
 
   public static class ProcessedFilter {
@@ -1178,8 +1206,7 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
       ((DelegatingCollector) collector).finish();
     }
 
-    DocSet docSet = setCollector.getDocSet();
-    return docSet;
+    return DocSetUtil.getDocSet(setCollector, this);
   }
 
   /**
@@ -1251,7 +1278,7 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
       ((DelegatingCollector) collector).finish();
     }
 
-    return setCollector.getDocSet();
+    return DocSetUtil.getDocSet(setCollector, this);
   }
 
   public ProcessedFilter getProcessedFilter(DocSet setFilter, List<Query> queries) throws IOException {
@@ -1959,7 +1986,7 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
 
       buildAndRunCollectorChain(qr, query, collector, cmd, pf.postFilter);
 
-      set = setCollector.getDocSet();
+      set = DocSetUtil.getDocSet(setCollector, this);
 
       nDocsReturned = 0;
       ids = new int[nDocsReturned];
@@ -1976,7 +2003,7 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
 
       buildAndRunCollectorChain(qr, query, collector, cmd, pf.postFilter);
 
-      set = setCollector.getDocSet();
+      set = DocSetUtil.getDocSet(setCollector, this);
 
       totalHits = topCollector.getTotalHits();
       assert (totalHits == set.size());

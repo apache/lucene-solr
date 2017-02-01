@@ -43,6 +43,7 @@ import org.mockito.stubbing.Answer;
 
 import com.google.common.collect.Lists;
 
+@Ignore("This test cannot currently work because it uses a local filesystem output path for the indexes and Solr requires hdfs output paths")
 public class MorphlineReducerTest extends MRUnitBase {
   
   @BeforeClass
@@ -94,7 +95,6 @@ public class MorphlineReducerTest extends MRUnitBase {
   }
 
   @Test
-  @Ignore("This test cannot currently work because it uses a local filesystem output path for the indexes and Solr requires hdfs output paths")
   public void testReducer() throws Exception {
     MySolrReducer myReducer = new MySolrReducer();
     try {

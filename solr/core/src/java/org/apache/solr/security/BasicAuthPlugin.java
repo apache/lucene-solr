@@ -37,11 +37,13 @@ import org.apache.http.Header;
 import org.apache.http.auth.BasicUserPrincipal;
 import org.apache.http.message.BasicHeader;
 import org.apache.solr.common.SolrException;
+import org.apache.solr.common.util.ValidatingJsonMap;
 import org.apache.solr.util.CommandOperation;
+import org.apache.solr.api.SpecProvider;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class BasicAuthPlugin extends AuthenticationPlugin implements ConfigEditablePlugin {
+public class BasicAuthPlugin extends AuthenticationPlugin implements ConfigEditablePlugin , SpecProvider {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   private AuthenticationProvider authenticationProvider;
   private final static ThreadLocal<Header> authHeader = new ThreadLocal<>();
@@ -162,7 +164,7 @@ public class BasicAuthPlugin extends AuthenticationPlugin implements ConfigEdita
     authHeader.remove();
   }
 
-  public interface AuthenticationProvider {
+  public interface AuthenticationProvider extends SpecProvider {
     void init(Map<String, Object> pluginConfig);
 
     boolean authenticate(String user, String pwd);
@@ -170,6 +172,10 @@ public class BasicAuthPlugin extends AuthenticationPlugin implements ConfigEdita
     Map<String, String> getPromptHeaders();
   }
 
+  @Override
+  public ValidatingJsonMap getSpec() {
+    return authenticationProvider.getSpec();
+  }
   public boolean getBlockUnknown(){
     return blockUnknown;
   }

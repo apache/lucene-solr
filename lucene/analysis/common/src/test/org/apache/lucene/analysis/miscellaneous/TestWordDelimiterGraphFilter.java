@@ -155,6 +155,19 @@ public class TestWordDelimiterGraphFilter extends BaseTokenStreamTestCase {
     doSplitPossessive(0, "ra's", "ra", "s");
   }
   
+  public void testTokenType() throws Exception {
+    int flags = GENERATE_WORD_PARTS | GENERATE_NUMBER_PARTS | CATENATE_ALL | SPLIT_ON_CASE_CHANGE | SPLIT_ON_NUMERICS | STEM_ENGLISH_POSSESSIVE;
+    // test that subwords and catenated subwords have
+    // the correct offsets.
+    Token token = new Token("foo-bar", 5, 12);
+    token.setType("mytype");
+    WordDelimiterGraphFilter wdf = new WordDelimiterGraphFilter(new CannedTokenStream(token), DEFAULT_WORD_DELIM_TABLE, flags, null);
+
+    assertTokenStreamContents(wdf, 
+                              new String[] {"foobar", "foo", "bar"},
+                              new String[] {"mytype", "mytype", "mytype"});
+  }
+  
   /*
    * Set a large position increment gap of 10 if the token is "largegap" or "/"
    */
@@ -177,7 +190,7 @@ public class TestWordDelimiterGraphFilter extends BaseTokenStreamTestCase {
       }
     }  
   }
-  
+
   public void testPositionIncrements() throws Exception {
     final int flags = GENERATE_WORD_PARTS | GENERATE_NUMBER_PARTS | CATENATE_ALL | SPLIT_ON_CASE_CHANGE | SPLIT_ON_NUMERICS | STEM_ENGLISH_POSSESSIVE;
     final CharArraySet protWords = new CharArraySet(new HashSet<>(Arrays.asList("NUTCH")), false);

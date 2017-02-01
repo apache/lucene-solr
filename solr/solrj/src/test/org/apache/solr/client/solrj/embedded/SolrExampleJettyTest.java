@@ -73,7 +73,7 @@ public class SolrExampleJettyTest extends SolrExampleTests {
     // two docs, one with uniqueKey, another without it
     String json = "{\"id\":\"abc1\", \"name\": \"name1\"} {\"name\" : \"name2\"}";
     HttpClient httpClient = client.getHttpClient();
-    HttpPost post = new HttpPost(client.getBaseURL() + "/update/json/docs");
+    HttpPost post = new HttpPost(getUri(client));
     post.setHeader("Content-Type", "application/json");
     post.setEntity(new InputStreamEntity(new ByteArrayInputStream(json.getBytes("UTF-8")), -1));
     HttpResponse response = httpClient.execute(post, HttpClientUtil.createNewHttpClientRequestContext());
@@ -93,5 +93,12 @@ public class SolrExampleJettyTest extends SolrExampleTests {
     m = (Map) ObjectBuilder.fromJSON(src);
     assertEquals("name2",m.get("name"));
 
+  }
+
+  private String getUri(HttpSolrClient client) {
+    String baseURL = client.getBaseURL();
+    return random().nextBoolean() ?
+        baseURL.replace("/collection1", "/v2/cores/collection1/update") :
+        baseURL + "/update/json/docs";
   }
 }

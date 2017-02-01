@@ -18,11 +18,13 @@ package org.apache.solr.handler.admin;
 
 import java.lang.invoke.MethodHandles;
 
+import java.util.Collection;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
+import org.apache.solr.api.Api;
 import org.apache.solr.client.solrj.SolrResponse;
 import org.apache.solr.cloud.OverseerSolrResponse;
 import org.apache.solr.cloud.OverseerTaskQueue.QueueEvent;
@@ -61,6 +63,7 @@ public class ConfigSetsHandler extends RequestHandlerBase {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   protected final CoreContainer coreContainer;
   public static long DEFAULT_ZK_TIMEOUT = 300*1000;
+  private final ConfigSetsHandlerApi configSetsHandlerApi = new ConfigSetsHandlerApi(this);
 
   /**
    * Overloaded ctor to inject CoreContainer into the handler.
@@ -71,10 +74,6 @@ public class ConfigSetsHandler extends RequestHandlerBase {
     this.coreContainer = coreContainer;
   }
 
-  @Override
-  final public void init(NamedList args) {
-
-  }
 
   @Override
   public void handleRequestBody(SolrQueryRequest req, SolrQueryResponse rsp) throws Exception {
@@ -96,21 +95,30 @@ public class ConfigSetsHandler extends RequestHandlerBase {
       ConfigSetAction action = ConfigSetAction.get(a);
       if (action == null)
         throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Unknown action: " + a);
-      ConfigSetOperation operation = ConfigSetOperation.get(action);
-      log.info("Invoked ConfigSet Action :{} with params {} ", action.toLower(), req.getParamString());
-      Map<String, Object> result = operation.call(req, rsp, this);
-      if (result != null) {
-        // We need to differentiate between collection and configsets actions since they currently
-        // use the same underlying queue.
-        result.put(QUEUE_OPERATION, CONFIGSETS_ACTION_PREFIX + operation.action.toLower());
-        ZkNodeProps props = new ZkNodeProps(result);
-        handleResponse(operation.action.toLower(), props, rsp, DEFAULT_ZK_TIMEOUT);
-      }
+      invokeAction(req, rsp, action);
     } else {
       throw new SolrException(ErrorCode.BAD_REQUEST, "action is a required param");
     }
 
     rsp.setHttpCaching(false);
+  }
+
+  void invokeAction(SolrQueryRequest req, SolrQueryResponse rsp, ConfigSetAction action) throws Exception {
+    ConfigSetOperation operation = ConfigSetOperation.get(action);
+    log.info("Invoked ConfigSet Action :{} with params {} ", action.toLower(), req.getParamString());
+    Map<String, Object> result = operation.call(req, rsp, this);
+    sendToZk(rsp, operation, result);
+  }
+
+  protected void sendToZk(SolrQueryResponse rsp, ConfigSetOperation operation, Map<String, Object> result)
+      throws KeeperException, InterruptedException {
+    if (result != null) {
+      // We need to differentiate between collection and configsets actions since they currently
+      // use the same underlying queue.
+      result.put(QUEUE_OPERATION, CONFIGSETS_ACTION_PREFIX + operation.action.toLower());
+      ZkNodeProps props = new ZkNodeProps(result);
+      handleResponse(operation.action.toLower(), props, rsp, DEFAULT_ZK_TIMEOUT);
+    }
   }
 
   private void handleResponse(String operation, ZkNodeProps m,
@@ -160,7 +168,6 @@ public class ConfigSetsHandler extends RequestHandlerBase {
   public String getDescription() {
     return "Manage SolrCloud ConfigSets";
   }
-
   @Override
   public Category getCategory() {
     return Category.ADMIN;
@@ -208,5 +215,15 @@ public class ConfigSetsHandler extends RequestHandlerBase {
       }
       throw new SolrException(ErrorCode.SERVER_ERROR, "No such action" + action);
     }
+  }
+
+  @Override
+  public Collection<Api> getApis() {
+    return configSetsHandlerApi.getApis();
+  }
+
+  @Override
+  public Boolean registerV2() {
+    return Boolean.TRUE;
   }
 }

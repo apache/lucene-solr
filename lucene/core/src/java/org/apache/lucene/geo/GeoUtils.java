@@ -152,7 +152,7 @@ public final class GeoUtils {
       }
     }
 
-    if (maxLon - lon < 90 && lon - minLon < 90 &&
+    if (within90LonDegrees(lon, minLon, maxLon) &&
         SloppyMath.haversinSortKey(lat, lon, minLat, minLon) <= distanceSortKey &&
         SloppyMath.haversinSortKey(lat, lon, minLat, maxLon) <= distanceSortKey &&
         SloppyMath.haversinSortKey(lat, lon, maxLat, minLon) <= distanceSortKey &&
@@ -163,4 +163,15 @@ public final class GeoUtils {
 
     return Relation.CELL_CROSSES_QUERY;
   }
+
+  /** Return whether all points of {@code [minLon,maxLon]} are within 90 degrees of {@code lon}. */
+  static boolean within90LonDegrees(double lon, double minLon, double maxLon) {
+    if (maxLon <= lon - 180) {
+      lon -= 360;
+    } else if (minLon >= lon + 180) {
+      lon += 360;
+    }
+    return maxLon - lon < 90 && lon - minLon < 90;
+  }
+
 }

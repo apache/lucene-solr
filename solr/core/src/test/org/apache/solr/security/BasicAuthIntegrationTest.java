@@ -85,6 +85,10 @@ public class BasicAuthIntegrationTest extends SolrCloudTestCase {
 
     String authcPrefix = "/admin/authentication";
     String authzPrefix = "/admin/authorization";
+    if(random().nextBoolean()){
+      authcPrefix = "/v2/cluster/security/authentication";
+      authzPrefix = "/v2/cluster/security/authorization";
+    }
 
     NamedList<Object> rsp;
     HttpClient cl = null;

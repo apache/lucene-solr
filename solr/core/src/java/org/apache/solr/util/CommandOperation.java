@@ -50,6 +50,10 @@ public class CommandOperation {
     this.name = operationName;
   }
 
+  public Object getCommandData() {
+    return commandData;
+  }
+
   public String getStr(String key, String def) {
     if (ROOT_OBJ.equals(key)) {
       Object obj = getRootPrimitive();

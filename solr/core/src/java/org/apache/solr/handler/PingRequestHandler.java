@@ -330,6 +330,11 @@ public class PingRequestHandler extends RequestHandlerBase implements SolrCoreAw
   }
 
   @Override
+  public Boolean registerV2() {
+    return Boolean.TRUE;
+  }
+
+  @Override
   public Category getCategory() {
     return Category.ADMIN;
   }

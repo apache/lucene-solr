@@ -40,7 +40,7 @@
   </requestHandler>
 
 
-  <requestHandler name="/dump" class="DumpRequestHandler" initParams="a">
+  <requestHandler name="/dump" class="DumpRequestHandler" initParams="a" registerPath="/,/v2">
     <lst name="defaults">
       <str name="a">${my.custom.variable.a:A}</str>
       <str name="b">${my.custom.variable.b:B}</str>

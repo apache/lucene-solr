@@ -20,7 +20,7 @@ import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.queryparser.xml.DOMUtils;
 import org.apache.lucene.queryparser.xml.ParserException;
-import org.apache.lucene.queryparser.xml.QueryBuilder;
+import org.apache.lucene.queryparser.xml.builders.SpanQueryBuilder;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.spans.SpanNearQuery;
 import org.apache.lucene.search.spans.SpanQuery;
@@ -28,14 +28,18 @@ import org.apache.lucene.search.spans.SpanTermQuery;
 import org.apache.solr.request.SolrQueryRequest;
 import org.w3c.dom.Element;
 
-public class ApacheLuceneSolrNearQueryBuilder extends SolrQueryBuilder {
+public class ApacheLuceneSolrNearQueryBuilder extends SolrSpanQueryBuilder {
 
   public ApacheLuceneSolrNearQueryBuilder(String defaultField, Analyzer analyzer,
-      SolrQueryRequest req, QueryBuilder queryFactory) {
-    super(defaultField, analyzer, req, queryFactory);
+      SolrQueryRequest req, SpanQueryBuilder spanFactory) {
+    super(defaultField, analyzer, req, spanFactory);
   }
 
   public Query getQuery(Element e) throws ParserException {
+    return getSpanQuery(e);
+  }
+
+  public SpanQuery getSpanQuery(Element e) throws ParserException {
     final String fieldName = DOMUtils.getAttributeWithInheritanceOrFail(e, "fieldName");
     final SpanQuery[] spanQueries = new SpanQuery[]{
         new SpanTermQuery(new Term(fieldName, "Apache")),

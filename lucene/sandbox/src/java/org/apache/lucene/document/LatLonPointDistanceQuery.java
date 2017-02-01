@@ -164,7 +164,7 @@ final class LatLonPointDistanceQuery extends Query {
 
                              int docLatitude = NumericUtils.sortableBytesToInt(packedValue, 0);
                              int docLongitude = NumericUtils.sortableBytesToInt(packedValue, Integer.BYTES);
-                             if (distancePredicate.apply(docLatitude, docLongitude)) {
+                             if (distancePredicate.test(docLatitude, docLongitude)) {
                                adder.add(docID);
                              }
                            }

@@ -619,6 +619,24 @@ public class CoreAdminRequest extends SolrRequest<CoreAdminResponse> {
     return req.process( client );
   }
 
+  /**
+   * Swap two existing cores.
+   * @param core1 name of the first core
+   * @param core2 name of the other core
+   * @param client SolrClient to use
+   * @return response
+   * @throws SolrServerException if one or both cores don't exist
+   * @throws IOException on IO errors
+   */
+  public static CoreAdminResponse swapCore(String core1, String core2, SolrClient client)
+      throws SolrServerException, IOException {
+    CoreAdminRequest req = new CoreAdminRequest();
+    req.setCoreName(core1);
+    req.setOtherCoreName(core2);
+    req.setAction( CoreAdminAction.SWAP );
+    return req.process( client );
+  }
+
   public static CoreStatus getCoreStatus(String coreName, SolrClient client) throws SolrServerException, IOException {
     return getCoreStatus(coreName, true, client);
   }

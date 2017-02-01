@@ -15,8 +15,10 @@
  * limitations under the License.
  */
 package org.apache.solr.servlet;
+import org.apache.solr.api.ApiBag;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.util.NamedList;
+import org.apache.solr.util.CommandOperation;
 import org.slf4j.Logger;
 
 import java.io.PrintWriter;
@@ -48,6 +50,10 @@ public class ResponseUtils {
       errorMetadata.add(SolrException.ERROR_CLASS, ex.getClass().getName());
       errorMetadata.add(SolrException.ROOT_ERROR_CLASS, SolrException.getRootCause(ex).getClass().getName());
       info.add("metadata", errorMetadata);
+      if (ex instanceof ApiBag.ExceptionWithErrObject) {
+        ApiBag.ExceptionWithErrObject exception = (ApiBag.ExceptionWithErrObject) ex;
+        info.add(CommandOperation.ERR_MSGS, exception.getErrs() );
+      }
     }
     
     for (Throwable th = ex; th != null; th = th.getCause()) {

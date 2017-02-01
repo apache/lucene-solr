@@ -39,12 +39,14 @@ public class HdfsBasicDistributedZkTest extends BasicDistributedZkTest {
   
   @BeforeClass
   public static void setupClass() throws Exception {
+    System.setProperty("tests.hdfs.numdatanodes", "1");
     dfsCluster = HdfsTestUtil.setupClass(createTempDir().toFile().getAbsolutePath());
   }
   
   @AfterClass
   public static void teardownClass() throws Exception {
     HdfsTestUtil.teardownClass(dfsCluster);
+    System.clearProperty("tests.hdfs.numdatanodes");
     dfsCluster = null;
   }
 
