@@ -595,7 +595,7 @@ public abstract class SolrTestCaseJ4 extends LuceneTestCase {
   protected static SolrConfig solrConfig;
 
   /**
-   * Harness initialized by initTestHarness.
+   * Harness initialized by create[Default]Core[Container].
    *
    * <p>
    * For use in test methods as needed.
@@ -604,7 +604,7 @@ public abstract class SolrTestCaseJ4 extends LuceneTestCase {
   protected static TestHarness h;
 
   /**
-   * LocalRequestFactory initialized by initTestHarness using sensible
+   * LocalRequestFactory initialized by create[Default]Core[Container] using sensible
    * defaults.
    *
    * <p>
