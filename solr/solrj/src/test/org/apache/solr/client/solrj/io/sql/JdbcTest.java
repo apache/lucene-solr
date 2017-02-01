@@ -25,6 +25,10 @@ import java.sql.ResultSetMetaData;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.sql.Types;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+import java.util.Map;
 import java.util.Properties;
 import java.util.Set;
 import java.util.SortedSet;
@@ -32,10 +36,12 @@ import java.util.TreeSet;
 
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.LuceneTestCase.Slow;
+import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.cloud.AbstractDistribZkTestBase;
 import org.apache.solr.cloud.SolrCloudTestCase;
+import org.apache.solr.common.cloud.Aliases;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.junit.BeforeClass;
 import org.junit.Ignore;
@@ -499,14 +505,19 @@ public class JdbcTest extends SolrCloudTestCase {
 //      assertEquals(0, databaseMetaData.getDriverMajorVersion());
 //      assertEquals(0, databaseMetaData.getDriverMinorVersion());
 
+
+      List<String> tableSchemas = new ArrayList<>(Arrays.asList(zkHost, "metadata"));
       try(ResultSet rs = databaseMetaData.getSchemas()) {
         assertTrue(rs.next());
-        assertEquals(zkHost, rs.getString("tableSchem"));
+        assertTrue(tableSchemas.contains(rs.getString("tableSchem")));
+        tableSchemas.remove(rs.getString("tableSchem"));
         assertNull(rs.getString("tableCat"));
         assertTrue(rs.next());
-        assertEquals("metadata", rs.getString("tableSchem"));
+        assertTrue(tableSchemas.contains(rs.getString("tableSchem")));
+        tableSchemas.remove(rs.getString("tableSchem"));
         assertNull(rs.getString("tableCat"));
         assertFalse(rs.next());
+        assertTrue(tableSchemas.isEmpty());
       }
 
       try(ResultSet rs = databaseMetaData.getCatalogs()) {
@@ -515,13 +526,23 @@ public class JdbcTest extends SolrCloudTestCase {
         assertFalse(rs.next());
       }
 
-      ZkStateReader zkStateReader = cluster.getSolrClient().getZkStateReader();
+      CloudSolrClient solrClient = cluster.getSolrClient();
+      solrClient.connect();
+      ZkStateReader zkStateReader = solrClient.getZkStateReader();
 
       SortedSet<String> tables = new TreeSet<>();
-      Set<String> collections = zkStateReader.getClusterState().getCollectionsMap().keySet();
-      Set<String> aliases = zkStateReader.getAliases().getCollectionAliasMap().keySet();
-      tables.addAll(collections);
-      tables.addAll(aliases);
+
+      Set<String> collectionsSet = zkStateReader.getClusterState().getCollectionsMap().keySet();
+      tables.addAll(collectionsSet);
+
+      Aliases aliases = zkStateReader.getAliases();
+      if(aliases != null) {
+        Map<String, String> collectionAliasMap = aliases.getCollectionAliasMap();
+        if(collectionAliasMap != null) {
+          Set<String> aliasesSet = collectionAliasMap.keySet();
+          tables.addAll(aliasesSet);
+        }
+      }
 
       try(ResultSet rs = databaseMetaData.getTables(null, zkHost, "%", null)) {
         for(String table : tables) {
