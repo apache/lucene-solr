@@ -5,7 +5,7 @@
       <div class="form-group">
         <label class="col-sm-1 control-label" for="url">Solr url : </label>
         <div class="col-sm-3">
-          <input  @keyup.enter="search" type="text" class="form-control" id="url" v-model:value="url">
+          <input  @keyup.enter="search" type="text" class="form-control" id="url" @input="setUrl" v-model:value="url">
         </div>
         <label class="col-sm-1 control-label" for="query">Query : </label>
         <div class="col-sm-3">
@@ -34,7 +34,6 @@
     </div>
 
     <hr>
-    <!-- <test :columns="columns" :data="docs" :sort-column="columns"></test> -->
     <p class="alert alert-warning text-center" v-show="!isFinish">No result found</p>
     <div class="row" v-show="isFinish">
       <div class="col-xs-5">
@@ -55,7 +54,7 @@ export default {
   name: "ltr",
   data(){
     return {
-      url:'http://localhost:8983/solr/corejouve',
+      url:window.localStorage.getItem('ltr_url')||'http://localhost:8983/solr/corejouve',
       query:'skirt',
       model:'jouvemodel',
       fl:'score,name_txt_en,[features]',
@@ -78,6 +77,10 @@ export default {
     }
   },
   methods: {
+    setUrl()
+    {
+      window.localStorage.setItem('ltr_url',this.url)
+    },
     sortByKey(array, key){
       return array.sort(function(a, b) {
         var x = a[key]; var y = b[key];
@@ -89,7 +92,7 @@ export default {
       this.solr=[]
       this.columns_solr=[]
       this.columns=[]
-
+      window.localStorage.setItem('ltr_url',this.url)
       var fullUrl=this.url+'/select?indent=on&q='+this.query+'&rq='+encodeURI(this.rq)+'&fl='+this.fl+'&wt=json&rows=100';
       this.$http.get(fullUrl).then((data) => {
         var json = JSON.parse(data.body).response
@@ -114,7 +117,15 @@ export default {
 
             this.solr.forEach(function(e){
               var feature = e['[features]']
-              var orignalScore = feature.split(',')[0].split('=')[1]
+              var orignalScore = 0
+              feature.split(',').forEach(function(f)
+              {
+                var tmp =f.split('=')
+                  if(tmp[0]==='originalScore')
+                  {
+                    orignalScore=tmp[1]
+                  }
+              })
               e['score']=orignalScore
             },this)
 
