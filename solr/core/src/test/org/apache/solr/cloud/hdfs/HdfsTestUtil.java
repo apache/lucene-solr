@@ -77,7 +77,7 @@ public class HdfsTestUtil {
     
     if (!HA_TESTING_ENABLED) haTesting = false;
     
-    int dataNodes = 2;
+    int dataNodes = Integer.getInteger("tests.hdfs.numdatanodes", 2);
     
     // keep netty from using secure random on startup: SOLR-10098
     ThreadLocalRandom.setInitialSeedUniquifier(1L);
