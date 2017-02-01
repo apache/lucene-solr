@@ -126,6 +126,8 @@ New Features
 
 * SOLR-7955: Auto create .system collection on first request if it does not exist (noble)
 
+* SOLR-10087: StreamHandler now supports registering custom streaming expressions from the blob store (Kevin Risden)
+
 
 Bug Fixes
 ----------------------

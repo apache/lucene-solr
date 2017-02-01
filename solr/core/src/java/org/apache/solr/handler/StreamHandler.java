@@ -178,7 +178,7 @@ public class StreamHandler extends RequestHandlerBase implements SolrCoreAware, 
      // This pulls all the overrides and additions from the config
      List<PluginInfo> pluginInfos = core.getSolrConfig().getPluginInfos(Expressible.class.getName());
      for (PluginInfo pluginInfo : pluginInfos) {
-       Class<? extends Expressible> clazz = core.getResourceLoader().findClass(pluginInfo.className, Expressible.class);
+       Class<? extends Expressible> clazz = core.getMemClassLoader().findClass(pluginInfo.className, Expressible.class);
        streamFactory.withFunctionName(pluginInfo.name, clazz);
      }
         
