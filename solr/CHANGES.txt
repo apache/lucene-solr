@@ -124,6 +124,9 @@ New Features
 * SOLR-9933: SolrCoreParser now supports configuration of custom SpanQueryBuilder classes.
   (Daniel Collins, Christine Poerschke)
 
+* SOLR-7955: Auto create .system collection on first request if it does not exist (noble)
+
+
 Bug Fixes
 ----------------------
 
