@@ -303,7 +303,7 @@ public class HttpSolrCall {
       extractRemotePath(corename, origCorename, idx);
       if (action != null) return;
       //core is not available locally or remotely
-      autoCreateSystemColl();
+      autoCreateSystemColl(corename);
       if(action != null) return;
     }
 
@@ -340,7 +340,7 @@ public class HttpSolrCall {
     action = PASSTHROUGH;
   }
 
-  protected void autoCreateSystemColl() throws Exception {
+  protected void autoCreateSystemColl(String corename) throws Exception {
     if (SYSTEM_COLL.equals(corename) && "POST".equals(req.getMethod()) && !cores.getZkController().getClusterState().hasCollection(SYSTEM_COLL)) {
       log.info("Going to auto-create .system collection");
       SolrQueryResponse rsp = new SolrQueryResponse();
