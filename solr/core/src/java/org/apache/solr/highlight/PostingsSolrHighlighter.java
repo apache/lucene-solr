@@ -66,7 +66,7 @@ import org.apache.solr.util.plugin.PluginInfoInitialized;
  *       &lt;str name="hl.bs.country"&gt;&lt;/str&gt;
  *       &lt;str name="hl.bs.variant"&gt;&lt;/str&gt;
  *       &lt;str name="hl.bs.type"&gt;SENTENCE&lt;/str&gt;
- *       &lt;int name="hl.maxAnalyzedChars"&gt;10000&lt;/int&gt;
+ *       &lt;int name="hl.maxAnalyzedChars"&gt;51200&lt;/int&gt;
  *       &lt;str name="hl.multiValuedSeparatorChar"&gt; &lt;/str&gt;
  *       &lt;bool name="hl.highlightMultiTerm"&gt;false&lt;/bool&gt;
  *     &lt;/lst&gt;
@@ -204,7 +204,7 @@ public class PostingsSolrHighlighter extends SolrHighlighter implements PluginIn
     protected final IndexSchema schema;
 
     public SolrExtendedPostingsHighlighter(SolrQueryRequest req) {
-      super(req.getParams().getInt(HighlightParams.MAX_CHARS, PostingsHighlighter.DEFAULT_MAX_LENGTH));
+      super(req.getParams().getInt(HighlightParams.MAX_CHARS, DEFAULT_MAX_CHARS));
       this.params = req.getParams();
       this.schema = req.getSchema();
     }

@@ -525,8 +525,7 @@ public class DefaultSolrHighlighter extends SolrHighlighter implements PluginInf
     }
 
     int maxCharsToAnalyze = params.getFieldInt(fieldName,
-        HighlightParams.MAX_CHARS,
-        Highlighter.DEFAULT_MAX_CHARS_TO_ANALYZE);
+        HighlightParams.MAX_CHARS, DEFAULT_MAX_CHARS);
     if (maxCharsToAnalyze < 0) {//e.g. -1
       maxCharsToAnalyze = Integer.MAX_VALUE;
     }

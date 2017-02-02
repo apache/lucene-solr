@@ -31,6 +31,7 @@ import java.util.List;
 public abstract class SolrHighlighter
 {
 
+  public static int DEFAULT_MAX_CHARS = 51200;
   public static int DEFAULT_PHRASE_LIMIT = 5000;
 
   /**

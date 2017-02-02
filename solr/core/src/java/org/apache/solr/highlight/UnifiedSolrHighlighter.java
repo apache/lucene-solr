@@ -62,8 +62,8 @@ import org.apache.solr.util.plugin.PluginInfoInitialized;
  * &lt;str name="hl.tag.post"&gt;&amp;lt;/em&amp;gt;&lt;/str&gt;
  * &lt;str name="hl.simple.pre"&gt;&amp;lt;em&amp;gt;&lt;/str&gt;
  * &lt;str name="hl.simple.post"&gt;&amp;lt;/em&amp;gt;&lt;/str&gt;
- * &lt;str name="hl.tag.ellipsis"&gt;... &lt;/str&gt;
- * &lt;bool name="hl.defaultSummary"&gt;true&lt;/bool&gt;
+ * &lt;str name="hl.tag.ellipsis"&gt;(internal/unspecified)&lt;/str&gt;
+ * &lt;bool name="hl.defaultSummary"&gt;false&lt;/bool&gt;
  * &lt;str name="hl.encoder"&gt;simple&lt;/str&gt;
  * &lt;float name="hl.score.k1"&gt;1.2&lt;/float&gt;
  * &lt;float name="hl.score.b"&gt;0.75&lt;/float&gt;
@@ -72,7 +72,7 @@ import org.apache.solr.util.plugin.PluginInfoInitialized;
  * &lt;str name="hl.bs.country"&gt;&lt;/str&gt;
  * &lt;str name="hl.bs.variant"&gt;&lt;/str&gt;
  * &lt;str name="hl.bs.type"&gt;SENTENCE&lt;/str&gt;
- * &lt;int name="hl.maxAnalyzedChars"&gt;10000&lt;/int&gt;
+ * &lt;int name="hl.maxAnalyzedChars"&gt;51200&lt;/int&gt;
  * &lt;bool name="hl.highlightMultiTerm"&gt;true&lt;/bool&gt;
  * &lt;bool name="hl.usePhraseHighlighter"&gt;true&lt;/bool&gt;
  * &lt;int name="hl.cacheFieldValCharsThreshold"&gt;524288&lt;/int&gt;
@@ -234,7 +234,7 @@ public class UnifiedSolrHighlighter extends SolrHighlighter implements PluginInf
       this.params = req.getParams();
       this.schema = req.getSchema();
       this.setMaxLength(
-          params.getInt(HighlightParams.MAX_CHARS, UnifiedHighlighter.DEFAULT_MAX_LENGTH));
+          params.getInt(HighlightParams.MAX_CHARS, DEFAULT_MAX_CHARS));
       this.setCacheFieldValCharsThreshold(
           params.getInt(HighlightParams.CACHE_FIELD_VAL_CHARS_THRESHOLD, DEFAULT_CACHE_CHARS_THRESHOLD));
 
