@@ -341,7 +341,10 @@ public class HttpSolrCall {
   }
 
   protected void autoCreateSystemColl(String corename) throws Exception {
-    if (SYSTEM_COLL.equals(corename) && "POST".equals(req.getMethod()) && !cores.getZkController().getClusterState().hasCollection(SYSTEM_COLL)) {
+    if (core == null &&
+        SYSTEM_COLL.equals(corename) &&
+        "POST".equals(req.getMethod()) &&
+        !cores.getZkController().getClusterState().hasCollection(SYSTEM_COLL)) {
       log.info("Going to auto-create .system collection");
       SolrQueryResponse rsp = new SolrQueryResponse();
       String repFactor = String.valueOf(Math.min(3, cores.getZkController().getClusterState().getLiveNodes().size()));
