@@ -164,6 +164,9 @@ Other Changes
 
 * SOLR-10043: Reduce logging of pre-start log rotation (janhoy)
 
+* SOLR-10018: Increase the default hl.maxAnalyzedChars to 51200 for the Unified & Postings Highlighter so that all
+  highlighters now have this same default. (David Smiley)
+
 ==================  6.4.1 ==================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release.
