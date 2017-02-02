@@ -366,7 +366,7 @@ public class CollectionsAPIDistributedZkTest extends SolrCloudTestCase {
       cluster.getSolrClient().request(createCmd);
     });
 
-    TimeUnit.MILLISECONDS.sleep(200);
+    TimeUnit.MILLISECONDS.sleep(1000);
     // in both cases, the collection should have default to the core name
     cloudClient.getZkStateReader().forceUpdateCollection("corewithnocollection3");
 
