@@ -38,7 +38,7 @@ public class HdfsCollectionsAPIDistributedZkTest extends CollectionsAPIDistribut
   @BeforeClass
   public static void setupClass() throws Exception {
     dfsCluster = HdfsTestUtil.setupClass(createTempDir().toFile().getAbsolutePath());
-    System.setProperty("solr.hdfs.blockcache.blocksperbank", "2048");
+    System.setProperty("solr.hdfs.blockcache.blocksperbank", "1024");
 
     ZkConfigManager configManager = new ZkConfigManager(zkClient());
     configManager.uploadConfigDir(configset("cloud-hdfs"), "conf");
