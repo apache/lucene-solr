@@ -1153,11 +1153,12 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
   public BitDocSet getLiveDocs() throws IOException {
     // Going through the filter cache will provide thread safety here if we only had getLiveDocs,
     // but the addition of setLiveDocs means we needed to add volatile to "liveDocs".
-    if (liveDocs == null) {
-      liveDocs = getDocSetBits(matchAllDocsQuery);
+    BitDocSet docs = liveDocs;
+    if (docs == null) {
+      liveDocs = docs = getDocSetBits(matchAllDocsQuery);
     }
-    assert liveDocs.size() == numDocs();
-    return liveDocs;
+    assert docs.size() == numDocs();
+    return docs;
   }
 
   /** @lucene.internal */
