@@ -166,6 +166,11 @@ Other Changes
 
 * SOLR-10018: Increase the default hl.maxAnalyzedChars to 51200 for the Unified & Postings Highlighter so that all
   highlighters now have this same default. (David Smiley)
+  
+* SOLR-6246: Added tests to check that the changes in LUCENE-7564 and LUCENE-7670 
+  enable AnalyzingInfixSuggester and BlendedInfixSuggester to play nicely with core reload.  
+  SolrSuggester.build() now throws SolrCoreState.CoreIsClosedException when interrupted
+  by a core reload/shutdown. (Steve Rowe)
 
 ==================  6.4.1 ==================
 
