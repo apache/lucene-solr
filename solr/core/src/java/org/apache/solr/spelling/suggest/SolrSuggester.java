@@ -36,6 +36,7 @@ import org.apache.lucene.search.Query;
 import org.apache.lucene.search.spell.Dictionary;
 import org.apache.lucene.search.suggest.Lookup;
 import org.apache.lucene.search.suggest.Lookup.LookupResult;
+import org.apache.lucene.store.AlreadyClosedException;
 import org.apache.lucene.util.Accountable;
 import org.apache.lucene.util.IOUtils;
 import org.apache.solr.analysis.TokenizerChain;
@@ -43,6 +44,7 @@ import org.apache.solr.common.util.NamedList;
 import org.apache.solr.core.CloseHook;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.search.SolrIndexSearcher;
+import org.apache.solr.update.SolrCoreState;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -175,7 +177,14 @@ public class SolrSuggester implements Accountable {
     LOG.info("SolrSuggester.build(" + name + ")");
 
     dictionary = dictionaryFactory.create(core, searcher);
-    lookup.build(dictionary);
+    try {
+      lookup.build(dictionary);
+    } catch (AlreadyClosedException e) {
+      RuntimeException e2 = new SolrCoreState.CoreIsClosedException
+          ("Suggester build has been interrupted by a core reload or shutdown.");
+      e2.initCause(e);
+      throw e2;
+    }
     if (storeDir != null) {
       File target = getStoreFile();
       if(!lookup.store(new FileOutputStream(target))) {

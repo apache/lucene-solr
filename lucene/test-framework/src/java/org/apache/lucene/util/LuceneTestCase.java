@@ -2703,6 +2703,34 @@ public abstract class LuceneTestCase extends Assert {
     throw new AssertionFailedError("Expected exception " + expectedType.getSimpleName());
   }
 
+  /**
+   * Checks that specific wrapped and outer exception classes are thrown
+   * by the given runnable, and returns the wrapped exception. 
+   */
+  public static <TO extends Throwable, TW extends Throwable> TW expectThrows
+  (Class<TO> expectedOuterType, Class<TW> expectedWrappedType, ThrowingRunnable runnable) {
+    try {
+      runnable.run();
+    } catch (Throwable e) {
+      if (expectedOuterType.isInstance(e)) {
+        Throwable cause = e.getCause();
+        if (expectedWrappedType.isInstance(cause)) {
+          return expectedWrappedType.cast(cause);
+        } else {
+          AssertionFailedError assertion = new AssertionFailedError
+              ("Unexpected wrapped exception type, expected " + expectedWrappedType.getSimpleName());
+          assertion.initCause(e);
+          throw assertion;
+        }
+      }
+      AssertionFailedError assertion = new AssertionFailedError
+          ("Unexpected outer exception type, expected " + expectedOuterType.getSimpleName());
+      assertion.initCause(e);
+      throw assertion;
+    }
+    throw new AssertionFailedError("Expected outer exception " + expectedOuterType.getSimpleName());
+  }
+
   /** Returns true if the file exists (can be opened), false
    *  if it cannot be opened, and (unlike Java's
    *  File.exists) throws IOException if there's some
