@@ -46,7 +46,7 @@ class SolrSort extends Sort implements SolrRel {
 
   @Override
   public RelOptCost computeSelfCost(RelOptPlanner planner, RelMetadataQuery mq) {
-    return super.computeSelfCost(planner, mq).multiplyBy(0.05);
+    return planner.getCostFactory().makeZeroCost();
   }
 
   @Override
@@ -70,6 +70,7 @@ class SolrSort extends Sort implements SolrRel {
         implementor.addOrder(name, direction);
       }
     }
+
 
     if(fetch != null) {
       implementor.setLimit(((RexLiteral) fetch).getValue().toString());

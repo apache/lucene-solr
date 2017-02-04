@@ -129,7 +129,7 @@ class SolrFilter extends Filter implements SolrRel {
           return "-"+translateComparison(((RexCall) node).getOperands().get(0));
         case EQUALS:
           String terms = binaryTranslated.getValue().getValue2().toString().trim();
-          if(!terms.startsWith("(")){
+          if(!terms.startsWith("(") && !terms.startsWith("[") && !terms.startsWith("{")){
             terms = "\""+terms+"\"";
           }
 

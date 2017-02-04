@@ -106,6 +106,8 @@ class SolrTable extends AbstractQueryableTable implements TranslatableTable {
       }
     }
 
+    System.out.println("####### Limit:"+limit);
+
     TupleStream tupleStream;
     String zk = properties.getProperty("zk");
     try {
@@ -456,13 +458,12 @@ class SolrTable extends AbstractQueryableTable implements TranslatableTable {
       tupleStream = parallelStream;
     }
 
-    //TODO: This should be done on the workers, but it won't serialize because it relies on Presto classes.
-    // Once we make this a Expressionable the problem will be solved.
-
+    //TODO: Currently we are not pushing down the having clause.
+    //      We need to push down the having clause to ensure that LIMIT does not cut off records prior to the having filter.
 
     if(orders != null && orders.size() > 0) {
-      int lim = limit == null ? 100 : Integer.parseInt(limit);
       if(!sortsEqual(buckets, sortDirection, orders)) {
+        int lim = (limit == null) ? 100 : Integer.parseInt(limit);
         StreamComparator comp = getComp(orders);
         //Rank the Tuples
         //If parallel stream is used ALL the Rolled up tuples from the workers will be ranked
@@ -471,9 +472,14 @@ class SolrTable extends AbstractQueryableTable implements TranslatableTable {
       } else {
         // Sort is the same as the same as the underlying stream
         // Only need to limit the result, not Rank the result
-        if(lim > -1) {
-          tupleStream = new LimitStream(tupleStream, lim);
+        if(limit != null) {
+          tupleStream = new LimitStream(tupleStream, Integer.parseInt(limit));
         }
+      }
+    } else {
+      //No order by, check for limit
+      if(limit != null) {
+        tupleStream = new LimitStream(tupleStream, Integer.parseInt(limit));
       }
     }
 
