@@ -22,6 +22,7 @@
 
   <!-- example tests are currently elsewhere -->
   <target name="test"/>
+  <target name="test-nocompile"/>
 
   <!-- this module has no javadocs -->
   <target name="javadocs"/>
