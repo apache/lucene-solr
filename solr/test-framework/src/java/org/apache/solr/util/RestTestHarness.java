@@ -51,6 +51,14 @@ public class RestTestHarness extends BaseTestHarness implements Closeable {
     return serverProvider.getBaseURL();
   }
 
+  public void setServerProvider(RESTfulServerProvider serverProvider) {
+    this.serverProvider = serverProvider;
+  }
+
+  public RESTfulServerProvider getServerProvider() {
+    return this.serverProvider;
+  }
+
   public String getAdminURL() {
     return getBaseURL().replace("/collection1", "");
   }

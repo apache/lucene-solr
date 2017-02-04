@@ -68,6 +68,8 @@ Optimizations
 
 * SOLR-10087: StreamHandler now supports registering custom streaming expressions from the blob store (Kevin Risden)
 
+* SOLR-8029: Added new style APIs and a framework for creating new APIs and mapping old APIs to new
+  (noble, Steve Rowe, Cassandra Targett, Timothy Potter)
 
 Bug Fixes
 ----------------------

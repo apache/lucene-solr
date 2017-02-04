@@ -18,7 +18,6 @@ package org.apache.solr.schema;
 
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.Reader;
 import java.io.StringWriter;
 import java.lang.invoke.MethodHandles;
 import java.nio.charset.StandardCharsets;
@@ -71,18 +70,10 @@ public class SchemaManager {
   /**
    * Take in a JSON command set and execute them. It tries to capture as many errors
    * as possible instead of failing at the first error it encounters
-   * @param reader The input as a Reader
    * @return List of errors. If the List is empty then the operation was successful.
    */
-  public List performOperations(Reader reader) throws Exception {
-    List<CommandOperation> ops;
-    try {
-      ops = CommandOperation.parse(reader);
-    } catch (Exception e) {
-      String msg = "Error parsing schema operations ";
-      log.warn(msg, e);
-      return Collections.singletonList(singletonMap(CommandOperation.ERR_MSGS, msg + ":" + e.getMessage()));
-    }
+  public List performOperations() throws Exception {
+    List<CommandOperation> ops = req.getCommands(false);
     List errs = CommandOperation.captureErrors(ops);
     if (!errs.isEmpty()) return errs;
 

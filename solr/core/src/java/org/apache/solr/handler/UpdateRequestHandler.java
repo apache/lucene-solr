@@ -150,6 +150,7 @@ public class UpdateRequestHandler extends ContentStreamHandlerBase implements Pe
     pathVsLoaders.put(JSON_PATH,registry.get("application/json"));
     pathVsLoaders.put(DOC_PATH,registry.get("application/json"));
     pathVsLoaders.put(CSV_PATH,registry.get("application/csv"));
+    pathVsLoaders.put(BIN_PATH,registry.get("application/javabin"));
     return registry;
   }
 
@@ -178,6 +179,7 @@ public class UpdateRequestHandler extends ContentStreamHandlerBase implements Pe
   public static final String DOC_PATH = "/update/json/docs";
   public static final String JSON_PATH = "/update/json";
   public static final String CSV_PATH = "/update/csv";
+  public static final String BIN_PATH = "/update/bin";
 
 }
 

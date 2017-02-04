@@ -68,7 +68,7 @@ public class CreateShardCmd implements Cmd {
     ShardHandler shardHandler = ocmh.shardHandlerFactory.getShardHandler();
     DocCollection collection = clusterState.getCollection(collectionName);
     int repFactor = message.getInt(REPLICATION_FACTOR, collection.getInt(REPLICATION_FACTOR, 1));
-    String createNodeSetStr = message.getStr(OverseerCollectionMessageHandler.CREATE_NODE_SET);
+    Object createNodeSetStr = message.get(OverseerCollectionMessageHandler.CREATE_NODE_SET);
     List<Assign.ReplicaCount> sortedNodeList = getNodesForNewReplicas(clusterState, collectionName, sliceName, repFactor,
         createNodeSetStr, ocmh.overseer.getZkController().getCoreContainer());
 

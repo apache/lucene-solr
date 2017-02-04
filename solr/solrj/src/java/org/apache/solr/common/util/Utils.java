@@ -146,7 +146,9 @@ public class Utils {
   }
 
   public static Object getObjectByPath(Map root, boolean onlyPrimitive, String hierarchy) {
-    return getObjectByPath(root, onlyPrimitive, StrUtils.splitSmart(hierarchy, '/'));
+    List<String> parts = StrUtils.splitSmart(hierarchy, '/');
+    if (parts.get(0).isEmpty()) parts.remove(0);
+    return getObjectByPath(root, onlyPrimitive, parts);
   }
 
   public static Object getObjectByPath(Map root, boolean onlyPrimitive, List<String> hierarchy) {
@@ -172,6 +174,7 @@ public class Utils {
         obj = (Map) o;
       } else {
         Object val = obj.get(s);
+        if (val == null) return null;
         if (idx > -1) {
           List l = (List) val;
           val = idx < l.size() ? l.get(idx) : null;
