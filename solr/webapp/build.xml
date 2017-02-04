@@ -35,6 +35,7 @@
   <target name="compile-core"/>
   <target name="compile-test"/>
   <target name="test"/>
+  <target name="test-nocompile"/>
 
   <target name="dist"
           description="Creates the Webapp folder for distribution."

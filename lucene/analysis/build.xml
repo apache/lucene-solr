@@ -105,6 +105,9 @@
   <target name="test">
     <forall-analyzers target="test"/>
   </target>
+  <target name="test-nocompile">
+    <fail message="Target 'test-nocompile' will not run recursively.  First change directory to the module you want to test."/>
+  </target>
   <target name="beast">
     <fail message="The Beast only works inside of individual modules"/>
   </target>
