@@ -1254,7 +1254,6 @@ public class ExportWriter implements SolrCore.RawWriter, Closeable {
   class StringValue implements SortValue {
 
     protected SortedDocValues vals;
-    protected SortedDocValues segmentVals[];
 
     protected MultiDocValues.OrdinalMap ordinalMap;
     protected LongValues globalOrds;
@@ -1264,11 +1263,11 @@ public class ExportWriter implements SolrCore.RawWriter, Closeable {
     protected int segment;
     protected int currentOrd;
     protected IntComp comp;
+    protected int lastDocID;
 
     public StringValue(SortedDocValues vals, String field, IntComp comp)  {
       this.vals = vals;
       if(vals instanceof MultiDocValues.MultiSortedDocValues) {
-        this.segmentVals = ((MultiDocValues.MultiSortedDocValues) vals).values;
         this.ordinalMap = ((MultiDocValues.MultiSortedDocValues) vals).mapping;
       }
       this.field = field;
@@ -1281,6 +1280,13 @@ public class ExportWriter implements SolrCore.RawWriter, Closeable {
     }
 
     public void setCurrentValue(int docId) throws IOException {
+
+      if (docId < lastDocID) {
+        throw new AssertionError("docs were sent out-of-order: lastDocID=" + lastDocID + " vs doc=" + docId);
+      }
+
+      lastDocID = docId;
+
       if (docId > currentVals.docID()) {
         currentVals.advance(docId);
       }
@@ -1301,14 +1307,13 @@ public class ExportWriter implements SolrCore.RawWriter, Closeable {
       this.currentOrd = v.currentOrd;
     }
 
-    public void setNextReader(LeafReaderContext context) {
+    public void setNextReader(LeafReaderContext context) throws IOException {
       segment = context.ord;
       if(ordinalMap != null) {
         globalOrds = ordinalMap.getGlobalOrds(segment);
-        currentVals = segmentVals[segment];
-      } else {
-        currentVals = vals;
       }
+      currentVals = DocValues.getSorted(context.reader(), field);
+      lastDocID = 0;
     }
 
     public void reset() {
