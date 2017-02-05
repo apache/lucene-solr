@@ -137,6 +137,9 @@
 
   <target name="test" description="Validate, then run core, solrj, and contrib unit tests."
           depends="-init-totals, test-core, test-contrib, -check-totals"/>
+  <target name="test-nocompile">
+    <fail message="Target 'test-nocompile' will not run recursively.  First change directory to the module you want to test."/>
+  </target>
 
   <target name="jacoco" description="Generates JaCoCo code coverage reports." depends="-jacoco-install">
     <!-- run jacoco for each module -->

@@ -56,6 +56,10 @@
   <target name="test" depends="-clover.load, -init-totals, test-core, test-test-framework, test-modules, -check-totals"
           description="Runs all unit tests (core, modules and back-compat)"
   />
+  <target name="test-nocompile">
+    <fail message="Target 'test-nocompile' will not run recursively.  First change directory to the module you want to test."/>
+  </target>
+
 
   <target name="pitest" depends="pitest-modules"
           description="Runs pitests (core, modules and back-compat)"

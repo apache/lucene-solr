@@ -1336,6 +1336,11 @@ ant -f lucene/build.xml test-updatecache
 # Miscellaneous. --------------------------------------------------
 #
 
+# Only run test(s), non-recursively. Faster than "ant test".
+# WARNING: Skips jar download and compilation. Clover not supported.
+ant test-nocompile
+ant -Dtestcase=... test-nocompile
+
 # Run all tests without stopping on errors (inspect log files!).
 ant -Dtests.haltonfailure=false test
 
@@ -1392,6 +1397,9 @@ ${tests-output}/junit4-*.suites     - per-JVM executed suites
 
   <target name="test" depends="clover,compile-test,install-junit4-taskdef,validate,-init-totals,-test,-check-totals" description="Runs unit tests"/>
   <target name="beast" depends="clover,compile-test,install-junit4-taskdef,validate,-init-totals,-beast,-check-totals" description="Runs unit tests in a loop (-Dbeast.iters=n)"/>
+
+  <target name="test-nocompile" depends="-clover.disable,install-junit4-taskdef,-init-totals,-test,-check-totals"
+          description="Only runs unit tests.  Jars are not downloaded; compilation is not updated; and Clover is not enabled."/>
 
   <target name="-jacoco-install">
     <!-- download jacoco from ivy if needed -->

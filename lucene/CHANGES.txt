@@ -150,6 +150,10 @@ Build
 
 * LUCENE-7665: Remove grouping dependency from the join module.
   (Martijn van Groningen)
+  
+* SOLR-10023: Add non-recursive 'test-nocompile' target: Only runs unit tests.
+  Jars are not downloaded; compilation is not updated; and Clover is not enabled.
+  (Steve Rowe)
 
 Other
 
