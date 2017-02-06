@@ -52,9 +52,9 @@ public class FloatFieldSource extends FieldCacheSource {
   
   @Override
   public FunctionValues getValues(Map context, LeafReaderContext readerContext) throws IOException {
-    final NumericDocValues arr = DocValues.getNumeric(readerContext.reader(), field);
+    final NumericDocValues arr = getNumericDocValues(context, readerContext);
     final Bits valid = DocValues.getDocsWithField(readerContext.reader(), field);
-
+    
     return new FloatDocValues(this) {
       @Override
       public float floatVal(int doc) {
@@ -85,6 +85,10 @@ public class FloatFieldSource extends FieldCacheSource {
       }
 
     };
+  }
+
+  protected NumericDocValues getNumericDocValues(Map context, LeafReaderContext readerContext) throws IOException {
+    return DocValues.getNumeric(readerContext.reader(), field);
   }
 
   @Override

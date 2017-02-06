@@ -52,11 +52,10 @@ public class IntFieldSource extends FieldCacheSource {
   
   @Override
   public FunctionValues getValues(Map context, LeafReaderContext readerContext) throws IOException {
-    final NumericDocValues arr = DocValues.getNumeric(readerContext.reader(), field);
+    final NumericDocValues arr = getNumericDocValues(context, readerContext);;
     final Bits valid = DocValues.getDocsWithField(readerContext.reader(), field);
     
     return new IntDocValues(this) {
-      final MutableValueInt val = new MutableValueInt();
 
       @Override
       public int intVal(int doc) {
@@ -91,6 +90,10 @@ public class IntFieldSource extends FieldCacheSource {
         };
       }
     };
+  }
+
+  protected NumericDocValues getNumericDocValues(Map context, LeafReaderContext readerContext) throws IOException {
+    return DocValues.getNumeric(readerContext.reader(), field);
   }
 
   @Override
