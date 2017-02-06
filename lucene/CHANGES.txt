@@ -103,6 +103,10 @@ New Features
   on doc values. These new methods should be wrapped in an IndexOrDocValuesQuery
   for best performance. (Adrien Grand)
 
+* LUCENE-7673: Added MultiValued[Int/Long/Float/Double]FieldSource that given a
+  SortedNumericSelector.Type can give a ValueSource view of a 
+  SortedNumericDocValues field. (Tomás Fernández Löbbe)
+
 Bug Fixes
 
 * LUCENE-7630: Fix (Edge)NGramTokenFilter to no longer drop payloads
