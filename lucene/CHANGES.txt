@@ -144,11 +144,6 @@ Optimizations
 
 Build
 
-* LUCENE-7651: Fix Javadocs build for Java 8u121 by injecting "Google Code
-  Prettify" without adding Javascript to Javadocs's -bottom parameter.
-  Also update Prettify to latest version to fix Google Chrome issue.
-  (Uwe Schindler)
-
 * LUCENE-7653: Update randomizedtesting to version 2.5.0. (Dawid Weiss)
 
 * LUCENE-7665: Remove grouping dependency from the join module.
@@ -167,6 +162,13 @@ Other
   (Daniel Collins, Christine Poerschke)
 
 ======================= Lucene 6.4.1 =======================
+
+Build
+
+* LUCENE-7651: Fix Javadocs build for Java 8u121 by injecting "Google Code
+  Prettify" without adding Javascript to Javadocs's -bottom parameter.
+  Also update Prettify to latest version to fix Google Chrome issue.
+  (Uwe Schindler)
 
 Bug Fixes
 
