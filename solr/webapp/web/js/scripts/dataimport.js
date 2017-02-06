@@ -28,7 +28,7 @@ sammy.bind
     $.ajax
     (
       {
-        url : core_basepath + '/admin/mbeans?cat=QUERYHANDLER&wt=json',
+        url : core_basepath + '/admin/mbeans?cat=QUERY&wt=json',
         dataType : 'json',
         beforeSend : function( xhr, settings )
         {

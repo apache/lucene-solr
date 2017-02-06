@@ -22,7 +22,7 @@ solrAdminApp.controller('DataImportController',
         $scope.resetMenu("dataimport", Constants.IS_COLLECTION_PAGE);
 
         $scope.refresh = function () {
-            Mbeans.info({core: $routeParams.core, cat: 'QUERYHANDLER'}, function (data) {
+            Mbeans.info({core: $routeParams.core, cat: 'QUERY'}, function (data) {
                 var mbeans = data['solr-mbeans'][1];
                 $scope.handlers = [];
                 for (var key in mbeans) {
