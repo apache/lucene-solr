@@ -93,19 +93,21 @@ public class CloudMLTQParser extends QParser {
     ArrayList<String> fieldNames = new ArrayList<>();
 
     if (qf != null) {
+      ArrayList<String> fieldNamesWithBoost = new ArrayList<>();
       for (String fieldName : qf) {
         if (!StringUtils.isEmpty(fieldName))  {
           String[] strings = splitList.split(fieldName);
           for (String string : strings) {
             if (!StringUtils.isEmpty(string)) {
-              fieldNames.add(string);
+              fieldNamesWithBoost.add(string);
             }
           }
         }
       }
       // Parse field names and boosts from the fields
-      boostFields = SolrPluginUtils.parseFieldBoosts(fieldNames.toArray(new String[0]));
+      boostFields = SolrPluginUtils.parseFieldBoosts(fieldNamesWithBoost.toArray(new String[0]));
       mltParams.setFieldToQueryTimeBoostFactor(boostFields);
+      fieldNames.addAll(boostFields.keySet());
     } else {
       for (String field : doc.getFieldNames()) {
         // Only use fields that are stored and have an explicit analyzer.
