@@ -20,16 +20,16 @@ import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.FieldType;
+import org.apache.lucene.geo.GeoUtils;
 import org.apache.lucene.index.DocValuesType;
 import org.apache.lucene.index.IndexOptions;
-import org.apache.lucene.geo.GeoUtils;
 import org.apache.lucene.util.BitUtil;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.BytesRefBuilder;
 
-import static org.apache.lucene.spatial.util.MortonEncoder.encode;
 import static org.apache.lucene.geo.GeoUtils.MIN_LAT_INCL;
 import static org.apache.lucene.geo.GeoUtils.MIN_LON_INCL;
+import static org.apache.lucene.spatial.util.MortonEncoder.encode;
 
 /**
  * <p>
@@ -50,7 +50,10 @@ import static org.apache.lucene.geo.GeoUtils.MIN_LON_INCL;
  * of terms for large queries. See LUCENE-6481 for a future improvement.
  *
  * @lucene.experimental
+ *
+ * @deprecated Use the higher performance {@code LatLonPoint} instead.
  */
+@Deprecated
 public final class GeoPointField extends Field {
   /** encoding step value for GeoPoint prefix terms */
   public static final int PRECISION_STEP = 9;

@@ -107,6 +107,10 @@ Other
 * LUCENE-7658: queryparser/xml CoreParser now implements SpanQueryBuilder interface.
   (Daniel Collins, Christine Poerschke)
 
+* LUCENE-7664: GeoPointField and its queries are deprecated in favor
+  of LatLonPoint, which offers faster indexing and searching
+  performance, smaller index, and less search-time heap usage.  (Mike McCandless)
+
 ======================= Lucene 6.4.1 =======================
 
 Build

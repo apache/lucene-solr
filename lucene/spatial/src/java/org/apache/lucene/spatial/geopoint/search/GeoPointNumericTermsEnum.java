@@ -35,7 +35,8 @@ import static org.apache.lucene.spatial.geopoint.document.GeoPointField.BITS;
  * {@link GeoPointTermQueryConstantScoreWrapper} and all docs whose GeoPoint fields match the prefix terms or
  * pass the {@link GeoPointMultiTermQuery.CellComparator#postFilter} criteria are returned in the resulting DocIdSet.
  *
- *  @lucene.experimental
+ * @lucene.experimental
+ * @deprecated Use the higher performance {@code LatLonPoint} queries instead.
  */
 @Deprecated
 final class GeoPointNumericTermsEnum extends GeoPointTermsEnum {

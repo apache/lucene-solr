@@ -28,7 +28,9 @@ import org.apache.lucene.spatial.geopoint.search.GeoPointMultiTermQuery.CellComp
  * candidate GeoPointField encoded terms against terms matching the defined query criteria.
  *
  *  @lucene.experimental
+ * @deprecated Use the higher performance {@code LatLonPoint} queries instead.
  */
+@Deprecated
 abstract class GeoPointTermsEnum extends FilteredTermsEnum {
   protected final short maxShift;
 

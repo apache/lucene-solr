@@ -26,7 +26,9 @@ import org.apache.lucene.index.PointValues.Relation;
 /** Package private implementation for the public facing GeoPointInPolygonQuery delegate class.
  *
  *    @lucene.experimental
+ * @deprecated Use the higher performance {@code LatLonPoint.newPolygonQuery} instead.
  */
+@Deprecated
 final class GeoPointInPolygonQueryImpl extends GeoPointInBBoxQueryImpl {
   private final GeoPointInPolygonQuery polygonQuery;
   private final Polygon2D polygons;

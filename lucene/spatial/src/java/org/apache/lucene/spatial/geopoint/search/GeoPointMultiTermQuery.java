@@ -37,7 +37,9 @@ import org.apache.lucene.util.SloppyMath;
  * Geospatial operations
  *
  * @lucene.experimental
+ * @deprecated Use the higher performance {@code LatLonPoint} queries instead.
  */
+@Deprecated
 abstract class GeoPointMultiTermQuery extends MultiTermQuery {
   // simple bounding box optimization - no objects used to avoid dependencies
   protected final double minLon;

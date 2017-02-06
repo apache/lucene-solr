@@ -43,7 +43,9 @@ import org.apache.lucene.util.SparseFixedBitSet;
  * for post filtering boundary ranges. Multi-valued GeoPoint documents are supported.
  *
  * @lucene.experimental
+ * @deprecated Use the higher performance {@code LatLonPoint} queries instead.
  */
+@Deprecated
 final class GeoPointTermQueryConstantScoreWrapper <Q extends GeoPointMultiTermQuery> extends Query {
   protected final Q query;
 

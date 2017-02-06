@@ -26,7 +26,8 @@ import org.apache.lucene.spatial.util.GeoRelationUtils;
 /** Package private implementation for the public facing GeoPointInBBoxQuery delegate class.
  *
  *    @lucene.experimental
- */
+ * @deprecated Use the higher performance {@code LatLonPoint.newBoxQuery} instead. */
+@Deprecated
 class GeoPointInBBoxQueryImpl extends GeoPointMultiTermQuery {
   /**
    * Constructs a new GeoBBoxQuery that will match encoded GeoPoint terms that fall within or on the boundary

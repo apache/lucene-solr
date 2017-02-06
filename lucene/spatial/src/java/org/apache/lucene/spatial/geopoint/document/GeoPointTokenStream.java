@@ -71,7 +71,9 @@ import static org.apache.lucene.spatial.geopoint.document.GeoPointField.PRECISIO
  * </pre>
  *
  * @lucene.experimental
+ * @deprecated Use the higher performance {@code LatLonPoint} instead.
  */
+@Deprecated
 final class GeoPointTokenStream extends TokenStream {
   private static final int MAX_SHIFT = PRECISION_STEP * 4;
 

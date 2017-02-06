@@ -36,7 +36,9 @@ import static org.apache.lucene.spatial.geopoint.document.GeoPointField.getPrefi
  * resulting DocIdSet.
  *
  *  @lucene.experimental
+ *  @deprecated Use the higher performance {@code LatLonPoint} queries instead.
  */
+@Deprecated
 final class GeoPointPrefixTermsEnum extends GeoPointTermsEnum {
   private short shift;
 

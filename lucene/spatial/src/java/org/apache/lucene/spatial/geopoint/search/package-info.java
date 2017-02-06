@@ -17,5 +17,6 @@
 
 /**
  * Geospatial Query Implementations for Core Lucene
+ * @deprecated Use the higher performance {@code LatLonPoint} queries instead.
  */
 package org.apache.lucene.spatial.geopoint.search;
