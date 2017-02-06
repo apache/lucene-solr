@@ -23,7 +23,7 @@ import java.util.Set;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
-import org.apache.lucene.queries.mlt.MoreLikeThisQuery;
+import org.apache.lucene.queries.mlt.query.MoreLikeThisQuery;
 import org.apache.lucene.queryparser.xml.QueryBuilder;
 import org.apache.lucene.search.BoostQuery;
 import org.apache.lucene.search.Query;
@@ -86,7 +86,7 @@ public class LikeThisQueryBuilder implements QueryBuilder {
     }
 
 
-    MoreLikeThisQuery mlt = new MoreLikeThisQuery(DOMUtils.getText(e), fields, analyzer, fields[0]);
+    MoreLikeThisQuery mlt = new MoreLikeThisQuery(DOMUtils.getText(e), fields, analyzer);
     mlt.setMaxQueryTerms(DOMUtils.getAttribute(e, "maxQueryTerms", DEFAULT_MAX_QUERY_TERMS));
     mlt.setMinTermFrequency(DOMUtils.getAttribute(e, "minTermFrequency", DEFAULT_MIN_TERM_FREQUENCY));
     mlt.setPercentTermsToMatch(DOMUtils.getAttribute(e, "percentTermsToMatch", DEFAULT_PERCENT_TERMS_TO_MATCH) / 100);

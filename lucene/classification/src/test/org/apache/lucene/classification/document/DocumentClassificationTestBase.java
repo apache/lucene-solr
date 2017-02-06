@@ -194,6 +194,33 @@ public abstract class DocumentClassificationTestBase<T> extends ClassificationTe
     doc.add(new Field(booleanFieldName, "false", ft));
     indexWriter.addDocument(doc);
 
+    // following docs mean to create a more realistic corpus
+    doc = new Document();
+    title = "Dark nights across time : returning trend";
+    text = "History tells you that the night is often associated to fear and darkness." +
+        "It is not new to see this kind of association, together with the fire, a concept of relief in dark periods.";
+    author = "author2";
+    doc.add(new Field(textFieldName, text, ft));
+    doc.add(new Field(titleFieldName, title, ft));
+    doc.add(new Field(authorFieldName, author, ft));
+    doc.add(new Field(categoryFieldName, "", ft));
+    doc.add(new Field(booleanFieldName, "false", ft));
+    for (int i = 0; i < 10; i++) {
+      indexWriter.addDocument(doc);
+    }
+    doc = new Document();
+    title = "The time of new troubles";
+    text = "Because sometimes success involves passing across troubles but it is completely worth." +
+        "Many persons faced this kind of path, across different generations. A number of three ( 3 ) studies from Cambridge has confirmed the trend.";
+    author = "author1";
+    doc.add(new Field(textFieldName, text, ft));
+    doc.add(new Field(titleFieldName, title, ft));
+    doc.add(new Field(authorFieldName, author, ft));
+    doc.add(new Field(categoryFieldName, "", ft));
+    doc.add(new Field(booleanFieldName, "false", ft));
+    for (int i = 0; i < 10; i++) {
+      indexWriter.addDocument(doc);
+    }
 
     doc = new Document();
     text = "unlabeled doc";
@@ -229,7 +256,6 @@ public abstract class DocumentClassificationTestBase<T> extends ClassificationTe
         " The three-dimensional images of the game are stunning, because it uses the Unreal Engine 3." +
         " The systems available are PS4, X-Box and personal computer." +
         " Will the simulate missile that is going to be  fired, success ?\" +\n" +
-        " Will this video game make the history" +
         " Help you favourite super hero to defeat all his enemies. The Dark Knight has returned !";
     String author = "Rocksteady Studios";
     doc.add(new Field(textFieldName, text, ft));
