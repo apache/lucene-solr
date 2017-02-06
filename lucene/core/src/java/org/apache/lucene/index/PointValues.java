@@ -211,8 +211,7 @@ public abstract class PointValues {
      *  determine how to further recurse down the tree. */
     Relation compare(byte[] minPackedValue, byte[] maxPackedValue);
 
-    /** Notifies the caller that this many documents (from one block) are about
-     *  to be visited */
+    /** Notifies the caller that this many documents are about to be visited */
     default void grow(int count) {};
   }
 

@@ -139,6 +139,9 @@ Optimizations
   computes scores lazily in order to be faster when used in conjunctions.
   (Adrien Grand)
 
+* LUCENE-7667: BKDReader now calls `IntersectVisitor.grow()` on larger
+  increments. (Adrien Grand)
+
 Build
 
 * LUCENE-7651: Fix Javadocs build for Java 8u121 by injecting "Google Code

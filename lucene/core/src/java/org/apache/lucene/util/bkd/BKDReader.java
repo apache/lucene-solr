@@ -528,10 +528,19 @@ public final class BKDReader extends PointValues implements Accountable {
   }
 
   /** Fast path: this is called when the query box fully encompasses all cells under this node. */
-  private void addAll(IntersectState state) throws IOException {
+  private void addAll(IntersectState state, boolean grown) throws IOException {
     //System.out.println("R: addAll nodeID=" + nodeID);
 
+    if (grown == false) {
+      final long maxPointCount = (long) maxPointsInLeafNode * state.index.getNumLeaves();
+      if (maxPointCount <= Integer.MAX_VALUE) { // could be >MAX_VALUE if there are more than 2B points in total
+        state.visitor.grow((int) maxPointCount);
+        grown = true;
+      }
+    }
+
     if (state.index.isLeafNode()) {
+      assert grown;
       //System.out.println("ADDALL");
       if (state.index.nodeExists()) {
         visitDocIDs(state.in, state.index.getLeafBlockFP(), state.visitor);
@@ -539,11 +548,11 @@ public final class BKDReader extends PointValues implements Accountable {
       // TODO: we can assert that the first value here in fact matches what the index claimed?
     } else {
       state.index.pushLeft();
-      addAll(state);
+      addAll(state, grown);
       state.index.pop();
 
       state.index.pushRight();
-      addAll(state);
+      addAll(state, grown);
       state.index.pop();
     }
   }
@@ -579,7 +588,7 @@ public final class BKDReader extends PointValues implements Accountable {
 
     // How many points are stored in this leaf cell:
     int count = in.readVInt();
-    visitor.grow(count);
+    // No need to call grow(), it has been called up-front
 
     if (version < BKDWriter.VERSION_COMPRESSED_DOC_IDS) {
       DocIdsWriter.readInts32(in, count, visitor);
@@ -687,7 +696,7 @@ public final class BKDReader extends PointValues implements Accountable {
       // This cell is fully outside of the query shape: stop recursing
     } else if (r == Relation.CELL_INSIDE_QUERY) {
       // This cell is fully inside of the query shape: recursively add all points in this cell without filtering
-      addAll(state);
+      addAll(state, false);
       // The cell crosses the shape boundary, or the cell fully contains the query, so we fall through and do full filtering:
     } else if (state.index.isLeafNode()) {
       
