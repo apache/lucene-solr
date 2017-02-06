@@ -172,6 +172,8 @@ Other Changes
   SolrSuggester.build() now throws SolrCoreState.CoreIsClosedException when interrupted
   by a core reload/shutdown. (Steve Rowe)
 
+* SOLR-9800: Factor out FacetComponent.newSimpleFacets method. (Jonny Marks via Christine Poerschke)
+
 ==================  6.4.1 ==================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release.

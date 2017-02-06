@@ -50,6 +50,7 @@ import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.schema.FieldType;
 import org.apache.solr.schema.PointField;
 import org.apache.solr.search.QueryParsing;
+import org.apache.solr.search.DocSet;
 import org.apache.solr.search.SyntaxError;
 import org.apache.solr.search.facet.FacetDebugInfo;
 import org.apache.solr.util.RTimer;
@@ -101,6 +102,11 @@ public class FacetComponent extends SearchComponent {
       // Initialize context
       FacetContext.initContext(rb);
     }
+  }
+
+  /* Custom facet components can return a custom SimpleFacets object */
+  protected SimpleFacets newSimpleFacets(SolrQueryRequest req, DocSet docSet, SolrParams params, ResponseBuilder rb) {
+    return new SimpleFacets(req, docSet, params, rb);
   }
 
   /**
@@ -253,7 +259,7 @@ public class FacetComponent extends SearchComponent {
 
     if (rb.doFacets) {
       SolrParams params = rb.req.getParams();
-      SimpleFacets f = new SimpleFacets(rb.req, rb.getResults().docSet, params, rb);
+      SimpleFacets f = newSimpleFacets(rb.req, rb.getResults().docSet, params, rb);
 
       RTimer timer = null;
       FacetDebugInfo fdebug = null;
