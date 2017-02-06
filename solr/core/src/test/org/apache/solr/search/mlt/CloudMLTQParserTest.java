@@ -134,7 +134,7 @@ public class CloudMLTQParserTest extends SolrCloudTestCase {
 
     queryResponse = cluster.getSolrClient().query(COLLECTION, new SolrQuery("{!mlt qf=lowerfilt_u^10,lowerfilt1_u^1000 boost=true mintf=0 mindf=0}30"));
     solrDocuments = queryResponse.getResults();
-    expectedIds = new int[]{29, 31, 32, 18, 23, 13, 14, 20, 22, 19};
+    expectedIds = new int[]{31, 29, 32, 13, 14, 20, 22, 18, 23, 19};
     actualIds = new int[solrDocuments.size()];
     i = 0;
     for (SolrDocument solrDocument : solrDocuments) {
