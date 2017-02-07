@@ -61,6 +61,8 @@ Other
 
 * LUCENE-7360: Remove Explanation.toHtml() (Alan Woodward)
 
+* LUCENE-7681: MemoryIndex uses new DocValues API (Alan Woodward)
+
 ======================= Lucene 6.5.0 =======================
 
 API Changes

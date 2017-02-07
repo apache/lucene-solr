@@ -678,7 +678,7 @@ public class MemoryIndex {
     this.normSimilarity = similarity;
     //invalidate any cached norms that may exist
     for (Info info : fields.values()) {
-      info.norms = null;
+      info.norm = null;
     }
   }
 
@@ -749,22 +749,7 @@ public class MemoryIndex {
       return score;
     } catch (IOException e) { // can never happen (RAMDirectory)
       throw new RuntimeException(e);
-    } finally {
-      // searcher.close();
-      /*
-       * Note that it is harmless and important for good performance to
-       * NOT close the index reader!!! This avoids all sorts of
-       * unnecessary baggage and locking in the Lucene IndexReader
-       * superclass, all of which is completely unnecessary for this main
-       * memory index data structure.
-       * 
-       * Wishing IndexReader would be an interface...
-       * 
-       * Actually with the new tight createSearcher() API auto-closing is now
-       * made impossible, hence searcher.close() would be harmless and also 
-       * would not degrade performance...
-       */
-    }   
+    }
   }
 
   /**
@@ -843,8 +828,7 @@ public class MemoryIndex {
 
     private FieldInfo fieldInfo;
 
-    /** The norms for this field; computed on demand. */
-    private transient LegacyNumericDocValues norms;
+    private Long norm;
 
     /**
      * Term strings and their positions for this field: Map &lt;String
@@ -953,53 +937,15 @@ public class MemoryIndex {
     }
 
     NumericDocValues getNormDocValues() {
-      FieldInvertState invertState = new FieldInvertState(fieldInfo.name, fieldInfo.number,
-                                                          numTokens, numOverlapTokens, 0, boost);
-      final long value = normSimilarity.computeNorm(invertState);
-      if (DEBUG) System.err.println("MemoryIndexReader.norms: " + fieldInfo.name + ":" + value + ":" + numTokens);
-      return new NumericDocValues() {
-          private int docID = -1;
+      if (norm == null) {
+        FieldInvertState invertState = new FieldInvertState(fieldInfo.name, fieldInfo.number,
+            numTokens, numOverlapTokens, 0, boost);
+        final long value = normSimilarity.computeNorm(invertState);
+        if (DEBUG) System.err.println("MemoryIndexReader.norms: " + fieldInfo.name + ":" + value + ":" + numTokens);
 
-          @Override
-          public int nextDoc() {
-            docID++;
-            if (docID == 1) {
-              docID = NO_MORE_DOCS;
-            }
-            return docID;
-          }
-
-          @Override
-          public int docID() {
-            return docID;
-          }
-
-          @Override
-          public int advance(int target) {
-            if (docID <= 0 && target == 0) {
-              docID = 0;
-            } else {
-              docID = NO_MORE_DOCS;
-            }
-            return docID;
-          }
-
-          @Override
-          public boolean advanceExact(int target) throws IOException {
-            docID = target;
-            return docID == 0;
-          }
-
-          @Override
-          public long cost() {
-            return 1;
-          }
-
-          @Override
-          public long longValue() {
-            return value;
-          }
-        };
+        norm = value;
+      }
+      return numericDocValues(norm);
     }
   }
   
@@ -1007,39 +953,206 @@ public class MemoryIndex {
   // Nested classes:
   ///////////////////////////////////////////////////////////////////////////////
 
+  private static class MemoryDocValuesIterator {
+
+    int doc = -1;
+
+    int advance(int doc) {
+      this.doc = doc;
+      return docId();
+    }
+
+    int nextDoc() {
+      doc++;
+      return docId();
+    }
+
+    int docId() {
+      return doc > 1 ? NumericDocValues.NO_MORE_DOCS : doc;
+    }
+
+  }
+
+  private static SortedNumericDocValues numericDocValues(long[] values, int count) {
+    MemoryDocValuesIterator it = new MemoryDocValuesIterator();
+    return new SortedNumericDocValues() {
+
+      int value = 0;
+
+      @Override
+      public long nextValue() throws IOException {
+        return values[value++];
+      }
+
+      @Override
+      public int docValueCount() {
+        return count;
+      }
+
+      @Override
+      public boolean advanceExact(int target) throws IOException {
+        return it.advance(target) == target;
+      }
+
+      @Override
+      public int docID() {
+        return it.docId();
+      }
+
+      @Override
+      public int nextDoc() throws IOException {
+        return it.nextDoc();
+      }
+
+      @Override
+      public int advance(int target) throws IOException {
+        return it.advance(target);
+      }
+
+      @Override
+      public long cost() {
+        return 1;
+      }
+    };
+  }
+
+  private static NumericDocValues numericDocValues(long value) {
+    MemoryDocValuesIterator it = new MemoryDocValuesIterator();
+    return new NumericDocValues() {
+      @Override
+      public long longValue() throws IOException {
+        return value;
+      }
+
+      @Override
+      public boolean advanceExact(int target) throws IOException {
+        return advance(target) == target;
+      }
+
+      @Override
+      public int docID() {
+        return it.docId();
+      }
+
+      @Override
+      public int nextDoc() throws IOException {
+        return it.nextDoc();
+      }
+
+      @Override
+      public int advance(int target) throws IOException {
+        return it.advance(target);
+      }
+
+      @Override
+      public long cost() {
+        return 1;
+      }
+    };
+  }
+
+  private static SortedDocValues sortedDocValues(BytesRef value) {
+    MemoryDocValuesIterator it = new MemoryDocValuesIterator();
+    return new SortedDocValues() {
+      @Override
+      public int ordValue() {
+        return 0;
+      }
+
+      @Override
+      public BytesRef lookupOrd(int ord) throws IOException {
+        return value;
+      }
+
+      @Override
+      public int getValueCount() {
+        return 1;
+      }
+
+      @Override
+      public boolean advanceExact(int target) throws IOException {
+        return it.advance(target) == target;
+      }
+
+      @Override
+      public int docID() {
+        return it.docId();
+      }
+
+      @Override
+      public int nextDoc() throws IOException {
+        return it.nextDoc();
+      }
+
+      @Override
+      public int advance(int target) throws IOException {
+        return it.advance(target);
+      }
+
+      @Override
+      public long cost() {
+        return 1;
+      }
+    };
+  }
+
+  private static SortedSetDocValues sortedSetDocValues(BytesRefHash values, int[] bytesIds) {
+    MemoryDocValuesIterator it = new MemoryDocValuesIterator();
+    BytesRef scratch = new BytesRef();
+    return new SortedSetDocValues() {
+      int ord = 0;
+
+      @Override
+      public long nextOrd() throws IOException {
+        if (ord >= values.size())
+          return NO_MORE_ORDS;
+        return ord++;
+      }
+
+      @Override
+      public BytesRef lookupOrd(long ord) throws IOException {
+        return values.get(bytesIds[(int) ord], scratch);
+      }
+
+      @Override
+      public long getValueCount() {
+        return values.size();
+      }
+
+      @Override
+      public boolean advanceExact(int target) throws IOException {
+        return it.advance(target) == target;
+      }
+
+      @Override
+      public int docID() {
+        return it.docId();
+      }
+
+      @Override
+      public int nextDoc() throws IOException {
+        return it.nextDoc();
+      }
+
+      @Override
+      public int advance(int target) throws IOException {
+        return it.advance(target);
+      }
+
+      @Override
+      public long cost() {
+        return 1;
+      }
+    };
+  }
+
   private static final class BinaryDocValuesProducer {
 
     BytesRefHash dvBytesValuesSet;
-    final LegacySortedDocValues sortedDocValues;
-    final BytesRef spare = new BytesRef();
-
     int[] bytesIds;
-
-    private BinaryDocValuesProducer() {
-      sortedDocValues = new LegacySortedDocValues() {
-        @Override
-        public int getOrd(int docID) {
-          return 0;
-        }
-
-        @Override
-        public BytesRef lookupOrd(int ord) {
-          return getValue(ord);
-        }
-
-        @Override
-        public int getValueCount() {
-          return 1;
-        }
-      };
-    }
 
     private void prepareForUsage() {
       bytesIds = dvBytesValuesSet.sort();
-    }
-
-    private BytesRef getValue(int index) {
-      return dvBytesValuesSet.get(bytesIds[index], spare);
     }
 
   }
@@ -1048,33 +1161,6 @@ public class MemoryIndex {
 
     long[] dvLongValues;
     int count;
-
-    final LegacyNumericDocValues numericDocValues;
-    final LegacySortedNumericDocValues sortedNumericDocValues;
-
-    private NumericDocValuesProducer() {
-      this.numericDocValues = new LegacyNumericDocValues() {
-        @Override
-        public long get(int docID) {
-          return dvLongValues[0];
-        }
-      };
-      this.sortedNumericDocValues = new LegacySortedNumericDocValues() {
-        @Override
-        public void setDocument(int doc) {
-        }
-
-        @Override
-        public long valueAt(int index) {
-          return dvLongValues[index];
-        }
-
-        @Override
-        public int count() {
-          return count;
-        }
-      };
-    }
 
     private void prepareForUsage() {
       Arrays.sort(dvLongValues, 0, count);
@@ -1141,7 +1227,7 @@ public class MemoryIndex {
       if (info == null) {
         return null;
       }
-      return new LegacyNumericDocValuesWrapper(new Bits.MatchAllBits(1), info.numericProducer.numericDocValues);
+      return numericDocValues(info.numericProducer.dvLongValues[0]);
     }
 
     @Override
@@ -1157,7 +1243,8 @@ public class MemoryIndex {
     private SortedDocValues getSortedDocValues(String field, DocValuesType docValuesType) {
       Info info = getInfoForExpectedDocValuesType(field, docValuesType);
       if (info != null) {
-        return new LegacySortedDocValuesWrapper(info.binaryProducer.sortedDocValues, 1);
+        BytesRef value = info.binaryProducer.dvBytesValuesSet.get(0, new BytesRef());
+        return sortedDocValues(value);
       } else {
         return null;
       }
@@ -1167,7 +1254,7 @@ public class MemoryIndex {
     public SortedNumericDocValues getSortedNumericDocValues(String field) {
       Info info = getInfoForExpectedDocValuesType(field, DocValuesType.SORTED_NUMERIC);
       if (info != null) {
-        return new LegacySortedNumericDocValuesWrapper(info.numericProducer.sortedNumericDocValues, 1);
+        return numericDocValues(info.numericProducer.dvLongValues, info.numericProducer.count);
       } else {
         return null;
       }
@@ -1177,33 +1264,7 @@ public class MemoryIndex {
     public SortedSetDocValues getSortedSetDocValues(String field) {
       Info info = getInfoForExpectedDocValuesType(field, DocValuesType.SORTED_SET);
       if (info != null) {
-        return new LegacySortedSetDocValuesWrapper(new LegacySortedSetDocValues() {
-
-          int index = 0;
-
-          @Override
-          public long nextOrd() {
-            if (index >= info.binaryProducer.dvBytesValuesSet.size()) {
-              return NO_MORE_ORDS;
-            }
-            return index++;
-          }
-
-          @Override
-          public void setDocument(int docID) {
-            index = 0;
-          }
-
-          @Override
-          public BytesRef lookupOrd(long ord) {
-            return info.binaryProducer.getValue((int) ord);
-          }
-
-          @Override
-          public long getValueCount() {
-            return info.binaryProducer.dvBytesValuesSet.size();
-          }
-          }, 1);
+        return sortedSetDocValues(info.binaryProducer.dvBytesValuesSet, info.binaryProducer.bytesIds);
       } else {
         return null;
       }
