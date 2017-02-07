@@ -146,6 +146,10 @@ Optimizations
 * LUCENE-7667: BKDReader now calls `IntersectVisitor.grow()` on larger
   increments. (Adrien Grand)
 
+* LUCENE-7638: Query parsers now analyze the token graph for articulation
+  points (or cut vertices) in order to create more efficient queries for
+  multi-token synonyms. (Jim Ferenczi)
+
 Build
 
 * LUCENE-7653: Update randomizedtesting to version 2.5.0. (Dawid Weiss)

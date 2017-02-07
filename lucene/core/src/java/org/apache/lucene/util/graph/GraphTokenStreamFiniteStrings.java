@@ -19,7 +19,11 @@ package org.apache.lucene.util.graph;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.BitSet;
+import java.util.Collections;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 
@@ -28,25 +32,27 @@ import org.apache.lucene.analysis.tokenattributes.BytesTermAttribute;
 import org.apache.lucene.analysis.tokenattributes.PositionIncrementAttribute;
 import org.apache.lucene.analysis.tokenattributes.PositionLengthAttribute;
 import org.apache.lucene.analysis.tokenattributes.TermToBytesRefAttribute;
+import org.apache.lucene.index.Term;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.IntsRef;
 import org.apache.lucene.util.automaton.Automaton;
 import org.apache.lucene.util.automaton.FiniteStringsIterator;
 import org.apache.lucene.util.automaton.Operations;
+import org.apache.lucene.util.automaton.Transition;
 
 import static org.apache.lucene.util.automaton.Operations.DEFAULT_MAX_DETERMINIZED_STATES;
 
 /**
- * Creates a list of {@link TokenStream} where each stream is the tokens that make up a finite string in graph token stream.  To do this,
- * the graph token stream is converted to an {@link Automaton} and from there we use a {@link FiniteStringsIterator} to collect the various
- * token streams for each finite string.
+ * Consumes a TokenStream and creates an {@link Automaton} where the transition labels are terms from
+ * the {@link TermToBytesRefAttribute}.
+ * This class also provides helpers to explore the different paths of the {@link Automaton}.
  */
 public final class GraphTokenStreamFiniteStrings {
-  private final Automaton.Builder builder = new Automaton.Builder();
   private final Map<BytesRef, Integer> termToID = new HashMap<>();
   private final Map<Integer, BytesRef> idToTerm = new HashMap<>();
   private final Map<Integer, Integer> idToInc = new HashMap<>();
-  private Automaton det;
+  private final Automaton det;
+  private final Transition transition = new Transition();
 
   private class FiniteStringsTokenStream extends TokenStream {
     private final BytesTermAttribute termAtt = addAttribute(BytesTermAttribute.class);
@@ -82,37 +88,121 @@ public final class GraphTokenStreamFiniteStrings {
     }
   }
 
-  private GraphTokenStreamFiniteStrings() {
+  public GraphTokenStreamFiniteStrings(TokenStream in) throws IOException {
+    Automaton aut = build(in);
+    this.det = Operations.removeDeadStates(Operations.determinize(aut, DEFAULT_MAX_DETERMINIZED_STATES));
   }
 
   /**
-   * Gets the list of finite string token streams from the given input graph token stream.
+   * Returns whether the provided state is the start of multiple side paths of different length (eg: new york, ny)
    */
-  public static List<TokenStream> getTokenStreams(final TokenStream in) throws IOException {
-    GraphTokenStreamFiniteStrings gfs = new GraphTokenStreamFiniteStrings();
-    return gfs.process(in);
+  public boolean hasSidePath(int state) {
+    int numT = det.initTransition(state, transition);
+    if (numT <= 1) {
+      return false;
+    }
+    det.getNextTransition(transition);
+    int dest = transition.dest;
+    for (int i = 1; i < numT; i++) {
+      det.getNextTransition(transition);
+      if (dest != transition.dest) {
+        return true;
+      }
+    }
+    return false;
   }
 
   /**
-   * Builds automaton and builds the finite string token streams.
+   * Returns the list of terms that start at the provided state
    */
-  private List<TokenStream> process(final TokenStream in) throws IOException {
-    build(in);
-
-    List<TokenStream> tokenStreams = new ArrayList<>();
-    final FiniteStringsIterator finiteStrings = new FiniteStringsIterator(det);
-    for (IntsRef ids; (ids = finiteStrings.next()) != null; ) {
-      tokenStreams.add(new FiniteStringsTokenStream(IntsRef.deepCopyOf(ids)));
+  public Term[] getTerms(String field, int state) {
+    int numT = det.initTransition(state, transition);
+    List<Term> terms = new ArrayList<> ();
+    for (int i = 0; i < numT; i++) {
+      det.getNextTransition(transition);
+      for (int id = transition.min; id <= transition.max; id++) {
+        Term term = new Term(field, idToTerm.get(id));
+        terms.add(term);
+      }
     }
-
-    return tokenStreams;
+    return terms.toArray(new Term[terms.size()]);
   }
 
-  private void build(final TokenStream in) throws IOException {
-    if (det != null) {
-      throw new IllegalStateException("Automation already built");
-    }
+  /**
+   * Get all finite strings from the automaton.
+   */
+  public Iterator<TokenStream> getFiniteStrings() throws IOException {
+    return getFiniteStrings(0, -1);
+  }
 
+
+  /**
+   * Get all finite strings that start at {@code startState} and end at {@code endState}.
+   */
+  public Iterator<TokenStream> getFiniteStrings(int startState, int endState) throws IOException {
+    final FiniteStringsIterator it = new FiniteStringsIterator(det, startState, endState);
+    return new Iterator<TokenStream> () {
+      IntsRef current;
+      boolean finished = false;
+
+      @Override
+      public boolean hasNext() {
+        if (finished == false && current == null) {
+          current = it.next();
+          if (current == null) {
+            finished = true;
+          }
+        }
+        return current != null;
+      }
+
+      @Override
+      public TokenStream next() {
+        if (current == null) {
+          hasNext();
+        }
+        TokenStream next =  new FiniteStringsTokenStream(current);
+        current = null;
+        return next;
+      }
+    };
+  }
+
+  /**
+   * Returns the articulation points (or cut vertices) of the graph:
+   * https://en.wikipedia.org/wiki/Biconnected_component
+   */
+  public int[] articulationPoints() {
+    if (det.getNumStates() == 0) {
+      return new int[0];
+    }
+    //
+    Automaton.Builder undirect = new Automaton.Builder();
+    undirect.copy(det);
+    for (int i = 0; i < det.getNumStates(); i++) {
+      int numT = det.initTransition(i, transition);
+      for (int j = 0; j < numT; j++) {
+        det.getNextTransition(transition);
+        undirect.addTransition(transition.dest, i, transition.min);
+      }
+    }
+    int numStates = det.getNumStates();
+    BitSet visited = new BitSet(numStates);
+    int[] depth = new int[det.getNumStates()];
+    int[] low = new int[det.getNumStates()];
+    int[] parent = new int[det.getNumStates()];
+    Arrays.fill(parent, -1);
+    List<Integer> points = new ArrayList<>();
+    articulationPointsRecurse(undirect.finish(), 0, 0, depth, low, parent, visited, points);
+    Collections.reverse(points);
+    return points.stream().mapToInt(p -> p).toArray();
+  }
+
+  /**
+   * Build an automaton from the provided {@link TokenStream}.
+   */
+  private Automaton build(final TokenStream in) throws IOException {
+    Automaton.Builder builder = new Automaton.Builder();
     final TermToBytesRefAttribute termBytesAtt = in.addAttribute(TermToBytesRefAttribute.class);
     final PositionIncrementAttribute posIncAtt = in.addAttribute(PositionIncrementAttribute.class);
     final PositionLengthAttribute posLengthAtt = in.addAttribute(PositionLengthAttribute.class);
@@ -136,12 +226,12 @@ public final class GraphTokenStreamFiniteStrings {
 
       int endPos = pos + posLengthAtt.getPositionLength();
       while (state < endPos) {
-        state = createState();
+        state = builder.createState();
       }
 
       BytesRef term = termBytesAtt.getBytesRef();
       int id = getTermID(currentIncr, prevIncr, term);
-      addTransition(pos, endPos, currentIncr, id);
+      builder.addTransition(pos, endPos, id);
 
       // only save last increment on non-zero increment in case we have multiple stacked tokens
       if (currentIncr > 0) {
@@ -150,47 +240,10 @@ public final class GraphTokenStreamFiniteStrings {
     }
 
     in.end();
-    setAccept(state, true);
-    finish();
-  }
-
-  /**
-   * Returns a new state; state 0 is always the initial state.
-   */
-  private int createState() {
-    return builder.createState();
-  }
-
-  /**
-   * Marks the specified state as accept or not.
-   */
-  private void setAccept(int state, boolean accept) {
-    builder.setAccept(state, accept);
-  }
-
-  /**
-   * Adds a transition to the automaton.
-   */
-  private void addTransition(int source, int dest, int incr, int id) {
-    builder.addTransition(source, dest, id);
-  }
-
-  /**
-   * Call this once you are done adding states/transitions.
-   */
-  private void finish() {
-    finish(DEFAULT_MAX_DETERMINIZED_STATES);
-  }
-
-  /**
-   * Call this once you are done adding states/transitions.
-   *
-   * @param maxDeterminizedStates Maximum number of states created when determinizing the automaton.  Higher numbers allow this operation
-   *                              to consume more memory but allow more complex automatons.
-   */
-  private void finish(int maxDeterminizedStates) {
-    Automaton automaton = builder.finish();
-    det = Operations.removeDeadStates(Operations.determinize(automaton, maxDeterminizedStates));
+    if (state != -1) {
+      builder.setAccept(state, true);
+    }
+    return builder.finish();
   }
 
   /**
@@ -224,7 +277,34 @@ public final class GraphTokenStreamFiniteStrings {
         idToTerm.put(id, term);
       }
     }
-
     return id;
+  }
+
+  private static void articulationPointsRecurse(Automaton a, int state, int d, int[] depth, int[] low, int[] parent,
+                                                BitSet visited, List<Integer> points) {
+    visited.set(state);
+    depth[state] = d;
+    low[state] = d;
+    int childCount = 0;
+    boolean isArticulation = false;
+    Transition t = new Transition();
+    int numT = a.initTransition(state, t);
+    for (int i = 0; i < numT; i++) {
+      a.getNextTransition(t);
+      if (visited.get(t.dest) == false) {
+        parent[t.dest] = state;
+        articulationPointsRecurse(a, t.dest, d + 1, depth, low, parent, visited, points);
+        childCount++;
+        if (low[t.dest] >= depth[state]) {
+          isArticulation = true;
+        }
+        low[state] = Math.min(low[state], low[t.dest]);
+      } else if (t.dest != parent[state]) {
+        low[state] = Math.min(low[state], depth[t.dest]);
+      }
+    }
+    if ((parent[state] != -1 && isArticulation) || (parent[state] == -1 && childCount > 1)) {
+      points.add(state);
+    }
   }
 }
