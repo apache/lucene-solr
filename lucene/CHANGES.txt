@@ -23,8 +23,9 @@ Bug Fixes
 
 Other
 
-* LUCENE-6989: Backport MMapDirectory's unmapping code to use MethodHandles. This
-  allows it to work with Java 9 EA build 150 and later. (Uwe Schindler)
+* LUCENE-6989: Backport MMapDirectory's unmapping code from Lucene 6.4 to use
+  MethodHandles. This allows it to work with Java 9 (EA build 150 and later).
+  (Uwe Schindler)
   
 Build
 
@@ -34,12 +35,17 @@ Build
   from JIRA. (Mano Kovacs, hossman, Steve Rowe)
   
 * LUCENE-7596: Update Groovy to version 2.4.8 to allow building with Java 9
-  build 148+. Also update JGit version for working-copy checks. (Uwe Schindler)
-
-* LUCENE-7651: Fix Javadocs build for Java 8u121 by injecting "Google Code
-  Prettify" without adding Javascript to Javadocs's -bottom parameter.
-  Also update Prettify to latest version to fix Google Chrome issue.
+  build 148+. Also update JGit version for working-copy checks. This does not
+  fix all issues with Java 9, but allows to build the distribution.
   (Uwe Schindler)
+
+* LUCENE-7651: Backport (Lucene 6.4.1) fix for Java 8u121 to allow documentation
+  build to inject "Google Code Prettify" without adding Javascript to Javadocs's
+  -bottom parameter. Unfortunately, this fix disables Prettify if Javadocs are
+  built with Java 7, as there is no generic way in Java 7 to inject Javascript
+  without breaking Java 8 (and possible paid Java 7 security updates). This
+  fix also updates Prettify to latest version to work around a Google Chrome
+  issue. (Uwe Schindler)
 
 ======================= Lucene 5.5.3 =======================
 
