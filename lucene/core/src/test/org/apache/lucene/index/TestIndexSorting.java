@@ -203,7 +203,7 @@ public class TestIndexSorting extends LuceneTestCase {
     // segment sort is needed
     codec.needsIndexSort = true;
     codec.numCalls = 0;
-    for (int i = 200; i < 300; i++) {
+    for (int i = 201; i < 300; i++) {
       Document doc = new Document();
       doc.add(new StringField("id", Integer.toString(i), Store.YES));
       doc.add(new NumericDocValuesField("id", i));
@@ -1637,7 +1637,6 @@ public class TestIndexSorting extends LuceneTestCase {
     w.close();
     dir.close();
   }
-
 
   // docvalues fields involved in the index sort cannot be updated
   public void testBadDVUpdate() throws Exception {
