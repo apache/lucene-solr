@@ -132,7 +132,7 @@ public class TopGroupsFieldCommand implements Command<TopGroups<BytesRef>> {
 
     final List<Collector> collectors = new ArrayList<>(1);
     final FieldType fieldType = field.getType();
-    if (fieldType.getNumericType() != null) {
+    if (fieldType.getNumberType() != null) {
       ValueSource vs = fieldType.getValueSource(field, null);
       Collection<SearchGroup<MutableValue>> v = GroupConverter.toMutable(field, firstPhaseGroups);
       secondPassCollector = new FunctionSecondPassGroupingCollector(
@@ -155,7 +155,7 @@ public class TopGroupsFieldCommand implements Command<TopGroups<BytesRef>> {
     }
 
     FieldType fieldType = field.getType();
-    if (fieldType.getNumericType() != null) {
+    if (fieldType.getNumberType() != null) {
       return GroupConverter.fromMutable(field, secondPassCollector.getTopGroups(0));
     } else {
       return secondPassCollector.getTopGroups(0);

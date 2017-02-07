@@ -28,20 +28,13 @@ import org.apache.solr.util.DateMathParser;
 
 public abstract class NumericFieldType extends PrimitiveFieldType {
 
-  public static enum NumberType {
-    INTEGER,
-    LONG,
-    FLOAT,
-    DOUBLE,
-    DATE
-  }
-
   protected NumberType type;
 
   /**
    * @return the type of this field
    */
-  final public NumberType getType() {
+  @Override
+  public NumberType getNumberType() {
     return type;
   }
 
@@ -58,7 +51,7 @@ public abstract class NumericFieldType extends PrimitiveFieldType {
       boolean minInclusive, boolean maxInclusive) {
     assert field.hasDocValues() && !field.multiValued();
     
-    switch (getType()) {
+    switch (getNumberType()) {
       case INTEGER:
         return numericDocValuesRangeQuery(field.getName(),
               min == null ? null : (long) Integer.parseInt(min),
@@ -87,18 +80,18 @@ public abstract class NumericFieldType extends PrimitiveFieldType {
     Query query;
     String fieldName = sf.getName();
 
-    Number minVal = min == null ? null : getType() == NumberType.FLOAT ? Float.parseFloat(min): Double.parseDouble(min);
-    Number maxVal = max == null ? null : getType() == NumberType.FLOAT ? Float.parseFloat(max): Double.parseDouble(max);
+    Number minVal = min == null ? null : getNumberType() == NumberType.FLOAT ? Float.parseFloat(min): Double.parseDouble(min);
+    Number maxVal = max == null ? null : getNumberType() == NumberType.FLOAT ? Float.parseFloat(max): Double.parseDouble(max);
     
     Long minBits = 
-        min == null ? null : getType() == NumberType.FLOAT ? (long) Float.floatToIntBits(minVal.floatValue()): Double.doubleToLongBits(minVal.doubleValue());
+        min == null ? null : getNumberType() == NumberType.FLOAT ? (long) Float.floatToIntBits(minVal.floatValue()): Double.doubleToLongBits(minVal.doubleValue());
     Long maxBits = 
-        max == null ? null : getType() == NumberType.FLOAT ? (long) Float.floatToIntBits(maxVal.floatValue()): Double.doubleToLongBits(maxVal.doubleValue());
+        max == null ? null : getNumberType() == NumberType.FLOAT ? (long) Float.floatToIntBits(maxVal.floatValue()): Double.doubleToLongBits(maxVal.doubleValue());
     
-    long negativeInfinityBits = getType() == NumberType.FLOAT ? FLOAT_NEGATIVE_INFINITY_BITS : DOUBLE_NEGATIVE_INFINITY_BITS;
-    long positiveInfinityBits = getType() == NumberType.FLOAT ? FLOAT_POSITIVE_INFINITY_BITS : DOUBLE_POSITIVE_INFINITY_BITS;
-    long minusZeroBits = getType() == NumberType.FLOAT ? FLOAT_MINUS_ZERO_BITS : DOUBLE_MINUS_ZERO_BITS;
-    long zeroBits = getType() == NumberType.FLOAT ? FLOAT_ZERO_BITS : DOUBLE_ZERO_BITS;
+    long negativeInfinityBits = getNumberType() == NumberType.FLOAT ? FLOAT_NEGATIVE_INFINITY_BITS : DOUBLE_NEGATIVE_INFINITY_BITS;
+    long positiveInfinityBits = getNumberType() == NumberType.FLOAT ? FLOAT_POSITIVE_INFINITY_BITS : DOUBLE_POSITIVE_INFINITY_BITS;
+    long minusZeroBits = getNumberType() == NumberType.FLOAT ? FLOAT_MINUS_ZERO_BITS : DOUBLE_MINUS_ZERO_BITS;
+    long zeroBits = getNumberType() == NumberType.FLOAT ? FLOAT_ZERO_BITS : DOUBLE_ZERO_BITS;
     
     // If min is negative (or -0d) and max is positive (or +0d), then issue a FunctionRangeQuery
     if ((minVal == null || minVal.doubleValue() < 0d || minBits == minusZeroBits) && 

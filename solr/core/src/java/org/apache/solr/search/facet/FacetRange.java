@@ -119,9 +119,7 @@ class FacetRangeProcessor extends FacetProcessor<FacetRange> {
     final FieldType ft = sf.getType();
 
     if (ft instanceof TrieField) {
-      final TrieField trie = (TrieField)ft;
-
-      switch (trie.getType()) {
+      switch (ft.getNumberType()) {
         case FLOAT:
           calc = new FloatCalc(sf);
           break;
@@ -143,9 +141,8 @@ class FacetRangeProcessor extends FacetProcessor<FacetRange> {
                   "Expected numeric field type :" + sf);
       }
     } else if (ft instanceof PointField) {
-      final PointField pfield = (PointField)ft;
-
-      switch (pfield.getType()) {
+      // TODO, this is the same in Trie and Point now
+      switch (ft.getNumberType()) {
         case FLOAT:
           calc = new FloatCalc(sf);
           break;
@@ -179,9 +176,7 @@ class FacetRangeProcessor extends FacetProcessor<FacetRange> {
     final FieldType ft = sf.getType();
 
     if (ft instanceof TrieField) {
-      final TrieField trie = (TrieField)ft;
-
-      switch (trie.getType()) {
+      switch (ft.getNumberType()) {
         case FLOAT:
           calc = new FloatCalc(sf);
           break;
