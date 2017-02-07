@@ -426,7 +426,6 @@ public class MMapDirectory extends FSDirectory {
           throw new IOException("Unable to unmap the mapped buffer: " + parent, error);
         }
       }
-      
     };
   }
   

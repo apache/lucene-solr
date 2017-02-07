@@ -45,7 +45,7 @@ public class TestDirectory extends LuceneTestCase {
     if (hasWorkingMMapOnWindows()) {
       dirs0.add(new MMapDirectory(path));
     }
-    final FSDirectory[] dirs = dirs0.stream().toArray(FSDirectory[]::new);
+    final FSDirectory[] dirs = dirs0.toArray(new FSDirectory[dirs0.size()]);
 
     for (int i=0; i<dirs.length; i++) {
       FSDirectory dir = dirs[i];

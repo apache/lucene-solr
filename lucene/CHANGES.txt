@@ -21,6 +21,11 @@ Bug Fixes
 * LUCENE-7562: CompletionFieldsConsumer sometimes throws
   NullPointerException on ghost fields (Oliver Eilhard via Mike McCandless)
 
+Other
+
+* LUCENE-6989: Backport MMapDirectory's unmapping code to use MethodHandles. This
+  allows it to work with Java 9 EA build 150 and later. (Uwe Schindler)
+  
 Build
 
 * LUCENE-7543: Make changes-to-html target an offline operation, by moving the
