@@ -175,7 +175,7 @@ public class MMapDirectory extends FSDirectory {
    * is closed while another thread is still accessing it (SIGSEGV).
    * <p>To enable the hack, the following requirements need to be
    * fulfilled: The used JVM must be Oracle Java / OpenJDK 8
-   * <em>(preliminary support for Java 9 EA build 150+ was added with Lucene 6.4)</em>.
+   * <em>(preliminary support for Java 9 EA build 150+ was added with Lucene 6.4 and 5.5.4)</em>.
    * In addition, the following permissions need to be granted
    * to {@code lucene-core.jar} in your
    * <a href="http://docs.oracle.com/javase/8/docs/technotes/guides/security/PolicyFiles.html">policy file</a>:
