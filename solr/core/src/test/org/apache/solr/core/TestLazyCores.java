@@ -729,6 +729,7 @@ public class TestLazyCores extends SolrTestCaseJ4 {
     }
   }
 
+  @BadApple(bugUrl = "https://issues.apache.org/jira/browse/SOLR-10101")
   // Insure that when a core is aged out of the transient cache, any uncommitted docs are preserved.
   // Note, this needs FS-based indexes to persist!
   // Cores 2, 3, 6, 7, 8, 9 are transient
