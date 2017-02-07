@@ -34,7 +34,6 @@ import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.schema.DateRangeField;
 import org.apache.solr.schema.FieldType;
 import org.apache.solr.schema.IndexSchema;
-import org.apache.solr.schema.PointField;
 import org.apache.solr.schema.SchemaField;
 import org.apache.solr.schema.TrieDateField;
 import org.apache.solr.schema.TrieField;
@@ -144,9 +143,7 @@ public class RangeFacetRequest extends FacetComponent.FacetBase {
     FieldType ft = schemaField.getType();
 
     if (ft instanceof TrieField) {
-      final TrieField trie = (TrieField) ft;
-
-      switch (trie.getType()) {
+      switch (ft.getNumberType()) {
         case FLOAT:
           calc = new FloatRangeEndpointCalculator(this);
           break;
@@ -170,8 +167,7 @@ public class RangeFacetRequest extends FacetComponent.FacetBase {
     } else if (ft instanceof DateRangeField) {
       calc = new DateRangeEndpointCalculator(this, null);
     } else if (ft.isPointField()) {
-      final PointField pointField = (PointField) ft;
-      switch (pointField.getType()) {
+      switch (ft.getNumberType()) {
         case FLOAT:
           calc = new FloatRangeEndpointCalculator(this);
           break;

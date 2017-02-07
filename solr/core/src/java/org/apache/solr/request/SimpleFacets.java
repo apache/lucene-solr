@@ -459,7 +459,7 @@ public class SimpleFacets {
           break;
         case FCS:
           assert !multiToken;
-          if (ft.getNumericType() != null && !sf.multiValued()) {
+          if (ft.getNumberType() != null && !sf.multiValued()) {
             // force numeric faceting
             if (prefix != null && !prefix.isEmpty()) {
               throw new SolrException(ErrorCode.BAD_REQUEST, FacetParams.FACET_PREFIX + " is not supported on numeric types");
@@ -593,7 +593,7 @@ public class SimpleFacets {
        /* Always use filters for booleans if not DocValues only... we know the number of values is very small. */
        if (type instanceof BoolField && (field.indexed() == true || field.hasDocValues() == false)) {
          method = FacetMethod.ENUM;
-       } else if (type.getNumericType() != null && !field.multiValued()) {
+       } else if (type.getNumberType() != null && !field.multiValued()) {
         /* the per-segment approach is optimal for numeric field types since there
            are no global ords to merge and no need to create an expensive
            top-level reader */
@@ -606,7 +606,7 @@ public class SimpleFacets {
 
      /* FC without docValues does not support single valued numeric facets */
      if (method == FacetMethod.FC
-         && type.getNumericType() != null && !field.multiValued()) {
+         && type.getNumberType() != null && !field.multiValued()) {
        method = FacetMethod.FCS;
      }
 
@@ -692,7 +692,7 @@ public class SimpleFacets {
   
   private Collector getInsanityWrapper(final String field, Collector collector) {
     SchemaField sf = searcher.getSchema().getFieldOrNull(field);
-    if (sf != null && !sf.hasDocValues() && !sf.multiValued() && sf.getType().getNumericType() != null) {
+    if (sf != null && !sf.hasDocValues() && !sf.multiValued() && sf.getType().getNumberType() != null) {
       // it's a single-valued numeric field: we must currently create insanity :(
       // there isn't a GroupedFacetCollector that works on numerics right now...
       return new FilterCollector(collector) {

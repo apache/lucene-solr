@@ -31,7 +31,6 @@ import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.NumericDocValues;
 import org.apache.lucene.index.SortedDocValues;
 import org.apache.lucene.index.SortedSetDocValues;
-import org.apache.lucene.legacy.LegacyNumericType;
 import org.apache.lucene.search.DocIdSet;
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.util.Bits;
@@ -42,9 +41,9 @@ import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.request.IntervalFacets.FacetInterval;
 import org.apache.solr.schema.FieldType;
+import org.apache.solr.schema.NumberType;
 import org.apache.solr.schema.PointField;
 import org.apache.solr.schema.SchemaField;
-import org.apache.solr.schema.TrieDateField;
 import org.apache.solr.search.DocIterator;
 import org.apache.solr.search.DocSet;
 import org.apache.solr.search.Filter;
@@ -175,7 +174,7 @@ public class IntervalFacets implements Iterable<FacetInterval> {
   }
 
   private void doCount() throws IOException {
-    if (schemaField.getType().getNumericType() != null && !schemaField.multiValued()) {
+    if (schemaField.getType().getNumberType() != null && !schemaField.multiValued()) {
       getCountNumeric();
     } else {
       getCountString();
@@ -185,7 +184,7 @@ public class IntervalFacets implements Iterable<FacetInterval> {
   private void getCountNumeric() throws IOException {
     final FieldType ft = schemaField.getType();
     final String fieldName = schemaField.getName();
-    final LegacyNumericType numericType = ft.getNumericType();
+    final NumberType numericType = ft.getNumberType();
     if (numericType == null) {
       throw new IllegalStateException();
     }
@@ -203,9 +202,8 @@ public class IntervalFacets implements Iterable<FacetInterval> {
         assert doc >= ctx.docBase;
         switch (numericType) {
           case LONG:
-            longs = DocValues.getNumeric(ctx.reader(), fieldName);
-            break;
-          case INT:
+          case DATE:
+          case INTEGER:
             longs = DocValues.getNumeric(ctx.reader(), fieldName);
             break;
           case FLOAT:
@@ -515,7 +513,7 @@ public class IntervalFacets implements Iterable<FacetInterval> {
       }
       // TODO: what about escaping star (*)?
       // TODO: escaping spaces on ends?
-      if (schemaField.getType().getNumericType() != null) {
+      if (schemaField.getType().getNumberType() != null) {
         setNumericLimits(schemaField);
       }
       if (start != null && end != null && start.compareTo(end) > 0) {
@@ -537,7 +535,7 @@ public class IntervalFacets implements Iterable<FacetInterval> {
      */
     public FacetInterval(SchemaField schemaField, String startStr, String endStr,
         boolean includeLower, boolean includeUpper, String key) {
-      assert schemaField.getType().getNumericType() != null: "Only numeric fields supported with this constructor";
+      assert schemaField.getType().getNumberType() != null: "Only numeric fields supported with this constructor";
       this.key = key;
       this.startOpen = !includeLower;
       this.endOpen = !includeUpper;
@@ -559,15 +557,14 @@ public class IntervalFacets implements Iterable<FacetInterval> {
       if (start == null) {
         startLimit = Long.MIN_VALUE;
       } else {
-        switch (schemaField.getType().getNumericType()) {
+        switch (schemaField.getType().getNumberType()) {
           case LONG:
-            if (schemaField.getType() instanceof TrieDateField) {
-              startLimit = ((Date) schemaField.getType().toObject(schemaField, start)).getTime();
-            } else {
-              startLimit = (long) schemaField.getType().toObject(schemaField, start);
-            }
+            startLimit = (long) schemaField.getType().toObject(schemaField, start);
             break;
-          case INT:
+          case DATE:
+            startLimit = ((Date) schemaField.getType().toObject(schemaField, start)).getTime();
+            break;
+          case INTEGER:
             startLimit = ((Integer) schemaField.getType().toObject(schemaField, start)).longValue();
             break;
           case FLOAT:
@@ -588,15 +585,14 @@ public class IntervalFacets implements Iterable<FacetInterval> {
       if (end == null) {
         endLimit = Long.MAX_VALUE;
       } else {
-        switch (schemaField.getType().getNumericType()) {
+        switch (schemaField.getType().getNumberType()) {
           case LONG:
-            if (schemaField.getType() instanceof TrieDateField) {
-              endLimit = ((Date) schemaField.getType().toObject(schemaField, end)).getTime();
-            } else {
-              endLimit = (long) schemaField.getType().toObject(schemaField, end);
-            }
+            endLimit = (long) schemaField.getType().toObject(schemaField, end);
             break;
-          case INT:
+          case DATE:
+            endLimit = ((Date) schemaField.getType().toObject(schemaField, end)).getTime();
+            break;
+          case INTEGER:
             endLimit = ((Integer) schemaField.getType().toObject(schemaField, end)).longValue();
             break;
           case FLOAT:

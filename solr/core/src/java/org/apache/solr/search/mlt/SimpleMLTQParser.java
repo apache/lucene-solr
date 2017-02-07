@@ -101,7 +101,7 @@ public class SimpleMLTQParser extends QParser {
         ArrayList<String> fields = new ArrayList();
         for (String fieldName : fieldDefinitions.keySet()) {
           if (fieldDefinitions.get(fieldName).indexed() && fieldDefinitions.get(fieldName).stored())
-            if (fieldDefinitions.get(fieldName).getType().getNumericType() == null)
+            if (fieldDefinitions.get(fieldName).getType().getNumberType() == null)
               fields.add(fieldName);
         }
         fieldNames = fields.toArray(new String[0]);
@@ -150,7 +150,7 @@ public class SimpleMLTQParser extends QParser {
   }
 
   private Query createIdQuery(String defaultField, String uniqueValue) {
-    return new TermQuery(req.getSchema().getField(defaultField).getType().getNumericType() != null
+    return new TermQuery(req.getSchema().getField(defaultField).getType().getNumberType() != null
         ? createNumericTerm(defaultField, uniqueValue)
         : new Term(defaultField, uniqueValue));
   }

@@ -233,8 +233,17 @@ public class EnumField extends PrimitiveFieldType {
    * {@inheritDoc}
    */
   @Override
+  @Deprecated
   public LegacyNumericType getNumericType() {
     return LegacyNumericType.INT;
+  }
+  
+  /**
+   * {@inheritDoc}
+   */
+  @Override
+  public NumberType getNumberType() {
+    return NumberType.INTEGER;
   }
 
   /**

@@ -19,9 +19,9 @@ package org.apache.solr.search.facet;
 import java.util.HashMap;
 import java.util.Map;
 
-import org.apache.lucene.legacy.LegacyNumericType;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.schema.FieldType;
+import org.apache.solr.schema.NumberType;
 import org.apache.solr.schema.SchemaField;
 
 // Any type of facet request that generates a variable number of buckets
@@ -98,7 +98,7 @@ public class FacetField extends FacetRequestSorted {
     FieldType ft = sf.getType();
     boolean multiToken = sf.multiValued() || ft.multiValuedFieldCache();
 
-    LegacyNumericType ntype = ft.getNumericType();
+    NumberType ntype = ft.getNumberType();
     // ensure we can support the requested options for numeric faceting:
     if (ntype != null) {
       if (prefix != null) {

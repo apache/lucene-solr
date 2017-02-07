@@ -96,7 +96,7 @@ public class SearchGroupsFieldCommand implements Command<SearchGroupsFieldComman
     final List<Collector> collectors = new ArrayList<>(2);
     final FieldType fieldType = field.getType();
     if (topNGroups > 0) {
-      if (fieldType.getNumericType() != null) {
+      if (fieldType.getNumberType() != null) {
         ValueSource vs = fieldType.getValueSource(field, null);
         firstPassGroupingCollector = new FunctionFirstPassGroupingCollector(vs, new HashMap<Object,Object>(), groupSort, topNGroups);
       } else {
@@ -105,7 +105,7 @@ public class SearchGroupsFieldCommand implements Command<SearchGroupsFieldComman
       collectors.add(firstPassGroupingCollector);
     }
     if (includeGroupCount) {
-      if (fieldType.getNumericType() != null) {
+      if (fieldType.getNumberType() != null) {
         ValueSource vs = fieldType.getValueSource(field, null);
         allGroupsCollector = new FunctionAllGroupsCollector(vs, new HashMap<Object,Object>());
       } else {
@@ -120,7 +120,7 @@ public class SearchGroupsFieldCommand implements Command<SearchGroupsFieldComman
   public SearchGroupsFieldCommandResult result() throws IOException {
     final Collection<SearchGroup<BytesRef>> topGroups;
     if (firstPassGroupingCollector != null) {
-      if (field.getType().getNumericType() != null) {
+      if (field.getType().getNumberType() != null) {
         topGroups = GroupConverter.fromMutable(field, firstPassGroupingCollector.getTopGroups(0, true));
       } else {
         topGroups = firstPassGroupingCollector.getTopGroups(0, true);

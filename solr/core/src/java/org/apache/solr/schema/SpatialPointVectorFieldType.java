@@ -80,14 +80,20 @@ public class SpatialPointVectorFieldType extends AbstractSpatialFieldType<PointV
   }
 
   @Override
+  @Deprecated
   public LegacyNumericType getNumericType() {
     return LegacyNumericType.DOUBLE;
+  }
+  
+  @Override
+  public NumberType getNumberType() {
+    return NumberType.DOUBLE;
   }
 
   @Override
   protected PointVectorStrategy newSpatialStrategy(String fieldName) {
     // TODO update to how BBoxField does things
-    if (this.getNumericType() != null) {
+    if (this.getNumberType() != null) {
       // create strategy based on legacy numerics
       // todo remove in 7.0
       LegacyFieldType fieldType = new LegacyFieldType(PointVectorStrategy.LEGACY_FIELDTYPE);

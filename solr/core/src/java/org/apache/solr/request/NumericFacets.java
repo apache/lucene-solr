@@ -34,7 +34,6 @@ import org.apache.lucene.index.NumericDocValues;
 import org.apache.lucene.index.ReaderUtil;
 import org.apache.lucene.index.Terms;
 import org.apache.lucene.index.TermsEnum;
-import org.apache.lucene.legacy.LegacyNumericType;
 import org.apache.lucene.queries.function.FunctionValues;
 import org.apache.lucene.queries.function.ValueSource;
 import org.apache.lucene.util.BytesRef;
@@ -44,6 +43,7 @@ import org.apache.lucene.util.StringHelper;
 import org.apache.solr.common.params.FacetParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.schema.FieldType;
+import org.apache.solr.schema.NumberType;
 import org.apache.solr.schema.SchemaField;
 import org.apache.solr.schema.TrieField;
 import org.apache.solr.search.DocIterator;
@@ -133,7 +133,7 @@ final class NumericFacets {
     mincount = Math.max(mincount, 1);
     final SchemaField sf = searcher.getSchema().getField(fieldName);
     final FieldType ft = sf.getType();
-    final LegacyNumericType numericType = ft.getNumericType();
+    final NumberType numericType = ft.getNumberType();
     if (numericType == null) {
       throw new IllegalStateException();
     }
@@ -154,9 +154,9 @@ final class NumericFacets {
         assert doc >= ctx.docBase;
         switch (numericType) {
           case LONG:
-            longs = DocValues.getNumeric(ctx.reader(), fieldName);
-            break;
-          case INT:
+          case DATE:
+          case INTEGER:
+            // Long, Date and Integer
             longs = DocValues.getNumeric(ctx.reader(), fieldName);
             break;
           case FLOAT:
@@ -182,7 +182,7 @@ final class NumericFacets {
             };
             break;
           default:
-            throw new AssertionError();
+            throw new AssertionError("Unexpected type: " + numericType);
         }
       }
       int valuesDocID = longs.docID();

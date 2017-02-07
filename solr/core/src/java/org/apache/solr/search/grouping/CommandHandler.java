@@ -172,7 +172,7 @@ public class CommandHandler {
     FieldType fieldType = sf.getType();
     
     final AllGroupHeadsCollector allGroupHeadsCollector;
-    if (fieldType.getNumericType() != null) {
+    if (fieldType.getNumberType() != null) {
       ValueSource vs = fieldType.getValueSource(sf, null);
       allGroupHeadsCollector = new FunctionAllGroupHeadsCollector(vs, new HashMap(), firstCommand.getSortWithinGroup());
     } else {

@@ -215,7 +215,7 @@ class FacetFieldProcessorByHashDV extends FacetFieldProcessor {
 
   private SimpleOrderedMap<Object> calcFacets() throws IOException {
 
-    if (sf.getType().getNumericType() != null) {
+    if (sf.getType().getNumberType() != null) {
       calc = FacetRangeProcessor.getNumericCalc(sf);
     } else {
       calc = new TermOrdCalc(); // kind of a hack

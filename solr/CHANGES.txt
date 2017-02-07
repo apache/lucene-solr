@@ -87,7 +87,7 @@ Other Changes
 * SOLR-10011: Refactor PointField & TrieField to now have a common base class, NumericFieldType. The
   TrieField.TrieTypes and PointField.PointTypes are now consolidated to NumericFieldType.NumberType. This
   refactoring also fixes a bug whereby PointFields were not using DocValues for range queries for
-  indexed=false, docValues=true fields.
+  indexed=false, docValues=true fields. (Ishan Chattopadhyaya, Tomás Fernández Löbbe)
 
 ==================  6.5.0 ==================
 

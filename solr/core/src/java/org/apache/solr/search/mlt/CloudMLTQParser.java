@@ -190,7 +190,7 @@ public class CloudMLTQParser extends QParser {
   }
 
   private Query createIdQuery(String defaultField, String uniqueValue) {
-    return new TermQuery(req.getSchema().getField(defaultField).getType().getNumericType() != null
+    return new TermQuery(req.getSchema().getField(defaultField).getType().getNumberType() != null
         ? createNumericTerm(defaultField, uniqueValue)
         : new Term(defaultField, uniqueValue));
   }

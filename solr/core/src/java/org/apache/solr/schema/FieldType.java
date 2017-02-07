@@ -616,8 +616,19 @@ public abstract class FieldType extends FieldProperties {
 
 
   /** Return the numeric type of this field, or null if this field is not a
-   *  numeric field. */
+   *  numeric field. 
+   *  @deprecated Please use {@link FieldType#getNumberType()} instead
+   */
+  @Deprecated
   public LegacyNumericType getNumericType() {
+    return null;
+  }
+  
+  /**
+   * Return the numeric type of this field, or null if this field is not a
+   *  numeric field. 
+   */
+  public NumberType getNumberType() {
     return null;
   }
 

@@ -57,7 +57,7 @@ public class HLLAgg extends StrAggValueSource {
         return new UniqueMultivaluedSlotAcc(fcontext, getArg(), numSlots, fcontext.isShard() ? factory : null);
       }
     } else {
-      if (sf.getType().getNumericType() != null) {
+      if (sf.getType().getNumberType() != null) {
         // always use hll here since we don't know how many values there are?
         return new NumericAcc(fcontext, getArg(), numSlots);
       } else {
