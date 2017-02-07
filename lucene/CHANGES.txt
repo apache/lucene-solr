@@ -115,6 +115,9 @@ Bug Fixes
 * LUCENE-7676: Fixed FilterCodecReader to override more super-class methods.
   Also added TestFilterCodecReader class. (Christine Poerschke)
 
+* LUCENE-7679: MemoryIndex was ignoring omitNorms settings on passed-in
+  IndexableFields. (Alan Woodward)
+
 Improvements
 
 * LUCENE-7055: Added Weight#scorerSupplier, which allows to estimate the cost

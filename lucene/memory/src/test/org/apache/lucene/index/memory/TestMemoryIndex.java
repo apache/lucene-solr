@@ -45,6 +45,7 @@ import org.apache.lucene.document.TextField;
 import org.apache.lucene.index.BinaryDocValues;
 import org.apache.lucene.index.DocValuesType;
 import org.apache.lucene.index.FieldInvertState;
+import org.apache.lucene.index.IndexOptions;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexableField;
 import org.apache.lucene.index.LeafReader;
@@ -200,6 +201,21 @@ public class TestMemoryIndex extends LuceneTestCase {
   }
 
   @Test
+  public void testOmitNorms() throws IOException {
+    MemoryIndex mi = new MemoryIndex();
+    FieldType ft = new FieldType();
+    ft.setTokenized(true);
+    ft.setIndexOptions(IndexOptions.DOCS_AND_FREQS);
+    ft.setOmitNorms(true);
+    mi.addField(new Field("f1", "some text in here", ft), analyzer);
+    mi.freeze();
+
+    LeafReader leader = (LeafReader) mi.createSearcher().getIndexReader();
+    NumericDocValues norms = leader.getNormValues("f1");
+    assertNull(norms);
+  }
+
+  @Test
   public void testBuildFromDocument() {
 
     Document doc = new Document();
@@ -276,7 +292,7 @@ public class TestMemoryIndex extends LuceneTestCase {
     try {
       MemoryIndex.fromDocument(doc, analyzer);
     } catch (IllegalArgumentException e) {
-      assertEquals("Can't add [BINARY] doc values field [field], because [NUMERIC] doc values field already exists", e.getMessage());
+      assertEquals("cannot change DocValues type from NUMERIC to BINARY for field \"field\"", e.getMessage());
     }
 
     doc = new Document();

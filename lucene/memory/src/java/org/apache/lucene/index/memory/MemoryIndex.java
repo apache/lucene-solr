@@ -34,6 +34,7 @@ import org.apache.lucene.analysis.tokenattributes.PayloadAttribute;
 import org.apache.lucene.analysis.tokenattributes.PositionIncrementAttribute;
 import org.apache.lucene.analysis.tokenattributes.TermToBytesRefAttribute;
 import org.apache.lucene.document.Document;
+import org.apache.lucene.document.FieldType;
 import org.apache.lucene.index.*;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
@@ -195,6 +196,8 @@ public class MemoryIndex {
 
   private Similarity normSimilarity = IndexSearcher.getDefaultSimilarity();
 
+  private FieldType defaultFieldType = new FieldType();
+
   /**
    * Constructs an empty instance that will not store offsets or payloads.
    */
@@ -236,6 +239,9 @@ public class MemoryIndex {
   MemoryIndex(boolean storeOffsets, boolean storePayloads, long maxReusedBytes) {
     this.storeOffsets = storeOffsets;
     this.storePayloads = storePayloads;
+    this.defaultFieldType.setIndexOptions(storeOffsets ?
+        IndexOptions.DOCS_AND_FREQS_AND_POSITIONS_AND_OFFSETS : IndexOptions.DOCS_AND_FREQS_AND_POSITIONS);
+    this.defaultFieldType.setStoreTermVectors(true);
     this.bytesUsed = Counter.newCounter();
     final int maxBufferedByteBlocks = (int)((maxReusedBytes/2) / ByteBlockPool.BYTE_BLOCK_SIZE );
     final int maxBufferedIntBlocks = (int) ((maxReusedBytes - (maxBufferedByteBlocks*ByteBlockPool.BYTE_BLOCK_SIZE))/(IntBlockPool.INT_BLOCK_SIZE * Integer.BYTES));
@@ -269,8 +275,8 @@ public class MemoryIndex {
       throw new IllegalArgumentException("analyzer must not be null");
     
     TokenStream stream = analyzer.tokenStream(fieldName, text);
-    addField(fieldName, stream, 1.0f, analyzer.getPositionIncrementGap(fieldName), analyzer.getOffsetGap(fieldName),
-        DocValuesType.NONE, null, 0, 0, null);
+    storeTerms(getInfo(fieldName, defaultFieldType), stream, 1.0f,
+        analyzer.getPositionIncrementGap(fieldName), analyzer.getOffsetGap(fieldName));
   }
 
   /**
@@ -385,10 +391,11 @@ public class MemoryIndex {
    * @param field the field to add
    * @param analyzer the analyzer to use for term analysis
    * @param boost a field boost
-   * @throws IllegalArgumentException if the field is a DocValues or Point field, as these
-   *                                  structures are not supported by MemoryIndex
    */
   public void addField(IndexableField field, Analyzer analyzer, float boost) {
+
+    Info info = getInfo(field.name(), field.fieldType());
+
     int offsetGap;
     TokenStream tokenStream;
     int positionIncrementGap;
@@ -400,6 +407,9 @@ public class MemoryIndex {
       offsetGap = 1;
       tokenStream = field.tokenStream(null, null);
       positionIncrementGap = 0;
+    }
+    if (tokenStream != null) {
+      storeTerms(info, tokenStream, boost, positionIncrementGap, offsetGap);
     }
 
     DocValuesType docValuesType = field.fieldType().docValuesType();
@@ -420,12 +430,14 @@ public class MemoryIndex {
       default:
         throw new UnsupportedOperationException("unknown doc values type [" + docValuesType + "]");
     }
-    BytesRef pointValue = null;
-    if (field.fieldType().pointDimensionCount() > 0) {
-      pointValue = field.binaryValue();
+    if (docValuesValue != null) {
+      storeDocValues(info, docValuesType, docValuesValue);
     }
-    addField(field.name(), tokenStream, boost, positionIncrementGap, offsetGap, docValuesType, docValuesValue,
-        field.fieldType().pointDimensionCount(), field.fieldType().pointNumBytes(), pointValue);
+
+    if (field.fieldType().pointDimensionCount() > 0) {
+      storePointValues(info, field.binaryValue());
+    }
+
   }
   
   /**
@@ -494,42 +506,40 @@ public class MemoryIndex {
    * @see org.apache.lucene.document.Field#setBoost(float)
    */
   public void addField(String fieldName, TokenStream tokenStream, float boost, int positionIncrementGap, int offsetGap) {
-    addField(fieldName, tokenStream, boost, positionIncrementGap, offsetGap, DocValuesType.NONE, null, 0, 0, null);
+    Info info = getInfo(fieldName, defaultFieldType);
+    storeTerms(info, tokenStream, boost, positionIncrementGap, offsetGap);
   }
 
-  private void addField(String fieldName, TokenStream tokenStream, float boost, int positionIncrementGap, int offsetGap,
-                        DocValuesType docValuesType, Object docValuesValue, int pointDimensionCount, int pointNumBytes,
-                        BytesRef pointValue) {
-
+  private Info getInfo(String fieldName, IndexableFieldType fieldType) {
     if (frozen) {
       throw new IllegalArgumentException("Cannot call addField() when MemoryIndex is frozen");
     }
     if (fieldName == null) {
       throw new IllegalArgumentException("fieldName must not be null");
     }
-    if (boost <= 0.0f) {
-      throw new IllegalArgumentException("boost factor must be greater than 0.0");
-    }
-
     Info info = fields.get(fieldName);
     if (info == null) {
-      IndexOptions indexOptions = storeOffsets ? IndexOptions.DOCS_AND_FREQS_AND_POSITIONS_AND_OFFSETS : IndexOptions.DOCS_AND_FREQS_AND_POSITIONS;
-      FieldInfo fieldInfo = new FieldInfo(fieldName, fields.size(), true, false, storePayloads, indexOptions, docValuesType, -1, Collections.emptyMap(), 0, 0);
-      fields.put(fieldName, info = new Info(fieldInfo, byteBlockPool));
+      fields.put(fieldName, info = new Info(createFieldInfo(fieldName, fields.size(), fieldType), byteBlockPool));
     }
-    if (pointDimensionCount > 0) {
-      storePointValues(info, pointDimensionCount, pointNumBytes, pointValue);
+    if (fieldType.pointDimensionCount() != info.fieldInfo.getPointDimensionCount()) {
+      if (fieldType.pointDimensionCount() > 0)
+        info.fieldInfo.setPointDimensions(fieldType.pointDimensionCount(), fieldType.pointNumBytes());
     }
-    if (docValuesType != DocValuesType.NONE) {
-      storeDocValues(info, docValuesType, docValuesValue);
+    if (fieldType.docValuesType() != info.fieldInfo.getDocValuesType()) {
+      if (fieldType.docValuesType() != DocValuesType.NONE)
+        info.fieldInfo.setDocValuesType(fieldType.docValuesType());
     }
-    if (tokenStream != null) {
-      storeTerms(info, tokenStream, boost, positionIncrementGap, offsetGap);
-    }
+    return info;
   }
 
-  private void storePointValues(Info info, int pointDimensionCount, int pointNumBytes, BytesRef pointValue) {
-    info.fieldInfo.setPointDimensions(pointDimensionCount, pointNumBytes);
+  private FieldInfo createFieldInfo(String fieldName, int ord, IndexableFieldType fieldType) {
+    IndexOptions indexOptions = storeOffsets ? IndexOptions.DOCS_AND_FREQS_AND_POSITIONS_AND_OFFSETS : IndexOptions.DOCS_AND_FREQS_AND_POSITIONS;
+    return new FieldInfo(fieldName, ord, fieldType.storeTermVectors(), fieldType.omitNorms(), storePayloads,
+        indexOptions, fieldType.docValuesType(), -1, Collections.emptyMap(),
+        fieldType.pointDimensionCount(), fieldType.pointNumBytes());
+  }
+
+  private void storePointValues(Info info, BytesRef pointValue) {
     if (info.pointValues == null) {
       info.pointValues = new BytesRef[4];
     }
@@ -591,6 +601,11 @@ public class MemoryIndex {
   }
 
   private void storeTerms(Info info, TokenStream tokenStream, float boost, int positionIncrementGap, int offsetGap) {
+
+    if (boost <= 0.0f) {
+      throw new IllegalArgumentException("boost factor must be greater than 0.0");
+    }
+
     int pos = -1;
     int offset = 0;
     if (info.numTokens == 0) {
@@ -1598,7 +1613,7 @@ public class MemoryIndex {
     @Override
     public NumericDocValues getNormValues(String field) {
       Info info = fields.get(field);
-      if (info == null) {
+      if (info == null || info.fieldInfo.omitsNorms()) {
         return null;
       }
       return info.getNormDocValues();
