@@ -16,13 +16,14 @@
  */
 package org.apache.lucene.util.graph;
 
-import java.util.List;
+import java.util.Iterator;
 
 import org.apache.lucene.analysis.CannedTokenStream;
 import org.apache.lucene.analysis.Token;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.tokenattributes.BytesTermAttribute;
 import org.apache.lucene.analysis.tokenattributes.PositionIncrementAttribute;
+import org.apache.lucene.index.Term;
 import org.apache.lucene.util.LuceneTestCase;
 
 /**
@@ -65,8 +66,17 @@ public class TestGraphTokenStreamFiniteStrings extends LuceneTestCase {
           token("b", 1, 1)
       );
 
-      GraphTokenStreamFiniteStrings.getTokenStreams(ts);
+      new GraphTokenStreamFiniteStrings(ts).getFiniteStrings();
     });
+  }
+
+  public void testEmpty() throws Exception {
+    TokenStream ts = new CannedTokenStream(
+    );
+    GraphTokenStreamFiniteStrings graph = new GraphTokenStreamFiniteStrings(ts);
+    Iterator<TokenStream> it = graph.getFiniteStrings();
+    assertFalse(it.hasNext());
+    assertArrayEquals(new int[0], graph.articulationPoints());
   }
 
   public void testSingleGraph() throws Exception {
@@ -78,11 +88,41 @@ public class TestGraphTokenStreamFiniteStrings extends LuceneTestCase {
         token("network", 1, 1)
     );
 
-    List<TokenStream> finiteTokenStreams = GraphTokenStreamFiniteStrings.getTokenStreams(ts);
+    GraphTokenStreamFiniteStrings graph = new GraphTokenStreamFiniteStrings(ts);
 
-    assertEquals(2, finiteTokenStreams.size());
-    assertTokenStream(finiteTokenStreams.get(0), new String[]{"fast", "wi", "fi", "network"}, new int[]{1, 1, 1, 1});
-    assertTokenStream(finiteTokenStreams.get(1), new String[]{"fast", "wifi", "network"}, new int[]{1, 1, 1});
+    Iterator<TokenStream> it = graph.getFiniteStrings();
+    assertTrue(it.hasNext());
+    assertTokenStream(it.next(), new String[]{"fast", "wi", "fi", "network"}, new int[]{1, 1, 1, 1});
+    assertTrue(it.hasNext());
+    assertTokenStream(it.next(), new String[]{"fast", "wifi", "network"}, new int[]{1, 1, 1});
+    assertFalse(it.hasNext());
+
+    int[] points = graph.articulationPoints();
+    assertArrayEquals(points, new int[] {1, 3});
+
+    assertFalse(graph.hasSidePath(0));
+    it = graph.getFiniteStrings(0, 1);
+    assertTrue(it.hasNext());
+    assertTokenStream(it.next(), new String[]{"fast"}, new int[] {1});
+    assertFalse(it.hasNext());
+    Term[] terms = graph.getTerms("field", 0);
+    assertArrayEquals(terms, new Term[] {new Term("field", "fast")});
+
+    assertTrue(graph.hasSidePath(1));
+    it = graph.getFiniteStrings(1, 3);
+    assertTrue(it.hasNext());
+    assertTokenStream(it.next(), new String[]{"wi", "fi"}, new int[]{1, 1});
+    assertTrue(it.hasNext());
+    assertTokenStream(it.next(), new String[]{"wifi"}, new int[]{1});
+    assertFalse(it.hasNext());
+
+    assertFalse(graph.hasSidePath(3));
+    it = graph.getFiniteStrings(3, -1);
+    assertTrue(it.hasNext());
+    assertTokenStream(it.next(), new String[]{"network"}, new int[] {1});
+    assertFalse(it.hasNext());
+    terms = graph.getTerms("field", 3);
+    assertArrayEquals(terms, new Term[] {new Term("field", "network")});
   }
 
   public void testSingleGraphWithGap() throws Exception {
@@ -96,13 +136,51 @@ public class TestGraphTokenStreamFiniteStrings extends LuceneTestCase {
         token("network", 1, 1)
     );
 
-    List<TokenStream> finiteTokenStreams = GraphTokenStreamFiniteStrings.getTokenStreams(ts);
+    GraphTokenStreamFiniteStrings graph = new GraphTokenStreamFiniteStrings(ts);
 
-    assertEquals(2, finiteTokenStreams.size());
-    assertTokenStream(finiteTokenStreams.get(0),
+    Iterator<TokenStream> it = graph.getFiniteStrings();
+    assertTrue(it.hasNext());
+    assertTokenStream(it.next(),
         new String[]{"hey", "fast", "wi", "fi", "network"}, new int[]{1, 2, 1, 1, 1});
-    assertTokenStream(finiteTokenStreams.get(1),
+    assertTrue(it.hasNext());
+    assertTokenStream(it.next(),
         new String[]{"hey", "fast", "wifi", "network"}, new int[]{1, 2, 1, 1});
+    assertFalse(it.hasNext());
+
+    int[] points = graph.articulationPoints();
+    assertArrayEquals(points, new int[] {1, 2, 4});
+
+    assertFalse(graph.hasSidePath(0));
+    it = graph.getFiniteStrings(0, 1);
+    assertTrue(it.hasNext());
+    assertTokenStream(it.next(), new String[]{"hey"}, new int[] {1});
+    assertFalse(it.hasNext());
+    Term[] terms = graph.getTerms("field", 0);
+    assertArrayEquals(terms, new Term[] {new Term("field", "hey")});
+
+    assertFalse(graph.hasSidePath(1));
+    it = graph.getFiniteStrings(1, 2);
+    assertTrue(it.hasNext());
+    assertTokenStream(it.next(), new String[]{"fast"}, new int[] {2});
+    assertFalse(it.hasNext());
+    terms = graph.getTerms("field", 1);
+    assertArrayEquals(terms, new Term[] {new Term("field", "fast")});
+
+    assertTrue(graph.hasSidePath(2));
+    it = graph.getFiniteStrings(2, 4);
+    assertTrue(it.hasNext());
+    assertTokenStream(it.next(), new String[]{"wi", "fi"}, new int[]{1, 1});
+    assertTrue(it.hasNext());
+    assertTokenStream(it.next(), new String[]{"wifi"}, new int[]{1});
+    assertFalse(it.hasNext());
+
+    assertFalse(graph.hasSidePath(4));
+    it = graph.getFiniteStrings(4, -1);
+    assertTrue(it.hasNext());
+    assertTokenStream(it.next(), new String[]{"network"}, new int[] {1});
+    assertFalse(it.hasNext());
+    terms = graph.getTerms("field", 4);
+    assertArrayEquals(terms, new Term[] {new Term("field", "network")});
   }
 
 
@@ -115,11 +193,41 @@ public class TestGraphTokenStreamFiniteStrings extends LuceneTestCase {
         token("network", 1, 1)
     );
 
-    List<TokenStream> finiteTokenStreams = GraphTokenStreamFiniteStrings.getTokenStreams(ts);
+    GraphTokenStreamFiniteStrings graph = new GraphTokenStreamFiniteStrings(ts);
 
-    assertEquals(2, finiteTokenStreams.size());
-    assertTokenStream(finiteTokenStreams.get(0), new String[]{"fast", "wi", "fi", "network"}, new int[]{1, 2, 1, 1});
-    assertTokenStream(finiteTokenStreams.get(1), new String[]{"fast", "wifi", "network"}, new int[]{1, 2, 1});
+    Iterator<TokenStream> it = graph.getFiniteStrings();
+    assertTrue(it.hasNext());
+    assertTokenStream(it.next(), new String[]{"fast", "wi", "fi", "network"}, new int[]{1, 2, 1, 1});
+    assertTrue(it.hasNext());
+    assertTokenStream(it.next(), new String[]{"fast", "wifi", "network"}, new int[]{1, 2, 1});
+    assertFalse(it.hasNext());
+
+    int[] points = graph.articulationPoints();
+    assertArrayEquals(points, new int[] {1, 3});
+
+    assertFalse(graph.hasSidePath(0));
+    it = graph.getFiniteStrings(0, 1);
+    assertTrue(it.hasNext());
+    assertTokenStream(it.next(), new String[]{"fast"}, new int[] {1});
+    assertFalse(it.hasNext());
+    Term[] terms = graph.getTerms("field", 0);
+    assertArrayEquals(terms, new Term[] {new Term("field", "fast")});
+
+    assertTrue(graph.hasSidePath(1));
+    it = graph.getFiniteStrings(1, 3);
+    assertTrue(it.hasNext());
+    assertTokenStream(it.next(), new String[]{"wi", "fi"}, new int[]{2, 1});
+    assertTrue(it.hasNext());
+    assertTokenStream(it.next(), new String[]{"wifi"}, new int[]{2});
+    assertFalse(it.hasNext());
+
+    assertFalse(graph.hasSidePath(3));
+    it = graph.getFiniteStrings(3, -1);
+    assertTrue(it.hasNext());
+    assertTokenStream(it.next(), new String[]{"network"}, new int[] {1});
+    assertFalse(it.hasNext());
+    terms = graph.getTerms("field", 3);
+    assertArrayEquals(terms, new Term[] {new Term("field", "network")});
   }
 
   public void testGraphAndGapSameTokenTerm() throws Exception {
@@ -131,11 +239,41 @@ public class TestGraphTokenStreamFiniteStrings extends LuceneTestCase {
         token("d", 1, 1)
     );
 
-    List<TokenStream> finiteTokenStreams = GraphTokenStreamFiniteStrings.getTokenStreams(ts);
+    GraphTokenStreamFiniteStrings graph = new GraphTokenStreamFiniteStrings(ts);
 
-    assertEquals(2, finiteTokenStreams.size());
-    assertTokenStream(finiteTokenStreams.get(0), new String[]{"a", "b", "c", "d"}, new int[]{1, 1, 2, 1});
-    assertTokenStream(finiteTokenStreams.get(1), new String[]{"a", "b", "a"}, new int[]{1, 1, 2});
+    Iterator<TokenStream> it = graph.getFiniteStrings();
+    assertTrue(it.hasNext());
+    assertTokenStream(it.next(), new String[]{"a", "b", "c", "d"}, new int[]{1, 1, 2, 1});
+    assertTrue(it.hasNext());
+    assertTokenStream(it.next(), new String[]{"a", "b", "a"}, new int[]{1, 1, 2});
+    assertFalse(it.hasNext());
+
+    int[] points = graph.articulationPoints();
+    assertArrayEquals(points, new int[] {1, 2});
+
+    assertFalse(graph.hasSidePath(0));
+    it = graph.getFiniteStrings(0, 1);
+    assertTrue(it.hasNext());
+    assertTokenStream(it.next(), new String[]{"a"}, new int[] {1});
+    assertFalse(it.hasNext());
+    Term[] terms = graph.getTerms("field", 0);
+    assertArrayEquals(terms, new Term[] {new Term("field", "a")});
+
+    assertFalse(graph.hasSidePath(1));
+    it = graph.getFiniteStrings(1, 2);
+    assertTrue(it.hasNext());
+    assertTokenStream(it.next(), new String[]{"b"}, new int[] {1});
+    assertFalse(it.hasNext());
+    terms = graph.getTerms("field", 1);
+    assertArrayEquals(terms, new Term[] {new Term("field", "b")});
+
+    assertTrue(graph.hasSidePath(2));
+    it = graph.getFiniteStrings(2, -1);
+    assertTrue(it.hasNext());
+    assertTokenStream(it.next(), new String[]{"c", "d"}, new int[] {2, 1});
+    assertTrue(it.hasNext());
+    assertTokenStream(it.next(), new String[]{"a"}, new int[] {2});
+    assertFalse(it.hasNext());
   }
 
   public void testStackedGraph() throws Exception {
@@ -148,12 +286,45 @@ public class TestGraphTokenStreamFiniteStrings extends LuceneTestCase {
         token("network", 1, 1)
     );
 
-    List<TokenStream> finiteTokenStreams = GraphTokenStreamFiniteStrings.getTokenStreams(ts);
+    GraphTokenStreamFiniteStrings graph = new GraphTokenStreamFiniteStrings(ts);
 
-    assertEquals(3, finiteTokenStreams.size());
-    assertTokenStream(finiteTokenStreams.get(0), new String[]{"fast", "wi", "fi", "network"}, new int[]{1, 1, 1, 1});
-    assertTokenStream(finiteTokenStreams.get(1), new String[]{"fast", "wifi", "network"}, new int[]{1, 1, 1});
-    assertTokenStream(finiteTokenStreams.get(2), new String[]{"fast", "wireless", "network"}, new int[]{1, 1, 1});
+    Iterator<TokenStream> it = graph.getFiniteStrings();
+    assertTrue(it.hasNext());
+    assertTokenStream(it.next(), new String[]{"fast", "wi", "fi", "network"}, new int[]{1, 1, 1, 1});
+    assertTrue(it.hasNext());
+    assertTokenStream(it.next(), new String[]{"fast", "wifi", "network"}, new int[]{1, 1, 1});
+    assertTrue(it.hasNext());
+    assertTokenStream(it.next(), new String[]{"fast", "wireless", "network"}, new int[]{1, 1, 1});
+    assertFalse(it.hasNext());
+
+    int[] points = graph.articulationPoints();
+    assertArrayEquals(points, new int[] {1, 3});
+
+    assertFalse(graph.hasSidePath(0));
+    it = graph.getFiniteStrings(0, 1);
+    assertTrue(it.hasNext());
+    assertTokenStream(it.next(), new String[]{"fast"}, new int[] {1});
+    assertFalse(it.hasNext());
+    Term[] terms = graph.getTerms("field", 0);
+    assertArrayEquals(terms, new Term[] {new Term("field", "fast")});
+
+    assertTrue(graph.hasSidePath(1));
+    it = graph.getFiniteStrings(1, 3);
+    assertTrue(it.hasNext());
+    assertTokenStream(it.next(), new String[]{"wi", "fi"}, new int[]{1, 1});
+    assertTrue(it.hasNext());
+    assertTokenStream(it.next(), new String[]{"wifi"}, new int[]{1});
+    assertTrue(it.hasNext());
+    assertTokenStream(it.next(), new String[]{"wireless"}, new int[]{1});
+    assertFalse(it.hasNext());
+
+    assertFalse(graph.hasSidePath(3));
+    it = graph.getFiniteStrings(3, -1);
+    assertTrue(it.hasNext());
+    assertTokenStream(it.next(), new String[]{"network"}, new int[] {1});
+    assertFalse(it.hasNext());
+    terms = graph.getTerms("field", 3);
+    assertArrayEquals(terms, new Term[] {new Term("field", "network")});
   }
 
   public void testStackedGraphWithGap() throws Exception {
@@ -166,12 +337,45 @@ public class TestGraphTokenStreamFiniteStrings extends LuceneTestCase {
         token("network", 1, 1)
     );
 
-    List<TokenStream> finiteTokenStreams = GraphTokenStreamFiniteStrings.getTokenStreams(ts);
+    GraphTokenStreamFiniteStrings graph = new GraphTokenStreamFiniteStrings(ts);
 
-    assertEquals(3, finiteTokenStreams.size());
-    assertTokenStream(finiteTokenStreams.get(0), new String[]{"fast", "wi", "fi", "network"}, new int[]{1, 2, 1, 1});
-    assertTokenStream(finiteTokenStreams.get(1), new String[]{"fast", "wifi", "network"}, new int[]{1, 2, 1});
-    assertTokenStream(finiteTokenStreams.get(2), new String[]{"fast", "wireless", "network"}, new int[]{1, 2, 1});
+    Iterator<TokenStream> it = graph.getFiniteStrings();
+    assertTrue(it.hasNext());
+    assertTokenStream(it.next(), new String[]{"fast", "wi", "fi", "network"}, new int[]{1, 2, 1, 1});
+    assertTrue(it.hasNext());
+    assertTokenStream(it.next(), new String[]{"fast", "wifi", "network"}, new int[]{1, 2, 1});
+    assertTrue(it.hasNext());
+    assertTokenStream(it.next(), new String[]{"fast", "wireless", "network"}, new int[]{1, 2, 1});
+    assertFalse(it.hasNext());
+
+    int[] points = graph.articulationPoints();
+    assertArrayEquals(points, new int[] {1, 3});
+
+    assertFalse(graph.hasSidePath(0));
+    it = graph.getFiniteStrings(0, 1);
+    assertTrue(it.hasNext());
+    assertTokenStream(it.next(), new String[]{"fast"}, new int[] {1});
+    assertFalse(it.hasNext());
+    Term[] terms = graph.getTerms("field", 0);
+    assertArrayEquals(terms, new Term[] {new Term("field", "fast")});
+
+    assertTrue(graph.hasSidePath(1));
+    it = graph.getFiniteStrings(1, 3);
+    assertTrue(it.hasNext());
+    assertTokenStream(it.next(), new String[]{"wi", "fi"}, new int[]{2, 1});
+    assertTrue(it.hasNext());
+    assertTokenStream(it.next(), new String[]{"wifi"}, new int[]{2});
+    assertTrue(it.hasNext());
+    assertTokenStream(it.next(), new String[]{"wireless"}, new int[]{2});
+    assertFalse(it.hasNext());
+
+    assertFalse(graph.hasSidePath(3));
+    it = graph.getFiniteStrings(3, -1);
+    assertTrue(it.hasNext());
+    assertTokenStream(it.next(), new String[]{"network"}, new int[] {1});
+    assertFalse(it.hasNext());
+    terms = graph.getTerms("field", 3);
+    assertArrayEquals(terms, new Term[] {new Term("field", "network")});
   }
 
   public void testGraphWithRegularSynonym() throws Exception {
@@ -184,13 +388,47 @@ public class TestGraphTokenStreamFiniteStrings extends LuceneTestCase {
         token("network", 1, 1)
     );
 
-    List<TokenStream> finiteTokenStreams = GraphTokenStreamFiniteStrings.getTokenStreams(ts);
+    GraphTokenStreamFiniteStrings graph = new GraphTokenStreamFiniteStrings(ts);
 
-    assertEquals(4, finiteTokenStreams.size());
-    assertTokenStream(finiteTokenStreams.get(0), new String[]{"fast", "wi", "fi", "network"}, new int[]{1, 1, 1, 1});
-    assertTokenStream(finiteTokenStreams.get(1), new String[]{"fast", "wifi", "network"}, new int[]{1, 1, 1});
-    assertTokenStream(finiteTokenStreams.get(2), new String[]{"speedy", "wi", "fi", "network"}, new int[]{1, 1, 1, 1});
-    assertTokenStream(finiteTokenStreams.get(3), new String[]{"speedy", "wifi", "network"}, new int[]{1, 1, 1});
+    Iterator<TokenStream> it = graph.getFiniteStrings();
+    assertTrue(it.hasNext());
+    assertTokenStream(it.next(), new String[]{"fast", "wi", "fi", "network"}, new int[]{1, 1, 1, 1});
+    assertTrue(it.hasNext());
+    assertTokenStream(it.next(), new String[]{"fast", "wifi", "network"}, new int[]{1, 1, 1});
+    assertTrue(it.hasNext());
+    assertTokenStream(it.next(), new String[]{"speedy", "wi", "fi", "network"}, new int[]{1, 1, 1, 1});
+    assertTrue(it.hasNext());
+    assertTokenStream(it.next(), new String[]{"speedy", "wifi", "network"}, new int[]{1, 1, 1});
+    assertFalse(it.hasNext());
+
+    int[] points = graph.articulationPoints();
+    assertArrayEquals(points, new int[] {1, 3});
+
+    assertFalse(graph.hasSidePath(0));
+    it = graph.getFiniteStrings(0, 1);
+    assertTrue(it.hasNext());
+    assertTokenStream(it.next(), new String[]{"fast"}, new int[] {1});
+    assertTrue(it.hasNext());
+    assertTokenStream(it.next(), new String[]{"speedy"}, new int[] {1});
+    assertFalse(it.hasNext());
+    Term[] terms = graph.getTerms("field", 0);
+    assertArrayEquals(terms, new Term[] {new Term("field", "fast"), new Term("field", "speedy")});
+
+    assertTrue(graph.hasSidePath(1));
+    it = graph.getFiniteStrings(1, 3);
+    assertTrue(it.hasNext());
+    assertTokenStream(it.next(), new String[]{"wi", "fi"}, new int[]{1, 1});
+    assertTrue(it.hasNext());
+    assertTokenStream(it.next(), new String[]{"wifi"}, new int[]{1});
+    assertFalse(it.hasNext());
+
+    assertFalse(graph.hasSidePath(3));
+    it = graph.getFiniteStrings(3, -1);
+    assertTrue(it.hasNext());
+    assertTokenStream(it.next(), new String[]{"network"}, new int[] {1});
+    assertFalse(it.hasNext());
+    terms = graph.getTerms("field", 3);
+    assertArrayEquals(terms, new Term[] {new Term("field", "network")});
   }
 
   public void testMultiGraph() throws Exception {
@@ -204,14 +442,105 @@ public class TestGraphTokenStreamFiniteStrings extends LuceneTestCase {
         token("network", 1, 1)
     );
 
-    List<TokenStream> finiteTokenStreams = GraphTokenStreamFiniteStrings.getTokenStreams(ts);
+    GraphTokenStreamFiniteStrings graph = new GraphTokenStreamFiniteStrings(ts);
 
-    assertEquals(4, finiteTokenStreams.size());
-    assertTokenStream(finiteTokenStreams.get(0),
+    Iterator<TokenStream> it = graph.getFiniteStrings();
+    assertTrue(it.hasNext());
+    assertTokenStream(it.next(),
         new String[]{"turbo", "charged", "wi", "fi", "network"}, new int[]{1, 1, 1, 1, 1});
-    assertTokenStream(finiteTokenStreams.get(1),
+    assertTrue(it.hasNext());
+    assertTokenStream(it.next(),
         new String[]{"turbo", "charged", "wifi", "network"}, new int[]{1, 1, 1, 1});
-    assertTokenStream(finiteTokenStreams.get(2), new String[]{"fast", "wi", "fi", "network"}, new int[]{1, 1, 1, 1});
-    assertTokenStream(finiteTokenStreams.get(3), new String[]{"fast", "wifi", "network"}, new int[]{1, 1, 1});
+    assertTrue(it.hasNext());
+    assertTokenStream(it.next(), new String[]{"fast", "wi", "fi", "network"}, new int[]{1, 1, 1, 1});
+    assertTrue(it.hasNext());
+    assertTokenStream(it.next(), new String[]{"fast", "wifi", "network"}, new int[]{1, 1, 1});
+    assertFalse(it.hasNext());
+
+    int[] points = graph.articulationPoints();
+    assertArrayEquals(points, new int[] {2, 4});
+
+    assertTrue(graph.hasSidePath(0));
+    it = graph.getFiniteStrings(0, 2);
+    assertTrue(it.hasNext());
+    assertTokenStream(it.next(), new String[]{"turbo", "charged"}, new int[]{1, 1});
+    assertTrue(it.hasNext());
+    assertTokenStream(it.next(), new String[]{"fast"}, new int[]{1});
+    assertFalse(it.hasNext());
+
+    assertTrue(graph.hasSidePath(2));
+    it = graph.getFiniteStrings(2, 4);
+    assertTrue(it.hasNext());
+    assertTokenStream(it.next(), new String[]{"wi", "fi"}, new int[]{1, 1});
+    assertTrue(it.hasNext());
+    assertTokenStream(it.next(), new String[]{"wifi"}, new int[]{1});
+    assertFalse(it.hasNext());
+
+    assertFalse(graph.hasSidePath(4));
+    it = graph.getFiniteStrings(4, -1);
+    assertTrue(it.hasNext());
+    assertTokenStream(it.next(), new String[]{"network"}, new int[] {1});
+    assertFalse(it.hasNext());
+    Term[] terms = graph.getTerms("field", 4);
+    assertArrayEquals(terms, new Term[] {new Term("field", "network")});
+  }
+
+  public void testMultipleSidePaths() throws Exception {
+    TokenStream ts = new CannedTokenStream(
+        token("the", 1, 1),
+        token("ny", 1, 4),
+        token("new", 0, 1),
+        token("york", 1, 1),
+        token("wifi", 1, 4),
+        token("wi", 0, 1),
+        token("fi", 1, 3),
+        token("wifi", 2, 2),
+        token("wi", 0, 1),
+        token("fi", 1, 1),
+        token("network", 1, 1)
+    );
+    GraphTokenStreamFiniteStrings graph = new GraphTokenStreamFiniteStrings(ts);
+
+    Iterator<TokenStream> it = graph.getFiniteStrings();
+    assertTrue(it.hasNext());
+    assertTokenStream(it.next(), new String[]{"the", "ny", "wifi", "network"}, new int[]{1, 1, 2, 1});
+    assertTrue(it.hasNext());
+    assertTokenStream(it.next(), new String[]{"the", "ny", "wi", "fi", "network"}, new int[]{1, 1, 2, 1, 1});
+    assertTrue(it.hasNext());
+    assertTokenStream(it.next(), new String[]{"the", "new", "york", "wifi", "network"}, new int[]{1, 1, 1, 1, 1});
+    assertTrue(it.hasNext());
+    assertTokenStream(it.next(), new String[]{"the", "new", "york", "wi", "fi", "network"}, new int[]{1, 1, 1, 1, 1, 1});
+    assertFalse(it.hasNext());
+
+    int[] points = graph.articulationPoints();
+    assertArrayEquals(points, new int[] {1, 7});
+
+    assertFalse(graph.hasSidePath(0));
+    it = graph.getFiniteStrings(0, 1);
+    assertTrue(it.hasNext());
+    assertTokenStream(it.next(), new String[]{"the"}, new int[]{1});
+    assertFalse(it.hasNext());
+    Term[] terms = graph.getTerms("field", 0);
+    assertArrayEquals(terms, new Term[] {new Term("field", "the")});
+
+    assertTrue(graph.hasSidePath(1));
+    it = graph.getFiniteStrings(1, 7);
+    assertTrue(it.hasNext());
+    assertTokenStream(it.next(), new String[]{"ny", "wifi"}, new int[]{1, 2});
+    assertTrue(it.hasNext());
+    assertTokenStream(it.next(), new String[]{"ny", "wi", "fi"}, new int[]{1, 2, 1});
+    assertTrue(it.hasNext());
+    assertTokenStream(it.next(), new String[]{"new", "york", "wifi"}, new int[]{1, 1, 1});
+    assertTrue(it.hasNext());
+    assertTokenStream(it.next(), new String[]{"new", "york", "wi", "fi"}, new int[]{1, 1, 1, 1});
+    assertFalse(it.hasNext());
+
+    assertFalse(graph.hasSidePath(7));
+    it = graph.getFiniteStrings(7, -1);
+    assertTrue(it.hasNext());
+    assertTokenStream(it.next(), new String[]{"network"}, new int[]{1});
+    assertFalse(it.hasNext());
+    terms = graph.getTerms("field", 7);
+    assertArrayEquals(terms, new Term[] {new Term("field", "network")});
   }
 }
