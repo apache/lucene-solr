@@ -232,12 +232,39 @@ else
 fi
 
 # Authentication options
+if [ -z "$SOLR_AUTH_TYPE" ] && [ -n "$SOLR_AUTHENTICATION_OPTS" ]; then
+  echo "WARNING: SOLR_AUTHENTICATION_OPTS environment variable configured without associated SOLR_AUTH_TYPE variable"
+  echo "         Please configure SOLR_AUTH_TYPE environment variable with the authentication type to be used."
+  echo "         Currently supported authentication types are [kerberos, basic]"
+fi
+
+if [ -n "$SOLR_AUTH_TYPE" ] && [ -n "$SOLR_AUTHENTICATION_CLIENT_BUILDER" ]; then
+  echo "WARNING: SOLR_AUTHENTICATION_CLIENT_BUILDER and SOLR_AUTH_TYPE environment variables are configured together."
+  echo "         Use SOLR_AUTH_TYPE environment variable to configure authentication type to be used. "
+  echo "         Currently supported authentication types are [kerberos, basic]"
+  echo "         The value of SOLR_AUTHENTICATION_CLIENT_BUILDER environment variable will be ignored"
+fi
+
+if [ -n "$SOLR_AUTH_TYPE" ]; then
+  case "$(echo $SOLR_AUTH_TYPE | awk '{print tolower($0)}')" in
+    basic)
+      SOLR_AUTHENTICATION_CLIENT_BUILDER="org.apache.solr.client.solrj.impl.PreemptiveBasicAuthClientBuilderFactory"
+      ;;
+    kerberos)
+      SOLR_AUTHENTICATION_CLIENT_BUILDER="org.apache.solr.client.solrj.impl.Krb5HttpClientBuilder"
+      ;;
+    *)
+      echo "ERROR: Value specified for SOLR_AUTH_TYPE environment variable is invalid."
+      exit 1
+   esac
+fi
+
 if [ "$SOLR_AUTHENTICATION_CLIENT_CONFIGURER" != "" ]; then
   echo "WARNING: Found unsupported configuration variable SOLR_AUTHENTICATION_CLIENT_CONFIGURER"
-  echo "         Please start using SOLR_AUTHENTICATION_CLIENT_BUILDER instead"
+  echo "         Please start using SOLR_AUTH_TYPE instead"
 fi
 if [ "$SOLR_AUTHENTICATION_CLIENT_BUILDER" != "" ]; then
-  AUTHC_CLIENT_BUILDER_ARG="-Dsolr.authentication.httpclient.builder=$SOLR_AUTHENTICATION_CLIENT_BUILDER"
+  AUTHC_CLIENT_BUILDER_ARG="-Dsolr.httpclient.builder.factory=$SOLR_AUTHENTICATION_CLIENT_BUILDER"
 fi
 AUTHC_OPTS="$AUTHC_CLIENT_BUILDER_ARG $SOLR_AUTHENTICATION_OPTS"
 

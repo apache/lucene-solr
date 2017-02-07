@@ -120,7 +120,9 @@
 #SOLR_SSL_CLIENT_TRUST_STORE_TYPE=
 
 # Settings for authentication
-#SOLR_AUTHENTICATION_CLIENT_BUILDER=
+# Please configure only one of SOLR_AUTHENTICATION_CLIENT_BUILDER or SOLR_AUTH_TYPE parameters
+#SOLR_AUTHENTICATION_CLIENT_BUILDER="org.apache.solr.client.solrj.impl.PreemptiveBasicAuthClientBuilderFactory"
+#SOLR_AUTH_TYPE="basic"
 #SOLR_AUTHENTICATION_OPTS="-Dbasicauth=solr:SolrRocks"
 
 # Settings for ZK ACL

@@ -128,6 +128,7 @@ New Features
 
 * SOLR-10087: StreamHandler now supports registering custom streaming expressions from the blob store (Kevin Risden)
 
+* SOLR-9997: Enable configuring SolrHttpClientBuilder via java system property. (Hrishikesh Gadre via Mark Miller)
 
 Bug Fixes
 ----------------------
