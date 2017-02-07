@@ -799,16 +799,8 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
 
       if (cmd.isInPlaceUpdate()) {
         params.set(DISTRIB_INPLACE_PREVVERSION, String.valueOf(cmd.prevVersion));
-        // Use synchronous=true so that a new connection is used, instead
-        // of the update being streamed through an existing streaming client.
-        // When using a streaming client, the previous update
-        // and the current in-place update (that depends on the previous update), if reordered
-        // in the stream, can result in the current update being bottled up behind the previous
-        // update in the stream and can lead to degraded performance.
-        cmdDistrib.distribAdd(cmd, nodes, params, true, replicationTracker);
-      } else {
-        cmdDistrib.distribAdd(cmd, nodes, params, false, replicationTracker);
       }
+      cmdDistrib.distribAdd(cmd, nodes, params, false, replicationTracker);
     }
     
     // TODO: what to do when no idField?
