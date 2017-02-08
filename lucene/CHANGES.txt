@@ -11,6 +11,8 @@ Bug Fixes
   token graph, messing up phrase queries when it was used during query
   parsing (Ere Maijala via Mike McCandless)
 
+* LUCENE-7676: Fixed FilterCodecReader to override more super-class methods.
+  Also added TestFilterCodecReader class. (Christine Poerschke)
 
 ======================= Lucene 6.4.1 =======================
 
