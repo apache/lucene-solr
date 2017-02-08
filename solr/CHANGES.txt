@@ -40,6 +40,8 @@ Bug Fixes
 
 * SOLR-10138: Transaction log replay can hit an NPE due to new Metrics code. (ab)
 
+* SOLR-10083: Fix instanceof check in ConstDoubleSource.equals (Pushkar Raste via Christine Poerschke)
+
 ==================  6.4.1 ==================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release.
