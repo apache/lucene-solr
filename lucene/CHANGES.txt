@@ -31,6 +31,10 @@ Bug Fixes
   ArrayIndexOutOfBoundsException exception on large index segments (>1.8B docs)
   with large skips. (yonik)
 
+* LUCENE-7570: IndexWriter may deadlock if a commit is running while
+  there are too many merges running and one of the merges hits a
+  tragic exception (Joey Echeverria via Mike McCandless)
+
 Other
 
 * LUCENE-6989: Backport MMapDirectory's unmapping code from Lucene 6.4 to use
