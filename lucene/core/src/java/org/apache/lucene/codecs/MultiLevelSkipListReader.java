@@ -145,7 +145,12 @@ public abstract class MultiLevelSkipListReader implements Closeable {
     
     return numSkipped[0] - skipInterval[0] - 1;
   }
-  
+
+  // Java 1.8 adds this Integer.compareUnsigned method, but we are Java 1.7 here:
+  private static int Integer_compareUnsigned(int x, int y) {
+    return Integer.compare(x + Integer.MIN_VALUE, y + Integer.MIN_VALUE);
+  }
+
   private boolean loadNextSkip(int level) throws IOException {
     // we have to skip, the target document is greater than the current
     // skip list entry        
@@ -154,7 +159,7 @@ public abstract class MultiLevelSkipListReader implements Closeable {
     numSkipped[level] += skipInterval[level];
 
     // numSkipped may overflow a signed int, so compare as unsigned.
-    if (Integer.compareUnsigned(numSkipped[level], docCount) > 0) {
+    if (Integer_compareUnsigned(numSkipped[level], docCount) > 0) {
       // this skip list is exhausted
       skipDoc[level] = Integer.MAX_VALUE;
       if (numberOfSkipLevels > level) numberOfSkipLevels = level; 
