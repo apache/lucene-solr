@@ -80,6 +80,8 @@ Bug Fixes
 
 * SOLR-10049: Collection deletion leaves behind the snapshot metadata (Hrishikesh Gadre via yonik)
 
+* SOLR-10083: Fix instanceof check in ConstDoubleSource.equals (Pushkar Raste via Christine Poerschke)
+
 Other Changes
 ----------------------
 * SOLR-9980: Expose configVersion in core admin status (Jessica Cheng Mallet via Tomás Fernández Löbbe)
