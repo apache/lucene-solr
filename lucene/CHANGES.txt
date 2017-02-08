@@ -1114,6 +1114,9 @@ Other
 * LUCENE-7095: Add point values support to the numeric field query time join.
   (Martijn van Groningen, Mike McCandless)
 
+======================= Lucene 5.5.4 =======================
+(No Changes)
+
 ======================= Lucene 5.5.3 =======================
 (No Changes)
 
