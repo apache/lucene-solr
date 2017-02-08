@@ -144,6 +144,8 @@ Bug Fixes
 
 * SOLR-10049: Collection deletion leaves behind the snapshot metadata (Hrishikesh Gadre via yonik)
 
+* SOLR-10083: Fix instanceof check in ConstDoubleSource.equals (Pushkar Raste via Christine Poerschke)
+
 Optimizations
 ----------------------
 
