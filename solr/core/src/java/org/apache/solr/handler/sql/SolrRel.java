@@ -20,6 +20,7 @@ import org.apache.calcite.plan.Convention;
 import org.apache.calcite.plan.RelOptTable;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.util.Pair;
+import org.apache.solr.client.solrj.io.ops.BooleanOperation;
 
 import java.util.*;
 
@@ -35,7 +36,9 @@ interface SolrRel extends RelNode {
   /** Callback for the implementation process that converts a tree of {@link SolrRel} nodes into a Solr query. */
   class Implementor {
     final Map<String, String> fieldMappings = new HashMap<>();
+    final Map<String, String> reverseAggMappings = new HashMap<>();
     String query = null;
+    String havingPredicate;
     boolean negativeQuery;
     String limitValue = null;
     final List<Pair<String, String>> orders = new ArrayList<>();
@@ -48,6 +51,12 @@ interface SolrRel extends RelNode {
     void addFieldMapping(String key, String val) {
       if(key != null && !fieldMappings.containsKey(key)) {
         this.fieldMappings.put(key, val);
+      }
+    }
+
+    void addReverseAggMapping(String key, String val) {
+      if(key != null && !reverseAggMappings.containsKey(key)) {
+        this.reverseAggMappings.put(key, val);
       }
     }
 
@@ -78,6 +87,11 @@ interface SolrRel extends RelNode {
         this.addFieldMapping(outName, metricIdentifier);
       }
     }
+
+    void setHavingPredicate(String havingPredicate) {
+      this.havingPredicate = havingPredicate;
+    }
+
 
     void setLimit(String limit) {
       limitValue = limit;

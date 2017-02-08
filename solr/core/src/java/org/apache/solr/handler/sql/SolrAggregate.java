@@ -69,8 +69,11 @@ class SolrAggregate extends Aggregate implements SolrRel {
 
     for(Pair<AggregateCall, String> namedAggCall : getNamedAggCalls()) {
 
+
       AggregateCall aggCall = namedAggCall.getKey();
+
       Pair<String, String> metric = toSolrMetric(implementor, aggCall, inNames);
+      implementor.addReverseAggMapping(namedAggCall.getValue(), metric.getKey().toLowerCase()+"("+metric.getValue()+")");
       implementor.addMetricPair(namedAggCall.getValue(), metric.getKey(), metric.getValue());
       if(aggCall.getName() == null) {
         implementor.addFieldMapping(namedAggCall.getValue(),

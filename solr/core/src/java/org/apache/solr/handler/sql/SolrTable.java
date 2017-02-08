@@ -32,7 +32,17 @@ import org.apache.solr.client.solrj.io.comp.ComparatorOrder;
 import org.apache.solr.client.solrj.io.comp.FieldComparator;
 import org.apache.solr.client.solrj.io.comp.MultipleFieldComparator;
 import org.apache.solr.client.solrj.io.comp.StreamComparator;
+import org.apache.solr.client.solrj.io.ops.AndOperation;
+import org.apache.solr.client.solrj.io.ops.BooleanOperation;
+import org.apache.solr.client.solrj.io.ops.EqualsOperation;
+import org.apache.solr.client.solrj.io.ops.GreaterThanEqualToOperation;
+import org.apache.solr.client.solrj.io.ops.GreaterThanOperation;
+import org.apache.solr.client.solrj.io.ops.LessThanEqualToOperation;
+import org.apache.solr.client.solrj.io.ops.LessThanOperation;
+import org.apache.solr.client.solrj.io.ops.NotOperation;
+import org.apache.solr.client.solrj.io.ops.OrOperation;
 import org.apache.solr.client.solrj.io.stream.*;
+import org.apache.solr.client.solrj.io.stream.expr.StreamExpressionParser;
 import org.apache.solr.client.solrj.io.stream.expr.StreamFactory;
 import org.apache.solr.client.solrj.io.stream.metrics.*;
 import org.apache.solr.common.params.CommonParams;
@@ -72,7 +82,7 @@ class SolrTable extends AbstractQueryableTable implements TranslatableTable {
   
   private Enumerable<Object> query(final Properties properties) {
     return query(properties, Collections.emptyList(), null, Collections.emptyList(), Collections.emptyList(),
-        Collections.emptyList(), null, null);
+        Collections.emptyList(), null, null, null);
   }
 
   /** Executes a Solr query on the underlying table.
@@ -89,7 +99,8 @@ class SolrTable extends AbstractQueryableTable implements TranslatableTable {
                                    final List<String> buckets,
                                    final List<Pair<String, String>> metricPairs,
                                    final String limit,
-                                   final String negativeQuery) {
+                                   final String negativeQuery,
+                                   final String havingPredicate) {
     // SolrParams should be a ModifiableParams instead of a map
     boolean mapReduce = "map_reduce".equals(properties.getProperty("aggregationMode"));
     boolean negative = Boolean.parseBoolean(negativeQuery);
@@ -105,8 +116,6 @@ class SolrTable extends AbstractQueryableTable implements TranslatableTable {
         q = query;
       }
     }
-
-    System.out.println("####### Limit:"+limit);
 
     TupleStream tupleStream;
     String zk = properties.getProperty("zk");
@@ -126,7 +135,8 @@ class SolrTable extends AbstractQueryableTable implements TranslatableTable {
                                                  orders,
                                                  buckets,
                                                  metricPairs,
-                                                 limit);
+                                                 limit,
+                                                 havingPredicate);
           } else {
             tupleStream = handleGroupByFacet(zk,
                                              collection,
@@ -135,7 +145,8 @@ class SolrTable extends AbstractQueryableTable implements TranslatableTable {
                                              orders,
                                              buckets,
                                              metricPairs,
-                                             limit);
+                                             limit,
+                                             havingPredicate);
           }
         }
       }
@@ -403,7 +414,8 @@ class SolrTable extends AbstractQueryableTable implements TranslatableTable {
                                              final List<Pair<String, String>> orders,
                                              final List<String> _buckets,
                                              final List<Pair<String, String>> metricPairs,
-                                             final String limit) throws IOException {
+                                             final String limit,
+                                             final String havingPredicate) throws IOException {
 
     int numWorkers = Integer.parseInt(properties.getProperty("numWorkers", "1"));
 
@@ -438,21 +450,36 @@ class SolrTable extends AbstractQueryableTable implements TranslatableTable {
     CloudSolrStream cstream = new CloudSolrStream(zk, collection, params);
     tupleStream = new RollupStream(cstream, buckets, metrics);
 
+    StreamFactory factory = new StreamFactory()
+        .withFunctionName("search", CloudSolrStream.class)
+        .withFunctionName("parallel", ParallelStream.class)
+        .withFunctionName("rollup", RollupStream.class)
+        .withFunctionName("sum", SumMetric.class)
+        .withFunctionName("min", MinMetric.class)
+        .withFunctionName("max", MaxMetric.class)
+        .withFunctionName("avg", MeanMetric.class)
+        .withFunctionName("count", CountMetric.class)
+        .withFunctionName("and", AndOperation.class)
+        .withFunctionName("or", OrOperation.class)
+        .withFunctionName("not", NotOperation.class)
+        .withFunctionName("eq", EqualsOperation.class)
+        .withFunctionName("gt", GreaterThanOperation.class)
+        .withFunctionName("lt", LessThanOperation.class)
+        .withFunctionName("lteq", LessThanEqualToOperation.class)
+        .withFunctionName("having", HavingStream.class)
+        .withFunctionName("gteq", GreaterThanEqualToOperation.class);
+
+    if(havingPredicate != null) {
+      BooleanOperation booleanOperation = (BooleanOperation)factory.constructOperation(StreamExpressionParser.parse(havingPredicate));
+      tupleStream = new HavingStream(tupleStream, booleanOperation);
+    }
+
     if(numWorkers > 1) {
       // Do the rollups in parallel
       // Maintain the sort of the Tuples coming from the workers.
       StreamComparator comp = bucketSortComp(buckets, sortDirection);
       ParallelStream parallelStream = new ParallelStream(zk, collection, tupleStream, numWorkers, comp);
 
-      StreamFactory factory = new StreamFactory()
-          .withFunctionName("search", CloudSolrStream.class)
-          .withFunctionName("parallel", ParallelStream.class)
-          .withFunctionName("rollup", RollupStream.class)
-          .withFunctionName("sum", SumMetric.class)
-          .withFunctionName("min", MinMetric.class)
-          .withFunctionName("max", MaxMetric.class)
-          .withFunctionName("avg", MeanMetric.class)
-          .withFunctionName("count", CountMetric.class);
 
       parallelStream.setStreamFactory(factory);
       tupleStream = parallelStream;
@@ -508,7 +535,8 @@ class SolrTable extends AbstractQueryableTable implements TranslatableTable {
                                          final List<Pair<String, String>> orders,
                                          final List<String> bucketFields,
                                          final List<Pair<String, String>> metricPairs,
-                                         final String lim) throws IOException {
+                                         final String lim,
+                                         final String havingPredicate) throws IOException {
 
     ModifiableSolrParams solrParams = new ModifiableSolrParams();
     solrParams.add(CommonParams.Q, query);
@@ -541,6 +569,30 @@ class SolrTable extends AbstractQueryableTable implements TranslatableTable {
                                               sorts,
                                               limit);
 
+
+
+    StreamFactory factory = new StreamFactory()
+        .withFunctionName("search", CloudSolrStream.class)
+        .withFunctionName("parallel", ParallelStream.class)
+        .withFunctionName("rollup", RollupStream.class)
+        .withFunctionName("sum", SumMetric.class)
+        .withFunctionName("min", MinMetric.class)
+        .withFunctionName("max", MaxMetric.class)
+        .withFunctionName("avg", MeanMetric.class)
+        .withFunctionName("count", CountMetric.class)
+        .withFunctionName("and", AndOperation.class)
+        .withFunctionName("or", OrOperation.class)
+        .withFunctionName("not", NotOperation.class)
+        .withFunctionName("eq", EqualsOperation.class)
+        .withFunctionName("gt", GreaterThanOperation.class)
+        .withFunctionName("lt", LessThanOperation.class)
+        .withFunctionName("lteq", LessThanEqualToOperation.class)
+        .withFunctionName("gteq", GreaterThanEqualToOperation.class);
+
+    if(havingPredicate != null) {
+      BooleanOperation booleanOperation = (BooleanOperation)factory.constructOperation(StreamExpressionParser.parse(havingPredicate));
+      tupleStream = new HavingStream(tupleStream, booleanOperation);
+    }
 
     if(lim != null)
     {
@@ -623,8 +675,8 @@ class SolrTable extends AbstractQueryableTable implements TranslatableTable {
      */
     @SuppressWarnings("UnusedDeclaration")
     public Enumerable<Object> query(List<Map.Entry<String, Class>> fields, String query, List<Pair<String, String>> order,
-                                    List<String> buckets, List<Pair<String, String>> metricPairs, String limit, String negativeQuery) {
-      return getTable().query(getProperties(), fields, query, order, buckets, metricPairs, limit, negativeQuery);
+                                    List<String> buckets, List<Pair<String, String>> metricPairs, String limit, String negativeQuery, String havingPredicate) {
+      return getTable().query(getProperties(), fields, query, order, buckets, metricPairs, limit, negativeQuery, havingPredicate);
     }
   }
 

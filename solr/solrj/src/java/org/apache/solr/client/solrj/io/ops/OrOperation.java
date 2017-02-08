@@ -17,46 +17,63 @@
 package org.apache.solr.client.solrj.io.ops;
 
 import java.io.IOException;
+import java.util.List;
+import java.util.ArrayList;
 import java.util.UUID;
 
+import org.apache.solr.client.solrj.io.Tuple;
 import org.apache.solr.client.solrj.io.stream.expr.Explanation;
 import org.apache.solr.client.solrj.io.stream.expr.Explanation.ExpressionType;
-import org.apache.solr.client.solrj.io.stream.expr.Expressible;
 import org.apache.solr.client.solrj.io.stream.expr.StreamExpression;
 import org.apache.solr.client.solrj.io.stream.expr.StreamExpressionParameter;
 import org.apache.solr.client.solrj.io.stream.expr.StreamFactory;
 
-public class OrOperation extends AndOperation {
+public class OrOperation implements BooleanOperation {
 
   private static final long serialVersionUID = 1;
   private UUID operationNodeId = UUID.randomUUID();
 
-  public OrOperation(BooleanOperation leftOperand, BooleanOperation rightOperand) {
-    super(leftOperand, rightOperand);
+  private List<BooleanOperation> booleanOperations = new ArrayList();
+
+  public void operate(Tuple tuple) {
+    for(BooleanOperation booleanOperation : booleanOperations) {
+      booleanOperation.operate(tuple);
+    }
+  }
+
+  public OrOperation(List<BooleanOperation> booleanOperations) {
+    this.booleanOperations = booleanOperations;
   }
 
   public OrOperation(StreamExpression expression, StreamFactory factory) throws IOException {
-    super(expression, factory);
+    List<StreamExpression> operationExpressions = factory.getExpressionOperandsRepresentingTypes(expression, BooleanOperation.class);
+    for(StreamExpression se : operationExpressions) {
+      StreamOperation op = factory.constructOperation(se);
+      if(op instanceof BooleanOperation) {
+        booleanOperations.add((BooleanOperation)op);
+      } else {
+        throw new IOException("AndOperation requires BooleanOperation parameters");
+      }
+    }
   }
 
   public boolean evaluate() {
-    return leftOperand.evaluate() || rightOperand.evaluate();
+    for(BooleanOperation booleanOperation : booleanOperations) {
+      if(booleanOperation.evaluate()) {
+        return true;
+      }
+    }
+    return false;
   }
 
   @Override
   public StreamExpressionParameter toExpression(StreamFactory factory) throws IOException {
     StreamExpression expression = new StreamExpression(factory.getFunctionName(this.getClass()));
-    if(leftOperand instanceof Expressible) {
-      expression.addParameter(leftOperand.toExpression(factory));
-    } else {
-      throw new IOException("This left operand of the OrOperation contains a non-expressible operation - it cannot be converted to an expression");
+
+    for(BooleanOperation booleanOperation : booleanOperations) {
+      expression.addParameter(booleanOperation.toExpression(factory));
     }
 
-    if(rightOperand instanceof Expressible) {
-      expression.addParameter(rightOperand.toExpression(factory));
-    } else {
-      throw new IOException("This the right operand of the OrOperation contains a non-expressible operation - it cannot be converted to an expression");
-    }
     return expression;
   }
 

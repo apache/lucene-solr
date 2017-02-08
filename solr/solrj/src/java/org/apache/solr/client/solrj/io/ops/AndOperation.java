@@ -18,12 +18,12 @@ package org.apache.solr.client.solrj.io.ops;
 
 import java.io.IOException;
 import java.util.List;
+import java.util.ArrayList;
 import java.util.UUID;
 
 import org.apache.solr.client.solrj.io.Tuple;
 import org.apache.solr.client.solrj.io.stream.expr.Explanation;
 import org.apache.solr.client.solrj.io.stream.expr.Explanation.ExpressionType;
-import org.apache.solr.client.solrj.io.stream.expr.Expressible;
 import org.apache.solr.client.solrj.io.stream.expr.StreamExpression;
 import org.apache.solr.client.solrj.io.stream.expr.StreamExpressionParameter;
 import org.apache.solr.client.solrj.io.stream.expr.StreamFactory;
@@ -33,60 +33,47 @@ public class AndOperation implements BooleanOperation {
   private static final long serialVersionUID = 1;
   private UUID operationNodeId = UUID.randomUUID();
 
-  protected BooleanOperation leftOperand;
-  protected BooleanOperation rightOperand;
+  private List<BooleanOperation> booleanOperations = new ArrayList();
 
   public void operate(Tuple tuple) {
-    leftOperand.operate(tuple);
-    rightOperand.operate(tuple);
+    for(BooleanOperation booleanOperation : booleanOperations) {
+      booleanOperation.operate(tuple);
+    }
   }
 
-  public AndOperation(BooleanOperation leftOperand, BooleanOperation rightOperand) {
-    this.leftOperand = leftOperand;
-    this.rightOperand = rightOperand;
+  public AndOperation(List<BooleanOperation> booleanOperations) {
+    this.booleanOperations = booleanOperations;
   }
 
   public AndOperation(StreamExpression expression, StreamFactory factory) throws IOException {
-      List<StreamExpression> operationExpressions = factory.getExpressionOperandsRepresentingTypes(expression, BooleanOperation.class);
-      if(operationExpressions != null && operationExpressions.size() == 2) {
-        StreamExpression left = operationExpressions.get(0);
-        StreamOperation leftOp = factory.constructOperation(left);
-        if(leftOp instanceof BooleanOperation) {
-          leftOperand = (BooleanOperation) leftOp;
-        } else {
-          throw new IOException("The And/Or Operation requires a BooleanOperation.");
-        }
-
-        StreamExpression right = operationExpressions.get(1);
-        StreamOperation rightOp = factory.constructOperation(right);
-        if(rightOp instanceof BooleanOperation) {
-          rightOperand = (BooleanOperation) rightOp;
-        } else {
-          throw new IOException("The And/Or Operation requires a BooleanOperation.");
-        }
+    List<StreamExpression> operationExpressions = factory.getExpressionOperandsRepresentingTypes(expression, BooleanOperation.class);
+    for(StreamExpression se : operationExpressions) {
+      StreamOperation op = factory.constructOperation(se);
+      if(op instanceof BooleanOperation) {
+        booleanOperations.add((BooleanOperation)op);
       } else {
-        throw new IOException("The And/Or Operation requires a BooleanOperations.");
+        throw new IOException("AndOperation requires BooleanOperation parameters");
       }
+    }
   }
 
   public boolean evaluate() {
-    return leftOperand.evaluate() && rightOperand.evaluate();
+    for(BooleanOperation booleanOperation : booleanOperations) {
+      if(!booleanOperation.evaluate()) {
+        return false;
+      }
+    }
+    return true;
   }
 
   @Override
   public StreamExpressionParameter toExpression(StreamFactory factory) throws IOException {
     StreamExpression expression = new StreamExpression(factory.getFunctionName(this.getClass()));
-    if(leftOperand instanceof Expressible) {
-      expression.addParameter(leftOperand.toExpression(factory));
-    } else {
-      throw new IOException("This left operand of the AndOperation contains a non-expressible operation - it cannot be converted to an expression");
+
+    for(BooleanOperation booleanOperation : booleanOperations) {
+      expression.addParameter(booleanOperation.toExpression(factory));
     }
 
-    if(rightOperand instanceof Expressible) {
-      expression.addParameter(rightOperand.toExpression(factory));
-    } else {
-      throw new IOException("This the right operand of the AndOperation contains a non-expressible operation - it cannot be converted to an expression");
-    }
     return expression;
   }
 

@@ -84,8 +84,9 @@ class SolrToEnumerableConverter extends ConverterImpl implements EnumerableRel {
     final Expression metricPairs = list.append("metricPairs", constantArrayList(solrImplementor.metricPairs, Pair.class));
     final Expression limit = list.append("limit", Expressions.constant(solrImplementor.limitValue));
     final Expression negativeQuery = list.append("negativeQuery", Expressions.constant(Boolean.toString(solrImplementor.negativeQuery), String.class));
+    final Expression havingPredicate = list.append("havingTest", Expressions.constant(solrImplementor.havingPredicate, String.class));
     Expression enumerable = list.append("enumerable", Expressions.call(table, SolrMethod.SOLR_QUERYABLE_QUERY.method,
-        fields, query, orders, buckets, metricPairs, limit, negativeQuery));
+        fields, query, orders, buckets, metricPairs, limit, negativeQuery, havingPredicate));
     Hook.QUERY_PLAN.run(query);
     list.add(Expressions.return_(null, enumerable));
     return implementor.result(physType, list.toBlock());

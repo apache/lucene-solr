@@ -111,7 +111,7 @@ class SolrRules {
     }
 
     <R extends RelNode> SolrConverterRule(Class<R> clazz, Predicate<RelNode> predicate, String description) {
-      super(clazz, predicate::test, Convention.NONE, SolrRel.CONVENTION, description);
+      super(clazz, Convention.NONE, SolrRel.CONVENTION, description);
     }
   }
 
@@ -120,8 +120,10 @@ class SolrRules {
    */
   private static class SolrFilterRule extends SolrConverterRule {
     private static boolean isNotFilterByExpr(List<RexNode> rexNodes, List<String> fieldNames) {
+
       // We dont have a way to filter by result of aggregator now
       boolean result = true;
+
       for (RexNode rexNode : rexNodes) {
         if (rexNode instanceof RexCall) {
           result = result && isNotFilterByExpr(((RexCall) rexNode).getOperands(), fieldNames);
