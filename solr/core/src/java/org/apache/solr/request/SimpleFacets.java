@@ -21,9 +21,12 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.IdentityHashMap;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Executor;
@@ -343,15 +346,46 @@ public class SimpleFacets {
     ENUM, FC, FCS, UIF;
   }
 
-  protected Predicate<BytesRef> newBytesRefFilter(String field, SolrParams params) {
-    final String contains = params.getFieldParam(field, FacetParams.FACET_CONTAINS);
-    final boolean ignoreCase = params.getFieldBool(field, FacetParams.FACET_CONTAINS_IGNORE_CASE, false);
-
-    if (contains == null) {
+  protected Predicate<BytesRef> newExcludeBytesRefFilter(String field, SolrParams params) {
+    final String exclude = params.getFieldParam(field, FacetParams.FACET_EXCLUDETERMS);
+    if (exclude == null) {
       return null;
     }
 
-    return new SubstringBytesRefFilter(contains, ignoreCase);
+    final Set<String> excludeTerms = new HashSet<>(StrUtils.splitSmart(exclude, ",", true));
+
+    return new Predicate<BytesRef>() {
+      @Override
+      public boolean test(BytesRef bytesRef) {
+        return !excludeTerms.contains(bytesRef.utf8ToString());
+      }
+    };
+  }
+
+  protected Predicate<BytesRef> newBytesRefFilter(String field, SolrParams params) {
+    final String contains = params.getFieldParam(field, FacetParams.FACET_CONTAINS);
+
+    final Predicate<BytesRef> containsFilter;
+    if (contains != null) {
+      final boolean containsIgnoreCase = params.getFieldBool(field, FacetParams.FACET_CONTAINS_IGNORE_CASE, false);
+      containsFilter = new SubstringBytesRefFilter(contains, containsIgnoreCase);
+    } else {
+      containsFilter = null;
+    }
+
+    final Predicate<BytesRef> excludeFilter = newExcludeBytesRefFilter(field, params);
+
+    if (containsFilter == null && excludeFilter == null) {
+      return null;
+    }
+
+    if (containsFilter != null && excludeFilter == null) {
+      return containsFilter;
+    } else if (containsFilter == null && excludeFilter != null) {
+      return excludeFilter;
+    }
+
+    return containsFilter.and(excludeFilter);
   }
 
   /**

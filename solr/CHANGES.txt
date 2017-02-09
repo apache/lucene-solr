@@ -130,6 +130,8 @@ New Features
 
 * SOLR-9997: Enable configuring SolrHttpClientBuilder via java system property. (Hrishikesh Gadre via Mark Miller)
 
+* SOLR-9912: Add facet.excludeTerms parameter support. (Jonny Marks, David Smiley, Christine Poerschke)
+
 Bug Fixes
 ----------------------
 
