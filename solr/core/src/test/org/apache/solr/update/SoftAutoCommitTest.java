@@ -17,9 +17,9 @@
 package org.apache.solr.update;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
-import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.junit.Assert.assertEquals;
 
+import java.lang.invoke.MethodHandles;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
@@ -33,6 +33,8 @@ import org.apache.solr.search.SolrIndexSearcher;
 import org.apache.solr.util.AbstractSolrTestCase;
 import org.junit.Before;
 import org.junit.BeforeClass;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Test auto commit functionality in a way that doesn't suck.
@@ -55,7 +57,7 @@ import org.junit.BeforeClass;
  */
 @Slow
 public class SoftAutoCommitTest extends AbstractSolrTestCase {
-
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   @BeforeClass
   public static void beforeClass() throws Exception {
@@ -78,28 +80,34 @@ public class SoftAutoCommitTest extends AbstractSolrTestCase {
     core.registerNewSearcherListener(monitor);
     updater.registerSoftCommitCallback(monitor);
     updater.registerCommitCallback(monitor);
+
+    // isolate searcher getting ready from this test
+    monitor.searcher.poll(5000, MILLISECONDS);
   }
   
   @Override
   public void setUp() throws Exception {
     super.setUp();
-    // reset stats
-    h.getCoreContainer().reload("collection1");
+
   }
 
   public void testSoftAndHardCommitMaxTimeMixedAdds() throws Exception {
-
     final int softCommitWaitMillis = 500;
     final int hardCommitWaitMillis = 1200;
 
     CommitTracker hardTracker = updater.commitTracker;
     CommitTracker softTracker = updater.softCommitTracker;
     
+    int startingHardCommits = hardTracker.getCommitCount();
+    int startingSoftCommits = softTracker.getCommitCount();
+    
     softTracker.setTimeUpperBound(softCommitWaitMillis);
     softTracker.setDocsUpperBound(-1);
     hardTracker.setTimeUpperBound(hardCommitWaitMillis);
     hardTracker.setDocsUpperBound(-1);
-    
+    // simplify whats going on by only having soft auto commits trigger new searchers
+    hardTracker.setOpenSearcher(false);
+
     // Add a single document
     long add529 = System.nanoTime();
     assertU(adoc("id", "529", "subject", "the doc we care about in this test"));
@@ -107,21 +115,24 @@ public class SoftAutoCommitTest extends AbstractSolrTestCase {
     monitor.assertSaneOffers();
 
     // Wait for the soft commit with some fudge
-    Long soft529 = monitor.soft.poll(softCommitWaitMillis * 3, MILLISECONDS);
+    Long soft529 = monitor.soft.poll(softCommitWaitMillis * 500, MILLISECONDS);
     assertNotNull("soft529 wasn't fast enough", soft529);
     monitor.assertSaneOffers();
 
+    
+    // wait for the hard commit
+    Long hard529 = monitor.hard.poll(hardCommitWaitMillis * 5, MILLISECONDS);
+    assertNotNull("hard529 wasn't fast enough", hard529);
+    
     // check for the searcher, should have happened right after soft commit
-    Long searcher529 = monitor.searcher.poll(softCommitWaitMillis * 3, MILLISECONDS);
+    Long searcher529 = monitor.searcher.poll(5000, MILLISECONDS);
     assertNotNull("searcher529 wasn't fast enough", searcher529);
     monitor.assertSaneOffers();
 
     // toss in another doc, shouldn't affect first hard commit time we poll
     assertU(adoc("id", "530", "subject", "just for noise/activity"));
 
-    // wait for the hard commit
-    Long hard529 = monitor.hard.poll(hardCommitWaitMillis * 5, MILLISECONDS);
-    assertNotNull("hard529 wasn't fast enough", hard529);
+
     monitor.assertSaneOffers();
 
     final long soft529Ms = TimeUnit.MILLISECONDS.convert(soft529 - add529, TimeUnit.NANOSECONDS);
@@ -148,17 +159,17 @@ public class SoftAutoCommitTest extends AbstractSolrTestCase {
     monitor.assertSaneOffers();
 
     // there may have been (or will be) a second hard commit for 530
-    Long hard530 = monitor.hard.poll(hardCommitWaitMillis, MILLISECONDS);
+    Long hard530 = monitor.hard.poll(hardCommitWaitMillis * 5, MILLISECONDS);
     assertEquals("Tracker reports too many hard commits",
                  (null == hard530 ? 1 : 2),
-                 hardTracker.getCommitCount());
+                 hardTracker.getCommitCount() - startingHardCommits);
 
     // there may have been a second soft commit for 530, 
     // but if so it must have already happend
     Long soft530 = monitor.soft.poll(0, MILLISECONDS);
     if (null != soft530) {
       assertEquals("Tracker reports too many soft commits",
-                   2, softTracker.getCommitCount());
+                   2, softTracker.getCommitCount() - startingSoftCommits);
       if (null != hard530) {
         assertTrue("soft530 after hard530: " +
                    soft530 + " !<= " + hard530,
@@ -170,7 +181,7 @@ public class SoftAutoCommitTest extends AbstractSolrTestCase {
       }
     } else {
       assertEquals("Tracker reports too many soft commits",
-                   1, softTracker.getCommitCount());
+                   1, softTracker.getCommitCount() - startingSoftCommits);
     }
       
     if (null != soft530 || null != hard530) {
@@ -178,16 +189,19 @@ public class SoftAutoCommitTest extends AbstractSolrTestCase {
                     monitor.searcher.poll(0, MILLISECONDS));
     }
 
-    monitor.assertSaneOffers();
+    // clear commits
+    monitor.hard.clear();
+    monitor.soft.clear();
 
-    // wait a bit, w/o other action we definitely shouldn't see any 
+    // wait a bit, w/o other action we shouldn't see any 
     // new hard/soft commits 
     assertNull("Got a hard commit we weren't expecting",
-               monitor.hard.poll(2, SECONDS));
+               monitor.hard.poll(1000, MILLISECONDS));
     assertNull("Got a soft commit we weren't expecting",
                monitor.soft.poll(0, MILLISECONDS));
 
     monitor.assertSaneOffers();
+    monitor.searcher.clear();
   }
 
   public void testSoftAndHardCommitMaxTimeDelete() throws Exception {
@@ -198,10 +212,16 @@ public class SoftAutoCommitTest extends AbstractSolrTestCase {
     CommitTracker hardTracker = updater.commitTracker;
     CommitTracker softTracker = updater.softCommitTracker;
     
+    int startingHardCommits = hardTracker.getCommitCount();
+    int startingSoftCommits = softTracker.getCommitCount();
+    
     softTracker.setTimeUpperBound(softCommitWaitMillis);
     softTracker.setDocsUpperBound(-1);
     hardTracker.setTimeUpperBound(hardCommitWaitMillis);
     hardTracker.setDocsUpperBound(-1);
+    // we don't want to overlap soft and hard opening searchers - this now blocks commits and we
+    // are looking for prompt timings
+    hardTracker.setOpenSearcher(false);
     
     // add a doc and force a commit
     assertU(adoc("id", "529", "subject", "the doc we care about in this test"));
@@ -238,7 +258,7 @@ public class SoftAutoCommitTest extends AbstractSolrTestCase {
     monitor.assertSaneOffers();
 
     // Wait for the soft commit with some fudge
-    soft529 = monitor.soft.poll(softCommitWaitMillis * 3, MILLISECONDS);
+    soft529 = monitor.soft.poll(softCommitWaitMillis * 3000, MILLISECONDS);
     assertNotNull("soft529 wasn't fast enough", soft529);
     monitor.assertSaneOffers();
  
@@ -276,18 +296,23 @@ public class SoftAutoCommitTest extends AbstractSolrTestCase {
                searcher529 + " !<= " + hard529,
                searcher529 <= hard529);
 
+    // wait for the last searcher we triggerd with 550
+    monitor.searcher.poll(5000, MILLISECONDS);
+    
     // clear commits
     monitor.hard.clear();
     monitor.soft.clear();
     
-    // wait a bit, w/o other action we definitely shouldn't see any 
+    // wait a bit, w/o other action we shouldn't see any 
     // new hard/soft commits 
     assertNull("Got a hard commit we weren't expecting",
-               monitor.hard.poll(2, SECONDS));
+        monitor.hard.poll(1000, MILLISECONDS));
     assertNull("Got a soft commit we weren't expecting",
-               monitor.soft.poll(0, MILLISECONDS));
+        monitor.soft.poll(0, MILLISECONDS));
 
     monitor.assertSaneOffers();
+    
+    monitor.searcher.clear();
   }
 
   public void testSoftAndHardCommitMaxTimeRapidAdds() throws Exception {
@@ -302,32 +327,43 @@ public class SoftAutoCommitTest extends AbstractSolrTestCase {
     softTracker.setDocsUpperBound(-1);
     hardTracker.setTimeUpperBound(hardCommitWaitMillis);
     hardTracker.setDocsUpperBound(-1);
+    // we don't want to overlap soft and hard opening searchers - this now blocks commits and we
+    // are looking for prompt timings
+    hardTracker.setOpenSearcher(false);
     
     // try to add 5 docs really fast
     long fast5start = System.nanoTime();
     for( int i=0;i<5; i++ ) {
       assertU(adoc("id", ""+500 + i, "subject", "five fast docs"));
     }
-    long fast5end = System.nanoTime() - TimeUnit.NANOSECONDS.convert(200, TimeUnit.MILLISECONDS); // minus a tad of slop
+    long fast5end = System.nanoTime() - TimeUnit.NANOSECONDS.convert(300, TimeUnit.MILLISECONDS); // minus a tad of slop
     long fast5time = 1 + TimeUnit.MILLISECONDS.convert(fast5end - fast5start, TimeUnit.NANOSECONDS);
 
     // total time for all 5 adds determines the number of soft to expect
     long expectedSoft = (long)Math.ceil((double) fast5time / softCommitWaitMillis);
     long expectedHard = (long)Math.ceil((double) fast5time / hardCommitWaitMillis);
+    
+    expectedSoft = Math.max(1, expectedSoft);
+    expectedHard = Math.max(1, expectedHard);
 
     // note: counting from 1 for multiplication
     for (int i = 1; i <= expectedSoft; i++) {
-      // Wait for the soft commit with some fudge
+      // Wait for the soft commit with plenty of fudge to survive nasty envs
       Long soft = monitor.soft.poll(softCommitWaitMillis * 2, MILLISECONDS);
-      assertNotNull(i + ": soft wasn't fast enough", soft);
-      monitor.assertSaneOffers();
+      if (soft != null || i == 1) {
+        assertNotNull(i + ": soft wasn't fast enough", soft);
+        monitor.assertSaneOffers();
 
-      // have to assume none of the docs were added until
-      // very end of the add window
-      long softMs = TimeUnit.MILLISECONDS.convert(soft - fast5end, TimeUnit.NANOSECONDS);
-      assertTrue(i + ": soft occurred too fast: " +
-              softMs + " < (" + softCommitWaitMillis + " * " + i + ")",
-          softMs >= (softCommitWaitMillis * i));
+        // have to assume none of the docs were added until
+        // very end of the add window
+        long softMs = TimeUnit.MILLISECONDS.convert(soft - fast5end, TimeUnit.NANOSECONDS);
+        assertTrue(i + ": soft occurred too fast: " +
+            softMs + " < (" + softCommitWaitMillis + " * " + i + ")",
+            softMs >= (softCommitWaitMillis * i));
+      } else {
+        // we may have guessed wrong and there were fewer commits
+        assertNull("Got a soft commit we weren't expecting", monitor.soft.poll(2000, MILLISECONDS));
+      }
     }
 
     // note: counting from 1 for multiplication
@@ -345,7 +381,24 @@ public class SoftAutoCommitTest extends AbstractSolrTestCase {
               hardMs + " < (" + hardCommitWaitMillis + " * " + i + ")",
           hardMs >= (hardCommitWaitMillis * i));
     }
+    
+    // we are only guessing how many commits we may see, allow one extra of each
+    monitor.soft.poll(softCommitWaitMillis + 200, MILLISECONDS);
+    monitor.hard.poll(hardCommitWaitMillis + 200, MILLISECONDS);
  
+    // clear commits
+    monitor.hard.clear();
+    monitor.soft.clear();
+
+    // wait a bit, w/o other action we shouldn't see any
+    // new hard/soft commits
+    assertNull("Got a hard commit we weren't expecting",
+        monitor.hard.poll(1000, MILLISECONDS));
+    assertNull("Got a soft commit we weren't expecting",
+        monitor.soft.poll(0, MILLISECONDS));
+
+    monitor.assertSaneOffers();
+    
   }
 }
 
