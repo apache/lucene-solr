@@ -26,6 +26,7 @@
     <div class="collapse navbar-collapse navbar-ex1-collapse">
       <ul class="nav navbar-nav">
         <li><router-link :to="{ path: '/' }">Home</router-link></li>
+        <li><router-link :to="{ path: '/clicklogs' }">ClickLogs</router-link></li>
         <li><router-link :to="{ path: '/compare' }">Compare</router-link></li>
       </ul>
     </div>

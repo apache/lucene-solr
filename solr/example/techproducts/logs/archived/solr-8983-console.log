@@ -1,0 +1,34 @@
+二月 01, 2017 11:23:03 上午 org.restlet.Application start
+信息: Starting org.apache.solr.rest.SolrSchemaRestApi application
+二月 01, 2017 11:23:03 上午 org.restlet.engine.log.LogFilter afterHandle
+信息: 2017-02-01	11:23:03	0:0:0:0:0:0:0:1	-	0:0:0:0:0:0:0:1	8983	DELETE	/solr/schema/feature-store/jouvestore	-	200	-	0	31	http://localhost:8983	-	-
+二月 01, 2017 11:23:03 上午 org.restlet.engine.log.LogFilter afterHandle
+信息: 2017-02-01	11:23:03	0:0:0:0:0:0:0:1	-	0:0:0:0:0:0:0:1	8983	POST	/solr/schema/feature-store	-	200	-	666	16	http://localhost:8983	-	-
+二月 01, 2017 11:23:26 上午 org.restlet.engine.log.LogFilter afterHandle
+信息: 2017-02-01	11:23:26	0:0:0:0:0:0:0:1	-	0:0:0:0:0:0:0:1	8983	DELETE	/solr/schema/feature-store/jouvestore	-	200	-	0	2	http://localhost:8983	-	-
+二月 01, 2017 11:23:26 上午 org.restlet.engine.log.LogFilter afterHandle
+信息: 2017-02-01	11:23:26	0:0:0:0:0:0:0:1	-	0:0:0:0:0:0:0:1	8983	POST	/solr/schema/feature-store	-	200	-	666	5	http://localhost:8983	-	-
+二月 01, 2017 11:23:44 上午 org.restlet.engine.log.LogFilter afterHandle
+信息: 2017-02-01	11:23:44	0:0:0:0:0:0:0:1	-	0:0:0:0:0:0:0:1	8983	DELETE	/solr/schema/feature-store/jouvestore	-	200	-	0	3	http://localhost:8983	-	-
+二月 01, 2017 11:23:44 上午 org.restlet.engine.log.LogFilter afterHandle
+信息: 2017-02-01	11:23:44	0:0:0:0:0:0:0:1	-	0:0:0:0:0:0:0:1	8983	POST	/solr/schema/feature-store	-	200	-	666	3	http://localhost:8983	-	-
+二月 01, 2017 11:23:44 上午 org.restlet.engine.log.LogFilter afterHandle
+信息: 2017-02-01	11:23:44	0:0:0:0:0:0:0:1	-	0:0:0:0:0:0:0:1	8983	DELETE	/solr/schema/model-store/jouvemodel	-	200	-	0	2	http://localhost:8983	-	-
+二月 01, 2017 11:23:44 上午 org.restlet.engine.log.LogFilter afterHandle
+信息: 2017-02-01	11:23:44	0:0:0:0:0:0:0:1	-	0:0:0:0:0:0:0:1	8983	POST	/solr/schema/model-store	-	200	-	394	7	http://localhost:8983	-	-
+二月 01, 2017 11:26:23 上午 org.restlet.engine.log.LogFilter afterHandle
+信息: 2017-02-01	11:26:23	0:0:0:0:0:0:0:1	-	0:0:0:0:0:0:0:1	8983	DELETE	/solr/schema/feature-store/jouvestore	-	200	-	0	2	http://localhost:8983	-	-
+二月 01, 2017 11:26:23 上午 org.restlet.engine.log.LogFilter afterHandle
+信息: 2017-02-01	11:26:23	0:0:0:0:0:0:0:1	-	0:0:0:0:0:0:0:1	8983	POST	/solr/schema/feature-store	-	200	-	690	3	http://localhost:8983	-	-
+二月 01, 2017 11:26:23 上午 org.restlet.engine.log.LogFilter afterHandle
+信息: 2017-02-01	11:26:23	0:0:0:0:0:0:0:1	-	0:0:0:0:0:0:0:1	8983	DELETE	/solr/schema/model-store/jouvemodel	-	200	-	0	2	http://localhost:8983	-	-
+二月 01, 2017 11:26:23 上午 org.restlet.engine.log.LogFilter afterHandle
+信息: 2017-02-01	11:26:23	0:0:0:0:0:0:0:1	-	0:0:0:0:0:0:0:1	8983	POST	/solr/schema/model-store	-	200	-	310	4	http://localhost:8983	-	-
+二月 01, 2017 1:07:23 下午 org.restlet.engine.log.LogFilter afterHandle
+信息: 2017-02-01	13:07:23	0:0:0:0:0:0:0:1	-	0:0:0:0:0:0:0:1	8983	DELETE	/solr/schema/feature-store/jouvestore	-	200	-	0	2	http://localhost:8983	-	-
+二月 01, 2017 1:07:23 下午 org.restlet.engine.log.LogFilter afterHandle
+信息: 2017-02-01	13:07:23	0:0:0:0:0:0:0:1	-	0:0:0:0:0:0:0:1	8983	POST	/solr/schema/feature-store	-	200	-	372	2	http://localhost:8983	-	-
+二月 01, 2017 1:07:23 下午 org.restlet.engine.log.LogFilter afterHandle
+信息: 2017-02-01	13:07:23	0:0:0:0:0:0:0:1	-	0:0:0:0:0:0:0:1	8983	DELETE	/solr/schema/model-store/jouvemodel	-	200	-	0	2	http://localhost:8983	-	-
+二月 01, 2017 1:07:23 下午 org.restlet.engine.log.LogFilter afterHandle
+信息: 2017-02-01	13:07:23	0:0:0:0:0:0:0:1	-	0:0:0:0:0:0:0:1	8983	POST	/solr/schema/model-store	-	400	-	156	5	http://localhost:8983	-	-

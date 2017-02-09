@@ -1,0 +1,405 @@
+INFO  - 2017-02-01 13:08:05.544; [   ] org.eclipse.jetty.util.log.Log; Logging initialized @372ms
+INFO  - 2017-02-01 13:08:05.776; [   ] org.eclipse.jetty.server.Server; jetty-9.3.14.v20161028
+INFO  - 2017-02-01 13:08:05.820; [   ] org.eclipse.jetty.deploy.providers.ScanningAppProvider; Deployment monitor [file:///Users/qfdk/GitHub/lucene-solr/solr/server/contexts/] at interval 0
+INFO  - 2017-02-01 13:08:06.221; [   ] org.eclipse.jetty.webapp.StandardDescriptorProcessor; NO JSP Support for /solr, did not find org.apache.jasper.servlet.JspServlet
+INFO  - 2017-02-01 13:08:06.267; [   ] org.apache.solr.servlet.SolrDispatchFilter;  ___      _       Welcome to Apache Solr™ version 7.0.0-SNAPSHOT ca50e5b61c2d8bfb703169cea2fb0ab20fd24c6b - qfdk - 2017-01-31 20:51:29
+INFO  - 2017-02-01 13:08:06.267; [   ] org.apache.solr.servlet.SolrDispatchFilter; / __| ___| |_ _   Starting in standalone mode on port 8983
+INFO  - 2017-02-01 13:08:06.268; [   ] org.apache.solr.servlet.SolrDispatchFilter; \__ \/ _ \ | '_|  Install dir: /Users/qfdk/GitHub/lucene-solr/solr
+INFO  - 2017-02-01 13:08:06.290; [   ] org.apache.solr.servlet.SolrDispatchFilter; |___/\___/_|_|    Start time: 2017-02-01T13:08:06.269Z
+INFO  - 2017-02-01 13:08:06.306; [   ] org.apache.solr.core.SolrResourceLoader; Using system property solr.solr.home: /Users/qfdk/GitHub/lucene-solr/solr/example/techproducts/solr
+INFO  - 2017-02-01 13:08:06.313; [   ] org.apache.solr.core.SolrXmlConfig; Loading container configuration from /Users/qfdk/GitHub/lucene-solr/solr/example/techproducts/solr/solr.xml
+INFO  - 2017-02-01 13:08:06.741; [   ] org.apache.solr.core.CorePropertiesLocator; Found 1 core definitions underneath /Users/qfdk/GitHub/lucene-solr/solr/example/techproducts/solr
+INFO  - 2017-02-01 13:08:06.746; [   ] org.apache.solr.core.CorePropertiesLocator; Cores are: [techproducts]
+WARN  - 2017-02-01 13:08:06.851; [   x:techproducts] org.apache.solr.core.SolrConfig; Couldn't add files from /Users/qfdk/GitHub/lucene-solr/solr/contrib/ltr/lib filtered by .*\.jar to classpath: /Users/qfdk/GitHub/lucene-solr/solr/contrib/ltr/lib
+INFO  - 2017-02-01 13:08:06.859; [   x:techproducts] org.apache.solr.core.SolrResourceLoader; [techproducts] Added 52 libs to classloader, from paths: [/Users/qfdk/GitHub/lucene-solr/solr/contrib/clustering/lib, /Users/qfdk/GitHub/lucene-solr/solr/contrib/extraction/lib, /Users/qfdk/GitHub/lucene-solr/solr/contrib/langid/lib, /Users/qfdk/GitHub/lucene-solr/solr/contrib/velocity/lib, /Users/qfdk/GitHub/lucene-solr/solr/dist]
+INFO  - 2017-02-01 13:08:06.908; [   ] org.eclipse.jetty.server.handler.ContextHandler; Started o.e.j.w.WebAppContext@11438d26{/solr,file:///Users/qfdk/GitHub/lucene-solr/solr/server/solr-webapp/webapp/,AVAILABLE}{/Users/qfdk/GitHub/lucene-solr/solr/server/solr-webapp/webapp}
+INFO  - 2017-02-01 13:08:06.937; [   ] org.eclipse.jetty.server.AbstractConnector; Started ServerConnector@4803b726{HTTP/1.1,[http/1.1]}{0.0.0.0:8983}
+INFO  - 2017-02-01 13:08:06.939; [   ] org.eclipse.jetty.server.Server; Started @1770ms
+INFO  - 2017-02-01 13:08:07.084; [   x:techproducts] org.apache.solr.update.SolrIndexConfig; IndexWriter infoStream solr logging is enabled
+INFO  - 2017-02-01 13:08:07.093; [   x:techproducts] org.apache.solr.core.SolrConfig; Using Lucene MatchVersion: 7.0.0
+INFO  - 2017-02-01 13:08:07.367; [   x:techproducts] org.apache.solr.schema.IndexSchema; [techproducts] Schema name=example
+WARN  - 2017-02-01 13:08:07.537; [   x:techproducts] org.apache.solr.core.SolrResourceLoader; Solr loaded a deprecated plugin/analysis class [solr.SynonymFilterFactory]. Please consult documentation how to replace it accordingly.
+WARN  - 2017-02-01 13:08:07.557; [   x:techproducts] org.apache.solr.core.SolrResourceLoader; Solr loaded a deprecated plugin/analysis class [solr.WordDelimiterFilterFactory]. Please consult documentation how to replace it accordingly.
+INFO  - 2017-02-01 13:08:08.167; [   ] org.apache.solr.servlet.HttpSolrCall; [admin] webapp=null path=/admin/info/system params={wt=json} status=0 QTime=59
+INFO  - 2017-02-01 13:08:08.237; [   ] org.apache.solr.servlet.HttpSolrCall; [admin] webapp=null path=/admin/cores params={core=techproducts&action=STATUS&wt=json} status=0 QTime=1
+INFO  - 2017-02-01 13:08:08.277; [   ] org.apache.solr.servlet.HttpSolrCall; [admin] webapp=null path=/admin/info/system params={wt=json} status=0 QTime=21
+INFO  - 2017-02-01 13:08:08.310; [   ] org.apache.solr.servlet.HttpSolrCall; [admin] webapp=null path=/admin/info/system params={wt=json} status=0 QTime=22
+INFO  - 2017-02-01 13:08:08.312; [   x:techproducts] org.apache.solr.rest.RestManager$Registry; Registered ManagedResource impl org.apache.solr.rest.schema.analysis.ManagedWordSetResource for path /schema/analysis/stopwords/english
+INFO  - 2017-02-01 13:08:08.313; [   x:techproducts] org.apache.solr.rest.RestManager$Registry; Registered ManagedResource impl org.apache.solr.rest.schema.analysis.ManagedSynonymFilterFactory$SynonymManager for path /schema/analysis/synonyms/english
+INFO  - 2017-02-01 13:08:08.319; [   ] org.apache.solr.servlet.HttpSolrCall; [admin] webapp=null path=/admin/cores params={core=techproducts&action=STATUS&wt=json} status=0 QTime=0
+INFO  - 2017-02-01 13:08:08.326; [   ] org.apache.solr.handler.admin.CoreAdminOperation; core create command name=techproducts&action=CREATE&instanceDir=techproducts&wt=json
+WARN  - 2017-02-01 13:08:08.352; [   x:techproducts] org.apache.solr.core.SolrConfig; Couldn't add files from /Users/qfdk/GitHub/lucene-solr/solr/contrib/ltr/lib filtered by .*\.jar to classpath: /Users/qfdk/GitHub/lucene-solr/solr/contrib/ltr/lib
+INFO  - 2017-02-01 13:08:08.357; [   x:techproducts] org.apache.solr.core.SolrResourceLoader; [techproducts] Added 52 libs to classloader, from paths: [/Users/qfdk/GitHub/lucene-solr/solr/contrib/clustering/lib, /Users/qfdk/GitHub/lucene-solr/solr/contrib/extraction/lib, /Users/qfdk/GitHub/lucene-solr/solr/contrib/langid/lib, /Users/qfdk/GitHub/lucene-solr/solr/contrib/velocity/lib, /Users/qfdk/GitHub/lucene-solr/solr/dist]
+INFO  - 2017-02-01 13:08:08.364; [   x:techproducts] org.apache.solr.schema.IndexSchema; Loaded schema example/1.6 with uniqueid field id
+INFO  - 2017-02-01 13:08:08.364; [   x:techproducts] org.apache.solr.rest.RestManager$Registry; Added observer of type org.apache.solr.rest.schema.analysis.ManagedStopFilterFactory to existing ManagedResource /schema/analysis/stopwords/english
+INFO  - 2017-02-01 13:08:08.365; [   x:techproducts] org.apache.solr.rest.RestManager$Registry; Added observer of type org.apache.solr.rest.schema.analysis.ManagedSynonymFilterFactory to existing ManagedResource /schema/analysis/synonyms/english
+INFO  - 2017-02-01 13:08:08.404; [   x:techproducts] org.apache.solr.update.SolrIndexConfig; IndexWriter infoStream solr logging is enabled
+INFO  - 2017-02-01 13:08:08.406; [   x:techproducts] org.apache.solr.core.SolrConfig; Using Lucene MatchVersion: 7.0.0
+INFO  - 2017-02-01 13:08:08.448; [   x:techproducts] org.apache.solr.core.CoreContainer; Creating SolrCore 'techproducts' using configuration from instancedir /Users/qfdk/GitHub/lucene-solr/solr/example/techproducts/solr/techproducts
+INFO  - 2017-02-01 13:08:08.464; [   x:techproducts] org.apache.solr.schema.IndexSchema; [techproducts] Schema name=example
+INFO  - 2017-02-01 13:08:08.497; [   x:techproducts] org.apache.solr.core.SolrCore; [[techproducts] ] Opening new SolrCore at [/Users/qfdk/GitHub/lucene-solr/solr/example/techproducts/solr/techproducts], dataDir=[/Users/qfdk/GitHub/lucene-solr/solr/example/techproducts/solr/techproducts/data/]
+INFO  - 2017-02-01 13:08:08.500; [   x:techproducts] org.apache.solr.core.JmxMonitoredMap; JMX monitoring is enabled. Adding Solr mbeans to JMX Server: com.sun.jmx.mbeanserver.JmxMBeanServer@49dc7102
+INFO  - 2017-02-01 13:08:08.587; [   x:techproducts] org.apache.solr.response.XSLTResponseWriter; xsltCacheLifetimeSeconds=5
+INFO  - 2017-02-01 13:08:08.799; [   x:techproducts] org.apache.solr.rest.RestManager$Registry; Registered ManagedResource impl org.apache.solr.rest.schema.analysis.ManagedWordSetResource for path /schema/analysis/stopwords/english
+INFO  - 2017-02-01 13:08:08.799; [   x:techproducts] org.apache.solr.rest.RestManager$Registry; Registered ManagedResource impl org.apache.solr.rest.schema.analysis.ManagedSynonymFilterFactory$SynonymManager for path /schema/analysis/synonyms/english
+INFO  - 2017-02-01 13:08:08.801; [   x:techproducts] org.apache.solr.schema.IndexSchema; Loaded schema example/1.6 with uniqueid field id
+INFO  - 2017-02-01 13:08:08.802; [   x:techproducts] org.apache.solr.rest.RestManager$Registry; Added observer of type org.apache.solr.rest.schema.analysis.ManagedStopFilterFactory to existing ManagedResource /schema/analysis/stopwords/english
+INFO  - 2017-02-01 13:08:08.802; [   x:techproducts] org.apache.solr.rest.RestManager$Registry; Added observer of type org.apache.solr.rest.schema.analysis.ManagedSynonymFilterFactory to existing ManagedResource /schema/analysis/synonyms/english
+INFO  - 2017-02-01 13:08:08.850; [   x:techproducts] org.apache.solr.core.CoreContainer; Creating SolrCore 'techproducts' using configuration from instancedir /Users/qfdk/GitHub/lucene-solr/solr/example/techproducts/solr/techproducts
+INFO  - 2017-02-01 13:08:08.851; [   x:techproducts] org.apache.solr.core.SolrCore; [[techproducts] ] Opening new SolrCore at [/Users/qfdk/GitHub/lucene-solr/solr/example/techproducts/solr/techproducts], dataDir=[/Users/qfdk/GitHub/lucene-solr/solr/example/techproducts/solr/techproducts/data/]
+INFO  - 2017-02-01 13:08:08.851; [   x:techproducts] org.apache.solr.core.JmxMonitoredMap; JMX monitoring is enabled. Adding Solr mbeans to JMX Server: com.sun.jmx.mbeanserver.JmxMBeanServer@49dc7102
+INFO  - 2017-02-01 13:08:08.854; [   x:techproducts] org.apache.solr.response.XSLTResponseWriter; xsltCacheLifetimeSeconds=5
+WARN  - 2017-02-01 13:08:08.921; [   x:techproducts] org.apache.solr.core.JmxMonitoredMap; Failed to register info bean: key=/admin/ping, infoBean=org.apache.solr.handler.PingRequestHandler@55c550c0
+javax.management.InstanceAlreadyExistsException: solr/techproducts:type=/admin/ping,id=org.apache.solr.handler.PingRequestHandler
+	at com.sun.jmx.mbeanserver.Repository.addMBean(Repository.java:437)
+	at com.sun.jmx.interceptor.DefaultMBeanServerInterceptor.registerWithRepository(DefaultMBeanServerInterceptor.java:1898)
+	at com.sun.jmx.interceptor.DefaultMBeanServerInterceptor.registerDynamicMBean(DefaultMBeanServerInterceptor.java:966)
+	at com.sun.jmx.interceptor.DefaultMBeanServerInterceptor.registerObject(DefaultMBeanServerInterceptor.java:900)
+	at com.sun.jmx.interceptor.DefaultMBeanServerInterceptor.registerMBean(DefaultMBeanServerInterceptor.java:324)
+	at com.sun.jmx.mbeanserver.JmxMBeanServer.registerMBean(JmxMBeanServer.java:522)
+	at org.apache.solr.core.JmxMonitoredMap.put(JmxMonitoredMap.java:197)
+	at org.apache.solr.core.JmxMonitoredMap.put(JmxMonitoredMap.java:76)
+	at org.apache.solr.core.SolrCore.registerInfoBean(SolrCore.java:2924)
+	at org.apache.solr.core.PluginBag.registerMBean(PluginBag.java:257)
+	at org.apache.solr.core.PluginBag.put(PluginBag.java:187)
+	at org.apache.solr.core.PluginBag.init(PluginBag.java:229)
+	at org.apache.solr.core.RequestHandlers.initHandlersFromConfig(RequestHandlers.java:130)
+	at org.apache.solr.core.SolrCore.<init>(SolrCore.java:920)
+	at org.apache.solr.core.SolrCore.<init>(SolrCore.java:825)
+	at org.apache.solr.core.CoreContainer.create(CoreContainer.java:927)
+	at org.apache.solr.core.CoreContainer.create(CoreContainer.java:863)
+	at org.apache.solr.handler.admin.CoreAdminOperation.lambda$static$100(CoreAdminOperation.java:88)
+	at org.apache.solr.handler.admin.CoreAdminOperation$$Lambda$20/1062635358.execute(Unknown Source)
+	at org.apache.solr.handler.admin.CoreAdminOperation.execute(CoreAdminOperation.java:378)
+	at org.apache.solr.handler.admin.CoreAdminHandler$CallInfo.call(CoreAdminHandler.java:379)
+	at org.apache.solr.handler.admin.CoreAdminHandler.handleRequestBody(CoreAdminHandler.java:165)
+	at org.apache.solr.handler.RequestHandlerBase.handleRequest(RequestHandlerBase.java:166)
+	at org.apache.solr.servlet.HttpSolrCall.handleAdminRequest(HttpSolrCall.java:664)
+	at org.apache.solr.servlet.HttpSolrCall.call(HttpSolrCall.java:445)
+	at org.apache.solr.servlet.SolrDispatchFilter.doFilter(SolrDispatchFilter.java:345)
+	at org.apache.solr.servlet.SolrDispatchFilter.doFilter(SolrDispatchFilter.java:296)
+	at org.eclipse.jetty.servlet.ServletHandler$CachedChain.doFilter(ServletHandler.java:1699)
+	at org.eclipse.jetty.servlets.CrossOriginFilter.handle(CrossOriginFilter.java:308)
+	at org.eclipse.jetty.servlets.CrossOriginFilter.doFilter(CrossOriginFilter.java:262)
+	at org.eclipse.jetty.servlet.ServletHandler$CachedChain.doFilter(ServletHandler.java:1691)
+	at org.eclipse.jetty.servlet.ServletHandler.doHandle(ServletHandler.java:582)
+	at org.eclipse.jetty.server.handler.ScopedHandler.handle(ScopedHandler.java:143)
+	at org.eclipse.jetty.security.SecurityHandler.handle(SecurityHandler.java:548)
+	at org.eclipse.jetty.server.session.SessionHandler.doHandle(SessionHandler.java:226)
+	at org.eclipse.jetty.server.handler.ContextHandler.doHandle(ContextHandler.java:1180)
+	at org.eclipse.jetty.servlet.ServletHandler.doScope(ServletHandler.java:512)
+	at org.eclipse.jetty.server.session.SessionHandler.doScope(SessionHandler.java:185)
+	at org.eclipse.jetty.server.handler.ContextHandler.doScope(ContextHandler.java:1112)
+	at org.eclipse.jetty.server.handler.ScopedHandler.handle(ScopedHandler.java:141)
+	at org.eclipse.jetty.server.handler.ContextHandlerCollection.handle(ContextHandlerCollection.java:213)
+	at org.eclipse.jetty.server.handler.HandlerCollection.handle(HandlerCollection.java:119)
+	at org.eclipse.jetty.server.handler.HandlerWrapper.handle(HandlerWrapper.java:134)
+	at org.eclipse.jetty.server.Server.handle(Server.java:534)
+	at org.eclipse.jetty.server.HttpChannel.handle(HttpChannel.java:320)
+	at org.eclipse.jetty.server.HttpConnection.onFillable(HttpConnection.java:251)
+	at org.eclipse.jetty.io.AbstractConnection$ReadCallback.succeeded(AbstractConnection.java:273)
+	at org.eclipse.jetty.io.FillInterest.fillable(FillInterest.java:95)
+	at org.eclipse.jetty.io.SelectChannelEndPoint$2.run(SelectChannelEndPoint.java:93)
+	at org.eclipse.jetty.util.thread.strategy.ExecuteProduceConsume.executeProduceConsume(ExecuteProduceConsume.java:303)
+	at org.eclipse.jetty.util.thread.strategy.ExecuteProduceConsume.produceConsume(ExecuteProduceConsume.java:148)
+	at org.eclipse.jetty.util.thread.strategy.ExecuteProduceConsume.run(ExecuteProduceConsume.java:136)
+	at org.eclipse.jetty.util.thread.QueuedThreadPool.runJob(QueuedThreadPool.java:671)
+	at org.eclipse.jetty.util.thread.QueuedThreadPool$2.run(QueuedThreadPool.java:589)
+	at java.lang.Thread.run(Thread.java:745)
+WARN  - 2017-02-01 13:08:08.969; [   x:techproducts] org.apache.solr.core.JmxMonitoredMap; Failed to register info bean: key=/admin/properties, infoBean=org.apache.solr.handler.admin.PropertiesRequestHandler@1755f286
+javax.management.InstanceAlreadyExistsException: solr/techproducts:type=/admin/properties,id=org.apache.solr.handler.admin.PropertiesRequestHandler
+	at com.sun.jmx.mbeanserver.Repository.addMBean(Repository.java:437)
+	at com.sun.jmx.interceptor.DefaultMBeanServerInterceptor.registerWithRepository(DefaultMBeanServerInterceptor.java:1898)
+	at com.sun.jmx.interceptor.DefaultMBeanServerInterceptor.registerDynamicMBean(DefaultMBeanServerInterceptor.java:966)
+	at com.sun.jmx.interceptor.DefaultMBeanServerInterceptor.registerObject(DefaultMBeanServerInterceptor.java:900)
+	at com.sun.jmx.interceptor.DefaultMBeanServerInterceptor.registerMBean(DefaultMBeanServerInterceptor.java:324)
+	at com.sun.jmx.mbeanserver.JmxMBeanServer.registerMBean(JmxMBeanServer.java:522)
+	at org.apache.solr.core.JmxMonitoredMap.put(JmxMonitoredMap.java:197)
+	at org.apache.solr.core.JmxMonitoredMap.put(JmxMonitoredMap.java:76)
+	at org.apache.solr.core.SolrCore.registerInfoBean(SolrCore.java:2924)
+	at org.apache.solr.core.PluginBag.registerMBean(PluginBag.java:257)
+	at org.apache.solr.core.PluginBag.put(PluginBag.java:187)
+	at org.apache.solr.core.PluginBag.init(PluginBag.java:229)
+	at org.apache.solr.core.RequestHandlers.initHandlersFromConfig(RequestHandlers.java:130)
+	at org.apache.solr.core.SolrCore.<init>(SolrCore.java:920)
+	at org.apache.solr.core.SolrCore.<init>(SolrCore.java:825)
+	at org.apache.solr.core.CoreContainer.create(CoreContainer.java:927)
+	at org.apache.solr.core.CoreContainer.lambda$load$3(CoreContainer.java:571)
+	at org.apache.solr.core.CoreContainer$$Lambda$40/812446698.call(Unknown Source)
+	at com.codahale.metrics.InstrumentedExecutorService$InstrumentedCallable.call(InstrumentedExecutorService.java:197)
+	at java.util.concurrent.FutureTask.run(FutureTask.java:266)
+	at org.apache.solr.common.util.ExecutorUtil$MDCAwareThreadPoolExecutor.lambda$execute$33(ExecutorUtil.java:229)
+	at org.apache.solr.common.util.ExecutorUtil$MDCAwareThreadPoolExecutor$$Lambda$41/1210830415.run(Unknown Source)
+	at java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1142)
+	at java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:617)
+	at java.lang.Thread.run(Thread.java:745)
+WARN  - 2017-02-01 13:08:08.976; [   x:techproducts] org.apache.solr.core.JmxMonitoredMap; Failed to register info bean: key=/admin/logging, infoBean=org.apache.solr.handler.admin.LoggingHandler@65300ce3
+javax.management.InstanceAlreadyExistsException: solr/techproducts:type=/admin/logging,id=org.apache.solr.handler.admin.LoggingHandler
+	at com.sun.jmx.mbeanserver.Repository.addMBean(Repository.java:437)
+	at com.sun.jmx.interceptor.DefaultMBeanServerInterceptor.registerWithRepository(DefaultMBeanServerInterceptor.java:1898)
+	at com.sun.jmx.interceptor.DefaultMBeanServerInterceptor.registerDynamicMBean(DefaultMBeanServerInterceptor.java:966)
+	at com.sun.jmx.interceptor.DefaultMBeanServerInterceptor.registerObject(DefaultMBeanServerInterceptor.java:900)
+	at com.sun.jmx.interceptor.DefaultMBeanServerInterceptor.registerMBean(DefaultMBeanServerInterceptor.java:324)
+	at com.sun.jmx.mbeanserver.JmxMBeanServer.registerMBean(JmxMBeanServer.java:522)
+	at org.apache.solr.core.JmxMonitoredMap.put(JmxMonitoredMap.java:197)
+	at org.apache.solr.core.JmxMonitoredMap.put(JmxMonitoredMap.java:76)
+	at org.apache.solr.core.SolrCore.registerInfoBean(SolrCore.java:2924)
+	at org.apache.solr.core.PluginBag.registerMBean(PluginBag.java:257)
+	at org.apache.solr.core.PluginBag.put(PluginBag.java:187)
+	at org.apache.solr.core.PluginBag.init(PluginBag.java:229)
+	at org.apache.solr.core.RequestHandlers.initHandlersFromConfig(RequestHandlers.java:130)
+	at org.apache.solr.core.SolrCore.<init>(SolrCore.java:920)
+	at org.apache.solr.core.SolrCore.<init>(SolrCore.java:825)
+	at org.apache.solr.core.CoreContainer.create(CoreContainer.java:927)
+	at org.apache.solr.core.CoreContainer.lambda$load$3(CoreContainer.java:571)
+	at org.apache.solr.core.CoreContainer$$Lambda$40/812446698.call(Unknown Source)
+	at com.codahale.metrics.InstrumentedExecutorService$InstrumentedCallable.call(InstrumentedExecutorService.java:197)
+	at java.util.concurrent.FutureTask.run(FutureTask.java:266)
+	at org.apache.solr.common.util.ExecutorUtil$MDCAwareThreadPoolExecutor.lambda$execute$33(ExecutorUtil.java:229)
+	at org.apache.solr.common.util.ExecutorUtil$MDCAwareThreadPoolExecutor$$Lambda$41/1210830415.run(Unknown Source)
+	at java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1142)
+	at java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:617)
+	at java.lang.Thread.run(Thread.java:745)
+WARN  - 2017-02-01 13:08:08.985; [   x:techproducts] org.apache.solr.core.JmxMonitoredMap; Failed to register info bean: key=/admin/file, infoBean=org.apache.solr.handler.admin.ShowFileRequestHandler@ea4adf4
+javax.management.InstanceAlreadyExistsException: solr/techproducts:type=/admin/file,id=org.apache.solr.handler.admin.ShowFileRequestHandler
+	at com.sun.jmx.mbeanserver.Repository.addMBean(Repository.java:437)
+	at com.sun.jmx.interceptor.DefaultMBeanServerInterceptor.registerWithRepository(DefaultMBeanServerInterceptor.java:1898)
+	at com.sun.jmx.interceptor.DefaultMBeanServerInterceptor.registerDynamicMBean(DefaultMBeanServerInterceptor.java:966)
+	at com.sun.jmx.interceptor.DefaultMBeanServerInterceptor.registerObject(DefaultMBeanServerInterceptor.java:900)
+	at com.sun.jmx.interceptor.DefaultMBeanServerInterceptor.registerMBean(DefaultMBeanServerInterceptor.java:324)
+	at com.sun.jmx.mbeanserver.JmxMBeanServer.registerMBean(JmxMBeanServer.java:522)
+	at org.apache.solr.core.JmxMonitoredMap.put(JmxMonitoredMap.java:197)
+	at org.apache.solr.core.JmxMonitoredMap.put(JmxMonitoredMap.java:76)
+	at org.apache.solr.core.SolrCore.registerInfoBean(SolrCore.java:2924)
+	at org.apache.solr.core.PluginBag.registerMBean(PluginBag.java:257)
+	at org.apache.solr.core.PluginBag.put(PluginBag.java:187)
+	at org.apache.solr.core.PluginBag.init(PluginBag.java:229)
+	at org.apache.solr.core.RequestHandlers.initHandlersFromConfig(RequestHandlers.java:130)
+	at org.apache.solr.core.SolrCore.<init>(SolrCore.java:920)
+	at org.apache.solr.core.SolrCore.<init>(SolrCore.java:825)
+	at org.apache.solr.core.CoreContainer.create(CoreContainer.java:927)
+	at org.apache.solr.core.CoreContainer.lambda$load$3(CoreContainer.java:571)
+	at org.apache.solr.core.CoreContainer$$Lambda$40/812446698.call(Unknown Source)
+	at com.codahale.metrics.InstrumentedExecutorService$InstrumentedCallable.call(InstrumentedExecutorService.java:197)
+	at java.util.concurrent.FutureTask.run(FutureTask.java:266)
+	at org.apache.solr.common.util.ExecutorUtil$MDCAwareThreadPoolExecutor.lambda$execute$33(ExecutorUtil.java:229)
+	at org.apache.solr.common.util.ExecutorUtil$MDCAwareThreadPoolExecutor$$Lambda$41/1210830415.run(Unknown Source)
+	at java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1142)
+	at java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:617)
+	at java.lang.Thread.run(Thread.java:745)
+WARN  - 2017-02-01 13:08:08.988; [   x:techproducts] org.apache.solr.core.JmxMonitoredMap; Failed to register info bean: key=/export, infoBean=org.apache.solr.handler.ExportHandler@6955b232
+javax.management.InstanceAlreadyExistsException: solr/techproducts:type=/export,id=org.apache.solr.handler.ExportHandler
+	at com.sun.jmx.mbeanserver.Repository.addMBean(Repository.java:437)
+	at com.sun.jmx.interceptor.DefaultMBeanServerInterceptor.registerWithRepository(DefaultMBeanServerInterceptor.java:1898)
+	at com.sun.jmx.interceptor.DefaultMBeanServerInterceptor.registerDynamicMBean(DefaultMBeanServerInterceptor.java:966)
+	at com.sun.jmx.interceptor.DefaultMBeanServerInterceptor.registerObject(DefaultMBeanServerInterceptor.java:900)
+	at com.sun.jmx.interceptor.DefaultMBeanServerInterceptor.registerMBean(DefaultMBeanServerInterceptor.java:324)
+	at com.sun.jmx.mbeanserver.JmxMBeanServer.registerMBean(JmxMBeanServer.java:522)
+	at org.apache.solr.core.JmxMonitoredMap.put(JmxMonitoredMap.java:197)
+	at org.apache.solr.core.JmxMonitoredMap.put(JmxMonitoredMap.java:76)
+	at org.apache.solr.core.SolrCore.registerInfoBean(SolrCore.java:2924)
+	at org.apache.solr.core.PluginBag.registerMBean(PluginBag.java:257)
+	at org.apache.solr.core.PluginBag.put(PluginBag.java:187)
+	at org.apache.solr.core.PluginBag.init(PluginBag.java:229)
+	at org.apache.solr.core.RequestHandlers.initHandlersFromConfig(RequestHandlers.java:130)
+	at org.apache.solr.core.SolrCore.<init>(SolrCore.java:920)
+	at org.apache.solr.core.SolrCore.<init>(SolrCore.java:825)
+	at org.apache.solr.core.CoreContainer.create(CoreContainer.java:927)
+	at org.apache.solr.core.CoreContainer.create(CoreContainer.java:863)
+	at org.apache.solr.handler.admin.CoreAdminOperation.lambda$static$100(CoreAdminOperation.java:88)
+	at org.apache.solr.handler.admin.CoreAdminOperation$$Lambda$20/1062635358.execute(Unknown Source)
+	at org.apache.solr.handler.admin.CoreAdminOperation.execute(CoreAdminOperation.java:378)
+	at org.apache.solr.handler.admin.CoreAdminHandler$CallInfo.call(CoreAdminHandler.java:379)
+	at org.apache.solr.handler.admin.CoreAdminHandler.handleRequestBody(CoreAdminHandler.java:165)
+	at org.apache.solr.handler.RequestHandlerBase.handleRequest(RequestHandlerBase.java:166)
+	at org.apache.solr.servlet.HttpSolrCall.handleAdminRequest(HttpSolrCall.java:664)
+	at org.apache.solr.servlet.HttpSolrCall.call(HttpSolrCall.java:445)
+	at org.apache.solr.servlet.SolrDispatchFilter.doFilter(SolrDispatchFilter.java:345)
+	at org.apache.solr.servlet.SolrDispatchFilter.doFilter(SolrDispatchFilter.java:296)
+	at org.eclipse.jetty.servlet.ServletHandler$CachedChain.doFilter(ServletHandler.java:1699)
+	at org.eclipse.jetty.servlets.CrossOriginFilter.handle(CrossOriginFilter.java:308)
+	at org.eclipse.jetty.servlets.CrossOriginFilter.doFilter(CrossOriginFilter.java:262)
+	at org.eclipse.jetty.servlet.ServletHandler$CachedChain.doFilter(ServletHandler.java:1691)
+	at org.eclipse.jetty.servlet.ServletHandler.doHandle(ServletHandler.java:582)
+	at org.eclipse.jetty.server.handler.ScopedHandler.handle(ScopedHandler.java:143)
+	at org.eclipse.jetty.security.SecurityHandler.handle(SecurityHandler.java:548)
+	at org.eclipse.jetty.server.session.SessionHandler.doHandle(SessionHandler.java:226)
+	at org.eclipse.jetty.server.handler.ContextHandler.doHandle(ContextHandler.java:1180)
+	at org.eclipse.jetty.servlet.ServletHandler.doScope(ServletHandler.java:512)
+	at org.eclipse.jetty.server.session.SessionHandler.doScope(SessionHandler.java:185)
+	at org.eclipse.jetty.server.handler.ContextHandler.doScope(ContextHandler.java:1112)
+	at org.eclipse.jetty.server.handler.ScopedHandler.handle(ScopedHandler.java:141)
+	at org.eclipse.jetty.server.handler.ContextHandlerCollection.handle(ContextHandlerCollection.java:213)
+	at org.eclipse.jetty.server.handler.HandlerCollection.handle(HandlerCollection.java:119)
+	at org.eclipse.jetty.server.handler.HandlerWrapper.handle(HandlerWrapper.java:134)
+	at org.eclipse.jetty.server.Server.handle(Server.java:534)
+	at org.eclipse.jetty.server.HttpChannel.handle(HttpChannel.java:320)
+	at org.eclipse.jetty.server.HttpConnection.onFillable(HttpConnection.java:251)
+	at org.eclipse.jetty.io.AbstractConnection$ReadCallback.succeeded(AbstractConnection.java:273)
+	at org.eclipse.jetty.io.FillInterest.fillable(FillInterest.java:95)
+	at org.eclipse.jetty.io.SelectChannelEndPoint$2.run(SelectChannelEndPoint.java:93)
+	at org.eclipse.jetty.util.thread.strategy.ExecuteProduceConsume.executeProduceConsume(ExecuteProduceConsume.java:303)
+	at org.eclipse.jetty.util.thread.strategy.ExecuteProduceConsume.produceConsume(ExecuteProduceConsume.java:148)
+	at org.eclipse.jetty.util.thread.strategy.ExecuteProduceConsume.run(ExecuteProduceConsume.java:136)
+	at org.eclipse.jetty.util.thread.QueuedThreadPool.runJob(QueuedThreadPool.java:671)
+	at org.eclipse.jetty.util.thread.QueuedThreadPool$2.run(QueuedThreadPool.java:589)
+	at java.lang.Thread.run(Thread.java:745)
+INFO  - 2017-02-01 13:08:09.032; [   x:techproducts] org.apache.solr.update.UpdateHandler; Using UpdateLog implementation: org.apache.solr.update.UpdateLog
+INFO  - 2017-02-01 13:08:09.032; [   x:techproducts] org.apache.solr.update.UpdateLog; Initializing UpdateLog: dataDir= defaultSyncLevel=FLUSH numRecordsToKeep=100 maxNumLogsToKeep=10 numVersionBuckets=65536
+INFO  - 2017-02-01 13:08:09.033; [   x:techproducts] org.apache.solr.update.UpdateHandler; Using UpdateLog implementation: org.apache.solr.update.UpdateLog
+INFO  - 2017-02-01 13:08:09.034; [   x:techproducts] org.apache.solr.update.UpdateLog; Initializing UpdateLog: dataDir= defaultSyncLevel=FLUSH numRecordsToKeep=100 maxNumLogsToKeep=10 numVersionBuckets=65536
+INFO  - 2017-02-01 13:08:09.063; [   x:techproducts] org.apache.solr.update.CommitTracker; Hard AutoCommit: if uncommited for 15000ms; 
+INFO  - 2017-02-01 13:08:09.063; [   x:techproducts] org.apache.solr.update.CommitTracker; Soft AutoCommit: disabled
+INFO  - 2017-02-01 13:08:09.066; [   x:techproducts] org.apache.solr.update.CommitTracker; Hard AutoCommit: if uncommited for 15000ms; 
+INFO  - 2017-02-01 13:08:09.067; [   x:techproducts] org.apache.solr.update.CommitTracker; Soft AutoCommit: disabled
+INFO  - 2017-02-01 13:08:09.099; [   x:techproducts] org.apache.solr.core.SolrCore; [techproducts]  CLOSING SolrCore org.apache.solr.core.SolrCore@7f3ff3b6
+INFO  - 2017-02-01 13:08:09.124; [   x:techproducts] org.apache.solr.metrics.SolrMetricManager; Closing metric reporters for: solr.core.techproducts
+ERROR - 2017-02-01 13:08:09.128; [   ] org.apache.solr.core.CoreContainer; Error waiting for SolrCore to be created
+java.util.concurrent.ExecutionException: org.apache.solr.common.SolrException: Unable to create core [techproducts]
+	at java.util.concurrent.FutureTask.report(FutureTask.java:122)
+	at java.util.concurrent.FutureTask.get(FutureTask.java:192)
+	at org.apache.solr.core.CoreContainer.lambda$load$4(CoreContainer.java:599)
+	at org.apache.solr.core.CoreContainer$$Lambda$42/963815509.run(Unknown Source)
+	at com.codahale.metrics.InstrumentedExecutorService$InstrumentedRunnable.run(InstrumentedExecutorService.java:176)
+	at java.util.concurrent.Executors$RunnableAdapter.call(Executors.java:511)
+	at java.util.concurrent.FutureTask.run(FutureTask.java:266)
+	at org.apache.solr.common.util.ExecutorUtil$MDCAwareThreadPoolExecutor.lambda$execute$33(ExecutorUtil.java:229)
+	at org.apache.solr.common.util.ExecutorUtil$MDCAwareThreadPoolExecutor$$Lambda$41/1210830415.run(Unknown Source)
+	at java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1142)
+	at java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:617)
+	at java.lang.Thread.run(Thread.java:745)
+Caused by: org.apache.solr.common.SolrException: Unable to create core [techproducts]
+	at org.apache.solr.core.CoreContainer.create(CoreContainer.java:942)
+	at org.apache.solr.core.CoreContainer.lambda$load$3(CoreContainer.java:571)
+	at org.apache.solr.core.CoreContainer$$Lambda$40/812446698.call(Unknown Source)
+	at com.codahale.metrics.InstrumentedExecutorService$InstrumentedCallable.call(InstrumentedExecutorService.java:197)
+	... 6 more
+Caused by: org.apache.solr.common.SolrException: Error opening new searcher
+	at org.apache.solr.core.SolrCore.<init>(SolrCore.java:961)
+	at org.apache.solr.core.SolrCore.<init>(SolrCore.java:825)
+	at org.apache.solr.core.CoreContainer.create(CoreContainer.java:927)
+	... 9 more
+Caused by: org.apache.solr.common.SolrException: Error opening new searcher
+	at org.apache.solr.core.SolrCore.openNewSearcher(SolrCore.java:1994)
+	at org.apache.solr.core.SolrCore.getSearcher(SolrCore.java:2114)
+	at org.apache.solr.core.SolrCore.initSearcher(SolrCore.java:1050)
+	at org.apache.solr.core.SolrCore.<init>(SolrCore.java:934)
+	... 11 more
+Caused by: org.apache.lucene.store.LockObtainFailedException: Lock held by this virtual machine: /Users/qfdk/GitHub/lucene-solr/solr/example/techproducts/solr/techproducts/data/index/write.lock
+	at org.apache.lucene.store.NativeFSLockFactory.obtainFSLock(NativeFSLockFactory.java:127)
+	at org.apache.lucene.store.FSLockFactory.obtainLock(FSLockFactory.java:41)
+	at org.apache.lucene.store.BaseDirectory.obtainLock(BaseDirectory.java:45)
+	at org.apache.lucene.store.FilterDirectory.obtainLock(FilterDirectory.java:104)
+	at org.apache.lucene.store.FilterDirectory.obtainLock(FilterDirectory.java:104)
+	at org.apache.lucene.index.IndexWriter.<init>(IndexWriter.java:804)
+	at org.apache.solr.update.SolrIndexWriter.<init>(SolrIndexWriter.java:135)
+	at org.apache.solr.update.SolrIndexWriter.create(SolrIndexWriter.java:99)
+	at org.apache.solr.update.DefaultSolrCoreState.createMainIndexWriter(DefaultSolrCoreState.java:240)
+	at org.apache.solr.update.DefaultSolrCoreState.getIndexWriter(DefaultSolrCoreState.java:114)
+	at org.apache.solr.core.SolrCore.openNewSearcher(SolrCore.java:1955)
+	... 14 more
+ERROR - 2017-02-01 13:08:09.155; [   ] org.apache.solr.update.SolrIndexWriter; SolrIndexWriter was not closed prior to finalize(), indicates a bug -- POSSIBLE RESOURCE LEAK!!!
+ERROR - 2017-02-01 13:08:09.157; [   ] org.apache.solr.update.SolrIndexWriter; Error closing IndexWriter
+java.lang.NullPointerException
+	at org.apache.lucene.index.IndexWriter.doFlush(IndexWriter.java:3381)
+	at org.apache.lucene.index.IndexWriter.flush(IndexWriter.java:3343)
+	at org.apache.lucene.index.IndexWriter.shutdown(IndexWriter.java:1134)
+	at org.apache.lucene.index.IndexWriter.close(IndexWriter.java:1179)
+	at org.apache.solr.update.SolrIndexWriter.close(SolrIndexWriter.java:295)
+	at org.apache.solr.update.SolrIndexWriter.finalize(SolrIndexWriter.java:351)
+	at java.lang.System$2.invokeFinalize(System.java:1270)
+	at java.lang.ref.Finalizer.runFinalizer(Finalizer.java:98)
+	at java.lang.ref.Finalizer.access$100(Finalizer.java:34)
+	at java.lang.ref.Finalizer$FinalizerThread.run(Finalizer.java:210)
+INFO  - 2017-02-01 13:08:09.294; [   x:techproducts] org.apache.solr.search.SolrIndexSearcher; Opening [Searcher@2f7e5f9[techproducts] main]
+INFO  - 2017-02-01 13:08:09.303; [   x:techproducts] org.apache.solr.rest.ManagedResourceStorage$FileStorageIO; File-based storage initialized to use dir: /Users/qfdk/GitHub/lucene-solr/solr/example/techproducts/solr/techproducts/conf
+INFO  - 2017-02-01 13:08:09.306; [   x:techproducts] org.apache.solr.rest.ManagedResourceStorage; Loaded LinkedHashMap at path _rest_managed.json using file:dir=/Users/qfdk/GitHub/lucene-solr/solr/example/techproducts/solr/techproducts/conf
+INFO  - 2017-02-01 13:08:09.307; [   x:techproducts] org.apache.solr.rest.ManagedResource; Loaded initArgs {} for /rest/managed
+INFO  - 2017-02-01 13:08:09.308; [   x:techproducts] org.apache.solr.rest.ManagedResourceStorage; Loaded LinkedHashMap at path _schema_analysis_stopwords_english.json using file:dir=/Users/qfdk/GitHub/lucene-solr/solr/example/techproducts/solr/techproducts/conf
+INFO  - 2017-02-01 13:08:09.309; [   x:techproducts] org.apache.solr.rest.ManagedResource; Loaded initArgs {ignoreCase=true} for /schema/analysis/stopwords/english
+INFO  - 2017-02-01 13:08:09.310; [   x:techproducts] org.apache.solr.rest.schema.analysis.ManagedWordSetResource; Loaded 35 words for /schema/analysis/stopwords/english
+INFO  - 2017-02-01 13:08:09.310; [   x:techproducts] org.apache.solr.rest.ManagedResource; Notified 2 observers of /schema/analysis/stopwords/english
+INFO  - 2017-02-01 13:08:09.312; [   x:techproducts] org.apache.solr.rest.ManagedResourceStorage; Loaded LinkedHashMap at path _schema_analysis_synonyms_english.json using file:dir=/Users/qfdk/GitHub/lucene-solr/solr/example/techproducts/solr/techproducts/conf
+INFO  - 2017-02-01 13:08:09.312; [   x:techproducts] org.apache.solr.rest.ManagedResource; Loaded initArgs {ignoreCase=true,format=solr} for /schema/analysis/synonyms/english
+INFO  - 2017-02-01 13:08:09.313; [   x:techproducts] org.apache.solr.rest.schema.analysis.ManagedSynonymFilterFactory$SynonymManager; Loaded 3 synonym mappings for /schema/analysis/synonyms/english
+INFO  - 2017-02-01 13:08:09.315; [   x:techproducts] org.apache.solr.rest.ManagedResource; Notified 2 observers of /schema/analysis/synonyms/english
+INFO  - 2017-02-01 13:08:09.317; [   x:techproducts] org.apache.solr.rest.RestManager$Registry; Registered ManagedResource impl org.apache.solr.ltr.store.rest.ManagedFeatureStore for path /schema/feature-store
+INFO  - 2017-02-01 13:08:09.318; [   x:techproducts] org.apache.solr.rest.ManagedResourceStorage; Loaded LinkedHashMap at path _schema_feature-store.json using file:dir=/Users/qfdk/GitHub/lucene-solr/solr/example/techproducts/solr/techproducts/conf
+INFO  - 2017-02-01 13:08:09.318; [   x:techproducts] org.apache.solr.rest.ManagedResource; Loaded initArgs {} for /schema/feature-store
+INFO  - 2017-02-01 13:08:09.319; [   x:techproducts] org.apache.solr.ltr.store.rest.ManagedFeatureStore; ------ managed feature ~ loading ------
+INFO  - 2017-02-01 13:08:09.319; [   x:techproducts] org.apache.solr.ltr.store.rest.ManagedFeatureStore; register feature based on {name=originalScore, class=org.apache.solr.ltr.feature.OriginalScoreFeature, params=null, store=jouvestore}
+INFO  - 2017-02-01 13:08:09.324; [   x:techproducts] org.apache.solr.ltr.store.rest.ManagedFeatureStore; register feature based on {name=isInStock, class=org.apache.solr.ltr.feature.FieldValueFeature, params={field=in-stock_b}, store=jouvestore}
+INFO  - 2017-02-01 13:08:09.334; [   x:techproducts] org.apache.solr.rest.ManagedResource; Notified 1 observers of /schema/feature-store
+INFO  - 2017-02-01 13:08:09.334; [   x:techproducts] org.apache.solr.rest.RestManager; Registered new managed resource /schema/feature-store
+INFO  - 2017-02-01 13:08:09.337; [   x:techproducts] org.apache.solr.rest.RestManager$Registry; Registered ManagedResource impl org.apache.solr.ltr.store.rest.ManagedModelStore for path /schema/model-store
+INFO  - 2017-02-01 13:08:09.339; [   x:techproducts] org.apache.solr.rest.ManagedResourceStorage; Loaded LinkedHashMap at path _schema_model-store.json using file:dir=/Users/qfdk/GitHub/lucene-solr/solr/example/techproducts/solr/techproducts/conf
+INFO  - 2017-02-01 13:08:09.340; [   x:techproducts] org.apache.solr.rest.ManagedResource; Loaded initArgs {} for /schema/model-store
+INFO  - 2017-02-01 13:08:09.341; [   x:techproducts] org.apache.solr.ltr.store.rest.ManagedModelStore; INIT model store
+INFO  - 2017-02-01 13:08:09.341; [   x:techproducts] org.apache.solr.ltr.store.rest.ManagedModelStore; ------ managed models ~ loading ------
+INFO  - 2017-02-01 13:08:09.342; [   x:techproducts] org.apache.solr.rest.ManagedResource; Notified 1 observers of /schema/model-store
+INFO  - 2017-02-01 13:08:09.342; [   x:techproducts] org.apache.solr.rest.RestManager; Registered new managed resource /schema/model-store
+INFO  - 2017-02-01 13:08:09.351; [   x:techproducts] org.apache.solr.handler.component.SpellCheckComponent; Initializing spell checkers
+INFO  - 2017-02-01 13:08:09.360; [   x:techproducts] org.apache.solr.spelling.DirectSolrSpellChecker; init: {name=default,field=text,classname=solr.DirectSolrSpellChecker,distanceMeasure=internal,accuracy=0.5,maxEdits=2,minPrefix=1,maxInspections=5,minQueryLength=4,maxQueryFrequency=0.01}
+INFO  - 2017-02-01 13:08:09.369; [   x:techproducts] org.apache.solr.handler.component.SuggestComponent; Initializing SuggestComponent
+INFO  - 2017-02-01 13:08:09.372; [   x:techproducts] org.apache.solr.spelling.suggest.SolrSuggester; init: {name=mySuggester,lookupImpl=FuzzyLookupFactory,dictionaryImpl=DocumentDictionaryFactory,field=cat,weightField=price,suggestAnalyzerFieldType=string,buildOnStartup=false}
+INFO  - 2017-02-01 13:08:09.391; [   x:techproducts] org.apache.solr.spelling.suggest.SolrSuggester; Dictionary loaded with params: {name=mySuggester,lookupImpl=FuzzyLookupFactory,dictionaryImpl=DocumentDictionaryFactory,field=cat,weightField=price,suggestAnalyzerFieldType=string,buildOnStartup=false}
+INFO  - 2017-02-01 13:08:09.392; [   x:techproducts] org.apache.solr.handler.component.QueryElevationComponent; Loading QueryElevation from: /Users/qfdk/GitHub/lucene-solr/solr/example/techproducts/solr/techproducts/conf/elevate.xml
+INFO  - 2017-02-01 13:08:09.405; [   x:techproducts] org.apache.solr.handler.ReplicationHandler; Commits will be reserved for  10000
+INFO  - 2017-02-01 13:08:09.431; [   x:techproducts] org.apache.solr.core.QuerySenderListener; QuerySenderListener sending requests to Searcher@2f7e5f9[techproducts] main{ExitableDirectoryReader(UninvertingDirectoryReader(Uninverting(_0(7.0.0):C32)))}
+ERROR - 2017-02-01 13:08:09.462; [   x:techproducts] org.apache.solr.common.SolrException; org.apache.solr.common.SolrException: Error CREATEing SolrCore 'techproducts': Could not create a new core in /Users/qfdk/GitHub/lucene-solr/solr/example/techproducts/solr/techproductsas another core is already defined there
+	at org.apache.solr.core.CoreContainer.create(CoreContainer.java:897)
+	at org.apache.solr.handler.admin.CoreAdminOperation.lambda$static$100(CoreAdminOperation.java:88)
+	at org.apache.solr.handler.admin.CoreAdminOperation$$Lambda$20/1062635358.execute(Unknown Source)
+	at org.apache.solr.handler.admin.CoreAdminOperation.execute(CoreAdminOperation.java:378)
+	at org.apache.solr.handler.admin.CoreAdminHandler$CallInfo.call(CoreAdminHandler.java:379)
+	at org.apache.solr.handler.admin.CoreAdminHandler.handleRequestBody(CoreAdminHandler.java:165)
+	at org.apache.solr.handler.RequestHandlerBase.handleRequest(RequestHandlerBase.java:166)
+	at org.apache.solr.servlet.HttpSolrCall.handleAdminRequest(HttpSolrCall.java:664)
+	at org.apache.solr.servlet.HttpSolrCall.call(HttpSolrCall.java:445)
+	at org.apache.solr.servlet.SolrDispatchFilter.doFilter(SolrDispatchFilter.java:345)
+	at org.apache.solr.servlet.SolrDispatchFilter.doFilter(SolrDispatchFilter.java:296)
+	at org.eclipse.jetty.servlet.ServletHandler$CachedChain.doFilter(ServletHandler.java:1699)
+	at org.eclipse.jetty.servlets.CrossOriginFilter.handle(CrossOriginFilter.java:308)
+	at org.eclipse.jetty.servlets.CrossOriginFilter.doFilter(CrossOriginFilter.java:262)
+	at org.eclipse.jetty.servlet.ServletHandler$CachedChain.doFilter(ServletHandler.java:1691)
+	at org.eclipse.jetty.servlet.ServletHandler.doHandle(ServletHandler.java:582)
+	at org.eclipse.jetty.server.handler.ScopedHandler.handle(ScopedHandler.java:143)
+	at org.eclipse.jetty.security.SecurityHandler.handle(SecurityHandler.java:548)
+	at org.eclipse.jetty.server.session.SessionHandler.doHandle(SessionHandler.java:226)
+	at org.eclipse.jetty.server.handler.ContextHandler.doHandle(ContextHandler.java:1180)
+	at org.eclipse.jetty.servlet.ServletHandler.doScope(ServletHandler.java:512)
+	at org.eclipse.jetty.server.session.SessionHandler.doScope(SessionHandler.java:185)
+	at org.eclipse.jetty.server.handler.ContextHandler.doScope(ContextHandler.java:1112)
+	at org.eclipse.jetty.server.handler.ScopedHandler.handle(ScopedHandler.java:141)
+	at org.eclipse.jetty.server.handler.ContextHandlerCollection.handle(ContextHandlerCollection.java:213)
+	at org.eclipse.jetty.server.handler.HandlerCollection.handle(HandlerCollection.java:119)
+	at org.eclipse.jetty.server.handler.HandlerWrapper.handle(HandlerWrapper.java:134)
+	at org.eclipse.jetty.server.Server.handle(Server.java:534)
+	at org.eclipse.jetty.server.HttpChannel.handle(HttpChannel.java:320)
+	at org.eclipse.jetty.server.HttpConnection.onFillable(HttpConnection.java:251)
+	at org.eclipse.jetty.io.AbstractConnection$ReadCallback.succeeded(AbstractConnection.java:273)
+	at org.eclipse.jetty.io.FillInterest.fillable(FillInterest.java:95)
+	at org.eclipse.jetty.io.SelectChannelEndPoint$2.run(SelectChannelEndPoint.java:93)
+	at org.eclipse.jetty.util.thread.strategy.ExecuteProduceConsume.executeProduceConsume(ExecuteProduceConsume.java:303)
+	at org.eclipse.jetty.util.thread.strategy.ExecuteProduceConsume.produceConsume(ExecuteProduceConsume.java:148)
+	at org.eclipse.jetty.util.thread.strategy.ExecuteProduceConsume.run(ExecuteProduceConsume.java:136)
+	at org.eclipse.jetty.util.thread.QueuedThreadPool.runJob(QueuedThreadPool.java:671)
+	at org.eclipse.jetty.util.thread.QueuedThreadPool$2.run(QueuedThreadPool.java:589)
+	at java.lang.Thread.run(Thread.java:745)
+Caused by: org.apache.solr.common.SolrException: Could not create a new core in /Users/qfdk/GitHub/lucene-solr/solr/example/techproducts/solr/techproductsas another core is already defined there
+	at org.apache.solr.core.CorePropertiesLocator.create(CorePropertiesLocator.java:67)
+	at org.apache.solr.core.CoreContainer.create(CoreContainer.java:866)
+	... 38 more
+
+INFO  - 2017-02-01 13:08:09.462; [   x:techproducts] org.apache.solr.servlet.HttpSolrCall; [admin] webapp=null path=/admin/cores params={name=techproducts&action=CREATE&instanceDir=techproducts&wt=json} status=400 QTime=1136
+INFO  - 2017-02-01 13:08:09.493; [   x:techproducts] org.apache.solr.core.SolrCore; [techproducts]  webapp=null path=null params={q=static+firstSearcher+warming+in+solrconfig.xml&distrib=false&event=firstSearcher} hits=3 status=0 QTime=61
+INFO  - 2017-02-01 13:08:09.506; [   x:techproducts] org.apache.solr.core.QuerySenderListener; QuerySenderListener done.
+INFO  - 2017-02-01 13:08:09.506; [   x:techproducts] org.apache.solr.handler.component.SpellCheckComponent$SpellCheckerListener; Loading spell index for spellchecker: default
+INFO  - 2017-02-01 13:08:09.506; [   x:techproducts] org.apache.solr.handler.component.SpellCheckComponent$SpellCheckerListener; Loading spell index for spellchecker: wordbreak
+INFO  - 2017-02-01 13:08:09.509; [   x:techproducts] org.apache.solr.core.SolrCore; [techproducts] Registered new searcher Searcher@2f7e5f9[techproducts] main{ExitableDirectoryReader(UninvertingDirectoryReader(Uninverting(_0(7.0.0):C32)))}
+INFO  - 2017-02-01 13:08:11.873; [   ] org.eclipse.jetty.server.AbstractConnector; Stopped ServerConnector@4803b726{HTTP/1.1,[http/1.1]}{0.0.0.0:8983}
+INFO  - 2017-02-01 13:08:11.873; [   ] org.apache.solr.core.CoreContainer; Shutting down CoreContainer instance=1264213713
+INFO  - 2017-02-01 13:08:11.875; [   x:techproducts] org.apache.solr.core.SolrCore; [techproducts]  CLOSING SolrCore org.apache.solr.core.SolrCore@17ac0b7b
+INFO  - 2017-02-01 13:08:11.883; [   x:techproducts] org.apache.solr.metrics.SolrMetricManager; Closing metric reporters for: solr.core.techproducts
+INFO  - 2017-02-01 13:08:11.885; [   ] org.apache.solr.metrics.SolrMetricManager; Closing metric reporters for: solr.node
+INFO  - 2017-02-01 13:08:11.889; [   ] org.eclipse.jetty.server.handler.ContextHandler; Stopped o.e.j.w.WebAppContext@11438d26{/solr,null,UNAVAILABLE}{/Users/qfdk/GitHub/lucene-solr/solr/server/solr-webapp/webapp}

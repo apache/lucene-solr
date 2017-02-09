@@ -9,6 +9,7 @@ import {ClientTable} from 'vue-tables-2'
 
 import Index from './components/Index'
 import Compare from './components/Compare'
+import Clicklogs from './components/Clicklogs'
 
 import top from './components/Header'
 import jumbotron from './components/Jumbotron'
@@ -23,6 +24,7 @@ var router = new VueRouter({
   base: __dirname,
   routes: [
       {path: '/', component: Index},
+      {path: '/clicklogs', component: Clicklogs},
       {path: '/compare', component: Compare}
   ]
 })

@@ -1,18 +1,18 @@
 <template lang="html">
   <div class="compare">
     <jumbotron :isShow="false" msg="Compare"></jumbotron>
-    <ltr></ltr>
+    <gencompare></gencompare>
   </div>
 </template>
 
 <script>
 import jumbotron from './Jumbotron'
-import ltr from './Ltr'
+import gencompare from './Gencompare'
 export default {
   name:'compare',
   components: {
     jumbotron,
-    ltr
+    gencompare
   },
   data(){
     return {
