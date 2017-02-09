@@ -180,6 +180,11 @@ public interface FacetParams {
    */
   public static final String FACET_CONTAINS_IGNORE_CASE = FACET_CONTAINS + ".ignoreCase";
 
+  /**
+   * Only return constraints of a facet field excluding the given string.
+   */
+  public static final String FACET_EXCLUDETERMS = FACET + ".excludeTerms";
+
  /**
    * When faceting by enumerating the terms in a field,
    * only use the filterCache for terms with a df &gt;= to this parameter.
