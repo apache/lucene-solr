@@ -18,6 +18,7 @@ package org.apache.solr.request;
 
 import java.io.IOException;
 import java.util.List;
+import java.util.function.Predicate;
 
 import org.apache.lucene.index.DocValues;
 import org.apache.lucene.index.LeafReaderContext;
@@ -57,8 +58,13 @@ import org.apache.solr.util.LongPriorityQueue;
  */
 public class DocValuesFacets {
   private DocValuesFacets() {}
-  
+
   public static NamedList<Integer> getCounts(SolrIndexSearcher searcher, DocSet docs, String fieldName, int offset, int limit, int mincount, boolean missing, String sort, String prefix, String contains, boolean ignoreCase, FacetDebugInfo fdebug) throws IOException {
+    final Predicate<BytesRef> termFilter = new SubstringBytesRefFilter(contains, ignoreCase);
+    return getCounts(searcher, docs, fieldName, offset, limit, mincount, missing, sort, prefix, termFilter, fdebug);
+  }
+  
+  public static NamedList<Integer> getCounts(SolrIndexSearcher searcher, DocSet docs, String fieldName, int offset, int limit, int mincount, boolean missing, String sort, String prefix, Predicate<BytesRef> termFilter, FacetDebugInfo fdebug) throws IOException {
     SchemaField schemaField = searcher.getSchema().getField(fieldName);
     FieldType ft = schemaField.getType();
     NamedList<Integer> res = new NamedList<>();
@@ -178,9 +184,9 @@ public class DocValuesFacets {
             // index order, so we already know that the keys are ordered.  This can be very
             // important if a lot of the counts are repeated (like zero counts would be).
 
-            if (contains != null) {
+            if (termFilter != null) {
               final BytesRef term = si.lookupOrd(startTermIndex+i);
-              if (!SimpleFacets.contains(term.utf8ToString(), contains, ignoreCase)) {
+              if (!termFilter.test(term)) {
                 continue;
               }
             }
@@ -213,8 +219,8 @@ public class DocValuesFacets {
       } else {
         // add results in index order
         int i=(startTermIndex==-1)?1:0;
-        if (mincount<=0 && contains == null) {
-          // if mincount<=0 and we're not examining the values for contains, then
+        if (mincount<=0 && termFilter == null) {
+          // if mincount<=0 and we're not examining the values for the term filter, then
           // we won't discard any terms and we know exactly where to start.
           i+=off;
           off=0;
@@ -224,9 +230,9 @@ public class DocValuesFacets {
           int c = counts[i];
           if (c<mincount) continue;
           BytesRef term = null;
-          if (contains != null) {
+          if (termFilter != null) {
             term = si.lookupOrd(startTermIndex+i);
-            if (!SimpleFacets.contains(term.utf8ToString(), contains, ignoreCase)) {
+            if (!termFilter.test(term)) {
               continue;
             }
           }

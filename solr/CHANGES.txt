@@ -177,6 +177,9 @@ Other Changes
 
 * SOLR-9800: Factor out FacetComponent.newSimpleFacets method. (Jonny Marks via Christine Poerschke)
 
+* SOLR-9914: SimpleFacets: refactor "contains" check into "SubstringBytesRefFilter" class.
+  (Jonny Marks, David Smiley, Christine Poerschke)
+
 ==================  6.4.1 ==================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release.
