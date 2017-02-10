@@ -33,16 +33,19 @@ import org.apache.solr.client.solrj.io.SolrClientCache;
 import org.apache.solr.client.solrj.io.Tuple;
 import org.apache.solr.client.solrj.io.comp.ComparatorOrder;
 import org.apache.solr.client.solrj.io.comp.FieldComparator;
-import org.apache.solr.client.solrj.io.ops.AndOperation;
+import org.apache.solr.client.solrj.io.eval.AddEvaluator;
+import org.apache.solr.client.solrj.io.eval.AndEvaluator;
+import org.apache.solr.client.solrj.io.eval.EqualsEvaluator;
+import org.apache.solr.client.solrj.io.eval.GreaterThanEqualToEvaluator;
+import org.apache.solr.client.solrj.io.eval.GreaterThanEvaluator;
+import org.apache.solr.client.solrj.io.eval.IfThenElseEvaluator;
+import org.apache.solr.client.solrj.io.eval.LessThanEqualToEvaluator;
+import org.apache.solr.client.solrj.io.eval.LessThanEvaluator;
+import org.apache.solr.client.solrj.io.eval.NotEvaluator;
+import org.apache.solr.client.solrj.io.eval.OrEvaluator;
+import org.apache.solr.client.solrj.io.eval.RawValueEvaluator;
 import org.apache.solr.client.solrj.io.ops.ConcatOperation;
-import org.apache.solr.client.solrj.io.ops.EqualsOperation;
-import org.apache.solr.client.solrj.io.ops.GreaterThanEqualToOperation;
-import org.apache.solr.client.solrj.io.ops.GreaterThanOperation;
 import org.apache.solr.client.solrj.io.ops.GroupOperation;
-import org.apache.solr.client.solrj.io.ops.LessThanEqualToOperation;
-import org.apache.solr.client.solrj.io.ops.LessThanOperation;
-import org.apache.solr.client.solrj.io.ops.NotOperation;
-import org.apache.solr.client.solrj.io.ops.OrOperation;
 import org.apache.solr.client.solrj.io.ops.ReplaceOperation;
 import org.apache.solr.client.solrj.io.stream.expr.StreamExpression;
 import org.apache.solr.client.solrj.io.stream.expr.StreamExpressionParser;
@@ -848,14 +851,14 @@ public class StreamExpressionTest extends SolrCloudTestCase {
         .withFunctionName("having", HavingStream.class)
         .withFunctionName("rollup", RollupStream.class)
         .withFunctionName("sum", SumMetric.class)
-        .withFunctionName("and", AndOperation.class)
-        .withFunctionName("or", OrOperation.class)
-        .withFunctionName("not", NotOperation.class)
-        .withFunctionName("gt", GreaterThanOperation.class)
-        .withFunctionName("lt", LessThanOperation.class)
-        .withFunctionName("eq", EqualsOperation.class)
-        .withFunctionName("lteq", LessThanEqualToOperation.class)
-        .withFunctionName("gteq", GreaterThanEqualToOperation.class);
+        .withFunctionName("and", AndEvaluator.class)
+        .withFunctionName("or", OrEvaluator.class)
+        .withFunctionName("not", NotEvaluator.class)
+        .withFunctionName("gt", GreaterThanEvaluator.class)
+        .withFunctionName("lt", LessThanEvaluator.class)
+        .withFunctionName("eq", EqualsEvaluator.class)
+        .withFunctionName("lteq", LessThanEqualToEvaluator.class)
+        .withFunctionName("gteq", GreaterThanEqualToEvaluator.class);
 
     stream = factory.constructStream("having(search(" + COLLECTIONORALIAS + ", q=*:*, fl=\"id,a_s,a_i,a_f\", sort=\"a_f asc\"), eq(a_i, 9))");
     StreamContext context = new StreamContext();
@@ -956,14 +959,15 @@ public class StreamExpressionTest extends SolrCloudTestCase {
         .withFunctionName("having", HavingStream.class)
         .withFunctionName("rollup", RollupStream.class)
         .withFunctionName("sum", SumMetric.class)
-        .withFunctionName("and", AndOperation.class)
-        .withFunctionName("or", OrOperation.class)
-        .withFunctionName("not", NotOperation.class)
-        .withFunctionName("gt", GreaterThanOperation.class)
-        .withFunctionName("lt", LessThanOperation.class)
-        .withFunctionName("eq", EqualsOperation.class)
-        .withFunctionName("lteq", LessThanEqualToOperation.class)
-        .withFunctionName("gteq", GreaterThanEqualToOperation.class)
+        .withFunctionName("and", AndEvaluator.class)
+        .withFunctionName("or", OrEvaluator.class)
+        .withFunctionName("not", NotEvaluator.class)
+        .withFunctionName("gt", GreaterThanEvaluator.class)
+        .withFunctionName("lt", LessThanEvaluator.class)
+        .withFunctionName("eq", EqualsEvaluator.class)
+        .withFunctionName("lteq", LessThanEqualToEvaluator.class)
+        .withFunctionName("gteq", GreaterThanEqualToEvaluator.class)
+        .withFunctionName("val", RawValueEvaluator.class)
         .withFunctionName("parallel", ParallelStream.class);
 
     stream = factory.constructStream("parallel(" + COLLECTIONORALIAS + ", workers=2, sort=\"a_f asc\", having(search(" + COLLECTIONORALIAS + ", q=*:*, fl=\"id,a_s,a_i,a_f\", sort=\"a_f asc\", partitionKeys=id), eq(a_i, 9)))");
@@ -2192,6 +2196,9 @@ public class StreamExpressionTest extends SolrCloudTestCase {
       .withFunctionName("select", SelectStream.class)
       .withFunctionName("replace", ReplaceOperation.class)
       .withFunctionName("concat", ConcatOperation.class)
+      .withFunctionName("add", AddEvaluator.class)
+      .withFunctionName("if", IfThenElseEvaluator.class)
+      .withFunctionName("gt", GreaterThanEvaluator.class)
       ;
     
     // Basic test

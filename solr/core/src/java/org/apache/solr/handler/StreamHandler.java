@@ -29,21 +29,63 @@ import org.apache.solr.client.solrj.io.ModelCache;
 import org.apache.solr.client.solrj.io.SolrClientCache;
 import org.apache.solr.client.solrj.io.Tuple;
 import org.apache.solr.client.solrj.io.comp.StreamComparator;
+import org.apache.solr.client.solrj.io.eval.AbsoluteValueEvaluator;
+import org.apache.solr.client.solrj.io.eval.AddEvaluator;
+import org.apache.solr.client.solrj.io.eval.AndEvaluator;
+import org.apache.solr.client.solrj.io.eval.DivideEvaluator;
+import org.apache.solr.client.solrj.io.eval.EqualsEvaluator;
+import org.apache.solr.client.solrj.io.eval.ExclusiveOrEvaluator;
+import org.apache.solr.client.solrj.io.eval.GreaterThanEqualToEvaluator;
+import org.apache.solr.client.solrj.io.eval.GreaterThanEvaluator;
+import org.apache.solr.client.solrj.io.eval.IfThenElseEvaluator;
+import org.apache.solr.client.solrj.io.eval.LessThanEqualToEvaluator;
+import org.apache.solr.client.solrj.io.eval.LessThanEvaluator;
+import org.apache.solr.client.solrj.io.eval.MultiplyEvaluator;
+import org.apache.solr.client.solrj.io.eval.NotEvaluator;
+import org.apache.solr.client.solrj.io.eval.OrEvaluator;
+import org.apache.solr.client.solrj.io.eval.RawValueEvaluator;
+import org.apache.solr.client.solrj.io.eval.SubtractEvaluator;
 import org.apache.solr.client.solrj.io.graph.GatherNodesStream;
 import org.apache.solr.client.solrj.io.graph.ShortestPathStream;
-import org.apache.solr.client.solrj.io.ops.AndOperation;
 import org.apache.solr.client.solrj.io.ops.ConcatOperation;
 import org.apache.solr.client.solrj.io.ops.DistinctOperation;
-import org.apache.solr.client.solrj.io.ops.EqualsOperation;
-import org.apache.solr.client.solrj.io.ops.GreaterThanEqualToOperation;
-import org.apache.solr.client.solrj.io.ops.GreaterThanOperation;
 import org.apache.solr.client.solrj.io.ops.GroupOperation;
-import org.apache.solr.client.solrj.io.ops.LessThanEqualToOperation;
-import org.apache.solr.client.solrj.io.ops.LessThanOperation;
-import org.apache.solr.client.solrj.io.ops.NotOperation;
-import org.apache.solr.client.solrj.io.ops.OrOperation;
 import org.apache.solr.client.solrj.io.ops.ReplaceOperation;
-import org.apache.solr.client.solrj.io.stream.*;
+import org.apache.solr.client.solrj.io.stream.CloudSolrStream;
+import org.apache.solr.client.solrj.io.stream.CommitStream;
+import org.apache.solr.client.solrj.io.stream.ComplementStream;
+import org.apache.solr.client.solrj.io.stream.DaemonStream;
+import org.apache.solr.client.solrj.io.stream.ExceptionStream;
+import org.apache.solr.client.solrj.io.stream.ExecutorStream;
+import org.apache.solr.client.solrj.io.stream.FacetStream;
+import org.apache.solr.client.solrj.io.stream.FeaturesSelectionStream;
+import org.apache.solr.client.solrj.io.stream.FetchStream;
+import org.apache.solr.client.solrj.io.stream.HashJoinStream;
+import org.apache.solr.client.solrj.io.stream.HavingStream;
+import org.apache.solr.client.solrj.io.stream.InnerJoinStream;
+import org.apache.solr.client.solrj.io.stream.IntersectStream;
+import org.apache.solr.client.solrj.io.stream.JDBCStream;
+import org.apache.solr.client.solrj.io.stream.LeftOuterJoinStream;
+import org.apache.solr.client.solrj.io.stream.MergeStream;
+import org.apache.solr.client.solrj.io.stream.ModelStream;
+import org.apache.solr.client.solrj.io.stream.NullStream;
+import org.apache.solr.client.solrj.io.stream.OuterHashJoinStream;
+import org.apache.solr.client.solrj.io.stream.ParallelStream;
+import org.apache.solr.client.solrj.io.stream.PriorityStream;
+import org.apache.solr.client.solrj.io.stream.RandomStream;
+import org.apache.solr.client.solrj.io.stream.RankStream;
+import org.apache.solr.client.solrj.io.stream.ReducerStream;
+import org.apache.solr.client.solrj.io.stream.RollupStream;
+import org.apache.solr.client.solrj.io.stream.ScoreNodesStream;
+import org.apache.solr.client.solrj.io.stream.SelectStream;
+import org.apache.solr.client.solrj.io.stream.SortStream;
+import org.apache.solr.client.solrj.io.stream.StatsStream;
+import org.apache.solr.client.solrj.io.stream.StreamContext;
+import org.apache.solr.client.solrj.io.stream.TextLogitStream;
+import org.apache.solr.client.solrj.io.stream.TopicStream;
+import org.apache.solr.client.solrj.io.stream.TupleStream;
+import org.apache.solr.client.solrj.io.stream.UniqueStream;
+import org.apache.solr.client.solrj.io.stream.UpdateStream;
 import org.apache.solr.client.solrj.io.stream.expr.Explanation;
 import org.apache.solr.client.solrj.io.stream.expr.Explanation.ExpressionType;
 import org.apache.solr.client.solrj.io.stream.expr.Expressible;
@@ -151,6 +193,7 @@ public class StreamHandler extends RequestHandlerBase implements SolrCoreAware, 
       .withFunctionName("executor", ExecutorStream.class)
       .withFunctionName("null", NullStream.class)
       .withFunctionName("priority", PriorityStream.class)
+      
       // metrics
       .withFunctionName("min", MinMetric.class)
       .withFunctionName("max", MaxMetric.class)
@@ -166,14 +209,31 @@ public class StreamHandler extends RequestHandlerBase implements SolrCoreAware, 
       .withFunctionName("group", GroupOperation.class)
       .withFunctionName("distinct", DistinctOperation.class)
       .withFunctionName("having", HavingStream.class)
-      .withFunctionName("and", AndOperation.class)
-      .withFunctionName("or", OrOperation.class)
-      .withFunctionName("not", NotOperation.class)
-      .withFunctionName("gt", GreaterThanOperation.class)
-      .withFunctionName("lt", LessThanOperation.class)
-      .withFunctionName("eq", EqualsOperation.class)
-      .withFunctionName("lteq", LessThanEqualToOperation.class)
-      .withFunctionName("gteq", GreaterThanEqualToOperation.class);
+      
+      // Stream Evaluators
+      .withFunctionName("val", RawValueEvaluator.class)
+      
+      // Boolean Stream Evaluators
+      .withFunctionName("and", AndEvaluator.class)
+      .withFunctionName("eor", ExclusiveOrEvaluator.class)
+      .withFunctionName("eq", EqualsEvaluator.class)
+      .withFunctionName("gt", GreaterThanEvaluator.class)
+      .withFunctionName("gteq", GreaterThanEqualToEvaluator.class)
+      .withFunctionName("lt", LessThanEvaluator.class)
+      .withFunctionName("lteq", LessThanEqualToEvaluator.class)
+      .withFunctionName("not", NotEvaluator.class)
+      .withFunctionName("or", OrEvaluator.class)
+      
+      // Number Stream Evaluators
+      .withFunctionName("abs", AbsoluteValueEvaluator.class)
+      .withFunctionName("add", AddEvaluator.class)
+      .withFunctionName("div", DivideEvaluator.class)
+      .withFunctionName("mult", MultiplyEvaluator.class)
+      .withFunctionName("sub", SubtractEvaluator.class)
+      
+      // Conditional Stream Evaluators
+      .withFunctionName("if", IfThenElseEvaluator.class)
+      ;
 
      // This pulls all the overrides and additions from the config
      List<PluginInfo> pluginInfos = core.getSolrConfig().getPluginInfos(Expressible.class.getName());

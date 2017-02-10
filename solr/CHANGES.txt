@@ -132,6 +132,11 @@ New Features
 
 * SOLR-9912: Add facet.excludeTerms parameter support. (Jonny Marks, David Smiley, Christine Poerschke)
 
+* SOLR-9916: Adds Stream Evaluators to support evaluating values from tuples. Supports boolean,
+  numeric, and conditional evaluators. BooleanOperations have been removed in preference of
+  BooleanEvaluators. (Dennis Gove)
+
+
 Bug Fixes
 ----------------------
 
