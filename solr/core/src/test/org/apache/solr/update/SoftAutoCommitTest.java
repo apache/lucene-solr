@@ -258,7 +258,7 @@ public class SoftAutoCommitTest extends AbstractSolrTestCase {
     monitor.assertSaneOffers();
 
     // Wait for the soft commit with some fudge
-    soft529 = monitor.soft.poll(softCommitWaitMillis * 3000, MILLISECONDS);
+    soft529 = monitor.soft.poll(softCommitWaitMillis * 5, MILLISECONDS);
     assertNotNull("soft529 wasn't fast enough", soft529);
     monitor.assertSaneOffers();
  
@@ -271,7 +271,7 @@ public class SoftAutoCommitTest extends AbstractSolrTestCase {
     assertU(adoc("id", "550", "subject", "just for noise/activity"));
 
     // wait for the hard commit
-    hard529 = monitor.hard.poll(hardCommitWaitMillis * 3, MILLISECONDS);
+    hard529 = monitor.hard.poll(hardCommitWaitMillis * 5, MILLISECONDS);
     assertNotNull("hard529 wasn't fast enough", hard529);
     monitor.assertSaneOffers();
 
@@ -296,8 +296,12 @@ public class SoftAutoCommitTest extends AbstractSolrTestCase {
                searcher529 + " !<= " + hard529,
                searcher529 <= hard529);
 
-    // wait for the last searcher we triggerd with 550
+    // ensure we wait for the last searcher we triggered with 550
     monitor.searcher.poll(5000, MILLISECONDS);
+    
+    // ensure we wait for the commits on 550
+    monitor.hard.poll(5000, MILLISECONDS);
+    monitor.soft.poll(5000, MILLISECONDS);
     
     // clear commits
     monitor.hard.clear();
