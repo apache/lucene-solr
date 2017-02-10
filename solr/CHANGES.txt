@@ -136,6 +136,8 @@ New Features
   numeric, and conditional evaluators. BooleanOperations have been removed in preference of
   BooleanEvaluators. (Dennis Gove)
 
+* SOLR-9903: Stop interrupting the update executor on shutdown, it can cause graceful shutdowns to put replicas into Leader 
+  Initiated Recovery among other undesirable things. (Mark Miller)
 
 Bug Fixes
 ----------------------
