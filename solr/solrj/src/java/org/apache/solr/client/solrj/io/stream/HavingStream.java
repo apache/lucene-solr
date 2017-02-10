@@ -23,8 +23,8 @@ import java.util.Locale;
 
 import org.apache.solr.client.solrj.io.Tuple;
 import org.apache.solr.client.solrj.io.comp.StreamComparator;
-import org.apache.solr.client.solrj.io.ops.BooleanOperation;
-import org.apache.solr.client.solrj.io.ops.StreamOperation;
+import org.apache.solr.client.solrj.io.eval.BooleanEvaluator;
+import org.apache.solr.client.solrj.io.eval.StreamEvaluator;
 import org.apache.solr.client.solrj.io.stream.expr.Explanation;
 import org.apache.solr.client.solrj.io.stream.expr.Explanation.ExpressionType;
 import org.apache.solr.client.solrj.io.stream.expr.Expressible;
@@ -42,19 +42,19 @@ public class HavingStream extends TupleStream implements Expressible {
   private static final long serialVersionUID = 1;
 
   private TupleStream stream;
-  private BooleanOperation op;
+  private BooleanEvaluator evaluator;
 
   private transient Tuple currentGroupHead;
 
-  public HavingStream(TupleStream stream, BooleanOperation op) throws IOException {
-    init(stream, op);
+  public HavingStream(TupleStream stream, BooleanEvaluator evaluator) throws IOException {
+    init(stream, evaluator);
   }
 
 
   public HavingStream(StreamExpression expression, StreamFactory factory) throws IOException{
     // grab all parameters out
     List<StreamExpression> streamExpressions = factory.getExpressionOperandsRepresentingTypes(expression, Expressible.class, TupleStream.class);
-    List<StreamExpression> operationExpressions = factory.getExpressionOperandsRepresentingTypes(expression, BooleanOperation.class);
+    List<StreamExpression> evaluatorExpressions = factory.getExpressionOperandsRepresentingTypes(expression, BooleanEvaluator.class);
 
     // validate expression contains only what we want.
     if(expression.getParameters().size() != streamExpressions.size() + 1){
@@ -66,25 +66,23 @@ public class HavingStream extends TupleStream implements Expressible {
     }
 
 
-    BooleanOperation booleanOperation = null;
-    if(operationExpressions != null && operationExpressions.size() == 1) {
-      StreamExpression ex = operationExpressions.get(0);
-      StreamOperation operation = factory.constructOperation(ex);
-      if(operation instanceof BooleanOperation) {
-        booleanOperation = (BooleanOperation) operation;
-      } else {
-        throw new IOException("The HavingStream requires a BooleanOperation. A StreamOperation was provided.");
+    StreamEvaluator evaluator = null;
+    if(evaluatorExpressions != null && evaluatorExpressions.size() == 1) {
+      StreamExpression ex = evaluatorExpressions.get(0);
+      evaluator = factory.constructEvaluator(ex);
+      if(!(evaluator instanceof BooleanEvaluator)) {
+        throw new IOException("The HavingStream requires a BooleanEvaluator. A StreamEvaluator was provided.");
       }
     } else {
-      throw new IOException("The HavingStream requires a BooleanOperation.");
+      throw new IOException("The HavingStream requires a BooleanEvaluator.");
     }
 
-    init(factory.constructStream(streamExpressions.get(0)), booleanOperation);
+    init(factory.constructStream(streamExpressions.get(0)), (BooleanEvaluator)evaluator);
   }
 
-  private void init(TupleStream stream, BooleanOperation op) throws IOException{
+  private void init(TupleStream stream, BooleanEvaluator evaluator) throws IOException{
     this.stream = stream;
-    this.op = op;
+    this.evaluator = evaluator;
   }
 
   @Override
@@ -104,10 +102,10 @@ public class HavingStream extends TupleStream implements Expressible {
       expression.addParameter("<stream>");
     }
 
-    if(op instanceof Expressible) {
-      expression.addParameter(op.toExpression(factory));
+    if(evaluator instanceof Expressible) {
+      expression.addParameter(evaluator.toExpression(factory));
     } else {
-      throw new IOException("This ReducerStream contains a non-expressible operation - it cannot be converted to an expression");
+      throw new IOException("This HavingStream contains a non-expressible evaluator - it cannot be converted to an expression");
     }
 
     return expression;
@@ -125,7 +123,7 @@ public class HavingStream extends TupleStream implements Expressible {
         .withExpressionType(ExpressionType.STREAM_DECORATOR)
         .withExpression(toExpression(factory, false).toString())
         .withHelpers(new Explanation[]{
-            op.toExplanation(factory)
+            evaluator.toExplanation(factory)
         });
   }
 
@@ -154,9 +152,7 @@ public class HavingStream extends TupleStream implements Expressible {
         return tuple;
       }
 
-      op.operate(tuple);
-
-      if(op.evaluate()) {
+      if(evaluator.evaluate(tuple)){
         return tuple;
       }
     }

@@ -49,7 +49,11 @@ New Features
 * SOLR-9926: Allow passing arbitrary java system properties to zkcli. (Hrishikesh Gadre via Mark Miller)
 
 * SOLR-9885: Allow pre-startup Solr log management in Solr bin scripts to be disabled. (Mano Kovacs via Mark Miller)
-  
+ 
+* SOLR-9916: Adds Stream Evaluators to support evaluating values from tuples. Supports boolean,
+  numeric, and conditional evaluators. BooleanOperations have been removed in preference of
+  BooleanEvaluators. (Dennis Gove)
+ 
 Optimizations
 ----------------------
 * SOLR-9941: Clear the deletes lists at UpdateLog before replaying from log. This prevents redundantly pre-applying

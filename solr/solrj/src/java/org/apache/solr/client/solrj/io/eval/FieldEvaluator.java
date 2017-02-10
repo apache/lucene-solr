@@ -14,54 +14,49 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.solr.client.solrj.io.ops;
+/**
+ * 
+ */
+package org.apache.solr.client.solrj.io.eval;
 
 import java.io.IOException;
-import java.util.UUID;
 
 import org.apache.solr.client.solrj.io.Tuple;
 import org.apache.solr.client.solrj.io.stream.expr.Explanation;
 import org.apache.solr.client.solrj.io.stream.expr.Explanation.ExpressionType;
-import org.apache.solr.client.solrj.io.stream.expr.StreamExpression;
+import org.apache.solr.client.solrj.io.stream.expr.StreamExpressionParameter;
+import org.apache.solr.client.solrj.io.stream.expr.StreamExpressionValue;
 import org.apache.solr.client.solrj.io.stream.expr.StreamFactory;
 
-public abstract class LeafOperation implements BooleanOperation {
-
-  private static final long serialVersionUID = 1;
-  private UUID operationNodeId = UUID.randomUUID();
-
-  protected String field;
-  protected Double val;
-  protected Tuple tuple;
-
-  public void operate(Tuple tuple) {
-    this.tuple = tuple;
+public class FieldEvaluator extends SimpleEvaluator {
+  private static final long serialVersionUID = 1L;
+  
+  private String fieldName;
+  
+  public FieldEvaluator(String fieldName) {
+    if(fieldName.startsWith("'") && fieldName.endsWith("'") && fieldName.length() > 1){
+      fieldName = fieldName.substring(1, fieldName.length() - 1);
+    }
+    
+    this.fieldName = fieldName;
   }
-
-  public LeafOperation(String field, double val) {
-    this.field = field;
-    this.val = val;
+  
+  @Override
+  public Object evaluate(Tuple tuple) {
+    return tuple.get(fieldName); // returns null if field doesn't exist in tuple
   }
-
-  public LeafOperation(StreamExpression expression, StreamFactory factory) throws IOException {
-    this.field = factory.getValueOperand(expression, 0);
-    this.val = Double.parseDouble(factory.getValueOperand(expression, 1));
+  
+  @Override
+  public StreamExpressionParameter toExpression(StreamFactory factory) throws IOException {
+    return new StreamExpressionValue(fieldName);
   }
 
   @Override
   public Explanation toExplanation(StreamFactory factory) throws IOException {
-    return new Explanation(operationNodeId.toString())
-        .withExpressionType(ExpressionType.OPERATION)
-        .withFunctionName(factory.getFunctionName(getClass()))
-        .withImplementingClass(getClass().getName())
-        .withExpression(toExpression(factory).toString());
+    return new Explanation(nodeId.toString())
+      .withExpressionType(ExpressionType.EVALUATOR)
+      .withImplementingClass(getClass().getName())
+      .withExpression(toExpression(factory).toString());
   }
 
-  protected String quote(String s) {
-    if(s.contains("(")) {
-      return "'"+s+"'";
-    }
-
-    return s;
-  }
 }
