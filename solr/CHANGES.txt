@@ -159,6 +159,8 @@ Bug Fixes
 
 * SOLR-10124: Replication can skip removing a temporary index directory in some cases when it should not. (Mark Miller)
 
+* SOLR-10063: CoreContainer shutdown has race condition that can cause a hang on shutdown. (Mark Miller)
+
 Optimizations
 ----------------------
 
