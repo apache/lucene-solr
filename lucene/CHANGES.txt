@@ -37,6 +37,10 @@ Improvements
 * LUCENE-7489: Better storage of sparse doc-values fields with the default
   codec. (Adrien Grand)
 
+* LUCENE-7662: If index files are missing, throw CorruptIndexException instead
+  of the less descriptive FileNotFound or NoSuchFileException (Mike Drob via 
+  Mike McCandless, Erick Erickson)
+
 Optimizations
 
 * LUCENE-7416: BooleanQuery optimizes queries that have queries that occur both
