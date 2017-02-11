@@ -655,7 +655,16 @@ public class CoreContainer {
       }
       if (backgroundCloser != null) { // Doesn't seem right, but tests get in here without initializing the core.
         try {
-          backgroundCloser.join();
+          while (true) {
+            backgroundCloser.join(15000);
+            if (backgroundCloser.isAlive()) {
+              synchronized (solrCores.getModifyLock()) {
+                solrCores.getModifyLock().notifyAll(); // there is a race we have to protect against
+              }
+            } else {
+              break;
+            }
+          }
         } catch (InterruptedException e) {
           Thread.currentThread().interrupt();
           if (log.isDebugEnabled()) {
