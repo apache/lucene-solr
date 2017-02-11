@@ -71,6 +71,10 @@ Improvements
   either points or doc values depending on which one is more efficient.
   (Adrien Grand)
 
+* LUCENE-7662: If index files are missing, throw CorruptIndexException instead
+  of the less descriptive FileNotFound or NoSuchFileException (Mike Drob via 
+  Mike McCandless, Erick Erickson)
+
 Optimizations
 
 * LUCENE-7641: Optimized point range queries to compute documents that do not

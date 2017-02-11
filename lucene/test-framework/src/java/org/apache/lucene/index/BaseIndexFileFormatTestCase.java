@@ -435,14 +435,9 @@ abstract class BaseIndexFileFormatTestCase extends LuceneTestCase {
           conf.setMergeScheduler(new SerialMergeScheduler());
           conf.setCodec(getCodec());
           iw = new IndexWriter(dir, conf);            
-        } catch (Exception e) {
-          if (e.getMessage() != null && e.getMessage().startsWith("a random IOException")) {
-            exceptionStream.println("\nTEST: got expected fake exc:" + e.getMessage());
-            e.printStackTrace(exceptionStream);
-            allowAlreadyClosed = true;
-          } else {
-            Rethrow.rethrow(e);
-          }
+        } catch (IOException e) {
+          handleFakeIOException(e, exceptionStream);
+          allowAlreadyClosed = true;
         }
         
         if (random().nextInt(10) == 0) {
@@ -476,14 +471,9 @@ abstract class BaseIndexFileFormatTestCase extends LuceneTestCase {
             conf.setMergeScheduler(new SerialMergeScheduler());
             conf.setCodec(getCodec());
             iw = new IndexWriter(dir, conf);            
-          } catch (Exception e) {
-            if (e.getMessage() != null && e.getMessage().startsWith("a random IOException")) {
-              exceptionStream.println("\nTEST: got expected fake exc:" + e.getMessage());
-              e.printStackTrace(exceptionStream);
-              allowAlreadyClosed = true;
-            } else {
-              Rethrow.rethrow(e);
-            }
+          } catch (IOException e) {
+            handleFakeIOException(e, exceptionStream);
+            allowAlreadyClosed = true;
           }
         }
       }
@@ -492,16 +482,11 @@ abstract class BaseIndexFileFormatTestCase extends LuceneTestCase {
         dir.setRandomIOExceptionRateOnOpen(0.0); // disable exceptions on openInput until next iteration: 
                                                  // or we make slowExists angry and trip a scarier assert!
         iw.close();
-      } catch (Exception e) {
-        if (e.getMessage() != null && e.getMessage().startsWith("a random IOException")) {
-          exceptionStream.println("\nTEST: got expected fake exc:" + e.getMessage());
-          e.printStackTrace(exceptionStream);
-          try {
-            iw.rollback();
-          } catch (Throwable t) {}
-        } else {
-          Rethrow.rethrow(e);
-        }
+      } catch (IOException e) {
+        handleFakeIOException(e, exceptionStream);
+        try {
+          iw.rollback();
+        } catch (Throwable t) {}
       }
       dir.close();
     } catch (Throwable t) {
@@ -516,5 +501,19 @@ abstract class BaseIndexFileFormatTestCase extends LuceneTestCase {
       System.out.println("TEST PASSED: dumping fake-exception-log:...");
       System.out.println(exceptionLog.toString("UTF-8"));
     }
+  }
+  
+  private void handleFakeIOException(IOException e, PrintStream exceptionStream) {
+    Throwable ex = e;
+    while (ex != null) {
+      if (ex.getMessage() != null && ex.getMessage().startsWith("a random IOException")) {
+        exceptionStream.println("\nTEST: got expected fake exc:" + ex.getMessage());
+        ex.printStackTrace(exceptionStream);
+        return;
+      }
+      ex = ex.getCause();
+    }
+    
+    Rethrow.rethrow(e);
   }
 }
