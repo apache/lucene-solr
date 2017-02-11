@@ -253,11 +253,16 @@ public abstract class BasePointsFormatTestCase extends BaseIndexFileFormatTestCa
           // This just means we got a too-small maxMB for the maxPointsInLeafNode; just retry w/ more heap
           assertTrue(iae.getMessage().contains("either increase maxMBSortInHeap or decrease maxPointsInLeafNode"));
         } catch (IOException ioe) {
-          String message = ioe.getMessage();
-          if (message.contains("a random IOException") || message.contains("background merge hit exception")) {
-            // BKDWriter should fully clean up after itself:
-            done = true;
-          } else {
+          Throwable ex = ioe;
+          while (ex != null) {
+            String message = ex.getMessage();
+            if (message != null && (message.contains("a random IOException") || message.contains("background merge hit exception"))) {
+              done = true;
+              break;
+            }
+            ex = ex.getCause();            
+          }
+          if (done == false) {
             throw ioe;
           }
         }
