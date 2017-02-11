@@ -604,7 +604,7 @@ public class IndexSearcher {
         }));
       }
 
-      final List<C> collectedCollectors = new ArrayList<>();
+      final List<C> collectedCollectors = new ArrayList<>(topDocsFutures.size());
       for (Future<C> future : topDocsFutures) {
         try {
           collectedCollectors.add(future.get());

@@ -246,7 +246,7 @@ public class SearcherLifetimeManager implements Closeable {
     // (not thread-safe since the values can change while
     // ArrayList is init'ing itself); must instead iterate
     // ourselves:
-    final List<SearcherTracker> trackers = new ArrayList<>();
+    final List<SearcherTracker> trackers = new ArrayList<>(searchers.size());
     for(SearcherTracker tracker : searchers.values()) {
       trackers.add(tracker);
     }

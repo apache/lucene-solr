@@ -195,7 +195,7 @@ abstract class DisjunctionScorer extends Scorer {
 
   @Override
   public final Collection<ChildScorer> getChildren() {
-    ArrayList<ChildScorer> children = new ArrayList<>();
+    ArrayList<ChildScorer> children = new ArrayList<>(subScorers.size());
     for (DisiWrapper scorer : subScorers) {
       children.add(new ChildScorer(scorer.scorer, "SHOULD"));
     }

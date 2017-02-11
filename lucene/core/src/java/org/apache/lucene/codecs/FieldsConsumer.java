@@ -84,8 +84,8 @@ public abstract class FieldsConsumer implements Closeable {
    *  Implementations can override this method for more sophisticated
    *  merging (bulk-byte copying, etc). */
   public void merge(MergeState mergeState) throws IOException {
-    final List<Fields> fields = new ArrayList<>();
-    final List<ReaderSlice> slices = new ArrayList<>();
+    final List<Fields> fields = new ArrayList<>(mergeState.fieldsProducers.length);
+    final List<ReaderSlice> slices = new ArrayList<>(mergeState.fieldsProducers.length);
 
     int docBase = 0;
 

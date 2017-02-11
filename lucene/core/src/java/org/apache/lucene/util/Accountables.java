@@ -98,7 +98,7 @@ public class Accountables {
    * will not be able to cast or manipulate the resources in any way.
    */
   public static Collection<Accountable> namedAccountables(String prefix, Map<?,? extends Accountable> in) {
-    List<Accountable> resources = new ArrayList<>();
+    List<Accountable> resources = new ArrayList<>(in.size());
     for (Map.Entry<?,? extends Accountable> kv : in.entrySet()) {
       resources.add(namedAccountable(prefix + " '" + kv.getKey() + "'", kv.getValue()));
     }

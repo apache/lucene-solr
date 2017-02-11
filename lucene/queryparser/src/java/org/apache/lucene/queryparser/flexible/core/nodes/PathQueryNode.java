@@ -208,7 +208,7 @@ public class PathQueryNode extends QueryNodeImpl {
 
     // copy children
     if (this.values != null) {
-      List<QueryText> localValues = new ArrayList<>();
+      List<QueryText> localValues = new ArrayList<>(this.values.size());
       for (QueryText value : this.values) {
         localValues.add(value.clone());
       }

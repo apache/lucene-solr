@@ -179,7 +179,7 @@ public final class DisjunctionMaxQuery extends Query implements Iterable<Query> 
     }
 
     boolean actuallyRewritten = false;
-    List<Query> rewrittenDisjuncts = new ArrayList<>();
+    List<Query> rewrittenDisjuncts = new ArrayList<>(disjuncts.length);
     for (Query sub : disjuncts) {
       Query rewrittenSub = sub.rewrite(reader);
       actuallyRewritten |= rewrittenSub != sub;

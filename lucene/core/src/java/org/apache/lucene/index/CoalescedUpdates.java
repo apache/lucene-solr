@@ -54,7 +54,7 @@ class CoalescedUpdates {
       queries.put(query, BufferedUpdates.MAX_INT);
     }
 
-    List<DocValuesUpdate> numericPacket = new ArrayList<>();
+    List<DocValuesUpdate> numericPacket = new ArrayList<>(in.numericDVUpdates.length);
     numericDVUpdates.add(numericPacket);
     for (NumericDocValuesUpdate nu : in.numericDVUpdates) {
       NumericDocValuesUpdate clone = new NumericDocValuesUpdate(nu.term, nu.field, (Long) nu.value);
@@ -62,7 +62,7 @@ class CoalescedUpdates {
       numericPacket.add(clone);
     }
     
-    List<DocValuesUpdate> binaryPacket = new ArrayList<>();
+    List<DocValuesUpdate> binaryPacket = new ArrayList<>(in.binaryDVUpdates.length);
     binaryDVUpdates.add(binaryPacket);
     for (BinaryDocValuesUpdate bu : in.binaryDVUpdates) {
       BinaryDocValuesUpdate clone = new BinaryDocValuesUpdate(bu.term, bu.field, (BytesRef) bu.value);

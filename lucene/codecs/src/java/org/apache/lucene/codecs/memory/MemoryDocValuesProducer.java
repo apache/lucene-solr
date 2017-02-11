@@ -774,7 +774,7 @@ class MemoryDocValuesProducer extends DocValuesProducer {
     
     @Override
     public Collection<Accountable> getChildResources() {
-      List<Accountable> resources = new ArrayList<>();
+      List<Accountable> resources = new ArrayList<>(2);
       if (addresses != null) {
         resources.add(Accountables.namedAccountable("addresses", addresses));
       }

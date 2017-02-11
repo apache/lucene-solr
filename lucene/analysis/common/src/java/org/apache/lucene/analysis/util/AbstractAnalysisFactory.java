@@ -293,8 +293,9 @@ public abstract class AbstractAnalysisFactory {
     if (fileNames == null)
       return Collections.<String>emptyList();
 
-    List<String> result = new ArrayList<>();
-    for (String file : fileNames.split("(?<!\\\\),")) {
+    String[] fileNamesArr = fileNames.split("(?<!\\\\),");
+    List<String> result = new ArrayList<>(fileNamesArr.length);
+    for (String file : fileNamesArr) {
       result.add(file.replaceAll("\\\\(?=,)", ""));
     }
 

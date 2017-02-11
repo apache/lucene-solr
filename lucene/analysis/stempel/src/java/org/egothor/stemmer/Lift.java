@@ -88,7 +88,6 @@ public class Lift extends Reduce {
   @Override
   public Trie optimize(Trie orig) {
     List<CharSequence> cmds = orig.cmds;
-    List<Row> rows = new ArrayList<>();
     List<Row> orows = orig.rows;
     int remap[] = new int[orows.size()];
     
@@ -97,7 +96,7 @@ public class Lift extends Reduce {
     }
     
     Arrays.fill(remap, -1);
-    rows = removeGaps(orig.root, orows, new ArrayList<Row>(), remap);
+    List<Row> rows = removeGaps(orig.root, orows, new ArrayList<Row>(), remap);
     
     return new Trie(orig.forward, remap[orig.root], cmds, rows);
   }

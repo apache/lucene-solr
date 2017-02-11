@@ -438,7 +438,7 @@ public final class SynonymGraphFilter extends TokenFilter {
     // TODO: we could encode this instead into the FST:
 
     // 1st pass: count how many new nodes we need
-    List<List<String>> paths = new ArrayList<>();
+    List<List<String>> paths = new ArrayList<>(count);
     for(int outputIDX=0;outputIDX<count;outputIDX++) {
       int wordID = bytesReader.readVInt();
       synonyms.words.get(wordID, scratchBytes);

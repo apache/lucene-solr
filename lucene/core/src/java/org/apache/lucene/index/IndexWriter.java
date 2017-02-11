@@ -4320,7 +4320,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
 //      System.out.println("[" + Thread.currentThread().getName() + "] IW.mergeMiddle: merging " + merge.getMergeReaders());
 
       // Let the merge wrap readers
-      List<CodecReader> mergeReaders = new ArrayList<>();
+      List<CodecReader> mergeReaders = new ArrayList<>(merge.readers.size());
       for (SegmentReader reader : merge.readers) {
         mergeReaders.add(merge.wrapForMerge(reader));
       }

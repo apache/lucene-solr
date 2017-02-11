@@ -913,7 +913,7 @@ public class MultiDocValues {
 
     @Override
     public Collection<Accountable> getChildResources() {
-      List<Accountable> resources = new ArrayList<>();
+      List<Accountable> resources = new ArrayList<>(3);
       resources.add(Accountables.namedAccountable("global ord deltas", globalOrdDeltas));
       resources.add(Accountables.namedAccountable("first segments", firstSegments));
       resources.add(Accountables.namedAccountable("segment map", segmentMap));

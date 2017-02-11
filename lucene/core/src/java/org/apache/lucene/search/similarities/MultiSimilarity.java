@@ -85,7 +85,7 @@ public class MultiSimilarity extends Similarity {
 
     @Override
     public Explanation explain(int doc, Explanation freq) throws IOException {
-      List<Explanation> subs = new ArrayList<>();
+      List<Explanation> subs = new ArrayList<>(subScorers.length);
       for (SimScorer subScorer : subScorers) {
         subs.add(subScorer.explain(doc, freq));
       }

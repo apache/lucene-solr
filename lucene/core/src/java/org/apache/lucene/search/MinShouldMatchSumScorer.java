@@ -115,7 +115,7 @@ final class MinShouldMatchSumScorer extends Scorer {
       addLead(new DisiWrapper(scorer));
     }
 
-    List<ChildScorer> children = new ArrayList<>();
+    List<ChildScorer> children = new ArrayList<>(scorers.size());
     for (Scorer scorer : scorers) {
       children.add(new ChildScorer(scorer, "SHOULD"));
     }

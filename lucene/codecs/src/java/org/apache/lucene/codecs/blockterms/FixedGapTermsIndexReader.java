@@ -263,7 +263,7 @@ public class FixedGapTermsIndexReader extends TermsIndexReaderBase {
 
     @Override
     public Collection<Accountable> getChildResources() {
-      List<Accountable> resources = new ArrayList<>();
+      List<Accountable> resources = new ArrayList<>(2);
       if (termOffsets != null) {
         resources.add(Accountables.namedAccountable("term lengths", termOffsets));
       }

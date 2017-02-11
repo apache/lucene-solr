@@ -407,11 +407,11 @@ final class SloppyPhraseScorer extends Scorer {
       }
     } else {
       // more involved - has multi-terms
-      ArrayList<HashSet<PhrasePositions>> tmp = new ArrayList<>();
       ArrayList<FixedBitSet> bb = ppTermsBitSets(rpp, rptTerms);
       unionTermGroups(bb);
       HashMap<Term,Integer> tg = termGroups(rptTerms, bb);
       HashSet<Integer> distinctGroupIDs = new HashSet<>(tg.values());
+      ArrayList<HashSet<PhrasePositions>> tmp = new ArrayList<>(distinctGroupIDs.size());
       for (int i=0; i<distinctGroupIDs.size(); i++) {
         tmp.add(new HashSet<PhrasePositions>());
       }

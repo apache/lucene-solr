@@ -843,7 +843,7 @@ public class BlockTermsReader extends FieldsProducer {
   
   @Override
   public Collection<Accountable> getChildResources() {
-    List<Accountable> resources = new ArrayList<>();
+    List<Accountable> resources = new ArrayList<>(2);
     if (indexReader != null) {
       resources.add(Accountables.namedAccountable("term index", indexReader));
     }

@@ -195,7 +195,7 @@ public class BM25Similarity extends Similarity {
    */
   public Explanation idfExplain(CollectionStatistics collectionStats, TermStatistics termStats[]) {
     double idf = 0d; // sum into a double before casting into a float
-    List<Explanation> details = new ArrayList<>();
+    List<Explanation> details = new ArrayList<>(termStats.length);
     for (final TermStatistics stat : termStats ) {
       Explanation idfExplain = idfExplain(collectionStats, stat);
       details.add(idfExplain);
@@ -296,7 +296,7 @@ public class BM25Similarity extends Similarity {
   }
 
   private Explanation explainTFNorm(int doc, Explanation freq, BM25Stats stats, NumericDocValues norms) throws IOException {
-    List<Explanation> subs = new ArrayList<>();
+    List<Explanation> subs = new ArrayList<>(5);
     subs.add(freq);
     subs.add(Explanation.match(k1, "parameter k1"));
     if (norms == null) {
@@ -323,7 +323,7 @@ public class BM25Similarity extends Similarity {
 
   private Explanation explainScore(int doc, Explanation freq, BM25Stats stats, NumericDocValues norms) throws IOException {
     Explanation boostExpl = Explanation.match(stats.boost, "boost");
-    List<Explanation> subs = new ArrayList<>();
+    List<Explanation> subs = new ArrayList<>(3);
     if (boostExpl.getValue() != 1.0f)
       subs.add(boostExpl);
     subs.add(stats.idf);

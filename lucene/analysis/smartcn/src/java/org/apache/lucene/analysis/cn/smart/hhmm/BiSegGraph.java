@@ -167,10 +167,10 @@ class BiSegGraph {
   public List<SegToken> getShortPath() {
     int current;
     int nodeCount = getToCount();
-    List<PathNode> path = new ArrayList<>();
     PathNode zeroPath = new PathNode();
     zeroPath.weight = 0;
     zeroPath.preNode = 0;
+    List<PathNode> path = new ArrayList<>(nodeCount + 1);
     path.add(zeroPath);
     for (current = 1; current <= nodeCount; current++) {
       double weight;

@@ -219,7 +219,7 @@ class NearestNeighbor {
     PriorityQueue<Cell> cellQueue = new PriorityQueue<>();
 
     NearestVisitor visitor = new NearestVisitor(hitQueue, n, pointLat, pointLon);
-    List<BKDReader.IntersectState> states = new ArrayList<>();
+    List<BKDReader.IntersectState> states = new ArrayList<>(readers.size());
 
     // Add root cell for each reader into the queue:
     int bytesPerDim = -1;

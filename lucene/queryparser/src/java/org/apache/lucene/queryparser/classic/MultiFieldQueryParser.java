@@ -211,7 +211,7 @@ public class MultiFieldQueryParser extends QueryParser
   protected Query getFuzzyQuery(String field, String termStr, float minSimilarity) throws ParseException
   {
     if (field == null) {
-      List<Query> clauses = new ArrayList<>();
+      List<Query> clauses = new ArrayList<>(fields.length);
       for (int i = 0; i < fields.length; i++) {
         clauses.add(getFuzzyQuery(fields[i], termStr, minSimilarity));
       }
@@ -224,7 +224,7 @@ public class MultiFieldQueryParser extends QueryParser
   protected Query getPrefixQuery(String field, String termStr) throws ParseException
   {
     if (field == null) {
-      List<Query> clauses = new ArrayList<>();
+      List<Query> clauses = new ArrayList<>(fields.length);
       for (int i = 0; i < fields.length; i++) {
         clauses.add(getPrefixQuery(fields[i], termStr));
       }
@@ -236,7 +236,7 @@ public class MultiFieldQueryParser extends QueryParser
   @Override
   protected Query getWildcardQuery(String field, String termStr) throws ParseException {
     if (field == null) {
-      List<Query> clauses = new ArrayList<>();
+      List<Query> clauses = new ArrayList<>(fields.length);
       for (int i = 0; i < fields.length; i++) {
         clauses.add(getWildcardQuery(fields[i], termStr));
       }
@@ -249,7 +249,7 @@ public class MultiFieldQueryParser extends QueryParser
   @Override
   protected Query getRangeQuery(String field, String part1, String part2, boolean startInclusive, boolean endInclusive) throws ParseException {
     if (field == null) {
-      List<Query> clauses = new ArrayList<>();
+      List<Query> clauses = new ArrayList<>(fields.length);
       for (int i = 0; i < fields.length; i++) {
         clauses.add(getRangeQuery(fields[i], part1, part2, startInclusive, endInclusive));
       }
@@ -264,7 +264,7 @@ public class MultiFieldQueryParser extends QueryParser
   protected Query getRegexpQuery(String field, String termStr)
       throws ParseException {
     if (field == null) {
-      List<Query> clauses = new ArrayList<>();
+      List<Query> clauses = new ArrayList<>(fields.length);
       for (int i = 0; i < fields.length; i++) {
         clauses.add(getRegexpQuery(fields[i], termStr));
       }

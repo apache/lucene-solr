@@ -110,7 +110,7 @@ public abstract class StoredFieldsWriter implements Closeable {
    *  Implementations can override this method for more sophisticated
    *  merging (bulk-byte copying, etc). */
   public int merge(MergeState mergeState) throws IOException {
-    List<StoredFieldsMergeSub> subs = new ArrayList<>();
+    List<StoredFieldsMergeSub> subs = new ArrayList<>(mergeState.storedFieldsReaders.length);
     for(int i=0;i<mergeState.storedFieldsReaders.length;i++) {
       StoredFieldsReader storedFieldsReader = mergeState.storedFieldsReaders[i];
       storedFieldsReader.checkIntegrity();

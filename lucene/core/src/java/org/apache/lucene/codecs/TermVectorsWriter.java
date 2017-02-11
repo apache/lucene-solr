@@ -196,7 +196,7 @@ public abstract class TermVectorsWriter implements Closeable {
    *  merging (bulk-byte copying, etc). */
   public int merge(MergeState mergeState) throws IOException {
 
-    List<TermVectorsMergeSub> subs = new ArrayList<>();
+    List<TermVectorsMergeSub> subs = new ArrayList<>(mergeState.termVectorsReaders.length);
     for(int i=0;i<mergeState.termVectorsReaders.length;i++) {
       TermVectorsReader reader = mergeState.termVectorsReaders[i];
       if (reader != null) {

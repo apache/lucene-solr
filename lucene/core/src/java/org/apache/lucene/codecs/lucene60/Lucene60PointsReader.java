@@ -142,7 +142,7 @@ public class Lucene60PointsReader extends PointsReader implements Closeable {
 
   @Override
   public Collection<Accountable> getChildResources() {
-    List<Accountable> resources = new ArrayList<>();
+    List<Accountable> resources = new ArrayList<>(readers.size());
     for(Map.Entry<Integer,BKDReader> ent : readers.entrySet()) {
       resources.add(Accountables.namedAccountable(readState.fieldInfos.fieldInfo(ent.getKey()).name,
                                                   ent.getValue()));

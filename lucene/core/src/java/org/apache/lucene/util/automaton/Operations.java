@@ -214,7 +214,7 @@ final public class Operations {
     if (count == 0) {
       return repeat(a);
     }
-    List<Automaton> as = new ArrayList<>();
+    List<Automaton> as = new ArrayList<>(count + 1);
     while (count-- > 0) {
       as.add(a);
     }
@@ -242,7 +242,7 @@ final public class Operations {
       b = new Automaton();
       b.copy(a);
     } else {
-      List<Automaton> as = new ArrayList<>();
+      List<Automaton> as = new ArrayList<>(min);
       for(int i=0;i<min;i++) {
         as.add(a);
       }

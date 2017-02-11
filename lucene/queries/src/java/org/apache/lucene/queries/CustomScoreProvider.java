@@ -132,7 +132,7 @@ public class CustomScoreProvider {
       valSrcScore *= valSrcExpl.getValue();
     }
     
-    List<Explanation> subs = new ArrayList<>();
+    List<Explanation> subs = new ArrayList<>(1 + valSrcExpls.length);
     subs.add(subQueryExpl);
     for (Explanation valSrcExpl : valSrcExpls) {
       subs.add(valSrcExpl);

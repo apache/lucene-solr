@@ -68,8 +68,9 @@ public class TokenInfoDictionaryBuilder {
         return name.endsWith(".csv");
       }
     };
-    ArrayList<File> csvFiles = new ArrayList<>();
-    for (File file : new File(dirname).listFiles(filter)) {
+    File[] foundFiles = new File(dirname).listFiles(filter);
+    ArrayList<File> csvFiles = new ArrayList<>(foundFiles.length);
+    for (File file : foundFiles) {
       csvFiles.add(file);
     }
     Collections.sort(csvFiles);

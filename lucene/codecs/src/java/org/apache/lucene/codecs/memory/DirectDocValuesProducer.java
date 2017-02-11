@@ -631,7 +631,7 @@ class DirectDocValuesProducer extends DocValuesProducer {
     
     @Override
     public Collection<Accountable> getChildResources() {
-      List<Accountable> resources = new ArrayList<>();
+      List<Accountable> resources = new ArrayList<>(2);
       if (address != null) {
         resources.add(Accountables.namedAccountable("addresses", RamUsageEstimator.sizeOf(address)));
       }
