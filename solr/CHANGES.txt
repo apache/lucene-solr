@@ -95,6 +95,10 @@ Bug Fixes
 
 * SOLR-10083: Fix instanceof check in ConstDoubleSource.equals (Pushkar Raste via Christine Poerschke)
 
+* SOLR-10120: A SolrCore reload can remove the index from the previous SolrCore during replication index rollover. (Mark Miller)
+
+* SOLR-10124: Replication can skip removing a temporary index directory in some cases when it should not. (Mark Miller)
+
 Other Changes
 ----------------------
 * SOLR-9980: Expose configVersion in core admin status (Jessica Cheng Mallet via Tomás Fernández Löbbe)

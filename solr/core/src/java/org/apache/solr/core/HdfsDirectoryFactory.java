@@ -21,8 +21,11 @@ import static org.apache.hadoop.fs.CommonConfigurationKeysPublic.HADOOP_SECURITY
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.net.URLEncoder;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.Collections;
+import java.util.List;
 import java.util.Locale;
 import java.util.Set;
 import java.util.concurrent.ExecutionException;
@@ -505,7 +508,7 @@ public class HdfsDirectoryFactory extends CachingDirectoryFactory implements Sol
   }
 
   @Override
-  public void cleanupOldIndexDirectories(final String dataDir, final String currentIndexDir) {
+  public void cleanupOldIndexDirectories(final String dataDir, final String currentIndexDir, boolean afterReload) {
 
     // Get the FileSystem object
     final Path dataDirPath = new Path(dataDir);
@@ -549,13 +552,27 @@ public class HdfsDirectoryFactory extends CachingDirectoryFactory implements Sol
     } catch (IOException ioExc) {
       LOG.error("Error checking for old index directories to clean-up.", ioExc);
     }
+    
+    List<Path> oldIndexPaths = new ArrayList<>(oldIndexDirs.length);
+    for (FileStatus ofs : oldIndexDirs) {
+      oldIndexPaths.add(ofs.getPath());
+    }
 
     if (oldIndexDirs == null || oldIndexDirs.length == 0)
       return; // nothing to clean-up
 
+    Collections.sort(oldIndexPaths, Collections.reverseOrder());
+    
     Set<String> livePaths = getLivePaths();
-    for (FileStatus oldDir : oldIndexDirs) {
-      Path oldDirPath = oldDir.getPath();
+    
+    int i = 0;
+    if (afterReload) {
+      LOG.info("Will not remove most recent old directory on reload {}", oldIndexDirs[0]);
+      i = 1;
+    }
+    LOG.info("Found {} old index directories to clean-up under {} afterReload={}", oldIndexDirs.length - i, dataDirPath, afterReload);
+    for (; i < oldIndexPaths.size(); i++) {
+      Path oldDirPath = oldIndexPaths.get(i);
       if (livePaths.contains(oldDirPath.toString())) {
         LOG.warn("Cannot delete directory {} because it is still being referenced in the cache.", oldDirPath);
       } else {
