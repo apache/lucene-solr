@@ -169,8 +169,8 @@ public class MetricsDirectoryFactory extends DirectoryFactory implements SolrCor
   }
 
   @Override
-  public void cleanupOldIndexDirectories(String dataDirPath, String currentIndexDirPath) {
-    in.cleanupOldIndexDirectories(dataDirPath, currentIndexDirPath);
+  public void cleanupOldIndexDirectories(String dataDirPath, String currentIndexDirPath, boolean reload) {
+    in.cleanupOldIndexDirectories(dataDirPath, currentIndexDirPath, reload);
   }
 
   @Override

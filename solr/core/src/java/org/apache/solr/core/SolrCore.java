@@ -617,34 +617,37 @@ public final class SolrCore implements SolrInfoMBean, Closeable {
   }
 
   public SolrCore reload(ConfigSet coreConfig) throws IOException {
-    solrCoreState.increfSolrCoreState();
-    final SolrCore currentCore;
-    if (!getNewIndexDir().equals(getIndexDir())) {
-      // the directory is changing, don't pass on state
-      currentCore = null;
-    } else {
-      currentCore = this;
-    }
+    // only one reload at a time
+    synchronized (getUpdateHandler().getSolrCoreState().getReloadLock()) {
+      solrCoreState.increfSolrCoreState();
+      final SolrCore currentCore;
+      if (!getNewIndexDir().equals(getIndexDir())) {
+        // the directory is changing, don't pass on state
+        currentCore = null;
+      } else {
+        currentCore = this;
+      }
 
-    boolean success = false;
-    SolrCore core = null;
-    try {
-      CoreDescriptor cd = new CoreDescriptor(coreDescriptor.getName(), coreDescriptor);
-      cd.loadExtraProperties(); //Reload the extra properties
-      core = new SolrCore(getName(), getDataDir(), coreConfig.getSolrConfig(),
-          coreConfig.getIndexSchema(), coreConfig.getProperties(),
-          cd, updateHandler, solrDelPolicy, currentCore);
-      
-      // we open a new IndexWriter to pick up the latest config
-      core.getUpdateHandler().getSolrCoreState().newIndexWriter(core, false);
-      
-      core.getSearcher(true, false, null, true);
-      success = true;
-      return core;
-    } finally {
-      // close the new core on any errors that have occurred.
-      if (!success) {
-        IOUtils.closeQuietly(core);
+      boolean success = false;
+      SolrCore core = null;
+      try {
+        CoreDescriptor cd = new CoreDescriptor(coreDescriptor.getName(), coreDescriptor);
+        cd.loadExtraProperties(); //Reload the extra properties
+        core = new SolrCore(getName(), getDataDir(), coreConfig.getSolrConfig(),
+            coreConfig.getIndexSchema(), coreConfig.getProperties(),
+            cd, updateHandler, solrDelPolicy, currentCore, true);
+        
+        // we open a new IndexWriter to pick up the latest config
+        core.getUpdateHandler().getSolrCoreState().newIndexWriter(core, false);
+        
+        core.getSearcher(true, false, null, true);
+        success = true;
+        return core;
+      } finally {
+        // close the new core on any errors that have occurred.
+        if (!success) {
+          IOUtils.closeQuietly(core);
+        }
       }
     }
   }
@@ -686,7 +689,7 @@ public final class SolrCore implements SolrInfoMBean, Closeable {
     }
   }
 
-  void initIndex(boolean reload) throws IOException {
+  void initIndex(boolean passOnPreviousState, boolean reload) throws IOException {
 
     String indexDir = getNewIndexDir();
     boolean indexExists = getDirectoryFactory().exists(indexDir);
@@ -697,7 +700,7 @@ public final class SolrCore implements SolrInfoMBean, Closeable {
 
     initIndexReaderFactory();
 
-    if (indexExists && firstTime && !reload) {
+    if (indexExists && firstTime && !passOnPreviousState) {
       final String lockType = getSolrConfig().indexConfig.lockType;
       Directory dir = directoryFactory.get(indexDir, DirContext.DEFAULT, lockType);
       try {
@@ -726,7 +729,7 @@ public final class SolrCore implements SolrInfoMBean, Closeable {
     }
 
 
-    cleanupOldIndexDirectories();
+    cleanupOldIndexDirectories(reload);
   }
 
 
@@ -823,7 +826,7 @@ public final class SolrCore implements SolrInfoMBean, Closeable {
 
   public SolrCore(CoreDescriptor cd, ConfigSet coreConfig) {
     this(cd.getName(), null, coreConfig.getSolrConfig(), coreConfig.getIndexSchema(), coreConfig.getProperties(),
-        cd, null, null, null);
+        cd, null, null, null, false);
   }
 
   
@@ -843,7 +846,7 @@ public final class SolrCore implements SolrInfoMBean, Closeable {
   public SolrCore(String name, String dataDir, SolrConfig config,
       IndexSchema schema, NamedList configSetProperties,
       CoreDescriptor coreDescriptor, UpdateHandler updateHandler,
-      IndexDeletionPolicyWrapper delPolicy, SolrCore prev) {
+      IndexDeletionPolicyWrapper delPolicy, SolrCore prev, boolean reload) {
     
     assert ObjectReleaseTracker.track(searcherExecutor); // ensure that in unclean shutdown tests we still close this
     
@@ -905,7 +908,7 @@ public final class SolrCore implements SolrInfoMBean, Closeable {
       this.codec = initCodec(solrConfig, this.schema);
 
       memClassLoader = new MemClassLoader(PluginBag.RuntimeLib.getLibObjects(this, solrConfig.getPluginInfos(PluginBag.RuntimeLib.class.getName())), getResourceLoader());
-      initIndex(prev != null);
+      initIndex(prev != null, reload);
 
       initWriters();
       qParserPlugins.init(createInstances(QParserPlugin.standardPlugins), this);
@@ -1533,7 +1536,12 @@ public final class SolrCore implements SolrInfoMBean, Closeable {
     }
 
     if (coreStateClosed) {
-
+      try {
+        cleanupOldIndexDirectories(false);
+      } catch (Exception e) {
+        SolrException.log(log, e);
+      }
+      
       try {
         directoryFactory.close();
       } catch (Throwable e) {
@@ -1542,7 +1550,6 @@ public final class SolrCore implements SolrInfoMBean, Closeable {
           throw (Error) e;
         }
       }
-
     }
 
     if( closeHooks != null ) {
@@ -1557,6 +1564,7 @@ public final class SolrCore implements SolrInfoMBean, Closeable {
          }
       }
     }
+    
     assert ObjectReleaseTracker.release(this);
   }
 
@@ -2952,16 +2960,16 @@ public final class SolrCore implements SolrInfoMBean, Closeable {
     return false;
   }
 
-  public void cleanupOldIndexDirectories() {
+  public void cleanupOldIndexDirectories(boolean reload) {
     final DirectoryFactory myDirFactory = getDirectoryFactory();
     final String myDataDir = getDataDir();
-    final String myIndexDir = getIndexDir();
+    final String myIndexDir = getNewIndexDir(); // ensure the latest replicated index is protected 
     final String coreName = getName();
     if (myDirFactory != null && myDataDir != null && myIndexDir != null) {
       Thread cleanupThread = new Thread(() -> {
         log.debug("Looking for old index directories to cleanup for core {} in {}", coreName, myDataDir);
         try {
-          myDirFactory.cleanupOldIndexDirectories(myDataDir, myIndexDir);
+          myDirFactory.cleanupOldIndexDirectories(myDataDir, myIndexDir, reload);
         } catch (Exception exc) {
           log.error("Failed to cleanup old index directories for core "+coreName, exc);
         }

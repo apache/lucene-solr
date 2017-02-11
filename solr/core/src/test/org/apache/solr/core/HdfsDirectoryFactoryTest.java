@@ -165,7 +165,7 @@ public class HdfsDirectoryFactoryTest extends SolrTestCaseJ4 {
     hdfs.mkdirs(oldIndexDirPath);
     assertTrue(hdfs.isDirectory(oldIndexDirPath));
 
-    hdfsFactory.cleanupOldIndexDirectories(dataHomePath.toString(), currentIndexDirPath.toString());
+    hdfsFactory.cleanupOldIndexDirectories(dataHomePath.toString(), currentIndexDirPath.toString(), false);
 
     assertTrue(hdfs.isDirectory(currentIndexDirPath));
     assertTrue(!hdfs.isDirectory(oldIndexDirPath));

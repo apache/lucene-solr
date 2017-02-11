@@ -38,6 +38,8 @@ public class CleanupOldIndexTest extends SolrCloudTestCase {
 
   @BeforeClass
   public static void setupCluster() throws Exception {
+    // we restart jetty and expect to find on disk data - need a local fs directory
+    useFactory(null);
     configureCluster(2)
         .addConfig("conf1", TEST_PATH().resolve("configsets").resolve("cloud-dynamic").resolve("conf"))
         .configure();
