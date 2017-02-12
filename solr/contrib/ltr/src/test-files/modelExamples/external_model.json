@@ -2,11 +2,11 @@
     "class":"org.apache.solr.ltr.model.LinearModel",
     "name":"externalmodel",
     "features":[
-        { "name": "matchedTitle"}
+        { "name": "titlePhraseMatch"}
     ],
     "params":{
         "weights": {
-            "matchedTitle": 0.999
+            "titlePhraseMatch": 0.555
         }
     }
 }
