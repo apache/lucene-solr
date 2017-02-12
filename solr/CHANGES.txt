@@ -195,6 +195,8 @@ Other Changes
 * SOLR-9914: SimpleFacets: refactor "contains" check into "SubstringBytesRefFilter" class.
   (Jonny Marks, David Smiley, Christine Poerschke)
 
+* SOLR-10072: The test TestSelectiveWeightCreation appears to be unreliable. (Michael Nilsson via Mark Miller)
+
 ==================  6.4.1 ==================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release.

@@ -25,21 +25,15 @@ public class TestParallelWeightCreation extends TestRerankBase{
   public void testLTRScoringQueryParallelWeightCreationResultOrder() throws Exception {
     setuptest("solrconfig-ltr_Th10_10.xml", "schema.xml");
 
-    assertU(adoc("id", "1", "title", "w1 w3", "description", "w1", "popularity",
-        "1"));
-    assertU(adoc("id", "2", "title", "w2", "description", "w2", "popularity",
-        "2"));
-    assertU(adoc("id", "3", "title", "w3", "description", "w3", "popularity",
-        "3"));
-    assertU(adoc("id", "4", "title", "w4 w3", "description", "w4", "popularity",
-        "4"));
-    assertU(adoc("id", "5", "title", "w5", "description", "w5", "popularity",
-        "5"));
+    assertU(adoc("id", "1", "title", "w1 w3", "description", "w1", "popularity", "1"));
+    assertU(adoc("id", "2", "title", "w2",    "description", "w2", "popularity", "2"));
+    assertU(adoc("id", "3", "title", "w3",    "description", "w3", "popularity", "3"));
+    assertU(adoc("id", "4", "title", "w3 w3", "description", "w4", "popularity", "4"));
+    assertU(adoc("id", "5", "title", "w5",    "description", "w5", "popularity", "5"));
     assertU(commit());
 
     loadFeatures("external_features.json");
     loadModels("external_model.json");
-    loadModels("external_model_store.json");
 
     // check to make sure that the order of results will be the same when using parallel weight creation
     final SolrQuery query = new SolrQuery();
@@ -47,10 +41,10 @@ public class TestParallelWeightCreation extends TestRerankBase{
     query.add("fl", "*,score");
     query.add("rows", "4");
 
-    query.add("rq", "{!ltr reRankDocs=4 model=externalmodel efi.user_query=w3}");
-    assertJQ("/query" + query.toQueryString(), "/response/docs/[0]/id=='1'");
-    assertJQ("/query" + query.toQueryString(), "/response/docs/[1]/id=='3'");
-    assertJQ("/query" + query.toQueryString(), "/response/docs/[2]/id=='4'");
+    query.add("rq", "{!ltr reRankDocs=10 model=externalmodel efi.user_query=w3}");
+    assertJQ("/query" + query.toQueryString(), "/response/docs/[0]/id=='3'");
+    assertJQ("/query" + query.toQueryString(), "/response/docs/[1]/id=='4'");
+    assertJQ("/query" + query.toQueryString(), "/response/docs/[2]/id=='1'");
     aftertest();
   }
 

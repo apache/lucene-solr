@@ -106,21 +106,16 @@ public class TestSelectiveWeightCreation extends TestRerankBase {
   public static void before() throws Exception {
     setuptest(false);
 
-    assertU(adoc("id", "1", "title", "w1 w3", "description", "w1", "popularity",
-        "1"));
-    assertU(adoc("id", "2", "title", "w2", "description", "w2", "popularity",
-        "2"));
-    assertU(adoc("id", "3", "title", "w3", "description", "w3", "popularity",
-        "3"));
-    assertU(adoc("id", "4", "title", "w4 w3", "description", "w4", "popularity",
-        "4"));
-    assertU(adoc("id", "5", "title", "w5", "description", "w5", "popularity",
-        "5"));
+    assertU(adoc("id", "1", "title", "w3 w1", "description", "w1", "popularity", "1"));
+    assertU(adoc("id", "2", "title", "w2",    "description", "w2", "popularity", "2"));
+    assertU(adoc("id", "3", "title", "w3",    "description", "w3", "popularity", "3"));
+    assertU(adoc("id", "4", "title", "w3 w3", "description", "w4", "popularity", "4"));
+    assertU(adoc("id", "5", "title", "w5",    "description", "w5", "popularity", "5"));
     assertU(commit());
 
     loadFeatures("external_features.json");
     loadModels("external_model.json");
-    loadModels("external_model_store.json");
+    loadModels("external_model2.json");
   }
 
   @AfterClass
@@ -134,14 +129,14 @@ public class TestSelectiveWeightCreation extends TestRerankBase {
     final RandomIndexWriter w = new RandomIndexWriter(random(), dir);
 
     Document doc = new Document();
-    doc.add(newStringField("id", "0", Field.Store.YES));
+    doc.add(newStringField("id", "10", Field.Store.YES));
     doc.add(newTextField("field", "wizard the the the the the oz",
         Field.Store.NO));
     doc.add(new FloatDocValuesField("final-score", 1.0f));
 
     w.addDocument(doc);
     doc = new Document();
-    doc.add(newStringField("id", "1", Field.Store.YES));
+    doc.add(newStringField("id", "11", Field.Store.YES));
     // 1 extra token, but wizard and oz are close;
     doc.add(newTextField("field", "wizard oz the the the the the the",
         Field.Store.NO));
@@ -159,8 +154,8 @@ public class TestSelectiveWeightCreation extends TestRerankBase {
     // first run the standard query
     final TopDocs hits = searcher.search(bqBuilder.build(), 10);
     assertEquals(2, hits.totalHits);
-    assertEquals("0", searcher.doc(hits.scoreDocs[0].doc).get("id"));
-    assertEquals("1", searcher.doc(hits.scoreDocs[1].doc).get("id"));
+    assertEquals("10", searcher.doc(hits.scoreDocs[0].doc).get("id"));
+    assertEquals("11", searcher.doc(hits.scoreDocs[1].doc).get("id"));
 
     List<Feature> features = makeFeatures(new int[] {0, 1, 2});
     final List<Feature> allFeatures = makeFeatures(new int[] {0, 1, 2, 3, 4, 5,
@@ -206,7 +201,7 @@ public class TestSelectiveWeightCreation extends TestRerankBase {
     }
     assertEquals(validFeatures, allFeatures.size());
 
-    assertU(delI("0"));assertU(delI("1"));
+    assertU(delI("10"));assertU(delI("11"));
     r.close();
     dir.close();
   }
@@ -216,41 +211,49 @@ public class TestSelectiveWeightCreation extends TestRerankBase {
   public void testSelectiveWeightsRequestFeaturesFromDifferentStore() throws Exception {
 
     final String docs0fv = FeatureLoggerTestUtils.toFeatureVector(
-        "matchedTitle","1.0", "titlePhraseMatch","0.40254828");
+        "matchedTitle","1.0", "titlePhraseMatch","0.6103343");
     final String docs0fv_fstore4= FeatureLoggerTestUtils.toFeatureVector(
         "popularity","3.0", "originalScore","1.0");
 
+    // extract all features in externalmodel's store (default store)
+    // rerank using externalmodel (default store)
     final SolrQuery query = new SolrQuery();
     query.setQuery("*:*");
-    query.add("fl", "*,score");
-    query.add("rows", "4");
-    query.add("rq", "{!ltr reRankDocs=4 model=externalmodel efi.user_query=w3}");
-    query.add("fl", "fv:[fv]");
+    query.add("fl", "*,score,fv:[fv]");
+    query.add("rows", "5");
+    query.add("rq", "{!ltr reRankDocs=10 model=externalmodel efi.user_query=w3}");
 
-    assertJQ("/query" + query.toQueryString(), "/response/docs/[0]/id=='1'");
-    assertJQ("/query" + query.toQueryString(), "/response/docs/[1]/id=='3'");
-    assertJQ("/query" + query.toQueryString(), "/response/docs/[2]/id=='4'");
-    assertJQ("/query" + query.toQueryString(), "/response/docs/[0]/fv=='"+docs0fv+"'"); // extract all features in default store
+    assertJQ("/query" + query.toQueryString(), "/response/docs/[0]/id=='3'");
+    assertJQ("/query" + query.toQueryString(), "/response/docs/[1]/id=='4'");
+    assertJQ("/query" + query.toQueryString(), "/response/docs/[2]/id=='1'");    
+    assertJQ("/query" + query.toQueryString(), "/response/docs/[0]/fv=='"+docs0fv+"'"); 
+    assertJQ("/query" + query.toQueryString(), "/response/docs/[0]/score==0.33873552");    
 
+    // extract all features from fstore4
+    // rerank using externalmodel (default store)
     query.remove("fl");
     query.remove("rq");
-    query.add("fl", "*,score");
-    query.add("rq", "{!ltr reRankDocs=4 model=externalmodel efi.user_query=w3}");
-    query.add("fl", "fv:[fv store=fstore4 efi.myPop=3]");
+    query.add("fl", "*,score,fv:[fv store=fstore4 efi.myPop=3]");
+    query.add("rq", "{!ltr reRankDocs=10 model=externalmodel efi.user_query=w3}");
 
-    assertJQ("/query" + query.toQueryString(), "/response/docs/[0]/id=='1'");
-    assertJQ("/query" + query.toQueryString(), "/response/docs/[0]/score==0.999");
-    assertJQ("/query" + query.toQueryString(), "/response/docs/[0]/fv=='"+docs0fv_fstore4+"'"); // extract all features from fstore4
+    assertJQ("/query" + query.toQueryString(), "/response/docs/[0]/id=='3'");
+    assertJQ("/query" + query.toQueryString(), "/response/docs/[1]/id=='4'");
+    assertJQ("/query" + query.toQueryString(), "/response/docs/[2]/id=='1'");    
+    assertJQ("/query" + query.toQueryString(), "/response/docs/[0]/fv=='"+docs0fv_fstore4+"'");
+    assertJQ("/query" + query.toQueryString(), "/response/docs/[0]/score==0.33873552");
 
-
+    // extract all features from fstore4
+    // rerank using externalmodel2 (fstore2)
     query.remove("fl");
     query.remove("rq");
-    query.add("fl", "*,score");
-    query.add("rq", "{!ltr reRankDocs=4 model=externalmodelstore efi.user_query=w3 efi.myconf=0.8}");
-    query.add("fl", "fv:[fv store=fstore4 efi.myPop=3]");
-    assertJQ("/query" + query.toQueryString(), "/response/docs/[0]/id=='1'"); // score using fstore2 used by externalmodelstore
-    assertJQ("/query" + query.toQueryString(), "/response/docs/[0]/score==0.7992");
-    assertJQ("/query" + query.toQueryString(), "/response/docs/[0]/fv=='"+docs0fv_fstore4+"'"); // extract all features from fstore4
+    query.add("fl", "*,score,fv:[fv store=fstore4 efi.myPop=3]");
+    query.add("rq", "{!ltr reRankDocs=10 model=externalmodel2 efi.user_query=w3}");
+    
+    assertJQ("/query" + query.toQueryString(), "/response/docs/[0]/id=='5'"); 
+    assertJQ("/query" + query.toQueryString(), "/response/docs/[1]/id=='4'"); 
+    assertJQ("/query" + query.toQueryString(), "/response/docs/[2]/id=='3'"); 
+    assertJQ("/query" + query.toQueryString(), "/response/docs/[0]/fv=='"+docs0fv_fstore4+"'");
+    assertJQ("/query" + query.toQueryString(), "/response/docs/[0]/score==2.5");
   }
 }
 
