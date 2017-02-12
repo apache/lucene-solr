@@ -75,6 +75,7 @@ import org.apache.solr.common.cloud.ZooKeeperException;
 import org.apache.solr.common.params.CollectionParams;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.SolrParams;
+import org.apache.solr.common.util.ObjectReleaseTracker;
 import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.common.util.URLUtil;
 import org.apache.solr.common.util.Utils;
@@ -417,6 +418,8 @@ public class ZkController {
     });
 
     init(registerOnReconnect);
+    
+    assert ObjectReleaseTracker.track(this);
   }
 
   public int getLeaderVoteWait() {
@@ -552,7 +555,7 @@ public class ZkController {
         }
       }
     }
-
+    assert ObjectReleaseTracker.release(this);
   }
 
   /**

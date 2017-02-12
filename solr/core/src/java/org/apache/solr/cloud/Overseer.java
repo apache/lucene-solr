@@ -44,6 +44,7 @@ import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.CollectionParams;
 import org.apache.solr.common.util.IOUtils;
+import org.apache.solr.common.util.ObjectReleaseTracker;
 import org.apache.solr.common.util.Utils;
 import org.apache.solr.core.CloudConfig;
 import org.apache.solr.handler.admin.CollectionsHandler;
@@ -489,6 +490,7 @@ public class Overseer implements Closeable {
     this.zkController = zkController;
     this.stats = new Stats();
     this.config = config;
+    assert ObjectReleaseTracker.track(this);
   }
   
   public synchronized void start(String id) {
@@ -540,11 +542,12 @@ public class Overseer implements Closeable {
   }
   
   public synchronized void close() {
-    if (closed || id == null) return;
+    if (closed) return;
     log.info("Overseer (id=" + id + ") closing");
     
     doClose();
     this.closed = true;
+    assert ObjectReleaseTracker.release(this);
   }
 
   private void doClose() {
@@ -560,6 +563,22 @@ public class Overseer implements Closeable {
     if (arfoThread != null) {
       IOUtils.closeQuietly(arfoThread);
       arfoThread.interrupt();
+    }
+    
+    if (updaterThread != null) {
+      try {
+        updaterThread.join();
+      } catch (InterruptedException e) {}
+    }
+    if (ccThread != null) {
+      try {
+        ccThread.join();
+      } catch (InterruptedException e) {}
+    }
+    if (arfoThread != null) {
+      try {
+        arfoThread.join();
+      } catch (InterruptedException e) {}
     }
     
     updaterThread = null;
