@@ -137,8 +137,10 @@ public class OverseerRolesTest extends SolrCloudTestCase {
         .offer(Utils.toJSON(new ZkNodeProps(Overseer.QUEUE_OPERATION, OverseerAction.QUIT.toLower(),
             "id", leaderId)));
 
-    waitForNewOverseer(10, s -> Objects.equals(leader, s) == false);
+    waitForNewOverseer(15, s -> Objects.equals(leader, s) == false);
 
+    Thread.sleep(1000);
+    
     logOverseerState();
     assertTrue("The old leader should have rejoined election",
         OverseerCollectionConfigSetProcessor.getSortedOverseerNodeNames(zkClient()).contains(leader));
