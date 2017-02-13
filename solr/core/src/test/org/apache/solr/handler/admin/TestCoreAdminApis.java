@@ -24,12 +24,14 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Properties;
 
+import org.apache.lucene.util.Constants;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.api.Api;
 import org.apache.solr.api.ApiBag;
 import org.easymock.EasyMock;
+import org.junit.BeforeClass;
 
 import static org.apache.solr.common.util.Utils.fromJSONString;
 import static org.easymock.EasyMock.anyBoolean;
@@ -37,6 +39,11 @@ import static org.easymock.EasyMock.anyObject;
 import static org.easymock.EasyMock.getCurrentArguments;
 
 public class TestCoreAdminApis extends SolrTestCaseJ4 {
+
+  @BeforeClass
+  public static void beforeClass() throws Exception {
+    assumeFalse("SOLR-9893: EasyMock does not work with Java 9", Constants.JRE_IS_MINIMUM_JAVA9);
+  }
 
   public void testCalls() throws Exception {
     Map<String, Object[]> calls = new HashMap<>();
