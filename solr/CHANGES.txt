@@ -55,6 +55,10 @@ New Features
   BooleanEvaluators. (Dennis Gove)
 
 * SOLR-9997: Enable configuring SolrHttpClientBuilder via java system property. (Hrishikesh Gadre via Mark Miller)
+
+* SOLR-8396: Add support for PointFields in Solr (Ishan Chattopadhyaya, Tomás Fernández Löbbe)
+
+* SOLR-9987: Add support for MultiValued DocValues in PointFields using SortedNumericDocValues (Tomás Fernández Löbbe)
  
 Optimizations
 ----------------------
@@ -129,6 +133,11 @@ Other Changes
   (Jonny Marks, David Smiley, Christine Poerschke)
 
 * SOLR-10072: The test TestSelectiveWeightCreation appears to be unreliable. (Michael Nilsson via Mark Miller)
+
+* SOLR-10011: Refactor PointField & TrieField to now have a common base class, NumericFieldType. The
+  TrieField.TrieTypes and PointField.PointTypes are now consolidated to NumericFieldType.NumberType. This
+  refactoring also fixes a bug whereby PointFields were not using DocValues for range queries for
+  indexed=false, docValues=true fields. (Ishan Chattopadhyaya, Tomás Fernández Löbbe)
 
 ==================  6.4.1 ==================
 
