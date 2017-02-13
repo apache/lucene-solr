@@ -21,10 +21,10 @@ import java.lang.invoke.MethodHandles;
 import java.util.Collection;
 
 import org.apache.lucene.document.DoublePoint;
+import org.apache.lucene.document.FieldType.LegacyNumericType;
 import org.apache.lucene.document.StoredField;
 import org.apache.lucene.index.DocValuesType;
 import org.apache.lucene.index.IndexableField;
-import org.apache.lucene.legacy.LegacyNumericType;
 import org.apache.lucene.queries.function.ValueSource;
 import org.apache.lucene.queries.function.valuesource.DoubleFieldSource;
 import org.apache.lucene.queries.function.valuesource.MultiValuedDoubleFieldSource;

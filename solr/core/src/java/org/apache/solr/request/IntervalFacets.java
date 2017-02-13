@@ -25,9 +25,8 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Locale;
 
-import org.apache.lucene.document.FieldType.LegacyNumericType;
-import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.DocValues;
+import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.NumericDocValues;
 import org.apache.lucene.index.SortedDocValues;
 import org.apache.lucene.index.SortedNumericDocValues;
@@ -268,13 +267,8 @@ public class IntervalFacets implements Iterable<FacetInterval> {
         assert doc >= ctx.docBase;
         longs = DocValues.getSortedNumeric(ctx.reader(), fieldName);
       }
-      int valuesDocID = longs.docID();
-      if (valuesDocID < doc - ctx.docBase) {
-        valuesDocID = longs.advance(doc - ctx.docBase);
-      }
-      if (valuesDocID == doc - ctx.docBase) {
-        accumIntervalWithMultipleValues(longs);
-      }
+      longs.setDocument(doc - ctx.docBase);
+      accumIntervalWithMultipleValues(longs);
     }
   }
 
@@ -314,12 +308,10 @@ public class IntervalFacets implements Iterable<FacetInterval> {
 
   private void accumIntervalWithMultipleValues(SortedNumericDocValues longs) throws IOException {
     // longs should be already positioned to the correct doc
-    assert longs.docID() != -1;
-    assert longs.docValueCount() > 0: "Should have at least one value for this document";
     int currentInterval = 0;
-    for (int i = 0; i < longs.docValueCount(); i++) {
+    for (int i = 0; i < longs.count(); i++) {
       boolean evaluateNextInterval = true;
-      long value = longs.nextValue();
+      long value = longs.valueAt(i);
       while (evaluateNextInterval && currentInterval < intervals.length) {
         IntervalCompareResult result = intervals[currentInterval].includes(value);
         switch (result) {

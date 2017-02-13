@@ -47,12 +47,13 @@ public class SortedNumericStatsValues implements StatsValues {
   }
   
   @Override
-  public void accumulate(int docId) throws IOException {
-    if (!sndv.advanceExact(docId)) {
+  public void accumulate(int docId) {
+    sndv.setDocument(docId);
+    if (sndv.count() == 0) {
       missing();
     } else {
-      for (int i = 0 ; i < sndv.docValueCount(); i++) {
-        nsv.accumulate(toCorrectType(sndv.nextValue()), 1);
+      for (int i = 0 ; i < sndv.count(); i++) {
+        nsv.accumulate(toCorrectType(sndv.valueAt(i)), 1);
       }
     }
     

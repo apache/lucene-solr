@@ -20,10 +20,10 @@ package org.apache.solr.schema;
 import java.lang.invoke.MethodHandles;
 import java.util.Collection;
 
+import org.apache.lucene.document.FieldType.LegacyNumericType;
 import org.apache.lucene.document.LongPoint;
 import org.apache.lucene.document.StoredField;
 import org.apache.lucene.index.IndexableField;
-import org.apache.lucene.legacy.LegacyNumericType;
 import org.apache.lucene.queries.function.ValueSource;
 import org.apache.lucene.queries.function.valuesource.LongFieldSource;
 import org.apache.lucene.queries.function.valuesource.MultiValuedLongFieldSource;

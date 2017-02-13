@@ -429,15 +429,12 @@ final class NumericFacets {
         assert doc >= ctx.docBase;
         longs = DocValues.getSortedNumeric(ctx.reader(), fieldName);
       }
-      int valuesDocID = longs.docID();
-      if (valuesDocID < doc - ctx.docBase) {
-        valuesDocID = longs.advance(doc - ctx.docBase);
-      }
-      if (valuesDocID == doc - ctx.docBase) {
-        long l = longs.nextValue(); // This document must have at least one value
+      longs.setDocument(doc - ctx.docBase);
+      if (longs.count() > 0) {
+        long l = longs.valueAt(0);
         hashTable.add(l, 1);
-        for (int i = 1; i < longs.docValueCount(); i++) {
-          long lnew = longs.nextValue();
+        for (int i = 1; i < longs.count(); i++) {
+          long lnew = longs.valueAt(i);
           if (lnew > l) { // Skip the value if it's equal to the last one, we don't want to double-count it
             hashTable.add(lnew, 1);
           }
