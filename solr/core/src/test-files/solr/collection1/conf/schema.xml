@@ -571,18 +571,17 @@
 
   <field name="timestamp" type="date" indexed="true" stored="true" docValues="true" default="NOW" multiValued="false"/>
   <field name="multiDefault" type="string" indexed="true" stored="true" default="muLti-Default" multiValued="true"/>
-  <field name="intDefault" type="int" indexed="true" stored="true" default="42" multiValued="false"/>
-  <field name="intDvoDefault" type="int" indexed="false" stored="false" multiValued="false"
+  <field name="intDefault" type="${solr.tests.intClass:pint}" indexed="true" stored="true" default="42" multiValued="false"/>
+  <field name="intDvoDefault" type="${solr.tests.intClass:pint}" indexed="false" stored="false" multiValued="false"
          useDocValuesAsStored="true" docValues="true" default="42" />
-  <field name="intRemove" type="int" indexed="true" stored="true" multiValued="true"/>
+  <field name="intRemove" type="${solr.tests.intClass:pint}" indexed="true" stored="true" multiValued="true"/>
   <field name="dateRemove" type="date" indexed="true" stored="true" multiValued="true"/>
-  <field name="floatRemove" type="float" indexed="true" stored="true" multiValued="true"/>
+  <field name="floatRemove" type="${solr.tests.floatClass:pfloat}" indexed="true" stored="true" multiValued="true"/>
 
   <field name="nopositionstext" type="nopositions" indexed="true" stored="true"/>
 
   <field name="tlong" type="tlong" indexed="true" stored="true"/>
-
-  <field name="_version_" type="long" indexed="false" stored="false" docValues="true" multiValued="false" useDocValuesAsStored="true"/>
+  <field name="_version_" type="${solr.tests.longClass:plong}" indexed="false" stored="false" docValues="true" multiValued="false" useDocValuesAsStored="true"/>
 
   <field name="title_stringNoNorms" type="string" omitNorms="true" indexed="true" stored="true"/>
 
@@ -612,14 +611,14 @@
 
   <dynamicField name="*_s" type="string" indexed="true" stored="true"/>
   <dynamicField name="*_s1" type="string" indexed="true" stored="true" multiValued="false"/>
-  <dynamicField name="*_l" type="long" indexed="true" stored="true"/>
-  <dynamicField name="*_l1" type="long" indexed="true" stored="true" multiValued="false"/>
+  <dynamicField name="*_l" type="${solr.tests.longClass:plong}" indexed="true" stored="true"/>
+  <dynamicField name="*_l1" type="${solr.tests.longClass:plong}" indexed="true" stored="true" multiValued="false"/>
   <dynamicField name="*_t" type="text" indexed="true" stored="true"/>
   <dynamicField name="*_b" type="boolean" indexed="true" stored="true"/>
   <dynamicField name="*_b1" type="boolean" indexed="true" stored="true" multiValued="false"/>
-  <dynamicField name="*_f" type="float" indexed="true" stored="true"/>
+  <dynamicField name="*_f" type="${solr.tests.floatClass:pfloat}" indexed="true" stored="true"/>
   <dynamicField name="*_f1" type="${solr.tests.floatClass:pfloat}" indexed="true" stored="true" multiValued="false"/>
-  <dynamicField name="*_d" type="double" indexed="true" stored="true"/>
+  <dynamicField name="*_d" type="${solr.tests.doubleClass:pdouble}" indexed="true" stored="true"/>
   <dynamicField name="*_d1" type="${solr.tests.doubleClass:pdouble}" indexed="true" stored="true" multiValued="false"/>
   <dynamicField name="*_dt" type="date" indexed="true" stored="true"/>
   <dynamicField name="*_dt1" type="date" indexed="true" stored="true" multiValued="false"/>
@@ -679,10 +678,10 @@
   <dynamicField name="*_sev_enum" type="severityType" indexed="true" stored="true" docValues="true" multiValued="true"/>
 
   <!-- With DocValues=true -->
-  <dynamicField name="*_i_dv" type="int" indexed="true" stored="true" docValues="true"/>
-  <dynamicField name="*_l_dv" type="long" indexed="true" stored="true" docValues="true"/>
-  <dynamicField name="*_f_dv" type="float" indexed="true" stored="true" docValues="true"/>
-  <dynamicField name="*_d_dv" type="double" indexed="true" stored="true" docValues="true"/>
+  <dynamicField name="*_i_dv" type="${solr.tests.intClass:pint}" indexed="true" stored="true" docValues="true"/>
+  <dynamicField name="*_l_dv" type="${solr.tests.longClass:plong}" indexed="true" stored="true" docValues="true"/>
+  <dynamicField name="*_f_dv" type="${solr.tests.floatClass:pfloat}" indexed="true" stored="true" docValues="true"/>
+  <dynamicField name="*_d_dv" type="${solr.tests.doubleClass:pdouble}" indexed="true" stored="true" docValues="true"/>
   <dynamicField name="*_dt_dv" type="date" indexed="true" stored="true" docValues="true"/>
   <dynamicField name="*_f1_dv" type="${solr.tests.floatClass:pfloat}" indexed="true" stored="true" docValues="true" multiValued="false"/>
 
@@ -693,21 +692,41 @@
                 useDocValuesAsStored="true"/>
   <dynamicField name="*_s_dvo" multiValued="false" type="string" docValues="true" indexed="false" stored="false"
                 useDocValuesAsStored="true"/>
-  <dynamicField name="*_ii_dvo" multiValued="true" type="int" docValues="true" indexed="false" stored="false"
+
+  <dynamicField name="*_ii_dvo" multiValued="true" type="${solr.tests.intClass:pint}" docValues="true" indexed="false" stored="false"
                 useDocValuesAsStored="true"/>
-  <dynamicField name="*_dd_dvo" multiValued="true" type="double" docValues="true" indexed="false" stored="false"
+  <dynamicField name="*_dd_dvo" multiValued="true" type="${solr.tests.doubleClass:pdouble}" docValues="true" indexed="false" stored="false"
                 useDocValuesAsStored="true"/>
 
   <!--  Non-stored, DocValues=true, useDocValuesAsStored=false -->
   <field name="single_i_dvn" multiValued="false" type="${solr.tests.intClass:pint}" indexed="true" stored="true"/>
   <field name="single_d_dvn" multiValued="false" type="${solr.tests.doubleClass:pdouble}" indexed="true" stored="true"/>
   <field name="single_s_dvn" multiValued="false" type="string" indexed="true" stored="true"/>
-  <field name="copy_single_i_dvn" multiValued="false" type="int" docValues="true" indexed="true" stored="false"
+  <field name="copy_single_i_dvn" multiValued="false" type="${solr.tests.intClass:pint}" docValues="true" indexed="true" stored="false"
          useDocValuesAsStored="false"/>
-  <field name="copy_single_d_dvn" multiValued="false" type="double" docValues="true" indexed="true" stored="false"
+  <field name="copy_single_d_dvn" multiValued="false" type="${solr.tests.doubleClass:pdouble}" docValues="true" indexed="true" stored="false"
          useDocValuesAsStored="false"/>
   <field name="copy_single_s_dvn" multiValued="false" type="string" docValues="true" indexed="true" stored="false"
          useDocValuesAsStored="false"/>
+         
+   <!-- Test point fields explicitly -->
+   <dynamicField name="*_i_p"      type="pint"    indexed="true"  stored="true" docValues="true" multiValued="false"/>
+   <dynamicField name="*_is_p"      type="pint"    indexed="true"  stored="true" docValues="true" multiValued="true"/>
+   <dynamicField name="*_i_ni_p"   type="pint"    indexed="false"  stored="true" docValues="true" multiValued="false"/>
+   <dynamicField name="*_is_ni_p"   type="pint"    indexed="false"  stored="true" docValues="true" multiValued="true"/>
+   <dynamicField name="*_l_p"      type="plong"    indexed="true"  stored="true" docValues="true" multiValued="false"/>
+   <dynamicField name="*_ls_p"      type="plong"    indexed="true"  stored="true" docValues="true" multiValued="true"/>
+   <dynamicField name="*_l_ni_p"   type="plong"    indexed="false"  stored="true" docValues="true" multiValued="false"/>
+   <dynamicField name="*_ls_ni_p"   type="plong"    indexed="false"  stored="true" docValues="true" multiValued="true"/>
+   <dynamicField name="*_f_p"      type="pfloat"    indexed="true"  stored="true" docValues="true" multiValued="false"/>
+   <dynamicField name="*_fs_p"      type="pfloat"    indexed="true"  stored="true" docValues="true" multiValued="true"/>
+   <dynamicField name="*_f_ni_p"   type="pfloat"    indexed="false"  stored="true" docValues="true" multiValued="false"/>
+   <dynamicField name="*_fs_ni_p"   type="pfloat"    indexed="false"  stored="true" docValues="true" multiValued="true"/>
+   <dynamicField name="*_d_p"      type="pdouble"    indexed="true"  stored="true" docValues="true" multiValued="false"/>
+   <dynamicField name="*_ds_p"      type="pdouble"    indexed="true"  stored="true" docValues="true" multiValued="true"/>
+   <dynamicField name="*_d_ni_p"   type="pdouble"    indexed="false"  stored="true" docValues="true" multiValued="false"/>
+   <dynamicField name="*_ds_ni_p"   type="pdouble"    indexed="false"  stored="true" docValues="true" multiValued="true"/>
+         
   <copyField source="single_i_dvn" dest="copy_single_i_dvn"/>
   <copyField source="single_d_dvn" dest="copy_single_d_dvn"/>
   <copyField source="single_s_dvn" dest="copy_single_s_dvn"/>

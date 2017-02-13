@@ -76,8 +76,8 @@ public class TestDistributedSearch extends BaseDistributedSearchTestCase {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   String t1="a_t";
-  String i1="a_i1";
-  String nint = "n_i";
+  String i1 = pickRandom("a_i1", "a_i_p", "a_i_ni_p");
+  String nint = pickRandom("n_i", "n_is_p", "n_is_ni_p");
   String tint = "n_ti";
   String tlong = "other_tl1";
   String tdate_a = "a_n_tdt";
@@ -187,7 +187,8 @@ public class TestDistributedSearch extends BaseDistributedSearchTestCase {
     // these queries should be exactly ordered and scores should exactly match
     query("q","*:*", "sort",i1+" desc");
     query("q","*:*", "sort","{!func}testfunc(add("+i1+",5))"+" desc");
-    query("q","*:*", "sort",i1+" asc");
+    query("q",i1 + "[* TO *]", "sort",i1+" asc");
+    query("q","*:*", "sort",i1+" asc, id desc");
     query("q","*:*", "sort",i1+" desc", "fl","*,score");
     query("q","*:*", "sort","n_tl1 asc", "fl","*,score"); 
     query("q","*:*", "sort","n_tl1 desc");
@@ -422,6 +423,7 @@ public class TestDistributedSearch extends BaseDistributedSearchTestCase {
     
     query("q","*:*", "sort",i1+" desc", "stats", "true", "stats.field", "stats_dt");
     query("q","*:*", "sort",i1+" desc", "stats", "true", "stats.field", i1);
+    query("q","*:*", "sort",i1+" desc", "stats", "true", "stats.field", nint);
 
     handle.put("stddev", FUZZY);
     handle.put("sumOfSquares", FUZZY);

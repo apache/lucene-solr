@@ -105,10 +105,11 @@ public class TestIntervalFaceting extends SolrTestCaseJ4 {
     assertU(adoc("id", "10"));
     assertU(commit());
     int i = 11;
-    while (getNumberOfReaders() < 2 && i < 10) {
+    while (getNumberOfReaders() < 2 && i < 20) {
       //try to get more than one segment
       assertU(adoc("id", String.valueOf(i), "test_i_dv", String.valueOf(i)));
       assertU(commit());
+      i++;
     }
     if (getNumberOfReaders() < 2) {
       // It is OK if for some seeds we fall into this case (for example, TieredMergePolicy with
@@ -244,9 +245,11 @@ public class TestIntervalFaceting extends SolrTestCaseJ4 {
     // All field values will be a number between 0 and cardinality
     int cardinality = 100000;
     // Fields to use for interval faceting
-    String[] fields = new String[]{"test_s_dv", "test_i_dv", "test_l_dv", "test_f_dv", "test_d_dv",
+    String[] fields = new String[]{
+        "test_s_dv", "test_i_dv", "test_l_dv", "test_f_dv", "test_d_dv",
         "test_ss_dv", "test_is_dv", "test_fs_dv", "test_ls_dv", "test_ds_dv", "test_s", "test_i", 
-        "test_l", "test_f", "test_d", "test_ss", "test_is", "test_fs", "test_ls", "test_ds"};
+        "test_l", "test_f", "test_d", "test_ss", "test_is", "test_fs", "test_ls", "test_ds",
+        "test_i_p", "test_is_p", "test_l_p", "test_ls_p", "test_f_p", "test_fs_p", "test_d_p", "test_ds_p"};
     for (int i = 0; i < atLeast(500); i++) {
       if (random().nextInt(50) == 0) {
         //have some empty docs
@@ -743,10 +746,11 @@ public class TestIntervalFaceting extends SolrTestCaseJ4 {
     assertU(commit());
     
     int i = 12;
-    while (getNumberOfReaders() < 2 && i < 10) {
+    while (getNumberOfReaders() < 2 && i < 20) {
       //try to get more than one segment
       assertU(adoc("id", String.valueOf(i), "test_s_dv", String.valueOf(i)));
       assertU(commit());
+      i++;
     }
     if (getNumberOfReaders() < 2) {
       // It is OK if for some seeds we fall into this case (for example, TieredMergePolicy with

@@ -30,6 +30,7 @@ import org.apache.lucene.index.FilterNumericDocValues;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.NumericDocValues;
 import org.apache.lucene.index.SortedDocValues;
+import org.apache.lucene.index.SortedNumericDocValues;
 import org.apache.lucene.index.SortedSetDocValues;
 import org.apache.lucene.search.DocIdSet;
 import org.apache.lucene.search.DocIdSetIterator;
@@ -174,8 +175,12 @@ public class IntervalFacets implements Iterable<FacetInterval> {
   }
 
   private void doCount() throws IOException {
-    if (schemaField.getType().getNumberType() != null && !schemaField.multiValued()) {
-      getCountNumeric();
+    if (schemaField.getType().getNumberType() != null && (!schemaField.multiValued() || schemaField.getType().isPointField())) {
+      if (schemaField.multiValued()) {
+        getCountMultiValuedNumeric();
+      } else {
+        getCountNumeric();
+      }
     } else {
       getCountString();
     }
@@ -241,6 +246,36 @@ public class IntervalFacets implements Iterable<FacetInterval> {
       }
     }
   }
+  
+  private void getCountMultiValuedNumeric() throws IOException {
+    final FieldType ft = schemaField.getType();
+    final String fieldName = schemaField.getName();
+    if (ft.getNumberType() == null) {
+      throw new IllegalStateException();
+    }
+    final List<LeafReaderContext> leaves = searcher.getIndexReader().leaves();
+
+    final Iterator<LeafReaderContext> ctxIt = leaves.iterator();
+    LeafReaderContext ctx = null;
+    SortedNumericDocValues longs = null;
+    for (DocIterator docsIt = docs.iterator(); docsIt.hasNext(); ) {
+      final int doc = docsIt.nextDoc();
+      if (ctx == null || doc >= ctx.docBase + ctx.reader().maxDoc()) {
+        do {
+          ctx = ctxIt.next();
+        } while (ctx == null || doc >= ctx.docBase + ctx.reader().maxDoc());
+        assert doc >= ctx.docBase;
+        longs = DocValues.getSortedNumeric(ctx.reader(), fieldName);
+      }
+      int valuesDocID = longs.docID();
+      if (valuesDocID < doc - ctx.docBase) {
+        valuesDocID = longs.advance(doc - ctx.docBase);
+      }
+      if (valuesDocID == doc - ctx.docBase) {
+        accumIntervalWithMultipleValues(longs);
+      }
+    }
+  }
 
   private void getCountString() throws IOException {
     Filter filter = docs.getTopFilter();
@@ -274,6 +309,44 @@ public class IntervalFacets implements Iterable<FacetInterval> {
         }
       }
     }
+  }
+
+  private void accumIntervalWithMultipleValues(SortedNumericDocValues longs) throws IOException {
+    // longs should be already positioned to the correct doc
+    assert longs.docID() != -1;
+    assert longs.docValueCount() > 0: "Should have at least one value for this document";
+    int currentInterval = 0;
+    for (int i = 0; i < longs.docValueCount(); i++) {
+      boolean evaluateNextInterval = true;
+      long value = longs.nextValue();
+      while (evaluateNextInterval && currentInterval < intervals.length) {
+        IntervalCompareResult result = intervals[currentInterval].includes(value);
+        switch (result) {
+          case INCLUDED:
+            /*
+             * Increment the current interval and move to the next one using
+             * the same value
+             */
+            intervals[currentInterval].incCount();
+            currentInterval++;
+            break;
+          case LOWER_THAN_START:
+            /*
+             * None of the next intervals will match this value (all of them have 
+             * higher start value). Move to the next value for this document. 
+             */
+            evaluateNextInterval = false;
+            break;
+          case GREATER_THAN_END:
+            /*
+             * Next interval may match this value
+             */
+            currentInterval++;
+            break;
+        }
+        //Maybe return if currentInterval == intervals.length?
+      }
+     }
   }
 
   private void accumIntervalsMulti(SortedSetDocValues ssdv,

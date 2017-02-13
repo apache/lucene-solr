@@ -26,6 +26,7 @@ import org.apache.lucene.index.IndexableField;
 import org.apache.lucene.legacy.LegacyNumericType;
 import org.apache.lucene.queries.function.ValueSource;
 import org.apache.lucene.queries.function.valuesource.LongFieldSource;
+import org.apache.lucene.queries.function.valuesource.MultiValuedLongFieldSource;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.SortField;
 import org.apache.lucene.util.BytesRef;
@@ -149,8 +150,7 @@ public class LongPointField extends PointField implements LongValueFieldType {
   @Override
   public Type getUninversionType(SchemaField sf) {
     if (sf.multiValued()) {
-      throw new UnsupportedOperationException("MultiValued Point fields with DocValues is not currently supported");
-//      return Type.SORTED_LONG;
+      return Type.SORTED_LONG;
     } else {
       return Type.LONG_POINT;
     }
@@ -160,6 +160,12 @@ public class LongPointField extends PointField implements LongValueFieldType {
   public ValueSource getValueSource(SchemaField field, QParser qparser) {
     field.checkFieldCacheSource();
     return new LongFieldSource(field.getName());
+  }
+  
+  @Override
+  protected ValueSource getSingleValueSource(org.apache.lucene.search.SortedNumericSelector.Type choice,
+      SchemaField field) {
+    return new MultiValuedLongFieldSource(field.getName(), choice);
   }
 
   @Override

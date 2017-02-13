@@ -626,7 +626,7 @@ public abstract class FieldType extends FieldProperties {
   
   /**
    * Return the numeric type of this field, or null if this field is not a
-   *  numeric field. 
+   * numeric field. 
    */
   public NumberType getNumberType() {
     return null;

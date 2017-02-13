@@ -139,6 +139,8 @@ New Features
 * SOLR-9903: Stop interrupting the update executor on shutdown, it can cause graceful shutdowns to put replicas into Leader 
   Initiated Recovery among other undesirable things. (Mark Miller)
 
+* SOLR-9987: Add support for MultiValued DocValues in PointFields using SortedNumericDocValues (Tomás Fernández Löbbe)
+
 Bug Fixes
 ----------------------
 
