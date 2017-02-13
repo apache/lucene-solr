@@ -176,6 +176,8 @@ Build
   Jars are not downloaded; compilation is not updated; and Clover is not enabled.
   (Steve Rowe)
 
+* LUCENE-7694: Update forbiddenapis to version 2.3. (Uwe Schindler)
+
 Other
 
 * LUCENE-7666: Fix typos in lucene-join package info javadoc.
