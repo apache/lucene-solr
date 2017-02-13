@@ -16,10 +16,10 @@
  */
 package org.apache.lucene.queries.function;
 
+import java.io.IOException;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
-import java.io.IOException;
 
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.MockAnalyzer;
@@ -27,13 +27,14 @@ import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.NumericDocValuesField;
 import org.apache.lucene.document.SortedDocValuesField;
+import org.apache.lucene.document.SortedNumericDocValuesField;
 import org.apache.lucene.document.StringField;
 import org.apache.lucene.document.TextField;
-import org.apache.lucene.index.Term;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriterConfig;
-import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.LeafReaderContext;
+import org.apache.lucene.index.RandomIndexWriter;
+import org.apache.lucene.index.Term;
 import org.apache.lucene.queries.function.docvalues.FloatDocValues;
 import org.apache.lucene.queries.function.valuesource.BytesRefFieldSource;
 import org.apache.lucene.queries.function.valuesource.ConstValueSource;
@@ -54,6 +55,10 @@ import org.apache.lucene.queries.function.valuesource.MaxFloatFunction;
 import org.apache.lucene.queries.function.valuesource.MinFloatFunction;
 import org.apache.lucene.queries.function.valuesource.MultiFloatFunction;
 import org.apache.lucene.queries.function.valuesource.MultiFunction;
+import org.apache.lucene.queries.function.valuesource.MultiValuedDoubleFieldSource;
+import org.apache.lucene.queries.function.valuesource.MultiValuedFloatFieldSource;
+import org.apache.lucene.queries.function.valuesource.MultiValuedIntFieldSource;
+import org.apache.lucene.queries.function.valuesource.MultiValuedLongFieldSource;
 import org.apache.lucene.queries.function.valuesource.NormValueSource;
 import org.apache.lucene.queries.function.valuesource.NumDocsValueSource;
 import org.apache.lucene.queries.function.valuesource.PowFloatFunction;
@@ -73,13 +78,15 @@ import org.apache.lucene.search.Query;
 import org.apache.lucene.search.ScoreDoc;
 import org.apache.lucene.search.Sort;
 import org.apache.lucene.search.SortField;
-import org.apache.lucene.search.TopDocs;
+import org.apache.lucene.search.SortedNumericSelector.Type;
 import org.apache.lucene.search.TermQuery;
+import org.apache.lucene.search.TopDocs;
 import org.apache.lucene.search.similarities.ClassicSimilarity;
 import org.apache.lucene.search.similarities.Similarity;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.LuceneTestCase;
+import org.apache.lucene.util.NumericUtils;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 
@@ -99,9 +106,9 @@ public class TestValueSources extends LuceneTestCase {
   static final ValueSource BOGUS_LONG_VS = new LongFieldSource("bogus_field");
 
   static final List<String[]> documents = Arrays.asList(new String[][] {
-      /*             id,  double, float, int,  long,   string, text */ 
-      new String[] { "0", "3.63", "5.2", "35", "4343", "test", "this is a test test test" },
-      new String[] { "1", "5.65", "9.3", "54", "1954", "bar",  "second test" },
+      /*             id,  double, float, int,  long,   string, text,                       double MV (x3),             int MV (x3)*/ 
+      new String[] { "0", "3.63", "5.2", "35", "4343", "test", "this is a test test test", "2.13", "3.69",  "-0.11",   "1", "7", "5"},
+      new String[] { "1", "5.65", "9.3", "54", "1954", "bar",  "second test",              "12.79", "123.456", "0.01", "12", "900", "-1" },
   });
   
   @BeforeClass
@@ -111,36 +118,29 @@ public class TestValueSources extends LuceneTestCase {
     IndexWriterConfig iwConfig = newIndexWriterConfig(analyzer);
     iwConfig.setMergePolicy(newLogMergePolicy());
     RandomIndexWriter iw = new RandomIndexWriter(random(), dir, iwConfig);
-    Document document = new Document();
-    Field idField = new StringField("id", "", Field.Store.NO);
-    document.add(idField);
-    Field idDVField = new SortedDocValuesField("id", new BytesRef());
-    document.add(idDVField);
-    Field doubleDVField = new NumericDocValuesField("double", 0);
-    document.add(doubleDVField);
-    Field floatDVField = new NumericDocValuesField("float", 0);
-    document.add(floatDVField);
-    Field intDVField = new NumericDocValuesField("int", 0);
-    document.add(intDVField);
-    Field longDVField = new NumericDocValuesField("long", 0);
-    document.add(longDVField);
-    Field stringField = new StringField("string", "", Field.Store.NO);
-    document.add(stringField);
-    Field stringDVField = new SortedDocValuesField("string", new BytesRef());
-    document.add(stringDVField);
-    Field textField = new TextField("text", "", Field.Store.NO);
-    document.add(textField);
-    
     for (String [] doc : documents) {
-      idField.setStringValue(doc[0]);
-      idDVField.setBytesValue(new BytesRef(doc[0]));
-      doubleDVField.setLongValue(Double.doubleToRawLongBits(Double.valueOf(doc[1])));
-      floatDVField.setLongValue(Float.floatToRawIntBits(Float.valueOf(doc[2])));
-      intDVField.setLongValue(Integer.valueOf(doc[3]));
-      longDVField.setLongValue(Long.valueOf(doc[4]));
-      stringField.setStringValue(doc[5]);
-      stringDVField.setBytesValue(new BytesRef(doc[5]));
-      textField.setStringValue(doc[6]);
+      Document document = new Document();
+      document.add(new StringField("id", doc[0], Field.Store.NO));
+      document.add(new SortedDocValuesField("id", new BytesRef(doc[0])));
+      document.add(new NumericDocValuesField("double", Double.doubleToRawLongBits(Double.parseDouble(doc[1]))));
+      document.add(new NumericDocValuesField("float", Float.floatToRawIntBits(Float.valueOf(doc[2]))));
+      document.add(new NumericDocValuesField("int", Integer.valueOf(doc[3])));
+      document.add(new NumericDocValuesField("long", Long.valueOf(doc[4])));
+      document.add(new StringField("string", doc[5], Field.Store.NO));
+      document.add(new SortedDocValuesField("string", new BytesRef(doc[5])));
+      document.add(new TextField("text", doc[6], Field.Store.NO));
+      document.add(new SortedNumericDocValuesField("floatMv", NumericUtils.floatToSortableInt(Float.parseFloat(doc[7]))));
+      document.add(new SortedNumericDocValuesField("floatMv", NumericUtils.floatToSortableInt(Float.parseFloat(doc[8]))));
+      document.add(new SortedNumericDocValuesField("floatMv", NumericUtils.floatToSortableInt(Float.parseFloat(doc[9]))));
+      document.add(new SortedNumericDocValuesField("doubleMv", NumericUtils.doubleToSortableLong(Double.parseDouble(doc[7]))));
+      document.add(new SortedNumericDocValuesField("doubleMv", NumericUtils.doubleToSortableLong(Double.parseDouble(doc[8]))));
+      document.add(new SortedNumericDocValuesField("doubleMv", NumericUtils.doubleToSortableLong(Double.parseDouble(doc[9]))));
+      document.add(new SortedNumericDocValuesField("intMv", Long.parseLong(doc[10])));
+      document.add(new SortedNumericDocValuesField("intMv", Long.parseLong(doc[11])));
+      document.add(new SortedNumericDocValuesField("intMv", Long.parseLong(doc[12])));
+      document.add(new SortedNumericDocValuesField("longMv", Long.parseLong(doc[10])));
+      document.add(new SortedNumericDocValuesField("longMv", Long.parseLong(doc[11])));
+      document.add(new SortedNumericDocValuesField("longMv", Long.parseLong(doc[12])));
       iw.addDocument(document);
     }
     
@@ -197,11 +197,31 @@ public class TestValueSources extends LuceneTestCase {
     assertNoneExist(BOGUS_DOUBLE_VS);
   }
   
+  public void testDoubleMultiValued() throws Exception {
+    ValueSource vs = new MultiValuedDoubleFieldSource("doubleMv", Type.MAX);
+    assertHits(new FunctionQuery(vs), new float[] { 3.69f, 123.456f });
+    assertAllExist(vs);
+    
+    vs = new MultiValuedDoubleFieldSource("doubleMv", Type.MIN);
+    assertHits(new FunctionQuery(vs), new float[] { -0.11f, 0.01f });
+    assertAllExist(vs);
+  }
+  
   public void testFloat() throws Exception {
     ValueSource vs = new FloatFieldSource("float");
     assertHits(new FunctionQuery(vs), new float[] { 5.2f, 9.3f });
     assertAllExist(vs);
     assertNoneExist(BOGUS_FLOAT_VS);
+  }
+  
+  public void testFloatMultiValued() throws Exception {
+    ValueSource vs = new MultiValuedFloatFieldSource("floatMv", Type.MAX);
+    assertHits(new FunctionQuery(vs), new float[] { 3.69f, 123.456f });
+    assertAllExist(vs);
+    
+    vs = new MultiValuedFloatFieldSource("floatMv", Type.MIN);
+    assertHits(new FunctionQuery(vs), new float[] { -0.11f, 0.01f });
+    assertAllExist(vs);
   }
   
   public void testIDF() throws Exception {
@@ -249,7 +269,16 @@ public class TestValueSources extends LuceneTestCase {
     assertHits(new FunctionQuery(vs), new float[] { 35f, 54f });
     assertAllExist(vs);
     assertNoneExist(BOGUS_INT_VS);
-                                 
+  }
+  
+  public void testIntMultiValued() throws Exception {
+    ValueSource vs = new MultiValuedIntFieldSource("intMv", Type.MAX);
+    assertHits(new FunctionQuery(vs), new float[] { 7f, 900f });
+    assertAllExist(vs);
+    
+    vs = new MultiValuedIntFieldSource("intMv", Type.MIN);
+    assertHits(new FunctionQuery(vs), new float[] { 1f, -1f });
+    assertAllExist(vs);
   }
   
   public void testJoinDocFreq() throws Exception {
@@ -272,6 +301,16 @@ public class TestValueSources extends LuceneTestCase {
     assertHits(new FunctionQuery(vs), new float[] { 4343f, 1954f });
     assertAllExist(vs);
     assertNoneExist(BOGUS_LONG_VS);
+  }
+  
+  public void testLongMultiValued() throws Exception {
+    ValueSource vs = new MultiValuedLongFieldSource("longMv", Type.MAX);
+    assertHits(new FunctionQuery(vs), new float[] { 7f, 900f });
+    assertAllExist(vs);
+    
+    vs = new MultiValuedLongFieldSource("longMv", Type.MIN);
+    assertHits(new FunctionQuery(vs), new float[] { 1f, -1f });
+    assertAllExist(vs);
   }
   
   public void testMaxDoc() throws Exception {

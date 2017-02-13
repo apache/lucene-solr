@@ -155,6 +155,7 @@ public class Explanation implements MapSerializable {
     public static final String DATASTORE = "datastore";
     public static final String METRIC = "metric";
     public static final String OPERATION = "operation";
+    public static final String EVALUATOR = "evaluator";
     public static final String EQUALITOR = "equalitor";
     public static final String SORTER = "sorter";
   }

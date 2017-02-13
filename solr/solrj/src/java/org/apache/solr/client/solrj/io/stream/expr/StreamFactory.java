@@ -26,12 +26,14 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.stream.Collectors;
 
 import org.apache.solr.client.solrj.io.comp.ComparatorOrder;
 import org.apache.solr.client.solrj.io.comp.MultipleFieldComparator;
 import org.apache.solr.client.solrj.io.comp.StreamComparator;
 import org.apache.solr.client.solrj.io.eq.MultipleFieldEqualitor;
 import org.apache.solr.client.solrj.io.eq.StreamEqualitor;
+import org.apache.solr.client.solrj.io.eval.StreamEvaluator;
 import org.apache.solr.client.solrj.io.ops.StreamOperation;
 import org.apache.solr.client.solrj.io.stream.TupleStream;
 import org.apache.solr.client.solrj.io.stream.metrics.Metric;
@@ -85,6 +87,10 @@ public class StreamFactory implements Serializable {
     }
     
     return expression.getParameters().get(parameterIndex);
+  }
+  
+  public List<String> getValueOperands(StreamExpression expression){
+    return getOperandsOfType(expression, StreamExpressionValue.class).stream().map(item -> ((StreamExpressionValue)item).getValue()).collect(Collectors.toList());
   }
   
   /** Given an expression, will return the value parameter at the given index, or null if doesn't exist */
@@ -174,6 +180,19 @@ public class StreamFactory implements Serializable {
     }
     
     return matchingStreamExpressions;   
+  }
+  
+  public boolean doesRepresentTypes(StreamExpression expression, Class ... clazzes){
+    if(functionNames.containsKey(expression.getFunctionName())){
+      for(Class clazz : clazzes){
+        if(!clazz.isAssignableFrom(functionNames.get(expression.getFunctionName()))){
+          return false;
+        }
+      }
+      return true;
+    }
+    
+    return false;    
   }
   
   public int getIntOperand(StreamExpression expression, String paramName, Integer defaultValue) throws IOException{
@@ -341,6 +360,21 @@ public class StreamFactory implements Serializable {
     }
     
     throw new IOException(String.format(Locale.ROOT,"Invalid operation expression %s - function '%s' is unknown (not mapped to a valid StreamOperation)", expression, expression.getFunctionName()));
+  }
+
+  public StreamEvaluator constructEvaluator(String expressionClause) throws IOException {
+    return constructEvaluator(StreamExpressionParser.parse(expressionClause));
+  }
+  public StreamEvaluator constructEvaluator(StreamExpression expression) throws IOException{
+    String function = expression.getFunctionName();
+    if(functionNames.containsKey(function)){
+      Class<? extends Expressible> clazz = functionNames.get(function);
+      if(Expressible.class.isAssignableFrom(clazz) && StreamEvaluator.class.isAssignableFrom(clazz)){
+        return (StreamEvaluator)createInstance(functionNames.get(function), new Class[]{ StreamExpression.class, StreamFactory.class }, new Object[]{ expression, this});
+      }
+    }
+    
+    throw new IOException(String.format(Locale.ROOT,"Invalid evaluator expression %s - function '%s' is unknown (not mapped to a valid StreamEvaluator)", expression, expression.getFunctionName()));
   }
 
 

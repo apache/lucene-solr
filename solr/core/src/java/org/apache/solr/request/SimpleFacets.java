@@ -21,9 +21,11 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.IdentityHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Executor;
@@ -33,8 +35,8 @@ import java.util.concurrent.RunnableFuture;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.SynchronousQueue;
 import java.util.concurrent.TimeUnit;
+import java.util.function.Predicate;
 
-import org.apache.commons.lang.StringUtils;
 import org.apache.lucene.index.Fields;
 import org.apache.lucene.index.LeafReader;
 import org.apache.lucene.index.LeafReaderContext;
@@ -168,26 +170,6 @@ public class SimpleFacets {
   public void setFacetDebugInfo(FacetDebugInfo fdebugParent) {
     this.fdebugParent = fdebugParent;
   }
-
-  /**
-   * Returns <code>true</code> if a String contains the given substring. Otherwise
-   * <code>false</code>.
-   *
-   * @param ref
-   *          the {@link String} to test
-   * @param substring
-   *          the substring to look for
-   * @param ignoreCase
-   *          whether the comparison should be case-insensitive
-   * @return Returns <code>true</code> iff the String contains the given substring.
-   *         Otherwise <code>false</code>.
-   */
-  public static boolean contains(String ref, String substring, boolean ignoreCase) {
-    if (ignoreCase)
-      return StringUtils.containsIgnoreCase(ref, substring);
-    return StringUtils.contains(ref, substring);
-  }
-
 
   protected ParsedParams parseParams(String type, String param) throws SyntaxError, IOException {
     SolrParams localParams = QueryParsing.getLocalParams(param, req.getParams());
@@ -362,6 +344,48 @@ public class SimpleFacets {
     ENUM, FC, FCS, UIF;
   }
 
+  protected Predicate<BytesRef> newExcludeBytesRefFilter(String field, SolrParams params) {
+    final String exclude = params.getFieldParam(field, FacetParams.FACET_EXCLUDETERMS);
+    if (exclude == null) {
+      return null;
+    }
+
+    final Set<String> excludeTerms = new HashSet<>(StrUtils.splitSmart(exclude, ",", true));
+
+    return new Predicate<BytesRef>() {
+      @Override
+      public boolean test(BytesRef bytesRef) {
+        return !excludeTerms.contains(bytesRef.utf8ToString());
+      }
+    };
+  }
+
+  protected Predicate<BytesRef> newBytesRefFilter(String field, SolrParams params) {
+    final String contains = params.getFieldParam(field, FacetParams.FACET_CONTAINS);
+
+    final Predicate<BytesRef> containsFilter;
+    if (contains != null) {
+      final boolean containsIgnoreCase = params.getFieldBool(field, FacetParams.FACET_CONTAINS_IGNORE_CASE, false);
+      containsFilter = new SubstringBytesRefFilter(contains, containsIgnoreCase);
+    } else {
+      containsFilter = null;
+    }
+
+    final Predicate<BytesRef> excludeFilter = newExcludeBytesRefFilter(field, params);
+
+    if (containsFilter == null && excludeFilter == null) {
+      return null;
+    }
+
+    if (containsFilter != null && excludeFilter == null) {
+      return containsFilter;
+    } else if (containsFilter == null && excludeFilter != null) {
+      return excludeFilter;
+    }
+
+    return containsFilter.and(excludeFilter);
+  }
+
   /**
    * Term counts for use in pivot faceting that resepcts the appropriate mincount
    * @see FacetParams#FACET_PIVOT_MINCOUNT
@@ -405,8 +429,9 @@ public class SimpleFacets {
     // default to sorting if there is a limit.
     String sort = params.getFieldParam(field, FacetParams.FACET_SORT, limit>0 ? FacetParams.FACET_SORT_COUNT : FacetParams.FACET_SORT_INDEX);
     String prefix = params.getFieldParam(field, FacetParams.FACET_PREFIX);
-    String contains = params.getFieldParam(field, FacetParams.FACET_CONTAINS);
-    boolean ignoreCase = params.getFieldBool(field, FacetParams.FACET_CONTAINS_IGNORE_CASE, false);
+
+    final Predicate<BytesRef> termFilter = newBytesRefFilter(field, params);
+
     boolean exists = params.getFieldBool(field, FacetParams.FACET_EXISTS, false);
     
     NamedList<Integer> counts;
@@ -444,14 +469,13 @@ public class SimpleFacets {
     }
 
     if (params.getFieldBool(field, GroupParams.GROUP_FACET, false)) {
-      counts = getGroupedCounts(searcher, docs, field, multiToken, offset,limit, mincount, missing, sort, prefix, contains, ignoreCase);
+      counts = getGroupedCounts(searcher, docs, field, multiToken, offset,limit, mincount, missing, sort, prefix, termFilter);
     } else {
       assert appliedFacetMethod != null;
       switch (appliedFacetMethod) {
         case ENUM:
           assert TrieField.getMainValuePrefix(ft) == null;
-          counts = getFacetTermEnumCounts(searcher, docs, field, offset, limit, mincount,missing,sort,prefix, contains, ignoreCase, 
-                                          exists);
+          counts = getFacetTermEnumCounts(searcher, docs, field, offset, limit, mincount,missing,sort,prefix, termFilter, exists);
           break;
         case FCS:
           assert !multiToken;
@@ -460,12 +484,15 @@ public class SimpleFacets {
             if (prefix != null && !prefix.isEmpty()) {
               throw new SolrException(ErrorCode.BAD_REQUEST, FacetParams.FACET_PREFIX + " is not supported on numeric types");
             }
-            if (contains != null && !contains.isEmpty()) {
-              throw new SolrException(ErrorCode.BAD_REQUEST, FacetParams.FACET_CONTAINS + " is not supported on numeric types");
+            if (termFilter != null) {
+              final boolean supportedOperation = (termFilter instanceof SubstringBytesRefFilter) && ((SubstringBytesRefFilter) termFilter).substring().isEmpty();
+              if (!supportedOperation) {
+                throw new SolrException(ErrorCode.BAD_REQUEST, FacetParams.FACET_CONTAINS + " is not supported on numeric types");
+              }
             }
             counts = NumericFacets.getCounts(searcher, docs, field, offset, limit, mincount, missing, sort);
           } else {
-            PerSegmentSingleValuedFaceting ps = new PerSegmentSingleValuedFaceting(searcher, docs, field, offset, limit, mincount, missing, sort, prefix, contains, ignoreCase);
+            PerSegmentSingleValuedFaceting ps = new PerSegmentSingleValuedFaceting(searcher, docs, field, offset, limit, mincount, missing, sort, prefix, termFilter);
             Executor executor = threads == 0 ? directExecutor : facetExecutor;
             ps.setNumThreads(threads);
             counts = ps.getFacetCounts(executor);
@@ -528,7 +555,7 @@ public class SimpleFacets {
             }
           break;
         case FC:
-          counts = DocValuesFacets.getCounts(searcher, docs, field, offset,limit, mincount, missing, sort, prefix, contains, ignoreCase, fdebug);
+          counts = DocValuesFacets.getCounts(searcher, docs, field, offset,limit, mincount, missing, sort, prefix, termFilter, fdebug);
           break;
         default:
           throw new AssertionError();
@@ -636,8 +663,7 @@ public class SimpleFacets {
                                              boolean missing,
                                              String sort,
                                              String prefix,
-                                             String contains,
-                                             boolean ignoreCase) throws IOException {
+                                             Predicate<BytesRef> termFilter) throws IOException {
     GroupingSpecification groupingSpecification = rb.getGroupingSpec();
     final String groupField  = groupingSpecification != null ? groupingSpecification.getFields()[0] : null;
     if (groupField == null) {
@@ -667,8 +693,8 @@ public class SimpleFacets {
     List<TermGroupFacetCollector.FacetEntry> scopedEntries 
       = result.getFacetEntries(offset, limit < 0 ? Integer.MAX_VALUE : limit);
     for (TermGroupFacetCollector.FacetEntry facetEntry : scopedEntries) {
-      //:TODO:can we do contains earlier than this to make it more efficient?
-      if (contains != null && !contains(facetEntry.getValue().utf8ToString(), contains, ignoreCase)) {
+      //:TODO:can we filter earlier than this to make it more efficient?
+      if (termFilter != null && !termFilter.test(facetEntry.getValue())) {
         continue;
       }
       facetFieldType.indexedToReadable(facetEntry.getValue(), charsRef);
@@ -836,6 +862,18 @@ public class SimpleFacets {
   }
 
   /**
+   *  Works like {@link #getFacetTermEnumCounts(SolrIndexSearcher, DocSet, String, int, int, int, boolean, String, String, Predicate, boolean)}
+   *  but takes a substring directly for the contains check rather than a {@link Predicate} instance.
+   */
+  public NamedList<Integer> getFacetTermEnumCounts(SolrIndexSearcher searcher, DocSet docs, String field, int offset, int limit, int mincount, boolean missing,
+                                                   String sort, String prefix, String contains, boolean ignoreCase, boolean intersectsCheck)
+    throws IOException {
+
+    final Predicate<BytesRef> termFilter = new SubstringBytesRefFilter(contains, ignoreCase);
+    return getFacetTermEnumCounts(searcher, docs, field, offset, limit, mincount, missing, sort, prefix, termFilter, intersectsCheck);
+  }
+
+  /**
    * Returns a list of terms in the specified field along with the 
    * corresponding count of documents in the set that match that constraint.
    * This method uses the FilterCache to get the intersection count between <code>docs</code>
@@ -845,8 +883,8 @@ public class SimpleFacets {
    * @see FacetParams#FACET_ZEROS
    * @see FacetParams#FACET_MISSING
    */
-  public NamedList<Integer> getFacetTermEnumCounts(SolrIndexSearcher searcher, DocSet docs, String field, int offset, int limit, int mincount, boolean missing, 
-                                      String sort, String prefix, String contains, boolean ignoreCase, boolean intersectsCheck)
+  public NamedList<Integer> getFacetTermEnumCounts(SolrIndexSearcher searcher, DocSet docs, String field, int offset, int limit, int mincount, boolean missing,
+                                                   String sort, String prefix, Predicate<BytesRef> termFilter, boolean intersectsCheck)
     throws IOException {
 
     /* :TODO: potential optimization...
@@ -916,7 +954,7 @@ public class SimpleFacets {
         if (prefixTermBytes != null && !StringHelper.startsWith(term, prefixTermBytes))
           break;
 
-        if (contains == null || contains(term.utf8ToString(), contains, ignoreCase)) {
+        if (termFilter == null || termFilter.test(term)) {
           int df = termsEnum.docFreq();
 
           // If we are sorting, we can use df>min (rather than >=) since we

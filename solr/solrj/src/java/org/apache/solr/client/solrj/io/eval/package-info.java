@@ -14,13 +14,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.solr.client.solrj.io.ops;
 
 /**
- *  A BooleanOperation returns true or false for each tuple that it evaluates. The HavingStream applies a BooleanOperation to
- *  determine which tuples to emit.
- */
-
-public interface BooleanOperation extends StreamOperation {
-  public abstract boolean evaluate();
-}
+ * Evaluators for the Streaming Aggregation API
+ **/
+package org.apache.solr.client.solrj.io.eval;

@@ -25,7 +25,8 @@ import org.apache.lucene.util.SloppyMath;
 /** Package private implementation for the public facing GeoPointDistanceQuery delegate class.
  *
  *    @lucene.experimental
- */
+ * @deprecated Use the higher performance {@code LatLonPoint#.newDistanceQuery} instead. */
+@Deprecated
 final class GeoPointDistanceQueryImpl extends GeoPointInBBoxQueryImpl {
   private final GeoPointDistanceQuery distanceQuery;
   private final double centerLon;

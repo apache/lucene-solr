@@ -23,15 +23,20 @@ import org.apache.lucene.document.Field;
 import org.apache.lucene.document.FieldType;
 import org.apache.lucene.document.NumericDocValuesField;
 import org.apache.lucene.document.SortedDocValuesField;
+import org.apache.lucene.document.SortedNumericDocValuesField;
 import org.apache.lucene.document.StoredField;
 import org.apache.lucene.document.TextField;
 import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.queries.function.valuesource.FloatFieldSource;
 import org.apache.lucene.queries.function.valuesource.IntFieldSource;
+import org.apache.lucene.queries.function.valuesource.MultiValuedFloatFieldSource;
+import org.apache.lucene.queries.function.valuesource.MultiValuedIntFieldSource;
+import org.apache.lucene.search.SortedNumericSelector;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.LuceneTestCase;
+import org.apache.lucene.util.NumericUtils;
 import org.apache.lucene.util.TestUtil;
 import org.junit.AfterClass;
 import org.junit.Ignore;
@@ -53,10 +58,35 @@ public abstract class FunctionTestSetup extends LuceneTestCase {
   protected static final String ID_FIELD = "id";
   protected static final String TEXT_FIELD = "text";
   protected static final String INT_FIELD = "iii";
+  /**
+   * This field is multiValued and should give the exact same results as
+   * {@link #INT_FIELD} when used with MIN selector
+   */
+  protected static final String INT_FIELD_MV_MIN = "iii_min";
+  /**
+   * This field is multiValued and should give the exact same results as
+   * {@link #INT_FIELD} when used with MAX selector
+   */
+  protected static final String INT_FIELD_MV_MAX = "iii_max";
+
   protected static final String FLOAT_FIELD = "fff";
+  /**
+   * This field is multiValued and should give the exact same results as
+   * {@link #FLOAT_FIELD} when used with MIN selector
+   */
+  protected static final String FLOAT_FIELD_MV_MIN = "fff_min";
+  /**
+   * This field is multiValued and should give the exact same results as
+   * {@link #FLOAT_FIELD} when used with MAX selector
+   */
+  protected static final String FLOAT_FIELD_MV_MAX = "fff_max";
 
   protected ValueSource INT_VALUESOURCE = new IntFieldSource(INT_FIELD);
+  protected ValueSource INT_MV_MIN_VALUESOURCE = new MultiValuedIntFieldSource(INT_FIELD_MV_MIN, SortedNumericSelector.Type.MIN);
+  protected ValueSource INT_MV_MAX_VALUESOURCE = new MultiValuedIntFieldSource(INT_FIELD_MV_MAX, SortedNumericSelector.Type.MAX);
   protected ValueSource FLOAT_VALUESOURCE = new FloatFieldSource(FLOAT_FIELD);
+  protected ValueSource FLOAT_MV_MIN_VALUESOURCE = new MultiValuedFloatFieldSource(FLOAT_FIELD_MV_MIN, SortedNumericSelector.Type.MIN);
+  protected ValueSource FLOAT_MV_MAX_VALUESOURCE = new MultiValuedFloatFieldSource(FLOAT_FIELD_MV_MAX, SortedNumericSelector.Type.MAX);
 
   private static final String DOC_TEXT_LINES[] = {
           "Well, this is just some plain text we use for creating the ",
@@ -148,6 +178,34 @@ public abstract class FunctionTestSetup extends LuceneTestCase {
     f = new StoredField(FLOAT_FIELD, scoreAndID); // for function scoring
     d.add(f);
     d.add(new NumericDocValuesField(FLOAT_FIELD, Float.floatToRawIntBits(scoreAndID)));
+    
+    f = new StoredField(INT_FIELD_MV_MIN, scoreAndID);
+    d.add(f);
+    f = new StoredField(INT_FIELD_MV_MIN, scoreAndID + 1);
+    d.add(f);
+    d.add(new SortedNumericDocValuesField(INT_FIELD_MV_MIN, scoreAndID));
+    d.add(new SortedNumericDocValuesField(INT_FIELD_MV_MIN, scoreAndID + 1));
+    
+    f = new StoredField(INT_FIELD_MV_MAX, scoreAndID);
+    d.add(f);
+    f = new StoredField(INT_FIELD_MV_MAX, scoreAndID - 1);
+    d.add(f);
+    d.add(new SortedNumericDocValuesField(INT_FIELD_MV_MAX, scoreAndID));
+    d.add(new SortedNumericDocValuesField(INT_FIELD_MV_MAX, scoreAndID - 1));
+    
+    f = new StoredField(FLOAT_FIELD_MV_MIN, scoreAndID);
+    d.add(f);
+    f = new StoredField(FLOAT_FIELD_MV_MIN, scoreAndID + 1);
+    d.add(f);
+    d.add(new SortedNumericDocValuesField(FLOAT_FIELD_MV_MIN, NumericUtils.floatToSortableInt(scoreAndID)));
+    d.add(new SortedNumericDocValuesField(FLOAT_FIELD_MV_MIN, NumericUtils.floatToSortableInt(scoreAndID + 1)));
+    
+    f = new StoredField(FLOAT_FIELD_MV_MAX, scoreAndID);
+    d.add(f);
+    f = new StoredField(FLOAT_FIELD_MV_MAX, scoreAndID - 1);
+    d.add(f);
+    d.add(new SortedNumericDocValuesField(FLOAT_FIELD_MV_MAX, NumericUtils.floatToSortableInt(scoreAndID)));
+    d.add(new SortedNumericDocValuesField(FLOAT_FIELD_MV_MAX, NumericUtils.floatToSortableInt(scoreAndID - 1)));
 
     iw.addDocument(d);
     log("added: " + d);

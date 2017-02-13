@@ -101,7 +101,18 @@ public class BlockCache {
     metrics.blockCacheEviction.incrementAndGet();
     metrics.blockCacheSize.decrementAndGet();
   }
-  
+
+  /**
+   * This is only best-effort... it's possible for false to be returned.
+   * The blockCacheKey is cloned before it is inserted into the map, so it may be reused by clients if desired.
+   *
+   * @param blockCacheKey the key for the block
+   * @param blockOffset the offset within the block
+   * @param data source data to write to the block
+   * @param offset offset within the source data array
+   * @param length the number of bytes to write.
+   * @return true if the block was cached/updated
+   */
   public boolean store(BlockCacheKey blockCacheKey, int blockOffset,
       byte[] data, int offset, int length) {
     if (length + blockOffset > blockSize) {
@@ -115,12 +126,19 @@ public class BlockCache {
       newLocation = true;
       location = new BlockCacheLocation();
       if (!findEmptyLocation(location)) {
+        // YCS: it looks like when the cache is full (a normal scenario), then two concurrent writes will result in one of them failing
+        // because no eviction is done first.  The code seems to rely on leaving just a single block empty.
+        // TODO: simplest fix would be to leave more than one block empty
         return false;
       }
     }
+
+    // YCS: I think this means that the block existed, but it is in the process of being
+    // concurrently removed.  This flag is set in the releaseLocation eviction listener.
     if (location.isRemoved()) {
       return false;
     }
+
     int bankId = location.getBankId();
     int bankOffset = location.getBlock() * blockSize;
     ByteBuffer bank = getBank(bankId);
@@ -132,7 +150,15 @@ public class BlockCache {
     }
     return true;
   }
-  
+
+  /**
+   * @param blockCacheKey the key for the block
+   * @param buffer the target buffer for the read result
+   * @param blockOffset offset within the block
+   * @param off offset within the target buffer
+   * @param length the number of bytes to read
+   * @return true if the block was cached and the bytes were read
+   */
   public boolean fetch(BlockCacheKey blockCacheKey, byte[] buffer,
       int blockOffset, int off, int length) {
     BlockCacheLocation location = cache.getIfPresent(blockCacheKey);
@@ -140,13 +166,14 @@ public class BlockCache {
       return false;
     }
     if (location.isRemoved()) {
+      // location is in the process of being removed and the block may have already been reused by this point.
       return false;
     }
     int bankId = location.getBankId();
-    int offset = location.getBlock() * blockSize;
+    int bankOffset = location.getBlock() * blockSize;
     location.touch();
     ByteBuffer bank = getBank(bankId);
-    bank.position(offset + blockOffset);
+    bank.position(bankOffset + blockOffset);
     bank.get(buffer, off, length);
     return true;
   }
@@ -200,11 +227,13 @@ public class BlockCache {
           + "] got [" + buffer.length + "]");
     }
   }
-  
+
+  /** Returns a new copy of the ByteBuffer for the given bank, so it's safe to call position() on w/o additional synchronization */
   private ByteBuffer getBank(int bankId) {
     return banks[bankId].duplicate();
   }
-  
+
+  /** returns the number of elements in the cache */
   public int getSize() {
     return cache.asMap().size();
   }

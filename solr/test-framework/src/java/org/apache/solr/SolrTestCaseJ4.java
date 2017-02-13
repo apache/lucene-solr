@@ -51,8 +51,12 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Properties;
+import java.util.Set;
+import java.util.Map.Entry;
+import java.util.concurrent.TimeUnit;
 
 import com.carrotsearch.randomizedtesting.RandomizedContext;
+import com.carrotsearch.randomizedtesting.TraceFormatting;
 import com.carrotsearch.randomizedtesting.annotations.ThreadLeakFilters;
 import com.carrotsearch.randomizedtesting.rules.SystemPropertiesRestoreRule;
 import org.apache.commons.io.FileUtils;
@@ -154,6 +158,14 @@ public abstract class SolrTestCaseJ4 extends LuceneTestCase {
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
+  private static final List<String> DEFAULT_STACK_FILTERS = Arrays.asList(new String [] {
+      "org.junit.",
+      "junit.framework.",
+      "sun.",
+      "java.lang.reflect.",
+      "com.carrotsearch.randomizedtesting.",
+  });
+  
   public static final String DEFAULT_TEST_COLLECTION_NAME = "collection1";
   public static final String DEFAULT_TEST_CORENAME = DEFAULT_TEST_COLLECTION_NAME;
   protected static final String CORE_PROPERTIES_FILENAME = "core.properties";
@@ -265,7 +277,7 @@ public abstract class SolrTestCaseJ4 extends LuceneTestCase {
         // if the tests passed, make sure everything was closed / released
         if (!RandomizedContext.current().getTargetClass().isAnnotationPresent(SuppressObjectReleaseTracker.class)) {
           endTrackingSearchers(120, false);
-          String orr = ObjectReleaseTracker.clearObjectTrackerAndCheckEmpty(30);
+          String orr = clearObjectTrackerAndCheckEmpty(120);
           assertNull(orr, orr);
         } else {
           endTrackingSearchers(15, false);
@@ -302,6 +314,41 @@ public abstract class SolrTestCaseJ4 extends LuceneTestCase {
 
     LogLevel.Configurer.restoreLogLevels(savedClassLogLevels);
     savedClassLogLevels.clear();
+  }
+  
+  /**
+   * @return null if ok else error message
+   */
+  public static String clearObjectTrackerAndCheckEmpty(int waitSeconds) {
+    int retries = 0;
+    String result;
+    do {
+      result = ObjectReleaseTracker.checkEmpty();
+      if (result == null)
+        break;
+      try {
+        if (retries % 10 == 0) {
+          log.info("Waiting for all tracked resources to be released");
+          if (retries > 10) {
+            TraceFormatting tf = new TraceFormatting(DEFAULT_STACK_FILTERS);
+            Map<Thread,StackTraceElement[]> stacksMap = Thread.getAllStackTraces();
+            Set<Entry<Thread,StackTraceElement[]>> entries = stacksMap.entrySet();
+            for (Entry<Thread,StackTraceElement[]> entry : entries) {
+              String stack = tf.formatStackTrace(entry.getValue());
+              System.err.println(entry.getKey().getName() + ":\n" + stack);
+            }
+          }
+        }
+        TimeUnit.SECONDS.sleep(1);
+      } catch (InterruptedException e) { break; }
+    }
+    while (retries++ < waitSeconds);
+    
+    
+    log.info("------------------------------------------------------- Done waiting for tracked resources to be released");
+    ObjectReleaseTracker.clear();
+    
+    return result;
   }
 
   private static Map<String, String> savedClassLogLevels = new HashMap<>();
@@ -505,6 +552,18 @@ public abstract class SolrTestCaseJ4 extends LuceneTestCase {
        if (retries++ > waitSeconds) {
          break;
        }
+       if (retries % 10 == 0) {
+         log.info("Waiting for all SolrIndexSearchers to be released at end of test");
+        if (retries > 10) {
+          TraceFormatting tf = new TraceFormatting();
+          Map<Thread,StackTraceElement[]> stacksMap = Thread.getAllStackTraces();
+          Set<Entry<Thread,StackTraceElement[]>> entries = stacksMap.entrySet();
+          for (Entry<Thread,StackTraceElement[]> entry : entries) {
+            String stack = tf.formatStackTrace(entry.getValue());
+            System.err.println(entry.getKey().getName() + ":\n" + stack);
+          }
+        }
+       }
        try {
          Thread.sleep(1000);
        } catch (InterruptedException e) {}
@@ -512,6 +571,8 @@ public abstract class SolrTestCaseJ4 extends LuceneTestCase {
        endNumCloses = SolrIndexSearcher.numCloses.get();
      }
 
+     log.info("------------------------------------------------------- Done waiting for all SolrIndexSearchers to be released");
+     
      SolrIndexSearcher.numOpens.getAndSet(0);
      SolrIndexSearcher.numCloses.getAndSet(0);
 

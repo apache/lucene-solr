@@ -36,7 +36,8 @@ import org.apache.lucene.geo.Polygon;
  *
  * @see Polygon
  * @lucene.experimental
- */
+ * @deprecated Use the higher performance {@code LatLonPoint.newPolygonQuery} instead. */
+@Deprecated
 public final class GeoPointInPolygonQuery extends GeoPointInBBoxQuery {
   /** array of polygons being queried */
   final Polygon[] polygons;

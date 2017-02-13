@@ -45,10 +45,20 @@ New Features
   on doc values. These new methods should be wrapped in an IndexOrDocValuesQuery
   for best performance. (Adrien Grand)
 
+* LUCENE-7673: Added MultiValued[Int/Long/Float/Double]FieldSource that given a
+  SortedNumericSelector.Type can give a ValueSource view of a 
+  SortedNumericDocValues field. (Tomás Fernández Löbbe)
+
 Bug Fixes
 
 * LUCENE-7630: Fix (Edge)NGramTokenFilter to no longer drop payloads
   and preserve all attributes. (Nathan Gass via Uwe Schindler)
+
+* LUCENE-7676: Fixed FilterCodecReader to override more super-class methods.
+  Also added TestFilterCodecReader class. (Christine Poerschke)
+
+* LUCENE-7679: MemoryIndex was ignoring omitNorms settings on passed-in
+  IndexableFields. (Alan Woodward)
 
 Improvements
 
@@ -60,6 +70,10 @@ Improvements
 * LUCENE-7643: IndexOrDocValuesQuery allows to execute range queries using
   either points or doc values depending on which one is more efficient.
   (Adrien Grand)
+
+* LUCENE-7662: If index files are missing, throw CorruptIndexException instead
+  of the less descriptive FileNotFound or NoSuchFileException (Mike Drob via 
+  Mike McCandless, Erick Erickson)
 
 Optimizations
 
@@ -81,12 +95,14 @@ Optimizations
   computes scores lazily in order to be faster when used in conjunctions.
   (Adrien Grand)
 
-Build
+* LUCENE-7667: BKDReader now calls `IntersectVisitor.grow()` on larger
+  increments. (Adrien Grand)
 
-* LUCENE-7651: Fix Javadocs build for Java 8u121 by injecting "Google Code
-  Prettify" without adding Javascript to Javadocs's -bottom parameter.
-  Also update Prettify to latest version to fix Google Chrome issue.
-  (Uwe Schindler)
+* LUCENE-7638: Query parsers now analyze the token graph for articulation
+  points (or cut vertices) in order to create more efficient queries for
+  multi-token synonyms. (Jim Ferenczi)
+
+Build
 
 * LUCENE-7653: Update randomizedtesting to version 2.5.0. (Dawid Weiss)
 
@@ -105,7 +121,18 @@ Other
 * LUCENE-7658: queryparser/xml CoreParser now implements SpanQueryBuilder interface.
   (Daniel Collins, Christine Poerschke)
 
+* LUCENE-7664: GeoPointField and its queries are deprecated in favor
+  of LatLonPoint, which offers faster indexing and searching
+  performance, smaller index, and less search-time heap usage.  (Mike McCandless)
+
 ======================= Lucene 6.4.1 =======================
+
+Build
+
+* LUCENE-7651: Fix Javadocs build for Java 8u121 by injecting "Google Code
+  Prettify" without adding Javascript to Javadocs's -bottom parameter.
+  Also update Prettify to latest version to fix Google Chrome issue.
+  (Uwe Schindler)
 
 Bug Fixes
 
@@ -1047,6 +1074,9 @@ Other
 
 * LUCENE-7095: Add point values support to the numeric field query time join.
   (Martijn van Groningen, Mike McCandless)
+
+======================= Lucene 5.5.4 =======================
+(No Changes)
 
 ======================= Lucene 5.5.3 =======================
 (No Changes)

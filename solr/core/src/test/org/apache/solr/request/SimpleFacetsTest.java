@@ -2081,6 +2081,158 @@ public class SimpleFacetsTest extends SolrTestCaseJ4 {
     doFacetPrefix("tt_s1", "{!threads=-1}", "", "facet.method","fcs");  // default / unlimited threads
     doFacetPrefix("tt_s1", "{!threads=2}", "", "facet.method","fcs");   // specific number of threads
   }
+
+  @Test
+  public void testFacetExclude() {
+    for (String method : new String[] {"enum", "fcs", "fc", "uif"}) {
+      doFacetExclude("contains_s1", "contains_group_s1", "Astra", "facet.method", method);
+    }
+  }
+
+  private void doFacetExclude(String f, String g, String termSuffix, String... params) {
+    String indent="on";
+    String pre = "//lst[@name='"+f+"']";
+
+    final SolrQueryRequest req = req(params, "q", "id:[* TO *]"
+        ,"indent",indent
+        ,"facet","true"
+        ,"facet.field", f
+        ,"facet.mincount","0"
+        ,"facet.offset","0"
+        ,"facet.limit","100"
+        ,"facet.sort","count"
+        ,"facet.excludeTerms","B,BBB"+termSuffix
+    );
+
+    assertQ("test facet.exclude",
+        req
+        ,"*[count(//lst[@name='facet_fields']/lst/int)=10]"
+        ,pre+"/int[1][@name='BBB'][.='3']"
+        ,pre+"/int[2][@name='CCC'][.='3']"
+        ,pre+"/int[3][@name='CCC"+termSuffix+"'][.='3']"
+        ,pre+"/int[4][@name='BB'][.='2']"
+        ,pre+"/int[5][@name='BB"+termSuffix+"'][.='2']"
+        ,pre+"/int[6][@name='CC'][.='2']"
+        ,pre+"/int[7][@name='CC"+termSuffix+"'][.='2']"
+        ,pre+"/int[8][@name='AAA'][.='1']"
+        ,pre+"/int[9][@name='AAA"+termSuffix+"'][.='1']"
+        ,pre+"/int[10][@name='B"+termSuffix+"'][.='1']"
+    );
+
+    final SolrQueryRequest groupReq = req(params, "q", "id:[* TO *]"
+        ,"indent",indent
+        ,"facet","true"
+        ,"facet.field", f
+        ,"facet.mincount","0"
+        ,"facet.offset","0"
+        ,"facet.limit","100"
+        ,"facet.sort","count"
+        ,"facet.excludeTerms","B,BBB"+termSuffix
+        ,"group","true"
+        ,"group.field",g
+        ,"group.facet","true"
+    );
+
+    assertQ("test facet.exclude for grouped facets",
+        groupReq
+        ,"*[count(//lst[@name='facet_fields']/lst/int)=10]"
+        ,pre+"/int[1][@name='CCC'][.='3']"
+        ,pre+"/int[2][@name='CCC"+termSuffix+"'][.='3']"
+        ,pre+"/int[3][@name='BBB'][.='2']"
+        ,pre+"/int[4][@name='AAA'][.='1']"
+        ,pre+"/int[5][@name='AAA"+termSuffix+"'][.='1']"
+        ,pre+"/int[6][@name='B"+termSuffix+"'][.='1']"
+        ,pre+"/int[7][@name='BB'][.='1']"
+        ,pre+"/int[8][@name='BB"+termSuffix+"'][.='1']"
+        ,pre+"/int[9][@name='CC'][.='1']"
+        ,pre+"/int[10][@name='CC"+termSuffix+"'][.='1']"
+    );
+  }
+
+  @Test
+  public void testFacetContainsAndExclude() {
+    for (String method : new String[] {"enum", "fcs", "fc", "uif"}) {
+      String contains = "BAst";
+      String groupContains = "Ast";
+      final boolean ignoreCase = random().nextBoolean();
+      if (ignoreCase) {
+        contains = randomizeStringCasing(contains);
+        groupContains = randomizeStringCasing(groupContains);
+        doFacetContainsAndExclude("contains_s1", "contains_group_s1", "Astra", contains, groupContains, "facet.method", method, "facet.contains.ignoreCase", "true");
+      } else {
+        doFacetContainsAndExclude("contains_s1", "contains_group_s1", "Astra", contains, groupContains, "facet.method", method);
+      }
+    }
+  }
+
+  private String randomizeStringCasing(String str) {
+    final char[] characters = str.toCharArray();
+
+    for (int i = 0; i != characters.length; ++i) {
+      final boolean switchCase = random().nextBoolean();
+      if (!switchCase) {
+        continue;
+      }
+
+      final char c = str.charAt(i);
+      if (Character.isUpperCase(c)) {
+        characters[i] = Character.toLowerCase(c);
+      } else {
+        characters[i] = Character.toUpperCase(c);
+      }
+    }
+
+    return new String(characters);
+  }
+
+  private void doFacetContainsAndExclude(String f, String g, String termSuffix, String contains, String groupContains, String... params) {
+    String indent="on";
+    String pre = "//lst[@name='"+f+"']";
+
+    final SolrQueryRequest req = req(params, "q", "id:[* TO *]"
+        ,"indent",indent
+        ,"facet","true"
+        ,"facet.field", f
+        ,"facet.mincount","0"
+        ,"facet.offset","0"
+        ,"facet.limit","100"
+        ,"facet.sort","count"
+        ,"facet.contains",contains
+        ,"facet.excludeTerms","BBB"+termSuffix
+    );
+
+    assertQ("test facet.contains with facet.exclude",
+        req
+        ,"*[count(//lst[@name='facet_fields']/lst/int)=2]"
+        ,pre+"/int[1][@name='BB"+termSuffix+"'][.='2']"
+        ,pre+"/int[2][@name='B"+termSuffix+"'][.='1']"
+    );
+
+    final SolrQueryRequest groupReq = req(params, "q", "id:[* TO *]"
+        ,"indent",indent
+        ,"facet","true"
+        ,"facet.field", f
+        ,"facet.mincount","0"
+        ,"facet.offset","0"
+        ,"facet.limit","100"
+        ,"facet.sort","count"
+        ,"facet.contains",groupContains
+        ,"facet.excludeTerms","AAA"+termSuffix
+        ,"group","true"
+        ,"group.field",g
+        ,"group.facet","true"
+    );
+
+    assertQ("test facet.contains with facet.exclude for grouped facets",
+        groupReq
+        ,"*[count(//lst[@name='facet_fields']/lst/int)=5]"
+        ,pre+"/int[1][@name='CCC"+termSuffix+"'][.='3']"
+        ,pre+"/int[2][@name='BBB"+termSuffix+"'][.='2']"
+        ,pre+"/int[3][@name='B"+termSuffix+"'][.='1']"
+        ,pre+"/int[4][@name='BB"+termSuffix+"'][.='1']"
+        ,pre+"/int[5][@name='CC"+termSuffix+"'][.='1']"
+    );
+  }
   
   @Test
   //@Ignore("SOLR-8466 - facet.method=uif ignores facet.contains")
@@ -2683,26 +2835,6 @@ public class SimpleFacetsTest extends SolrTestCaseJ4 {
                   "facet.range.end", "9900000086200",
                   "facet.range.gap", "0.0003"),
               400);
-  }
-
-  public void testContainsAtStart() {
-    assertTrue(SimpleFacets.contains("foobar", "foo", false));
-  }
-
-  public void testContains() {
-    assertTrue(SimpleFacets.contains("foobar", "ooba", false));
-  }
-
-  public void testContainsAtEnd() {
-    assertTrue(SimpleFacets.contains("foobar", "bar", false));
-  }
-
-  public void testContainsWhole() {
-    assertTrue(SimpleFacets.contains("foobar", "foobar", false));
-  }
-
-  public void testContainsIgnoreCase() {
-    assertTrue(SimpleFacets.contains("FooBar", "bar", true));
   }
   
   public void testRangeQueryHardEndParamFilter() {

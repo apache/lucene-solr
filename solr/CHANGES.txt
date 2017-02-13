@@ -49,7 +49,11 @@ New Features
 * SOLR-9926: Allow passing arbitrary java system properties to zkcli. (Hrishikesh Gadre via Mark Miller)
 
 * SOLR-9885: Allow pre-startup Solr log management in Solr bin scripts to be disabled. (Mano Kovacs via Mark Miller)
-  
+ 
+* SOLR-9916: Adds Stream Evaluators to support evaluating values from tuples. Supports boolean,
+  numeric, and conditional evaluators. BooleanOperations have been removed in preference of
+  BooleanEvaluators. (Dennis Gove)
+ 
 Optimizations
 ----------------------
 * SOLR-9941: Clear the deletes lists at UpdateLog before replaying from log. This prevents redundantly pre-applying
@@ -71,6 +75,15 @@ Optimizations
 * SOLR-8029: Added new style APIs and a framework for creating new APIs and mapping old APIs to new
   (noble, Steve Rowe, Cassandra Targett, Timothy Potter)
 
+* SOLR-9912: Add facet.excludeTerms parameter support. (Jonny Marks, David Smiley, Christine Poerschke)
+
+* SOLR-9916: Adds Stream Evaluators to support evaluating values from tuples. Supports boolean,
+  numeric, and conditional evaluators. BooleanOperations have been removed in preference of
+  BooleanEvaluators. (Dennis Gove)
+
+* SOLR-9903: Stop interrupting the update executor on shutdown, it can cause graceful shutdowns to put replicas into Leader 
+  Initiated Recovery among other undesirable things. (Mark Miller)
+
 Bug Fixes
 ----------------------
 
@@ -79,6 +92,12 @@ Bug Fixes
 * SOLR-9114: NPE using TermVectorComponent, MoreLikeThisComponent in combination with ExactStatsCache (Cao Manh Dat, Varun Thacker)
 
 * SOLR-10049: Collection deletion leaves behind the snapshot metadata (Hrishikesh Gadre via yonik)
+
+* SOLR-10083: Fix instanceof check in ConstDoubleSource.equals (Pushkar Raste via Christine Poerschke)
+
+* SOLR-10120: A SolrCore reload can remove the index from the previous SolrCore during replication index rollover. (Mark Miller)
+
+* SOLR-10124: Replication can skip removing a temporary index directory in some cases when it should not. (Mark Miller)
 
 Other Changes
 ----------------------
@@ -99,6 +118,13 @@ Other Changes
   enable AnalyzingInfixSuggester and BlendedInfixSuggester to play nicely with core reload.  
   SolrSuggester.build() now throws SolrCoreState.CoreIsClosedException when interrupted
   by a core reload/shutdown. (Steve Rowe)
+
+* SOLR-9800: Factor out FacetComponent.newSimpleFacets method. (Jonny Marks via Christine Poerschke)
+
+* SOLR-9914: SimpleFacets: refactor "contains" check into "SubstringBytesRefFilter" class.
+  (Jonny Marks, David Smiley, Christine Poerschke)
+
+* SOLR-10072: The test TestSelectiveWeightCreation appears to be unreliable. (Michael Nilsson via Mark Miller)
 
 ==================  6.4.1 ==================
 
@@ -1912,6 +1938,23 @@ Other Changes
 
 * SOLR-8904: DateUtil in SolrJ moved to the extraction contrib as ExtractionDateUtil.  Obsolete methods were removed.
   (David Smiley)
+
+======================= 5.5.4 =======================
+
+Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release.
+
+Versions of Major Components
+---------------------
+Apache Tika 1.13
+Carrot2 3.15.0
+Velocity 1.7 and Velocity Tools 2.0
+Apache UIMA 2.3.1
+Apache ZooKeeper 3.4.6
+Jetty 9.3.14.v20161028
+
+
+(No Changes)
+
 
 ======================= 5.5.3 =======================
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release.

@@ -23,8 +23,10 @@ import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.nio.file.NoSuchFileException;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.List;
 
 import org.apache.commons.io.FileUtils;
 import org.apache.lucene.store.Directory;
@@ -326,7 +328,7 @@ public abstract class DirectoryFactory implements NamedListInitializedPlugin,
     return Collections.emptySet();
   }
 
-  public void cleanupOldIndexDirectories(final String dataDirPath, final String currentIndexDirPath) {
+  public void cleanupOldIndexDirectories(final String dataDirPath, final String currentIndexDirPath, boolean afterCoreReload) {
     File dataDir = new File(dataDirPath);
     if (!dataDir.isDirectory()) {
       log.debug("{} does not point to a valid data directory; skipping clean-up of old index directories.", dataDirPath);
@@ -347,9 +349,17 @@ public abstract class DirectoryFactory implements NamedListInitializedPlugin,
     if (oldIndexDirs == null || oldIndexDirs.length == 0)
       return; // nothing to do (no log message needed)
 
-    log.info("Found {} old index directories to clean-up under {}", oldIndexDirs.length, dataDirPath);
-    for (File dir : oldIndexDirs) {
-
+    List<File> dirsList = Arrays.asList(oldIndexDirs);
+    Collections.sort(dirsList, Collections.reverseOrder());
+    
+    int i = 0;
+    if (afterCoreReload) {
+      log.info("Will not remove most recent old directory after reload {}", oldIndexDirs[0]);
+      i = 1;
+    }
+    log.info("Found {} old index directories to clean-up under {} afterReload={}", oldIndexDirs.length - i, dataDirPath, afterCoreReload);
+    for (; i < dirsList.size(); i++) {
+      File dir = dirsList.get(i);
       String dirToRmPath = dir.getAbsolutePath();
       try {
         if (deleteOldIndexDirectory(dirToRmPath)) {

@@ -38,7 +38,10 @@ import org.apache.lucene.geo.GeoUtils;
  * queries one can expect upwards of 400m error. Vincenty shrinks this to ~40m error but pays a penalty for computing
  * using the spheroid
  *
- * @lucene.experimental */
+ * @lucene.experimental
+ * @deprecated Use the higher performance {@code LatLonPoint.newDistanceQuery} instead.
+ */
+@Deprecated
 public class GeoPointDistanceQuery extends GeoPointInBBoxQuery {
   /** latitude value (in degrees) for query location */
   protected final double centerLat;

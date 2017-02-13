@@ -25,6 +25,7 @@ import java.util.Map;
 
 import org.apache.solr.client.solrj.io.Tuple;
 import org.apache.solr.client.solrj.io.comp.StreamComparator;
+import org.apache.solr.client.solrj.io.eval.StreamEvaluator;
 import org.apache.solr.client.solrj.io.ops.StreamOperation;
 import org.apache.solr.client.solrj.io.stream.expr.Explanation;
 import org.apache.solr.client.solrj.io.stream.expr.Explanation.ExpressionType;
@@ -32,6 +33,7 @@ import org.apache.solr.client.solrj.io.stream.expr.Expressible;
 import org.apache.solr.client.solrj.io.stream.expr.StreamExplanation;
 import org.apache.solr.client.solrj.io.stream.expr.StreamExpression;
 import org.apache.solr.client.solrj.io.stream.expr.StreamExpressionParameter;
+import org.apache.solr.client.solrj.io.stream.expr.StreamExpressionParser;
 import org.apache.solr.client.solrj.io.stream.expr.StreamExpressionValue;
 import org.apache.solr.client.solrj.io.stream.expr.StreamFactory;
 
@@ -47,6 +49,7 @@ public class SelectStream extends TupleStream implements Expressible {
 
   private TupleStream stream;
   private Map<String,String> selectedFields;
+  private Map<StreamEvaluator,String> selectedEvaluators;
   private List<StreamOperation> operations;
 
   public SelectStream(TupleStream stream, List<String> selectedFields) throws IOException {
@@ -56,22 +59,25 @@ public class SelectStream extends TupleStream implements Expressible {
       this.selectedFields.put(selectedField, selectedField);
     }
     operations = new ArrayList<>();
+    selectedEvaluators = new HashMap<>();
   }
   
   public SelectStream(TupleStream stream, Map<String,String> selectedFields) throws IOException {
     this.stream = stream;
     this.selectedFields = selectedFields;
     operations = new ArrayList<>();
+    selectedEvaluators = new HashMap<>();
   }
   
   public SelectStream(StreamExpression expression,StreamFactory factory) throws IOException {
     // grab all parameters out
     List<StreamExpression> streamExpressions = factory.getExpressionOperandsRepresentingTypes(expression, Expressible.class, TupleStream.class);
-    List<StreamExpressionParameter> selectFieldsExpressions = factory.getOperandsOfType(expression, StreamExpressionValue.class);
+    List<StreamExpressionParameter> selectAsFieldsExpressions = factory.getOperandsOfType(expression, StreamExpressionValue.class);
     List<StreamExpression> operationExpressions = factory.getExpressionOperandsRepresentingTypes(expression, StreamOperation.class);
+    List<StreamExpression> evaluatorExpressions = factory.getExpressionOperandsRepresentingTypes(expression, StreamEvaluator.class);
     
     // validate expression contains only what we want.
-    if(expression.getParameters().size() != streamExpressions.size() + selectFieldsExpressions.size() + operationExpressions.size()){
+    if(expression.getParameters().size() != streamExpressions.size() + selectAsFieldsExpressions.size() + operationExpressions.size()){
       throw new IOException(String.format(Locale.ROOT,"Invalid expression %s - unknown operands found", expression));
     }
     
@@ -79,14 +85,19 @@ public class SelectStream extends TupleStream implements Expressible {
       throw new IOException(String.format(Locale.ROOT,"Invalid expression %s - expecting single stream but found %d (must be TupleStream types)",expression, streamExpressions.size()));
     }
 
-    if(0 == selectFieldsExpressions.size()){
+    if(0 == selectAsFieldsExpressions.size()){
       throw new IOException(String.format(Locale.ROOT,"Invalid expression %s - expecting at least one select field but found %d",expression, streamExpressions.size()));
+    }
+    
+    if(0 != evaluatorExpressions.size()){
+      throw new IOException(String.format(Locale.ROOT,"Invalid expression %s - evaluators must be given a name, like 'add(...) as result' but found %d evaluators without names",expression, evaluatorExpressions.size()));
     }
 
     stream = factory.constructStream(streamExpressions.get(0));
     
-    selectedFields = new HashMap<String,String>(selectFieldsExpressions.size());
-    for(StreamExpressionParameter parameter : selectFieldsExpressions){
+    selectedFields = new HashMap<String,String>();
+    selectedEvaluators = new HashMap<StreamEvaluator, String>();
+    for(StreamExpressionParameter parameter : selectAsFieldsExpressions){
       StreamExpressionValue selectField = (StreamExpressionValue)parameter;
       String value = selectField.getValue().trim();
       
@@ -99,7 +110,28 @@ public class SelectStream extends TupleStream implements Expressible {
         if(2 != parts.length){
           throw new IOException(String.format(Locale.ROOT,"Invalid expression %s - expecting select field of form 'fieldA' or 'fieldA as alias' but found %s",expression, value));
         }
-        selectedFields.put(parts[0].trim(), parts[1].trim());
+        
+        String asValue = parts[0].trim();
+        String asName = parts[1].trim();
+        
+        boolean handled = false;
+        if(asValue.contains("(")){
+          // possible evaluator
+          try{
+            StreamExpression asValueExpression = StreamExpressionParser.parse(asValue);
+            if(factory.doesRepresentTypes(asValueExpression, StreamEvaluator.class)){
+              selectedEvaluators.put(factory.constructEvaluator(asValueExpression), asName);
+              handled = true;
+            }
+          }
+          catch(Throwable e){
+            // it was not handled, so treat as a non-evaluator
+          }
+        }
+        
+        if(!handled){        
+          selectedFields.put(asValue, asName);
+        }
       }
       else{
         selectedFields.put(value,value);
@@ -134,7 +166,7 @@ public class SelectStream extends TupleStream implements Expressible {
       expression.addParameter("<stream>");
     }
     
-    // selects
+    // selected fields
     for(Map.Entry<String, String> selectField : selectedFields.entrySet()) {
       if(selectField.getKey().equals(selectField.getValue())){
         expression.addParameter(selectField.getKey());
@@ -142,6 +174,11 @@ public class SelectStream extends TupleStream implements Expressible {
       else{
         expression.addParameter(String.format(Locale.ROOT, "%s as %s", selectField.getKey(), selectField.getValue()));
       }
+    }
+    
+    // selected evaluators
+    for(Map.Entry<StreamEvaluator, String> selectedEvaluator : selectedEvaluators.entrySet()) {
+      expression.addParameter(String.format(Locale.ROOT, "%s as %s", selectedEvaluator.getKey().toExpression(factory), selectedEvaluator.getValue()));
     }
     
     for(StreamOperation operation : operations){
@@ -162,6 +199,10 @@ public class SelectStream extends TupleStream implements Expressible {
       .withImplementingClass(this.getClass().getName())
       .withExpressionType(ExpressionType.STREAM_DECORATOR)
       .withExpression(toExpression(factory, false).toString());   
+    
+    for(StreamEvaluator evaluator : selectedEvaluators.keySet()){
+      explanation.addHelper(evaluator.toExplanation(factory));
+    }
     
     for(StreamOperation operation : operations){
       explanation.addHelper(operation.toExplanation(factory));
@@ -196,19 +237,27 @@ public class SelectStream extends TupleStream implements Expressible {
     }
 
     // create a copy with the limited set of fields
-    Tuple working = new Tuple(new HashMap<>());
+    Tuple workingToReturn = new Tuple(new HashMap<>());
+    Tuple workingForEvaluators = new Tuple(new HashMap<>());
     for(Object fieldName : original.fields.keySet()){
+      workingForEvaluators.put(fieldName, original.get(fieldName));
       if(selectedFields.containsKey(fieldName)){
-        working.put(selectedFields.get(fieldName), original.get(fieldName));
+        workingToReturn.put(selectedFields.get(fieldName), original.get(fieldName));
       }
     }
     
     // apply all operations
     for(StreamOperation operation : operations){
-      operation.operate(working);
+      operation.operate(workingToReturn);
+      operation.operate(workingForEvaluators);
     }
     
-    return working;
+    // Apply all evaluators
+    for(Map.Entry<StreamEvaluator, String> selectedEvaluator : selectedEvaluators.entrySet()) {
+      workingToReturn.put(selectedEvaluator.getValue(), selectedEvaluator.getKey().evaluate(workingForEvaluators));
+    }
+    
+    return workingToReturn;
   }
   
   /** Return the stream sort - ie, the order in which records are returned */

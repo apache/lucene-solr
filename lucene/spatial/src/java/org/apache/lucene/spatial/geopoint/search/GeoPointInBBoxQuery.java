@@ -41,7 +41,8 @@ import org.apache.lucene.geo.GeoUtils;
  *        many cells (degenerate case)
  *
  * @lucene.experimental
- */
+ * @deprecated Use the higher performance {@code LatLonPoint.newBoxQuery} instead. */
+ @Deprecated
 public class GeoPointInBBoxQuery extends Query {
   /** field name */
   protected final String field;

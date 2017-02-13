@@ -208,8 +208,8 @@ public class UpdateShardHandler implements SolrMetricProducer, SolrInfoMBean {
 
   public void close() {
     try {
-      // we interrupt on purpose here, but this executor should not run threads that do disk IO!
-      ExecutorUtil.shutdownWithInterruptAndAwaitTermination(updateExecutor);
+      // do not interrupt, do not interrupt
+      ExecutorUtil.shutdownAndAwaitTermination(updateExecutor);
       ExecutorUtil.shutdownAndAwaitTermination(recoveryExecutor);
       if (idleConnectionsEvictor != null) {
         idleConnectionsEvictor.shutdown();
