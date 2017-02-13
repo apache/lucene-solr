@@ -107,6 +107,11 @@ New Features
   SortedNumericSelector.Type can give a ValueSource view of a 
   SortedNumericDocValues field. (Tomás Fernández Löbbe)
 
+* LUCENE-7465: Add SimplePatternTokenizer and
+  SimplePatternSplitTokenizer, using Lucene's regexp/automaton
+  implementation for analysis/tokenization (Clinton Gormley, Mike
+  McCandless)
+
 Bug Fixes
 
 * LUCENE-7630: Fix (Edge)NGramTokenFilter to no longer drop payloads
