@@ -91,7 +91,13 @@ public class HttpClientUtil {
   public static final String PROP_BASIC_AUTH_PASS = "httpBasicAuthPassword";
   
   public static final String SYS_PROP_CHECK_PEER_NAME = "solr.ssl.checkPeerName";
-  
+
+  /**
+   * A Java system property to select the {@linkplain HttpClientConfigurer} used for
+   * configuring the {@linkplain HttpClientConfigurer} instance by default.
+   */
+  public static final String SYS_PROP_HTTP_CLIENT_BUILDER_FACTORY = "solr.httpclient.builder.factory";
+
   private static final Logger logger = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   
   static final DefaultHttpRequestRetryHandler NO_RETRY = new DefaultHttpRequestRetryHandler(
@@ -101,7 +107,21 @@ public class HttpClientUtil {
       = Collections.synchronizedList(new ArrayList<>(singletonList(new HttpClientConfigurer())));
 
   private static final List<HttpRequestInterceptor> interceptors = Collections.synchronizedList(new ArrayList<>());
-  
+
+  static {
+    // Configure the HttpClientBuilder if user has specified the factory type.
+    String factoryClassName = System.getProperty(SYS_PROP_HTTP_CLIENT_BUILDER_FACTORY);
+    if (factoryClassName != null) {
+      logger.debug ("Using " + factoryClassName);
+      try {
+        HttpClientConfigurer factory = (HttpClientConfigurer)Class.forName(factoryClassName).newInstance();
+        addConfigurer(factory);
+      } catch (InstantiationException | IllegalAccessException | ClassNotFoundException e) {
+        throw new RuntimeException("Unable to instantiate Solr HttpClientBuilderFactory", e);
+      }
+    }
+  }
+
   /**
    * Add a {@link HttpClientConfigurer} class used to configure the http
    * clients.

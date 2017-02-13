@@ -53,6 +53,8 @@ New Features
 * SOLR-9916: Adds Stream Evaluators to support evaluating values from tuples. Supports boolean,
   numeric, and conditional evaluators. BooleanOperations have been removed in preference of
   BooleanEvaluators. (Dennis Gove)
+
+* SOLR-9997: Enable configuring SolrHttpClientBuilder via java system property. (Hrishikesh Gadre via Mark Miller)
  
 Optimizations
 ----------------------
