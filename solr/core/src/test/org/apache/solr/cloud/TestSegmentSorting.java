@@ -22,18 +22,18 @@ import java.util.Map;
 
 import org.apache.lucene.index.TieredMergePolicy;
 import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.SolrTestCaseJ4.SuppressPointFields;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.core.CoreDescriptor;
 import org.apache.solr.index.TieredMergePolicyFactory;
-
 import org.junit.After;
 import org.junit.BeforeClass;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+@SuppressPointFields(bugUrl="https://issues.apache.org/jira/browse/SOLR-9992")
 public class TestSegmentSorting extends SolrCloudTestCase {
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());

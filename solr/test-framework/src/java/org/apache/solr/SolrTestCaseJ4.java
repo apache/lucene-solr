@@ -2474,4 +2474,8 @@ public abstract class SolrTestCaseJ4 extends LuceneTestCase {
   protected static void systemClearPropertySolrTestsMergePolicyFactory() {
     System.clearProperty(SYSTEM_PROPERTY_SOLR_TESTS_MERGEPOLICYFACTORY);
   }
+  
+  protected <T> T pickRandom(T... options) {
+    return options[random().nextInt(options.length)];
+  }
 }

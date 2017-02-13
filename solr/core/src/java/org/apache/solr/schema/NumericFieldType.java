@@ -17,9 +17,11 @@
 package org.apache.solr.schema;
 
 import org.apache.lucene.document.NumericDocValuesField;
+import org.apache.lucene.document.SortedNumericDocValuesField;
 import org.apache.lucene.queries.function.ValueSource;
 import org.apache.lucene.search.MatchNoDocsQuery;
 import org.apache.lucene.search.Query;
+import org.apache.lucene.util.NumericUtils;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.search.FunctionRangeQuery;
 import org.apache.solr.search.QParser;
@@ -49,28 +51,36 @@ public abstract class NumericFieldType extends PrimitiveFieldType {
 
   protected Query getDocValuesRangeQuery(QParser parser, SchemaField field, String min, String max,
       boolean minInclusive, boolean maxInclusive) {
-    assert field.hasDocValues() && !field.multiValued();
+    assert field.hasDocValues() && (field.getType().isPointField() || !field.multiValued());
     
     switch (getNumberType()) {
       case INTEGER:
         return numericDocValuesRangeQuery(field.getName(),
               min == null ? null : (long) Integer.parseInt(min),
               max == null ? null : (long) Integer.parseInt(max),
-              minInclusive, maxInclusive);
+              minInclusive, maxInclusive, field.multiValued());
       case FLOAT:
-        return getRangeQueryForFloatDoubleDocValues(field, min, max, minInclusive, maxInclusive);
+        if (field.multiValued()) {
+          return getRangeQueryForMultiValuedFloatDocValues(field, min, max, minInclusive, maxInclusive);
+        } else {
+          return getRangeQueryForFloatDoubleDocValues(field, min, max, minInclusive, maxInclusive);
+        }
       case LONG:
         return numericDocValuesRangeQuery(field.getName(),
               min == null ? null : Long.parseLong(min),
               max == null ? null : Long.parseLong(max),
-              minInclusive, maxInclusive);
+              minInclusive, maxInclusive, field.multiValued());
       case DOUBLE:
-        return getRangeQueryForFloatDoubleDocValues(field, min, max, minInclusive, maxInclusive);
+        if (field.multiValued()) { 
+          return getRangeQueryForMultiValuedDoubleDocValues(field, min, max, minInclusive, maxInclusive);
+        } else {
+          return getRangeQueryForFloatDoubleDocValues(field, min, max, minInclusive, maxInclusive);
+        }
       case DATE:
         return numericDocValuesRangeQuery(field.getName(),
               min == null ? null : DateMathParser.parseMath(null, min).getTime(),
               max == null ? null : DateMathParser.parseMath(null, max).getTime(),
-              minInclusive, maxInclusive);
+              minInclusive, maxInclusive, field.multiValued());
       default:
         throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Unknown type for numeric field");
     }
@@ -104,19 +114,32 @@ public abstract class NumericFieldType extends PrimitiveFieldType {
       if ((minVal == null || minVal.doubleValue() < 0d || minBits == minusZeroBits) &&
           (maxVal != null && (maxVal.doubleValue() < 0d || maxBits == minusZeroBits))) {
         query = numericDocValuesRangeQuery
-            (fieldName, maxBits, (min == null ? negativeInfinityBits : minBits), maxInclusive, minInclusive);
+            (fieldName, maxBits, (min == null ? negativeInfinityBits : minBits), maxInclusive, minInclusive, false);
       } else { // If both max and min are positive, then issue range query
         query = numericDocValuesRangeQuery
-            (fieldName, minBits, (max == null ? positiveInfinityBits : maxBits), minInclusive, maxInclusive);
+            (fieldName, minBits, (max == null ? positiveInfinityBits : maxBits), minInclusive, maxInclusive, false);
       }
     }
     return query;
   }
   
+  protected Query getRangeQueryForMultiValuedDoubleDocValues(SchemaField sf, String min, String max, boolean minInclusive, boolean maxInclusive) {
+    Long minBits = min == null ? NumericUtils.doubleToSortableLong(Double.NEGATIVE_INFINITY): NumericUtils.doubleToSortableLong(Double.parseDouble(min));
+    Long maxBits = max == null ? NumericUtils.doubleToSortableLong(Double.POSITIVE_INFINITY): NumericUtils.doubleToSortableLong(Double.parseDouble(max));
+    return numericDocValuesRangeQuery(sf.getName(), minBits, maxBits, minInclusive, maxInclusive, true);
+  }
+  
+  protected Query getRangeQueryForMultiValuedFloatDocValues(SchemaField sf, String min, String max, boolean minInclusive, boolean maxInclusive) {
+    Long minBits = (long)(min == null ? NumericUtils.floatToSortableInt(Float.NEGATIVE_INFINITY): NumericUtils.floatToSortableInt(Float.parseFloat(min)));
+    Long maxBits = (long)(max == null ? NumericUtils.floatToSortableInt(Float.POSITIVE_INFINITY): NumericUtils.floatToSortableInt(Float.parseFloat(max)));
+    return numericDocValuesRangeQuery(sf.getName(), minBits, maxBits, minInclusive, maxInclusive, true);
+  }
+  
   public static Query numericDocValuesRangeQuery(
       String field,
       Number lowerValue, Number upperValue,
-      boolean lowerInclusive, boolean upperInclusive) {
+      boolean lowerInclusive, boolean upperInclusive,
+      boolean multiValued) {
 
     long actualLowerValue = Long.MIN_VALUE;
     if (lowerValue != null) {
@@ -139,6 +162,11 @@ public abstract class NumericFieldType extends PrimitiveFieldType {
         --actualUpperValue;
       }
     }
-    return NumericDocValuesField.newRangeQuery(field, actualLowerValue, actualUpperValue);
+    if (multiValued) {
+      // In multiValued case use SortedNumericDocValuesField, this won't work for Trie*Fields wince they use BinaryDV in the multiValue case
+      return SortedNumericDocValuesField.newRangeQuery(field, actualLowerValue, actualUpperValue);
+    } else {
+      return NumericDocValuesField.newRangeQuery(field, actualLowerValue, actualUpperValue);
+    }
   }
 }

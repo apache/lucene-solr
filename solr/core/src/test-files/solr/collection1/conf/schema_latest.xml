@@ -109,7 +109,7 @@
   <!-- If you remove this field, you must _also_ disable the update log in solrconfig.xml
      or Solr won't start. _version_ and update log are required for SolrCloud
   -->
-  <field name="_version_" type="long" indexed="false" stored="false" docValues="true"/>
+  <field name="_version_" type="${solr.tests.longClass:plong}" indexed="false" stored="false" docValues="true"/>
 
   <!-- points to the root document of a block of nested documents. Required for nested
      document support, may be removed otherwise
@@ -130,9 +130,9 @@
   <field name="includes" type="text_general" indexed="true" stored="true" termVectors="true" termPositions="true"
          termOffsets="true"/>
 
-  <field name="weight" type="float" indexed="true" stored="true"/>
-  <field name="price" type="float" indexed="true" stored="true"/>
-  <field name="popularity" type="int" indexed="true" stored="true"/>
+  <field name="weight" type="${solr.tests.floatClass:pfloat}" indexed="true" stored="true"/>
+  <field name="price" type="${solr.tests.floatClass:pfloat}" indexed="true" stored="true"/>
+  <field name="popularity" type="${solr.tests.intClass:pint}" indexed="true" stored="true"/>
   <field name="inStock" type="boolean" indexed="true" stored="true"/>
 
   <field name="store" type="location" indexed="true" stored="true"/>
@@ -200,27 +200,27 @@
       a "*" only at the start or the end.  -->
 
   <!-- docvalues and stored are exclusive -->
-  <dynamicField name="*_i" type="int" indexed="true" stored="true"/>
-  <dynamicField name="*_is" type="int" indexed="true" stored="true" multiValued="true"/>
+  <dynamicField name="*_i" type="${solr.tests.intClass:pint}" indexed="true" stored="true"/>
+  <dynamicField name="*_is" type="${solr.tests.intClass:pint}" indexed="true" stored="true" multiValued="true"/>
   <dynamicField name="*_id" type="${solr.tests.intClass:pint}" indexed="true" stored="false" docValues="true"/>
-  <dynamicField name="*_ids" type="int" indexed="true" stored="false" multiValued="true" docValues="true"/>
+  <dynamicField name="*_ids" type="${solr.tests.intClass:pint}" indexed="true" stored="false" multiValued="true" docValues="true"/>
   <dynamicField name="*_s" type="string" indexed="true" stored="true"/>
   <dynamicField name="*_s1" type="string" indexed="true" stored="true"/>
   <dynamicField name="*_ss" type="string" indexed="true" stored="true" multiValued="true"/>
   <dynamicField name="*_sd" type="string" indexed="true" stored="false" docValues="true"/>
   <dynamicField name="*_sds" type="string" indexed="true" stored="false" multiValued="true" docValues="true"/>
-  <dynamicField name="*_l" type="long" indexed="true" stored="true"/>
-  <dynamicField name="*_ls" type="long" indexed="true" stored="true" multiValued="true"/>
-  <dynamicField name="*_ld" type="long" indexed="true" stored="false" docValues="true"/>
-  <dynamicField name="*_lds" type="long" indexed="true" stored="false" multiValued="true" docValues="true"/>
-  <dynamicField name="*_f" type="float" indexed="true" stored="true"/>
-  <dynamicField name="*_fs" type="float" indexed="true" stored="true" multiValued="true"/>
+  <dynamicField name="*_l" type="${solr.tests.longClass:plong}" indexed="true" stored="true"/>
+  <dynamicField name="*_ls" type="${solr.tests.longClass:plong}" indexed="true" stored="true" multiValued="true"/>
+  <dynamicField name="*_ld" type="${solr.tests.longClass:plong}" indexed="true" stored="false" docValues="true"/>
+  <dynamicField name="*_lds" type="${solr.tests.longClass:plong}" indexed="true" stored="false" multiValued="true" docValues="true"/>
+  <dynamicField name="*_f" type="${solr.tests.floatClass:pfloat}" indexed="true" stored="true"/>
+  <dynamicField name="*_fs" type="${solr.tests.floatClass:pfloat}" indexed="true" stored="true" multiValued="true"/>
   <dynamicField name="*_fd" type="${solr.tests.floatClass:pfloat}" indexed="true" stored="false" docValues="true"/>
-  <dynamicField name="*_fds" type="float" indexed="true" stored="false" multiValued="true" docValues="true"/>
-  <dynamicField name="*_d" type="double" indexed="true" stored="true"/>
-  <dynamicField name="*_ds" type="double" indexed="true" stored="true" multiValued="true"/>
+  <dynamicField name="*_fds" type="${solr.tests.floatClass:pfloat}" indexed="true" stored="false" multiValued="true" docValues="true"/>
+  <dynamicField name="*_d" type="${solr.tests.doubleClass:pdouble}" indexed="true" stored="true"/>
+  <dynamicField name="*_ds" type="${solr.tests.doubleClass:pdouble}" indexed="true" stored="true" multiValued="true"/>
   <dynamicField name="*_dd" type="${solr.tests.doubleClass:pdouble}" indexed="true" stored="false" docValues="true"/>
-  <dynamicField name="*_dds" type="double" indexed="true" stored="false" multiValued="true" docValues="true"/>
+  <dynamicField name="*_dds" type="${solr.tests.doubleClass:pdouble}" indexed="true" stored="false" multiValued="true" docValues="true"/>
   <dynamicField name="*_dt" type="date" indexed="true" stored="true"/>
   <dynamicField name="*_dts" type="date" indexed="true" stored="true" multiValued="true"/>
   <dynamicField name="*_dtd" type="date" indexed="true" stored="false" docValues="true"/>
@@ -228,15 +228,15 @@
 
   <!-- docvalues and stored (S suffix) -->
   <dynamicField name="*_idS" type="${solr.tests.intClass:pint}" indexed="true" stored="true" docValues="true"/>
-  <dynamicField name="*_idsS" type="int" indexed="true" stored="true" multiValued="true" docValues="true"/>
+  <dynamicField name="*_idsS" type="${solr.tests.intClass:pint}" indexed="true" stored="true" multiValued="true" docValues="true"/>
   <dynamicField name="*_sdS" type="string" indexed="true" stored="true" docValues="true"/>
   <dynamicField name="*_sdsS" type="string" indexed="true" stored="true" multiValued="true" docValues="true"/>
   <dynamicField name="*_ldS" type="${solr.tests.longClass:plong}" indexed="true" stored="true" docValues="true"/>
-  <dynamicField name="*_ldsS" type="long" indexed="true" stored="true" multiValued="true" docValues="true"/>
+  <dynamicField name="*_ldsS" type="${solr.tests.longClass:plong}" indexed="true" stored="true" multiValued="true" docValues="true"/>
   <dynamicField name="*_fdS" type="${solr.tests.floatClass:pfloat}" indexed="true" stored="true" docValues="true"/>
-  <dynamicField name="*_fdsS" type="float" indexed="true" stored="true" multiValued="true" docValues="true"/>
+  <dynamicField name="*_fdsS" type="${solr.tests.floatClass:pfloat}" indexed="true" stored="true" multiValued="true" docValues="true"/>
   <dynamicField name="*_ddS" type="${solr.tests.doubleClass:pdouble}" indexed="true" stored="true" docValues="true"/>
-  <dynamicField name="*_ddsS" type="double" indexed="true" stored="true" multiValued="true" docValues="true"/>
+  <dynamicField name="*_ddsS" type="${solr.tests.doubleClass:pdouble}" indexed="true" stored="true" multiValued="true" docValues="true"/>
   <dynamicField name="*_dtdS" type="date" indexed="true" stored="true" docValues="true"/>
   <dynamicField name="*_dtdsS" type="date" indexed="true" stored="true" multiValued="true" docValues="true"/>
 
@@ -396,10 +396,10 @@
   <fieldType name="tdouble" class="solr.TrieDoubleField" precisionStep="8" positionIncrementGap="0"/>
   
   <!-- Point Fields -->
-  <fieldType name="pint" class="solr.IntPointField"/>
-  <fieldType name="plong" class="solr.LongPointField"/>
-  <fieldType name="pdouble" class="solr.DoublePointField"/>
-  <fieldType name="pfloat" class="solr.FloatPointField"/>
+  <fieldType name="pint" class="solr.IntPointField" docValues="true"/>
+  <fieldType name="plong" class="solr.LongPointField" docValues="true"/>
+  <fieldType name="pdouble" class="solr.DoublePointField" docValues="true"/>
+  <fieldType name="pfloat" class="solr.FloatPointField" docValues="true"/>
   
 
   <!-- The format for this date field is of the form 1995-12-31T23:59:59Z, and
