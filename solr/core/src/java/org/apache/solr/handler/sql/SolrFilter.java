@@ -132,7 +132,8 @@ class SolrFilter extends Filter implements SolrRel {
         case NOT:
           return "-" + translateComparison(((RexCall) node).getOperands().get(0));
         case EQUALS:
-          String terms = binaryTranslated.getValue().getValue2().toString().trim();
+          String terms = binaryTranslated.getValue().toString().trim();
+          terms = terms.replace("'","");
           if (!terms.startsWith("(") && !terms.startsWith("[") && !terms.startsWith("{")) {
             terms = "\"" + terms + "\"";
           }
@@ -141,19 +142,19 @@ class SolrFilter extends Filter implements SolrRel {
           this.negativeQuery = false;
           return clause;
         case NOT_EQUALS:
-          return "-(" + binaryTranslated.getKey() + ":" + binaryTranslated.getValue().getValue2() + ")";
+          return "-(" + binaryTranslated.getKey() + ":" + binaryTranslated.getValue() + ")";
         case LESS_THAN:
           this.negativeQuery = false;
-          return "(" + binaryTranslated.getKey() + ": [ * TO " + binaryTranslated.getValue().getValue2() + " })";
+          return "(" + binaryTranslated.getKey() + ": [ * TO " + binaryTranslated.getValue() + " })";
         case LESS_THAN_OR_EQUAL:
           this.negativeQuery = false;
-          return "(" + binaryTranslated.getKey() + ": [ * TO " + binaryTranslated.getValue().getValue2() + " ])";
+          return "(" + binaryTranslated.getKey() + ": [ * TO " + binaryTranslated.getValue() + " ])";
         case GREATER_THAN:
           this.negativeQuery = false;
-          return "(" + binaryTranslated.getKey() + ": { " + binaryTranslated.getValue().getValue2() + " TO * ])";
+          return "(" + binaryTranslated.getKey() + ": { " + binaryTranslated.getValue() + " TO * ])";
         case GREATER_THAN_OR_EQUAL:
           this.negativeQuery = false;
-          return "(" + binaryTranslated.getKey() + ": [ " + binaryTranslated.getValue().getValue2() + " TO * ])";
+          return "(" + binaryTranslated.getKey() + ": [ " + binaryTranslated.getValue() + " TO * ])";
         default:
           throw new AssertionError("cannot translate " + node);
       }
@@ -305,21 +306,20 @@ class SolrFilter extends Filter implements SolrRel {
       }
 
       switch (node.getKind()) {
-
         case EQUALS:
-          String terms = binaryTranslated.getValue().getValue2().toString().trim();
+          String terms = binaryTranslated.getValue().toString().trim();
           String clause = "eq(" + binaryTranslated.getKey() + "," + terms + ")";
           return clause;
         case NOT_EQUALS:
-          return "not(eq(" + binaryTranslated.getKey() + "," + binaryTranslated.getValue().getValue2() + "))";
+          return "not(eq(" + binaryTranslated.getKey() + "," + binaryTranslated.getValue() + "))";
         case LESS_THAN:
-          return "lt(" + binaryTranslated.getKey() + "," + binaryTranslated.getValue().getValue2() + ")";
+          return "lt(" + binaryTranslated.getKey() + "," + binaryTranslated.getValue() + ")";
         case LESS_THAN_OR_EQUAL:
-          return "lteq(" + binaryTranslated.getKey() + "," + binaryTranslated.getValue().getValue2() + ")";
+          return "lteq(" + binaryTranslated.getKey() + "," + binaryTranslated.getValue() + ")";
         case GREATER_THAN:
-          return "gt(" + binaryTranslated.getKey() + "," + binaryTranslated.getValue().getValue2() + ")";
+          return "gt(" + binaryTranslated.getKey() + "," + binaryTranslated.getValue() + ")";
         case GREATER_THAN_OR_EQUAL:
-          return "gteq(" + binaryTranslated.getKey() + "," + binaryTranslated.getValue().getValue2() + ")";
+          return "gteq(" + binaryTranslated.getKey() + "," + binaryTranslated.getValue() + ")";
         default:
           throw new AssertionError("cannot translate " + node);
       }

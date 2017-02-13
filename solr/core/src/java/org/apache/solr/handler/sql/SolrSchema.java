@@ -90,6 +90,7 @@ class SolrSchema extends AbstractSchema {
     final RelDataTypeFactory typeFactory = new SqlTypeFactoryImpl(RelDataTypeSystem.DEFAULT);
     final RelDataTypeFactory.FieldInfoBuilder fieldInfo = typeFactory.builder();
     Map<String, LukeResponse.FieldInfo> luceneFieldInfoMap = getFieldInfo(collection);
+
     for(Map.Entry<String, LukeResponse.FieldInfo> entry : luceneFieldInfoMap.entrySet()) {
       LukeResponse.FieldInfo luceneFieldInfo = entry.getValue();
 
@@ -110,13 +111,17 @@ class SolrSchema extends AbstractSchema {
           type = typeFactory.createJavaType(String.class);
       }
 
-      EnumSet<FieldFlag> flags = luceneFieldInfo.getFlags();
+      EnumSet<FieldFlag> flags = luceneFieldInfo.parseFlags(luceneFieldInfo.getSchema());
+      /*
       if(flags != null && flags.contains(FieldFlag.MULTI_VALUED)) {
         type = typeFactory.createArrayType(type, -1);
       }
+      */
 
       fieldInfo.add(entry.getKey(), type).nullable(true);
     }
+    fieldInfo.add("_query_",typeFactory.createJavaType(String.class));
+    fieldInfo.add("score",typeFactory.createJavaType(Double.class));
 
     return RelDataTypeImpl.proto(fieldInfo.build());
   }

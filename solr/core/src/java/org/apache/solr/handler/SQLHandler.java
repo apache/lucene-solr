@@ -79,7 +79,7 @@ public class SQLHandler extends RequestHandlerBase implements SolrCoreAware, Per
     params.set("numWorkers", params.getInt("numWorkers", 1));
     params.set("workerCollection", params.get("workerCollection", defaultWorkerCollection));
     params.set("workerZkhost", params.get("workerZkhost", defaultZkhost));
-    params.set("aggregationMode", params.get("aggregationMode", "map_reduce"));
+    params.set("aggregationMode", params.get("aggregationMode", "facet"));
 
     TupleStream tupleStream = null;
     try {
