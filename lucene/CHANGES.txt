@@ -178,6 +178,9 @@ Build
 
 * LUCENE-7694: Update forbiddenapis to version 2.3. (Uwe Schindler)
 
+* LUCENE-7693: Replace "org.apache." logic in GetMavenDependenciesTask.
+  (Daniel Collins, Christine Poerschke)
+
 Other
 
 * LUCENE-7666: Fix typos in lucene-join package info javadoc.
