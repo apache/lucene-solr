@@ -202,6 +202,9 @@ Other Changes
   refactoring also fixes a bug whereby PointFields were not using DocValues for range queries for
   indexed=false, docValues=true fields. (Ishan Chattopadhyaya, Tomás Fernández Löbbe)
 
+* SOLR-9890: factor out ShardResultTransformerUtils.[un]marshSortValue methods
+  (Judith Silverman, Christine Poerschke)
+
 ==================  6.4.1 ==================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release.
