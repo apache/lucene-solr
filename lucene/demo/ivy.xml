@@ -17,7 +17,7 @@
    under the License.    
 -->
 <ivy-module version="2.0">
-  <info organisation="org.apache.lucene" module="core-demo"/>
+  <info organisation="org.apache.lucene" module="demo"/>
   <configurations defaultconfmapping="compile->master">
     <conf name="compile" transitive="false"/>
   </configurations>
