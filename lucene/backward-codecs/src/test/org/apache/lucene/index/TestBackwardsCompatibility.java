@@ -426,7 +426,9 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
       "5.5.2-cfs",
       "5.5.2-nocfs",
       "5.5.3-cfs",
-      "5.5.3-nocfs"
+      "5.5.3-nocfs",
+      "5.5.4-cfs",
+      "5.5.4-nocfs"
   };
 
   // TODO: on 6.0.0 release, gen the single segment indices and add here:
