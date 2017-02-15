@@ -159,6 +159,10 @@ Bug Fixes
 
 * SOLR-10104: BlockDirectoryCache release hooks do not work with multiple directories. (Mike Drob, Mark Miller)
 
+* SOLR-10121: Fix race conditions in HDFS BlockCache that can contribute to corruption in high
+  concurrency situations. (yonik)
+
+
 Optimizations
 ----------------------
 
