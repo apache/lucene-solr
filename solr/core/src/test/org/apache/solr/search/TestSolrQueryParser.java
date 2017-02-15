@@ -23,6 +23,7 @@ import org.apache.lucene.search.BooleanClause;
 import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.BoostQuery;
 import org.apache.lucene.search.ConstantScoreQuery;
+import org.apache.lucene.search.PointInSetQuery;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.TermInSetQuery;
 import org.apache.lucene.search.TermQuery;
@@ -227,10 +228,17 @@ public class TestSolrQueryParser extends SolrTestCaseJ4 {
     assertEquals(26, ((TermInSetQuery)q).getTermData().size());
 
     // large numeric filter query should use TermsQuery (for trie fields)
-    qParser = QParser.getParser("foo_i:(1 2 3 4 5 6 7 8 9 10 20 19 18 17 16 15 14 13 12 11)", req);
+    qParser = QParser.getParser("foo_ti:(1 2 3 4 5 6 7 8 9 10 20 19 18 17 16 15 14 13 12 11)", req);
     qParser.setIsFilter(true); // this may change in the future
     q = qParser.getQuery();
     assertEquals(20, ((TermInSetQuery)q).getTermData().size());
+    
+    // for point fields large filter query should use PointInSetQuery
+    qParser = QParser.getParser("foo_pi:(1 2 3 4 5 6 7 8 9 10 20 19 18 17 16 15 14 13 12 11)", req);
+    qParser.setIsFilter(true); // this may change in the future
+    q = qParser.getQuery();
+    assertTrue(q instanceof PointInSetQuery);
+    assertEquals(20, ((PointInSetQuery)q).getPackedPoints().size());
 
     // a filter() clause inside a relevancy query should be able to use a TermsQuery
     qParser = QParser.getParser("foo_s:aaa filter(foo_s:(a b c d e f g h i j k l m n o p q r s t u v w x y z))", req);

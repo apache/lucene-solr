@@ -84,7 +84,7 @@ import org.apache.solr.util.DateMathParser;
  */
 public class TrieDateField extends TrieField implements DateValueFieldType {
   {
-    this.type = TrieTypes.DATE;
+    this.type = NumberType.DATE;
   }
   
   @Override

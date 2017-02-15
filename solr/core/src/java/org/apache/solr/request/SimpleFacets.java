@@ -436,6 +436,10 @@ public class SimpleFacets {
     
     NamedList<Integer> counts;
     SchemaField sf = searcher.getSchema().getField(field);
+    if (sf.getType().isPointField() && !sf.hasDocValues()) {
+      throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, 
+          "Can't facet on a PointField without docValues");
+    }
     FieldType ft = sf.getType();
 
     // determine what type of faceting method to use
@@ -478,8 +482,8 @@ public class SimpleFacets {
           counts = getFacetTermEnumCounts(searcher, docs, field, offset, limit, mincount,missing,sort,prefix, termFilter, exists);
           break;
         case FCS:
-          assert !multiToken;
-          if (ft.getNumericType() != null && !sf.multiValued()) {
+          assert ft.isPointField() || !multiToken;
+          if (ft.isPointField() || (ft.getNumberType() != null && !sf.multiValued())) {
             // force numeric faceting
             if (prefix != null && !prefix.isEmpty()) {
               throw new SolrException(ErrorCode.BAD_REQUEST, FacetParams.FACET_PREFIX + " is not supported on numeric types");
@@ -490,6 +494,10 @@ public class SimpleFacets {
                 throw new SolrException(ErrorCode.BAD_REQUEST, FacetParams.FACET_CONTAINS + " is not supported on numeric types");
               }
             }
+//            We should do this, but mincount=0 is currently the default
+//            if (ft.isPointField() && mincount <= 0) {
+//              throw new SolrException(ErrorCode.BAD_REQUEST, FacetParams.FACET_MINCOUNT + " <= 0 is not supported on point types");
+//            }
             counts = NumericFacets.getCounts(searcher, docs, field, offset, limit, mincount, missing, sort);
           } else {
             PerSegmentSingleValuedFaceting ps = new PerSegmentSingleValuedFaceting(searcher, docs, field, offset, limit, mincount, missing, sort, prefix, termFilter);
@@ -606,13 +614,17 @@ public class SimpleFacets {
    static FacetMethod selectFacetMethod(SchemaField field, FacetMethod method, Integer mincount) {
 
      FieldType type = field.getType();
+     if (type.isPointField()) {
+       // Only FCS is supported for PointFields for now
+       return FacetMethod.FCS;
+     }
 
      /*The user did not specify any preference*/
      if (method == null) {
        /* Always use filters for booleans if not DocValues only... we know the number of values is very small. */
        if (type instanceof BoolField && (field.indexed() == true || field.hasDocValues() == false)) {
          method = FacetMethod.ENUM;
-       } else if (type.getNumericType() != null && !field.multiValued()) {
+       } else if (type.getNumberType() != null && !field.multiValued()) {
         /* the per-segment approach is optimal for numeric field types since there
            are no global ords to merge and no need to create an expensive
            top-level reader */
@@ -625,7 +637,7 @@ public class SimpleFacets {
 
      /* FC without docValues does not support single valued numeric facets */
      if (method == FacetMethod.FC
-         && type.getNumericType() != null && !field.multiValued()) {
+         && type.getNumberType() != null && !field.multiValued()) {
        method = FacetMethod.FCS;
      }
 
@@ -710,7 +722,7 @@ public class SimpleFacets {
   
   private Collector getInsanityWrapper(final String field, Collector collector) {
     SchemaField sf = searcher.getSchema().getFieldOrNull(field);
-    if (sf != null && !sf.hasDocValues() && !sf.multiValued() && sf.getType().getNumericType() != null) {
+    if (sf != null && !sf.hasDocValues() && !sf.multiValued() && sf.getType().getNumberType() != null) {
       // it's a single-valued numeric field: we must currently create insanity :(
       // there isn't a GroupedFacetCollector that works on numerics right now...
       return new FilterCollector(collector) {
@@ -836,12 +848,20 @@ public class SimpleFacets {
    * @param terms a list of term values (in the specified field) to compute the counts for 
    */
   protected NamedList<Integer> getListedTermCounts(String field, final ParsedParams parsed, List<String> terms) throws IOException {
-    FieldType ft = searcher.getSchema().getFieldType(field);
+    SchemaField sf = searcher.getSchema().getField(field);
+    FieldType ft = sf.getType();
     NamedList<Integer> res = new NamedList<>();
-    for (String term : terms) {
-      String internal = ft.toInternal(term);
-      int count = searcher.numDocs(new TermQuery(new Term(field, internal)), parsed.docs);
-      res.add(term, count);
+    if (ft.isPointField()) {
+      for (String term : terms) {
+        int count = searcher.numDocs(ft.getFieldQuery(null, sf, term), parsed.docs);
+        res.add(term, count);
+      }
+    } else {
+      for (String term : terms) {
+        String internal = ft.toInternal(term);
+        int count = searcher.numDocs(new TermQuery(new Term(field, internal)), parsed.docs);
+        res.add(term, count);
+      }
     }
     return res;    
   }
@@ -886,7 +906,7 @@ public class SimpleFacets {
   public NamedList<Integer> getFacetTermEnumCounts(SolrIndexSearcher searcher, DocSet docs, String field, int offset, int limit, int mincount, boolean missing,
                                                    String sort, String prefix, Predicate<BytesRef> termFilter, boolean intersectsCheck)
     throws IOException {
-
+    
     /* :TODO: potential optimization...
     * cache the Terms with the highest docFreq and try them first
     * don't enum if we get our max from them
@@ -902,10 +922,12 @@ public class SimpleFacets {
       fastForRandomSet = new HashDocSet(sset.getDocs(), 0, sset.size());
     }
 
-
     IndexSchema schema = searcher.getSchema();
-    LeafReader r = searcher.getSlowAtomicReader();
     FieldType ft = schema.getFieldType(field);
+    assert !ft.isPointField(): "Point Fields don't support enum method";
+    
+    LeafReader r = searcher.getSlowAtomicReader();
+    
 
     boolean sortByCount = sort.equals("count") || sort.equals("true");
     final int maxsize = limit>=0 ? offset+limit : Integer.MAX_VALUE-1;
@@ -1119,6 +1141,9 @@ public class SimpleFacets {
       SchemaField schemaField = searcher.getCore().getLatestSchema().getField(parsed.facetValue);
       if (parsed.params.getBool(GroupParams.GROUP_FACET, false)) {
         throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Interval Faceting can't be used with " + GroupParams.GROUP_FACET);
+      }
+      if (schemaField.getType().isPointField() && !schemaField.hasDocValues()) {
+        throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Can't use interval faceting on a PointField without docValues");
       }
       
       SimpleOrderedMap<Integer> fieldResults = new SimpleOrderedMap<Integer>();

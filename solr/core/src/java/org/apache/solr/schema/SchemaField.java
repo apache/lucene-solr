@@ -167,6 +167,11 @@ public final class SchemaField extends FieldProperties {
                               "can not sort on multivalued field: " 
                               + getName());
     }
+    if (this.type.isPointField() && !hasDocValues()) {
+      throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, 
+                              "can not sort on a PointField without doc values: " 
+                              + getName());
+    }
   }
 
   /** 
@@ -186,6 +191,11 @@ public final class SchemaField extends FieldProperties {
     if ( multiValued() ) {
       throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, 
                               "can not use FieldCache on multivalued field: " 
+                              + getName());
+    }
+    if (this.type.isPointField() && !hasDocValues()) {
+      throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, 
+                              "Point fields can't use FieldCache. Use docValues=true for field: " 
                               + getName());
     }
     

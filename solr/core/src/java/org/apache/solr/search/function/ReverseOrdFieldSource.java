@@ -77,7 +77,7 @@ public class ReverseOrdFieldSource extends ValueSource {
     if (o instanceof SolrIndexSearcher) {
       SolrIndexSearcher is = (SolrIndexSearcher) o;
       SchemaField sf = is.getSchema().getFieldOrNull(field);
-      if (sf != null && sf.hasDocValues() == false && sf.multiValued() == false && sf.getType().getNumericType() != null) {
+      if (sf != null && sf.hasDocValues() == false && sf.multiValued() == false && sf.getType().getNumberType() != null) {
         // it's a single-valued numeric field: we must currently create insanity :(
         List<LeafReaderContext> leaves = is.getIndexReader().leaves();
         LeafReader insaneLeaves[] = new LeafReader[leaves.size()];

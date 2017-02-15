@@ -21,6 +21,8 @@ org.apache.lucene.analysis.ngram.EdgeNGramTokenizerFactory
 org.apache.lucene.analysis.ngram.NGramTokenizerFactory
 org.apache.lucene.analysis.path.PathHierarchyTokenizerFactory
 org.apache.lucene.analysis.pattern.PatternTokenizerFactory
+org.apache.lucene.analysis.pattern.SimplePatternSplitTokenizerFactory
+org.apache.lucene.analysis.pattern.SimplePatternTokenizerFactory
 org.apache.lucene.analysis.standard.ClassicTokenizerFactory
 org.apache.lucene.analysis.standard.StandardTokenizerFactory
 org.apache.lucene.analysis.standard.UAX29URLEmailTokenizerFactory

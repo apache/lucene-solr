@@ -52,7 +52,7 @@ import org.apache.lucene.util.mutable.MutableValueFloat;
  */
 public class TrieFloatField extends TrieField implements FloatValueFieldType {
   {
-    type=TrieTypes.FLOAT;
+    type = NumberType.FLOAT;
   }
 
   @Override

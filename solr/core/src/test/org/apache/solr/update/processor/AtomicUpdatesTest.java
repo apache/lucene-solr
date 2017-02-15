@@ -139,7 +139,7 @@ public class AtomicUpdatesTest extends SolrTestCaseJ4 {
 
     assertU(commit());
 
-    assertQ(req("q", "intRemove:*", "indent", "true"), "//result[@numFound = '4']");
+    assertQ(req("q", "intRemove:[* TO *]", "indent", "true"), "//result[@numFound = '4']");
     assertQ(req("q", "intRemove:222", "indent", "true"), "//result[@numFound = '3']");
 
 
@@ -152,7 +152,7 @@ public class AtomicUpdatesTest extends SolrTestCaseJ4 {
     assertU(adoc(doc));
     assertU(commit());
 
-    assertQ(req("q", "intRemove:*", "indent", "true"), "//result[@numFound = '4']");
+    assertQ(req("q", "intRemove:[* TO *]", "indent", "true"), "//result[@numFound = '4']");
     assertQ(req("q", "intRemove:222", "indent", "true"), "//result[@numFound = '2']");
 
     doc = new SolrInputDocument();
@@ -164,7 +164,7 @@ public class AtomicUpdatesTest extends SolrTestCaseJ4 {
     assertU(adoc(doc));
     assertU(commit());
 
-    assertQ(req("q", "intRemove:*", "indent", "true"), "//result[@numFound = '4']");
+    assertQ(req("q", "intRemove:[* TO *]", "indent", "true"), "//result[@numFound = '4']");
     assertQ(req("q", "intRemove:222", "indent", "true"), "//result[@numFound = '1']");
 
     doc = new SolrInputDocument();
@@ -174,7 +174,7 @@ public class AtomicUpdatesTest extends SolrTestCaseJ4 {
     assertU(adoc(doc));
     assertU(commit());
 
-    assertQ(req("q", "intRemove:*", "indent", "true"), "//result[@numFound = '4']");
+    assertQ(req("q", "intRemove:[* TO *]", "indent", "true"), "//result[@numFound = '4']");
     assertQ(req("q", "intRemove:111", "indent", "true"), "//result[@numFound = '3']");
   }
 
@@ -207,7 +207,7 @@ public class AtomicUpdatesTest extends SolrTestCaseJ4 {
 
     assertU(commit());
 
-    assertQ(req("q", "intRemove:*", "indent", "true"), "//result[@numFound = '4']");
+    assertQ(req("q", "intRemove:[* TO *]", "indent", "true"), "//result[@numFound = '4']");
     assertQ(req("q", "intRemove:222", "indent", "true"), "//result[@numFound = '3']");
 
 
@@ -220,7 +220,7 @@ public class AtomicUpdatesTest extends SolrTestCaseJ4 {
     assertU(adoc(doc));
     assertU(commit());
 
-    assertQ(req("q", "intRemove:*", "indent", "true"), "//result[@numFound = '4']");
+    assertQ(req("q", "intRemove:[* TO *]", "indent", "true"), "//result[@numFound = '4']");
     assertQ(req("q", "intRemove:222", "indent", "true"), "//result[@numFound = '2']");
 
     doc = new SolrInputDocument();
@@ -232,7 +232,7 @@ public class AtomicUpdatesTest extends SolrTestCaseJ4 {
     assertU(adoc(doc));
     assertU(commit());
 
-    assertQ(req("q", "intRemove:*", "indent", "true"), "//result[@numFound = '4']");
+    assertQ(req("q", "intRemove:[* TO *]", "indent", "true"), "//result[@numFound = '4']");
     assertQ(req("q", "intRemove:222", "indent", "true"), "//result[@numFound = '1']");
 
     doc = new SolrInputDocument();
@@ -242,7 +242,7 @@ public class AtomicUpdatesTest extends SolrTestCaseJ4 {
     assertU(adoc(doc));
     assertU(commit());
 
-    assertQ(req("q", "intRemove:*", "indent", "true"), "//result[@numFound = '4']");
+    assertQ(req("q", "intRemove:[* TO *]", "indent", "true"), "//result[@numFound = '4']");
     assertQ(req("q", "intRemove:111", "indent", "true"), "//result[@numFound = '3']");
   }
 
@@ -271,7 +271,7 @@ public class AtomicUpdatesTest extends SolrTestCaseJ4 {
     assertU(adoc(doc));
     assertU(commit());
 
-    assertQ(req("q", "intRemove:*", "indent", "true"), "//result[@numFound = '4']");
+    assertQ(req("q", "intRemove:[* TO *]", "indent", "true"), "//result[@numFound = '4']");
     assertQ(req("q", "intRemove:222", "indent", "true"), "//result[@numFound = '3']");
 
 
@@ -284,7 +284,7 @@ public class AtomicUpdatesTest extends SolrTestCaseJ4 {
     assertU(adoc(doc));
     assertU(commit());
 
-    assertQ(req("q", "intRemove:*", "indent", "true"), "//result[@numFound = '4']");
+    assertQ(req("q", "intRemove:[* TO *]", "indent", "true"), "//result[@numFound = '4']");
     assertQ(req("q", "intRemove:222", "indent", "true"), "//result[@numFound = '2']");
 
     doc = new SolrInputDocument();
@@ -296,7 +296,7 @@ public class AtomicUpdatesTest extends SolrTestCaseJ4 {
     assertU(adoc(doc));
     assertU(commit());
 
-    assertQ(req("q", "intRemove:*", "indent", "true"), "//result[@numFound = '4']");
+    assertQ(req("q", "intRemove:[* TO *]", "indent", "true"), "//result[@numFound = '4']");
     assertQ(req("q", "intRemove:222", "indent", "true"), "//result[@numFound = '1']");
 
     doc = new SolrInputDocument();
@@ -306,7 +306,7 @@ public class AtomicUpdatesTest extends SolrTestCaseJ4 {
     assertU(adoc(doc));
     assertU(commit());
 
-    assertQ(req("q", "intRemove:*", "indent", "true"), "//result[@numFound = '4']");
+    assertQ(req("q", "intRemove:[* TO *]", "indent", "true"), "//result[@numFound = '4']");
     assertQ(req("q", "intRemove:111", "indent", "true"), "//result[@numFound = '3']");
   }
 
@@ -336,7 +336,7 @@ public class AtomicUpdatesTest extends SolrTestCaseJ4 {
 
     assertU(commit());
 
-    assertQ(req("q", "intRemove:*", "indent", "true"), "//result[@numFound = '4']");
+    assertQ(req("q", "intRemove:[* TO *]", "indent", "true"), "//result[@numFound = '4']");
     assertQ(req("q", "intRemove:222", "indent", "true"), "//result[@numFound = '3']");
 
     doc = new SolrInputDocument();
@@ -348,7 +348,7 @@ public class AtomicUpdatesTest extends SolrTestCaseJ4 {
     assertU(adoc(doc));
     assertU(commit());
 
-    assertQ(req("q", "intRemove:*", "indent", "true"), "//result[@numFound = '4']");
+    assertQ(req("q", "intRemove:[* TO *]", "indent", "true"), "//result[@numFound = '4']");
     assertQ(req("q", "intRemove:222", "indent", "true"), "//result[@numFound = '2']");
 
     doc = new SolrInputDocument();
@@ -360,7 +360,7 @@ public class AtomicUpdatesTest extends SolrTestCaseJ4 {
     assertU(adoc(doc));
     assertU(commit());
 
-    assertQ(req("q", "intRemove:*", "indent", "true"), "//result[@numFound = '4']");
+    assertQ(req("q", "intRemove:[* TO *]", "indent", "true"), "//result[@numFound = '4']");
     assertQ(req("q", "intRemove:222", "indent", "true"), "//result[@numFound = '1']");
 
     doc = new SolrInputDocument();
@@ -370,7 +370,7 @@ public class AtomicUpdatesTest extends SolrTestCaseJ4 {
     assertU(adoc(doc));
     assertU(commit());
 
-    assertQ(req("q", "intRemove:*", "indent", "true"), "//result[@numFound = '4']");
+    assertQ(req("q", "intRemove:[* TO *]", "indent", "true"), "//result[@numFound = '4']");
     assertQ(req("q", "intRemove:111", "indent", "true"), "//result[@numFound = '3']");
   }
 
@@ -420,7 +420,7 @@ public class AtomicUpdatesTest extends SolrTestCaseJ4 {
 
     assertU(commit());
 
-    assertQ(req("q", "intRemove:*", "indent", "true"), "//result[@numFound = '4']");
+    assertQ(req("q", "intRemove:[* TO *]", "indent", "true"), "//result[@numFound = '4']");
     assertQ(req("q", "intRemove:222", "indent", "true"), "//result[@numFound = '3']");
 
 
@@ -433,7 +433,7 @@ public class AtomicUpdatesTest extends SolrTestCaseJ4 {
     assertU(adoc(doc));
     assertU(commit());
 
-    assertQ(req("q", "intRemove:*", "indent", "true"), "//result[@numFound = '4']");
+    assertQ(req("q", "intRemove:[* TO *]", "indent", "true"), "//result[@numFound = '4']");
     assertQ(req("q", "intRemove:222", "indent", "true"), "//result[@numFound = '2']");
 
     doc = new SolrInputDocument();
@@ -445,7 +445,7 @@ public class AtomicUpdatesTest extends SolrTestCaseJ4 {
     assertU(adoc(doc));
     assertU(commit());
 
-    assertQ(req("q", "intRemove:*", "indent", "true"), "//result[@numFound = '4']");
+    assertQ(req("q", "intRemove:[* TO *]", "indent", "true"), "//result[@numFound = '4']");
     assertQ(req("q", "intRemove:222", "indent", "true"), "//result[@numFound = '1']");
 
     doc = new SolrInputDocument();
@@ -455,7 +455,7 @@ public class AtomicUpdatesTest extends SolrTestCaseJ4 {
     assertU(adoc(doc));
     assertU(commit());
 
-    assertQ(req("q", "intRemove:*", "indent", "true"), "//result[@numFound = '4']");
+    assertQ(req("q", "intRemove:[* TO *]", "indent", "true"), "//result[@numFound = '4']");
     assertQ(req("q", "intRemove:111", "indent", "true"), "//result[@numFound = '3']");
   }
   
@@ -486,7 +486,7 @@ public class AtomicUpdatesTest extends SolrTestCaseJ4 {
 
     assertU(commit());
 
-    assertQ(req("q", "intRemove:*", "indent", "true"), "//result[@numFound = '4']");
+    assertQ(req("q", "intRemove:[* TO *]", "indent", "true"), "//result[@numFound = '4']");
     assertQ(req("q", "intRemove:22222222", "indent", "true"), "//result[@numFound = '3']");
 
 
@@ -499,7 +499,7 @@ public class AtomicUpdatesTest extends SolrTestCaseJ4 {
     assertU(adoc(doc));
     assertU(commit());
 
-    assertQ(req("q", "intRemove:*", "indent", "true"), "//result[@numFound = '4']");
+    assertQ(req("q", "intRemove:[* TO *]", "indent", "true"), "//result[@numFound = '4']");
     assertQ(req("q", "intRemove:22222222", "indent", "true"), "//result[@numFound = '2']");
 
     doc = new SolrInputDocument();
@@ -511,7 +511,7 @@ public class AtomicUpdatesTest extends SolrTestCaseJ4 {
     assertU(adoc(doc));
     assertU(commit());
 
-    assertQ(req("q", "intRemove:*", "indent", "true"), "//result[@numFound = '4']");
+    assertQ(req("q", "intRemove:[* TO *]", "indent", "true"), "//result[@numFound = '4']");
     assertQ(req("q", "intRemove:22222222", "indent", "true"), "//result[@numFound = '1']");
 
     doc = new SolrInputDocument();
@@ -521,7 +521,7 @@ public class AtomicUpdatesTest extends SolrTestCaseJ4 {
     assertU(adoc(doc));
     assertU(commit());
 
-    assertQ(req("q", "intRemove:*", "indent", "true"), "//result[@numFound = '4']");
+    assertQ(req("q", "intRemove:[* TO *]", "indent", "true"), "//result[@numFound = '4']");
     assertQ(req("q", "intRemove:11111111", "indent", "true"), "//result[@numFound = '3']");
   }
   
@@ -707,7 +707,7 @@ public class AtomicUpdatesTest extends SolrTestCaseJ4 {
 
     assertU(commit());
 
-    assertQ(req("q", "floatRemove:*", "indent", "true"), "//result[@numFound = '4']");
+    assertQ(req("q", "floatRemove:[* TO *]", "indent", "true"), "//result[@numFound = '4']");
     assertQ(req("q", "floatRemove:\"222.222\"", "indent", "true"), "//result[@numFound = '3']");
 
 
@@ -721,7 +721,7 @@ public class AtomicUpdatesTest extends SolrTestCaseJ4 {
     assertU(adoc(doc));
     assertU(commit());
 
-    assertQ(req("q", "floatRemove:*", "indent", "true"), "//result[@numFound = '4']");
+    assertQ(req("q", "floatRemove:[* TO *]", "indent", "true"), "//result[@numFound = '4']");
     assertQ(req("q", "floatRemove:\"222.222\"", "indent", "true"), "//result[@numFound = '2']");
 
     doc = new SolrInputDocument();
@@ -733,7 +733,7 @@ public class AtomicUpdatesTest extends SolrTestCaseJ4 {
     assertU(adoc(doc));
     assertU(commit());
 
-    assertQ(req("q", "floatRemove:*", "indent", "true"), "//result[@numFound = '4']");
+    assertQ(req("q", "floatRemove:[* TO *]", "indent", "true"), "//result[@numFound = '4']");
     assertQ(req("q", "floatRemove:\"222.222\"", "indent", "true"), "//result[@numFound = '1']");
 
     doc = new SolrInputDocument();
@@ -743,7 +743,7 @@ public class AtomicUpdatesTest extends SolrTestCaseJ4 {
     assertU(adoc(doc));
     assertU(commit());
 
-    assertQ(req("q", "floatRemove:*", "indent", "true"), "//result[@numFound = '4']");
+    assertQ(req("q", "floatRemove:[* TO *]", "indent", "true"), "//result[@numFound = '4']");
     assertQ(req("q", "floatRemove:\"111.111\"", "indent", "true"), "//result[@numFound = '3']");
   }
   
@@ -775,7 +775,7 @@ public class AtomicUpdatesTest extends SolrTestCaseJ4 {
 
     assertU(commit());
 
-    assertQ(req("q", "floatRemove:*", "indent", "true"), "//result[@numFound = '4']");
+    assertQ(req("q", "floatRemove:[* TO *]", "indent", "true"), "//result[@numFound = '4']");
     assertQ(req("q", "floatRemove:\"222.222\"", "indent", "true"), "//result[@numFound = '3']");
 
 
@@ -789,7 +789,7 @@ public class AtomicUpdatesTest extends SolrTestCaseJ4 {
     assertU(adoc(doc));
     assertU(commit());
 
-    assertQ(req("q", "floatRemove:*", "indent", "true"), "//result[@numFound = '4']");
+    assertQ(req("q", "floatRemove:[* TO *]", "indent", "true"), "//result[@numFound = '4']");
     assertQ(req("q", "floatRemove:\"222.222\"", "indent", "true"), "//result[@numFound = '2']");
 
     doc = new SolrInputDocument();
@@ -801,7 +801,7 @@ public class AtomicUpdatesTest extends SolrTestCaseJ4 {
     assertU(adoc(doc));
     assertU(commit());
 
-    assertQ(req("q", "floatRemove:*", "indent", "true"), "//result[@numFound = '4']");
+    assertQ(req("q", "floatRemove:[* TO *]", "indent", "true"), "//result[@numFound = '4']");
     assertQ(req("q", "floatRemove:\"222.222\"", "indent", "true"), "//result[@numFound = '1']");
 
     doc = new SolrInputDocument();
@@ -811,7 +811,7 @@ public class AtomicUpdatesTest extends SolrTestCaseJ4 {
     assertU(adoc(doc));
     assertU(commit());
 
-    assertQ(req("q", "floatRemove:*", "indent", "true"), "//result[@numFound = '4']");
+    assertQ(req("q", "floatRemove:[* TO *]", "indent", "true"), "//result[@numFound = '4']");
     assertQ(req("q", "floatRemove:\"111.111\"", "indent", "true"), "//result[@numFound = '3']");
   }
 

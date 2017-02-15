@@ -36,6 +36,7 @@ import org.apache.lucene.analysis.util.CharFilterFactory;
 import org.apache.lucene.analysis.util.TokenFilterFactory;
 import org.apache.lucene.analysis.util.TokenizerFactory;
 import org.apache.lucene.document.Field;
+import org.apache.lucene.document.FieldType.LegacyNumericType;
 import org.apache.lucene.index.IndexOptions;
 import org.apache.lucene.document.SortedSetDocValuesField;
 import org.apache.lucene.index.IndexableField;
@@ -124,6 +125,10 @@ public abstract class FieldType extends FieldProperties {
    * @return true if the {@link #createFields(org.apache.solr.schema.SchemaField, Object, float)} method may return more than one field
    */
   public boolean isPolyField(){
+    return false;
+  }
+  
+  public boolean isPointField() {
     return false;
   }
 
@@ -410,7 +415,10 @@ public abstract class FieldType extends FieldProperties {
     return toInternal(val);
   }
 
-  /** Given the readable value, return the term value that will match it. */
+  /** Given the readable value, return the term value that will match it.
+   * This method will modify the size and length of the {@code result} 
+   * parameter and write from offset 0
+   */
   public void readableToIndexed(CharSequence val, BytesRefBuilder result) {
     final String internal = readableToIndexed(val.toString());
     result.copyChars(internal);
@@ -624,8 +632,19 @@ public abstract class FieldType extends FieldProperties {
 
 
   /** Return the numeric type of this field, or null if this field is not a
-   *  numeric field. */
-  public org.apache.lucene.document.FieldType.LegacyNumericType getNumericType() {
+   *  numeric field. 
+   *  @deprecated Please use {@link FieldType#getNumberType()} instead
+   */
+  @Deprecated
+  public LegacyNumericType getNumericType() {
+    return null;
+  }
+  
+  /**
+   * Return the numeric type of this field, or null if this field is not a
+   * numeric field. 
+   */
+  public NumberType getNumberType() {
     return null;
   }
 

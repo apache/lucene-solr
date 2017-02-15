@@ -45,7 +45,7 @@ import org.apache.lucene.util.mutable.MutableValueLong;
  */
 public class TrieLongField extends TrieField implements LongValueFieldType {
   {
-    type=TrieTypes.LONG;
+    type = NumberType.LONG;
   }
 
   @Override

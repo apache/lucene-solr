@@ -65,8 +65,13 @@ public class StatsValuesFactory {
     
     if (TrieDateField.class.isInstance(fieldType)) {
       return new DateStatsValues(statsField);
-    } else if (TrieField.class.isInstance(fieldType)) {
-      return new NumericStatsValues(statsField);
+    } else if (TrieField.class.isInstance(fieldType) || PointField.class.isInstance(fieldType)) {
+      
+      NumericStatsValues statsValue = new NumericStatsValues(statsField);
+      if (sf.multiValued()) {
+        return new SortedNumericStatsValues(statsValue, statsField);
+      }
+      return statsValue;
     } else if (StrField.class.isInstance(fieldType)) {
       return new StringStatsValues(statsField);
     } else if (sf.getType().getClass().equals(EnumField.class)) {

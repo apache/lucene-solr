@@ -112,6 +112,9 @@ public class Krb5HttpClientConfigurer extends HttpClientConfigurer {
       } else {
         httpClient.getCredentialsProvider().clear();
       }
+    } else {
+      logger.warn("{} is configured without specifying system property '{}'",
+                    getClass().getName(), LOGIN_CONFIG_PROP);
     }
   }
 

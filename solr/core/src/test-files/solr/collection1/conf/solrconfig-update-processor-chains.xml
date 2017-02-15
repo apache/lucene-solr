@@ -35,6 +35,8 @@
       <arr name="typeClass">
         <str>solr.TrieIntField</str>
         <str>solr.TrieLongField</str>
+        <str>solr.IntPointField</str>
+        <str>solr.LongPointField</str>
       </arr>
     </processor>
     <processor class="solr.MinFieldValueUpdateProcessorFactory">

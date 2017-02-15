@@ -108,7 +108,9 @@ REM set SOLR_SSL_CLIENT_TRUST_STORE_PASSWORD=
 REM set SOLR_SSL_CLIENT_TRUST_STORE_TYPE=
 
 REM Settings for authentication
-REM set SOLR_AUTHENTICATION_CLIENT_CONFIGURER=
+REM Please configure only one of SOLR_AUTHENTICATION_CLIENT_CONFIGURER or SOLR_AUTH_TYPE parameters
+REM set SOLR_AUTHENTICATION_CLIENT_CONFIGURER=org.apache.solr.client.solrj.impl.PreemptiveBasicAuthConfigurer
+REM set SOLR_AUTH_TYPE=basic
 REM set SOLR_AUTHENTICATION_OPTS="-Dbasicauth=solr:SolrRocks"
 
 REM Settings for ZK ACL

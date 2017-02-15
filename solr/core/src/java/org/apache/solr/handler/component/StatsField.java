@@ -29,8 +29,6 @@ import java.util.Map;
 import java.util.Set;
 
 import org.apache.commons.lang.StringUtils;
-import org.apache.lucene.document.FieldType;
-import org.apache.lucene.document.FieldType.LegacyNumericType;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.queries.function.FunctionQuery;
 import org.apache.lucene.queries.function.ValueSource;
@@ -47,6 +45,7 @@ import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.request.DocValuesStats;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.schema.IndexSchema;
+import org.apache.solr.schema.NumberType;
 import org.apache.solr.schema.SchemaField;
 import org.apache.solr.search.DocIterator;
 import org.apache.solr.search.DocSet;
@@ -58,8 +57,8 @@ import org.apache.solr.search.SyntaxError;
 import org.apache.solr.util.hll.HLL;
 import org.apache.solr.util.hll.HLLType;
 
-import com.google.common.hash.Hashing;
 import com.google.common.hash.HashFunction;
+import com.google.common.hash.Hashing;
 
 /**
  * Models all of the information associated with a single {@link StatsParams#STATS_FIELD}
@@ -417,7 +416,7 @@ public class StatsField {
       return StatsValuesFactory.createStatsValues(this);
     }
 
-    if (null != schemaField 
+    if (null != schemaField && !schemaField.getType().isPointField()
         && (schemaField.multiValued() || schemaField.getType().multiValuedFieldCache())) {
 
       // TODO: should this also be used for single-valued string fields? (should work fine)
@@ -637,13 +636,13 @@ public class StatsField {
         return null;
       }
 
-      final FieldType.LegacyNumericType hashableNumType = getHashableNumericType(field);
+      final NumberType hashableNumType = getHashableNumericType(field);
 
       // some sane defaults
       int log2m = 13;   // roughly equivilent to "cardinality='0.33'"
       int regwidth = 6; // with decent hash, this is plenty for all valid long hashes
 
-      if (LegacyNumericType.FLOAT.equals(hashableNumType) || FieldType.LegacyNumericType.INT.equals(hashableNumType)) {
+      if (NumberType.FLOAT.equals(hashableNumType) || NumberType.INTEGER.equals(hashableNumType)) {
         // for 32bit values, we can adjust our default regwidth down a bit
         regwidth--;
 
@@ -707,7 +706,7 @@ public class StatsField {
       if (null == hasher) {
         // if this is a function, or a non Long field, pre-hashed is invalid
         // NOTE: we ignore hashableNumType - it's LONG for non numerics like Strings
-        if (null == field || !FieldType.LegacyNumericType.LONG.equals(field.getType().getNumericType())) {
+        if (null == field || !(NumberType.LONG.equals(field.getType().getNumberType()) || NumberType.DATE.equals(field.getType().getNumberType()))) { 
           throw new SolrException(ErrorCode.BAD_REQUEST, "hllPreHashed is only supported with Long based fields");
         }
       }
@@ -740,16 +739,16 @@ public class StatsField {
   }
 
   /**
-   * Returns the effective {@link org.apache.lucene.document.FieldType.LegacyNumericType} for the field for the purposes of hash values.
-   * ie: If the field has an explict LegacyNumericType that is returned; If the field has no explicit
-   * LegacyNumericType then {@link org.apache.lucene.document.FieldType.LegacyNumericType#LONG} is returned;  If field is null, then
-   * {@link org.apache.lucene.document.FieldType.LegacyNumericType#FLOAT} is assumed for ValueSource.
+   * Returns the effective {@link NumberType} for the field for the purposes of hash values.
+   * ie: If the field has an explict NumberType that is returned; If the field has no explicit
+   * NumberType then {@link NumberType#LONG} is returned;  If field is null, then
+   * {@link NumberType#FLOAT} is assumed for ValueSource.
    */
-  private static LegacyNumericType getHashableNumericType(SchemaField field) {
+  private static NumberType getHashableNumericType(SchemaField field) {
     if (null == field) {
-      return LegacyNumericType.FLOAT;
+      return NumberType.FLOAT;
     }
-    final LegacyNumericType result = field.getType().getNumericType();
-    return null == result ? FieldType.LegacyNumericType.LONG : result;
+    final NumberType result = field.getType().getNumberType();
+    return null == result ? NumberType.LONG : result;
   }
 }

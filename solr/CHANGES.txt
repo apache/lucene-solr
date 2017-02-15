@@ -53,6 +53,12 @@ New Features
 * SOLR-9916: Adds Stream Evaluators to support evaluating values from tuples. Supports boolean,
   numeric, and conditional evaluators. BooleanOperations have been removed in preference of
   BooleanEvaluators. (Dennis Gove)
+
+* SOLR-9997: Enable configuring SolrHttpClientBuilder via java system property. (Hrishikesh Gadre via Mark Miller)
+
+* SOLR-8396: Add support for PointFields in Solr (Ishan Chattopadhyaya, Tomás Fernández Löbbe)
+
+* SOLR-9987: Add support for MultiValued DocValues in PointFields using SortedNumericDocValues (Tomás Fernández Löbbe)
  
 Optimizations
 ----------------------
@@ -99,6 +105,10 @@ Bug Fixes
 
 * SOLR-10124: Replication can skip removing a temporary index directory in some cases when it should not. (Mark Miller)
 
+* SOLR-9996: Unstored IntPointField returns Long type (Ishan Chattopadhyaya)
+
+* SOLR-10104: BlockDirectoryCache release hooks do not work with multiple directories. (Mike Drob, Mark Miller)
+
 Other Changes
 ----------------------
 * SOLR-9980: Expose configVersion in core admin status (Jessica Cheng Mallet via Tomás Fernández Löbbe)
@@ -125,6 +135,11 @@ Other Changes
   (Jonny Marks, David Smiley, Christine Poerschke)
 
 * SOLR-10072: The test TestSelectiveWeightCreation appears to be unreliable. (Michael Nilsson via Mark Miller)
+
+* SOLR-10011: Refactor PointField & TrieField to now have a common base class, NumericFieldType. The
+  TrieField.TrieTypes and PointField.PointTypes are now consolidated to NumericFieldType.NumberType. This
+  refactoring also fixes a bug whereby PointFields were not using DocValues for range queries for
+  indexed=false, docValues=true fields. (Ishan Chattopadhyaya, Tomás Fernández Löbbe)
 
 ==================  6.4.1 ==================
 

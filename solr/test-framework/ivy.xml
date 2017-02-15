@@ -17,7 +17,7 @@
    under the License.    
 -->
 <ivy-module version="2.0">
-  <info organisation="org.apache.solr" module="solr-test-framework"/>
+  <info organisation="org.apache.solr" module="test-framework"/>
 
   <configurations defaultconfmapping="compile->master;junit4-stdalone->master">
     <conf name="compile" transitive="false" />

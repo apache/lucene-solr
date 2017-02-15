@@ -33,6 +33,7 @@ import javax.xml.xpath.XPathExpressionException;
 import javax.xml.xpath.XPathFactory;
 
 import org.apache.lucene.document.FieldType;
+import org.apache.lucene.document.FieldType.LegacyNumericType;
 import org.apache.lucene.document.LegacyIntField;
 import org.apache.lucene.document.NumericDocValuesField;
 import org.apache.lucene.document.SortedSetDocValuesField;
@@ -233,8 +234,17 @@ public class EnumField extends PrimitiveFieldType {
    * {@inheritDoc}
    */
   @Override
-  public FieldType.LegacyNumericType getNumericType() {
-    return FieldType.LegacyNumericType.INT;
+  @Deprecated
+  public LegacyNumericType getNumericType() {
+    return LegacyNumericType.INT;
+  }
+  
+  /**
+   * {@inheritDoc}
+   */
+  @Override
+  public NumberType getNumberType() {
+    return NumberType.INTEGER;
   }
 
   /**

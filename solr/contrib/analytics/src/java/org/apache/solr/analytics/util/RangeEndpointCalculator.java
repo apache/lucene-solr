@@ -229,8 +229,7 @@ public abstract class RangeEndpointCalculator<T extends Comparable<T>> {
     final FieldType ft = sf.getType();
     final RangeEndpointCalculator<?> calc;
     if (ft instanceof TrieField) {
-      final TrieField trie = (TrieField)ft;
-      switch (trie.getType()) {
+      switch (ft.getNumberType()) {
         case FLOAT:
           calc = new FloatRangeEndpointCalculator(request);
           break;
