@@ -24,40 +24,50 @@ import org.apache.solr.client.solrj.io.stream.expr.StreamExpressionParameter;
 import org.apache.solr.client.solrj.io.stream.expr.StreamFactory;
 
 public class CountMetric extends Metric {
+  private String columnName;
   private long count;
-  
-  public CountMetric(){
-    init("count");
+
+  public CountMetric() {
+    this("*");
+  }
+
+  public CountMetric(String columnName) {
+    init("count", columnName);
   }
 
   public CountMetric(StreamExpression expression, StreamFactory factory) throws IOException{
     // grab all parameters out
     String functionName = expression.getFunctionName();
     String columnName = factory.getValueOperand(expression, 0);
-    
-    // validate expression contains only what we want.
-    if(!"*".equals(columnName)){
-      throw new IOException(String.format(Locale.ROOT,"Invalid expression %s - expected %s(*)", expression, functionName));
-    }
+
     if(1 != expression.getParameters().size()){
       throw new IOException(String.format(Locale.ROOT,"Invalid expression %s - unknown operands found", expression));
     }
-    
-    init(functionName);
-    
+
+    init(functionName, columnName);
   }
 
   public String[] getColumns() {
-    return new String[0];
+    if(isAllColumns()) {
+      return new String[0];
+    }
+    return new String[]{columnName};
   }
-  
-  private void init(String functionName){
+
+  private void init(String functionName, String columnName){
+    this.columnName = columnName;
     setFunctionName(functionName);
-    setIdentifier(functionName, "(*)");
+    setIdentifier(functionName, "(", columnName, ")");
+  }
+
+  private boolean isAllColumns() {
+    return "*".equals(this.columnName);
   }
 
   public void update(Tuple tuple) {
-    ++count;
+    if(isAllColumns() || tuple.get(columnName) != null) {
+      ++count;
+    }
   }
 
   public Long getValue() {
@@ -65,10 +75,11 @@ public class CountMetric extends Metric {
   }
 
   public Metric newInstance() {
-    return new CountMetric();
+    return new CountMetric(columnName);
   }
+
   @Override
   public StreamExpressionParameter toExpression(StreamFactory factory) throws IOException {
-    return new StreamExpression(getFunctionName()).withParameter("*");
+    return new StreamExpression(getFunctionName()).withParameter(columnName);
   }
 }

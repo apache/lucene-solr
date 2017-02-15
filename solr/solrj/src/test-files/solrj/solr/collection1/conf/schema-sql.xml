@@ -44,7 +44,7 @@
              positionIncrementGap="0"/>
   <fieldType name="float" docValues="true" class="solr.TrieFloatField" precisionStep="0" omitNorms="true"
              positionIncrementGap="0"/>
-  <fieldType name="long" class="solr.TrieLongField" precisionStep="0" omitNorms="true" positionIncrementGap="0"/>
+  <fieldType name="long" docValues="true" class="solr.TrieLongField" precisionStep="0" omitNorms="true" positionIncrementGap="0"/>
   <fieldType name="double" class="solr.TrieDoubleField" precisionStep="0" omitNorms="true" positionIncrementGap="0"/>
 
   <fieldType name="tint" class="solr.TrieIntField" precisionStep="8" omitNorms="true" positionIncrementGap="0"/>

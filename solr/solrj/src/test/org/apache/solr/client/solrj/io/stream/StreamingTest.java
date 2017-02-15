@@ -1508,6 +1508,23 @@ public void testTrace() throws Exception {
     assertEquals(5.5, avgf.doubleValue(), 0.01);
     assertEquals(2, count.doubleValue(), 0.01);
 
+    // Test will null metrics
+    rollupStream = new RollupStream(stream, buckets, metrics);
+    tuples = getTuples(rollupStream);
+
+    assert(tuples.size() == 3);
+    tuple = tuples.get(0);
+    bucket = tuple.getString("a_s");
+    assertTrue(bucket.equals("hello0"));
+
+    tuple = tuples.get(1);
+    bucket = tuple.getString("a_s");
+    assertTrue(bucket.equals("hello3"));
+
+    tuple = tuples.get(2);
+    bucket = tuple.getString("a_s");
+    assertTrue(bucket.equals("hello4"));
+
 
     //Test will null value in the grouping field
     new UpdateRequest()
