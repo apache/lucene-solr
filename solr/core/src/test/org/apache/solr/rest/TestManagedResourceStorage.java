@@ -39,7 +39,7 @@ import org.junit.Test;
  * Depends on ZK for testing ZooKeeper backed storage logic.
  */
 @Slow
-@AwaitsFix(bugUrl = "https://issues.apache.org/jira/browse/SOLR-6444")
+@AwaitsFix(bugUrl = "https://issues.apache.org/jira/browse/SOLR-6443")
 public class TestManagedResourceStorage extends AbstractZkTestCase {
 
   /**
