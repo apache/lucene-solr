@@ -40,6 +40,7 @@ public class MetricsDirectoryFactory extends DirectoryFactory implements SolrCor
   private final String registry;
   private final DirectoryFactory in;
   private boolean directoryDetails = false;
+  private boolean directoryTotals = false;
 
   public MetricsDirectoryFactory(SolrMetricManager metricManager, String registry, DirectoryFactory in) {
     this.metricManager = metricManager;
@@ -54,9 +55,12 @@ public class MetricsDirectoryFactory extends DirectoryFactory implements SolrCor
   /**
    * Currently the following arguments are supported:
    * <ul>
-   *   <li><code>directoryDetails</code> - (optional bool) when true then additional detailed metrics
+   *   <li><code>directory</code> - (optional bool, default false) when true then coarse-grained metrics will be collected.</li>
+   *   <li><code>directoryDetails</code> - (optional bool, default false) when true then additional detailed metrics
    *   will be collected. These include eg. IO size histograms and per-file counters and histograms</li>
    * </ul>
+   * NOTE: please be aware that collecting even coarse-grained metrics can have significant performance impact
+   * (see SOLR-10130).
    * @param args init args
    */
   @Override
@@ -66,11 +70,20 @@ public class MetricsDirectoryFactory extends DirectoryFactory implements SolrCor
     if (args == null) {
       return;
     }
+    Boolean td = args.getBooleanArg("directory");
+    if (td != null) {
+      directoryTotals = td;
+    } else {
+      directoryTotals = false;
+    }
     Boolean dd = args.getBooleanArg("directoryDetails");
     if (dd != null) {
       directoryDetails = dd;
     } else {
       directoryDetails = false;
+    }
+    if (directoryDetails) {
+      directoryTotals = true;
     }
   }
 
@@ -107,7 +120,7 @@ public class MetricsDirectoryFactory extends DirectoryFactory implements SolrCor
   @Override
   protected Directory create(String path, LockFactory lockFactory, DirContext dirContext) throws IOException {
     Directory dir = in.create(path, lockFactory, dirContext);
-    return new MetricsDirectory(metricManager, registry, dir, directoryDetails);
+    return new MetricsDirectory(metricManager, registry, dir, directoryTotals, directoryDetails);
   }
 
   @Override
@@ -196,7 +209,7 @@ public class MetricsDirectoryFactory extends DirectoryFactory implements SolrCor
     if (dir instanceof MetricsDirectory) {
       return dir;
     } else {
-      return new MetricsDirectory(metricManager, registry, dir, directoryDetails);
+      return new MetricsDirectory(metricManager, registry, dir, directoryTotals, directoryDetails);
     }
   }
 
@@ -263,21 +276,31 @@ public class MetricsDirectoryFactory extends DirectoryFactory implements SolrCor
     private final Meter totalWrites;
     private final Histogram totalWriteSizes;
     private final boolean directoryDetails;
+    private final boolean directoryTotals;
 
     private final String PREFIX = SolrInfoMBean.Category.DIRECTORY.toString() + ".";
 
-    public MetricsDirectory(SolrMetricManager metricManager, String registry, Directory in, boolean directoryDetails) throws IOException {
+    public MetricsDirectory(SolrMetricManager metricManager, String registry, Directory in, boolean directoryTotals,
+                            boolean directoryDetails) throws IOException {
       super(in);
       this.metricManager = metricManager;
       this.registry = registry;
       this.in = in;
       this.directoryDetails = directoryDetails;
-      this.totalReads = metricManager.meter(registry, "reads", SolrInfoMBean.Category.DIRECTORY.toString(), "total");
-      this.totalWrites = metricManager.meter(registry, "writes", SolrInfoMBean.Category.DIRECTORY.toString(), "total");
-      if (directoryDetails) {
-        this.totalReadSizes = metricManager.histogram(registry, "readSizes", SolrInfoMBean.Category.DIRECTORY.toString(), "total");
-        this.totalWriteSizes = metricManager.histogram(registry, "writeSizes", SolrInfoMBean.Category.DIRECTORY.toString(), "total");
+      this.directoryTotals = directoryTotals;
+      if (directoryTotals) {
+        this.totalReads = metricManager.meter(registry, "reads", SolrInfoMBean.Category.DIRECTORY.toString(), "total");
+        this.totalWrites = metricManager.meter(registry, "writes", SolrInfoMBean.Category.DIRECTORY.toString(), "total");
+        if (directoryDetails) {
+          this.totalReadSizes = metricManager.histogram(registry, "readSizes", SolrInfoMBean.Category.DIRECTORY.toString(), "total");
+          this.totalWriteSizes = metricManager.histogram(registry, "writeSizes", SolrInfoMBean.Category.DIRECTORY.toString(), "total");
+        } else {
+          this.totalReadSizes = null;
+          this.totalWriteSizes = null;
+        }
       } else {
+        this.totalReads = null;
+        this.totalWrites = null;
         this.totalReadSizes = null;
         this.totalWriteSizes = null;
       }
@@ -312,6 +335,9 @@ public class MetricsDirectoryFactory extends DirectoryFactory implements SolrCor
     @Override
     public IndexOutput createOutput(String name, IOContext context) throws IOException {
       IndexOutput output = in.createOutput(name, context);
+      if (!directoryTotals) {
+        return output;
+      }
       if (output != null) {
         return new MetricsOutput(totalWrites, totalWriteSizes, metricManager, registry, getMetricName(name, true), output);
       } else {
@@ -322,6 +348,9 @@ public class MetricsDirectoryFactory extends DirectoryFactory implements SolrCor
     @Override
     public IndexOutput createTempOutput(String prefix, String suffix, IOContext context) throws IOException {
       IndexOutput output = in.createTempOutput(prefix, suffix, context);
+      if (!directoryTotals) {
+        return output;
+      }
       if (output != null) {
         return new MetricsOutput(totalWrites, totalWriteSizes, metricManager, registry, getMetricName(TEMP, true), output);
       } else {
@@ -332,6 +361,9 @@ public class MetricsDirectoryFactory extends DirectoryFactory implements SolrCor
     @Override
     public IndexInput openInput(String name, IOContext context) throws IOException {
       IndexInput input = in.openInput(name, context);
+      if (!directoryTotals) {
+        return input;
+      }
       if (input != null) {
         return new MetricsInput(totalReads, totalReadSizes, metricManager, registry, getMetricName(name, false), input);
       } else {

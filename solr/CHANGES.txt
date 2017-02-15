@@ -205,6 +205,28 @@ Other Changes
 * SOLR-9890: factor out ShardResultTransformerUtils.[un]marshSortValue methods
   (Judith Silverman, Christine Poerschke)
 
+==================  6.4.2 ==================
+
+Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release.
+
+Versions of Major Components
+---------------------
+Apache Tika 1.13
+Carrot2 3.15.0
+Velocity 1.7 and Velocity Tools 2.0
+Apache UIMA 2.3.1
+Apache ZooKeeper 3.4.6
+Jetty 9.3.14.v20161028
+
+Detailed Change List
+----------------------
+
+Bug Fixes
+----------------------
+* SOLR-10130: Serious performance degradation in Solr 6.4.1 due to the new metrics collection.
+  Default settings in solrconfig.xml /config/indexConfig/metrics have been changed to turn off
+  IndexWriter and Directory level metrics collection. (ab, ishan)
+
 ==================  6.4.1 ==================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release.
