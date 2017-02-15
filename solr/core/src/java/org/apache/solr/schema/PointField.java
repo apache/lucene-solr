@@ -24,15 +24,17 @@ import java.util.Collections;
 import java.util.List;
 
 import org.apache.lucene.document.NumericDocValuesField;
+import org.apache.lucene.document.SortedNumericDocValuesField;
 import org.apache.lucene.document.StoredField;
 import org.apache.lucene.index.IndexableField;
 import org.apache.lucene.queries.function.ValueSource;
 import org.apache.lucene.search.Query;
-import org.apache.lucene.search.SortedSetSelector;
+import org.apache.lucene.search.SortedNumericSelector;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.BytesRefBuilder;
 import org.apache.lucene.util.CharsRef;
 import org.apache.lucene.util.CharsRefBuilder;
+import org.apache.lucene.util.NumericUtils;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.response.TextResponseWriter;
 import org.apache.solr.search.QParser;
@@ -75,7 +77,7 @@ public abstract class PointField extends NumericFieldType {
     
     // multivalued Point fields all use SortedSetDocValues, so we give a clean error if that's
     // not supported by the specified choice, else we delegate to a helper
-    SortedSetSelector.Type selectorType = choice.getSortedSetSelectorType();
+    SortedNumericSelector.Type selectorType = choice.getSortedNumericSelectorType();
     if (null == selectorType) {
       throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,
                               choice.toString() + " is not a supported option for picking a single value"
@@ -95,9 +97,7 @@ public abstract class PointField extends NumericFieldType {
    * @param field the field to use, guaranteed to be multivalued.
    * @see #getSingleValueSource(MultiValueSelector,SchemaField,QParser) 
    */
-  protected ValueSource getSingleValueSource(SortedSetSelector.Type choice, SchemaField field) {
-    throw new UnsupportedOperationException("MultiValued Point fields with DocValues is not currently supported");
-  }
+  protected abstract ValueSource getSingleValueSource(SortedNumericSelector.Type choice, SchemaField field);
 
   @Override
   public boolean isTokenized() {
@@ -130,7 +130,7 @@ public abstract class PointField extends NumericFieldType {
   @Override
   public Query getRangeQuery(QParser parser, SchemaField field, String min, String max, boolean minInclusive,
       boolean maxInclusive) {
-    if (!field.indexed() && field.hasDocValues() && !field.multiValued()) {
+    if (!field.indexed() && field.hasDocValues()) {
       return getDocValuesRangeQuery(parser, field, min, max, minInclusive, maxInclusive);
     } else {
       return getPointRangeQuery(parser, field, min, max, minInclusive, maxInclusive);
@@ -203,10 +203,8 @@ public abstract class PointField extends NumericFieldType {
     fields.add(field);
     
     if (sf.hasDocValues()) {
-      if (sf.multiValued()) {
-        throw new UnsupportedOperationException("MultiValued Point fields with DocValues is not currently supported. Field: '" + sf.getName() + "'");
-      } else {
-        final long bits;
+      final long bits;
+      if (!sf.multiValued()) {
         if (field.numericValue() instanceof Integer || field.numericValue() instanceof Long) {
           bits = field.numericValue().longValue();
         } else if (field.numericValue() instanceof Float) {
@@ -216,8 +214,19 @@ public abstract class PointField extends NumericFieldType {
           bits = Double.doubleToLongBits(field.numericValue().doubleValue());
         }
         fields.add(new NumericDocValuesField(sf.getName(), bits));
+      } else {
+        // MultiValued
+        if (field.numericValue() instanceof Integer || field.numericValue() instanceof Long) {
+          bits = field.numericValue().longValue();
+        } else if (field.numericValue() instanceof Float) {
+          bits = NumericUtils.floatToSortableInt(field.numericValue().floatValue());
+        } else {
+          assert field.numericValue() instanceof Double;
+          bits = NumericUtils.doubleToSortableLong(field.numericValue().doubleValue());
+        }
+        fields.add(new SortedNumericDocValuesField(sf.getName(), bits));
       }
-    }
+    } 
     if (sf.stored()) {
       fields.add(getStoredField(sf, value));
     }

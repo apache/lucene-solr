@@ -688,7 +688,12 @@ public class RealTimeGetComponent extends SearchComponent
 
         if (sf != null && sf.multiValued()) {
           List<Object> vals = new ArrayList<>();
-          vals.add( f );
+          if (f.fieldType().docValuesType() == DocValuesType.SORTED_NUMERIC) {
+            // SORTED_NUMERICS store sortable bits version of the value, need to retrieve the original
+            vals.add(sf.getType().toObject(f));
+          } else {
+            vals.add( f );
+          }
           out.setField( f.name(), vals );
         }
         else{

@@ -136,7 +136,7 @@ public class V2HttpCall extends HttpSolrCall {
       if (isCompositeApi && apiInfo instanceof CompositeApi) {
         ((CompositeApi) this.api).add(apiInfo);
       } else {
-        api = apiInfo == null ? api : apiInfo;
+        api = apiInfo;
       }
       MDCLoggingContext.setCore(core);
       parseRequest();

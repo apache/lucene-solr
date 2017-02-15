@@ -36,7 +36,7 @@ public class CharacterRunAutomaton extends RunAutomaton {
    *   it then a TooComplexToDeterminizeException is thrown.
    */ 
   public CharacterRunAutomaton(Automaton a, int maxDeterminizedStates) {
-    super(a, Character.MAX_CODE_POINT, false, maxDeterminizedStates);
+    super(a, Character.MAX_CODE_POINT+1, maxDeterminizedStates);
   }
 
   /**

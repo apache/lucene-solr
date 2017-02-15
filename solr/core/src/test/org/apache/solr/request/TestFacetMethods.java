@@ -17,6 +17,9 @@
 
 package org.apache.solr.request;
 
+import static junit.framework.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
+
 import org.apache.solr.request.SimpleFacets.FacetMethod;
 import org.apache.solr.schema.BoolField;
 import org.apache.solr.schema.IntPointField;
@@ -24,8 +27,6 @@ import org.apache.solr.schema.SchemaField;
 import org.apache.solr.schema.StrField;
 import org.apache.solr.schema.TrieIntField;
 import org.junit.Test;
-
-import static junit.framework.Assert.assertEquals;
 
 public class TestFacetMethods {
 
@@ -210,6 +211,12 @@ public class TestFacetMethods {
   public void testPointFields() {
     // Methods other than FCS are not currently supported for PointFields
     SchemaField field = new SchemaField("foo", new IntPointField());
+    assertEquals(SimpleFacets.FacetMethod.FCS, SimpleFacets.selectFacetMethod(field, null, 0));
+    assertEquals(SimpleFacets.FacetMethod.FCS, SimpleFacets.selectFacetMethod(field, FacetMethod.ENUM, 0));
+    assertEquals(SimpleFacets.FacetMethod.FCS, SimpleFacets.selectFacetMethod(field, FacetMethod.FC, 0));
+    assertEquals(SimpleFacets.FacetMethod.FCS, SimpleFacets.selectFacetMethod(field, FacetMethod.FCS, 0));
+    field = new SchemaField("fooMV", new IntPointField(), 0x00000200, "0"); //MultiValued
+    assertTrue(field.multiValued());
     assertEquals(SimpleFacets.FacetMethod.FCS, SimpleFacets.selectFacetMethod(field, null, 0));
     assertEquals(SimpleFacets.FacetMethod.FCS, SimpleFacets.selectFacetMethod(field, FacetMethod.ENUM, 0));
     assertEquals(SimpleFacets.FacetMethod.FCS, SimpleFacets.selectFacetMethod(field, FacetMethod.FC, 0));

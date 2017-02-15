@@ -56,6 +56,7 @@ import org.apache.lucene.index.NumericDocValues;
 import org.apache.lucene.index.PostingsEnum;
 import org.apache.lucene.index.ReaderUtil;
 import org.apache.lucene.index.SortedDocValues;
+import org.apache.lucene.index.SortedNumericDocValues;
 import org.apache.lucene.index.SortedSetDocValues;
 import org.apache.lucene.index.StoredFieldVisitor;
 import org.apache.lucene.index.StoredFieldVisitor.Status;
@@ -98,6 +99,7 @@ import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.FixedBitSet;
+import org.apache.lucene.util.NumericUtils;
 import org.apache.solr.common.SolrDocumentBase;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
@@ -816,110 +818,136 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
         log.warn("Couldn't decorate docValues for field: [{}], schemaField: [{}]", fieldName, schemaField);
         continue;
       }
-
-      if (schemaField.multiValued()) {
-        final SortedSetDocValues values = leafReader.getSortedSetDocValues(fieldName);
-        if (values != null && values.getValueCount() > 0) {
-          if (values.advance(localId) == localId) {
-            final List<Object> outValues = new LinkedList<Object>();
-            for (long ord = values.nextOrd(); ord != SortedSetDocValues.NO_MORE_ORDS; ord = values.nextOrd()) {
-              final BytesRef value = values.lookupOrd(ord);
-              outValues.add(schemaField.getType().toObject(schemaField, value));
-            }
-            assert outValues.size() > 0;
-            doc.addField(fieldName, outValues);
+      FieldInfo fi = fieldInfos.fieldInfo(fieldName);
+      if (fi == null) {
+        continue; // Searcher doesn't have info about this field, hence ignore it.
+      }
+      final DocValuesType dvType = fi.getDocValuesType();
+      switch (dvType) {
+        case NUMERIC:
+          final NumericDocValues ndv = leafReader.getNumericDocValues(fieldName);
+          if (ndv == null) {
+            continue;
           }
-        }
-      } else {
-        FieldInfo fi = fieldInfos.fieldInfo(fieldName);
-        if (fi == null) {
-          continue; // Searcher doesn't have info about this field, hence ignore it.
-        }
-        final DocValuesType dvType = fi.getDocValuesType();
-        switch (dvType) {
-          case NUMERIC:
-            final NumericDocValues ndv = leafReader.getNumericDocValues(fieldName);
-            if (ndv == null) {
-              continue;
-            }
-            Long val;
-            if (ndv.advanceExact(localId)) {
-              val = ndv.longValue();
-            } else {
-              continue;
-            }
-            Object newVal = val;
-            if (schemaField.getType().isPointField()) {
-              NumberType type = schemaField.getType().getNumberType(); 
-              switch (type) {
-                case INTEGER:
-                  newVal = val.intValue();
-                  break;
-                case LONG:
-                  newVal = val.longValue();
-                  break;
-                case FLOAT:
-                  newVal = Float.intBitsToFloat(val.intValue());
-                  break;
-                case DOUBLE:
-                  newVal = Double.longBitsToDouble(val);
-                  break;
-                case DATE:
-                  newVal = new Date(val);
-                  break;
-                default:
-                  throw new AssertionError("Unexpected PointType: " + type);
-              }
-            } else {
-              if (schemaField.getType() instanceof TrieIntField) {
+          Long val;
+          if (ndv.advanceExact(localId)) {
+            val = ndv.longValue();
+          } else {
+            continue;
+          }
+          Object newVal = val;
+          if (schemaField.getType().isPointField()) {
+            // TODO: Maybe merge PointField with TrieFields here
+            NumberType type = schemaField.getType().getNumberType();
+            switch (type) {
+              case INTEGER:
                 newVal = val.intValue();
-              } else if (schemaField.getType() instanceof TrieFloatField) {
+                break;
+              case LONG:
+                newVal = val.longValue();
+                break;
+              case FLOAT:
                 newVal = Float.intBitsToFloat(val.intValue());
-              } else if (schemaField.getType() instanceof TrieDoubleField) {
+                break;
+              case DOUBLE:
                 newVal = Double.longBitsToDouble(val);
-              } else if (schemaField.getType() instanceof TrieDateField) {
+                break;
+              case DATE:
                 newVal = new Date(val);
-              } else if (schemaField.getType() instanceof EnumField) {
-                newVal = ((EnumField) schemaField.getType()).intValueToStringValue(val.intValue());
-              }
+                break;
+              default:
+                throw new AssertionError("Unexpected PointType: " + type);
             }
-            doc.addField(fieldName, newVal);
-            break;
-          case BINARY:
-            BinaryDocValues bdv = leafReader.getBinaryDocValues(fieldName);
-            if (bdv == null) {
-              continue;
+          } else {
+            if (schemaField.getType() instanceof TrieIntField) {
+              newVal = val.intValue();
+            } else if (schemaField.getType() instanceof TrieFloatField) {
+              newVal = Float.intBitsToFloat(val.intValue());
+            } else if (schemaField.getType() instanceof TrieDoubleField) {
+              newVal = Double.longBitsToDouble(val);
+            } else if (schemaField.getType() instanceof TrieDateField) {
+              newVal = new Date(val);
+            } else if (schemaField.getType() instanceof EnumField) {
+              newVal = ((EnumField) schemaField.getType()).intValueToStringValue(val.intValue());
             }
-            BytesRef value;
-            if (bdv.advanceExact(localId)) {
-              value = BytesRef.deepCopyOf(bdv.binaryValue());
+          }
+          doc.addField(fieldName, newVal);
+          break;
+        case BINARY:
+          BinaryDocValues bdv = leafReader.getBinaryDocValues(fieldName);
+          if (bdv == null) {
+            continue;
+          }
+          BytesRef value;
+          if (bdv.advanceExact(localId)) {
+            value = BytesRef.deepCopyOf(bdv.binaryValue());
+          } else {
+            continue;
+          }
+          doc.addField(fieldName, value);
+          break;
+        case SORTED:
+          SortedDocValues sdv = leafReader.getSortedDocValues(fieldName);
+          if (sdv == null) {
+            continue;
+          }
+          if (sdv.advanceExact(localId)) {
+            final BytesRef bRef = sdv.binaryValue();
+            // Special handling for Boolean fields since they're stored as 'T' and 'F'.
+            if (schemaField.getType() instanceof BoolField) {
+              doc.addField(fieldName, schemaField.getType().toObject(schemaField, bRef));
             } else {
-              continue;
+              doc.addField(fieldName, bRef.utf8ToString());
             }
-            doc.addField(fieldName, value);
-            break;
-          case SORTED:
-            SortedDocValues sdv = leafReader.getSortedDocValues(fieldName);
-            if (sdv == null) {
-              continue;
-            }
-            if (sdv.advanceExact(localId)) {
-              final BytesRef bRef = sdv.binaryValue();
-              // Special handling for Boolean fields since they're stored as 'T' and 'F'.
-              if (schemaField.getType() instanceof BoolField) {
-                doc.addField(fieldName, schemaField.getType().toObject(schemaField, bRef));
-              } else {
-                doc.addField(fieldName, bRef.utf8ToString());
+          }
+          break;
+        case SORTED_NUMERIC:
+          final SortedNumericDocValues numericDv = leafReader.getSortedNumericDocValues(fieldName);
+          NumberType type = schemaField.getType().getNumberType();
+          if (numericDv != null) {
+            if (numericDv.advance(localId) == localId) {
+              final List<Object> outValues = new ArrayList<Object>(numericDv.docValueCount());
+              for (int i = 0; i < numericDv.docValueCount(); i++) {
+                long number = numericDv.nextValue();
+                switch (type) {
+                  case INTEGER:
+                    outValues.add((int)number);
+                    break;
+                  case LONG:
+                    outValues.add(number);
+                    break;
+                  case FLOAT:
+                    outValues.add(NumericUtils.sortableIntToFloat((int)number));
+                    break;
+                  case DOUBLE:
+                    outValues.add(NumericUtils.sortableLongToDouble(number));
+                    break;
+                  case DATE:
+                    newVal = new Date(number);
+                    break;
+                  default:
+                    throw new AssertionError("Unexpected PointType: " + type);
+                }
               }
+              assert outValues.size() > 0;
+              doc.addField(fieldName, outValues);
             }
-            break;
-          case SORTED_NUMERIC:
-            throw new AssertionError("SORTED_NUMERIC not supported yet!");
-          case SORTED_SET:
-            throw new AssertionError("SORTED_SET fields should be multi-valued!");
-          case NONE:
-            break;
-        }
+          }
+        case SORTED_SET:
+          final SortedSetDocValues values = leafReader.getSortedSetDocValues(fieldName);
+          if (values != null && values.getValueCount() > 0) {
+            if (values.advance(localId) == localId) {
+              final List<Object> outValues = new LinkedList<Object>();
+              for (long ord = values.nextOrd(); ord != SortedSetDocValues.NO_MORE_ORDS; ord = values.nextOrd()) {
+                value = values.lookupOrd(ord);
+                outValues.add(schemaField.getType().toObject(schemaField, value));
+              }
+              assert outValues.size() > 0;
+              doc.addField(fieldName, outValues);
+            }
+          }
+        case NONE:
+          break;
       }
     }
   }

@@ -416,7 +416,7 @@ public class StatsField {
       return StatsValuesFactory.createStatsValues(this);
     }
 
-    if (null != schemaField 
+    if (null != schemaField && !schemaField.getType().isPointField()
         && (schemaField.multiValued() || schemaField.getType().multiValuedFieldCache())) {
 
       // TODO: should this also be used for single-valued string fields? (should work fine)

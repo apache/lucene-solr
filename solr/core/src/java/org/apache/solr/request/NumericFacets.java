@@ -32,12 +32,14 @@ import org.apache.lucene.index.FilterNumericDocValues;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.NumericDocValues;
 import org.apache.lucene.index.ReaderUtil;
+import org.apache.lucene.index.SortedNumericDocValues;
 import org.apache.lucene.index.Terms;
 import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.queries.function.FunctionValues;
 import org.apache.lucene.queries.function.ValueSource;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.CharsRefBuilder;
+import org.apache.lucene.util.NumericUtils;
 import org.apache.lucene.util.PriorityQueue;
 import org.apache.lucene.util.StringHelper;
 import org.apache.solr.common.params.FacetParams;
@@ -61,16 +63,18 @@ final class NumericFacets {
 
     long[] bits; // bits identifying a value
     int[] counts;
-    int[] docIDs;
+    int[] docIDs; //Will be null if HashTable is created with needsDocId=false
     int mask;
     int size;
     int threshold;
 
-    HashTable() {
+    HashTable(boolean needsDocId) {
       final int capacity = 64; // must be a power of 2
       bits = new long[capacity];
       counts = new int[capacity];
-      docIDs = new int[capacity];
+      if (needsDocId) {
+        docIDs = new int[capacity];
+      }
       mask = capacity - 1;
       size = 0;
       threshold = (int) (capacity * LOAD_FACTOR);
@@ -99,6 +103,23 @@ final class NumericFacets {
         break;
       }
     }
+    
+    void add(long value, int count) {
+      if (size >= threshold) {
+        rehash();
+      }
+      final int h = hash(value);
+      for (int slot = h; ; slot = (slot + 1) & mask) {
+        if (counts[slot] == 0) {
+          bits[slot] = value;
+          ++size;
+        } else if (bits[slot] != value) {
+          continue;
+        }
+        counts[slot] += count;
+        break;
+      }
+    }
 
     private void rehash() {
       final long[] oldBits = bits;
@@ -108,14 +129,24 @@ final class NumericFacets {
       final int newCapacity = bits.length * 2;
       bits = new long[newCapacity];
       counts = new int[newCapacity];
-      docIDs = new int[newCapacity];
+      if (oldDocIDs!= null) {
+        docIDs = new int[newCapacity];
+      }
       mask = newCapacity - 1;
       threshold = (int) (LOAD_FACTOR * newCapacity);
       size = 0;
 
-      for (int i = 0; i < oldBits.length; ++i) {
-        if (oldCounts[i] > 0) {
-          add(oldDocIDs[i], oldBits[i], oldCounts[i]);
+      if (oldDocIDs!= null) {
+        for (int i = 0; i < oldBits.length; ++i) {
+          if (oldCounts[i] > 0) {
+            add(oldDocIDs[i], oldBits[i], oldCounts[i]);
+          }
+        }
+      } else {
+        for (int i = 0; i < oldBits.length; ++i) {
+          if (oldCounts[i] > 0) {
+            add(oldBits[i], oldCounts[i]);
+          }
         }
       }
     }
@@ -129,7 +160,16 @@ final class NumericFacets {
   }
 
   public static NamedList<Integer> getCounts(SolrIndexSearcher searcher, DocSet docs, String fieldName, int offset, int limit, int mincount, boolean missing, String sort) throws IOException {
-    final boolean zeros = mincount <= 0;
+    final SchemaField sf = searcher.getSchema().getField(fieldName);
+    if (sf.multiValued()) {
+      // TODO: evaluate using getCountsMultiValued for singleValued numerics with SingletonSortedNumericDocValues
+      return getCountsMultiValued(searcher, docs, fieldName, offset, limit, mincount, missing, sort);
+    }
+    return getCountsSingleValue(searcher, docs, fieldName, offset, limit, mincount, missing, sort);
+  }
+  
+  private static NamedList<Integer> getCountsSingleValue(SolrIndexSearcher searcher, DocSet docs, String fieldName, int offset, int limit, int mincount, boolean missing, String sort) throws IOException {
+    boolean zeros = mincount <= 0;
     mincount = Math.max(mincount, 1);
     final SchemaField sf = searcher.getSchema().getField(fieldName);
     final FieldType ft = sf.getType();
@@ -137,10 +177,11 @@ final class NumericFacets {
     if (numericType == null) {
       throw new IllegalStateException();
     }
+    zeros = zeros && !ft.isPointField() && sf.indexed(); // We don't return zeros when using PointFields or when index=false
     final List<LeafReaderContext> leaves = searcher.getIndexReader().leaves();
 
     // 1. accumulate
-    final HashTable hashTable = new HashTable();
+    final HashTable hashTable = new HashTable(true);
     final Iterator<LeafReaderContext> ctxIt = leaves.iterator();
     LeafReaderContext ctx = null;
     NumericDocValues longs = null;
@@ -361,6 +402,120 @@ final class NumericFacets {
       result.add(null, missingCount);
     }
     return result;
+  }
+
+  private static NamedList<Integer> getCountsMultiValued(SolrIndexSearcher searcher, DocSet docs, String fieldName, int offset, int limit, int mincount, boolean missing, String sort) throws IOException {
+    // If facet.mincount=0 with PointFields the only option is to get the values from DocValues
+    // not currently supported. See SOLR-10033
+    mincount = Math.max(mincount, 1);
+    final SchemaField sf = searcher.getSchema().getField(fieldName);
+    final FieldType ft = sf.getType();
+    assert sf.multiValued();
+    final List<LeafReaderContext> leaves = searcher.getIndexReader().leaves();
+
+    // 1. accumulate
+    final HashTable hashTable = new HashTable(false);
+    final Iterator<LeafReaderContext> ctxIt = leaves.iterator();
+    LeafReaderContext ctx = null;
+    SortedNumericDocValues longs = null;
+    int missingCount = 0;
+    for (DocIterator docsIt = docs.iterator(); docsIt.hasNext(); ) {
+      final int doc = docsIt.nextDoc();
+      if (ctx == null || doc >= ctx.docBase + ctx.reader().maxDoc()) {
+        do {
+          ctx = ctxIt.next();
+        } while (ctx == null || doc >= ctx.docBase + ctx.reader().maxDoc());
+        assert doc >= ctx.docBase;
+        longs = DocValues.getSortedNumeric(ctx.reader(), fieldName);
+      }
+      int valuesDocID = longs.docID();
+      if (valuesDocID < doc - ctx.docBase) {
+        valuesDocID = longs.advance(doc - ctx.docBase);
+      }
+      if (valuesDocID == doc - ctx.docBase) {
+        long l = longs.nextValue(); // This document must have at least one value
+        hashTable.add(l, 1);
+        for (int i = 1; i < longs.docValueCount(); i++) {
+          long lnew = longs.nextValue();
+          if (lnew > l) { // Skip the value if it's equal to the last one, we don't want to double-count it
+            hashTable.add(lnew, 1);
+          }
+          l = lnew;
+         }
+        
+      } else {
+        ++missingCount;
+      }
+    }
+
+    // 2. select top-k facet values
+    final int pqSize = limit < 0 ? hashTable.size : Math.min(offset + limit, hashTable.size);
+    final PriorityQueue<Entry> pq;
+    if (FacetParams.FACET_SORT_COUNT.equals(sort) || FacetParams.FACET_SORT_COUNT_LEGACY.equals(sort)) {
+      pq = new PriorityQueue<Entry>(pqSize) {
+        @Override
+        protected boolean lessThan(Entry a, Entry b) {
+          if (a.count < b.count || (a.count == b.count && a.bits > b.bits)) {
+            return true;
+          } else {
+            return false;
+          }
+        }
+      };
+    } else {
+      // sort=index
+      pq = new PriorityQueue<Entry>(pqSize) {
+        @Override
+        protected boolean lessThan(Entry a, Entry b) {
+          return a.bits > b.bits;
+        }
+      };
+    }
+    Entry e = null;
+    for (int i = 0; i < hashTable.bits.length; ++i) {
+      if (hashTable.counts[i] >= mincount) {
+        if (e == null) {
+          e = new Entry();
+        }
+        e.bits = hashTable.bits[i];
+        e.count = hashTable.counts[i];
+        e = pq.insertWithOverflow(e);
+      }
+    }
+
+    // 4. build the NamedList
+    final NamedList<Integer> result = new NamedList<>(Math.max(pq.size() - offset + 1, 1));
+    final Deque<Entry> counts = new ArrayDeque<>(pq.size() - offset);
+    while (pq.size() > offset) {
+      counts.addFirst(pq.pop());
+    }
+    
+    for (Entry entry : counts) {
+      result.add(bitsToStringValue(ft, entry.bits), entry.count); // TODO: convert to correct value
+    }
+    
+    // Once facet.mincount=0 is supported we'll need to add logic similar to the SingleValue case, but obtaining values
+    // with count 0 from DocValues
+
+    if (missing) {
+      result.add(null, missingCount);
+    }
+    return result;
+  }
+
+  private static String bitsToStringValue(FieldType fieldType, long bits) {
+    switch (fieldType.getNumberType()) {
+      case LONG:
+      case INTEGER:
+        return String.valueOf(bits);
+      case FLOAT:
+        return String.valueOf(NumericUtils.sortableIntToFloat((int)bits));
+      case DOUBLE:
+        return String.valueOf(NumericUtils.sortableLongToDouble(bits));
+        //TODO: DATE
+      default:
+        throw new AssertionError("Unsupported NumberType: " + fieldType.getNumberType());
+    }
   }
 
 }
