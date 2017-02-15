@@ -94,7 +94,10 @@ public class BlockCache {
     }
     int bankId = location.getBankId();
     int block = location.getBlock();
+
+    // mark the block removed before we release the lock to allow it to be reused
     location.setRemoved(true);
+
     locks[bankId].clear(block);
     lockCounters[bankId].decrementAndGet();
     for (OnRelease onRelease : onReleases) {
@@ -105,7 +108,8 @@ public class BlockCache {
   }
 
   /**
-   * This is only best-effort... it's possible for false to be returned.
+   * This is only best-effort... it's possible for false to be returned, meaning the block was not able to be cached.
+   * NOTE: blocks may not currently be updated (false will be returned if the block is already cached)
    * The blockCacheKey is cloned before it is inserted into the map, so it may be reused by clients if desired.
    *
    * @param blockCacheKey the key for the block
@@ -123,9 +127,7 @@ public class BlockCache {
           + blockOffset + "]");
     }
     BlockCacheLocation location = cache.getIfPresent(blockCacheKey);
-    boolean newLocation = false;
     if (location == null) {
-      newLocation = true;
       location = new BlockCacheLocation();
       if (!findEmptyLocation(location)) {
         // YCS: it looks like when the cache is full (a normal scenario), then two concurrent writes will result in one of them failing
@@ -133,11 +135,12 @@ public class BlockCache {
         // TODO: simplest fix would be to leave more than one block empty
         return false;
       }
-    }
-
-    // YCS: I think this means that the block existed, but it is in the process of being
-    // concurrently removed.  This flag is set in the releaseLocation eviction listener.
-    if (location.isRemoved()) {
+    } else {
+      // If we allocated a new block, then it has never been published and is thus never in danger of being concurrently removed.
+      // On the other hand, if this is an existing block we are updating, it may concurrently be removed and reused for another
+      // purpose (and then our write may overwrite that).  This can happen even if clients never try to update existing blocks,
+      // since two clients can try to cache the same block concurrently.  Because of this, the ability to update an existing
+      // block has been removed for the time being (see SOLR-10121).
       return false;
     }
 
@@ -146,10 +149,10 @@ public class BlockCache {
     ByteBuffer bank = getBank(bankId);
     bank.position(bankOffset + blockOffset);
     bank.put(data, offset, length);
-    if (newLocation) {
-      cache.put(blockCacheKey.clone(), location);
-      metrics.blockCacheSize.incrementAndGet();
-    }
+
+    // make sure all modifications to the block have been completed before we publish it.
+    cache.put(blockCacheKey.clone(), location);
+    metrics.blockCacheSize.incrementAndGet();
     return true;
   }
 
@@ -167,16 +170,20 @@ public class BlockCache {
     if (location == null) {
       return false;
     }
-    if (location.isRemoved()) {
-      // location is in the process of being removed and the block may have already been reused by this point.
-      return false;
-    }
+
     int bankId = location.getBankId();
     int bankOffset = location.getBlock() * blockSize;
     location.touch();
     ByteBuffer bank = getBank(bankId);
     bank.position(bankOffset + blockOffset);
     bank.get(buffer, off, length);
+
+    if (location.isRemoved()) {
+      // must check *after* the read is done since the bank may have been reused for another block
+      // before or during the read.
+      return false;
+    }
+
     return true;
   }
   

@@ -25,6 +25,7 @@ import org.apache.lucene.util.LuceneTestCase;
 import org.junit.Test;
 
 public class BlockCacheTest extends LuceneTestCase {
+
   @Test
   public void testBlockCache() {
     int blocksInTest = 2000000;
@@ -60,8 +61,9 @@ public class BlockCacheTest extends LuceneTestCase {
 
       byte[] testData = testData(random, blockSize, newData);
       long t1 = System.nanoTime();
-      blockCache.store(blockCacheKey, 0, testData, 0, blockSize);
+      boolean success = blockCache.store(blockCacheKey, 0, testData, 0, blockSize);
       storeTime += (System.nanoTime() - t1);
+      if (!success) continue;  // for now, updating existing blocks is not supported... see SOLR-10121
 
       long t3 = System.nanoTime();
       if (blockCache.fetch(blockCacheKey, buffer)) {
@@ -74,33 +76,6 @@ public class BlockCacheTest extends LuceneTestCase {
     System.out.println("Store         = " + (storeTime / (double) passes) / 1000000.0);
     System.out.println("Fetch         = " + (fetchTime / (double) passes) / 1000000.0);
     System.out.println("# of Elements = " + blockCache.getSize());
-  }
-
-  /**
-   * Verify checking of buffer size limits against the cached block size.
-   */
-  @Test
-  public void testLongBuffer() {
-    Random random = random();
-    int blockSize = BlockCache._32K;
-    int slabSize = blockSize * 1024;
-    long totalMemory = 2 * slabSize;
-
-    BlockCache blockCache = new BlockCache(new Metrics(), true, totalMemory, slabSize);
-    BlockCacheKey blockCacheKey = new BlockCacheKey();
-    blockCacheKey.setBlock(0);
-    blockCacheKey.setFile(0);
-    blockCacheKey.setPath("/");
-    byte[] newData = new byte[blockSize*3];
-    byte[] testData = testData(random, blockSize, newData);
-
-    assertTrue(blockCache.store(blockCacheKey, 0, testData, 0, blockSize));
-    assertTrue(blockCache.store(blockCacheKey, 0, testData, blockSize, blockSize));
-    assertTrue(blockCache.store(blockCacheKey, 0, testData, blockSize*2, blockSize));
-
-    assertTrue(blockCache.store(blockCacheKey, 1, testData, 0, blockSize - 1));
-    assertTrue(blockCache.store(blockCacheKey, 1, testData, blockSize, blockSize - 1));
-    assertTrue(blockCache.store(blockCacheKey, 1, testData, blockSize*2, blockSize - 1));
   }
 
   private static byte[] testData(Random random, int size, byte[] buf) {
@@ -123,22 +98,23 @@ public class BlockCacheTest extends LuceneTestCase {
   public void testBlockCacheConcurrent() throws Exception {
     Random rnd = random();
 
+    final int blocksInTest = 400;  // pick something bigger than 256, since that would lead to a slab size of 64 blocks and the bitset locks would consist of a single word.
+    final int blockSize = 64;
+    final int slabSize = blocksInTest * blockSize / 4;
+    final long totalMemory = 2 * slabSize;  // 2 slabs of memory, so only half of what is needed for all blocks
+
     /***
-    final int blocksInTest = 256;
-    final int blockSize = 1024;
-    final int slabSize = blockSize * 128;
-    final long totalMemory = 2 * slabSize;
-    ***/
+     final int blocksInTest = 16384;  // pick something bigger than 256, since that would lead to a slab size of 64 blocks and the bitset locks would consist of a single word.
+     final int blockSize = 1024;
+     final int slabSize = blocksInTest * blockSize / 4;
+     final long totalMemory = 2 * slabSize;  // 2 slabs of memory, so only half of what is needed for all blocks
+     ***/
 
-    final int blocksInTest = 16384;  // pick something that won't fit in memory, but is small enough to cause a medium hit rate.  16MB of blocks is double the total memory size of the cache.
-    final int blockSize = 1024;
-    final int slabSize = blockSize * 4096;
-    final long totalMemory = 2 * slabSize;  // should give us 2 slabs (8MB)
-
-    final int nThreads=2;
+    final int nThreads=64;
     final int nReads=1000000;
     final int readsPerThread=nReads/nThreads;
     final int readLastBlockOdds=10; // odds (1 in N) of the next block operation being on the same block as the previous operation... helps flush concurrency issues
+    final int showErrors=50; // show first 50 validation failures
 
     final BlockCache blockCache = new BlockCache(new Metrics(), true, totalMemory, slabSize, blockSize);
 
@@ -147,6 +123,7 @@ public class BlockCacheTest extends LuceneTestCase {
     final AtomicLong missesInCache = new AtomicLong();
     final AtomicLong storeFails = new AtomicLong();
     final AtomicLong lastBlock = new AtomicLong();
+    final AtomicLong validateFails = new AtomicLong(0);
 
     final int file = 0;
 
@@ -158,7 +135,7 @@ public class BlockCacheTest extends LuceneTestCase {
 
       threads[i] = new Thread() {
         Random r;
-        BlockCacheKey blockCacheKey = new BlockCacheKey();
+        BlockCacheKey blockCacheKey;
         byte[] buffer = new byte[blockSize];
 
         @Override
@@ -201,8 +178,9 @@ public class BlockCacheTest extends LuceneTestCase {
             for (int i = 0; i < len; i++) {
               long globalPos = globalOffset + i;
               if (buffer[i] != getByte(globalPos)) {
-                System.out.println("ERROR: read was " + "block=" + block + " blockOffset=" + blockOffset + " len=" + len + " globalPos=" + globalPos + " localReadOffset=" + i + " got=" + buffer[i] + " expected=" + getByte(globalPos));
                 failed.set(true);
+                if (validateFails.incrementAndGet() <= showErrors) System.out.println("ERROR: read was " + "block=" + block + " blockOffset=" + blockOffset + " len=" + len + " globalPos=" + globalPos + " localReadOffset=" + i + " got=" + buffer[i] + " expected=" + getByte(globalPos));
+                break;
               }
             }
           } else {
@@ -236,6 +214,7 @@ public class BlockCacheTest extends LuceneTestCase {
     System.out.println("Cache Hits = " + hitsInCache.get());
     System.out.println("Cache Misses = " + missesInCache.get());
     System.out.println("Cache Store Fails = " + storeFails.get());
+    System.out.println("Blocks with Errors = " + validateFails.get());
 
     assertFalse( failed.get() );
   }
