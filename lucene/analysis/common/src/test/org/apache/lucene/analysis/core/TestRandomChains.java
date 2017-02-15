@@ -499,7 +499,7 @@ public class TestRandomChains extends BaseTokenStreamTestCase {
         return DateFormat.getDateInstance(DateFormat.DEFAULT, randomLocale(random));
     });
     put(Automaton.class, random -> {
-        return Operations.determinize(new RegExp(AutomatonTestUtil.randomRegexp(random()), RegExp.NONE).toAutomaton(), Operations.DEFAULT_MAX_DETERMINIZED_STATES);
+        return Operations.determinize(new RegExp(AutomatonTestUtil.randomRegexp(random), RegExp.NONE).toAutomaton(), Operations.DEFAULT_MAX_DETERMINIZED_STATES);
     });
   }};
   
