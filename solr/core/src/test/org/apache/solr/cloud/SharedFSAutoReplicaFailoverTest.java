@@ -85,6 +85,7 @@ public class SharedFSAutoReplicaFailoverTest extends AbstractFullDistribZkTestBa
   
   @BeforeClass
   public static void hdfsFailoverBeforeClass() throws Exception {
+    System.setProperty("solr.hdfs.blockcache.blocksperbank", "512");
     dfsCluster = HdfsTestUtil.setupClass(createTempDir().toFile().getAbsolutePath());
     schemaString = "schema15.xml"; 
   }
@@ -92,6 +93,7 @@ public class SharedFSAutoReplicaFailoverTest extends AbstractFullDistribZkTestBa
   @AfterClass
   public static void hdfsFailoverAfterClass() throws Exception {
     HdfsTestUtil.teardownClass(dfsCluster);
+    System.clearProperty("solr.hdfs.blockcache.blocksperbank");
     dfsCluster = null;
   }
 
