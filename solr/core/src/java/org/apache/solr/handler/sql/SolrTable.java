@@ -35,15 +35,16 @@ import org.apache.solr.client.solrj.io.comp.StreamComparator;
 import org.apache.solr.client.solrj.io.eq.FieldEqualitor;
 import org.apache.solr.client.solrj.io.eq.MultipleFieldEqualitor;
 import org.apache.solr.client.solrj.io.eq.StreamEqualitor;
-import org.apache.solr.client.solrj.io.ops.AndOperation;
-import org.apache.solr.client.solrj.io.ops.BooleanOperation;
-import org.apache.solr.client.solrj.io.ops.EqualsOperation;
-import org.apache.solr.client.solrj.io.ops.GreaterThanEqualToOperation;
-import org.apache.solr.client.solrj.io.ops.GreaterThanOperation;
-import org.apache.solr.client.solrj.io.ops.LessThanEqualToOperation;
-import org.apache.solr.client.solrj.io.ops.LessThanOperation;
-import org.apache.solr.client.solrj.io.ops.NotOperation;
-import org.apache.solr.client.solrj.io.ops.OrOperation;
+import org.apache.solr.client.solrj.io.eval.AndEvaluator;
+import org.apache.solr.client.solrj.io.eval.BooleanEvaluator;
+import org.apache.solr.client.solrj.io.eval.EqualsEvaluator;
+import org.apache.solr.client.solrj.io.eval.GreaterThanEqualToEvaluator;
+import org.apache.solr.client.solrj.io.eval.GreaterThanEvaluator;
+import org.apache.solr.client.solrj.io.eval.LessThanEqualToEvaluator;
+import org.apache.solr.client.solrj.io.eval.LessThanEvaluator;
+import org.apache.solr.client.solrj.io.eval.NotEvaluator;
+import org.apache.solr.client.solrj.io.eval.OrEvaluator;
+import org.apache.solr.client.solrj.io.eval.RawValueEvaluator;
 import org.apache.solr.client.solrj.io.stream.*;
 import org.apache.solr.client.solrj.io.stream.expr.StreamExpressionParser;
 import org.apache.solr.client.solrj.io.stream.expr.StreamFactory;
@@ -483,18 +484,19 @@ class SolrTable extends AbstractQueryableTable implements TranslatableTable {
         .withFunctionName("max", MaxMetric.class)
         .withFunctionName("avg", MeanMetric.class)
         .withFunctionName("count", CountMetric.class)
-        .withFunctionName("and", AndOperation.class)
-        .withFunctionName("or", OrOperation.class)
-        .withFunctionName("not", NotOperation.class)
-        .withFunctionName("eq", EqualsOperation.class)
-        .withFunctionName("gt", GreaterThanOperation.class)
-        .withFunctionName("lt", LessThanOperation.class)
-        .withFunctionName("lteq", LessThanEqualToOperation.class)
+        .withFunctionName("and", AndEvaluator.class)
+        .withFunctionName("or", OrEvaluator.class)
+        .withFunctionName("not", NotEvaluator.class)
+        .withFunctionName("eq", EqualsEvaluator.class)
+        .withFunctionName("gt", GreaterThanEvaluator.class)
+        .withFunctionName("lt", LessThanEvaluator.class)
+        .withFunctionName("val", RawValueEvaluator.class)
+        .withFunctionName("lteq", LessThanEqualToEvaluator.class)
         .withFunctionName("having", HavingStream.class)
-        .withFunctionName("gteq", GreaterThanEqualToOperation.class);
+        .withFunctionName("gteq", GreaterThanEqualToEvaluator.class);
 
     if(havingPredicate != null) {
-      BooleanOperation booleanOperation = (BooleanOperation)factory.constructOperation(StreamExpressionParser.parse(havingPredicate));
+      BooleanEvaluator booleanOperation = (BooleanEvaluator)factory.constructEvaluator(StreamExpressionParser.parse(havingPredicate));
       tupleStream = new HavingStream(tupleStream, booleanOperation);
     }
 
@@ -605,17 +607,18 @@ class SolrTable extends AbstractQueryableTable implements TranslatableTable {
         .withFunctionName("max", MaxMetric.class)
         .withFunctionName("avg", MeanMetric.class)
         .withFunctionName("count", CountMetric.class)
-        .withFunctionName("and", AndOperation.class)
-        .withFunctionName("or", OrOperation.class)
-        .withFunctionName("not", NotOperation.class)
-        .withFunctionName("eq", EqualsOperation.class)
-        .withFunctionName("gt", GreaterThanOperation.class)
-        .withFunctionName("lt", LessThanOperation.class)
-        .withFunctionName("lteq", LessThanEqualToOperation.class)
-        .withFunctionName("gteq", GreaterThanEqualToOperation.class);
+        .withFunctionName("and", AndEvaluator.class)
+        .withFunctionName("or", OrEvaluator.class)
+        .withFunctionName("not", NotEvaluator.class)
+        .withFunctionName("eq", EqualsEvaluator.class)
+        .withFunctionName("val", RawValueEvaluator.class)
+        .withFunctionName("gt", GreaterThanEvaluator.class)
+        .withFunctionName("lt", LessThanEvaluator.class)
+        .withFunctionName("lteq", LessThanEqualToEvaluator.class)
+        .withFunctionName("gteq", GreaterThanEqualToEvaluator.class);
 
     if(havingPredicate != null) {
-      BooleanOperation booleanOperation = (BooleanOperation)factory.constructOperation(StreamExpressionParser.parse(havingPredicate));
+      BooleanEvaluator booleanOperation = (BooleanEvaluator)factory.constructEvaluator(StreamExpressionParser.parse(havingPredicate));
       tupleStream = new HavingStream(tupleStream, booleanOperation);
     }
 

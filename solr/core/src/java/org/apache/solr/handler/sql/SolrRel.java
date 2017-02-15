@@ -20,7 +20,6 @@ import org.apache.calcite.plan.Convention;
 import org.apache.calcite.plan.RelOptTable;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.util.Pair;
-import org.apache.solr.client.solrj.io.ops.BooleanOperation;
 
 import java.util.*;
 
