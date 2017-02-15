@@ -26,7 +26,7 @@ import com.codahale.metrics.Timer;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.request.SolrQueryRequest;
-import org.junit.BeforeClass;
+import org.junit.After;
 import org.junit.Test;
 
 /**
@@ -34,15 +34,12 @@ import org.junit.Test;
  */
 public class SolrIndexMetricsTest extends SolrTestCaseJ4 {
 
-  @BeforeClass
-  public static void beforeClass() throws Exception {
-    System.setProperty("solr.tests.mergeDetails", "true");
-    System.setProperty("solr.tests.directoryDetails", "true");
-    initCore("solrconfig-indexmetrics.xml", "schema.xml");
+  @After
+  public void afterMethod() throws Exception {
+    deleteCore();
   }
 
-  @Test
-  public void testIndexMetrics() throws Exception {
+  private void addDocs() throws Exception {
     SolrQueryRequest req = lrf.makeRequest();
     UpdateHandler uh = req.getCore().getUpdateHandler();
     AddUpdateCommand add = new AddUpdateCommand(req);
@@ -54,10 +51,86 @@ public class SolrIndexMetricsTest extends SolrTestCaseJ4 {
       uh.addDoc(add);
     }
     uh.commit(new CommitUpdateCommand(req, false));
-    MetricRegistry registry = h.getCoreContainer().getMetricManager().registry(h.getCore().getCoreMetricManager().getRegistryName());
-    assertNotNull(registry);
     // make sure all merges are finished
     h.reload();
+  }
+
+  @Test
+  public void testIndexMetricsNoDetails() throws Exception {
+    System.setProperty("solr.tests.metrics.merge", "true");
+    System.setProperty("solr.tests.metrics.mergeDetails", "false");
+    System.setProperty("solr.tests.metrics.directory", "true");
+    System.setProperty("solr.tests.metrics.directoryDetails", "false");
+    initCore("solrconfig-indexmetrics.xml", "schema.xml");
+
+    addDocs();
+
+    MetricRegistry registry = h.getCoreContainer().getMetricManager().registry(h.getCore().getCoreMetricManager().getRegistryName());
+    assertNotNull(registry);
+
+    Map<String, Metric> metrics = registry.getMetrics();
+
+    assertEquals(10, metrics.entrySet().stream().filter(e -> e.getKey().startsWith("INDEX")).count());
+    assertEquals(2, metrics.entrySet().stream().filter(e -> e.getKey().startsWith("DIRECTORY")).count());
+
+    // check basic index meters
+    Timer timer = (Timer)metrics.get("INDEX.merge.minor");
+    assertTrue("minorMerge: " + timer.getCount(), timer.getCount() >= 3);
+    timer = (Timer)metrics.get("INDEX.merge.major");
+    assertEquals("majorMerge: " + timer.getCount(), 0, timer.getCount());
+    // check detailed meters
+    assertNull((Meter)metrics.get("INDEX.merge.major.docs"));
+    Meter meter = (Meter)metrics.get("INDEX.flush");
+    assertTrue("flush: " + meter.getCount(), meter.getCount() > 10);
+
+    // check basic directory meters
+    meter = (Meter)metrics.get("DIRECTORY.total.reads");
+    assertTrue("totalReads", meter.getCount() > 0);
+    meter = (Meter)metrics.get("DIRECTORY.total.writes");
+    assertTrue("totalWrites", meter.getCount() > 0);
+    // check detailed meters
+    Histogram histogram = (Histogram)metrics.get("DIRECTORY.total.readSizes");
+    assertNull("readSizes", histogram);
+    histogram = (Histogram)metrics.get("DIRECTORY.total.writeSizes");
+    assertNull("writeSizes", histogram);
+    meter = (Meter)metrics.get("DIRECTORY.segments.writes");
+    assertNull("segmentsWrites", meter);
+    histogram = (Histogram)metrics.get("DIRECTORY.segments.writeSizes");
+    assertNull("segmentsWriteSizes", histogram);
+
+  }
+
+  @Test
+  public void testIndexNoMetrics() throws Exception {
+    System.setProperty("solr.tests.metrics.merge", "false");
+    System.setProperty("solr.tests.metrics.mergeDetails", "false");
+    System.setProperty("solr.tests.metrics.directory", "false");
+    System.setProperty("solr.tests.metrics.directoryDetails", "false");
+    initCore("solrconfig-indexmetrics.xml", "schema.xml");
+
+    addDocs();
+
+    MetricRegistry registry = h.getCoreContainer().getMetricManager().registry(h.getCore().getCoreMetricManager().getRegistryName());
+    assertNotNull(registry);
+
+    Map<String, Metric> metrics = registry.getMetrics();
+    assertEquals(0, metrics.entrySet().stream().filter(e -> e.getKey().startsWith("INDEX")).count());
+    // this is variable, depending on the codec and the number of created files
+    assertEquals(0, metrics.entrySet().stream().filter(e -> e.getKey().startsWith("DIRECTORY")).count());
+  }
+
+  @Test
+  public void testIndexMetricsWithDetails() throws Exception {
+    System.setProperty("solr.tests.metrics.merge", "false"); // test mergeDetails override too
+    System.setProperty("solr.tests.metrics.mergeDetails", "true");
+    System.setProperty("solr.tests.metrics.directory", "false");
+    System.setProperty("solr.tests.metrics.directoryDetails", "true");
+    initCore("solrconfig-indexmetrics.xml", "schema.xml");
+
+    addDocs();
+
+    MetricRegistry registry = h.getCoreContainer().getMetricManager().registry(h.getCore().getCoreMetricManager().getRegistryName());
+    assertNotNull(registry);
 
     Map<String, Metric> metrics = registry.getMetrics();
 
@@ -70,8 +143,10 @@ public class SolrIndexMetricsTest extends SolrTestCaseJ4 {
     assertTrue("minorMerge: " + timer.getCount(), timer.getCount() >= 3);
     timer = (Timer)metrics.get("INDEX.merge.major");
     assertEquals("majorMerge: " + timer.getCount(), 0, timer.getCount());
+    // check detailed meters
     Meter meter = (Meter)metrics.get("INDEX.merge.major.docs");
     assertEquals("majorMergeDocs: " + meter.getCount(), 0, meter.getCount());
+
     meter = (Meter)metrics.get("INDEX.flush");
     assertTrue("flush: " + meter.getCount(), meter.getCount() > 10);
 
@@ -80,11 +155,11 @@ public class SolrIndexMetricsTest extends SolrTestCaseJ4 {
     assertTrue("totalReads", meter.getCount() > 0);
     meter = (Meter)metrics.get("DIRECTORY.total.writes");
     assertTrue("totalWrites", meter.getCount() > 0);
+    // check detailed meters
     Histogram histogram = (Histogram)metrics.get("DIRECTORY.total.readSizes");
     assertTrue("readSizes", histogram.getCount() > 0);
     histogram = (Histogram)metrics.get("DIRECTORY.total.writeSizes");
     assertTrue("writeSizes", histogram.getCount() > 0);
-    // check detailed meters
     meter = (Meter)metrics.get("DIRECTORY.segments.writes");
     assertTrue("segmentsWrites", meter.getCount() > 0);
     histogram = (Histogram)metrics.get("DIRECTORY.segments.writeSizes");

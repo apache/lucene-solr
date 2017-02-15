@@ -29,8 +29,10 @@
 
   <indexConfig>
     <metrics>
-      <bool name="directoryDetails">${solr.tests.directoryDetails:false}</bool>
-      <bool name="mergeDetails">${solr.tests.mergeDetails:false}</bool>
+      <bool name="directory">${solr.tests.metrics.directory:false}</bool>
+      <bool name="directoryDetails">${solr.tests.metrics.directoryDetails:false}</bool>
+      <bool name="merge">${solr.tests.metrics.merge:false}</bool>
+      <bool name="mergeDetails">${solr.tests.metrics.mergeDetails:false}</bool>
     </metrics>
     <!-- intentionally set very low values here to trigger multiple flushes and merges.
          DO NOT USE THESE ABSURD VALUES IN PRODUCTION. -->
