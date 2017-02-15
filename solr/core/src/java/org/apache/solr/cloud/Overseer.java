@@ -490,6 +490,7 @@ public class Overseer implements Closeable {
     this.zkController = zkController;
     this.stats = new Stats();
     this.config = config;
+    assert ObjectReleaseTracker.track(this);
   }
   
   public synchronized void start(String id) {
@@ -520,7 +521,6 @@ public class Overseer implements Closeable {
     updaterThread.start();
     ccThread.start();
     arfoThread.start();
-    assert ObjectReleaseTracker.track(this);
   }
 
   public Stats getStats() {

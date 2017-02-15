@@ -40,7 +40,6 @@ import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.NumericUtils;
-import org.apache.lucene.util.Rethrow;
 import org.apache.lucene.util.StringHelper;
 import org.apache.lucene.util.TestUtil;
 
@@ -233,7 +232,16 @@ public abstract class BasePointsFormatTestCase extends BaseIndexFileFormatTestCa
           dir.setRandomIOExceptionRateOnOpen(0.05);
           verify(dir, docValues, null, numDims, numBytesPerDim, true);
         } catch (IllegalStateException ise) {
-          done = handlePossiblyFakeException(ise);
+          if (ise.getMessage().contains("this writer hit an unrecoverable error")) {
+            Throwable cause = ise.getCause();
+            if (cause != null && cause.getMessage().contains("a random IOException")) {
+              done = true;
+            } else {
+              throw ise;
+            }
+          } else {
+            throw ise;
+          }
         } catch (AssertionError ae) {
           if (ae.getMessage() != null && ae.getMessage().contains("does not exist; files=")) {
             // OK: likely we threw the random IOExc when IW was asserting the commit files exist
@@ -245,26 +253,21 @@ public abstract class BasePointsFormatTestCase extends BaseIndexFileFormatTestCa
           // This just means we got a too-small maxMB for the maxPointsInLeafNode; just retry w/ more heap
           assertTrue(iae.getMessage().contains("either increase maxMBSortInHeap or decrease maxPointsInLeafNode"));
         } catch (IOException ioe) {
-          done = handlePossiblyFakeException(ioe);
+          Throwable ex = ioe;
+          while (ex != null) {
+            String message = ex.getMessage();
+            if (message != null && (message.contains("a random IOException") || message.contains("background merge hit exception"))) {
+              done = true;
+              break;
+            }
+            ex = ex.getCause();            
+          }
+          if (done == false) {
+            throw ioe;
+          }
         }
       }
     }
-  }
-
-  // TODO: merge w/ BaseIndexFileFormatTestCase.handleFakeIOException
-  private boolean handlePossiblyFakeException(Exception e) {
-    Throwable ex = e;
-    while (ex != null) {
-      String message = ex.getMessage();
-      if (message != null && (message.contains("a random IOException") || message.contains("background merge hit exception"))) {
-        return true;
-      }
-      ex = ex.getCause();            
-    }
-    Rethrow.rethrow(e);
-
-    // dead code yet javac disagrees:
-    return false;
   }
 
   public void testMultiValued() throws Exception {

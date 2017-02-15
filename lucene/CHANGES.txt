@@ -107,11 +107,6 @@ New Features
   SortedNumericSelector.Type can give a ValueSource view of a 
   SortedNumericDocValues field. (Tomás Fernández Löbbe)
 
-* LUCENE-7465: Add SimplePatternTokenizer and
-  SimplePatternSplitTokenizer, using Lucene's regexp/automaton
-  implementation for analysis/tokenization (Clinton Gormley, Mike
-  McCandless)
-
 Bug Fixes
 
 * LUCENE-7630: Fix (Edge)NGramTokenFilter to no longer drop payloads
@@ -175,11 +170,6 @@ Build
 * SOLR-10023: Add non-recursive 'test-nocompile' target: Only runs unit tests.
   Jars are not downloaded; compilation is not updated; and Clover is not enabled.
   (Steve Rowe)
-
-* LUCENE-7694: Update forbiddenapis to version 2.3. (Uwe Schindler)
-
-* LUCENE-7693: Replace "org.apache." logic in GetMavenDependenciesTask.
-  (Daniel Collins, Christine Poerschke)
 
 Other
 

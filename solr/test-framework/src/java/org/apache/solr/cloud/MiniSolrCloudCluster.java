@@ -457,7 +457,7 @@ public class MiniSolrCloudCluster {
       }
     } finally {
       executor.shutdown();
-      executor.awaitTermination(15, TimeUnit.SECONDS);
+      executor.awaitTermination(2, TimeUnit.SECONDS);
       try {
         if (!externalZkServer) {
           zkServer.shutdown();

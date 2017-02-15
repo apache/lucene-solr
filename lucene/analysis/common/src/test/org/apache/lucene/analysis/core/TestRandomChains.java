@@ -96,11 +96,7 @@ import org.apache.lucene.util.CharsRef;
 import org.apache.lucene.util.Rethrow;
 import org.apache.lucene.util.TestUtil;
 import org.apache.lucene.util.Version;
-import org.apache.lucene.util.automaton.Automaton;
-import org.apache.lucene.util.automaton.AutomatonTestUtil;
 import org.apache.lucene.util.automaton.CharacterRunAutomaton;
-import org.apache.lucene.util.automaton.Operations;
-import org.apache.lucene.util.automaton.RegExp;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.tartarus.snowball.SnowballProgram;
@@ -498,9 +494,6 @@ public class TestRandomChains extends BaseTokenStreamTestCase {
         if (random.nextBoolean()) return null;
         return DateFormat.getDateInstance(DateFormat.DEFAULT, randomLocale(random));
     });
-    put(Automaton.class, random -> {
-        return Operations.determinize(new RegExp(AutomatonTestUtil.randomRegexp(random()), RegExp.NONE).toAutomaton(), Operations.DEFAULT_MAX_DETERMINIZED_STATES);
-    });
   }};
   
   static final Set<Class<?>> allowedTokenizerArgs, allowedTokenFilterArgs, allowedCharFilterArgs;
@@ -510,8 +503,7 @@ public class TestRandomChains extends BaseTokenStreamTestCase {
     allowedTokenizerArgs.add(Reader.class);
     allowedTokenizerArgs.add(AttributeFactory.class);
     allowedTokenizerArgs.add(AttributeSource.class);
-    allowedTokenizerArgs.add(Automaton.class);
-
+    
     allowedTokenFilterArgs = Collections.newSetFromMap(new IdentityHashMap<Class<?>,Boolean>());
     allowedTokenFilterArgs.addAll(argProducers.keySet());
     allowedTokenFilterArgs.add(TokenStream.class);

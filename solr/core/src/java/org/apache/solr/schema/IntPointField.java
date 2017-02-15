@@ -26,10 +26,8 @@ import org.apache.lucene.index.IndexableField;
 import org.apache.lucene.legacy.LegacyNumericType;
 import org.apache.lucene.queries.function.ValueSource;
 import org.apache.lucene.queries.function.valuesource.IntFieldSource;
-import org.apache.lucene.queries.function.valuesource.MultiValuedIntFieldSource;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.SortField;
-import org.apache.lucene.search.SortedNumericSelector;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.BytesRefBuilder;
 import org.apache.solr.search.QParser;
@@ -151,7 +149,8 @@ public class IntPointField extends PointField implements IntValueFieldType {
   @Override
   public Type getUninversionType(SchemaField sf) {
     if (sf.multiValued()) {
-      return Type.SORTED_INTEGER;
+      throw new UnsupportedOperationException("MultiValued Point fields with DocValues is not currently supported");
+//      return Type.SORTED_INTEGER;
     } else {
       return Type.INTEGER_POINT;
     }
@@ -182,11 +181,6 @@ public class IntPointField extends PointField implements IntValueFieldType {
   @Override
   protected StoredField getStoredField(SchemaField sf, Object value) {
     return new StoredField(sf.getName(), (Integer) this.toNativeType(value));
-  }
-  
-  @Override
-  protected ValueSource getSingleValueSource(SortedNumericSelector.Type choice, SchemaField f) {
-    return new MultiValuedIntFieldSource(f.getName(), choice);
   }
 
 }

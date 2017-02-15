@@ -27,13 +27,10 @@ import org.apache.lucene.index.IndexableField;
 import org.apache.lucene.legacy.LegacyNumericType;
 import org.apache.lucene.queries.function.ValueSource;
 import org.apache.lucene.queries.function.valuesource.FloatFieldSource;
-import org.apache.lucene.queries.function.valuesource.MultiValuedFloatFieldSource;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.SortField;
-import org.apache.lucene.search.SortedNumericSelector;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.BytesRefBuilder;
-import org.apache.lucene.util.NumericUtils;
 import org.apache.solr.search.QParser;
 import org.apache.solr.uninverting.UninvertingReader.Type;
 import org.slf4j.Logger;
@@ -94,9 +91,7 @@ public class FloatPointField extends PointField implements FloatValueFieldType {
     if (val != null) {
       if (f.fieldType().stored() == false && f.fieldType().docValuesType() == DocValuesType.NUMERIC) {
         return Float.intBitsToFloat(val.intValue());
-      } else if (f.fieldType().stored() == false && f.fieldType().docValuesType() == DocValuesType.SORTED_NUMERIC) {
-        return NumericUtils.sortableIntToFloat(val.intValue());
-      } else  {
+      } else {
         return val;
       }
     } else {
@@ -154,7 +149,8 @@ public class FloatPointField extends PointField implements FloatValueFieldType {
   @Override
   public Type getUninversionType(SchemaField sf) {
     if (sf.multiValued()) {
-      return Type.SORTED_FLOAT;
+      throw new UnsupportedOperationException("MultiValued Point fields with DocValues is not currently supported");
+//      return Type.SORTED_FLOAT;
     } else {
       return Type.FLOAT_POINT;
     }
@@ -165,12 +161,6 @@ public class FloatPointField extends PointField implements FloatValueFieldType {
     field.checkFieldCacheSource();
     return new FloatFieldSource(field.getName());
   }
-  
-  @Override
-  protected ValueSource getSingleValueSource(SortedNumericSelector.Type choice, SchemaField f) {
-    return new MultiValuedFloatFieldSource(f.getName(), choice);
-  }
-
 
   @Override
   public LegacyNumericType getNumericType() {
