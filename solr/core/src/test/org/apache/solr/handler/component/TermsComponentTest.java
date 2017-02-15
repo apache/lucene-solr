@@ -27,6 +27,8 @@ import java.util.regex.Pattern;
  *
  *
  **/
+// TermsComponent not currently supported for PointFields
+@SolrTestCaseJ4.SuppressPointFields
 public class TermsComponentTest extends SolrTestCaseJ4 {
 
   @BeforeClass

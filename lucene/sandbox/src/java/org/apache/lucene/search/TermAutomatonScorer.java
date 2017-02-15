@@ -367,7 +367,7 @@ class TermAutomatonScorer extends Scorer {
 
   static class TermRunAutomaton extends RunAutomaton {
     public TermRunAutomaton(Automaton a, int termCount) {
-      super(a, termCount, true);
+      super(a, termCount);
     }
   }
 

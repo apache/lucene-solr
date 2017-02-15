@@ -37,20 +37,20 @@
   <dynamicField name="*_i" type="int" indexed="true" stored="false" docValues="false"/>
   <dynamicField name="*_i_dv" type="${solr.tests.intClass:pint}" indexed="false" stored="false" docValues="true"/>
   <dynamicField name="*_is" type="int" indexed="true" stored="false" docValues="false" multiValued="true"/>
-  <dynamicField name="*_is_dv" type="int" indexed="false" stored="false" docValues="true" multiValued="true"/>
+  <dynamicField name="*_is_dv" type="${solr.tests.intClass:pint}" indexed="false" stored="false" docValues="true" multiValued="true"/>
   <dynamicField name="*_s" type="string" indexed="true" stored="false" docValues="false"/>
   <dynamicField name="*_s_dv" type="string" indexed="false" stored="false" docValues="true"/>
   <dynamicField name="*_ss" type="string" indexed="true" stored="false" docValues="false" multiValued="true"/>
   <dynamicField name="*_ss_dv" type="string" indexed="false" stored="false" docValues="true" multiValued="true"/>
   <dynamicField name="*_f" type="float" indexed="true" stored="false" docValues="false"/>
   <dynamicField name="*_f_dv" type="${solr.tests.floatClass:pfloat}" indexed="true" stored="false" docValues="true"/>
-  <dynamicField name="*_fs_dv" type="float" indexed="true" stored="false" docValues="true" multiValued="true"/>
+  <dynamicField name="*_fs_dv" type="${solr.tests.floatClass:pfloat}" indexed="true" stored="false" docValues="true" multiValued="true"/>
   <dynamicField name="*_l" type="long" indexed="true" stored="false" docValues="false"/>
   <dynamicField name="*_l_dv" type="${solr.tests.longClass:plong}" indexed="true" stored="false" docValues="true"/>
-  <dynamicField name="*_ls_dv" type="long" indexed="true" stored="false" docValues="true" multiValued="true"/>
+  <dynamicField name="*_ls_dv" type="${solr.tests.longClass:plong}" indexed="true" stored="false" docValues="true" multiValued="true"/>
   <dynamicField name="*_d" type="double" indexed="true" stored="false" docValues="false"/>
   <dynamicField name="*_d_dv" type="${solr.tests.doubleClass:pdouble}" indexed="true" stored="false" docValues="true"/>
-  <dynamicField name="*_ds_dv" type="double" indexed="true" stored="false" docValues="true" multiValued="true"/>
+  <dynamicField name="*_ds_dv" type="${solr.tests.doubleClass:pdouble}" indexed="true" stored="false" docValues="true" multiValued="true"/>
   <dynamicField name="*_dt" type="date" indexed="true" stored="false" docValues="false"/>
   <dynamicField name="*_dt_dv" type="date" indexed="true" stored="false" docValues="true"/>
   <dynamicField name="*_dts_dv" type="date" indexed="true" stored="false" docValues="true" multiValued="true"/>

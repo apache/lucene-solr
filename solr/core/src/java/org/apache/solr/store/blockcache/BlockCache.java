@@ -17,6 +17,8 @@
 package org.apache.solr.store.blockcache;
 
 import java.nio.ByteBuffer;
+import java.util.List;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import com.github.benmanes.caffeine.cache.Cache;
@@ -38,8 +40,8 @@ public class BlockCache {
   private final int numberOfBlocksPerBank;
   private final int maxEntries;
   private final Metrics metrics;
-  private volatile OnRelease onRelease;
-  
+  private final List<OnRelease> onReleases = new CopyOnWriteArrayList<>();
+
   public static interface OnRelease {
     public void release(BlockCacheKey blockCacheKey);
   }
@@ -95,7 +97,7 @@ public class BlockCache {
     location.setRemoved(true);
     locks[bankId].clear(block);
     lockCounters[bankId].decrementAndGet();
-    if (onRelease != null) {
+    for (OnRelease onRelease : onReleases) {
       onRelease.release(blockCacheKey);
     }
     metrics.blockCacheEviction.incrementAndGet();
@@ -239,6 +241,6 @@ public class BlockCache {
   }
 
   void setOnRelease(OnRelease onRelease) {
-    this.onRelease = onRelease;
+    this.onReleases.add(onRelease);
   }
 }

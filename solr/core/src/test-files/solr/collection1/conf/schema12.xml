@@ -458,8 +458,8 @@
   <field name="bind" type="boolean" indexed="true" stored="false"/>
   <field name="bsto" type="boolean" indexed="false" stored="true"/>
   <field name="bindsto" type="boolean" indexed="true" stored="true"/>
-  <field name="isto" type="int" indexed="false" stored="true"/>
-  <field name="iind" type="int" indexed="true" stored="false"/>
+  <field name="isto" type="${solr.tests.intClass:pint}" indexed="false" stored="true"/>
+  <field name="iind" type="${solr.tests.intClass:pint}" indexed="true" stored="false"/>
   <field name="ssto" type="string" indexed="false" stored="true"/>
   <field name="sind" type="string" indexed="true" stored="false"/>
   <field name="sindsto" type="string" indexed="true" stored="true"/>
@@ -554,20 +554,20 @@
 
   <dynamicField name="*_sw" type="text_sw" indexed="true" stored="true" multiValued="true"/>
 
-  <dynamicField name="*_i" type="int" indexed="true" stored="true"/>
-  <dynamicField name="*_is" type="int" indexed="true" stored="true" multiValued="true"/>
+  <dynamicField name="*_i" type="${solr.tests.intClass:pint}" indexed="true" stored="true"/>
+  <dynamicField name="*_is" type="${solr.tests.intClass:pint}" indexed="true" stored="true" multiValued="true"/>
   <dynamicField name="*_i_dv" type="${solr.tests.intClass:pint}" indexed="true" stored="true" docValues="true" multiValued="false"/>
-  <dynamicField name="*_is_dv" type="${solr.tests.intClass:pint}" indexed="true" stored="true" docValues="true" multiValued="false"/>
+  <dynamicField name="*_is_dv" type="${solr.tests.intClass:pint}" indexed="true" stored="true" docValues="true" multiValued="true"/>
   <dynamicField name="*_s1" type="string" indexed="true" stored="true" multiValued="false"/>
   <!-- :TODO: why are these identical?!?!?! -->
   <dynamicField name="*_s" type="string" indexed="true" stored="true" multiValued="true"/>
   <dynamicField name="*_ss" type="string" indexed="true" stored="true" multiValued="true"/>
-  <dynamicField name="*_l" type="long" indexed="true" stored="true"/>
+  <dynamicField name="*_l" type="${solr.tests.longClass:plong}" indexed="true" stored="true"/>
   <dynamicField name="*_t" type="text" indexed="true" stored="true"/>
   <dynamicField name="*_tt" type="text" indexed="true" stored="true"/>
   <dynamicField name="*_b" type="boolean" indexed="true" stored="true"/>
   <dynamicField name="*_f" type="${solr.tests.floatClass:pfloat}" indexed="true" stored="true"/>
-  <dynamicField name="*_d" type="double" indexed="true" stored="true"/>
+  <dynamicField name="*_d" type="${solr.tests.doubleClass:pdouble}" indexed="true" stored="true"/>
   <dynamicField name="*_dt" type="date" indexed="true" stored="true"/>
   
   <dynamicField name="*_pi" type="pint" indexed="true" stored="true" docValues="false" multiValued="false"/>

@@ -27,10 +27,13 @@ import org.apache.lucene.index.IndexableField;
 import org.apache.lucene.legacy.LegacyNumericType;
 import org.apache.lucene.queries.function.ValueSource;
 import org.apache.lucene.queries.function.valuesource.DoubleFieldSource;
+import org.apache.lucene.queries.function.valuesource.MultiValuedDoubleFieldSource;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.SortField;
+import org.apache.lucene.search.SortedNumericSelector;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.BytesRefBuilder;
+import org.apache.lucene.util.NumericUtils;
 import org.apache.solr.search.QParser;
 import org.apache.solr.uninverting.UninvertingReader.Type;
 import org.slf4j.Logger;
@@ -91,6 +94,8 @@ public class DoublePointField extends PointField implements DoubleValueFieldType
     if (val != null) {
       if (f.fieldType().stored() == false && f.fieldType().docValuesType() == DocValuesType.NUMERIC) {
         return Double.longBitsToDouble(val.longValue());
+      } else if (f.fieldType().stored() == false && f.fieldType().docValuesType() == DocValuesType.SORTED_NUMERIC) {
+        return NumericUtils.sortableLongToDouble(val.longValue());
       } else {
         return val;
       }
@@ -149,8 +154,7 @@ public class DoublePointField extends PointField implements DoubleValueFieldType
   @Override
   public Type getUninversionType(SchemaField sf) {
     if (sf.multiValued()) {
-      throw new UnsupportedOperationException("MultiValued Point fields with DocValues is not currently supported");
-//      return Type.SORTED_DOUBLE;
+      return Type.SORTED_DOUBLE;
     } else {
       return Type.DOUBLE_POINT;
     }
@@ -160,6 +164,11 @@ public class DoublePointField extends PointField implements DoubleValueFieldType
   public ValueSource getValueSource(SchemaField field, QParser qparser) {
     field.checkFieldCacheSource();
     return new DoubleFieldSource(field.getName());
+  }
+  
+  @Override
+  protected ValueSource getSingleValueSource(SortedNumericSelector.Type choice, SchemaField f) {
+    return new MultiValuedDoubleFieldSource(f.getName(), choice);
   }
 
   @Override
