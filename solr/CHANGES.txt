@@ -231,6 +231,8 @@ Bug Fixes
   Default settings in solrconfig.xml /config/indexConfig/metrics have been changed to turn off
   IndexWriter and Directory level metrics collection. (ab, ishan)
 
+* SOLR-10138: Transaction log replay can hit an NPE due to new Metrics code. (ab)
+
 ==================  6.4.1 ==================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release.

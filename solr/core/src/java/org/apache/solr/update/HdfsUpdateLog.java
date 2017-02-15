@@ -37,6 +37,7 @@ import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.util.IOUtils;
 import org.apache.solr.core.PluginInfo;
 import org.apache.solr.core.SolrCore;
+import org.apache.solr.core.SolrInfoMBean;
 import org.apache.solr.util.HdfsUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -121,7 +122,7 @@ public class HdfsUpdateLog extends UpdateLog {
     String ulogDir = core.getCoreDescriptor().getUlogDir();
 
     this.uhandler = uhandler;
-    
+
     synchronized (fsLock) {
       // just like dataDir, we do not allow
       // moving the tlog dir on reload
@@ -259,7 +260,9 @@ public class HdfsUpdateLog extends UpdateLog {
       }
 
     }
-    
+
+    // initialize metrics
+    core.getCoreMetricManager().registerMetricProducer(SolrInfoMBean.Category.TLOG.toString(), this);
   }
   
   @Override
