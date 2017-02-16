@@ -23,7 +23,6 @@ import com.codahale.metrics.Gauge;
 import com.codahale.metrics.Meter;
 import com.codahale.metrics.Metric;
 import com.codahale.metrics.MetricRegistry;
-import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.metrics.SolrMetricManager;
 import org.noggit.ObjectBuilder;
 
