@@ -126,6 +126,10 @@ Bug Fixes
 * LUCENE-7692: PatternReplaceCharFilterFactory now implements MultiTermAware.
   (Adrien Grand)
 
+* LUCENE-7685: ToParentBlockJoinQuery and ToChildBlockJoinQuery now use the
+  rewritten child query in their equals and hashCode implementations.
+  (Adrien Grand)
+
 Improvements
 
 * LUCENE-7055: Added Weight#scorerSupplier, which allows to estimate the cost
