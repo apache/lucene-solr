@@ -67,13 +67,6 @@ public class ToParentBlockJoinQuery extends Query {
 
   private final BitSetProducer parentsFilter;
   private final Query childQuery;
-
-  // If we are rewritten, this is the original childQuery we
-  // were passed; we use this for .equals() and
-  // .hashCode().  This makes rewritten query equal the
-  // original, so that user does not have to .rewrite() their
-  // query before searching:
-  private final Query origChildQuery;
   private final ScoreMode scoreMode;
 
   /** Create a ToParentBlockJoinQuery.
@@ -85,15 +78,6 @@ public class ToParentBlockJoinQuery extends Query {
    **/
   public ToParentBlockJoinQuery(Query childQuery, BitSetProducer parentsFilter, ScoreMode scoreMode) {
     super();
-    this.origChildQuery = childQuery;
-    this.childQuery = childQuery;
-    this.parentsFilter = parentsFilter;
-    this.scoreMode = scoreMode;
-  }
-
-  private ToParentBlockJoinQuery(Query origChildQuery, Query childQuery, BitSetProducer parentsFilter, ScoreMode scoreMode) {
-    super();
-    this.origChildQuery = origChildQuery;
     this.childQuery = childQuery;
     this.parentsFilter = parentsFilter;
     this.scoreMode = scoreMode;
@@ -377,8 +361,7 @@ public class ToParentBlockJoinQuery extends Query {
   public Query rewrite(IndexReader reader) throws IOException {
     final Query childRewrite = childQuery.rewrite(reader);
     if (childRewrite != childQuery) {
-      return new ToParentBlockJoinQuery(origChildQuery,
-                                childRewrite,
+      return new ToParentBlockJoinQuery(childRewrite,
                                 parentsFilter,
                                 scoreMode);
     } else {
@@ -398,7 +381,7 @@ public class ToParentBlockJoinQuery extends Query {
   }
 
   private boolean equalsTo(ToParentBlockJoinQuery other) {
-    return origChildQuery.equals(other.origChildQuery) &&
+    return childQuery.equals(other.childQuery) &&
            parentsFilter.equals(other.parentsFilter) &&
            scoreMode == other.scoreMode;
   }
@@ -407,7 +390,7 @@ public class ToParentBlockJoinQuery extends Query {
   public int hashCode() {
     final int prime = 31;
     int hash = classHash();
-    hash = prime * hash + origChildQuery.hashCode();
+    hash = prime * hash + childQuery.hashCode();
     hash = prime * hash + scoreMode.hashCode();
     hash = prime * hash + parentsFilter.hashCode();
     return hash;
