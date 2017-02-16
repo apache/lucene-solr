@@ -145,6 +145,10 @@ Improvements
   of the less descriptive FileNotFound or NoSuchFileException (Mike Drob via 
   Mike McCandless, Erick Erickson)
 
+* LUCENE-7680: UsageTrackingQueryCachingPolicy never caches term filters anymore
+  since they are plenty fast. This also has the side-effect of leaving more
+  space in the history for costly filters. (Adrien Grand)
+
 Optimizations
 
 * LUCENE-7641: Optimized point range queries to compute documents that do not
