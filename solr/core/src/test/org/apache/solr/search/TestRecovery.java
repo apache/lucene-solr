@@ -23,6 +23,7 @@ import com.codahale.metrics.Gauge;
 import com.codahale.metrics.Meter;
 import com.codahale.metrics.Metric;
 import com.codahale.metrics.MetricRegistry;
+import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.metrics.SolrMetricManager;
 import org.noggit.ObjectBuilder;
 
@@ -68,6 +69,9 @@ public class TestRecovery extends SolrTestCaseJ4 {
 
   // TODO: fix this test to not require FSDirectory
   static String savedFactory;
+
+
+  private interface RunnableWithException{void run () throws Exception;}
 
   @BeforeClass
   public static void beforeClass() throws Exception {
@@ -290,6 +294,86 @@ public class TestRecovery extends SolrTestCaseJ4 {
 
   @Test
   public void testLogReplayWithReorderedDBQ() throws Exception {
+    testLogReplayWithReorderedDBQWrapper(() -> {
+          updateJ(jsonAdd(sdoc("id", "B1", "_version_", "1010")), params(DISTRIB_UPDATE_PARAM, FROM_LEADER));
+          updateJ(jsonDelQ("id:B2"), params(DISTRIB_UPDATE_PARAM, FROM_LEADER, "_version_", "-1017")); // This should've arrived after the 1015th update
+          updateJ(jsonAdd(sdoc("id", "B2", "_version_", "1015")), params(DISTRIB_UPDATE_PARAM, FROM_LEADER));
+          updateJ(jsonAdd(sdoc("id", "B3", "_version_", "1020")), params(DISTRIB_UPDATE_PARAM, FROM_LEADER));
+        },
+        () -> assertJQ(req("q", "*:*"), "/response/numFound==2")
+    );
+  }
+
+  @Test
+  public void testLogReplayWithReorderedDBQByAsterixAndChildDocs() throws Exception {
+    testLogReplayWithReorderedDBQWrapper(() -> {
+          // 1010 - will be deleted
+          updateJ(jsonAdd(sdocWithChildren("B1", "1010")), params(DISTRIB_UPDATE_PARAM, FROM_LEADER));
+          // 1018 - should be kept, including child docs
+          updateJ(jsonAdd(sdocWithChildren("B2", "1018")), params(DISTRIB_UPDATE_PARAM, FROM_LEADER));
+          // 1017 - delete should affect only 1010
+          updateJ(jsonDelQ("id:*"), params(DISTRIB_UPDATE_PARAM, FROM_LEADER, "_version_", "-1017")); // This should've arrived after the 1015th update
+          // 1012 - will be deleted
+          updateJ(jsonAdd(sdoc("id", "B3", "_version_", "1012")), params(DISTRIB_UPDATE_PARAM, FROM_LEADER));
+          // 1020 - should be untouched
+          updateJ(jsonAdd(sdocWithChildren("B4", "1020")), params(DISTRIB_UPDATE_PARAM, FROM_LEADER));
+        },
+        () -> assertJQ(req("q", "*:*"), "/response/numFound==6")
+    );
+  }
+
+  @Test
+  public void testLogReplayWithReorderedDBQByIdAndChildDocs() throws Exception {
+    testLogReplayWithReorderedDBQWrapper(() -> {
+          // 1010 - will be deleted
+          updateJ(jsonAdd(sdocWithChildren("B1", "1010")), params(DISTRIB_UPDATE_PARAM, FROM_LEADER));
+          // 1018 - should be kept, including child docs
+          updateJ(jsonAdd(sdocWithChildren("B2", "1018")), params(DISTRIB_UPDATE_PARAM, FROM_LEADER));
+          // 1017 - delete should affect only 1010
+          updateJ(jsonDelQ("id:B1 id:B2 id:B3 id:B4"), params(DISTRIB_UPDATE_PARAM, FROM_LEADER, "_version_", "-1017")); // This should've arrived after the 1015th update
+          // 1012 - will be deleted
+          updateJ(jsonAdd(sdoc("id", "B3", "_version_", "1012")), params(DISTRIB_UPDATE_PARAM, FROM_LEADER));
+          // 1020 - should be untouched
+          updateJ(jsonAdd(sdocWithChildren("B4", "1020")), params(DISTRIB_UPDATE_PARAM, FROM_LEADER));
+        },
+        () -> assertJQ(req("q", "*:*"), "/response/numFound==8") // B2, B4 and 6 children docs (delete by id does not delete child docs)
+    );
+  }
+
+  @Test
+  public void testLogReplayWithReorderedDBQInsertingChildnodes() throws Exception {
+    testLogReplayWithReorderedDBQWrapper(() -> {
+          updateJ(jsonDelQ("id:B2"), params(DISTRIB_UPDATE_PARAM, FROM_LEADER, "_version_", "-1017"));
+          // test doc: B1
+          // 1013 - will be inserted with 3 children
+          updateJ(jsonAdd(sdocWithChildren("B1", "1013", 3)), params(DISTRIB_UPDATE_PARAM, FROM_LEADER));
+        },
+        () -> assertJQ(req("q", "*:*"), "/response/numFound==4") // B1 and B2, plus 2x 3 children
+    );
+  }
+
+
+  @Test
+  public void testLogReplayWithReorderedDBQUpdateWithDifferentChildCount() throws Exception {
+    testLogReplayWithReorderedDBQWrapper(() -> {
+          // control
+          // 1013 - will be inserted with 3 children
+          updateJ(jsonAdd(sdocWithChildren("B1", "1011", 2)), params(DISTRIB_UPDATE_PARAM, FROM_LEADER));
+          // 1018 - this should be the final
+          updateJ(jsonAdd(sdocWithChildren("B1", "1012", 3)), params(DISTRIB_UPDATE_PARAM, FROM_LEADER));
+
+          // 1013 - will be inserted with 3 children
+          updateJ(jsonAdd(sdocWithChildren("B2", "1013", 2)), params(DISTRIB_UPDATE_PARAM, FROM_LEADER));
+          updateJ(jsonDelQ("id:B3"), params(DISTRIB_UPDATE_PARAM, FROM_LEADER, "_version_", "-1019"));
+          // 1018 - this should be the final
+          updateJ(jsonAdd(sdocWithChildren("B2", "1018", 3)), params(DISTRIB_UPDATE_PARAM, FROM_LEADER));
+        },
+        () -> assertJQ(req("q", "*:*"), "/response/numFound==8") // B1+3children+B2+3children
+    );
+  }
+
+  private void testLogReplayWithReorderedDBQWrapper(RunnableWithException act, RunnableWithException assrt) throws Exception {
+
     try {
 
       DirectUpdateHandler2.commitOnClose = false;
@@ -310,13 +394,11 @@ public class TestRecovery extends SolrTestCaseJ4 {
       clearIndex();
       assertU(commit());
 
-      updateJ(jsonAdd(sdoc("id","B1", "_version_","1010")), params(DISTRIB_UPDATE_PARAM,FROM_LEADER));
-      updateJ(jsonDelQ("id:B2"), params(DISTRIB_UPDATE_PARAM,FROM_LEADER, "_version_","-1017")); // This should've arrived after the 1015th update
-      updateJ(jsonAdd(sdoc("id","B2", "_version_","1015")), params(DISTRIB_UPDATE_PARAM,FROM_LEADER));
-      updateJ(jsonAdd(sdoc("id","B3", "_version_","1020")), params(DISTRIB_UPDATE_PARAM,FROM_LEADER));
+      // Adding some documents
+      act.run();
 
 
-      assertJQ(req("q","*:*"),"/response/numFound==0");
+      assertJQ(req("q", "*:*"), "/response/numFound==0");
 
       h.close();
       createCore();
@@ -325,7 +407,7 @@ public class TestRecovery extends SolrTestCaseJ4 {
 
       // verify that previous close didn't do a commit
       // recovery should be blocked by our hook
-      assertJQ(req("q","*:*") ,"/response/numFound==0");
+      assertJQ(req("q", "*:*"), "/response/numFound==0");
 
       // unblock recovery
       logReplay.release(1000);
@@ -333,7 +415,9 @@ public class TestRecovery extends SolrTestCaseJ4 {
       // wait until recovery has finished
       assertTrue(logReplayFinish.tryAcquire(timeout, TimeUnit.SECONDS));
 
-      assertJQ(req("q","*:*") ,"/response/numFound==2");
+      // Asserting
+      assrt.run();
+
     } finally {
       DirectUpdateHandler2.commitOnClose = true;
       UpdateLog.testing_logReplayHook = null;

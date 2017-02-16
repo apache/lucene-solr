@@ -189,8 +189,11 @@ public class AddUpdateCommand extends UpdateCommand implements Iterable<Document
 
         String idField = getHashableId();
 
+        boolean isVersion = version != 0;
+
         for (SolrInputDocument sdoc : all) {
           sdoc.setField("_root_", idField);      // should this be a string or the same type as the ID?
+          if(isVersion) sdoc.setField(VersionInfo.VERSION_FIELD, version);
           // TODO: if possible concurrent modification exception (if SolrInputDocument not cloned and is being forwarded to replicas)
           // then we could add this field to the generated lucene document instead.
         }

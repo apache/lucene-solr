@@ -53,6 +53,9 @@ Bug Fixes
 * SOLR-9837: Fix 55% performance regression of FieldCache uninvert time of
   numeric fields.  (yonik)
 
+* SOLR-10114: Reordered delete-by-query causes inconsistenties between shards that have 
+  child documents (Mano Kovacs, Mihaly Toth, yonik)
+
 
 Optimizations
 ----------------------
