@@ -1302,8 +1302,15 @@ public abstract class SolrTestCaseJ4 extends LuceneTestCase {
 
   public SolrInputDocument sdocWithChildren(String id, String version, int childCount) {
     SolrInputDocument doc = sdoc("id", id, "_version_", version);
-    for (int i = 0; i < childCount; i++) {
+    for (int i = 1; i <= childCount; i++) {
       doc.addChildDocument(sdoc("id", id + "_child" + i));
+    }
+    return doc;
+  }
+  public SolrInputDocument sdocWithChildren(Integer id, String version, int childCount) {
+    SolrInputDocument doc = sdoc("id", id, "_version_", version);
+    for (int i = 1; i <= childCount; i++) {
+      doc.addChildDocument(sdoc("id", (1000)*id + i));
     }
     return doc;
   }

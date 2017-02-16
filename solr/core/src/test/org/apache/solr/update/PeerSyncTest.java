@@ -115,9 +115,7 @@ public class PeerSyncTest extends BaseDistributedSearchTestCase {
     for (int i=0; i<10; i++) docsAdded.add(i+1);
     assertSync(client1, numVersions, true, shardsArr[0]);
 
-    client0.commit(); client1.commit();
-    QueryResponse qacResponse = queryAndCompare(params("q", "*:*", "rows", "10000"), client0, client1);
-    validateQACResponse(docsAdded, qacResponse);
+    validateDocs(docsAdded, client0, client1);
 
     int toAdd = (int)(numVersions *.95);
     for (int i=0; i<toAdd; i++) {
@@ -135,9 +133,7 @@ public class PeerSyncTest extends BaseDistributedSearchTestCase {
     }
 
     assertSync(client1, numVersions, true, shardsArr[0]);
-    client0.commit(); client1.commit();
-    qacResponse = queryAndCompare(params("q", "*:*", "rows", "10000", "sort","_version_ desc"), client0, client1);
-    validateQACResponse(docsAdded, qacResponse);
+    validateDocs(docsAdded, client0, client1);
 
     // test delete and deleteByQuery
     v=1000;
@@ -150,9 +146,7 @@ public class PeerSyncTest extends BaseDistributedSearchTestCase {
     docsAdded.add(1002); // 1002 added
 
     assertSync(client1, numVersions, true, shardsArr[0]);
-    client0.commit(); client1.commit();
-    qacResponse = queryAndCompare(params("q", "*:*", "rows", "10000", "sort","_version_ desc"), client0, client1);
-    validateQACResponse(docsAdded, qacResponse);
+    validateDocs(docsAdded, client0, client1);
 
     // test that delete by query is returned even if not requested, and that it doesn't delete newer stuff than it should
     v=2000;
@@ -174,9 +168,8 @@ public class PeerSyncTest extends BaseDistributedSearchTestCase {
     del(client, params(DISTRIB_UPDATE_PARAM,FROM_LEADER,"_version_",Long.toString(-++v)), "2000");
 
     assertSync(client1, numVersions, true, shardsArr[0]);
-    client0.commit(); client1.commit();
-    qacResponse = queryAndCompare(params("q", "*:*", "rows", "10000", "sort","_version_ desc"), client0, client1);
-    validateQACResponse(docsAdded, qacResponse);
+
+    validateDocs(docsAdded, client0, client1);
 
     //
     // Test that handling reorders work when applying docs retrieved from peer
@@ -202,9 +195,7 @@ public class PeerSyncTest extends BaseDistributedSearchTestCase {
     docsAdded.add(3002); // 3002 added
     
     assertSync(client1, numVersions, true, shardsArr[0]);
-    client0.commit(); client1.commit();
-    qacResponse = queryAndCompare(params("q", "*:*", "rows", "10000", "sort","_version_ desc"), client0, client1);
-    validateQACResponse(docsAdded, qacResponse);
+    validateDocs(docsAdded, client0, client1);
 
     // now lets check fingerprinting causes appropriate fails
     v = 4000;
@@ -238,9 +229,7 @@ public class PeerSyncTest extends BaseDistributedSearchTestCase {
     }
     assertSync(client1, numVersions, true, shardsArr[0]);
     
-    client0.commit(); client1.commit();
-    qacResponse = queryAndCompare(params("q", "*:*", "rows", "10000", "sort","_version_ desc"), client0, client1);
-    validateQACResponse(docsAdded, qacResponse);
+    validateDocs(docsAdded, client0, client1);
 
     // lets add some in-place updates
     add(client0, seenLeader, sdoc("id", "5000", "val_i_dvo", 0, "title", "mytitle", "_version_", 5000)); // full update
@@ -278,39 +267,71 @@ public class PeerSyncTest extends BaseDistributedSearchTestCase {
     delQ(client0, params(DISTRIB_UPDATE_PARAM,FROM_LEADER,"_version_","5005"),  "val_i_dvo:1"); // current val is 2, so this should not delete anything
     assertSync(client1, numVersions, true, shardsArr[0]);
 
-    boolean deleteTheUpdatedDocument = random().nextBoolean();
-    if (deleteTheUpdatedDocument) { // if doc with id=5000 is deleted, further in-place-updates should fail
-      delQ(client0, params(DISTRIB_UPDATE_PARAM,FROM_LEADER,"_version_","5006"),  "val_i_dvo:2"); // current val is 2, this will delete id=5000
-      assertSync(client1, numVersions, true, shardsArr[0]);
-      SolrException ex = expectThrows(SolrException.class, () -> {
-        inPlaceParams.set(DistributedUpdateProcessor.DISTRIB_INPLACE_PREVVERSION, "5004");
-        add(client0, inPlaceParams, sdoc("id", 5000, "val_i_dvo", 3, "_version_", 5007));
-      });
-      assertEquals(ex.toString(), SolrException.ErrorCode.SERVER_ERROR.code, ex.code());
-      assertThat(ex.getMessage(), containsString("Can't find document with id=5000"));
-    } else {
-      inPlaceParams.set(DistributedUpdateProcessor.DISTRIB_INPLACE_PREVVERSION, "5004");
-      add(client0, inPlaceParams, sdoc("id", 5000, "val_i_dvo", 3, "_version_", 5006));
-      assertSync(client1, numVersions, true, shardsArr[0]);
 
-      // verify the in-place updated document (id=5000) has correct fields
-      assertEquals(3, client1.getById("5000").get("val_i_dvo"));
-      assertEquals(client0.getById("5000")+" and "+client1.getById("5000"), 
-          "mytitle", client1.getById("5000").getFirstValue("title"));
 
-      if (random().nextBoolean()) {
-        client0.commit(); client1.commit();
-        qacResponse = queryAndCompare(params("q", "*:*", "rows", "10000", "sort","_version_ desc"), client0, client1);
-        validateQACResponse(docsAdded, qacResponse);
-      }
-      del(client0, params(DISTRIB_UPDATE_PARAM,FROM_LEADER,"_version_","5007"),  5000);
-      docsAdded.remove(5000);
-      assertSync(client1, numVersions, true, shardsArr[0]);
+    add(client0, seenLeader, sdoc("id", "5000", "val_i_dvo", 0, "title", "mytitle", "_version_", 5000)); // full update
+    docsAdded.add(5000);
+    assertSync(client1, numVersions, true, shardsArr[0]);
+    inPlaceParams.set(DistributedUpdateProcessor.DISTRIB_INPLACE_PREVVERSION, "5004");
+    add(client0, inPlaceParams, sdoc("id", 5000, "val_i_dvo", 3, "_version_", 5006));
+    assertSync(client1, numVersions, true, shardsArr[0]);
 
-      client0.commit(); client1.commit();
-      qacResponse = queryAndCompare(params("q", "*:*", "rows", "10000", "sort","_version_ desc"), client0, client1);
-      validateQACResponse(docsAdded, qacResponse);
-    }
+    // verify the in-place updated document (id=5000) has correct fields
+    assertEquals(3, client1.getById("5000").get("val_i_dvo"));
+    assertEquals(client0.getById("5000")+" and "+client1.getById("5000"),
+        "mytitle", client1.getById("5000").getFirstValue("title"));
+
+    validateDocs(docsAdded, client0, client1);
+
+    del(client0, params(DISTRIB_UPDATE_PARAM,FROM_LEADER,"_version_","5007"),  5000);
+    docsAdded.remove(5000);
+    assertSync(client1, numVersions, true, shardsArr[0]);
+
+    validateDocs(docsAdded, client0, client1);
+
+
+    // if doc with id=6000 is deleted, further in-place-updates should fail
+    add(client0, seenLeader, sdoc("id", "6000", "val_i_dvo", 6, "title", "mytitle", "_version_", 6000)); // full update
+    delQ(client0, params(DISTRIB_UPDATE_PARAM,FROM_LEADER,"_version_","6004"),  "val_i_dvo:6"); // current val is 6000, this will delete id=6000
+    assertSync(client1, numVersions, true, shardsArr[0]);
+    SolrException ex = expectThrows(SolrException.class, () -> {
+      inPlaceParams.set(DistributedUpdateProcessor.DISTRIB_INPLACE_PREVVERSION, "6000");
+      add(client0, inPlaceParams, sdoc("id", 6000, "val_i_dvo", 6003, "_version_", 5007));
+    });
+    assertEquals(ex.toString(), SolrException.ErrorCode.SERVER_ERROR.code, ex.code());
+    assertThat(ex.getMessage(), containsString("Can't find document with id=6000"));
+
+
+    // Reordered DBQ with Child-nodes (SOLR-10114)
+    docsAdded.clear();
+
+    // Reordered full delete should not delete child-docs
+    add(client0, seenLeader, sdocWithChildren(7001, "7001", 2)); // add with later version
+    docsAdded.add(7001);
+    docsAdded.add(7001001);
+    docsAdded.add(7001002);
+    delQ(client0, params(DISTRIB_UPDATE_PARAM,FROM_LEADER,"_version_","7000"),  "id:*"); // reordered delete
+    assertSync(client1, numVersions, true, shardsArr[0]);
+    validateDocs(docsAdded, client0, client1);
+
+    // Reordered DBQ should not affect update
+    add(client0, seenLeader, sdocWithChildren(8000, "8000", 5)); // add with later version
+    delQ(client0, params(DISTRIB_UPDATE_PARAM,FROM_LEADER,"_version_","8002"),  "id:8500"); // not found, arrives earlier
+    add(client0, seenLeader, sdocWithChildren(8000, "8001", 2)); // update with two childs
+    docsAdded.add(8000);
+    docsAdded.add(8000001);
+    docsAdded.add(8000002);
+    assertSync(client1, numVersions, true, shardsArr[0]);
+    validateDocs(docsAdded, client0, client1);
+
+  }
+
+  private void validateDocs(Set<Integer> docsAdded, SolrClient client0, SolrClient client1) throws SolrServerException, IOException {
+    client0.commit();
+    client1.commit();
+    QueryResponse qacResponse;
+    qacResponse = queryAndCompare(params("q", "*:*", "rows", "10000", "sort","_version_ desc"), client0, client1);
+    validateQACResponse(docsAdded, qacResponse);
   }
 
   void assertSync(SolrClient client, int numVersions, boolean expectedResult, String... syncWith) throws IOException, SolrServerException {

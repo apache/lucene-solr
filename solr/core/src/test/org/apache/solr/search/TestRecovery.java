@@ -70,8 +70,6 @@ public class TestRecovery extends SolrTestCaseJ4 {
   static String savedFactory;
 
 
-  private interface RunnableWithException{void run () throws Exception;}
-
   @BeforeClass
   public static void beforeClass() throws Exception {
     savedFactory = System.getProperty("solr.DirectoryFactory");
@@ -371,7 +369,7 @@ public class TestRecovery extends SolrTestCaseJ4 {
     );
   }
 
-  private void testLogReplayWithReorderedDBQWrapper(RunnableWithException act, RunnableWithException assrt) throws Exception {
+  private void testLogReplayWithReorderedDBQWrapper(ThrowingRunnable act, ThrowingRunnable assrt) throws Exception {
 
     try {
 
@@ -417,6 +415,8 @@ public class TestRecovery extends SolrTestCaseJ4 {
       // Asserting
       assrt.run();
 
+    } catch (Throwable thr) {
+      throw new Exception(thr);
     } finally {
       DirectUpdateHandler2.commitOnClose = true;
       UpdateLog.testing_logReplayHook = null;
