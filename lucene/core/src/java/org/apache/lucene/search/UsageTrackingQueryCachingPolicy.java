@@ -122,7 +122,17 @@ public class UsageTrackingQueryCachingPolicy implements QueryCachingPolicy {
       return 2;
     } else {
       // default: cache after the filter has been seen 5 times
-      return 5;
+      int minFrequency = 5;
+      if (query instanceof BooleanQuery
+          || query instanceof DisjunctionMaxQuery) {
+        // Say you keep reusing a boolean query that looks like "A OR B" and
+        // never use the A and B queries out of that context. 5 times after it
+        // has been used, we would cache both A, B and A OR B, which is
+        // wasteful. So instead we cache compound queries a bit earlier so that
+        // we would only cache "A OR B" in that case.
+        minFrequency--;
+      }
+      return minFrequency;
     }
   }
 
