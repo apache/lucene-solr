@@ -122,6 +122,9 @@ Bug Fixes
 * SOLR-10159: When DBQ is reordered with an in-place update, upon whose updated value the DBQ is based
   on, the DBQ fails due to excessive caching in DeleteByQueryWrapper (Ishan Chattopadhyaya)
 
+* SOLR-10114: Reordered delete-by-query causes inconsistenties between shards that have 
+  child documents (Mano Kovacs, Mihaly Toth, yonik)
+
 Other Changes
 ----------------------
 * SOLR-9980: Expose configVersion in core admin status (Jessica Cheng Mallet via Tomás Fernández Löbbe)
