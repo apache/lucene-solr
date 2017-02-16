@@ -27,7 +27,7 @@ import org.apache.lucene.util.FrequencyTrackingRingBuffer;
  *
  * @lucene.experimental
  */
-public final class UsageTrackingQueryCachingPolicy implements QueryCachingPolicy {
+public class UsageTrackingQueryCachingPolicy implements QueryCachingPolicy {
 
   // the hash code that we use as a sentinel in the ring buffer.
   private static final int SENTINEL = Integer.MIN_VALUE;
@@ -54,16 +54,49 @@ public final class UsageTrackingQueryCachingPolicy implements QueryCachingPolicy
         isPointQuery(query);
   }
 
-  static boolean isCheap(Query query) {
-    // same for cheap queries
-    // these queries are so cheap that they usually do not need caching
-    return query instanceof TermQuery;
+  private static boolean shouldNeverCache(Query query) {
+    if (query instanceof TermQuery) {
+      // We do not bother caching term queries since they are already plenty fast.
+      return true;
+    }
+
+    if (query instanceof MatchAllDocsQuery) {
+      // MatchAllDocsQuery has an iterator that is faster than what a bit set could do.
+      return true;
+    }
+
+    // For the below queries, it's cheap to notice they cannot match any docs so
+    // we do not bother caching them.
+    if (query instanceof MatchNoDocsQuery) {
+      return false;
+    }
+
+    if (query instanceof BooleanQuery) {
+      BooleanQuery bq = (BooleanQuery) query;
+      if (bq.clauses().isEmpty()) {
+        return true;
+      }
+    }
+
+    if (query instanceof DisjunctionMaxQuery) {
+      DisjunctionMaxQuery dmq = (DisjunctionMaxQuery) query;
+      if (dmq.getDisjuncts().isEmpty()) {
+        return true;
+      }
+    }
+
+    return false;
   }
 
   private final FrequencyTrackingRingBuffer recentlyUsedFilters;
 
   /**
-   * Create a new instance.
+   * Expert: Create a new instance with a configurable history size. Beware of
+   * passing too large values for the size of the history, either
+   * {@link #minFrequencyToCache} returns low values and this means some filters
+   * that are rarely used will be cached, which would hurt performance. Or
+   * {@link #minFrequencyToCache} returns high values that are function of the
+   * size of the history but then filters will be slow to make it to the cache.
    *
    * @param historySize               the number of recently used filters to track
    */
@@ -71,20 +104,22 @@ public final class UsageTrackingQueryCachingPolicy implements QueryCachingPolicy
     this.recentlyUsedFilters = new FrequencyTrackingRingBuffer(historySize, SENTINEL);
   }
 
-  /** Create a new instance with an history size of 256. */
+  /** Create a new instance with an history size of 256. This should be a good
+   *  default for most cases. */
   public UsageTrackingQueryCachingPolicy() {
     this(256);
   }
 
   /**
-   * For a given query, return how many times it should appear in the history
-   * before being cached.
+   * For a given filter, return how many times it should appear in the history
+   * before being cached. The default implementation returns 2 for filters that
+   * need to evaluate against the entire index to build a {@link DocIdSetIterator},
+   * like {@link MultiTermQuery}, point-based queries or {@link TermInSetQuery},
+   * and 5 for other filters.
    */
   protected int minFrequencyToCache(Query query) {
     if (isCostly(query)) {
       return 2;
-    } else if (isCheap(query)) {
-      return 20;
     } else {
       // default: cache after the filter has been seen 5 times
       return 5;
@@ -95,6 +130,10 @@ public final class UsageTrackingQueryCachingPolicy implements QueryCachingPolicy
   public void onUse(Query query) {
     assert query instanceof BoostQuery == false;
     assert query instanceof ConstantScoreQuery == false;
+
+    if (shouldNeverCache(query)) {
+      return;
+    }
 
     // call hashCode outside of sync block
     // in case it's somewhat expensive:
@@ -123,23 +162,8 @@ public final class UsageTrackingQueryCachingPolicy implements QueryCachingPolicy
 
   @Override
   public boolean shouldCache(Query query) throws IOException {
-    if (query instanceof MatchAllDocsQuery
-        // MatchNoDocsQuery currently rewrites to a BooleanQuery,
-        // but who knows, it might get its own Weight one day
-        || query instanceof MatchNoDocsQuery) {
+    if (shouldNeverCache(query)) {
       return false;
-    }
-    if (query instanceof BooleanQuery) {
-      BooleanQuery bq = (BooleanQuery) query;
-      if (bq.clauses().isEmpty()) {
-        return false;
-      }
-    }
-    if (query instanceof DisjunctionMaxQuery) {
-      DisjunctionMaxQuery dmq = (DisjunctionMaxQuery) query;
-      if (dmq.getDisjuncts().isEmpty()) {
-        return false;
-      }
     }
     final int frequency = frequency(query);
     final int minFrequency = minFrequencyToCache(query);

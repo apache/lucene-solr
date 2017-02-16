@@ -16,6 +16,8 @@
  */
 package org.apache.lucene.search;
 
+import java.io.IOException;
+
 import org.apache.lucene.document.IntPoint;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.util.LuceneTestCase;
@@ -30,6 +32,15 @@ public class TestUsageTrackingFilterCachingPolicy extends LuceneTestCase {
 
   public void testNeverCacheMatchAll() throws Exception {
     Query q = new MatchAllDocsQuery();
+    UsageTrackingQueryCachingPolicy policy = new UsageTrackingQueryCachingPolicy();
+    for (int i = 0; i < 1000; ++i) {
+      policy.onUse(q);
+    }
+    assertFalse(policy.shouldCache(q));
+  }
+
+  public void testNeverCacheTermFilter() throws IOException {
+    Query q = new TermQuery(new Term("foo", "bar"));
     UsageTrackingQueryCachingPolicy policy = new UsageTrackingQueryCachingPolicy();
     for (int i = 0; i < 1000; ++i) {
       policy.onUse(q);
