@@ -73,6 +73,11 @@ public class TestDoubleRangeFieldQueries extends BaseRangeFieldQueryTestCase {
     return DoubleRangeField.newWithinQuery(FIELD_NAME, ((DoubleRange)r).min, ((DoubleRange)r).max);
   }
 
+  @Override
+  protected Query newCrossesQuery(Range r) {
+    return DoubleRangeField.newCrossesQuery(FIELD_NAME, ((DoubleRange)r).min, ((DoubleRange)r).max);
+  }
+
   /** Basic test */
   public void testBasics() throws Exception {
     Directory dir = newDirectory();
@@ -88,7 +93,7 @@ public class TestDoubleRangeFieldQueries extends BaseRangeFieldQueryTestCase {
     document.add(new DoubleRangeField(FIELD_NAME, new double[] {10.0, -10.0}, new double[] {20.0, 10.0}));
     writer.addDocument(document);
 
-    // intersects (contains)
+    // intersects (contains, crosses)
     document = new Document();
     document.add(new DoubleRangeField(FIELD_NAME, new double[] {-20.0, -20.0}, new double[] {30.0, 30.1}));
     writer.addDocument(document);
@@ -126,6 +131,8 @@ public class TestDoubleRangeFieldQueries extends BaseRangeFieldQueryTestCase {
     assertEquals(2, searcher.count(DoubleRangeField.newWithinQuery(FIELD_NAME,
         new double[] {-11.0, -15.0}, new double[] {15.0, 20.0})));
     assertEquals(2, searcher.count(DoubleRangeField.newContainsQuery(FIELD_NAME,
+        new double[] {-11.0, -15.0}, new double[] {15.0, 20.0})));
+    assertEquals(5, searcher.count(DoubleRangeField.newCrossesQuery(FIELD_NAME,
         new double[] {-11.0, -15.0}, new double[] {15.0, 20.0})));
 
     reader.close();

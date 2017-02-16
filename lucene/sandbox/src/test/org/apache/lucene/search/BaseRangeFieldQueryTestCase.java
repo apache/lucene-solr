@@ -51,6 +51,8 @@ public abstract class BaseRangeFieldQueryTestCase extends LuceneTestCase {
 
   protected abstract Query newWithinQuery(Range box);
 
+  protected abstract Query newCrossesQuery(Range box);
+
   protected abstract Range nextRange(int dimensions);
 
   protected int dimension() {
@@ -213,7 +215,7 @@ public abstract class BaseRangeFieldQueryTestCase extends LuceneTestCase {
 
       // occasionally test open ended bounding ranges
       Range queryRange = nextRange(dimensions);
-      int rv = random().nextInt(3);
+      int rv = random().nextInt(4);
       Query query;
       Range.QueryType queryType;
       if (rv == 0) {
@@ -222,9 +224,12 @@ public abstract class BaseRangeFieldQueryTestCase extends LuceneTestCase {
       } else if (rv == 1)  {
         queryType = Range.QueryType.CONTAINS;
         query = newContainsQuery(queryRange);
-      } else {
+      } else if (rv == 2) {
         queryType = Range.QueryType.WITHIN;
         query = newWithinQuery(queryRange);
+      } else {
+        queryType = Range.QueryType.CROSSES;
+        query = newCrossesQuery(queryRange);
       }
 
       if (VERBOSE) {
@@ -296,12 +301,15 @@ public abstract class BaseRangeFieldQueryTestCase extends LuceneTestCase {
   }
 
   protected boolean expectedBBoxQueryResult(Range queryRange, Range range, Range.QueryType queryType) {
-    if (queryRange.isEqual(range)) {
+    if (queryRange.isEqual(range) && queryType != Range.QueryType.CROSSES) {
       return true;
     }
     Range.QueryType relation = range.relate(queryRange);
     if (queryType == Range.QueryType.INTERSECTS) {
       return relation != null;
+    } else if (queryType == Range.QueryType.CROSSES) {
+      // by definition, RangeFields that CONTAIN the query are also considered to cross
+      return relation == queryType || relation == Range.QueryType.CONTAINS;
     }
     return relation == queryType;
   }
@@ -309,7 +317,7 @@ public abstract class BaseRangeFieldQueryTestCase extends LuceneTestCase {
   abstract static class Range {
     protected boolean isMissing = false;
 
-    enum QueryType { INTERSECTS, WITHIN, CONTAINS }
+    enum QueryType { INTERSECTS, WITHIN, CONTAINS, CROSSES }
 
     protected abstract int numDimensions();
     protected abstract Object getMin(int dim);
@@ -330,7 +338,7 @@ public abstract class BaseRangeFieldQueryTestCase extends LuceneTestCase {
       } else if (contains(other)) {
         return QueryType.CONTAINS;
       }
-      return QueryType.INTERSECTS;
+      return QueryType.CROSSES;
     }
   }
 }
