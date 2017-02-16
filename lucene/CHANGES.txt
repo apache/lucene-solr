@@ -123,6 +123,9 @@ Bug Fixes
 * LUCENE-7679: MemoryIndex was ignoring omitNorms settings on passed-in
   IndexableFields. (Alan Woodward)
 
+* LUCENE-7692: PatternReplaceCharFilterFactory now implements MultiTermAware.
+  (Adrien Grand)
+
 Improvements
 
 * LUCENE-7055: Added Weight#scorerSupplier, which allows to estimate the cost
