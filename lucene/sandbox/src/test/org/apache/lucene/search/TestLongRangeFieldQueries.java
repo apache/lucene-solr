@@ -73,6 +73,11 @@ public class TestLongRangeFieldQueries extends BaseRangeFieldQueryTestCase {
     return LongRangeField.newWithinQuery(FIELD_NAME, ((LongRange)r).min, ((LongRange)r).max);
   }
 
+  @Override
+  protected Query newCrossesQuery(Range r) {
+    return LongRangeField.newCrossesQuery(FIELD_NAME, ((LongRange)r).min, ((LongRange)r).max);
+  }
+
   /** Basic test */
   public void testBasics() throws Exception {
     Directory dir = newDirectory();
@@ -88,7 +93,7 @@ public class TestLongRangeFieldQueries extends BaseRangeFieldQueryTestCase {
     document.add(new LongRangeField(FIELD_NAME, new long[] {10, -10}, new long[] {20, 10}));
     writer.addDocument(document);
 
-    // intersects (contains)
+    // intersects (contains, crosses)
     document = new Document();
     document.add(new LongRangeField(FIELD_NAME, new long[] {-20, -20}, new long[] {30, 30}));
     writer.addDocument(document);
@@ -126,6 +131,8 @@ public class TestLongRangeFieldQueries extends BaseRangeFieldQueryTestCase {
     assertEquals(3, searcher.count(LongRangeField.newWithinQuery(FIELD_NAME,
         new long[] {-11, -15}, new long[] {15, 20})));
     assertEquals(2, searcher.count(LongRangeField.newContainsQuery(FIELD_NAME,
+        new long[] {-11, -15}, new long[] {15, 20})));
+    assertEquals(4, searcher.count(LongRangeField.newCrossesQuery(FIELD_NAME,
         new long[] {-11, -15}, new long[] {15, 20})));
 
     reader.close();

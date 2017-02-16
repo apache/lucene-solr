@@ -19,6 +19,8 @@ package org.apache.lucene.document;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.Objects;
+import java.util.function.IntPredicate;
+import java.util.function.Predicate;
 
 import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.LeafReader;
@@ -62,7 +64,9 @@ abstract class RangeFieldQuery extends Query {
     /** Use this for within queries. */
     WITHIN,
     /** Use this for contains */
-    CONTAINS
+    CONTAINS,
+    /** Use this for crosses queries */
+    CROSSES
   }
 
   /**
@@ -107,7 +111,7 @@ abstract class RangeFieldQuery extends Query {
   @Override
   public final Weight createWeight(IndexSearcher searcher, boolean needsScores) throws IOException {
     return new ConstantScoreWeight(this) {
-      final RangeFieldComparator comparator = new RangeFieldComparator();
+      final RangeFieldComparator target = new RangeFieldComparator();
       private DocIdSet buildMatchingDocIdSet(LeafReader reader, PointValues values) throws IOException {
         DocIdSetBuilder result = new DocIdSetBuilder(reader.maxDoc(), values, field);
         values.intersect(field,
@@ -123,14 +127,7 @@ abstract class RangeFieldQuery extends Query {
               }
               @Override
               public void visit(int docID, byte[] leaf) throws IOException {
-                // add the document iff:
-                if (Arrays.equals(ranges, leaf)
-                    // target is within cell and queryType is INTERSECTS or CONTAINS:
-                    || (comparator.isWithin(leaf) && queryType != QueryType.WITHIN)
-                    // target contains cell and queryType is INTERSECTS or WITHIN:
-                    || (comparator.contains(leaf) && queryType != QueryType.CONTAINS)
-                    // target is not disjoint (crosses) and queryType is INTERSECTS
-                    || (comparator.isDisjoint(leaf) == false && queryType == QueryType.INTERSECTS)) {
+                if (target.matches(leaf)) {
                   adder.add(docID);
                 }
               }
@@ -138,14 +135,15 @@ abstract class RangeFieldQuery extends Query {
               public Relation compare(byte[] minPackedValue, byte[] maxPackedValue) {
                 byte[] node = getInternalRange(minPackedValue, maxPackedValue);
                 // compute range relation for BKD traversal
-                if (comparator.isDisjoint(node)) {
+                if (target.intersects(node) == false) {
                   return Relation.CELL_OUTSIDE_QUERY;
-                } else if (comparator.isWithin(node)) {
+                } else if (target.within(node)) {
                   // target within cell; continue traversing:
                   return Relation.CELL_CROSSES_QUERY;
-                } else if (comparator.contains(node)) {
-                  // target contains cell; add iff queryType is not a CONTAINS query:
-                  return (queryType == QueryType.CONTAINS) ? Relation.CELL_OUTSIDE_QUERY : Relation.CELL_INSIDE_QUERY;
+                } else if (target.contains(node)) {
+                  // target contains cell; add iff queryType is not a CONTAINS or CROSSES query:
+                  return (queryType == QueryType.CONTAINS || queryType == QueryType.CROSSES) ?
+                      Relation.CELL_OUTSIDE_QUERY : Relation.CELL_INSIDE_QUERY;
                 }
                 // target intersects cell; continue traversing:
                 return Relation.CELL_CROSSES_QUERY;
@@ -174,7 +172,7 @@ abstract class RangeFieldQuery extends Query {
           byte[] range = getInternalRange(values.getMinPackedValue(field), values.getMaxPackedValue(field));
           // if the internal node is not equal and not contained by the query, all docs do not match
           if ((!Arrays.equals(ranges, range)
-              && (comparator.contains(range) && queryType != QueryType.CONTAINS)) == false) {
+              && (target.contains(range) && queryType != QueryType.CONTAINS)) == false) {
             allDocsMatch = false;
           }
         } else {
@@ -203,30 +201,56 @@ abstract class RangeFieldQuery extends Query {
    * {@code RangeField} types based on the defined query range and relation.
    */
   class RangeFieldComparator {
-    /** check if the query is outside the candidate range */
-    private boolean isDisjoint(final byte[] range) {
-      for (int d=0; d<numDims; ++d) {
-        if (compareMinMax(range, d) > 0 || compareMaxMin(range, d) < 0) {
-          return true;
-        }
+    final Predicate<byte[]> predicate;
+
+    /** constructs the comparator based on the query type */
+    RangeFieldComparator() {
+      switch (queryType) {
+        case INTERSECTS:
+          predicate = this::intersects;
+          break;
+        case WITHIN:
+          predicate = this::contains;
+          break;
+        case CONTAINS:
+          predicate = this::within;
+          break;
+        case CROSSES:
+          // crosses first checks intersection (disjoint automatic fails),
+          // then ensures the query doesn't wholly contain the leaf:
+          predicate = (byte[] leaf) -> this.intersects(leaf)
+              && this.contains(leaf) == false;
+          break;
+        default:
+          throw new IllegalArgumentException("invalid queryType [" + queryType + "] found.");
       }
-      return false;
+    }
+
+    /** determines if the candidate range matches the query request */
+    private boolean matches(final byte[] candidate) {
+      return (Arrays.equals(ranges, candidate) && queryType != QueryType.CROSSES)
+          || predicate.test(candidate);
+    }
+
+    /** check if query intersects candidate range */
+    private boolean intersects(final byte[] candidate) {
+      return relate((int d) -> compareMinMax(candidate, d) > 0 || compareMaxMin(candidate, d) < 0);
     }
 
     /** check if query is within candidate range */
-    private boolean isWithin(final byte[] range) {
-      for (int d=0; d<numDims; ++d) {
-        if (compareMinMin(range, d) < 0 || compareMaxMax(range, d) > 0) {
-          return false;
-        }
-      }
-      return true;
+    private boolean within(final byte[] candidate) {
+      return relate((int d) -> compareMinMin(candidate, d) < 0 || compareMaxMax(candidate, d) > 0);
     }
 
     /** check if query contains candidate range */
-    private boolean contains(final byte[] range) {
+    private boolean contains(final byte[] candidate) {
+      return relate((int d) -> compareMinMin(candidate, d) > 0 || compareMaxMax(candidate, d) < 0);
+    }
+
+    /** internal method used by each relation method to test range relation logic */
+    private boolean relate(IntPredicate predicate) {
       for (int d=0; d<numDims; ++d) {
-        if (compareMinMin(range, d) > 0 || compareMaxMax(range, d) < 0) {
+        if (predicate.test(d)) {
           return false;
         }
       }
