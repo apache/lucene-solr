@@ -216,15 +216,13 @@ public abstract class SolrQueryRequestBase implements SolrQueryRequest, Closeabl
   private InputStreamReader getInputStream(ContentStream contentStream) {
     if(contentStream instanceof InputStream) {
       return new InputStreamReader((InputStream)contentStream, UTF_8);
-    }
-    if(contentStream instanceof ContentStreamBase.StringStream) {
+    } else {
       try {
         return new InputStreamReader(contentStream.getStream(), UTF_8);
       } catch (IOException e) {
         throw new RuntimeException(e);
       }
     }
-    throw new IllegalAccessError("ContentStream type not supported "+contentStream.getClass().getName());
   }
 
   protected ValidatingJsonMap getSpec() {
