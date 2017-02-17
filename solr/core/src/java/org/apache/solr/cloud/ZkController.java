@@ -75,6 +75,7 @@ import org.apache.solr.common.cloud.ZooKeeperException;
 import org.apache.solr.common.params.CollectionParams;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.SolrParams;
+import org.apache.solr.common.util.IOUtils;
 import org.apache.solr.common.util.ObjectReleaseTracker;
 import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.common.util.URLUtil;
@@ -324,6 +325,7 @@ public class ZkController {
                 ElectionContext prevContext = overseerElector.getContext();
                 if (prevContext != null) {
                   prevContext.cancelElection();
+                  prevContext.close();
                 }
 
                 overseerElector.setup(context);
@@ -534,11 +536,8 @@ public class ZkController {
       }
     } finally {
       try {
-        try {
-          overseer.close();
-        } catch (Exception e) {
-          log.error("Error closing overseer", e);
-        }
+        IOUtils.closeQuietly(overseerElector.getContext());
+        IOUtils.closeQuietly(overseer);
       } finally {
         try {
           try {
