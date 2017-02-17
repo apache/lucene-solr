@@ -74,9 +74,6 @@ Optimizations
   string fields from the FieldCache, resulting in up to 56% better throughput for those cases.
   (yonik)
 
-* SOLR-9584: Support Solr being proxied with another endpoint than default /solr, by using relative links
-  in AdminUI javascripts (Yun Jie Zhou via janhoy)
-
 * SOLR-5944: In-place updates of Numeric DocValues. To leverage this, the _version_ field and the updated
   field must both be stored=false, indexed=false, docValues=true. (Ishan Chattopadhyaya, hossman, noble,
   shalin, yonik)
@@ -174,6 +171,10 @@ Optimizations
 
 * SOLR-9764: All filters that which all documents in the index now share the same memory (DocSet).
   (Michael Sun, yonik)
+
+* SOLR-9584: Support Solr being proxied with another endpoint than default /solr, by using relative links
+  in AdminUI javascripts (Yun Jie Zhou via janhoy)
+
 
 Other Changes
 ----------------------

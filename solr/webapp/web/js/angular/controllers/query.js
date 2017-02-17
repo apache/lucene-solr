@@ -88,9 +88,9 @@ solrAdminApp.controller('QueryController',
       Query.query(params, function(data) {
         $scope.lang = $scope.query.wt;
         $scope.response = data;
-        $scope.url = $location.protocol() + "://" +
-                     $location.host() + ":" +
-                     $location.port() + url;
+        // Use relative URL to make it also work through proxies that may have a different host/port/context
+        $scope.url = url;
+        $scope.hostPortContext = $location.absUrl().substr(0,$location.absUrl().indexOf("#")); // For display only
       });
     };
 
