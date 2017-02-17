@@ -1505,6 +1505,14 @@ public final class SolrCore implements SolrInfoMBean, Closeable {
         throw (Error) e;
       }
     }
+    
+    if (coreStateClosed) {
+      try {
+        cleanupOldIndexDirectories(false);
+      } catch (Exception e) {
+        SolrException.log(log, e);
+      }
+    }
 
     try {
       infoRegistry.clear();
@@ -1536,11 +1544,6 @@ public final class SolrCore implements SolrInfoMBean, Closeable {
     }
 
     if (coreStateClosed) {
-      try {
-        cleanupOldIndexDirectories(false);
-      } catch (Exception e) {
-        SolrException.log(log, e);
-      }
       
       try {
         directoryFactory.close();
