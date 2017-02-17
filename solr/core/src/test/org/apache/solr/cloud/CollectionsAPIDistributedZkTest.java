@@ -482,7 +482,7 @@ public class CollectionsAPIDistributedZkTest extends SolrCloudTestCase {
   public void testCollectionsAPI() throws Exception {
 
     // create new collections rapid fire
-    int cnt = random().nextInt(TEST_NIGHTLY ? 6 : 1) + 1;
+    int cnt = random().nextInt(TEST_NIGHTLY ? 3 : 1) + 1;
     CollectionAdminRequest.Create[] createRequests = new CollectionAdminRequest.Create[cnt];
 
     for (int i = 0; i < cnt; i++) {
