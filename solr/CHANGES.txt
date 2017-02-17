@@ -162,6 +162,9 @@ Bug Fixes
 * SOLR-10121: Fix race conditions in HDFS BlockCache that can contribute to corruption in high
   concurrency situations. (yonik)
 
+* SOLR-10141: Upgrade to Caffeine 2.3.5 since v1.0.1 contributed to BlockCache corruption because the
+  removal listener was called more than once for some items and not at all for other items. (Ben Manes, yonik)
+
 
 Optimizations
 ----------------------

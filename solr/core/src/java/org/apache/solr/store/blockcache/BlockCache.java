@@ -75,8 +75,8 @@ public class BlockCache {
       lockCounters[i] = new AtomicInteger();
     }
 
-    RemovalListener<BlockCacheKey,BlockCacheLocation> listener = 
-        notification -> releaseLocation(notification.getKey(), notification.getValue());
+    RemovalListener<BlockCacheKey,BlockCacheLocation> listener = (blockCacheKey, blockCacheLocation, removalCause) -> releaseLocation(blockCacheKey, blockCacheLocation);
+
     cache = Caffeine.newBuilder()
         .removalListener(listener)
         .maximumSize(maxEntries)
