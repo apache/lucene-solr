@@ -484,6 +484,7 @@ final class ShardLeaderElectionContext extends ShardLeaderElectionContextBase {
   public void checkLIR(String coreName, boolean allReplicasInLine)
       throws InterruptedException, KeeperException, IOException {
     if (allReplicasInLine) {
+      log.info("Found all replicas participating in election, clear LIR");
       // SOLR-8075: A bug may allow the proper leader to get marked as LIR DOWN and
       // if we are marked as DOWN but were able to become the leader, we remove
       // the DOWN entry here so that we don't fail publishing ACTIVE due to being in LIR.
@@ -750,6 +751,11 @@ final class OverseerElectionContext extends ElectionContext {
   @Override
   public void cancelElection() throws InterruptedException, KeeperException {
     super.cancelElection();
+    overseer.close();
+  }
+  
+  @Override
+  public void close() {
     overseer.close();
   }
 

@@ -132,6 +132,8 @@ Bug Fixes
 
 * SOLR-10170: ClassCastException in RecoveryStrategy. (Mark Miller)
 
+* SOLR-9846: Overseer is not always closed after being started. (Mark Miller)
+
 Optimizations
 ----------------------
 

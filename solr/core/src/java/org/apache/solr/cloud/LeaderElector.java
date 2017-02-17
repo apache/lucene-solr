@@ -388,6 +388,7 @@ public  class LeaderElector {
     }
     if (watcher != null) watcher.cancel();
     this.context.cancelElection();
+    this.context.close();
     this.context = ctx;
     joinElection(ctx, true, joinAtHead);
   }
