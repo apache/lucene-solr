@@ -18,6 +18,7 @@ package org.apache.solr.request;
 
 import org.apache.solr.api.ApiBag;
 import org.apache.solr.common.SolrException;
+import org.apache.solr.common.util.ContentStreamBase;
 import org.apache.solr.common.util.ValidatingJsonMap;
 import org.apache.solr.common.util.SuppressForbidden;
 import org.apache.solr.search.SolrIndexSearcher;
@@ -31,6 +32,7 @@ import org.apache.solr.common.util.ContentStream;
 import org.apache.solr.core.SolrCore;
 
 import java.io.Closeable;
+import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.security.Principal;
@@ -202,13 +204,27 @@ public abstract class SolrQueryRequestBase implements SolrQueryRequest, Closeabl
       Iterable<ContentStream> contentStreams = getContentStreams();
       if (contentStreams == null) throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "No content stream");
       for (ContentStream contentStream : contentStreams) {
-        parsedCommands = ApiBag.getCommandOperations(new InputStreamReader((InputStream) contentStream, UTF_8),
+        parsedCommands = ApiBag.getCommandOperations(getInputStream(contentStream),
             getValidators(), validateInput);
       }
 
     }
     return CommandOperation.clone(parsedCommands);
 
+  }
+
+  private InputStreamReader getInputStream(ContentStream contentStream) {
+    if(contentStream instanceof InputStream) {
+      return new InputStreamReader((InputStream)contentStream, UTF_8);
+    }
+    if(contentStream instanceof ContentStreamBase.StringStream) {
+      try {
+        return new InputStreamReader(contentStream.getStream(), UTF_8);
+      } catch (IOException e) {
+        throw new RuntimeException(e);
+      }
+    }
+    throw new IllegalAccessError("ContentStream type not supported "+contentStream.getClass().getName());
   }
 
   protected ValidatingJsonMap getSpec() {

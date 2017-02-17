@@ -239,7 +239,7 @@ public class SolrRequestParsers
         if (httpSolrCall != null) {
           return httpSolrCall.getCommands(validateInput);
         }
-        return Collections.emptyList();
+        return super.getCommands(validateInput);
       }
 
       @Override
@@ -247,7 +247,7 @@ public class SolrRequestParsers
         if (httpSolrCall != null && httpSolrCall instanceof V2HttpCall) {
           return ((V2HttpCall) httpSolrCall).getUrlParts();
         }
-        return Collections.EMPTY_MAP;
+        return super.getPathTemplateValues();
       }
 
       @Override

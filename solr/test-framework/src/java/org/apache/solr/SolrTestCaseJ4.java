@@ -78,6 +78,7 @@ import org.apache.solr.client.solrj.impl.HttpClientUtil;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.impl.HttpSolrClient.Builder;
 import org.apache.solr.client.solrj.impl.LBHttpSolrClient;
+import org.apache.solr.client.solrj.response.SolrResponseBase;
 import org.apache.solr.client.solrj.util.ClientUtils;
 import org.apache.solr.cloud.IpTables;
 import org.apache.solr.common.SolrDocument;
@@ -2388,6 +2389,32 @@ public abstract class SolrTestCaseJ4 extends LuceneTestCase {
     }
     return new Builder(url)
         .build();
+  }
+
+  public static void assertResponse(SolrResponseBase response) {
+    assertTrue(response.getStatus() == 0);
+    if (response.getResponse().get("errors") != null) {
+      try {
+
+        String message;
+        Object errorMessages = ((LinkedHashMap)((ArrayList) response.getResponse().get("errors")).get(0)).get("errorMessages");
+        if(errorMessages instanceof String) {
+          message = errorMessages.toString();
+        }else{
+          message = String.valueOf(
+              ((ArrayList)
+                  ((LinkedHashMap)
+                      ((ArrayList) response.getResponse().get("errors"))
+                          .get(0))
+                      .get("errorMessages"))
+                  .get(0));
+        }
+        assertTrue(message, response.getResponse().get("errors") == null);
+      } catch (Exception e) {
+        assertTrue("Generic error, found errors but unable to find message",
+            response.getResponse().get("errors") == null);
+      }
+    }
   }
 
   /** 
