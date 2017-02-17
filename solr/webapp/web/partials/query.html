@@ -345,7 +345,7 @@ limitations under the License.
 
   <div id="result">
 
-    <a ng-show="response.data" id="url" class="address-bar" ng-href="{{url}}">{{url}}</a>
+    <a ng-show="response.data" id="url" class="address-bar" ng-href="{{url}}">{{hostPortContext}}{{url}}</a>
 
     <div id="response">
       <pre class="syntax language-{{lang}}"><code ng-bind-html="response.data | highlight:lang | unsafe"></code></pre>
