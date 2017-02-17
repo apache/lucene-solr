@@ -38,6 +38,8 @@ public class HdfsCollectionsAPIDistributedZkTest extends CollectionsAPIDistribut
   @BeforeClass
   public static void setupClass() throws Exception {
     System.setProperty("solr.hdfs.blockcache.blocksperbank", "512");
+    System.setProperty("tests.hdfs.numdatanodes", "1");
+   
     dfsCluster = HdfsTestUtil.setupClass(createTempDir().toFile().getAbsolutePath());
 
     ZkConfigManager configManager = new ZkConfigManager(zkClient());
@@ -53,6 +55,7 @@ public class HdfsCollectionsAPIDistributedZkTest extends CollectionsAPIDistribut
     HdfsTestUtil.teardownClass(dfsCluster);
     dfsCluster = null;
     System.clearProperty("solr.hdfs.blockcache.blocksperbank");
+    System.clearProperty("tests.hdfs.numdatanodes");
     System.clearProperty("solr.hdfs.home");
   }
 
