@@ -110,6 +110,7 @@ public class RangeFacetsExample implements Closeable {
     return searcher.search(q, 10);
   }
 
+  /** User drills down on the specified range, and also computes drill sideways counts. */
   public DrillSideways.DrillSidewaysResult drillSideways(LongRange range) throws IOException {
     // Passing no baseQuery means we drill down on all
     // documents ("browse only"):
