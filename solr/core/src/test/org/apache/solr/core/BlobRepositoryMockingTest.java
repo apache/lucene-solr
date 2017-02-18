@@ -25,18 +25,11 @@ import java.nio.charset.Charset;
 import java.util.concurrent.ConcurrentHashMap;
 
 import org.apache.commons.io.IOUtils;
-import org.apache.lucene.util.Constants;
-import org.apache.lucene.util.LuceneTestCase;
 import org.apache.solr.common.SolrException;
-import org.easymock.EasyMock;
-import org.junit.After;
 import org.junit.Before;
-import org.junit.BeforeClass;
 import org.junit.Test;
 
-import static org.easymock.EasyMock.anyObject;
-import static org.easymock.EasyMock.eq;
-import static org.easymock.EasyMock.expect;
+import static org.mockito.Mockito.*;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
@@ -47,18 +40,12 @@ public class BlobRepositoryMockingTest {
   private static final Charset UTF8 = Charset.forName("UTF-8");
   private static final String[][] PARSED = new String[][]{{"foo", "bar", "baz"}, {"bang", "boom", "bash"}};
   private static final String BLOBSTR = "foo,bar,baz\nbang,boom,bash";
-  private CoreContainer mockContainer = EasyMock.createMock(CoreContainer.class);
+  private CoreContainer mockContainer = mock(CoreContainer.class);
   @SuppressWarnings("unchecked")
-  private ConcurrentHashMap<String, BlobRepository.BlobContent> mapMock = EasyMock.createMock(ConcurrentHashMap.class);
-  @SuppressWarnings("unchecked")
-  private BlobRepository.Decoder<Object> decoderMock = EasyMock.createMock(BlobRepository.Decoder.class);;
-  @SuppressWarnings("unchecked")
-  private BlobRepository.BlobContent<Object> blobContentMock = EasyMock.createMock(BlobRepository.BlobContent.class);
+  private ConcurrentHashMap<String, BlobRepository.BlobContent> mapMock = mock(ConcurrentHashMap.class);
   
   private Object[] mocks = new Object[] {
       mockContainer,
-      decoderMock,
-      blobContentMock,
       mapMock
   };
   
@@ -67,16 +54,11 @@ public class BlobRepositoryMockingTest {
   boolean blobFetched = false;
   String blobKey = "";
 
-  @BeforeClass
-  public static void beforeClass() throws Exception {
-    LuceneTestCase.assumeFalse("SOLR-9893: EasyMock does not work with Java 9", Constants.JRE_IS_MINIMUM_JAVA9);
-  }
-  
   @Before
   public void setUp() throws IllegalAccessException, NoSuchFieldException {
     blobFetched = false;
     blobKey = "";
-    EasyMock.reset(mocks);
+    reset(mocks);
     repository = new BlobRepository(mockContainer) {
       @Override
       ByteBuffer fetchBlob(String key) {
@@ -93,53 +75,49 @@ public class BlobRepositoryMockingTest {
     };
   }
 
-  @After
-  public void tearDown() {
-    EasyMock.verify(mocks);
-  }
-
   @Test (expected = SolrException.class)
   public void testCloudOnly() {
-    expect(mockContainer.isZooKeeperAware()).andReturn(false);
-    EasyMock.replay(mocks);
-    BlobRepository.BlobContentRef ref = repository.getBlobIncRef("foo!");
+    when(mockContainer.isZooKeeperAware()).thenReturn(false);
+    try {
+      BlobRepository.BlobContentRef ref = repository.getBlobIncRef("foo!");
+    } catch (SolrException e) {
+      verify(mockContainer).isZooKeeperAware();
+      throw e;
+    }
   }
 
   @SuppressWarnings("unchecked")
   @Test
   public void testGetBlobIncrRefString() {
-    expect(mockContainer.isZooKeeperAware()).andReturn(true);
-    expect(mapMock.get("foo!")).andReturn(null);
-    expect(mapMock.put(eq("foo!"), anyObject(BlobRepository.BlobContent.class))).andReturn(null);
-    EasyMock.replay(mocks);
+    when(mockContainer.isZooKeeperAware()).thenReturn(true);
     BlobRepository.BlobContentRef ref = repository.getBlobIncRef("foo!");
     assertTrue("foo!".equals(blobKey));
     assertTrue(blobFetched);
     assertNotNull(ref.blob);
     assertEquals(blobData, ref.blob.get());
-  }  
-  
+    verify(mockContainer).isZooKeeperAware();
+    verify(mapMock).get("foo!");
+    verify(mapMock).put(eq("foo!"), any(BlobRepository.BlobContent.class));
+  }
+
   @SuppressWarnings("unchecked")
   @Test
   public void testCachedAlready() {
-    expect(mockContainer.isZooKeeperAware()).andReturn(true);
-    expect(mapMock.get("foo!")).andReturn(new BlobRepository.BlobContent<BlobRepository>("foo!", blobData));
-    EasyMock.replay(mocks);
+    when(mockContainer.isZooKeeperAware()).thenReturn(true);
+    when(mapMock.get("foo!")).thenReturn(new BlobRepository.BlobContent<BlobRepository>("foo!", blobData));
     BlobRepository.BlobContentRef ref = repository.getBlobIncRef("foo!");
     assertEquals("",blobKey);
     assertFalse(blobFetched);
     assertNotNull(ref.blob);
     assertEquals(blobData, ref.blob.get());
+    verify(mockContainer).isZooKeeperAware();
+    verify(mapMock).get("foo!");
   }
 
   @SuppressWarnings("unchecked")
   @Test
   public void testGetBlobIncrRefStringDecoder() {
-    expect(mockContainer.isZooKeeperAware()).andReturn(true);
-    expect(mapMock.get("foo!mocked")).andReturn(null);
-    expect(mapMock.put(eq("foo!mocked"), anyObject(BlobRepository.BlobContent.class))).andReturn(null);
-    
-    EasyMock.replay(mocks);
+    when(mockContainer.isZooKeeperAware()).thenReturn(true);
     BlobRepository.BlobContentRef ref = repository.getBlobIncRef("foo!", new BlobRepository.Decoder<Object>() {
       @Override
       public Object decode(InputStream inputStream) {
@@ -163,6 +141,9 @@ public class BlobRepositoryMockingTest {
     assertTrue(blobFetched);
     assertNotNull(ref.blob);
     assertEquals(PARSED, ref.blob.get());
+    verify(mockContainer).isZooKeeperAware();
+    verify(mapMock).get("foo!mocked");
+    verify(mapMock).put(eq("foo!mocked"), any(BlobRepository.BlobContent.class));
   }
 
 

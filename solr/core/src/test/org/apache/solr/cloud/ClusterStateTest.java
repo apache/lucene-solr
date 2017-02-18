@@ -21,27 +21,16 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 
-import org.apache.lucene.util.Constants;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.DocRouter;
 import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.cloud.Replica;
-import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.util.Utils;
-import org.easymock.EasyMock;
-import org.junit.BeforeClass;
 import org.junit.Test;
 
-import static org.easymock.EasyMock.createMock;
-
 public class ClusterStateTest extends SolrTestCaseJ4 {
-  
-  @BeforeClass
-  public static void beforeClass() throws Exception {
-    assumeFalse("SOLR-9893: EasyMock does not work with Java 9", Constants.JRE_IS_MINIMUM_JAVA9);
-  }
 
   @Test
   public void testStoreAndRead() throws Exception {
@@ -64,8 +53,7 @@ public class ClusterStateTest extends SolrTestCaseJ4 {
     slices.put("shard2", slice2);
     collectionStates.put("collection1", new DocCollection("collection1", slices, null, DocRouter.DEFAULT));
     collectionStates.put("collection2", new DocCollection("collection2", slices, null, DocRouter.DEFAULT));
-    ZkStateReader zkStateReaderMock = getMockZkStateReader(collectionStates.keySet());
-    
+
     ClusterState clusterState = new ClusterState(-1,liveNodes, collectionStates);
     byte[] bytes = Utils.toJSON(clusterState);
     // System.out.println("#################### " + new String(bytes));
@@ -90,11 +78,4 @@ public class ClusterStateTest extends SolrTestCaseJ4 {
     assertEquals("Should not have collections", 0, loadedClusterState.getCollectionsMap().size());
   }
 
-  public static ZkStateReader getMockZkStateReader(final Set<String> collections) {
-    ZkStateReader mock = createMock(ZkStateReader.class);
-    EasyMock.reset(mock);
-    EasyMock.replay(mock);
-
-    return mock;
-  }
 }

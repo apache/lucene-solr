@@ -217,6 +217,8 @@ Other Changes
 * SOLR-9890: factor out ShardResultTransformerUtils.[un]marshSortValue methods
   (Judith Silverman, Christine Poerschke)
 
+* SOLR-9966: Convert/migrate tests using EasyMock to Mockito (Cao Manh Dat,  Uwe Schindler)
+
 ==================  6.4.2 ==================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release.
