@@ -27,7 +27,6 @@ import java.util.Map;
 import java.util.Properties;
 import java.util.Set;
 
-import org.apache.lucene.util.Constants;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.cloud.CloudDescriptor;
 import org.apache.solr.cloud.ZkController;
@@ -36,24 +35,15 @@ import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.util.Utils;
 import org.apache.solr.core.CoreSorter.CountsForEachShard;
 import org.apache.solr.util.MockCoreContainer;
-import org.junit.BeforeClass;
 
 import static java.util.stream.Collectors.toList;
 import static org.apache.solr.core.CoreSorter.getShardName;
-import static org.easymock.EasyMock.createMock;
-import static org.easymock.EasyMock.expect;
-import static org.easymock.EasyMock.replay;
-import static org.easymock.EasyMock.reset;
+import static org.mockito.Mockito.*;
 
 public class CoreSorterTest extends SolrTestCaseJ4 {
   Map<String, Boolean> nodes = new LinkedHashMap<>();
   Set<String> liveNodes = new HashSet<>();
 
-  @BeforeClass
-  public static void beforeClass() throws Exception {
-    assumeFalse("SOLR-9893: EasyMock does not work with Java 9", Constants.JRE_IS_MINIMUM_JAVA9);
-  }
-  
   public void testComparator() {
     List<CountsForEachShard> l = new ArrayList<>();
     //                           DOWN LIVE  MY
@@ -111,15 +101,13 @@ public class CoreSorterTest extends SolrTestCaseJ4 {
   }
 
   private CoreContainer getMockContainer() {
-    CoreContainer mockCC = createMock(CoreContainer.class);
-    ZkController mockZKC = createMock(ZkController.class);
-    ClusterState mockClusterState = createMock(ClusterState.class);
-    reset(mockCC, mockZKC, mockClusterState);
-    expect(mockCC.isZooKeeperAware()).andReturn(Boolean.TRUE).anyTimes();
-    expect(mockCC.getZkController()).andReturn(mockZKC).anyTimes();
-    expect(mockClusterState.getLiveNodes()).andReturn(liveNodes).anyTimes();
-    expect(mockZKC.getClusterState()).andReturn(mockClusterState).anyTimes();
-    replay(mockCC, mockZKC, mockClusterState);
+    CoreContainer mockCC = mock(CoreContainer.class);
+    ZkController mockZKC = mock(ZkController.class);
+    ClusterState mockClusterState = mock(ClusterState.class);
+    when(mockCC.isZooKeeperAware()).thenReturn(true);
+    when(mockCC.getZkController()).thenReturn(mockZKC);
+    when(mockClusterState.getLiveNodes()).thenReturn(liveNodes);
+    when(mockZKC.getClusterState()).thenReturn(mockClusterState);
     return mockCC;
   }
 
