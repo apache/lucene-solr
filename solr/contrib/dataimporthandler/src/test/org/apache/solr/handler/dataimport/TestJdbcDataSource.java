@@ -35,6 +35,7 @@ import java.util.Properties;
 
 import javax.sql.DataSource;
 
+import org.apache.lucene.util.Constants;
 import org.apache.solr.handler.dataimport.JdbcDataSource.ResultSetIterator;
 import static org.mockito.Mockito.*;
 import org.junit.After;
@@ -484,6 +485,8 @@ public class TestJdbcDataSource extends AbstractDataImportHandlerTestCase {
 
   @Test
   public void testRetrieveFromDriverManager() throws Exception {
+    // in JDK9, Class.forName will throw exception for mock classes
+    if (Constants.JRE_IS_MINIMUM_JAVA9) return;
     DriverManager.registerDriver(driver);
     try {
       when(driver.connect(notNull(),notNull())).thenReturn(connection);
