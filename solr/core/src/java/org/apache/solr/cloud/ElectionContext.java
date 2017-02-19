@@ -744,8 +744,9 @@ final class OverseerElectionContext extends ElectionContext {
         log.warn("Wait interrupted ", e);
       }
     }
-    
-    overseer.start(id);
+    if (overseer.getZkController() == null || overseer.getZkController().getCoreContainer() == null || !overseer.getZkController().getCoreContainer().isShutDown()) {
+      overseer.start(id);
+    }
   }
   
   @Override
