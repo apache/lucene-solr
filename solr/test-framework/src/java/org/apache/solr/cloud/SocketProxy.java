@@ -343,6 +343,10 @@ public class SocketProxy {
         try {
           src.setSoTimeout(PUMP_SOCKET_TIMEOUT_MS);
         } catch (SocketException e) {
+          if (e.getMessage().equals("Socket is closed")) {
+            log.warn("Failed to set socket timeout on "+src+" due to: "+e);
+            return;
+          }
           log.error("Failed to set socket timeout on "+src+" due to: "+e);
           throw new RuntimeException(e);
         }
