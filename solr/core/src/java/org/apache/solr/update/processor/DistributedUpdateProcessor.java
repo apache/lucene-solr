@@ -1036,13 +1036,13 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
 
     VersionBucket bucket = vinfo.bucket(bucketHash);
 
-    long dependentVersionFound = -1; // Last found version for a dependent update; applicable only for in-place updates; useful for logging later
-    // if this is an inplace update, check and wait if we should be waiting for a dependent update, before 
-    // entering the synchronized block
+    long dependentVersionFound = -1;
+    // if this is an in-place update, check and wait if we should be waiting for a previous update (on which
+    // this update depends), before entering the synchronized block
     if (!leaderLogic && cmd.isInPlaceUpdate()) {
       dependentVersionFound = waitForDependentUpdates(cmd, versionOnUpdate, isReplayOrPeersync, bucket);
       if (dependentVersionFound == -1) {
-        // it means in leader, the document has been deleted by now. drop this update
+        // it means the document has been deleted by now at the leader. drop this update
         return true;
       }
     }
@@ -1135,7 +1135,7 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
                   assert fetchedFromLeader instanceof AddUpdateCommand;
                   // Newer document was fetched from the leader. Apply that document instead of this current in-place update.
                   log.info("In-place update of {} failed to find valid lastVersion to apply to, forced to fetch full doc from leader: {}",
-                      idBytes.utf8ToString(), (fetchedFromLeader == null? null: ((AddUpdateCommand)fetchedFromLeader).solrDoc));
+                      idBytes.utf8ToString(), fetchedFromLeader);
 
                   // Make this update to become a non-inplace update containing the full document obtained from the leader
                   cmd.solrDoc = ((AddUpdateCommand)fetchedFromLeader).solrDoc;
@@ -1273,7 +1273,7 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
       return -1;
     } else {
       assert missingUpdate instanceof AddUpdateCommand;
-      log.info("Fetched the document: {}", ((AddUpdateCommand)missingUpdate).getSolrInputDocument());
+      log.debug("Fetched the document: {}", ((AddUpdateCommand)missingUpdate).getSolrInputDocument());
       versionAdd((AddUpdateCommand)missingUpdate);
       log.info("Added the fetched document, id="+((AddUpdateCommand)missingUpdate).getPrintableId()+", version="+missingUpdate.getVersion());
     }
