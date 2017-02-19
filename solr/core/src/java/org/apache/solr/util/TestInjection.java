@@ -283,7 +283,13 @@ public class TestInjection {
       boolean enabled = pair.first();
       int chanceIn100 = pair.second();
       if (enabled && rand.nextInt(100) >= (100 - chanceIn100)) {
-        long rndTime = rand.nextInt(1000);
+        long rndTime;
+        if (rand.nextInt(10) > 2) {
+          rndTime = rand.nextInt(300);
+        } else {
+          rndTime = rand.nextInt(1000);
+        }
+       
         log.info("inject random update delay of {}ms", rndTime);
         try {
           Thread.sleep(rndTime);
