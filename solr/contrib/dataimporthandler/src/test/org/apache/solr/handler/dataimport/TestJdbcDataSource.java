@@ -485,8 +485,7 @@ public class TestJdbcDataSource extends AbstractDataImportHandlerTestCase {
 
   @Test
   public void testRetrieveFromDriverManager() throws Exception {
-    // in JDK9, Class.forName will throw exception for mock classes
-    if (Constants.JRE_IS_MINIMUM_JAVA9) return;
+    assumeFalse("In Java 9, Class.forName() does not work for mock classes", Constants.JRE_IS_MINIMUM_JAVA9);
     DriverManager.registerDriver(driver);
     try {
       when(driver.connect(notNull(),notNull())).thenReturn(connection);
