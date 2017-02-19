@@ -98,7 +98,7 @@ public class TestCoreAdminApis extends SolrTestCaseJ4 {
     when(mockCC.getCoreRootDirectory()).thenReturn(Paths.get("coreroot"));
     when(mockCC.getContainerProperties()).thenReturn(new Properties());
 
-    when(mockCC.getRequestHandlers()).thenReturn((PluginBag<SolrRequestHandler>) out.get("getRequestHandlers"));
+    when(mockCC.getRequestHandlers()).thenAnswer(invocationOnMock -> out.get("getRequestHandlers"));
     return mockCC;
   }
 
