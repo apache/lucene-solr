@@ -70,7 +70,7 @@ import org.junit.Before;
  */
 public class SolrCloudTestCase extends SolrTestCaseJ4 {
 
-  public static final int DEFAULT_TIMEOUT = 60;
+  public static final int DEFAULT_TIMEOUT = 90;
 
   private static class Config {
     final String name;

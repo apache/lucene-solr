@@ -201,10 +201,13 @@ public class DistributedVersionInfoTest extends SolrCloudTestCase {
             Thread.sleep(rand.nextInt(50)+1);
           } catch (InterruptedException e) {}
 
-          int docToDelete = rand.nextInt(docsSent.get())+1;
-          if (!deletedDocs.contains(docToDelete)) {
-            delI(String.valueOf(docToDelete));
-            deletedDocs.add(docToDelete);
+          int ds = docsSent.get();
+          if (ds > 0) {
+            int docToDelete = rand.nextInt(ds) + 1;
+            if (!deletedDocs.contains(docToDelete)) {
+              delI(String.valueOf(docToDelete));
+              deletedDocs.add(docToDelete);
+            }
           }
         }
       }
