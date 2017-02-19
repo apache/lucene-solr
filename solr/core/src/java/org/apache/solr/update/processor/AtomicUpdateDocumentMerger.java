@@ -214,7 +214,7 @@ public class AtomicUpdateDocumentMerger {
     Set<String> segmentSortingFields = null;
     try {
       IndexWriter iw = holder.get();
-      fieldNamesFromIndexWriter = iw.getFieldNames();
+      fieldNamesFromIndexWriter = iw.getFieldNames(); // This shouldn't be needed once LUCENE-7659 is resolved
       segmentSortingFields = iw.getConfig().getIndexSortFields();
     } finally {
       holder.decref();
