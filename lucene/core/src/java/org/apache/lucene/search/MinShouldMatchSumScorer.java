@@ -20,7 +20,6 @@ package org.apache.lucene.search;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.List;
 import java.util.stream.LongStream;
 import java.util.stream.StreamSupport;
@@ -90,7 +89,6 @@ final class MinShouldMatchSumScorer extends Scorer {
   final DisiWrapper[] tail;
   int tailSize;
 
-  final Collection<ChildScorer> childScorers;
   final long cost;
 
   MinShouldMatchSumScorer(Weight weight, Collection<Scorer> scorers, int minShouldMatch) {
@@ -115,17 +113,17 @@ final class MinShouldMatchSumScorer extends Scorer {
       addLead(new DisiWrapper(scorer));
     }
 
-    List<ChildScorer> children = new ArrayList<>();
-    for (Scorer scorer : scorers) {
-      children.add(new ChildScorer(scorer, "SHOULD"));
-    }
-    this.childScorers = Collections.unmodifiableCollection(children);
     this.cost = cost(scorers.stream().map(Scorer::iterator).mapToLong(DocIdSetIterator::cost), scorers.size(), minShouldMatch);
   }
 
   @Override
-  public final Collection<ChildScorer> getChildren() {
-    return childScorers;
+  public final Collection<ChildScorer> getChildren() throws IOException {
+    List<ChildScorer> matchingChildren = new ArrayList<>();
+    updateFreq();
+    for (DisiWrapper s = lead; s != null; s = s.next) {
+      matchingChildren.add(new ChildScorer(s.scorer, "SHOULD"));
+    }
+    return matchingChildren;
   }
 
   @Override

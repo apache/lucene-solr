@@ -90,6 +90,11 @@ API Changes
   after the main query has been executed. (Adrien Grand, Martijn van Groningen,
   Mike McCandless)
 
+* LUCENE-7628: Scorer.getChildren() now only returns Scorers that are
+  positioned on the current document, and can throw an IOException.
+  AssertingScorer checks that getChildren() is not called on an unpositioned
+  Scorer.  (Alan Woodward, Adrien Grand)
+
 New Features
 
 * LUCENE-7449: Add CROSSES relation support to RangeFieldQuery. (Nick Knize)
