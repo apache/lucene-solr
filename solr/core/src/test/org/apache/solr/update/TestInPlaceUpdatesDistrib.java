@@ -136,6 +136,7 @@ public class TestInPlaceUpdatesDistrib extends AbstractFullDistribZkTestBase {
         "docValues",Boolean.TRUE));
 
     // Do the tests now:
+    reorderedDBQIndividualReplicaTest();
     testDBQUsingUpdatedFieldFromDroppedUpdate();
     outOfOrderDBQsTest();
     docValuesUpdateTest();
@@ -241,6 +242,53 @@ public class TestInPlaceUpdatesDistrib extends AbstractFullDistribZkTestBase {
     }
 
     log.info("outOfOrderDeleteUpdatesIndividualReplicaTest: This test passed fine...");
+    clearIndex();
+    commit();
+  }
+
+  private void reorderedDBQIndividualReplicaTest() throws Exception {
+    clearIndex();
+    commit();
+
+    // put replica out of sync
+    float newinplace_updatable_float = 100;
+    long version0 = 2000;
+    List<UpdateRequest> updates = new ArrayList<>();
+    updates.add(simulatedUpdateRequest(null, "id", 0, "title_s", "title0_new", "inplace_updatable_float",
+        newinplace_updatable_float, "_version_", version0 + 1)); // full update
+    updates.add(simulatedUpdateRequest(version0 + 1, "id", 0, "inplace_updatable_float",
+        newinplace_updatable_float + 1, "_version_", version0 + 2)); // inplace_updatable_float=101
+    updates.add(simulatedDeleteRequest("inplace_updatable_float:"+(newinplace_updatable_float + 1), version0 + 3));
+
+    // Reordering needs to happen using parallel threads
+    ExecutorService threadpool =
+        ExecutorUtil.newMDCAwareFixedThreadPool(updates.size() + 1, new DefaultSolrThreadFactory(getTestName()));
+
+    // re-order the updates by swapping the last two
+    List<UpdateRequest> reorderedUpdates = new ArrayList<>(updates);
+    reorderedUpdates.set(1, updates.get(2));
+    reorderedUpdates.set(2, updates.get(1));
+
+    List<Future<UpdateResponse>> updateResponses = new ArrayList<>();
+    for (UpdateRequest update : reorderedUpdates) {
+      AsyncUpdateWithRandomCommit task = new AsyncUpdateWithRandomCommit(update, NONLEADERS.get(0), random().nextLong());
+      updateResponses.add(threadpool.submit(task));
+      // while we can't guarantee/trust what order the updates are executed in, since multiple threads
+      // are involved, but we're trying to bias the thread scheduling to run them in the order submitted
+      Thread.sleep(100);
+    }
+
+    threadpool.shutdown();
+    assertTrue("Thread pool didn't terminate within 10 secs", threadpool.awaitTermination(10, TimeUnit.SECONDS));
+
+    // assert all requests were successful
+    for (Future<UpdateResponse> resp: updateResponses) {
+      assertEquals(0, resp.get().getStatus());
+    }
+
+    SolrDocument doc = NONLEADERS.get(0).getById(String.valueOf(0), params("distrib", "false"));
+    assertNull("This doc was supposed to have been deleted, but was: " + doc, doc);
+
     clearIndex();
     commit();
   }
