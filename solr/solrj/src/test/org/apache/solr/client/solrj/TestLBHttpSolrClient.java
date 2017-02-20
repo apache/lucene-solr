@@ -205,8 +205,8 @@ public class TestLBHttpSolrClient extends SolrTestCaseJ4 {
       s[i] = solr[i].getUrl();
     }
     ModifiableSolrParams params = new ModifiableSolrParams();
-    params.set(HttpClientUtil.PROP_CONNECTION_TIMEOUT, 250);
-    params.set(HttpClientUtil.PROP_SO_TIMEOUT, 250);
+    params.set(HttpClientUtil.PROP_CONNECTION_TIMEOUT, 500);
+    params.set(HttpClientUtil.PROP_SO_TIMEOUT, 500);
     CloseableHttpClient myHttpClient = HttpClientUtil.createClient(params);
     try {
       LBHttpSolrClient client = getLBHttpSolrClient(myHttpClient, s);
@@ -243,6 +243,8 @@ public class TestLBHttpSolrClient extends SolrTestCaseJ4 {
       String name = resp.getResults().get(0).getFieldValue("name").toString();
       if (name.equals(serverName))
         return;
+      
+      Thread.sleep(500);
     }
   }
   
