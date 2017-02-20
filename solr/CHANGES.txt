@@ -130,6 +130,8 @@ Bug Fixes
 
 * SOLR-10063: CoreContainer shutdown has race condition that can cause a hang on shutdown. (Mark Miller)
 
+* SOLR-10170: ClassCastException in RecoveryStrategy. (Mark Miller)
+
 Optimizations
 ----------------------
 

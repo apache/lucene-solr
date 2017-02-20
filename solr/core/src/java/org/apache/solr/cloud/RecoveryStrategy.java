@@ -591,10 +591,12 @@ public class RecoveryStrategy extends Thread implements Closeable {
         sendPrepRecoveryCmd(leaderBaseUrl, prepCmd);
         break;
       } catch (ExecutionException e) {
-        SolrServerException solrException = (SolrServerException) e.getCause();
-        if (solrException.getRootCause() instanceof SocketTimeoutException && numTries < maxTries) {
-          LOG.warn("Socket timeout when send prep recovery cmd, retrying.. ");
-          continue;
+        if (e.getCause() instanceof SolrServerException) {
+          SolrServerException solrException = (SolrServerException) e.getCause();
+          if (solrException.getRootCause() instanceof SocketTimeoutException && numTries < maxTries) {
+            LOG.warn("Socket timeout on send prep recovery cmd, retrying.. ");
+            continue;
+          }
         }
         throw  e;
       }
