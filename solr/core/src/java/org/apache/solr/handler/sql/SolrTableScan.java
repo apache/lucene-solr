@@ -72,6 +72,10 @@ class SolrTableScan extends TableScan implements SolrRel {
     for (RelOptRule rule : SolrRules.RULES) {
       planner.addRule(rule);
     }
+
+    for (RelOptRule rule : SolrRules.CONSTANT_REDUCTION_RULES) {
+      planner.addRule(rule);
+    }
   }
 
   public void implement(Implementor implementor) {
