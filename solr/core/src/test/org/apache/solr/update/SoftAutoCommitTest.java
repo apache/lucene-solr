@@ -98,6 +98,10 @@ public class SoftAutoCommitTest extends AbstractSolrTestCase {
     CommitTracker hardTracker = updater.commitTracker;
     CommitTracker softTracker = updater.softCommitTracker;
     
+    // wait out any leaked commits
+    monitor.soft.poll(softCommitWaitMillis * 2, MILLISECONDS);
+    monitor.hard.poll(hardCommitWaitMillis * 2, MILLISECONDS);
+    
     int startingHardCommits = hardTracker.getCommitCount();
     int startingSoftCommits = softTracker.getCommitCount();
     
@@ -115,7 +119,7 @@ public class SoftAutoCommitTest extends AbstractSolrTestCase {
     monitor.assertSaneOffers();
 
     // Wait for the soft commit with some fudge
-    Long soft529 = monitor.soft.poll(softCommitWaitMillis * 500, MILLISECONDS);
+    Long soft529 = monitor.soft.poll(softCommitWaitMillis * 5, MILLISECONDS);
     assertNotNull("soft529 wasn't fast enough", soft529);
     monitor.assertSaneOffers();
 
@@ -353,7 +357,7 @@ public class SoftAutoCommitTest extends AbstractSolrTestCase {
     // note: counting from 1 for multiplication
     for (int i = 1; i <= expectedSoft; i++) {
       // Wait for the soft commit with plenty of fudge to survive nasty envs
-      Long soft = monitor.soft.poll(softCommitWaitMillis * 2, MILLISECONDS);
+      Long soft = monitor.soft.poll(softCommitWaitMillis * 3, MILLISECONDS);
       if (soft != null || i == 1) {
         assertNotNull(i + ": soft wasn't fast enough", soft);
         monitor.assertSaneOffers();
