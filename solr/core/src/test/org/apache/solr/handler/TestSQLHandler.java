@@ -317,6 +317,14 @@ public class TestSQLHandler extends AbstractFullDistribZkTestBase {
       assert(tuple.getLong("myInt") == 7);
       assert(tuple.get("myString").equals("a"));
 
+      // SOLR-8845 - Test to make sure that 1 = 0 works for things like Spark SQL
+      sParams = mapParams(CommonParams.QT, "/sql",
+          "stmt", "select id, field_i, str_s from collection1 where 1 = 0");
+
+      solrStream = new SolrStream(jetty.url, sParams);
+      tuples = getTuples(solrStream);
+
+      assertEquals(0, tuples.size());
     } finally {
       delete();
     }

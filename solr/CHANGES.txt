@@ -285,6 +285,8 @@ Other Changes
 * SOLR-10155: For numeric types facet.contains= and facet.prefix= are now rejected.
   (Gus Heck, Christine Poerschke)
 
+* SOLR-10171 Add Constant Reduction Rules to Calcite Planner (Kevin Risden)
+
 ==================  6.4.2 ==================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release.

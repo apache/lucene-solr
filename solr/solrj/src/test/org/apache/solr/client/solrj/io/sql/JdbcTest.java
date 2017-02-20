@@ -450,6 +450,25 @@ public class JdbcTest extends SolrCloudTestCase {
   }
 
   @Test
+  public void testOneEqualZeroMetadata() throws Exception {
+    // SOLR-8845 - Make sure that 1 = 1 (literal comparison literal) works
+    try (Connection con = DriverManager.getConnection("jdbc:solr://" + zkHost +
+        "?collection=" + COLLECTIONORALIAS)) {
+
+      try (Statement stmt = con.createStatement()) {
+        try (ResultSet rs = stmt.executeQuery("select a_s from " + COLLECTIONORALIAS + " where 1 = 0")) {
+          assertFalse(rs.next());
+
+          ResultSetMetaData resultSetMetaData = rs.getMetaData();
+          assertNotNull(resultSetMetaData);
+          assertEquals(1, resultSetMetaData.getColumnCount());
+          assertEquals("a_s", resultSetMetaData.getColumnName(1));
+        }
+      }
+    }
+  }
+
+  @Test
   public void testDriverMetadata() throws Exception {
     String collection = COLLECTIONORALIAS;
 
