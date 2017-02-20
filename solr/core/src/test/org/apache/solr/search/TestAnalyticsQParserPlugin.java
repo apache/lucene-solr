@@ -18,6 +18,7 @@ package org.apache.solr.search;
 
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.IndexSearcher;
+import org.apache.lucene.util.LuceneTestCase.AwaitsFix;
 import org.apache.solr.client.solrj.request.QueryRequest;
 
 import org.apache.solr.client.solrj.response.QueryResponse;
@@ -31,12 +32,11 @@ import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.handler.component.MergeStrategy;
 import org.apache.solr.handler.component.ShardResponse;
 
-import org.junit.Ignore;
 import java.util.List;
 import java.util.concurrent.Future;
 import java.io.IOException;
 
-@Ignore
+@AwaitsFix(bugUrl = "https://issues.apache.org/jira/browse/SOLR-10175")
 public class TestAnalyticsQParserPlugin extends QParserPlugin {
 
 
