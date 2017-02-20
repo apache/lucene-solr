@@ -116,6 +116,9 @@ New Features
   implementation for analysis/tokenization (Clinton Gormley, Mike
   McCandless)
 
+* LUCENE-7688: Add OneMergeWrappingMergePolicy class.
+  (Keith Laban, Christine Poerschke)
+
 Bug Fixes
 
 * LUCENE-7630: Fix (Edge)NGramTokenFilter to no longer drop payloads
