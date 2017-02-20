@@ -42,6 +42,7 @@ public class HdfsChaosMonkeyNothingIsSafeTest extends ChaosMonkeyNothingIsSafeTe
   @BeforeClass
   public static void setupClass() throws Exception {
     dfsCluster = HdfsTestUtil.setupClass(createTempDir().toFile().getAbsolutePath());
+    System.setProperty("solr.hdfs.blockcache.global", "true"); // always use global cache, this test can create a lot of directories
   }
   
   @AfterClass
