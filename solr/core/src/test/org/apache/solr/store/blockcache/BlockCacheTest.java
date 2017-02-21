@@ -227,15 +227,15 @@ public class BlockCacheTest extends LuceneTestCase {
 
   // Sanity test the underlying concurrent map that BlockCache is using, in the same way that we use it.
   @Test
-  @AwaitsFix(bugUrl = "https://issues.apache.org/jira/browse/SOLR-10141")
   public void testCacheConcurrent() throws Exception {
     Random rnd = random();
 
+    // TODO: introduce more randomness in cache size, hit rate, etc
     final int blocksInTest = 400;
     final int maxEntries = blocksInTest/2;
 
     final int nThreads=64;
-    final int nReads=10000000;
+    final int nReads=1000000;
     final int readsPerThread=nReads/nThreads;
     final int readLastBlockOdds=10; // odds (1 in N) of the next block operation being on the same block as the previous operation... helps flush concurrency issues
     final boolean updateAnyway = true; // sometimes insert a new entry for the key even if one was found
