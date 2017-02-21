@@ -62,6 +62,7 @@
   <field name="datedv" type="date" indexed="false" stored="false" docValues="true" default="1995-12-31T23:59:59.999Z"/>
 
   <field name="stringdv" type="string" indexed="false" stored="false" docValues="true" default="solr" />
+  <field name="string_add_dv_later" type="string" indexed="true" stored="true" docValues="false"/>
   <field name="booldv" type="boolean" indexed="false" stored="false" docValues="true" default="true" />
 
   <field name="floatdvs" type="float" indexed="false" stored="false" docValues="true" default="1"/>
