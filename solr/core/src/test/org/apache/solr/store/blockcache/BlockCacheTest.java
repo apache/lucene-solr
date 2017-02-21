@@ -94,7 +94,6 @@ public class BlockCacheTest extends LuceneTestCase {
   }
 
   @Test
-  @AwaitsFix(bugUrl = "https://issues.apache.org/jira/browse/SOLR-10121")
   public void testBlockCacheConcurrent() throws Exception {
     Random rnd = random();
 
