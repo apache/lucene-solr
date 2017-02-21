@@ -18,7 +18,6 @@ package org.apache.solr.search;
 
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.IndexSearcher;
-import org.apache.lucene.util.LuceneTestCase.AwaitsFix;
 import org.apache.solr.client.solrj.request.QueryRequest;
 
 import org.apache.solr.client.solrj.response.QueryResponse;
@@ -36,8 +35,7 @@ import java.util.List;
 import java.util.concurrent.Future;
 import java.io.IOException;
 
-@AwaitsFix(bugUrl = "https://issues.apache.org/jira/browse/SOLR-10175")
-public class TestAnalyticsQParserPlugin extends QParserPlugin {
+public class AnalyticsTestQParserPlugin extends QParserPlugin {
 
 
   public QParser createParser(String query, SolrParams localParams, SolrParams params, SolrQueryRequest req) {
