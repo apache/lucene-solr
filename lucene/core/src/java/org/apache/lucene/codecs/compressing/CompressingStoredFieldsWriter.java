@@ -502,7 +502,7 @@ public final class CompressingStoredFieldsWriter extends StoredFieldsWriter {
        * If all readers are compressed and they have the same fieldinfos then we can merge the serialized document
        * directly.
        */
-      List<CompressingStoredFieldsMergeSub> subs = new ArrayList<>();
+      List<CompressingStoredFieldsMergeSub> subs = new ArrayList<>(mergeState.storedFieldsReaders.length);
       for(int i=0;i<mergeState.storedFieldsReaders.length;i++) {
         if (matching.matchingReaders[i] &&
             mergeState.storedFieldsReaders[i] instanceof CompressingStoredFieldsReader) {

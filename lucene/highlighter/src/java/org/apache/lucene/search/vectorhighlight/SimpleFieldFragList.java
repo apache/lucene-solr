@@ -42,7 +42,7 @@ public class SimpleFieldFragList extends FieldFragList {
   @Override
   public void add( int startOffset, int endOffset, List<WeightedPhraseInfo> phraseInfoList ) {
     float totalBoost = 0;
-    List<SubInfo> subInfos = new ArrayList<>();
+    List<SubInfo> subInfos = new ArrayList<>(phraseInfoList.size());
     for( WeightedPhraseInfo phraseInfo : phraseInfoList ){
       subInfos.add( new SubInfo( phraseInfo.getText(), phraseInfo.getTermsOffsets(), phraseInfo.getSeqnum(), phraseInfo.getBoost() ) );
       totalBoost += phraseInfo.getBoost();

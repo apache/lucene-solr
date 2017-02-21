@@ -86,7 +86,7 @@ abstract class SpanContainQuery extends SpanQuery implements Cloneable {
       if (littleSpans == null) {
         return null;
       }
-      ArrayList<Spans> bigAndLittle = new ArrayList<>();
+      ArrayList<Spans> bigAndLittle = new ArrayList<>(2);
       bigAndLittle.add(bigSpans);
       bigAndLittle.add(littleSpans);
       return bigAndLittle;

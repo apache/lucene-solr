@@ -97,8 +97,9 @@ class SegmentInfosSearcherManager extends ReferenceManager<IndexSearcher> {
     if (old == null) {
       subs = null;
     } else {
-      subs = new ArrayList<>();
-      for(LeafReaderContext ctx : old.getIndexReader().leaves()) {
+      List<LeafReaderContext> leaves = old.getIndexReader().leaves();
+      subs = new ArrayList<>(leaves.size());
+      for(LeafReaderContext ctx : leaves) {
         subs.add(ctx.reader());
       }
     }

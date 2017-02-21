@@ -79,16 +79,16 @@ class SimpleGeoJSONPolygonParser {
     if (polyType.equals("Polygon")) {
       return new Polygon[] {parsePolygon(coordinates)};
     } else {
-      List<Polygon> polygons = new ArrayList<>();
+      Polygon[] polygons = new Polygon[coordinates.size()];
       for(int i=0;i<coordinates.size();i++) {
         Object o = coordinates.get(i);
         if (o instanceof List == false) {
           throw newParseException("elements of coordinates array should be an array, but got: " + o.getClass());
         }
-        polygons.add(parsePolygon((List<Object>) o));
+        polygons[i] = (parsePolygon((List<Object>) o));
       }
 
-      return polygons.toArray(new Polygon[polygons.size()]);
+      return polygons;
     }
   }
 
@@ -217,11 +217,11 @@ class SimpleGeoJSONPolygonParser {
   }
 
   private Polygon parsePolygon(List<Object> coordinates) throws ParseException {
-    List<Polygon> holes = new ArrayList<>();
     Object o = coordinates.get(0);
     if (o instanceof List == false) {
       throw newParseException("first element of polygon array must be an array [[lat, lon], [lat, lon] ...] but got: " + o);
     }
+    List<Polygon> holes = new ArrayList<>(coordinates.size());
     double[][] polyPoints = parsePoints((List<Object>) o);
     for(int i=1;i<coordinates.size();i++) {
       o = coordinates.get(i);

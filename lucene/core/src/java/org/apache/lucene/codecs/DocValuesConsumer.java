@@ -476,7 +476,7 @@ public abstract class DocValuesConsumer implements Closeable {
    * an Iterable that merges ordinals and values and filters deleted documents .
    */
   public void mergeSortedField(FieldInfo fieldInfo, final MergeState mergeState) throws IOException {
-    List<SortedDocValues> toMerge = new ArrayList<>();
+    List<SortedDocValues> toMerge = new ArrayList<>(mergeState.docValuesProducers.length);
     for (int i=0;i<mergeState.docValuesProducers.length;i++) {
       SortedDocValues values = null;
       DocValuesProducer docValuesProducer = mergeState.docValuesProducers[i];
@@ -647,7 +647,7 @@ public abstract class DocValuesConsumer implements Closeable {
    */
   public void mergeSortedSetField(FieldInfo mergeFieldInfo, final MergeState mergeState) throws IOException {
 
-    List<SortedSetDocValues> toMerge = new ArrayList<>();
+    List<SortedSetDocValues> toMerge = new ArrayList<>(mergeState.docValuesProducers.length);
     for (int i=0;i<mergeState.docValuesProducers.length;i++) {
       SortedSetDocValues values = null;
       DocValuesProducer docValuesProducer = mergeState.docValuesProducers[i];

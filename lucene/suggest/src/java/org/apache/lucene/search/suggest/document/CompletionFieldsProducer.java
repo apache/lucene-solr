@@ -148,7 +148,7 @@ final class CompletionFieldsProducer extends FieldsProducer {
 
   @Override
   public Collection<Accountable> getChildResources() {
-    List<Accountable> accountableList = new ArrayList<>();
+    List<Accountable> accountableList = new ArrayList<>(readers.size());
     for (Map.Entry<String, CompletionsTermsReader> readerEntry : readers.entrySet()) {
       accountableList.add(Accountables.namedAccountable(readerEntry.getKey(), readerEntry.getValue()));
     }

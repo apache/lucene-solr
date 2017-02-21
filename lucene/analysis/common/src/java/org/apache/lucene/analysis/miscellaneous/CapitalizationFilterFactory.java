@@ -89,7 +89,7 @@ public class CapitalizationFilterFactory extends TokenFilterFactory {
 
     k = getSet(args, OK_PREFIX);
     if (k != null) {
-      okPrefix = new ArrayList<>();
+      okPrefix = new ArrayList<>(k.size());
       for (String item : k) {
         okPrefix.add(item.toCharArray());
       }

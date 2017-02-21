@@ -49,7 +49,7 @@ final class BooleanWeight extends Weight {
     this.query = query;
     this.needsScores = needsScores;
     this.similarity = searcher.getSimilarity(needsScores);
-    weights = new ArrayList<>();
+    weights = new ArrayList<>(query.clauses().size());
     for (BooleanClause c : query) {
       Weight w = searcher.createWeight(c.getQuery(), needsScores && c.isScoring(), boost);
       weights.add(w);

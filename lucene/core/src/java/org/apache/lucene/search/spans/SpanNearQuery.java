@@ -177,7 +177,7 @@ public class SpanNearQuery extends SpanQuery implements Cloneable {
 
   @Override
   public SpanWeight createWeight(IndexSearcher searcher, boolean needsScores, float boost) throws IOException {
-    List<SpanWeight> subWeights = new ArrayList<>();
+    List<SpanWeight> subWeights = new ArrayList<>(clauses.size());
     for (SpanQuery q : clauses) {
       subWeights.add(q.createWeight(searcher, false, boost));
     }
@@ -234,7 +234,7 @@ public class SpanNearQuery extends SpanQuery implements Cloneable {
   @Override
   public Query rewrite(IndexReader reader) throws IOException {
     boolean actuallyRewritten = false;
-    List<SpanQuery> rewrittenClauses = new ArrayList<>();
+    List<SpanQuery> rewrittenClauses = new ArrayList<>(clauses.size());
     for (int i = 0 ; i < clauses.size(); i++) {
       SpanQuery c = clauses.get(i);
       SpanQuery query = (SpanQuery) c.rewrite(reader);

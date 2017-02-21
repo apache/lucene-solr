@@ -107,7 +107,7 @@ public class SimpleFacetsExample {
     FacetsCollector.search(searcher, new MatchAllDocsQuery(), 10, fc);
 
     // Retrieve results
-    List<FacetResult> results = new ArrayList<>();
+    List<FacetResult> results = new ArrayList<>(2);
 
     // Count both "Publish Date" and "Author" dimensions
     Facets facets = new FastTaxonomyFacetCounts(taxoReader, config, fc);
@@ -134,7 +134,7 @@ public class SimpleFacetsExample {
     searcher.search(new MatchAllDocsQuery(), fc);
 
     // Retrieve results
-    List<FacetResult> results = new ArrayList<>();
+    List<FacetResult> results = new ArrayList<>(1);
 
     // Count both "Publish Date" and "Author" dimensions
     Facets facets = new FastTaxonomyFacetCounts(taxoReader, config, fc);

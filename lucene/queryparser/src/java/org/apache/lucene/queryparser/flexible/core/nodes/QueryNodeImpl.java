@@ -127,7 +127,7 @@ public abstract class QueryNodeImpl implements QueryNode, Cloneable {
 
     // copy children
     if (this.clauses != null) {
-      List<QueryNode> localClauses = new ArrayList<>();
+      List<QueryNode> localClauses = new ArrayList<>(this.clauses.size());
       for (QueryNode clause : this.clauses) {
         localClauses.add(clause.cloneTree());
       }

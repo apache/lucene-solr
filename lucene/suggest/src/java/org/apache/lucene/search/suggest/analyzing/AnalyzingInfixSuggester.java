@@ -687,7 +687,7 @@ public class AnalyzingInfixSuggester extends Lookup implements Closeable {
       throws IOException {
 
     List<LeafReaderContext> leaves = searcher.getIndexReader().leaves();
-    List<LookupResult> results = new ArrayList<>();
+    List<LookupResult> results = new ArrayList<>(hits.scoreDocs.length);
     for (int i=0;i<hits.scoreDocs.length;i++) {
       FieldDoc fd = (FieldDoc) hits.scoreDocs[i];
       BinaryDocValues textDV = MultiDocValues.getBinaryValues(searcher.getIndexReader(), TEXT_FIELD_NAME);

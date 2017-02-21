@@ -103,7 +103,7 @@ public class SimpleSortedSetFacetsExample {
     // Retrieve results
     Facets facets = new SortedSetDocValuesFacetCounts(state, fc);
 
-    List<FacetResult> results = new ArrayList<>();
+    List<FacetResult> results = new ArrayList<>(2);
     results.add(facets.getTopChildren(10, "Author"));
     results.add(facets.getTopChildren(10, "Publish Year"));
     indexReader.close();

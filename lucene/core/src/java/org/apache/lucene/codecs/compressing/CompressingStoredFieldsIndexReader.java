@@ -191,7 +191,7 @@ public final class CompressingStoredFieldsIndexReader implements Cloneable, Acco
 
   @Override
   public Collection<Accountable> getChildResources() {
-    List<Accountable> resources = new ArrayList<>();
+    List<Accountable> resources = new ArrayList<>(2);
     
     long docBaseDeltaBytes = RamUsageEstimator.shallowSizeOf(docBasesDeltas);
     for (PackedInts.Reader r : docBasesDeltas) {

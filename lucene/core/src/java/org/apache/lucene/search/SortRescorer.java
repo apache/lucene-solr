@@ -99,7 +99,9 @@ public class SortRescorer extends Rescorer {
     TopDocs hits = rescore(searcher, oneHit, 1);
     assert hits.totalHits == 1;
 
-    List<Explanation> subs = new ArrayList<>();
+    SortField[] sortFields = sort.getSort();
+
+    List<Explanation> subs = new ArrayList<>(1 + sortFields.length);
 
     // Add first pass:
     Explanation first = Explanation.match(firstPassExplanation.getValue(), "first pass score", firstPassExplanation);
@@ -108,7 +110,6 @@ public class SortRescorer extends Rescorer {
     FieldDoc fieldDoc = (FieldDoc) hits.scoreDocs[0];
 
     // Add sort values:
-    SortField[] sortFields = sort.getSort();
     for(int i=0;i<sortFields.length;i++) {
       subs.add(Explanation.match(0.0f, "sort field " + sortFields[i].toString() + " value=" + fieldDoc.fields[i]));
     }

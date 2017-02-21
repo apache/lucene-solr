@@ -43,8 +43,7 @@ public class WeightedFieldFragList extends FieldFragList {
    */ 
   @Override
   public void add( int startOffset, int endOffset, List<WeightedPhraseInfo> phraseInfoList ) {
-    List<SubInfo> tempSubInfos = new ArrayList<>();
-    List<SubInfo> realSubInfos = new ArrayList<>();
+    List<SubInfo> tempSubInfos = new ArrayList<>(phraseInfoList.size());
     HashSet<String> distinctTerms = new HashSet<>();
     int length = 0;
 
@@ -64,7 +63,7 @@ public class WeightedFieldFragList extends FieldFragList {
     // To avoid that fragments containing a high number of words possibly "outrank" more relevant fragments
     // we "bend" the length with a standard-normalization a little bit.
     float norm = length * ( 1 / (float)Math.sqrt( length ) );
-
+    List<SubInfo> realSubInfos = new ArrayList<>(tempSubInfos.size());
     float totalBoost = 0;
     for ( SubInfo tempSubInfo : tempSubInfos ) {
       float subInfoBoost = tempSubInfo.getBoost() * norm;

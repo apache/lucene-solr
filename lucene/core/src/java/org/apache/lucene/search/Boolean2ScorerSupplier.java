@@ -161,8 +161,8 @@ final class Boolean2ScorerSupplier extends ScorerSupplier {
       long minCost = Math.min(
           requiredNoScoring.stream().mapToLong(ScorerSupplier::cost).min().orElse(Long.MAX_VALUE),
           requiredScoring.stream().mapToLong(ScorerSupplier::cost).min().orElse(Long.MAX_VALUE));
-      List<Scorer> requiredScorers = new ArrayList<>();
-      List<Scorer> scoringScorers = new ArrayList<>();
+      List<Scorer> requiredScorers = new ArrayList<>(requiredNoScoring.size() + requiredScoring.size());
+      List<Scorer> scoringScorers = new ArrayList<>(requiredScoring.size());
       for (ScorerSupplier s : requiredNoScoring) {
         requiredScorers.add(s.get(randomAccess || s.cost() > minCost));
       }
@@ -206,7 +206,7 @@ final class Boolean2ScorerSupplier extends ScorerSupplier {
       }
       return new MinShouldMatchSumScorer(weight, optionalScorers, minShouldMatch);
     } else {
-      final List<Scorer> optionalScorers = new ArrayList<>();
+      final List<Scorer> optionalScorers = new ArrayList<>(optional.size());
       for (ScorerSupplier scorer : optional) {
         optionalScorers.add(scorer.get(randomAccess));
       }

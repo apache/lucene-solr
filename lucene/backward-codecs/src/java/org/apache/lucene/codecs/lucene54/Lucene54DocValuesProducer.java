@@ -1531,7 +1531,7 @@ final class Lucene54DocValuesProducer extends DocValuesProducer implements Close
 
     @Override
     public Collection<Accountable> getChildResources() {
-      List<Accountable> resources = new ArrayList<>();
+      List<Accountable> resources = new ArrayList<>(2);
       resources.add(Accountables.namedAccountable("term bytes", terms));
       resources.add(Accountables.namedAccountable("term addresses", termAddresses));
       return Collections.unmodifiableList(resources);
