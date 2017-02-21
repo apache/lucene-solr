@@ -135,13 +135,12 @@ public final class SimplePatternSplitTokenizer extends Tokenizer {
         } while (state != -1);
         
         if (lastAcceptLength != -1) {
-          // strip the trailing separater we just matched from the token:
-          tokenUpto -= lastAcceptLength;
-          // we found a token separator
+          // we found a token separator; strip the trailing separator we just matched from the token:
           int extra = sepUpto - lastAcceptLength;
           if (extra != 0) {
             pushBack(extra);
           }
+          tokenUpto -= lastAcceptLength;
           if (tokenUpto > 0) {
             fillToken(offsetStart);
             return true;
@@ -187,14 +186,14 @@ public final class SimplePatternSplitTokenizer extends Tokenizer {
     tokenUpto -= count;
     assert tokenUpto >= 0;
     if (pendingLimit == 0) {
-      if (bufferNextRead >= count) {
+      if (bufferLimit != -1 && bufferNextRead >= count) {
         // optimize common case when the chars we are pushing back are still in the buffer
         bufferNextRead -= count;
       } else {
         if (count > pendingChars.length) {
           pendingChars = ArrayUtil.grow(pendingChars, count);
         }
-        System.arraycopy(termAtt.buffer(), tokenUpto - count, pendingChars, 0, count);
+        System.arraycopy(termAtt.buffer(), tokenUpto, pendingChars, 0, count);
         pendingLimit = count;
       }
     } else {
