@@ -270,4 +270,14 @@ public class TestSimplePatternSplitTokenizer extends BaseTokenStreamTestCase {
     checkRandomData(random(), b, 1000*RANDOM_MULTIPLIER);
     b.close();
   }
+
+  public void testEndLookahead() throws Exception {
+    Tokenizer t = new SimplePatternSplitTokenizer("(ab)+");
+    t.setReader(new StringReader("aba"));
+    assertTokenStreamContents(t,
+        new String[] { "a" },
+        new int[] { 2 },
+        new int[] { 3 },
+        3);
+  }
 }

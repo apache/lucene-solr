@@ -172,7 +172,7 @@ public final class SimplePatternTokenizer extends Tokenizer {
   private void pushBack(int count) {
     
     if (pendingLimit == 0) {
-      if (bufferNextRead >= count) {
+      if (bufferLimit != -1 && bufferNextRead >= count) {
         // optimize common case when the chars we are pushing back are still in the buffer
         bufferNextRead -= count;
       } else {
