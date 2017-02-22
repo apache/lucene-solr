@@ -180,6 +180,9 @@ Bug Fixes
 
 * SOLR-9824: Some bulk update paths could be very slow due to CUSC polling. (David Smiley, Mark Miller)
 
+* SOLR-10055: Linux installer now renames existing bin/solr.in.* as bin/solr.in.*.orig to make the installed config in
+  /etc/defaults be the one found by default when launching solr manually. (janhoy)
+
 Optimizations
 ----------------------
 
