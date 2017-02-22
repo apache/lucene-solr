@@ -259,6 +259,7 @@ Other Changes
 * SOLR-10214: Remove unused HDFS BlockCache metrics and add storeFails, as well as adding total
   counts for lookups, hits, and evictions. (yonik)
   
+* SOLR-10134: EmbeddedSolrServer responds on Schema API requests (Robert Alexandersson via Mikhail Khludnev)  
 
 ==================  6.4.2 ==================
 

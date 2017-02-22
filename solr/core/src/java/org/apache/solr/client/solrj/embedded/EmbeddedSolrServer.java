@@ -172,6 +172,7 @@ public class EmbeddedSolrServer extends SolrClient {
 
       req = _parser.buildRequestFrom(core, params, request.getContentStreams());
       req.getContext().put(PATH, path);
+      req.getContext().put("httpMethod", request.getMethod().name());
       SolrQueryResponse rsp = new SolrQueryResponse();
       SolrRequestInfo.setRequestInfo(new SolrRequestInfo(req, rsp));
 
@@ -199,32 +200,13 @@ public class EmbeddedSolrServer extends SolrClient {
               };
 
 
-          ByteArrayOutputStream out = new ByteArrayOutputStream();
-          new JavaBinCodec(resolver) {
+          try(ByteArrayOutputStream out = new ByteArrayOutputStream()) {
+            createJavaBinCodec(callback, resolver).setWritableDocFields(resolver).marshal(rsp.getValues(), out);
 
-            @Override
-            public void writeSolrDocument(SolrDocument doc) {
-              callback.streamSolrDocument(doc);
-              //super.writeSolrDocument( doc, fields );
+            try(InputStream in = out.toInputStream()){
+              return (NamedList<Object>) new JavaBinCodec(resolver).unmarshal(in);
             }
-
-            @Override
-            public void writeSolrDocumentList(SolrDocumentList docs) throws IOException {
-              if (docs.size() > 0) {
-                SolrDocumentList tmp = new SolrDocumentList();
-                tmp.setMaxScore(docs.getMaxScore());
-                tmp.setNumFound(docs.getNumFound());
-                tmp.setStart(docs.getStart());
-                docs = tmp;
-              }
-              callback.streamDocListInfo(docs.getNumFound(), docs.getStart(), docs.getMaxScore());
-              super.writeSolrDocumentList(docs);
-            }
-
-          }.setWritableDocFields(resolver). marshal(rsp.getValues(), out);
-
-          InputStream in = out.toInputStream();
-          return (NamedList<Object>) new JavaBinCodec(resolver).unmarshal(in);
+          }
         } catch (Exception ex) {
           throw new RuntimeException(ex);
         }
@@ -241,6 +223,31 @@ public class EmbeddedSolrServer extends SolrClient {
       if (req != null) req.close();
       SolrRequestInfo.clearRequestInfo();
     }
+  }
+
+  private JavaBinCodec createJavaBinCodec(final StreamingResponseCallback callback, final BinaryResponseWriter.Resolver resolver) {
+    return new JavaBinCodec(resolver) {
+
+      @Override
+      public void writeSolrDocument(SolrDocument doc) {
+        callback.streamSolrDocument(doc);
+        //super.writeSolrDocument( doc, fields );
+      }
+
+      @Override
+      public void writeSolrDocumentList(SolrDocumentList docs) throws IOException {
+        if (docs.size() > 0) {
+          SolrDocumentList tmp = new SolrDocumentList();
+          tmp.setMaxScore(docs.getMaxScore());
+          tmp.setNumFound(docs.getNumFound());
+          tmp.setStart(docs.getStart());
+          docs = tmp;
+        }
+        callback.streamDocListInfo(docs.getNumFound(), docs.getStart(), docs.getMaxScore());
+        super.writeSolrDocumentList(docs);
+      }
+
+    };
   }
 
   private static void checkForExceptions(SolrQueryResponse rsp) throws Exception {
