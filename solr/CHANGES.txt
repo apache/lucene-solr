@@ -169,6 +169,8 @@ Bug Fixes
 
 * SOLR-10170: ClassCastException in RecoveryStrategy. (Mark Miller)
 
+* SOLR-10020: CoreAdminHandler silently swallows some errors. (Mike Drob via Erick Erickson)
+
 Optimizations
 ----------------------
 
