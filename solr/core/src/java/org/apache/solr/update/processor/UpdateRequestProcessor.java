@@ -16,13 +16,18 @@
  */
 package org.apache.solr.update.processor;
 
+import java.io.Closeable;
 import java.io.IOException;
+import java.lang.invoke.MethodHandles;
 
+import org.apache.solr.common.SolrException;
 import org.apache.solr.update.AddUpdateCommand;
 import org.apache.solr.update.CommitUpdateCommand;
 import org.apache.solr.update.DeleteUpdateCommand;
 import org.apache.solr.update.MergeIndexesCommand;
 import org.apache.solr.update.RollbackUpdateCommand;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 
 /**
@@ -37,7 +42,9 @@ import org.apache.solr.update.RollbackUpdateCommand;
  * 
  * @since solr 1.3
  */
-public abstract class UpdateRequestProcessor {
+public abstract class UpdateRequestProcessor implements Closeable {
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
+  
   protected final UpdateRequestProcessor next;
 
   public UpdateRequestProcessor( UpdateRequestProcessor next) {
@@ -72,5 +79,24 @@ public abstract class UpdateRequestProcessor {
   public void finish() throws IOException {
     if (next != null) next.finish();    
   }
+  
+  @Override
+  public final void close() throws IOException {
+    UpdateRequestProcessor p = this;
+    while (p != null) {
+      try {
+        p.doClose();
+      } catch(Exception e) {
+        SolrException.log(log, "Exception closing processor", e);
+      }
+      p = p.next;
+    }
+  }
+
+  /**
+   * Override to implement resource release logic that *must* be called at the
+   * end of a request.
+   */
+  protected void doClose() {}
 }
 

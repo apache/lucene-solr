@@ -229,6 +229,9 @@ Other Changes
 * SOLR-10173: Make HttpShardHandlerFactory.getReplicaListTransformer more extensible.
   (Ramsey Haddad via Christine Poerschke)
 
+* SOLR-9842: UpdateRequestProcessors have no way to guarantee the closing of resources used for a request.
+  (Mark Miller)
+
 ==================  6.4.2 ==================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release.
