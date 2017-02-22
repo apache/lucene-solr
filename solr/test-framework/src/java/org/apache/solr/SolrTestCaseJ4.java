@@ -2018,6 +2018,10 @@ public abstract class SolrTestCaseJ4 extends LuceneTestCase {
   // the string to write to the core.properties file may be null in which case nothing is done with it.
   // propertiesContent may be an empty string, which will actually work.
   public static void copyMinConf(File dstRoot, String propertiesContent) throws IOException {
+    copyMinConf(dstRoot, propertiesContent, "solrconfig-minimal.xml");
+  }
+
+  public static void copyMinConf(File dstRoot, String propertiesContent, String solrconfigXmlName) throws IOException {
 
     File subHome = new File(dstRoot, "conf");
     if (! dstRoot.exists()) {
@@ -2029,7 +2033,7 @@ public abstract class SolrTestCaseJ4 extends LuceneTestCase {
     }
     String top = SolrTestCaseJ4.TEST_HOME() + "/collection1/conf";
     FileUtils.copyFile(new File(top, "schema-tiny.xml"), new File(subHome, "schema.xml"));
-    FileUtils.copyFile(new File(top, "solrconfig-minimal.xml"), new File(subHome, "solrconfig.xml"));
+    FileUtils.copyFile(new File(top, solrconfigXmlName), new File(subHome, "solrconfig.xml"));
     FileUtils.copyFile(new File(top, "solrconfig.snippet.randomindexconfig.xml"), new File(subHome, "solrconfig.snippet.randomindexconfig.xml"));
   }
 

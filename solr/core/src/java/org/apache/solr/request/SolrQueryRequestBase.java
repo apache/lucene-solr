@@ -31,13 +31,14 @@ import org.apache.solr.common.util.ContentStream;
 import org.apache.solr.core.SolrCore;
 
 import java.io.Closeable;
+import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.security.Principal;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.HashMap;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
 
@@ -202,13 +203,25 @@ public abstract class SolrQueryRequestBase implements SolrQueryRequest, Closeabl
       Iterable<ContentStream> contentStreams = getContentStreams();
       if (contentStreams == null) throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "No content stream");
       for (ContentStream contentStream : contentStreams) {
-        parsedCommands = ApiBag.getCommandOperations(new InputStreamReader((InputStream) contentStream, UTF_8),
+        parsedCommands = ApiBag.getCommandOperations(getInputStream(contentStream),
             getValidators(), validateInput);
       }
 
     }
     return CommandOperation.clone(parsedCommands);
 
+  }
+
+  private InputStreamReader getInputStream(ContentStream contentStream) {
+    if(contentStream instanceof InputStream) {
+      return new InputStreamReader((InputStream)contentStream, UTF_8);
+    } else {
+      try {
+        return new InputStreamReader(contentStream.getStream(), UTF_8);
+      } catch (IOException e) {
+        throw new RuntimeException(e);
+      }
+    }
   }
 
   protected ValidatingJsonMap getSpec() {

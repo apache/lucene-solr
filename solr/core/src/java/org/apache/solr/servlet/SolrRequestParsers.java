@@ -16,7 +16,7 @@
  */
 package org.apache.solr.servlet;
 
-import javax.servlet.http.HttpServletRequest;
+import static org.apache.solr.common.params.CommonParams.PATH;
 
 import java.io.ByteArrayOutputStream;
 import java.io.File;
@@ -33,12 +33,13 @@ import java.security.Principal;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+
+import javax.servlet.http.HttpServletRequest;
 
 import org.apache.commons.fileupload.FileItem;
 import org.apache.commons.fileupload.disk.DiskFileItemFactory;
@@ -63,8 +64,6 @@ import org.apache.solr.request.SolrQueryRequestBase;
 import org.apache.solr.util.CommandOperation;
 import org.apache.solr.util.RTimerTree;
 import org.apache.solr.util.SolrFileCleaningTracker;
-
-import static org.apache.solr.common.params.CommonParams.PATH;
 
 
 public class SolrRequestParsers 
@@ -239,7 +238,7 @@ public class SolrRequestParsers
         if (httpSolrCall != null) {
           return httpSolrCall.getCommands(validateInput);
         }
-        return Collections.emptyList();
+        return super.getCommands(validateInput);
       }
 
       @Override
@@ -247,7 +246,7 @@ public class SolrRequestParsers
         if (httpSolrCall != null && httpSolrCall instanceof V2HttpCall) {
           return ((V2HttpCall) httpSolrCall).getUrlParts();
         }
-        return Collections.EMPTY_MAP;
+        return super.getPathTemplateValues();
       }
 
       @Override
