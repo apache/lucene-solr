@@ -274,6 +274,7 @@ public abstract class SolrTestCaseJ4 extends LuceneTestCase {
     System.setProperty("tests.shardhandler.randomSeed", Long.toString(random().nextLong()));
     System.setProperty("solr.clustering.enabled", "false");
     System.setProperty("solr.peerSync.useRangeVersions", String.valueOf(random().nextBoolean()));
+    System.setProperty("solr.cloud.wait-for-updates-with-stale-state-pause", "500");
     startTrackingSearchers();
     ignoreException("ignore_exception");
     newRandomConfig();
@@ -322,7 +323,6 @@ public abstract class SolrTestCaseJ4 extends LuceneTestCase {
       System.clearProperty("useCompoundFile");
       System.clearProperty("urlScheme");
       System.clearProperty("solr.peerSync.useRangeVersions");
-      
       HttpClientUtil.resetConfigurers();
 
       // clean up static
