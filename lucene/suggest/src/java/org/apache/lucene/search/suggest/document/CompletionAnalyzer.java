@@ -81,7 +81,7 @@ public final class CompletionAnalyzer extends AnalyzerWrapper {
   private final int maxGraphExpansions;
 
   /**
-   * Wraps an analyzer to convert it's output token stream to an automaton
+   * Wraps an analyzer to convert its output token stream to an automaton
    *
    * @param analyzer token stream to be converted to an automaton
    * @param preserveSep Preserve separation between tokens when converting to an automaton

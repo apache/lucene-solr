@@ -172,7 +172,7 @@ public class TestContextSuggestField extends LuceneTestCase {
     SuggestIndexSearcher suggestIndexSearcher = new SuggestIndexSearcher(reader);
 
     CompletionQuery query = new PrefixCompletionQuery(analyzer, new Term("suggest_field", "sugg"));
-    TopSuggestDocs suggest = suggestIndexSearcher.suggest(query, 10);
+    TopSuggestDocs suggest = suggestIndexSearcher.suggest(query, 10, false);
     assertSuggestions(suggest,
         new Entry("suggestion1", 4),
         new Entry("suggestion2", 3),
@@ -180,7 +180,7 @@ public class TestContextSuggestField extends LuceneTestCase {
         new Entry("suggestion4", 1));
 
     query = new PrefixCompletionQuery(analyzer, new Term("context_suggest_field", "sugg"));
-    suggest = suggestIndexSearcher.suggest(query, 10);
+    suggest = suggestIndexSearcher.suggest(query, 10, false);
     assertSuggestions(suggest,
         new Entry("suggestion1", "type1", 4),
         new Entry("suggestion2", "type2", 3),
@@ -212,14 +212,14 @@ public class TestContextSuggestField extends LuceneTestCase {
     DirectoryReader reader = iw.getReader();
     SuggestIndexSearcher suggestIndexSearcher = new SuggestIndexSearcher(reader);
     ContextQuery query = new ContextQuery(new PrefixCompletionQuery(completionAnalyzer, new Term("suggest_field", "sugg")));
-    TopSuggestDocs suggest = suggestIndexSearcher.suggest(query, 4);
+    TopSuggestDocs suggest = suggestIndexSearcher.suggest(query, 4, false);
     assertSuggestions(suggest,
         new Entry("suggestion1", "type1", 4),
         new Entry("suggestion2", "type2", 3),
         new Entry("suggestion3", "type3", 2),
         new Entry("suggestion4", "type4", 1));
     query.addContext("type1");
-    suggest = suggestIndexSearcher.suggest(query, 4);
+    suggest = suggestIndexSearcher.suggest(query, 4, false);
     assertSuggestions(suggest,
         new Entry("suggestion1", "type1", 4));
     reader.close();
