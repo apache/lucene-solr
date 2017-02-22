@@ -50,6 +50,7 @@ import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.IndexOutput;
 import org.apache.lucene.store.Lock;
 import org.apache.lucene.util.IOUtils;
+import org.apache.lucene.util.Version;
 
 /** Replica node, that pulls index changes from the primary node by copying newly flushed or merged index files.
  * 
@@ -138,7 +139,7 @@ public abstract class ReplicaNode extends Node {
       SegmentInfos infos;
       if (segmentsFileName == null) {
         // No index here yet:
-        infos = new SegmentInfos();
+        infos = new SegmentInfos(Version.LATEST);
         message("top: init: no segments in index");
       } else {
         message("top: init: read existing segments commit " + segmentsFileName);

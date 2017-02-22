@@ -702,13 +702,27 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
       if (VERBOSE) {
         System.out.println("\nTEST: old index " + name);
       }
+      Directory oldDir = oldIndexDirs.get(name);
+      Version indexCreatedVersion = SegmentInfos.readLatestCommit(oldDir).getIndexCreatedVersion();
+
       Directory targetDir = newDirectory();
+      // Simulate writing into an index that was created on the same version
+      new SegmentInfos(indexCreatedVersion).commit(targetDir);
       IndexWriter w = new IndexWriter(targetDir, newIndexWriterConfig(new MockAnalyzer(random())));
-      w.addIndexes(oldIndexDirs.get(name));
+      w.addIndexes(oldDir);
+      w.close();
+      targetDir.close();
+
+      // Now check that we forbid calling addIndexes with a different version
+      targetDir = newDirectory();
+      IndexWriter oldWriter = new IndexWriter(targetDir, newIndexWriterConfig(new MockAnalyzer(random())));
+      IllegalArgumentException e = expectThrows(IllegalArgumentException.class, () -> oldWriter.addIndexes(oldDir));
+      assertTrue(e.getMessage(), e.getMessage().startsWith("Cannot use addIndexes(Directory) with indexes that have been created by a different Lucene version."));
+
       if (VERBOSE) {
         System.out.println("\nTEST: done adding indices; now close");
       }
-      w.close();
+      oldWriter.close();
       
       targetDir.close();
     }
@@ -1221,6 +1235,20 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
     }
   }
 
+  public void testIndexCreatedVersion() throws IOException {
+    for (String name : oldNames) {
+      Directory dir = oldIndexDirs.get(name);
+      SegmentInfos infos = SegmentInfos.readLatestCommit(dir);
+      // those indexes are created by a single version so we can
+      // compare the commit version with the created version
+      if (infos.getCommitLuceneVersion().onOrAfter(Version.LUCENE_7_0_0)) {
+        assertEquals(infos.getCommitLuceneVersion(), infos.getIndexCreatedVersion());
+      } else {
+        assertNull(infos.getIndexCreatedVersion());
+      }
+    }
+  }
+
   public void verifyUsesDefaultCodec(Directory dir, String name) throws Exception {
     DirectoryReader r = DirectoryReader.open(dir);
     for (LeafReaderContext context : r.leaves()) {
@@ -1284,7 +1312,7 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
     }
   }
   
-  private int checkAllSegmentsUpgraded(Directory dir) throws IOException {
+  private int checkAllSegmentsUpgraded(Directory dir, Version indexCreatedVersion) throws IOException {
     final SegmentInfos infos = SegmentInfos.readLatestCommit(dir);
     if (VERBOSE) {
       System.out.println("checkAllSegmentsUpgraded: " + infos);
@@ -1293,6 +1321,7 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
       assertEquals(Version.LATEST, si.info.getVersion());
     }
     assertEquals(Version.LATEST, infos.getCommitLuceneVersion());
+    assertEquals(indexCreatedVersion, infos.getIndexCreatedVersion());
     return infos.size();
   }
   
@@ -1310,10 +1339,11 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
         System.out.println("testUpgradeOldIndex: index=" +name);
       }
       Directory dir = newDirectory(oldIndexDirs.get(name));
+      Version indexCreatedVersion = SegmentInfos.readLatestCommit(dir).getIndexCreatedVersion();
 
       newIndexUpgrader(dir).upgrade();
 
-      checkAllSegmentsUpgraded(dir);
+      checkAllSegmentsUpgraded(dir, indexCreatedVersion);
       
       dir.close();
     }
@@ -1324,7 +1354,9 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
     PrintStream savedSystemOut = System.out;
     System.setOut(new PrintStream(new ByteArrayOutputStream(), false, "UTF-8"));
     try {
-      for (String name : oldIndexDirs.keySet()) {
+      for (Map.Entry<String,Directory> entry : oldIndexDirs.entrySet()) {
+        String name = entry.getKey();
+        Version indexCreatedVersion = SegmentInfos.readLatestCommit(entry.getValue()).getIndexCreatedVersion();
         Path dir = createTempDir(name);
         TestUtil.unzip(getDataInputStream("index." + name + ".zip"), dir);
         
@@ -1360,7 +1392,7 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
         
         Directory upgradedDir = newFSDirectory(dir);
         try {
-          checkAllSegmentsUpgraded(upgradedDir);
+          checkAllSegmentsUpgraded(upgradedDir, indexCreatedVersion);
         } finally {
           upgradedDir.close();
         }
@@ -1377,6 +1409,7 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
       }
       Directory dir = newDirectory(oldIndexDirs.get(name));
       assertEquals("Original index must be single segment", 1, getNumberOfSegments(dir));
+      Version indexCreatedVersion = SegmentInfos.readLatestCommit(dir).getIndexCreatedVersion();
 
       // create a bunch of dummy segments
       int id = 40;
@@ -1418,7 +1451,7 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
       assertEquals(1, DirectoryReader.listCommits(dir).size());
       newIndexUpgrader(dir).upgrade();
 
-      final int segCount = checkAllSegmentsUpgraded(dir);
+      final int segCount = checkAllSegmentsUpgraded(dir, indexCreatedVersion);
       assertEquals("Index must still contain the same number of segments, as only one segment was upgraded and nothing else merged",
         origSegCount, segCount);
       
@@ -1435,7 +1468,7 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
 
     newIndexUpgrader(dir).upgrade();
 
-    checkAllSegmentsUpgraded(dir);
+    checkAllSegmentsUpgraded(dir, null);
     
     dir.close();
   }

@@ -49,7 +49,7 @@ import org.apache.lucene.util.SuppressForbidden;
  * careful!
  */
 public class IndexSplitter {
-  public SegmentInfos infos;
+  public final SegmentInfos infos;
 
   FSDirectory fsDir;
 
@@ -133,7 +133,7 @@ public class IndexSplitter {
   public void split(Path destDir, String[] segs) throws IOException {
     Files.createDirectories(destDir);
     FSDirectory destFSDir = FSDirectory.open(destDir);
-    SegmentInfos destInfos = new SegmentInfos();
+    SegmentInfos destInfos = new SegmentInfos(infos.getIndexCreatedVersion());
     destInfos.counter = infos.counter;
     for (String n : segs) {
       SegmentCommitInfo infoPerCommit = getInfo(n);
