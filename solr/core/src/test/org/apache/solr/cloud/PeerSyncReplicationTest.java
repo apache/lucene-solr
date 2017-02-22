@@ -195,9 +195,15 @@ public class PeerSyncReplicationTest extends AbstractFullDistribZkTestBase {
     }
   }
 
+  class IndexInBackGround extends Thread {
+    private int numDocs;
 
-  private void indexInBackground(int numDocs) {
-    new Thread(() -> {
+    public IndexInBackGround(int numDocs) {
+      super(getClassName());
+      this.numDocs = numDocs;
+    }
+    
+    public void run() {
       try {
         for (int i = 0; i < numDocs; i++) {
           indexDoc(id, docId, i1, 50, tlong, 50, t1, "document number " + docId);
@@ -209,10 +215,7 @@ public class PeerSyncReplicationTest extends AbstractFullDistribZkTestBase {
         log.error("Error indexing doc in background", e);
         //Throwing an error here will kill the thread
       }
-    }, getClassName())
-        .start();
-
-
+    }
   }
    
 
@@ -269,7 +272,8 @@ public class PeerSyncReplicationTest extends AbstractFullDistribZkTestBase {
     // disable fingerprint check if needed
     System.setProperty("solr.disableFingerprint", String.valueOf(disableFingerprint));
 
-    indexInBackground(50);
+    IndexInBackGround iib = new IndexInBackGround(50);
+    iib.start();
     
     // bring back dead node and ensure it recovers
     ChaosMonkey.start(nodeToBringUp.jetty);
@@ -284,6 +288,14 @@ public class PeerSyncReplicationTest extends AbstractFullDistribZkTestBase {
     jetties.removeAll(nodesDown);
     assertEquals(getShardCount() - nodesDown.size(), jetties.size());
 
+    waitForThingsToLevelOut(30);
+    
+    iib.join();
+    
+    cloudClient.commit();
+    
+    checkShardConsistency(false, false);
+    
     long cloudClientDocs = cloudClient.query(new SolrQuery("*:*")).getResults().getNumFound();
     assertEquals(docId, cloudClientDocs);
 
