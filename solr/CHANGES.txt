@@ -232,6 +232,9 @@ Other Changes
 * SOLR-9842: UpdateRequestProcessors have no way to guarantee the closing of resources used for a request.
   (Mark Miller)
 
+* SOLR-9848: Lower solr.cloud.wait-for-updates-with-stale-state-pause back down from 7 seconds. 
+  (Mark Miller) 
+
 ==================  6.4.2 ==================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release.
