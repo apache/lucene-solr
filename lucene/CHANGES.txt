@@ -196,6 +196,9 @@ Optimizations
   points (or cut vertices) in order to create more efficient queries for
   multi-token synonyms. (Jim Ferenczi)
 
+* LUCENE-7699: Query parsers now use span queries to produce more efficient
+  phrase queries for multi-token synonyms. (Matt Webber via Jim Ferenczi)
+
 Build
 
 * LUCENE-7653: Update randomizedtesting to version 2.5.0. (Dawid Weiss)

@@ -51,6 +51,10 @@ import org.apache.lucene.search.PhraseQuery;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.SynonymQuery;
 import org.apache.lucene.search.TermQuery;
+import org.apache.lucene.search.spans.SpanNearQuery;
+import org.apache.lucene.search.spans.SpanOrQuery;
+import org.apache.lucene.search.spans.SpanQuery;
+import org.apache.lucene.search.spans.SpanTermQuery;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.automaton.TooComplexToDeterminizeException;
 
@@ -513,24 +517,30 @@ public class TestQueryParser extends QueryParserTestBase {
     synonym.add(pig, BooleanClause.Occur.MUST);
     BooleanQuery guineaPig = synonym.build();
 
+    PhraseQuery phraseGuineaPig = new PhraseQuery.Builder()
+        .add(new Term("field", "guinea"))
+        .add(new Term("field", "pig"))
+        .build();
+
     GraphQuery graphQuery = new GraphQuery(guineaPig, cavy);
     assertEquals(graphQuery, dumb.parse("guinea pig"));
 
-    // With the phrase operator, a multi-word synonym source will form a graph query with inner phrase queries.
-    PhraseQuery.Builder phraseSynonym = new PhraseQuery.Builder();
-    phraseSynonym.add(new Term("field", "guinea"));
-    phraseSynonym.add(new Term("field", "pig"));
-    PhraseQuery guineaPigPhrase = phraseSynonym.build();
-
-    graphQuery = new GraphQuery(guineaPigPhrase, cavy);
-    assertEquals(graphQuery, dumb.parse("\"guinea pig\""));
+    // With the phrase operator, a multi-word synonym source will form span near queries.
+    SpanNearQuery spanGuineaPig = SpanNearQuery.newOrderedNearQuery("field")
+        .addClause(new SpanTermQuery(new Term("field", "guinea")))
+        .addClause(new SpanTermQuery(new Term("field", "pig")))
+        .setSlop(0)
+        .build();
+    SpanTermQuery spanCavy = new SpanTermQuery(new Term("field", "cavy"));
+    SpanOrQuery spanPhrase = new SpanOrQuery(new SpanQuery[]{spanGuineaPig, spanCavy});
+    assertEquals(spanPhrase, dumb.parse("\"guinea pig\""));
 
     // custom behavior, the synonyms are expanded, unless you use quote operator
     QueryParser smart = new SmartQueryParser();
     smart.setSplitOnWhitespace(false);
     graphQuery = new GraphQuery(guineaPig, cavy);
     assertEquals(graphQuery, smart.parse("guinea pig"));
-    assertEquals(guineaPigPhrase, smart.parse("\"guinea pig\""));
+    assertEquals(phraseGuineaPig, smart.parse("\"guinea pig\""));
   }
 
   public void testEnableGraphQueries() throws Exception {
@@ -626,9 +636,9 @@ public class TestQueryParser extends QueryParserTestBase {
     assertQueryEquals("guinea pig running?", a, "Graph(+field:guinea +field:pig, field:cavy, hasBoolean=true, hasPhrase=false) running?");
     assertQueryEquals("guinea pig \"running\"", a, "Graph(+field:guinea +field:pig, field:cavy, hasBoolean=true, hasPhrase=false) running");
 
-    assertQueryEquals("\"guinea pig\"~2", a, "Graph(field:\"guinea pig\"~2, field:cavy, hasBoolean=false, hasPhrase=true)");
+    assertQueryEquals("\"guinea pig\"~2", a, "spanOr([spanNear([guinea, pig], 0, true), cavy])");
 
-    assertQueryEquals("field:\"guinea pig\"", a, "Graph(field:\"guinea pig\", field:cavy, hasBoolean=false, hasPhrase=true)");
+    assertQueryEquals("field:\"guinea pig\"", a, "spanOr([spanNear([guinea, pig], 0, true), cavy])");
 
     splitOnWhitespace = oldSplitOnWhitespace;
   }
@@ -705,9 +715,9 @@ public class TestQueryParser extends QueryParserTestBase {
     assertQueryEquals("guinea pig running?", a, "guinea pig running?");
     assertQueryEquals("guinea pig \"running\"", a, "guinea pig running");
 
-    assertQueryEquals("\"guinea pig\"~2", a, "Graph(field:\"guinea pig\"~2, field:cavy, hasBoolean=false, hasPhrase=true)");
+    assertQueryEquals("\"guinea pig\"~2", a, "spanOr([spanNear([guinea, pig], 0, true), cavy])");
 
-    assertQueryEquals("field:\"guinea pig\"", a, "Graph(field:\"guinea pig\", field:cavy, hasBoolean=false, hasPhrase=true)");
+    assertQueryEquals("field:\"guinea pig\"", a, "spanOr([spanNear([guinea, pig], 0, true), cavy])");
 
     splitOnWhitespace = oldSplitOnWhitespace;
   }
