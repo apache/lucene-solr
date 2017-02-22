@@ -126,6 +126,10 @@ New Features
 * LUCENE-7688: Add OneMergeWrappingMergePolicy class.
   (Keith Laban, Christine Poerschke)
 
+* LUCENE-7686: The near-real-time document suggester can now
+  efficiently filter out duplicate suggestions (Uwe Schindler, Mike
+  McCandless)
+
 Bug Fixes
 
 * LUCENE-7630: Fix (Edge)NGramTokenFilter to no longer drop payloads

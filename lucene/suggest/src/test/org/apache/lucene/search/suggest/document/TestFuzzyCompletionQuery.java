@@ -66,7 +66,7 @@ public class TestFuzzyCompletionQuery extends LuceneTestCase {
     DirectoryReader reader = iw.getReader();
     SuggestIndexSearcher suggestIndexSearcher = new SuggestIndexSearcher(reader);
     CompletionQuery query = new FuzzyCompletionQuery(analyzer, new Term("suggest_field", "sugg"));
-    TopSuggestDocs suggest = suggestIndexSearcher.suggest(query, 4);
+    TopSuggestDocs suggest = suggestIndexSearcher.suggest(query, 4, false);
     assertSuggestions(suggest,
         new Entry("suaggestion", 4 * 2),
         new Entry("suggestion", 2 * 3),
@@ -101,7 +101,7 @@ public class TestFuzzyCompletionQuery extends LuceneTestCase {
     DirectoryReader reader = iw.getReader();
     SuggestIndexSearcher suggestIndexSearcher = new SuggestIndexSearcher(reader);
     CompletionQuery query =  new ContextQuery(new FuzzyCompletionQuery(analyzer, new Term("suggest_field", "sugge")));
-    TopSuggestDocs suggest = suggestIndexSearcher.suggest(query, 5);
+    TopSuggestDocs suggest = suggestIndexSearcher.suggest(query, 5, false);
     assertSuggestions(suggest,
         new Entry("suggestion", "type4", 4),
         new Entry("suggdestion", "type4", 4),
@@ -140,7 +140,7 @@ public class TestFuzzyCompletionQuery extends LuceneTestCase {
     ContextQuery contextQuery = new ContextQuery(fuzzyQuery);
     contextQuery.addContext("type1", 6);
     contextQuery.addContext("type3", 2);
-    TopSuggestDocs suggest = suggestIndexSearcher.suggest(contextQuery, 5);
+    TopSuggestDocs suggest = suggestIndexSearcher.suggest(contextQuery, 5, false);
     assertSuggestions(suggest,
         new Entry("sduggestion", "type1", 1 * (1 + 6)),
         new Entry("sugdgestion", "type3", 1 * (3 + 2))
