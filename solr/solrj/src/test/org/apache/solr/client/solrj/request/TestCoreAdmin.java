@@ -17,6 +17,7 @@
 package org.apache.solr.client.solrj.request;
 
 import java.io.File;
+import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.util.Collection;
 
@@ -28,9 +29,11 @@ import org.apache.lucene.util.LuceneTestCase;
 import org.apache.solr.SolrIgnoredThreadsFilter;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrQuery;
+import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.embedded.AbstractEmbeddedSolrServerTestCase;
 import org.apache.solr.client.solrj.embedded.EmbeddedSolrServer;
 import org.apache.solr.client.solrj.request.CoreAdminRequest.Create;
+import org.apache.solr.client.solrj.request.CoreAdminRequest.RequestRecovery;
 import org.apache.solr.client.solrj.response.CoreAdminResponse;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.common.SolrDocumentList;
@@ -280,6 +283,13 @@ public class TestCoreAdmin extends AbstractEmbeddedSolrServerTestCase {
 
     assertEquals(2, core0Registry.counter("UPDATE./update.requests").getCount());
     assertEquals(3, core1Registry.counter("UPDATE./update.requests").getCount());
+  }
+
+  @Test
+  public void testInvalidRequestRecovery() throws SolrServerException, IOException {
+      RequestRecovery recoverRequestCmd = new RequestRecovery();
+      recoverRequestCmd.setCoreName("non_existing_core");
+      expectThrows(SolrException.class, () -> recoverRequestCmd.process(getSolrAdmin()));
   }
   
   @BeforeClass
