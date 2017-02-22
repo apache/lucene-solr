@@ -38,11 +38,6 @@ Upgrade Notes
 New Features
 ----------------------
 
-* SOLR-9977: Fix config bug in DistribDocExpirationUpdateProcessorTest that allowed false assumptions
-  about when index version changes (hossman)
-
-* SOLR-9979: Macro expansion should not be done in shard requests (Tomás Fernández Löbbe)
-
 * SOLR-9836: Add ability to recover from leader when index corruption is detected on SolrCore creation.
   (Mike Drob via Mark Miller)
 
@@ -98,6 +93,11 @@ Bug Fixes
 ----------------------
 
 * SOLR-9976: Fix init bug in SegmentsInfoRequestHandlerTest (hossman)
+
+* SOLR-9977: Fix config bug in DistribDocExpirationUpdateProcessorTest that allowed false assumptions
+  about when index version changes (hossman)
+
+* SOLR-9979: Macro expansion should not be done in shard requests (Tomás Fernández Löbbe)
 
 * SOLR-9114: NPE using TermVectorComponent, MoreLikeThisComponent in combination with ExactStatsCache (Cao Manh Dat, Varun Thacker)
 
