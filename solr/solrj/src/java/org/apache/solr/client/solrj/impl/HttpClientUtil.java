@@ -19,10 +19,9 @@ package org.apache.solr.client.solrj.impl;
 import java.io.IOException;
 import java.io.InputStream;
 import java.lang.invoke.MethodHandles;
-import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 import java.util.zip.GZIPInputStream;
@@ -128,7 +127,7 @@ public class HttpClientUtil {
 
   private static volatile SchemaRegistryProvider schemaRegistryProvider;
   private static volatile String cookiePolicy;
-  private static final List<HttpRequestInterceptor> interceptors = Collections.synchronizedList(new ArrayList<HttpRequestInterceptor>());
+  private static final List<HttpRequestInterceptor> interceptors = new CopyOnWriteArrayList<>();
 
 
   static {
@@ -156,6 +155,9 @@ public class HttpClientUtil {
 
     @Override
     public void process(HttpRequest request, HttpContext context) throws HttpException, IOException {
+      // don't synchronize traversal - can lead to deadlock - CopyOnWriteArrayList is critical
+      // we also do not want to have to acquire the mutex when the list is empty or put a global
+      // mutex around the process calls
       interceptors.forEach(new Consumer<HttpRequestInterceptor>() {
 
         @Override
