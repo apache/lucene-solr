@@ -94,7 +94,7 @@ public class ReplicaListTransformerTest extends LuceneTestCase {
       transformer = new HttpShardHandlerFactory() {
 
         @Override
-        ReplicaListTransformer getReplicaListTransformer(final SolrQueryRequest req)
+        protected ReplicaListTransformer getReplicaListTransformer(final SolrQueryRequest req)
         {
           final SolrParams params = req.getParams();
 
