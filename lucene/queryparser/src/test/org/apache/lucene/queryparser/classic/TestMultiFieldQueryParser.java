@@ -48,48 +48,48 @@ import org.apache.lucene.util.LuceneTestCase;
  */
 public class TestMultiFieldQueryParser extends LuceneTestCase {
 
-  /** test stop words parsing for both the non static form, and for the 
+  /** test stop words parsing for both the non static form, and for the
    * corresponding static form (qtxt, fields[]). */
   public void testStopwordsParsing() throws Exception {
-    assertStopQueryEquals("one", "b:one t:one");  
-    assertStopQueryEquals("one stop", "b:one t:one");  
-    assertStopQueryEquals("one (stop)", "b:one t:one");  
-    assertStopQueryEquals("one ((stop))", "b:one t:one");  
-    assertStopQueryEquals("stop", "");  
-    assertStopQueryEquals("(stop)", "");  
-    assertStopQueryEquals("((stop))", "");  
+    assertStopQueryEquals("one", "b:one t:one");
+    assertStopQueryEquals("one stop", "b:one t:one");
+    assertStopQueryEquals("one (stop)", "b:one t:one");
+    assertStopQueryEquals("one ((stop))", "b:one t:one");
+    assertStopQueryEquals("stop", "");
+    assertStopQueryEquals("(stop)", "");
+    assertStopQueryEquals("((stop))", "");
   }
 
-  // verify parsing of query using a stopping analyzer  
+  // verify parsing of query using a stopping analyzer
   private void assertStopQueryEquals (String qtxt, String expectedRes) throws Exception {
     String[] fields = {"b", "t"};
     Occur occur[] = {Occur.SHOULD, Occur.SHOULD};
     TestQueryParser.QPTestAnalyzer a = new TestQueryParser.QPTestAnalyzer();
     MultiFieldQueryParser mfqp = new MultiFieldQueryParser(fields, a);
-    
+
     Query q = mfqp.parse(qtxt);
     assertEquals(expectedRes, q.toString());
-    
+
     q = MultiFieldQueryParser.parse(qtxt, fields, occur, a);
     assertEquals(expectedRes, q.toString());
   }
-  
+
   public void testSimple() throws Exception {
     String[] fields = {"b", "t"};
     MultiFieldQueryParser mfqp = new MultiFieldQueryParser(fields, new MockAnalyzer(random()));
-    
+
     Query q = mfqp.parse("one");
     assertEquals("b:one t:one", q.toString());
-    
+
     q = mfqp.parse("one two");
     assertEquals("(b:one t:one) (b:two t:two)", q.toString());
-    
+
     q = mfqp.parse("+one +two");
     assertEquals("+(b:one t:one) +(b:two t:two)", q.toString());
 
     q = mfqp.parse("+one -two -three");
     assertEquals("+(b:one t:one) -(b:two t:two) -(b:three t:three)", q.toString());
-    
+
     q = mfqp.parse("one^2 two");
     assertEquals("(b:one t:one)^2.0 (b:two t:two)", q.toString());
 
@@ -118,7 +118,7 @@ public class TestMultiFieldQueryParser extends LuceneTestCase {
     assertEquals("b:\"foo bar\"~4 t:\"foo bar\"~4", q.toString());
 
     // LUCENE-1213: MultiFieldQueryParser was ignoring slop when phrase had a field.
-    q = mfqp.parse("b:\"foo bar\"~4"); 
+    q = mfqp.parse("b:\"foo bar\"~4");
     assertEquals("b:\"foo bar\"~4", q.toString());
 
     // make sure that terms which have a field are not touched:
@@ -133,31 +133,31 @@ public class TestMultiFieldQueryParser extends LuceneTestCase {
     assertEquals("+(b:\"aa bb cc\" t:\"aa bb cc\") +(b:\"dd ee\" t:\"dd ee\")", q.toString());
 
   }
-  
+
   public void testBoostsSimple() throws Exception {
       Map<String,Float> boosts = new HashMap<>();
       boosts.put("b", Float.valueOf(5));
       boosts.put("t", Float.valueOf(10));
       String[] fields = {"b", "t"};
       MultiFieldQueryParser mfqp = new MultiFieldQueryParser(fields, new MockAnalyzer(random()), boosts);
-      
-      
+
+
       //Check for simple
       Query q = mfqp.parse("one");
       assertEquals("(b:one)^5.0 (t:one)^10.0", q.toString());
-      
+
       //Check for AND
       q = mfqp.parse("one AND two");
       assertEquals("+((b:one)^5.0 (t:one)^10.0) +((b:two)^5.0 (t:two)^10.0)", q.toString());
-      
+
       //Check for OR
       q = mfqp.parse("one OR two");
       assertEquals("((b:one)^5.0 (t:one)^10.0) ((b:two)^5.0 (t:two)^10.0)", q.toString());
-      
+
       //Check for AND and a field
       q = mfqp.parse("one AND two AND foo:test");
       assertEquals("+((b:one)^5.0 (t:one)^10.0) +((b:two)^5.0 (t:two)^10.0) +foo:test", q.toString());
-      
+
       q = mfqp.parse("one^3 AND two^4");
       assertEquals("+((b:one)^5.0 (t:one)^10.0)^3.0 +((b:two)^5.0 (t:two)^10.0)^4.0", q.toString());
   }
@@ -185,14 +185,14 @@ public class TestMultiFieldQueryParser extends LuceneTestCase {
     expectThrows(IllegalArgumentException.class, () -> {
       MultiFieldQueryParser.parse(queries5, fields, new MockAnalyzer(random()));
     });
-    
+
     // check also with stop words for this static form (qtxts[], fields[]).
     TestQueryParser.QPTestAnalyzer stopA = new TestQueryParser.QPTestAnalyzer();
-    
+
     String[] queries6 = {"((+stop))", "+((stop))"};
     q = MultiFieldQueryParser.parse(queries6, fields, stopA);
     assertEquals("", q.toString());
-    
+
     String[] queries7 = {"one ((+stop)) +more", "+((stop)) +two"};
     q = MultiFieldQueryParser.parse(queries7, fields, stopA);
     assertEquals("(b:one +b:more) (+t:two)", q.toString());
@@ -284,8 +284,8 @@ public class TestMultiFieldQueryParser extends LuceneTestCase {
     doc.add(newTextField("body", "blah the footest blah", Field.Store.NO));
     iw.addDocument(doc);
     iw.close();
-    
-    MultiFieldQueryParser mfqp = 
+
+    MultiFieldQueryParser mfqp =
       new MultiFieldQueryParser(new String[] {"body"}, analyzer);
     mfqp.setDefaultOperator(QueryParser.Operator.AND);
     Query q = mfqp.parse("the footest");
@@ -296,7 +296,7 @@ public class TestMultiFieldQueryParser extends LuceneTestCase {
     ir.close();
     ramDir.close();
   }
-  
+
   /**
    * Return no tokens for field "f1".
    */
@@ -324,7 +324,7 @@ public class TestMultiFieldQueryParser extends LuceneTestCase {
       return stdAnalyzer.createComponents(fieldName);
     }
   }
-  
+
   public void testSimpleRegex() throws ParseException {
     String[] fields = new String[] {"a", "b"};
     MultiFieldQueryParser mfqp = new MultiFieldQueryParser(fields, new MockAnalyzer(random()));
@@ -356,7 +356,9 @@ public class TestMultiFieldQueryParser extends LuceneTestCase {
     parser.setSplitOnWhitespace(false);
     q = parser.parse("guinea pig");
     assertFalse(parser.getSplitOnWhitespace());
-    assertEquals("Graph(+b:guinea +b:pig, b:cavy, hasBoolean=true, hasPhrase=false) "
-        + "Graph(+t:guinea +t:pig, t:cavy, hasBoolean=true, hasPhrase=false)", q.toString());
+    assertEquals("((+b:guinea +b:pig) (+t:guinea +t:pig)) (b:cavy t:cavy)", q.toString());
+    parser.setSplitOnWhitespace(true);
+    q = parser.parse("guinea pig");
+    assertEquals("(b:guinea t:guinea) (b:pig t:pig)", q.toString());
   }
 }

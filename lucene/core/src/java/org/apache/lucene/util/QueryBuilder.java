@@ -19,6 +19,7 @@ package org.apache.lucene.util;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Iterator;
 import java.util.List;
 
@@ -31,7 +32,6 @@ import org.apache.lucene.analysis.tokenattributes.TermToBytesRefAttribute;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.BooleanClause;
 import org.apache.lucene.search.BooleanQuery;
-import org.apache.lucene.search.GraphQuery;
 import org.apache.lucene.search.MultiPhraseQuery;
 import org.apache.lucene.search.PhraseQuery;
 import org.apache.lucene.search.Query;
@@ -638,7 +638,15 @@ public class QueryBuilder {
    * @return new Query instance
    */
   protected Query newGraphSynonymQuery(Query queries[]) {
-    return new GraphQuery(queries);
+    if (queries == null) {
+      return new BooleanQuery.Builder().build();
+    } else if (queries.length == 1) {
+      return queries[0];
+    } else {
+      BooleanQuery.Builder builder = new BooleanQuery.Builder();
+      Arrays.stream(queries).forEachOrdered(qry -> builder.add(qry, BooleanClause.Occur.SHOULD));
+      return builder.build();
+    }
   }
   
   /**
