@@ -28,6 +28,7 @@ import org.apache.lucene.document.SortedNumericDocValuesField;
 import org.apache.lucene.document.StoredField;
 import org.apache.lucene.index.IndexableField;
 import org.apache.lucene.queries.function.ValueSource;
+import org.apache.lucene.search.IndexOrDocValuesQuery;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.SortedNumericSelector;
 import org.apache.lucene.util.BytesRef;
@@ -117,6 +118,10 @@ public abstract class PointField extends NumericFieldType {
     if (!field.indexed() && field.hasDocValues()) {
       // currently implemented as singleton range
       return getRangeQuery(parser, field, externalVal, externalVal, true, true);
+    } else if (field.indexed() && field.hasDocValues()) {
+      Query pointsQuery = getExactQuery(field, externalVal);
+      Query dvQuery = getDocValuesRangeQuery(parser, field, externalVal, externalVal, true, true);
+      return new IndexOrDocValuesQuery(pointsQuery, dvQuery);
     } else {
       return getExactQuery(field, externalVal);
     }
@@ -132,6 +137,10 @@ public abstract class PointField extends NumericFieldType {
       boolean maxInclusive) {
     if (!field.indexed() && field.hasDocValues()) {
       return getDocValuesRangeQuery(parser, field, min, max, minInclusive, maxInclusive);
+    } else if (field.indexed() && field.hasDocValues()) {
+      Query pointsQuery = getPointRangeQuery(parser, field, min, max, minInclusive, maxInclusive);
+      Query dvQuery = getDocValuesRangeQuery(parser, field, min, max, minInclusive, maxInclusive);
+      return new IndexOrDocValuesQuery(pointsQuery, dvQuery);
     } else {
       return getPointRangeQuery(parser, field, min, max, minInclusive, maxInclusive);
     }

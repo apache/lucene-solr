@@ -395,7 +395,7 @@
   <fieldType name="x" class="solr.PointType" dimension="1" subFieldType="double"/>
   <fieldType name="tenD" class="solr.PointType" dimension="10" subFieldType="double"/>
   <!-- Use the sub field suffix -->
-  <fieldType name="xyd" class="solr.PointType" dimension="2" subFieldSuffix="_d1"/>
+  <fieldType name="xyd" class="solr.PointType" dimension="2" subFieldSuffix="_d1_ndv"/>
   <fieldType name="geohash" class="solr.GeoHashField"/>
 
 
@@ -620,6 +620,7 @@
   <dynamicField name="*_f1" type="${solr.tests.floatClass:pfloat}" indexed="true" stored="true" multiValued="false"/>
   <dynamicField name="*_d" type="${solr.tests.doubleClass:pdouble}" indexed="true" stored="true"/>
   <dynamicField name="*_d1" type="${solr.tests.doubleClass:pdouble}" indexed="true" stored="true" multiValued="false"/>
+  <dynamicField name="*_d1_ndv" type="${solr.tests.doubleClass:pdouble}" indexed="true" docValues="false" stored="true" multiValued="false"/>
   <dynamicField name="*_dt" type="date" indexed="true" stored="true"/>
   <dynamicField name="*_dt1" type="date" indexed="true" stored="true" multiValued="false"/>
 
