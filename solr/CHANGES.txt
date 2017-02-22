@@ -134,6 +134,8 @@ New Features
   field must both be stored=false, indexed=false, docValues=true. (Ishan Chattopadhyaya, hossman, noble,
   shalin, yonik)
 
+* SOLR-9640: Support PKI authentication in standalone mode (janhoy)
+
 Bug Fixes
 ----------------------
 
@@ -754,8 +756,6 @@ New Features
 
 * SOLR-1085: Add support for MoreLikeThis queries and responses in SolrJ client.
   (Maurice Jumelet, Bill Mitchell, Cao Manh Dat via shalin)
-
-* SOLR-9640: Support PKI authentication in standalone mode (janhoy)
 
 Bug Fixes
 ----------------------

@@ -35,10 +35,11 @@ import org.apache.solr.request.LocalSolrQueryRequest;
 import org.apache.solr.request.SolrRequestInfo;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.util.CryptoKeys;
-import static org.mockito.Mockito.*;
 import org.junit.Test;
 
-import static org.easymock.EasyMock.getCurrentArguments;
+import static org.mockito.Mockito.any;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 public class TestPKIAuthenticationPlugin extends SolrTestCaseJ4 {
 
