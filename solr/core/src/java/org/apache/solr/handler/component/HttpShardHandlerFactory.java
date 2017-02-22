@@ -103,7 +103,7 @@ public class HttpShardHandlerFactory extends ShardHandlerFactory implements org.
 
   private HttpClientMetricNameStrategy metricNameStrategy;
 
-  private final Random r = new Random();
+  protected final Random r = new Random();
 
   private final ReplicaListTransformer shufflingReplicaListTransformer = new ShufflingReplicaListTransformer(r);
 
@@ -318,7 +318,7 @@ public class HttpShardHandlerFactory extends ShardHandlerFactory implements org.
       return s != null && s.startsWith(preferredHostAddress);
     }
   }
-  ReplicaListTransformer getReplicaListTransformer(final SolrQueryRequest req)
+  protected ReplicaListTransformer getReplicaListTransformer(final SolrQueryRequest req)
   {
     final SolrParams params = req.getParams();
 

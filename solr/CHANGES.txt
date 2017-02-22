@@ -226,6 +226,9 @@ Other Changes
 
 * SOLR-9966: Convert/migrate tests using EasyMock to Mockito (Cao Manh Dat,  Uwe Schindler)
 
+* SOLR-10173: Make HttpShardHandlerFactory.getReplicaListTransformer more extensible.
+  (Ramsey Haddad via Christine Poerschke)
+
 ==================  6.4.2 ==================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release.
