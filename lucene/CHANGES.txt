@@ -131,9 +131,6 @@ Bug Fixes
 * LUCENE-7630: Fix (Edge)NGramTokenFilter to no longer drop payloads
   and preserve all attributes. (Nathan Gass via Uwe Schindler)
 
-* LUCENE-7676: Fixed FilterCodecReader to override more super-class methods.
-  Also added TestFilterCodecReader class. (Christine Poerschke)
-
 * LUCENE-7679: MemoryIndex was ignoring omitNorms settings on passed-in
   IndexableFields. (Alan Woodward)
 
@@ -224,6 +221,13 @@ Other
 
 * LUCENE-7658: queryparser/xml CoreParser now implements SpanQueryBuilder interface.
   (Daniel Collins, Christine Poerschke)
+
+======================= Lucene 6.4.2 =======================
+
+Bug Fixes
+
+* LUCENE-7676: Fixed FilterCodecReader to override more super-class methods.
+  Also added TestFilterCodecReader class. (Christine Poerschke)
 
 ======================= Lucene 6.4.1 =======================
 
