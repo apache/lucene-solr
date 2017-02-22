@@ -142,6 +142,10 @@ Bug Fixes
   rewritten child query in their equals and hashCode implementations.
   (Adrien Grand)
 
+* LUCENE-7698: CommonGramsQueryFilter was producing a disconnected
+  token graph, messing up phrase queries when it was used during query
+  parsing (Ere Maijala via Mike McCandless)
+
 Improvements
 
 * LUCENE-7055: Added Weight#scorerSupplier, which allows to estimate the cost

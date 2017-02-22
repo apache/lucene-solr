@@ -533,6 +533,24 @@ public class TestQueryParser extends QueryParserTestBase {
     assertEquals(guineaPigPhrase, smart.parse("\"guinea pig\""));
   }
 
+  public void testEnableGraphQueries() throws Exception {
+    QueryParser dumb = new QueryParser("field", new Analyzer1());
+    dumb.setSplitOnWhitespace(false);
+    dumb.setEnableGraphQueries(false);
+    
+    TermQuery guinea = new TermQuery(new Term("field", "guinea"));
+    TermQuery pig = new TermQuery(new Term("field", "pig"));
+    TermQuery cavy = new TermQuery(new Term("field", "cavy"));
+
+    // A multi-word synonym source will just form a boolean query when graph queries are disabled:
+    Query inner = new SynonymQuery(new Term[] {new Term("field", "cavy"), new Term("field", "guinea")});
+    BooleanQuery.Builder b = new BooleanQuery.Builder();
+    b.add(inner, BooleanClause.Occur.SHOULD);
+    b.add(pig, BooleanClause.Occur.SHOULD);
+    BooleanQuery query = b.build();
+    assertEquals(query, dumb.parse("guinea pig"));
+  }
+
   // TODO: Move to QueryParserTestBase once standard flexible parser gets this capability
   public void testOperatorsAndMultiWordSynonyms() throws Exception {
     Analyzer a = new MockSynonymAnalyzer();
