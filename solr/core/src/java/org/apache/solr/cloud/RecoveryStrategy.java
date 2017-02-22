@@ -70,7 +70,7 @@ public class RecoveryStrategy extends Thread implements Closeable {
 
   private static final Logger LOG = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
-  private static final int WAIT_FOR_UPDATES_WITH_STALE_STATE_PAUSE = Integer.getInteger("solr.cloud.wait-for-updates-with-stale-state-pause", 7000);
+  private static final int WAIT_FOR_UPDATES_WITH_STALE_STATE_PAUSE = Integer.getInteger("solr.cloud.wait-for-updates-with-stale-state-pause", 2500);
   private static final int MAX_RETRIES = 500;
   private static final int STARTING_RECOVERY_DELAY = 5000;
 
