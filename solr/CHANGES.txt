@@ -162,21 +162,21 @@ Bug Fixes
 * SOLR-10141: Upgrade to Caffeine 2.4.0 since v1.0.1 contributed to BlockCache corruption because the
   removal listener was called more than once for some items and not at all for other items. (Ben Manes, yonik)
 
-* SOLR-9846: Overseer is not always closed after being started. (Mark Miller)
-
 * SOLR-10114: Reordered delete-by-query causes inconsistenties between shards that have
   child documents (Mano Kovacs, Mihaly Toth, yonik)
 
 * SOLR-10159: When DBQ is reordered with an in-place update, upon whose updated value the DBQ is based
   on, the DBQ fails due to excessive caching in DeleteByQueryWrapper (Ishan Chattopadhyaya)
 
-* SOLR-10168: ShardSplit can fail with NPE in OverseerCollectionMessageHandler#waitForCoreAdminAsyncCallToComplete. (Mark Miller)
-
-* SOLR-10170: ClassCastException in RecoveryStrategy. (Mark Miller)
-
 * SOLR-10020: CoreAdminHandler silently swallows some errors. (Mike Drob via Erick Erickson)
 
 * SOLR-10063: CoreContainer shutdown has race condition that can cause a hang on shutdown. (Mark Miller)
+
+* SOLR-10170: ClassCastException in RecoveryStrategy. (Mark Miller)
+
+* SOLR-9846: Overseer is not always closed after being started. (Mark Miller)
+
+* SOLR-10168: ShardSplit can fail with NPE in OverseerCollectionMessageHandler#waitForCoreAdminAsyncCallToComplete. (Mark Miller)
 
 Optimizations
 ----------------------
