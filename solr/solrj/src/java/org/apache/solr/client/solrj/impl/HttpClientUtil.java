@@ -16,8 +16,6 @@
  */
 package org.apache.solr.client.solrj.impl;
 
-import static java.util.Collections.singletonList;
-
 import java.io.IOException;
 import java.io.InputStream;
 import java.lang.invoke.MethodHandles;
@@ -62,6 +60,8 @@ import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import static java.util.Collections.singletonList;
 
 /**
  * Utility class for creating/configuring httpclient instances. 
@@ -222,6 +222,10 @@ public class HttpClientUtil {
 
   public static void removeRequestInterceptor(HttpRequestInterceptor interceptor) {
     interceptors.remove(interceptor);
+  }
+
+  public static void clearRequestInterceptors() {
+    interceptors.clear();
   }
 
   /**

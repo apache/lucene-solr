@@ -39,7 +39,6 @@ import java.util.concurrent.Future;
 import com.codahale.metrics.Gauge;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Maps;
-
 import org.apache.lucene.index.CorruptIndexException;
 import org.apache.lucene.store.Directory;
 import org.apache.solr.client.solrj.impl.HttpClientConfigurer;
@@ -52,7 +51,6 @@ import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.Replica.State;
-import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.common.util.IOUtils;
 import org.apache.solr.common.util.Utils;
@@ -67,6 +65,8 @@ import org.apache.solr.handler.admin.CoreAdminHandler;
 import org.apache.solr.handler.admin.InfoHandler;
 import org.apache.solr.handler.admin.MetricsHandler;
 import org.apache.solr.handler.admin.SecurityConfHandler;
+import org.apache.solr.handler.admin.SecurityConfHandlerLocal;
+import org.apache.solr.handler.admin.SecurityConfHandlerZk;
 import org.apache.solr.handler.admin.ZookeeperInfoHandler;
 import org.apache.solr.handler.component.HttpShardHandlerFactory;
 import org.apache.solr.handler.component.ShardHandlerFactory;
@@ -90,7 +90,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import static java.util.Objects.requireNonNull;
-import static java.util.Collections.EMPTY_MAP;
 import static org.apache.solr.common.params.CommonParams.AUTHC_PATH;
 import static org.apache.solr.common.params.CommonParams.AUTHZ_PATH;
 import static org.apache.solr.common.params.CommonParams.COLLECTIONS_HANDLER_PATH;
@@ -316,10 +315,10 @@ public class CoreContainer {
     }
 
     if (pluginClassName != null) {
-      log.info("Authentication plugin class obtained from ZK: "+pluginClassName);
+      log.debug("Authentication plugin class obtained from security.json: "+pluginClassName);
     } else if (System.getProperty(AUTHENTICATION_PLUGIN_PROP) != null) {
       pluginClassName = System.getProperty(AUTHENTICATION_PLUGIN_PROP);
-      log.info("Authentication plugin class obtained from system property '" +
+      log.debug("Authentication plugin class obtained from system property '" +
           AUTHENTICATION_PLUGIN_PROP + "': " + pluginClassName);
     } else {
       log.debug("No authentication plugin used.");
@@ -329,6 +328,7 @@ public class CoreContainer {
 
     // Initialize the plugin
     if (pluginClassName != null) {
+      log.info("Initializing authentication plugin: " + pluginClassName);
       authenticationPlugin = new SecurityPluginHolder<>(readVersion(authenticationConfig),
           getResourceLoader().newInstance(pluginClassName,
               AuthenticationPlugin.class,
@@ -480,10 +480,8 @@ public class CoreContainer {
 
     MDCLoggingContext.setNode(this);
 
-    ZkStateReader.ConfigData securityConfig = isZooKeeperAware() ? getZkController().getZkStateReader().getSecurityProps(false) : new ZkStateReader.ConfigData(EMPTY_MAP, -1);
-    initializeAuthorizationPlugin((Map<String, Object>) securityConfig.data.get("authorization"));
-    initializeAuthenticationPlugin((Map<String, Object>) securityConfig.data.get("authentication"));
-
+    securityConfHandler = isZooKeeperAware() ? new SecurityConfHandlerZk(this) : new SecurityConfHandlerLocal(this);
+    reloadSecurityProperties();
     this.backupRepoFactory = new BackupRepositoryFactory(cfg.getBackupRepositoryPlugins());
 
     createHandler(ZK_PATH, ZookeeperInfoHandler.class.getName(), ZookeeperInfoHandler.class);
@@ -493,7 +491,6 @@ public class CoreContainer {
     configSetsHandler = createHandler(CONFIGSETS_HANDLER_PATH, cfg.getConfigSetsHandlerClass(), ConfigSetsHandler.class);
     metricsHandler = createHandler(METRICS_PATH, MetricsHandler.class.getName(), MetricsHandler.class);
 
-    securityConfHandler = new SecurityConfHandler(this);
     containerHandlers.put(AUTHZ_PATH, securityConfHandler);
     securityConfHandler.initializeMetrics(metricManager, SolrInfoMBean.Group.node.toString(), AUTHZ_PATH);
     containerHandlers.put(AUTHC_PATH, securityConfHandler);
@@ -602,10 +599,17 @@ public class CoreContainer {
   }
 
   public void securityNodeChanged() {
-    log.info("Security node changed");
-    ZkStateReader.ConfigData securityConfig = getZkController().getZkStateReader().getSecurityProps(false);
-    initializeAuthorizationPlugin((Map<String, Object>) securityConfig.data.get("authorization"));
-    initializeAuthenticationPlugin((Map<String, Object>) securityConfig.data.get("authentication"));
+    log.info("Security node changed, reloading security.json");
+    reloadSecurityProperties();
+  }
+
+  /**
+   * Make sure securityConfHandler is initialized
+   */
+  private void reloadSecurityProperties() {
+    SecurityConfHandler.SecurityConfig securityConfig = securityConfHandler.getSecurityConfig(false);
+    initializeAuthorizationPlugin((Map<String, Object>) securityConfig.getData().get("authorization"));
+    initializeAuthenticationPlugin((Map<String, Object>) securityConfig.getData().get("authentication"));
   }
 
   private static void checkForDuplicateCoreNames(List<CoreDescriptor> cds) {

@@ -74,6 +74,10 @@ New Features
   field must both be stored=false, indexed=false, docValues=true. (Ishan Chattopadhyaya, hossman, noble,
   shalin, yonik)
 
+* SOLR-9481: Authentication and Authorization plugins now work in standalone mode if security.json is placed in
+  SOLR_HOME on every node. Editing config through API is supported but affects only that one node.
+  This feature should be considered experimental for this release and may not work with SSL yet. (janhoy)
+
 Bug Fixes
 ----------------------
 
