@@ -60,8 +60,6 @@ public class AddUpdateCommand extends UpdateCommand implements Iterable<Document
    public int commitWithin = -1;
 
    public boolean isLastDocInBatch = false;
-
-   public int pollQueueTime = 0;
    
    public AddUpdateCommand(SolrQueryRequest req) {
      super(req);

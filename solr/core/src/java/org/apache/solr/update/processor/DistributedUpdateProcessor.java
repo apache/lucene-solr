@@ -828,6 +828,13 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
     // Given that, it may also make sense to move the version reporting out of this
     // processor too.
   }
+  
+  @Override
+  protected void doClose() {
+    if (cmdDistrib != null) {
+      cmdDistrib.close();
+    }
+  }
  
   // TODO: optionally fail if n replicas are not reached...
   private void doFinish() {

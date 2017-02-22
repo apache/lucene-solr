@@ -73,9 +73,9 @@ public class StreamingSolrClients {
       // on a greater scale since the current behavior is to only increase the number of connections/Runners when
       // the queue is more than half full.
       client = new ErrorReportingConcurrentUpdateSolrClient(url, httpClient, 100, runnerCount, updateExecutor, true, req);
+      client.setPollQueueTime(Integer.MAX_VALUE); // minimize connections created
       client.setParser(new BinaryResponseParser());
       client.setRequestWriter(new BinaryRequestWriter());
-      client.setPollQueueTime(req.pollQueueTime);
       Set<String> queryParams = new HashSet<>(2);
       queryParams.add(DistributedUpdateProcessor.DISTRIB_FROM);
       queryParams.add(DistributingUpdateProcessorFactory.DISTRIB_UPDATE_PARAM);

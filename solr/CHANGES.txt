@@ -178,6 +178,8 @@ Bug Fixes
 
 * SOLR-10168: ShardSplit can fail with NPE in OverseerCollectionMessageHandler#waitForCoreAdminAsyncCallToComplete. (Mark Miller)
 
+* SOLR-9824: Some bulk update paths could be very slow due to CUSC polling. (David Smiley, Mark Miller)
+
 Optimizations
 ----------------------
 
