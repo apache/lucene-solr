@@ -21,6 +21,7 @@ import java.io.IOException;
 import com.carrotsearch.randomizedtesting.annotations.Nightly;
 import com.carrotsearch.randomizedtesting.annotations.ThreadLeakFilters;
 import org.apache.hadoop.hdfs.MiniDFSCluster;
+import org.apache.lucene.util.LuceneTestCase.BadApple;
 import org.apache.lucene.util.LuceneTestCase.Slow;
 import org.apache.solr.SolrTestCaseJ4.SuppressObjectReleaseTracker;
 import org.apache.solr.cloud.ChaosMonkeyNothingIsSafeTest;
@@ -34,6 +35,7 @@ import org.junit.BeforeClass;
     BadHdfsThreadsFilter.class // hdfs currently leaks thread(s)
 })
 @SuppressObjectReleaseTracker(bugUrl="Testing purposes")
+@BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-10191")
 public class HdfsChaosMonkeyNothingIsSafeTest extends ChaosMonkeyNothingIsSafeTest {
   private static MiniDFSCluster dfsCluster;
   
