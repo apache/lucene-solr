@@ -41,6 +41,11 @@ import org.apache.lucene.search.PhraseQuery;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.SynonymQuery;
 import org.apache.lucene.search.TermQuery;
+import org.apache.lucene.search.spans.SpanNearQuery;
+import org.apache.lucene.search.spans.SpanOrQuery;
+import org.apache.lucene.search.spans.SpanQuery;
+import org.apache.lucene.search.spans.SpanTermQuery;
+import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.automaton.TooComplexToDeterminizeException;
 
 /**
@@ -54,20 +59,20 @@ public class TestQueryParser extends QueryParserTestBase {
     public QPTestParser(String f, Analyzer a) {
       super(f, a);
     }
-    
+
     @Override
     protected Query getFuzzyQuery(String field, String termStr,
         float minSimilarity) throws ParseException {
       throw new ParseException("Fuzzy queries not allowed");
     }
-    
+
     @Override
     protected Query getWildcardQuery(String field, String termStr)
         throws ParseException {
       throw new ParseException("Wildcard queries not allowed");
     }
   }
-  
+
   public QueryParser getParser(Analyzer a) throws Exception {
     if (a == null) a = new MockAnalyzer(random(), MockTokenizer.SIMPLE, true);
     QueryParser qp = new QueryParser(getDefaultField(), a);
@@ -75,13 +80,13 @@ public class TestQueryParser extends QueryParserTestBase {
     qp.setSplitOnWhitespace(splitOnWhitespace);
     return qp;
   }
-  
+
   @Override
   public CommonQueryParserConfiguration getParserConfig(Analyzer a)
       throws Exception {
     return getParser(a);
   }
-  
+
   @Override
   public Query getQuery(String query, CommonQueryParserConfiguration cqpC)
       throws Exception {
@@ -90,31 +95,31 @@ public class TestQueryParser extends QueryParserTestBase {
     QueryParser qp = (QueryParser) cqpC;
     return qp.parse(query);
   }
-  
+
   @Override
   public Query getQuery(String query, Analyzer a) throws Exception {
     return getParser(a).parse(query);
   }
-  
+
   @Override
   public boolean isQueryParserException(Exception exception) {
     return exception instanceof ParseException;
   }
-  
+
   @Override
   public void setDefaultOperatorOR(CommonQueryParserConfiguration cqpC) {
     assert (cqpC instanceof QueryParser);
     QueryParser qp = (QueryParser) cqpC;
     qp.setDefaultOperator(Operator.OR);
   }
-  
+
   @Override
   public void setDefaultOperatorAND(CommonQueryParserConfiguration cqpC) {
     assert (cqpC instanceof QueryParser);
     QueryParser qp = (QueryParser) cqpC;
     qp.setDefaultOperator(Operator.AND);
   }
-  
+
   @Override
   public void setAnalyzeRangeTerms(CommonQueryParserConfiguration cqpC,
       boolean value) {
@@ -122,7 +127,7 @@ public class TestQueryParser extends QueryParserTestBase {
     QueryParser qp = (QueryParser) cqpC;
     qp.setAnalyzeRangeTerms(value);
   }
-  
+
   @Override
   public void setAutoGeneratePhraseQueries(CommonQueryParserConfiguration cqpC,
       boolean value) {
@@ -130,7 +135,7 @@ public class TestQueryParser extends QueryParserTestBase {
     QueryParser qp = (QueryParser) cqpC;
     qp.setAutoGeneratePhraseQueries(value);
   }
-  
+
   @Override
   public void setDateResolution(CommonQueryParserConfiguration cqpC,
       CharSequence field, Resolution value) {
@@ -138,7 +143,7 @@ public class TestQueryParser extends QueryParserTestBase {
     QueryParser qp = (QueryParser) cqpC;
     qp.setDateResolution(field.toString(), value);
   }
-  
+
   @Override
   public void testDefaultOperator() throws Exception {
     QueryParser qp = getParser(new MockAnalyzer(random()));
@@ -149,7 +154,7 @@ public class TestQueryParser extends QueryParserTestBase {
     setDefaultOperatorOR(qp);
     assertEquals(QueryParserBase.OR_OPERATOR, qp.getDefaultOperator());
   }
-  
+
   // LUCENE-2002: when we run javacc to regen QueryParser,
   // we also run a replaceregexp step to fix 2 of the public
   // ctors (change them to protected):
@@ -175,14 +180,14 @@ public class TestQueryParser extends QueryParserTestBase {
       // expected
     }
   }
-  
+
   public void testFuzzySlopeExtendability() throws ParseException {
     QueryParser qp = new QueryParser("a",  new MockAnalyzer(random(), MockTokenizer.WHITESPACE, false)) {
 
       @Override
       Query handleBareFuzzy(String qfield, Token fuzzySlop, String termImage)
           throws ParseException {
-        
+
         if(fuzzySlop.image.endsWith("€")) {
           float fms = fuzzyMinSim;
           try {
@@ -193,11 +198,11 @@ public class TestQueryParser extends QueryParserTestBase {
         }
         return super.handleBareFuzzy(qfield, fuzzySlop, termImage);
       }
-      
+
     };
     assertEquals(qp.parse("a:[11.95 TO 12.95]"), qp.parse("12.45~1€"));
   }
-  
+
   @Override
   public void testStarParsing() throws Exception {
     final int[] type = new int[1];
@@ -209,14 +214,14 @@ public class TestQueryParser extends QueryParserTestBase {
         type[0] = 1;
         return new TermQuery(new Term(field, termStr));
       }
-      
+
       @Override
       protected Query getPrefixQuery(String field, String termStr) {
         // override error checking of superclass
         type[0] = 2;
         return new TermQuery(new Term(field, termStr));
       }
-      
+
       @Override
       protected Query getFieldQuery(String field, String queryText,
           boolean quoted) throws ParseException {
@@ -224,9 +229,9 @@ public class TestQueryParser extends QueryParserTestBase {
         return super.getFieldQuery(field, queryText, quoted);
       }
     };
-    
+
     TermQuery tq;
-    
+
     tq = (TermQuery) qp.parse("foo:zoo*");
     assertEquals("zoo", tq.getTerm().text());
     assertEquals(2, type[0]);
@@ -236,35 +241,35 @@ public class TestQueryParser extends QueryParserTestBase {
     assertEquals("zoo", tq.getTerm().text());
     assertEquals(2, type[0]);
     assertEquals(bq.getBoost(), 2, 0);
-    
+
     tq = (TermQuery) qp.parse("foo:*");
     assertEquals("*", tq.getTerm().text());
     assertEquals(1, type[0]); // could be a valid prefix query in the future too
-    
+
     bq = (BoostQuery) qp.parse("foo:*^2");
     tq = (TermQuery) bq.getQuery();
     assertEquals("*", tq.getTerm().text());
     assertEquals(1, type[0]);
     assertEquals(bq.getBoost(), 2, 0);
-    
+
     tq = (TermQuery) qp.parse("*:foo");
     assertEquals("*", tq.getTerm().field());
     assertEquals("foo", tq.getTerm().text());
     assertEquals(3, type[0]);
-    
+
     tq = (TermQuery) qp.parse("*:*");
     assertEquals("*", tq.getTerm().field());
     assertEquals("*", tq.getTerm().text());
     assertEquals(1, type[0]); // could be handled as a prefix query in the
                               // future
-    
+
     tq = (TermQuery) qp.parse("(*:*)");
     assertEquals("*", tq.getTerm().field());
     assertEquals("*", tq.getTerm().text());
     assertEquals(1, type[0]);
-    
+
   }
-  
+
   // Wildcard queries should not be allowed
   public void testCustomQueryParserWildcard() {
     expectThrows(ParseException.class, () -> {
@@ -272,7 +277,7 @@ public class TestQueryParser extends QueryParserTestBase {
           MockTokenizer.WHITESPACE, false)).parse("a?t");
     });
   }
-  
+
   // Fuzzy queries should not be allowed
   public void testCustomQueryParserFuzzy() throws Exception {
     expectThrows(ParseException.class, () -> {
@@ -280,15 +285,15 @@ public class TestQueryParser extends QueryParserTestBase {
           MockTokenizer.WHITESPACE, false)).parse("xunit~");
     });
   }
-  
+
   /** query parser that doesn't expand synonyms when users use double quotes */
   private class SmartQueryParser extends QueryParser {
     Analyzer morePrecise = new Analyzer2();
-    
+
     public SmartQueryParser() {
       super("field", new Analyzer1());
     }
-    
+
     @Override
     protected Query getFieldQuery(String field, String queryText, boolean quoted)
         throws ParseException {
@@ -296,7 +301,7 @@ public class TestQueryParser extends QueryParserTestBase {
       else return super.getFieldQuery(field, queryText, quoted);
     }
   }
-  
+
   @Override
   public void testNewFieldQuery() throws Exception {
     /** ordinary behavior, synonyms form uncoordinated boolean query */
@@ -306,13 +311,13 @@ public class TestQueryParser extends QueryParserTestBase {
     assertEquals(expanded, dumb.parse("\"dogs\""));
     /** even with the phrase operator the behavior is the same */
     assertEquals(expanded, dumb.parse("dogs"));
-    
+
     /**
      * custom behavior, the synonyms are expanded, unless you use quote operator
      */
     QueryParser smart = new SmartQueryParser();
     assertEquals(expanded, smart.parse("dogs"));
-    
+
     Query unexpanded = new TermQuery(new Term("field", "dogs"));
     assertEquals(unexpanded, smart.parse("\"dogs\""));
   }
@@ -330,7 +335,7 @@ public class TestQueryParser extends QueryParserTestBase {
     assertEquals(expected, qp.parse("dogs^2"));
     assertEquals(expected, qp.parse("\"dogs\"^2"));
   }
-  
+
   /** forms multiphrase query */
   public void testSynonymsPhrase() throws Exception {
     MultiPhraseQuery.Builder expectedQBuilder = new MultiPhraseQuery.Builder();
@@ -346,7 +351,7 @@ public class TestQueryParser extends QueryParserTestBase {
     expected = new BoostQuery(expectedQBuilder.build(), 2f);
     assertEquals(expected, qp.parse("\"old dogs\"~3^2"));
   }
-  
+
   /**
    * adds synonym of "國" for "国".
    */
@@ -354,7 +359,7 @@ public class TestQueryParser extends QueryParserTestBase {
     CharTermAttribute termAtt = addAttribute(CharTermAttribute.class);
     PositionIncrementAttribute posIncAtt = addAttribute(PositionIncrementAttribute.class);
     boolean addSynonym = false;
-    
+
     public MockCJKSynonymFilter(TokenStream input) {
       super(input);
     }
@@ -368,16 +373,16 @@ public class TestQueryParser extends QueryParserTestBase {
         addSynonym = false;
         return true;
       }
-      
+
       if (input.incrementToken()) {
         addSynonym = termAtt.toString().equals("国");
         return true;
       } else {
         return false;
       }
-    } 
+    }
   }
-  
+
   static class MockCJKSynonymAnalyzer extends Analyzer {
     @Override
     protected TokenStreamComponents createComponents(String fieldName) {
@@ -385,7 +390,7 @@ public class TestQueryParser extends QueryParserTestBase {
       return new TokenStreamComponents(tokenizer, new MockCJKSynonymFilter(tokenizer));
     }
   }
-  
+
   /** simple CJK synonym test */
   public void testCJKSynonym() throws Exception {
     Query expected = new SynonymQuery(new Term("field", "国"), new Term("field", "國"));
@@ -396,7 +401,7 @@ public class TestQueryParser extends QueryParserTestBase {
     expected = new BoostQuery(expected, 2f);
     assertEquals(expected, qp.parse("国^2"));
   }
-  
+
   /** synonyms with default OR operator */
   public void testCJKSynonymsOR() throws Exception {
     BooleanQuery.Builder expectedB = new BooleanQuery.Builder();
@@ -409,7 +414,7 @@ public class TestQueryParser extends QueryParserTestBase {
     expected = new BoostQuery(expected, 2f);
     assertEquals(expected, qp.parse("中国^2"));
   }
-  
+
   /** more complex synonyms with default OR operator */
   public void testCJKSynonymsOR2() throws Exception {
     BooleanQuery.Builder expectedB = new BooleanQuery.Builder();
@@ -424,7 +429,7 @@ public class TestQueryParser extends QueryParserTestBase {
     expected = new BoostQuery(expected, 2f);
     assertEquals(expected, qp.parse("中国国^2"));
   }
-  
+
   /** synonyms with default AND operator */
   public void testCJKSynonymsAND() throws Exception {
     BooleanQuery.Builder expectedB = new BooleanQuery.Builder();
@@ -438,7 +443,7 @@ public class TestQueryParser extends QueryParserTestBase {
     expected = new BoostQuery(expected, 2f);
     assertEquals(expected, qp.parse("中国^2"));
   }
-  
+
   /** more complex synonyms with default AND operator */
   public void testCJKSynonymsAND2() throws Exception {
     BooleanQuery.Builder expectedB = new BooleanQuery.Builder();
@@ -454,7 +459,7 @@ public class TestQueryParser extends QueryParserTestBase {
     expected = new BoostQuery(expected, 2f);
     assertEquals(expected, qp.parse("中国国^2"));
   }
-  
+
   /** forms multiphrase query */
   public void testCJKSynonymsPhrase() throws Exception {
     MultiPhraseQuery.Builder expectedQBuilder = new MultiPhraseQuery.Builder();
@@ -509,31 +514,37 @@ public class TestQueryParser extends QueryParserTestBase {
     synonym.add(pig, BooleanClause.Occur.MUST);
     BooleanQuery guineaPig = synonym.build();
 
+    PhraseQuery phraseGuineaPig = new PhraseQuery.Builder()
+        .add(new Term("field", "guinea"))
+        .add(new Term("field", "pig"))
+        .build();
+
     GraphQuery graphQuery = new GraphQuery(guineaPig, cavy);
     assertEquals(graphQuery, dumb.parse("guinea pig"));
 
-    // With the phrase operator, a multi-word synonym source will form a graph query with inner phrase queries.
-    PhraseQuery.Builder phraseSynonym = new PhraseQuery.Builder();
-    phraseSynonym.add(new Term("field", "guinea"));
-    phraseSynonym.add(new Term("field", "pig"));
-    PhraseQuery guineaPigPhrase = phraseSynonym.build();
-
-    graphQuery = new GraphQuery(guineaPigPhrase, cavy);
-    assertEquals(graphQuery, dumb.parse("\"guinea pig\""));
+    // With the phrase operator, a multi-word synonym source will form span near queries.
+    SpanNearQuery spanGuineaPig = SpanNearQuery.newOrderedNearQuery("field")
+        .addClause(new SpanTermQuery(new Term("field", "guinea")))
+        .addClause(new SpanTermQuery(new Term("field", "pig")))
+        .setSlop(0)
+        .build();
+    SpanTermQuery spanCavy = new SpanTermQuery(new Term("field", "cavy"));
+    SpanOrQuery spanPhrase = new SpanOrQuery(new SpanQuery[]{spanGuineaPig, spanCavy});
+    assertEquals(spanPhrase, dumb.parse("\"guinea pig\""));
 
     // custom behavior, the synonyms are expanded, unless you use quote operator
     QueryParser smart = new SmartQueryParser();
     smart.setSplitOnWhitespace(false);
     graphQuery = new GraphQuery(guineaPig, cavy);
     assertEquals(graphQuery, smart.parse("guinea pig"));
-    assertEquals(guineaPigPhrase, smart.parse("\"guinea pig\""));
+    assertEquals(phraseGuineaPig, smart.parse("\"guinea pig\""));
   }
 
   public void testEnableGraphQueries() throws Exception {
     QueryParser dumb = new QueryParser("field", new Analyzer1());
     dumb.setSplitOnWhitespace(false);
     dumb.setEnableGraphQueries(false);
-    
+
     TermQuery guinea = new TermQuery(new Term("field", "guinea"));
     TermQuery pig = new TermQuery(new Term("field", "pig"));
     TermQuery cavy = new TermQuery(new Term("field", "cavy"));
@@ -622,9 +633,9 @@ public class TestQueryParser extends QueryParserTestBase {
     assertQueryEquals("guinea pig running?", a, "Graph(+field:guinea +field:pig, field:cavy, hasBoolean=true, hasPhrase=false) running?");
     assertQueryEquals("guinea pig \"running\"", a, "Graph(+field:guinea +field:pig, field:cavy, hasBoolean=true, hasPhrase=false) running");
 
-    assertQueryEquals("\"guinea pig\"~2", a, "Graph(field:\"guinea pig\"~2, field:cavy, hasBoolean=false, hasPhrase=true)");
+    assertQueryEquals("\"guinea pig\"~2", a, "spanOr([spanNear([guinea, pig], 0, true), cavy])");
 
-    assertQueryEquals("field:\"guinea pig\"", a, "Graph(field:\"guinea pig\", field:cavy, hasBoolean=false, hasPhrase=true)");
+    assertQueryEquals("field:\"guinea pig\"", a, "spanOr([spanNear([guinea, pig], 0, true), cavy])");
 
     splitOnWhitespace = oldSplitOnWhitespace;
   }
@@ -701,9 +712,9 @@ public class TestQueryParser extends QueryParserTestBase {
     assertQueryEquals("guinea pig running?", a, "guinea pig running?");
     assertQueryEquals("guinea pig \"running\"", a, "guinea pig running");
 
-    assertQueryEquals("\"guinea pig\"~2", a, "Graph(field:\"guinea pig\"~2, field:cavy, hasBoolean=false, hasPhrase=true)");
+    assertQueryEquals("\"guinea pig\"~2", a, "spanOr([spanNear([guinea, pig], 0, true), cavy])");
 
-    assertQueryEquals("field:\"guinea pig\"", a, "Graph(field:\"guinea pig\", field:cavy, hasBoolean=false, hasPhrase=true)");
+    assertQueryEquals("field:\"guinea pig\"", a, "spanOr([spanNear([guinea, pig], 0, true), cavy])");
 
     splitOnWhitespace = oldSplitOnWhitespace;
   }

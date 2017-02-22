@@ -37,6 +37,10 @@ import org.apache.lucene.search.PhraseQuery;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.SynonymQuery;
 import org.apache.lucene.search.TermQuery;
+import org.apache.lucene.search.spans.SpanNearQuery;
+import org.apache.lucene.search.spans.SpanOrQuery;
+import org.apache.lucene.search.spans.SpanQuery;
+import org.apache.lucene.search.spans.SpanTermQuery;
 import org.apache.lucene.util.graph.GraphTokenStreamFiniteStrings;
 
 /**
@@ -314,7 +318,7 @@ public class QueryBuilder {
       } else if (isGraph) {
         // graph
         if (quoted) {
-          return analyzeGraphPhrase(stream, operator, field, phraseSlop);
+          return analyzeGraphPhrase(stream, field, phraseSlop);
         } else {
           return analyzeGraphBoolean(field, stream, operator);
         }
@@ -341,7 +345,31 @@ public class QueryBuilder {
       throw new RuntimeException("Error analyzing query text", e);
     }
   }
-  
+
+  /**
+   * Creates a span query from the tokenstream.  In the case of a single token, a simple <code>SpanTermQuery</code> is
+   * returned.  When multiple tokens, an ordered <code>SpanNearQuery</code> with slop of 0 is returned.
+   */
+  protected final SpanQuery createSpanQuery(TokenStream in, String field) throws IOException {
+    TermToBytesRefAttribute termAtt = in.getAttribute(TermToBytesRefAttribute.class);
+    if (termAtt == null) {
+      return null;
+    }
+
+    List<SpanTermQuery> terms = new ArrayList<>();
+    while (in.incrementToken()) {
+      terms.add(new SpanTermQuery(new Term(field, termAtt.getBytesRef())));
+    }
+
+    if (terms.isEmpty()) {
+      return null;
+    } else if (terms.size() == 1) {
+      return terms.get(0);
+    } else {
+      return new SpanNearQuery(terms.toArray(new SpanTermQuery[0]), 0, true);
+    }
+  }
+
   /** 
    * Creates simple term query from the cached tokenstream contents 
    */
@@ -521,21 +549,66 @@ public class QueryBuilder {
   }
 
   /**
-   * Creates a query from a graph token stream by extracting all the finite strings from the graph and using them to create the query.
+   * Creates a span near (phrase) query from a graph token stream. The articulation points of the graph are visited in
+   * order and the queries created at each point are merged in the returned near query.
    */
-  protected Query analyzeGraphPhrase(TokenStream source, BooleanClause.Occur operator, String field, int phraseSlop)
+  protected SpanQuery analyzeGraphPhrase(TokenStream source, String field, int phraseSlop)
       throws IOException {
     source.reset();
-    GraphTokenStreamFiniteStrings visitor = new GraphTokenStreamFiniteStrings(source);
-    Iterator<TokenStream> it = visitor.getFiniteStrings();
-    List<Query> queries = new ArrayList<>();
-    while (it.hasNext()) {
-      Query query = createFieldQuery(it.next(), operator, field, true, phraseSlop);
-      if (query != null) {
-        queries.add(query);
+    GraphTokenStreamFiniteStrings graph = new GraphTokenStreamFiniteStrings(source);
+    List<SpanQuery> clauses = new ArrayList<>();
+    int[] articulationPoints = graph.articulationPoints();
+    int lastState = 0;
+    for (int i = 0; i <= articulationPoints.length; i++) {
+      int start = lastState;
+      int end = -1;
+      if (i < articulationPoints.length) {
+        end = articulationPoints[i];
+      }
+      lastState = end;
+      final SpanQuery queryPos;
+      if (graph.hasSidePath(start)) {
+        List<SpanQuery> queries = new ArrayList<>();
+        Iterator<TokenStream> it = graph.getFiniteStrings(start, end);
+        while (it.hasNext()) {
+          TokenStream ts = it.next();
+          SpanQuery q = createSpanQuery(ts, field);
+          if (q != null) {
+            queries.add(q);
+          }
+        }
+        if (queries.size() > 0) {
+          queryPos = new SpanOrQuery(queries.toArray(new SpanQuery[0]));
+        } else {
+          queryPos = null;
+        }
+      } else {
+        Term[] terms = graph.getTerms(field, start);
+        assert terms.length > 0;
+        if (terms.length == 1) {
+          queryPos = new SpanTermQuery(terms[0]);
+        } else {
+          SpanTermQuery[] orClauses = new SpanTermQuery[terms.length];
+          for (int idx = 0; idx < terms.length; idx++) {
+            orClauses[idx] = new SpanTermQuery(terms[idx]);
+          }
+
+          queryPos = new SpanOrQuery(orClauses);
+        }
+      }
+
+      if (queryPos != null) {
+        clauses.add(queryPos);
       }
     }
-    return new GraphQuery(queries.toArray(new Query[0]));
+
+    if (clauses.isEmpty()) {
+      return null;
+    } else if (clauses.size() == 1) {
+      return clauses.get(0);
+    } else {
+      return new SpanNearQuery(clauses.toArray(new SpanQuery[0]), phraseSlop, true);
+    }
   }
 
   /**
