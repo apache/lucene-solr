@@ -19,7 +19,6 @@ package org.apache.solr.client.solrj.io.stream;
 import java.io.Closeable;
 import java.io.IOException;
 import java.io.Serializable;
-import java.io.Writer;
 import java.util.List;
 import java.util.UUID;
 
@@ -27,9 +26,12 @@ import org.apache.solr.client.solrj.io.Tuple;
 import org.apache.solr.client.solrj.io.comp.StreamComparator;
 import org.apache.solr.client.solrj.io.stream.expr.Explanation;
 import org.apache.solr.client.solrj.io.stream.expr.StreamFactory;
+import org.apache.solr.common.IteratorWriter;
+import org.apache.solr.common.MapWriter;
+import org.apache.solr.common.SolrException;
 
 
-public abstract class TupleStream implements Closeable, Serializable {
+public abstract class TupleStream implements Closeable, Serializable, MapWriter {
 
   private static final long serialVersionUID = 1;
   
@@ -38,15 +40,6 @@ public abstract class TupleStream implements Closeable, Serializable {
   public TupleStream() {
 
   }
-
-  public static void writeStreamOpen(Writer out) throws IOException {
-    out.write("{\"docs\":[");
-  }
-
-  public static void writeStreamClose(Writer out) throws IOException {
-    out.write("]}");
-  }
-
   public abstract void setStreamContext(StreamContext context);
 
   public abstract List<TupleStream> children();
@@ -64,7 +57,30 @@ public abstract class TupleStream implements Closeable, Serializable {
   public int getCost() {
     return 0;
   }
-  
+
+  @Override
+  public void writeMap(EntryWriter ew) throws IOException {
+    open();
+    ew.put("docs", (IteratorWriter) iw -> {
+      try {
+        for (; ; ) {
+          Tuple tuple = read();
+          if (tuple != null) {
+            iw.add(tuple);
+            if (tuple.EOF) {
+              close();
+              break;
+            }
+          } else {
+            break;
+          }
+        }
+      } catch (IOException e) {
+        throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
+      }
+    });
+  }
+
   public UUID getStreamNodeId(){
     return streamNodeId;
   }

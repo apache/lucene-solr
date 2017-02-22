@@ -23,14 +23,14 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
+import com.codahale.metrics.Timer;
 import org.apache.solr.cloud.OverseerCollectionMessageHandler.Cmd;
 import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SimpleOrderedMap;
-import org.apache.solr.util.stats.Snapshot;
-import org.apache.solr.util.stats.Timer;
+import org.apache.solr.util.stats.MetricUtils;
 import org.apache.zookeeper.data.Stat;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -100,17 +100,7 @@ public class OverseerStatusCmd implements Cmd {
         lst.add("errors", errors);
       }
       Timer timer = entry.getValue().requestTime;
-      Snapshot snapshot = timer.getSnapshot();
-      lst.add("totalTime", timer.getSum());
-      lst.add("avgRequestsPerMinute", timer.getMeanRate());
-      lst.add("5minRateRequestsPerMinute", timer.getFiveMinuteRate());
-      lst.add("15minRateRequestsPerMinute", timer.getFifteenMinuteRate());
-      lst.add("avgTimePerRequest", timer.getMean());
-      lst.add("medianRequestTime", snapshot.getMedian());
-      lst.add("75thPctlRequestTime", snapshot.get75thPercentile());
-      lst.add("95thPctlRequestTime", snapshot.get95thPercentile());
-      lst.add("99thPctlRequestTime", snapshot.get99thPercentile());
-      lst.add("999thPctlRequestTime", snapshot.get999thPercentile());
+      MetricUtils.addMetrics(lst, timer);
     }
     results.add("overseer_operations", overseerStats);
     results.add("collection_operations", collectionStats);

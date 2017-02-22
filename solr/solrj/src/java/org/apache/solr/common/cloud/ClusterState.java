@@ -24,6 +24,7 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
@@ -442,13 +443,19 @@ public class ClusterState implements JSONWriter.Writable {
   }
 
   public static class CollectionRef {
+    protected final AtomicInteger gets = new AtomicInteger();
     private final DocCollection coll;
+
+    public int getCount(){
+      return gets.get();
+    }
 
     public CollectionRef(DocCollection coll) {
       this.coll = coll;
     }
 
     public DocCollection get(){
+      gets.incrementAndGet();
       return coll;
     }
 

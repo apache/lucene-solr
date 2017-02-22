@@ -18,7 +18,6 @@ package org.apache.solr.schema;
 
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.Reader;
 import java.io.StringWriter;
 import java.lang.invoke.MethodHandles;
 import java.nio.charset.StandardCharsets;
@@ -71,26 +70,16 @@ public class SchemaManager {
   /**
    * Take in a JSON command set and execute them. It tries to capture as many errors
    * as possible instead of failing at the first error it encounters
-   * @param reader The input as a Reader
    * @return List of errors. If the List is empty then the operation was successful.
    */
-  public List performOperations(Reader reader) throws Exception {
-    List<CommandOperation> ops;
-    try {
-      ops = CommandOperation.parse(reader);
-    } catch (Exception e) {
-      String msg = "Error parsing schema operations ";
-      log.warn(msg, e);
-      return Collections.singletonList(singletonMap(CommandOperation.ERR_MSGS, msg + ":" + e.getMessage()));
-    }
+  public List performOperations() throws Exception {
+    List<CommandOperation> ops = req.getCommands(false);
     List errs = CommandOperation.captureErrors(ops);
     if (!errs.isEmpty()) return errs;
 
     IndexSchema schema = req.getCore().getLatestSchema();
     if (schema instanceof ManagedIndexSchema && schema.isMutable()) {
-      synchronized (schema.getSchemaUpdateLock()) {
-        return doOperations(ops);
-      }
+      return doOperations(ops);
     } else {
       return singletonList(singletonMap(CommandOperation.ERR_MSGS, "schema is not editable"));
     }
@@ -107,52 +96,65 @@ public class SchemaManager {
     TimeOut timeOut = new TimeOut(timeout, TimeUnit.SECONDS);
     SolrCore core = req.getCore();
     String errorMsg = "Unable to persist managed schema. ";
-    while (!timeOut.hasTimedOut()) {
-      managedIndexSchema = getFreshManagedSchema(req.getCore());
-      for (CommandOperation op : operations) {
-        OpType opType = OpType.get(op.name);
-        if (opType != null) {
-          opType.perform(op, this);
-        } else {
-          op.addError("No such operation : " + op.name);
-        }
-      }
-      List errs = CommandOperation.captureErrors(operations);
-      if (!errs.isEmpty()) return errs;
-      SolrResourceLoader loader = req.getCore().getResourceLoader();
-      if (loader instanceof ZkSolrResourceLoader) {
-        ZkSolrResourceLoader zkLoader = (ZkSolrResourceLoader) loader;
-        StringWriter sw = new StringWriter();
-        try {
-          managedIndexSchema.persist(sw);
-        } catch (IOException e) {
-          throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "unable to serialize schema");
-          //unlikely
-        }
+    List errors = Collections.emptyList();
+    int latestVersion = -1;
 
-        try {
-          int latestVersion = ZkController.persistConfigResourceToZooKeeper(zkLoader, managedIndexSchema.getSchemaZkVersion(),
-              managedIndexSchema.getResourceName(), sw.toString().getBytes(StandardCharsets.UTF_8), true);
-          waitForOtherReplicasToUpdate(timeOut, latestVersion);
-          core.setLatestSchema(managedIndexSchema);
-          return Collections.emptyList();
-        } catch (ZkController.ResourceModifiedInZkException e) {
-          log.info("Schema was modified by another node. Retrying..");
+    synchronized (req.getSchema().getSchemaUpdateLock()) {
+      while (!timeOut.hasTimedOut()) {
+        managedIndexSchema = getFreshManagedSchema(req.getCore());
+        for (CommandOperation op : operations) {
+          OpType opType = OpType.get(op.name);
+          if (opType != null) {
+            opType.perform(op, this);
+          } else {
+            op.addError("No such operation : " + op.name);
+          }
         }
-      } else {
-        try {
-          //only for non cloud stuff
-          managedIndexSchema.persistManagedSchema(false);
-          core.setLatestSchema(managedIndexSchema);
-          return Collections.emptyList();
-        } catch (SolrException e) {
-          log.warn(errorMsg);
-          return singletonList(errorMsg + e.getMessage());
+        errors = CommandOperation.captureErrors(operations);
+        if (!errors.isEmpty()) break;
+        SolrResourceLoader loader = req.getCore().getResourceLoader();
+        if (loader instanceof ZkSolrResourceLoader) {
+          ZkSolrResourceLoader zkLoader = (ZkSolrResourceLoader) loader;
+          StringWriter sw = new StringWriter();
+          try {
+            managedIndexSchema.persist(sw);
+          } catch (IOException e) {
+            throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "unable to serialize schema");
+            //unlikely
+          }
+
+          try {
+            latestVersion = ZkController.persistConfigResourceToZooKeeper
+                (zkLoader, managedIndexSchema.getSchemaZkVersion(), managedIndexSchema.getResourceName(),
+                 sw.toString().getBytes(StandardCharsets.UTF_8), true);
+            req.getCore().getCoreDescriptor().getCoreContainer().reload(req.getCore().getName());
+            break;
+          } catch (ZkController.ResourceModifiedInZkException e) {
+            log.info("Schema was modified by another node. Retrying..");
+          }
+        } else {
+          try {
+            //only for non cloud stuff
+            managedIndexSchema.persistManagedSchema(false);
+            core.setLatestSchema(managedIndexSchema);
+          } catch (SolrException e) {
+            log.warn(errorMsg);
+            errors = singletonList(errorMsg + e.getMessage());
+          }
+          break;
         }
       }
     }
-    log.warn(errorMsg + "Timed out.");
-    return singletonList(errorMsg + "Timed out.");
+    if (req.getCore().getResourceLoader() instanceof ZkSolrResourceLoader) {
+      // Don't block further schema updates while waiting for a pending update to propagate to other replicas.
+      // This reduces the likelihood of a (time-limited) distributed deadlock during concurrent schema updates.
+      waitForOtherReplicasToUpdate(timeOut, latestVersion);
+    }
+    if (errors.isEmpty() && timeOut.hasTimedOut()) {
+      log.warn(errorMsg + "Timed out.");
+      errors = singletonList(errorMsg + "Timed out.");
+    }
+    return errors;
   }
 
   private void waitForOtherReplicasToUpdate(TimeOut timeOut, int latestVersion) {

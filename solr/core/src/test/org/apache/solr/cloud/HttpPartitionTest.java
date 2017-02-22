@@ -71,7 +71,7 @@ public class HttpPartitionTest extends AbstractFullDistribZkTestBase {
   
   // To prevent the test assertions firing too fast before cluster state
   // recognizes (and propagates) partitions
-  protected static final long sleepMsBeforeHealPartition = 2000L;
+  protected static final long sleepMsBeforeHealPartition = 300;
 
   // give plenty of time for replicas to recover when running in slow Jenkins test envs
   protected static final int maxWaitSecsToSeeAllActive = 90;
@@ -340,16 +340,16 @@ public class HttpPartitionTest extends AbstractFullDistribZkTestBase {
     log.info("Looked up max version bucket seed "+maxVersionBefore+" for core "+coreName);
 
     // now up the stakes and do more docs
-    int numDocs = 1000;
+    int numDocs = TEST_NIGHTLY ? 1000 : 100;
     boolean hasPartition = false;
     for (int d = 0; d < numDocs; d++) {
       // create / restore partition every 100 docs
-      if (d % 100 == 0) {
+      if (d % 10 == 0) {
         if (hasPartition) {
           proxy.reopen();
           hasPartition = false;
         } else {
-          if (d >= 100) {
+          if (d >= 10) {
             proxy.close();
             hasPartition = true;
             Thread.sleep(sleepMsBeforeHealPartition);
@@ -674,9 +674,9 @@ public class HttpPartitionTest extends AbstractFullDistribZkTestBase {
 
       if (!allReplicasUp) {
         try {
-          Thread.sleep(1000L);
+          Thread.sleep(200L);
         } catch (Exception ignoreMe) {}
-        waitMs += 1000L;
+        waitMs += 200L;
       }
     } // end while
 

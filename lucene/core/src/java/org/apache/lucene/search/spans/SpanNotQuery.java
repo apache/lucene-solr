@@ -49,19 +49,23 @@ public final class SpanNotQuery extends SpanQuery {
 
   /** Construct a SpanNotQuery matching spans from <code>include</code> which
    * have no overlap with spans from <code>exclude</code> within
-   * <code>dist</code> tokens of <code>include</code>. */
+   * <code>dist</code> tokens of <code>include</code>. Inversely, a negative
+   * <code>dist</code> value may be used to specify a certain amount of allowable
+   * overlap. */
   public SpanNotQuery(SpanQuery include, SpanQuery exclude, int dist) {
      this(include, exclude, dist, dist);
   }
 
   /** Construct a SpanNotQuery matching spans from <code>include</code> which
    * have no overlap with spans from <code>exclude</code> within
-   * <code>pre</code> tokens before or <code>post</code> tokens of <code>include</code>. */
+   * <code>pre</code> tokens before or <code>post</code> tokens of
+   * <code>include</code>. Inversely, negative values for <code>pre</code> and/or
+   * <code>post</code> allow a certain amount of overlap to occur. */
   public SpanNotQuery(SpanQuery include, SpanQuery exclude, int pre, int post) {
     this.include = Objects.requireNonNull(include);
     this.exclude = Objects.requireNonNull(exclude);
-    this.pre = (pre >=0) ? pre : 0;
-    this.post = (post >= 0) ? post : 0;
+    this.pre = pre;
+    this.post = post;
 
     if (include.getField() != null && exclude.getField() != null && !include.getField().equals(exclude.getField()))
       throw new IllegalArgumentException("Clauses must have same field.");

@@ -27,6 +27,7 @@ import org.apache.solr.core.SolrCore;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.schema.SimilarityFactory;
 import org.apache.solr.search.similarities.SchemaSimilarityFactory;
+import org.apache.solr.util.RESTfulServerProvider;
 import org.apache.solr.util.RestTestBase;
 import org.apache.solr.util.RestTestHarness;
 
@@ -34,9 +35,12 @@ import org.junit.After;
 import org.junit.Before;
 import org.noggit.JSONParser;
 import org.noggit.ObjectBuilder;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.File;
 import java.io.StringReader;
+import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
@@ -45,6 +49,8 @@ import java.util.Set;
 
 
 public class TestBulkSchemaAPI extends RestTestBase {
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
+
 
   private static File tmpSolrHome;
 
@@ -58,6 +64,15 @@ public class TestBulkSchemaAPI extends RestTestBase {
 
     createJettyAndHarness(tmpSolrHome.getAbsolutePath(), "solrconfig-managed-schema.xml", "schema-rest.xml",
         "/solr", true, null);
+    if (random().nextBoolean()) {
+      log.info("These tests are run with V2 API");
+      restTestHarness.setServerProvider(new RESTfulServerProvider() {
+        @Override
+        public String getBaseURL() {
+          return jetty.getBaseUrl().toString() + "/v2/cores/" + DEFAULT_TEST_CORENAME;
+        }
+      });
+    }
   }
 
   @After

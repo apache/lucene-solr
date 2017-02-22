@@ -62,6 +62,7 @@ import org.apache.lucene.store.MergeInfo;
 import org.apache.lucene.store.RateLimitedIndexOutput;
 import org.apache.lucene.store.TrackingDirectoryWrapper;
 import org.apache.lucene.util.Accountable;
+import org.apache.lucene.util.ArrayUtil;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.CloseableThreadLocal;
@@ -70,6 +71,7 @@ import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.InfoStream;
 import org.apache.lucene.util.StringHelper;
 import org.apache.lucene.util.ThreadInterruptedException;
+import org.apache.lucene.util.UnicodeUtil;
 import org.apache.lucene.util.Version;
 
 /**
@@ -131,19 +133,24 @@ import org.apache.lucene.util.Version;
   
   <a name="deletionPolicy"></a>
   <p>Expert: <code>IndexWriter</code> allows an optional
-  {@link IndexDeletionPolicy} implementation to be
-  specified.  You can use this to control when prior commits
-  are deleted from the index.  The default policy is {@link
-  KeepOnlyLastCommitDeletionPolicy} which removes all prior
-  commits as soon as a new commit is done (this matches
-  behavior before 2.2).  Creating your own policy can allow
-  you to explicitly keep previous "point in time" commits
-  alive in the index for some time, to allow readers to
-  refresh to the new commit without having the old commit
-  deleted out from under them.  This is necessary on
-  filesystems like NFS that do not support "delete on last
-  close" semantics, which Lucene's "point in time" search
-  normally relies on. </p>
+  {@link IndexDeletionPolicy} implementation to be specified.  You
+  can use this to control when prior commits are deleted from
+  the index.  The default policy is {@link KeepOnlyLastCommitDeletionPolicy}
+  which removes all prior commits as soon as a new commit is
+  done.  Creating your own policy can allow you to explicitly
+  keep previous "point in time" commits alive in the index for
+  some time, either because this is useful for your application,
+  or to give readers enough time to refresh to the new commit
+  without having the old commit deleted out from under them.
+  The latter is necessary when multiple computers take turns opening
+  their own {@code IndexWriter} and {@code IndexReader}s
+  against a single shared index mounted via remote filesystems
+  like NFS which do not support "delete on last close" semantics.
+  A single computer accessing an index via NFS is fine with the
+  default deletion policy since NFS clients emulate "delete on
+  last close" locally.  That said, accessing an index via NFS
+  will likely result in poor performance compared to a local IO
+  device. </p>
 
   <a name="mergePolicy"></a> <p>Expert:
   <code>IndexWriter</code> allows you to separately change
@@ -258,6 +265,12 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
    * IndexWriterConfig#setInfoStream(InfoStream)}).
    */
   public final static int MAX_TERM_LENGTH = DocumentsWriterPerThread.MAX_TERM_LENGTH_UTF8;
+
+  /**
+   * Maximum length string for a stored field.
+   */
+  public final static int MAX_STORED_STRING_LENGTH = ArrayUtil.MAX_ARRAY_LENGTH / UnicodeUtil.MAX_UTF8_BYTES_PER_CHAR;
+    
   // when unrecoverable disaster strikes, we populate this with the reason that we had to close IndexWriter
   volatile Throwable tragedy;
 
@@ -1019,15 +1032,19 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
     }
   }
 
-  /** Confirms that the incoming index sort (if any) matches the existing index sort (if any).  This is unfortunately just best effort,
-   *  because it could be the old index only has flushed segments. */
-  private void validateIndexSort() {
+  /** Confirms that the incoming index sort (if any) matches the existing index sort (if any).
+   *  This is unfortunately just best effort, because it could be the old index only has unsorted flushed segments built
+   *  before {@link Version#LUCENE_6_5_0} (flushed segments are sorted in Lucene 7.0).  */
+  private void validateIndexSort() throws CorruptIndexException {
     Sort indexSort = config.getIndexSort();
     if (indexSort != null) {
       for(SegmentCommitInfo info : segmentInfos) {
         Sort segmentIndexSort = info.info.getIndexSort();
         if (segmentIndexSort != null && indexSort.equals(segmentIndexSort) == false) {
           throw new IllegalArgumentException("cannot change previous indexSort=" + segmentIndexSort + " (from segment=" + info + ") to new indexSort=" + indexSort);
+        } else if (segmentIndexSort == null && info.info.getVersion().onOrAfter(Version.LUCENE_6_5_0)) {
+          // Flushed segments are not sorted if they were built with a version prior to 6.5.0
+          throw new CorruptIndexException("segment not sorted with indexSort=" + segmentIndexSort, info.info.toString());
         }
       }
     }
@@ -1606,6 +1623,9 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
     if (!globalFieldNumberMap.contains(field, DocValuesType.NUMERIC)) {
       throw new IllegalArgumentException("can only update existing numeric-docvalues fields!");
     }
+    if (config.getIndexSortFields().contains(field)) {
+      throw new IllegalArgumentException("cannot update docvalues field involved in the index sort, field=" + field + ", sort=" + config.getIndexSort());
+    }
     try {
       long seqNo = docWriter.updateDocValues(new NumericDocValuesUpdate(term, field, value));
       if (seqNo < 0) {
@@ -1700,6 +1720,9 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
       if (!globalFieldNumberMap.contains(f.name(), dvType)) {
         throw new IllegalArgumentException("can only update existing docvalues fields! field=" + f.name() + ", type=" + dvType);
       }
+      if (config.getIndexSortFields().contains(f.name())) {
+        throw new IllegalArgumentException("cannot update docvalues field involved in the index sort, field=" + f.name() + ", sort=" + config.getIndexSort());
+      }
       switch (dvType) {
         case NUMERIC:
           dvUpdates[i] = new NumericDocValuesUpdate(term, f.name(), (Long) f.numericValue());
@@ -1758,6 +1781,22 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
   // for test purpose
   final int getFlushDeletesCount() {
     return flushDeletesCount.get();
+  }
+
+  /**
+   * Return an unmodifiable set of all field names as visible
+   * from this IndexWriter, across all segments of the index.
+   * Useful for knowing which fields exist, before {@link #updateDocValues(Term, Field...)} is
+   * attempted. We could phase out this method if
+   * {@link #updateDocValues(Term, Field...)} could create the non-existent
+   * docValues fields as necessary, instead of throwing
+   * IllegalArgumentException for attempts to update non-existent
+   * docValues fields.
+   * @lucene.internal
+   * @lucene.experimental
+   */
+  public Set<String> getFieldNames() {
+    return globalFieldNumberMap.getFieldNames(); // FieldNumbers#getFieldNames() returns an unmodifiableSet
   }
 
   final String newSegmentName() {
@@ -2933,11 +2972,16 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
   @Override
   public final long prepareCommit() throws IOException {
     ensureOpen();
-    pendingSeqNo = prepareCommitInternal(config.getMergePolicy());
+    boolean[] doMaybeMerge = new boolean[1];
+    pendingSeqNo = prepareCommitInternal(doMaybeMerge);
+    // we must do this outside of the commitLock else we can deadlock:
+    if (doMaybeMerge[0]) {
+      maybeMerge(config.getMergePolicy(), MergeTrigger.FULL_FLUSH, UNBOUNDED_MAX_MERGE_SEGMENTS);      
+    }
     return pendingSeqNo;
   }
 
-  private long prepareCommitInternal(MergePolicy mergePolicy) throws IOException {
+  private long prepareCommitInternal(boolean[] doMaybeMerge) throws IOException {
     startCommitTime = System.nanoTime();
     synchronized(commitLock) {
       ensureOpen(false);
@@ -3044,7 +3088,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
       boolean success = false;
       try {
         if (anySegmentsFlushed) {
-          maybeMerge(mergePolicy, MergeTrigger.FULL_FLUSH, UNBOUNDED_MAX_MERGE_SEGMENTS);
+          doMaybeMerge[0] = true;
         }
         startCommit(toCommit);
         success = true;
@@ -3165,6 +3209,10 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
       infoStream.message("IW", "commit: start");
     }
 
+    boolean[] doMaybeMerge = new boolean[1];
+
+    long seqNo;
+
     synchronized(commitLock) {
       ensureOpen(false);
 
@@ -3172,13 +3220,11 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
         infoStream.message("IW", "commit: enter lock");
       }
 
-      long seqNo;
-
       if (pendingCommit == null) {
         if (infoStream.isEnabled("IW")) {
           infoStream.message("IW", "commit: now prepare");
         }
-        seqNo = prepareCommitInternal(mergePolicy);
+        seqNo = prepareCommitInternal(doMaybeMerge);
       } else {
         if (infoStream.isEnabled("IW")) {
           infoStream.message("IW", "commit: already prepared");
@@ -3187,9 +3233,14 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
       }
 
       finishCommit();
-
-      return seqNo;
     }
+
+    // we must do this outside of the commitLock else we can deadlock:
+    if (doMaybeMerge[0]) {
+      maybeMerge(mergePolicy, MergeTrigger.FULL_FLUSH, UNBOUNDED_MAX_MERGE_SEGMENTS);      
+    }
+    
+    return seqNo;
   }
 
   private final void finishCommit() throws IOException {

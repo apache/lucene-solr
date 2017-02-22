@@ -42,11 +42,19 @@ import org.apache.solr.update.AddUpdateCommand;
 import org.apache.solr.update.CommitUpdateCommand;
 import org.apache.solr.update.UpdateHandler;
 import org.apache.solr.util.ReadOnlyCoresLocator;
+import org.junit.BeforeClass;
 import org.junit.Test;
 
 public class TestLazyCores extends SolrTestCaseJ4 {
 
   private File solrHomeDirectory;
+
+  @BeforeClass
+  public static void setupClass() throws Exception {
+    // Need to use a disk-based directory because there are tests that close a core after adding documents
+    // then expect to be able to re-open that core and execute a search
+    useFactory("solr.StandardDirectoryFactory");
+  }
 
   private static CoreDescriptor makeCoreDescriptor(CoreContainer cc, String coreName, String isTransient, String loadOnStartup) {
     return new CoreDescriptor(cc, coreName, cc.getCoreRootDirectory().resolve(coreName),
@@ -721,4 +729,72 @@ public class TestLazyCores extends SolrTestCaseJ4 {
     }
   }
 
+  @BadApple(bugUrl = "https://issues.apache.org/jira/browse/SOLR-10101")
+  // Insure that when a core is aged out of the transient cache, any uncommitted docs are preserved.
+  // Note, this needs FS-based indexes to persist!
+  // Cores 2, 3, 6, 7, 8, 9 are transient
+  @Test
+  public void testNoCommit() throws Exception {
+    CoreContainer cc = init();
+    String[] coreList = new String[]{
+        "collection2",
+        "collection3",
+        "collection6",
+        "collection7",
+        "collection8",
+        "collection9"
+    };
+    try {
+      // First, go through all the transient cores and add some docs. DO NOT COMMIT!
+      // The aged-out core should commit the docs when it gets closed.
+      List<SolrCore> openCores = new ArrayList<>();
+      for (String coreName : coreList) {
+        SolrCore core = cc.getCore(coreName);
+        openCores.add(core);
+        add10(core);
+      }
+      
+      // Just proving that some cores have been aged out.
+      checkNotInCores(cc, "collection2", "collection3");
+
+      // Close our get of all cores above.
+      for (SolrCore core : openCores) core.close();
+      openCores.clear();
+      
+      // We still should have 6, 7, 8, 9 loaded, their reference counts have NOT dropped to zero 
+      checkInCores(cc, "collection6", "collection7", "collection8", "collection9");
+
+      for (String coreName : coreList) {
+        // The point of this test is to insure that when cores are aged out and re-opened
+        // that the docs are there, so insure that the core we're testing is gone, gone, gone. 
+        checkNotInCores(cc, coreName);
+        
+        // Load the core up again.
+        SolrCore core = cc.getCore(coreName);
+        openCores.add(core);
+        
+        // Insure docs are still there.
+        check10(core);
+      }
+      for (SolrCore core : openCores) core.close();
+    } finally {
+      cc.shutdown();
+    }
+  }
+
+  private void add10(SolrCore core) throws IOException {
+    for (int idx = 0; idx < 10; ++idx) {
+      addLazy(core, "id", "0" + idx);
+    }
+    SolrQueryRequest req = makeReq(core);
+
+  }
+
+  private void check10(SolrCore core) {
+    // Just get a couple of searches to work!
+    assertQ("test closing core without committing",
+        makeReq(core, "q", "*:*")
+        , "//result[@numFound='10']"
+    );
+  }
 }

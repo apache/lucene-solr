@@ -50,6 +50,10 @@ public class SolrDocument extends SolrDocumentBase<Object, SolrDocument> impleme
     _fields = new LinkedHashMap<>();
   }
 
+  public SolrDocument(Map<String, Object> fields) {
+    this._fields = fields;
+  }
+
   /**
    * @return a list of field names defined in this document - this Collection is directly backed by this SolrDocument.
    * @see #keySet

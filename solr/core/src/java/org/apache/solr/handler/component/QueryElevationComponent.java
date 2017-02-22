@@ -16,14 +16,35 @@
  */
 package org.apache.solr.handler.component;
 
+import javax.xml.xpath.XPath;
+import javax.xml.xpath.XPathConstants;
+import javax.xml.xpath.XPathExpressionException;
+import javax.xml.xpath.XPathFactory;
+import java.io.File;
+import java.io.IOException;
+import java.io.InputStream;
+import java.lang.invoke.MethodHandles;
+import java.net.MalformedURLException;
+import java.net.URL;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.WeakHashMap;
+
+import com.carrotsearch.hppc.IntIntHashMap;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
+import org.apache.lucene.index.Fields;
+import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.LeafReader;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.PostingsEnum;
-import org.apache.lucene.index.Fields;
-import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.index.Terms;
 import org.apache.lucene.index.TermsEnum;
@@ -46,22 +67,22 @@ import org.apache.solr.cloud.ZkController;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.QueryElevationParams;
 import org.apache.solr.common.params.SolrParams;
-import org.apache.solr.common.util.StrUtils;
-import org.apache.solr.schema.IndexSchema;
-import org.apache.solr.search.QueryParsing;
-import org.apache.solr.search.grouping.GroupingSpecification;
-import org.apache.solr.util.DOMUtil;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SimpleOrderedMap;
+import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.core.Config;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.transform.ElevatedMarkerFactory;
 import org.apache.solr.response.transform.ExcludedMarkerFactory;
 import org.apache.solr.schema.FieldType;
+import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.schema.SchemaField;
+import org.apache.solr.search.QueryParsing;
 import org.apache.solr.search.SolrIndexSearcher;
 import org.apache.solr.search.SortSpec;
+import org.apache.solr.search.grouping.GroupingSpecification;
+import org.apache.solr.util.DOMUtil;
 import org.apache.solr.util.RefCounted;
 import org.apache.solr.util.VersionedFile;
 import org.apache.solr.util.plugin.SolrCoreAware;
@@ -70,29 +91,6 @@ import org.slf4j.LoggerFactory;
 import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
 import org.xml.sax.InputSource;
-
-import com.carrotsearch.hppc.IntIntHashMap;
-
-import javax.xml.xpath.XPath;
-import javax.xml.xpath.XPathConstants;
-import javax.xml.xpath.XPathExpressionException;
-import javax.xml.xpath.XPathFactory;
-
-import java.io.File;
-import java.io.IOException;
-import java.io.InputStream;
-import java.lang.invoke.MethodHandles;
-import java.net.MalformedURLException;
-import java.net.URL;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.WeakHashMap;
 
 /**
  * A component to elevate some documents to the top of the result set.
@@ -460,15 +458,15 @@ public class QueryElevationComponent extends SearchComponent implements SolrCore
       // alter the sorting in the grouping specification if there is one
       GroupingSpecification groupingSpec = rb.getGroupingSpec();
       if(groupingSpec != null) {
-        SortField[] groupSort = groupingSpec.getGroupSort().getSort();
-        Sort modGroupSort = this.modifySort(groupSort, force, comparator);
-        if(modGroupSort != null) {
-          groupingSpec.setGroupSort(modGroupSort);
+        SortSpec groupSortSpec = groupingSpec.getGroupSortSpec();
+        SortSpec modGroupSortSpec = this.modifySortSpec(groupSortSpec, force, comparator);
+        if (modGroupSortSpec != null) {
+          groupingSpec.setGroupSortSpec(modGroupSortSpec);
         }
-        SortField[] withinGroupSort = groupingSpec.getSortWithinGroup().getSort();
-        Sort modWithinGroupSort = this.modifySort(withinGroupSort, force, comparator);
-        if(modWithinGroupSort != null) {
-          groupingSpec.setSortWithinGroup(modWithinGroupSort);
+        SortSpec withinGroupSortSpec = groupingSpec.getWithinGroupSortSpec();
+        SortSpec modWithinGroupSortSpec = this.modifySortSpec(withinGroupSortSpec, force, comparator);
+        if (modWithinGroupSortSpec != null) {
+          groupingSpec.setWithinGroupSortSpec(modWithinGroupSortSpec);
         }
       }
     }
@@ -492,12 +490,6 @@ public class QueryElevationComponent extends SearchComponent implements SolrCore
         rb.addDebugInfo("queryBoosting", dbg);
       }
     }
-  }
-
-  private Sort modifySort(SortField[] current, boolean force, ElevationComparatorSource comparator) {
-    SortSpec tmp = new SortSpec(new Sort(current), Arrays.asList(new SchemaField[current.length]));
-    tmp = modifySortSpec(tmp, force, comparator);
-    return null == tmp ? null : tmp.getSort();
   }
 
   private SortSpec modifySortSpec(SortSpec current, boolean force, ElevationComparatorSource comparator) {
@@ -526,9 +518,9 @@ public class QueryElevationComponent extends SearchComponent implements SolrCore
     }
     if (modify) {
       SortSpec newSpec = new SortSpec(new Sort(sorts.toArray(new SortField[sorts.size()])),
-                                      fields);
-      newSpec.setOffset(current.getOffset());
-      newSpec.setCount(current.getCount());
+                                      fields,
+                                      current.getCount(),
+                                      current.getOffset());
       return newSpec;
     }
     return null;
@@ -634,7 +626,7 @@ public class QueryElevationComponent extends SearchComponent implements SolrCore
   }
 
   @Override
-  public FieldComparator<Integer> newComparator(String fieldname, final int numHits, int sortPos, boolean reversed) throws IOException {
+  public FieldComparator<Integer> newComparator(String fieldname, final int numHits, int sortPos, boolean reversed) {
     return new SimpleFieldComparator<Integer>() {
       private final int[] values = new int[numHits];
       private int bottomVal;

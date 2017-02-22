@@ -16,15 +16,19 @@
  */
 package org.apache.solr.handler.component;
 
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+
 import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.SolrTestCaseJ4.SuppressPointFields;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.search.CollapsingQParserPlugin;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
-import java.util.*;
-
+@SuppressPointFields
 public class TestExpandComponent extends SolrTestCaseJ4 {
 
   @BeforeClass
@@ -314,4 +318,19 @@ public class TestExpandComponent extends SolrTestCaseJ4 {
     );
   }
 
+  @Test
+  public void testExpandWithEmptyIndexReturnsZeroResults() {
+    //We make sure the index is cleared
+
+    clearIndex();
+    assertU(commit());
+
+    ModifiableSolrParams params = new ModifiableSolrParams();
+    params.add("q", "*:*");
+    params.add("fq", "{!collapse field=group_s}");
+    params.add("expand" ,"true");
+    params.add("expand.rows", "10");
+
+    assertQ(req(params), "*[count(//doc)=0]");
+  }
 }

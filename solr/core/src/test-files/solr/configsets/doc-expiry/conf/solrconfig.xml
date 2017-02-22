@@ -25,13 +25,24 @@
 
   <dataDir>${solr.data.dir:}</dataDir>
 
+  <indexConfig>
+    <!-- NOTE: we do *NOT* want Randomized Merging for these tests,
+         because we need to be able to assert that index changes are only happening
+         on the shards we expected them to as a result of our deletes.
+         
+         (the random/mock merge classes can cause new readers to be opened after a commit
+         even if the index itself hasn't changed - ex: new segments file listing same exact segments
+         
+         Instead use Solr defaults for almost everything
+    -->
+    <lockType>${solr.tests.lockType:single}</lockType>
+  </indexConfig>
+  
   <directoryFactory name="DirectoryFactory"
                     class="${solr.directoryFactory:solr.NRTCachingDirectoryFactory}"/>
   <schemaFactory class="ClassicIndexSchemaFactory"/>
 
   <luceneMatchVersion>${tests.luceneMatchVersion:LATEST}</luceneMatchVersion>
-
-  <xi:include href="solrconfig.snippet.randomindexconfig.xml" xmlns:xi="http://www.w3.org/2001/XInclude"/>
 
   <updateHandler class="solr.DirectUpdateHandler2">
     <updateLog>

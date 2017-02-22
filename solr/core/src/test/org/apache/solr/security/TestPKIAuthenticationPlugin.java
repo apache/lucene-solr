@@ -35,7 +35,7 @@ import org.apache.solr.request.LocalSolrQueryRequest;
 import org.apache.solr.request.SolrRequestInfo;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.util.CryptoKeys;
-import org.easymock.EasyMock;
+import static org.mockito.Mockito.*;
 import org.junit.Test;
 
 import static org.easymock.EasyMock.getCurrentArguments;
@@ -178,22 +178,14 @@ public class TestPKIAuthenticationPlugin extends SolrTestCaseJ4 {
   }
   
   private HttpServletRequest createMockRequest(final AtomicReference<Header> header) {
-    HttpServletRequest mockReq = EasyMock.createMock(HttpServletRequest.class);
-    EasyMock.reset(mockReq);
-    mockReq.getHeader(EasyMock.anyObject(String.class));
-    EasyMock.expectLastCall().andAnswer(() -> {
-      if (PKIAuthenticationPlugin.HEADER.equals(getCurrentArguments()[0])) {
+    HttpServletRequest mockReq = mock(HttpServletRequest.class);
+    when(mockReq.getHeader(any(String.class))).then(invocation -> {
+      if (PKIAuthenticationPlugin.HEADER.equals(invocation.getArgument(0))) {
         if (header.get() == null) return null;
         return header.get().getValue();
       } else return null;
-    }).anyTimes();
-    mockReq.getUserPrincipal();
-    EasyMock.expectLastCall().andAnswer(() -> null).anyTimes();
-
-    mockReq.getRequestURI();
-    EasyMock.expectLastCall().andAnswer(() -> "/collection1/select").anyTimes();
-
-    EasyMock.replay(mockReq);
+    });
+    when(mockReq.getRequestURI()).thenReturn("/collection1/select");
     return mockReq;
   }
 }

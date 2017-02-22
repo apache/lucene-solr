@@ -40,6 +40,8 @@ import org.apache.lucene.document.StringField;
 import org.apache.lucene.document.TextField;
 import org.apache.lucene.index.TermsEnum.SeekStatus;
 import org.apache.lucene.search.DocIdSetIterator;
+import org.apache.lucene.search.IndexSearcher;
+import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IOContext;
 import org.apache.lucene.util.BytesRef;
@@ -308,6 +310,49 @@ public abstract class BasePostingsFormatTestCase extends BaseIndexFileFormatTest
       }
     }
     ir.close();
+    iw.close();
+    dir.close();
+  }
+
+  // tests that level 2 ghost fields still work
+  public void testLevel2Ghosts() throws Exception {
+    Directory dir = newDirectory();
+
+    Analyzer analyzer = new MockAnalyzer(random());
+    IndexWriterConfig iwc = newIndexWriterConfig(null);
+    iwc.setCodec(getCodec());
+    iwc.setMergePolicy(newLogMergePolicy());
+    IndexWriter iw = new IndexWriter(dir, iwc);
+
+    Document document = new Document();
+    document.add(new StringField("id", "0", Field.Store.NO));
+    document.add(new StringField("suggest_field", "apples", Field.Store.NO));
+    iw.addDocument(document);
+    // need another document so whole segment isn't deleted
+    iw.addDocument(new Document());
+    iw.commit();
+
+    document = new Document();
+    document.add(new StringField("id", "1", Field.Store.NO));
+    document.add(new StringField("suggest_field2", "apples", Field.Store.NO));
+    iw.addDocument(document);
+    iw.commit();
+
+    iw.deleteDocuments(new Term("id", "0"));
+    // first force merge creates a level 1 ghost field
+    iw.forceMerge(1);
+    
+    // second force merge creates a level 2 ghost field, causing MultiFields to include "suggest_field" in its iteration, yet a null Terms is returned (no documents have
+    // this field anymore)
+    iw.addDocument(new Document());
+    iw.forceMerge(1);
+
+    DirectoryReader reader = DirectoryReader.open(iw);
+    IndexSearcher indexSearcher = new IndexSearcher(reader);
+
+    assertEquals(1, indexSearcher.count(new TermQuery(new Term("id", "1"))));
+
+    reader.close();
     iw.close();
     dir.close();
   }

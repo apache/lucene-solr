@@ -91,6 +91,11 @@
 # Location where Solr should write logs to. Absolute or relative to solr start dir
 #SOLR_LOGS_DIR=logs
 
+# Enables log rotation, cleanup, and archiving during start. Setting SOLR_LOG_PRESTART_ROTATION=false will skip start
+# time rotation of logs, and the archiving of the last GC and console log files. It does not affect Log4j configuration.
+# This pre-startup rotation may need to be disabled depending how much you customize the default logging setup.
+#SOLR_LOG_PRESTART_ROTATION=true
+
 # Sets the port Solr binds to, default is 8983
 #SOLR_PORT=8983
 
@@ -98,8 +103,10 @@
 # Be sure to update the paths to the correct keystore for your environment
 #SOLR_SSL_KEY_STORE=/home/shalin/work/oss/shalin-lusolr/solr/server/etc/solr-ssl.keystore.jks
 #SOLR_SSL_KEY_STORE_PASSWORD=secret
+#SOLR_SSL_KEY_STORE_TYPE=JKS
 #SOLR_SSL_TRUST_STORE=/home/shalin/work/oss/shalin-lusolr/solr/server/etc/solr-ssl.keystore.jks
 #SOLR_SSL_TRUST_STORE_PASSWORD=secret
+#SOLR_SSL_TRUST_STORE_TYPE=JKS
 #SOLR_SSL_NEED_CLIENT_AUTH=false
 #SOLR_SSL_WANT_CLIENT_AUTH=false
 
@@ -107,11 +114,15 @@
 # otherwise keep them commented and the above values will automatically be set for HTTP clients
 #SOLR_SSL_CLIENT_KEY_STORE=
 #SOLR_SSL_CLIENT_KEY_STORE_PASSWORD=
+#SOLR_SSL_CLIENT_KEY_STORE_TYPE=
 #SOLR_SSL_CLIENT_TRUST_STORE=
 #SOLR_SSL_CLIENT_TRUST_STORE_PASSWORD=
+#SOLR_SSL_CLIENT_TRUST_STORE_TYPE=
 
 # Settings for authentication
-#SOLR_AUTHENTICATION_CLIENT_BUILDER=
+# Please configure only one of SOLR_AUTHENTICATION_CLIENT_BUILDER or SOLR_AUTH_TYPE parameters
+#SOLR_AUTHENTICATION_CLIENT_BUILDER="org.apache.solr.client.solrj.impl.PreemptiveBasicAuthClientBuilderFactory"
+#SOLR_AUTH_TYPE="basic"
 #SOLR_AUTHENTICATION_OPTS="-Dbasicauth=solr:SolrRocks"
 
 # Settings for ZK ACL

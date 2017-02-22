@@ -37,11 +37,14 @@ public class HdfsCollectionsAPIDistributedZkTest extends CollectionsAPIDistribut
 
   @BeforeClass
   public static void setupClass() throws Exception {
+    System.setProperty("solr.hdfs.blockcache.blocksperbank", "512");
+    System.setProperty("tests.hdfs.numdatanodes", "1");
+   
     dfsCluster = HdfsTestUtil.setupClass(createTempDir().toFile().getAbsolutePath());
-    System.setProperty("solr.hdfs.blockcache.blocksperbank", "2048");
 
     ZkConfigManager configManager = new ZkConfigManager(zkClient());
     configManager.uploadConfigDir(configset("cloud-hdfs"), "conf");
+    configManager.uploadConfigDir(configset("cloud-hdfs"), "conf2");
 
     System.setProperty("solr.hdfs.home", HdfsTestUtil.getDataDir(dfsCluster, "data"));
   }
@@ -51,6 +54,9 @@ public class HdfsCollectionsAPIDistributedZkTest extends CollectionsAPIDistribut
     cluster.shutdown(); // need to close before the MiniDFSCluster
     HdfsTestUtil.teardownClass(dfsCluster);
     dfsCluster = null;
+    System.clearProperty("solr.hdfs.blockcache.blocksperbank");
+    System.clearProperty("tests.hdfs.numdatanodes");
+    System.clearProperty("solr.hdfs.home");
   }
 
 }

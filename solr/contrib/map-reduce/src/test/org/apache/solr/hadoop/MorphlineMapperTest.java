@@ -25,6 +25,7 @@ import org.apache.hadoop.io.Text;
 import org.apache.hadoop.mrunit.mapreduce.MapDriver;
 import org.apache.hadoop.mrunit.types.Pair;
 import org.apache.lucene.util.Constants;
+import org.apache.lucene.util.LuceneTestCase.AwaitsFix;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.hadoop.morphline.MorphlineMapper;
 import org.apache.solr.util.BadHdfsThreadsFilter;
@@ -36,6 +37,7 @@ import com.carrotsearch.randomizedtesting.annotations.ThreadLeakFilters;
 @ThreadLeakFilters(defaultFilters = true, filters = {
     BadHdfsThreadsFilter.class // hdfs currently leaks thread(s)
 })
+@AwaitsFix(bugUrl="https://issues.apache.org/jira/browse/SOLR-9220")
 public class MorphlineMapperTest extends MRUnitBase {
   
   @BeforeClass
@@ -44,7 +46,6 @@ public class MorphlineMapperTest extends MRUnitBase {
   }
   
   @Test
-  @AwaitsFix(bugUrl="https://issues.apache.org/jira/browse/SOLR-9220")
   public void testMapper() throws Exception {
     MorphlineMapper mapper = new MorphlineMapper();
     MapDriver<LongWritable, Text, Text, SolrInputDocumentWritable> mapDriver = MapDriver.newMapDriver(mapper);;

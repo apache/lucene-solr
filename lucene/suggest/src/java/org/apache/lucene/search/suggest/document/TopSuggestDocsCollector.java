@@ -17,7 +17,12 @@
 package org.apache.lucene.search.suggest.document;
 
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Comparator;
+import java.util.List;
 
+import org.apache.lucene.analysis.CharArraySet;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.search.CollectionTerminatedException;
 import org.apache.lucene.search.SimpleCollector;
@@ -47,9 +52,13 @@ public class TopSuggestDocsCollector extends SimpleCollector {
   private final SuggestScoreDocPriorityQueue priorityQueue;
   private final int num;
 
-  /**
-   * Document base offset for the current Leaf
-   */
+  /** Only set if we are deduplicating hits: holds all per-segment hits until the end, when we dedup them */
+  private final List<SuggestScoreDoc> pendingResults;
+
+  /** Only set if we are deduplicating hits: holds all surface forms seen so far in the current segment */
+  final CharArraySet seenSurfaceForms;
+
+  /** Document base offset for the current Leaf */
   protected int docBase;
 
   /**
@@ -58,12 +67,24 @@ public class TopSuggestDocsCollector extends SimpleCollector {
    * Collects at most <code>num</code> completions
    * with corresponding document and weight
    */
-  public TopSuggestDocsCollector(int num) {
+  public TopSuggestDocsCollector(int num, boolean skipDuplicates) {
     if (num <= 0) {
       throw new IllegalArgumentException("'num' must be > 0");
     }
     this.num = num;
     this.priorityQueue = new SuggestScoreDocPriorityQueue(num);
+    if (skipDuplicates) {
+      seenSurfaceForms = new CharArraySet(num, false);
+      pendingResults = new ArrayList<>();
+    } else {
+      seenSurfaceForms = null;
+      pendingResults = null;
+    }
+  }
+
+  /** Returns true if duplicates are filtered out */
+  protected boolean doSkipDuplicates() {
+    return seenSurfaceForms != null;
   }
 
   /**
@@ -76,6 +97,13 @@ public class TopSuggestDocsCollector extends SimpleCollector {
   @Override
   protected void doSetNextReader(LeafReaderContext context) throws IOException {
     docBase = context.docBase;
+    if (seenSurfaceForms != null) {
+      seenSurfaceForms.clear();
+      // NOTE: this also clears the priorityQueue:
+      for (SuggestScoreDoc hit : priorityQueue.getResults()) {
+        pendingResults.add(hit);
+      }
+    }
   }
 
   /**
@@ -101,7 +129,52 @@ public class TopSuggestDocsCollector extends SimpleCollector {
    * Returns at most <code>num</code> Top scoring {@link org.apache.lucene.search.suggest.document.TopSuggestDocs}s
    */
   public TopSuggestDocs get() throws IOException {
-    SuggestScoreDoc[] suggestScoreDocs = priorityQueue.getResults();
+
+    SuggestScoreDoc[] suggestScoreDocs;
+    
+    if (seenSurfaceForms != null) {
+      // NOTE: this also clears the priorityQueue:
+      for (SuggestScoreDoc hit : priorityQueue.getResults()) {
+        pendingResults.add(hit);
+      }
+
+      // Deduplicate all hits: we already dedup'd efficiently within each segment by
+      // truncating the FST top paths search, but across segments there may still be dups:
+      seenSurfaceForms.clear();
+
+      // TODO: we could use a priority queue here to make cost O(N * log(num)) instead of O(N * log(N)), where N = O(num *
+      // numSegments), but typically numSegments is smallish and num is smallish so this won't matter much in practice:
+
+      Collections.sort(pendingResults,
+                       new Comparator<SuggestScoreDoc>() {
+                         @Override
+                         public int compare(SuggestScoreDoc a, SuggestScoreDoc b) {
+                           // sort by higher score
+                           int cmp = Float.compare(b.score, a.score);
+                           if (cmp == 0) {
+                             // tie break by lower docID:
+                             cmp = Integer.compare(a.doc, b.doc);
+                           }
+                           return cmp;
+                         }
+                       });
+
+      List<SuggestScoreDoc> hits = new ArrayList<>();
+      
+      for (SuggestScoreDoc hit : pendingResults) {
+        if (seenSurfaceForms.contains(hit.key) == false) {
+          seenSurfaceForms.add(hit.key);
+          hits.add(hit);
+          if (hits.size() == num) {
+            break;
+          }
+        }
+      }
+      suggestScoreDocs = hits.toArray(new SuggestScoreDoc[0]);
+    } else {
+      suggestScoreDocs = priorityQueue.getResults();
+    }
+
     if (suggestScoreDocs.length > 0) {
       return new TopSuggestDocs(suggestScoreDocs.length, suggestScoreDocs, suggestScoreDocs[0].score);
     } else {

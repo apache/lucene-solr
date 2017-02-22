@@ -47,7 +47,7 @@ import org.apache.lucene.util.BytesRef;
  * document.add(new SuggestField(name, "suggestion", 4));
  * </pre>
  * To perform document suggestions based on the this field, use
- * {@link SuggestIndexSearcher#suggest(CompletionQuery, int)}
+ * {@link SuggestIndexSearcher#suggest(CompletionQuery, int, boolean)}
  *
  * @lucene.experimental
  */

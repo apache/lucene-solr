@@ -164,6 +164,10 @@ public abstract class CompressionMode {
       LZ4.compress(bytes, off, len, out, ht);
     }
 
+    @Override
+    public void close() throws IOException {
+      // no-op
+    }
   }
 
   private static final class LZ4HighCompressor extends Compressor {
@@ -180,15 +184,17 @@ public abstract class CompressionMode {
       LZ4.compressHC(bytes, off, len, out, ht);
     }
 
+    @Override
+    public void close() throws IOException {
+      // no-op
+    }
   }
 
   private static final class DeflateDecompressor extends Decompressor {
 
-    final Inflater decompressor;
     byte[] compressed;
 
     DeflateDecompressor() {
-      decompressor = new Inflater(true);
       compressed = new byte[0];
     }
 
@@ -207,20 +213,24 @@ public abstract class CompressionMode {
       in.readBytes(compressed, 0, compressedLength);
       compressed[compressedLength] = 0; // explicitly set dummy byte to 0
 
-      decompressor.reset();
-      // extra "dummy byte"
-      decompressor.setInput(compressed, 0, paddedLength);
-
-      bytes.offset = bytes.length = 0;
-      bytes.bytes = ArrayUtil.grow(bytes.bytes, originalLength);
+      final Inflater decompressor = new Inflater(true);
       try {
-        bytes.length = decompressor.inflate(bytes.bytes, bytes.length, originalLength);
-      } catch (DataFormatException e) {
-        throw new IOException(e);
-      }
-      if (!decompressor.finished()) {
-        throw new CorruptIndexException("Invalid decoder state: needsInput=" + decompressor.needsInput() 
-                                                            + ", needsDict=" + decompressor.needsDictionary(), in);
+        // extra "dummy byte"
+        decompressor.setInput(compressed, 0, paddedLength);
+
+        bytes.offset = bytes.length = 0;
+        bytes.bytes = ArrayUtil.grow(bytes.bytes, originalLength);
+        try {
+          bytes.length = decompressor.inflate(bytes.bytes, bytes.length, originalLength);
+        } catch (DataFormatException e) {
+          throw new IOException(e);
+        }
+        if (!decompressor.finished()) {
+          throw new CorruptIndexException("Invalid decoder state: needsInput=" + decompressor.needsInput()
+                                                              + ", needsDict=" + decompressor.needsDictionary(), in);
+        }
+      } finally {
+        decompressor.end();
       }
       if (bytes.length != originalLength) {
         throw new CorruptIndexException("Lengths mismatch: " + bytes.length + " != " + originalLength, in);
@@ -240,6 +250,7 @@ public abstract class CompressionMode {
 
     final Deflater compressor;
     byte[] compressed;
+    boolean closed;
 
     DeflateCompressor(int level) {
       compressor = new Deflater(level, true);
@@ -273,6 +284,14 @@ public abstract class CompressionMode {
 
       out.writeVInt(totalCount);
       out.writeBytes(compressed, totalCount);
+    }
+
+    @Override
+    public void close() throws IOException {
+      if (closed == false) {
+        compressor.end();
+        closed = true;
+      }
     }
 
   }

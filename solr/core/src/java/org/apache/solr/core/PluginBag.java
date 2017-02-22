@@ -46,10 +46,15 @@ import org.apache.solr.util.SimplePostTool;
 import org.apache.solr.util.plugin.NamedListInitializedPlugin;
 import org.apache.solr.util.plugin.PluginInfoInitialized;
 import org.apache.solr.util.plugin.SolrCoreAware;
+import org.apache.solr.api.Api;
+import org.apache.solr.api.ApiBag;
+import org.apache.solr.api.ApiSupport;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import static java.util.Collections.singletonMap;
 import static org.apache.solr.common.params.CommonParams.NAME;
+import static org.apache.solr.api.ApiBag.HANDLER_NAME;
 
 /**
  * This manages the lifecycle of a set of plugin of the same type .
@@ -63,11 +68,13 @@ public class PluginBag<T> implements AutoCloseable {
   private final Class klass;
   private SolrCore core;
   private final SolrConfig.SolrPluginInfo meta;
+  private final ApiBag apiBag;
 
   /**
    * Pass needThreadSafety=true if plugins can be added and removed concurrently with lookups.
    */
   public PluginBag(Class<T> klass, SolrCore core, boolean needThreadSafety) {
+    this.apiBag = klass == SolrRequestHandler.class ? new ApiBag(core != null) : null;
     this.core = core;
     this.klass = klass;
     // TODO: since reads will dominate writes, we could also think about creating a new instance of a map each time it changes.
@@ -174,16 +181,52 @@ public class PluginBag<T> implements AutoCloseable {
    */
   public T put(String name, T plugin) {
     if (plugin == null) return null;
-    PluginHolder<T> old = put(name, new PluginHolder<T>(null, plugin));
+    PluginHolder<T> pluginHolder = new PluginHolder<>(null, plugin);
+    pluginHolder.registerAPI = false;
+    PluginHolder<T> old = put(name, pluginHolder);
     return old == null ? null : old.get();
   }
 
-
   PluginHolder<T> put(String name, PluginHolder<T> plugin) {
-    PluginHolder<T> old = registry.put(name, plugin);
-    if (plugin.pluginInfo != null && plugin.pluginInfo.isDefault()) {
-      setDefault(name);
+    Boolean registerApi = null;
+    Boolean disableHandler = null;
+    if (plugin.pluginInfo != null) {
+      String registerAt = plugin.pluginInfo.attributes.get("registerPath");
+      if (registerAt != null) {
+        List<String> strs = StrUtils.splitSmart(registerAt, ',');
+        disableHandler = !strs.contains("/");
+        registerApi = strs.contains("/v2");
+      }
     }
+
+    if (apiBag != null) {
+      if (plugin.isLoaded()) {
+        T inst = plugin.get();
+        if (inst instanceof ApiSupport) {
+          ApiSupport apiSupport = (ApiSupport) inst;
+          if (registerApi == null) registerApi = apiSupport.registerV2();
+          if (disableHandler == null) disableHandler = !apiSupport.registerV1();
+
+          if(registerApi) {
+            Collection<Api> apis = apiSupport.getApis();
+            if (apis != null) {
+              Map<String, String> nameSubstitutes = singletonMap(HANDLER_NAME, name);
+              for (Api api : apis) {
+                apiBag.register(api, nameSubstitutes);
+              }
+            }
+          }
+
+        }
+      } else {
+        if (registerApi != null && registerApi)
+          apiBag.registerLazy((PluginHolder<SolrRequestHandler>) plugin, plugin.pluginInfo);
+      }
+    }
+    if(disableHandler == null) disableHandler = Boolean.FALSE;
+    PluginHolder<T> old = null;
+    if(!disableHandler) old = registry.put(name, plugin);
+    if (plugin.pluginInfo != null && plugin.pluginInfo.isDefault()) setDefault(name);
     if (plugin.isLoaded()) registerMBean(plugin.get(), core, name);
     return old;
   }
@@ -249,7 +292,7 @@ public class PluginBag<T> implements AutoCloseable {
     return result.isLoaded();
   }
 
-  private static void registerMBean(Object inst, SolrCore core, String pluginKey) {
+  private void registerMBean(Object inst, SolrCore core, String pluginKey) {
     if (core == null) return;
     if (inst instanceof SolrInfoMBean) {
       SolrInfoMBean mBean = (SolrInfoMBean) inst;
@@ -280,6 +323,7 @@ public class PluginBag<T> implements AutoCloseable {
   public static class PluginHolder<T> implements AutoCloseable {
     private T inst;
     protected final PluginInfo pluginInfo;
+    boolean registerAPI = false;
 
     public PluginHolder(PluginInfo info) {
       this.pluginInfo = info;
@@ -321,7 +365,7 @@ public class PluginBag<T> implements AutoCloseable {
    * A class that loads plugins Lazily. When the get() method is invoked
    * the Plugin is initialized and returned.
    */
-  public static class LazyPluginHolder<T> extends PluginHolder<T> {
+  public class LazyPluginHolder<T> extends PluginHolder<T> {
     private volatile T lazyInst;
     private final SolrConfig.SolrPluginInfo pluginMeta;
     protected SolrException solrException;
@@ -516,4 +560,17 @@ public class PluginBag<T> implements AutoCloseable {
       }
     }
   }
+
+
+  public Api v2lookup(String path, String method, Map<String, String> parts) {
+    if (apiBag == null) {
+      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "this should not happen, looking up for v2 API at the wrong place");
+    }
+    return apiBag.lookup(path, method, parts);
+  }
+
+  public ApiBag getApiBag() {
+    return apiBag;
+  }
+
 }

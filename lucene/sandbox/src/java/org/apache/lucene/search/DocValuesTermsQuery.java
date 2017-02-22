@@ -25,9 +25,11 @@ import java.util.Objects;
 import org.apache.lucene.index.DocValues;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.LeafReaderContext;
+import org.apache.lucene.index.PrefixCodedTerms;
 import org.apache.lucene.index.SortedSetDocValues;
+import org.apache.lucene.index.Term;
+import org.apache.lucene.index.PrefixCodedTerms.TermIterator;
 import org.apache.lucene.util.ArrayUtil;
-import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.FixedBitSet;
 import org.apache.lucene.util.LongBitSet;
@@ -92,13 +94,24 @@ import org.apache.lucene.util.LongBitSet;
 public class DocValuesTermsQuery extends Query {
 
   private final String field;
-  private final BytesRef[] terms;
+  private final PrefixCodedTerms termData;
+  private final int termDataHashCode; // cached hashcode of termData
 
   public DocValuesTermsQuery(String field, Collection<BytesRef> terms) {
     this.field = Objects.requireNonNull(field);
     Objects.requireNonNull(terms, "Collection of terms must not be null");
-    this.terms = terms.toArray(new BytesRef[terms.size()]);
-    ArrayUtil.timSort(this.terms);
+    BytesRef[] sortedTerms = terms.toArray(new BytesRef[terms.size()]);
+    ArrayUtil.timSort(sortedTerms);
+    PrefixCodedTerms.Builder builder = new PrefixCodedTerms.Builder();
+    BytesRef previous = null;
+    for (BytesRef term : sortedTerms) {
+      if (term.equals(previous) == false) {
+        builder.add(field, term);
+      }
+      previous = term;
+    }
+    termData = builder.finish();
+    termDataHashCode = termData.hashCode();
   }
 
   public DocValuesTermsQuery(String field, BytesRef... terms) {
@@ -125,69 +138,70 @@ public class DocValuesTermsQuery extends Query {
   }
 
   private boolean equalsTo(DocValuesTermsQuery other) {
-    return field.equals(other.field) &&
-           Arrays.equals(terms, other.terms);
+    // termData might be heavy to compare so check the hash code first
+    return termDataHashCode == other.termDataHashCode && 
+           termData.equals(other.termData);
   }
 
   @Override
   public int hashCode() {
-    return 31 * classHash() + Objects.hash(field, Arrays.asList(terms));
+    return 31 * classHash() + termDataHashCode;
   }
 
   @Override
   public String toString(String defaultField) {
-    StringBuilder sb = new StringBuilder();
-    sb.append(field).append(": [");
-    for (BytesRef term : terms) {
-      sb.append(term).append(", ");
+    StringBuilder builder = new StringBuilder();
+    boolean first = true;
+    TermIterator iterator = termData.iterator();
+    for (BytesRef term = iterator.next(); term != null; term = iterator.next()) {
+      if (!first) {
+        builder.append(' ');
+      }
+      first = false;
+      builder.append(new Term(iterator.field(), term).toString());
     }
-    if (terms.length > 0) {
-      sb.setLength(sb.length() - 2);
-    }
-    return sb.append(']').toString();
+
+    return builder.toString();
   }
 
   @Override
   public Weight createWeight(IndexSearcher searcher, boolean needsScores, float boost) throws IOException {
-    return new RandomAccessWeight(this, boost) {
+    return new ConstantScoreWeight(this, boost) {
 
       @Override
-      protected Bits getMatchingDocs(LeafReaderContext context) throws IOException {
+      public Scorer scorer(LeafReaderContext context) throws IOException {
         final SortedSetDocValues values = DocValues.getSortedSet(context.reader(), field);
         final LongBitSet bits = new LongBitSet(values.getValueCount());
-        for (BytesRef term : terms) {
+        boolean matchesAtLeastOneTerm = false;
+        TermIterator iterator = termData.iterator();
+        for (BytesRef term = iterator.next(); term != null; term = iterator.next()) {
           final long ord = values.lookupTerm(term);
           if (ord >= 0) {
+            matchesAtLeastOneTerm = true;
             bits.set(ord);
           }
         }
-        return new Bits() {
+        if (matchesAtLeastOneTerm == false) {
+          return null;
+        }
+        return new ConstantScoreScorer(this, score(), new TwoPhaseIterator(values) {
 
           @Override
-          public boolean get(int doc) {
-            try {
-              if (doc > values.docID()) {
-                values.advance(doc);
+          public boolean matches() throws IOException {
+            for (long ord = values.nextOrd(); ord != SortedSetDocValues.NO_MORE_ORDS; ord = values.nextOrd()) {
+              if (bits.get(ord)) {
+                return true;
               }
-              if (doc == values.docID()) {
-                for (long ord = values.nextOrd(); ord != SortedSetDocValues.NO_MORE_ORDS; ord = values.nextOrd()) {
-                  if (bits.get(ord)) {
-                    return true;
-                  }
-                }
-              }
-            } catch (IOException ioe) {
-              throw new RuntimeException(ioe);
             }
             return false;
           }
 
           @Override
-          public int length() {
-            return context.reader().maxDoc();
+          public float matchCost() {
+            return 3; // lookup in a bitset
           }
 
-        };
+        });
       }
     };
   }

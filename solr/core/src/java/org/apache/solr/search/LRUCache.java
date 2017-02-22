@@ -46,9 +46,9 @@ public class LRUCache<K,V> extends SolrCacheBase implements SolrCache<K,V>, Acco
   ///  Copied from Lucene's LRUQueryCache
 
   // memory usage of a simple term query
-  static final long DEFAULT_RAM_BYTES_USED = 192;
+  public static final long DEFAULT_RAM_BYTES_USED = 192;
 
-  static final long HASHTABLE_RAM_BYTES_PER_ENTRY =
+  public static final long HASHTABLE_RAM_BYTES_PER_ENTRY =
       2 * RamUsageEstimator.NUM_BYTES_OBJECT_REF // key + value
           * 2; // hash tables need to be oversized to avoid collisions, assume 2x capacity
 

@@ -25,7 +25,7 @@ solrAdminApp.controller('FilesController',
         $scope.file = $location.search().file;
         $scope.content = null;
 
-        $scope.baseurl = $location.protocol()+ "://" + $location.host() + ":" + $location.port();
+        $scope.baseurl = $location.absUrl().substr(0,$location.absUrl().indexOf("#")); // Including /solr/ context
 
         $scope.refresh = function () {
 
@@ -81,7 +81,7 @@ solrAdminApp.controller('FilesController',
 
                 Files.get({core: $routeParams.core, file: $scope.file, contentType: contentType}, function(data) {
                     $scope.content = data.data;
-                    $scope.url = $scope.baseurl + data.config.url + "?" + $.param(data.config.params);
+                    $scope.url = data.config.url + "?" + $.param(data.config.params);  // relative URL
                     if (contentType.indexOf("text/plain") && (data.data.indexOf("<?xml")>=0) || data.data.indexOf("<!--")>=0) {
                         $scope.lang = "xml";
                     } else {

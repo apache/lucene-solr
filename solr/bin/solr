@@ -158,34 +158,113 @@ SOLR_SSL_OPTS=""
 if [ -n "$SOLR_SSL_KEY_STORE" ]; then
   SOLR_JETTY_CONFIG+=("--module=https")
   SOLR_URL_SCHEME=https
-  SOLR_SSL_OPTS=" -Dsolr.jetty.keystore=$SOLR_SSL_KEY_STORE \
-    -Dsolr.jetty.keystore.password=$SOLR_SSL_KEY_STORE_PASSWORD \
-    -Dsolr.jetty.truststore=$SOLR_SSL_TRUST_STORE \
-    -Dsolr.jetty.truststore.password=$SOLR_SSL_TRUST_STORE_PASSWORD \
-    -Dsolr.jetty.ssl.needClientAuth=$SOLR_SSL_NEED_CLIENT_AUTH \
-    -Dsolr.jetty.ssl.wantClientAuth=$SOLR_SSL_WANT_CLIENT_AUTH"
+  SOLR_SSL_OPTS+=" -Dsolr.jetty.keystore=$SOLR_SSL_KEY_STORE"
+  if [ -n "$SOLR_SSL_KEY_STORE_PASSWORD" ]; then
+    SOLR_SSL_OPTS+=" -Dsolr.jetty.keystore.password=$SOLR_SSL_KEY_STORE_PASSWORD"
+  fi
+  if [ -n "$SOLR_SSL_KEY_STORE_TYPE" ]; then
+    SOLR_SSL_OPTS+=" -Dsolr.jetty.keystore.type=$SOLR_SSL_KEY_STORE_TYPE"
+  fi
+
+  if [ -n "$SOLR_SSL_TRUST_STORE" ]; then
+    SOLR_SSL_OPTS+=" -Dsolr.jetty.truststore=$SOLR_SSL_TRUST_STORE"
+  fi
+  if [ -n "$SOLR_SSL_TRUST_STORE_PASSWORD" ]; then
+    SOLR_SSL_OPTS+=" -Dsolr.jetty.truststore.password=$SOLR_SSL_TRUST_STORE_PASSWORD"
+  fi
+  if [ -n "$SOLR_SSL_TRUST_STORE_TYPE" ]; then
+    SOLR_SSL_OPTS+=" -Dsolr.jetty.truststore.type=$SOLR_SSL_TRUST_STORE_TYPE"
+  fi
+
+  if [ -n "$SOLR_SSL_NEED_CLIENT_AUTH" ]; then
+    SOLR_SSL_OPTS+=" -Dsolr.jetty.ssl.needClientAuth=$SOLR_SSL_NEED_CLIENT_AUTH"
+  fi
+  if [ -n "$SOLR_SSL_WANT_CLIENT_AUTH" ]; then
+    SOLR_SSL_OPTS+=" -Dsolr.jetty.ssl.wantClientAuth=$SOLR_SSL_WANT_CLIENT_AUTH"
+  fi
+
   if [ -n "$SOLR_SSL_CLIENT_KEY_STORE" ]; then
-    SOLR_SSL_OPTS+=" -Djavax.net.ssl.keyStore=$SOLR_SSL_CLIENT_KEY_STORE \
-      -Djavax.net.ssl.keyStorePassword=$SOLR_SSL_CLIENT_KEY_STORE_PASSWORD \
-      -Djavax.net.ssl.trustStore=$SOLR_SSL_CLIENT_TRUST_STORE \
-      -Djavax.net.ssl.trustStorePassword=$SOLR_SSL_CLIENT_TRUST_STORE_PASSWORD"
+    SOLR_SSL_OPTS+=" -Djavax.net.ssl.keyStore=$SOLR_SSL_CLIENT_KEY_STORE"
+
+    if [ -n "$SOLR_SSL_CLIENT_KEY_STORE_PASSWORD" ]; then
+      SOLR_SSL_OPTS+=" -Djavax.net.ssl.keyStorePassword=$SOLR_SSL_CLIENT_KEY_STORE_PASSWORD"
+    fi
+    if [ -n "$SOLR_SSL_CLIENT_KEY_STORE_TYPE" ]; then
+      SOLR_SSL_OPTS+=" -Djavax.net.ssl.keyStoreType=$SOLR_SSL_CLIENT_KEY_STORE_TYPE"
+    fi
   else
-    SOLR_SSL_OPTS+=" -Djavax.net.ssl.keyStore=$SOLR_SSL_KEY_STORE \
-      -Djavax.net.ssl.keyStorePassword=$SOLR_SSL_KEY_STORE_PASSWORD \
-      -Djavax.net.ssl.trustStore=$SOLR_SSL_TRUST_STORE \
-      -Djavax.net.ssl.trustStorePassword=$SOLR_SSL_TRUST_STORE_PASSWORD"
+    if [ -n "$SOLR_SSL_KEY_STORE" ]; then
+      SOLR_SSL_OPTS+=" -Djavax.net.ssl.keyStore=$SOLR_SSL_KEY_STORE"
+    fi
+    if [ -n "$SOLR_SSL_KEY_STORE_PASSWORD" ]; then
+      SOLR_SSL_OPTS+=" -Djavax.net.ssl.keyStorePassword=$SOLR_SSL_KEY_STORE_PASSWORD"
+    fi
+    if [ -n "$SOLR_SSL_KEY_STORE_TYPE" ]; then
+      SOLR_SSL_OPTS+=" -Djavax.net.ssl.keyStoreType=$SOLR_SSL_KEYSTORE_TYPE"
+    fi
+  fi
+
+  if [ -n "$SOLR_SSL_CLIENT_TRUST_STORE" ]; then
+    SOLR_SSL_OPTS+=" -Djavax.net.ssl.trustStore=$SOLR_SSL_CLIENT_TRUST_STORE"
+
+    if [ -n "$SOLR_SSL_CLIENT_TRUST_STORE_PASSWORD" ]; then
+      SOLR_SSL_OPTS+=" -Djavax.net.ssl.trustStorePassword=$SOLR_SSL_CLIENT_TRUST_STORE_PASSWORD"
+    fi
+
+    if [ -n "$SOLR_SSL_CLIENT_TRUST_STORE_TYPE" ]; then
+      SOLR_SSL_OPTS+=" -Djavax.net.ssl.trustStoreType=$SOLR_SSL_CLIENT_TRUST_STORE_TYPE"
+    fi
+  else
+    if [ -n "$SOLR_SSL_TRUST_STORE" ]; then
+      SOLR_SSL_OPTS+=" -Djavax.net.ssl.trustStore=$SOLR_SSL_TRUST_STORE"
+    fi
+
+    if [ -n "$SOLR_SSL_TRUST_STORE_PASSWORD" ]; then
+      SOLR_SSL_OPTS+=" -Djavax.net.ssl.trustStorePassword=$SOLR_SSL_TRUST_STORE_PASSWORD"
+    fi
+
+    if [ -n "$SOLR_SSL_TRUST_STORE_TYPE" ]; then
+      SOLR_SSL_OPTS+=" -Djavax.net.ssl.trustStoreType=$SOLR_SSL_TRUST_STORE_TYPE"
+    fi
   fi
 else
   SOLR_JETTY_CONFIG+=("--module=http")
 fi
 
 # Authentication options
+if [ -z "$SOLR_AUTH_TYPE" ] && [ -n "$SOLR_AUTHENTICATION_OPTS" ]; then
+  echo "WARNING: SOLR_AUTHENTICATION_OPTS environment variable configured without associated SOLR_AUTH_TYPE variable"
+  echo "         Please configure SOLR_AUTH_TYPE environment variable with the authentication type to be used."
+  echo "         Currently supported authentication types are [kerberos, basic]"
+fi
+
+if [ -n "$SOLR_AUTH_TYPE" ] && [ -n "$SOLR_AUTHENTICATION_CLIENT_BUILDER" ]; then
+  echo "WARNING: SOLR_AUTHENTICATION_CLIENT_BUILDER and SOLR_AUTH_TYPE environment variables are configured together."
+  echo "         Use SOLR_AUTH_TYPE environment variable to configure authentication type to be used. "
+  echo "         Currently supported authentication types are [kerberos, basic]"
+  echo "         The value of SOLR_AUTHENTICATION_CLIENT_BUILDER environment variable will be ignored"
+fi
+
+if [ -n "$SOLR_AUTH_TYPE" ]; then
+  case "$(echo $SOLR_AUTH_TYPE | awk '{print tolower($0)}')" in
+    basic)
+      SOLR_AUTHENTICATION_CLIENT_BUILDER="org.apache.solr.client.solrj.impl.PreemptiveBasicAuthClientBuilderFactory"
+      ;;
+    kerberos)
+      SOLR_AUTHENTICATION_CLIENT_BUILDER="org.apache.solr.client.solrj.impl.Krb5HttpClientBuilder"
+      ;;
+    *)
+      echo "ERROR: Value specified for SOLR_AUTH_TYPE environment variable is invalid."
+      exit 1
+   esac
+fi
+
 if [ "$SOLR_AUTHENTICATION_CLIENT_CONFIGURER" != "" ]; then
   echo "WARNING: Found unsupported configuration variable SOLR_AUTHENTICATION_CLIENT_CONFIGURER"
-  echo "         Please start using SOLR_AUTHENTICATION_CLIENT_BUILDER instead"
+  echo "         Please start using SOLR_AUTH_TYPE instead"
 fi
 if [ "$SOLR_AUTHENTICATION_CLIENT_BUILDER" != "" ]; then
-  AUTHC_CLIENT_BUILDER_ARG="-Dsolr.authentication.httpclient.builder=$SOLR_AUTHENTICATION_CLIENT_BUILDER"
+  AUTHC_CLIENT_BUILDER_ARG="-Dsolr.httpclient.builder.factory=$SOLR_AUTHENTICATION_CLIENT_BUILDER"
 fi
 AUTHC_OPTS="$AUTHC_CLIENT_BUILDER_ARG $SOLR_AUTHENTICATION_OPTS"
 
@@ -441,6 +520,12 @@ function print_usage() {
     echo ""
     echo "             Only the node names are listed, not data"
     echo ""
+    echo "         mkroot makes a znode on Zookeeper with no data. Can be used to make a path of arbitrary"
+    echo "             depth but primarily intended to create a 'chroot'."
+    echo ""
+    echo "             <path>: The Zookeeper path to create. Leading slash is assumed if not present."
+    echo "                     Intermediate nodes are created as needed if not present."
+    echo ""
   fi
 } # end print_usage
 
@@ -455,6 +540,7 @@ function print_short_zk_usage() {
   echo "         solr zk rm [-r] <path> [-z zkHost]"
   echo "         solr zk mv <src> <dest> [-z zkHost]"
   echo "         solr zk ls [-r] <path> [-z zkHost]"
+  echo "         solr zk mkroot <path> [-z zkHost]"
   echo ""
 
   if [ "$1" == "" ]; then
@@ -495,7 +581,7 @@ function solr_pid_by_port() {
 # extract the value of the -Djetty.port parameter from a running Solr process 
 function jetty_port() {
   SOLR_PID="$1"
-  SOLR_PROC=`ps auxww | grep -w $SOLR_PID | grep start\.jar | grep jetty.port`
+  SOLR_PROC=`ps auxww | grep -w $SOLR_PID | grep start\.jar | grep jetty\.port`
   IFS=' ' read -a proc_args <<< "$SOLR_PROC"
   for arg in "${proc_args[@]}"
     do
@@ -543,10 +629,10 @@ function get_info() {
     done < <(find "$SOLR_PID_DIR" -name "solr-*.pid" -type f)
   else
     # no pid files but check using ps just to be sure
-    numSolrs=`ps auxww | grep start\.jar | grep solr.solr.home | grep -v grep | wc -l | sed -e 's/^[ \t]*//'`
+    numSolrs=`ps auxww | grep start\.jar | grep solr\.solr\.home | grep -v grep | wc -l | sed -e 's/^[ \t]*//'`
     if [ "$numSolrs" != "0" ]; then
       echo -e "\nFound $numSolrs Solr nodes: "
-      PROCESSES=$(ps auxww | grep start\.jar | grep solr.solr.home | grep -v grep | awk '{print $2}' | sort -r)
+      PROCESSES=$(ps auxww | grep start\.jar | grep solr\.solr\.home | grep -v grep | awk '{print $2}' | sort -r)
       for ID in $PROCESSES
         do
           port=`jetty_port "$ID"`
@@ -949,7 +1035,7 @@ if [[ "$SCRIPT_CMD" == "zk" ]]; then
   if [ $# -gt 0 ]; then
     while true; do
       case "$1" in
-        -upconfig|upconfig|-downconfig|downconfig|cp|rm|mv|ls)
+        -upconfig|upconfig|-downconfig|downconfig|cp|rm|mv|ls|mkroot)
             if [ "${1:0:1}" == "-" ]; then
               ZK_OP=${1:1}
             else
@@ -990,7 +1076,7 @@ if [[ "$SCRIPT_CMD" == "zk" ]]; then
             shift
             break
         ;;
-        *)  # Pick up <src> <dst> or <path> params for rm, ls, cp, mv.
+        *)  # Pick up <src> <dst> or <path> params for rm, ls, cp, mv, mkroot.
             if [ "$1" == "" ]; then
               break # out-of-args, stop looping
             fi
@@ -1010,7 +1096,7 @@ if [[ "$SCRIPT_CMD" == "zk" ]]; then
   fi
 
   if [ -z "$ZK_OP" ]; then
-    print_short_zk_usage "Zookeeper operation (one of 'upconfig', 'downconfig', 'rm', 'mv', 'cp', 'ls') is required!"
+    print_short_zk_usage "Zookeeper operation (one of 'upconfig', 'downconfig', 'rm', 'mv', 'cp', 'ls', 'mkroot') is required!"
   fi
 
   if [ -z "$ZK_HOST" ]; then
@@ -1036,6 +1122,13 @@ if [[ "$SCRIPT_CMD" == "zk" ]]; then
     fi
   fi
 
+  if [[ "$ZK_OP" == "mkroot" ]]; then
+    if [[ -z "$ZK_SRC" ]]; then
+      print_short_zk_usage "<path> must be specified when using the 'mkroot' command."
+    fi
+  fi
+
+
   case "$ZK_OP" in
     upconfig)
       run_tool "$ZK_OP" -confname "$CONFIGSET_CONFNAME" -confdir "$CONFIGSET_CONFDIR" -zkHost "$ZK_HOST" -configsetsDir "$SOLR_TIP/server/solr/configsets"
@@ -1060,6 +1153,12 @@ if [[ "$SCRIPT_CMD" == "zk" ]]; then
         print_short_zk_usage "Zookeeper path to list must be specified when using the 'ls' command"
       fi
       run_tool "$ZK_OP" -path "$ZK_SRC" -recurse "$ZK_RECURSE" -zkHost "$ZK_HOST"
+    ;;
+    mkroot)
+      if [ -z "$ZK_SRC" ]; then
+        print_short_zk_usage "Zookeeper path to list must be specified when using the 'mkroot' command"
+      fi
+      run_tool "$ZK_OP" -path "$ZK_SRC" -zkHost "$ZK_HOST"
     ;;
     *)
       print_short_zk_usage "Unrecognized Zookeeper operation $ZK_OP"
@@ -1345,7 +1444,7 @@ if [[ "$SCRIPT_CMD" == "start" ]]; then
 
   if [ -z "$SOLR_PID" ]; then
     # not found using the pid file ... but use ps to ensure not found
-    SOLR_PID=`ps auxww | grep start\.jar | grep -w $SOLR_PORT | grep -v grep | awk '{print $2}' | sort -r`
+    SOLR_PID=`ps auxww | grep start\.jar | grep -w "\-Djetty\.port=$SOLR_PORT" | grep -v grep | awk '{print $2}' | sort -r`
   fi
 
   if [ "$SOLR_PID" != "" ]; then
@@ -1358,7 +1457,7 @@ else
   SOLR_PID=`solr_pid_by_port "$SOLR_PORT"`
   if [ -z "$SOLR_PID" ]; then
     # not found using the pid file ... but use ps to ensure not found
-    SOLR_PID=`ps auxww | grep start\.jar | grep -w $SOLR_PORT | grep -v grep | awk '{print $2}' | sort -r`
+    SOLR_PID=`ps auxww | grep start\.jar | grep -w "\-Djetty\.port=$SOLR_PORT" | grep -v grep | awk '{print $2}' | sort -r`
   fi
   if [ "$SOLR_PID" != "" ]; then
     stop_solr "$SOLR_SERVER_DIR" "$SOLR_PORT" "$STOP_KEY" "$SOLR_PID"
@@ -1408,11 +1507,17 @@ if [ ! -e "$SOLR_HOME" ]; then
   echo -e "\nSolr home directory $SOLR_HOME not found!\n"
   exit 1
 fi
-
-run_tool utils -s "$DEFAULT_SERVER_DIR" -l "$SOLR_LOGS_DIR" -remove_old_solr_logs 7 || echo "Failed removing old solr logs"
-run_tool utils -s "$DEFAULT_SERVER_DIR" -l "$SOLR_LOGS_DIR" -archive_gc_logs        || echo "Failed archiving old GC logs"
-run_tool utils -s "$DEFAULT_SERVER_DIR" -l "$SOLR_LOGS_DIR" -archive_console_logs   || echo "Failed archiving old console logs"
-run_tool utils -s "$DEFAULT_SERVER_DIR" -l "$SOLR_LOGS_DIR" -rotate_solr_logs 9     || echo "Failed rotating old solr logs"
+if $verbose ; then
+  q=""
+else
+  q="-q"
+fi
+if [ "${SOLR_LOG_PRESTART_ROTATION:=true}" == "true" ]; then
+  run_tool utils -s "$DEFAULT_SERVER_DIR" -l "$SOLR_LOGS_DIR" $q -remove_old_solr_logs 7 || echo "Failed removing old solr logs"
+  run_tool utils -s "$DEFAULT_SERVER_DIR" -l "$SOLR_LOGS_DIR" $q -archive_gc_logs $q     || echo "Failed archiving old GC logs"
+  run_tool utils -s "$DEFAULT_SERVER_DIR" -l "$SOLR_LOGS_DIR" $q -archive_console_logs   || echo "Failed archiving old console logs"
+  run_tool utils -s "$DEFAULT_SERVER_DIR" -l "$SOLR_LOGS_DIR" $q -rotate_solr_logs 9     || echo "Failed rotating old solr logs"
+fi
 
 java_ver_out=`echo "$("$JAVA" -version 2>&1)"`
 JAVA_VERSION=`echo $java_ver_out | grep "java version" | awk '{ print substr($3, 2, length($3)-2); }'`
@@ -1659,7 +1764,7 @@ function launch_solr() {
             exit # subshell!
           fi
         else
-          SOLR_PID=`ps auxww | grep start\.jar | grep -w $SOLR_PORT | grep -v grep | awk '{print $2}' | sort -r`
+          SOLR_PID=`ps auxww | grep start\.jar | grep -w "\-Djetty\.port=$SOLR_PORT" | grep -v grep | awk '{print $2}' | sort -r`
           echo -e "\nStarted Solr server on port $SOLR_PORT (pid=$SOLR_PID). Happy searching!\n"
           exit # subshell!
         fi
@@ -1668,7 +1773,7 @@ function launch_solr() {
     else
       echo -e "NOTE: Please install lsof as this script needs it to determine if Solr is listening on port $SOLR_PORT."
       sleep 10
-      SOLR_PID=`ps auxww | grep start\.jar | grep -w $SOLR_PORT | grep -v grep | awk '{print $2}' | sort -r`
+      SOLR_PID=`ps auxww | grep start\.jar | grep -w "\-Djetty\.port=$SOLR_PORT" | grep -v grep | awk '{print $2}' | sort -r`
       echo -e "\nStarted Solr server on port $SOLR_PORT (pid=$SOLR_PID). Happy searching!\n"
       return;
     fi

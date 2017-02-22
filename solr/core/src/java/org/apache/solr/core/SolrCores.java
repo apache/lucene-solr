@@ -239,7 +239,9 @@ class SolrCores {
       }
       cores.put(n0, c1);
       cores.put(n1, c0);
-
+      container.getMetricManager().swapRegistries(
+          c0.getCoreMetricManager().getRegistryName(),
+          c1.getCoreMetricManager().getRegistryName());
       c0.setName(n1);
       c1.setName(n0);
     }

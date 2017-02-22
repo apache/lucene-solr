@@ -41,7 +41,7 @@ public class TestUTF32ToUTF8 extends LuceneTestCase {
 
   private boolean matches(ByteRunAutomaton a, int code) {
     char[] chars = Character.toChars(code);
-    byte[] b = new byte[UnicodeUtil.MAX_UTF8_BYTES_PER_CHAR * chars.length];
+    byte[] b = new byte[UnicodeUtil.maxUTF8Length(chars.length)];
     final int len = UnicodeUtil.UTF16toUTF8(chars, 0, chars.length, b);
     return a.run(b, 0, len);
   }

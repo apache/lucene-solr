@@ -705,17 +705,29 @@ class DatabaseMetaDataImpl implements DatabaseMetaData {
 
   @Override
   public ResultSet getTables(String catalog, String schemaPattern, String tableNamePattern, String[] types) throws SQLException {
-    return this.connectionStatement.executeQuery("select TABLE_CAT, TABLE_SCHEM, TABLE_NAME, TABLE_TYPE, REMARKS from _TABLES_");
+    String tableCatCheck = "";
+    if(catalog != null) {
+      tableCatCheck = "tableCat = '\" + catalog + \"' and";
+    }
+    if(schemaPattern == null) {
+      schemaPattern = "%";
+    }
+    if(tableNamePattern == null) {
+      tableNamePattern = "%";
+    }
+    return this.connectionStatement.executeQuery("select tableCat, tableSchem, tableName, tableType, remarks from " +
+        "metadata.TABLES where " + tableCatCheck + " tableSchem like '" + schemaPattern + "' and tableName like '" +
+        tableNamePattern + "'");
   }
 
   @Override
   public ResultSet getSchemas() throws SQLException {
-    return this.connectionStatement.executeQuery("select TABLE_SCHEM, TABLE_CATALOG from _SCHEMAS_");
+    return this.connectionStatement.executeQuery("select distinct tableSchem, tableCat from metadata.TABLES");
   }
 
   @Override
   public ResultSet getCatalogs() throws SQLException {
-    return this.connectionStatement.executeQuery("select TABLE_CAT from _CATALOGS_");
+    return this.connectionStatement.executeQuery("select distinct tableCat from metadata.TABLES");
   }
 
   @Override

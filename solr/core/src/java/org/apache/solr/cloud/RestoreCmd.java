@@ -87,7 +87,7 @@ public class RestoreCmd implements OverseerCollectionMessageHandler.Cmd {
     URI location = repository.createURI(message.getStr(CoreAdminParams.BACKUP_LOCATION));
     URI backupPath = repository.resolve(location, backupName);
     ZkStateReader zkStateReader = ocmh.zkStateReader;
-    BackupManager backupMgr = new BackupManager(repository, zkStateReader, restoreCollectionName);
+    BackupManager backupMgr = new BackupManager(repository, zkStateReader);
 
     Properties properties = backupMgr.readBackupProperties(location, backupName);
     String backupCollection = properties.getProperty(BackupManager.COLLECTION_NAME_PROP);

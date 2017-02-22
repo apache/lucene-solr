@@ -33,6 +33,7 @@ import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.LowerCaseFilter;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.Tokenizer;
+import org.apache.lucene.analysis.core.FlattenGraphFilterFactory;
 import org.apache.lucene.analysis.core.WhitespaceTokenizer;
 import org.apache.lucene.analysis.util.ResourceLoader;
 import org.apache.lucene.analysis.util.ResourceLoaderAware;
@@ -72,7 +73,11 @@ import org.apache.lucene.analysis.util.TokenizerFactory;
  *   <li><code>{@link Analyzer} analyzer</code> - an analyzer used for each raw synonym</li>
  * </ul>
  * @see SolrSynonymParser SolrSynonymParser: default format
+ *
+ * @deprecated Use {@link SynonymGraphFilterFactory} instead, but be sure to also
+ * use {@link FlattenGraphFilterFactory} at index time (not at search time) as well.
  */
+@Deprecated
 public class SynonymFilterFactory extends TokenFilterFactory implements ResourceLoaderAware {
   private final boolean ignoreCase;
   private final String tokenizerFactory;

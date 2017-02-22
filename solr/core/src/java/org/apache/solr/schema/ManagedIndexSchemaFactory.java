@@ -377,6 +377,18 @@ public class ManagedIndexSchemaFactory extends IndexSchemaFactory implements Sol
       this.zkIndexSchemaReader = new ZkIndexSchemaReader(this, core);
       ZkSolrResourceLoader zkLoader = (ZkSolrResourceLoader)loader;
       zkLoader.setZkIndexSchemaReader(this.zkIndexSchemaReader);
+      try {
+        zkIndexSchemaReader.refreshSchemaFromZk(-1); // update immediately if newer is available
+        core.setLatestSchema(getSchema());
+      } catch (KeeperException e) {
+        String msg = "Error attempting to access " + zkLoader.getConfigSetZkPath() + "/" + managedSchemaResourceName;
+        log.error(msg, e);
+        throw new SolrException(ErrorCode.SERVER_ERROR, msg, e);
+      } catch (InterruptedException e) {
+        // Restore the interrupted status
+        Thread.currentThread().interrupt();
+        log.warn("", e);
+      }
     } else {
       this.zkIndexSchemaReader = null;
     }

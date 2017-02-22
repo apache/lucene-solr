@@ -21,20 +21,26 @@ import static org.apache.hadoop.fs.CommonConfigurationKeysPublic.HADOOP_SECURITY
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.net.URLEncoder;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.Collections;
+import java.util.List;
 import java.util.Locale;
 import java.util.Set;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 
 import org.apache.hadoop.conf.Configuration;
+import org.apache.hadoop.fs.FileContext;
 import org.apache.hadoop.fs.FileStatus;
 import org.apache.hadoop.fs.FileSystem;
+import org.apache.hadoop.fs.Options;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.fs.PathFilter;
 import org.apache.hadoop.security.UserGroupInformation;
 import org.apache.lucene.store.Directory;
+import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.LockFactory;
 import org.apache.lucene.store.NRTCachingDirectory;
 import org.apache.lucene.store.NoLockFactory;
@@ -502,7 +508,7 @@ public class HdfsDirectoryFactory extends CachingDirectoryFactory implements Sol
   }
 
   @Override
-  public void cleanupOldIndexDirectories(final String dataDir, final String currentIndexDir) {
+  public void cleanupOldIndexDirectories(final String dataDir, final String currentIndexDir, boolean afterReload) {
 
     // Get the FileSystem object
     final Path dataDirPath = new Path(dataDir);
@@ -546,13 +552,27 @@ public class HdfsDirectoryFactory extends CachingDirectoryFactory implements Sol
     } catch (IOException ioExc) {
       LOG.error("Error checking for old index directories to clean-up.", ioExc);
     }
+    
+    List<Path> oldIndexPaths = new ArrayList<>(oldIndexDirs.length);
+    for (FileStatus ofs : oldIndexDirs) {
+      oldIndexPaths.add(ofs.getPath());
+    }
 
     if (oldIndexDirs == null || oldIndexDirs.length == 0)
       return; // nothing to clean-up
 
+    Collections.sort(oldIndexPaths, Collections.reverseOrder());
+    
     Set<String> livePaths = getLivePaths();
-    for (FileStatus oldDir : oldIndexDirs) {
-      Path oldDirPath = oldDir.getPath();
+    
+    int i = 0;
+    if (afterReload) {
+      LOG.info("Will not remove most recent old directory on reload {}", oldIndexDirs[0]);
+      i = 1;
+    }
+    LOG.info("Found {} old index directories to clean-up under {} afterReload={}", oldIndexDirs.length - i, dataDirPath, afterReload);
+    for (; i < oldIndexPaths.size(); i++) {
+      Path oldDirPath = oldIndexPaths.get(i);
       if (livePaths.contains(oldDirPath.toString())) {
         LOG.warn("Cannot delete directory {} because it is still being referenced in the cache.", oldDirPath);
       } else {
@@ -567,5 +587,31 @@ public class HdfsDirectoryFactory extends CachingDirectoryFactory implements Sol
         }
       }
     }
+  }
+  
+  // perform an atomic rename if possible
+  public void renameWithOverwrite(Directory dir, String fileName, String toName) throws IOException {
+    String hdfsDirPath = getPath(dir);
+    FileContext fileContext = FileContext.getFileContext(getConf());
+    fileContext.rename(new Path(hdfsDirPath + "/" + fileName), new Path(hdfsDirPath + "/" + toName), Options.Rename.OVERWRITE);
+  }
+  
+  @Override
+  public void move(Directory fromDir, Directory toDir, String fileName, IOContext ioContext) throws IOException {
+    
+    Directory baseFromDir = getBaseDir(fromDir);
+    Directory baseToDir = getBaseDir(toDir);
+    
+    if (baseFromDir instanceof HdfsDirectory && baseToDir instanceof HdfsDirectory) {
+      Path dir1 = ((HdfsDirectory) baseFromDir).getHdfsDirPath();
+      Path dir2 = ((HdfsDirectory) baseToDir).getHdfsDirPath();
+      Path file1 = new Path(dir1, fileName);
+      Path file2 = new Path(dir2, fileName);
+      FileContext fileContext = FileContext.getFileContext(getConf());
+      fileContext.rename(file1, file2);
+      return;
+    }
+
+    super.move(fromDir, toDir, fileName, ioContext);
   }
 }

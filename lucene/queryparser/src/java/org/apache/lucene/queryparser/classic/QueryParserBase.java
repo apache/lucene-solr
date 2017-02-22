@@ -144,7 +144,7 @@ public abstract class QueryParserBase extends QueryBuilder implements CommonQuer
    * Set to false if phrase queries should only be generated when
    * surrounded by double quotes.
    */
-  public final void setAutoGeneratePhraseQueries(boolean value) {
+  public void setAutoGeneratePhraseQueries(boolean value) {
     this.autoGeneratePhraseQueries = value;
   }
 
@@ -475,8 +475,6 @@ public abstract class QueryParserBase extends QueryBuilder implements CommonQuer
     return createFieldQuery(analyzer, occur, field, queryText, quoted || autoGeneratePhraseQueries, phraseSlop);
   }
 
-
-
   /**
    * Base implementation delegates to {@link #getFieldQuery(String,String,boolean)}.
    * This method may be overridden, for example, to return
@@ -489,15 +487,7 @@ public abstract class QueryParserBase extends QueryBuilder implements CommonQuer
     Query query = getFieldQuery(field, queryText, true);
 
     if (query instanceof PhraseQuery) {
-      PhraseQuery.Builder builder = new PhraseQuery.Builder();
-      builder.setSlop(slop);
-      PhraseQuery pq = (PhraseQuery) query;
-      org.apache.lucene.index.Term[] terms = pq.getTerms();
-      int[] positions = pq.getPositions();
-      for (int i = 0; i < terms.length; ++i) {
-        builder.add(terms[i], positions[i]);
-      }
-      query = builder.build();
+      query = addSlopToPhrase((PhraseQuery) query, slop);
     } else if (query instanceof MultiPhraseQuery) {
       MultiPhraseQuery mpq = (MultiPhraseQuery)query;
       
@@ -507,6 +497,21 @@ public abstract class QueryParserBase extends QueryBuilder implements CommonQuer
     }
 
     return query;
+  }
+
+  /**
+   * Rebuild a phrase query with a slop value
+   */
+  private PhraseQuery addSlopToPhrase(PhraseQuery query, int slop) {
+    PhraseQuery.Builder builder = new PhraseQuery.Builder();
+    builder.setSlop(slop);
+    org.apache.lucene.index.Term[] terms = query.getTerms();
+    int[] positions = query.getPositions();
+    for (int i = 0; i < terms.length; ++i) {
+      builder.add(terms[i], positions[i]);
+    }
+
+    return builder.build();
   }
 
   protected Query getRangeQuery(String field,

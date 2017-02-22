@@ -23,9 +23,14 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.stream.Collectors;
 
+import com.codahale.metrics.Counter;
+import com.codahale.metrics.Metric;
+import com.codahale.metrics.Timer;
 import org.apache.commons.io.IOUtils;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
@@ -35,8 +40,11 @@ import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.common.cloud.ClusterStateUtil;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.core.SolrCore;
+import org.apache.solr.metrics.SolrMetricManager;
 import org.apache.solr.update.DirectUpdateHandler2;
 import org.apache.solr.update.UpdateLog;
+import org.apache.solr.util.TestInjection;
+import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -47,6 +55,7 @@ public class TestCloudRecovery extends SolrCloudTestCase {
 
   @BeforeClass
   public static void setupCluster() throws Exception {
+    TestInjection.prepRecoveryOpPauseForever = "true:30";
     System.setProperty("solr.directoryFactory", "solr.StandardDirectoryFactory");
     System.setProperty("solr.ulog.numRecordsToKeep", "1000");
 
@@ -60,6 +69,11 @@ public class TestCloudRecovery extends SolrCloudTestCase {
         .process(cluster.getSolrClient());
     AbstractDistribZkTestBase.waitForRecoveriesToFinish(COLLECTION, cluster.getSolrClient().getZkStateReader(),
         false, true, 30);
+  }
+
+  @AfterClass
+  public static void afterClass() {
+    TestInjection.reset();
   }
 
   @Before
@@ -94,6 +108,26 @@ public class TestCloudRecovery extends SolrCloudTestCase {
     assertEquals(4, resp.getResults().getNumFound());
     // Make sure all nodes is recover from tlog
     assertEquals(4, countReplayLog.get());
+
+    // check metrics
+    int replicationCount = 0;
+    int errorsCount = 0;
+    int skippedCount = 0;
+    for (JettySolrRunner jetty : cluster.getJettySolrRunners()) {
+      SolrMetricManager manager = jetty.getCoreContainer().getMetricManager();
+      List<String> registryNames = manager.registryNames().stream()
+          .filter(s -> s.startsWith("solr.core.")).collect(Collectors.toList());
+      for (String registry : registryNames) {
+        Map<String, Metric> metrics = manager.registry(registry).getMetrics();
+        Timer timer = (Timer)metrics.get("REPLICATION.time");
+        Counter counter = (Counter)metrics.get("REPLICATION.errors");
+        Counter skipped = (Counter)metrics.get("REPLICATION.skipped");
+        replicationCount += timer.getCount();
+        errorsCount += counter.getCount();
+        skippedCount += skipped.getCount();
+      }
+    }
+    assertEquals(2, replicationCount);
   }
 
   @Test

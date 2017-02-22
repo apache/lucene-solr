@@ -389,6 +389,11 @@ public class DebugComponent extends SearchComponent
   }
 
   @Override
+  public Category getCategory() {
+    return Category.OTHER;
+  }
+
+  @Override
   public URL[] getDocs() {
     return null;
   }

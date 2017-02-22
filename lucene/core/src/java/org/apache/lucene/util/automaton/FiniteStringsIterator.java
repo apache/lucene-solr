@@ -17,12 +17,12 @@
 package org.apache.lucene.util.automaton;
 
 
+import java.util.BitSet;
+
 import org.apache.lucene.util.ArrayUtil;
 import org.apache.lucene.util.IntsRef;
 import org.apache.lucene.util.IntsRefBuilder;
 import org.apache.lucene.util.RamUsageEstimator;
-
-import java.util.BitSet;
 
 /**
  * Iterates all accepted strings.
@@ -50,6 +50,11 @@ public class FiniteStringsIterator {
   private final Automaton a;
 
   /**
+   * The state where each path should stop or -1 if only accepted states should be final.
+   */
+  private final int endState;
+
+  /**
    * Tracks which states are in the current path, for cycle detection.
    */
   private final BitSet pathStates;
@@ -75,7 +80,20 @@ public class FiniteStringsIterator {
    * @param a Automaton to create finite string from.
    */
   public FiniteStringsIterator(Automaton a) {
+    this(a, 0, -1);
+  }
+
+
+  /**
+   * Constructor.
+   *
+   * @param a Automaton to create finite string from.
+   * @param startState The starting state for each path.
+   * @param endState The state where each path should stop or -1 if only accepted states should be final.
+   */
+  public FiniteStringsIterator(Automaton a, int startState, int endState) {
     this.a = a;
+    this.endState = endState;
     this.nodes = new PathNode[16];
     for (int i = 0, end = nodes.length; i < end; i++) {
       nodes[i] = new PathNode();
@@ -85,11 +103,11 @@ public class FiniteStringsIterator {
     this.string.setLength(0);
     this.emitEmptyString = a.isAccept(0);
 
-    // Start iteration with node 0.
-    if (a.getNumTransitions(0) > 0) {
-      pathStates.set(0);
-      nodes[0].resetState(a, 0);
-      string.append(0);
+    // Start iteration with node startState.
+    if (a.getNumTransitions(startState) > 0) {
+      pathStates.set(startState);
+      nodes[0].resetState(a, startState);
+      string.append(startState);
     }
   }
 
@@ -115,7 +133,7 @@ public class FiniteStringsIterator {
         string.setIntAt(depth - 1, label);
 
         int to = node.to;
-        if (a.getNumTransitions(to) != 0) {
+        if (a.getNumTransitions(to) != 0 && to != endState) {
           // Now recurse: the destination of this transition has outgoing transitions:
           if (pathStates.get(to)) {
             throw new IllegalArgumentException("automaton has cycles");
@@ -128,7 +146,7 @@ public class FiniteStringsIterator {
           depth++;
           string.setLength(depth);
           string.grow(depth);
-        } else if (a.isAccept(to)) {
+        } else if (endState == to || a.isAccept(to)) {
           // This transition leads to an accept state, so we save the current string:
           return string.get();
         }

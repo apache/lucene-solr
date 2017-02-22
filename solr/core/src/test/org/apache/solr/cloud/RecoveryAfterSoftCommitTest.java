@@ -43,8 +43,6 @@ public class RecoveryAfterSoftCommitTest extends AbstractFullDistribZkTestBase {
   public static void beforeTests() {
     System.setProperty("solr.tests.maxBufferedDocs", String.valueOf(MAX_BUFFERED_DOCS));
     System.setProperty("solr.ulog.numRecordsToKeep", String.valueOf(ULOG_NUM_RECORDS_TO_KEEP));
-    // the default=7000ms artificially slows down recovery and is not needed for this test
-    System.setProperty("solr.cloud.wait-for-updates-with-stale-state-pause", "500");
     // avoid creating too many files, see SOLR-7421
     System.setProperty("useCompoundFile", "true");
   }
@@ -53,7 +51,6 @@ public class RecoveryAfterSoftCommitTest extends AbstractFullDistribZkTestBase {
   public static void afterTest()  {
     System.clearProperty("solr.tests.maxBufferedDocs");
     System.clearProperty("solr.ulog.numRecordsToKeep");
-    System.clearProperty("solr.cloud.wait-for-updates-with-stale-state-pause");
     System.clearProperty("useCompoundFile");
   }
 

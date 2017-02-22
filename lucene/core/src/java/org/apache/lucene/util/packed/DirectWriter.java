@@ -21,7 +21,7 @@ import java.io.EOFException;
 import java.io.IOException;
 import java.util.Arrays;
 
-import org.apache.lucene.store.IndexOutput;
+import org.apache.lucene.store.DataOutput;
 
 /** 
  * Class for writing packed integers to be directly read from Directory.
@@ -44,7 +44,7 @@ import org.apache.lucene.store.IndexOutput;
 public final class DirectWriter {
   final int bitsPerValue;
   final long numValues;
-  final IndexOutput output;
+  final DataOutput output;
   
   long count;
   boolean finished;
@@ -56,7 +56,7 @@ public final class DirectWriter {
   final BulkOperation encoder;
   final int iterations;
   
-  DirectWriter(IndexOutput output, long numValues, int bitsPerValue) {
+  DirectWriter(DataOutput output, long numValues, int bitsPerValue) {
     this.output = output;
     this.numValues = numValues;
     this.bitsPerValue = bitsPerValue;
@@ -103,7 +103,7 @@ public final class DirectWriter {
   }
   
   /** Returns an instance suitable for encoding {@code numValues} using {@code bitsPerValue} */
-  public static DirectWriter getInstance(IndexOutput output, long numValues, int bitsPerValue) {
+  public static DirectWriter getInstance(DataOutput output, long numValues, int bitsPerValue) {
     if (Arrays.binarySearch(SUPPORTED_BITS_PER_VALUE, bitsPerValue) < 0) {
       throw new IllegalArgumentException("Unsupported bitsPerValue " + bitsPerValue + ". Did you use bitsRequired?");
     }

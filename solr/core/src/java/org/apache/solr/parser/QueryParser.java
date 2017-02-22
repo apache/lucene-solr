@@ -4,11 +4,12 @@ package org.apache.solr.parser;
 import java.io.StringReader;
 import java.util.ArrayList;
 import java.util.List;
+
 import org.apache.lucene.search.BooleanClause;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.util.Version;
-import org.apache.solr.search.SyntaxError;
 import org.apache.solr.search.QParser;
+import org.apache.solr.search.SyntaxError;
 
 
 public class QueryParser extends SolrQueryParserBase implements QueryParserConstants {
@@ -135,9 +136,9 @@ public class QueryParser extends SolrQueryParserBase implements QueryParserConst
       addClause(clauses, conj, mods, q);
     }
       if (clauses.size() == 1 && firstQuery != null)
-        {if (true) return firstQuery;}
+        {if (true) return rawToNormal(firstQuery);}
       else {
-  {if (true) return getBooleanQuery(clauses);}
+        {if (true) return getBooleanQuery(clauses);}
       }
     throw new Error("Missing return statement in function");
   }
@@ -146,6 +147,7 @@ public class QueryParser extends SolrQueryParserBase implements QueryParserConst
   Query q;
   Token fieldToken=null, boost=null;
   Token localParams=null;
+  int flags = 0;
     if (jj_2_1(2)) {
       switch ((jj_ntk==-1)?jj_ntk():jj_ntk) {
       case TERM:
@@ -195,6 +197,7 @@ public class QueryParser extends SolrQueryParserBase implements QueryParserConst
       break;
     case FILTER:
       jj_consume_token(FILTER);
+                 flags=startFilter();
       q = Query(field);
       jj_consume_token(RPAREN);
       switch ((jj_ntk==-1)?jj_ntk():jj_ntk) {
@@ -206,7 +209,7 @@ public class QueryParser extends SolrQueryParserBase implements QueryParserConst
         jj_la1[7] = jj_gen;
         ;
       }
-                                                                   q=getFilter(q);
+                                                                                            q=getFilter(q); restoreFlags(flags);
       break;
     case LPARAMS:
       localParams = jj_consume_token(LPARAMS);

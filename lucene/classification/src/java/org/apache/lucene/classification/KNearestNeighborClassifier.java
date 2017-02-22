@@ -195,9 +195,10 @@ public class KNearestNeighborClassifier implements Classifier<BytesRef> {
     Map<BytesRef, Double> classBoosts = new HashMap<>(); // this is a boost based on class ranking positions in topDocs
     float maxScore = topDocs.getMaxScore();
     for (ScoreDoc scoreDoc : topDocs.scoreDocs) {
-      IndexableField storableField = indexSearcher.doc(scoreDoc.doc).getField(classFieldName);
-      if (storableField != null) {
-        BytesRef cl = new BytesRef(storableField.stringValue());
+      IndexableField[] storableFields = indexSearcher.doc(scoreDoc.doc).getFields(classFieldName);
+      for (IndexableField singleStorableField : storableFields) {
+        if (singleStorableField != null) {
+          BytesRef cl = new BytesRef(singleStorableField.stringValue());
         //update count
         Integer count = classCounts.get(cl);
         if (count != null) {
@@ -212,6 +213,7 @@ public class KNearestNeighborClassifier implements Classifier<BytesRef> {
           classBoosts.put(cl, totalBoost + singleBoost);
         } else {
           classBoosts.put(cl, singleBoost);
+        }
         }
       }
     }

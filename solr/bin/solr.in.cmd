@@ -75,6 +75,11 @@ REM set SOLR_LOG_LEVEL=INFO
 REM Location where Solr should write logs to. Absolute or relative to solr start dir
 REM set SOLR_LOGS_DIR=logs
 
+REM Enables log rotation, cleanup, and archiving before starting Solr. Setting SOLR_LOG_PRESTART_ROTATION=false will skip start
+REM time rotation of logs, and the archiving of the last GC and console log files. It does not affect Log4j configuration. This
+REM pre-startup rotation may need to be disabled depending how much you customize the default logging setup.
+REM set SOLR_LOG_PRESTART_ROTATION=true
+
 REM Set the host interface to listen on. Jetty will listen on all interfaces (0.0.0.0) by default.
 REM This must be an IPv4 ("a.b.c.d") or bracketed IPv6 ("[x::y]") address, not a hostname!
 REM set SOLR_JETTY_HOST=0.0.0.0
@@ -86,8 +91,10 @@ REM Uncomment to set SSL-related system properties
 REM Be sure to update the paths to the correct keystore for your environment
 REM set SOLR_SSL_KEY_STORE=etc/solr-ssl.keystore.jks
 REM set SOLR_SSL_KEY_STORE_PASSWORD=secret
+REM set SOLR_SSL_KEY_STORE_TYPE=JKS
 REM set SOLR_SSL_TRUST_STORE=etc/solr-ssl.keystore.jks
 REM set SOLR_SSL_TRUST_STORE_PASSWORD=secret
+REM set SOLR_SSL_TRUST_STORE_TYPE=JKS
 REM set SOLR_SSL_NEED_CLIENT_AUTH=false
 REM set SOLR_SSL_WANT_CLIENT_AUTH=false
 
@@ -95,11 +102,15 @@ REM Uncomment if you want to override previously defined SSL values for HTTP cli
 REM otherwise keep them commented and the above values will automatically be set for HTTP clients
 REM set SOLR_SSL_CLIENT_KEY_STORE=
 REM set SOLR_SSL_CLIENT_KEY_STORE_PASSWORD=
+REM set SOLR_SSL_CLIENT_KEY_STORE_TYPE=
 REM set SOLR_SSL_CLIENT_TRUST_STORE=
-REM setSOLR_SSL_CLIENT_TRUST_STORE_PASSWORD=
+REM set SOLR_SSL_CLIENT_TRUST_STORE_PASSWORD=
+REM set SOLR_SSL_CLIENT_TRUST_STORE_TYPE=
 
 REM Settings for authentication
-REM set SOLR_AUTHENTICATION_CLIENT_BUILDER=
+REM Please configure only one of SOLR_AUTHENTICATION_CLIENT_BUILDER or SOLR_AUTH_TYPE parameters
+REM set SOLR_AUTHENTICATION_CLIENT_BUILDER=org.apache.solr.client.solrj.impl.PreemptiveBasicAuthClientBuilderFactory
+REM set SOLR_AUTH_TYPE=basic
 REM set SOLR_AUTHENTICATION_OPTS="-Dbasicauth=solr:SolrRocks"
 
 REM Settings for ZK ACL

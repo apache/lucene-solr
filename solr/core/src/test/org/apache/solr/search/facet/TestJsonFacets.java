@@ -34,6 +34,7 @@ import org.apache.lucene.util.LuceneTestCase;
 import org.apache.solr.JSONTestUtil;
 import org.apache.solr.SolrTestCaseHS;
 import org.apache.solr.common.SolrInputDocument;
+import org.apache.solr.SolrTestCaseJ4.SuppressPointFields;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.request.macro.MacroExpander;
 import org.junit.AfterClass;
@@ -41,6 +42,7 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 
 @LuceneTestCase.SuppressCodecs({"Lucene3x","Lucene40","Lucene41","Lucene42","Lucene45","Appending"})
+@SuppressPointFields
 public class TestJsonFacets extends SolrTestCaseHS {
 
   private static SolrInstances servers;  // for distributed testing
@@ -381,6 +383,7 @@ public class TestJsonFacets extends SolrTestCaseHS {
 
   public static void doStatsTemplated(Client client, ModifiableSolrParams p) throws Exception {
     p.set("Z_num_i", "Z_" + p.get("num_i") );
+    p.set("sparse_num_d", "sparse_" + p.get("num_d") );
     if (p.get("num_is") == null) p.add("num_is","num_is");
     if (p.get("num_fs") == null) p.add("num_fs","num_fs");
 
@@ -398,21 +401,34 @@ public class TestJsonFacets extends SolrTestCaseHS {
     String super_s = m.expand("${super_s}");
     String sparse_s = m.expand("${sparse_s}");
     String multi_ss = m.expand("${multi_ss}");
+    String sparse_num_d = m.expand("${sparse_num_d}");
+
 
     client.deleteByQuery("*:*", null);
 
+    Client iclient = client;
+
+    /*** This code was not needed yet, but may be needed if we want to force empty shard results more often.
+    // create a new indexing client that doesn't use one shard to better test for empty or non-existent results
+    if (!client.local()) {
+      List<SolrClient> shards = client.getClientProvider().all();
+      iclient = new Client(shards.subList(0, shards.size()-1), client.getClientProvider().getSeed());
+     }
+     ***/
+
     SolrInputDocument doc =
-               sdoc("id", "1", cat_s, "A", where_s, "NY", num_d, "4", num_i, "2",   num_is,"2",num_is,"-5", num_fs,"2",num_fs,"-5",   super_s, "zodiac", date, "2001-01-01T01:01:01Z", val_b, "true", sparse_s, "one");
-    client.add(doc, null);
-    client.add(doc, null);
-    client.add(doc, null);  // a couple of deleted docs
-    client.add(sdoc("id", "2", cat_s, "B", where_s, "NJ", num_d, "-9", num_i, "-5", num_is,"3",num_is,"-1", num_fs,"3",num_fs,"-1.5", super_s,"superman", date,"2002-02-02T02:02:02Z", val_b, "false"         , multi_ss,"a", multi_ss,"b" , Z_num_i, "0"), null);
-    client.add(sdoc("id", "3"), null);
-    client.commit();
-    client.add(sdoc("id", "4", cat_s, "A", where_s, "NJ", num_d, "2", num_i, "3",   num_is,"0",num_is,"3", num_fs,"0", num_fs,"3",   super_s,"spiderman", date,"2003-03-03T03:03:03Z"                         , multi_ss, "b", Z_num_i, ""+Integer.MIN_VALUE), null);
-    client.add(sdoc("id", "5", cat_s, "B", where_s, "NJ", num_d, "11", num_i, "7",  num_is,"0",            num_fs,"0",               super_s,"batman"   , date,"2001-02-03T01:02:03Z"          ,sparse_s,"two", multi_ss, "a"), null);
-    client.commit();
-    client.add(sdoc("id", "6", cat_s, "B", where_s, "NY", num_d, "-5", num_i, "-5", num_is,"-1",           num_fs,"-1.5",            super_s,"hulk"     , date,"2002-03-01T03:02:01Z"                         , multi_ss, "b", multi_ss, "a", Z_num_i, ""+Integer.MAX_VALUE), null);
+               sdoc("id", "1", cat_s, "A", where_s, "NY", num_d, "4", sparse_num_d, "6", num_i, "2",   num_is,"2",num_is,"-5", num_fs,"2",num_fs,"-5",   super_s, "zodiac", date, "2001-01-01T01:01:01Z", val_b, "true", sparse_s, "one");
+    iclient.add(doc, null);
+    iclient.add(doc, null);
+    iclient.add(doc, null);  // a couple of deleted docs
+    iclient.add(sdoc("id", "2", cat_s, "B", where_s, "NJ", num_d, "-9",                  num_i, "-5", num_is,"3",num_is,"-1", num_fs,"3",num_fs,"-1.5", super_s,"superman", date,"2002-02-02T02:02:02Z", val_b, "false"         , multi_ss,"a", multi_ss,"b" , Z_num_i, "0"), null);
+    iclient.add(sdoc("id", "3"), null);
+    iclient.commit();
+    iclient.add(sdoc("id", "4", cat_s, "A", where_s, "NJ", num_d, "2", sparse_num_d,"-4",num_i, "3",   num_is,"0",num_is,"3", num_fs,"0", num_fs,"3",   super_s,"spiderman", date,"2003-03-03T03:03:03Z"                         , multi_ss, "b", Z_num_i, ""+Integer.MIN_VALUE), null);
+    iclient.add(sdoc("id", "5", cat_s, "B", where_s, "NJ", num_d, "11",                  num_i, "7",  num_is,"0",            num_fs,"0",               super_s,"batman"   , date,"2001-02-03T01:02:03Z"          ,sparse_s,"two", multi_ss, "a"), null);
+    iclient.commit();
+    iclient.add(sdoc("id", "6", cat_s, "B", where_s, "NY", num_d, "-5",                  num_i, "-5", num_is,"-1",           num_fs,"-1.5",            super_s,"hulk"     , date,"2002-03-01T03:02:01Z"                         , multi_ss, "b", multi_ss, "a", Z_num_i, ""+Integer.MAX_VALUE), null);
+    iclient.commit();
     client.commit();
 
     // test for presence of debugging info
@@ -542,11 +558,15 @@ public class TestJsonFacets extends SolrTestCaseHS {
     // test sorting by single percentile
     client.testJQ(params(p, "q", "*:*"
             , "json.facet", "{f1:{terms:{${terms} field:'${cat_s}', sort:'n1 desc', facet:{n1:'percentile(${num_d},50)'}  }}" +
-                " , f2:{terms:{${terms} field:'${cat_s}', sort:'n1 asc', facet:{n1:'percentile(${num_d},50)'}  }} }"
+                " , f2:{terms:{${terms} field:'${cat_s}', sort:'n1 asc', facet:{n1:'percentile(${num_d},50)'}  }} " +
+                " , f3:{terms:{${terms} field:'${cat_s}', sort:'n1 desc', facet:{n1:'percentile(${sparse_num_d},50)'}  }} " +
+            "}"
         )
         , "facets=={ 'count':6, " +
             "  f1:{  'buckets':[{ val:'A', count:2, n1:3.0 }, { val:'B', count:3, n1:-5.0}]}" +
-            ", f2:{  'buckets':[{ val:'B', count:3, n1:-5.0}, { val:'A', count:2, n1:3.0 }]} }"
+            ", f2:{  'buckets':[{ val:'B', count:3, n1:-5.0}, { val:'A', count:2, n1:3.0 }]}" +
+            ", f3:{  'buckets':[{ val:'A', count:2, n1:1.0}, { val:'B', count:3}]}" +
+            "}"
     );
 
     // test sorting by multiple percentiles (sort is by first)
@@ -852,6 +872,33 @@ public class TestJsonFacets extends SolrTestCaseHS {
             " }"
     );
 
+
+    // stats at top level, matching documents, but no values in the field
+    // NOTE: this represents the current state of what is returned, not the ultimate desired state.
+    client.testJQ(params(p, "q", "id:3"
+        , "json.facet", "{ sum1:'sum(${num_d})', sumsq1:'sumsq(${num_d})', avg1:'avg(${num_d})', min1:'min(${num_d})', max1:'max(${num_d})'" +
+            ", numwhere:'unique(${where_s})', unique_num_i:'unique(${num_i})', unique_num_d:'unique(${num_d})', unique_date:'unique(${date})'" +
+            ", where_hll:'hll(${where_s})', hll_num_i:'hll(${num_i})', hll_num_d:'hll(${num_d})', hll_date:'hll(${date})'" +
+            ", med:'percentile(${num_d},50)', perc:'percentile(${num_d},0,50.0,100)' }"
+        )
+        , "facets=={count:1 " +
+            ",sum1:0.0," +
+            " sumsq1:0.0," +
+            " avg1:0.0," +   // TODO: undesirable. omit?
+            " min1:'NaN'," + // TODO: undesirable. omit?
+            " max1:'NaN'," +
+            " numwhere:0," +
+            " unique_num_i:0," +
+            " unique_num_d:0," +
+            " unique_date:0," +
+            " where_hll:0," +
+            " hll_num_i:0," +
+            " hll_num_d:0," +
+            " hll_date:0" +
+            " }"
+    );
+
+
     //
     // tests on a multi-valued field with actual multiple values, just to ensure that we are
     // using a multi-valued method for the rest of the tests when appropriate.
@@ -996,6 +1043,25 @@ public class TestJsonFacets extends SolrTestCaseHS {
         , "facets=={ count:5, " +
             " f1:{ buckets:[ {val:B, count:3}, {val:A, count:2} ]  }" +
             "}"
+    );
+
+    // test sub-facets of  empty buckets with domain filter exclusions (canProduceFromEmpty) (see SOLR-9519)
+    client.testJQ(params(p, "q", "*:*", "fq","{!tag=doc3}id:non-exist", "fq","{!tag=CATA}${cat_s}:A"
+
+        , "json.facet", "{" +
+            "f1:{${terms} type:terms, field:${cat_s}, domain:{excludeTags:doc3} }  " +
+            ",q1 :{type:query, q:'*:*', facet:{ f1:{${terms} type:terms, field:${cat_s}, domain:{excludeTags:doc3} } }  }  " +  // nested under query
+            ",q1a:{type:query, q:'id:4', facet:{ f1:{${terms} type:terms, field:${cat_s}, domain:{excludeTags:doc3} } }  }  " +  // nested under query, make sure id:4 filter still applies
+            ",r1 :{type:range, field:${num_d}, start:0, gap:3, end:5,  facet:{ f1:{${terms} type:terms, field:${cat_s}, domain:{excludeTags:doc3} } }  }  " +  // nested under range, make sure range constraints still apply
+            ",f2:{${terms} type:terms, field:${cat_s}, domain:{filter:'*:*'} }  " + // domain filter doesn't widen, so f2 should not appear.
+            "}"
+    )
+    , "facets=={ count:0, " +
+        " f1:{ buckets:[ {val:A, count:2} ]  }" +
+        ",q1:{ count:0, f1:{buckets:[{val:A, count:2}]} }" +
+        ",q1a:{ count:0, f1:{buckets:[{val:A, count:1}]} }" +
+        ",r1:{ buckets:[ {val:0.0,count:0,f1:{buckets:[{val:A, count:1}]}}, {val:3.0,count:0,f1:{buckets:[{val:A, count:1}]}} ]  }" +
+        "}"
     );
 
     // nested query facets on subset (with excludeTags)
@@ -1165,26 +1231,30 @@ public class TestJsonFacets extends SolrTestCaseHS {
 
 
     // test filter
-    client.testJQ(params(p, "q", "*:*", "myfilt","${cat_s}:A"
+    client.testJQ(params(p, "q", "*:*", "myfilt","${cat_s}:A", "ff","-id:1", "ff","-id:2"
         , "json.facet", "{" +
             "t:{${terms} type:terms, field:${cat_s}, domain:{filter:[]} }" + // empty filter list
             ",t_filt:{${terms} type:terms, field:${cat_s}, domain:{filter:'${cat_s}:B'} }" +
-            ",t_filt2:{${terms} type:terms, field:${cat_s}, domain:{filter:'{!query v=$myfilt}'} }" +  // test access to qparser and other query parameters
-            ",t_filt3:{${terms} type:terms, field:${cat_s}, domain:{filter:['-id:1','-id:2']} }" +
+            ",t_filt2 :{${terms} type:terms, field:${cat_s}, domain:{filter:'{!query v=$myfilt}'} }" +  // test access to qparser and other query parameters
+            ",t_filt2a:{${terms} type:terms, field:${cat_s}, domain:{filter:{param:myfilt} } }" +  // test filter via "param" type
+            ",t_filt3: {${terms} type:terms, field:${cat_s}, domain:{filter:['-id:1','-id:2']} }" +
+            ",t_filt3a:{${terms} type:terms, field:${cat_s}, domain:{filter:{param:ff}} }" +  // test multi-valued query parameter
             ",q:{type:query, q:'${cat_s}:B', domain:{filter:['-id:5']} }" + // also tests a top-level negative filter
             ",r:{type:range, field:${num_d}, start:-5, end:10, gap:5, domain:{filter:'-id:4'} }" +
             "}"
         )
         , "facets=={ count:6, " +
-            "t       :{ buckets:[ {val:B, count:3}, {val:A, count:2} ] }" +
-            ",t_filt :{ buckets:[ {val:B, count:3}] } " +
-            ",t_filt2:{ buckets:[ {val:A, count:2}] } " +
-            ",t_filt3:{ buckets:[ {val:B, count:2}, {val:A, count:1}] } " +
+            "t        :{ buckets:[ {val:B, count:3}, {val:A, count:2} ] }" +
+            ",t_filt  :{ buckets:[ {val:B, count:3}] } " +
+            ",t_filt2 :{ buckets:[ {val:A, count:2}] } " +
+            ",t_filt2a:{ buckets:[ {val:A, count:2}] } " +
+            ",t_filt3 :{ buckets:[ {val:B, count:2}, {val:A, count:1}] } " +
+            ",t_filt3a:{ buckets:[ {val:B, count:2}, {val:A, count:1}] } " +
             ",q:{count:2}" +
             ",r:{buckets:[ {val:-5.0,count:1}, {val:0.0,count:1}, {val:5.0,count:0} ] }" +
             "}"
     );
-    
+
   }
 
   @Test
@@ -1423,6 +1493,24 @@ public class TestJsonFacets extends SolrTestCaseHS {
             ",pages2:{type:terms, field:v_t, domain:{blockChildren:'type_s:book', filter:'-id:3.1'} }" +
             ",books:{type:terms, field:v_t, domain:{blockParent:'type_s:book', filter:'*:*'} }" +
             ",books2:{type:terms, field:v_t, domain:{blockParent:'type_s:book', filter:'id:1'} }" +
+            "}"
+        )
+        , "facets=={ count:10" +
+            ", pages1:{ buckets:[ {val:y,count:4},{val:x,count:3},{val:z,count:3} ] }" +
+            ", pages2:{ buckets:[ {val:y,count:4},{val:z,count:3},{val:x,count:2} ] }" +
+            ", books:{ buckets:[ {val:q,count:3},{val:e,count:2},{val:w,count:2} ] }" +
+            ", books2:{ buckets:[ {val:q,count:1} ] }" +
+            "}"
+    );
+
+
+    // test other various ways to get filters
+    client.testJQ(params(p, "q", "*:*", "f1","-id:3.1", "f2","id:1"
+        , "json.facet", "{ " +
+            "pages1:{type:terms, field:v_t, domain:{blockChildren:'type_s:book', filter:[]} }" +
+            ",pages2:{type:terms, field:v_t, domain:{blockChildren:'type_s:book', filter:{param:f1} } }" +
+            ",books:{type:terms, field:v_t, domain:{blockParent:'type_s:book', filter:[{param:q},{param:missing_param}]} }" +
+            ",books2:{type:terms, field:v_t, domain:{blockParent:'type_s:book', filter:[{param:f2}] } }" +
             "}"
         )
         , "facets=={ count:10" +

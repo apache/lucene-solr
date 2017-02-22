@@ -19,6 +19,7 @@ package org.apache.solr.cloud;
 import java.io.Closeable;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
+import java.net.SocketTimeoutException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -69,7 +70,7 @@ public class RecoveryStrategy extends Thread implements Closeable {
 
   private static final Logger LOG = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
-  private static final int WAIT_FOR_UPDATES_WITH_STALE_STATE_PAUSE = Integer.getInteger("solr.cloud.wait-for-updates-with-stale-state-pause", 7000);
+  private static final int WAIT_FOR_UPDATES_WITH_STALE_STATE_PAUSE = Integer.getInteger("solr.cloud.wait-for-updates-with-stale-state-pause", 2500);
   private static final int MAX_RETRIES = 500;
   private static final int STARTING_RECOVERY_DELAY = 5000;
 
@@ -572,24 +573,46 @@ public class RecoveryStrategy extends Thread implements Closeable {
   private void sendPrepRecoveryCmd(String leaderBaseUrl, String leaderCoreName, Slice slice)
       throws SolrServerException, IOException, InterruptedException, ExecutionException {
 
-    try (HttpSolrClient client = new HttpSolrClient.Builder(leaderBaseUrl).build()) {
-      client.setConnectionTimeout(30000);
-      WaitForState prepCmd = new WaitForState();
-      prepCmd.setCoreName(leaderCoreName);
-      prepCmd.setNodeName(zkController.getNodeName());
-      prepCmd.setCoreNodeName(coreZkNodeName);
-      prepCmd.setState(Replica.State.RECOVERING);
-      prepCmd.setCheckLive(true);
-      prepCmd.setOnlyIfLeader(true);
-      final Slice.State state = slice.getState();
-      if (state != Slice.State.CONSTRUCTION && state != Slice.State.RECOVERY && state != Slice.State.RECOVERY_FAILED) {
-        prepCmd.setOnlyIfLeaderActive(true);
+    WaitForState prepCmd = new WaitForState();
+    prepCmd.setCoreName(leaderCoreName);
+    prepCmd.setNodeName(zkController.getNodeName());
+    prepCmd.setCoreNodeName(coreZkNodeName);
+    prepCmd.setState(Replica.State.RECOVERING);
+    prepCmd.setCheckLive(true);
+    prepCmd.setOnlyIfLeader(true);
+    final Slice.State state = slice.getState();
+    if (state != Slice.State.CONSTRUCTION && state != Slice.State.RECOVERY && state != Slice.State.RECOVERY_FAILED) {
+      prepCmd.setOnlyIfLeaderActive(true);
+    }
+
+    final int maxTries = 30;
+    for (int numTries = 0; numTries < maxTries; numTries++) {
+      try {
+        sendPrepRecoveryCmd(leaderBaseUrl, prepCmd);
+        break;
+      } catch (ExecutionException e) {
+        if (e.getCause() instanceof SolrServerException) {
+          SolrServerException solrException = (SolrServerException) e.getCause();
+          if (solrException.getRootCause() instanceof SocketTimeoutException && numTries < maxTries) {
+            LOG.warn("Socket timeout on send prep recovery cmd, retrying.. ");
+            continue;
+          }
+        }
+        throw  e;
       }
+    }
+  }
+
+  private void sendPrepRecoveryCmd(String leaderBaseUrl, WaitForState prepCmd)
+      throws SolrServerException, IOException, InterruptedException, ExecutionException {
+    try (HttpSolrClient client = new HttpSolrClient.Builder(leaderBaseUrl).build()) {
+      client.setConnectionTimeout(10000);
+      client.setSoTimeout(10000);
       HttpUriRequestResponse mrr = client.httpUriRequest(prepCmd);
       prevSendPreRecoveryHttpUriRequest = mrr.httpUriRequest;
-      
+
       LOG.info("Sending prep recovery command to [{}]; [{}]", leaderBaseUrl, prepCmd.toString());
-      
+
       mrr.future.get();
     }
   }

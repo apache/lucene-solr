@@ -360,8 +360,13 @@ public  class LeaderElector {
   public void setup(final ElectionContext context) throws InterruptedException,
       KeeperException {
     String electZKPath = context.electionPath + LeaderElector.ELECTION_NODE;
-    
-    zkCmdExecutor.ensureExists(electZKPath, zkClient);
+    if (context instanceof OverseerElectionContext) {
+      zkCmdExecutor.ensureExists(electZKPath, zkClient);
+    } else {
+      // we use 2 param so that replica won't create /collection/{collection} if it doesn't exist
+      zkCmdExecutor.ensureExists(electZKPath, (byte[])null, CreateMode.PERSISTENT, zkClient, 2);
+    }
+
     this.context = context;
   }
   
@@ -383,6 +388,7 @@ public  class LeaderElector {
     }
     if (watcher != null) watcher.cancel();
     this.context.cancelElection();
+    this.context.close();
     this.context = ctx;
     joinElection(ctx, true, joinAtHead);
   }

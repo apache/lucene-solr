@@ -51,15 +51,13 @@
     <dependency org="org.slf4j" name="slf4j-log4j12" rev="${/org.slf4j/slf4j-log4j12}" conf="compile"/>
     <dependency org="org.slf4j" name="jcl-over-slf4j" rev="${/org.slf4j/jcl-over-slf4j}" conf="compile"/>
 
-    <dependency org="org.easymock" name="easymock" rev="${/org.easymock/easymock}" conf="test"/>
-    <dependency org="cglib" name="cglib-nodep" rev="${/cglib/cglib-nodep}" conf="test"/>
+    <dependency org="org.mockito" name="mockito-core" rev="${/org.mockito/mockito-core}" conf="test"/>
+    <dependency org="net.bytebuddy" name="byte-buddy" rev="${/net.bytebuddy/byte-buddy}" conf="test"/>
     <dependency org="org.objenesis" name="objenesis" rev="${/org.objenesis/objenesis}" conf="test"/>
 
-    <dependency org="org.mockito" name="mockito-core" rev="${/org.mockito/mockito-core}" conf="test"/>
-
     <dependency org="com.fasterxml.jackson.core" name="jackson-core" rev="${/com.fasterxml.jackson.core/jackson-core}" conf="compile"/>
-    <dependency org="com.fasterxml.jackson.core" name="jackson-databind" rev="${/com.fasterxml.jackson.core/jackson-databind}" conf="test"/>
-    <dependency org="com.fasterxml.jackson.core" name="jackson-annotations" rev="${/com.fasterxml.jackson.core/jackson-annotations}" conf="test"/>
+    <dependency org="com.fasterxml.jackson.core" name="jackson-databind" rev="${/com.fasterxml.jackson.core/jackson-databind}" conf="compile"/>
+    <dependency org="com.fasterxml.jackson.core" name="jackson-annotations" rev="${/com.fasterxml.jackson.core/jackson-annotations}" conf="compile"/>
     <dependency org="com.fasterxml.jackson.dataformat" name="jackson-dataformat-smile" rev="${/com.fasterxml.jackson.dataformat/jackson-dataformat-smile}" conf="compile"/>
 
 
@@ -140,10 +138,15 @@
 
     <!-- StatsComponents percentiles Dependencies-->
     <dependency org="com.tdunning" name="t-digest" rev="${/com.tdunning/t-digest}" conf="compile->*"/>
-    <!-- SQL Parser -->
 
-    <dependency org="com.facebook.presto" name="presto-parser" rev="${/com.facebook.presto/presto-parser}"/>
-    <dependency org="io.airlift" name="slice" rev="${/io.airlift/slice}"/>
+    <!-- SQL Parser -->
+    <dependency org="org.apache.calcite" name="calcite-core" rev="${/org.apache.calcite/calcite-core}" conf="compile"/>
+    <dependency org="org.apache.calcite" name="calcite-linq4j" rev="${/org.apache.calcite/calcite-linq4j}" conf="compile"/>
+    <dependency org="org.apache.calcite.avatica" name="avatica-core" rev="${/org.apache.calcite.avatica/avatica-core}" conf="compile"/>
+    <dependency org="net.hydromatic" name="eigenbase-properties" rev="${/net.hydromatic/eigenbase-properties}" conf="compile"/>
+    <dependency org="org.codehaus.janino" name="janino" rev="${/org.codehaus.janino/janino}" conf="compile"/>
+    <dependency org="org.codehaus.janino" name="commons-compiler" rev="${/org.codehaus.janino/commons-compiler}" conf="compile"/>
+    <dependency org="com.google.protobuf" name="protobuf-java" rev="${/com.google.protobuf/protobuf-java}" conf="compile"/>
 
     <exclude org="*" ext="*" matcher="regexp" type="${ivy.exclude.types}"/> 
   </dependencies>

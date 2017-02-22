@@ -32,11 +32,17 @@ import java.util.*;
  *
  */
 public abstract class QParser {
+  /** @lucene.experimental  */
+  public static final int FLAG_FILTER = 0x01;
+
   protected String qstr;
   protected SolrParams params;
   protected SolrParams localParams;
   protected SolrQueryRequest req;
   protected int recurseCount;
+
+  /** @lucene.experimental  */
+  protected int flags;
 
   protected Query query;
 
@@ -83,6 +89,28 @@ public abstract class QParser {
     this.req = req;
   }
 
+  /** @lucene.experimental  */
+  public void setFlags(int flags) {
+    this.flags = flags;
+  }
+
+  /** @lucene.experimental  */
+  public int getFlags() {
+    return flags;
+  }
+
+  /** @lucene.experimental Query is in the context of a filter, where scores don't matter */
+  public boolean isFilter() {
+    return (flags & FLAG_FILTER) != 0;
+  }
+
+  /** @lucene.experimental  */
+  public void setIsFilter(boolean isFilter) {
+    if (isFilter)
+      flags |= FLAG_FILTER;
+    else
+      flags &= ~FLAG_FILTER;
+  }
 
   private static void addTag(Map<Object,Collection<Object>> tagMap, Object key, Object val) {
     Collection<Object> lst = tagMap.get(key);
@@ -201,6 +229,7 @@ public abstract class QParser {
       defaultType = localParams.get(QueryParsing.DEFTYPE);
     }
     QParser nestedParser = getParser(q, defaultType, getReq());
+    nestedParser.flags = this.flags;  // TODO: this would be better passed in to the constructor... change to a ParserContext object?
     nestedParser.recurseCount = recurseCount;
     recurseCount--;
     return nestedParser;

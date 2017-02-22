@@ -22,10 +22,10 @@ import java.util.List;
 import java.util.TreeSet;
 import java.util.function.Predicate;
 
+import com.codahale.metrics.Timer;
 import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.util.Pair;
-import org.apache.solr.util.stats.TimerContext;
 import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.WatchedEvent;
@@ -85,7 +85,7 @@ public class OverseerTaskQueue extends DistributedQueue {
    */
   public void remove(QueueEvent event) throws KeeperException,
       InterruptedException {
-    TimerContext time = stats.time(dir + "_remove_event");
+    Timer.Context time = stats.time(dir + "_remove_event");
     try {
       String path = event.getId();
       String responsePath = dir + "/" + response_prefix
@@ -181,7 +181,7 @@ public class OverseerTaskQueue extends DistributedQueue {
    */
   public QueueEvent offer(byte[] data, long timeout) throws KeeperException,
       InterruptedException {
-    TimerContext time = stats.time(dir + "_offer");
+    Timer.Context time = stats.time(dir + "_offer");
     try {
       // Create and watch the response node before creating the request node;
       // otherwise we may miss the response.
@@ -227,7 +227,7 @@ public class OverseerTaskQueue extends DistributedQueue {
     ArrayList<QueueEvent> topN = new ArrayList<>();
 
     LOG.debug("Peeking for top {} elements. ExcludeSet: {}", n, excludeSet);
-    TimerContext time;
+    Timer.Context time;
     if (waitMillis == Long.MAX_VALUE) time = stats.time(dir + "_peekTopN_wait_forever");
     else time = stats.time(dir + "_peekTopN_wait" + waitMillis);
 

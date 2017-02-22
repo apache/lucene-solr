@@ -270,6 +270,7 @@ public class GraphExpressionTest extends SolrCloudTestCase {
     StreamFactory factory = new StreamFactory()
         .withCollectionZkHost("collection1", cluster.getZkServer().getZkAddress())
         .withFunctionName("gatherNodes", GatherNodesStream.class)
+        .withFunctionName("nodes", GatherNodesStream.class)
         .withFunctionName("search", CloudSolrStream.class)
         .withFunctionName("count", CountMetric.class)
         .withFunctionName("avg", MeanMetric.class)
@@ -277,7 +278,7 @@ public class GraphExpressionTest extends SolrCloudTestCase {
         .withFunctionName("min", MinMetric.class)
         .withFunctionName("max", MaxMetric.class);
 
-    String expr = "gatherNodes(collection1, " +
+    String expr = "nodes(collection1, " +
         "walk=\"product1->product_s\"," +
         "gather=\"basket_s\")";
 

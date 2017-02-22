@@ -17,16 +17,15 @@
 package org.apache.lucene.facet.range;
 
 import java.io.IOException;
-import java.util.Collections;
 import java.util.Objects;
 
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.LeafReaderContext;
-import org.apache.lucene.queries.function.FunctionValues;
-import org.apache.lucene.queries.function.ValueSource;
 import org.apache.lucene.search.ConstantScoreScorer;
 import org.apache.lucene.search.ConstantScoreWeight;
 import org.apache.lucene.search.DocIdSetIterator;
+import org.apache.lucene.search.DoubleValues;
+import org.apache.lucene.search.DoubleValuesSource;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.Scorer;
@@ -95,9 +94,9 @@ public final class DoubleRange extends Range {
   private static class ValueSourceQuery extends Query {
     private final DoubleRange range;
     private final Query fastMatchQuery;
-    private final ValueSource valueSource;
+    private final DoubleValuesSource valueSource;
 
-    ValueSourceQuery(DoubleRange range, Query fastMatchQuery, ValueSource valueSource) {
+    ValueSourceQuery(DoubleRange range, Query fastMatchQuery, DoubleValuesSource valueSource) {
       this.range = range;
       this.fastMatchQuery = fastMatchQuery;
       this.valueSource = valueSource;
@@ -158,11 +157,11 @@ public final class DoubleRange extends Range {
             approximation = s.iterator();
           }
 
-          final FunctionValues values = valueSource.getValues(Collections.emptyMap(), context);
+          final DoubleValues values = valueSource.getValues(context, null);
           final TwoPhaseIterator twoPhase = new TwoPhaseIterator(approximation) {
             @Override
             public boolean matches() throws IOException {
-              return range.accept(values.doubleVal(approximation.docID()));
+              return values.advanceExact(approximation.docID()) && range.accept(values.doubleValue());
             }
 
             @Override
@@ -177,8 +176,19 @@ public final class DoubleRange extends Range {
 
   }
 
-  @Override
-  public Query getQuery(final Query fastMatchQuery, final ValueSource valueSource) {
+  /**
+   * Create a Query that matches documents in this range
+   *
+   * The query will check all documents that match the provided match query,
+   * or every document in the index if the match query is null.
+   *
+   * If the value source is static, eg an indexed numeric field, it may be
+   * faster to use {@link org.apache.lucene.search.PointRangeQuery}
+   *
+   * @param fastMatchQuery a query to use as a filter
+   * @param valueSource    the source of values for the range check
+   */
+  public Query getQuery(Query fastMatchQuery, DoubleValuesSource valueSource) {
     return new ValueSourceQuery(this, fastMatchQuery, valueSource);
   }
 }

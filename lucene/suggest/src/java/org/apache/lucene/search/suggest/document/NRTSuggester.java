@@ -32,12 +32,11 @@ import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.CharsRefBuilder;
 import org.apache.lucene.util.fst.ByteSequenceOutputs;
 import org.apache.lucene.util.fst.FST;
-import org.apache.lucene.util.fst.PairOutputs;
 import org.apache.lucene.util.fst.PairOutputs.Pair;
+import org.apache.lucene.util.fst.PairOutputs;
 import org.apache.lucene.util.fst.PositiveIntOutputs;
 import org.apache.lucene.util.fst.Util;
 
-import static org.apache.lucene.search.suggest.document.NRTSuggester.PayLoadProcessor.parseDocID;
 import static org.apache.lucene.search.suggest.document.NRTSuggester.PayLoadProcessor.parseSurfaceForm;
 
 /**
@@ -142,21 +141,74 @@ public final class NRTSuggester implements Accountable {
     // maximum number of suggestions that can be collected.
     final int topN = collector.getCountToCollect() * prefixPaths.size();
     final int queueSize = getMaxTopNSearcherQueueSize(topN, scorer.reader.numDocs(), liveDocsRatio, scorer.filtered);
+
+    final CharsRefBuilder spare = new CharsRefBuilder();
+
     Comparator<Pair<Long, BytesRef>> comparator = getComparator();
     Util.TopNSearcher<Pair<Long, BytesRef>> searcher = new Util.TopNSearcher<Pair<Long, BytesRef>>(fst, topN, queueSize, comparator,
         new ScoringPathComparator(scorer)) {
 
-      private final CharsRefBuilder spare = new CharsRefBuilder();
+      private final ByteArrayDataInput scratchInput = new ByteArrayDataInput();
+
+      @Override
+      protected boolean acceptPartialPath(Util.FSTPath<Pair<Long,BytesRef>> path) {
+        if (collector.doSkipDuplicates()) {
+          // We are removing dups
+          if (path.payload == -1) {
+            // This path didn't yet see the complete surface form; let's see if it just did with the arc output we just added:
+            BytesRef arcOutput = path.arc.output.output2;
+            BytesRef output = path.output.output2;
+            for(int i=0;i<arcOutput.length;i++) {
+              if (arcOutput.bytes[arcOutput.offset + i] == payloadSep) {
+                // OK this arc that the path was just extended by contains the payloadSep, so we now have a full surface form in this path
+                path.payload = output.length - arcOutput.length + i;
+                assert output.bytes[output.offset + path.payload] == payloadSep;
+                break;
+              }
+            }
+          }
+
+          if (path.payload != -1) {
+            BytesRef output = path.output.output2;
+            spare.copyUTF8Bytes(output.bytes, output.offset, path.payload);
+            if (collector.seenSurfaceForms.contains(spare.chars(), 0, spare.length())) {
+              return false;
+            }
+          }
+        }
+        return true;
+      }
 
       @Override
       protected boolean acceptResult(Util.FSTPath<Pair<Long, BytesRef>> path) {
-        int payloadSepIndex = parseSurfaceForm(path.cost.output2, payloadSep, spare);
-        int docID = parseDocID(path.cost.output2, payloadSepIndex);
+        BytesRef output = path.output.output2;
+        int payloadSepIndex;
+        if (path.payload != -1) {
+          payloadSepIndex = path.payload;
+          spare.copyUTF8Bytes(output.bytes, output.offset, payloadSepIndex);
+        } else {
+          assert collector.doSkipDuplicates() == false;
+          payloadSepIndex = parseSurfaceForm(output, payloadSep, spare);
+        }
+
+        scratchInput.reset(output.bytes, output.offset + payloadSepIndex + 1, output.length - payloadSepIndex - 1);
+        int docID = scratchInput.readVInt();
+        
         if (!scorer.accept(docID, acceptDocs)) {
           return false;
         }
+        if (collector.doSkipDuplicates()) {
+          // now record that we've seen this surface form:
+          char[] key = new char[spare.length()];
+          System.arraycopy(spare.chars(), 0, key, 0, spare.length());
+          if (collector.seenSurfaceForms.contains(key)) {
+            // we already collected a higher scoring document with this key, in this segment:
+            return false;
+          }
+          collector.seenSurfaceForms.add(key);
+        }
         try {
-          float score = scorer.score(decode(path.cost.output1), path.boost);
+          float score = scorer.score(decode(path.output.output1), path.boost);
           collector.collect(docID, spare.toCharsRef(), path.context, score);
           return true;
         } catch (IOException e) {
@@ -167,8 +219,20 @@ public final class NRTSuggester implements Accountable {
 
     for (FSTUtil.Path<Pair<Long, BytesRef>> path : prefixPaths) {
       scorer.weight.setNextMatch(path.input.get());
+      BytesRef output = path.output.output2;
+      int payload = -1;
+      if (collector.doSkipDuplicates()) {
+        for(int j=0;j<output.length;j++) {
+          if (output.bytes[output.offset+j] == payloadSep) {
+            // Important to cache this, else we have a possibly O(N^2) cost where N is the length of suggestions
+            payload = j;
+            break;
+          }
+        }
+      }
+      
       searcher.addStartPaths(path.fstNode, path.output, false, path.input, scorer.weight.boost(),
-          scorer.weight.context());
+                             scorer.weight.context(), payload);
     }
     // hits are also returned by search()
     // we do not use it, instead collect at acceptResult
@@ -191,8 +255,8 @@ public final class NRTSuggester implements Accountable {
 
     @Override
     public int compare(Util.FSTPath<Pair<Long, BytesRef>> first, Util.FSTPath<Pair<Long, BytesRef>> second) {
-      int cmp = Float.compare(scorer.score(decode(second.cost.output1), second.boost),
-          scorer.score(decode(first.cost.output1), first.boost));
+      int cmp = Float.compare(scorer.score(decode(second.output.output1), second.boost),
+          scorer.score(decode(first.output.output1), first.boost));
       return (cmp != 0) ? cmp : first.input.get().compareTo(second.input.get());
     }
   }
@@ -283,13 +347,6 @@ public final class NRTSuggester implements Accountable {
       assert surfaceFormLen != -1 : "no payloadSep found, unable to determine surface form";
       spare.copyUTF8Bytes(output.bytes, output.offset, surfaceFormLen);
       return surfaceFormLen;
-    }
-
-    static int parseDocID(final BytesRef output, int payloadSepIndex) {
-      assert payloadSepIndex != -1 : "payload sep index can not be -1";
-      ByteArrayDataInput input = new ByteArrayDataInput(output.bytes, payloadSepIndex + output.offset + 1,
-          output.length - (payloadSepIndex + output.offset));
-      return input.readVInt();
     }
 
     static BytesRef make(final BytesRef surface, int docID, int payloadSep) throws IOException {

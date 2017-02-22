@@ -78,11 +78,10 @@ public abstract class ConfigSetService {
       IndexSchema schema = createIndexSchema(dcore, solrConfig);
       NamedList properties = createConfigSetProperties(dcore, coreLoader);
       return new ConfigSet(configName(dcore), solrConfig, schema, properties);
-    }
-    catch (Exception e) {
+    } catch (Exception e) {
       throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,
-                              "Could not load conf for core " + dcore.getName() + 
-                              ": " + e.getMessage(), e);
+          "Could not load conf for core " + dcore.getName() +
+              ": " + e.getMessage(), e);
     }
 
   }

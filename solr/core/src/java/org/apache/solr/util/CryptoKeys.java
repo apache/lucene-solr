@@ -285,6 +285,10 @@ public final class CryptoKeys {
     private final PrivateKey privateKey;
     private final SecureRandom random = new SecureRandom();
 
+    // If this ever comes back to haunt us see the discussion at
+    // SOLR-9609 for background and code allowing this to go
+    // into security.json
+    private static final int DEFAULT_KEYPAIR_LENGTH = 1024;
 
     public RSAKeyPair() {
       KeyPairGenerator keyGen = null;
@@ -293,7 +297,7 @@ public final class CryptoKeys {
       } catch (NoSuchAlgorithmException e) {
         throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
       }
-      keyGen.initialize(512);
+      keyGen.initialize(DEFAULT_KEYPAIR_LENGTH);
       java.security.KeyPair keyPair = keyGen.genKeyPair();
       privateKey = keyPair.getPrivate();
       publicKey = keyPair.getPublic();

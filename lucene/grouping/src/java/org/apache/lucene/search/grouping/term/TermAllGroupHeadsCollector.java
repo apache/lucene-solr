@@ -31,19 +31,19 @@ import org.apache.lucene.search.LeafFieldComparator;
 import org.apache.lucene.search.Scorer;
 import org.apache.lucene.search.Sort;
 import org.apache.lucene.search.SortField;
-import org.apache.lucene.search.grouping.AbstractAllGroupHeadsCollector;
+import org.apache.lucene.search.grouping.AllGroupHeadsCollector;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.BytesRefBuilder;
 import org.apache.lucene.util.SentinelIntSet;
 
 /**
- * A base implementation of {@link org.apache.lucene.search.grouping.AbstractAllGroupHeadsCollector} for retrieving the most relevant groups when grouping
+ * A base implementation of {@link AllGroupHeadsCollector} for retrieving the most relevant groups when grouping
  * on a string based group field. More specifically this all concrete implementations of this base implementation
  * use {@link SortedDocValues}.
  *
  * @lucene.experimental
  */
-public abstract class TermAllGroupHeadsCollector<GH extends AbstractAllGroupHeadsCollector.GroupHead<?>> extends AbstractAllGroupHeadsCollector<GH> {
+public abstract class TermAllGroupHeadsCollector extends AllGroupHeadsCollector<BytesRef> {
 
   private static final int DEFAULT_INITIAL_SIZE = 128;
 
@@ -67,7 +67,7 @@ public abstract class TermAllGroupHeadsCollector<GH extends AbstractAllGroupHead
    * @param sortWithinGroup The sort within each group
    * @return an <code>AbstractAllGroupHeadsCollector</code> instance based on the supplied arguments
    */
-  public static AbstractAllGroupHeadsCollector<?> create(String groupField, Sort sortWithinGroup) {
+  public static AllGroupHeadsCollector<BytesRef> create(String groupField, Sort sortWithinGroup) {
     return create(groupField, sortWithinGroup, DEFAULT_INITIAL_SIZE);
   }
 
@@ -82,7 +82,7 @@ public abstract class TermAllGroupHeadsCollector<GH extends AbstractAllGroupHead
    *                    4 bytes * initialSize.
    * @return an <code>AbstractAllGroupHeadsCollector</code> instance based on the supplied arguments
    */
-  public static AbstractAllGroupHeadsCollector<?> create(String groupField, Sort sortWithinGroup, int initialSize) {
+  public static AllGroupHeadsCollector<BytesRef> create(String groupField, Sort sortWithinGroup, int initialSize) {
     boolean sortAllScore = true;
     boolean sortAllFieldValue = true;
 
@@ -113,7 +113,7 @@ public abstract class TermAllGroupHeadsCollector<GH extends AbstractAllGroupHead
   }
 
   // A general impl that works for any group sort.
-  static class GeneralAllGroupHeadsCollector extends TermAllGroupHeadsCollector<GeneralAllGroupHeadsCollector.GroupHead> {
+  static class GeneralAllGroupHeadsCollector extends TermAllGroupHeadsCollector {
 
     private final Sort sortWithinGroup;
     private final Map<BytesRef, GroupHead> groups;
@@ -199,7 +199,7 @@ public abstract class TermAllGroupHeadsCollector<GH extends AbstractAllGroupHead
       }
     }
 
-    class GroupHead extends AbstractAllGroupHeadsCollector.GroupHead<BytesRef> {
+    class GroupHead extends AllGroupHeadsCollector.GroupHead<BytesRef> {
 
       @SuppressWarnings({"unchecked", "rawtypes"})
       final FieldComparator[] comparators;
@@ -239,7 +239,7 @@ public abstract class TermAllGroupHeadsCollector<GH extends AbstractAllGroupHead
 
 
   // AbstractAllGroupHeadsCollector optimized for ord fields and scores.
-  static class OrdScoreAllGroupHeadsCollector extends TermAllGroupHeadsCollector<OrdScoreAllGroupHeadsCollector.GroupHead> {
+  static class OrdScoreAllGroupHeadsCollector extends TermAllGroupHeadsCollector {
 
     private final SentinelIntSet ordSet;
     private final List<GroupHead> collectedGroups;
@@ -365,7 +365,7 @@ public abstract class TermAllGroupHeadsCollector<GH extends AbstractAllGroupHead
       }
     }
 
-    class GroupHead extends AbstractAllGroupHeadsCollector.GroupHead<BytesRef> {
+    class GroupHead extends AllGroupHeadsCollector.GroupHead<BytesRef> {
 
       BytesRefBuilder[] sortValues;
       int[] sortOrds;
@@ -452,7 +452,7 @@ public abstract class TermAllGroupHeadsCollector<GH extends AbstractAllGroupHead
 
 
   // AbstractAllGroupHeadsCollector optimized for ord fields.
-  static class OrdAllGroupHeadsCollector extends TermAllGroupHeadsCollector<OrdAllGroupHeadsCollector.GroupHead> {
+  static class OrdAllGroupHeadsCollector extends TermAllGroupHeadsCollector {
 
     private final SentinelIntSet ordSet;
     private final List<GroupHead> collectedGroups;
@@ -566,7 +566,7 @@ public abstract class TermAllGroupHeadsCollector<GH extends AbstractAllGroupHead
       }
     }
 
-    class GroupHead extends AbstractAllGroupHeadsCollector.GroupHead<BytesRef> {
+    class GroupHead extends AllGroupHeadsCollector.GroupHead<BytesRef> {
 
       BytesRefBuilder[] sortValues;
       int[] sortOrds;
@@ -635,7 +635,7 @@ public abstract class TermAllGroupHeadsCollector<GH extends AbstractAllGroupHead
 
 
   // AbstractAllGroupHeadsCollector optimized for scores.
-  static class ScoreAllGroupHeadsCollector extends TermAllGroupHeadsCollector<ScoreAllGroupHeadsCollector.GroupHead> {
+  static class ScoreAllGroupHeadsCollector extends TermAllGroupHeadsCollector {
 
     final SentinelIntSet ordSet;
     final List<GroupHead> collectedGroups;
@@ -727,7 +727,7 @@ public abstract class TermAllGroupHeadsCollector<GH extends AbstractAllGroupHead
       }
     }
 
-    class GroupHead extends AbstractAllGroupHeadsCollector.GroupHead<BytesRef> {
+    class GroupHead extends AllGroupHeadsCollector.GroupHead<BytesRef> {
 
       float[] scores;
 

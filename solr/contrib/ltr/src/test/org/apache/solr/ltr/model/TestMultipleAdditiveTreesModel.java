@@ -16,7 +16,7 @@
  */
 package org.apache.solr.ltr.model;
 
-//import static org.junit.internal.matchers.StringContains.containsString;
+import static org.junit.internal.matchers.StringContains.containsString;
 
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.ltr.TestRerankBase;
@@ -30,7 +30,7 @@ public class TestMultipleAdditiveTreesModel extends TestRerankBase {
 
   @BeforeClass
   public static void before() throws Exception {
-    setuptest("solrconfig-ltr.xml", "schema.xml");
+    setuptest(false);
 
     assertU(adoc("id", "1", "title", "w1", "description", "w1", "popularity","1"));
     assertU(adoc("id", "2", "title", "w2", "description", "w2", "popularity","2"));
@@ -38,10 +38,6 @@ public class TestMultipleAdditiveTreesModel extends TestRerankBase {
     assertU(adoc("id", "4", "title", "w4", "description", "w4", "popularity","4"));
     assertU(adoc("id", "5", "title", "w5", "description", "w5", "popularity","5"));
     assertU(commit());
-
-    loadFeatures("multipleadditivetreesmodel_features.json"); // currently needed to force
-    // scoring on all docs
-    loadModels("multipleadditivetreesmodel.json");
   }
 
   @AfterClass
@@ -52,6 +48,9 @@ public class TestMultipleAdditiveTreesModel extends TestRerankBase {
 
   @Test
   public void testMultipleAdditiveTreesScoringWithAndWithoutEfiFeatureMatches() throws Exception {
+    loadFeatures("multipleadditivetreesmodel_features.json");
+    loadModels("multipleadditivetreesmodel.json");
+
     final SolrQuery query = new SolrQuery();
     query.setQuery("*:*");
     query.add("rows", "3");
@@ -75,7 +74,7 @@ public class TestMultipleAdditiveTreesModel extends TestRerankBase {
     query.add("rq", "{!ltr reRankDocs=3 model=multipleadditivetreesmodel efi.user_query=w3}");
 
     assertJQ("/query" + query.toQueryString(), "/response/docs/[0]/id=='3'");
-    assertJQ("/query" + query.toQueryString(), "/response/docs/[0]/score==-20.0");
+    assertJQ("/query" + query.toQueryString(), "/response/docs/[0]/score==30.0");
     assertJQ("/query" + query.toQueryString(), "/response/docs/[1]/score==-120.0");
     assertJQ("/query" + query.toQueryString(), "/response/docs/[2]/score==-120.0");
   }
@@ -93,30 +92,28 @@ public class TestMultipleAdditiveTreesModel extends TestRerankBase {
 
     // test out the explain feature, make sure it returns something
     query.setParam("debugQuery", "on");
-    String qryResult = JQ("/query" + query.toQueryString());
 
+    String qryResult = JQ("/query" + query.toQueryString());
     qryResult = qryResult.replaceAll("\n", " ");
-    // FIXME containsString doesn't exist.
-    // assertThat(qryResult, containsString("\"debug\":{"));
-    // qryResult = qryResult.substring(qryResult.indexOf("debug"));
-    //
-    // assertThat(qryResult, containsString("\"explain\":{"));
-    // qryResult = qryResult.substring(qryResult.indexOf("explain"));
-    //
-    // assertThat(qryResult, containsString("multipleadditivetreesmodel"));
-    // assertThat(qryResult,
-    // containsString(MultipleAdditiveTreesModel.class.getCanonicalName()));
-    //
-    // assertThat(qryResult, containsString("-100.0 = tree 0"));
-    // assertThat(qryResult, containsString("50.0 = tree 0"));
-    // assertThat(qryResult, containsString("-20.0 = tree 1"));
-    // assertThat(qryResult, containsString("'matchedTitle':1.0 > 0.5"));
-    // assertThat(qryResult, containsString("'matchedTitle':0.0 <= 0.5"));
-    //
-    // assertThat(qryResult, containsString(" Go Right "));
-    // assertThat(qryResult, containsString(" Go Left "));
-    // assertThat(qryResult,
-    // containsString("'this_feature_doesnt_exist' does not exist in FV"));
+
+    assertThat(qryResult, containsString("\"debug\":{"));
+    qryResult = qryResult.substring(qryResult.indexOf("debug"));
+
+    assertThat(qryResult, containsString("\"explain\":{"));
+    qryResult = qryResult.substring(qryResult.indexOf("explain"));
+
+    assertThat(qryResult, containsString("multipleadditivetreesmodel"));
+    assertThat(qryResult, containsString(MultipleAdditiveTreesModel.class.getCanonicalName()));
+
+    assertThat(qryResult, containsString("-100.0 = tree 0"));
+    assertThat(qryResult, containsString("50.0 = tree 0"));
+    assertThat(qryResult, containsString("-20.0 = tree 1"));
+    assertThat(qryResult, containsString("'matchedTitle':1.0 > 0.5"));
+    assertThat(qryResult, containsString("'matchedTitle':0.0 <= 0.5"));
+
+    assertThat(qryResult, containsString(" Go Right "));
+    assertThat(qryResult, containsString(" Go Left "));
+    assertThat(qryResult, containsString("'this_feature_doesnt_exist' does not exist in FV"));
   }
 
   @Test

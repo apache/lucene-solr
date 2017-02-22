@@ -17,6 +17,7 @@
 package org.apache.solr.ltr.feature;
 
 import org.apache.solr.client.solrj.SolrQuery;
+import org.apache.solr.ltr.FeatureLoggerTestUtils;
 import org.apache.solr.ltr.TestRerankBase;
 import org.apache.solr.ltr.model.LinearModel;
 import org.junit.AfterClass;
@@ -29,24 +30,24 @@ public class TestFieldValueFeature extends TestRerankBase {
 
   @BeforeClass
   public static void before() throws Exception {
-    setuptest("solrconfig-ltr.xml", "schema.xml");
+    setuptest(false);
 
     assertU(adoc("id", "1", "title", "w1", "description", "w1", "popularity",
-        "1"));
+        "1","isTrendy","true"));
     assertU(adoc("id", "2", "title", "w2 2asd asdd didid", "description",
         "w2 2asd asdd didid", "popularity", "2"));
     assertU(adoc("id", "3", "title", "w3", "description", "w3", "popularity",
-        "3"));
+        "3","isTrendy","true"));
     assertU(adoc("id", "4", "title", "w4", "description", "w4", "popularity",
-        "4"));
+        "4","isTrendy","false"));
     assertU(adoc("id", "5", "title", "w5", "description", "w5", "popularity",
-        "5"));
+        "5","isTrendy","true"));
     assertU(adoc("id", "6", "title", "w1 w2", "description", "w1 w2",
-        "popularity", "6"));
+        "popularity", "6","isTrendy","false"));
     assertU(adoc("id", "7", "title", "w1 w2 w3 w4 w5", "description",
-        "w1 w2 w3 w4 w5 w8", "popularity", "7"));
+        "w1 w2 w3 w4 w5 w8", "popularity", "7","isTrendy","true"));
     assertU(adoc("id", "8", "title", "w1 w1 w1 w2 w2 w8", "description",
-        "w1 w1 w1 w2 w2", "popularity", "8"));
+        "w1 w1 w1 w2 w2", "popularity", "8","isTrendy","false"));
 
     // a document without the popularity field
     assertU(adoc("id", "42", "title", "NO popularity", "description", "NO popularity"));
@@ -116,7 +117,7 @@ public class TestFieldValueFeature extends TestRerankBase {
     query.add("fl", "[fv]");
     assertJQ("/query" + query.toQueryString(), "/response/numFound/==1");
     assertJQ("/query" + query.toQueryString(),
-            "/response/docs/[0]/=={'[fv]':'popularity:"+FIELD_VALUE_FEATURE_DEFAULT_VAL+"'}");
+            "/response/docs/[0]/=={'[fv]':'"+FeatureLoggerTestUtils.toFeatureVector("popularity",Float.toString(FIELD_VALUE_FEATURE_DEFAULT_VAL))+"'}");
 
   }
 
@@ -145,7 +146,7 @@ public class TestFieldValueFeature extends TestRerankBase {
     query.add("fl", "[fv]");
     assertJQ("/query" + query.toQueryString(), "/response/numFound/==1");
     assertJQ("/query" + query.toQueryString(),
-            "/response/docs/[0]/=={'[fv]':'popularity42:42.0'}");
+            "/response/docs/[0]/=={'[fv]':'"+FeatureLoggerTestUtils.toFeatureVector("popularity42","42.0")+"'}");
 
   }
 
@@ -165,7 +166,41 @@ public class TestFieldValueFeature extends TestRerankBase {
     query.add("fl", "[fv]");
     assertJQ("/query" + query.toQueryString(), "/response/numFound/==1");
     assertJQ("/query" + query.toQueryString(),
-            "/response/docs/[0]/=={'[fv]':'not-existing-field:"+FIELD_VALUE_FEATURE_DEFAULT_VAL+"'}");
+            "/response/docs/[0]/=={'[fv]':'"+FeatureLoggerTestUtils.toFeatureVector("not-existing-field",Float.toString(FIELD_VALUE_FEATURE_DEFAULT_VAL))+"'}");
+
+  }
+
+  @Test
+  public void testBooleanValue() throws Exception {
+    final String fstore = "test_boolean_store";
+    loadFeature("trendy", FieldValueFeature.class.getCanonicalName(), fstore,
+            "{\"field\":\"isTrendy\"}");
+
+    loadModel("trendy-model", LinearModel.class.getCanonicalName(),
+            new String[] {"trendy"}, fstore, "{\"weights\":{\"trendy\":1.0}}");
+
+    SolrQuery query = new SolrQuery();
+    query.setQuery("id:4");
+    query.add("rq", "{!ltr model=trendy-model reRankDocs=4}");
+    query.add("fl", "[fv]");
+    assertJQ("/query" + query.toQueryString(),
+            "/response/docs/[0]/=={'[fv]':'"+FeatureLoggerTestUtils.toFeatureVector("trendy","0.0")+"'}");
+
+
+    query = new SolrQuery();
+    query.setQuery("id:5");
+    query.add("rq", "{!ltr model=trendy-model reRankDocs=4}");
+    query.add("fl", "[fv]");
+    assertJQ("/query" + query.toQueryString(),
+            "/response/docs/[0]/=={'[fv]':'"+FeatureLoggerTestUtils.toFeatureVector("trendy","1.0")+"'}");
+
+    // check default value is false
+    query = new SolrQuery();
+    query.setQuery("id:2");
+    query.add("rq", "{!ltr model=trendy-model reRankDocs=4}");
+    query.add("fl", "[fv]");
+    assertJQ("/query" + query.toQueryString(),
+            "/response/docs/[0]/=={'[fv]':'"+FeatureLoggerTestUtils.toFeatureVector("trendy","0.0")+"'}");
 
   }
 

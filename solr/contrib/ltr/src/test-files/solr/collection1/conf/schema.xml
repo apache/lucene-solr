@@ -24,6 +24,8 @@
     <field name="keywords" type="text_general" indexed="true" stored="true" multiValued="true"/>
     <field name="popularity" type="int" indexed="true" stored="true" />
     <field name="normHits" type="float" indexed="true" stored="true" />
+    <field name="isTrendy" type="boolean" indexed="true" stored="true" />
+
     <field name="text" type="text_general" indexed="true" stored="false" multiValued="true"/>
     <field name="_version_" type="long" indexed="true" stored="true"/>
 

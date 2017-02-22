@@ -29,7 +29,9 @@ public class RecordingJSONParser extends JSONParser {
 
   private StringBuilder sb = new StringBuilder();
   private boolean objectStarted = false;
-  public long lastMarkedPosition = 0;
+  private long lastMarkedPosition = 0;
+  private long lastGlobalPosition = 0;
+  private static final int BUFFER_SIZE = 8192;
 
 
   public RecordingJSONParser(Reader in) {
@@ -39,7 +41,7 @@ public class RecordingJSONParser extends JSONParser {
   }
 
   static char[] getChars() {
-    buf.set(new char[8192]);
+    buf.set(new char[BUFFER_SIZE]);
     return buf.get();
   }
 
@@ -68,11 +70,22 @@ public class RecordingJSONParser extends JSONParser {
     if(currPosition < 0){
       System.out.println("ERROR");
     }
+
     if (currPosition > lastMarkedPosition) {
       for (long i = lastMarkedPosition; i < currPosition; i++) {
         recordChar(bufCopy[(int) i]);
       }
+    } else if (currPosition < lastMarkedPosition) {
+      for (long i = 0; i < currPosition; i++) {
+        recordChar(bufCopy[(int) i]);
+      }
+    } else if (currPosition == BUFFER_SIZE && lastGlobalPosition != globalPosition) {
+      for (long i = 0; i < currPosition; i++) {
+        recordChar(bufCopy[(int) i]);
+      }
     }
+
+    lastGlobalPosition = globalPosition;
     lastMarkedPosition = currPosition;
   }
 

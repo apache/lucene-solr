@@ -412,7 +412,11 @@ public final class DocExpirationUpdateProcessorFactory
             proc.processCommit(commit);
             
           } finally {
-            proc.finish();
+            try {
+              proc.finish();
+            } finally {
+              proc.close();
+            }
           }
 
           log.info("Finished periodic deletion of expired docs");

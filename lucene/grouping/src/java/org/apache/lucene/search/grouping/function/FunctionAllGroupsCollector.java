@@ -19,7 +19,7 @@ package org.apache.lucene.search.grouping.function;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.queries.function.FunctionValues;
 import org.apache.lucene.queries.function.ValueSource;
-import org.apache.lucene.search.grouping.AbstractAllGroupsCollector;
+import org.apache.lucene.search.grouping.AllGroupsCollector;
 import org.apache.lucene.util.mutable.MutableValue;
 
 import java.io.IOException;
@@ -39,7 +39,7 @@ import java.util.TreeSet;
  *
  * @lucene.experimental
  */
-public class FunctionAllGroupsCollector extends AbstractAllGroupsCollector<MutableValue> {
+public class FunctionAllGroupsCollector extends AllGroupsCollector<MutableValue> {
 
   private final Map<?, ?> vsContext;
   private final ValueSource groupBy;

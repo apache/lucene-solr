@@ -73,6 +73,11 @@ public class TestFloatRangeFieldQueries extends BaseRangeFieldQueryTestCase {
     return FloatRangeField.newWithinQuery(FIELD_NAME, ((FloatRange)r).min, ((FloatRange)r).max);
   }
 
+  @Override
+  protected Query newCrossesQuery(Range r) {
+    return FloatRangeField.newCrossesQuery(FIELD_NAME, ((FloatRange)r).min, ((FloatRange)r).max);
+  }
+
   /** Basic test */
   public void testBasics() throws Exception {
     Directory dir = newDirectory();
@@ -88,7 +93,7 @@ public class TestFloatRangeFieldQueries extends BaseRangeFieldQueryTestCase {
     document.add(new FloatRangeField(FIELD_NAME, new float[] {10.0f, -10.0f}, new float[] {20.0f, 10.0f}));
     writer.addDocument(document);
 
-    // intersects (contains)
+    // intersects (contains, crosses)
     document = new Document();
     document.add(new FloatRangeField(FIELD_NAME, new float[] {-20.0f, -20.0f}, new float[] {30.0f, 30.1f}));
     writer.addDocument(document);
@@ -126,6 +131,8 @@ public class TestFloatRangeFieldQueries extends BaseRangeFieldQueryTestCase {
     assertEquals(2, searcher.count(FloatRangeField.newWithinQuery(FIELD_NAME,
         new float[] {-11.0f, -15.0f}, new float[] {15.0f, 20.0f})));
     assertEquals(2, searcher.count(FloatRangeField.newContainsQuery(FIELD_NAME,
+        new float[] {-11.0f, -15.0f}, new float[] {15.0f, 20.0f})));
+    assertEquals(5, searcher.count(FloatRangeField.newCrossesQuery(FIELD_NAME,
         new float[] {-11.0f, -15.0f}, new float[] {15.0f, 20.0f})));
 
     reader.close();

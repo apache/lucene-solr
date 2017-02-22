@@ -22,7 +22,9 @@ import java.util.Map;
 import java.util.regex.Pattern;
 
 import org.apache.lucene.analysis.CharFilter;
+import org.apache.lucene.analysis.util.AbstractAnalysisFactory;
 import org.apache.lucene.analysis.util.CharFilterFactory;
+import org.apache.lucene.analysis.util.MultiTermAwareComponent;
 
 /**
  * Factory for {@link PatternReplaceCharFilter}. 
@@ -37,7 +39,7 @@ import org.apache.lucene.analysis.util.CharFilterFactory;
  * 
  * @since Solr 3.1
  */
-public class PatternReplaceCharFilterFactory extends CharFilterFactory {
+public class PatternReplaceCharFilterFactory extends CharFilterFactory implements MultiTermAwareComponent {
   private final Pattern pattern;
   private final String replacement;
 
@@ -54,5 +56,10 @@ public class PatternReplaceCharFilterFactory extends CharFilterFactory {
   @Override
   public CharFilter create(Reader input) {
     return new PatternReplaceCharFilter(pattern, replacement, input);
+  }
+
+  @Override
+  public AbstractAnalysisFactory getMultiTermComponent() {
+    return this;
   }
 }

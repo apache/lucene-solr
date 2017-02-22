@@ -20,7 +20,6 @@ import org.apache.lucene.search.Sort;
 import org.apache.lucene.search.grouping.SearchGroup;
 import org.apache.lucene.util.BytesRef;
 import org.apache.solr.common.util.NamedList;
-import org.apache.solr.schema.FieldType;
 import org.apache.solr.schema.SchemaField;
 import org.apache.solr.search.SolrIndexSearcher;
 import org.apache.solr.search.grouping.Command;
@@ -90,12 +89,7 @@ public class SearchGroupsResultTransformer implements ShardResultTransformer<Lis
           searchGroup.sortValues = rawSearchGroup.getValue().toArray(new Comparable[rawSearchGroup.getValue().size()]);
           for (int i = 0; i < searchGroup.sortValues.length; i++) {
             SchemaField field = groupSort.getSort()[i].getField() != null ? searcher.getSchema().getFieldOrNull(groupSort.getSort()[i].getField()) : null;
-            if (field != null) {
-              FieldType fieldType = field.getType();
-              if (searchGroup.sortValues[i] != null) {
-                searchGroup.sortValues[i] = fieldType.unmarshalSortValue(searchGroup.sortValues[i]);
-              }
-            }
+            searchGroup.sortValues[i] = ShardResultTransformerUtils.unmarshalSortValue(searchGroup.sortValues[i], field);
           }
           searchGroups.add(searchGroup);
         }
@@ -115,13 +109,7 @@ public class SearchGroupsResultTransformer implements ShardResultTransformer<Lis
       for (int i = 0; i < searchGroup.sortValues.length; i++) {
         Object sortValue = searchGroup.sortValues[i];
         SchemaField field = groupSort.getSort()[i].getField() != null ? searcher.getSchema().getFieldOrNull(groupSort.getSort()[i].getField()) : null;
-        if (field != null) {
-          FieldType fieldType = field.getType();
-          if (sortValue != null) {
-            sortValue = fieldType.marshalSortValue(sortValue);
-          }
-        }
-        convertedSortValues[i] = sortValue;
+        convertedSortValues[i] = ShardResultTransformerUtils.marshalSortValue(sortValue, field);
       }
       String groupValue = searchGroup.groupValue != null ? searchGroup.groupValue.utf8ToString() : null;
       result.add(groupValue, convertedSortValues);

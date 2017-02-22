@@ -92,6 +92,15 @@ public class TestLTROnSolrCloud extends TestRerankBase {
     assertEquals("3", queryResponse.getResults().get(2).get("id").toString());
     assertEquals("4", queryResponse.getResults().get(3).get("id").toString());
 
+    final String result0_features= FeatureLoggerTestUtils.toFeatureVector(
+        "powpularityS","64.0", "c3","2.0");
+    final String result1_features= FeatureLoggerTestUtils.toFeatureVector(
+        "powpularityS","49.0", "c3","2.0");
+    final String result2_features= FeatureLoggerTestUtils.toFeatureVector(
+        "powpularityS","36.0", "c3","2.0");
+    final String result3_features= FeatureLoggerTestUtils.toFeatureVector(
+        "powpularityS","25.0", "c3","2.0");
+
     // Test re-rank and feature vectors returned
     query.setFields("*,score,features:[fv]");
     query.add("rq", "{!ltr model=powpularityS-model reRankDocs=8}");
@@ -99,16 +108,16 @@ public class TestLTROnSolrCloud extends TestRerankBase {
         solrCluster.getSolrClient().query(COLLECTION,query);
     assertEquals(8, queryResponse.getResults().getNumFound());
     assertEquals("8", queryResponse.getResults().get(0).get("id").toString());
-    assertEquals("powpularityS:64.0;c3:2.0",
+    assertEquals(result0_features,
         queryResponse.getResults().get(0).get("features").toString());
     assertEquals("7", queryResponse.getResults().get(1).get("id").toString());
-    assertEquals("powpularityS:49.0;c3:2.0",
+    assertEquals(result1_features,
         queryResponse.getResults().get(1).get("features").toString());
     assertEquals("6", queryResponse.getResults().get(2).get("id").toString());
-    assertEquals("powpularityS:36.0;c3:2.0",
+    assertEquals(result2_features,
         queryResponse.getResults().get(2).get("features").toString());
     assertEquals("5", queryResponse.getResults().get(3).get("id").toString());
-    assertEquals("powpularityS:25.0;c3:2.0",
+    assertEquals(result3_features,
         queryResponse.getResults().get(3).get("features").toString());
   }
 

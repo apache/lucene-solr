@@ -26,7 +26,7 @@ public class TestLTRQParserExplain extends TestRerankBase {
 
   @BeforeClass
   public static void setup() throws Exception {
-    setuptest();
+    setuptest(true);
     loadFeatures("features-store-test-model.json");
   }
 

@@ -22,10 +22,12 @@ public class UpdateShardHandlerConfig {
   public static final int DEFAULT_DISTRIBUPDATESOTIMEOUT = 600000;
   public static final int DEFAULT_MAXUPDATECONNECTIONS = 100000;
   public static final int DEFAULT_MAXUPDATECONNECTIONSPERHOST = 100000;
+  public static final String DEFAULT_METRICNAMESTRATEGY = "queryLessURLAndMethod";
 
   public static final UpdateShardHandlerConfig DEFAULT
       = new UpdateShardHandlerConfig(DEFAULT_MAXUPDATECONNECTIONS, DEFAULT_MAXUPDATECONNECTIONSPERHOST,
-                                     DEFAULT_DISTRIBUPDATESOTIMEOUT, DEFAULT_DISTRIBUPDATECONNTIMEOUT);
+                                     DEFAULT_DISTRIBUPDATESOTIMEOUT, DEFAULT_DISTRIBUPDATECONNTIMEOUT,
+                                      DEFAULT_METRICNAMESTRATEGY);
 
   private final int maxUpdateConnections;
 
@@ -35,11 +37,15 @@ public class UpdateShardHandlerConfig {
 
   private final int distributedConnectionTimeout;
 
-  public UpdateShardHandlerConfig(int maxUpdateConnections, int maxUpdateConnectionsPerHost, int distributedSocketTimeout, int distributedConnectionTimeout) {
+  private final String metricNameStrategy;
+
+  public UpdateShardHandlerConfig(int maxUpdateConnections, int maxUpdateConnectionsPerHost, int distributedSocketTimeout, int distributedConnectionTimeout,
+                                  String metricNameStrategy) {
     this.maxUpdateConnections = maxUpdateConnections;
     this.maxUpdateConnectionsPerHost = maxUpdateConnectionsPerHost;
     this.distributedSocketTimeout = distributedSocketTimeout;
     this.distributedConnectionTimeout = distributedConnectionTimeout;
+    this.metricNameStrategy = metricNameStrategy;
   }
 
   public int getMaxUpdateConnectionsPerHost() {
@@ -56,5 +62,9 @@ public class UpdateShardHandlerConfig {
 
   public int getDistributedConnectionTimeout() {
     return distributedConnectionTimeout;
+  }
+
+  public String getMetricNameStrategy() {
+    return metricNameStrategy;
   }
 }

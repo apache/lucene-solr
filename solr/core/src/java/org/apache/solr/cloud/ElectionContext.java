@@ -125,17 +125,6 @@ class ShardLeaderElectionContextBase extends ElectionContext {
     this.zkClient = zkStateReader.getZkClient();
     this.shardId = shardId;
     this.collection = collection;
-
-    try {
-      new ZkCmdExecutor(zkStateReader.getZkClient().getZkClientTimeout())
-          .ensureExists(ZkStateReader.COLLECTIONS_ZKNODE + "/" + collection,
-              zkClient);
-    } catch (KeeperException e) {
-      throw new SolrException(ErrorCode.SERVER_ERROR, e);
-    } catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
-      throw new SolrException(ErrorCode.SERVER_ERROR, e);
-    }
   }
   
   @Override
@@ -175,9 +164,16 @@ class ShardLeaderElectionContextBase extends ElectionContext {
   void runLeaderProcess(boolean weAreReplacement, int pauseBeforeStartMs)
       throws KeeperException, InterruptedException, IOException {
     // register as leader - if an ephemeral is already there, wait to see if it goes away
+    
+    if (!zkClient.exists(ZkStateReader.COLLECTIONS_ZKNODE + "/" + collection, true)) {
+      log.info("Will not register as leader because collection appears to be gone.");
+      return;
+    }
+    
     String parent = new Path(leaderPath).getParent().toString();
     ZkCmdExecutor zcmd = new ZkCmdExecutor(30000);
-    zcmd.ensureExists(parent, zkClient);
+    // only if /collections/{collection} exists already do we succeed in creating this path
+    zcmd.ensureExists(parent, (byte[])null, CreateMode.PERSISTENT, zkClient, 2);
 
     try {
       RetryUtil.retryOnThrowable(NodeExistsException.class, 60000, 5000, () -> {
@@ -488,6 +484,7 @@ final class ShardLeaderElectionContext extends ShardLeaderElectionContextBase {
   public void checkLIR(String coreName, boolean allReplicasInLine)
       throws InterruptedException, KeeperException, IOException {
     if (allReplicasInLine) {
+      log.info("Found all replicas participating in election, clear LIR");
       // SOLR-8075: A bug may allow the proper leader to get marked as LIR DOWN and
       // if we are marked as DOWN but were able to become the leader, we remove
       // the DOWN entry here so that we don't fail publishing ACTIVE due to being in LIR.
@@ -747,13 +744,19 @@ final class OverseerElectionContext extends ElectionContext {
         log.warn("Wait interrupted ", e);
       }
     }
-    
-    overseer.start(id);
+    if (overseer.getZkController() == null || overseer.getZkController().getCoreContainer() == null || !overseer.getZkController().getCoreContainer().isShutDown()) {
+      overseer.start(id);
+    }
   }
   
   @Override
   public void cancelElection() throws InterruptedException, KeeperException {
     super.cancelElection();
+    overseer.close();
+  }
+  
+  @Override
+  public void close() {
     overseer.close();
   }
 

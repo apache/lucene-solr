@@ -27,9 +27,9 @@ public class ByteRunAutomaton extends RunAutomaton {
     this(a, false, Operations.DEFAULT_MAX_DETERMINIZED_STATES);
   }
   
-  /** expert: if utf8 is true, the input is already byte-based */
+  /** expert: if isBinary is true, the input is already byte-based */
   public ByteRunAutomaton(Automaton a, boolean isBinary, int maxDeterminizedStates) {
-    super(isBinary ? a : new UTF32ToUTF8().convert(a), 256, true, maxDeterminizedStates);
+    super(isBinary ? a : new UTF32ToUTF8().convert(a), 256, maxDeterminizedStates);
   }
 
   /**

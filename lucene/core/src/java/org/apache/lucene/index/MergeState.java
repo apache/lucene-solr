@@ -42,7 +42,7 @@ public class MergeState {
   /** Maps document IDs from old segments to document IDs in the new segment */
   public final DocMap[] docMaps;
 
-  // Only used by IW when it must remap deletes that arrived against the merging segmetns while a merge was running:
+  // Only used by IW when it must remap deletes that arrived against the merging segments while a merge was running:
   final DocMap[] leafDocMaps;
 
   /** {@link SegmentInfo} of the newly merged segment. */
@@ -80,6 +80,9 @@ public class MergeState {
 
   /** InfoStream for debugging messages. */
   public final InfoStream infoStream;
+
+  /** Indicates if the index needs to be sorted **/
+  public boolean needsIndexSort;
 
   /** Sole constructor. */
   MergeState(List<CodecReader> originalReaders, SegmentInfo segmentInfo, InfoStream infoStream) throws IOException {
@@ -143,50 +146,58 @@ public class MergeState {
     this.docMaps = buildDocMaps(readers, indexSort);
   }
 
-  private DocMap[] buildDocMaps(List<CodecReader> readers, Sort indexSort) throws IOException {
+  // Remap docIDs around deletions
+  private DocMap[] buildDeletionDocMaps(List<CodecReader> readers) {
 
+    int totalDocs = 0;
     int numReaders = readers.size();
+    DocMap[] docMaps = new DocMap[numReaders];
+
+    for (int i = 0; i < numReaders; i++) {
+      LeafReader reader = readers.get(i);
+      Bits liveDocs = reader.getLiveDocs();
+
+      final PackedLongValues delDocMap;
+      if (liveDocs != null) {
+        delDocMap = removeDeletes(reader.maxDoc(), liveDocs);
+      } else {
+        delDocMap = null;
+      }
+
+      final int docBase = totalDocs;
+      docMaps[i] = new DocMap() {
+        @Override
+        public int get(int docID) {
+          if (liveDocs == null) {
+            return docBase + docID;
+          } else if (liveDocs.get(docID)) {
+            return docBase + (int) delDocMap.get(docID);
+          } else {
+            return -1;
+          }
+        }
+      };
+      totalDocs += reader.numDocs();
+    }
+
+    return docMaps;
+  }
+
+  private DocMap[] buildDocMaps(List<CodecReader> readers, Sort indexSort) throws IOException {
 
     if (indexSort == null) {
       // no index sort ... we only must map around deletions, and rebase to the merged segment's docID space
-
-      int totalDocs = 0;
-      DocMap[] docMaps = new DocMap[numReaders];
-
-      // Remap docIDs around deletions:
-      for (int i = 0; i < numReaders; i++) {
-        LeafReader reader = readers.get(i);
-        Bits liveDocs = reader.getLiveDocs();
-
-        final PackedLongValues delDocMap;
-        if (liveDocs != null) {
-          delDocMap = removeDeletes(reader.maxDoc(), liveDocs);
-        } else {
-          delDocMap = null;
-        }
-
-        final int docBase = totalDocs;
-        docMaps[i] = new DocMap() {
-          @Override
-          public int get(int docID) {
-            if (liveDocs == null) {
-              return docBase + docID;
-            } else if (liveDocs.get(docID)) {
-              return docBase + (int) delDocMap.get(docID);
-            } else {
-              return -1;
-            }
-          }
-        };
-        totalDocs += reader.numDocs();
-      }
-
-      return docMaps;
-
+      return buildDeletionDocMaps(readers);
     } else {
       // do a merge sort of the incoming leaves:
       long t0 = System.nanoTime();
       DocMap[] result = MultiSorter.sort(indexSort, readers);
+      if (result == null) {
+        // already sorted so we can switch back to map around deletions
+        return buildDeletionDocMaps(readers);
+      } else {
+        needsIndexSort = true;
+      }
       long t1 = System.nanoTime();
       if (infoStream.isEnabled("SM")) {
         infoStream.message("SM", String.format(Locale.ROOT, "%.2f msec to build merge sorted DocMaps", (t1-t0)/1000000.0));
@@ -212,7 +223,10 @@ public class MergeState {
       return originalReaders;
     }
 
-    // If an incoming reader is not sorted, because it was flushed by IW, we sort it here:
+    /** If an incoming reader is not sorted, because it was flushed by IW older than {@link Version.LUCENE_7_0_0}
+     * or because we add unsorted segments from another index {@link IndexWriter#addIndexes(CodecReader...)} ,
+     * we sort it here:
+     */
     final Sorter sorter = new Sorter(indexSort);
     List<CodecReader> readers = new ArrayList<>(originalReaders.size());
 
@@ -220,9 +234,6 @@ public class MergeState {
       Sort segmentSort = leaf.getIndexSort();
 
       if (segmentSort == null) {
-        // TODO: fix IW to also sort when flushing?  It's somewhat tricky because of stored fields and term vectors, which write "live"
-        // to their index files on each indexed document:
-
         // This segment was written by flush, so documents are not yet sorted, so we sort them now:
         long t0 = System.nanoTime();
         Sorter.DocMap sortDocMap = sorter.sort(leaf);
@@ -233,6 +244,7 @@ public class MergeState {
           if (infoStream.isEnabled("SM")) {
             infoStream.message("SM", String.format(Locale.ROOT, "segment %s is not sorted; wrapping for sort %s now (%.2f msec to sort)", leaf, indexSort, msec));
           }
+          needsIndexSort = true;
           leaf = SlowCodecReaderWrapper.wrap(SortingLeafReader.wrap(new MergeReaderWrapper(leaf), sortDocMap));
           leafDocMaps[readers.size()] = new DocMap() {
               @Override

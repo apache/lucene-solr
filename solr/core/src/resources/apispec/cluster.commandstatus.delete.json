@@ -1,0 +1,10 @@
+{
+  "methods": [
+    "DELETE"
+  ],
+  "url": {
+    "paths": [
+      "/cluster/command-status/{id}"
+    ]
+  }
+}

@@ -17,6 +17,8 @@
 package org.apache.lucene.search.uhighlight;
 
 import java.io.IOException;
+import java.util.Collection;
+import java.util.Collections;
 
 import com.carrotsearch.randomizedtesting.annotations.ParametersFactory;
 import org.apache.lucene.analysis.MockAnalyzer;
@@ -29,14 +31,17 @@ import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.BooleanClause;
 import org.apache.lucene.search.BooleanQuery;
+import org.apache.lucene.search.BoostQuery;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.MatchNoDocsQuery;
 import org.apache.lucene.search.MultiPhraseQuery;
 import org.apache.lucene.search.PhraseQuery;
 import org.apache.lucene.search.PrefixQuery;
+import org.apache.lucene.search.Query;
 import org.apache.lucene.search.Sort;
 import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.search.TopDocs;
+import org.apache.lucene.search.Weight;
 import org.apache.lucene.search.WildcardQuery;
 import org.apache.lucene.search.spans.SpanMultiTermQueryWrapper;
 import org.apache.lucene.search.spans.SpanNearQuery;
@@ -400,5 +405,77 @@ public class TestUnifiedHighlighterStrictPhrases extends LuceneTestCase {
     String content = "whatever";
     Object o = highlighter.highlightWithoutSearcher("body", new MatchNoDocsQuery(), content, 1);
     assertEquals(content, o);
+  }
+
+  public void testPreSpanQueryRewrite() throws IOException {
+    indexWriter.addDocument(newDoc("There is no accord and satisfaction with this - Consideration of the accord is arbitrary."));
+    initReaderSearcherHighlighter();
+
+    highlighter = new UnifiedHighlighter(searcher, indexAnalyzer) {
+      @Override
+      protected Collection<Query> preSpanQueryRewrite(Query query) {
+        if (query instanceof MyQuery) {
+          return Collections.singletonList(((MyQuery)query).wrapped);
+        }
+        return null;
+      }
+    };
+    highlighter.setHighlightPhrasesStrictly(true);
+
+    BooleanQuery.Builder bqBuilder = new BooleanQuery.Builder();
+    Query phraseQuery = new BoostQuery(new PhraseQuery("body", "accord", "and", "satisfaction"), 2.0f);
+    Query oredTerms = new BooleanQuery.Builder()
+        .setMinimumNumberShouldMatch(2)
+        .add(new TermQuery(new Term("body", "accord")), BooleanClause.Occur.SHOULD)
+        .add(new TermQuery(new Term("body", "satisfaction")), BooleanClause.Occur.SHOULD)
+        .add(new TermQuery(new Term("body", "consideration")), BooleanClause.Occur.SHOULD)
+        .build();
+    Query proximityBoostingQuery = new MyQuery(oredTerms);
+    Query totalQuery = bqBuilder
+        .add(phraseQuery, BooleanClause.Occur.SHOULD)
+        .add(proximityBoostingQuery, BooleanClause.Occur.SHOULD)
+        .build();
+    TopDocs topDocs = searcher.search(totalQuery, 10, Sort.INDEXORDER);
+    assertEquals(1, topDocs.totalHits);
+    String[] snippets = highlighter.highlight("body", totalQuery, topDocs);
+    assertArrayEquals(new String[]{"There is no <b>accord</b> <b>and</b> <b>satisfaction</b> with this - <b>Consideration</b> of the <b>accord</b> is arbitrary."}, snippets);
+  }
+
+  private static class MyQuery extends Query {
+
+    private final Query wrapped;
+
+    MyQuery(Query wrapped) {
+      this.wrapped = wrapped;
+    }
+
+    @Override
+    public Weight createWeight(IndexSearcher searcher, boolean needsScores, float boost) throws IOException {
+      return wrapped.createWeight(searcher, needsScores, boost);
+    }
+
+    @Override
+    public Query rewrite(IndexReader reader) throws IOException {
+      Query newWrapped = wrapped.rewrite(reader);
+      if (newWrapped != wrapped) {
+        return new MyQuery(newWrapped);
+      }
+      return this;
+    }
+
+    @Override
+    public String toString(String field) {
+      return "[[["+wrapped.toString(field)+"]]]";
+    }
+
+    @Override
+    public boolean equals(Object obj) {
+      return obj != null && obj.getClass() == getClass() && wrapped.equals(((MyQuery)wrapped).wrapped);
+    }
+
+    @Override
+    public int hashCode() {
+      return wrapped.hashCode();
+    }
   }
 }

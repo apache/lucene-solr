@@ -37,6 +37,7 @@ import org.apache.solr.request.LocalSolrQueryRequest;
 import org.apache.solr.search.SolrIndexSearcher;
 import org.apache.solr.update.CommitUpdateCommand;
 import org.apache.solr.util.RefCounted;
+import org.apache.solr.util.TestInjection;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -46,6 +47,8 @@ class PrepRecoveryOp implements CoreAdminHandler.CoreAdminOp {
 
   @Override
   public void execute(CallInfo it) throws Exception {
+    assert TestInjection.injectPrepRecoveryOpPauseForever();
+
     final SolrParams params = it.req.getParams();
 
     String cname = params.get(CoreAdminParams.CORE);

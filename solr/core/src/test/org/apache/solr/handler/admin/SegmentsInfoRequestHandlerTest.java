@@ -16,8 +16,11 @@
  */
 package org.apache.solr.handler.admin;
 
+import org.apache.lucene.index.LogDocMergePolicy;
+import org.apache.lucene.util.Version;
+import org.apache.solr.index.LogDocMergePolicyFactory;
 import org.apache.solr.util.AbstractSolrTestCase;
-import org.junit.Before;
+
 import org.junit.BeforeClass;
 import org.junit.Test;
 
@@ -31,17 +34,26 @@ public class SegmentsInfoRequestHandlerTest extends AbstractSolrTestCase {
   
   @BeforeClass
   public static void beforeClass() throws Exception {
-    System.setProperty("enable.update.log", "false");
-    initCore("solrconfig.xml", "schema12.xml");
-  }
 
-  @Before
-  public void before() throws Exception {
+    // we need a consistent segmentation to ensure we don't get a random
+    // merge that reduces the total num docs in all segments, or the number of deletes
+    //
+    systemSetPropertySolrTestsMergePolicy(LogDocMergePolicy.class.getName());
+    systemSetPropertySolrTestsMergePolicyFactory(LogDocMergePolicyFactory.class.getName());
+    
+    System.setProperty("enable.update.log", "false"); // no _version_ in our schema
+    initCore("solrconfig.xml", "schema12.xml"); // segments API shouldn't depend on _version_ or ulog
+    
+    // build up an index with at least 2 segments and some deletes
     for (int i = 0; i < DOC_COUNT; i++) {
       assertU(adoc("id","SOLR100" + i, "name","Apache Solr:" + i));
     }
     for (int i = 0; i < DEL_COUNT; i++) {
       assertU(delI("SOLR100" + i));
+    }
+    assertU(commit());
+    for (int i = 0; i < DOC_COUNT; i++) {
+      assertU(adoc("id","SOLR200" + i, "name","Apache Solr:" + i));
     }
     assertU(commit());
   }
@@ -52,14 +64,21 @@ public class SegmentsInfoRequestHandlerTest extends AbstractSolrTestCase {
         req("qt","/admin/segments"),
           "0<count(//lst[@name='segments']/lst)");
   }
+
+  @Test
+  public void testSegmentInfosVersion() {
+    assertQ("No segments mentioned in result",
+        req("qt","/admin/segments"),
+        "2=count(//lst[@name='segments']/lst/str[@name='version'][.='"+Version.LATEST+"'])");
+  }
   
   @Test
   public void testSegmentInfosData() {   
     assertQ("No segments mentioned in result",
         req("qt","/admin/segments"),
           //#Document
-          DOC_COUNT+"=sum(//lst[@name='segments']/lst[*]/int[@name='size'])",
+          (DOC_COUNT*2)+"=sum(//lst[@name='segments']/lst/int[@name='size'])",
           //#Deletes
-          DEL_COUNT+"=sum(//lst[@name='segments']/lst[*]/int[@name='delCount'])");
+          DEL_COUNT+"=sum(//lst[@name='segments']/lst/int[@name='delCount'])");
   }
 }

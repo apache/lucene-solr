@@ -19,6 +19,7 @@ package org.apache.solr.handler.clustering;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.Map;
@@ -44,9 +45,6 @@ import org.apache.solr.util.plugin.SolrCoreAware;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.google.common.collect.Maps;
-
-
 /**
  * Provides a plugin for performing cluster analysis. This can either be applied to 
  * search results (e.g., via <a href="http://project.carrot2.org">Carrot<sup>2</sup></a>) or for
@@ -68,12 +66,12 @@ public class ClusteringComponent extends SearchComponent implements SolrCoreAwar
   /**
    * Declaration-order list of search clustering engines.
    */
-  private final LinkedHashMap<String, SearchClusteringEngine> searchClusteringEngines = Maps.newLinkedHashMap();
-  
+  private final LinkedHashMap<String, SearchClusteringEngine> searchClusteringEngines = new LinkedHashMap<>();
+
   /**
    * Declaration order list of document clustering engines.
    */
-  private final LinkedHashMap<String, DocumentClusteringEngine> documentClusteringEngines = Maps.newLinkedHashMap();
+  private final LinkedHashMap<String, DocumentClusteringEngine> documentClusteringEngines = new LinkedHashMap<>();
 
   /**
    * An unmodifiable view of {@link #searchClusteringEngines}.
@@ -173,7 +171,7 @@ public class ClusteringComponent extends SearchComponent implements SolrCoreAwar
       if (engine != null) {
         checkAvailable(name, engine);
         DocListAndSet results = rb.getResults();
-        Map<SolrDocument,Integer> docIds = Maps.newHashMapWithExpectedSize(results.docList.size());
+        Map<SolrDocument,Integer> docIds = new HashMap<>(results.docList.size());
         SolrDocumentList solrDocList = SolrPluginUtils.docListToSolrDocumentList(
             results.docList, rb.req.getSearcher(), engine.getFieldsToLoad(rb.req), docIds);
         Object clusters = engine.cluster(rb.getQuery(), solrDocList, docIds, rb.req);

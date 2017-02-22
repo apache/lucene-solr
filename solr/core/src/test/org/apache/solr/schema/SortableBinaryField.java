@@ -16,7 +16,6 @@
  */
 package org.apache.solr.schema;
 
-import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -71,7 +70,7 @@ public class SortableBinaryField extends BinaryField {
       super(field, new FieldComparatorSource() {
         @Override
         public FieldComparator.TermOrdValComparator newComparator
-            (final String fieldname, final int numHits, final int sortPos, final boolean reversed) throws IOException {
+            (final String fieldname, final int numHits, final int sortPos, final boolean reversed) {
           return new FieldComparator.TermOrdValComparator(numHits, fieldname);
         }}, reverse);
     }

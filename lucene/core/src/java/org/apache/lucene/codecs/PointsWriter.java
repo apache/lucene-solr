@@ -128,6 +128,11 @@ public abstract class PointsWriter implements Closeable {
               }
 
               @Override
+              public long estimatePointCount(IntersectVisitor visitor) {
+                throw new UnsupportedOperationException();
+              }
+
+              @Override
               public byte[] getMinPackedValue() {
                 throw new UnsupportedOperationException();
               }

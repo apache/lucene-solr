@@ -18,24 +18,25 @@ package org.apache.lucene.search.uhighlight;
 
 import java.io.Closeable;
 import java.io.IOException;
+import java.util.List;
 import java.util.Objects;
 
 import org.apache.lucene.index.PostingsEnum;
 import org.apache.lucene.util.BytesRef;
 
 /**
- * Holds the term &amp; PostingsEnum, and info for tracking the occurrences of a term within the text.
- * It is advanced with the underlying postings and is placed in a priority queue by highlightOffsetsEnums
- * based on the start offset.
+ * Holds the term ({@link BytesRef}), {@link PostingsEnum}, offset iteration tracking.
+ * It is advanced with the underlying postings and is placed in a priority queue by
+ * {@link FieldHighlighter#highlightOffsetsEnums(List)} based on the start offset.
  *
  * @lucene.internal
  */
 public class OffsetsEnum implements Comparable<OffsetsEnum>, Closeable {
   private final BytesRef term;
-  final PostingsEnum postingsEnum; // with offsets
+  private final PostingsEnum postingsEnum; // with offsets
 
-  float weight; // set once in highlightOffsetsEnums
-  private int pos = 0; // the occurrence counter of this term within the text being highlighted.
+  private float weight; // set once in highlightOffsetsEnums
+  private int posCounter = 0; // the occurrence counter of this term within the text being highlighted.
 
   public OffsetsEnum(BytesRef term, PostingsEnum postingsEnum) throws IOException {
     this.term = term; // can be null
@@ -65,32 +66,51 @@ public class OffsetsEnum implements Comparable<OffsetsEnum>, Closeable {
     }
   }
 
-  BytesRef getTerm() throws IOException {
-    // the dp.getPayload thing is a hack -- see MultiTermHighlighting
-    return term != null ? term : postingsEnum.getPayload();
-    // We don't deepcopy() because in this hack we know we don't have to.
+  /** The term at this position; usually always the same. This term is a reference that is safe to continue to refer to,
+   * even after we move to next position. */
+  public BytesRef getTerm() throws IOException {
+    // TODO TokenStreamOffsetStrategy could override OffsetsEnum; then remove this hack here
+    return term != null ? term : postingsEnum.getPayload(); // abusing payload like this is a total hack!
   }
 
-  boolean hasMorePositions() throws IOException {
-    return pos < postingsEnum.freq();
+  public PostingsEnum getPostingsEnum() {
+    return postingsEnum;
   }
 
-  void nextPosition() throws IOException {
-    pos++;
+  public int freq() throws IOException {
+    return postingsEnum.freq();
+  }
+
+  public boolean hasMorePositions() throws IOException {
+    return posCounter < postingsEnum.freq();
+  }
+
+  public void nextPosition() throws IOException {
+    assert hasMorePositions();
+    posCounter++;
     postingsEnum.nextPosition();
   }
 
-  int startOffset() throws IOException {
+  public int startOffset() throws IOException {
     return postingsEnum.startOffset();
   }
 
-  int endOffset() throws IOException {
+  public int endOffset() throws IOException {
     return postingsEnum.endOffset();
+  }
+
+  public float getWeight() {
+    return weight;
+  }
+
+  public void setWeight(float weight) {
+    this.weight = weight;
   }
 
   @Override
   public void close() throws IOException {
-    if (postingsEnum instanceof Closeable) { // the one in MultiTermHighlighting is.
+    // TODO TokenStreamOffsetStrategy could override OffsetsEnum; then this base impl would be no-op.
+    if (postingsEnum instanceof Closeable) {
       ((Closeable) postingsEnum).close();
     }
   }

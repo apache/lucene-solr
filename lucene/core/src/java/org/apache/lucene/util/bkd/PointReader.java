@@ -24,20 +24,22 @@ import org.apache.lucene.util.LongBitSet;
 
 /** One pass iterator through all points previously written with a
  *  {@link PointWriter}, abstracting away whether points a read
- *  from (offline) disk or simple arrays in heap. */
-abstract class PointReader implements Closeable {
+ *  from (offline) disk or simple arrays in heap.
+ *
+ * @lucene.internal */
+public abstract class PointReader implements Closeable {
 
   /** Returns false once iteration is done, else true. */
-  abstract boolean next() throws IOException;
+  public abstract boolean next() throws IOException;
 
   /** Returns the packed byte[] value */
-  abstract byte[] packedValue();
+  public abstract byte[] packedValue();
 
   /** Point ordinal */
-  abstract long ord();
+  public abstract long ord();
 
   /** DocID for this point */
-  abstract int docID();
+  public abstract int docID();
 
   /** Iterates through the next {@code count} ords, marking them in the provided {@code ordBitSet}. */
   public void markOrds(long count, LongBitSet ordBitSet) throws IOException {

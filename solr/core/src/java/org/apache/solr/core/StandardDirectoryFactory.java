@@ -18,6 +18,11 @@ package org.apache.solr.core;
 import java.io.File;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
+import java.nio.file.AtomicMoveNotSupportedException;
+import java.nio.file.FileSystems;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.StandardCopyOption;
 import java.util.Locale;
 
 import org.apache.commons.io.FileUtils;
@@ -25,7 +30,6 @@ import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.FSDirectory;
 import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.LockFactory;
-import org.apache.lucene.store.NRTCachingDirectory;
 import org.apache.lucene.store.NativeFSLockFactory;
 import org.apache.lucene.store.NoLockFactory;
 import org.apache.lucene.store.SimpleFSLockFactory;
@@ -111,8 +115,6 @@ public class StandardDirectoryFactory extends CachingDirectoryFactory {
    * carefully - some Directory wrappers will
    * cache files for example.
    * 
-   * This implementation works with NRTCachingDirectory.
-   * 
    * You should first {@link Directory#sync(java.util.Collection)} any file that will be 
    * moved or avoid cached files through settings.
    * 
@@ -127,29 +129,37 @@ public class StandardDirectoryFactory extends CachingDirectoryFactory {
     Directory baseToDir = getBaseDir(toDir);
     
     if (baseFromDir instanceof FSDirectory && baseToDir instanceof FSDirectory) {
-      File dir1 = ((FSDirectory) baseFromDir).getDirectory().toFile();
-      File dir2 = ((FSDirectory) baseToDir).getDirectory().toFile();
-      File indexFileInTmpDir = new File(dir1, fileName);
-      File indexFileInIndex = new File(dir2, fileName);
-      boolean success = indexFileInTmpDir.renameTo(indexFileInIndex);
-      if (success) {
-        return;
+  
+      Path path1 = ((FSDirectory) baseFromDir).getDirectory().toAbsolutePath();
+      Path path2 = ((FSDirectory) baseToDir).getDirectory().toAbsolutePath();
+      
+      try {
+        Files.move(path1.resolve(fileName), path2.resolve(fileName), StandardCopyOption.ATOMIC_MOVE);
+      } catch (AtomicMoveNotSupportedException e) {
+        Files.move(path1.resolve(fileName), path2.resolve(fileName));
       }
+      return;
     }
 
     super.move(fromDir, toDir, fileName, ioContext);
   }
 
-  // special hack to work with NRTCachingDirectory
-  private Directory getBaseDir(Directory dir) {
-    Directory baseDir;
-    if (dir instanceof NRTCachingDirectory) {
-      baseDir = ((NRTCachingDirectory)dir).getDelegate();
+  // perform an atomic rename if possible
+  public void renameWithOverwrite(Directory dir, String fileName, String toName) throws IOException {
+    Directory baseDir = getBaseDir(dir);
+    if (baseDir instanceof FSDirectory) {
+      Path path = ((FSDirectory) baseDir).getDirectory().toAbsolutePath();
+      try {
+        Files.move(path.resolve(fileName),
+            path.resolve(toName), StandardCopyOption.ATOMIC_MOVE,
+            StandardCopyOption.REPLACE_EXISTING);
+      } catch (AtomicMoveNotSupportedException e) {
+        Files.move(FileSystems.getDefault().getPath(path.toString(), fileName),
+            FileSystems.getDefault().getPath(path.toString(), toName), StandardCopyOption.REPLACE_EXISTING);
+      }
     } else {
-      baseDir = dir;
+      super.renameWithOverwrite(dir, fileName, toName);
     }
-    
-    return baseDir;
   }
 
 }

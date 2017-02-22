@@ -88,6 +88,16 @@ public abstract class FacetRequest {
     public boolean toChildren;
     public String parents; // identifies the parent filter... the full set of parent documents for any block join operation
     public List<Object> filters; // list of symbolic filters (JSON query format)
+
+    // True if a starting set of documents can be mapped onto a different set of documents not originally in the starting set.
+    public boolean canTransformDomain() {
+      return toParent || toChildren || excludeTags != null;
+    }
+
+    // Can this domain become non-empty if the input domain is empty?  This does not check any sub-facets (see canProduceFromEmpty for that)
+    public boolean canBecomeNonEmpty() {
+      return excludeTags != null;
+    }
   }
 
   public FacetRequest() {
@@ -116,6 +126,15 @@ public abstract class FacetRequest {
    * This is normally true only for facets with a limit.
    */
   public boolean returnsPartial() {
+    return false;
+  }
+
+  /** Returns true if this facet, or any sub-facets can produce results from an empty domain. */
+  public boolean canProduceFromEmpty() {
+    if (domain != null && domain.canBecomeNonEmpty()) return true;
+    for (FacetRequest freq : subFacets.values()) {
+      if (freq.canProduceFromEmpty()) return true;
+    }
     return false;
   }
 
@@ -549,6 +568,7 @@ class FacetQueryParser extends FacetParser<FacetQuery> {
 
     if (qstring != null) {
       QParser parser = QParser.getParser(qstring, getSolrRequest());
+      parser.setIsFilter(true);
       facet.q = parser.getQuery();
     }
 

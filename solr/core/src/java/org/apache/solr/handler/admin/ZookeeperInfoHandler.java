@@ -97,6 +97,11 @@ public final class ZookeeperInfoHandler extends RequestHandlerBase {
     return "Fetch Zookeeper contents";
   }
 
+  @Override
+  public Category getCategory() {
+    return Category.ADMIN;
+  }
+
   /**
    * Enumeration of ways to filter collections on the graph panel.
    */

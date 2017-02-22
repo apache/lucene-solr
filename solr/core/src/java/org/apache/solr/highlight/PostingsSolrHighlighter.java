@@ -50,8 +50,9 @@ import org.apache.solr.util.plugin.PluginInfoInitialized;
  * <p>
  * Example configuration:
  * <pre class="prettyprint">
- *   &lt;requestHandler name="standard" class="solr.StandardRequestHandler"&gt;
+ *   &lt;requestHandler name="/select" class="solr.SearchHandler"&gt;
  *     &lt;lst name="defaults"&gt;
+ *       &lt;str name="hl.method"&gt;postings&lt;/str&gt;
  *       &lt;int name="hl.snippets"&gt;1&lt;/int&gt;
  *       &lt;str name="hl.tag.pre"&gt;&amp;lt;em&amp;gt;&lt;/str&gt;
  *       &lt;str name="hl.tag.post"&gt;&amp;lt;/em&amp;gt;&lt;/str&gt;
@@ -65,17 +66,11 @@ import org.apache.solr.util.plugin.PluginInfoInitialized;
  *       &lt;str name="hl.bs.country"&gt;&lt;/str&gt;
  *       &lt;str name="hl.bs.variant"&gt;&lt;/str&gt;
  *       &lt;str name="hl.bs.type"&gt;SENTENCE&lt;/str&gt;
- *       &lt;int name="hl.maxAnalyzedChars"&gt;10000&lt;/int&gt;
+ *       &lt;int name="hl.maxAnalyzedChars"&gt;51200&lt;/int&gt;
  *       &lt;str name="hl.multiValuedSeparatorChar"&gt; &lt;/str&gt;
  *       &lt;bool name="hl.highlightMultiTerm"&gt;false&lt;/bool&gt;
  *     &lt;/lst&gt;
  *   &lt;/requestHandler&gt;
- * </pre>
- * ...
- * <pre class="prettyprint">
- *   &lt;searchComponent class="solr.HighlightComponent" name="highlight"&gt;
- *     &lt;highlighting class="org.apache.solr.highlight.PostingsSolrHighlighter"/&gt;
- *   &lt;/searchComponent&gt;
  * </pre>
  * <p>
  * Notes:
@@ -209,7 +204,7 @@ public class PostingsSolrHighlighter extends SolrHighlighter implements PluginIn
     protected final IndexSchema schema;
 
     public SolrExtendedPostingsHighlighter(SolrQueryRequest req) {
-      super(req.getParams().getInt(HighlightParams.MAX_CHARS, PostingsHighlighter.DEFAULT_MAX_LENGTH));
+      super(req.getParams().getInt(HighlightParams.MAX_CHARS, DEFAULT_MAX_CHARS));
       this.params = req.getParams();
       this.schema = req.getSchema();
     }

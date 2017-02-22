@@ -33,8 +33,8 @@ import org.apache.lucene.util.mutable.MutableValueFloat;
 import org.apache.lucene.util.mutable.MutableValueInt;
 import org.apache.lucene.util.mutable.MutableValueLong;
 import org.apache.solr.schema.FieldType;
+import org.apache.solr.schema.NumberType;
 import org.apache.solr.schema.SchemaField;
-import org.apache.solr.schema.TrieField;
 
 /** 
  * this is a transition class: for numeric types we use function-based distributed grouping,
@@ -70,7 +70,7 @@ class GroupConverter {
     for (SearchGroup<BytesRef> original : values) {
       SearchGroup<MutableValue> converted = new SearchGroup<MutableValue>();
       converted.sortValues = original.sortValues; // ?
-      TrieField.TrieTypes type = ((TrieField)fieldType).getType();
+      NumberType type = fieldType.getNumberType();
       final MutableValue v;
       switch (type) {
         case INTEGER:

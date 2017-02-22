@@ -64,6 +64,7 @@ org.apache.lucene.analysis.miscellaneous.CapitalizationFilterFactory
 org.apache.lucene.analysis.miscellaneous.CodepointCountFilterFactory
 org.apache.lucene.analysis.miscellaneous.DateRecognizerFilterFactory
 org.apache.lucene.analysis.miscellaneous.FingerprintFilterFactory
+org.apache.lucene.analysis.miscellaneous.FixBrokenOffsetsFilterFactory
 org.apache.lucene.analysis.miscellaneous.HyphenatedWordsFilterFactory
 org.apache.lucene.analysis.miscellaneous.KeepWordFilterFactory
 org.apache.lucene.analysis.miscellaneous.KeywordMarkerFilterFactory
@@ -77,6 +78,7 @@ org.apache.lucene.analysis.miscellaneous.StemmerOverrideFilterFactory
 org.apache.lucene.analysis.miscellaneous.TrimFilterFactory
 org.apache.lucene.analysis.miscellaneous.TruncateTokenFilterFactory
 org.apache.lucene.analysis.miscellaneous.WordDelimiterFilterFactory
+org.apache.lucene.analysis.miscellaneous.WordDelimiterGraphFilterFactory
 org.apache.lucene.analysis.miscellaneous.ScandinavianFoldingFilterFactory
 org.apache.lucene.analysis.miscellaneous.ScandinavianNormalizationFilterFactory
 org.apache.lucene.analysis.ngram.EdgeNGramFilterFactory
@@ -101,5 +103,7 @@ org.apache.lucene.analysis.standard.ClassicFilterFactory
 org.apache.lucene.analysis.standard.StandardFilterFactory
 org.apache.lucene.analysis.sv.SwedishLightStemFilterFactory
 org.apache.lucene.analysis.synonym.SynonymFilterFactory
+org.apache.lucene.analysis.synonym.SynonymGraphFilterFactory
+org.apache.lucene.analysis.core.FlattenGraphFilterFactory
 org.apache.lucene.analysis.tr.TurkishLowerCaseFilterFactory
 org.apache.lucene.analysis.util.ElisionFilterFactory

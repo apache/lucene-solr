@@ -84,7 +84,8 @@ public class StatsComponentTest extends AbstractSolrTestCase {
             "stats_i","stats_l","stats_f","stats_d",
             "stats_ti","stats_tl","stats_tf","stats_td",
             "stats_ti_dv","stats_tl_dv","stats_tf_dv","stats_td_dv", 
-            "stats_ti_ni_dv","stats_tl_ni_dv","stats_tf_ni_dv","stats_td_ni_dv"
+            "stats_ti_ni_dv","stats_tl_ni_dv","stats_tf_ni_dv","stats_td_ni_dv",
+            "stats_i_ni_p","stats_l_ni_p","stats_f_ni_p","stats_d_ni_p",
     }) {
 
       // all of our checks should work with all of these params
@@ -111,7 +112,9 @@ public class StatsComponentTest extends AbstractSolrTestCase {
     for (String f : new String[] {"stats_ii",
             "stats_tis","stats_tfs","stats_tls","stats_tds",  // trie fields
             "stats_tis_dv","stats_tfs_dv","stats_tls_dv","stats_tds_dv",  // Doc Values
-            "stats_tis_ni_dv","stats_tfs_ni_dv","stats_tls_ni_dv","stats_tds_ni_dv"  // Doc Values Not indexed
+            "stats_tis_ni_dv","stats_tfs_ni_dv","stats_tls_ni_dv","stats_tds_ni_dv",  // Doc Values Not indexed
+            "stats_is_p", "stats_fs_p", "stats_ls_p", "stats_ds_p", // Point Fields
+            "stats_is_ni_p","stats_fs_ni_p","stats_ls_ni_p" // Point Doc Values Not indexed
                                   }) {
 
       doTestMVFieldStatisticsResult(f);

@@ -31,7 +31,7 @@ public class TestModelManagerPersistence extends TestRerankBase {
 
   @Before
   public void init() throws Exception {
-    setupPersistenttest();
+    setupPersistenttest(true);
   }
 
   // executed first
@@ -106,9 +106,9 @@ public class TestModelManagerPersistence extends TestRerankBase {
     assertJQ(ManagedModelStore.REST_END_POINT + "/test-model2",
         "/models/[0]/name=='test-model'");
 
-    assertJDelete(ManagedModelStore.REST_END_POINT + "/*",
+    assertJDelete(ManagedModelStore.REST_END_POINT + "/test-model1",
         "/responseHeader/status==0");
-    assertJDelete(ManagedFeatureStore.REST_END_POINT + "/*",
+    assertJDelete(ManagedFeatureStore.REST_END_POINT + "/test1",
         "/responseHeader/status==0");
     assertJQ(ManagedFeatureStore.REST_END_POINT + "/test1",
         "/features/==[]");

@@ -829,6 +829,15 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
     // add to control second in case adding to shards fails
     controlClient.add(doc);
   }
+  
+  protected ZkCoreNodeProps getLeaderUrlFromZk(String collection, String slice) {
+    ClusterState clusterState = getCommonCloudSolrClient().getZkStateReader().getClusterState();
+    ZkNodeProps leader = clusterState.getLeader(collection, slice);
+    if (leader == null) {
+      throw new RuntimeException("Could not find leader:" + collection + " " + slice);
+    }
+    return new ZkCoreNodeProps(leader);
+  }
 
   @Override
   protected void del(String q) throws Exception {

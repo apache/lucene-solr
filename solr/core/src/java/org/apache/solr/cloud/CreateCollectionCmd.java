@@ -25,19 +25,23 @@ import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Properties;
 import java.util.concurrent.TimeUnit;
 
 import org.apache.solr.cloud.OverseerCollectionMessageHandler.Cmd;
 import org.apache.solr.cloud.overseer.ClusterStateMutator;
 import org.apache.solr.cloud.rule.ReplicaAssigner;
 import org.apache.solr.common.SolrException;
+import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.DocRouter;
 import org.apache.solr.common.cloud.ImplicitDocRouter;
 import org.apache.solr.common.cloud.Replica;
+import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.cloud.ZkConfigManager;
 import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.cloud.ZkStateReader;
+import org.apache.solr.common.cloud.ZooKeeperException;
 import org.apache.solr.common.params.CoreAdminParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.NamedList;
@@ -46,7 +50,9 @@ import org.apache.solr.common.util.Utils;
 import org.apache.solr.handler.component.ShardHandler;
 import org.apache.solr.handler.component.ShardRequest;
 import org.apache.solr.util.TimeOut;
+import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.KeeperException;
+import org.apache.zookeeper.KeeperException.NoNodeException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -64,9 +70,11 @@ import static org.apache.solr.common.util.StrUtils.formatString;
 public class CreateCollectionCmd implements Cmd {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   private final OverseerCollectionMessageHandler ocmh;
+  private SolrZkClient zkClient;
 
   public CreateCollectionCmd(OverseerCollectionMessageHandler ocmh) {
     this.ocmh = ocmh;
+    this.zkClient = ocmh.zkStateReader.getZkClient();
   }
 
   @Override
@@ -83,7 +91,6 @@ public class CreateCollectionCmd implements Cmd {
     }
 
     ocmh.validateConfigOrThrowSolrException(configName);
-
 
     try {
       // look at the replication factor and see if it matches reality
@@ -157,10 +164,20 @@ public class CreateCollectionCmd implements Cmd {
       }
 
       ZkStateReader zkStateReader = ocmh.zkStateReader;
-      boolean isLegacyCloud =  Overseer.isLegacy(zkStateReader);
+      boolean isLegacyCloud = Overseer.isLegacy(zkStateReader);
 
       ocmh.createConfNode(configName, collectionName, isLegacyCloud);
 
+      Map<String,String> collectionParams = new HashMap<>();
+      Map<String,Object> collectionProps = message.getProperties();
+      for (String propName : collectionProps.keySet()) {
+        if (propName.startsWith(ZkController.COLLECTION_PARAM_PREFIX)) {
+          collectionParams.put(propName.substring(ZkController.COLLECTION_PARAM_PREFIX.length()), (String) collectionProps.get(propName));
+        }
+      }
+      
+      createCollectionZkNode(zkClient, collectionName, collectionParams);
+      
       Overseer.getStateUpdateQueue(zkStateReader.getZkClient()).offer(Utils.toJSON(message));
 
       // wait for a while until we don't see the collection
@@ -287,5 +304,130 @@ public class CreateCollectionCmd implements Cmd {
       }
     }
     return configName;
+  }
+  
+  public static void createCollectionZkNode(SolrZkClient zkClient, String collection, Map<String,String> params) {
+    log.debug("Check for collection zkNode:" + collection);
+    String collectionPath = ZkStateReader.COLLECTIONS_ZKNODE + "/" + collection;
+
+    try {
+      if (!zkClient.exists(collectionPath, true)) {
+        log.debug("Creating collection in ZooKeeper:" + collection);
+
+        try {
+          Map<String,Object> collectionProps = new HashMap<>();
+
+          // TODO: if collection.configName isn't set, and there isn't already a conf in zk, just use that?
+          String defaultConfigName = System.getProperty(ZkController.COLLECTION_PARAM_PREFIX + ZkController.CONFIGNAME_PROP, collection);
+
+          if (params.size() > 0) {
+            collectionProps.putAll(params);
+            // if the config name wasn't passed in, use the default
+            if (!collectionProps.containsKey(ZkController.CONFIGNAME_PROP)) {
+              // users can create the collection node and conf link ahead of time, or this may return another option
+              getConfName(zkClient, collection, collectionPath, collectionProps);
+            }
+
+          } else if (System.getProperty("bootstrap_confdir") != null) {
+            // if we are bootstrapping a collection, default the config for
+            // a new collection to the collection we are bootstrapping
+            log.info("Setting config for collection:" + collection + " to " + defaultConfigName);
+
+            Properties sysProps = System.getProperties();
+            for (String sprop : System.getProperties().stringPropertyNames()) {
+              if (sprop.startsWith(ZkController.COLLECTION_PARAM_PREFIX)) {
+                collectionProps.put(sprop.substring(ZkController.COLLECTION_PARAM_PREFIX.length()), sysProps.getProperty(sprop));
+              }
+            }
+
+            // if the config name wasn't passed in, use the default
+            if (!collectionProps.containsKey(ZkController.CONFIGNAME_PROP))
+              collectionProps.put(ZkController.CONFIGNAME_PROP, defaultConfigName);
+
+          } else if (Boolean.getBoolean("bootstrap_conf")) {
+            // the conf name should should be the collection name of this core
+            collectionProps.put(ZkController.CONFIGNAME_PROP, collection);
+          } else {
+            getConfName(zkClient, collection, collectionPath, collectionProps);
+          }
+
+          collectionProps.remove(ZkStateReader.NUM_SHARDS_PROP);  // we don't put numShards in the collections properties
+
+          ZkNodeProps zkProps = new ZkNodeProps(collectionProps);
+          zkClient.makePath(collectionPath, Utils.toJSON(zkProps), CreateMode.PERSISTENT, null, true);
+
+        } catch (KeeperException e) {
+          // it's okay if the node already exists
+          if (e.code() != KeeperException.Code.NODEEXISTS) {
+            throw e;
+          }
+        }
+      } else {
+        log.debug("Collection zkNode exists");
+      }
+
+    } catch (KeeperException e) {
+      // it's okay if another beats us creating the node
+      if (e.code() == KeeperException.Code.NODEEXISTS) {
+        return;
+      }
+      throw new SolrException(ErrorCode.SERVER_ERROR, "Error creating collection node in Zookeeper", e);
+    } catch (InterruptedException e) {
+      Thread.interrupted();
+      throw new SolrException(ErrorCode.SERVER_ERROR, "Error creating collection node in Zookeeper", e);
+    }
+
+  }
+  
+  private static void getConfName(SolrZkClient zkClient, String collection, String collectionPath, Map<String,Object> collectionProps) throws KeeperException,
+      InterruptedException {
+    // check for configName
+    log.debug("Looking for collection configName");
+    if (collectionProps.containsKey("configName")) {
+      log.info("configName was passed as a param {}", collectionProps.get("configName"));
+      return;
+    }
+    
+    List<String> configNames = null;
+    int retry = 1;
+    int retryLimt = 6;
+    for (; retry < retryLimt; retry++) {
+      if (zkClient.exists(collectionPath, true)) {
+        ZkNodeProps cProps = ZkNodeProps.load(zkClient.getData(collectionPath, null, null, true));
+        if (cProps.containsKey(ZkController.CONFIGNAME_PROP)) {
+          break;
+        }
+      }
+
+      // if there is only one conf, use that
+      try {
+        configNames = zkClient.getChildren(ZkConfigManager.CONFIGS_ZKNODE, null,
+            true);
+      } catch (NoNodeException e) {
+        // just keep trying
+      }
+      if (configNames != null && configNames.size() == 1) {
+        // no config set named, but there is only 1 - use it
+        log.info("Only one config set found in zk - using it:" + configNames.get(0));
+        collectionProps.put(ZkController.CONFIGNAME_PROP, configNames.get(0));
+        break;
+      }
+
+      if (configNames != null && configNames.contains(collection)) {
+        log.info(
+            "Could not find explicit collection configName, but found config name matching collection name - using that set.");
+        collectionProps.put(ZkController.CONFIGNAME_PROP, collection);
+        break;
+      }
+
+      log.info("Could not find collection configName - pausing for 3 seconds and trying again - try: " + retry);
+      Thread.sleep(3000);
+    }
+    if (retry == retryLimt) {
+      log.error("Could not find configName for collection " + collection);
+      throw new ZooKeeperException(
+          SolrException.ErrorCode.SERVER_ERROR,
+          "Could not find configName for collection " + collection + " found:" + configNames);
+    }
   }
 }

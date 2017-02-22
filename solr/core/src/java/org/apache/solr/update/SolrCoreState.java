@@ -41,10 +41,16 @@ public abstract class SolrCoreState {
   
   protected boolean closed = false;
   private final Object updateLock = new Object();
+  private final Object reloadLock = new Object();
   
   public Object getUpdateLock() {
     return updateLock;
   }
+  
+  public Object getReloadLock() {
+    return reloadLock;
+  }
+  
   
   private int solrCoreStateRefCnt = 1;
 

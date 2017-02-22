@@ -23,6 +23,7 @@ import java.util.Map;
 import org.apache.lucene.document.BinaryDocValuesField; // javadocs
 import org.apache.lucene.document.NumericDocValuesField; // javadocs
 import org.apache.lucene.document.SortedDocValuesField; // javadocs
+import org.apache.lucene.document.SortedNumericDocValuesField;
 import org.apache.lucene.document.SortedSetDocValuesField; // javadocs
 import org.apache.lucene.document.StringField; // javadocs
 import org.apache.lucene.index.BinaryDocValues;
@@ -37,6 +38,7 @@ import org.apache.lucene.index.LeafReader;
 import org.apache.lucene.index.NumericDocValues;
 import org.apache.lucene.index.SortedDocValues;
 import org.apache.lucene.index.SortedSetDocValues;
+import org.apache.lucene.util.RamUsageEstimator;
 import org.apache.solr.uninverting.FieldCache.CacheEntry;
 
 /**
@@ -168,7 +170,35 @@ public class UninvertingReader extends FilterLeafReader {
      * Fields with this type act as if they were indexed with
      * {@link SortedSetDocValuesField}.
      */
-    SORTED_SET_DOUBLE
+    SORTED_SET_DOUBLE,
+    /** 
+     * Multi-valued Integer, (e.g. indexed with {@link org.apache.lucene.document.IntPoint})
+     * <p>
+     * Fields with this type act as if they were indexed with
+     * {@link SortedNumericDocValuesField}.
+     */
+    SORTED_INTEGER,
+    /** 
+     * Multi-valued Float, (e.g. indexed with {@link org.apache.lucene.document.FloatPoint})
+     * <p>
+     * Fields with this type act as if they were indexed with
+     * {@link SortedNumericDocValuesField}.
+     */
+    SORTED_FLOAT,
+    /** 
+     * Multi-valued Long, (e.g. indexed with {@link org.apache.lucene.document.LongPoint})
+     * <p>
+     * Fields with this type act as if they were indexed with
+     * {@link SortedNumericDocValuesField}.
+     */
+    SORTED_LONG,
+    /** 
+     * Multi-valued Double, (e.g. indexed with {@link org.apache.lucene.document.DoublePoint})
+     * <p>
+     * Fields with this type act as if they were indexed with
+     * {@link SortedNumericDocValuesField}.
+     */
+    SORTED_DOUBLE
   }
   
   /**
@@ -253,6 +283,12 @@ public class UninvertingReader extends FilterLeafReader {
             case SORTED_SET_LONG:
             case SORTED_SET_DOUBLE:
               type = DocValuesType.SORTED_SET;
+              break;
+            case SORTED_INTEGER:
+            case SORTED_FLOAT:
+            case SORTED_LONG:
+            case SORTED_DOUBLE:
+              type = DocValuesType.SORTED_NUMERIC;
               break;
             default:
               throw new AssertionError();
@@ -374,16 +410,34 @@ public class UninvertingReader extends FilterLeafReader {
    * Return information about the backing cache
    * @lucene.internal 
    */
-  public static String[] getUninvertedStats() {
+  public static FieldCacheStats getUninvertedStats() {
     CacheEntry[] entries = FieldCache.DEFAULT.getCacheEntries();
+    long totalBytesUsed = 0;
     String[] info = new String[entries.length];
     for (int i = 0; i < entries.length; i++) {
       info[i] = entries[i].toString();
+      totalBytesUsed += entries[i].getValue().ramBytesUsed();
     }
-    return info;
+    String totalSize = RamUsageEstimator.humanReadableUnits(totalBytesUsed);
+    return new FieldCacheStats(totalSize, info);
   }
 
   public static int getUninvertedStatsSize() {
     return FieldCache.DEFAULT.getCacheEntries().length;
+  }
+
+  /**
+   * Return information about the backing cache
+   * @lucene.internal
+   */
+  public static class FieldCacheStats {
+    public String totalSize;
+    public String[] info;
+
+    public FieldCacheStats(String totalSize, String[] info) {
+      this.totalSize = totalSize;
+      this.info = info;
+    }
+
   }
 }

@@ -63,7 +63,7 @@ public class ExternalPaths {
         }
       } catch (Exception e) {
         // If there is no "solr/conf" in the classpath, fall back to searching from the current directory.
-        file = new File(".");
+        file = new File(System.getProperty("tests.src.home", "."));
       }
       File base = file.getAbsoluteFile();
       while (!(new File(base, "solr/CHANGES.txt").exists()) && null != base) {

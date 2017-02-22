@@ -99,8 +99,8 @@ public class SolrIndexConfigTest extends SolrTestCaseJ4 {
   }
 
   public void testSortingMPSolrIndexConfigCreation() throws Exception {
-    final String expectedFieldName = "timestamp";
-    final SortField.Type expectedFieldType = SortField.Type.LONG;
+    final String expectedFieldName = "timestamp_i_dvo";
+    final SortField.Type expectedFieldType = SortField.Type.INT;
     final boolean expectedFieldSortDescending = true;
 
     SolrConfig solrConfig = new SolrConfig(instanceDir, solrConfigFileNameSortingMergePolicyFactory, null);
@@ -197,6 +197,7 @@ public class SolrIndexConfigTest extends SolrTestCaseJ4 {
     } else {
       assertNull(m.get("mergedSegmentWarmer"));
     }
+    ++mSizeExpected; assertNotNull(m.get("metrics"));
 
     assertEquals(mSizeExpected, m.size());
   }

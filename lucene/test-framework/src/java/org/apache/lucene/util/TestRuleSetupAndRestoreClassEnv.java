@@ -36,7 +36,6 @@ import org.apache.lucene.codecs.lucene70.Lucene70Codec;
 import org.apache.lucene.codecs.mockrandom.MockRandomPostingsFormat;
 import org.apache.lucene.codecs.simpletext.SimpleTextCodec;
 import org.apache.lucene.index.RandomCodec;
-import org.apache.lucene.search.similarities.ClassicSimilarity;
 import org.apache.lucene.search.similarities.RandomSimilarity;
 import org.apache.lucene.search.similarities.Similarity;
 import org.apache.lucene.util.LuceneTestCase.SuppressCodecs;
@@ -213,7 +212,7 @@ final class TestRuleSetupAndRestoreClassEnv extends AbstractBeforeAfterRule {
     TimeZone randomTimeZone = randomTimeZone(random());
     timeZone = testTimeZone.equals("random") ? randomTimeZone : TimeZone.getTimeZone(testTimeZone);
     TimeZone.setDefault(timeZone);
-    similarity = random().nextBoolean() ? new ClassicSimilarity() : new RandomSimilarity(random());
+    similarity = new RandomSimilarity(random());
 
     // Check codec restrictions once at class level.
     try {

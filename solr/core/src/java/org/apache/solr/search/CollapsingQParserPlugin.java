@@ -965,7 +965,7 @@ public class CollapsingQParserPlugin extends QParserPlugin {
 
     @Override public boolean needsScores() { return needsScores || super.needsScores(); }
 
-    public void setScorer(Scorer scorer) {
+    public void setScorer(Scorer scorer) throws IOException {
       this.collapseStrategy.setScorer(scorer);
     }
 
@@ -1147,7 +1147,7 @@ public class CollapsingQParserPlugin extends QParserPlugin {
 
     @Override public boolean needsScores() { return needsScores || super.needsScores(); }
 
-    public void setScorer(Scorer scorer) {
+    public void setScorer(Scorer scorer) throws IOException {
       this.collapseStrategy.setScorer(scorer);
     }
 
@@ -1523,7 +1523,7 @@ public class CollapsingQParserPlugin extends QParserPlugin {
       return collapsedSet;
     }
 
-    public void setScorer(Scorer scorer) {
+    public void setScorer(Scorer scorer) throws IOException {
       this.scorer = scorer;
     }
 
@@ -1952,7 +1952,7 @@ public class CollapsingQParserPlugin extends QParserPlugin {
     }
 
     @Override
-    public void setScorer(Scorer s) {
+    public void setScorer(Scorer s) throws IOException {
       super.setScorer(s);
       this.compareState.setScorer(s);
     }
@@ -2100,7 +2100,7 @@ public class CollapsingQParserPlugin extends QParserPlugin {
       return collapsedSet;
     }
 
-    public void setScorer(Scorer scorer) {
+    public void setScorer(Scorer scorer) throws IOException {
       this.scorer = scorer;
     }
 
@@ -2522,7 +2522,7 @@ public class CollapsingQParserPlugin extends QParserPlugin {
     }
 
     @Override
-    public void setScorer(Scorer s) {
+    public void setScorer(Scorer s) throws IOException {
       super.setScorer(s);
       this.compareState.setScorer(s);
     }
@@ -2652,7 +2652,7 @@ public class CollapsingQParserPlugin extends QParserPlugin {
      * Constructs an instance based on the the (raw, un-rewritten) SortFields to be used, 
      * and an initial number of expected groups (will grow as needed).
      */
-    public SortFieldsCompare(SortField[] sorts, int initNumGroups) throws IOException {
+    public SortFieldsCompare(SortField[] sorts, int initNumGroups) {
       this.sorts = sorts;
       numClauses = sorts.length;
       fieldComparators = new FieldComparator[numClauses];
@@ -2673,7 +2673,7 @@ public class CollapsingQParserPlugin extends QParserPlugin {
         leafFieldComparators[clause] = fieldComparators[clause].getLeafComparator(context);
       }
     }
-    public void setScorer(Scorer s) {
+    public void setScorer(Scorer s) throws IOException {
       for (int clause = 0; clause < numClauses; clause++) {
         leafFieldComparators[clause].setScorer(s);
       }

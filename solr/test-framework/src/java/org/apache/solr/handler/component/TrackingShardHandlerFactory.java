@@ -91,7 +91,7 @@ public class TrackingShardHandlerFactory extends HttpShardHandlerFactory {
       }
 
       @Override
-      public void submit(ShardRequest sreq, String shard, ModifiableSolrParams params, String preferredHostAddress) {
+      public void submit(ShardRequest sreq, String shard, ModifiableSolrParams params) {
         synchronized (TrackingShardHandlerFactory.this) {
           if (isTracking()) {
             queue.offer(new ShardRequestAndParams(sreq, shard, params));

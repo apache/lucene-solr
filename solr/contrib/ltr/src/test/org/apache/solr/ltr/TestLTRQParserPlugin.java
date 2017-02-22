@@ -26,9 +26,7 @@ public class TestLTRQParserPlugin extends TestRerankBase {
 
   @BeforeClass
   public static void before() throws Exception {
-    setuptest("solrconfig-ltr.xml", "schema.xml");
-    // store = getModelStore();
-    bulkIndex();
+    setuptest(true);
 
     loadFeatures("features-linear.json");
     loadModels("linear-model.json");
@@ -37,7 +35,6 @@ public class TestLTRQParserPlugin extends TestRerankBase {
   @AfterClass
   public static void after() throws Exception {
     aftertest();
-    // store.clear();
   }
 
   @Test
@@ -66,6 +63,20 @@ public class TestLTRQParserPlugin extends TestRerankBase {
 
     final String res = restTestHarness.query("/query" + query.toQueryString());
     assert (res.contains("cannot find model"));
+  }
+
+  @Test
+  public void ltrBadRerankDocsTest() throws Exception {
+    final String solrQuery = "_query_:{!edismax qf='title' mm=100% v='bloomberg' tie=0.1}";
+    final SolrQuery query = new SolrQuery();
+    query.setQuery(solrQuery);
+    query.add("fl", "*, score");
+    query.add("rows", "4");
+    query.add("fv", "true");
+    query.add("rq", "{!ltr model=6029760550880411648 reRankDocs=-1}");
+
+    final String res = restTestHarness.query("/query" + query.toQueryString());
+    assert (res.contains("Must rerank at least 1 document"));
   }
 
   @Test

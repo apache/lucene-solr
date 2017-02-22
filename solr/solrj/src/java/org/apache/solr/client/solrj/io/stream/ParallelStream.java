@@ -257,15 +257,17 @@ public class ParallelStream extends CloudSolrStream implements Expressible {
   }
 
   protected void constructStreams() throws IOException {
-
     try {
       Object pushStream = ((Expressible) tupleStream).toExpression(streamFactory);
 
       ZkStateReader zkStateReader = cloudSolrClient.getZkStateReader();
+
+      Collection<Slice> slices = CloudSolrStream.getSlices(this.collection, zkStateReader, true);
+
       ClusterState clusterState = zkStateReader.getClusterState();
       Set<String> liveNodes = clusterState.getLiveNodes();
-      Collection<Slice> slices = clusterState.getActiveSlices(this.collection);
-      List<Replica> shuffler = new ArrayList();
+
+      List<Replica> shuffler = new ArrayList<>();
       for(Slice slice : slices) {
         Collection<Replica> replicas = slice.getReplicas();
         for (Replica replica : replicas) {

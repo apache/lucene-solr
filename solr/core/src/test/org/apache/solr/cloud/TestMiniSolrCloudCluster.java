@@ -16,7 +16,6 @@
  */
 package org.apache.solr.cloud;
 
-import java.io.File;
 import java.lang.invoke.MethodHandles;
 import java.net.URL;
 import java.util.ArrayList;
@@ -378,55 +377,6 @@ public class TestMiniSolrCloudCluster extends LuceneTestCase {
         }
 
       }
-    }
-    finally {
-      miniCluster.shutdown();
-    }
-  }
-
-  @Test
-  public void testSegmentTerminateEarly() throws Exception {
-
-    final String collectionName = "testSegmentTerminateEarlyCollection";
-
-    final SegmentTerminateEarlyTestState tstes = new SegmentTerminateEarlyTestState();
-
-    File solrXml = new File(SolrTestCaseJ4.TEST_HOME(), "solr.xml");
-    Builder jettyConfig = JettyConfig.builder();
-    jettyConfig.waitForLoadingCoresToFinish(null);
-    final MiniSolrCloudCluster miniCluster = createMiniSolrCloudCluster();
-    final CloudSolrClient cloudSolrClient = miniCluster.getSolrClient();
-    cloudSolrClient.setDefaultCollection(collectionName);
-
-    try {
-      // create collection
-      {
-        final String asyncId = (random().nextBoolean() ? null : "asyncId("+collectionName+".create)="+random().nextInt());
-        final Map<String, String> collectionProperties = new HashMap<>();
-        collectionProperties.put(CoreDescriptor.CORE_CONFIG, "solrconfig-sortingmergepolicyfactory.xml");
-        createCollection(miniCluster, collectionName, null, asyncId, Boolean.TRUE, collectionProperties);
-      }
-
-      ZkStateReader zkStateReader = cloudSolrClient.getZkStateReader();
-      AbstractDistribZkTestBase.waitForRecoveriesToFinish(collectionName, zkStateReader, true, true, 330);
-
-      // add some documents, then optimize to get merged-sorted segments
-      tstes.addDocuments(cloudSolrClient, 10, 10, true);
-
-      // CommonParams.SEGMENT_TERMINATE_EARLY parameter intentionally absent
-      tstes.queryTimestampDescending(cloudSolrClient);
-
-      // add a few more documents, but don't optimize to have some not-merge-sorted segments
-      tstes.addDocuments(cloudSolrClient, 2, 10, false);
-
-      // CommonParams.SEGMENT_TERMINATE_EARLY parameter now present
-      tstes.queryTimestampDescendingSegmentTerminateEarlyYes(cloudSolrClient);
-      tstes.queryTimestampDescendingSegmentTerminateEarlyNo(cloudSolrClient);
-
-      // CommonParams.SEGMENT_TERMINATE_EARLY parameter present but it won't be used
-      tstes.queryTimestampDescendingSegmentTerminateEarlyYesGrouped(cloudSolrClient);
-      tstes.queryTimestampAscendingSegmentTerminateEarlyYes(cloudSolrClient); // uses a sort order that is _not_ compatible with the merge sort order
-
     }
     finally {
       miniCluster.shutdown();

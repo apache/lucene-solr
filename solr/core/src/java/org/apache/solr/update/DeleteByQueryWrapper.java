@@ -68,6 +68,7 @@ final class DeleteByQueryWrapper extends Query {
   public Weight createWeight(IndexSearcher searcher, boolean needsScores, float boost) throws IOException {
     final LeafReader wrapped = wrap((LeafReader) searcher.getIndexReader());
     final IndexSearcher privateContext = new IndexSearcher(wrapped);
+    privateContext.setQueryCache(searcher.getQueryCache());
     final Weight inner = in.createWeight(privateContext, needsScores, boost);
     return new Weight(DeleteByQueryWrapper.this) {
       @Override

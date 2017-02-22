@@ -66,6 +66,25 @@ public class TopSuggestDocs extends TopDocs {
     public int compareTo(SuggestScoreDoc o) {
       return Lookup.CHARSEQUENCE_COMPARATOR.compare(key, o.key);
     }
+
+    @Override
+    public boolean equals(Object other) {
+      if (other instanceof SuggestScoreDoc == false) {
+        return false;
+      } else {
+        return key.equals(((SuggestScoreDoc) other).key);
+      }
+    }
+
+    @Override
+    public int hashCode() {
+      return key.hashCode();
+    }
+
+    @Override
+    public String toString() {
+      return "key=" + key + " doc=" + doc + " score=" + score + " shardIndex=" + shardIndex;      
+    }
   }
 
   /**

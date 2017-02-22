@@ -68,7 +68,7 @@ public class BackupManager {
   protected final ZkStateReader zkStateReader;
   protected final BackupRepository repository;
 
-  public BackupManager(BackupRepository repository, ZkStateReader zkStateReader, String collectionName) {
+  public BackupManager(BackupRepository repository, ZkStateReader zkStateReader) {
     this.repository = Objects.requireNonNull(repository);
     this.zkStateReader = Objects.requireNonNull(zkStateReader);
   }
@@ -126,6 +126,7 @@ public class BackupManager {
    *
    * @param backupLoc The base path used to store the backup data.
    * @param backupId The unique name for the backup.
+   * @param collectionName The name of the collection whose meta-data is to be returned.
    * @return the meta-data information for the backed-up collection.
    * @throws IOException in case of errors.
    */

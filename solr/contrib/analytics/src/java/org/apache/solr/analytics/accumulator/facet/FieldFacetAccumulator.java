@@ -58,7 +58,7 @@ public class FieldFacetAccumulator extends ValueAccumulator {
     this.schemaField = schemaField;
     this.name = schemaField.getName();
     this.multiValued = schemaField.multiValued();
-    this.numField = schemaField.getType().getNumericType()!=null;
+    this.numField = schemaField.getType().getNumberType()!=null;
     this.dateField = schemaField.getType() instanceof DateValueFieldType;
     this.parent = parent;  
     this.parser = AnalyticsParsers.getParser(schemaField.getType().getClass());

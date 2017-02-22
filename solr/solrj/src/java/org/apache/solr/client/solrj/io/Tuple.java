@@ -16,13 +16,15 @@
  */
 package org.apache.solr.client.solrj.io;
 
+import java.io.IOException;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.HashMap;
-import java.util.Map;
 import java.util.List;
+import java.util.Map;
 
+import org.apache.solr.common.MapWriter;
 
 /**
  *  A simple abstraction of a record containing key/value pairs.
@@ -31,7 +33,7 @@ import java.util.List;
  *
 **/
 
-public class Tuple implements Cloneable {
+public class Tuple implements Cloneable, MapWriter {
 
   /**
    *  When EOF field is true the Tuple marks the end of the stream.
@@ -89,7 +91,7 @@ public class Tuple implements Cloneable {
     }
   }
 
-  // Convenience method since Booleans can be pased around as Strings.
+  // Convenience method since Booleans can be passed around as Strings.
   public Boolean getBool(Object key) {
     Object o = this.fields.get(key);
 
@@ -192,5 +194,16 @@ public class Tuple implements Cloneable {
   
   public void merge(Tuple other){
     fields.putAll(other.getMap());
+  }
+
+  @Override
+  public void writeMap(EntryWriter ew) throws IOException {
+    fields.forEach((k, v) -> {
+      try {
+        ew.put((String)k,v);
+      } catch (IOException e) {
+        throw new RuntimeException(e);
+      }
+    });
   }
 }

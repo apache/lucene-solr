@@ -34,7 +34,7 @@ content.source=org.apache.lucene.benchmark.byTask.feeds.EnwikiContentSource
 docs.file=temp/enwiki-20070527-pages-articles.xml.bz2
 
 query.maker=org.apache.lucene.benchmark.byTask.feeds.FileBasedQueryMaker
-file.query.maker.file=conf/query-phrases.txt
+file.query.maker.file=conf/query-terms.txt
 log.queries=false
 log.step.SearchTravRetHighlight=-1
 
@@ -55,7 +55,7 @@ highlighter=HlImpl:NONE:SH_A:UH_A:PH_P:UH_P:UH_PV
 
         { "Warm" SearchTravRetHighlight > : 1000
 
-        { "HL" SearchTravRetHighlight > : 500
+        { "HL" SearchTravRetHighlight > : 2000
 
         CloseReader
 

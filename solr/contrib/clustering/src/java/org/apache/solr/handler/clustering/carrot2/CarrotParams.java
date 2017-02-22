@@ -16,9 +16,9 @@
  */
 package org.apache.solr.handler.clustering.carrot2;
 
+import java.util.Arrays;
+import java.util.HashSet;
 import java.util.Set;
-
-import com.google.common.collect.ImmutableSet;
 
 /**
  * Carrot2 parameter mapping (recognized and mapped if passed via Solr configuration).
@@ -50,7 +50,7 @@ public final class CarrotParams {
    */
   public static String RESOURCES_DIR = CARROT_PREFIX + "resourcesDir";
 
-  static final Set<String> CARROT_PARAM_NAMES = ImmutableSet.of(
+  static final Set<String> CARROT_PARAM_NAMES = new HashSet<>(Arrays.asList(
           ALGORITHM, 
           
           TITLE_FIELD_NAME, 
@@ -66,8 +66,8 @@ public final class CarrotParams {
           NUM_DESCRIPTIONS, 
           OUTPUT_SUB_CLUSTERS, 
           RESOURCES_DIR,
-          LANGUAGE_CODE_MAP);
-  
+          LANGUAGE_CODE_MAP));
+
   /** No instances. */
   private CarrotParams() {}
 }

@@ -28,12 +28,14 @@ import java.util.concurrent.TimeUnit;
 import org.apache.solr.common.NonExistentCoreException;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.ClusterState;
+import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.CoreAdminParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.Utils;
+import org.apache.solr.core.snapshots.SolrSnapshotManager;
 import org.apache.solr.util.TimeOut;
 import org.apache.zookeeper.KeeperException;
 import org.slf4j.Logger;
@@ -56,6 +58,11 @@ public class DeleteCollectionCmd implements OverseerCollectionMessageHandler.Cmd
     ZkStateReader zkStateReader = ocmh.zkStateReader;
     final String collection = message.getStr(NAME);
     try {
+      // Remove the snapshots meta-data for this collection in ZK. Deleting actual index files
+      // should be taken care of as part of collection delete operation.
+      SolrZkClient zkClient = zkStateReader.getZkClient();
+      SolrSnapshotManager.cleanupCollectionLevelSnapshots(zkClient, collection);
+
       if (zkStateReader.getClusterState().getCollectionOrNull(collection) == null) {
         if (zkStateReader.getZkClient().exists(ZkStateReader.COLLECTIONS_ZKNODE + "/" + collection, true)) {
           // if the collection is not in the clusterstate, but is listed in zk, do nothing, it will just

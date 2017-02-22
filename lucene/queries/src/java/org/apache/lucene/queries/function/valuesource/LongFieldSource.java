@@ -64,7 +64,7 @@ public class LongFieldSource extends FieldCacheSource {
   @Override
   public FunctionValues getValues(Map context, LeafReaderContext readerContext) throws IOException {
     
-    final NumericDocValues arr = DocValues.getNumeric(readerContext.reader(), field);
+    final NumericDocValues arr = getNumericDocValues(context, readerContext);
 
     return new LongDocValues(this) {
       int lastDocID;
@@ -140,6 +140,10 @@ public class LongFieldSource extends FieldCacheSource {
       }
 
     };
+  }
+
+  protected NumericDocValues getNumericDocValues(Map context, LeafReaderContext readerContext) throws IOException {
+    return DocValues.getNumeric(readerContext.reader(), field);
   }
 
   protected MutableValueLong newMutableValueLong() {

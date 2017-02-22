@@ -190,9 +190,9 @@ Query Query(String field) throws SyntaxError :
   )*
     {
       if (clauses.size() == 1 && firstQuery != null)
-        return firstQuery;
+        return rawToNormal(firstQuery);
       else {
-  return getBooleanQuery(clauses);
+        return getBooleanQuery(clauses);
       }
     }
 }
@@ -201,6 +201,7 @@ Query Clause(String field) throws SyntaxError : {
   Query q;
   Token fieldToken=null, boost=null;
   Token localParams=null;
+  int flags = 0;
 }
 {
  
@@ -216,7 +217,7 @@ Query Clause(String field) throws SyntaxError : {
   (
    q=Term(field)
    | <LPAREN> q=Query(field) <RPAREN> (<CARAT> boost=<NUMBER>)?
-   | (<FILTER> q=Query(field) <RPAREN> (<CARAT> boost=<NUMBER>)? { q=getFilter(q); }  )
+   | (<FILTER> { flags=startFilter(); } q=Query(field) <RPAREN> (<CARAT> boost=<NUMBER>)? { q=getFilter(q); restoreFlags(flags); } )
    | (localParams = <LPARAMS> (<CARAT> boost=<NUMBER>)? { q=getLocalParams(field, localParams.image); }  )
   )
     {  return handleBoost(q, boost); }

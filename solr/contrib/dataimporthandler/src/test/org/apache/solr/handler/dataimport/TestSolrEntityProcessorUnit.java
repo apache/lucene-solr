@@ -18,10 +18,22 @@ package org.apache.solr.handler.dataimport;
 
 import java.util.*;
 
+import org.apache.solr.client.solrj.SolrQuery;
+import org.apache.solr.common.params.CommonParams;
+import org.apache.solr.common.params.CursorMarkParams;
+import org.apache.solr.handler.dataimport.SolrEntityProcessor.SolrDocumentListIterator;
+import org.junit.Test;
+
 /**
  * Unit test of SolrEntityProcessor. A very basic test outside of the DIH.
  */
 public class TestSolrEntityProcessorUnit extends AbstractDataImportHandlerTestCase {
+
+  private static final class NoNextMockProcessor extends SolrEntityProcessor {
+    @Override
+    protected void nextPage() {
+    }
+  }
 
   private static final String ID = "id";
 
@@ -82,6 +94,64 @@ public class TestSolrEntityProcessorUnit extends AbstractDataImportHandlerTestCa
       assertEquals(1, processor.getQueryCount());
       assertNull(processor.nextRow());
     } finally {
+      processor.destroy();
+    }
+  }
+  @Test (expected = DataImportHandlerException.class)
+  public void testNoQuery() {
+    SolrEntityProcessor processor = new SolrEntityProcessor();
+    
+    HashMap<String,String> entityAttrs = new HashMap<String,String>(){{put(SolrEntityProcessor.SOLR_SERVER,"http://route:66/no");}};
+    processor.init(getContext(null, null, null, null, Collections.emptyList(), 
+        entityAttrs));
+    try {
+    processor.buildIterator();
+    }finally {
+      processor.destroy();
+    }
+  }
+  
+  public void testPagingQuery() {
+    SolrEntityProcessor processor = new NoNextMockProcessor() ;
+    
+    HashMap<String,String> entityAttrs = new HashMap<String,String>(){{
+      put(SolrEntityProcessor.SOLR_SERVER,"http://route:66/no");
+      if (random().nextBoolean()) {
+        List<String> noCursor = Arrays.asList("","false",CursorMarkParams.CURSOR_MARK_START);//only 'true' not '*'
+        Collections.shuffle(noCursor, random());
+        put(CursorMarkParams.CURSOR_MARK_PARAM,  noCursor.get(0));
+      }}};
+    processor.init(getContext(null, null, null, null, Collections.emptyList(), 
+        entityAttrs));
+    try {
+    processor.buildIterator();
+    SolrQuery query = new SolrQuery();
+    ((SolrDocumentListIterator) processor.rowIterator).passNextPage(query);
+    assertEquals("0", query.get(CommonParams.START));
+    assertNull( query.get(CursorMarkParams.CURSOR_MARK_PARAM));
+    assertNotNull( query.get(CommonParams.TIME_ALLOWED));
+    }finally {
+      processor.destroy();
+    }
+  }
+  
+  public void testCursorQuery() {
+    SolrEntityProcessor processor = new NoNextMockProcessor() ;
+    
+    HashMap<String,String> entityAttrs = new HashMap<String,String>(){{
+      put(SolrEntityProcessor.SOLR_SERVER,"http://route:66/no");
+      put(CursorMarkParams.CURSOR_MARK_PARAM,"true");
+      }};
+    processor.init(getContext(null, null, null, null, Collections.emptyList(), 
+        entityAttrs));
+    try {
+    processor.buildIterator();
+    SolrQuery query = new SolrQuery();
+    ((SolrDocumentListIterator) processor.rowIterator).passNextPage(query);
+    assertNull(query.get(CommonParams.START));
+    assertEquals(CursorMarkParams.CURSOR_MARK_START, query.get(CursorMarkParams.CURSOR_MARK_PARAM));
+    assertNull( query.get(CommonParams.TIME_ALLOWED));
+    }finally {
       processor.destroy();
     }
   }

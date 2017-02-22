@@ -17,174 +17,157 @@
 package org.apache.lucene.search.uhighlight;
 
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.List;
 
 import org.apache.lucene.analysis.Analyzer;
-import org.apache.lucene.analysis.FilteringTokenFilter;
+import org.apache.lucene.analysis.TokenFilter;
 import org.apache.lucene.analysis.TokenStream;
-import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
-import org.apache.lucene.index.IndexReader;
-import org.apache.lucene.index.LeafReader;
-import org.apache.lucene.index.Terms;
-import org.apache.lucene.index.memory.MemoryIndex;
-import org.apache.lucene.search.spans.SpanQuery;
+import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
+import org.apache.lucene.analysis.tokenattributes.PositionIncrementAttribute;
 import org.apache.lucene.util.BytesRef;
-import org.apache.lucene.util.automaton.Automata;
 import org.apache.lucene.util.automaton.CharacterRunAutomaton;
 
-
 /**
- * Uses an {@link Analyzer} on content to get offsets. It may use a {@link MemoryIndex} too.
+ * Provides a base class for analysis based offset strategies to extend from.
+ * Requires an Analyzer and provides an override-able method for altering how
+ * the TokenStream is created.
  *
  * @lucene.internal
  */
-public class AnalysisOffsetStrategy extends FieldOffsetStrategy {
+public abstract class AnalysisOffsetStrategy extends FieldOffsetStrategy {
 
-  //TODO: Consider splitting this highlighter into a MemoryIndexFieldHighlighter and a TokenStreamFieldHighlighter
-  private static final BytesRef[] ZERO_LEN_BYTES_REF_ARRAY = new BytesRef[0];
-  private final Analyzer analyzer;
-  private final MemoryIndex memoryIndex;
-  private final LeafReader leafReader;
-  private final CharacterRunAutomaton preMemIndexFilterAutomaton;
+  protected final Analyzer analyzer;
 
-  public AnalysisOffsetStrategy(String field, BytesRef[] extractedTerms, PhraseHelper phraseHelper, CharacterRunAutomaton[] automata, Analyzer analyzer) {
-    super(field, extractedTerms, phraseHelper, automata);
+  public AnalysisOffsetStrategy(String field, BytesRef[] queryTerms, PhraseHelper phraseHelper, CharacterRunAutomaton[] automata, Analyzer analyzer) {
+    super(field, queryTerms, phraseHelper, automata);
     this.analyzer = analyzer;
-    // Automata (Wildcards / MultiTermQuery):
-    this.automata = automata;
-
-    if (terms.length > 0 && !strictPhrases.hasPositionSensitivity()) {
-      this.automata = convertTermsToAutomata(terms, automata);
-      // clear the terms array now that we've moved them to be expressed as automata
-      terms = ZERO_LEN_BYTES_REF_ARRAY;
+    if (analyzer.getOffsetGap(field) != 1) { // note: 1 is the default. It is RARELY changed.
+      throw new IllegalArgumentException(
+          "offset gap of the provided analyzer should be 1 (field " + field + ")");
     }
-
-    if (terms.length > 0 || strictPhrases.willRewrite()) { //needs MemoryIndex
-      // init MemoryIndex
-      boolean storePayloads = strictPhrases.hasPositionSensitivity(); // might be needed
-      memoryIndex = new MemoryIndex(true, storePayloads);//true==store offsets
-      leafReader = (LeafReader) memoryIndex.createSearcher().getIndexReader();
-      // preFilter for MemoryIndex
-      preMemIndexFilterAutomaton = buildCombinedAutomaton(field, terms, this.automata, strictPhrases);
-    } else {
-      memoryIndex = null;
-      leafReader = null;
-      preMemIndexFilterAutomaton = null;
-    }
-
   }
 
   @Override
-  public UnifiedHighlighter.OffsetSource getOffsetSource() {
+  public final UnifiedHighlighter.OffsetSource getOffsetSource() {
     return UnifiedHighlighter.OffsetSource.ANALYSIS;
   }
 
-  @Override
-  public List<OffsetsEnum> getOffsetsEnums(IndexReader reader, int docId, String content) throws IOException {
-    // note: don't need LimitTokenOffsetFilter since content is already truncated to maxLength
-    TokenStream tokenStream = tokenStream(content);
-
-    if (memoryIndex != null) { // also handles automata.length > 0
-      // We use a MemoryIndex and index the tokenStream so that later we have the PostingsEnum with offsets.
-
-      // note: An *alternative* strategy is to get PostingsEnums without offsets from the main index
-      //  and then marry this up with a fake PostingsEnum backed by a TokenStream (which has the offsets) and
-      //  can use that to filter applicable tokens?  It would have the advantage of being able to exit
-      //  early and save some re-analysis.  This would be an additional method/offset-source approach
-      //  since it's still useful to highlight without any index (so we build MemoryIndex).
-
-      // note: probably unwise to re-use TermsEnum on reset mem index so we don't. But we do re-use the
-      //   leaf reader, which is a bit more top level than in the guts.
-      memoryIndex.reset();
-
-      // Filter the tokenStream to applicable terms
-      if (preMemIndexFilterAutomaton != null) {
-        tokenStream = newKeepWordFilter(tokenStream, preMemIndexFilterAutomaton);
-      }
-      memoryIndex.addField(field, tokenStream);//note: calls tokenStream.reset() & close()
-      tokenStream = null; // it's consumed; done.
-      docId = 0;
-
-      if (automata.length > 0) {
-        Terms foundTerms = leafReader.terms(field);
-        if (foundTerms == null) {
-          return Collections.emptyList(); //No offsets for this field.
-        }
-        // Un-invert for the automata. Much more compact than a CachingTokenStream
-        tokenStream = MultiTermHighlighting.uninvertAndFilterTerms(foundTerms, 0, automata, content.length());
-      }
-
-    }
-
-    return createOffsetsEnums(leafReader, docId, tokenStream);
-  }
-
   protected TokenStream tokenStream(String content) throws IOException {
-    return MultiValueTokenStream.wrap(field, analyzer, content, UnifiedHighlighter.MULTIVAL_SEP_CHAR);
-  }
-
-  private static CharacterRunAutomaton[] convertTermsToAutomata(BytesRef[] terms, CharacterRunAutomaton[] automata) {
-    CharacterRunAutomaton[] newAutomata = new CharacterRunAutomaton[terms.length + automata.length];
-    for (int i = 0; i < terms.length; i++) {
-      newAutomata[i] = MultiTermHighlighting.makeStringMatchAutomata(terms[i]);
+    // If there is no splitChar in content then we needn't wrap:
+    int splitCharIdx = content.indexOf(UnifiedHighlighter.MULTIVAL_SEP_CHAR);
+    if (splitCharIdx == -1) {
+      return analyzer.tokenStream(field, content);
     }
-    // Append existing automata (that which is used for MTQs)
-    System.arraycopy(automata, 0, newAutomata, terms.length, automata.length);
-    return newAutomata;
+
+    TokenStream subTokenStream = analyzer.tokenStream(field, content.substring(0, splitCharIdx));
+
+    return new MultiValueTokenStream(subTokenStream, field, analyzer, content, UnifiedHighlighter.MULTIVAL_SEP_CHAR, splitCharIdx);
   }
-
-  private static FilteringTokenFilter newKeepWordFilter(final TokenStream tokenStream,
-                                                        final CharacterRunAutomaton charRunAutomaton) {
-    // it'd be nice to use KeepWordFilter but it demands a CharArraySet. TODO File JIRA? Need a new interface?
-    return new FilteringTokenFilter(tokenStream) {
-      final CharTermAttribute charAtt = addAttribute(CharTermAttribute.class);
-
-      @Override
-      protected boolean accept() throws IOException {
-        return charRunAutomaton.run(charAtt.buffer(), 0, charAtt.length());
-      }
-    };
-  }
-
 
   /**
-   * Build one {@link CharacterRunAutomaton} matching any term the query might match.
+   * Wraps an {@link Analyzer} and string text that represents multiple values delimited by a specified character. This
+   * exposes a TokenStream that matches what would get indexed considering the
+   * {@link Analyzer#getPositionIncrementGap(String)}. Currently this assumes {@link Analyzer#getOffsetGap(String)} is
+   * 1; an exception will be thrown if it isn't.
+   * <br />
+   * It would be more orthogonal for this to be an Analyzer since we're wrapping an Analyzer but doing so seems like
+   * more work.  The underlying components see a Reader not a String -- and the String is easy to
+   * split up without redundant buffering.
+   *
+   * @lucene.internal
    */
-  private static CharacterRunAutomaton buildCombinedAutomaton(String field, BytesRef[] terms,
-                                                              CharacterRunAutomaton[] automata,
-                                                              PhraseHelper strictPhrases) {
-    List<CharacterRunAutomaton> allAutomata = new ArrayList<>();
-    if (terms.length > 0) {
-      allAutomata.add(new CharacterRunAutomaton(Automata.makeStringUnion(Arrays.asList(terms))));
-    }
-    Collections.addAll(allAutomata, automata);
-    for (SpanQuery spanQuery : strictPhrases.getSpanQueries()) {
-      Collections.addAll(allAutomata,
-          MultiTermHighlighting.extractAutomata(spanQuery, field, true));//true==lookInSpan
+  // TODO we could make this go away.  MemoryIndexOffsetStrategy could simply split and analyze each value into the
+  //   MemoryIndex. TokenStreamOffsetStrategy's hack TokenStreamPostingsEnum could incorporate this logic,
+  //   albeit with less code, less hack.
+  private static final class MultiValueTokenStream extends TokenFilter {
+
+    private final String fieldName;
+    private final Analyzer indexAnalyzer;
+    private final String content;
+    private final char splitChar;
+
+    private final PositionIncrementAttribute posIncAtt = addAttribute(PositionIncrementAttribute.class);
+    private final OffsetAttribute offsetAtt = addAttribute(OffsetAttribute.class);
+
+    private int startValIdx = 0;
+    private int endValIdx;
+    private int remainingPosInc = 0;
+
+    private MultiValueTokenStream(TokenStream subTokenStream, String fieldName, Analyzer indexAnalyzer,
+                                  String content, char splitChar, int splitCharIdx) {
+      super(subTokenStream); // subTokenStream is already initialized to operate on the first value
+      this.fieldName = fieldName;
+      this.indexAnalyzer = indexAnalyzer;
+      this.content = content;
+      this.splitChar = splitChar;
+      this.endValIdx = splitCharIdx;
     }
 
-    if (allAutomata.size() == 1) {
-      return allAutomata.get(0);
-    }
-    //TODO it'd be nice if we could get at the underlying Automaton in CharacterRunAutomaton so that we
-    //  could union them all. But it's not exposed, and note TermRangeQuery isn't modelled as an Automaton
-    //  by MultiTermHighlighting.
-
-    // Return an aggregate CharacterRunAutomaton of others
-    return new CharacterRunAutomaton(Automata.makeEmpty()) {// the makeEmpty() is bogus; won't be used
-      @Override
-      public boolean run(char[] chars, int offset, int length) {
-        for (int i = 0; i < allAutomata.size(); i++) {// don't use foreach to avoid Iterator allocation
-          if (allAutomata.get(i).run(chars, offset, length)) {
-            return true;
-          }
-        }
-        return false;
+    @Override
+    public void reset() throws IOException {
+      if (startValIdx != 0) {
+        throw new IllegalStateException("This TokenStream wasn't developed to be re-used.");
+        // ... although we could if a need for it arises.
       }
-    };
-  }
+      super.reset();
+    }
 
+    @Override
+    public boolean incrementToken() throws IOException {
+      while (true) {
+
+        if (input.incrementToken()) {
+          // Position tracking:
+          if (remainingPosInc > 0) {//usually true first token of additional values (not first val)
+            posIncAtt.setPositionIncrement(remainingPosInc + posIncAtt.getPositionIncrement());
+            remainingPosInc = 0;//reset
+          }
+          // Offset tracking:
+          offsetAtt.setOffset(
+              startValIdx + offsetAtt.startOffset(),
+              startValIdx + offsetAtt.endOffset()
+          );
+          return true;
+        }
+
+        if (endValIdx == content.length()) {//no more
+          return false;
+        }
+
+        input.end(); // might adjust position increment
+        remainingPosInc += posIncAtt.getPositionIncrement();
+        input.close();
+        remainingPosInc += indexAnalyzer.getPositionIncrementGap(fieldName);
+
+        // Get new tokenStream based on next segment divided by the splitChar
+        startValIdx = endValIdx + 1;
+        endValIdx = content.indexOf(splitChar, startValIdx);
+        if (endValIdx == -1) {//EOF
+          endValIdx = content.length();
+        }
+        TokenStream tokenStream = indexAnalyzer.tokenStream(fieldName, content.substring(startValIdx, endValIdx));
+        if (tokenStream != input) {// (input is defined in TokenFilter set in the constructor)
+          // This is a grand trick we do -- knowing that the analyzer's re-use strategy is going to produce the
+          // very same tokenStream instance and thus have the same AttributeSource as this wrapping TokenStream
+          // since we used it as our input in the constructor.
+          // Were this not the case, we'd have to copy every attribute of interest since we can't alter the
+          // AttributeSource of this wrapping TokenStream post-construction (it's all private/final).
+          // If this is a problem, we could do that instead; maybe with a custom CharTermAttribute that allows
+          // us to easily set the char[] reference without literally copying char by char.
+          throw new IllegalStateException("Require TokenStream re-use.  Unsupported re-use strategy?: " +
+              indexAnalyzer.getReuseStrategy());
+        }
+        tokenStream.reset();
+      } // while loop to increment token of this new value
+    }
+
+    @Override
+    public void end() throws IOException {
+      super.end();
+      // Offset tracking:
+      offsetAtt.setOffset(
+          startValIdx + offsetAtt.startOffset(),
+          startValIdx + offsetAtt.endOffset());
+    }
+
+  }
 }

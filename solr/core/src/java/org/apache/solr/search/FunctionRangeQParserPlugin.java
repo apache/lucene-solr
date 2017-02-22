@@ -46,7 +46,9 @@ public class FunctionRangeQParserPlugin extends QParserPlugin {
       @Override
       public Query parse() throws SyntaxError {
         funcStr = localParams.get(QueryParsing.V, null);
-        Query funcQ = subQuery(funcStr, FunctionQParserPlugin.NAME).getQuery();
+        QParser subParser = subQuery(funcStr, FunctionQParserPlugin.NAME);
+        subParser.setIsFilter(false);  // the range can be based on the relevancy score of embedded queries.
+        Query funcQ = subParser.getQuery();
         if (funcQ instanceof FunctionQuery) {
           vs = ((FunctionQuery)funcQ).getValueSource();
         } else {

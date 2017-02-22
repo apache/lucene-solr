@@ -85,7 +85,7 @@ public class RuleEngineTest extends SolrTestCaseJ4{
         new HashMap(), new ArrayList<>(MockSnitch.nodeVsTags.keySet()), null, null ).getNodeMappings();
     assertNotNull(mapping);
 
-    rules = parseRules("[{role:'!overseer'}]" );
+    rules = parseRules("[{role:'!overseer'}, {'freedisk':'>1'}]" );
     Map<String, Object> snitchSession = new HashMap<>();
     List<String> preferredOverseerNodes = ImmutableList.of("127.0.0.1:49947_", "127.0.0.1:49952_");
     ReplicaAssigner replicaAssigner = new ReplicaAssigner(

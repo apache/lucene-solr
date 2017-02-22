@@ -16,7 +16,6 @@
  */
 package org.apache.lucene.facet.taxonomy;
 
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -37,25 +36,19 @@ import org.apache.lucene.facet.FacetsConfig;
 import org.apache.lucene.facet.LabelAndValue;
 import org.apache.lucene.facet.taxonomy.directory.DirectoryTaxonomyReader;
 import org.apache.lucene.facet.taxonomy.directory.DirectoryTaxonomyWriter;
-import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.queries.function.FunctionQuery;
-import org.apache.lucene.queries.function.FunctionValues;
-import org.apache.lucene.queries.function.ValueSource;
-import org.apache.lucene.queries.function.docvalues.DoubleDocValues;
-import org.apache.lucene.queries.function.valuesource.FloatFieldSource;
-import org.apache.lucene.queries.function.valuesource.IntFieldSource;
 import org.apache.lucene.queries.function.valuesource.LongFieldSource;
 import org.apache.lucene.search.BoostQuery;
 import org.apache.lucene.search.ConstantScoreQuery;
+import org.apache.lucene.search.DoubleValuesSource;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.MatchAllDocsQuery;
 import org.apache.lucene.search.Query;
-import org.apache.lucene.search.Scorer;
 import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.search.TopDocs;
 import org.apache.lucene.store.Directory;
@@ -120,7 +113,7 @@ public class TestTaxonomyFacetSumValueSource extends FacetTestCase {
     // Facets.search utility methods:
     searcher.search(new MatchAllDocsQuery(), c);
 
-    TaxonomyFacetSumValueSource facets = new TaxonomyFacetSumValueSource(taxoReader, new FacetsConfig(), c, new IntFieldSource("num"));
+    TaxonomyFacetSumValueSource facets = new TaxonomyFacetSumValueSource(taxoReader, new FacetsConfig(), c, DoubleValuesSource.fromIntField("num"));
 
     // Retrieve & verify results:
     assertEquals("dim=Author path=[] value=145.0 childCount=4\n  Lisa (50.0)\n  Frank (45.0)\n  Susan (40.0)\n  Bob (10.0)\n", facets.getTopChildren(10, "Author").toString());
@@ -180,7 +173,7 @@ public class TestTaxonomyFacetSumValueSource extends FacetTestCase {
     FacetsCollector c = new FacetsCollector();
     searcher.search(new MatchAllDocsQuery(), c);    
 
-    TaxonomyFacetSumValueSource facets = new TaxonomyFacetSumValueSource(taxoReader, new FacetsConfig(), c, new IntFieldSource("num"));
+    TaxonomyFacetSumValueSource facets = new TaxonomyFacetSumValueSource(taxoReader, new FacetsConfig(), c, DoubleValuesSource.fromIntField("num"));
 
     // Ask for top 10 labels for any dims that have counts:
     List<FacetResult> results = facets.getAllDims(10);
@@ -223,7 +216,7 @@ public class TestTaxonomyFacetSumValueSource extends FacetTestCase {
     FacetsCollector c = new FacetsCollector();
     searcher.search(new MatchAllDocsQuery(), c);    
 
-    TaxonomyFacetSumValueSource facets = new TaxonomyFacetSumValueSource(taxoReader, config, c, new IntFieldSource("num"));
+    TaxonomyFacetSumValueSource facets = new TaxonomyFacetSumValueSource(taxoReader, config, c, DoubleValuesSource.fromIntField("num"));
 
     // Ask for top 10 labels for any dims that have counts:
     List<FacetResult> results = facets.getAllDims(10);
@@ -266,7 +259,7 @@ public class TestTaxonomyFacetSumValueSource extends FacetTestCase {
     
     TopDocs td = FacetsCollector.search(newSearcher(r), csq, 10, fc);
 
-    Facets facets = new TaxonomyFacetSumValueSource(taxoReader, config, fc, new TaxonomyFacetSumValueSource.ScoreValueSource());
+    Facets facets = new TaxonomyFacetSumValueSource(taxoReader, config, fc, DoubleValuesSource.SCORES);
     
     int expected = (int) (td.getMaxScore() * td.totalHits);
     assertEquals(expected, facets.getSpecificValue("dim", "a").intValue());
@@ -294,7 +287,7 @@ public class TestTaxonomyFacetSumValueSource extends FacetTestCase {
 
     FacetsCollector sfc = new FacetsCollector();
     newSearcher(r).search(new MatchAllDocsQuery(), sfc);
-    Facets facets = new TaxonomyFacetSumValueSource(taxoReader, config, sfc, new LongFieldSource("price"));
+    Facets facets = new TaxonomyFacetSumValueSource(taxoReader, config, sfc, DoubleValuesSource.fromLongField("price"));
     assertEquals("dim=a path=[] value=10.0 childCount=2\n  1 (6.0)\n  0 (4.0)\n", facets.getTopChildren(10, "a").toString());
 
     iw.close();
@@ -318,34 +311,12 @@ public class TestTaxonomyFacetSumValueSource extends FacetTestCase {
     
     DirectoryReader r = DirectoryReader.open(iw);
     DirectoryTaxonomyReader taxoReader = new DirectoryTaxonomyReader(taxoWriter);
-
-    ValueSource valueSource = new ValueSource() {
-      @Override
-      public FunctionValues getValues(@SuppressWarnings("rawtypes") Map context, LeafReaderContext readerContext) throws IOException {
-        final Scorer scorer = (Scorer) context.get("scorer");
-        assert scorer != null;
-        return new DoubleDocValues(this) {
-          @Override
-          public double doubleVal(int document) {
-            try {
-              return scorer.score();
-            } catch (IOException exception) {
-              throw new RuntimeException(exception);
-            }
-          }
-        };
-      }
-
-      @Override public boolean equals(Object o) { return o == this; }
-      @Override public int hashCode() { return System.identityHashCode(this); }
-      @Override public String description() { return "score()"; }
-    };
     
     FacetsCollector fc = new FacetsCollector(true);
     // score documents by their 'price' field - makes asserting the correct counts for the categories easier
     Query q = new FunctionQuery(new LongFieldSource("price"));
     FacetsCollector.search(newSearcher(r), q, 10, fc);
-    Facets facets = new TaxonomyFacetSumValueSource(taxoReader, config, fc, valueSource);
+    Facets facets = new TaxonomyFacetSumValueSource(taxoReader, config, fc, DoubleValuesSource.SCORES);
     
     assertEquals("dim=a path=[] value=10.0 childCount=2\n  1 (6.0)\n  0 (4.0)\n", facets.getTopChildren(10, "a").toString());
 
@@ -373,10 +344,9 @@ public class TestTaxonomyFacetSumValueSource extends FacetTestCase {
     DirectoryReader r = DirectoryReader.open(iw);
     DirectoryTaxonomyReader taxoReader = new DirectoryTaxonomyReader(taxoWriter);
 
-    ValueSource valueSource = new LongFieldSource("price");
     FacetsCollector sfc = new FacetsCollector();
     newSearcher(r).search(new MatchAllDocsQuery(), sfc);
-    Facets facets = new TaxonomyFacetSumValueSource(taxoReader, config, sfc, valueSource);
+    Facets facets = new TaxonomyFacetSumValueSource(taxoReader, config, sfc, DoubleValuesSource.fromLongField("price"));
     
     assertEquals("dim=a path=[] value=10.0 childCount=2\n  1 (6.0)\n  0 (4.0)\n", facets.getTopChildren(10, "a").toString());
 
@@ -408,7 +378,7 @@ public class TestTaxonomyFacetSumValueSource extends FacetTestCase {
     FacetsCollector.search(newSearcher(r), new MatchAllDocsQuery(), 10, fc);
     
     Facets facets1 = getTaxonomyFacetCounts(taxoReader, config, fc);
-    Facets facets2 = new TaxonomyFacetSumValueSource(new DocValuesOrdinalsReader("$b"), taxoReader, config, fc, new TaxonomyFacetSumValueSource.ScoreValueSource());
+    Facets facets2 = new TaxonomyFacetSumValueSource(new DocValuesOrdinalsReader("$b"), taxoReader, config, fc, DoubleValuesSource.SCORES);
 
     assertEquals(r.maxDoc(), facets1.getTopChildren(10, "a").value.intValue());
     assertEquals(r.maxDoc(), facets2.getTopChildren(10, "b").value.doubleValue(), 1E-10);
@@ -446,8 +416,6 @@ public class TestTaxonomyFacetSumValueSource extends FacetTestCase {
     // NRT open
     TaxonomyReader tr = new DirectoryTaxonomyReader(tw);
 
-    ValueSource values = new FloatFieldSource("value");
-
     int iters = atLeast(100);
     for(int iter=0;iter<iters;iter++) {
       String searchToken = tokens[random().nextInt(tokens.length)];
@@ -456,7 +424,7 @@ public class TestTaxonomyFacetSumValueSource extends FacetTestCase {
       }
       FacetsCollector fc = new FacetsCollector();
       FacetsCollector.search(searcher, new TermQuery(new Term("content", searchToken)), 10, fc);
-      Facets facets = new TaxonomyFacetSumValueSource(tr, config, fc, values);
+      Facets facets = new TaxonomyFacetSumValueSource(tr, config, fc, DoubleValuesSource.fromFloatField("value"));
 
       // Slow, yet hopefully bug-free, faceting:
       @SuppressWarnings({"rawtypes","unchecked"}) Map<String,Float>[] expectedValues = new HashMap[numDims];
@@ -472,7 +440,7 @@ public class TestTaxonomyFacetSumValueSource extends FacetTestCase {
               if (v == null) {
                 expectedValues[j].put(doc.dims[j], doc.value);
               } else {
-                expectedValues[j].put(doc.dims[j], v.floatValue() + doc.value);
+                expectedValues[j].put(doc.dims[j], v + doc.value);
               }
             }
           }

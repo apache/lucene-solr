@@ -69,7 +69,7 @@ public class AnalyticsMergeStrategyTest extends BaseDistributedSearchTestCase {
     commit();
 
     /*
-    *  The count qparser plugin is pointing to the TestAnalyticsQParserPlugin. This class defines a simple AnalyticsQuery and
+    *  The count qparser plugin is pointing to AnalyticsTestQParserPlugin. This class defines a simple AnalyticsQuery and
     *  has two merge strategies. If the iterate local param is true then an InterativeMergeStrategy is used.
     */
 

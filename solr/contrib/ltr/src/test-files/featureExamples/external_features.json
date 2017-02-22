@@ -5,11 +5,11 @@
         "q" : "{!terms f=title}${user_query}"
     }
 }, {
-    "name" : "confidence",
-    "class" : "org.apache.solr.ltr.feature.ValueFeature",
+    "name" : "docPopularity",
+    "class" : "org.apache.solr.ltr.feature.FieldValueFeature",
     "store": "fstore2",
     "params" : {
-        "value" : "${myconf}"
+        "field" : "popularity"
     }
 }, {
     "name":"originalScore",
