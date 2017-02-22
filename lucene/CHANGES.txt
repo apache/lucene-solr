@@ -95,6 +95,8 @@ API Changes
   AssertingScorer checks that getChildren() is not called on an unpositioned
   Scorer.  (Alan Woodward, Adrien Grand)
 
+* LUCENE-7702: Removed GraphQuery in favour of simple boolean query. (Matt Webber via Jim Ferenczi)
+
 New Features
 
 * LUCENE-7449: Add CROSSES relation support to RangeFieldQuery. (Nick Knize)

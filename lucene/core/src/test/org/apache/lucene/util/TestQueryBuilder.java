@@ -31,7 +31,6 @@ import org.apache.lucene.analysis.tokenattributes.PositionIncrementAttribute;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.BooleanClause;
 import org.apache.lucene.search.BooleanQuery;
-import org.apache.lucene.search.GraphQuery;
 import org.apache.lucene.search.MultiPhraseQuery;
 import org.apache.lucene.search.PhraseQuery;
 import org.apache.lucene.search.Query;
@@ -178,7 +177,12 @@ public class TestQueryBuilder extends LuceneTestCase {
           .add(new TermQuery(new Term("field", "pig")), BooleanClause.Occur.MUST)
           .build();
       Query syn2 = new TermQuery(new Term("field", "cavy"));
-      GraphQuery expectedGraphQuery = new GraphQuery(syn1, syn2);
+
+      BooleanQuery expectedGraphQuery = new BooleanQuery.Builder()
+          .add(syn1, BooleanClause.Occur.SHOULD)
+          .add(syn2, BooleanClause.Occur.SHOULD)
+          .build();
+
       QueryBuilder queryBuilder = new QueryBuilder(new MockSynonymAnalyzer());
       assertEquals(expectedGraphQuery, queryBuilder.createBooleanQuery("field", "guinea pig", occur));
 
@@ -213,7 +217,10 @@ public class TestQueryBuilder extends LuceneTestCase {
           .add(new Term("field", "pig"))
           .build();
       Query syn2 = new TermQuery(new Term("field", "cavy"));
-      GraphQuery expectedGraphQuery = new GraphQuery(syn1, syn2);
+      BooleanQuery expectedGraphQuery = new BooleanQuery.Builder()
+          .add(syn1, BooleanClause.Occur.SHOULD)
+          .add(syn2, BooleanClause.Occur.SHOULD)
+          .build();
       QueryBuilder queryBuilder = new QueryBuilder(new MockSynonymAnalyzer());
       queryBuilder.setAutoGenerateMultiTermSynonymsPhraseQuery(true);
       assertEquals(expectedGraphQuery, queryBuilder.createBooleanQuery("field", "guinea pig", occur));
