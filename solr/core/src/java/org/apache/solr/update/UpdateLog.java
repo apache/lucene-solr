@@ -53,6 +53,7 @@ import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.ExecutorUtil;
+import org.apache.solr.common.util.IOUtils;
 import org.apache.solr.core.PluginInfo;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.core.SolrInfoMBean;
@@ -1724,6 +1725,8 @@ public static final int VERSION_IDX = 1;
         } catch (IOException ex) {
           recoveryInfo.errors++;
           loglog.error("Replay exception: finish()", ex);
+        } finally {
+          IOUtils.closeQuietly(proc);
         }
 
       } finally {

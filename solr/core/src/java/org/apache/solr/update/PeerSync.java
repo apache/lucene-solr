@@ -40,6 +40,7 @@ import org.apache.solr.cloud.ZkController;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.params.ModifiableSolrParams;
+import org.apache.solr.common.util.IOUtils;
 import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.core.SolrInfoMBean;
@@ -865,6 +866,8 @@ public class PeerSync implements SolrMetricProducer {
         sreq.updateException = e;
         log.error(msg() + "Error applying updates from " + sreq.shards + " ,finish()", e);
         return false;
+      } finally {
+        IOUtils.closeQuietly(proc);
       }
     }
 
