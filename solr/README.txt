@@ -118,7 +118,7 @@ dist/solr-<component>-XX.jar
   for more information).
 
 docs/index.html
-  The Apache Solr Javadoc API documentation and Tutorial
+  A link to the online version of Apache Solr Javadoc API documentation and Tutorial
 
 
 Instructions for Building Apache Solr from Source

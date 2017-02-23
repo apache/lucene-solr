@@ -246,6 +246,9 @@ Other Changes
 
 * SOLR-10020: Cannot reload a core if it fails initialization. (Mike Drob via Erick Erickson)
 
+* SOLR-9450: The docs/ folder in the binary distribution now contains a single index.html file linking
+  to the online documentation, reducing the size of the download (janhoy, Shawn Heisey, Uwe Schindler)
+
 ==================  6.4.2 ==================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release.
@@ -697,7 +700,7 @@ Upgrade Notes
 
 New Features
 ----------------------
-* SOLR-5725: facet.method=enum can bypass exact counts calculation with facet.exists=true, it just returns 1 for 
+* SOLR-5725: facet.method=enum can bypass exact counts calculation with facet.exists=true, it just returns 1 for
   terms which exists in result docset. (Alexey Kozhemiakin, Sebastian Koziel, Radoslaw Zielinski via Mikhail Khludnev)
 
 * SOLR-9127: Excel workbook (.xlsx) response writer. use 'wt=xlsx' (Tony Moriarty, noble)
@@ -973,7 +976,6 @@ Other Changes
 
 * SOLR-9371: Fix bin/solr calculations for start/stop wait time and RMI_PORT.
   (Shawn Heisey via Erick Erickson)
-
 
 ==================  6.2.1 ==================
 
