@@ -189,7 +189,7 @@ Optimizations
 * SOLR-9941: Clear the deletes lists at UpdateLog before replaying from log. This prevents redundantly pre-applying
   DBQs, during the log replay, to every update in the log as if the DBQs were out of order. (hossman, Ishan Chattopadhyaya)
 
-* SOLR-9764: All filters that which all documents in the index now share the same memory (DocSet).
+* SOLR-9764: All filters that match all documents in the index now share the same memory (DocSet).
   (Michael Sun, yonik)
 
 * SOLR-9584: Support Solr being proxied with another endpoint than default /solr, by using relative links
