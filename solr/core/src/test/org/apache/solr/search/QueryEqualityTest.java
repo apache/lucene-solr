@@ -193,6 +193,15 @@ public class QueryEqualityTest extends SolrTestCaseJ4 {
     }
   }
 
+  public void testSignificantTermsQuery() throws Exception {
+    SolrQueryRequest req = req("q", "*:*");
+    try {
+      assertQueryEquals("sigificantTerms", req, "{!sigificantTerms}");
+    } finally {
+      req.close();
+    }
+  }
+
   public void testQuerySwitch() throws Exception {
     SolrQueryRequest req = req("myXXX", "XXX", 
                                "myField", "foo_s",
