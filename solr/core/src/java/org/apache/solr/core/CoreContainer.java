@@ -1096,28 +1096,32 @@ public class CoreContainer {
    * @param name the name of the SolrCore to reload
    */
   public void reload(String name) {
-
     SolrCore core = solrCores.getCoreFromAnyList(name, false);
-    if (core == null)
-      throw new SolrException( SolrException.ErrorCode.BAD_REQUEST, "No such core: " + name );
-
-    CoreDescriptor cd = core.getCoreDescriptor();
-    try {
-      solrCores.waitAddPendingCoreOps(name);
-      ConfigSet coreConfig = coreConfigService.getConfig(cd);
-      log.info("Reloading SolrCore '{}' using configuration from {}", cd.getName(), coreConfig.getName());
-      SolrCore newCore = core.reload(coreConfig);
-      registerCore(name, newCore, false, false);
-    } catch (SolrCoreState.CoreIsClosedException e) {
-      throw e;
-    } catch (Exception e) {
-      coreInitFailures.put(cd.getName(), new CoreLoadFailure(cd, e));
-      throw new SolrException(ErrorCode.SERVER_ERROR, "Unable to reload core [" + cd.getName() + "]", e);
+    if (core != null) {
+      CoreDescriptor cd = core.getCoreDescriptor();
+      try {
+        solrCores.waitAddPendingCoreOps(cd.getName());
+        ConfigSet coreConfig = coreConfigService.getConfig(cd);
+        log.info("Reloading SolrCore '{}' using configuration from {}", cd.getName(), coreConfig.getName());
+        SolrCore newCore = core.reload(coreConfig);
+        registerCore(cd.getName(), newCore, false, false);
+      } catch (SolrCoreState.CoreIsClosedException e) {
+        throw e;
+      } catch (Exception e) {
+        coreInitFailures.put(cd.getName(), new CoreLoadFailure(cd, e));
+        throw new SolrException(ErrorCode.SERVER_ERROR, "Unable to reload core [" + cd.getName() + "]", e);
+      }
+      finally {
+        solrCores.removeFromPendingOps(cd.getName());
+      }
+    } else {
+      CoreLoadFailure clf = coreInitFailures.get(name);
+      if (clf != null) {
+        create(clf.cd, true, false);
+      } else {
+        throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "No such core: " + name );
+      }
     }
-    finally {
-      solrCores.removeFromPendingOps(name);
-    }
-
   }
 
   /**

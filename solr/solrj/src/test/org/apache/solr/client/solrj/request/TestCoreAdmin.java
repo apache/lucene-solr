@@ -19,6 +19,9 @@ package org.apache.solr.client.solrj.request;
 import java.io.File;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.Collection;
 
 import com.carrotsearch.randomizedtesting.annotations.ThreadLeakFilters;
@@ -41,6 +44,7 @@ import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.NamedList;
+import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.metrics.SolrCoreMetricManager;
 import org.apache.solr.metrics.SolrMetricManager;
@@ -292,6 +296,41 @@ public class TestCoreAdmin extends AbstractEmbeddedSolrServerTestCase {
       expectThrows(SolrException.class, () -> recoverRequestCmd.process(getSolrAdmin()));
   }
   
+  @Test
+  public void testReloadCoreAfterFailure() throws Exception {
+    cores.shutdown();
+    useFactory(null); // use FS factory
+
+    try {
+      cores = CoreContainer.createAndLoad(SOLR_HOME, getSolrXml());
+
+      String ddir = CoreAdminRequest.getCoreStatus("core0", getSolrCore0()).getDataDirectory();
+      Path data = Paths.get(ddir, "index");
+      assumeTrue("test can't handle relative data directory paths (yet?)", data.isAbsolute());
+
+      getSolrCore0().add(new SolrInputDocument("id", "core0-1"));
+      getSolrCore0().commit();
+
+      cores.shutdown();
+
+      // destroy the index
+      Files.move(data.resolve("_0.si"), data.resolve("backup"));
+      cores = CoreContainer.createAndLoad(SOLR_HOME, getSolrXml());
+
+      // Need to run a query to confirm that the core couldn't load
+      expectThrows(SolrException.class, () -> getSolrCore0().query(new SolrQuery("*:*")));
+
+      // We didn't fix anything, so should still throw
+      expectThrows(SolrException.class, () -> CoreAdminRequest.reloadCore("core0", getSolrCore0()));
+
+      Files.move(data.resolve("backup"), data.resolve("_0.si"));
+      CoreAdminRequest.reloadCore("core0", getSolrCore0());
+      assertEquals(1, getSolrCore0().query(new SolrQuery("*:*")).getResults().getNumFound());
+    } finally {
+      resetFactory();
+    }
+  }
+
   @BeforeClass
   public static void before() {
     // wtf?
