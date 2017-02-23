@@ -23,6 +23,7 @@ import java.text.ParseException;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Locale;
 import java.util.Set;
 
 import org.apache.lucene.analysis.Analyzer;
@@ -1921,5 +1922,38 @@ public class TestSynonymGraphFilter extends BaseTokenStreamTestCase {
         new String[]{"z", "xc", "x", "c", "$"},
         new int[]{1, 1, 0, 1, 1});
     a.close();
+  }
+
+  public void testUpperCase() throws IOException {
+    assertMapping("word", "synonym");
+    assertMapping("word".toUpperCase(Locale.ROOT), "synonym");
+  }
+
+  private void assertMapping(String inputString, String outputString) throws IOException {
+    SynonymMap.Builder builder = new SynonymMap.Builder(false);
+    // the rules must be lowercased up front, but the incoming tokens will be case insensitive:
+    CharsRef input = SynonymMap.Builder.join(inputString.toLowerCase(Locale.ROOT).split(" "), new CharsRefBuilder());
+    CharsRef output = SynonymMap.Builder.join(outputString.split(" "), new CharsRefBuilder());
+    builder.add(input, output, true);
+    Analyzer analyzer = new CustomAnalyzer(builder.build());
+    TokenStream tokenStream = analyzer.tokenStream("field", inputString);
+    assertTokenStreamContents(tokenStream, new String[]{
+        outputString, inputString
+      });
+  }
+
+  static class CustomAnalyzer extends Analyzer {
+    private SynonymMap synonymMap;
+
+    CustomAnalyzer(SynonymMap synonymMap) {
+      this.synonymMap = synonymMap;
+    }
+
+    @Override
+    protected TokenStreamComponents createComponents(String s) {
+      Tokenizer tokenizer = new MockTokenizer(MockTokenizer.WHITESPACE, false);
+      TokenStream tokenStream = new SynonymGraphFilter(tokenizer, synonymMap, true); // Ignore case True
+      return new TokenStreamComponents(tokenizer, tokenStream);
+    }
   }
 }
