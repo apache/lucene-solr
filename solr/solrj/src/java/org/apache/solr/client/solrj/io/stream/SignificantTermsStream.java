@@ -433,7 +433,7 @@ public class SignificantTermsStream extends TupleStream implements Expressible{
       params.add("maxDocFreq", Float.toString(maxDocFreq));
       params.add("minTermLength", Integer.toString(minTermLength));
       params.add("field", field);
-      params.add("numTerms", String.valueOf(numTerms*3));
+      params.add("numTerms", String.valueOf(numTerms*5));
 
       QueryRequest request= new QueryRequest(params);
       QueryResponse response = request.process(solrClient);
