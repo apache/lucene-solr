@@ -244,6 +244,8 @@ Other Changes
 * SOLR-9848: Lower solr.cloud.wait-for-updates-with-stale-state-pause back down from 7 seconds. 
   (Mark Miller) 
 
+* SOLR-10020: Cannot reload a core if it fails initialization. (Mike Drob via Erick Erickson)
+
 ==================  6.4.2 ==================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release.
