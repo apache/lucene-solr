@@ -193,6 +193,11 @@ public class BasicAuthIntegrationTest extends SolrCloudTestCase {
       update.setCommitWithin(100);
       cluster.getSolrClient().request(update, COLLECTION);
 
+      UpdateRequest delete = new UpdateRequest();
+      delete.setBasicAuthCredentials("harry", "HarryIsUberCool");
+      delete.deleteById("4");
+      delete.setCommitWithin(100);
+      cluster.getSolrClient().request(delete, COLLECTION);
 
       executeCommand(baseUrl + authcPrefix, cl, "{set-property : { blockUnknown: true}}", "harry", "HarryIsUberCool");
       verifySecurityStatus(cl, baseUrl + authcPrefix, "authentication/blockUnknown", "true", 20, "harry", "HarryIsUberCool");
