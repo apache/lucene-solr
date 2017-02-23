@@ -160,6 +160,14 @@ public final class SynonymGraphFilter extends TokenFilter {
     }
   }
 
+  /**
+   * Apply previously built synonyms to incoming tokens.
+   * @param input input tokenstream
+   * @param synonyms synonym map
+   * @param ignoreCase case-folds input for matching with {@link Character#toLowerCase(int)}.
+   *                   Note, if you set this to true, it's your responsibility to lowercase
+   *                   the input entries when you create the {@link SynonymMap}
+   */
   public SynonymGraphFilter(TokenStream input, SynonymMap synonyms, boolean ignoreCase) {
     super(input);
     this.synonyms = synonyms;
