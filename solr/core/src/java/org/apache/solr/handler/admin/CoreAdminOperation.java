@@ -102,11 +102,7 @@ enum CoreAdminOperation implements CoreAdminOp {
   }),
   RELOAD_OP(RELOAD, it -> {
     SolrParams params = it.req.getParams();
-    String cname = params.get(CoreAdminParams.CORE);
-
-    if (cname == null || !it.handler.coreContainer.getCoreNames().contains(cname)) {
-      throw new SolrException(ErrorCode.BAD_REQUEST, "Core with core name [" + cname + "] does not exist.");
-    }
+    String cname = params.required().get(CoreAdminParams.CORE);
 
     try {
       it.handler.coreContainer.reload(cname);

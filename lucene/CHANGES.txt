@@ -172,6 +172,10 @@ Improvements
   earlier than regular queries in order to improve cache efficiency.
   (Adrien Grand)
 
+* LUCENE-7707: Use predefined shard index when mergeing top docs if present. This 
+  allows to use TopDoc#merge to merge shard responses incrementally instead of
+  once all shard responses are present. (Simon Willnauer)
+
 Optimizations
 
 * LUCENE-7641: Optimized point range queries to compute documents that do not
