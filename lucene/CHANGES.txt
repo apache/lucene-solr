@@ -178,6 +178,10 @@ Improvements
   earlier than regular queries in order to improve cache efficiency.
   (Adrien Grand)
 
+* LUCENE-7710: BlockPackedReader throws CorruptIndexException and includes
+  IndexInput description instead of plain IOException (Mike Drob via
+  Mike McCandless)
+
 Optimizations
 
 * LUCENE-7641: Optimized point range queries to compute documents that do not
