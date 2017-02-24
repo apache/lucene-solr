@@ -259,7 +259,6 @@ public class QueryComponent extends SearchComponent
     //TODO: move weighting of sort
     final SortSpec groupSortSpec = searcher.weightSortSpec(sortSpec, Sort.RELEVANCE);
 
-    // groupSort defaults to sort
     String withinGroupSortStr = params.get(GroupParams.GROUP_SORT);
     //TODO: move weighting of sort
     final SortSpec withinGroupSortSpec;
