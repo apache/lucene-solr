@@ -77,7 +77,7 @@ public class BasicAuthDistributedTest extends BaseDistributedSearchTestCase {
     handle.put("maxScore", SKIPVAL);
     handle.put("_version_", SKIPVAL);
   }
-  
+
   private void testAuth() throws Exception {
     QueryResponse rsp = query("q","text:doc", "fl", "id,text", "sort", "id asc");
     assertEquals(10, rsp.getResults().getNumFound());
@@ -91,7 +91,7 @@ public class BasicAuthDistributedTest extends BaseDistributedSearchTestCase {
       query("q","text:doc-fail", "fl", "id,text", "sort", "id asc");
     });
     assertEquals(401, expected.code());
-    
+
     // Add auth
     ModifiableSolrParams params = new ModifiableSolrParams();
     params.add("q", "text:doc").add("fl", "id,text").add("sort", "id asc");
@@ -103,7 +103,7 @@ public class BasicAuthDistributedTest extends BaseDistributedSearchTestCase {
       rsp = query(true, params, "solr", "SolrRocks");
     }
     assertEquals(10, rsp.getResults().getNumFound());
-    
+
     // Disable auth
     for (JettySolrRunner j : jettys) {
       deleteSecurityJson(j.getCoreContainer());
@@ -133,5 +133,4 @@ public class BasicAuthDistributedTest extends BaseDistributedSearchTestCase {
       "    'class':'solr.RuleBasedAuthorizationPlugin',\n" +
       "    'user-role':{'solr':'admin'},\n" +
       "    'permissions':[{'name':'all','role':'admin'}]}}";
-  
 }
