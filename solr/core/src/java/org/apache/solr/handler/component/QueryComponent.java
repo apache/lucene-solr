@@ -253,24 +253,28 @@ public class QueryComponent extends SearchComponent
 
     //TODO: move weighting of sort
     final SortSpec groupSortSpec = searcher.weightSortSpec(sortSpec, Sort.RELEVANCE);
-
-    // groupSort defaults to sort
+    // withinGroupSort defaults to groupSort
     String withinGroupSortStr = params.get(GroupParams.GROUP_SORT);
     //TODO: move weighting of sort
     final SortSpec withinGroupSortSpec;
+
+    int withinGroupOffset = params.getInt(GroupParams.GROUP_OFFSET, 0);
+    int withinGroupCount = params.getInt(GroupParams.GROUP_LIMIT, 1);
+
     if (withinGroupSortStr != null) {
       SortSpec parsedWithinGroupSortSpec = SortSpecParsing.parseSortSpec(withinGroupSortStr, req);
       withinGroupSortSpec = searcher.weightSortSpec(parsedWithinGroupSortSpec, Sort.RELEVANCE);
+
+      withinGroupSortSpec.setOffset(withinGroupOffset);
+      withinGroupSortSpec.setCount(withinGroupCount);
+
     } else {
       withinGroupSortSpec = new SortSpec(
           groupSortSpec.getSort(),
           groupSortSpec.getSchemaFields(),
-          groupSortSpec.getCount(),
-          groupSortSpec.getOffset());
+          withinGroupCount,
+          withinGroupOffset);
     }
-    withinGroupSortSpec.setOffset(params.getInt(GroupParams.GROUP_OFFSET, 0));
-    withinGroupSortSpec.setCount(params.getInt(GroupParams.GROUP_LIMIT, 1));
-
     groupingSpec.setWithinGroupSortSpec(withinGroupSortSpec);
     groupingSpec.setGroupSortSpec(groupSortSpec);
 
@@ -650,7 +654,9 @@ public class QueryComponent extends SearchComponent
           leafComparator.setScorer(new FakeScorer(doc, score));
           leafComparator.copy(0, doc);
           Object val = comparator.value(0);
-          if (null != ft) val = ft.marshalSortValue(val);
+          if (null != ft) {
+              val = ft.marshalSortValue(val);
+          }
           vals[position] = val;
         }
 

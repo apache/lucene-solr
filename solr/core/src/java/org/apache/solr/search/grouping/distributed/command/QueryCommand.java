@@ -160,4 +160,15 @@ public class QueryCommand implements Command<QueryCommandResult> {
   public Sort getWithinGroupSort() {
     return null;
   }
+
+  @Override
+  public SortSpec getGroupSortSpec() {
+      return null;
+  }
+
+  @Override
+  public SortSpec getWithinGroupSortSpec() {
+      return null;
+  }
+
 }

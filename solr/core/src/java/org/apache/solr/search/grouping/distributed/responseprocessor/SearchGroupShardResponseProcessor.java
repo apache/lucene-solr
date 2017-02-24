@@ -48,19 +48,7 @@ public class SearchGroupShardResponseProcessor implements ShardResponseProcessor
    */
   @Override
   public void process(ResponseBuilder rb, ShardRequest shardRequest) {
-//    SortSpec ss = rb.getSortSpec(); // used only for offset and count; might as well use groupSortSpec (?)
-//    Good question. I would suggest to keep the 'ss' around for now for the following reasons:
-//    (1) Not changing it now doesn't mean that it couldn't be changed later i.e. beyond the scope of SOLR-6203 work.
-//    (2) Changing it now (as part of SOLR-6203) has limited benefit, as you say it's used in just two places.
-//    (3) Before/When changing it, we would need to convince ourselves by code inspection that indeed ss.get(Count|Offset)()
-//        is here always the same as groupSortSpec.get(Count|Offset)() within the master and branch_6x Apache code base.
-//    (4) The code that is responsible for 'setting' what is behind ss.get(Count|Offset)() and groupSortSpec.get(Count|Offset)()
-//        could be non-lucene.experimental and customised by folks outside the Apache code base. That would not be a blocker
-//        as such but if such customisation is a possibility (though probably unlikely in this specific case) then we might wish
-//        to communicate the potential change in behaviour as part of the CHANGES.txt entry somehow e.g. something along the lines of
-//        "... now assumes that ... matches ... i.e. ... does not modify ..." which would not be impossible but could be a little
-//        tricky, for (point (2)) relatively limited benefit.
-//    More verbose than expected list of reasons there. Does that kind of make sense?
+
     SortSpec groupSortSpec = rb.getGroupingSpec().getGroupSortSpec();
     final String[] fields = rb.getGroupingSpec().getFields();
 

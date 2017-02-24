@@ -17,6 +17,7 @@
 package org.apache.solr.search.grouping.distributed.shardresultserializer;
 
 import org.apache.lucene.search.Sort;
+import org.apache.lucene.search.SortField;
 import org.apache.lucene.search.grouping.SearchGroup;
 import org.apache.lucene.util.BytesRef;
 import org.apache.solr.common.util.NamedList;
@@ -81,6 +82,12 @@ public class SearchGroupsResultTransformer implements ShardResultTransformer<Lis
     final Map<String, SearchGroupsFieldCommandResult> result = new HashMap<>(shardResponse.size());
     final Sort groupSort = groupSortSpec.getSort();
 
+    final List<SchemaField> groupSchemaFields = groupSortSpec.getSchemaFields();
+    final SortField[] groupSortFields = groupSort.getSort();
+    boolean convertFromNative = false;
+
+    assert (groupSchemaFields.size() == groupSortFields.length);
+
     for (Map.Entry<String, NamedList> command : shardResponse) {
       List<SearchGroup<BytesRef>> searchGroups = new ArrayList<>();
       NamedList topGroupsAndGroupCount = command.getValue();
@@ -92,13 +99,7 @@ public class SearchGroupsResultTransformer implements ShardResultTransformer<Lis
           searchGroup.groupValue = rawSearchGroup.getKey() != null ? new BytesRef(rawSearchGroup.getKey()) : null;
           searchGroup.sortValues = rawSearchGroup.getValue().toArray(new Comparable[rawSearchGroup.getValue().size()]);
           for (int i = 0; i < searchGroup.sortValues.length; i++) {
-            SchemaField field = groupSort.getSort()[i].getField() != null ? searcher.getSchema().getFieldOrNull(groupSort.getSort()[i].getField()) : null;
-            if (field != null) {
-              FieldType fieldType = field.getType();
-              if (searchGroup.sortValues[i] != null) {
-                searchGroup.sortValues[i] = fieldType.unmarshalSortValue(searchGroup.sortValues[i]);
-              }
-            }
+              searchGroup.sortValues[i] = convertSortValue( groupSchemaFields.get(i), searchGroup.sortValues[i], convertFromNative );
           }
           searchGroups.add(searchGroup);
         }
@@ -114,25 +115,37 @@ public class SearchGroupsResultTransformer implements ShardResultTransformer<Lis
   private NamedList serializeSearchGroup(Collection<SearchGroup<BytesRef>> data, SortSpec groupSortSpec) {
     final NamedList<Object[]> result = new NamedList<>(data.size());
     final Sort groupSort = groupSortSpec.getSort();
+    final List<SchemaField> groupSchemaFields = groupSortSpec.getSchemaFields();
+    final SortField[] groupSortFields = groupSort.getSort();
+    boolean convertFromNative = true;
+
+    assert (groupSchemaFields.size() == groupSortFields.length);
 
     for (SearchGroup<BytesRef> searchGroup : data) {
       Object[] convertedSortValues = new Object[searchGroup.sortValues.length];
       for (int i = 0; i < searchGroup.sortValues.length; i++) {
-        Object sortValue = searchGroup.sortValues[i];
-        SchemaField field = groupSort.getSort()[i].getField() != null ? searcher.getSchema().getFieldOrNull(groupSort.getSort()[i].getField()) : null;
-        if (field != null) {
-          FieldType fieldType = field.getType();
-          if (sortValue != null) {
-            sortValue = fieldType.marshalSortValue(sortValue);
-          }
-        }
-        convertedSortValues[i] = sortValue;
+          convertedSortValues[i] = convertSortValue( groupSchemaFields.get(i), searchGroup.sortValues[i], convertFromNative );
       }
       String groupValue = searchGroup.groupValue != null ? searchGroup.groupValue.utf8ToString() : null;
       result.add(groupValue, convertedSortValues);
     }
 
     return result;
+  }
+
+  private static Object convertSortValue(SchemaField schemaField, Object origValue, boolean convertFromNative) {
+
+      Object sortValue  = origValue;
+      if (schemaField != null && sortValue != null) {
+
+          FieldType fieldType = schemaField.getType();
+          if (convertFromNative) {
+              sortValue = fieldType.marshalSortValue(sortValue);
+          } else {
+              sortValue = fieldType.unmarshalSortValue(sortValue);
+          }
+      }
+      return sortValue;
   }
 
 }

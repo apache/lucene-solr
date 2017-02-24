@@ -167,12 +167,12 @@ public class SearchGroupsFieldCommand implements Command<SearchGroupsFieldComman
   }
 
 
-//  @Override  // Not yet part of interface
+  @Override
   public SortSpec getGroupSortSpec() {
     return groupSortSpec;
   }
 
-//  @Override // Not yet part of interface
+  @Override
   public SortSpec getWithinGroupSortSpec() {
       return null;
   }
