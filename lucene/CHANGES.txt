@@ -155,6 +155,10 @@ Bug Fixes
   token graph, messing up phrase queries when it was used during query
   parsing (Ere Maijala via Mike McCandless)
 
+* LUCENE-7708: ShingleFilter without unigram was producing a disconnected
+  token graph, messing up queries when it was used during query
+  parsing (Jim Ferenczi)
+
 Improvements
 
 * LUCENE-7055: Added Weight#scorerSupplier, which allows to estimate the cost
