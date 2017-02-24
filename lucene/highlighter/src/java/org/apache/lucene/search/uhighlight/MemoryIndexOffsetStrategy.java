@@ -23,6 +23,7 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.function.Function;
+import java.util.function.Predicate;
 
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.FilteringTokenFilter;
@@ -49,7 +50,7 @@ public class MemoryIndexOffsetStrategy extends AnalysisOffsetStrategy {
   private final LeafReader leafReader;
   private final CharacterRunAutomaton preMemIndexFilterAutomaton;
 
-  public MemoryIndexOffsetStrategy(String field, BytesRef[] extractedTerms, PhraseHelper phraseHelper,
+  public MemoryIndexOffsetStrategy(String field, Predicate<String> fieldMatcher, BytesRef[] extractedTerms, PhraseHelper phraseHelper,
                                    CharacterRunAutomaton[] automata, Analyzer analyzer,
                                    Function<Query, Collection<Query>> multiTermQueryRewrite) {
     super(field, extractedTerms, phraseHelper, automata, analyzer);
@@ -57,13 +58,14 @@ public class MemoryIndexOffsetStrategy extends AnalysisOffsetStrategy {
     memoryIndex = new MemoryIndex(true, storePayloads);//true==store offsets
     leafReader = (LeafReader) memoryIndex.createSearcher().getIndexReader(); // appears to be re-usable
     // preFilter for MemoryIndex
-    preMemIndexFilterAutomaton = buildCombinedAutomaton(field, terms, this.automata, phraseHelper, multiTermQueryRewrite);
+    preMemIndexFilterAutomaton = buildCombinedAutomaton(fieldMatcher, terms, this.automata, phraseHelper, multiTermQueryRewrite);
   }
 
   /**
    * Build one {@link CharacterRunAutomaton} matching any term the query might match.
    */
-  private static CharacterRunAutomaton buildCombinedAutomaton(String field, BytesRef[] terms,
+  private static CharacterRunAutomaton buildCombinedAutomaton(Predicate<String> fieldMatcher,
+                                                              BytesRef[] terms,
                                                               CharacterRunAutomaton[] automata,
                                                               PhraseHelper strictPhrases,
                                                               Function<Query, Collection<Query>> multiTermQueryRewrite) {
@@ -74,7 +76,7 @@ public class MemoryIndexOffsetStrategy extends AnalysisOffsetStrategy {
     Collections.addAll(allAutomata, automata);
     for (SpanQuery spanQuery : strictPhrases.getSpanQueries()) {
       Collections.addAll(allAutomata,
-          MultiTermHighlighting.extractAutomata(spanQuery, field, true, multiTermQueryRewrite));//true==lookInSpan
+          MultiTermHighlighting.extractAutomata(spanQuery, fieldMatcher, true, multiTermQueryRewrite));//true==lookInSpan
     }
 
     if (allAutomata.size() == 1) {

@@ -19,7 +19,9 @@ package org.apache.solr.handler;
 import java.io.IOException;
 import java.io.Reader;
 import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 
 import org.apache.commons.io.IOUtils;
 import org.apache.solr.common.util.ContentStream;
@@ -39,6 +41,15 @@ public class DumpRequestHandler extends RequestHandlerBase
   {
     // Show params
     rsp.add( "params", req.getParams().toNamedList() );
+    String[] parts = req.getParams().getParams("urlTemplateValues");
+    if (parts != null && parts.length > 0) {
+      Map map = new LinkedHashMap<>();
+      rsp.getValues().add("urlTemplateValues", map);
+      for (String part : parts) {
+        map.put(part, req.getPathTemplateValues().get(part));
+      }
+    }
+
     String[] returnParams = req.getParams().getParams("param");
     if(returnParams !=null) {
       NamedList params = (NamedList) rsp.getValues().get("params");

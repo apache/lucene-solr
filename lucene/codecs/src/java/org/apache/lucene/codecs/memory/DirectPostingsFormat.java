@@ -659,6 +659,9 @@ public final class DirectPostingsFormat extends PostingsFormat {
 
     @Override
     public TermsEnum intersect(CompiledAutomaton compiled, final BytesRef startTerm) {
+      if (compiled.type != CompiledAutomaton.AUTOMATON_TYPE.NORMAL) {
+        throw new IllegalArgumentException("please use CompiledAutomaton.getTermsEnum instead");
+      }
       return new DirectIntersectTermsEnum(compiled, startTerm);
     }
 

@@ -52,6 +52,7 @@ import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.search.grouping.function.FunctionAllGroupHeadsCollector;
 import org.apache.lucene.search.grouping.term.TermAllGroupHeadsCollector;
 import org.apache.lucene.store.Directory;
+import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.FixedBitSet;
 import org.apache.lucene.util.LuceneTestCase;
@@ -138,7 +139,7 @@ public class AllGroupHeadsCollectorTest extends LuceneTestCase {
     int maxDoc = reader.maxDoc();
 
     Sort sortWithinGroup = new Sort(new SortField("id_1", SortField.Type.INT, true));
-    AbstractAllGroupHeadsCollector<?> allGroupHeadsCollector = createRandomCollector(groupField, sortWithinGroup);
+    AllGroupHeadsCollector<?> allGroupHeadsCollector = createRandomCollector(groupField, sortWithinGroup);
     indexSearcher.search(new TermQuery(new Term("content", "random")), allGroupHeadsCollector);
     assertTrue(arrayContains(new int[]{2, 3, 5, 7}, allGroupHeadsCollector.retrieveGroupHeads()));
     assertTrue(openBitSetContains(new int[]{2, 3, 5, 7}, allGroupHeadsCollector.retrieveGroupHeads(maxDoc), maxDoc));
@@ -326,7 +327,7 @@ public class AllGroupHeadsCollectorTest extends LuceneTestCase {
         final String searchTerm = "real" + random().nextInt(3);
         boolean sortByScoreOnly = random().nextBoolean();
         Sort sortWithinGroup = getRandomSort(sortByScoreOnly);
-        AbstractAllGroupHeadsCollector<?> allGroupHeadsCollector = createRandomCollector("group", sortWithinGroup);
+        AllGroupHeadsCollector<?> allGroupHeadsCollector = createRandomCollector("group", sortWithinGroup);
         s.search(new TermQuery(new Term("content", searchTerm)), allGroupHeadsCollector);
         int[] expectedGroupHeads = createExpectedGroupHeads(searchTerm, groupDocs, sortWithinGroup, sortByScoreOnly, fieldIdToDocID);
         int[] actualGroupHeads = allGroupHeadsCollector.retrieveGroupHeads();
@@ -402,8 +403,9 @@ public class AllGroupHeadsCollectorTest extends LuceneTestCase {
     return true;
   }
 
-  private boolean openBitSetContains(int[] expectedDocs, FixedBitSet actual, int maxDoc) throws IOException {
-    if (expectedDocs.length != actual.cardinality()) {
+  private boolean openBitSetContains(int[] expectedDocs, Bits actual, int maxDoc) throws IOException {
+    assert actual instanceof FixedBitSet;
+    if (expectedDocs.length != ((FixedBitSet)actual).cardinality()) {
       return false;
     }
 
@@ -510,8 +512,8 @@ public class AllGroupHeadsCollectorTest extends LuceneTestCase {
   }
 
   @SuppressWarnings({"unchecked","rawtypes"})
-  private AbstractAllGroupHeadsCollector<?> createRandomCollector(String groupField, Sort sortWithinGroup) {
-    AbstractAllGroupHeadsCollector<? extends AbstractAllGroupHeadsCollector.GroupHead> collector;
+  private AllGroupHeadsCollector<?> createRandomCollector(String groupField, Sort sortWithinGroup) {
+    AllGroupHeadsCollector<?> collector;
     if (random().nextBoolean()) {
       ValueSource vs = new BytesRefFieldSource(groupField);
       collector =  new FunctionAllGroupHeadsCollector(vs, new HashMap<>(), sortWithinGroup);

@@ -30,6 +30,7 @@ import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.ReaderUtil;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.store.Directory;
+import org.apache.lucene.util.ArrayUtil;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.TestUtil;
@@ -37,7 +38,9 @@ import org.apache.lucene.util.TestUtil;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 public class TestTopDocsMerge extends LuceneTestCase {
 
@@ -70,6 +73,64 @@ public class TestTopDocsMerge extends LuceneTestCase {
 
   public void testSort_2() throws Exception {
     testSort(true);
+  }
+
+  public void testInconsistentTopDocsFail() {
+    TopDocs[] topDocs = new TopDocs[] {
+        new TopDocs(1, new ScoreDoc[] { new ScoreDoc(1, 1.0f, 1) }),
+        new TopDocs(1, new ScoreDoc[] { new ScoreDoc(1, 1.0f, -1) })
+    };
+    if (random().nextBoolean()) {
+      ArrayUtil.swap(topDocs, 0, 1);
+    }
+    expectThrows(IllegalStateException.class, () -> {
+      TopDocs.merge(0, 1, topDocs);
+    });
+  }
+
+  public void testAssignShardIndex() {
+    boolean useConstantScore = random().nextBoolean();
+    int numTopDocs = 2 + random().nextInt(10);
+    ArrayList<TopDocs> topDocs = new ArrayList<>(numTopDocs);
+    Map<Integer, TopDocs> shardResultMapping = new HashMap<>();
+    int numHitsTotal = 0;
+    for (int i = 0; i < numTopDocs; i++) {
+      int numHits = 1 + random().nextInt(10);
+      numHitsTotal += numHits;
+      ScoreDoc[] scoreDocs = new ScoreDoc[numHits];
+      for (int j = 0; j < scoreDocs.length; j++) {
+        float score = useConstantScore ? 1.0f : random().nextFloat();
+        scoreDocs[j] = new ScoreDoc((100 * i) + j, score , i);
+        // we set the shard index to index in the list here but shuffle the entire list below
+      }
+      topDocs.add(new TopDocs(numHits, scoreDocs));
+      shardResultMapping.put(i, topDocs.get(i));
+    }
+    // shuffle the entire thing such that we don't get 1 to 1 mapping of shard index to index in the array
+    // -- well likely ;)
+    Collections.shuffle(topDocs, random());
+    final int from = random().nextInt(numHitsTotal-1);
+    final int size = 1 + random().nextInt(numHitsTotal - from);
+    TopDocs merge = TopDocs.merge(from, size, topDocs.toArray(new TopDocs[0]));
+    assertTrue(merge.scoreDocs.length > 0);
+    for (ScoreDoc scoreDoc : merge.scoreDocs) {
+      assertTrue(scoreDoc.shardIndex != -1);
+      TopDocs shardTopDocs = shardResultMapping.get(scoreDoc.shardIndex);
+      assertNotNull(shardTopDocs);
+      boolean found = false;
+      for (ScoreDoc shardScoreDoc : shardTopDocs.scoreDocs) {
+        if (shardScoreDoc == scoreDoc) {
+          found = true;
+          break;
+        }
+      }
+      assertTrue(found);
+    }
+
+    // now ensure merge is stable even if we use our own shard IDs
+    Collections.shuffle(topDocs, random());
+    TopDocs merge2 = TopDocs.merge(from, size, topDocs.toArray(new TopDocs[0]));
+    assertArrayEquals(merge.scoreDocs, merge2.scoreDocs);
   }
 
   void testSort(boolean useFrom) throws Exception {

@@ -52,7 +52,7 @@ import org.apache.lucene.util.mutable.MutableValueDouble;
  */
 public class TrieDoubleField extends TrieField implements DoubleValueFieldType {
   {
-    type=TrieTypes.DOUBLE;
+    type = NumberType.DOUBLE;
   }
   
   @Override

@@ -22,9 +22,7 @@ import java.io.IOException;
 import org.apache.lucene.analysis.TokenFilter;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
-import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
 import org.apache.lucene.analysis.tokenattributes.PositionIncrementAttribute;
-import org.apache.lucene.analysis.tokenattributes.PositionLengthAttribute;
 
 /**
  * Tokenizes the given token into n-grams of given size(s).
@@ -43,15 +41,11 @@ public final class EdgeNGramTokenFilter extends TokenFilter {
   private int curTermLength;
   private int curCodePointCount;
   private int curGramSize;
-  private int tokStart;
-  private int tokEnd; // only used if the length changed before this filter
   private int savePosIncr;
-  private int savePosLen;
+  private State state;
   
   private final CharTermAttribute termAtt = addAttribute(CharTermAttribute.class);
-  private final OffsetAttribute offsetAtt = addAttribute(OffsetAttribute.class);
   private final PositionIncrementAttribute posIncrAtt = addAttribute(PositionIncrementAttribute.class);
-  private final PositionLengthAttribute posLenAtt = addAttribute(PositionLengthAttribute.class);
 
   /**
    * Creates EdgeNGramTokenFilter that can generate n-grams in the sizes of the given range
@@ -86,17 +80,14 @@ public final class EdgeNGramTokenFilter extends TokenFilter {
           curTermLength = termAtt.length();
           curCodePointCount = Character.codePointCount(termAtt, 0, termAtt.length());
           curGramSize = minGram;
-          tokStart = offsetAtt.startOffset();
-          tokEnd = offsetAtt.endOffset();
+          state = captureState();
           savePosIncr += posIncrAtt.getPositionIncrement();
-          savePosLen = posLenAtt.getPositionLength();
         }
       }
       if (curGramSize <= maxGram) {         // if we have hit the end of our n-gram size range, quit
         if (curGramSize <= curCodePointCount) { // if the remaining input is too short, we can't generate any n-grams
           // grab gramSize chars from front or back
-          clearAttributes();
-          offsetAtt.setOffset(tokStart, tokEnd);
+          restoreState(state);
           // first ngram gets increment, others don't
           if (curGramSize == minGram) {
             posIncrAtt.setPositionIncrement(savePosIncr);
@@ -104,7 +95,6 @@ public final class EdgeNGramTokenFilter extends TokenFilter {
           } else {
             posIncrAtt.setPositionIncrement(0);
           }
-          posLenAtt.setPositionLength(savePosLen);
           final int charLength = Character.offsetByCodePoints(curTermBuffer, 0, curTermLength, 0, curGramSize);
           termAtt.copyBuffer(curTermBuffer, 0, charLength);
           curGramSize++;

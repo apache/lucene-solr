@@ -43,11 +43,6 @@ public class TestCheckIndex extends BaseTestCheckIndex {
   }
   
   @Test
-  public void testBogusTermVectors() throws IOException {
-    testBogusTermVectors(directory);
-  }
-  
-  @Test
   public void testChecksumsOnly() throws IOException {
     testChecksumsOnly(directory);
   }

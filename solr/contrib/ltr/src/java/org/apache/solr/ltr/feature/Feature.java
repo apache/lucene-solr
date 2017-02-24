@@ -258,8 +258,7 @@ public abstract class Feature extends Query {
 
     @Override
     public void extractTerms(Set<Term> terms) {
-      // needs to be implemented by query subclasses
-      throw new UnsupportedOperationException();
+      // no-op
     }
 
     /**

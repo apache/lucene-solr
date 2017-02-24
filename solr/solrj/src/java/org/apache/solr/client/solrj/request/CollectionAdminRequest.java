@@ -280,6 +280,8 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse> 
 
     public CollectionAdminRoleRequest(CollectionAction action, String node, String role) {
       super(action);
+      this.node = node;
+      this.role = role;
     }
 
     @Override

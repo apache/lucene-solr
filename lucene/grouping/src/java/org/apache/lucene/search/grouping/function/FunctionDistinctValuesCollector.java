@@ -16,27 +16,31 @@
  */
 package org.apache.lucene.search.grouping.function;
 
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.queries.function.FunctionValues;
 import org.apache.lucene.queries.function.ValueSource;
-import org.apache.lucene.search.grouping.AbstractDistinctValuesCollector;
+import org.apache.lucene.search.grouping.DistinctValuesCollector;
 import org.apache.lucene.search.grouping.SearchGroup;
 import org.apache.lucene.util.mutable.MutableValue;
 
-import java.io.IOException;
-import java.util.*;
-
 /**
- * Function based implementation of {@link org.apache.lucene.search.grouping.AbstractDistinctValuesCollector}.
+ * Function based implementation of {@link DistinctValuesCollector}.
  *
  * @lucene.experimental
  */
-public class FunctionDistinctValuesCollector extends AbstractDistinctValuesCollector<FunctionDistinctValuesCollector.GroupCount> {
+public class FunctionDistinctValuesCollector extends DistinctValuesCollector<MutableValue> {
 
   private final Map<?, ?> vsContext;
   private final ValueSource groupSource;
   private final ValueSource countSource;
-  private final Map<MutableValue, GroupCount> groupMap;
+  private final Map<MutableValue, GroupCount<MutableValue>> groupMap;
 
   private FunctionValues.ValueFiller groupFiller;
   private FunctionValues.ValueFiller countFiller;
@@ -49,19 +53,19 @@ public class FunctionDistinctValuesCollector extends AbstractDistinctValuesColle
     this.countSource = countSource;
     groupMap = new LinkedHashMap<>();
     for (SearchGroup<MutableValue> group : groups) {
-      groupMap.put(group.groupValue, new GroupCount(group.groupValue));
+      groupMap.put(group.groupValue, new GroupCount<>(group.groupValue));
     }
   }
 
   @Override
-  public List<GroupCount> getGroups() {
+  public List<GroupCount<MutableValue>> getGroups() {
     return new ArrayList<>(groupMap.values());
   }
 
   @Override
   public void collect(int doc) throws IOException {
     groupFiller.fillValue(doc);
-    GroupCount groupCount = groupMap.get(groupMval);
+    GroupCount<MutableValue> groupCount = groupMap.get(groupMval);
     if (groupCount != null) {
       countFiller.fillValue(doc);
       groupCount.uniqueValues.add(countMval.duplicate());
@@ -76,17 +80,6 @@ public class FunctionDistinctValuesCollector extends AbstractDistinctValuesColle
     values = countSource.getValues(vsContext, context);
     countFiller = values.getValueFiller();
     countMval = countFiller.getValue();
-  }
-
-  /** Holds distinct values for a single group.
-   *
-   * @lucene.experimental */
-  public static class GroupCount extends AbstractDistinctValuesCollector.GroupCount<MutableValue> {
-
-    GroupCount(MutableValue groupValue) {
-      super(groupValue);
-    }
-
   }
 
 }

@@ -4,11 +4,14 @@
   "collection":               "techproducts",
   "requestHandler":           "query",
   "q":                        "*:*",
-  "otherParams":              "fl=id,score,[features efi.user_query='$USERQUERY']",
+  "efiParams":                "efi.user_query='$USERQUERY'",
   "userQueriesFile":          "user_queries.txt",
-  "trainingFile":             "ClickData",
-  "featuresFile":             "techproducts-features.json",
+  "trainingFile":             "exampleTrainingFile.txt",
+  "trainedModelFile":         "exampleTrainedModel.txt",
   "trainingLibraryLocation":  "liblinear/train",
-  "solrModelFile":            "solrModel.json",
-  "solrModelName":            "ExampleModel"
+  "trainingLibraryOptions":   "-q",
+  "solrFeaturesFile":         "exampleFeatures.json",
+  "solrFeatureStoreName":     "exampleFeatureStore",
+  "solrModelFile":            "exampleModel.json",
+  "solrModelName":            "exampleModel"
 }

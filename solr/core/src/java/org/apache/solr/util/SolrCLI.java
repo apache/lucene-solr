@@ -60,7 +60,6 @@ import org.apache.commons.cli.Option;
 import org.apache.commons.cli.OptionBuilder;
 import org.apache.commons.cli.Options;
 import org.apache.commons.cli.ParseException;
-import org.apache.commons.codec.binary.Base64;
 import org.apache.commons.exec.DefaultExecuteResultHandler;
 import org.apache.commons.exec.DefaultExecutor;
 import org.apache.commons.exec.Executor;
@@ -80,7 +79,6 @@ import org.apache.http.client.methods.HttpHead;
 import org.apache.http.client.utils.URIBuilder;
 import org.apache.http.conn.ConnectTimeoutException;
 import org.apache.http.impl.client.CloseableHttpClient;
-import org.apache.http.message.BasicHeader;
 import org.apache.http.util.EntityUtils;
 import org.apache.lucene.util.Version;
 import org.apache.solr.client.solrj.SolrClient;
@@ -90,7 +88,6 @@ import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.impl.HttpClientUtil;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.impl.HttpSolrClient.Builder;
-import org.apache.solr.client.solrj.impl.SolrHttpClientBuilder;
 import org.apache.solr.client.solrj.impl.ZkClientClusterStateProvider;
 import org.apache.solr.client.solrj.request.ContentStreamUpdateRequest;
 import org.apache.solr.client.solrj.response.QueryResponse;
@@ -106,7 +103,6 @@ import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.ContentStreamBase;
 import org.apache.solr.common.util.NamedList;
-import org.apache.solr.common.util.StrUtils;
 import org.noggit.CharArr;
 import org.noggit.JSONParser;
 import org.noggit.JSONWriter;
@@ -153,7 +149,6 @@ public class SolrCLI {
 
       int toolExitStatus = 0;
       try {
-        setBasicAuth();
         runImpl(cli);
       } catch (Exception exc) {
         // since this is a CLI, spare the user the stacktrace
@@ -261,20 +256,6 @@ public class SolrCLI {
   }
 
   public static CommandLine parseCmdLine(String[] args, Option[] toolOptions) throws Exception {
-
-    String builderClassName = System.getProperty("solr.authentication.httpclient.builder");
-    if (builderClassName!=null) {
-      try {
-        Class c = Class.forName(builderClassName);
-        SolrHttpClientBuilder builder = (SolrHttpClientBuilder)c.newInstance();
-        HttpClientUtil.setHttpClientBuilder(builder);
-        log.info("Set SolrHttpClientBuilder from: "+builderClassName);
-      } catch (Exception ex) {
-        log.error(ex.getMessage());
-        throw new RuntimeException("Error during loading of builder '"+builderClassName+"'.", ex);
-      }
-    }
-
     // the parser doesn't like -D props
     List<String> toolArgList = new ArrayList<String>();
     List<String> dashDList = new ArrayList<String>();
@@ -364,6 +345,8 @@ public class SolrCLI {
       return new ZkCpTool();
     else if ("ls".equals(toolType))
       return new ZkLsTool();
+    else if ("mkroot".equals(toolType))
+      return new ZkMkrootTool();
     else if ("assert".equals(toolType))
       return new AssertTool();
     else if ("utils".equals(toolType))
@@ -529,25 +512,6 @@ public class SolrCLI {
     return classes;
   }
 
-  /**
-   * Inspects system property basicauth and enables authentication for HttpClient
-   * @throws Exception if the basicauth SysProp has wrong format
-   */
-  protected static void setBasicAuth() throws Exception {
-    String basicauth = System.getProperty("basicauth", null);
-    if (basicauth != null) {
-      List<String> ss = StrUtils.splitSmart(basicauth, ':');
-      if (ss.size() != 2)
-        throw new Exception("Please provide 'basicauth' in the 'user:password' format");
-
-      HttpClientUtil.addRequestInterceptor((httpRequest, httpContext) -> {
-        String pair = ss.get(0) + ":" + ss.get(1);
-        byte[] encodedBytes = Base64.encodeBase64(pair.getBytes(UTF_8));
-        httpRequest.addHeader(new BasicHeader("Authorization", "Basic " + new String(encodedBytes, UTF_8)));
-      });
-    }
-  }
-  
   /**
    * Determine if a request to Solr failed due to a communication error,
    * which is generally retry-able. 
@@ -1986,7 +1950,7 @@ public class SolrCLI {
 
       if (zkHost == null) {
         throw new IllegalStateException("Solr at " + cli.getOptionValue("zkHost") +
-            " is running in standalone server mode, 'zk rm' can only be used when running in SolrCloud mode.\n");
+            " is running in standalone server mode, 'zk ls' can only be used when running in SolrCloud mode.\n");
       }
 
 
@@ -1999,11 +1963,70 @@ public class SolrCLI {
             " recurse: " + Boolean.toString(recurse));
         stdout.print(zkClient.listZnode(znode, recurse));
       } catch (Exception e) {
-        log.error("Could not complete rm operation for reason: " + e.getMessage());
+        log.error("Could not complete ls operation for reason: " + e.getMessage());
         throw (e);
       }
     }
   } // End zkLsTool class
+
+
+  public static class ZkMkrootTool extends ToolBase {
+
+    public ZkMkrootTool() {
+      this(System.out);
+    }
+
+    public ZkMkrootTool(PrintStream stdout) {
+      super(stdout);
+    }
+
+    @SuppressWarnings("static-access")
+    public Option[] getOptions() {
+      return new Option[]{
+          OptionBuilder
+              .withArgName("path")
+              .hasArg()
+              .isRequired(true)
+              .withDescription("Path to create")
+              .create("path"),
+          OptionBuilder
+              .withArgName("HOST")
+              .hasArg()
+              .isRequired(true)
+              .withDescription("Address of the Zookeeper ensemble; defaults to: " + ZK_HOST)
+              .create("zkHost")
+      };
+    }
+
+    public String getName() {
+      return "mkroot";
+    }
+
+    protected void runImpl(CommandLine cli) throws Exception {
+
+      String zkHost = getZkHost(cli);
+
+      if (zkHost == null) {
+        throw new IllegalStateException("Solr at " + cli.getOptionValue("zkHost") +
+            " is running in standalone server mode, 'zk mkroot' can only be used when running in SolrCloud mode.\n");
+      }
+
+
+      try (SolrZkClient zkClient = new SolrZkClient(zkHost, 30000)) {
+        echo("\nConnecting to ZooKeeper at " + zkHost + " ...");
+
+        String znode = cli.getOptionValue("path");
+        echo("Creating Zookeeper path " + znode + " on ZooKeeper at " + zkHost);
+        zkClient.makePath(znode, true);
+      } catch (Exception e) {
+        log.error("Could not complete mkroot operation for reason: " + e.getMessage());
+        throw (e);
+      }
+    }
+  } // End zkMkrootTool class
+
+
+
 
   public static class ZkCpTool extends ToolBase {
 
@@ -3280,7 +3303,6 @@ public class SolrCLI {
 
       int toolExitStatus = 0;
       try {
-        setBasicAuth();
         toolExitStatus = runAssert(cli);
       } catch (Exception exc) {
         // since this is a CLI, spare the user the stacktrace

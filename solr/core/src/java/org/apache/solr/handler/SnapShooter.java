@@ -231,7 +231,11 @@ public class SnapShooter {
       return details;
     } finally {
       if (!success) {
-        backupRepo.deleteDirectory(snapshotDirPath);
+        try {
+          backupRepo.deleteDirectory(snapshotDirPath);
+        } catch (Exception excDuringDelete) {
+          LOG.warn("Failed to delete "+snapshotDirPath+" after snapshot creation failed due to: "+excDuringDelete);
+        }
       }
     }
   }

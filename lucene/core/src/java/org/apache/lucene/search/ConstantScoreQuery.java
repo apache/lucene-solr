@@ -125,26 +125,46 @@ public final class ConstantScoreQuery extends Query {
         }
 
         @Override
-        public Scorer scorer(LeafReaderContext context) throws IOException {
-          final Scorer innerScorer = innerWeight.scorer(context);
-          if (innerScorer == null) {
+        public ScorerSupplier scorerSupplier(LeafReaderContext context) throws IOException {
+          ScorerSupplier innerScorerSupplier = innerWeight.scorerSupplier(context);
+          if (innerScorerSupplier == null) {
             return null;
           }
-          final float score = score();
-          return new FilterScorer(innerScorer) {
+          return new ScorerSupplier() {
             @Override
-            public float score() throws IOException {
-              return score;
+            public Scorer get(boolean randomAccess) throws IOException {
+              final Scorer innerScorer = innerScorerSupplier.get(randomAccess);
+              final float score = score();
+              return new FilterScorer(innerScorer) {
+                @Override
+                public float score() throws IOException {
+                  return score;
+                }
+                @Override
+                public int freq() throws IOException {
+                  return 1;
+                }
+                @Override
+                public Collection<ChildScorer> getChildren() {
+                  return Collections.singleton(new ChildScorer(innerScorer, "constant"));
+                }
+              };
             }
+
             @Override
-            public int freq() throws IOException {
-              return 1;
-            }
-            @Override
-            public Collection<ChildScorer> getChildren() {
-              return Collections.singleton(new ChildScorer(innerScorer, "constant"));
+            public long cost() {
+              return innerScorerSupplier.cost();
             }
           };
+        }
+
+        @Override
+        public Scorer scorer(LeafReaderContext context) throws IOException {
+          ScorerSupplier scorerSupplier = scorerSupplier(context);
+          if (scorerSupplier == null) {
+            return null;
+          }
+          return scorerSupplier.get(false);
         }
 
       };

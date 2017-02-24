@@ -17,6 +17,7 @@
 package org.apache.solr.update.processor;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Date;
 import java.util.List;
 
@@ -139,7 +140,7 @@ public class AtomicUpdatesTest extends SolrTestCaseJ4 {
 
     assertU(commit());
 
-    assertQ(req("q", "intRemove:*", "indent", "true"), "//result[@numFound = '4']");
+    assertQ(req("q", "intRemove:[* TO *]", "indent", "true"), "//result[@numFound = '4']");
     assertQ(req("q", "intRemove:222", "indent", "true"), "//result[@numFound = '3']");
 
 
@@ -152,7 +153,7 @@ public class AtomicUpdatesTest extends SolrTestCaseJ4 {
     assertU(adoc(doc));
     assertU(commit());
 
-    assertQ(req("q", "intRemove:*", "indent", "true"), "//result[@numFound = '4']");
+    assertQ(req("q", "intRemove:[* TO *]", "indent", "true"), "//result[@numFound = '4']");
     assertQ(req("q", "intRemove:222", "indent", "true"), "//result[@numFound = '2']");
 
     doc = new SolrInputDocument();
@@ -164,7 +165,7 @@ public class AtomicUpdatesTest extends SolrTestCaseJ4 {
     assertU(adoc(doc));
     assertU(commit());
 
-    assertQ(req("q", "intRemove:*", "indent", "true"), "//result[@numFound = '4']");
+    assertQ(req("q", "intRemove:[* TO *]", "indent", "true"), "//result[@numFound = '4']");
     assertQ(req("q", "intRemove:222", "indent", "true"), "//result[@numFound = '1']");
 
     doc = new SolrInputDocument();
@@ -174,7 +175,7 @@ public class AtomicUpdatesTest extends SolrTestCaseJ4 {
     assertU(adoc(doc));
     assertU(commit());
 
-    assertQ(req("q", "intRemove:*", "indent", "true"), "//result[@numFound = '4']");
+    assertQ(req("q", "intRemove:[* TO *]", "indent", "true"), "//result[@numFound = '4']");
     assertQ(req("q", "intRemove:111", "indent", "true"), "//result[@numFound = '3']");
   }
 
@@ -207,7 +208,7 @@ public class AtomicUpdatesTest extends SolrTestCaseJ4 {
 
     assertU(commit());
 
-    assertQ(req("q", "intRemove:*", "indent", "true"), "//result[@numFound = '4']");
+    assertQ(req("q", "intRemove:[* TO *]", "indent", "true"), "//result[@numFound = '4']");
     assertQ(req("q", "intRemove:222", "indent", "true"), "//result[@numFound = '3']");
 
 
@@ -220,7 +221,7 @@ public class AtomicUpdatesTest extends SolrTestCaseJ4 {
     assertU(adoc(doc));
     assertU(commit());
 
-    assertQ(req("q", "intRemove:*", "indent", "true"), "//result[@numFound = '4']");
+    assertQ(req("q", "intRemove:[* TO *]", "indent", "true"), "//result[@numFound = '4']");
     assertQ(req("q", "intRemove:222", "indent", "true"), "//result[@numFound = '2']");
 
     doc = new SolrInputDocument();
@@ -232,7 +233,7 @@ public class AtomicUpdatesTest extends SolrTestCaseJ4 {
     assertU(adoc(doc));
     assertU(commit());
 
-    assertQ(req("q", "intRemove:*", "indent", "true"), "//result[@numFound = '4']");
+    assertQ(req("q", "intRemove:[* TO *]", "indent", "true"), "//result[@numFound = '4']");
     assertQ(req("q", "intRemove:222", "indent", "true"), "//result[@numFound = '1']");
 
     doc = new SolrInputDocument();
@@ -242,7 +243,7 @@ public class AtomicUpdatesTest extends SolrTestCaseJ4 {
     assertU(adoc(doc));
     assertU(commit());
 
-    assertQ(req("q", "intRemove:*", "indent", "true"), "//result[@numFound = '4']");
+    assertQ(req("q", "intRemove:[* TO *]", "indent", "true"), "//result[@numFound = '4']");
     assertQ(req("q", "intRemove:111", "indent", "true"), "//result[@numFound = '3']");
   }
 
@@ -271,7 +272,7 @@ public class AtomicUpdatesTest extends SolrTestCaseJ4 {
     assertU(adoc(doc));
     assertU(commit());
 
-    assertQ(req("q", "intRemove:*", "indent", "true"), "//result[@numFound = '4']");
+    assertQ(req("q", "intRemove:[* TO *]", "indent", "true"), "//result[@numFound = '4']");
     assertQ(req("q", "intRemove:222", "indent", "true"), "//result[@numFound = '3']");
 
 
@@ -284,7 +285,7 @@ public class AtomicUpdatesTest extends SolrTestCaseJ4 {
     assertU(adoc(doc));
     assertU(commit());
 
-    assertQ(req("q", "intRemove:*", "indent", "true"), "//result[@numFound = '4']");
+    assertQ(req("q", "intRemove:[* TO *]", "indent", "true"), "//result[@numFound = '4']");
     assertQ(req("q", "intRemove:222", "indent", "true"), "//result[@numFound = '2']");
 
     doc = new SolrInputDocument();
@@ -296,7 +297,7 @@ public class AtomicUpdatesTest extends SolrTestCaseJ4 {
     assertU(adoc(doc));
     assertU(commit());
 
-    assertQ(req("q", "intRemove:*", "indent", "true"), "//result[@numFound = '4']");
+    assertQ(req("q", "intRemove:[* TO *]", "indent", "true"), "//result[@numFound = '4']");
     assertQ(req("q", "intRemove:222", "indent", "true"), "//result[@numFound = '1']");
 
     doc = new SolrInputDocument();
@@ -306,7 +307,7 @@ public class AtomicUpdatesTest extends SolrTestCaseJ4 {
     assertU(adoc(doc));
     assertU(commit());
 
-    assertQ(req("q", "intRemove:*", "indent", "true"), "//result[@numFound = '4']");
+    assertQ(req("q", "intRemove:[* TO *]", "indent", "true"), "//result[@numFound = '4']");
     assertQ(req("q", "intRemove:111", "indent", "true"), "//result[@numFound = '3']");
   }
 
@@ -336,7 +337,7 @@ public class AtomicUpdatesTest extends SolrTestCaseJ4 {
 
     assertU(commit());
 
-    assertQ(req("q", "intRemove:*", "indent", "true"), "//result[@numFound = '4']");
+    assertQ(req("q", "intRemove:[* TO *]", "indent", "true"), "//result[@numFound = '4']");
     assertQ(req("q", "intRemove:222", "indent", "true"), "//result[@numFound = '3']");
 
     doc = new SolrInputDocument();
@@ -348,7 +349,7 @@ public class AtomicUpdatesTest extends SolrTestCaseJ4 {
     assertU(adoc(doc));
     assertU(commit());
 
-    assertQ(req("q", "intRemove:*", "indent", "true"), "//result[@numFound = '4']");
+    assertQ(req("q", "intRemove:[* TO *]", "indent", "true"), "//result[@numFound = '4']");
     assertQ(req("q", "intRemove:222", "indent", "true"), "//result[@numFound = '2']");
 
     doc = new SolrInputDocument();
@@ -360,7 +361,7 @@ public class AtomicUpdatesTest extends SolrTestCaseJ4 {
     assertU(adoc(doc));
     assertU(commit());
 
-    assertQ(req("q", "intRemove:*", "indent", "true"), "//result[@numFound = '4']");
+    assertQ(req("q", "intRemove:[* TO *]", "indent", "true"), "//result[@numFound = '4']");
     assertQ(req("q", "intRemove:222", "indent", "true"), "//result[@numFound = '1']");
 
     doc = new SolrInputDocument();
@@ -370,7 +371,7 @@ public class AtomicUpdatesTest extends SolrTestCaseJ4 {
     assertU(adoc(doc));
     assertU(commit());
 
-    assertQ(req("q", "intRemove:*", "indent", "true"), "//result[@numFound = '4']");
+    assertQ(req("q", "intRemove:[* TO *]", "indent", "true"), "//result[@numFound = '4']");
     assertQ(req("q", "intRemove:111", "indent", "true"), "//result[@numFound = '3']");
   }
 
@@ -420,7 +421,7 @@ public class AtomicUpdatesTest extends SolrTestCaseJ4 {
 
     assertU(commit());
 
-    assertQ(req("q", "intRemove:*", "indent", "true"), "//result[@numFound = '4']");
+    assertQ(req("q", "intRemove:[* TO *]", "indent", "true"), "//result[@numFound = '4']");
     assertQ(req("q", "intRemove:222", "indent", "true"), "//result[@numFound = '3']");
 
 
@@ -433,7 +434,7 @@ public class AtomicUpdatesTest extends SolrTestCaseJ4 {
     assertU(adoc(doc));
     assertU(commit());
 
-    assertQ(req("q", "intRemove:*", "indent", "true"), "//result[@numFound = '4']");
+    assertQ(req("q", "intRemove:[* TO *]", "indent", "true"), "//result[@numFound = '4']");
     assertQ(req("q", "intRemove:222", "indent", "true"), "//result[@numFound = '2']");
 
     doc = new SolrInputDocument();
@@ -445,7 +446,7 @@ public class AtomicUpdatesTest extends SolrTestCaseJ4 {
     assertU(adoc(doc));
     assertU(commit());
 
-    assertQ(req("q", "intRemove:*", "indent", "true"), "//result[@numFound = '4']");
+    assertQ(req("q", "intRemove:[* TO *]", "indent", "true"), "//result[@numFound = '4']");
     assertQ(req("q", "intRemove:222", "indent", "true"), "//result[@numFound = '1']");
 
     doc = new SolrInputDocument();
@@ -455,7 +456,7 @@ public class AtomicUpdatesTest extends SolrTestCaseJ4 {
     assertU(adoc(doc));
     assertU(commit());
 
-    assertQ(req("q", "intRemove:*", "indent", "true"), "//result[@numFound = '4']");
+    assertQ(req("q", "intRemove:[* TO *]", "indent", "true"), "//result[@numFound = '4']");
     assertQ(req("q", "intRemove:111", "indent", "true"), "//result[@numFound = '3']");
   }
   
@@ -486,7 +487,7 @@ public class AtomicUpdatesTest extends SolrTestCaseJ4 {
 
     assertU(commit());
 
-    assertQ(req("q", "intRemove:*", "indent", "true"), "//result[@numFound = '4']");
+    assertQ(req("q", "intRemove:[* TO *]", "indent", "true"), "//result[@numFound = '4']");
     assertQ(req("q", "intRemove:22222222", "indent", "true"), "//result[@numFound = '3']");
 
 
@@ -499,7 +500,7 @@ public class AtomicUpdatesTest extends SolrTestCaseJ4 {
     assertU(adoc(doc));
     assertU(commit());
 
-    assertQ(req("q", "intRemove:*", "indent", "true"), "//result[@numFound = '4']");
+    assertQ(req("q", "intRemove:[* TO *]", "indent", "true"), "//result[@numFound = '4']");
     assertQ(req("q", "intRemove:22222222", "indent", "true"), "//result[@numFound = '2']");
 
     doc = new SolrInputDocument();
@@ -511,7 +512,7 @@ public class AtomicUpdatesTest extends SolrTestCaseJ4 {
     assertU(adoc(doc));
     assertU(commit());
 
-    assertQ(req("q", "intRemove:*", "indent", "true"), "//result[@numFound = '4']");
+    assertQ(req("q", "intRemove:[* TO *]", "indent", "true"), "//result[@numFound = '4']");
     assertQ(req("q", "intRemove:22222222", "indent", "true"), "//result[@numFound = '1']");
 
     doc = new SolrInputDocument();
@@ -521,7 +522,7 @@ public class AtomicUpdatesTest extends SolrTestCaseJ4 {
     assertU(adoc(doc));
     assertU(commit());
 
-    assertQ(req("q", "intRemove:*", "indent", "true"), "//result[@numFound = '4']");
+    assertQ(req("q", "intRemove:[* TO *]", "indent", "true"), "//result[@numFound = '4']");
     assertQ(req("q", "intRemove:11111111", "indent", "true"), "//result[@numFound = '3']");
   }
   
@@ -707,7 +708,7 @@ public class AtomicUpdatesTest extends SolrTestCaseJ4 {
 
     assertU(commit());
 
-    assertQ(req("q", "floatRemove:*", "indent", "true"), "//result[@numFound = '4']");
+    assertQ(req("q", "floatRemove:[* TO *]", "indent", "true"), "//result[@numFound = '4']");
     assertQ(req("q", "floatRemove:\"222.222\"", "indent", "true"), "//result[@numFound = '3']");
 
 
@@ -721,7 +722,7 @@ public class AtomicUpdatesTest extends SolrTestCaseJ4 {
     assertU(adoc(doc));
     assertU(commit());
 
-    assertQ(req("q", "floatRemove:*", "indent", "true"), "//result[@numFound = '4']");
+    assertQ(req("q", "floatRemove:[* TO *]", "indent", "true"), "//result[@numFound = '4']");
     assertQ(req("q", "floatRemove:\"222.222\"", "indent", "true"), "//result[@numFound = '2']");
 
     doc = new SolrInputDocument();
@@ -733,7 +734,7 @@ public class AtomicUpdatesTest extends SolrTestCaseJ4 {
     assertU(adoc(doc));
     assertU(commit());
 
-    assertQ(req("q", "floatRemove:*", "indent", "true"), "//result[@numFound = '4']");
+    assertQ(req("q", "floatRemove:[* TO *]", "indent", "true"), "//result[@numFound = '4']");
     assertQ(req("q", "floatRemove:\"222.222\"", "indent", "true"), "//result[@numFound = '1']");
 
     doc = new SolrInputDocument();
@@ -743,7 +744,7 @@ public class AtomicUpdatesTest extends SolrTestCaseJ4 {
     assertU(adoc(doc));
     assertU(commit());
 
-    assertQ(req("q", "floatRemove:*", "indent", "true"), "//result[@numFound = '4']");
+    assertQ(req("q", "floatRemove:[* TO *]", "indent", "true"), "//result[@numFound = '4']");
     assertQ(req("q", "floatRemove:\"111.111\"", "indent", "true"), "//result[@numFound = '3']");
   }
   
@@ -775,7 +776,7 @@ public class AtomicUpdatesTest extends SolrTestCaseJ4 {
 
     assertU(commit());
 
-    assertQ(req("q", "floatRemove:*", "indent", "true"), "//result[@numFound = '4']");
+    assertQ(req("q", "floatRemove:[* TO *]", "indent", "true"), "//result[@numFound = '4']");
     assertQ(req("q", "floatRemove:\"222.222\"", "indent", "true"), "//result[@numFound = '3']");
 
 
@@ -789,7 +790,7 @@ public class AtomicUpdatesTest extends SolrTestCaseJ4 {
     assertU(adoc(doc));
     assertU(commit());
 
-    assertQ(req("q", "floatRemove:*", "indent", "true"), "//result[@numFound = '4']");
+    assertQ(req("q", "floatRemove:[* TO *]", "indent", "true"), "//result[@numFound = '4']");
     assertQ(req("q", "floatRemove:\"222.222\"", "indent", "true"), "//result[@numFound = '2']");
 
     doc = new SolrInputDocument();
@@ -801,7 +802,7 @@ public class AtomicUpdatesTest extends SolrTestCaseJ4 {
     assertU(adoc(doc));
     assertU(commit());
 
-    assertQ(req("q", "floatRemove:*", "indent", "true"), "//result[@numFound = '4']");
+    assertQ(req("q", "floatRemove:[* TO *]", "indent", "true"), "//result[@numFound = '4']");
     assertQ(req("q", "floatRemove:\"222.222\"", "indent", "true"), "//result[@numFound = '1']");
 
     doc = new SolrInputDocument();
@@ -811,7 +812,7 @@ public class AtomicUpdatesTest extends SolrTestCaseJ4 {
     assertU(adoc(doc));
     assertU(commit());
 
-    assertQ(req("q", "floatRemove:*", "indent", "true"), "//result[@numFound = '4']");
+    assertQ(req("q", "floatRemove:[* TO *]", "indent", "true"), "//result[@numFound = '4']");
     assertQ(req("q", "floatRemove:\"111.111\"", "indent", "true"), "//result[@numFound = '3']");
   }
 
@@ -1135,4 +1136,150 @@ public class AtomicUpdatesTest extends SolrTestCaseJ4 {
     assertQ(req("q", "cat:ccc", "indent", "true"), "//result[@numFound = '1']");
 
   }
+
+  public void testFieldsWithDefaultValuesWhenAtomicUpdatesAgainstTlog() {
+    for (String fieldToUpdate : Arrays.asList("field_to_update_i1", "field_to_update_i_dvo")) {
+      clearIndex();
+      
+      assertU(adoc(sdoc("id", "7", fieldToUpdate, "666")));
+      assertQ(fieldToUpdate + ": initial RTG"
+              , req("qt", "/get", "id", "7")
+              , "count(//doc)=1"
+              , "//doc/int[@name='id'][.='7']"
+              , "//doc/int[@name='"+fieldToUpdate+"'][.='666']"
+              , "//doc/int[@name='intDefault'][.='42']"
+              , "//doc/int[@name='intDvoDefault'][.='42']"
+              , "//doc/long[@name='_version_']"
+              , "//doc/date[@name='timestamp']"
+              , "//doc/arr[@name='multiDefault']/str[.='muLti-Default']"
+              , "count(//doc/*)=7"
+              );
+
+      // do atomic update
+      assertU(adoc(sdoc("id", "7", fieldToUpdate, ImmutableMap.of("inc", -555))));
+      assertQ(fieldToUpdate + ": RTG after atomic update"
+              , req("qt", "/get", "id", "7")
+              , "count(//doc)=1"
+              , "//doc/int[@name='id'][.='7']"
+              , "//doc/int[@name='"+fieldToUpdate+"'][.='111']"
+              , "//doc/int[@name='intDefault'][.='42']"
+              , "//doc/int[@name='intDvoDefault'][.='42']"
+              , "//doc/long[@name='_version_']"
+              , "//doc/date[@name='timestamp']"
+              , "//doc/arr[@name='multiDefault']/str[.='muLti-Default']"
+              , "count(//doc/*)=7"
+              );
+
+      assertU(commit());
+      assertQ(fieldToUpdate + ": post commit RTG"
+              , req("qt", "/get", "id", "7")
+              , "count(//doc)=1"
+              , "//doc/int[@name='id'][.='7']"
+              , "//doc/int[@name='"+fieldToUpdate+"'][.='111']"
+              , "//doc/int[@name='intDefault'][.='42']"
+              , "//doc/int[@name='intDvoDefault'][.='42']"
+              , "//doc/long[@name='_version_']"
+              , "//doc/date[@name='timestamp']"
+              , "//doc/arr[@name='multiDefault']/str[.='muLti-Default']"
+              , "count(//doc/*)=7"
+              );
+    }
+    
+  }
+
+  @AwaitsFix(bugUrl="https://issues.apache.org/jira/browse/SOLR-9838")
+  public void testAtomicUpdateOfFieldsWithDefaultValue() {
+    // both fields have the same default value (42)
+    for (String fieldToUpdate : Arrays.asList("intDefault", "intDvoDefault")) {
+      clearIndex();
+
+      // doc where we immediately attempt to inc the default value
+      assertU(adoc(sdoc("id", "7", fieldToUpdate, ImmutableMap.of("inc", "666"))));
+      assertQ(fieldToUpdate + ": initial RTG#7"
+              , req("qt", "/get", "id", "7")
+              , "count(//doc)=1"
+              , "//doc/int[@name='id'][.='7']"
+              , "//doc/int[@name='"+fieldToUpdate+"'][.='708']"
+              // whichever field we did *NOT* update
+              , "//doc/int[@name!='"+fieldToUpdate+"'][.='42']"
+              , "//doc/long[@name='_version_']"
+              , "//doc/date[@name='timestamp']"
+              , "//doc/arr[@name='multiDefault']/str[.='muLti-Default']"
+              , "count(//doc/*)=6"
+              );
+      // do atomic update
+      assertU(adoc(sdoc("id", "7", fieldToUpdate, ImmutableMap.of("inc", -555))));
+      assertQ(fieldToUpdate + ": RTG#7 after atomic update"
+              , req("qt", "/get", "id", "7")
+              , "count(//doc)=1"
+              , "//doc/int[@name='id'][.='7']"
+              , "//doc/int[@name='"+fieldToUpdate+"'][.='153']"
+              // whichever field we did *NOT* update
+              , "//doc/int[@name!='"+fieldToUpdate+"'][.='42']"
+              , "//doc/long[@name='_version_']"
+              , "//doc/date[@name='timestamp']"
+              , "//doc/arr[@name='multiDefault']/str[.='muLti-Default']"
+              , "count(//doc/*)=6"
+              );
+
+      // diff doc where we check that we can overwrite the default value
+      assertU(adoc(sdoc("id", "8", fieldToUpdate, ImmutableMap.of("set", "666"))));
+      assertQ(fieldToUpdate + ": initial RTG#8"
+              , req("qt", "/get", "id", "8")
+              , "count(//doc)=1"
+              , "//doc/int[@name='id'][.='8']"
+              , "//doc/int[@name='"+fieldToUpdate+"'][.='666']"
+              // whichever field we did *NOT* update
+              , "//doc/int[@name!='"+fieldToUpdate+"'][.='42']"
+              , "//doc/long[@name='_version_']"
+              , "//doc/date[@name='timestamp']"
+              , "//doc/arr[@name='multiDefault']/str[.='muLti-Default']"
+              , "count(//doc/*)=6"
+              );
+      // do atomic update
+      assertU(adoc(sdoc("id", "7", fieldToUpdate, ImmutableMap.of("inc", -555))));
+      assertQ(fieldToUpdate + ": RTG after atomic update"
+              , req("qt", "/get", "id", "8")
+              , "count(//doc)=1"
+              , "//doc/int[@name='id'][.='8']"
+              , "//doc/int[@name='"+fieldToUpdate+"'][.='111']"
+              // whichever field we did *NOT* update
+              , "//doc/int[@name!='"+fieldToUpdate+"'][.='42']"
+              , "//doc/long[@name='_version_']"
+              , "//doc/date[@name='timestamp']"
+              , "//doc/arr[@name='multiDefault']/str[.='muLti-Default']"
+              , "count(//doc/*)=6"
+              );
+      
+      assertU(commit());
+      
+      assertQ(fieldToUpdate + ": doc7 post commit RTG"
+              , req("qt", "/get", "id", "7")
+              , "count(//doc)=1"
+              , "//doc/int[@name='id'][.='7']"
+              , "//doc/int[@name='"+fieldToUpdate+"'][.='153']"
+              // whichever field we did *NOT* update
+              , "//doc/int[@name!='"+fieldToUpdate+"'][.='42']"
+              , "//doc/long[@name='_version_']"
+              , "//doc/date[@name='timestamp']"
+              , "//doc/arr[@name='multiDefault']/str[.='muLti-Default']"
+              , "count(//doc/*)=6"
+              );
+      assertQ(fieldToUpdate + ": doc8 post commit RTG"
+              , req("qt", "/get", "id", "8")
+              , "count(//doc)=1"
+              , "//doc/int[@name='id'][.='8']"
+              , "//doc/int[@name='"+fieldToUpdate+"'][.='111']"
+              // whichever field we did *NOT* update
+              , "//doc/int[@name!='"+fieldToUpdate+"'][.='42']"
+              , "//doc/long[@name='_version_']"
+              , "//doc/date[@name='timestamp']"
+              , "//doc/arr[@name='multiDefault']/str[.='muLti-Default']"
+              , "count(//doc/*)=6"
+              );
+    }
+    
+  }
+  
+  
 }

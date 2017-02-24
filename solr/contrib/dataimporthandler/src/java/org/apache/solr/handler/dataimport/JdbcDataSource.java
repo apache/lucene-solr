@@ -71,6 +71,7 @@ public class JdbcDataSource extends
 
   @Override
   public void init(Context context, Properties initProps) {
+    resolveVariables(context, initProps);
     initProps = decryptPwd(context, initProps);
     Object o = initProps.get(CONVERT_TYPE);
     if (o != null)
@@ -113,7 +114,7 @@ public class JdbcDataSource extends
   }
 
   private Properties decryptPwd(Context context, Properties initProps) {
-    String encryptionKey = context.replaceTokens(initProps.getProperty("encryptKeyFile"));
+    String encryptionKey = initProps.getProperty("encryptKeyFile");
     if (initProps.getProperty("password") != null && encryptionKey != null) {
       // this means the password is encrypted and use the file to decode it
       try {
@@ -143,7 +144,6 @@ public class JdbcDataSource extends
   protected Callable<Connection> createConnectionFactory(final Context context,
                                        final Properties initProps) {
 //    final VariableResolver resolver = context.getVariableResolver();
-    resolveVariables(context, initProps);
     final String jndiName = initProps.getProperty(JNDI_NAME);
     final String url = initProps.getProperty(URL);
     final String driver = initProps.getProperty(DRIVER);

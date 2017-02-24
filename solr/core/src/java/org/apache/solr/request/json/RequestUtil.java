@@ -147,14 +147,16 @@ public class RequestUtil {
       newMap.putAll( MultiMapSolrParams.asMultiMap(invariants) );
     }
 
-    String[] doMacrosStr = newMap.get("expandMacros");
-    boolean doMacros = true;
-    if (doMacrosStr != null) {
-      doMacros = "true".equals(doMacrosStr[0]);
-    }
+    if (!isShard) { // Don't expand macros in shard requests
+      String[] doMacrosStr = newMap.get("expandMacros");
+      boolean doMacros = true;
+      if (doMacrosStr != null) {
+        doMacros = "true".equals(doMacrosStr[0]);
+      }
 
-    if (doMacros) {
-      newMap = MacroExpander.expand(newMap);
+      if (doMacros) {
+        newMap = MacroExpander.expand(newMap);
+      }
     }
     // Set these params as soon as possible so if there is an error processing later, things like
     // "wt=json" will take effect from the defaults.

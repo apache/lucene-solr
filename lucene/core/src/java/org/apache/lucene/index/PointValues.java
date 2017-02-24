@@ -26,6 +26,7 @@ import org.apache.lucene.document.Field;
 import org.apache.lucene.document.FloatPoint;
 import org.apache.lucene.document.IntPoint;
 import org.apache.lucene.document.LongPoint;
+import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.util.StringHelper;
 import org.apache.lucene.util.bkd.BKDWriter;
 
@@ -210,8 +211,7 @@ public abstract class PointValues {
      *  determine how to further recurse down the tree. */
     Relation compare(byte[] minPackedValue, byte[] maxPackedValue);
 
-    /** Notifies the caller that this many documents (from one block) are about
-     *  to be visited */
+    /** Notifies the caller that this many documents are about to be visited */
     default void grow(int count) {};
   }
 
@@ -219,6 +219,12 @@ public abstract class PointValues {
    *  This method does not enforce live documents, so it's up to the caller
    *  to test whether each document is deleted, if necessary. */
   public abstract void intersect(IntersectVisitor visitor) throws IOException;
+
+  /** Estimate the number of points that would be visited by {@link #intersect}
+   * with the given {@link IntersectVisitor}. This should run many times faster
+   * than {@link #intersect(IntersectVisitor)}.
+   * @see DocIdSetIterator#cost */
+  public abstract long estimatePointCount(IntersectVisitor visitor);
 
   /** Returns minimum value for each dimension, packed, or null if {@link #size} is <code>0</code> */
   public abstract byte[] getMinPackedValue() throws IOException;

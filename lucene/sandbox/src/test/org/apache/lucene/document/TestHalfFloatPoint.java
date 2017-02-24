@@ -229,6 +229,7 @@ public class TestHalfFloatPoint extends LuceneTestCase {
     // values that cannot be exactly represented as a half float
     assertEquals(HalfFloatPoint.nextUp(0f), HalfFloatPoint.nextUp(Float.MIN_VALUE), 0f);
     assertEquals(Float.floatToIntBits(-0f), Float.floatToIntBits(HalfFloatPoint.nextUp(-Float.MIN_VALUE)));
+    assertEquals(Float.floatToIntBits(0f), Float.floatToIntBits(HalfFloatPoint.nextUp(-0f)));
   }
 
   public void testNextDown() {
@@ -239,5 +240,6 @@ public class TestHalfFloatPoint extends LuceneTestCase {
     // values that cannot be exactly represented as a half float
     assertEquals(Float.floatToIntBits(0f), Float.floatToIntBits(HalfFloatPoint.nextDown(Float.MIN_VALUE)));
     assertEquals(HalfFloatPoint.nextDown(-0f), HalfFloatPoint.nextDown(-Float.MIN_VALUE), 0f);
+    assertEquals(Float.floatToIntBits(-0f), Float.floatToIntBits(HalfFloatPoint.nextDown(+0f)));
   }
 }

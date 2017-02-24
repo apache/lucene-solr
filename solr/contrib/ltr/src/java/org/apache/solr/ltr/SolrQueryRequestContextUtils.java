@@ -37,12 +37,12 @@ public class SolrQueryRequestContextUtils {
 
   /** feature logger accessors **/
 
-  public static void setFeatureLogger(SolrQueryRequest req, FeatureLogger<?> featureLogger) {
+  public static void setFeatureLogger(SolrQueryRequest req, FeatureLogger featureLogger) {
     req.getContext().put(FEATURE_LOGGER, featureLogger);
   }
 
-  public static FeatureLogger<?> getFeatureLogger(SolrQueryRequest req) {
-    return (FeatureLogger<?>) req.getContext().get(FEATURE_LOGGER);
+  public static FeatureLogger getFeatureLogger(SolrQueryRequest req) {
+    return (FeatureLogger) req.getContext().get(FEATURE_LOGGER);
   }
 
   /** scoring query accessors **/

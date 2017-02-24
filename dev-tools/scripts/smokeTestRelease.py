@@ -497,7 +497,6 @@ def versionToTuple(version, name):
     versionTuple = versionTuple[:-2] + ('100',)
   elif versionTuple[-1].lower()[:2] == 'rc':
     versionTuple = versionTuple[:-2] + (versionTuple[-1][2:],)
-  print('%s: %s' % (version, versionTuple))
   return versionTuple
 
 

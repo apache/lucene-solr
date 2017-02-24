@@ -228,7 +228,7 @@ public class TestFSTs extends LuceneTestCase {
         final long value = lastOutput + TestUtil.nextInt(random(), 1, 1000);
         lastOutput = value;
         pairs.add(new FSTTester.InputOutput<>(terms[idx],
-                                                                         outputs.newPair((long) idx, value)));
+                                              outputs.newPair((long) idx, value)));
       }
       new FSTTester<>(random(), dir, inputMode, pairs, outputs, false).doTest(true);
     }

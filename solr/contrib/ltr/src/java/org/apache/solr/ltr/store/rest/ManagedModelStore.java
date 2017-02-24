@@ -61,7 +61,6 @@ public class ManagedModelStore extends ManagedResource implements ManagedResourc
 
   /** the model store rest endpoint **/
   public static final String REST_END_POINT = "/schema/model-store";
-  // TODO: reduce from public to package visibility (once tests no longer need public access)
 
   /**
    * Managed model store: the name of the attribute containing all the models of
@@ -124,13 +123,17 @@ public class ManagedModelStore extends ManagedResource implements ManagedResourc
     if ((managedData != null) && (managedData instanceof List)) {
       final List<Map<String,Object>> up = (List<Map<String,Object>>) managedData;
       for (final Map<String,Object> u : up) {
-        try {
-          final LTRScoringModel algo = fromLTRScoringModelMap(solrResourceLoader, u, managedFeatureStore);
-          addModel(algo);
-        } catch (final ModelException e) {
-          throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, e);
-        }
+        addModelFromMap(u);
       }
+    }
+  }
+
+  private void addModelFromMap(Map<String,Object> modelMap) {
+    try {
+      final LTRScoringModel algo = fromLTRScoringModelMap(solrResourceLoader, modelMap, managedFeatureStore);
+      addModel(algo);
+    } catch (final ModelException e) {
+      throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, e);
     }
   }
 
@@ -146,26 +149,17 @@ public class ManagedModelStore extends ManagedResource implements ManagedResourc
   @SuppressWarnings("unchecked")
   @Override
   protected Object applyUpdatesToManagedData(Object updates) {
+
     if (updates instanceof List) {
       final List<Map<String,Object>> up = (List<Map<String,Object>>) updates;
       for (final Map<String,Object> u : up) {
-        try {
-          final LTRScoringModel algo = fromLTRScoringModelMap(solrResourceLoader, u, managedFeatureStore);
-          addModel(algo);
-        } catch (final ModelException e) {
-          throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, e);
-        }
+        addModelFromMap(u);
       }
     }
 
     if (updates instanceof Map) {
       final Map<String,Object> map = (Map<String,Object>) updates;
-      try {
-        final LTRScoringModel algo = fromLTRScoringModelMap(solrResourceLoader, map, managedFeatureStore);
-        addModel(algo);
-      } catch (final ModelException e) {
-        throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, e);
-      }
+      addModelFromMap(map);
     }
 
     return modelsAsManagedResources(store.getModels());
@@ -173,11 +167,7 @@ public class ManagedModelStore extends ManagedResource implements ManagedResourc
 
   @Override
   public synchronized void doDeleteChild(BaseSolrResource endpoint, String childId) {
-    if (childId.equals("*")) {
-      store.clear();
-    } else {
-      store.delete(childId);
-    }
+    store.delete(childId);
     storeManagedData(applyUpdatesToManagedData(null));
   }
 

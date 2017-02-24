@@ -24,7 +24,7 @@ public class TestJavascriptFunction extends LuceneTestCase {
   
   private void assertEvaluatesTo(String expression, double expected) throws Exception {
     Expression evaluator = JavascriptCompiler.compile(expression);
-    double actual = evaluator.evaluate(0, null);
+    double actual = evaluator.evaluate(null);
     assertEquals(expected, actual, DELTA);
   }
   

@@ -35,8 +35,11 @@ import org.apache.solr.request.LocalSolrQueryRequest;
 import org.apache.solr.request.SolrRequestInfo;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.util.CryptoKeys;
-import org.easymock.EasyMock;
-import static org.easymock.EasyMock.getCurrentArguments;
+import org.junit.Test;
+
+import static org.mockito.Mockito.any;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 public class TestPKIAuthenticationPlugin extends SolrTestCaseJ4 {
 
@@ -142,29 +145,49 @@ public class TestPKIAuthenticationPlugin extends SolrTestCaseJ4 {
     mock1.doAuthenticate(mockReq, null,filterChain );
     assertNotNull(wrappedRequestByFilter.get());
     assertEquals("$", ((HttpServletRequest) wrappedRequestByFilter.get()).getUserPrincipal().getName());
+  }
 
+  @Test
+  public void testGetBaseUrlForNodeNameLocal() {
+    synchronized (this) {
+      final MockPKIAuthenticationPlugin mock = new MockPKIAuthenticationPlugin(null, "myName");
+      System.clearProperty("solr.jetty.keystore");
+      assertEquals("http://my.host:9876/solr2", mock.getBaseUrlForNodeNameLocal("my.host:9876_solr2"));
+      System.setProperty("solr.jetty.keystore", "foo");
+      assertEquals("https://my.host:9876/solr2", mock.getBaseUrlForNodeNameLocal("my.host:9876_solr2"));
+      System.clearProperty("solr.jetty.keystore");
+    }
+  }
 
-
-
+  @Test
+  public void testResolveUrlScheme() {
+    synchronized (this) {
+      System.clearProperty("urlScheme");
+      System.clearProperty("solr.jetty.keystore");
+      assertEquals("http", MockPKIAuthenticationPlugin.resolveUrlScheme());
+      System.setProperty("urlScheme", "http");
+      assertEquals("http", MockPKIAuthenticationPlugin.resolveUrlScheme());
+      System.setProperty("urlScheme", "https");
+      assertEquals("https", MockPKIAuthenticationPlugin.resolveUrlScheme());
+      System.setProperty("urlScheme", "ftp");
+      System.clearProperty("solr.jetty.keystore");
+      assertEquals("http", MockPKIAuthenticationPlugin.resolveUrlScheme());
+      System.setProperty("solr.jetty.keystore", "foo");
+      assertEquals("https", MockPKIAuthenticationPlugin.resolveUrlScheme());
+      System.clearProperty("urlScheme");
+      System.clearProperty("solr.jetty.keystore");
+    }
   }
 
   private HttpServletRequest createMockRequest(final AtomicReference<Header> header) {
-    HttpServletRequest mockReq = EasyMock.createMock(HttpServletRequest.class);
-    EasyMock.reset(mockReq);
-    mockReq.getHeader(EasyMock.anyObject(String.class));
-    EasyMock.expectLastCall().andAnswer(() -> {
-      if (PKIAuthenticationPlugin.HEADER.equals(getCurrentArguments()[0])) {
+    HttpServletRequest mockReq = mock(HttpServletRequest.class);
+    when(mockReq.getHeader(any(String.class))).then(invocation -> {
+      if (PKIAuthenticationPlugin.HEADER.equals(invocation.getArgument(0))) {
         if (header.get() == null) return null;
         return header.get().getValue();
       } else return null;
-    }).anyTimes();
-    mockReq.getUserPrincipal();
-    EasyMock.expectLastCall().andAnswer(() -> null).anyTimes();
-
-    mockReq.getRequestURI();
-    EasyMock.expectLastCall().andAnswer(() -> "/collection1/select").anyTimes();
-
-    EasyMock.replay(mockReq);
+    });
+    when(mockReq.getRequestURI()).thenReturn("/collection1/select");
     return mockReq;
   }
 }

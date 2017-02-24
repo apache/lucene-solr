@@ -70,7 +70,7 @@ public class RecoveryStrategy extends Thread implements Closeable {
 
   private static final Logger LOG = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
-  private static final int WAIT_FOR_UPDATES_WITH_STALE_STATE_PAUSE = Integer.getInteger("solr.cloud.wait-for-updates-with-stale-state-pause", 7000);
+  private static final int WAIT_FOR_UPDATES_WITH_STALE_STATE_PAUSE = Integer.getInteger("solr.cloud.wait-for-updates-with-stale-state-pause", 2500);
   private static final int MAX_RETRIES = 500;
   private static final int STARTING_RECOVERY_DELAY = 5000;
 
@@ -591,10 +591,12 @@ public class RecoveryStrategy extends Thread implements Closeable {
         sendPrepRecoveryCmd(leaderBaseUrl, prepCmd);
         break;
       } catch (ExecutionException e) {
-        SolrServerException solrException = (SolrServerException) e.getCause();
-        if (solrException.getRootCause() instanceof SocketTimeoutException && numTries < maxTries) {
-          LOG.warn("Socket timeout when send prep recovery cmd, retrying.. ");
-          continue;
+        if (e.getCause() instanceof SolrServerException) {
+          SolrServerException solrException = (SolrServerException) e.getCause();
+          if (solrException.getRootCause() instanceof SocketTimeoutException && numTries < maxTries) {
+            LOG.warn("Socket timeout on send prep recovery cmd, retrying.. ");
+            continue;
+          }
         }
         throw  e;
       }

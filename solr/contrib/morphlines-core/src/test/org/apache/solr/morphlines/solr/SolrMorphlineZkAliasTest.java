@@ -91,13 +91,6 @@ public class SolrMorphlineZkAliasTest extends AbstractSolrMorphlineZkTestBase {
     Notifications.notifyRollbackTransaction(morphline);
     Notifications.notifyShutdown(morphline);
 
-    CollectionAdminRequest.createAlias("aliascollection", "collection1,collection2")
-        .processAndWait(cluster.getSolrClient(), TIMEOUT);
-
-    expectThrows(IllegalArgumentException.class, () -> {
-      parse("test-morphlines" + File.separator + "loadSolrBasic", "aliascollection");
-    });
-
   }
 
 }

@@ -200,4 +200,9 @@ public abstract class UpdateHandler implements SolrInfoMBean {
   }
 
   public abstract void split(SplitIndexCommand cmd) throws IOException;
+
+  @Override
+  public Category getCategory() {
+    return Category.UPDATE;
+  }
 }

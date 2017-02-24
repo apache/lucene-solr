@@ -31,10 +31,12 @@ import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.core.Diagnostics;
+import org.apache.solr.update.processor.DistributedUpdateProcessor;
 import org.apache.solr.update.processor.DistributedUpdateProcessor.RequestReplicationTracker;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.Closeable;
 import java.io.IOException;
 import java.io.InputStream;
 import java.lang.invoke.MethodHandles;
@@ -50,7 +52,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
 
 
-public class SolrCmdDistributor {
+public class SolrCmdDistributor implements Closeable {
   private static final int MAX_RETRIES_ON_FORWARD = 25;
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   
@@ -94,6 +96,10 @@ public class SolrCmdDistributor {
     } finally {
       clients.shutdown();
     }
+  }
+  
+  public void close() {
+    clients.shutdown();
   }
 
   private void doRetriesIfNeeded() {
@@ -206,7 +212,10 @@ public class SolrCmdDistributor {
         uReq.lastDocInBatch();
       uReq.setParams(params);
       uReq.add(cmd.solrDoc, cmd.commitWithin, cmd.overwrite);
-      submit(new Req(cmd, node, uReq, synchronous, rrt, cmd.pollQueueTime), false);
+      if (cmd.isInPlaceUpdate()) {
+        params.set(DistributedUpdateProcessor.DISTRIB_INPLACE_PREVVERSION, String.valueOf(cmd.prevVersion));
+      }
+      submit(new Req(cmd, node, uReq, synchronous, rrt), false);
     }
     
   }
@@ -310,19 +319,17 @@ public class SolrCmdDistributor {
     public boolean synchronous;
     public UpdateCommand cmd;
     public RequestReplicationTracker rfTracker;
-    public int pollQueueTime;
 
     public Req(UpdateCommand cmd, Node node, UpdateRequest uReq, boolean synchronous) {
-      this(cmd, node, uReq, synchronous, null, 0);
+      this(cmd, node, uReq, synchronous, null);
     }
     
-    public Req(UpdateCommand cmd, Node node, UpdateRequest uReq, boolean synchronous, RequestReplicationTracker rfTracker, int pollQueueTime) {
+    public Req(UpdateCommand cmd, Node node, UpdateRequest uReq, boolean synchronous, RequestReplicationTracker rfTracker) {
       this.node = node;
       this.uReq = uReq;
       this.synchronous = synchronous;
       this.cmd = cmd;
       this.rfTracker = rfTracker;
-      this.pollQueueTime = pollQueueTime;
     }
     
     public String toString() {

@@ -273,6 +273,11 @@ public class HighlightComponent extends SearchComponent implements PluginInfoIni
   public String getDescription() {
     return "Highlighting";
   }
+
+  @Override
+  public Category getCategory() {
+    return Category.HIGHLIGHTER;
+  }
   
   @Override
   public URL[] getDocs() {

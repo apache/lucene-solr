@@ -754,7 +754,7 @@ public class BasicDistributedZkTest extends AbstractFullDistribZkTestBase {
       QueryRequest req = new QueryRequest(params);
       NamedList<Object> resp = client.request(req);
       NamedList mbeans = (NamedList) resp.get("solr-mbeans");
-      NamedList uhandlerCat = (NamedList) mbeans.get("UPDATEHANDLER");
+      NamedList uhandlerCat = (NamedList) mbeans.get("UPDATE");
       NamedList uhandler = (NamedList) uhandlerCat.get("updateHandler");
       NamedList stats = (NamedList) uhandler.get("stats");
       return (Long) stats.get("commits");

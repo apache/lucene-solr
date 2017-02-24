@@ -22,6 +22,13 @@
  <!-- Query parser used to rerank top docs with a provided model -->
  <queryParser name="ltr" class="org.apache.solr.ltr.search.LTRQParserPlugin" />
 
+ <query>
+  <filterCache class="solr.FastLRUCache" size="4096"
+   initialSize="2048" autowarmCount="0" />
+  <cache name="QUERY_DOC_FV" class="solr.search.LRUCache" size="4096"
+   initialSize="2048" autowarmCount="4096" regenerator="solr.search.NoOpRegenerator" />
+ </query>
+
  <maxBufferedDocs>1</maxBufferedDocs>
  <mergePolicyFactory class="org.apache.solr.index.TieredMergePolicyFactory">
   <int name="maxMergeAtOnce">10</int>
@@ -32,8 +39,9 @@
   in the response. The name of the field we will be the the name of the transformer 
   enclosed between brackets (in this case [fv]). In order to get the feature 
   vector you will have to specify that you want the field (e.g., fl="*,[fv]) -->
- <transformer name="features"
-  class="org.apache.solr.ltr.response.transform.LTRFeatureLoggerTransformerFactory" />
+ <transformer name="features" class="org.apache.solr.ltr.response.transform.LTRFeatureLoggerTransformerFactory">
+   <str name="fvCacheName">QUERY_DOC_FV</str>
+ </transformer>
 
  <updateHandler class="solr.DirectUpdateHandler2">
   <autoCommit>

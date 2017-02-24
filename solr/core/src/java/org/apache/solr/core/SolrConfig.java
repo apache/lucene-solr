@@ -287,7 +287,7 @@ public class SolrConfig extends Config implements MapSerializable {
     } else {
       jmxConfig = new JmxConfiguration(false, null, null, null);
     }
-    maxWarmingSearchers = getInt("query/maxWarmingSearchers", Integer.MAX_VALUE);
+    maxWarmingSearchers = getInt("query/maxWarmingSearchers", 1);
     slowQueryThresholdMillis = getInt("query/slowQueryThresholdMillis", -1);
     for (SolrPluginInfo plugin : plugins) loadPluginInfo(plugin);
 

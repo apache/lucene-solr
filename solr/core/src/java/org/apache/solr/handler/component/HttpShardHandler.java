@@ -15,15 +15,14 @@
  * limitations under the License.
  */
 package org.apache.solr.handler.component;
+
 import java.lang.invoke.MethodHandles;
 import java.net.ConnectException;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
-import java.util.ListIterator;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.Callable;
@@ -114,51 +113,19 @@ public class HttpShardHandler extends ShardHandler {
 
   // Not thread safe... don't use in Callable.
   // Don't modify the returned URL list.
-  private List<String> getURLs(String shard, String preferredHostAddress) {
+  private List<String> getURLs(String shard) {
     List<String> urls = shardToURLs.get(shard);
     if (urls == null) {
       urls = httpShardHandlerFactory.buildURLList(shard);
-      if (preferredHostAddress != null && urls.size() > 1) {
-        preferCurrentHostForDistributedReq(preferredHostAddress, urls);
-      }
       shardToURLs.put(shard, urls);
     }
     return urls;
   }
 
-  /**
-   * A distributed request is made via {@link LBHttpSolrClient} to the first live server in the URL list.
-   * This means it is just as likely to choose current host as any of the other hosts.
-   * This function makes sure that the cores of current host are always put first in the URL list.
-   * If all nodes prefer local-cores then a bad/heavily-loaded node will receive less requests from healthy nodes.
-   * This will help prevent a distributed deadlock or timeouts in all the healthy nodes due to one bad node.
-   */
-  private void preferCurrentHostForDistributedReq(final String currentHostAddress, final List<String> urls) {
-    if (log.isDebugEnabled())
-      log.debug("Trying to prefer local shard on {} among the urls: {}",
-          currentHostAddress, Arrays.toString(urls.toArray()));
-
-    ListIterator<String> itr = urls.listIterator();
-    while (itr.hasNext()) {
-      String url = itr.next();
-      if (url.startsWith(currentHostAddress)) {
-        // move current URL to the fore-front
-        itr.remove();
-        urls.add(0, url);
-
-        if (log.isDebugEnabled())
-          log.debug("Applied local shard preference for urls: {}",
-              Arrays.toString(urls.toArray()));
-
-        break;
-      }
-    }
-  }
-
   @Override
-  public void submit(final ShardRequest sreq, final String shard, final ModifiableSolrParams params, String preferredHostAddress) {
+  public void submit(final ShardRequest sreq, final String shard, final ModifiableSolrParams params) {
     // do this outside of the callable for thread safety reasons
-    final List<String> urls = getURLs(shard, preferredHostAddress);
+    final List<String> urls = getURLs(shard);
 
     Callable<ShardResponse> task = () -> {
 
@@ -313,13 +280,6 @@ public class HttpShardHandler extends ShardHandler {
     CoreDescriptor coreDescriptor = req.getCore().getCoreDescriptor();
     CloudDescriptor cloudDescriptor = coreDescriptor.getCloudDescriptor();
     ZkController zkController = coreDescriptor.getCoreContainer().getZkController();
-
-    if (params.getBool(CommonParams.PREFER_LOCAL_SHARDS, false)) {
-      rb.preferredHostAddress = (zkController != null) ? zkController.getBaseUrl() : null;
-      if (rb.preferredHostAddress == null) {
-        log.warn("Couldn't determine current host address to prefer local shards");
-      }
-    }
 
     final ReplicaListTransformer replicaListTransformer = httpShardHandlerFactory.getReplicaListTransformer(req);
 

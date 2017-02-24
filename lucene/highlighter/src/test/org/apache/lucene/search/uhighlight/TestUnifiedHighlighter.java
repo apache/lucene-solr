@@ -25,6 +25,7 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.function.Predicate;
 
 import com.carrotsearch.randomizedtesting.annotations.ParametersFactory;
 import org.apache.lucene.analysis.MockAnalyzer;
@@ -32,14 +33,17 @@ import org.apache.lucene.analysis.MockTokenizer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.FieldType;
+import org.apache.lucene.index.IndexOptions;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.BooleanClause;
 import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.DocIdSetIterator;
+import org.apache.lucene.search.FuzzyQuery;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.PhraseQuery;
+import org.apache.lucene.search.PrefixQuery;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.ScoreDoc;
 import org.apache.lucene.search.Sort;
@@ -959,4 +963,275 @@ public class TestUnifiedHighlighter extends LuceneTestCase {
     ir.close();
   }
 
+  private IndexReader indexSomeFields() throws IOException {
+    RandomIndexWriter iw = new RandomIndexWriter(random(), dir, indexAnalyzer);
+    FieldType ft = new FieldType();
+    ft.setIndexOptions(IndexOptions.NONE);
+    ft.setTokenized(false);
+    ft.setStored(true);
+    ft.freeze();
+
+    Field title = new Field("title", "", fieldType);
+    Field text = new Field("text", "", fieldType);
+    Field category = new Field("category", "", fieldType);
+
+    Document doc = new Document();
+    doc.add(title);
+    doc.add(text);
+    doc.add(category);
+    title.setStringValue("This is the title field.");
+    text.setStringValue("This is the text field. You can put some text if you want.");
+    category.setStringValue("This is the category field.");
+    iw.addDocument(doc);
+
+    IndexReader ir = iw.getReader();
+    iw.close();
+    return ir;
+  }
+
+  public void testFieldMatcherTermQuery() throws Exception {
+    IndexReader ir = indexSomeFields();
+    IndexSearcher searcher = newSearcher(ir);
+    UnifiedHighlighter highlighterNoFieldMatch = new UnifiedHighlighter(searcher, indexAnalyzer) {
+      @Override
+      protected Predicate<String> getFieldMatcher(String field) {
+        // requireFieldMatch=false
+        return (qf) -> true;
+      }
+    };
+    UnifiedHighlighter highlighterFieldMatch = new UnifiedHighlighter(searcher, indexAnalyzer);
+    BooleanQuery.Builder queryBuilder =
+        new BooleanQuery.Builder()
+            .add(new TermQuery(new Term("text", "some")), BooleanClause.Occur.SHOULD)
+            .add(new TermQuery(new Term("text", "field")), BooleanClause.Occur.SHOULD)
+            .add(new TermQuery(new Term("text", "this")), BooleanClause.Occur.SHOULD)
+            .add(new TermQuery(new Term("title", "is")), BooleanClause.Occur.SHOULD)
+            .add(new TermQuery(new Term("title", "this")), BooleanClause.Occur.SHOULD)
+            .add(new TermQuery(new Term("category", "this")), BooleanClause.Occur.SHOULD)
+            .add(new TermQuery(new Term("category", "some")), BooleanClause.Occur.SHOULD)
+            .add(new TermQuery(new Term("category", "category")), BooleanClause.Occur.SHOULD);
+    Query query = queryBuilder.build();
+
+    // title
+    {
+      TopDocs topDocs = searcher.search(query, 10, Sort.INDEXORDER);
+      assertEquals(1, topDocs.totalHits);
+      String[] snippets = highlighterNoFieldMatch.highlight("title", query, topDocs, 10);
+      assertEquals(1, snippets.length);
+      assertEquals("<b>This</b> <b>is</b> the title <b>field</b>.", snippets[0]);
+
+      snippets = highlighterFieldMatch.highlight("title", query, topDocs, 10);
+      assertEquals(1, snippets.length);
+      assertEquals("<b>This</b> <b>is</b> the title field.", snippets[0]);
+
+      highlighterFieldMatch.setFieldMatcher((fq) -> "text".equals(fq));
+      snippets = highlighterFieldMatch.highlight("title", query, topDocs, 10);
+      assertEquals(1, snippets.length);
+      assertEquals("<b>This</b> is the title <b>field</b>.", snippets[0]);
+      highlighterFieldMatch.setFieldMatcher(null);
+    }
+
+    // text
+    {
+      TopDocs topDocs = searcher.search(query, 10, Sort.INDEXORDER);
+      assertEquals(1, topDocs.totalHits);
+      String[] snippets = highlighterNoFieldMatch.highlight("text", query, topDocs, 10);
+      assertEquals(1, snippets.length);
+      assertEquals("<b>This</b> <b>is</b> the text <b>field</b>. You can put <b>some</b> text if you want.", snippets[0]);
+
+      snippets = highlighterFieldMatch.highlight("text", query, topDocs, 10);
+      assertEquals(1, snippets.length);
+      assertEquals("<b>This</b> is the text <b>field</b>. You can put <b>some</b> text if you want.", snippets[0]);
+
+      highlighterFieldMatch.setFieldMatcher((fq) -> "title".equals(fq));
+      snippets = highlighterFieldMatch.highlight("text", query, topDocs, 10);
+      assertEquals(1, snippets.length);
+      assertEquals("<b>This</b> <b>is</b> the text field. ", snippets[0]);
+      highlighterFieldMatch.setFieldMatcher(null);
+    }
+
+    // category
+    {
+      TopDocs topDocs = searcher.search(query, 10, Sort.INDEXORDER);
+      assertEquals(1, topDocs.totalHits);
+      String[] snippets = highlighterNoFieldMatch.highlight("category", query, topDocs, 10);
+      assertEquals(1, snippets.length);
+      assertEquals("<b>This</b> <b>is</b> the <b>category</b> <b>field</b>.", snippets[0]);
+
+      snippets = highlighterFieldMatch.highlight("category", query, topDocs, 10);
+      assertEquals(1, snippets.length);
+      assertEquals("<b>This</b> is the <b>category</b> field.", snippets[0]);
+
+
+      highlighterFieldMatch.setFieldMatcher((fq) -> "title".equals(fq));
+      snippets = highlighterFieldMatch.highlight("category", query, topDocs, 10);
+      assertEquals(1, snippets.length);
+      assertEquals("<b>This</b> <b>is</b> the category field.", snippets[0]);
+      highlighterFieldMatch.setFieldMatcher(null);
+    }
+    ir.close();
+  }
+
+  public void testFieldMatcherMultiTermQuery() throws Exception {
+    IndexReader ir = indexSomeFields();
+    IndexSearcher searcher = newSearcher(ir);
+    UnifiedHighlighter highlighterNoFieldMatch = new UnifiedHighlighter(searcher, indexAnalyzer) {
+      @Override
+      protected Predicate<String> getFieldMatcher(String field) {
+        // requireFieldMatch=false
+        return (qf) -> true;
+      }
+    };
+    UnifiedHighlighter highlighterFieldMatch = new UnifiedHighlighter(searcher, indexAnalyzer);
+    BooleanQuery.Builder queryBuilder =
+        new BooleanQuery.Builder()
+            .add(new FuzzyQuery(new Term("text", "sime"), 1), BooleanClause.Occur.SHOULD)
+            .add(new PrefixQuery(new Term("text", "fie")), BooleanClause.Occur.SHOULD)
+            .add(new PrefixQuery(new Term("text", "thi")), BooleanClause.Occur.SHOULD)
+            .add(new TermQuery(new Term("title", "is")), BooleanClause.Occur.SHOULD)
+            .add(new PrefixQuery(new Term("title", "thi")), BooleanClause.Occur.SHOULD)
+            .add(new PrefixQuery(new Term("category", "thi")), BooleanClause.Occur.SHOULD)
+            .add(new FuzzyQuery(new Term("category", "sime"), 1), BooleanClause.Occur.SHOULD)
+            .add(new PrefixQuery(new Term("category", "categ")), BooleanClause.Occur.SHOULD);
+    Query query = queryBuilder.build();
+
+    // title
+    {
+      TopDocs topDocs = searcher.search(query, 10, Sort.INDEXORDER);
+      assertEquals(1, topDocs.totalHits);
+      String[] snippets = highlighterNoFieldMatch.highlight("title", query, topDocs, 10);
+      assertEquals(1, snippets.length);
+      assertEquals("<b>This</b> <b>is</b> the title <b>field</b>.", snippets[0]);
+
+      snippets = highlighterFieldMatch.highlight("title", query, topDocs, 10);
+      assertEquals(1, snippets.length);
+      assertEquals("<b>This</b> <b>is</b> the title field.", snippets[0]);
+
+      highlighterFieldMatch.setFieldMatcher((fq) -> "text".equals(fq));
+      snippets = highlighterFieldMatch.highlight("title", query, topDocs, 10);
+      assertEquals(1, snippets.length);
+      assertEquals("<b>This</b> is the title <b>field</b>.", snippets[0]);
+      highlighterFieldMatch.setFieldMatcher(null);
+    }
+
+    // text
+    {
+      TopDocs topDocs = searcher.search(query, 10, Sort.INDEXORDER);
+      assertEquals(1, topDocs.totalHits);
+      String[] snippets = highlighterNoFieldMatch.highlight("text", query, topDocs, 10);
+      assertEquals(1, snippets.length);
+      assertEquals("<b>This</b> <b>is</b> the text <b>field</b>. You can put <b>some</b> text if you want.", snippets[0]);
+
+      snippets = highlighterFieldMatch.highlight("text", query, topDocs, 10);
+      assertEquals(1, snippets.length);
+      assertEquals("<b>This</b> is the text <b>field</b>. You can put <b>some</b> text if you want.", snippets[0]);
+
+      highlighterFieldMatch.setFieldMatcher((fq) -> "title".equals(fq));
+      snippets = highlighterFieldMatch.highlight("text", query, topDocs, 10);
+      assertEquals(1, snippets.length);
+      assertEquals("<b>This</b> <b>is</b> the text field. ", snippets[0]);
+      highlighterFieldMatch.setFieldMatcher(null);
+    }
+
+    // category
+    {
+      TopDocs topDocs = searcher.search(query, 10, Sort.INDEXORDER);
+      assertEquals(1, topDocs.totalHits);
+      String[] snippets = highlighterNoFieldMatch.highlight("category", query, topDocs, 10);
+      assertEquals(1, snippets.length);
+      assertEquals("<b>This</b> <b>is</b> the <b>category</b> <b>field</b>.", snippets[0]);
+
+      snippets = highlighterFieldMatch.highlight("category", query, topDocs, 10);
+      assertEquals(1, snippets.length);
+      assertEquals("<b>This</b> is the <b>category</b> field.", snippets[0]);
+
+
+      highlighterFieldMatch.setFieldMatcher((fq) -> "title".equals(fq));
+      snippets = highlighterFieldMatch.highlight("category", query, topDocs, 10);
+      assertEquals(1, snippets.length);
+      assertEquals("<b>This</b> <b>is</b> the category field.", snippets[0]);
+      highlighterFieldMatch.setFieldMatcher(null);
+    }
+    ir.close();
+  }
+
+  public void testFieldMatcherPhraseQuery() throws Exception {
+    IndexReader ir = indexSomeFields();
+    IndexSearcher searcher = newSearcher(ir);
+    UnifiedHighlighter highlighterNoFieldMatch = new UnifiedHighlighter(searcher, indexAnalyzer) {
+      @Override
+      protected Predicate<String> getFieldMatcher(String field) {
+        // requireFieldMatch=false
+        return (qf) -> true;
+      }
+    };
+    UnifiedHighlighter highlighterFieldMatch = new UnifiedHighlighter(searcher, indexAnalyzer);
+    BooleanQuery.Builder queryBuilder =
+        new BooleanQuery.Builder()
+            .add(new PhraseQuery("title", "this", "is", "the", "title"), BooleanClause.Occur.SHOULD)
+            .add(new PhraseQuery(2, "category", "this", "is", "the", "field"), BooleanClause.Occur.SHOULD)
+            .add(new PhraseQuery("text", "this", "is"), BooleanClause.Occur.SHOULD)
+            .add(new PhraseQuery("category", "this", "is"), BooleanClause.Occur.SHOULD)
+            .add(new PhraseQuery(1, "text", "you", "can", "put", "text"), BooleanClause.Occur.SHOULD);
+    Query query = queryBuilder.build();
+
+    // title
+    {
+      TopDocs topDocs = searcher.search(query, 10, Sort.INDEXORDER);
+      assertEquals(1, topDocs.totalHits);
+      String[] snippets = highlighterNoFieldMatch.highlight("title", query, topDocs, 10);
+      assertEquals(1, snippets.length);
+      assertEquals("<b>This</b> <b>is</b> <b>the</b> <b>title</b> <b>field</b>.", snippets[0]);
+
+      snippets = highlighterFieldMatch.highlight("title", query, topDocs, 10);
+      assertEquals(1, snippets.length);
+      assertEquals("<b>This</b> <b>is</b> <b>the</b> <b>title</b> field.", snippets[0]);
+
+      highlighterFieldMatch.setFieldMatcher((fq) -> "text".equals(fq));
+      snippets = highlighterFieldMatch.highlight("title", query, topDocs, 10);
+      assertEquals(1, snippets.length);
+      assertEquals("<b>This</b> <b>is</b> the title field.", snippets[0]);
+      highlighterFieldMatch.setFieldMatcher(null);
+    }
+
+    // text
+    {
+      TopDocs topDocs = searcher.search(query, 10, Sort.INDEXORDER);
+      assertEquals(1, topDocs.totalHits);
+      String[] snippets = highlighterNoFieldMatch.highlight("text", query, topDocs, 10);
+      assertEquals(1, snippets.length);
+      assertEquals("<b>This</b> <b>is</b> <b>the</b> <b>text</b> <b>field</b>. <b>You</b> <b>can</b> <b>put</b> some <b>text</b> if you want.", snippets[0]);
+
+      snippets = highlighterFieldMatch.highlight("text", query, topDocs, 10);
+      assertEquals(1, snippets.length);
+      assertEquals("<b>This</b> <b>is</b> the <b>text</b> field. <b>You</b> <b>can</b> <b>put</b> some <b>text</b> if you want.", snippets[0]);
+
+      highlighterFieldMatch.setFieldMatcher((fq) -> "title".equals(fq));
+      snippets = highlighterFieldMatch.highlight("text", query, topDocs, 10);
+      assertEquals(1, snippets.length);
+      assertEquals("This is the text field. You can put some text if you want.", snippets[0]);
+      highlighterFieldMatch.setFieldMatcher(null);
+    }
+
+    // category
+    {
+      TopDocs topDocs = searcher.search(query, 10, Sort.INDEXORDER);
+      assertEquals(1, topDocs.totalHits);
+      String[] snippets = highlighterNoFieldMatch.highlight("category", query, topDocs, 10);
+      assertEquals(1, snippets.length);
+      assertEquals("<b>This</b> <b>is</b> <b>the</b> category <b>field</b>.", snippets[0]);
+
+      snippets = highlighterFieldMatch.highlight("category", query, topDocs, 10);
+      assertEquals(1, snippets.length);
+      assertEquals("<b>This</b> <b>is</b> <b>the</b> category <b>field</b>.", snippets[0]);
+
+
+      highlighterFieldMatch.setFieldMatcher((fq) -> "text".equals(fq));
+      snippets = highlighterFieldMatch.highlight("category", query, topDocs, 10);
+      assertEquals(1, snippets.length);
+      assertEquals("<b>This</b> <b>is</b> the category field.", snippets[0]);
+      highlighterFieldMatch.setFieldMatcher(null);
+    }
+    ir.close();
+  }
 }

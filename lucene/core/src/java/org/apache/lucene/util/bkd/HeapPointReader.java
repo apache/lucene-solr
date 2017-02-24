@@ -18,7 +18,10 @@ package org.apache.lucene.util.bkd;
 
 import java.util.List;
 
-final class HeapPointReader extends PointReader {
+/** Utility class to read buffered points from in-heap arrays.
+ *
+ * @lucene.internal */
+public final class HeapPointReader extends PointReader {
   private int curRead;
   final List<byte[]> blocks;
   final int valuesPerBlock;
@@ -30,7 +33,7 @@ final class HeapPointReader extends PointReader {
   final byte[] scratch;
   final boolean singleValuePerDoc;
 
-  HeapPointReader(List<byte[]> blocks, int valuesPerBlock, int packedBytesLength, int[] ords, long[] ordsLong, int[] docIDs, int start, int end, boolean singleValuePerDoc) {
+  public HeapPointReader(List<byte[]> blocks, int valuesPerBlock, int packedBytesLength, int[] ords, long[] ordsLong, int[] docIDs, int start, int end, boolean singleValuePerDoc) {
     this.blocks = blocks;
     this.valuesPerBlock = valuesPerBlock;
     this.singleValuePerDoc = singleValuePerDoc;

@@ -38,13 +38,62 @@ import java.util.Arrays;
  */
 public abstract class RunAutomaton {
   final Automaton automaton;
-  final int maxInterval;
+  final int alphabetSize;
   final int size;
   final boolean[] accept;
   final int[] transitions; // delta(state,c) = transitions[state*points.length +
                      // getCharClass(c)]
   final int[] points; // char interval start points
-  final int[] classmap; // map from char number to class class
+  final int[] classmap; // map from char number to class
+  
+  /**
+   * Constructs a new <code>RunAutomaton</code> from a deterministic
+   * <code>Automaton</code>.
+   * 
+   * @param a an automaton
+   */
+  protected RunAutomaton(Automaton a, int alphabetSize) {
+    this(a, alphabetSize, Operations.DEFAULT_MAX_DETERMINIZED_STATES);
+  }
+
+  /**
+   * Constructs a new <code>RunAutomaton</code> from a deterministic
+   * <code>Automaton</code>.
+   * 
+   * @param a an automaton
+   * @param maxDeterminizedStates maximum number of states that can be created
+   *   while determinizing a
+   */
+  protected RunAutomaton(Automaton a, int alphabetSize, int maxDeterminizedStates) {
+    this.alphabetSize = alphabetSize;
+    a = Operations.determinize(a, maxDeterminizedStates);
+    this.automaton = a;
+    points = a.getStartPoints();
+    size = Math.max(1,a.getNumStates());
+    accept = new boolean[size];
+    transitions = new int[size * points.length];
+    Arrays.fill(transitions, -1);
+    for (int n=0;n<size;n++) {
+      accept[n] = a.isAccept(n);
+      for (int c = 0; c < points.length; c++) {
+        int dest = a.step(n, points[c]);
+        assert dest == -1 || dest < size;
+        transitions[n * points.length + c] = dest;
+      }
+    }
+
+    /*
+     * Set alphabet table for optimal run performance.
+     */
+    classmap = new int[Math.min(256, alphabetSize)];
+    int i = 0;
+    for (int j = 0; j < classmap.length; j++) {
+      if (i + 1 < points.length && j == points[i + 1]) {
+        i++;
+      }
+      classmap[j] = i;
+    }
+  }
   
   /**
    * Returns a string representation of this automaton.
@@ -63,7 +112,7 @@ public abstract class RunAutomaton {
           int min = points[j];
           int max;
           if (j + 1 < points.length) max = (points[j + 1] - 1);
-          else max = maxInterval;
+          else max = alphabetSize;
           b.append(" ");
           Automaton.appendCharString(min, b);
           if (min != max) {
@@ -103,63 +152,19 @@ public abstract class RunAutomaton {
    * Gets character class of given codepoint
    */
   final int getCharClass(int c) {
-    return Operations.findIndex(c, points);
-  }
 
-  /**
-   * Constructs a new <code>RunAutomaton</code> from a deterministic
-   * <code>Automaton</code>.
-   * 
-   * @param a an automaton
-   */
-  public RunAutomaton(Automaton a, int maxInterval, boolean tableize) {
-    this(a, maxInterval, tableize, Operations.DEFAULT_MAX_DETERMINIZED_STATES);
-  }
-
-  /**
-   * Constructs a new <code>RunAutomaton</code> from a deterministic
-   * <code>Automaton</code>.
-   * 
-   * @param a an automaton
-   * @param maxDeterminizedStates maximum number of states that can be created
-   *   while determinizing a
-   */
-  public RunAutomaton(Automaton a, int maxInterval, boolean tableize,
-      int maxDeterminizedStates) {
-    this.maxInterval = maxInterval;
-    a = Operations.determinize(a, maxDeterminizedStates);
-    this.automaton = a;
-    points = a.getStartPoints();
-    size = Math.max(1,a.getNumStates());
-    accept = new boolean[size];
-    transitions = new int[size * points.length];
-    Arrays.fill(transitions, -1);
-    for (int n=0;n<size;n++) {
-      accept[n] = a.isAccept(n);
-      for (int c = 0; c < points.length; c++) {
-        int dest = a.step(n, points[c]);
-        assert dest == -1 || dest < size;
-        transitions[n * points.length + c] = dest;
-      }
+    // binary search
+    int a = 0;
+    int b = points.length;
+    while (b - a > 1) {
+      int d = (a + b) >>> 1;
+      if (points[d] > c) b = d;
+      else if (points[d] < c) a = d;
+      else return d;
     }
-
-    /*
-     * Set alphabet table for optimal run performance.
-     */
-    if (tableize) {
-      classmap = new int[maxInterval + 1];
-      int i = 0;
-      for (int j = 0; j <= maxInterval; j++) {
-        if (i + 1 < points.length && j == points[i + 1]) {
-          i++;
-        }
-        classmap[j] = i;
-      }
-    } else {
-      classmap = null;
-    }
+    return a;
   }
-  
+
   /**
    * Returns the state obtained by reading the given char from the given state.
    * Returns -1 if not obtaining any such state. (If the original
@@ -168,7 +173,8 @@ public abstract class RunAutomaton {
    * transition function.)
    */
   public final int step(int state, int c) {
-    if (classmap == null) {
+    assert c < alphabetSize;
+    if (c >= classmap.length) {
       return transitions[state * points.length + getCharClass(c)];
     } else {
       return transitions[state * points.length + classmap[c]];
@@ -179,7 +185,7 @@ public abstract class RunAutomaton {
   public int hashCode() {
     final int prime = 31;
     int result = 1;
-    result = prime * result + maxInterval;
+    result = prime * result + alphabetSize;
     result = prime * result + points.length;
     result = prime * result + size;
     return result;
@@ -191,7 +197,7 @@ public abstract class RunAutomaton {
     if (obj == null) return false;
     if (getClass() != obj.getClass()) return false;
     RunAutomaton other = (RunAutomaton) obj;
-    if (maxInterval != other.maxInterval) return false;
+    if (alphabetSize != other.alphabetSize) return false;
     if (size != other.size) return false;
     if (!Arrays.equals(points, other.points)) return false;
     if (!Arrays.equals(accept, other.accept)) return false;

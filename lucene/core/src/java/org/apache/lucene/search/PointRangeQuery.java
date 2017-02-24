@@ -26,7 +26,9 @@ import org.apache.lucene.index.PointValues.Relation;
 import org.apache.lucene.document.IntPoint;    // javadocs
 import org.apache.lucene.index.LeafReader;
 import org.apache.lucene.index.LeafReaderContext;
+import org.apache.lucene.util.BitSetIterator;
 import org.apache.lucene.util.DocIdSetBuilder;
+import org.apache.lucene.util.FixedBitSet;
 import org.apache.lucene.util.StringHelper;
 
 /** 
@@ -104,71 +106,125 @@ public abstract class PointRangeQuery extends Query {
 
     return new ConstantScoreWeight(this, boost) {
 
-      private DocIdSet buildMatchingDocIdSet(LeafReader reader, PointValues values) throws IOException {
-        DocIdSetBuilder result = new DocIdSetBuilder(reader.maxDoc(), values, field);
+      private IntersectVisitor getIntersectVisitor(DocIdSetBuilder result) {
+        return new IntersectVisitor() {
 
-        values.intersect(
-            new IntersectVisitor() {
+          DocIdSetBuilder.BulkAdder adder;
 
-              DocIdSetBuilder.BulkAdder adder;
+          @Override
+          public void grow(int count) {
+            adder = result.grow(count);
+          }
 
-              @Override
-              public void grow(int count) {
-                adder = result.grow(count);
+          @Override
+          public void visit(int docID) {
+            adder.add(docID);
+          }
+
+          @Override
+          public void visit(int docID, byte[] packedValue) {
+            for(int dim=0;dim<numDims;dim++) {
+              int offset = dim*bytesPerDim;
+              if (StringHelper.compare(bytesPerDim, packedValue, offset, lowerPoint, offset) < 0) {
+                // Doc's value is too low, in this dimension
+                return;
+              }
+              if (StringHelper.compare(bytesPerDim, packedValue, offset, upperPoint, offset) > 0) {
+                // Doc's value is too high, in this dimension
+                return;
+              }
+            }
+
+            // Doc is in-bounds
+            adder.add(docID);
+          }
+
+          @Override
+          public Relation compare(byte[] minPackedValue, byte[] maxPackedValue) {
+
+            boolean crosses = false;
+
+            for(int dim=0;dim<numDims;dim++) {
+              int offset = dim*bytesPerDim;
+
+              if (StringHelper.compare(bytesPerDim, minPackedValue, offset, upperPoint, offset) > 0 ||
+                  StringHelper.compare(bytesPerDim, maxPackedValue, offset, lowerPoint, offset) < 0) {
+                return Relation.CELL_OUTSIDE_QUERY;
               }
 
-              @Override
-              public void visit(int docID) {
-                adder.add(docID);
+              crosses |= StringHelper.compare(bytesPerDim, minPackedValue, offset, lowerPoint, offset) < 0 ||
+                  StringHelper.compare(bytesPerDim, maxPackedValue, offset, upperPoint, offset) > 0;
+            }
+
+            if (crosses) {
+              return Relation.CELL_CROSSES_QUERY;
+            } else {
+              return Relation.CELL_INSIDE_QUERY;
+            }
+          }
+        };
+      }
+
+      /**
+       * Create a visitor that clears documents that do NOT match the range.
+       */
+      private IntersectVisitor getInverseIntersectVisitor(FixedBitSet result, int[] cost) {
+        return new IntersectVisitor() {
+
+          @Override
+          public void visit(int docID) {
+            result.clear(docID);
+            cost[0]--;
+          }
+
+          @Override
+          public void visit(int docID, byte[] packedValue) {
+            for(int dim=0;dim<numDims;dim++) {
+              int offset = dim*bytesPerDim;
+              if (StringHelper.compare(bytesPerDim, packedValue, offset, lowerPoint, offset) < 0) {
+                // Doc's value is too low, in this dimension
+                result.clear(docID);
+                cost[0]--;
+                return;
+              }
+              if (StringHelper.compare(bytesPerDim, packedValue, offset, upperPoint, offset) > 0) {
+                // Doc's value is too high, in this dimension
+                result.clear(docID);
+                cost[0]--;
+                return;
+              }
+            }
+          }
+
+          @Override
+          public Relation compare(byte[] minPackedValue, byte[] maxPackedValue) {
+
+            boolean crosses = false;
+
+            for(int dim=0;dim<numDims;dim++) {
+              int offset = dim*bytesPerDim;
+
+              if (StringHelper.compare(bytesPerDim, minPackedValue, offset, upperPoint, offset) > 0 ||
+                  StringHelper.compare(bytesPerDim, maxPackedValue, offset, lowerPoint, offset) < 0) {
+                // This dim is not in the range
+                return Relation.CELL_INSIDE_QUERY;
               }
 
-              @Override
-              public void visit(int docID, byte[] packedValue) {
-                for(int dim=0;dim<numDims;dim++) {
-                  int offset = dim*bytesPerDim;
-                  if (StringHelper.compare(bytesPerDim, packedValue, offset, lowerPoint, offset) < 0) {
-                    // Doc's value is too low, in this dimension
-                    return;
-                  }
-                  if (StringHelper.compare(bytesPerDim, packedValue, offset, upperPoint, offset) > 0) {
-                    // Doc's value is too high, in this dimension
-                    return;
-                  }
-                }
+              crosses |= StringHelper.compare(bytesPerDim, minPackedValue, offset, lowerPoint, offset) < 0 ||
+                  StringHelper.compare(bytesPerDim, maxPackedValue, offset, upperPoint, offset) > 0;
+            }
 
-                // Doc is in-bounds
-                adder.add(docID);
-              }
-
-              @Override
-              public Relation compare(byte[] minPackedValue, byte[] maxPackedValue) {
-
-                boolean crosses = false;
-
-                for(int dim=0;dim<numDims;dim++) {
-                  int offset = dim*bytesPerDim;
-
-                  if (StringHelper.compare(bytesPerDim, minPackedValue, offset, upperPoint, offset) > 0 ||
-                      StringHelper.compare(bytesPerDim, maxPackedValue, offset, lowerPoint, offset) < 0) {
-                    return Relation.CELL_OUTSIDE_QUERY;
-                  }
-
-                  crosses |= StringHelper.compare(bytesPerDim, minPackedValue, offset, lowerPoint, offset) < 0 ||
-                    StringHelper.compare(bytesPerDim, maxPackedValue, offset, upperPoint, offset) > 0;
-                }
-
-                if (crosses) {
-                  return Relation.CELL_CROSSES_QUERY;
-                } else {
-                  return Relation.CELL_INSIDE_QUERY;
-                }
-              }
-            });
-        return result.build();
+            if (crosses) {
+              return Relation.CELL_CROSSES_QUERY;
+            } else {
+              return Relation.CELL_OUTSIDE_QUERY;
+            }
+          }
+        };
       }
 
       @Override
-      public Scorer scorer(LeafReaderContext context) throws IOException {
+      public ScorerSupplier scorerSupplier(LeafReaderContext context) throws IOException {
         LeafReader reader = context.reader();
 
         PointValues values = reader.getPointValues(field);
@@ -201,15 +257,69 @@ public abstract class PointRangeQuery extends Query {
           allDocsMatch = false;
         }
 
-        DocIdSetIterator iterator;
+        final Weight weight = this;
         if (allDocsMatch) {
           // all docs have a value and all points are within bounds, so everything matches
-          iterator = DocIdSetIterator.all(reader.maxDoc());
+          return new ScorerSupplier() {
+            @Override
+            public Scorer get(boolean randomAccess) {
+              return new ConstantScoreScorer(weight, score(),
+                  DocIdSetIterator.all(reader.maxDoc()));
+            }
+            
+            @Override
+            public long cost() {
+              return reader.maxDoc();
+            }
+          };
         } else {
-          iterator = buildMatchingDocIdSet(reader, values).iterator();
-        }
+          return new ScorerSupplier() {
 
-        return new ConstantScoreScorer(this, score(), iterator);
+            final DocIdSetBuilder result = new DocIdSetBuilder(reader.maxDoc(), values, field);
+            final IntersectVisitor visitor = getIntersectVisitor(result);
+            long cost = -1;
+
+            @Override
+            public Scorer get(boolean randomAccess) throws IOException {
+              if (values.getDocCount() == reader.maxDoc()
+                  && values.getDocCount() == values.size()
+                  && cost() > reader.maxDoc() / 2) {
+                // If all docs have exactly one value and the cost is greater
+                // than half the leaf size then maybe we can make things faster
+                // by computing the set of documents that do NOT match the range
+                final FixedBitSet result = new FixedBitSet(reader.maxDoc());
+                result.set(0, reader.maxDoc());
+                int[] cost = new int[] { reader.maxDoc() };
+                values.intersect(getInverseIntersectVisitor(result, cost));
+                final DocIdSetIterator iterator = new BitSetIterator(result, cost[0]);
+                return new ConstantScoreScorer(weight, score(), iterator);
+              }
+
+              values.intersect(visitor);
+              DocIdSetIterator iterator = result.build().iterator();
+              return new ConstantScoreScorer(weight, score(), iterator);
+            }
+            
+            @Override
+            public long cost() {
+              if (cost == -1) {
+                // Computing the cost may be expensive, so only do it if necessary
+                cost = values.estimatePointCount(visitor);
+                assert cost >= 0;
+              }
+              return cost;
+            }
+          };
+        }
+      }
+
+      @Override
+      public Scorer scorer(LeafReaderContext context) throws IOException {
+        ScorerSupplier scorerSupplier = scorerSupplier(context);
+        if (scorerSupplier == null) {
+          return null;
+        }
+        return scorerSupplier.get(false);
       }
     };
   }

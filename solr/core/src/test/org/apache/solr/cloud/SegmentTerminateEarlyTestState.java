@@ -17,12 +17,12 @@
 
 package org.apache.solr.cloud;
 
-import java.time.ZoneOffset;
-import java.time.ZonedDateTime;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
+import java.util.Random;
 
+import org.apache.solr.SolrTestCaseJ4.SuppressPointFields;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.response.QueryResponse;
@@ -32,13 +32,18 @@ import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.ShardParams;
 import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.response.SolrQueryResponse;
-
+// This test uses grouping requests, which doesn't work yet with PointFields
+@SuppressPointFields(bugUrl="https://issues.apache.org/jira/browse/SOLR-9992")
 class SegmentTerminateEarlyTestState {
 
   final String keyField = "id";
-  final String timestampField = "timestamp";
-  final String oddField = "odd_l1"; // <dynamicField name="*_l1"  type="long"   indexed="true"  stored="true" multiValued="false"/>
-  final String quadField = "quad_l1"; // <dynamicField name="*_l1"  type="long"   indexed="true"  stored="true" multiValued="false"/>
+
+  // for historic reasons, this is refered to as a "timestamp" field, but in actuallity is just an int
+  // value representing a number of "minutes" between 0-60.
+  // aka: I decided not to rename a million things while refactoring this test
+  public static final String timestampField = "timestamp_i_dvo";
+  public static final String oddField = "odd_l1"; // <dynamicField name="*_l1"  type="long"   indexed="true"  stored="true" multiValued="false"/>
+  public static final String quadField = "quad_l1"; // <dynamicField name="*_l1"  type="long"   indexed="true"  stored="true" multiValued="false"/>
 
   final Set<Integer> minTimestampDocKeys = new HashSet<>();
   final Set<Integer> maxTimestampDocKeys = new HashSet<>();
@@ -47,7 +52,12 @@ class SegmentTerminateEarlyTestState {
   Integer maxTimestampMM = null;
 
   int numDocs = 0;
+  final Random rand;
 
+  public SegmentTerminateEarlyTestState(Random rand) {
+    this.rand = rand;
+  }
+  
   void addDocuments(CloudSolrClient cloudSolrClient,
       int numCommits, int numDocsPerCommit, boolean optimize) throws Exception {
     for (int cc = 1; cc <= numCommits; ++cc) {
@@ -56,7 +66,7 @@ class SegmentTerminateEarlyTestState {
         final Integer docKey = new Integer(numDocs);
         SolrInputDocument doc = new SolrInputDocument();
         doc.setField(keyField, ""+docKey);
-        final int MM = TestMiniSolrCloudCluster.random().nextInt(60); // minutes
+        final int MM = rand.nextInt(60); // minutes
         if (minTimestampMM == null || MM <= minTimestampMM.intValue()) {
           if (minTimestampMM != null && MM < minTimestampMM.intValue()) {
             minTimestampDocKeys.clear();
@@ -71,7 +81,7 @@ class SegmentTerminateEarlyTestState {
           maxTimestampMM = new Integer(MM);
           maxTimestampDocKeys.add(docKey);
         }
-        doc.setField(timestampField, ZonedDateTime.of(2016, 1, 1, 0, MM, 0, 0, ZoneOffset.UTC).toInstant().toString());
+        doc.setField(timestampField, (Integer)MM);
         doc.setField(oddField, ""+(numDocs % 2));
         doc.setField(quadField, ""+(numDocs % 4)+1);
         cloudSolrClient.add(doc);
@@ -116,7 +126,7 @@ class SegmentTerminateEarlyTestState {
     query.setFields(keyField, oddField, timestampField);
     final int rowsWanted = 1;
     query.setRows(rowsWanted);
-    final Boolean shardsInfoWanted = (TestMiniSolrCloudCluster.random().nextBoolean() ? null : new Boolean(TestMiniSolrCloudCluster.random().nextBoolean()));
+    final Boolean shardsInfoWanted = (rand.nextBoolean() ? null : new Boolean(rand.nextBoolean()));
     if (shardsInfoWanted != null) {
       query.set(ShardParams.SHARDS_INFO, shardsInfoWanted.booleanValue());
     }
@@ -163,7 +173,7 @@ class SegmentTerminateEarlyTestState {
     query.setSort(timestampField, SolrQuery.ORDER.desc);
     query.setFields(keyField, oddField, timestampField);
     query.setRows(1);
-    final Boolean shardsInfoWanted = (TestMiniSolrCloudCluster.random().nextBoolean() ? null : new Boolean(TestMiniSolrCloudCluster.random().nextBoolean()));
+    final Boolean shardsInfoWanted = (rand.nextBoolean() ? null : new Boolean(rand.nextBoolean()));
     if (shardsInfoWanted != null) {
       query.set(ShardParams.SHARDS_INFO, shardsInfoWanted.booleanValue());
     }

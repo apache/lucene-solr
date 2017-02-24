@@ -81,7 +81,7 @@ public class JSONWriterTest extends SolrTestCaseJ4 {
         JSONWriter.JSON_NL_MAP,
         JSONWriter.JSON_NL_ARROFARR,
         JSONWriter.JSON_NL_ARROFMAP,
-        JSONWriter.JSON_NL_ARROFNVP,
+        JSONWriter.JSON_NL_ARROFNTV,
     };
     for (final String namedListStyle : namedListStyles) {
       implTestJSON(namedListStyle);
@@ -116,8 +116,10 @@ public class JSONWriterTest extends SolrTestCaseJ4 {
       expectedNLjson = "\"nl\":[[\"data1\",\"he\\u2028llo\\u2029!\"],[null,42],[null,null]]";
     } else if (namedListStyle == JSONWriter.JSON_NL_ARROFMAP) {
       expectedNLjson = "\"nl\":[{\"data1\":\"he\\u2028llo\\u2029!\"},42,null]";
-    } else if (namedListStyle == JSONWriter.JSON_NL_ARROFNVP) {
-      expectedNLjson = "\"nl\":[{\"name\":\"data1\",\"str\":\"he\\u2028llo\\u2029!\"},{\"int\":42},{\"null\":null}]";
+    } else if (namedListStyle == JSONWriter.JSON_NL_ARROFNTV) {
+      expectedNLjson = "\"nl\":[{\"name\":\"data1\",\"type\":\"str\",\"value\":\"he\\u2028llo\\u2029!\"}," +
+          "{\"name\":null,\"type\":\"int\",\"value\":42}," +
+          "{\"name\":null,\"type\":\"null\",\"value\":null}]";
     } else {
       expectedNLjson = null;
       fail("unexpected namedListStyle="+namedListStyle);
@@ -168,7 +170,7 @@ public class JSONWriterTest extends SolrTestCaseJ4 {
   }
 
   @Test
-  public void testArrnvpWriterOverridesAllWrites() {
+  public void testArrntvWriterOverridesAllWrites() {
     // List rather than Set because two not-overridden methods could share name but not signature
     final List<String> methodsExpectedNotOverriden = new ArrayList<>(14);
     methodsExpectedNotOverriden.add("writeResponse");
@@ -189,7 +191,7 @@ public class JSONWriterTest extends SolrTestCaseJ4 {
     methodsExpectedNotOverriden.add("public void org.apache.solr.response.JSONWriter.writeMap(org.apache.solr.common.MapWriter) throws java.io.IOException");
     methodsExpectedNotOverriden.add("public void org.apache.solr.response.JSONWriter.writeIterator(org.apache.solr.common.IteratorWriter) throws java.io.IOException");
 
-    final Class<?> subClass = ArrayOfNamedValuePairJSONWriter.class;
+    final Class<?> subClass = ArrayOfNameTypeValueJSONWriter.class;
     final Class<?> superClass = subClass.getSuperclass();
 
     for (final Method superClassMethod : superClass.getDeclaredMethods()) {
@@ -231,14 +233,14 @@ public class JSONWriterTest extends SolrTestCaseJ4 {
   }
 
   @Test
-  public void testArrnvpWriterLacksMethodsOfItsOwn() {
-    final Class<?> subClass = ArrayOfNamedValuePairJSONWriter.class;
+  public void testArrntvWriterLacksMethodsOfItsOwn() {
+    final Class<?> subClass = ArrayOfNameTypeValueJSONWriter.class;
     final Class<?> superClass = subClass.getSuperclass();
     // ArrayOfNamedValuePairJSONWriter is a simple sub-class
     // which should have (almost) no methods of its own
     for (final Method subClassMethod : subClass.getDeclaredMethods()) {
       // only own private method of its own
-      if (subClassMethod.getName().equals("ifNeededWriteTypeAsKey")) continue;
+      if (subClassMethod.getName().equals("ifNeededWriteTypeAndValueKey")) continue;
       try {
         final Method superClassMethod = superClass.getDeclaredMethod(
             subClassMethod.getName(),
@@ -260,7 +262,7 @@ public class JSONWriterTest extends SolrTestCaseJ4 {
     assertEquals("flat", JSONWriter.JSON_NL_FLAT);
     assertEquals("arrarr", JSONWriter.JSON_NL_ARROFARR);
     assertEquals("arrmap", JSONWriter.JSON_NL_ARROFMAP);
-    assertEquals("arrnvp", JSONWriter.JSON_NL_ARROFNVP);
+    assertEquals("arrntv", JSONWriter.JSON_NL_ARROFNTV);
     assertEquals("json.wrf", JSONWriter.JSON_WRAPPER_FUNCTION);
   }
 

@@ -108,11 +108,9 @@ public class TestSolrCloudWithSecureImpersonation extends SolrTestCaseJ4 {
     System.setProperty("solr.test.sys.prop2", "proptwo");
 
     SolrRequestParsers.DEFAULT.setAddRequestHeadersToContext(true);
-    String solrXml = MiniSolrCloudCluster.DEFAULT_CLOUD_SOLR_XML.replace("</solr>",
-        " <str name=\"collectionsHandler\">" + ImpersonatorCollectionsHandler.class.getName() + "</str>\n" +
-            "</solr>");
+    System.setProperty("collectionsHandler", ImpersonatorCollectionsHandler.class.getName());
 
-    miniCluster = new MiniSolrCloudCluster(NUM_SERVERS, createTempDir(), solrXml, buildJettyConfig("/solr"));
+    miniCluster = new MiniSolrCloudCluster(NUM_SERVERS, createTempDir(), buildJettyConfig("/solr"));
     JettySolrRunner runner = miniCluster.getJettySolrRunners().get(0);
     solrClient = new HttpSolrClient.Builder(runner.getBaseUrl().toString()).build();
   }
@@ -168,6 +166,8 @@ public class TestSolrCloudWithSecureImpersonation extends SolrTestCaseJ4 {
     }
     System.clearProperty("solr.test.sys.prop1");
     System.clearProperty("solr.test.sys.prop2");
+    System.clearProperty("collectionsHandler");
+
     SolrRequestParsers.DEFAULT.setAddRequestHeadersToContext(false);
   }
 

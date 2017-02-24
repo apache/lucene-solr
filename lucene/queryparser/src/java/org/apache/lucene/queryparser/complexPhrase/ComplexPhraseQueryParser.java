@@ -255,7 +255,9 @@ public class ComplexPhraseQueryParser extends QueryParser {
     public Query rewrite(IndexReader reader) throws IOException {
       final Query contents = this.contents[0];
       // ArrayList spanClauses = new ArrayList();
-      if (contents instanceof TermQuery) {
+      if (contents instanceof TermQuery 
+          || contents instanceof MultiTermQuery
+          ) {
         return contents;
       }
       // Build a sequence of Span clauses arranged in a SpanNear - child

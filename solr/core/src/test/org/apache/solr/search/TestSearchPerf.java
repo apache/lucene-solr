@@ -123,6 +123,7 @@ public class TestSearchPerf extends AbstractSolrTestCase {
       processor.processAdd(cmd);
     }
     processor.finish();
+    processor.close();
     req.close();
 
     assertU(commit());

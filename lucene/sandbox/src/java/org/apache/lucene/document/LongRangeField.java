@@ -229,6 +229,26 @@ public class LongRangeField extends Field {
     };
   }
 
+  /**
+   * Create a query for matching indexed ranges that cross the defined range.
+   * A CROSSES is defined as any set of ranges that are not disjoint and not wholly contained by
+   * the query. Effectively, its the complement of union(WITHIN, DISJOINT).
+   * @param field field name. must not be null.
+   * @param min array of min values. (accepts {@code Long.MIN_VALUE})
+   * @param max array of max values. (accepts {@code Long.MAX_VALUE})
+   * @return query for matching ranges within the defined range
+   * @throws IllegalArgumentException if {@code field} is null, {@code min} or {@code max} is invalid
+   */
+  public static Query newCrossesQuery(String field, final long[] min, final long[] max) {
+    checkArgs(min, max);
+    return new RangeFieldQuery(field, encode(min, max), min.length, QueryType.CROSSES) {
+      @Override
+      protected String toString(byte[] ranges, int dimension) {
+        return LongRangeField.toString(ranges, dimension);
+      }
+    };
+  }
+
   @Override
   public String toString() {
     StringBuilder sb = new StringBuilder();

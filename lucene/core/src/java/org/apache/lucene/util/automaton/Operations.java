@@ -29,23 +29,23 @@
 
 package org.apache.lucene.util.automaton;
 
-import org.apache.lucene.util.ArrayUtil;
-import org.apache.lucene.util.BytesRef;
-import org.apache.lucene.util.BytesRefBuilder;
-import org.apache.lucene.util.IntsRef;
-import org.apache.lucene.util.IntsRefBuilder;
-import org.apache.lucene.util.RamUsageEstimator;
-
+import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.BitSet;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+
+import org.apache.lucene.util.ArrayUtil;
+import org.apache.lucene.util.BytesRef;
+import org.apache.lucene.util.BytesRefBuilder;
+import org.apache.lucene.util.IntsRef;
+import org.apache.lucene.util.IntsRefBuilder;
+import org.apache.lucene.util.RamUsageEstimator;
 
 /**
  * Automata operations.
@@ -335,7 +335,7 @@ final public class Operations {
     Transition[][] transitions2 = a2.getSortedTransitions();
     Automaton c = new Automaton();
     c.createState();
-    LinkedList<StatePair> worklist = new LinkedList<>();
+    ArrayDeque<StatePair> worklist = new ArrayDeque<>();
     HashMap<StatePair,StatePair> newstates = new HashMap<>();
     StatePair p = new StatePair(0, 0, 0);
     worklist.add(p);
@@ -370,10 +370,8 @@ final public class Operations {
   }
 
   /** Returns true if these two automata accept exactly the
-   *  same language.  This is a costly computation!  Note
-   *  also that a1 and a2 will be determinized as a side
-   *  effect.  Both automata must be determinized and have
-   *  no dead states! */
+   *  same language.  This is a costly computation!  Both automata
+   *  must be determinized and have no dead states! */
   public static boolean sameLanguage(Automaton a1, Automaton a2) {
     if (a1 == a2) {
       return true;
@@ -437,7 +435,7 @@ final public class Operations {
     // TODO: cutover to iterators instead
     Transition[][] transitions1 = a1.getSortedTransitions();
     Transition[][] transitions2 = a2.getSortedTransitions();
-    LinkedList<StatePair> worklist = new LinkedList<>();
+    ArrayDeque<StatePair> worklist = new ArrayDeque<>();
     HashSet<StatePair> visited = new HashSet<>();
     StatePair p = new StatePair(0, 0);
     worklist.add(p);
@@ -684,7 +682,7 @@ final public class Operations {
     // Create state 0:
     b.createState();
 
-    LinkedList<SortedIntSet.FrozenIntSet> worklist = new LinkedList<>();
+    ArrayDeque<SortedIntSet.FrozenIntSet> worklist = new ArrayDeque<>();
     Map<SortedIntSet.FrozenIntSet,Integer> newstate = new HashMap<>();
 
     worklist.add(initialset);
@@ -806,7 +804,7 @@ final public class Operations {
       return false;
     }
     
-    LinkedList<Integer> workList = new LinkedList<>();
+    ArrayDeque<Integer> workList = new ArrayDeque<>();
     BitSet seen = new BitSet(a.getNumStates());
     workList.add(0);
     seen.set(0);
@@ -909,7 +907,7 @@ final public class Operations {
     if (numStates == 0) {
       return live;
     }
-    LinkedList<Integer> workList = new LinkedList<>();
+    ArrayDeque<Integer> workList = new ArrayDeque<>();
     live.set(0);
     workList.add(0);
 
@@ -948,7 +946,7 @@ final public class Operations {
     }
     Automaton a2 = builder.finish();
 
-    LinkedList<Integer> workList = new LinkedList<>();
+    ArrayDeque<Integer> workList = new ArrayDeque<>();
     BitSet live = new BitSet(numStates);
     BitSet acceptBits = a.getAcceptStates();
     int s = 0;
@@ -1012,22 +1010,6 @@ final public class Operations {
     return result;
   }
 
-  /**
-   * Finds the largest entry whose value is less than or equal to c, or 0 if
-   * there is no such entry.
-   */
-  static int findIndex(int c, int[] points) {
-    int a = 0;
-    int b = points.length;
-    while (b - a > 1) {
-      int d = (a + b) >>> 1;
-      if (points[d] > c) b = d;
-      else if (points[d] < c) a = d;
-      else return d;
-    }
-    return a;
-  }
-  
   /**
    * Returns true if the language of this automaton is finite.  The
    * automaton must not have any dead states.

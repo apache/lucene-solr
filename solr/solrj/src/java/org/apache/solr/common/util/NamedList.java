@@ -393,8 +393,8 @@ public class NamedList<T> implements Cloneable, Serializable, Iterable<Map.Entry
     return sb.toString();
   }
 
-  public NamedList getImmutableCopy() {
-    NamedList copy = clone();
+  public NamedList<T> getImmutableCopy() {
+    NamedList<T> copy = clone();
     return new NamedList<>( Collections.unmodifiableList(copy.nvPairs));
   }
 

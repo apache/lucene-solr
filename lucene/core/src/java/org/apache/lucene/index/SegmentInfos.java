@@ -17,8 +17,11 @@
 package org.apache.lucene.index;
 
 
+import java.io.EOFException;
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.PrintStream;
+import java.nio.file.NoSuchFileException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -277,7 +280,11 @@ public final class SegmentInfos implements Cloneable, Iterable<SegmentCommitInfo
     long generation = generationFromSegmentsFileName(segmentFileName);
     //System.out.println(Thread.currentThread() + ": SegmentInfos.readCommit " + segmentFileName);
     try (ChecksumIndexInput input = directory.openChecksumInput(segmentFileName, IOContext.READ)) {
-      return readCommit(directory, input, generation);
+      try {
+        return readCommit(directory, input, generation);
+      } catch (EOFException | NoSuchFileException | FileNotFoundException e) {
+        throw new CorruptIndexException("Unexpected file read error while reading index.", input, e);
+      }
     }
   }
 

@@ -16,11 +16,6 @@
  */
 package org.apache.solr.servlet;
 
-import static org.easymock.EasyMock.anyObject;
-import static org.easymock.EasyMock.createMock;
-import static org.easymock.EasyMock.expect;
-import static org.easymock.EasyMock.replay;
-
 import java.io.BufferedInputStream;
 import java.io.ByteArrayInputStream;
 import java.io.File;
@@ -54,6 +49,7 @@ import org.apache.solr.servlet.SolrRequestParsers.MultipartRequestParser;
 import org.apache.solr.servlet.SolrRequestParsers.FormDataRequestParser;
 import org.apache.solr.servlet.SolrRequestParsers.RawRequestParser;
 import org.apache.solr.servlet.SolrRequestParsers.StandardRequestParser;
+import static org.mockito.Mockito.*;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -236,11 +232,10 @@ public class SolrRequestParserTest extends SolrTestCaseJ4 {
     
     for( String contentType : ct ) {
       HttpServletRequest request = getMock("/solr/select", contentType, postBytes.length);
-      expect(request.getMethod()).andReturn("POST").anyTimes();
-      expect(request.getQueryString()).andReturn(getParams).anyTimes();
-      expect(request.getInputStream()).andReturn(new ByteServletInputStream(postBytes));
-      replay(request);
-      
+      when(request.getMethod()).thenReturn("POST");
+      when(request.getQueryString()).thenReturn(getParams);
+      when(request.getInputStream()).thenReturn(new ByteServletInputStream(postBytes));
+
       MultipartRequestParser multipart = new MultipartRequestParser( 2048 );
       RawRequestParser raw = new RawRequestParser();
       FormDataRequestParser formdata = new FormDataRequestParser( 2048 );
@@ -251,6 +246,8 @@ public class SolrRequestParserTest extends SolrTestCaseJ4 {
       assertEquals( "contentType: "+contentType, "hello", p.get("q") );
       assertEquals( "contentType: "+contentType, "\u00FC", p.get("qt") );
       assertArrayEquals( "contentType: "+contentType, new String[]{"foo","bar"}, p.getParams("dup") );
+
+      verify(request).getInputStream();
     }
   }
 
@@ -296,10 +293,9 @@ public class SolrRequestParserTest extends SolrTestCaseJ4 {
     
     // Set up the expected behavior
     HttpServletRequest request = getMock("/solr/select", contentType, postBytes.length);
-    expect(request.getMethod()).andReturn("POST").anyTimes();
-    expect(request.getQueryString()).andReturn(getParams).anyTimes();
-    expect(request.getInputStream()).andReturn(new ByteServletInputStream(postBytes));
-    replay(request);
+    when(request.getMethod()).thenReturn("POST");
+    when(request.getQueryString()).thenReturn(getParams);
+    when(request.getInputStream()).thenReturn(new ByteServletInputStream(postBytes));
     
     MultipartRequestParser multipart = new MultipartRequestParser( 2048 );
     RawRequestParser raw = new RawRequestParser();
@@ -312,6 +308,8 @@ public class SolrRequestParserTest extends SolrTestCaseJ4 {
     assertEquals( "contentType: "+contentType, "\u00FC", p.get("qt") );
     assertEquals( "contentType: "+contentType, "\u00FC", p.get("qt2") );
     assertArrayEquals( "contentType: "+contentType, new String[]{"foo","\u00FC","bar"}, p.getParams("dup") );
+
+    verify(request).getInputStream();
   }
   
   @Test
@@ -325,11 +323,9 @@ public class SolrRequestParserTest extends SolrTestCaseJ4 {
       large.append('&').append(large);
     }
     HttpServletRequest request = getMock("/solr/select", "application/x-www-form-urlencoded", -1);
-    expect(request.getMethod()).andReturn("POST").anyTimes();
-    expect(request.getQueryString()).andReturn(null).anyTimes();
-    expect(request.getInputStream()).andReturn(new ByteServletInputStream(large.toString().getBytes(StandardCharsets.US_ASCII)));
-    replay(request);
-    
+    when(request.getMethod()).thenReturn("POST");
+    when(request.getInputStream()).thenReturn(new ByteServletInputStream(large.toString().getBytes(StandardCharsets.US_ASCII)));
+
     FormDataRequestParser formdata = new FormDataRequestParser( limitKBytes );    
     try {
       formdata.parseParamsAndFillStreams(request, new ArrayList<ContentStream>());
@@ -338,15 +334,16 @@ public class SolrRequestParserTest extends SolrTestCaseJ4 {
       assertTrue(solre.getMessage().contains("upload limit"));
       assertEquals(400, solre.code());
     }
+
+    verify(request).getInputStream();
   }
   
   @Test
   public void testParameterIncompatibilityException1() throws Exception
   {
     HttpServletRequest request = getMock("/solr/select", "application/x-www-form-urlencoded", 100);
-    expect(request.getQueryString()).andReturn(null).anyTimes();
     // we emulate Jetty that returns empty stream when parameters were parsed before:
-    expect(request.getInputStream()).andReturn(new ServletInputStream() {
+    when(request.getInputStream()).thenReturn(new ServletInputStream() {
       @Override public int read() { return -1; }
 
       @Override
@@ -364,8 +361,7 @@ public class SolrRequestParserTest extends SolrTestCaseJ4 {
 
       }
     });
-    replay(request);
-    
+
     FormDataRequestParser formdata = new FormDataRequestParser( 2048 );    
     try {
       formdata.parseParamsAndFillStreams(request, new ArrayList<ContentStream>());
@@ -374,18 +370,17 @@ public class SolrRequestParserTest extends SolrTestCaseJ4 {
       assertTrue(solre.getMessage().startsWith("Solr requires that request parameters"));
       assertEquals(500, solre.code());
     }
+    verify(request).getInputStream();
   }
   
   @Test
   public void testParameterIncompatibilityException2() throws Exception
   {
     HttpServletRequest request = getMock("/solr/select", "application/x-www-form-urlencoded", 100);
-    expect(request.getMethod()).andReturn("POST").anyTimes();
-    expect(request.getQueryString()).andReturn(null).anyTimes();
+    when(request.getMethod()).thenReturn("POST");
     // we emulate Tomcat that throws IllegalStateException when parameters were parsed before:
-    expect(request.getInputStream()).andThrow(new IllegalStateException());
-    replay(request);
-    
+    when(request.getInputStream()).thenThrow(new IllegalStateException());
+
     FormDataRequestParser formdata = new FormDataRequestParser( 2048 );    
     try {
       formdata.parseParamsAndFillStreams(request, new ArrayList<ContentStream>());
@@ -394,23 +389,23 @@ public class SolrRequestParserTest extends SolrTestCaseJ4 {
       assertTrue(solre.getMessage().startsWith("Solr requires that request parameters"));
       assertEquals(500, solre.code());
     }
+    verify(request).getInputStream();
   }
   
   @Test
   public void testAddHttpRequestToContext() throws Exception {
     HttpServletRequest request = getMock("/solr/select", null, -1);
-    expect(request.getMethod()).andReturn("GET").anyTimes();
-    expect(request.getQueryString()).andReturn("q=title:solr").anyTimes();
+    when(request.getMethod()).thenReturn("GET");
+    when(request.getQueryString()).thenReturn("q=title:solr");
     Map<String, String> headers = new HashMap<>();
     headers.put("X-Forwarded-For", "10.0.0.1");
-    expect(request.getHeaderNames()).andReturn(new Vector<>(headers.keySet()).elements()).anyTimes();
+    when(request.getHeaderNames()).thenReturn(new Vector<>(headers.keySet()).elements());
     for(Map.Entry<String,String> entry:headers.entrySet()) {
       Vector<String> v = new Vector<>();
       v.add(entry.getValue());
-      expect(request.getHeaders(entry.getKey())).andReturn(v.elements()).anyTimes();
+      when(request.getHeaders(entry.getKey())).thenReturn(v.elements());
     }
-    replay(request);
-    
+
     SolrRequestParsers parsers = new SolrRequestParsers(h.getCore().getSolrConfig());
     assertFalse(parsers.isAddRequestHeadersToContext());
     SolrQueryRequest solrReq = parsers.parse(h.getCore(), "/select", request);
@@ -425,10 +420,7 @@ public class SolrRequestParserTest extends SolrTestCaseJ4 {
 
   public void testPostMissingContentType() throws Exception {
     HttpServletRequest request = getMock();
-    expect(request.getMethod()).andReturn("POST").anyTimes();
-    expect(request.getQueryString()).andReturn(null).anyTimes();
-    expect(request.getHeader(anyObject())).andReturn(null).anyTimes();
-    replay(request);
+    when(request.getMethod()).thenReturn("POST");
 
     SolrRequestParsers parsers = new SolrRequestParsers(h.getCore().getSolrConfig());
     try {
@@ -466,19 +458,16 @@ public class SolrRequestParserTest extends SolrTestCaseJ4 {
     String contentType = "application/x-www-form-urlencoded";
     int contentLength = -1;  // does this mean auto-detect?
 
-    HttpServletRequest request = createMock(HttpServletRequest.class);
-    expect(request.getHeader("User-Agent")).andReturn(userAgent).anyTimes();
-    expect(request.getHeader("Content-Length")).andReturn(null).anyTimes();
-    expect(request.getRequestURI()).andReturn(uri).anyTimes();
-    expect(request.getContentType()).andReturn(contentType).anyTimes();
-    expect(request.getContentLength()).andReturn(contentLength).anyTimes();
-    expect(request.getAttribute(SolrRequestParsers.REQUEST_TIMER_SERVLET_ATTRIBUTE)).andReturn(null).anyTimes();
+    HttpServletRequest request = mock(HttpServletRequest.class);
+    when(request.getHeader("User-Agent")).thenReturn(userAgent);
+    when(request.getRequestURI()).thenReturn(uri);
+    when(request.getContentType()).thenReturn(contentType);
+    when(request.getContentLength()).thenReturn(contentLength);
 
-    expect(request.getMethod()).andReturn(method).anyTimes();
+    when(request.getMethod()).thenReturn(method);
     // we dont pass a content-length to let the security mechanism limit it:
-    expect(request.getQueryString()).andReturn("foo=1&bar=2").anyTimes();
-    expect(request.getInputStream()).andReturn(new ByteServletInputStream(body.getBytes(StandardCharsets.US_ASCII)));
-    replay(request);
+    when(request.getQueryString()).thenReturn("foo=1&bar=2");
+    when(request.getInputStream()).thenReturn(new ByteServletInputStream(body.getBytes(StandardCharsets.US_ASCII)));
 
     SolrRequestParsers parsers = new SolrRequestParsers(h.getCore().getSolrConfig());
     SolrQueryRequest req = parsers.parse(h.getCore(), "/select", request);
@@ -501,21 +490,19 @@ public class SolrRequestParserTest extends SolrTestCaseJ4 {
     }
 
     req.close();
+    verify(request).getInputStream();
   }
 
 
   public HttpServletRequest getMock() {
     return getMock("/solr/select", null, -1);
-    // return getMock("/solr/select", "application/x-www-form-urlencoded");
   }
 
   public HttpServletRequest getMock(String uri, String contentType, int contentLength) {
-    HttpServletRequest request = createMock(HttpServletRequest.class);
-    expect(request.getHeader("User-Agent")).andReturn(null).anyTimes();
-    expect(request.getRequestURI()).andReturn(uri).anyTimes();
-    expect(request.getContentType()).andReturn(contentType).anyTimes();
-    expect(request.getContentLength()).andReturn(contentLength).anyTimes();
-    expect(request.getAttribute(SolrRequestParsers.REQUEST_TIMER_SERVLET_ATTRIBUTE)).andReturn(null).anyTimes();
+    HttpServletRequest request = mock(HttpServletRequest.class);
+    when(request.getRequestURI()).thenReturn(uri);
+    when(request.getContentType()).thenReturn(contentType);
+    when(request.getContentLength()).thenReturn(contentLength);
     return request;
   }
 

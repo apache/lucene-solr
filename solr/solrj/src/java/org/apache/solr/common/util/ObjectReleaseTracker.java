@@ -28,7 +28,6 @@ import java.util.Map.Entry;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
-import java.util.concurrent.TimeUnit;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -40,7 +39,7 @@ public class ObjectReleaseTracker {
   public static boolean track(Object object) {
     StringWriter sw = new StringWriter();
     PrintWriter pw = new PrintWriter(sw);
-    new ObjectTrackerException().printStackTrace(pw);
+    new ObjectTrackerException(object.getClass().getName()).printStackTrace(pw);
     OBJECTS.put(object, sw.toString());
     return true;
   }
@@ -52,27 +51,6 @@ public class ObjectReleaseTracker {
   
   public static void clear() {
     OBJECTS.clear();
-  }
-  
-  /**
-   * @return null if ok else error message
-   */
-  public static String clearObjectTrackerAndCheckEmpty(int waitSeconds) {
-    int retries = 0;
-    String result;
-    do {
-      result = checkEmpty();
-      if (result == null)
-        break;
-      try {
-        TimeUnit.SECONDS.sleep(1);
-      } catch (InterruptedException e) { break; }
-    }
-    while (retries++ < waitSeconds);
-    
-    OBJECTS.clear();
-    
-    return result;
   }
   
   /**
@@ -120,7 +98,9 @@ public class ObjectReleaseTracker {
   }
   
   private static class ObjectTrackerException extends RuntimeException {
-    
+    ObjectTrackerException(String msg) {
+      super(msg);
+    }
   }
 
 }

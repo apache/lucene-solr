@@ -30,6 +30,7 @@ import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.cloud.AbstractDistribZkTestBase;
 import org.apache.solr.cloud.SolrCloudTestCase;
 import org.apache.solr.common.SolrDocument;
+import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.kitesdk.morphline.api.Collector;
@@ -49,6 +50,10 @@ public abstract class AbstractSolrMorphlineZkTestBase extends SolrCloudTestCase 
 
   @BeforeClass
   public static void setupCluster() throws Exception {
+    // set some system properties for use by tests
+    System.setProperty("solr.test.sys.prop1", "propone");
+    System.setProperty("solr.test.sys.prop2", "proptwo");
+    
     configureCluster(2)
         .addConfig("conf", SOLR_CONF_DIR.toPath())
         .configure();
@@ -57,6 +62,12 @@ public abstract class AbstractSolrMorphlineZkTestBase extends SolrCloudTestCase 
         .processAndWait(cluster.getSolrClient(), TIMEOUT);
     AbstractDistribZkTestBase.waitForRecoveriesToFinish(COLLECTION, cluster.getSolrClient().getZkStateReader(),
         false, true, TIMEOUT);
+  }
+  
+  @AfterClass
+  public static void afterClass() {
+    System.clearProperty("solr.test.sys.prop1");
+    System.clearProperty("solr.test.sys.prop2");
   }
 
   protected static final String RESOURCES_DIR = getFile("morphlines-core.marker").getParent();
@@ -79,6 +90,7 @@ public abstract class AbstractSolrMorphlineZkTestBase extends SolrCloudTestCase 
   @Before
   public void setup() throws Exception {
     collector = new Collector();
+    cluster.waitForAllNodes(DEFAULT_TIMEOUT);
   }
 
   protected void commit() throws Exception {

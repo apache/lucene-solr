@@ -73,7 +73,7 @@ abstract class UniqueSlotAcc extends SlotAcc {
 
   private Object getShardHLL(int slot) throws IOException {
     FixedBitSet ords = arr[slot];
-    if (ords == null) return null;  // TODO: when we get to refinements, may be useful to return something???
+    if (ords == null) return HLLAgg.NO_VALUES;
 
     HLL hll = factory.getHLL();
     long maxOrd = ords.length();

@@ -17,7 +17,10 @@
 package org.apache.lucene.index;
 
 
+import java.io.EOFException;
+import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.nio.file.NoSuchFileException;
 import java.util.Collections;
 import java.util.LinkedHashSet;
 import java.util.Set;
@@ -56,6 +59,7 @@ final class SegmentCoreReaders {
   final TermVectorsReader termVectorsReaderOrig;
   final PointsReader pointsReader;
   final Directory cfsReader;
+  final String segment;
   /** 
    * fieldinfos for this core: means gen=-1.
    * this is the exact fieldinfos these codec components saw at write.
@@ -98,6 +102,8 @@ final class SegmentCoreReaders {
         cfsDir = dir;
       }
 
+      segment = si.info.name;
+
       coreFieldInfos = codec.fieldInfosFormat().read(cfsDir, si.info, "", context);
       
       final SegmentReadState segmentReadState = new SegmentReadState(cfsDir, si.info, coreFieldInfos, context);
@@ -130,6 +136,10 @@ final class SegmentCoreReaders {
         pointsReader = null;
       }
       success = true;
+    } catch (EOFException | FileNotFoundException e) {
+      throw new CorruptIndexException("Problem reading index from " + dir, dir.toString(), e);
+    } catch (NoSuchFileException e) {
+      throw new CorruptIndexException("Problem reading index.", e.getFile(), e);
     } finally {
       if (!success) {
         decRef();
@@ -191,5 +201,10 @@ final class SegmentCoreReaders {
   
   void removeCoreClosedListener(CoreClosedListener listener) {
     coreClosedListeners.remove(listener);
+  }
+
+  @Override
+  public String toString() {
+    return "SegmentCoreReader(" + segment + ")";
   }
 }

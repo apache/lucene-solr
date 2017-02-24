@@ -78,7 +78,8 @@ public class TestUnifiedSolrHighlighter extends SolrTestCaseJ4 {
         "text2", "document one", "text3", "crappy document", "id", "101"));
     assertU(commit());
     assertQ("multiple snippets test",
-        req("q", "text:document", "sort", "id asc", "hl", "true", "hl.snippets", "2", "hl.bs.type", "SENTENCE"),
+        req("q", "text:document", "sort", "id asc", "hl", "true", "hl.snippets", "2", "hl.bs.type", "SENTENCE",
+            "hl.fragsize", "-1"),
         "count(//lst[@name='highlighting']/lst[@name='101']/arr[@name='text']/*)=2",
         "//lst[@name='highlighting']/lst[@name='101']/arr/str[1]='<em>Document</em> snippet one. '",
         "//lst[@name='highlighting']/lst[@name='101']/arr/str[2]='<em>Document</em> snippet two.'");
@@ -202,20 +203,36 @@ public class TestUnifiedSolrHighlighter extends SolrTestCaseJ4 {
         "//lst[@name='highlighting']/lst[@name='102']/arr[@name='text3']/str='crappier [document]'");
   }
   
-  public void testBreakIterator() {
+  public void testBreakIteratorWord() {
     assertQ("different breakiterator", 
-        req("q", "text:document", "sort", "id asc", "hl", "true", "hl.bs.type", "WORD"),
+        req("q", "text:document", "sort", "id asc", "hl", "true", "hl.bs.type", "WORD", "hl.fragsize", "-1"),
         "count(//lst[@name='highlighting']/*)=2",
         "//lst[@name='highlighting']/lst[@name='101']/arr[@name='text']/str='<em>document</em>'",
         "//lst[@name='highlighting']/lst[@name='102']/arr[@name='text']/str='<em>document</em>'");
   }
   
-  public void testBreakIterator2() {
+  public void testBreakIteratorWhole() {
     assertU(adoc("text", "Document one has a first sentence. Document two has a second sentence.", "id", "103"));
     assertU(commit());
-    assertQ("different breakiterator", 
-        req("q", "text:document", "sort", "id asc", "hl", "true", "hl.bs.type", "WHOLE"),
+    assertQ("WHOLE breakiterator",
+        req("q", "text:document", "sort", "id asc", "hl", "true", "hl.bs.type", "WHOLE", "hl.fragsize", "-1"),
         "//lst[@name='highlighting']/lst[@name='103']/arr[@name='text']/str='<em>Document</em> one has a first sentence. <em>Document</em> two has a second sentence.'");
+    assertQ("hl.fragsize 0 is equivalent to WHOLE",
+        req("q", "text:document", "sort", "id asc", "hl", "true", "hl.fragsize", "0"),
+        "//lst[@name='highlighting']/lst[@name='103']/arr[@name='text']/str='<em>Document</em> one has a first sentence. <em>Document</em> two has a second sentence.'");
+  }
+
+  public void testFragsize() {
+    // test default is 70... so make a sentence that is a little less (closer to 70 than end of text)
+    clearIndex();
+    assertU(adoc("id", "10", "text", "This is a sentence just under seventy chars in length blah blah. Next sentence is here."));
+    assertU(commit());
+    assertQ("default fragsize",
+        req("q", "text:seventy", "hl", "true"),
+        "//lst[@name='highlighting']/lst[@name='10']/arr[@name='text']/str='This is a sentence just under <em>seventy</em> chars in length blah blah. Next sentence is here.'");
+    assertQ("smaller fragsize",
+        req("q", "text:seventy", "hl", "true", "hl.fragsize", "60"), // a bit smaller
+        "//lst[@name='highlighting']/lst[@name='10']/arr[@name='text']/str='This is a sentence just under <em>seventy</em> chars in length blah blah. '");
   }
   
   public void testEncoder() {
@@ -224,6 +241,16 @@ public class TestUnifiedSolrHighlighter extends SolrTestCaseJ4 {
     assertQ("html escaped", 
         req("q", "text:document", "sort", "id asc", "hl", "true", "hl.encoder", "html"),
         "//lst[@name='highlighting']/lst[@name='103']/arr[@name='text']/str='<em>Document</em>&#32;one&#32;has&#32;a&#32;first&#32;&lt;i&gt;sentence&lt;&#x2F;i&gt;&#46;'");
+  }
+
+  public void testRequireFieldMatch() {
+    // We highlight on field text3 (hl.fl), but our query only references the "text" field. Nonetheless, the query word
+    //  "document" is found in all fields here.
+
+    assertQ(req("q", "id:101", "hl", "true", "hl.q", "text:document", "hl.fl", "text3"), //hl.requireFieldMatch is false by default
+        "count(//lst[@name='highlighting']/lst[@name='101']/arr[@name='text3']/*)=1");
+    assertQ(req("q", "id:101", "hl", "true", "hl.q", "text:document", "hl.fl", "text3", "hl.requireFieldMatch", "true"),
+        "count(//lst[@name='highlighting']/lst[@name='101']/arr[@name='text3']/*)=0");
   }
   
 }

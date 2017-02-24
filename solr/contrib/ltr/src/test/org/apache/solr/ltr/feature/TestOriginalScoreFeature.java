@@ -20,6 +20,7 @@ import java.util.ArrayList;
 import java.util.Map;
 
 import org.apache.solr.client.solrj.SolrQuery;
+import org.apache.solr.ltr.FeatureLoggerTestUtils;
 import org.apache.solr.ltr.TestRerankBase;
 import org.apache.solr.ltr.model.LinearModel;
 import org.junit.AfterClass;
@@ -31,7 +32,7 @@ public class TestOriginalScoreFeature extends TestRerankBase {
 
   @BeforeClass
   public static void before() throws Exception {
-    setuptest("solrconfig-ltr.xml", "schema.xml");
+    setuptest(false);
 
     assertU(adoc("id", "1", "title", "w1"));
     assertU(adoc("id", "2", "title", "w2"));
@@ -132,17 +133,17 @@ public class TestOriginalScoreFeature extends TestRerankBase {
     assertJQ("/query" + query.toQueryString(), "/response/numFound/==4");
     assertJQ("/query" + query.toQueryString(), "/response/docs/[0]/id=='1'");
     assertJQ("/query" + query.toQueryString(),
-        "/response/docs/[0]/fv=='origScore:" + doc0Score + ";c2:2.0'");
+        "/response/docs/[0]/fv=='" + FeatureLoggerTestUtils.toFeatureVector("origScore", doc0Score, "c2", "2.0")+"'");
     assertJQ("/query" + query.toQueryString(), "/response/docs/[1]/id=='8'");
 
     assertJQ("/query" + query.toQueryString(),
-        "/response/docs/[1]/fv=='origScore:" + doc1Score + ";c2:2.0'");
+        "/response/docs/[1]/fv=='" + FeatureLoggerTestUtils.toFeatureVector("origScore", doc1Score, "c2", "2.0")+"'");
     assertJQ("/query" + query.toQueryString(), "/response/docs/[2]/id=='6'");
     assertJQ("/query" + query.toQueryString(),
-        "/response/docs/[2]/fv=='origScore:" + doc2Score + ";c2:2.0'");
+        "/response/docs/[2]/fv=='" + FeatureLoggerTestUtils.toFeatureVector("origScore", doc2Score, "c2", "2.0")+"'");
     assertJQ("/query" + query.toQueryString(), "/response/docs/[3]/id=='7'");
     assertJQ("/query" + query.toQueryString(),
-        "/response/docs/[3]/fv=='origScore:" + doc3Score + ";c2:2.0'");
+        "/response/docs/[3]/fv=='" + FeatureLoggerTestUtils.toFeatureVector("origScore", doc3Score, "c2", "2.0")+"'");
   }
 
 }

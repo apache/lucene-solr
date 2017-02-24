@@ -102,7 +102,7 @@ public class AllGroupsCollectorTest extends LuceneTestCase {
     IndexSearcher indexSearcher = newSearcher(w.getReader());
     w.close();
 
-    AbstractAllGroupsCollector<?> allGroupsCollector = createRandomCollector(groupField);
+    AllGroupsCollector<?> allGroupsCollector = createRandomCollector(groupField);
     indexSearcher.search(new TermQuery(new Term("content", "random")), allGroupsCollector);
     assertEquals(4, allGroupsCollector.getGroupCount());
 
@@ -123,8 +123,8 @@ public class AllGroupsCollectorTest extends LuceneTestCase {
     doc.add(new SortedDocValuesField(groupField, new BytesRef(value)));
   }
 
-  private AbstractAllGroupsCollector<?> createRandomCollector(String groupField) {
-    AbstractAllGroupsCollector<?> selected;
+  private AllGroupsCollector<?> createRandomCollector(String groupField) {
+    AllGroupsCollector<?> selected;
     if (random().nextBoolean()) {
       selected = new TermAllGroupsCollector(groupField);
     } else {

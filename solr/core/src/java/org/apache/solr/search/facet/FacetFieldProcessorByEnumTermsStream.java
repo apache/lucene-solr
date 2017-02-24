@@ -149,7 +149,7 @@ class FacetFieldProcessorByEnumTermsStream extends FacetFieldProcessor implement
     if (freq.prefix != null) {
       String indexedPrefix = sf.getType().toInternal(freq.prefix);
       startTermBytes = new BytesRef(indexedPrefix);
-    } else if (sf.getType().getNumericType() != null) {
+    } else if (sf.getType().getNumberType() != null) {
       String triePrefix = TrieField.getMainValuePrefix(sf.getType());
       if (triePrefix != null) {
         startTermBytes = new BytesRef(triePrefix);

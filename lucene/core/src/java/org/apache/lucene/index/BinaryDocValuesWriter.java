@@ -21,15 +21,19 @@ import java.io.IOException;
 
 import org.apache.lucene.codecs.DocValuesConsumer;
 import org.apache.lucene.search.DocIdSetIterator;
+import org.apache.lucene.search.SortField;
 import org.apache.lucene.store.DataInput;
 import org.apache.lucene.store.DataOutput;
 import org.apache.lucene.util.ArrayUtil;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.BytesRefBuilder;
 import org.apache.lucene.util.Counter;
+import org.apache.lucene.util.FixedBitSet;
 import org.apache.lucene.util.PagedBytes;
 import org.apache.lucene.util.packed.PackedInts;
 import org.apache.lucene.util.packed.PackedLongValues;
+
+import static org.apache.lucene.search.DocIdSetIterator.NO_MORE_DOCS;
 
 /** Buffers up pending byte[] per doc, then flushes when
  *  segment flushes. */
@@ -98,10 +102,37 @@ class BinaryDocValuesWriter extends DocValuesWriter {
   public void finish(int maxDoc) {
   }
 
+  private SortingLeafReader.CachedBinaryDVs sortDocValues(int maxDoc, Sorter.DocMap sortMap, BinaryDocValues oldValues) throws IOException {
+    FixedBitSet docsWithField = new FixedBitSet(maxDoc);
+    BytesRef[] values = new BytesRef[maxDoc];
+    while (true) {
+      int docID = oldValues.nextDoc();
+      if (docID == NO_MORE_DOCS) {
+        break;
+      }
+      int newDocID = sortMap.oldToNew(docID);
+      docsWithField.set(newDocID);
+      values[newDocID] = BytesRef.deepCopyOf(oldValues.binaryValue());
+    }
+    return new SortingLeafReader.CachedBinaryDVs(values, docsWithField);
+  }
+
   @Override
-  public void flush(SegmentWriteState state, DocValuesConsumer dvConsumer) throws IOException {
+  Sorter.DocComparator getDocComparator(int numDoc, SortField sortField) throws IOException {
+    throw new IllegalArgumentException("It is forbidden to sort on a binary field");
+  }
+
+  @Override
+  public void flush(SegmentWriteState state, Sorter.DocMap sortMap, DocValuesConsumer dvConsumer) throws IOException {
     bytes.freeze(false);
     final PackedLongValues lengths = this.lengths.build();
+    final SortingLeafReader.CachedBinaryDVs sorted;
+    if (sortMap != null) {
+      sorted = sortDocValues(state.segmentInfo.maxDoc(), sortMap,
+          new BufferedBinaryDocValues(lengths, maxLength, bytes.getDataInput(), docsWithField.iterator()));
+    } else {
+      sorted = null;
+    }
     dvConsumer.addBinaryField(fieldInfo,
                               new EmptyDocValuesProducer() {
                                 @Override
@@ -109,7 +140,11 @@ class BinaryDocValuesWriter extends DocValuesWriter {
                                   if (fieldInfoIn != fieldInfo) {
                                     throw new IllegalArgumentException("wrong fieldInfo");
                                   }
-                                  return new BufferedBinaryDocValues(lengths, maxLength, bytes.getDataInput(), docsWithField.iterator());
+                                  if (sorted == null) {
+                                    return new BufferedBinaryDocValues(lengths, maxLength, bytes.getDataInput(), docsWithField.iterator());
+                                  } else {
+                                    return new SortingLeafReader.SortingBinaryDocValues(sorted);
+                                  }
                                 }
                               });
   }

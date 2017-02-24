@@ -291,7 +291,11 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
     "6.2.1-cfs",
     "6.2.1-nocfs",
     "6.3.0-cfs",
-    "6.3.0-nocfs"
+    "6.3.0-nocfs",
+    "6.4.0-cfs",
+    "6.4.0-nocfs",
+    "6.4.1-cfs",
+    "6.4.1-nocfs"
   };
   
   final String[] unsupportedNames = {
@@ -422,7 +426,9 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
       "5.5.2-cfs",
       "5.5.2-nocfs",
       "5.5.3-cfs",
-      "5.5.3-nocfs"
+      "5.5.3-nocfs",
+      "5.5.4-cfs",
+      "5.5.4-nocfs"
   };
 
   // TODO: on 6.0.0 release, gen the single segment indices and add here:

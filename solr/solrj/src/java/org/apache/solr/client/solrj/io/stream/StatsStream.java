@@ -57,7 +57,6 @@ public class StatsStream extends TupleStream implements Expressible  {
   private SolrParams params;
   private String collection;
   private boolean done;
-  private long count;
   private boolean doCount;
   protected transient SolrClientCache cache;
   protected transient CloudSolrClient cloudSolrClient;
@@ -195,8 +194,7 @@ public class StatsStream extends TupleStream implements Expressible  {
   }
 
   public List<TupleStream> children() {
-    List<TupleStream> l =  new ArrayList();
-    return l;
+    return new ArrayList<>();
   }
 
   public void open() throws IOException {
@@ -233,10 +231,9 @@ public class StatsStream extends TupleStream implements Expressible  {
       done = true;
       return tuple;
     } else {
-      Map fields = new HashMap();
+      Map<String, Object> fields = new HashMap<>();
       fields.put("EOF", true);
-      Tuple tuple = new Tuple(fields);
-      return tuple;
+      return new Tuple(fields);
     }
   }
 
@@ -245,7 +242,7 @@ public class StatsStream extends TupleStream implements Expressible  {
   }
 
   private void addStats(ModifiableSolrParams params, Metric[] _metrics) {
-    Map<String, List<String>> m = new HashMap();
+    Map<String, List<String>> m = new HashMap<>();
     for(Metric metric : _metrics) {
       String metricId = metric.getIdentifier();
       if(metricId.contains("(")) {
@@ -255,8 +252,11 @@ public class StatsStream extends TupleStream implements Expressible  {
         String column = parts[1];
         List<String> stats = m.get(column);
 
-        if(stats == null && !column.equals("*")) {
-          stats = new ArrayList();
+        if(stats == null) {
+          stats = new ArrayList<>();
+        }
+
+        if(!column.equals("*")) {
           m.put(column, stats);
         }
 
@@ -290,34 +290,36 @@ public class StatsStream extends TupleStream implements Expressible  {
 
   private Tuple getTuple(NamedList response) {
 
-    Map map = new HashMap();
+    Map<String, Object> map = new HashMap<>();
+    SolrDocumentList solrDocumentList = (SolrDocumentList) response.get("response");
+
+    long count = solrDocumentList.getNumFound();
 
     if(doCount) {
-      SolrDocumentList solrDocumentList = (SolrDocumentList) response.get("response");
-      this.count = solrDocumentList.getNumFound();
-      map.put("count(*)", this.count);
+      map.put("count(*)", count);
     }
 
-    NamedList stats = (NamedList)response.get("stats");
-    NamedList statsFields = (NamedList)stats.get("stats_fields");
+    if(count != 0) {
+      NamedList stats = (NamedList)response.get("stats");
+      NamedList statsFields = (NamedList)stats.get("stats_fields");
 
-    for(int i=0; i<statsFields.size(); i++) {
-      String field = statsFields.getName(i);
-      NamedList theStats = (NamedList)statsFields.getVal(i);
-      for(int s=0; s<theStats.size(); s++) {
-        addStat(map, field, theStats.getName(s), theStats.getVal(s));
+      for(int i=0; i<statsFields.size(); i++) {
+        String field = statsFields.getName(i);
+        NamedList theStats = (NamedList)statsFields.getVal(i);
+        for(int s=0; s<theStats.size(); s++) {
+          addStat(map, field, theStats.getName(s), theStats.getVal(s));
+        }
       }
     }
 
-    Tuple tuple = new Tuple(map);
-    return tuple;
+    return new Tuple(map);
   }
 
   public int getCost() {
     return 0;
   }
 
-  private void addStat(Map map, String field, String stat, Object val) {
+  private void addStat(Map<String, Object> map, String field, String stat, Object val) {
     if(stat.equals("mean")) {
       map.put("avg("+field+")", val);
     } else {

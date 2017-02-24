@@ -117,7 +117,7 @@ public abstract class StoredFieldsWriter implements Closeable {
       subs.add(new StoredFieldsMergeSub(new MergeVisitor(mergeState, i), mergeState.docMaps[i], storedFieldsReader, mergeState.maxDocs[i]));
     }
 
-    final DocIDMerger<StoredFieldsMergeSub> docIDMerger = new DocIDMerger<>(subs, mergeState.needsIndexSort);
+    final DocIDMerger<StoredFieldsMergeSub> docIDMerger = DocIDMerger.of(subs, mergeState.needsIndexSort);
 
     int docCount = 0;
     while (true) {

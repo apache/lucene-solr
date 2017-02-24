@@ -26,9 +26,7 @@ public class TestLTRQParserPlugin extends TestRerankBase {
 
   @BeforeClass
   public static void before() throws Exception {
-    setuptest("solrconfig-ltr.xml", "schema.xml");
-    // store = getModelStore();
-    bulkIndex();
+    setuptest(true);
 
     loadFeatures("features-linear.json");
     loadModels("linear-model.json");
@@ -37,7 +35,6 @@ public class TestLTRQParserPlugin extends TestRerankBase {
   @AfterClass
   public static void after() throws Exception {
     aftertest();
-    // store.clear();
   }
 
   @Test

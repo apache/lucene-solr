@@ -32,7 +32,7 @@ public class TestUpdate extends SolrTestCaseJ4 {
   }
 
   @Test
-  public void testUpdateableDocs() throws Exception {
+  public void testUpdatableDocs() throws Exception {
     // The document may be retrieved from the index or from the transaction log.
     // Test both by running the same test with and without commits
 

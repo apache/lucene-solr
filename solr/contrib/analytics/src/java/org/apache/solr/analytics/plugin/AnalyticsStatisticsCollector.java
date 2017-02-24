@@ -21,7 +21,7 @@ import java.util.concurrent.atomic.AtomicLong;
 import com.codahale.metrics.Timer;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SimpleOrderedMap;
-import org.apache.solr.util.stats.TimerUtils;
+import org.apache.solr.util.stats.MetricUtils;
 
 public class AnalyticsStatisticsCollector {
   private final AtomicLong numRequests;
@@ -95,7 +95,7 @@ public class AnalyticsStatisticsCollector {
     lst.add("rangeFacets", numRangeFacets.longValue());
     lst.add("queryFacets", numQueryFacets.longValue());
     lst.add("queriesInQueryFacets", numQueries.longValue());
-    TimerUtils.addMetrics(lst, requestTimes);
+    MetricUtils.addMetrics(lst, requestTimes);
     return lst;
   }
 }

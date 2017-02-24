@@ -29,6 +29,8 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 
+import com.codahale.metrics.Counter;
+import com.codahale.metrics.Timer;
 import org.apache.http.NoHttpResponseException;
 import org.apache.http.client.HttpClient;
 import org.apache.http.conn.ConnectTimeoutException;
@@ -38,14 +40,18 @@ import org.apache.solr.cloud.ZkController;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.params.ModifiableSolrParams;
+import org.apache.solr.common.util.IOUtils;
 import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.core.SolrCore;
+import org.apache.solr.core.SolrInfoMBean;
 import org.apache.solr.handler.component.HttpShardHandlerFactory;
 import org.apache.solr.handler.component.ShardHandler;
 import org.apache.solr.handler.component.ShardHandlerFactory;
 import org.apache.solr.handler.component.ShardRequest;
 import org.apache.solr.handler.component.ShardResponse;
 import org.apache.solr.logging.MDCLoggingContext;
+import org.apache.solr.metrics.SolrMetricManager;
+import org.apache.solr.metrics.SolrMetricProducer;
 import org.apache.solr.request.LocalSolrQueryRequest;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
@@ -58,7 +64,7 @@ import static org.apache.solr.update.processor.DistributedUpdateProcessor.Distri
 import static org.apache.solr.update.processor.DistributingUpdateProcessorFactory.DISTRIB_UPDATE_PARAM;
 
 /** @lucene.experimental */
-public class PeerSync  {
+public class PeerSync implements SolrMetricProducer {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   private boolean debug = log.isDebugEnabled();
 
@@ -87,6 +93,11 @@ public class PeerSync  {
   private final boolean onlyIfActive;
   private SolrCore core;
 
+  // metrics
+  private Timer syncTime;
+  private Counter syncErrors;
+  private Counter syncSkipped;
+
   // comparator that sorts by absolute value, putting highest first
   public static Comparator<Long> absComparator = (o1, o2) -> {
     long l1 = Math.abs(o1);
@@ -111,7 +122,6 @@ public class PeerSync  {
     if (l1 < l2) return -1;
     return 0;
   };
-
 
   private static class SyncShardRequest extends ShardRequest {
     List<Long> reportedVersions;
@@ -147,6 +157,15 @@ public class PeerSync  {
     // TODO: close
     shardHandlerFactory = (HttpShardHandlerFactory) core.getCoreDescriptor().getCoreContainer().getShardHandlerFactory();
     shardHandler = shardHandlerFactory.getShardHandler(client);
+
+    core.getCoreMetricManager().registerMetricProducer(SolrInfoMBean.Category.REPLICATION.toString(), this);
+  }
+
+  @Override
+  public void initializeMetrics(SolrMetricManager manager, String registry, String scope) {
+    syncTime = manager.timer(registry, "time", scope);
+    syncErrors = manager.counter(registry, "errors", scope);
+    syncSkipped = manager.counter(registry, "skipped", scope);
   }
 
   /** optional list of updates we had before possibly receiving new updates */
@@ -208,9 +227,11 @@ public class PeerSync  {
    */
   public PeerSyncResult sync() {
     if (ulog == null) {
+      syncErrors.inc();
       return PeerSyncResult.failure();
     }
     MDCLoggingContext.setCore(core);
+    Timer.Context timerContext = null;
     try {
       log.info(msg() + "START replicas=" + replicas + " nUpdates=" + nUpdates);
       
@@ -221,10 +242,13 @@ public class PeerSync  {
       }
       // check if we already in sync to begin with 
       if(doFingerprint && alreadyInSync()) {
+        syncSkipped.inc();
         return PeerSyncResult.success();
       }
-      
-      
+
+      // measure only when actual sync is performed
+      timerContext = syncTime.time();
+
       // Fire off the requests before getting our own recent updates (for better concurrency)
       // This also allows us to avoid getting updates we don't need... if we got our updates and then got their updates,
       // they would
@@ -242,6 +266,7 @@ public class PeerSync  {
       if (startingVersions != null) {
         if (startingVersions.size() == 0) {
           log.warn("no frame of reference to tell if we've missed updates");
+          syncErrors.inc();
           return PeerSyncResult.failure();
         }
         Collections.sort(startingVersions, absComparator);
@@ -257,6 +282,7 @@ public class PeerSync  {
         if (Math.abs(startingVersions.get(0)) < smallestNewUpdate) {
           log.warn(msg()
               + "too many updates received since start - startingUpdates no longer overlaps with our currentUpdates");
+          syncErrors.inc();
           return PeerSyncResult.failure();
         }
         
@@ -285,10 +311,12 @@ public class PeerSync  {
             if (srsp.getException() == null)  {
               List<Long> otherVersions = (List<Long>)srsp.getSolrResponse().getResponse().get("versions");
               if (otherVersions != null && !otherVersions.isEmpty())  {
+                syncErrors.inc();
                 return PeerSyncResult.failure(true);
               }
             }
           }
+          syncErrors.inc();
           return PeerSyncResult.failure(false);
         }
       }
@@ -304,6 +332,7 @@ public class PeerSync  {
         if (!success) {
           log.info(msg() + "DONE. sync failed");
           shardHandler.cancelAll();
+          syncErrors.inc();
           return PeerSyncResult.failure();
         }
       }
@@ -318,8 +347,14 @@ public class PeerSync  {
       }
 
       log.info(msg() + "DONE. sync " + (success ? "succeeded" : "failed"));
+      if (!success) {
+        syncErrors.inc();
+      }
       return success ?  PeerSyncResult.success() : PeerSyncResult.failure();
     } finally {
+      if (timerContext != null) {
+        timerContext.close();
+      }
       MDCLoggingContext.clear();
     }
   }
@@ -335,9 +370,15 @@ public class PeerSync  {
     for (;;) {
       ShardResponse srsp = shardHandler.takeCompletedOrError();
       if (srsp == null) break;
+
+      Object replicaFingerprint = srsp.getSolrResponse().getResponse().get("fingerprint");
+      if (replicaFingerprint == null) {
+        log.warn("Replica did not return a fingerprint - possibly an older Solr version");
+        continue;
+      }
       
       try {
-        IndexFingerprint otherFingerprint = IndexFingerprint.fromObject(srsp.getSolrResponse().getResponse().get("fingerprint"));
+        IndexFingerprint otherFingerprint = IndexFingerprint.fromObject(replicaFingerprint);
         IndexFingerprint ourFingerprint = IndexFingerprint.getFingerprint(core, Long.MAX_VALUE);
         if(IndexFingerprint.compare(otherFingerprint, ourFingerprint) == 0) {
           log.info("We are already in sync. No need to do a PeerSync ");
@@ -788,6 +829,16 @@ public class PeerSync  {
             proc.processDelete(cmd);
             break;
           }
+          case UpdateLog.UPDATE_INPLACE:
+          {
+            AddUpdateCommand cmd = UpdateLog.convertTlogEntryToAddUpdateCommand(req, entry, oper, version);
+            cmd.setFlags(UpdateCommand.PEER_SYNC | UpdateCommand.IGNORE_AUTOCOMMIT);
+            if (debug) {
+              log.debug(msg() + "inplace update " + cmd + " prevVersion=" + cmd.prevVersion + ", doc=" + cmd.solrDoc);
+            }
+            proc.processAdd(cmd);
+            break;
+          }
 
           default:
             throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,  "Unknown Operation! " + oper);
@@ -815,6 +866,8 @@ public class PeerSync  {
         sreq.updateException = e;
         log.error(msg() + "Error applying updates from " + sreq.shards + " ,finish()", e);
         return false;
+      } finally {
+        IOUtils.closeQuietly(proc);
       }
     }
 

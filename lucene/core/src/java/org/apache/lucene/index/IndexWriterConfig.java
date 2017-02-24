@@ -18,7 +18,9 @@ package org.apache.lucene.index;
 
 
 import java.io.PrintStream;
+import java.util.Arrays;
 import java.util.EnumSet;
+import java.util.stream.Collectors;
 
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.standard.StandardAnalyzer;
@@ -474,6 +476,7 @@ public final class IndexWriterConfig extends LiveIndexWriterConfig {
       }
     }
     this.indexSort = sort;
+    this.indexSortFields = Arrays.stream(sort.getSort()).map(SortField::getField).collect(Collectors.toSet());
     return this;
   }
 

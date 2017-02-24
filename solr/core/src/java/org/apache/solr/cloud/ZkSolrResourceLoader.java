@@ -109,7 +109,7 @@ public class ZkSolrResourceLoader extends SolrResourceLoader {
       } catch (InterruptedException e) {
         Thread.currentThread().interrupt();
         throw new IOException("Error opening " + file, e);
-      } catch (KeeperException e) {
+      } catch (Exception e) {
         throw new IOException("Error opening " + file, e);
       }
     }

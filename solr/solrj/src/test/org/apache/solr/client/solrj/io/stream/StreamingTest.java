@@ -94,15 +94,17 @@ public static void configureCluster() throws Exception {
 
   String collection;
   useAlias = random().nextBoolean();
-  if(useAlias) {
+  if (useAlias) {
     collection = COLLECTIONORALIAS + "_collection";
-    CollectionAdminRequest.createAlias(COLLECTIONORALIAS, collection).process(cluster.getSolrClient());
   } else {
     collection = COLLECTIONORALIAS;
   }
-
   CollectionAdminRequest.createCollection(collection, "conf", numShards, 1).process(cluster.getSolrClient());
-  AbstractDistribZkTestBase.waitForRecoveriesToFinish(collection, cluster.getSolrClient().getZkStateReader(), false, true, DEFAULT_TIMEOUT);
+  AbstractDistribZkTestBase.waitForRecoveriesToFinish(collection, cluster.getSolrClient().getZkStateReader(),
+      false, true, DEFAULT_TIMEOUT);
+  if (useAlias) {
+    CollectionAdminRequest.createAlias(COLLECTIONORALIAS, collection).process(cluster.getSolrClient());
+  }
 
   zkHost = cluster.getZkServer().getZkAddress();
   streamFactory.withCollectionZkHost(COLLECTIONORALIAS, zkHost);
@@ -1505,6 +1507,23 @@ public void testTrace() throws Exception {
     assertEquals(7.5, avgi.doubleValue(), 0.01);
     assertEquals(5.5, avgf.doubleValue(), 0.01);
     assertEquals(2, count.doubleValue(), 0.01);
+
+    // Test will null metrics
+    rollupStream = new RollupStream(stream, buckets, metrics);
+    tuples = getTuples(rollupStream);
+
+    assert(tuples.size() == 3);
+    tuple = tuples.get(0);
+    bucket = tuple.getString("a_s");
+    assertTrue(bucket.equals("hello0"));
+
+    tuple = tuples.get(1);
+    bucket = tuple.getString("a_s");
+    assertTrue(bucket.equals("hello3"));
+
+    tuple = tuples.get(2);
+    bucket = tuple.getString("a_s");
+    assertTrue(bucket.equals("hello4"));
 
 
     //Test will null value in the grouping field

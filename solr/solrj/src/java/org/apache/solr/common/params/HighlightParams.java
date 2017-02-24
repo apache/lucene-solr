@@ -38,7 +38,7 @@ public interface HighlightParams {
   // query interpretation
   public static final String Q           = HIGHLIGHT+".q"; // all
   public static final String QPARSER     = HIGHLIGHT+".qparser"; // all
-  public static final String FIELD_MATCH = HIGHLIGHT+".requireFieldMatch"; // OH, FVH
+  public static final String FIELD_MATCH = HIGHLIGHT+".requireFieldMatch"; // OH, FVH, UH
   public static final String USE_PHRASE_HIGHLIGHTER = HIGHLIGHT+".usePhraseHighlighter"; // OH, FVH, UH
   public static final String HIGHLIGHT_MULTI_TERM = HIGHLIGHT+".highlightMultiTerm"; // all
 
@@ -49,7 +49,7 @@ public interface HighlightParams {
   public static final String HIGHLIGHT_ALTERNATE = HIGHLIGHT+".highlightAlternate"; // OH, FVH
 
   // sizing
-  public static final String FRAGSIZE    = HIGHLIGHT+".fragsize"; // OH, FVH
+  public static final String FRAGSIZE    = HIGHLIGHT+".fragsize"; // OH, FVH, UH
   public static final String FRAGMENTER  = HIGHLIGHT+".fragmenter"; // OH
   public static final String INCREMENT   = HIGHLIGHT+".increment"; // OH
   public static final String REGEX       = "regex"; // OH
@@ -66,7 +66,7 @@ public interface HighlightParams {
 
   // formatting
   public static final String FORMATTER   = HIGHLIGHT+".formatter"; // OH
-  public static final String ENCODER     = HIGHLIGHT+".encoder"; // OH, (UH, PH limited)
+  public static final String ENCODER     = HIGHLIGHT+".encoder"; // all
   public static final String MERGE_CONTIGUOUS_FRAGMENTS = HIGHLIGHT + ".mergeContiguous"; // OH
   public static final String SIMPLE      = "simple"; // OH
   public static final String SIMPLE_PRE  = HIGHLIGHT+"."+SIMPLE+".pre"; // OH

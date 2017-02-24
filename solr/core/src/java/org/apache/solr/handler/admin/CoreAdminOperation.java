@@ -102,11 +102,7 @@ enum CoreAdminOperation implements CoreAdminOp {
   }),
   RELOAD_OP(RELOAD, it -> {
     SolrParams params = it.req.getParams();
-    String cname = params.get(CoreAdminParams.CORE);
-
-    if (cname == null || !it.handler.coreContainer.getCoreNames().contains(cname)) {
-      throw new SolrException(ErrorCode.BAD_REQUEST, "Core with core name [" + cname + "] does not exist.");
-    }
+    String cname = params.required().get(CoreAdminParams.CORE);
 
     try {
       it.handler.coreContainer.reload(cname);
@@ -140,21 +136,17 @@ enum CoreAdminOperation implements CoreAdminOp {
 
   REQUESTRECOVERY_OP(REQUESTRECOVERY, it -> {
     final SolrParams params = it.req.getParams();
-    log().info("It has been requested that we recover: core=" + params.get(CoreAdminParams.CORE));
-    new Thread(() -> {
-      String cname = params.get(CoreAdminParams.CORE);
-      if (cname == null) {
-        cname = "";
+    final String cname = params.get(CoreAdminParams.CORE, "");
+    log().info("It has been requested that we recover: core=" + cname);
+    
+    try (SolrCore core = it.handler.coreContainer.getCore(cname)) {
+      if (core != null) {
+        // This can take a while, but doRecovery is already async so don't worry about it here
+        core.getUpdateHandler().getSolrCoreState().doRecovery(it.handler.coreContainer, core.getCoreDescriptor());
+      } else {
+        throw new SolrException(ErrorCode.BAD_REQUEST, "Unable to locate core " + cname);
       }
-      try (SolrCore core = it.handler.coreContainer.getCore(cname)) {
-        if (core != null) {
-          core.getUpdateHandler().getSolrCoreState().doRecovery(it.handler.coreContainer, core.getCoreDescriptor());
-        } else {
-          SolrException.log(log(), "Could not find core to call recovery:" + cname);
-        }
-      }
-    }).start();
-
+    }
   }),
   REQUESTSYNCSHARD_OP(REQUESTSYNCSHARD, new RequestSyncShardOp()),
 
@@ -335,6 +327,7 @@ enum CoreAdminOperation implements CoreAdminOp {
           info.add("uptime", core.getUptimeMs());
           if (cores.isZooKeeperAware()) {
             info.add("lastPublished", core.getCoreDescriptor().getCloudDescriptor().getLastPublished().toString().toLowerCase(Locale.ROOT));
+            info.add("configVersion", core.getSolrConfig().getZnodeVersion());
           }
           if (isIndexInfoNeeded) {
             RefCounted<SolrIndexSearcher> searcher = core.getSearcher();

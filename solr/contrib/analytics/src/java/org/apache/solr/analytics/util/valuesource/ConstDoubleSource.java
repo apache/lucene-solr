@@ -23,7 +23,6 @@ import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.queries.function.FunctionValues;
 import org.apache.lucene.queries.function.docvalues.DoubleDocValues;
 import org.apache.lucene.queries.function.valuesource.ConstNumberSource;
-import org.apache.lucene.queries.function.valuesource.ConstValueSource;
 import org.apache.solr.analytics.util.AnalyticsParams;
 
 /**
@@ -67,7 +66,7 @@ public class ConstDoubleSource extends ConstNumberSource {
 
   @Override
   public boolean equals(Object o) {
-    if (!(o instanceof ConstValueSource)) return false;
+    if (!(o instanceof ConstDoubleSource)) return false;
     ConstDoubleSource other = (ConstDoubleSource)o;
     return  this.constant == other.constant;
   }

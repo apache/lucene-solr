@@ -342,7 +342,33 @@ public class TransactionLog implements Closeable {
 
   int lastAddSize;
 
+  /**
+   * Writes an add update command to the transaction log. This is not applicable for
+   * in-place updates; use {@link #write(AddUpdateCommand, long, int)}.
+   * (The previous pointer (applicable for in-place updates) is set to -1 while writing
+   * the command to the transaction log.)
+   * @param cmd The add update command to be written
+   * @param flags Options for writing the command to the transaction log
+   * @return Returns the position pointer of the written update command
+   * 
+   * @see #write(AddUpdateCommand, long, int)
+   */
   public long write(AddUpdateCommand cmd, int flags) {
+    return write(cmd, -1, flags);
+  }
+
+  /**
+   * Writes an add update command to the transaction log. This should be called only for
+   * writing in-place updates, or else pass -1 as the prevPointer.
+   * @param cmd The add update command to be written
+   * @param prevPointer The pointer in the transaction log which this update depends 
+   * on (applicable for in-place updates)
+   * @param flags Options for writing the command to the transaction log
+   * @return Returns the position pointer of the written update command
+   */
+  public long write(AddUpdateCommand cmd, long prevPointer, int flags) {
+    assert (-1 <= prevPointer && (cmd.isInPlaceUpdate() || (-1 == prevPointer)));
+    
     LogCodec codec = new LogCodec(resolver);
     SolrInputDocument sdoc = cmd.getSolrInputDocument();
 
@@ -355,10 +381,19 @@ public class TransactionLog implements Closeable {
 
       MemOutputStream out = new MemOutputStream(new byte[bufSize]);
       codec.init(out);
-      codec.writeTag(JavaBinCodec.ARR, 3);
-      codec.writeInt(UpdateLog.ADD | flags);  // should just take one byte
-      codec.writeLong(cmd.getVersion());
-      codec.writeSolrInputDocument(cmd.getSolrInputDocument());
+      if (cmd.isInPlaceUpdate()) {
+        codec.writeTag(JavaBinCodec.ARR, 5);
+        codec.writeInt(UpdateLog.UPDATE_INPLACE | flags);  // should just take one byte
+        codec.writeLong(cmd.getVersion());
+        codec.writeLong(prevPointer);
+        codec.writeLong(cmd.prevVersion);
+        codec.writeSolrInputDocument(cmd.getSolrInputDocument());
+      } else {
+        codec.writeTag(JavaBinCodec.ARR, 3);
+        codec.writeInt(UpdateLog.ADD | flags);  // should just take one byte
+        codec.writeLong(cmd.getVersion());
+        codec.writeSolrInputDocument(cmd.getSolrInputDocument());
+      }
       lastAddSize = (int)out.size();
 
       synchronized (this) {

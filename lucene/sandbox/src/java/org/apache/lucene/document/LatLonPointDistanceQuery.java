@@ -18,6 +18,7 @@ package org.apache.lucene.document;
 
 import java.io.IOException;
 
+import org.apache.lucene.geo.GeoEncodingUtils;
 import org.apache.lucene.geo.GeoUtils;
 import org.apache.lucene.geo.Rectangle;
 import org.apache.lucene.index.FieldInfo;
@@ -31,10 +32,10 @@ import org.apache.lucene.search.ConstantScoreWeight;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.Scorer;
+import org.apache.lucene.search.ScorerSupplier;
 import org.apache.lucene.search.Weight;
 import org.apache.lucene.util.DocIdSetBuilder;
 import org.apache.lucene.util.NumericUtils;
-import org.apache.lucene.util.SloppyMath;
 import org.apache.lucene.util.StringHelper;
 
 import static org.apache.lucene.geo.GeoEncodingUtils.decodeLatitude;
@@ -102,8 +103,19 @@ final class LatLonPointDistanceQuery extends Query {
 
     return new ConstantScoreWeight(this, boost) {
 
+      final GeoEncodingUtils.DistancePredicate distancePredicate = GeoEncodingUtils.createDistancePredicate(latitude, longitude, radiusMeters);
+
       @Override
       public Scorer scorer(LeafReaderContext context) throws IOException {
+        ScorerSupplier scorerSupplier = scorerSupplier(context);
+        if (scorerSupplier == null) {
+          return null;
+        }
+        return scorerSupplier.get(false);
+      }
+
+      @Override
+      public ScorerSupplier scorerSupplier(LeafReaderContext context) throws IOException {
         LeafReader reader = context.reader();
         PointValues values = reader.getPointValues(field);
         if (values == null) {
@@ -119,8 +131,7 @@ final class LatLonPointDistanceQuery extends Query {
         
         // matching docids
         DocIdSetBuilder result = new DocIdSetBuilder(reader.maxDoc(), values, field);
-
-        values.intersect(
+        final IntersectVisitor visitor =
                          new IntersectVisitor() {
 
                            DocIdSetBuilder.BulkAdder adder;
@@ -151,11 +162,9 @@ final class LatLonPointDistanceQuery extends Query {
                                return;
                              }
 
-                             double docLatitude = decodeLatitude(packedValue, 0);
-                             double docLongitude = decodeLongitude(packedValue, Integer.BYTES);
-
-                             // its a match only if its sortKey <= our sortKey
-                             if (SloppyMath.haversinSortKey(latitude, longitude, docLatitude, docLongitude) <= sortKey) {
+                             int docLatitude = NumericUtils.sortableBytesToInt(packedValue, 0);
+                             int docLongitude = NumericUtils.sortableBytesToInt(packedValue, Integer.BYTES);
+                             if (distancePredicate.test(docLatitude, docLongitude)) {
                                adder.add(docID);
                              }
                            }
@@ -185,32 +194,30 @@ final class LatLonPointDistanceQuery extends Query {
                              double latMax = decodeLatitude(maxPackedValue, 0);
                              double lonMax = decodeLongitude(maxPackedValue, Integer.BYTES);
 
-                             if ((longitude < lonMin || longitude > lonMax) && (axisLat+ Rectangle.AXISLAT_ERROR < latMin || axisLat- Rectangle.AXISLAT_ERROR > latMax)) {
-                               // circle not fully inside / crossing axis
-                               if (SloppyMath.haversinSortKey(latitude, longitude, latMin, lonMin) > sortKey &&
-                                   SloppyMath.haversinSortKey(latitude, longitude, latMin, lonMax) > sortKey &&
-                                   SloppyMath.haversinSortKey(latitude, longitude, latMax, lonMin) > sortKey &&
-                                   SloppyMath.haversinSortKey(latitude, longitude, latMax, lonMax) > sortKey) {
-                                 // no points inside
-                                 return Relation.CELL_OUTSIDE_QUERY;
-                               }
-                             }
-
-                             if (lonMax - longitude < 90 && longitude - lonMin < 90 &&
-                                 SloppyMath.haversinSortKey(latitude, longitude, latMin, lonMin) <= sortKey &&
-                                 SloppyMath.haversinSortKey(latitude, longitude, latMin, lonMax) <= sortKey &&
-                                 SloppyMath.haversinSortKey(latitude, longitude, latMax, lonMin) <= sortKey &&
-                                 SloppyMath.haversinSortKey(latitude, longitude, latMax, lonMax) <= sortKey) {
-                               // we are fully enclosed, collect everything within this subtree
-                               return Relation.CELL_INSIDE_QUERY;
-                             } else {
-                               // recurse: its inside our bounding box(es), but not fully, or it wraps around.
-                               return Relation.CELL_CROSSES_QUERY;
-                             }
+                             return GeoUtils.relate(latMin, latMax, lonMin, lonMax, latitude, longitude, sortKey, axisLat);
                            }
-                         });
+                         };
+        final Weight weight = this;
+        return new ScorerSupplier() {
 
-        return new ConstantScoreScorer(this, score(), result.build().iterator());
+          long cost = -1;
+
+          @Override
+          public Scorer get(boolean randomAccess) throws IOException {
+            values.intersect(visitor);
+            return new ConstantScoreScorer(weight, score(), result.build().iterator());
+          }
+
+          @Override
+          public long cost() {
+            if (cost == -1) {
+              cost = values.estimatePointCount(visitor);
+            }
+            assert cost >= 0;
+            return cost;
+          }
+        };
+
       }
     };
   }

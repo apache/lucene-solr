@@ -43,6 +43,7 @@ import org.apache.solr.ltr.feature.ValueFeature;
 import org.apache.solr.ltr.model.LTRScoringModel;
 import org.apache.solr.ltr.model.LinearModel;
 import org.apache.solr.ltr.model.ModelException;
+import org.apache.solr.ltr.store.FeatureStore;
 import org.apache.solr.ltr.store.rest.ManagedFeatureStore;
 import org.apache.solr.ltr.store.rest.ManagedModelStore;
 import org.apache.solr.request.SolrQueryRequestBase;
@@ -75,14 +76,57 @@ public class TestRerankBase extends RestTestBase {
   protected static File fstorefile = null;
   protected static File mstorefile = null;
 
-  public static void setuptest() throws Exception {
-    setuptest("solrconfig-ltr.xml", "schema.xml");
-    bulkIndex();
+  final private static String SYSTEM_PROPERTY_SOLR_LTR_TRANSFORMER_FV_DEFAULTFORMAT = "solr.ltr.transformer.fv.defaultFormat";
+  private static String defaultFeatureFormat;
+
+  protected String chooseDefaultFeatureVector(String dense, String sparse) {
+    if (defaultFeatureFormat == null) {
+      // to match <code><str name="defaultFormat">${solr.ltr.transformer.fv.defaultFormat:dense}</str></code> snippet
+      return dense;
+    } else  if ("dense".equals(defaultFeatureFormat)) {
+      return dense;
+    } else  if ("sparse".equals(defaultFeatureFormat)) {
+      return sparse;
+    } else {
+      fail("unexpected feature format choice: "+defaultFeatureFormat);
+      return null;
+    }
   }
 
-  public static void setupPersistenttest() throws Exception {
+  protected static void chooseDefaultFeatureFormat() throws Exception {
+    switch (random().nextInt(3)) {
+      case 0:
+        defaultFeatureFormat = null;
+        break;
+      case 1:
+        defaultFeatureFormat = "dense";
+        break;
+      case 2:
+        defaultFeatureFormat = "sparse";
+        break;
+      default:
+        fail("unexpected feature format choice");
+        break;
+    }
+    if (defaultFeatureFormat != null) {
+      System.setProperty(SYSTEM_PROPERTY_SOLR_LTR_TRANSFORMER_FV_DEFAULTFORMAT, defaultFeatureFormat);
+    }
+  }
+
+  protected static void unchooseDefaultFeatureFormat() {
+    System.clearProperty(SYSTEM_PROPERTY_SOLR_LTR_TRANSFORMER_FV_DEFAULTFORMAT);
+  }
+
+  protected static void setuptest(boolean bulkIndex) throws Exception {
+    chooseDefaultFeatureFormat();
+    setuptest("solrconfig-ltr.xml", "schema.xml");
+    if (bulkIndex) bulkIndex();
+  }
+
+  protected static void setupPersistenttest(boolean bulkIndex) throws Exception {
+    chooseDefaultFeatureFormat();
     setupPersistentTest("solrconfig-ltr.xml", "schema.xml");
-    bulkIndex();
+    if (bulkIndex) bulkIndex();
   }
 
   public static ManagedFeatureStore getManagedFeatureStore() {
@@ -178,8 +222,7 @@ public class TestRerankBase extends RestTestBase {
     FileUtils.deleteDirectory(tmpSolrHome);
     System.clearProperty("managed.schema.mutable");
     // System.clearProperty("enable.update.log");
-
-
+    unchooseDefaultFeatureFormat();
   }
 
   public static void makeRestTestHarnessNull() {
@@ -269,6 +312,12 @@ public class TestRerankBase extends RestTestBase {
 
   public static LTRScoringModel createModelFromFiles(String modelFileName,
       String featureFileName) throws ModelException, Exception {
+    return createModelFromFiles(modelFileName, featureFileName,
+        FeatureStore.DEFAULT_FEATURE_STORE_NAME);
+  }
+
+  public static LTRScoringModel createModelFromFiles(String modelFileName,
+      String featureFileName, String featureStoreName) throws ModelException, Exception {
     URL url = TestRerankBase.class.getResource("/modelExamples/"
         + modelFileName);
     final String modelJson = FileUtils.readFileToString(new File(url.toURI()),
@@ -289,7 +338,7 @@ public class TestRerankBase extends RestTestBase {
 
     final ManagedFeatureStore fs = getManagedFeatureStore();
     // fs.getFeatureStore(null).clear();
-    fs.doDeleteChild(null, "*"); // is this safe??
+    fs.doDeleteChild(null, featureStoreName); // is this safe??
     // based on my need to call this I dont think that
     // "getNewManagedFeatureStore()"
     // is actually returning a new feature store each time

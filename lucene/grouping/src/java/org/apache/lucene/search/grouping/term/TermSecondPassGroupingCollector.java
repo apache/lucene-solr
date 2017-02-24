@@ -23,19 +23,19 @@ import org.apache.lucene.index.DocValues;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.SortedDocValues;
 import org.apache.lucene.search.Sort;
-import org.apache.lucene.search.grouping.AbstractSecondPassGroupingCollector;
+import org.apache.lucene.search.grouping.SecondPassGroupingCollector;
 import org.apache.lucene.search.grouping.SearchGroup;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.SentinelIntSet;
 
 /**
- * Concrete implementation of {@link org.apache.lucene.search.grouping.AbstractSecondPassGroupingCollector} that groups based on
+ * Concrete implementation of {@link SecondPassGroupingCollector} that groups based on
  * field values and more specifically uses {@link SortedDocValues}
  * to collect grouped docs.
  *
  * @lucene.experimental
  */
-public class TermSecondPassGroupingCollector extends AbstractSecondPassGroupingCollector<BytesRef> {
+public class TermSecondPassGroupingCollector extends SecondPassGroupingCollector<BytesRef> {
 
   private final String groupField;
   private final SentinelIntSet ordSet;

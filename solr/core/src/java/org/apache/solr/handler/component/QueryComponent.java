@@ -185,6 +185,11 @@ public class QueryComponent extends SearchComponent
       }
 
       rb.setSortSpec( parser.getSortSpec(true) );
+      for (SchemaField sf:rb.getSortSpec().getSchemaFields()) {
+        if (sf != null && sf.getType().isPointField() && !sf.hasDocValues()) {
+          throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,"Can't sort on a point field without docValues");
+        }
+      }
       rb.setQparser(parser);
 
       final String cursorStr = rb.req.getParams().get(CursorMarkParams.CURSOR_MARK_PARAM);
@@ -253,7 +258,7 @@ public class QueryComponent extends SearchComponent
 
     //TODO: move weighting of sort
     final SortSpec groupSortSpec = searcher.weightSortSpec(sortSpec, Sort.RELEVANCE);
-    // withinGroupSort defaults to groupSort
+
     String withinGroupSortStr = params.get(GroupParams.GROUP_SORT);
     //TODO: move weighting of sort
     final SortSpec withinGroupSortSpec;
@@ -339,11 +344,21 @@ public class QueryComponent extends SearchComponent
       List<String> idArr = StrUtils.splitSmart(ids, ",", true);
       int[] luceneIds = new int[idArr.size()];
       int docs = 0;
-      for (int i=0; i<idArr.size(); i++) {
-        int id = searcher.getFirstMatch(
-                new Term(idField.getName(), idField.getType().toInternal(idArr.get(i))));
-        if (id >= 0)
-          luceneIds[docs++] = id;
+      if (idField.getType().isPointField()) {
+        for (int i=0; i<idArr.size(); i++) {
+          int id = searcher.search(
+              idField.getType().getFieldQuery(null, idField, idArr.get(i)), 1).scoreDocs[0].doc;
+          if (id >= 0) {
+            luceneIds[docs++] = id;
+          }
+        }
+      } else {
+        for (int i=0; i<idArr.size(); i++) {
+          int id = searcher.getFirstMatch(
+                  new Term(idField.getName(), idField.getType().toInternal(idArr.get(i))));
+          if (id >= 0)
+            luceneIds[docs++] = id;
+        }
       }
 
       DocListAndSet res = new DocListAndSet();
@@ -1373,6 +1388,11 @@ public class QueryComponent extends SearchComponent
   @Override
   public String getDescription() {
     return "query";
+  }
+
+  @Override
+  public Category getCategory() {
+    return Category.QUERY;
   }
 
   @Override

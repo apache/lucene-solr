@@ -216,7 +216,7 @@ public class BlockGroupingCollector extends SimpleCollector {
    *  @param lastDocPerGroup a {@link Weight} that marks the
    *    last document in each group.
    */
-  public BlockGroupingCollector(Sort groupSort, int topNGroups, boolean needsScores, Weight lastDocPerGroup) throws IOException {
+  public BlockGroupingCollector(Sort groupSort, int topNGroups, boolean needsScores, Weight lastDocPerGroup) {
 
     if (topNGroups < 1) {
       throw new IllegalArgumentException("topNGroups must be >= 1 (got " + topNGroups + ")");

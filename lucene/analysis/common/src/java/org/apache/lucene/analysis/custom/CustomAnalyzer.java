@@ -145,7 +145,7 @@ public final class CustomAnalyzer extends Analyzer {
     for (TokenFilterFactory filter : tokenFilters) {
       if (filter instanceof MultiTermAwareComponent) {
         filter = (TokenFilterFactory) ((MultiTermAwareComponent) filter).getMultiTermComponent();
-        result = filter.create(in);
+        result = filter.create(result);
       }
     }
     return result;

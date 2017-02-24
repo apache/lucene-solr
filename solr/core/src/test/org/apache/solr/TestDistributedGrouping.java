@@ -16,18 +16,19 @@
  */
 package org.apache.solr;
 
+import java.io.IOException;
+import java.util.List;
+
 import org.apache.lucene.util.LuceneTestCase.Slow;
+import org.apache.solr.SolrTestCaseJ4.SuppressPointFields;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.response.QueryResponse;
+import org.apache.solr.common.SolrDocumentList;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.NamedList;
-import org.apache.solr.common.SolrDocumentList;
 import org.junit.Test;
-
-import java.io.IOException;
-import java.util.List;
 
 /**
  * TODO? perhaps use:
@@ -37,6 +38,7 @@ import java.util.List;
  * @since solr 4.0
  */
 @Slow
+@SuppressPointFields
 public class TestDistributedGrouping extends BaseDistributedSearchTestCase {
 
   String t1="a_t";

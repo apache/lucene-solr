@@ -26,7 +26,6 @@ use warnings;
 
 my $jira_url_prefix = 'http://issues.apache.org/jira/browse/';
 my $github_pull_request_prefix = 'https://github.com/apache/lucene-solr/pull/';
-my $bugzilla_url_prefix = 'http://issues.apache.org/bugzilla/show_bug.cgi?id=';
 my $month_regex = &setup_month_regex;
 my %month_nums = &setup_month_nums;
 my %lucene_bugzilla_jira_map = &setup_lucene_bugzilla_jira_map;
@@ -45,7 +44,11 @@ my @lines = <STDIN>;                        # Get all input at once
 #
 # Cmdline args:  <LUCENE|SOLR>  <project-DOAP-rdf-file>  <lucene-javadoc-url>(only from Solr)
 #
-my $product = $ARGV[0];
+my $product = uc($ARGV[0]);
+if ($product !~ /^(LUCENE|SOLR)$/) {
+  print STDERR "Unknown product name '$ARGV[0]'\n";
+  exit(1);
+}
 my %release_dates = &setup_release_dates($ARGV[1]);
 my $lucene_javadoc_url = ($product eq 'SOLR' ? $ARGV[2] : ''); # Only Solr supplies this on the cmdline
 my $in_major_component_versions_section = 0;
@@ -643,6 +646,7 @@ sub markup_trailing_attribution {
                            (?!inverse\ )
                            (?![Tt]he\ )
                            (?!use\ the\ bug\ number)
+                           (?!e\.?g\.?\b)
                      [^()"]+?\))\s*$}
                     {\n${extra_newline}<span class="attrib">$1</span>}x) {
     # If attribution is not found, then look for attribution with a
@@ -668,6 +672,7 @@ sub markup_trailing_attribution {
                       (?!inverse\ )
                       (?![Tt]he\ )
                       (?!use\ the\ bug\ number)
+                      (?!e\.?g\.?\b)
                  [^()"]+?\)))
                 ((?:\.|(?i:\.?\s*Issue\s+\d{3,}|LUCENE-\d+)\.?)\s*)$}
               {
@@ -824,7 +829,6 @@ sub get_release_date {
 sub setup_release_dates {
   my %release_dates = ();
   my $file = shift;
-print STDERR "file: $file\n";
   open(FILE, "<$file") || die "could not open $file: $!";
   my $version_list = <FILE>;
   my $created_list = <FILE>;

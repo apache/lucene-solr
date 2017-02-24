@@ -198,7 +198,7 @@ public abstract class DocValuesConsumer implements Closeable {
                           }
                         }
 
-                        final DocIDMerger<NumericDocValuesSub> docIDMerger = new DocIDMerger<>(subs, mergeState.needsIndexSort);
+                        final DocIDMerger<NumericDocValuesSub> docIDMerger = DocIDMerger.of(subs, mergeState.needsIndexSort);
 
                         final long finalCost = cost;
                         
@@ -296,7 +296,7 @@ public abstract class DocValuesConsumer implements Closeable {
                          }
                        }
 
-                       final DocIDMerger<BinaryDocValuesSub> docIDMerger = new DocIDMerger<>(subs, mergeState.needsIndexSort);
+                       final DocIDMerger<BinaryDocValuesSub> docIDMerger = DocIDMerger.of(subs, mergeState.needsIndexSort);
                        final long finalCost = cost;
                        
                        return new BinaryDocValues() {
@@ -397,7 +397,7 @@ public abstract class DocValuesConsumer implements Closeable {
 
                               final long finalCost = cost;
 
-                              final DocIDMerger<SortedNumericDocValuesSub> docIDMerger = new DocIDMerger<>(subs, mergeState.needsIndexSort);
+                              final DocIDMerger<SortedNumericDocValuesSub> docIDMerger = DocIDMerger.of(subs, mergeState.needsIndexSort);
 
                               return new SortedNumericDocValues() {
 
@@ -555,7 +555,7 @@ public abstract class DocValuesConsumer implements Closeable {
 
                        final long finalCost = cost;
 
-                       final DocIDMerger<SortedDocValuesSub> docIDMerger = new DocIDMerger<>(subs, mergeState.needsIndexSort);
+                       final DocIDMerger<SortedDocValuesSub> docIDMerger = DocIDMerger.of(subs, mergeState.needsIndexSort);
                        
                        return new SortedDocValues() {
                          private int docID = -1;
@@ -721,7 +721,7 @@ public abstract class DocValuesConsumer implements Closeable {
                             subs.add(new SortedSetDocValuesSub(mergeState.docMaps[i], values, map.getGlobalOrds(i)));
                           }
             
-                          final DocIDMerger<SortedSetDocValuesSub> docIDMerger = new DocIDMerger<>(subs, mergeState.needsIndexSort);
+                          final DocIDMerger<SortedSetDocValuesSub> docIDMerger = DocIDMerger.of(subs, mergeState.needsIndexSort);
                           
                           final long finalCost = cost;
 

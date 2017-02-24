@@ -322,6 +322,8 @@ elif [ -f "/etc/default/$SOLR_SERVICE.in.sh" ]; then
 else
   echo -e "\nInstalling /etc/default/$SOLR_SERVICE.in.sh ...\n"
   cp "$SOLR_INSTALL_DIR/bin/solr.in.sh" "/etc/default/$SOLR_SERVICE.in.sh"
+  mv "$SOLR_INSTALL_DIR/bin/solr.in.sh" "$SOLR_INSTALL_DIR/bin/solr.in.sh.orig"  
+  mv "$SOLR_INSTALL_DIR/bin/solr.in.cmd" "$SOLR_INSTALL_DIR/bin/solr.in.cmd.orig"  
   echo "SOLR_PID_DIR=\"$SOLR_VAR_DIR\"
 SOLR_HOME=\"$SOLR_VAR_DIR/data\"
 LOG4J_PROPS=\"$SOLR_VAR_DIR/log4j.properties\"

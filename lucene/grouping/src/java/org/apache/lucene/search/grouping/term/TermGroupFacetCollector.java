@@ -25,19 +25,19 @@ import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.SortedDocValues;
 import org.apache.lucene.index.SortedSetDocValues;
 import org.apache.lucene.index.TermsEnum;
-import org.apache.lucene.search.grouping.AbstractGroupFacetCollector;
+import org.apache.lucene.search.grouping.GroupFacetCollector;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.BytesRefBuilder;
 import org.apache.lucene.util.SentinelIntSet;
 import org.apache.lucene.util.UnicodeUtil;
 
 /**
- * An implementation of {@link AbstractGroupFacetCollector} that computes grouped facets based on the indexed terms
+ * An implementation of {@link GroupFacetCollector} that computes grouped facets based on the indexed terms
  * from DocValues.
  *
  * @lucene.experimental
  */
-public abstract class TermGroupFacetCollector extends AbstractGroupFacetCollector {
+public abstract class TermGroupFacetCollector extends GroupFacetCollector {
 
   final List<GroupedFacetHit> groupedFacetHits;
   final SentinelIntSet segmentGroupedFacetHits;
@@ -190,7 +190,7 @@ public abstract class TermGroupFacetCollector extends AbstractGroupFacetCollecto
       return new SegmentResult(segmentFacetCounts, segmentTotalCount, facetFieldTermsIndex.termsEnum(), startFacetOrd, endFacetOrd);
     }
 
-    private static class SegmentResult extends AbstractGroupFacetCollector.SegmentResult {
+    private static class SegmentResult extends GroupFacetCollector.SegmentResult {
 
       final TermsEnum tenum;
 
@@ -380,7 +380,7 @@ public abstract class TermGroupFacetCollector extends AbstractGroupFacetCollecto
       return new SegmentResult(segmentFacetCounts, segmentTotalCount, facetFieldNumTerms, facetOrdTermsEnum, startFacetOrd, endFacetOrd);
     }
 
-    private static class SegmentResult extends AbstractGroupFacetCollector.SegmentResult {
+    private static class SegmentResult extends GroupFacetCollector.SegmentResult {
 
       final TermsEnum tenum;
 

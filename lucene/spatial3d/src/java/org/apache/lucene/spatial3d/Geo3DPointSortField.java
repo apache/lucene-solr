@@ -16,11 +16,8 @@
  */
 package org.apache.lucene.spatial3d;
 
-import java.io.IOException;
-
 import org.apache.lucene.search.FieldComparator;
 import org.apache.lucene.search.SortField;
-
 import org.apache.lucene.spatial3d.geom.GeoDistanceShape;
 
 /**
@@ -42,7 +39,7 @@ final class Geo3DPointSortField extends SortField {
   }
   
   @Override
-  public FieldComparator<?> getComparator(int numHits, int sortPos) throws IOException {
+  public FieldComparator<?> getComparator(int numHits, int sortPos) {
     return new Geo3DPointDistanceComparator(getField(), distanceShape, numHits);
   }
 

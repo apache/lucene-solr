@@ -34,7 +34,7 @@ public class GeoCircleFactory {
    * @return a GeoCircle corresponding to what was specified.
    */
   public static GeoCircle makeGeoCircle(final PlanetModel planetModel, final double latitude, final double longitude, final double radius) {
-    if (radius < Vector.MINIMUM_RESOLUTION) {
+    if (radius < Vector.MINIMUM_ANGULAR_RESOLUTION) {
       return new GeoDegeneratePoint(planetModel, latitude, longitude);
     }
     return new GeoStandardCircle(planetModel, latitude, longitude, radius);

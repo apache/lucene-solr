@@ -135,7 +135,7 @@ public class TestPrefixCompletionQuery extends LuceneTestCase {
     DirectoryReader reader = iw.getReader();
     SuggestIndexSearcher suggestIndexSearcher = new SuggestIndexSearcher(reader);
     PrefixCompletionQuery query = new PrefixCompletionQuery(analyzer, new Term("suggest_field", "ab"));
-    TopSuggestDocs lookupDocs = suggestIndexSearcher.suggest(query, 3);
+    TopSuggestDocs lookupDocs = suggestIndexSearcher.suggest(query, 3, false);
     assertSuggestions(lookupDocs, new Entry("abcdd", 5), new Entry("abd", 4), new Entry("abc", 3));
 
     reader.close();
@@ -165,7 +165,7 @@ public class TestPrefixCompletionQuery extends LuceneTestCase {
     PrefixCompletionQuery query = new PrefixCompletionQuery(analyzer, new Term("suggest_field", "abc_"), filter);
     // if at most half of the top scoring documents have been filtered out
     // the search should be admissible for a single segment
-    TopSuggestDocs suggest = indexSearcher.suggest(query, num);
+    TopSuggestDocs suggest = indexSearcher.suggest(query, num, false);
     assertTrue(suggest.totalHits >= 1);
     assertThat(suggest.scoreLookupDocs()[0].key.toString(), equalTo("abc_" + topScore));
     assertThat(suggest.scoreLookupDocs()[0].score, equalTo((float) topScore));
@@ -174,14 +174,14 @@ public class TestPrefixCompletionQuery extends LuceneTestCase {
     query = new PrefixCompletionQuery(analyzer, new Term("suggest_field", "abc_"), filter);
     // if more than half of the top scoring documents have been filtered out
     // search is not admissible, so # of suggestions requested is num instead of 1
-    suggest = indexSearcher.suggest(query, num);
+    suggest = indexSearcher.suggest(query, num, false);
     assertSuggestions(suggest, new Entry("abc_0", 0));
 
     filter = new NumericRangeBitsProducer("filter_int_fld", num - 1, num - 1);
     query = new PrefixCompletionQuery(analyzer, new Term("suggest_field", "abc_"), filter);
     // if only lower scoring documents are filtered out
     // search is admissible
-    suggest = indexSearcher.suggest(query, 1);
+    suggest = indexSearcher.suggest(query, 1, false);
     assertSuggestions(suggest, new Entry("abc_" + (num - 1), num - 1));
 
     reader.close();
@@ -216,13 +216,13 @@ public class TestPrefixCompletionQuery extends LuceneTestCase {
 
     // suggest without filter
     PrefixCompletionQuery query = new PrefixCompletionQuery(analyzer, new Term("suggest_field", "app"));
-    TopSuggestDocs suggest = indexSearcher.suggest(query, 3);
+    TopSuggestDocs suggest = indexSearcher.suggest(query, 3, false);
     assertSuggestions(suggest, new Entry("apple", 5), new Entry("applle", 4), new Entry("apples", 3));
 
     // suggest with filter
     BitsProducer filter = new NumericRangeBitsProducer("filter_int_fld", 5, 12);
     query = new PrefixCompletionQuery(analyzer, new Term("suggest_field", "app"), filter);
-    suggest = indexSearcher.suggest(query, 3);
+    suggest = indexSearcher.suggest(query, 3, false);
     assertSuggestions(suggest, new Entry("applle", 4), new Entry("apples", 3));
 
     reader.close();
@@ -243,10 +243,10 @@ public class TestPrefixCompletionQuery extends LuceneTestCase {
     DirectoryReader reader = iw.getReader();
     SuggestIndexSearcher indexSearcher = new SuggestIndexSearcher(reader);
     CompletionQuery query = new PrefixCompletionQuery(analyzer, new Term("suggest_field_no_p_sep_or_pos_inc", "fo"));
-    TopSuggestDocs suggest = indexSearcher.suggest(query, 4); // all 4
+    TopSuggestDocs suggest = indexSearcher.suggest(query, 4, false); // all 4
     assertSuggestions(suggest, new Entry("the foo bar", 10), new Entry("the fo", 9), new Entry("foo bar", 8), new Entry("foobar", 7));
     query = new PrefixCompletionQuery(analyzer, new Term("suggest_field_no_p_sep_or_pos_inc", "foob"));
-    suggest = indexSearcher.suggest(query, 4); // not the fo
+    suggest = indexSearcher.suggest(query, 4, false); // not the fo
     assertSuggestions(suggest, new Entry("the foo bar", 10), new Entry("foo bar", 8), new Entry("foobar", 7));
     reader.close();
     iw.close();
@@ -266,10 +266,10 @@ public class TestPrefixCompletionQuery extends LuceneTestCase {
     DirectoryReader reader = iw.getReader();
     SuggestIndexSearcher indexSearcher = new SuggestIndexSearcher(reader);
     CompletionQuery query = new PrefixCompletionQuery(analyzer, new Term("suggest_field_no_p_pos_inc", "fo"));
-    TopSuggestDocs suggest = indexSearcher.suggest(query, 4); //matches all 4
+    TopSuggestDocs suggest = indexSearcher.suggest(query, 4, false); //matches all 4
     assertSuggestions(suggest, new Entry("the foo bar", 10), new Entry("the fo", 9), new Entry("foo bar", 8), new Entry("foobar", 7));
     query = new PrefixCompletionQuery(analyzer, new Term("suggest_field_no_p_pos_inc", "foob"));
-    suggest = indexSearcher.suggest(query, 4); // only foobar
+    suggest = indexSearcher.suggest(query, 4, false); // only foobar
     assertSuggestions(suggest, new Entry("foobar", 7));
     reader.close();
     iw.close();
@@ -289,10 +289,10 @@ public class TestPrefixCompletionQuery extends LuceneTestCase {
     DirectoryReader reader = iw.getReader();
     SuggestIndexSearcher indexSearcher = new SuggestIndexSearcher(reader);
     CompletionQuery query = new PrefixCompletionQuery(analyzer, new Term("suggest_field_no_p_sep", "fo"));
-    TopSuggestDocs suggest = indexSearcher.suggest(query, 4); // matches all 4
+    TopSuggestDocs suggest = indexSearcher.suggest(query, 4, false); // matches all 4
     assertSuggestions(suggest, new Entry("the foo bar", 10), new Entry("the fo", 9), new Entry("foo bar", 8), new Entry("foobar", 7));
     query = new PrefixCompletionQuery(analyzer, new Term("suggest_field_no_p_sep", "foob"));
-    suggest = indexSearcher.suggest(query, 4); // except the fo
+    suggest = indexSearcher.suggest(query, 4, false); // except the fo
     assertSuggestions(suggest, new Entry("the foo bar", 10), new Entry("foo bar", 8), new Entry("foobar", 7));
     reader.close();
     iw.close();
@@ -329,10 +329,10 @@ public class TestPrefixCompletionQuery extends LuceneTestCase {
     SuggestIndexSearcher indexSearcher = new SuggestIndexSearcher(reader);
 
     PrefixCompletionQuery query = new PrefixCompletionQuery(analyzer, new Term("suggest_field", "app"));
-    assertEquals(0, indexSearcher.suggest(query, 3).totalHits);
+    assertEquals(0, indexSearcher.suggest(query, 3, false).totalHits);
 
     query = new PrefixCompletionQuery(analyzer, new Term("suggest_field2", "app"));
-    assertSuggestions(indexSearcher.suggest(query, 3), new Entry("apples", 3));
+    assertSuggestions(indexSearcher.suggest(query, 3, false), new Entry("apples", 3));
 
     reader.close();
     iw.close();

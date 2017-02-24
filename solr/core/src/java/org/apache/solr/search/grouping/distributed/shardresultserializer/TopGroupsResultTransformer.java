@@ -188,7 +188,7 @@ public class TopGroupsResultTransformer implements ShardResultTransformer<List<C
         assert (schemaFields.size() == sortValues.length);
 
         for (int k = 0; k < sortValues.length; k++) {
-          sortValues[k] = convertSortValue(schemaFields.get(k), sortValues[k], convertFromNative);
+          sortValues[k] = ShardResultTransformerUtils.unmarshalSortValue(sortValues[k], schemaFields.get(k));
         }
       } else {
         log.debug("doc {} has null 'sortValues'", document);
@@ -294,7 +294,7 @@ public class TopGroupsResultTransformer implements ShardResultTransformer<List<C
       FieldDoc fieldDoc = (FieldDoc) scoreDoc;
       Object[] convertedSortValues  = new Object[fieldDoc.fields.length];
       for (int j = 0; j < fieldDoc.fields.length; j++) {
-          convertedSortValues[j] = convertSortValue(groupSchemaFields.get(j), fieldDoc.fields[j], convertFromNative);
+        convertedSortValues[j] = ShardResultTransformerUtils.marshalSortValue(fieldDoc.fields[j], groupSchemaFields.get(j));
       }
       document.add("sortValues", convertedSortValues);
     }

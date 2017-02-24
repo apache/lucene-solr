@@ -33,6 +33,7 @@ import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
+import org.apache.solr.common.util.IOUtils;
 import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.request.LocalSolrQueryRequest;
@@ -106,7 +107,7 @@ public class TolerantUpdateProcessorTest extends UpdateProcessorTestBase {
    */
   public void testReflection() {
     for (Method method : TolerantUpdateProcessor.class.getMethods()) {
-      if (method.getDeclaringClass().equals(Object.class)) {
+      if (method.getDeclaringClass().equals(Object.class) || method.getName().equals("close")) {
         continue;
       }
       assertEquals("base class(es) has changed, TolerantUpdateProcessor needs updated to ensure it " +
@@ -427,8 +428,9 @@ public class TolerantUpdateProcessorTest extends UpdateProcessorTestBase {
     }
     
     SolrQueryRequest req = new LocalSolrQueryRequest(core, requestParams);
+    UpdateRequestProcessor processor = null;
     try {
-      UpdateRequestProcessor processor = pc.createProcessor(req, rsp);
+      processor = pc.createProcessor(req, rsp);
       for(SolrInputDocument doc:docs) {
         AddUpdateCommand cmd = new AddUpdateCommand(req);
         cmd.solrDoc = doc;
@@ -437,6 +439,7 @@ public class TolerantUpdateProcessorTest extends UpdateProcessorTestBase {
       processor.finish();
       
     } finally {
+      IOUtils.closeQuietly(processor);
       req.close();
     }
     return rsp;

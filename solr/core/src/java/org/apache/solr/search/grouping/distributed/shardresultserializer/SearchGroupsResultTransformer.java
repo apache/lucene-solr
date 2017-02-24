@@ -21,7 +21,6 @@ import org.apache.lucene.search.SortField;
 import org.apache.lucene.search.grouping.SearchGroup;
 import org.apache.lucene.util.BytesRef;
 import org.apache.solr.common.util.NamedList;
-import org.apache.solr.schema.FieldType;
 import org.apache.solr.schema.SchemaField;
 import org.apache.solr.search.SolrIndexSearcher;
 import org.apache.solr.search.SortSpec;
@@ -99,7 +98,7 @@ public class SearchGroupsResultTransformer implements ShardResultTransformer<Lis
           searchGroup.groupValue = rawSearchGroup.getKey() != null ? new BytesRef(rawSearchGroup.getKey()) : null;
           searchGroup.sortValues = rawSearchGroup.getValue().toArray(new Comparable[rawSearchGroup.getValue().size()]);
           for (int i = 0; i < searchGroup.sortValues.length; i++) {
-              searchGroup.sortValues[i] = convertSortValue( groupSchemaFields.get(i), searchGroup.sortValues[i], convertFromNative );
+            searchGroup.sortValues[i] = ShardResultTransformerUtils.unmarshalSortValue(searchGroup.sortValues[i], groupSchemaFields.get(i));
           }
           searchGroups.add(searchGroup);
         }
@@ -124,7 +123,7 @@ public class SearchGroupsResultTransformer implements ShardResultTransformer<Lis
     for (SearchGroup<BytesRef> searchGroup : data) {
       Object[] convertedSortValues = new Object[searchGroup.sortValues.length];
       for (int i = 0; i < searchGroup.sortValues.length; i++) {
-          convertedSortValues[i] = convertSortValue( groupSchemaFields.get(i), searchGroup.sortValues[i], convertFromNative );
+        convertedSortValues[i] = ShardResultTransformerUtils.marshalSortValue(searchGroup.sortValues[i], groupSchemaFields.get(i));
       }
       String groupValue = searchGroup.groupValue != null ? searchGroup.groupValue.utf8ToString() : null;
       result.add(groupValue, convertedSortValues);

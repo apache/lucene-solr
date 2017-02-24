@@ -73,6 +73,11 @@ public class TestIntRangeFieldQueries extends BaseRangeFieldQueryTestCase {
     return IntRangeField.newWithinQuery(FIELD_NAME, ((IntRange)r).min, ((IntRange)r).max);
   }
 
+  @Override
+  protected Query newCrossesQuery(Range r) {
+    return IntRangeField.newCrossesQuery(FIELD_NAME, ((IntRange)r).min, ((IntRange)r).max);
+  }
+
   /** Basic test */
   public void testBasics() throws Exception {
     Directory dir = newDirectory();
@@ -88,7 +93,7 @@ public class TestIntRangeFieldQueries extends BaseRangeFieldQueryTestCase {
     document.add(new IntRangeField(FIELD_NAME, new int[] {10, -10}, new int[] {20, 10}));
     writer.addDocument(document);
 
-    // intersects (contains)
+    // intersects (contains / crosses)
     document = new Document();
     document.add(new IntRangeField(FIELD_NAME, new int[] {-20, -20}, new int[] {30, 30}));
     writer.addDocument(document);
@@ -126,6 +131,8 @@ public class TestIntRangeFieldQueries extends BaseRangeFieldQueryTestCase {
     assertEquals(3, searcher.count(IntRangeField.newWithinQuery(FIELD_NAME,
         new int[] {-11, -15}, new int[] {15, 20})));
     assertEquals(2, searcher.count(IntRangeField.newContainsQuery(FIELD_NAME,
+        new int[] {-11, -15}, new int[] {15, 20})));
+    assertEquals(4, searcher.count(IntRangeField.newCrossesQuery(FIELD_NAME,
         new int[] {-11, -15}, new int[] {15, 20})));
 
     reader.close();

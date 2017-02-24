@@ -24,7 +24,7 @@ import java.util.List;
 import org.apache.lucene.index.DocValues;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.SortedDocValues;
-import org.apache.lucene.search.grouping.AbstractAllGroupsCollector;
+import org.apache.lucene.search.grouping.AllGroupsCollector;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.SentinelIntSet;
 
@@ -42,7 +42,7 @@ import org.apache.lucene.util.SentinelIntSet;
  *
  * @lucene.experimental
  */
-public class TermAllGroupsCollector extends AbstractAllGroupsCollector<BytesRef> {
+public class TermAllGroupsCollector extends AllGroupsCollector<BytesRef> {
 
   private static final int DEFAULT_INITIAL_SIZE = 128;
 
@@ -53,7 +53,7 @@ public class TermAllGroupsCollector extends AbstractAllGroupsCollector<BytesRef>
   private SortedDocValues index;
 
   /**
-   * Expert: Constructs a {@link AbstractAllGroupsCollector}
+   * Expert: Constructs a {@link AllGroupsCollector}
    *
    * @param groupField  The field to group by
    * @param initialSize The initial allocation size of the
@@ -69,7 +69,7 @@ public class TermAllGroupsCollector extends AbstractAllGroupsCollector<BytesRef>
   }
 
   /**
-   * Constructs a {@link AbstractAllGroupsCollector}. This sets the
+   * Constructs a {@link AllGroupsCollector}. This sets the
    * initial allocation size for the internal int set and group
    * list to 128.
    *

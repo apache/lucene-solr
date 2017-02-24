@@ -19,9 +19,9 @@ package org.apache.solr.client.solrj.impl;
 import java.io.IOException;
 import java.io.InputStream;
 import java.lang.invoke.MethodHandles;
-import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
+import java.util.Optional;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 import java.util.zip.GZIPInputStream;
@@ -55,6 +55,7 @@ import org.apache.http.impl.client.DefaultHttpRequestRetryHandler;
 import org.apache.http.impl.client.HttpClientBuilder;
 import org.apache.http.impl.conn.PoolingHttpClientConnectionManager;
 import org.apache.http.protocol.HttpContext;
+import org.apache.http.protocol.HttpRequestExecutor;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.ObjectReleaseTracker;
@@ -110,32 +111,53 @@ public class HttpClientUtil {
   // cannot be established within x ms. with a
   // java.net.SocketTimeoutException: Connection timed out
   public static final String PROP_CONNECTION_TIMEOUT = "connTimeout";
-  
+
+  /**
+   * A Java system property to select the {@linkplain HttpClientBuilderFactory} used for
+   * configuring the {@linkplain HttpClientBuilder} instance by default.
+   */
+  public static final String SYS_PROP_HTTP_CLIENT_BUILDER_FACTORY = "solr.httpclient.builder.factory";
+
   static final DefaultHttpRequestRetryHandler NO_RETRY = new DefaultHttpRequestRetryHandler(
       0, false);
 
   private static volatile SolrHttpClientBuilder httpClientBuilder;
-  
+
   private static SolrHttpClientContextBuilder httpClientRequestContextBuilder = new SolrHttpClientContextBuilder();
-  
+
+  private static volatile SchemaRegistryProvider schemaRegistryProvider;
+  private static volatile String cookiePolicy;
+  private static final List<HttpRequestInterceptor> interceptors = new CopyOnWriteArrayList<>();
+
+
   static {
     resetHttpClientBuilder();
+
+    // Configure the HttpClientBuilder if user has specified the factory type.
+    String factoryClassName = System.getProperty(SYS_PROP_HTTP_CLIENT_BUILDER_FACTORY);
+    if (factoryClassName != null) {
+      logger.debug ("Using " + factoryClassName);
+      try {
+        HttpClientBuilderFactory factory = (HttpClientBuilderFactory)Class.forName(factoryClassName).newInstance();
+        httpClientBuilder = factory.getHttpClientBuilder(Optional.of(SolrHttpClientBuilder.create()));
+      } catch (InstantiationException | IllegalAccessException | ClassNotFoundException e) {
+        throw new RuntimeException("Unable to instantiate Solr HttpClientBuilderFactory", e);
+      }
+    }
   }
 
   public static abstract class SchemaRegistryProvider {
     /** Must be non-null */
     public abstract Registry<ConnectionSocketFactory> getSchemaRegistry();
   }
-  
-  private static volatile SchemaRegistryProvider schemaRegistryProvider;
-  private static volatile String cookiePolicy;
 
-  private static final List<HttpRequestInterceptor> interceptors = Collections.synchronizedList(new ArrayList<HttpRequestInterceptor>());
-  
   private static class DynamicInterceptor implements HttpRequestInterceptor {
 
     @Override
     public void process(HttpRequest request, HttpContext context) throws HttpException, IOException {
+      // don't synchronize traversal - can lead to deadlock - CopyOnWriteArrayList is critical
+      // we also do not want to have to acquire the mutex when the list is empty or put a global
+      // mutex around the process calls
       interceptors.forEach(new Consumer<HttpRequestInterceptor>() {
 
         @Override
@@ -150,7 +172,7 @@ public class HttpClientUtil {
 
     }
   }
-  
+
   public static void setHttpClientBuilder(SolrHttpClientBuilder newHttpClientBuilder) {
     httpClientBuilder = newHttpClientBuilder;
   }
@@ -213,22 +235,18 @@ public class HttpClientUtil {
     
     return createClient(params, cm, false);
   }
-  
-  /**
-   * Creates new http client by using the provided configuration.
-   * 
-   */
-  public static CloseableHttpClient createClient(final SolrParams params, PoolingHttpClientConnectionManager cm, boolean sharedConnectionManager) {
+
+  public static CloseableHttpClient createClient(final SolrParams params, PoolingHttpClientConnectionManager cm, boolean sharedConnectionManager, HttpRequestExecutor httpRequestExecutor)  {
     final ModifiableSolrParams config = new ModifiableSolrParams(params);
     if (logger.isDebugEnabled()) {
       logger.debug("Creating new http client, config:" + config);
     }
- 
+
     cm.setMaxTotal(params.getInt(HttpClientUtil.PROP_MAX_CONNECTIONS, 10000));
     cm.setDefaultMaxPerRoute(params.getInt(HttpClientUtil.PROP_MAX_CONNECTIONS_PER_HOST, 10000));
     cm.setValidateAfterInactivity(Integer.getInteger(VALIDATE_AFTER_INACTIVITY, VALIDATE_AFTER_INACTIVITY_DEFAULT));
 
-    
+
     HttpClientBuilder newHttpClientBuilder = HttpClientBuilder.create();
 
     if (sharedConnectionManager) {
@@ -236,7 +254,7 @@ public class HttpClientUtil {
     } else {
       newHttpClientBuilder.setConnectionManagerShared(false);
     }
-    
+
     ConnectionKeepAliveStrategy keepAliveStrat = new ConnectionKeepAliveStrategy() {
       @Override
       public long getKeepAliveDuration(HttpResponse response, HttpContext context) {
@@ -256,16 +274,28 @@ public class HttpClientUtil {
     }
 
     newHttpClientBuilder.addInterceptorLast(new DynamicInterceptor());
-    
+
     newHttpClientBuilder = newHttpClientBuilder.setKeepAliveStrategy(keepAliveStrat)
         .evictIdleConnections((long) Integer.getInteger(EVICT_IDLE_CONNECTIONS, EVICT_IDLE_CONNECTIONS_DEFAULT), TimeUnit.MILLISECONDS);
-    
+
+    if (httpRequestExecutor != null)  {
+      newHttpClientBuilder.setRequestExecutor(httpRequestExecutor);
+    }
+
     HttpClientBuilder builder = setupBuilder(newHttpClientBuilder, params);
-    
+
     HttpClient httpClient = builder.setConnectionManager(cm).build();
-    
+
     assert ObjectReleaseTracker.track(httpClient);
     return (CloseableHttpClient) httpClient;
+  }
+  
+  /**
+   * Creates new http client by using the provided configuration.
+   * 
+   */
+  public static CloseableHttpClient createClient(final SolrParams params, PoolingHttpClientConnectionManager cm, boolean sharedConnectionManager) {
+    return createClient(params, cm, sharedConnectionManager, null);
   }
   
   private static HttpClientBuilder setupBuilder(HttpClientBuilder builder, SolrParams config) {

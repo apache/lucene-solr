@@ -20,6 +20,7 @@ package org.apache.lucene.store;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
@@ -37,11 +38,13 @@ public class TestDirectory extends LuceneTestCase {
       largeBuffer[i] = (byte) i; // automatically loops with modulo
     }
 
-    final FSDirectory[] dirs = new FSDirectory[] {
-      new SimpleFSDirectory(path),
-      new NIOFSDirectory(path),
-      new MMapDirectory(path)
-    };
+    final List<FSDirectory> dirs0 = new ArrayList<>();
+    dirs0.add(new SimpleFSDirectory(path));
+    dirs0.add(new NIOFSDirectory(path));
+    if (hasWorkingMMapOnWindows()) {
+      dirs0.add(new MMapDirectory(path));
+    }
+    final FSDirectory[] dirs = dirs0.stream().toArray(FSDirectory[]::new);
 
     for (int i=0; i<dirs.length; i++) {
       FSDirectory dir = dirs[i];

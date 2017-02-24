@@ -349,7 +349,7 @@ public class CloudSolrClientTest extends SolrCloudTestCase {
     SolrQuery qRequest = new SolrQuery("*:*");
 
     ModifiableSolrParams qParams = new ModifiableSolrParams();
-    qParams.add("preferLocalShards", Boolean.toString(preferLocalShards));
+    qParams.add(CommonParams.PREFER_LOCAL_SHARDS, Boolean.toString(preferLocalShards));
     qParams.add(ShardParams.SHARDS_INFO, "true");
     qRequest.add(qParams);
 
@@ -391,7 +391,7 @@ public class CloudSolrClientTest extends SolrCloudTestCase {
 
   private Long getNumRequests(String baseUrl, String collectionName) throws
       SolrServerException, IOException {
-    return getNumRequests(baseUrl, collectionName, "QUERYHANDLER", "standard", false);
+    return getNumRequests(baseUrl, collectionName, "QUERY", "standard", false);
   }
 
   private Long getNumRequests(String baseUrl, String collectionName, String category, String key, boolean returnNumErrors) throws
@@ -431,7 +431,7 @@ public class CloudSolrClientTest extends SolrCloudTestCase {
         for (String adminPath : adminPathToMbean.keySet()) {
           long errorsBefore = 0;
           for (JettySolrRunner runner : cluster.getJettySolrRunners()) {
-            Long numRequests = getNumRequests(runner.getBaseUrl().toString(), "foo", "QUERYHANDLER", adminPathToMbean.get(adminPath), true);
+            Long numRequests = getNumRequests(runner.getBaseUrl().toString(), "foo", "ADMIN", adminPathToMbean.get(adminPath), true);
             errorsBefore += numRequests;
             log.info("Found {} requests to {} on {}", numRequests, adminPath, runner.getBaseUrl());
           }
@@ -448,7 +448,7 @@ public class CloudSolrClientTest extends SolrCloudTestCase {
           }
           long errorsAfter = 0;
           for (JettySolrRunner runner : cluster.getJettySolrRunners()) {
-            Long numRequests = getNumRequests(runner.getBaseUrl().toString(), "foo", "QUERYHANDLER", adminPathToMbean.get(adminPath), true);
+            Long numRequests = getNumRequests(runner.getBaseUrl().toString(), "foo", "ADMIN", adminPathToMbean.get(adminPath), true);
             errorsAfter += numRequests;
             log.info("Found {} requests to {} on {}", numRequests, adminPath, runner.getBaseUrl());
           }

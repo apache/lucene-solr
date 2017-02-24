@@ -34,7 +34,7 @@
 
   <requestHandler name="/replication" class="solr.ReplicationHandler">
     <lst name="defaults">
-      <str name="maxWriteMBPerSec">0.1</str>
+      <str name="maxWriteMBPerSec">0.05</str>
     </lst>
   </requestHandler>
 

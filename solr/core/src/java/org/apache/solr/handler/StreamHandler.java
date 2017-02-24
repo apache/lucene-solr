@@ -29,6 +29,22 @@ import org.apache.solr.client.solrj.io.ModelCache;
 import org.apache.solr.client.solrj.io.SolrClientCache;
 import org.apache.solr.client.solrj.io.Tuple;
 import org.apache.solr.client.solrj.io.comp.StreamComparator;
+import org.apache.solr.client.solrj.io.eval.AbsoluteValueEvaluator;
+import org.apache.solr.client.solrj.io.eval.AddEvaluator;
+import org.apache.solr.client.solrj.io.eval.AndEvaluator;
+import org.apache.solr.client.solrj.io.eval.DivideEvaluator;
+import org.apache.solr.client.solrj.io.eval.EqualsEvaluator;
+import org.apache.solr.client.solrj.io.eval.ExclusiveOrEvaluator;
+import org.apache.solr.client.solrj.io.eval.GreaterThanEqualToEvaluator;
+import org.apache.solr.client.solrj.io.eval.GreaterThanEvaluator;
+import org.apache.solr.client.solrj.io.eval.IfThenElseEvaluator;
+import org.apache.solr.client.solrj.io.eval.LessThanEqualToEvaluator;
+import org.apache.solr.client.solrj.io.eval.LessThanEvaluator;
+import org.apache.solr.client.solrj.io.eval.MultiplyEvaluator;
+import org.apache.solr.client.solrj.io.eval.NotEvaluator;
+import org.apache.solr.client.solrj.io.eval.OrEvaluator;
+import org.apache.solr.client.solrj.io.eval.RawValueEvaluator;
+import org.apache.solr.client.solrj.io.eval.SubtractEvaluator;
 import org.apache.solr.client.solrj.io.graph.GatherNodesStream;
 import org.apache.solr.client.solrj.io.graph.ShortestPathStream;
 import org.apache.solr.client.solrj.io.ops.ConcatOperation;
@@ -111,6 +127,7 @@ public class StreamHandler extends RequestHandlerBase implements SolrCoreAware, 
       .withFunctionName("jdbc", JDBCStream.class)
       .withFunctionName("topic", TopicStream.class)
       .withFunctionName("commit", CommitStream.class)
+      .withFunctionName("random", RandomStream.class)
       
       // decorator streams
       .withFunctionName("merge", MergeStream.class)
@@ -133,13 +150,16 @@ public class StreamHandler extends RequestHandlerBase implements SolrCoreAware, 
       .withFunctionName("daemon", DaemonStream.class)
       .withFunctionName("shortestPath", ShortestPathStream.class)
       .withFunctionName("gatherNodes", GatherNodesStream.class)
+      .withFunctionName("nodes", GatherNodesStream.class)
       .withFunctionName("select", SelectStream.class)
       .withFunctionName("scoreNodes", ScoreNodesStream.class)
       .withFunctionName("model", ModelStream.class)
       .withFunctionName("classify", ClassifyStream.class)
       .withFunctionName("fetch", FetchStream.class)
       .withFunctionName("executor", ExecutorStream.class)
-
+      .withFunctionName("null", NullStream.class)
+      .withFunctionName("priority", PriorityStream.class)
+      .withFunctionName("significantTerms", SignificantTermsStream.class)
       // metrics
       .withFunctionName("min", MinMetric.class)
       .withFunctionName("max", MaxMetric.class)
@@ -153,12 +173,38 @@ public class StreamHandler extends RequestHandlerBase implements SolrCoreAware, 
       
       // stream reduction operations
       .withFunctionName("group", GroupOperation.class)
-      .withFunctionName("distinct", DistinctOperation.class);
+      .withFunctionName("distinct", DistinctOperation.class)
+      .withFunctionName("having", HavingStream.class)
+      
+      // Stream Evaluators
+      .withFunctionName("val", RawValueEvaluator.class)
+      
+      // Boolean Stream Evaluators
+      .withFunctionName("and", AndEvaluator.class)
+      .withFunctionName("eor", ExclusiveOrEvaluator.class)
+      .withFunctionName("eq", EqualsEvaluator.class)
+      .withFunctionName("gt", GreaterThanEvaluator.class)
+      .withFunctionName("gteq", GreaterThanEqualToEvaluator.class)
+      .withFunctionName("lt", LessThanEvaluator.class)
+      .withFunctionName("lteq", LessThanEqualToEvaluator.class)
+      .withFunctionName("not", NotEvaluator.class)
+      .withFunctionName("or", OrEvaluator.class)
+      
+      // Number Stream Evaluators
+      .withFunctionName("abs", AbsoluteValueEvaluator.class)
+      .withFunctionName("add", AddEvaluator.class)
+      .withFunctionName("div", DivideEvaluator.class)
+      .withFunctionName("mult", MultiplyEvaluator.class)
+      .withFunctionName("sub", SubtractEvaluator.class)
+      
+      // Conditional Stream Evaluators
+      .withFunctionName("if", IfThenElseEvaluator.class)
+      ;
 
      // This pulls all the overrides and additions from the config
      List<PluginInfo> pluginInfos = core.getSolrConfig().getPluginInfos(Expressible.class.getName());
      for (PluginInfo pluginInfo : pluginInfos) {
-       Class<? extends Expressible> clazz = core.getResourceLoader().findClass(pluginInfo.className, Expressible.class);
+       Class<? extends Expressible> clazz = core.getMemClassLoader().findClass(pluginInfo.className, Expressible.class);
        streamFactory.withFunctionName(pluginInfo.name, clazz);
      }
         

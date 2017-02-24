@@ -63,7 +63,6 @@ grant {
   permission java.lang.RuntimePermission "createClassLoader";
   // needed to test unmap hack on platforms that support it
   permission java.lang.RuntimePermission "accessClassInPackage.sun.misc";
-  permission java.lang.RuntimePermission "accessClassInPackage.jdk.internal.ref";
   // needed by cyberneko usage by benchmarks on J9
   permission java.lang.RuntimePermission "accessClassInPackage.org.apache.xerces.util";
   // needed by jacoco to dump coverage

@@ -141,9 +141,9 @@ public class DelegationTokenKerberosFilter extends DelegationTokenAuthentication
     // set the internal authentication handler in order to record whether the request should continue
     super.initializeAuthHandler(authHandlerClassName, filterConfig);
     AuthenticationHandler authHandler = getAuthenticationHandler();
-    super.initializeAuthHandler(KerberosPlugin.RequestContinuesRecorderAuthenticationHandler.class.getName(), filterConfig);
-    KerberosPlugin.RequestContinuesRecorderAuthenticationHandler newAuthHandler =
-        (KerberosPlugin.RequestContinuesRecorderAuthenticationHandler)getAuthenticationHandler();
+    super.initializeAuthHandler(RequestContinuesRecorderAuthenticationHandler.class.getName(), filterConfig);
+    RequestContinuesRecorderAuthenticationHandler newAuthHandler =
+        (RequestContinuesRecorderAuthenticationHandler)getAuthenticationHandler();
     newAuthHandler.setAuthHandler(authHandler);
   }
 

@@ -282,6 +282,7 @@ public class TestSolrCloudWithDelegationTokens extends SolrTestCaseJ4 {
   }
 
   @Test
+  @AwaitsFix(bugUrl="https://issues.apache.org/jira/browse/HADOOP-14044")
   public void testDelegationTokenCancelFail() throws Exception {
     // cancel a bogus token
     cancelDelegationToken("BOGUS", ErrorCode.NOT_FOUND.code, solrClientPrimary);

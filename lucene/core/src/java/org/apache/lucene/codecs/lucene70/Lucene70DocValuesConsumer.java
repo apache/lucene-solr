@@ -18,6 +18,8 @@ package org.apache.lucene.codecs.lucene70;
 
 
 import static org.apache.lucene.codecs.lucene70.Lucene70DocValuesFormat.DIRECT_MONOTONIC_BLOCK_SHIFT;
+import static org.apache.lucene.codecs.lucene70.Lucene70DocValuesFormat.NUMERIC_BLOCK_SHIFT;
+import static org.apache.lucene.codecs.lucene70.Lucene70DocValuesFormat.NUMERIC_BLOCK_SIZE;
 
 import java.io.Closeable; // javadocs
 import java.io.IOException;
@@ -42,6 +44,7 @@ import org.apache.lucene.index.SortedSetDocValues;
 import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.search.SortedSetSelector;
+import org.apache.lucene.store.GrowableByteArrayDataOutput;
 import org.apache.lucene.store.IndexOutput;
 import org.apache.lucene.store.RAMOutputStream;
 import org.apache.lucene.util.BytesRef;
@@ -112,12 +115,46 @@ final class Lucene70DocValuesConsumer extends DocValuesConsumer implements Close
     });
   }
 
+  private static class MinMaxTracker {
+    long min, max, numValues, spaceInBits;
+
+    MinMaxTracker() {
+      reset();
+      spaceInBits = 0;
+    }
+
+    private void reset() {
+      min = Long.MAX_VALUE;
+      max = Long.MIN_VALUE;
+      numValues = 0;
+    }
+
+    /** Accumulate a new value. */
+    void update(long v) {
+      min = Math.min(min, v);
+      max = Math.max(max, v);
+      ++numValues;
+    }
+
+    /** Update the required space. */
+    void finish() {
+      if (max > min) {
+        spaceInBits += DirectWriter.unsignedBitsRequired(max - min) * numValues;
+      }
+    }
+
+    /** Update space usage and get ready for accumulating values for the next block. */
+    void nextBlock() {
+      finish();
+      reset();
+    }
+  }
+
   private long[] writeValues(FieldInfo field, DocValuesProducer valuesProducer) throws IOException {
     SortedNumericDocValues values = valuesProducer.getSortedNumeric(field);
     int numDocsWithValue = 0;
-    long numValues = 0;
-    long min = Long.MAX_VALUE;
-    long max = Long.MIN_VALUE;
+    MinMaxTracker minMax = new MinMaxTracker();
+    MinMaxTracker blockMinMax = new MinMaxTracker();
     long gcd = 0;
     Set<Long> uniqueValues = new HashSet<>();
     for (int doc = values.nextDoc(); doc != DocIdSetIterator.NO_MORE_DOCS; doc = values.nextDoc()) {
@@ -130,25 +167,34 @@ final class Lucene70DocValuesConsumer extends DocValuesConsumer implements Close
             // wrong results. Since these extreme values are unlikely, we just discard
             // GCD computation for them
             gcd = 1;
-          } else if (numValues != 0) { // minValue needs to be set first
-            gcd = MathUtil.gcd(gcd, v - min);
+          } else if (minMax.numValues != 0) { // minValue needs to be set first
+            gcd = MathUtil.gcd(gcd, v - minMax.min);
           }
         }
 
-        min = Math.min(min, v);
-        max = Math.max(max, v);
+        minMax.update(v);
+        blockMinMax.update(v);
+        if (blockMinMax.numValues == NUMERIC_BLOCK_SIZE) {
+          blockMinMax.nextBlock();
+        }
 
         if (uniqueValues != null
             && uniqueValues.add(v)
             && uniqueValues.size() > 256) {
           uniqueValues = null;
         }
-
-        numValues++;
       }
 
       numDocsWithValue++;
     }
+
+    minMax.finish();
+    blockMinMax.finish();
+
+    final long numValues = minMax.numValues;
+    long min = minMax.min;
+    final long max = minMax.max;
+    assert blockMinMax.spaceInBits <= minMax.spaceInBits;
 
     if (numDocsWithValue == 0) {
       meta.writeLong(-2);
@@ -166,6 +212,7 @@ final class Lucene70DocValuesConsumer extends DocValuesConsumer implements Close
 
     meta.writeLong(numValues);
     final int numBitsPerValue;
+    boolean doBlocks = false;
     Map<Long, Integer> encode = null;
     if (min >= max) {
       numBitsPerValue = 0;
@@ -189,12 +236,19 @@ final class Lucene70DocValuesConsumer extends DocValuesConsumer implements Close
         gcd = 1;
       } else {
         uniqueValues = null;
-        numBitsPerValue = DirectWriter.unsignedBitsRequired((max - min) / gcd);
-        if (gcd == 1 && min > 0
-            && DirectWriter.unsignedBitsRequired(max) == DirectWriter.unsignedBitsRequired(max - min)) {
-          min = 0;
+        // we do blocks if that appears to save 10+% storage
+        doBlocks = minMax.spaceInBits > 0 && (double) blockMinMax.spaceInBits / minMax.spaceInBits <= 0.9;
+        if (doBlocks) {
+          numBitsPerValue = 0xFF;
+          meta.writeInt(-2 - NUMERIC_BLOCK_SHIFT);
+        } else {
+          numBitsPerValue = DirectWriter.unsignedBitsRequired((max - min) / gcd);
+          if (gcd == 1 && min > 0
+              && DirectWriter.unsignedBitsRequired(max) == DirectWriter.unsignedBitsRequired(max - min)) {
+            min = 0;
+          }
+          meta.writeInt(-1);
         }
-        meta.writeInt(-1);
       }
     }
 
@@ -203,24 +257,77 @@ final class Lucene70DocValuesConsumer extends DocValuesConsumer implements Close
     meta.writeLong(gcd);
     long startOffset = data.getFilePointer();
     meta.writeLong(startOffset);
-    if (numBitsPerValue != 0) {
-      values = valuesProducer.getSortedNumeric(field);
-      DirectWriter writer = DirectWriter.getInstance(data, numValues, numBitsPerValue);
-      for (int doc = values.nextDoc(); doc != DocIdSetIterator.NO_MORE_DOCS; doc = values.nextDoc()) {
-        for (int i = 0, count = values.docValueCount(); i < count; ++i) {
-          long v = values.nextValue();
-          if (encode == null) {
-            writer.add((v - min) / gcd);
-          } else {
-            writer.add(encode.get(v));
-          }
-        }
-      }
-      writer.finish();
+    if (doBlocks) {
+      writeValuesMultipleBlocks(valuesProducer.getSortedNumeric(field), gcd);
+    } else if (numBitsPerValue != 0) {
+      writeValuesSingleBlock(valuesProducer.getSortedNumeric(field), numValues, numBitsPerValue, min, gcd, encode);
     }
     meta.writeLong(data.getFilePointer() - startOffset);
 
     return new long[] {numDocsWithValue, numValues};
+  }
+
+  private void writeValuesSingleBlock(SortedNumericDocValues values, long numValues, int numBitsPerValue,
+      long min, long gcd, Map<Long, Integer> encode) throws IOException {
+    DirectWriter writer = DirectWriter.getInstance(data, numValues, numBitsPerValue);
+    for (int doc = values.nextDoc(); doc != DocIdSetIterator.NO_MORE_DOCS; doc = values.nextDoc()) {
+      for (int i = 0, count = values.docValueCount(); i < count; ++i) {
+        long v = values.nextValue();
+        if (encode == null) {
+          writer.add((v - min) / gcd);
+        } else {
+          writer.add(encode.get(v));
+        }
+      }
+    }
+    writer.finish();
+  }
+ 
+  private void writeValuesMultipleBlocks(SortedNumericDocValues values, long gcd) throws IOException {
+    final long[] buffer = new long[NUMERIC_BLOCK_SIZE];
+    final GrowableByteArrayDataOutput encodeBuffer = new GrowableByteArrayDataOutput(NUMERIC_BLOCK_SIZE);
+    int upTo = 0;
+    for (int doc = values.nextDoc(); doc != DocIdSetIterator.NO_MORE_DOCS; doc = values.nextDoc()) {
+      for (int i = 0, count = values.docValueCount(); i < count; ++i) {
+        buffer[upTo++] = values.nextValue();
+        if (upTo == NUMERIC_BLOCK_SIZE) {
+          writeBlock(buffer, NUMERIC_BLOCK_SIZE, gcd, encodeBuffer);
+          upTo = 0;
+        }
+      }
+    }
+    if (upTo > 0) {
+      writeBlock(buffer, upTo, gcd, encodeBuffer);
+    }
+  }
+
+  private void writeBlock(long[] values, int length, long gcd, GrowableByteArrayDataOutput buffer) throws IOException {
+    assert length > 0;
+    long min = values[0];
+    long max = values[0];
+    for (int i = 1; i < length; ++i) {
+      final long v = values[i];
+      assert Math.floorMod(values[i] - min, gcd) == 0;
+      min = Math.min(min, v);
+      max = Math.max(max, v);
+    }
+    if (min == max) {
+      data.writeByte((byte) 0);
+      data.writeLong(min);
+    } else {
+      final int bitsPerValue = DirectWriter.unsignedBitsRequired(max - min);
+      buffer.reset();
+      assert buffer.getPosition() == 0;
+      final DirectWriter w = DirectWriter.getInstance(buffer, length, bitsPerValue);
+      for (int i = 0; i < length; ++i) {
+        w.add((values[i] - min) / gcd);
+      }
+      w.finish();
+      data.writeByte((byte) bitsPerValue);
+      data.writeLong(min);
+      data.writeInt(buffer.getPosition());
+      data.writeBytes(buffer.getBytes(), buffer.getPosition());
+    }
   }
 
   @Override

@@ -20,76 +20,77 @@ import java.io.IOException;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Objects;
 
 import org.apache.lucene.index.LeafReaderContext;
-import org.apache.lucene.queries.function.FunctionValues;
-import org.apache.lucene.queries.function.ValueSource;
-import org.apache.lucene.search.SortField;
+import org.apache.lucene.search.DoubleValues;
+import org.apache.lucene.search.DoubleValuesSource;
 
 /**
- * A {@link ValueSource} which evaluates a {@link Expression} given the context of an {@link Bindings}.
+ * A {@link DoubleValuesSource} which evaluates a {@link Expression} given the context of an {@link Bindings}.
  */
 @SuppressWarnings({"rawtypes", "unchecked"})
-final class ExpressionValueSource extends ValueSource {
-  final ValueSource variables[];
+final class ExpressionValueSource extends DoubleValuesSource {
+  final DoubleValuesSource variables[];
   final Expression expression;
   final boolean needsScores;
 
   ExpressionValueSource(Bindings bindings, Expression expression) {
     if (bindings == null) throw new NullPointerException();
-    if (expression == null) throw new NullPointerException();
-    this.expression = expression;
-    variables = new ValueSource[expression.variables.length];
+    this.expression = Objects.requireNonNull(expression);
+    variables = new DoubleValuesSource[expression.variables.length];
     boolean needsScores = false;
     for (int i = 0; i < variables.length; i++) {
-      ValueSource source = bindings.getValueSource(expression.variables[i]);
-      if (source instanceof ScoreValueSource) {
-        needsScores = true;
-      } else if (source instanceof ExpressionValueSource) {
-        if (((ExpressionValueSource)source).needsScores()) {
-          needsScores = true;
-        }
-      } else if (source == null) {
+      DoubleValuesSource source = bindings.getDoubleValuesSource(expression.variables[i]);
+      if (source == null) {
         throw new RuntimeException("Internal error. Variable (" + expression.variables[i] + ") does not exist.");
       }
+      needsScores |= source.needsScores();
       variables[i] = source;
     }
     this.needsScores = needsScores;
   }
 
   @Override
-  public FunctionValues getValues(Map context, LeafReaderContext readerContext) throws IOException {
-    Map<String, FunctionValues> valuesCache = (Map<String, FunctionValues>)context.get("valuesCache");
-    if (valuesCache == null) {
-      valuesCache = new HashMap<>();
-      context = new HashMap(context);
-      context.put("valuesCache", valuesCache);
-    }
-    FunctionValues[] externalValues = new FunctionValues[expression.variables.length];
+  public DoubleValues getValues(LeafReaderContext readerContext, DoubleValues scores) throws IOException {
+    Map<String, DoubleValues> valuesCache = new HashMap<>();
+    DoubleValues[] externalValues = new DoubleValues[expression.variables.length];
 
     for (int i = 0; i < variables.length; ++i) {
       String externalName = expression.variables[i];
-      FunctionValues values = valuesCache.get(externalName);
+      DoubleValues values = valuesCache.get(externalName);
       if (values == null) {
-        values = variables[i].getValues(context, readerContext);
+        values = variables[i].getValues(readerContext, scores);
         if (values == null) {
           throw new RuntimeException("Internal error. External (" + externalName + ") does not exist.");
         }
         valuesCache.put(externalName, values);
       }
-      externalValues[i] = values;
+      externalValues[i] = zeroWhenUnpositioned(values);
     }
 
-    return new ExpressionFunctionValues(this, expression, externalValues);
+    return new ExpressionFunctionValues(expression, externalValues);
+  }
+
+  private static DoubleValues zeroWhenUnpositioned(DoubleValues in) {
+    return new DoubleValues() {
+
+      boolean positioned = false;
+
+      @Override
+      public double doubleValue() throws IOException {
+        return positioned ? in.doubleValue() : 0;
+      }
+
+      @Override
+      public boolean advanceExact(int doc) throws IOException {
+        return positioned = in.advanceExact(doc);
+      }
+    };
   }
 
   @Override
-  public SortField getSortField(boolean reverse) {
-    return new ExpressionSortField(expression.sourceText, this, reverse);
-  }
-
-  @Override
-  public String description() {
+  public String toString() {
     return "expr(" + expression.sourceText + ")";
   }
   
@@ -132,7 +133,8 @@ final class ExpressionValueSource extends ValueSource {
     return true;
   }
 
-  boolean needsScores() {
+  @Override
+  public boolean needsScores() {
     return needsScores;
   }
 }

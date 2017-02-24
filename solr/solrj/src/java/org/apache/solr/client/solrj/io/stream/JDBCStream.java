@@ -17,6 +17,7 @@
 package org.apache.solr.client.solrj.io.stream;
 
 import java.io.IOException;
+import java.sql.Array;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.ResultSet;
@@ -88,6 +89,7 @@ public class JDBCStream extends TupleStream implements Expressible {
   private ResultSetValueSelector[] valueSelectors;
   protected ResultSet resultSet;
   protected transient StreamContext streamContext;
+  protected String sep = Character.toString((char)31);
 
   public JDBCStream(String connectionUrl, String sqlQuery, StreamComparator definedSort) throws IOException {
     this(connectionUrl, sqlQuery, definedSort, null, null);
@@ -209,8 +211,8 @@ public class JDBCStream extends TupleStream implements Expressible {
     try{
       resultSet = statement.executeQuery(sqlQuery);
     } catch (SQLException e) {
-      throw new IOException(String.format(Locale.ROOT, "Failed to execute sqlQuery '%s' against JDBC connection '%s'",
-          sqlQuery, connectionUrl), e);
+      throw new IOException(String.format(Locale.ROOT, "Failed to execute sqlQuery '%s' against JDBC connection '%s'.\n"
+          + e.getMessage(), sqlQuery, connectionUrl), e);
     }
     
     try{
@@ -226,18 +228,25 @@ public class JDBCStream extends TupleStream implements Expressible {
     ResultSetValueSelector[] valueSelectors = new ResultSetValueSelector[metadata.getColumnCount()];
     
     for(int columnIdx = 0; columnIdx < metadata.getColumnCount(); ++columnIdx){
-      
       final int columnNumber = columnIdx + 1; // cause it starts at 1
       // Use getColumnLabel instead of getColumnName to make sure fields renamed with AS as picked up properly
       final String columnName = metadata.getColumnLabel(columnNumber);
       String className = metadata.getColumnClassName(columnNumber);
       String typeName = metadata.getColumnTypeName(columnNumber);
-            
+      
       if(directSupportedTypes.contains(className)){
         valueSelectors[columnIdx] = new ResultSetValueSelector() {
           public Object selectValue(ResultSet resultSet) throws SQLException {
             Object obj = resultSet.getObject(columnNumber);
             if(resultSet.wasNull()){ return null; }
+            if(obj instanceof String) {
+              String s = (String)obj;
+              if(s.indexOf(sep) > -1) {
+                s = s.substring(1);
+                return s.split(sep);
+              }
+            }
+
             return obj;
           }
           public String getColumnName() {
@@ -272,6 +281,22 @@ public class JDBCStream extends TupleStream implements Expressible {
             Float obj = resultSet.getFloat(columnNumber);
             if(resultSet.wasNull()){ return null; }
             return obj.doubleValue();
+          }
+          public String getColumnName() {
+            return columnName;
+          }
+        };
+      } else if(Array.class.getName().equals(className)) {
+        valueSelectors[columnIdx] = new ResultSetValueSelector() {
+          public Object selectValue(ResultSet resultSet) throws SQLException {
+            Object o = resultSet.getObject(columnNumber);
+            if(resultSet.wasNull()){ return null; }
+            if(o instanceof Array) {
+              Array array = (Array)o;
+              return array.getArray();
+            } else {
+              return o;
+            }
           }
           public String getColumnName() {
             return columnName;

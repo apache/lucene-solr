@@ -203,7 +203,8 @@ public final class FieldInfo {
     return pointNumBytes;
   }
 
-  void setDocValuesType(DocValuesType type) {
+  /** Record that this field is indexed with docvalues, with the specified type */
+  public void setDocValuesType(DocValuesType type) {
     if (type == null) {
       throw new NullPointerException("DocValuesType must not be null (field: \"" + name + "\")");
     }

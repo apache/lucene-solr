@@ -22,18 +22,18 @@ import org.apache.lucene.index.DocValues;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.SortedDocValues;
 import org.apache.lucene.search.Sort;
-import org.apache.lucene.search.grouping.AbstractFirstPassGroupingCollector;
+import org.apache.lucene.search.grouping.FirstPassGroupingCollector;
 import org.apache.lucene.util.ArrayUtil;
 import org.apache.lucene.util.BytesRef;
 
 /**
- * Concrete implementation of {@link org.apache.lucene.search.grouping.AbstractFirstPassGroupingCollector} that groups based on
+ * Concrete implementation of {@link FirstPassGroupingCollector} that groups based on
  * field values and more specifically uses {@link SortedDocValues}
  * to collect groups.
  *
  * @lucene.experimental
  */
-public class TermFirstPassGroupingCollector extends AbstractFirstPassGroupingCollector<BytesRef> {
+public class TermFirstPassGroupingCollector extends FirstPassGroupingCollector<BytesRef> {
 
   private SortedDocValues index;
 

@@ -137,6 +137,9 @@
 
   <target name="test" description="Validate, then run core, solrj, and contrib unit tests."
           depends="-init-totals, test-core, test-contrib, -check-totals"/>
+  <target name="test-nocompile">
+    <fail message="Target 'test-nocompile' will not run recursively.  First change directory to the module you want to test."/>
+  </target>
 
   <target name="jacoco" description="Generates JaCoCo code coverage reports." depends="-jacoco-install">
     <!-- run jacoco for each module -->
@@ -204,6 +207,21 @@
           <replaceregex pattern="&lt;a\s+name\s*=\s*&quot;(?!techproducts)[^&quot;]+&quot;\s*&gt;\s*&lt;/a&gt;\s*" replace="" flags="gs"/>
         </tokenfilter>
       </filterchain>
+    </copy>
+  </target>
+  
+  <target name="documentation-online" description="Generate a link to the online documentation"
+      depends="define-solr-javadoc-url">
+    <xslt in="${ant.file}" out="${javadoc-online.dir}/index.html" style="site/online-link.xsl" force="true">
+      <outputproperty name="method" value="html"/>
+      <outputproperty name="version" value="4.0"/>
+      <outputproperty name="encoding" value="UTF-8"/>
+      <outputproperty name="indent" value="yes"/>
+      <param name="version" expression="${version}"/>
+      <param name="solrJavadocUrl" expression="${solr.javadoc.url}"/>
+    </xslt>
+    <copy todir="${javadoc-online.dir}">
+      <fileset dir="site/assets" includes="**/solr.svg"/>
     </copy>
   </target>
 
@@ -452,7 +470,7 @@
   <target name="prepare-release" depends="prepare-release-no-sign, sign-artifacts"/>
  
   <!-- make a distribution -->
-  <target name="package" depends="package-src-tgz,create-package,-dist-changes,-dist-keys"/>
+  <target name="package" depends="package-src-tgz,create-package,documentation,-dist-changes,-dist-keys"/>
 
   <!-- copy changes/ to the release folder -->
   <target name="-dist-changes">
@@ -542,7 +560,7 @@
       <target name="init-dist"/>
       <target name="dist"/>
       <target name="server"/>
-      <target name="documentation"/>
+      <target name="documentation-online"/>
     </antcall>
     <mkdir dir="${dest}/${fullnamever}"/>
     <delete includeemptydirs="true">
@@ -583,7 +601,7 @@
                             dist/solrj-lib/*
                             dist/test-framework/**"
                   excludes="**/*.tgz **/*.zip **/*.md5 **/*src*.jar **/*docs*.jar **/*.sha1" />
-      <tarfileset dir="${javadoc.dir}"
+      <tarfileset dir="${javadoc-online.dir}"
                   prefix="${fullnamever}/docs" />
     </tar>
     <make-checksums file="${package.dir}/${fullnamever}.tgz"/>

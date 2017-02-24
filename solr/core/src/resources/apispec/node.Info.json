@@ -1,0 +1,11 @@
+{
+   "description": "Provides information about system properties, threads, logging settings, and system details for a node.",
+  "methods": ["GET"],
+  "url": {
+    "paths": [
+      "/node/properties",
+      "/node/threads",
+      "/node/logging",
+      "/node/system"]
+  }
+}

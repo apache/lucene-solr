@@ -45,6 +45,7 @@ import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.BooleanClause.Occur;
 import org.apache.lucene.store.Directory;
+import org.apache.lucene.util.AttributeSource;
 import org.apache.lucene.util.BitSetIterator;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.FixedBitSet;
@@ -431,7 +432,9 @@ public class TestTermAutomatonQuery extends LuceneTestCase {
     @Override
     public boolean incrementToken() throws IOException {
       if (synNext) {
+        AttributeSource.State state = captureState();
         clearAttributes();
+        restoreState(state);
         posIncAtt.setPositionIncrement(0);
         termAtt.append(""+((char) 97 + random().nextInt(3)));
         synNext = false;

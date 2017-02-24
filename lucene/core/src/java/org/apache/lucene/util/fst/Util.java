@@ -248,32 +248,38 @@ public final class Util {
    *  @lucene.experimental
    */
   public static class FSTPath<T> {
+    /** Holds the last arc appended to this path */
     public FST.Arc<T> arc;
-    public T cost;
+    /** Holds cost plus any usage-specific output: */
+    public T output;
     public final IntsRefBuilder input;
     public final float boost;
     public final CharSequence context;
 
+    // Custom int payload for consumers; the NRT suggester uses this to record if this path has already enumerated a surface form
+    public int payload;
+
     /** Sole constructor */
-    public FSTPath(T cost, FST.Arc<T> arc, IntsRefBuilder input) {
-      this(cost, arc, input, 0, null);
+    public FSTPath(T output, FST.Arc<T> arc, IntsRefBuilder input) {
+      this(output, arc, input, 0, null, -1);
     }
 
-    public FSTPath(T cost, FST.Arc<T> arc, IntsRefBuilder input, float boost, CharSequence context) {
+    public FSTPath(T output, FST.Arc<T> arc, IntsRefBuilder input, float boost, CharSequence context, int payload) {
       this.arc = new FST.Arc<T>().copyFrom(arc);
-      this.cost = cost;
+      this.output = output;
       this.input = input;
       this.boost = boost;
       this.context = context;
+      this.payload = payload;
     }
 
-    public FSTPath<T> newPath(T cost, IntsRefBuilder input) {
-      return new FSTPath<>(cost, this.arc, input, this.boost, this.context);
+    public FSTPath<T> newPath(T output, IntsRefBuilder input) {
+      return new FSTPath<>(output, this.arc, input, this.boost, this.context, this.payload);
     }
 
     @Override
     public String toString() {
-      return "input=" + input.get() + " cost=" + cost + "context=" + context + "boost=" + boost;
+      return "input=" + input.get() + " output=" + output + " context=" + context + " boost=" + boost + " payload=" + payload;
     }
   }
 
@@ -287,7 +293,7 @@ public final class Util {
 
     @Override
     public int compare(FSTPath<T> a, FSTPath<T> b) {
-      int cmp = comparator.compare(a.cost, b.cost);
+      int cmp = comparator.compare(a.output, b.output);
       if (cmp == 0) {
         return a.input.get().compareTo(b.input.get());
       } else {
@@ -339,8 +345,7 @@ public final class Util {
 
       assert queue != null;
 
-      T cost = fst.outputs.add(path.cost, path.arc.output);
-      //System.out.println("  addIfCompetitive queue.size()=" + queue.size() + " path=" + path + " + label=" + path.arc.label);
+      T output = fst.outputs.add(path.output, path.arc.output);
 
       if (queue.size() == maxQueueDepth) {
         FSTPath<T> bottom = queue.last();
@@ -373,31 +378,31 @@ public final class Util {
       newInput.copyInts(path.input.get());
       newInput.append(path.arc.label);
 
-      queue.add(path.newPath(cost, newInput));
-
-      if (queue.size() == maxQueueDepth+1) {
-        queue.pollLast();
+      FSTPath<T> newPath = path.newPath(output, newInput);
+      if (acceptPartialPath(newPath)) {
+        queue.add(newPath);
+        if (queue.size() == maxQueueDepth+1) {
+          queue.pollLast();
+        }
       }
     }
 
     public void addStartPaths(FST.Arc<T> node, T startOutput, boolean allowEmptyString, IntsRefBuilder input) throws IOException {
-      addStartPaths(node, startOutput, allowEmptyString, input, 0, null);
+      addStartPaths(node, startOutput, allowEmptyString, input, 0, null, -1);
     }
 
     /** Adds all leaving arcs, including 'finished' arc, if
      *  the node is final, from this node into the queue.  */
     public void addStartPaths(FST.Arc<T> node, T startOutput, boolean allowEmptyString, IntsRefBuilder input,
-                              float boost, CharSequence context) throws IOException {
+                              float boost, CharSequence context, int payload) throws IOException {
 
       // De-dup NO_OUTPUT since it must be a singleton:
       if (startOutput.equals(fst.outputs.getNoOutput())) {
         startOutput = fst.outputs.getNoOutput();
       }
 
-      FSTPath<T> path = new FSTPath<>(startOutput, node, input, boost, context);
+      FSTPath<T> path = new FSTPath<>(startOutput, node, input, boost, context, payload);
       fst.readFirstTargetArc(node, path.arc, bytesReader);
-
-      //System.out.println("add start paths");
 
       // Bootstrap: find the min starting arc
       while (true) {
@@ -415,8 +420,6 @@ public final class Util {
 
       final List<Result<T>> results = new ArrayList<>();
 
-      //System.out.println("search topN=" + topN);
-
       final BytesReader fstReader = fst.getBytesReader();
       final T NO_OUTPUT = fst.outputs.getNoOutput();
 
@@ -430,13 +433,11 @@ public final class Util {
 
       // For each top N path:
       while (results.size() < topN) {
-        //System.out.println("\nfind next path: queue.size=" + queue.size());
 
         FSTPath<T> path;
 
         if (queue == null) {
           // Ran out of paths
-          //System.out.println("  break queue=null");
           break;
         }
 
@@ -446,15 +447,18 @@ public final class Util {
 
         if (path == null) {
           // There were less than topN paths available:
-          //System.out.println("  break no more paths");
           break;
+        }
+        //System.out.println("pop path=" + path + " arc=" + path.arc.output);
+
+        if (acceptPartialPath(path) == false) {
+          continue;
         }
 
         if (path.arc.label == FST.END_LABEL) {
-          //System.out.println("    empty string!  cost=" + path.cost);
           // Empty string!
           path.input.setLength(path.input.length() - 1);
-          results.add(new Result<>(path.input.get(), path.cost));
+          results.add(new Result<>(path.input.get(), path.output));
           continue;
         }
 
@@ -463,8 +467,6 @@ public final class Util {
           queue = null;
         }
 
-        //System.out.println("  path: " + path);
-        
         // We take path and find its "0 output completion",
         // ie, just keep traversing the first arc with
         // NO_OUTPUT that we can find, since this must lead
@@ -474,13 +476,11 @@ public final class Util {
         // For each input letter:
         while (true) {
 
-          //System.out.println("\n    cycle path: " + path);         
           fst.readFirstTargetArc(path.arc, path.arc, fstReader);
 
           // For each arc leaving this node:
           boolean foundZero = false;
           while(true) {
-            //System.out.println("      arc=" + (char) path.arc.label + " cost=" + path.arc.output);
             // tricky: instead of comparing output == 0, we must
             // express it via the comparator compare(output, 0) == 0
             if (comparator.compare(NO_OUTPUT, path.arc.output) == 0) {
@@ -514,18 +514,19 @@ public final class Util {
 
           if (path.arc.label == FST.END_LABEL) {
             // Add final output:
-            //System.out.println("    done!: " + path);
-            path.cost = fst.outputs.add(path.cost, path.arc.output);
+            path.output = fst.outputs.add(path.output, path.arc.output);
             if (acceptResult(path)) {
-              //System.out.println("    add result: " + path);
-              results.add(new Result<>(path.input.get(), path.cost));
+              results.add(new Result<>(path.input.get(), path.output));
             } else {
               rejectCount++;
             }
             break;
           } else {
             path.input.append(path.arc.label);
-            path.cost = fst.outputs.add(path.cost, path.arc.output);
+            path.output = fst.outputs.add(path.output, path.arc.output);
+            if (acceptPartialPath(path) == false) {
+              break;
+            }
           }
         }
       }
@@ -533,7 +534,12 @@ public final class Util {
     }
 
     protected boolean acceptResult(FSTPath<T> path) {
-      return acceptResult(path.input.get(), path.cost);
+      return acceptResult(path.input.get(), path.output);
+    }
+
+    /** Override this to prevent considering a path before it's complete */
+    protected boolean acceptPartialPath(FSTPath<T> path) {
+      return true;
     }
 
     protected boolean acceptResult(IntsRef input, T output) {

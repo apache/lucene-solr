@@ -21,7 +21,7 @@ import java.util.List;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.params.ShardParams;
 
-interface ReplicaListTransformer {
+public interface ReplicaListTransformer {
 
   /**
    * Transforms the passed in list of choices. Transformations can include (but are not limited to)

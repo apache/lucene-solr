@@ -16,6 +16,7 @@
  */
 package org.apache.solr.handler.dataimport;
 
+import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.params.UpdateParams;
 import org.apache.solr.request.SolrQueryRequest;
@@ -63,6 +64,11 @@ public class SolrWriter extends DIHWriterBase implements DIHWriter {
           "Unable to call finish() on UpdateRequestProcessor", e);
     } finally {
       deltaKeys = null;
+      try {
+        processor.close();
+      } catch (IOException e) {
+        SolrException.log(log, e);
+      }
     }
   }
   @Override

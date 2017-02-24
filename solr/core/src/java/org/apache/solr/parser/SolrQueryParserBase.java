@@ -24,6 +24,7 @@ import java.util.List;
 import java.util.Map;
 
 import org.apache.lucene.analysis.Analyzer;
+import org.apache.lucene.analysis.reverse.ReverseStringFilter;
 import org.apache.lucene.analysis.util.TokenFilterFactory;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.AutomatonQuery;
@@ -61,6 +62,8 @@ import org.apache.solr.search.SyntaxError;
  * and acts to separate the majority of the Java code from the .jj grammar file. 
  */
 public abstract class SolrQueryParserBase extends QueryBuilder {
+
+  protected static final String REVERSE_WILDCARD_LOWER_BOUND = new String(new char[]{ReverseStringFilter.START_OF_HEADING_MARKER + 1});
 
   public static final int TERMS_QUERY_THRESHOLD = 16;   // @lucene.internal Set to a low value temporarily for better test coverage
 
@@ -787,7 +790,7 @@ public abstract class SolrQueryParserBase extends QueryBuilder {
   protected ReversedWildcardFilterFactory getReversedWildcardFilterFactory(FieldType fieldType) {
     if (leadingWildcards == null) leadingWildcards = new HashMap<>();
     ReversedWildcardFilterFactory fac = leadingWildcards.get(fieldType);
-    if (fac != null || leadingWildcards.containsKey(fac)) {
+    if (fac != null || leadingWildcards.containsKey(fieldType)) {
       return fac;
     }
 
@@ -888,15 +891,24 @@ public abstract class SolrQueryParserBase extends QueryBuilder {
     return newFieldQuery(getAnalyzer(), field, queryText, quoted);
   }
 
+ protected boolean isRangeShouldBeProtectedFromReverse(String field, String part1){
+   checkNullField(field);
+   SchemaField sf = schema.getField(field);
 
+   return part1 == null && getReversedWildcardFilterFactory(sf.getType())!=null;
+ }
 
   // called from parser
   protected Query getRangeQuery(String field, String part1, String part2, boolean startInclusive, boolean endInclusive) throws SyntaxError {
+    boolean reverse = isRangeShouldBeProtectedFromReverse(field, part1);
+    return getRangeQueryImpl(field, reverse ? REVERSE_WILDCARD_LOWER_BOUND : part1, part2, startInclusive || reverse, endInclusive);
+  }
+
+  protected Query getRangeQueryImpl(String field, String part1, String part2, boolean startInclusive, boolean endInclusive) throws SyntaxError {
     checkNullField(field);
     SchemaField sf = schema.getField(field);
     return sf.getType().getRangeQuery(parser, sf, part1, part2, startInclusive, endInclusive);
   }
-
   // called from parser
   protected Query getPrefixQuery(String field, String termStr) throws SyntaxError {
     checkNullField(field);

@@ -71,8 +71,8 @@ public class BoolField extends PrimitiveFieldType {
   }
 
   // avoid instantiating every time...
-  protected final static char[] TRUE_TOKEN = {'T'};
-  protected final static char[] FALSE_TOKEN = {'F'};
+  public final static char[] TRUE_TOKEN = {'T'};
+  public final static char[] FALSE_TOKEN = {'F'};
 
   ////////////////////////////////////////////////////////////////////////
   // TODO: look into creating my own queryParser that can more efficiently

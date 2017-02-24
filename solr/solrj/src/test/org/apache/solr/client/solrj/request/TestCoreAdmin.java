@@ -17,22 +17,37 @@
 package org.apache.solr.client.solrj.request;
 
 import java.io.File;
+import java.io.IOException;
 import java.lang.invoke.MethodHandles;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.util.Collection;
 
 import com.carrotsearch.randomizedtesting.annotations.ThreadLeakFilters;
 import com.carrotsearch.randomizedtesting.rules.SystemPropertiesRestoreRule;
+import com.codahale.metrics.MetricRegistry;
 import org.apache.commons.io.FileUtils;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.solr.SolrIgnoredThreadsFilter;
 import org.apache.solr.client.solrj.SolrClient;
+import org.apache.solr.client.solrj.SolrQuery;
+import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.embedded.AbstractEmbeddedSolrServerTestCase;
 import org.apache.solr.client.solrj.embedded.EmbeddedSolrServer;
 import org.apache.solr.client.solrj.request.CoreAdminRequest.Create;
+import org.apache.solr.client.solrj.request.CoreAdminRequest.RequestRecovery;
 import org.apache.solr.client.solrj.response.CoreAdminResponse;
+import org.apache.solr.client.solrj.response.QueryResponse;
+import org.apache.solr.common.SolrDocumentList;
 import org.apache.solr.common.SolrException;
+import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.NamedList;
+import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.SolrCore;
+import org.apache.solr.metrics.SolrCoreMetricManager;
+import org.apache.solr.metrics.SolrMetricManager;
 import org.junit.After;
 import org.junit.BeforeClass;
 import org.junit.Rule;
@@ -186,7 +201,136 @@ public class TestCoreAdmin extends AbstractEmbeddedSolrServerTestCase {
       assertTrue(exceptionMessage.contains("must consist entirely of periods, underscores, hyphens, and alphanumerics"));
     }
   }
+
+  @Test
+  public void testValidCoreRename() throws Exception {
+    Collection<String> names = cores.getAllCoreNames();
+    assertFalse(names.toString(), names.contains("coreRenamed"));
+    assertTrue(names.toString(), names.contains("core1"));
+    CoreAdminRequest.renameCore("core1", "coreRenamed", getSolrAdmin());
+    names = cores.getAllCoreNames();
+    assertTrue(names.toString(), names.contains("coreRenamed"));
+    assertFalse(names.toString(), names.contains("core1"));
+    // rename it back
+    CoreAdminRequest.renameCore("coreRenamed", "core1", getSolrAdmin());
+    names = cores.getAllCoreNames();
+    assertFalse(names.toString(), names.contains("coreRenamed"));
+    assertTrue(names.toString(), names.contains("core1"));
+  }
+
+  @Test
+  public void testCoreSwap() throws Exception {
+    // index marker docs to core0
+    SolrClient cli0 = getSolrCore0();
+    SolrInputDocument d = new SolrInputDocument("id", "core0-0");
+    cli0.add(d);
+    d = new SolrInputDocument("id", "core0-1");
+    cli0.add(d);
+    cli0.commit();
+    // index a marker doc to core1
+    SolrClient cli1 = getSolrCore1();
+    d = new SolrInputDocument("id", "core1-0");
+    cli1.add(d);
+    cli1.commit();
+
+    // initial state assertions
+    SolrQuery q = new SolrQuery("*:*");
+    QueryResponse rsp = cli0.query(q);
+    SolrDocumentList docs = rsp.getResults();
+    assertEquals(2, docs.size());
+    docs.forEach(doc -> {
+      assertTrue(doc.toString(), doc.getFieldValue("id").toString().startsWith("core0-"));
+    });
+
+    rsp = cli1.query(q);
+    docs = rsp.getResults();
+    assertEquals(1, docs.size());
+    docs.forEach(doc -> {
+      assertTrue(doc.toString(), doc.getFieldValue("id").toString().startsWith("core1-"));
+    });
+
+    // assert initial metrics
+    SolrMetricManager metricManager = cores.getMetricManager();
+    String core0RegistryName = SolrCoreMetricManager.createRegistryName(null, "core0");
+    String core1RegistryName = SolrCoreMetricManager.createRegistryName(null, "core1");
+    MetricRegistry core0Registry = metricManager.registry(core0RegistryName);
+    MetricRegistry core1Registry = metricManager.registry(core1RegistryName);
+
+    // 2 docs + 1 commit
+    assertEquals(3, core0Registry.counter("UPDATE./update.requests").getCount());
+    // 1 doc + 1 commit
+    assertEquals(2, core1Registry.counter("UPDATE./update.requests").getCount());
+
+    // swap
+    CoreAdminRequest.swapCore("core0", "core1", getSolrAdmin());
+
+    // assert state after swap
+    cli0 = getSolrCore0();
+    cli1 = getSolrCore1();
+
+    rsp = cli0.query(q);
+    docs = rsp.getResults();
+    assertEquals(1, docs.size());
+    docs.forEach(doc -> {
+      assertTrue(doc.toString(), doc.getFieldValue("id").toString().startsWith("core1-"));
+    });
+
+    rsp = cli1.query(q);
+    docs = rsp.getResults();
+    assertEquals(2, docs.size());
+    docs.forEach(doc -> {
+      assertTrue(doc.toString(), doc.getFieldValue("id").toString().startsWith("core0-"));
+    });
+
+    core0Registry = metricManager.registry(core0RegistryName);
+    core1Registry = metricManager.registry(core1RegistryName);
+
+    assertEquals(2, core0Registry.counter("UPDATE./update.requests").getCount());
+    assertEquals(3, core1Registry.counter("UPDATE./update.requests").getCount());
+  }
+
+  @Test
+  public void testInvalidRequestRecovery() throws SolrServerException, IOException {
+      RequestRecovery recoverRequestCmd = new RequestRecovery();
+      recoverRequestCmd.setCoreName("non_existing_core");
+      expectThrows(SolrException.class, () -> recoverRequestCmd.process(getSolrAdmin()));
+  }
   
+  @Test
+  public void testReloadCoreAfterFailure() throws Exception {
+    cores.shutdown();
+    useFactory(null); // use FS factory
+
+    try {
+      cores = CoreContainer.createAndLoad(SOLR_HOME, getSolrXml());
+
+      String ddir = CoreAdminRequest.getCoreStatus("core0", getSolrCore0()).getDataDirectory();
+      Path data = Paths.get(ddir, "index");
+      assumeTrue("test can't handle relative data directory paths (yet?)", data.isAbsolute());
+
+      getSolrCore0().add(new SolrInputDocument("id", "core0-1"));
+      getSolrCore0().commit();
+
+      cores.shutdown();
+
+      // destroy the index
+      Files.move(data.resolve("_0.si"), data.resolve("backup"));
+      cores = CoreContainer.createAndLoad(SOLR_HOME, getSolrXml());
+
+      // Need to run a query to confirm that the core couldn't load
+      expectThrows(SolrException.class, () -> getSolrCore0().query(new SolrQuery("*:*")));
+
+      // We didn't fix anything, so should still throw
+      expectThrows(SolrException.class, () -> CoreAdminRequest.reloadCore("core0", getSolrCore0()));
+
+      Files.move(data.resolve("backup"), data.resolve("_0.si"));
+      CoreAdminRequest.reloadCore("core0", getSolrCore0());
+      assertEquals(1, getSolrCore0().query(new SolrQuery("*:*")).getResults().getNumFound());
+    } finally {
+      resetFactory();
+    }
+  }
+
   @BeforeClass
   public static void before() {
     // wtf?

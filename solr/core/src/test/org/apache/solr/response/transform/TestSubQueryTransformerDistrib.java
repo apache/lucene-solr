@@ -26,7 +26,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Random;
 
-import org.apache.solr.SolrTestCaseJ4.SuppressSSL;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
@@ -42,14 +41,18 @@ import org.apache.solr.common.util.ContentStreamBase;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
-@SuppressSSL 
 public class TestSubQueryTransformerDistrib extends SolrCloudTestCase {
   
+  private static final String support = "These guys help customers";
+  private static final String engineering = "These guys develop stuff";
   final static String people = "people";
   final static String depts = "departments";
+  private static boolean differentUniqueId;
   
   @BeforeClass
   public static void setupCluster() throws Exception {
+    
+    differentUniqueId = random().nextBoolean();
     
     final Path configDir = Paths.get(TEST_HOME(), "collection1", "conf");
 
@@ -72,7 +75,9 @@ public class TestSubQueryTransformerDistrib extends SolrCloudTestCase {
 
     CollectionAdminRequest.createCollection(depts, configName, shards, replicas)
         .withProperty("config", "solrconfig-doctransformers.xml")
-        .withProperty("schema", "schema-docValuesJoin.xml")
+        .withProperty("schema", 
+              differentUniqueId ? "schema-minimal-with-another-uniqkey.xml":
+                                  "schema-docValuesJoin.xml")
         .process(cluster.getSolrClient());
 
     CloudSolrClient client = cluster.getSolrClient();
@@ -102,28 +107,22 @@ public class TestSubQueryTransformerDistrib extends SolrCloudTestCase {
           "fl","*,depts:[subquery "+((random1.nextBoolean() ? "" : "separator=,"))+"]", 
           "rows","" + peopleMultiplier,
           "depts.q","{!terms f=dept_id_s v=$row.dept_ss_dv "+((random1.nextBoolean() ? "" : "separator=,"))+"}", 
-          "depts.fl","text_t",
+          "depts.fl","text_t"+(differentUniqueId?",id:notid":""),
           "depts.indent","true",
           "depts.collection","departments",
+          differentUniqueId ? "depts.distrib.singlePass":"notnecessary","true",
           "depts.rows",""+(deptMultiplier*2),
-          "depts.logParamsList","q,fl,rows,row.dept_ss_dv"}));
+          "depts.logParamsList","q,fl,rows,row.dept_ss_dv",
+          random().nextBoolean()?"depts.wt":"whatever",anyWt(),
+          random().nextBoolean()?"wt":"whatever",anyWt()}));
       final QueryResponse  rsp = new QueryResponse();
       rsp.setResponse(cluster.getSolrClient().request(qr, people));
       final SolrDocumentList hits = rsp.getResults();
       
       assertEquals(peopleMultiplier, hits.getNumFound());
       
-      Map<String,String> engText = new HashMap<String,String>() {
-        { put("text_t", "These guys develop stuff");
-        }
-      };
-      Map<String,String> suppText = new HashMap<String,String>() {
-        { put("text_t", "These guys help customers");
-        }
-      };
-      
-      int engineer = 0;
-      int support = 0;
+      int engineerCount = 0;
+      int supportCount = 0;
       
       for (int res : new int [] {0, (peopleMultiplier-1) /2, peopleMultiplier-1}) {
         SolrDocument doc = hits.get(res);
@@ -133,15 +132,22 @@ public class TestSubQueryTransformerDistrib extends SolrCloudTestCase {
             deptMultiplier * 2, relDepts.getNumFound());
         for (int deptN = 0 ; deptN < relDepts.getNumFound(); deptN++ ) {
           SolrDocument deptDoc = relDepts.get(deptN);
-          assertTrue(deptDoc + "should be either "+engText +" or "+suppText,
-              (engText.equals(deptDoc) && ++engineer>0) || 
-                   (suppText.equals(deptDoc) && ++support>0));
+          String actual = (String) deptDoc.get("text_t");
+          assertTrue(deptDoc + "should be either "+engineering +" or "+support,
+              (engineering.equals(actual) && ++engineerCount>0) || 
+                   (support.equals(actual) && ++supportCount>0));
         }
       }
-      assertEquals(hits.toString(), engineer, support); 
+      assertEquals(hits.toString(), engineerCount, supportCount); 
     }
     
   }
+
+  private String anyWt() {
+    String[] wts = new String[]{"javabin","xml","json"};
+    return wts[random().nextInt(wts.length)];
+  }
+
 
   private void createIndex(String people, int peopleMultiplier, String depts, int deptMultiplier)
       throws SolrServerException, IOException {
@@ -175,14 +181,15 @@ public class TestSubQueryTransformerDistrib extends SolrCloudTestCase {
     addDocs(people, peopleDocs);
 
     List<String> deptsDocs = new ArrayList<>();
+    String deptIdField = differentUniqueId? "notid":"id";
     for (int d=0; d < deptMultiplier; d++) {
-      deptsDocs.add(add(doc("id",""+id++, "dept_id_s", "Engineering", "text_t","These guys develop stuff", "salary_i_dv", "1000",
+      deptsDocs.add(add(doc(deptIdField,""+id++, "dept_id_s", "Engineering", "text_t",engineering, "salary_i_dv", "1000",
                                      "dept_id_i", "0")));
-      deptsDocs.add(add(doc("id",""+id++, "dept_id_s", "Marketing", "text_t","These guys make you look good","salary_i_dv", "1500",
+      deptsDocs.add(add(doc(deptIdField,""+id++, "dept_id_s", "Marketing", "text_t","These guys make you look good","salary_i_dv", "1500",
                                      "dept_id_i", "1")));
-      deptsDocs.add(add(doc("id",""+id++, "dept_id_s", "Sales", "text_t","These guys sell stuff","salary_i_dv", "1600",
+      deptsDocs.add(add(doc(deptIdField,""+id++, "dept_id_s", "Sales", "text_t","These guys sell stuff","salary_i_dv", "1600",
                                     "dept_id_i", "2")));
-      deptsDocs.add(add(doc("id",""+id++, "dept_id_s", "Support", "text_t","These guys help customers","salary_i_dv", "800",
+      deptsDocs.add(add(doc(deptIdField,""+id++, "dept_id_s", "Support", "text_t",support,"salary_i_dv", "800",
                                     "dept_id_i", "3")));
       
     }

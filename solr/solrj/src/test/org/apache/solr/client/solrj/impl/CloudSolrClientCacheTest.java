@@ -36,7 +36,7 @@ import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.util.NamedList;
-import org.easymock.EasyMock;
+import static org.mockito.Mockito.*;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
 
@@ -101,12 +101,10 @@ public class CloudSolrClientCacheTest extends SolrTestCaseJ4 {
 
 
   private LBHttpSolrClient getMockLbHttpSolrClient(Map<String, Function> responses) throws Exception {
-    LBHttpSolrClient mockLbclient = EasyMock.createMock(LBHttpSolrClient.class);
-    EasyMock.reset(mockLbclient);
+    LBHttpSolrClient mockLbclient = mock(LBHttpSolrClient.class);
 
-    mockLbclient.request(EasyMock.anyObject(LBHttpSolrClient.Req.class));
-    EasyMock.expectLastCall().andAnswer(() -> {
-      LBHttpSolrClient.Req req = (LBHttpSolrClient.Req) EasyMock.getCurrentArguments()[0];
+    when(mockLbclient.request(any(LBHttpSolrClient.Req.class))).then(invocationOnMock -> {
+      LBHttpSolrClient.Req req = invocationOnMock.getArgument(0);
       Function f = responses.get("request");
       if (f == null) return null;
       Object res = f.apply(null);
@@ -115,12 +113,7 @@ public class CloudSolrClientCacheTest extends SolrTestCaseJ4 {
       rsp.rsp = (NamedList<Object>) res;
       rsp.server = req.servers.get(0);
       return rsp;
-    }).anyTimes();
-
-    mockLbclient.getHttpClient();
-    EasyMock.expectLastCall().andAnswer(() -> null).anyTimes();
-
-    EasyMock.replay(mockLbclient);
+    });
     return mockLbclient;
   }
 
