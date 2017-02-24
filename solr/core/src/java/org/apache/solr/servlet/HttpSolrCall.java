@@ -560,7 +560,7 @@ public class HttpSolrCall {
   }
 
   private boolean shouldAuthorize() {
-    if(PKIAuthenticationPlugin.PATH.equals(path)) return false;
+    if(path != null && path.endsWith(PKIAuthenticationPlugin.PATH)) return false;
     //admin/info/key is the path where public key is exposed . it is always unsecured
     if (cores.getPkiAuthenticationPlugin() != null && req.getUserPrincipal() != null) {
       boolean b = cores.getPkiAuthenticationPlugin().needsAuthorization(req);
@@ -1081,7 +1081,7 @@ public class HttpSolrCall {
           response.delete(response.length() - 1, response.length());
         
         response.append("], Path: [").append(resource).append("]");
-        response.append(" path : ").append(path).append(" params :").append(solrReq.getParams());
+        response.append(" path : ").append(path).append(" params :").append(solrReq == null ? null : solrReq.getParams());
         return response.toString();
       }
 
