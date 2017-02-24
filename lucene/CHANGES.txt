@@ -97,6 +97,12 @@ API Changes
 
 * LUCENE-7702: Removed GraphQuery in favour of simple boolean query. (Matt Webber via Jim Ferenczi)
 
+* LUCENE-7707: TopDocs.merge now takes a boolean option telling it
+  when to use the incoming shard index versus when to assign the shard
+  index itself, allowing users to merge shard responses incrementally
+  instead of once all shard responses are present. (Simon Willnauer,
+  Mike McCandless)
+
 New Features
 
 * LUCENE-7449: Add CROSSES relation support to RangeFieldQuery. (Nick Knize)
@@ -171,10 +177,6 @@ Improvements
 * LUCENE-7677: UsageTrackingQueryCachingPolicy now caches compound queries a bit
   earlier than regular queries in order to improve cache efficiency.
   (Adrien Grand)
-
-* LUCENE-7707: Use predefined shard index when mergeing top docs if present. This 
-  allows to use TopDoc#merge to merge shard responses incrementally instead of
-  once all shard responses are present. (Simon Willnauer)
 
 Optimizations
 
