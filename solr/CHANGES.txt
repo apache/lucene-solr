@@ -78,8 +78,6 @@ New Features
   SOLR_HOME on every node. Editing config through API is supported but affects only that one node.
   This feature should be considered experimental for this release and may not work with SSL yet. (janhoy)
 
-* SOLR-9640: Support PKI authentication and SSL in standalone-mode master/slave auth with local security.json (janhoy)
-
 Bug Fixes
 ----------------------
 
