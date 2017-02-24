@@ -402,11 +402,11 @@ public class SolrDispatchFilter extends BaseSolrFilter {
     if (authenticationPlugin == null) {
       return true;
     } else {
-      // /admin/info/key must be always open. see SOLR-9188
-      // tests work only w/ getPathInfo
-      //otherwise it's just enough to have getServletPath()
-      if (PKIAuthenticationPlugin.PATH.equals(((HttpServletRequest) request).getServletPath()) ||
-          PKIAuthenticationPlugin.PATH.equals(((HttpServletRequest) request).getPathInfo())) return true;
+      String requestUri = ((HttpServletRequest) request).getRequestURI();
+      if (requestUri != null && requestUri.endsWith(PKIAuthenticationPlugin.PATH)) {
+        log.debug("Passthrough of pki URL " + requestUri);
+        return true;
+      }
       String header = ((HttpServletRequest) request).getHeader(PKIAuthenticationPlugin.HEADER);
       if (header != null && cores.getPkiAuthenticationPlugin() != null)
         authenticationPlugin = cores.getPkiAuthenticationPlugin();
@@ -418,7 +418,6 @@ public class SolrDispatchFilter extends BaseSolrFilter {
           wrappedRequest.set(req);
         });
       } catch (Exception e) {
-        log.info("Error authenticating", e);
         throw new SolrException(ErrorCode.SERVER_ERROR, "Error during request authentication, ", e);
       }
     }
