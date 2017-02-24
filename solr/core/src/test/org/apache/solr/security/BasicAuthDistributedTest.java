@@ -82,7 +82,7 @@ public class BasicAuthDistributedTest extends BaseDistributedSearchTestCase {
     QueryResponse rsp = query("q","text:doc", "fl", "id,text", "sort", "id asc");
     assertEquals(10, rsp.getResults().getNumFound());
 
-    // Enable authentication 
+    // Enable authentication
     for (JettySolrRunner j : jettys) {
       writeSecurityJson(j.getCoreContainer());
     }
