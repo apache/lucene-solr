@@ -564,7 +564,7 @@ public abstract class BaseDistributedSearchTestCase extends SolrTestCaseJ4 {
     SolrClient client = clients.get(which);
     return req.process(client, null);
   }
-  
+
   /**
    * Sets distributed params.
    * Returns the QueryResponse from {@link #queryServer},
@@ -663,7 +663,7 @@ public abstract class BaseDistributedSearchTestCase extends SolrTestCaseJ4 {
     if (user != null && pass != null) {
       req.setBasicAuthCredentials(user, pass);
     }
-    return req;    
+    return req;
   }
 
   public QueryResponse queryAndCompare(SolrParams params, SolrClient... clients) throws SolrServerException, IOException {
