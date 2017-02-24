@@ -145,10 +145,6 @@ public class TestPKIAuthenticationPlugin extends SolrTestCaseJ4 {
     mock1.doAuthenticate(mockReq, null,filterChain );
     assertNotNull(wrappedRequestByFilter.get());
     assertEquals("$", ((HttpServletRequest) wrappedRequestByFilter.get()).getUserPrincipal().getName());
-
-
-
-
   }
 
   @Test
@@ -159,7 +155,7 @@ public class TestPKIAuthenticationPlugin extends SolrTestCaseJ4 {
     assertEquals("https://my.host:9876/solr2", mock.getBaseUrlForNodeNameLocal("my.host:9876_solr2"));
     System.clearProperty("solr.jetty.keystore");
   }
-  
+
   @Test
   public void testResolveUrlScheme() {
     System.clearProperty("urlScheme");
@@ -177,7 +173,7 @@ public class TestPKIAuthenticationPlugin extends SolrTestCaseJ4 {
     System.clearProperty("urlScheme");
     System.clearProperty("solr.jetty.keystore");
   }
-  
+
   private HttpServletRequest createMockRequest(final AtomicReference<Header> header) {
     HttpServletRequest mockReq = mock(HttpServletRequest.class);
     when(mockReq.getHeader(any(String.class))).then(invocation -> {
