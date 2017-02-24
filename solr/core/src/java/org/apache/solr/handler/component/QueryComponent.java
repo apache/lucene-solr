@@ -669,9 +669,7 @@ public class QueryComponent extends SearchComponent
           leafComparator.setScorer(new FakeScorer(doc, score));
           leafComparator.copy(0, doc);
           Object val = comparator.value(0);
-          if (null != ft) {
-              val = ft.marshalSortValue(val);
-          }
+          if (null != ft) val = ft.marshalSortValue(val);
           vals[position] = val;
         }
 

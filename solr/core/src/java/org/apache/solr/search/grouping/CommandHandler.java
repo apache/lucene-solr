@@ -174,9 +174,9 @@ public class CommandHandler {
     final AllGroupHeadsCollector allGroupHeadsCollector;
     if (fieldType.getNumberType() != null) {
       ValueSource vs = fieldType.getValueSource(sf, null);
-      allGroupHeadsCollector = new FunctionAllGroupHeadsCollector(vs, new HashMap(), firstCommand.getSortWithinGroup());
+      allGroupHeadsCollector = new FunctionAllGroupHeadsCollector(vs, new HashMap(), firstCommand.getWithinGroupSort());
     } else {
-      allGroupHeadsCollector = TermAllGroupHeadsCollector.create(firstCommand.getKey(), firstCommand.getSortWithinGroup());
+      allGroupHeadsCollector = TermAllGroupHeadsCollector.create(firstCommand.getKey(), firstCommand.getWithinGroupSort());
     }
     if (collectors.isEmpty()) {
       searchWithTimeLimiter(query, filter, allGroupHeadsCollector);

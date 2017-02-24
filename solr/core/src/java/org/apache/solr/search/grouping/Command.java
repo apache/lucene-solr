@@ -58,15 +58,6 @@ public interface Command<T> {
    */
   Sort getGroupSort();
 
-
-
-  @Deprecated
-  /**
-   * @return The sort inside a group
-   */
-  Sort getSortWithinGroup();
-
-
   /**
    * @return The sort inside a group
    */

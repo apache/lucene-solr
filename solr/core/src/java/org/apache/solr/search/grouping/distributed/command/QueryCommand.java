@@ -149,13 +149,6 @@ public class QueryCommand implements Command<QueryCommandResult> {
     return sort;
   }
 
-  @Deprecated
-  @Override
-  public Sort getSortWithinGroup() {
-    return null;
-  }
-
-
   @Override
   public Sort getWithinGroupSort() {
     return null;

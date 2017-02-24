@@ -191,12 +191,6 @@ public class TopGroupsFieldCommand implements Command<TopGroups<BytesRef>> {
       return groupSortSpec.getSort();
   }
 
-  @Deprecated
-  @Override
-  public Sort getSortWithinGroup() {
-      return getWithinGroupSort();
-  }
-
   @Override
   public Sort getWithinGroupSort() {
       return withinGroupSortSpec.getSort();

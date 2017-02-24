@@ -19,7 +19,6 @@ package org.apache.solr.handler.component;
 import java.util.List;
 import org.apache.solr.common.util.NamedList;
 
-import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.SolrDocumentList;
 
 import org.apache.solr.BaseDistributedSearchTestCase;

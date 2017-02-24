@@ -37,7 +37,6 @@ import org.apache.lucene.util.BytesRef;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.handler.component.ResponseBuilder;
 import org.apache.solr.handler.component.ShardDoc;
-import org.apache.solr.schema.FieldType;
 import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.schema.SchemaField;
 import org.apache.solr.search.SortSpec;
@@ -159,11 +158,9 @@ public class TopGroupsResultTransformer implements ShardResultTransformer<List<C
   protected ScoreDoc[] transformToNativeShardDoc(List<NamedList<Object>> documents, SortSpec sortSpec, String shard,
                                                  IndexSchema schema) {
     ScoreDoc[] scoreDocs = new ScoreDoc[documents.size()];
-    Sort sort = sortSpec.getSort();
 
     final List<SchemaField> schemaFields = sortSpec.getSchemaFields();
-    final SortField[] sortFields = sort.getSort();
-    boolean convertFromNative = false;
+    final SortField[] sortFields = sortSpec.getSort().getSort();
 
     assert (schemaFields.size() == sortFields.length);
 
@@ -210,10 +207,8 @@ public class TopGroupsResultTransformer implements ShardResultTransformer<List<C
     SchemaField uniqueField = schema.getUniqueKeyField();
 
     final SortSpec withinGroupSortSpec = rb.getGroupingSpec().getWithinGroupSortSpec();
-    final Sort withinGroupSort = withinGroupSortSpec.getSort();
     final List<SchemaField> withinGroupSchemaFields = withinGroupSortSpec.getSchemaFields();
-    final SortField[] withinGroupSortFields = withinGroupSort.getSort();
-    boolean convertFromNative = true;
+    final SortField[] withinGroupSortFields = withinGroupSortSpec.getSort().getSort();
 
     assert (withinGroupSchemaFields.size() == withinGroupSortFields.length);
 
@@ -244,7 +239,7 @@ public class TopGroupsResultTransformer implements ShardResultTransformer<List<C
 
         Object[] convertedSortValues  = new Object[fieldDoc.fields.length];
         for (int j = 0; j < fieldDoc.fields.length; j++) {
-            convertedSortValues[j] = convertSortValue(withinGroupSchemaFields.get(j), fieldDoc.fields[j], convertFromNative);
+            convertedSortValues[j] = ShardResultTransformerUtils.marshalSortValue(fieldDoc.fields[j], withinGroupSchemaFields.get(j));
         }
         document.add("sortValues", convertedSortValues);
       }
@@ -271,10 +266,8 @@ public class TopGroupsResultTransformer implements ShardResultTransformer<List<C
     SchemaField uniqueField = schema.getUniqueKeyField();
 
     final SortSpec groupSortSpec = rb.getGroupingSpec().getGroupSortSpec();
-    final Sort groupSort = groupSortSpec.getSort();
     final List<SchemaField> groupSchemaFields = groupSortSpec.getSchemaFields();
-    final SortField[] groupSortFields = groupSort.getSort();
-    boolean convertFromNative = true;
+    final SortField[] groupSortFields = groupSortSpec.getSort().getSort();
 
     assert (groupSchemaFields.size() == groupSortFields.length);
 
@@ -306,21 +299,6 @@ public class TopGroupsResultTransformer implements ShardResultTransformer<List<C
     DocumentStoredFieldVisitor visitor = new DocumentStoredFieldVisitor(uniqueField.getName());
     rb.req.getSearcher().doc(doc, visitor);
     return visitor.getDocument();
-  }
-
-  private static Object convertSortValue(SchemaField schemaField, Object origValue, boolean convertFromNative) {
-
-      Object sortValue  = origValue;
-      if (schemaField != null && sortValue != null) {
-
-          FieldType fieldType = schemaField.getType();
-          if (convertFromNative) {
-              sortValue = fieldType.marshalSortValue(sortValue);
-          } else {
-              sortValue = fieldType.unmarshalSortValue(sortValue);
-          }
-      }
-      return sortValue;
   }
 
 }

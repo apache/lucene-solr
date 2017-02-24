@@ -148,18 +148,10 @@ public class SearchGroupsFieldCommand implements Command<SearchGroupsFieldComman
     return new SearchGroupsFieldCommandResult(groupCount, topGroups);
   }
 
-  @Deprecated
-  @Override
-  public Sort getSortWithinGroup() {
-      return null;
-  }
-
-
   @Override
   public Sort getWithinGroupSort() {
     return null;
   }
-
 
   @Override
   public Sort getGroupSort() {

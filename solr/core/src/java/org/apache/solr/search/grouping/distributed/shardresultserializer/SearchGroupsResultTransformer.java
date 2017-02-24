@@ -16,7 +16,6 @@
  */
 package org.apache.solr.search.grouping.distributed.shardresultserializer;
 
-import org.apache.lucene.search.Sort;
 import org.apache.lucene.search.SortField;
 import org.apache.lucene.search.grouping.SearchGroup;
 import org.apache.lucene.util.BytesRef;
@@ -79,11 +78,9 @@ public class SearchGroupsResultTransformer implements ShardResultTransformer<Lis
   @Override
   public Map<String, SearchGroupsFieldCommandResult> transformToNative(NamedList<NamedList> shardResponse, SortSpec groupSortSpec, SortSpec withinGroupSortSpec, String shard) {
     final Map<String, SearchGroupsFieldCommandResult> result = new HashMap<>(shardResponse.size());
-    final Sort groupSort = groupSortSpec.getSort();
 
     final List<SchemaField> groupSchemaFields = groupSortSpec.getSchemaFields();
-    final SortField[] groupSortFields = groupSort.getSort();
-    boolean convertFromNative = false;
+    final SortField[] groupSortFields = groupSortSpec.getSort().getSort();
 
     assert (groupSchemaFields.size() == groupSortFields.length);
 
@@ -113,10 +110,8 @@ public class SearchGroupsResultTransformer implements ShardResultTransformer<Lis
 
   private NamedList serializeSearchGroup(Collection<SearchGroup<BytesRef>> data, SortSpec groupSortSpec) {
     final NamedList<Object[]> result = new NamedList<>(data.size());
-    final Sort groupSort = groupSortSpec.getSort();
     final List<SchemaField> groupSchemaFields = groupSortSpec.getSchemaFields();
-    final SortField[] groupSortFields = groupSort.getSort();
-    boolean convertFromNative = true;
+    final SortField[] groupSortFields = groupSortSpec.getSort().getSort();
 
     assert (groupSchemaFields.size() == groupSortFields.length);
 
@@ -130,21 +125,6 @@ public class SearchGroupsResultTransformer implements ShardResultTransformer<Lis
     }
 
     return result;
-  }
-
-  private static Object convertSortValue(SchemaField schemaField, Object origValue, boolean convertFromNative) {
-
-      Object sortValue  = origValue;
-      if (schemaField != null && sortValue != null) {
-
-          FieldType fieldType = schemaField.getType();
-          if (convertFromNative) {
-              sortValue = fieldType.marshalSortValue(sortValue);
-          } else {
-              sortValue = fieldType.unmarshalSortValue(sortValue);
-          }
-      }
-      return sortValue;
   }
 
 }

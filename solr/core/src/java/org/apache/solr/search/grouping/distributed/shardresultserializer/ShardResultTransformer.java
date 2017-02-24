@@ -16,7 +16,6 @@
  */
 package org.apache.solr.search.grouping.distributed.shardresultserializer;
 
-import org.apache.lucene.search.Sort;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.search.SortSpec;
 
