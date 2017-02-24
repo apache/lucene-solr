@@ -606,7 +606,7 @@ public abstract class BaseDistributedSearchTestCase extends SolrTestCaseJ4 {
    * @param setDistribParams whether to do a distributed request
    * @param user basic auth username (set to null if not in use)
    * @param pass basic auth password (set to null if not in use)
-   * @return the query response                       
+   * @return the query response
    */
   protected QueryResponse query(boolean setDistribParams, SolrParams p, String user, String pass) throws Exception {
     
