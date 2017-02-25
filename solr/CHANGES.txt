@@ -78,6 +78,9 @@ New Features
   SOLR_HOME on every node. Editing config through API is supported but affects only that one node.
   This feature should be considered experimental for this release and may not work with SSL yet. (janhoy)
 
+* SOLR-10158: Add support for "preload" option in MMapDirectoryFactory.
+  (Amrit Sarkar via Uwe Schindler)
+
 Bug Fixes
 ----------------------
 
