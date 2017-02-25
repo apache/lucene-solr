@@ -275,6 +275,8 @@ Bug Fixes
 
 * SOLR-10083: Fix instanceof check in ConstDoubleSource.equals (Pushkar Raste via Christine Poerschke)
 
+* SOLR-10190: Fix NPE in CloudSolrClient when reading stale alias (Janosch Woschitz via Tomás Fernández Löbbe)
+
 ==================  6.4.1 ==================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release.
