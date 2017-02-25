@@ -166,7 +166,7 @@ public class CloudSolrClientTest extends SolrCloudTestCase {
         fail("Alias points to non-existing collection, add should fail");
       } catch (SolrException e) {
         assertEquals(SolrException.ErrorCode.BAD_REQUEST.code, e.code());
-        assertTrue("Unexpected error exception", e.getMessage().contains("Collection not found"));
+        assertTrue("Unexpected exception", e.getMessage().contains("Collection not found"));
       }
     }
   }
