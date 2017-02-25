@@ -134,6 +134,9 @@ New Features
   field must both be stored=false, indexed=false, docValues=true. (Ishan Chattopadhyaya, hossman, noble,
   shalin, yonik)
 
+* SOLR-10158: Add support for "preload" option in MMapDirectoryFactory.
+  (Amrit Sarkar via Uwe Schindler)
+
 Bug Fixes
 ----------------------
 
