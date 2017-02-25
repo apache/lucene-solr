@@ -147,6 +147,31 @@ public class CloudSolrClientTest extends SolrCloudTestCase {
   }
 
   @Test
+  public void testHandlingOfStaleAlias() throws Exception {
+    try (CloudSolrClient client = getCloudSolrClient(cluster.getZkServer().getZkAddress())) {
+      client.setDefaultCollection("misconfigured-alias");
+
+      CollectionAdminRequest.createCollection("nemesis", "conf", 2, 1).process(client);
+      CollectionAdminRequest.createAlias("misconfigured-alias", "nemesis").process(client);
+      CollectionAdminRequest.deleteCollection("nemesis").process(client);
+
+      List<SolrInputDocument> docs = new ArrayList<>();
+
+      SolrInputDocument doc = new SolrInputDocument();
+      doc.addField(id, Integer.toString(1));
+      docs.add(doc);
+
+      try {
+        client.add(docs);
+        fail("Alias points to non-existing collection, add should fail");
+      } catch (SolrException e) {
+        assertEquals(SolrException.ErrorCode.BAD_REQUEST.code, e.code());
+        assertTrue("Unexpected error exception", e.getMessage().contains("Collection not found"));
+      }
+    }
+  }
+
+  @Test
   public void testRouting() throws Exception {
     
     AbstractUpdateRequest request = new UpdateRequest()
