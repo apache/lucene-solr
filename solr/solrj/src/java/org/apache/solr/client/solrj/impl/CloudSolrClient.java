@@ -1075,6 +1075,9 @@ public class CloudSolrClient extends SolrClient {
       for (String requestedCollection : requestedCollectionNames) {
         // track the version of state we're using on the client side using the _stateVer_ param
         DocCollection coll = getDocCollection(requestedCollection, null);
+        if (coll == null) {
+          throw new SolrException(ErrorCode.BAD_REQUEST, "Collection not found: " + requestedCollection);
+        }
         int collVer = coll.getZNodeVersion();
         if (coll.getStateFormat()>1) {
           if(requestedCollections == null) requestedCollections = new ArrayList<>(requestedCollectionNames.size());
