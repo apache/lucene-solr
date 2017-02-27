@@ -358,7 +358,7 @@ public class SignificantTermsStream extends TupleStream implements Expressible{
           map.put("background", freqs[0]);
           map.put("foreground", freqs[1]);
 
-          float score = (float)Math.log(freqs[1]) * (float) (Math.log(((float)(numDocs + 1)) / (freqs[0] + 1)) + 1.0);
+          float score = (float)(Math.log(freqs[1])+1.0) * (float) (Math.log(((float)(numDocs + 1)) / (freqs[0] + 1)) + 1.0);
 
           map.put("score", score);
           maps.add(map);
