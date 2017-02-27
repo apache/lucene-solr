@@ -50,7 +50,7 @@ import org.apache.solr.uninverting.UninvertingReader;
  */
 public class UninvertDocValuesMergePolicyFactory extends WrapperMergePolicyFactory {
   
-  private boolean skipIntegrityCheck = false;
+  final private boolean skipIntegrityCheck;
 
   /**
    * Whether or not the wrapped docValues producer should check consistency 
@@ -59,21 +59,14 @@ public class UninvertDocValuesMergePolicyFactory extends WrapperMergePolicyFacto
     return skipIntegrityCheck;
   }
 
-  /**
-   * Whether or not the wrapped docValues producer should check consistency
-   * 
-   * Note that enabling this may be costly in terms of I/O, e.g. may involve computing a checksum value against large data files.
-   * 
-   * @see DocValuesProducer#checkIntegrity()
-   * 
-   * @param skipIntegrityCheck checks consitency 
-   */
-  public void setSkipIntegrityCheck(boolean skipIntegrityCheck) {
-    this.skipIntegrityCheck = skipIntegrityCheck;
-  }
-
   public UninvertDocValuesMergePolicyFactory(SolrResourceLoader resourceLoader, MergePolicyFactoryArgs args, IndexSchema schema) {
     super(resourceLoader, args, schema);
+    final Boolean sic = (Boolean)args.remove("skipIntegrityCheck");
+    if (sic != null) {
+      this.skipIntegrityCheck = sic.booleanValue();
+    } else {
+      this.skipIntegrityCheck = false;
+    }
     if (!args.keys().isEmpty()) {
       throw new IllegalArgumentException("Arguments were "+args+" but "+getClass().getSimpleName()+" takes no arguments.");
     }

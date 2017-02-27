@@ -27,6 +27,7 @@
     <mergePolicyFactory class="org.apache.solr.index.UninvertDocValuesMergePolicyFactory">
       <str name="wrapped.prefix">inner</str>
       <str name="inner.class">org.apache.solr.index.DefaultMergePolicyFactory</str>
+      <bool name="skipIntegrityCheck">${solr.tests.skipIntegrityCheck:false}</bool>
     </mergePolicyFactory>
      
     <mergeScheduler class="org.apache.lucene.index.ConcurrentMergeScheduler"/>

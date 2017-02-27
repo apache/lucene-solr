@@ -35,12 +35,25 @@ import org.apache.solr.search.SolrIndexSearcher;
 import org.apache.solr.util.RefCounted;
 import org.apache.solr.util.TestHarness;
 import org.junit.After;
+import org.junit.AfterClass;
 import org.junit.Before;
+import org.junit.BeforeClass;
 
 public class UninvertDocValuesMergePolicyTest extends SolrTestCaseJ4 {
 
+  private static String SOLR_TESTS_SKIP_INTEGRITY_CHECK = "solr.tests.skipIntegrityCheck";
   private static String ID_FIELD = "id";
   private static String TEST_FIELD = "string_add_dv_later";
+
+  @BeforeClass
+  public static void beforeTests() throws Exception {
+    System.setProperty(SOLR_TESTS_SKIP_INTEGRITY_CHECK, (random().nextBoolean() ? "true" : "false"));
+  }
+
+  @AfterClass
+  public static void afterTests() {
+    System.clearProperty(SOLR_TESTS_SKIP_INTEGRITY_CHECK);
+  }
 
   @After
   public void after() throws Exception {
