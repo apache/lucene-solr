@@ -66,8 +66,6 @@ import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.core.CachingDirectoryFactory;
 import org.apache.solr.core.CoreContainer;
-import org.apache.solr.core.DirectoryFactory;
-import org.apache.solr.core.MetricsDirectoryFactory;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.core.StandardDirectoryFactory;
 import org.apache.solr.core.snapshots.SolrSnapshotMetaDataManager;
@@ -923,12 +921,7 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
   }
 
   private CachingDirectoryFactory getCachingDirectoryFactory(SolrCore core) {
-    DirectoryFactory df = core.getDirectoryFactory();
-    if (df instanceof MetricsDirectoryFactory) {
-      return (CachingDirectoryFactory)((MetricsDirectoryFactory)df).getDelegate();
-    } else {
-      return (CachingDirectoryFactory)df;
-    }
+    return (CachingDirectoryFactory) core.getDirectoryFactory();
   }
 
   private void checkForSingleIndex(JettySolrRunner jetty) {

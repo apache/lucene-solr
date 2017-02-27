@@ -18,7 +18,6 @@ package org.apache.solr.update;
 
 import java.util.Map;
 
-import com.codahale.metrics.Histogram;
 import com.codahale.metrics.Meter;
 import com.codahale.metrics.Metric;
 import com.codahale.metrics.MetricRegistry;
@@ -59,8 +58,6 @@ public class SolrIndexMetricsTest extends SolrTestCaseJ4 {
   public void testIndexMetricsNoDetails() throws Exception {
     System.setProperty("solr.tests.metrics.merge", "true");
     System.setProperty("solr.tests.metrics.mergeDetails", "false");
-    System.setProperty("solr.tests.metrics.directory", "true");
-    System.setProperty("solr.tests.metrics.directoryDetails", "false");
     initCore("solrconfig-indexmetrics.xml", "schema.xml");
 
     addDocs();
@@ -71,7 +68,6 @@ public class SolrIndexMetricsTest extends SolrTestCaseJ4 {
     Map<String, Metric> metrics = registry.getMetrics();
 
     assertEquals(10, metrics.entrySet().stream().filter(e -> e.getKey().startsWith("INDEX")).count());
-    assertEquals(2, metrics.entrySet().stream().filter(e -> e.getKey().startsWith("DIRECTORY")).count());
 
     // check basic index meters
     Timer timer = (Timer)metrics.get("INDEX.merge.minor");
@@ -82,30 +78,12 @@ public class SolrIndexMetricsTest extends SolrTestCaseJ4 {
     assertNull((Meter)metrics.get("INDEX.merge.major.docs"));
     Meter meter = (Meter)metrics.get("INDEX.flush");
     assertTrue("flush: " + meter.getCount(), meter.getCount() > 10);
-
-    // check basic directory meters
-    meter = (Meter)metrics.get("DIRECTORY.total.reads");
-    assertTrue("totalReads", meter.getCount() > 0);
-    meter = (Meter)metrics.get("DIRECTORY.total.writes");
-    assertTrue("totalWrites", meter.getCount() > 0);
-    // check detailed meters
-    Histogram histogram = (Histogram)metrics.get("DIRECTORY.total.readSizes");
-    assertNull("readSizes", histogram);
-    histogram = (Histogram)metrics.get("DIRECTORY.total.writeSizes");
-    assertNull("writeSizes", histogram);
-    meter = (Meter)metrics.get("DIRECTORY.segments.writes");
-    assertNull("segmentsWrites", meter);
-    histogram = (Histogram)metrics.get("DIRECTORY.segments.writeSizes");
-    assertNull("segmentsWriteSizes", histogram);
-
   }
 
   @Test
   public void testIndexNoMetrics() throws Exception {
     System.setProperty("solr.tests.metrics.merge", "false");
     System.setProperty("solr.tests.metrics.mergeDetails", "false");
-    System.setProperty("solr.tests.metrics.directory", "false");
-    System.setProperty("solr.tests.metrics.directoryDetails", "false");
     initCore("solrconfig-indexmetrics.xml", "schema.xml");
 
     addDocs();
@@ -115,16 +93,12 @@ public class SolrIndexMetricsTest extends SolrTestCaseJ4 {
 
     Map<String, Metric> metrics = registry.getMetrics();
     assertEquals(0, metrics.entrySet().stream().filter(e -> e.getKey().startsWith("INDEX")).count());
-    // this is variable, depending on the codec and the number of created files
-    assertEquals(0, metrics.entrySet().stream().filter(e -> e.getKey().startsWith("DIRECTORY")).count());
   }
 
   @Test
   public void testIndexMetricsWithDetails() throws Exception {
     System.setProperty("solr.tests.metrics.merge", "false"); // test mergeDetails override too
     System.setProperty("solr.tests.metrics.mergeDetails", "true");
-    System.setProperty("solr.tests.metrics.directory", "false");
-    System.setProperty("solr.tests.metrics.directoryDetails", "true");
     initCore("solrconfig-indexmetrics.xml", "schema.xml");
 
     addDocs();
@@ -135,8 +109,6 @@ public class SolrIndexMetricsTest extends SolrTestCaseJ4 {
     Map<String, Metric> metrics = registry.getMetrics();
 
     assertTrue(metrics.entrySet().stream().filter(e -> e.getKey().startsWith("INDEX")).count() >= 12);
-    // this is variable, depending on the codec and the number of created files
-    assertTrue(metrics.entrySet().stream().filter(e -> e.getKey().startsWith("DIRECTORY")).count() > 20);
 
     // check basic index meters
     Timer timer = (Timer)metrics.get("INDEX.merge.minor");
@@ -149,21 +121,5 @@ public class SolrIndexMetricsTest extends SolrTestCaseJ4 {
 
     meter = (Meter)metrics.get("INDEX.flush");
     assertTrue("flush: " + meter.getCount(), meter.getCount() > 10);
-
-    // check basic directory meters
-    meter = (Meter)metrics.get("DIRECTORY.total.reads");
-    assertTrue("totalReads", meter.getCount() > 0);
-    meter = (Meter)metrics.get("DIRECTORY.total.writes");
-    assertTrue("totalWrites", meter.getCount() > 0);
-    // check detailed meters
-    Histogram histogram = (Histogram)metrics.get("DIRECTORY.total.readSizes");
-    assertTrue("readSizes", histogram.getCount() > 0);
-    histogram = (Histogram)metrics.get("DIRECTORY.total.writeSizes");
-    assertTrue("writeSizes", histogram.getCount() > 0);
-    meter = (Meter)metrics.get("DIRECTORY.segments.writes");
-    assertTrue("segmentsWrites", meter.getCount() > 0);
-    histogram = (Histogram)metrics.get("DIRECTORY.segments.writeSizes");
-    assertTrue("segmentsWriteSizes", histogram.getCount() > 0);
-
   }
 }
