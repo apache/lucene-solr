@@ -237,7 +237,7 @@ public class ScoreNodesStream extends TupleStream implements Expressible
             throw new Exception("termFreq field not present in the Tuple");
           }
           Number termFreqValue = (Number)tuple.get(termFreq);
-          float score = termFreqValue.floatValue() * (float) (Math.log((numDocs + 1) / (docFreq.doubleValue() + 1)) + 1.0);
+          float score = (float)(Math.log(termFreqValue.floatValue())+1.0) * (float) (Math.log((numDocs + 1) / (docFreq.doubleValue() + 1)) + 1.0);
           tuple.put("nodeScore", score);
           tuple.put("docFreq", docFreq);
           tuple.put("numDocs", numDocs);
