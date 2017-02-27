@@ -29,7 +29,7 @@
   <groupId>org.apache.solr</groupId>
   <artifactId>solr-ltr</artifactId>
   <packaging>jar</packaging>
-  <name>Apache Solr Analytics Package</name>
+  <name>Apache Solr Learning to Rank Package</name>
   <description>
     Apache Solr Learning to Rank Package
   </description>
@@ -57,10 +57,10 @@
       <artifactId>solr-test-framework</artifactId>
       <scope>test</scope>
     </dependency>
-    @solr-analytics.internal.dependencies@
-    @solr-analytics.external.dependencies@
-    @solr-analytics.internal.test.dependencies@
-    @solr-analytics.external.test.dependencies@
+    @solr-ltr.internal.dependencies@
+    @solr-ltr.external.dependencies@
+    @solr-ltr.internal.test.dependencies@
+    @solr-ltr.external.test.dependencies@
   </dependencies>
   <build>
     <sourceDirectory>${module-path}/src/java</sourceDirectory>
