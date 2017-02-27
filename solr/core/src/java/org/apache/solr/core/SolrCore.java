@@ -659,14 +659,7 @@ public final class SolrCore implements SolrInfoMBean, Closeable {
       dirFactory = new NRTCachingDirectoryFactory();
       dirFactory.initCoreContainer(getCoreDescriptor().getCoreContainer());
     }
-    if (solrConfig.indexConfig.metricsInfo != null && solrConfig.indexConfig.metricsInfo.isEnabled()) {
-      final DirectoryFactory factory = new MetricsDirectoryFactory(coreDescriptor.getCoreContainer().getMetricManager(),
-          coreMetricManager.getRegistryName(), dirFactory);
-        factory.init(solrConfig.indexConfig.metricsInfo.initArgs);
-      return factory;
-    } else {
-      return dirFactory;
-    }
+    return dirFactory;
   }
 
   private void initIndexReaderFactory() {
