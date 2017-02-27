@@ -280,6 +280,8 @@ Bug Fixes
 
 * SOLR-10190: Fix NPE in CloudSolrClient when reading stale alias (Janosch Woschitz via Tomás Fernández Löbbe)
 
+* SOLR-10192: Fix copy/paste in solr-ltr pom.xml template. (Christine Poerschke)
+
 ==================  6.4.1 ==================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release.
