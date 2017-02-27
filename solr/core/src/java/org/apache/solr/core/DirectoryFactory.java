@@ -411,13 +411,6 @@ public abstract class DirectoryFactory implements NamedListInitializedPlugin,
       dirFactory = new NRTCachingDirectoryFactory();
       dirFactory.initCoreContainer(cc);
     }
-    if (config.indexConfig.metricsInfo != null && config.indexConfig.metricsInfo.isEnabled()) {
-      final DirectoryFactory factory = new MetricsDirectoryFactory(cc.getMetricManager(),
-          registryName, dirFactory);
-        factory.init(config.indexConfig.metricsInfo.initArgs);
-      return factory;
-    } else {
-      return dirFactory;
-    }
+    return dirFactory;
   }
 }
