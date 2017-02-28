@@ -812,7 +812,7 @@ public class TestInPlaceUpdatesDistrib extends AbstractFullDistribZkTestBase {
     }
 
     threadpool.shutdown();
-    assertTrue("Thread pool didn't terminate within 10 secs", threadpool.awaitTermination(10, TimeUnit.SECONDS));
+    assertTrue("Thread pool didn't terminate within 10 secs", threadpool.awaitTermination(15, TimeUnit.SECONDS));
 
     commit();
 
