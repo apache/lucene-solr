@@ -59,7 +59,7 @@ def runAndSendGPGPassword(command, password):
 
 def getGitRev():
   status = os.popen('git status').read().strip()
-  if 'nothing to commit, working directory clean' not in status:
+  if 'nothing to commit, working directory clean' not in status and 'nothing to commit, working tree clean' not in status:
     raise RuntimeError('git clone is dirty:\n\n%s' % status)
   branch = os.popen('git rev-parse --abbrev-ref HEAD').read().strip()
   command = 'git log origin/%s..' % branch
