@@ -65,7 +65,21 @@
         <foaf:mbox rdf:resource="mailto:dev@lucene.apache.org"/>
       </foaf:Person>
     </maintainer>
-    
+
+    <release>
+      <Version>
+        <name>lucene-6.4.1</name>
+        <created>2017-02-06</created>
+        <revision>6.4.1</revision>
+      </Version>
+    </release>
+    <release>
+      <Version>
+        <name>lucene-6.4.0</name>
+        <created>2017-01-23</created>
+        <revision>6.4.0</revision>
+      </Version>
+    </release> 
     <release>
       <Version>
         <name>solr-6.3.0</name>
