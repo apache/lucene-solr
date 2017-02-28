@@ -17,9 +17,6 @@
 package org.apache.solr.store.blockcache;
 
 import java.net.URL;
-import java.util.Map;
-import java.util.Map.Entry;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicLong;
 
 import org.apache.solr.common.util.NamedList;
