@@ -27,7 +27,7 @@ import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.handler.component.RealTimeGetComponent;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.update.processor.DistributedUpdateProcessor;
-import org.junit.After;
+import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
@@ -58,8 +58,8 @@ public class UpdateLogTest extends SolrTestCaseJ4 {
     }
   }
 
-  @After
-  public void after() {
+  @AfterClass
+  public static void afterClass() {
     System.clearProperty("solr.tests.intClassName");
     System.clearProperty("solr.tests.longClassName");
     System.clearProperty("solr.tests.floatClassName");
