@@ -133,6 +133,7 @@ public class BlockCache {
         // YCS: it looks like when the cache is full (a normal scenario), then two concurrent writes will result in one of them failing
         // because no eviction is done first.  The code seems to rely on leaving just a single block empty.
         // TODO: simplest fix would be to leave more than one block empty
+        metrics.blockCacheStoreFail.incrementAndGet();
         return false;
       }
     } else {
@@ -141,6 +142,8 @@ public class BlockCache {
       // purpose (and then our write may overwrite that).  This can happen even if clients never try to update existing blocks,
       // since two clients can try to cache the same block concurrently.  Because of this, the ability to update an existing
       // block has been removed for the time being (see SOLR-10121).
+
+      // No metrics to update: we don't count a redundant store as a store fail.
       return false;
     }
 
@@ -168,6 +171,7 @@ public class BlockCache {
       int blockOffset, int off, int length) {
     BlockCacheLocation location = cache.getIfPresent(blockCacheKey);
     if (location == null) {
+      metrics.blockCacheMiss.incrementAndGet();
       return false;
     }
 
@@ -181,9 +185,11 @@ public class BlockCache {
     if (location.isRemoved()) {
       // must check *after* the read is done since the bank may have been reused for another block
       // before or during the read.
+      metrics.blockCacheMiss.incrementAndGet();
       return false;
     }
 
+    metrics.blockCacheHit.incrementAndGet();
     return true;
   }
   

@@ -256,6 +256,10 @@ Other Changes
 
 * SOLR-7453: Remove replication & backup scripts in the solr/scripts directory of the checkout (Varun Thacker)
 
+* SOLR-10214: Remove unused HDFS BlockCache metrics and add storeFails, as well as adding total
+  counts for lookups, hits, and evictions. (yonik)
+  
+
 ==================  6.4.2 ==================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release.
