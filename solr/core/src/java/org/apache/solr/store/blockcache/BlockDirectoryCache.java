@@ -104,11 +104,6 @@ public class BlockDirectoryCache implements Cache {
     blockCacheKey.setFile(file);
     boolean fetch = blockCache.fetch(blockCacheKey, b, blockOffset, off,
         lengthToReadInBlock);
-    if (fetch) {
-      metrics.blockCacheHit.incrementAndGet();
-    } else {
-      metrics.blockCacheMiss.incrementAndGet();
-    }
     return fetch;
   }
   
