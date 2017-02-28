@@ -510,8 +510,11 @@ public class TestFuzzyQuery extends LuceneTestCase {
 
   @SuppressWarnings({"unchecked","rawtypes"})
   public void testRandom() throws Exception {
-    int numTerms = atLeast(100);
     int digits = TestUtil.nextInt(random(), 2, 3);
+    // underestimated total number of unique terms that randomSimpleString
+    // maybe generate, it assumes all terms have a length of 7
+    int vocabularySize = digits << 7;
+    int numTerms = Math.min(atLeast(100), vocabularySize);
     Set<String> terms = new HashSet<>();
     while (terms.size() < numTerms) {
       terms.add(randomSimpleString(digits));
