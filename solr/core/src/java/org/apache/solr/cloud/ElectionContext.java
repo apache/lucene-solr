@@ -423,8 +423,12 @@ final class ShardLeaderElectionContext extends ShardLeaderElectionContextBase {
           
           super.runLeaderProcess(weAreReplacement, 0);
           try (SolrCore core = cc.getCore(coreName)) {
-            core.getCoreDescriptor().getCloudDescriptor().setLeader(true);
-            publishActiveIfRegisteredAndNotActive(core);
+            if (core != null) {
+              core.getCoreDescriptor().getCloudDescriptor().setLeader(true);
+              publishActiveIfRegisteredAndNotActive(core);
+            } else {
+              return;
+            }
           }
           log.info("I am the new leader: " + ZkCoreNodeProps.getCoreUrl(leaderProps) + " " + shardId);
           
