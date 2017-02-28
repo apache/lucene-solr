@@ -47,7 +47,7 @@ public class CleanupOldIndexTest extends SolrCloudTestCase {
   }
   
   @AfterClass
-  public static void teardownTestCases() throws Exception {
+  public static void afterClass() throws Exception {
 
     if (suiteFailureMarker.wasSuccessful()) {
       zkClient().printLayoutToStdOut();
