@@ -64,6 +64,7 @@ public class UpdateLogTest extends SolrTestCaseJ4 {
     System.clearProperty("solr.tests.longClassName");
     System.clearProperty("solr.tests.floatClassName");
     System.clearProperty("solr.tests.doubleClassName");
+    ulog = null;
   }
 
   @Test
