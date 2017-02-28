@@ -761,6 +761,8 @@ public class ExpandComponent extends SearchComponent implements PluginInfoInitia
     }
   }
 
+  // this reader alters the content of the given reader so it should not
+  // delegate the caching stuff
   private class ReaderWrapper extends FilterLeafReader {
 
     private String field;
@@ -772,10 +774,6 @@ public class ExpandComponent extends SearchComponent implements PluginInfoInitia
 
     public SortedDocValues getSortedDocValues(String field) {
       return null;
-    }
-
-    public Object getCoreCacheKey() {
-      return in.getCoreCacheKey();
     }
 
     public FieldInfos getFieldInfos() {
@@ -804,6 +802,21 @@ public class ExpandComponent extends SearchComponent implements PluginInfoInitia
       }
       FieldInfos infos = new FieldInfos(newInfos.toArray(new FieldInfo[newInfos.size()]));
       return infos;
+    }
+
+    // NOTE: delegating the caches is wrong here as we are altering the content
+    // of the reader, this should ONLY be used under an uninvertingreader which
+    // will restore doc values back using uninversion, otherwise all sorts of
+    // crazy things could happen.
+
+    @Override
+    public CacheHelper getCoreCacheHelper() {
+      return in.getCoreCacheHelper();
+    }
+
+    @Override
+    public CacheHelper getReaderCacheHelper() {
+      return in.getReaderCacheHelper();
     }
   }
 

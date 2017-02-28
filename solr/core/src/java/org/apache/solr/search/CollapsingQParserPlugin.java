@@ -388,12 +388,23 @@ public class CollapsingQParserPlugin extends QParserPlugin {
       this.field = field;
     }
 
-    public SortedDocValues getSortedDocValues(String field) {
-      return null;
+    // NOTE: delegating the caches is wrong here as we are altering the content
+    // of the reader, this should ONLY be used under an uninvertingreader which
+    // will restore doc values back using uninversion, otherwise all sorts of
+    // crazy things could happen.
+
+    @Override
+    public CacheHelper getCoreCacheHelper() {
+      return in.getCoreCacheHelper();
     }
 
-    public Object getCoreCacheKey() {
-      return in.getCoreCacheKey();
+    @Override
+    public CacheHelper getReaderCacheHelper() {
+      return in.getReaderCacheHelper();
+    }
+
+    public SortedDocValues getSortedDocValues(String field) {
+      return null;
     }
 
     public FieldInfos getFieldInfos() {

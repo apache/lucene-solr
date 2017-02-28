@@ -145,7 +145,7 @@ public class TestNRTOpen extends SolrTestCaseJ4 {
     try {
       DirectoryReader ir = searcher.get().getRawReader();
       for (LeafReaderContext context : ir.leaves()) {
-        set.add(context.reader().getCoreCacheKey());
+        set.add(context.reader().getCoreCacheHelper().getKey());
       }
     } finally {
       searcher.decref();

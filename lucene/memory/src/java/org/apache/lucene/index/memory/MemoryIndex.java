@@ -1182,16 +1182,6 @@ public class MemoryIndex {
       }
     }
 
-    @Override
-    public void addCoreClosedListener(CoreClosedListener listener) {
-      addCoreClosedListenerAsReaderClosedListener(this, listener);
-    }
-
-    @Override
-    public void removeCoreClosedListener(CoreClosedListener listener) {
-      removeCoreClosedListenerAsReaderClosedListener(this, listener);
-    }
-
     private Info getInfoForExpectedDocValuesType(String fieldName, DocValuesType expectedType) {
       if (expectedType == DocValuesType.NONE) {
         return null;
@@ -1682,6 +1672,16 @@ public class MemoryIndex {
 
     @Override
     public Sort getIndexSort() {
+      return null;
+    }
+
+    @Override
+    public CacheHelper getCoreCacheHelper() {
+      return null;
+    }
+
+    @Override
+    public CacheHelper getReaderCacheHelper() {
       return null;
     }
   }

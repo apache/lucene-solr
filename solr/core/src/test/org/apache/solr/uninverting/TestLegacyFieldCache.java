@@ -32,26 +32,20 @@ import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.LeafReader;
 import org.apache.lucene.index.NumericDocValues;
 import org.apache.lucene.index.RandomIndexWriter;
-import org.apache.lucene.index.Terms;
-import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.legacy.LegacyDoubleField;
 import org.apache.lucene.legacy.LegacyFloatField;
 import org.apache.lucene.legacy.LegacyIntField;
 import org.apache.lucene.legacy.LegacyLongField;
-import org.apache.lucene.legacy.LegacyNumericUtils;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
-import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.TestUtil;
 import org.apache.solr.index.SlowCompositeReaderWrapper;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 
-import java.io.ByteArrayOutputStream;
 import java.io.IOException;
-import java.io.PrintStream;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.concurrent.CyclicBarrier;
@@ -106,31 +100,6 @@ public class TestLegacyFieldCache extends LuceneTestCase {
     directory.close();
     directory = null;
   }
-  
-  public void testInfoStream() throws Exception {
-    try {
-      FieldCache cache = FieldCache.DEFAULT;
-      ByteArrayOutputStream bos = new ByteArrayOutputStream(1024);
-      cache.setInfoStream(new PrintStream(bos, false, IOUtils.UTF_8));
-      cache.getNumerics(reader, "theDouble", FieldCache.LEGACY_DOUBLE_PARSER);
-      cache.getNumerics(reader, "theDouble", new FieldCache.Parser() {
-        @Override
-        public TermsEnum termsEnum(Terms terms) throws IOException {
-          return LegacyNumericUtils.filterPrefixCodedLongs(terms.iterator());
-        }
-        @Override
-        public long parseValue(BytesRef term) {
-          int val = (int) LegacyNumericUtils.prefixCodedToLong(term);
-          if (val<0) val ^= 0x7fffffff;
-          return val;
-        }
-      });
-      assertTrue(bos.toString(IOUtils.UTF_8).indexOf("WARNING") != -1);
-    } finally {
-      FieldCache.DEFAULT.setInfoStream(null);
-      FieldCache.DEFAULT.purgeAllCaches();
-    }
-  }
 
   public void test() throws IOException {
     FieldCache cache = FieldCache.DEFAULT;
@@ -174,7 +143,7 @@ public class TestLegacyFieldCache extends LuceneTestCase {
       assertEquals(i%2 == 0, docsWithField.get(i));
     }
 
-    FieldCache.DEFAULT.purgeByCacheKey(reader.getCoreCacheKey());
+    FieldCache.DEFAULT.purgeByCacheKey(reader.getCoreCacheHelper().getKey());
   }
 
   public void testEmptyIndex() throws Exception {
@@ -186,7 +155,7 @@ public class TestLegacyFieldCache extends LuceneTestCase {
     TestUtil.checkReader(reader);
     FieldCache.DEFAULT.getTerms(reader, "foobar");
     FieldCache.DEFAULT.getTermsIndex(reader, "foobar");
-    FieldCache.DEFAULT.purgeByCacheKey(reader.getCoreCacheKey());
+    FieldCache.DEFAULT.purgeByCacheKey(reader.getCoreCacheHelper().getKey());
     r.close();
     dir.close();
   }

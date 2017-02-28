@@ -33,6 +33,10 @@ API Changes
 
 * LUCENE-7494: Points now have a per-field API, like doc values. (Adrien Grand)
 
+* LUCENE-7410: Cache keys and close listeners have been refactored in order
+  to be less trappy. See IndexReader.getReaderCacheHelper and
+  LeafReader.getCoreCacheHelper. (Adrien Grand)
+
 Bug Fixes
 
 * LUCENE-7626: IndexWriter will no longer accept broken token offsets

@@ -35,6 +35,9 @@ import org.apache.lucene.util.Bits;
  * A <code>FilterCodecReader</code> contains another CodecReader, which it
  * uses as its basic source of data, possibly transforming the data along the
  * way or providing additional functionality.
+ * <p><b>NOTE</b>: If this {@link FilterCodecReader} does not change the
+ * content the contained reader, you could consider delegating calls to
+ * {@link #getCoreCacheHelper()} and {@link #getReaderCacheHelper()}.
  */
 public abstract class FilterCodecReader extends CodecReader {
   /** 
@@ -103,16 +106,6 @@ public abstract class FilterCodecReader extends CodecReader {
   @Override
   public Sort getIndexSort() {
     return in.getIndexSort();
-  }
-
-  @Override
-  public void addCoreClosedListener(CoreClosedListener listener) {
-    in.addCoreClosedListener(listener);
-  }
-
-  @Override
-  public void removeCoreClosedListener(CoreClosedListener listener) {
-    in.removeCoreClosedListener(listener);
   }
 
   @Override

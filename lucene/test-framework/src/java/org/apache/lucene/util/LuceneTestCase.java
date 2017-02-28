@@ -74,7 +74,6 @@ import org.apache.lucene.document.FieldType;
 import org.apache.lucene.document.StringField;
 import org.apache.lucene.document.TextField;
 import org.apache.lucene.index.*;
-import org.apache.lucene.index.IndexReader.ReaderClosedListener;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.TermsEnum.SeekStatus;
 import org.apache.lucene.mockfile.FilterPath;
@@ -86,7 +85,6 @@ import org.apache.lucene.search.LRUQueryCache;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.QueryCache;
 import org.apache.lucene.search.QueryCachingPolicy;
-import org.apache.lucene.search.QueryUtils.FCInvisibleMultiReader;
 import org.apache.lucene.store.BaseDirectoryWrapper;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.FSDirectory;
@@ -1664,7 +1662,7 @@ public abstract class LuceneTestCase extends Assert {
     Random random = random();
       
     for (int i = 0, c = random.nextInt(6)+1; i < c; i++) {
-      switch(random.nextInt(5)) {
+      switch(random.nextInt(4)) {
       case 0:
         // will create no FC insanity in atomic case, as ParallelLeafReader has own cache key:
         if (VERBOSE) {
@@ -1675,15 +1673,6 @@ public abstract class LuceneTestCase extends Assert {
         new ParallelCompositeReader((CompositeReader) r);
         break;
       case 1:
-        // Häckidy-Hick-Hack: a standard MultiReader will cause FC insanity, so we use
-        // QueryUtils' reader with a fake cache key, so insanity checker cannot walk
-        // along our reader:
-        if (VERBOSE) {
-          System.out.println("NOTE: LuceneTestCase.wrapReader: wrapping previous reader=" + r + " with FCInvisibleMultiReader");
-        }
-        r = new FCInvisibleMultiReader(r);
-        break;
-      case 2:
         if (r instanceof LeafReader) {
           final LeafReader ar = (LeafReader) r;
           final List<String> allFields = new ArrayList<>();
@@ -1703,7 +1692,7 @@ public abstract class LuceneTestCase extends Assert {
                                      );
         }
         break;
-      case 3:
+      case 2:
         // Häckidy-Hick-Hack: a standard Reader will cause FC insanity, so we use
         // QueryUtils' reader with a fake cache key, so insanity checker cannot walk
         // along our reader:
@@ -1716,7 +1705,7 @@ public abstract class LuceneTestCase extends Assert {
           r = new AssertingDirectoryReader((DirectoryReader)r);
         }
         break;
-      case 4:
+      case 3:
         if (VERBOSE) {
           System.out.println("NOTE: LuceneTestCase.wrapReader: wrapping previous reader=" + r + " with MismatchedLeaf/DirectoryReader");
         }
@@ -1731,10 +1720,6 @@ public abstract class LuceneTestCase extends Assert {
       }
     }
 
-    if ((r instanceof CompositeReader) && !(r instanceof FCInvisibleMultiReader)) {
-      // prevent cache insanity caused by e.g. ParallelCompositeReader, to fix we wrap one more time:
-      r = new FCInvisibleMultiReader(r);
-    }
     if (VERBOSE) {
       System.out.println("wrapReader wrapped: " +r);
     }
@@ -1900,7 +1885,7 @@ public abstract class LuceneTestCase extends Assert {
     } else {
       int threads = 0;
       final ThreadPoolExecutor ex;
-      if (random.nextBoolean()) {
+      if (r.getReaderCacheHelper() == null || random.nextBoolean()) {
         ex = null;
       } else {
         threads = TestUtil.nextInt(random, 1, 8);
@@ -1914,12 +1899,7 @@ public abstract class LuceneTestCase extends Assert {
        if (VERBOSE) {
          System.out.println("NOTE: newSearcher using ExecutorService with " + threads + " threads");
        }
-       r.addReaderClosedListener(new ReaderClosedListener() {
-         @Override
-         public void onClose(IndexReader reader) {
-           TestUtil.shutdownExecutorService(ex);
-         }
-       });
+       r.getReaderCacheHelper().addClosedListener(cacheKey -> TestUtil.shutdownExecutorService(ex));
       }
       IndexSearcher ret;
       if (wrapWithAssertions) {

@@ -116,7 +116,8 @@ public class DefaultSortedSetDocValuesReaderState extends SortedSetDocValuesRead
         SortedSetDocValues dv = MultiDocValues.getSortedSetValues(origReader, field);
         if (dv instanceof MultiDocValues.MultiSortedSetDocValues) {
           map = ((MultiDocValues.MultiSortedSetDocValues)dv).mapping;
-          if (map.owner == origReader.getCoreCacheKey()) {
+          IndexReader.CacheHelper cacheHelper = origReader.getReaderCacheHelper();
+          if (cacheHelper != null && map.owner == cacheHelper.getKey()) {
             cachedOrdMaps.put(field, map);
           }
         }

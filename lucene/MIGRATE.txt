@@ -47,3 +47,11 @@ queries.
 
 This option has been removed as expanded terms are now normalized through
 Analyzer#normalize.
+
+## Cache key and close listener refactoring (LUCENE-7410)
+
+The way to access cache keys and add close listeners has been refactored in
+order to be less trappy. You should now use IndexReader.getReaderCacheHelper()
+to have manage caches that take deleted docs and doc values updates into
+account, and LeafReader.getCoreCacheHelper() to manage per-segment caches that
+do not take deleted docs and doc values updates into account.

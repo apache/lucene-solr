@@ -63,6 +63,7 @@ import org.apache.lucene.analysis.util.ResourceLoader;
 import org.apache.lucene.codecs.Codec;
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexDeletionPolicy;
+import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.search.BooleanQuery;
@@ -219,7 +220,7 @@ public final class SolrCore implements SolrInfoMBean, Closeable {
 
   public Date getStartTimeStamp() { return startTime; }
 
-  private final Map<Object, IndexFingerprint> perSegmentFingerprintCache = new MapMaker().weakKeys().makeMap();
+  private final Map<IndexReader.CacheKey, IndexFingerprint> perSegmentFingerprintCache = new MapMaker().weakKeys().makeMap();
 
   public long getStartNanoTime() {
     return startNanoTime;
@@ -1775,8 +1776,14 @@ public final class SolrCore implements SolrInfoMBean, Closeable {
    */
   public IndexFingerprint getIndexFingerprint(SolrIndexSearcher searcher, LeafReaderContext ctx, long maxVersion)
       throws IOException {
+    IndexReader.CacheHelper cacheHelper = ctx.reader().getReaderCacheHelper();
+    if (cacheHelper == null) {
+      log.debug("Cannot cache IndexFingerprint as reader does not support caching. searcher:{} reader:{} readerHash:{} maxVersion:{}", searcher, ctx.reader(), ctx.reader().hashCode(), maxVersion);
+      return IndexFingerprint.getFingerprint(searcher, ctx, maxVersion);
+    }
+    
     IndexFingerprint f = null;
-    f = perSegmentFingerprintCache.get(ctx.reader().getCombinedCoreAndDeletesKey());
+    f = perSegmentFingerprintCache.get(cacheHelper.getKey());
     // fingerprint is either not cached or
     // if we want fingerprint only up to a version less than maxVersionEncountered in the segment, or
     // documents were deleted from segment for which fingerprint was cached
@@ -1787,7 +1794,7 @@ public final class SolrCore implements SolrInfoMBean, Closeable {
       // cache fingerprint for the segment only if all the versions in the segment are included in the fingerprint
       if (f.getMaxVersionEncountered() == f.getMaxInHash()) {
         log.info("Caching fingerprint for searcher:{} leafReaderContext:{} mavVersion:{}", searcher, ctx, maxVersion);
-        perSegmentFingerprintCache.put(ctx.reader().getCombinedCoreAndDeletesKey(), f);
+        perSegmentFingerprintCache.put(cacheHelper.getKey(), f);
       }
 
     } else {

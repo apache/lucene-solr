@@ -66,6 +66,17 @@ public class MultiReader extends BaseCompositeReader<IndexReader> {
   }
 
   @Override
+  public CacheHelper getReaderCacheHelper() {
+    // MultiReader instances can be short-lived, which would make caching trappy
+    // so we do not cache on them, unless they wrap a single reader in which
+    // case we delegate
+    if (getSequentialSubReaders().size() == 1) {
+      return getSequentialSubReaders().get(0).getReaderCacheHelper();
+    }
+    return null;
+  }
+
+  @Override
   protected synchronized void doClose() throws IOException {
     IOException ioe = null;
     for (final IndexReader r : getSequentialSubReaders()) {

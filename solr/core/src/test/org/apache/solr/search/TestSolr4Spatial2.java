@@ -157,7 +157,7 @@ public class TestSolr4Spatial2 extends SolrTestCaseJ4 {
 
 
   protected Object getFirstLeafReaderKey() {
-    return getSearcher().getRawReader().leaves().get(0).reader().getCoreCacheKey();
+    return getSearcher().getRawReader().leaves().get(0).reader().getCoreCacheHelper().getKey();
   }
 
   @Test// SOLR-8541

@@ -19,7 +19,6 @@ package org.apache.lucene.index;
 
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -47,10 +46,21 @@ public class TestIndexReaderClose extends LuceneTestCase {
       LeafReader leaf = getOnlyLeafReader(open);
       FilterLeafReader reader = new FilterLeafReader(leaf) {
         @Override
+        public CacheHelper getCoreCacheHelper() {
+          return in.getCoreCacheHelper();
+        }
+        @Override
+        public CacheHelper getReaderCacheHelper() {
+          return in.getReaderCacheHelper();
+        }
+        @Override
         protected void doClose() throws IOException {
-          super.doClose();
-          if (throwOnClose) {
-           throw new IllegalStateException("BOOM!");
+          try {
+            super.doClose();
+          } finally {
+            if (throwOnClose) {
+              throw new IllegalStateException("BOOM!");
+             }
           }
         }
       };
@@ -60,14 +70,14 @@ public class TestIndexReaderClose extends LuceneTestCase {
       for (int i = 0; i < listenerCount; i++) {
           if (rarely()) {
             faultySet = true;
-            reader.addReaderClosedListener(new FaultyListener());
+            reader.getReaderCacheHelper().addClosedListener(new FaultyListener());
           } else {
             count.incrementAndGet();
-            reader.addReaderClosedListener(new CountListener(count));
+            reader.getReaderCacheHelper().addClosedListener(new CountListener(count));
           }
       }
       if (!faultySet && !throwOnClose) {
-        reader.addReaderClosedListener(new FaultyListener());
+        reader.getReaderCacheHelper().addClosedListener(new FaultyListener());
       }
 
       IllegalStateException expected = expectThrows(IllegalStateException.class, () -> {
@@ -106,31 +116,19 @@ public class TestIndexReaderClose extends LuceneTestCase {
     w.close();
 
     final IndexReader reader = DirectoryReader.open(w.w.getDirectory());
-    // We explicitly define a different cache key
-    final Object coreCacheKey = new Object();
-    final LeafReader leafReader = new FilterLeafReader(getOnlyLeafReader(reader)) {
-      @Override
-      public Object getCoreCacheKey() {
-        return coreCacheKey;
-      }
-    };
+    final LeafReader leafReader = new AssertingLeafReader(getOnlyLeafReader(reader));
 
     final int numListeners = TestUtil.nextInt(random(), 1, 10);
-    final List<LeafReader.CoreClosedListener> listeners = new ArrayList<>();
+    final List<IndexReader.ClosedListener> listeners = new ArrayList<>();
     AtomicInteger counter = new AtomicInteger(numListeners);
-    
+
     for (int i = 0; i < numListeners; ++i) {
-      CountCoreListener listener = new CountCoreListener(counter, coreCacheKey);
+      CountCoreListener listener = new CountCoreListener(counter, leafReader.getCoreCacheHelper().getKey());
       listeners.add(listener);
-      leafReader.addCoreClosedListener(listener);
+      leafReader.getCoreCacheHelper().addClosedListener(listener);
     }
     for (int i = 0; i < 100; ++i) {
-      leafReader.addCoreClosedListener(listeners.get(random().nextInt(listeners.size())));
-    }
-    final int removed = random().nextInt(numListeners);
-    Collections.shuffle(listeners, random());
-    for (int i = 0; i < removed; ++i) {
-      leafReader.removeCoreClosedListener(listeners.get(i));
+      leafReader.getCoreCacheHelper().addClosedListener(listeners.get(random().nextInt(listeners.size())));
     }
     assertEquals(numListeners, counter.get());
     // make sure listeners are registered on the wrapped reader and that closing any of them has the same effect
@@ -139,11 +137,11 @@ public class TestIndexReaderClose extends LuceneTestCase {
     } else {
       leafReader.close();
     }
-    assertEquals(removed, counter.get());
+    assertEquals(0, counter.get());
     w.w.getDirectory().close();
   }
 
-  private static final class CountCoreListener implements LeafReader.CoreClosedListener {
+  private static final class CountCoreListener implements IndexReader.ClosedListener {
 
     private final AtomicInteger count;
     private final Object coreCacheKey;
@@ -154,14 +152,14 @@ public class TestIndexReaderClose extends LuceneTestCase {
     }
 
     @Override
-    public void onClose(Object coreCacheKey) {
+    public void onClose(IndexReader.CacheKey coreCacheKey) {
       assertSame(this.coreCacheKey, coreCacheKey);
       count.decrementAndGet();
     }
 
   }
 
-  private static final class CountListener implements IndexReader.ReaderClosedListener  {
+  private static final class CountListener implements IndexReader.ClosedListener  {
     private final AtomicInteger count;
 
     public CountListener(AtomicInteger count) {
@@ -169,15 +167,15 @@ public class TestIndexReaderClose extends LuceneTestCase {
     }
 
     @Override
-    public void onClose(IndexReader reader) {
+    public void onClose(IndexReader.CacheKey cacheKey) {
       count.decrementAndGet();
     }
   }
 
-  private static final class FaultyListener implements IndexReader.ReaderClosedListener {
+  private static final class FaultyListener implements IndexReader.ClosedListener {
 
     @Override
-    public void onClose(IndexReader reader) {
+    public void onClose(IndexReader.CacheKey cacheKey) {
       throw new IllegalStateException("GRRRRRRRRRRRR!");
     }
   }

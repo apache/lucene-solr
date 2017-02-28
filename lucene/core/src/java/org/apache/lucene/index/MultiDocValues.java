@@ -598,7 +598,9 @@ public class MultiDocValues {
     if (anyReal == false) {
       return null;
     } else {
-      OrdinalMap mapping = OrdinalMap.build(r.getCoreCacheKey(), values, PackedInts.DEFAULT);
+      IndexReader.CacheHelper cacheHelper = r.getReaderCacheHelper();
+      IndexReader.CacheKey owner = cacheHelper == null ? null : cacheHelper.getKey();
+      OrdinalMap mapping = OrdinalMap.build(owner, values, PackedInts.DEFAULT);
       return new MultiSortedDocValues(values, starts, mapping, totalCost);
     }
   }
@@ -640,7 +642,9 @@ public class MultiDocValues {
     if (anyReal == false) {
       return null;
     } else {
-      OrdinalMap mapping = OrdinalMap.build(r.getCoreCacheKey(), values, PackedInts.DEFAULT);
+      IndexReader.CacheHelper cacheHelper = r.getReaderCacheHelper();
+      IndexReader.CacheKey owner = cacheHelper == null ? null : cacheHelper.getKey();
+      OrdinalMap mapping = OrdinalMap.build(owner, values, PackedInts.DEFAULT);
       return new MultiSortedSetDocValues(values, starts, mapping, totalCost);
     }
   }
@@ -710,9 +714,9 @@ public class MultiDocValues {
     /**
      * Create an ordinal map that uses the number of unique values of each
      * {@link SortedDocValues} instance as a weight.
-     * @see #build(Object, TermsEnum[], long[], float)
+     * @see #build(IndexReader.CacheKey, TermsEnum[], long[], float)
      */
-    public static OrdinalMap build(Object owner, SortedDocValues[] values, float acceptableOverheadRatio) throws IOException {
+    public static OrdinalMap build(IndexReader.CacheKey owner, SortedDocValues[] values, float acceptableOverheadRatio) throws IOException {
       final TermsEnum[] subs = new TermsEnum[values.length];
       final long[] weights = new long[values.length];
       for (int i = 0; i < values.length; ++i) {
@@ -725,9 +729,9 @@ public class MultiDocValues {
     /**
      * Create an ordinal map that uses the number of unique values of each
      * {@link SortedSetDocValues} instance as a weight.
-     * @see #build(Object, TermsEnum[], long[], float)
+     * @see #build(IndexReader.CacheKey, TermsEnum[], long[], float)
      */
-    public static OrdinalMap build(Object owner, SortedSetDocValues[] values, float acceptableOverheadRatio) throws IOException {
+    public static OrdinalMap build(IndexReader.CacheKey owner, SortedSetDocValues[] values, float acceptableOverheadRatio) throws IOException {
       final TermsEnum[] subs = new TermsEnum[values.length];
       final long[] weights = new long[values.length];
       for (int i = 0; i < values.length; ++i) {
@@ -748,7 +752,7 @@ public class MultiDocValues {
      *             to the other subs
      * @throws IOException if an I/O error occurred.
      */
-    public static OrdinalMap build(Object owner, TermsEnum subs[], long[] weights, float acceptableOverheadRatio) throws IOException {
+    public static OrdinalMap build(IndexReader.CacheKey owner, TermsEnum subs[], long[] weights, float acceptableOverheadRatio) throws IOException {
       if (subs.length != weights.length) {
         throw new IllegalArgumentException("subs and weights must have the same length");
       }
@@ -761,7 +765,7 @@ public class MultiDocValues {
     private static final long BASE_RAM_BYTES_USED = RamUsageEstimator.shallowSizeOfInstance(OrdinalMap.class);
 
     /** Cache key of whoever asked for this awful thing */
-    public final Object owner;
+    public final IndexReader.CacheKey owner;
     // globalOrd -> (globalOrd - segmentOrd) where segmentOrd is the the ordinal in the first segment that contains this term
     final PackedLongValues globalOrdDeltas;
     // globalOrd -> first segment container
@@ -773,7 +777,7 @@ public class MultiDocValues {
     // ram usage
     final long ramBytesUsed;
     
-    OrdinalMap(Object owner, TermsEnum subs[], SegmentMap segmentMap, float acceptableOverheadRatio) throws IOException {
+    OrdinalMap(IndexReader.CacheKey owner, TermsEnum subs[], SegmentMap segmentMap, float acceptableOverheadRatio) throws IOException {
       // create the ordinal mappings by pulling a termsenum over each sub's 
       // unique terms, and walking a multitermsenum over those
       this.owner = owner;

@@ -108,6 +108,11 @@ public class TestTermQuery extends LuceneTestCase {
     protected DirectoryReader doWrapDirectoryReader(DirectoryReader in) throws IOException {
       return new NoSeekDirectoryReader(in);
     }
+
+    @Override
+    public CacheHelper getReaderCacheHelper() {
+      return in.getReaderCacheHelper();
+    }
     
   }
 
@@ -147,6 +152,16 @@ public class TestTermQuery extends LuceneTestCase {
           };
         }
       };
+    }
+
+    @Override
+    public CacheHelper getCoreCacheHelper() {
+      return in.getCoreCacheHelper();
+    }
+
+    @Override
+    public CacheHelper getReaderCacheHelper() {
+      return in.getReaderCacheHelper();
     }
 
   };
