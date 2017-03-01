@@ -242,6 +242,9 @@ Build
 * LUCENE-7693: Replace "org.apache." logic in GetMavenDependenciesTask.
   (Daniel Collins, Christine Poerschke)
 
+* LUCENE-7726: Fix HTML entity bugs in Javadocs to be able to build with
+  Java 9. (Uwe Schindler, Hossman)
+
 Other
 
 * LUCENE-7666: Fix typos in lucene-join package info javadoc.
