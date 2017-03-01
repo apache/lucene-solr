@@ -257,6 +257,10 @@ Bug Fixes
 * LUCENE-7676: Fixed FilterCodecReader to override more super-class methods.
   Also added TestFilterCodecReader class. (Christine Poerschke)
 
+* LUCENE-7717: The UnifiedHighlighter and PostingsHighlighter were not highlighting
+  prefix queries with multi-byte characters. TermRangeQuery is affected too.
+  (Dmitry Malinin, David Smiley)
+
 ======================= Lucene 6.4.1 =======================
 
 Build
