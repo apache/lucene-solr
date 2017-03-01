@@ -918,7 +918,6 @@ public class StreamExpressionTest extends SolrCloudTestCase {
     t = tuples.get(1);
     assertTrue(t.getString("id").equals("9"));
 
-
     stream = factory.constructStream("having(rollup(over=a_f, sum(a_i), search(" + COLLECTIONORALIAS + ", q=*:*, fl=\"id,a_s,a_i,a_f\", sort=\"a_f asc\")), and(eq(sum(a_i), 9),eq(sum(a_i), 9)))");
     context = new StreamContext();
     context.setSolrClientCache(solrClientCache);
@@ -1038,8 +1037,6 @@ public class StreamExpressionTest extends SolrCloudTestCase {
 
     t = tuples.get(0);
     assertTrue(t.getDouble("a_f") == 10.0D);
-
-
 
     solrClientCache.close();
   }
