@@ -29,6 +29,7 @@ import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.analysis.MockTokenizer;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.Tokenizer;
+import org.apache.lucene.analysis.standard.StandardAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.FieldType;
@@ -668,10 +669,11 @@ public class TestUnifiedHighlighterMTQ extends LuceneTestCase {
 
     IndexSearcher searcher = newSearcher(ir);
     UnifiedHighlighter highlighter = new UnifiedHighlighter(searcher, indexAnalyzer);
+    // use a variety of common MTQ types
     BooleanQuery query = new BooleanQuery.Builder()
-        .add(new WildcardQuery(new Term("body", "te*")), BooleanClause.Occur.SHOULD)
-        .add(new WildcardQuery(new Term("body", "one")), BooleanClause.Occur.SHOULD)
-        .add(new WildcardQuery(new Term("body", "se*")), BooleanClause.Occur.SHOULD)
+        .add(new PrefixQuery(new Term("body", "te")), BooleanClause.Occur.SHOULD)
+        .add(new WildcardQuery(new Term("body", "*one*")), BooleanClause.Occur.SHOULD)
+        .add(new FuzzyQuery(new Term("body", "zentence~")), BooleanClause.Occur.SHOULD)
         .build();
     TopDocs topDocs = searcher.search(query, 10, Sort.INDEXORDER);
     assertEquals(1, topDocs.totalHits);
@@ -732,8 +734,7 @@ public class TestUnifiedHighlighterMTQ extends LuceneTestCase {
     snippets = highlighter.highlight("body", query, topDocs);
     assertEquals(1, snippets.length);
 
-    // Default formatter bolds each hit:
-    assertEquals("<b>Test(body:te*)</b> a <b>one(body:one)</b> <b>sentence(body:se*)</b> document.", snippets[0]);
+    assertEquals("<b>Test(body:te*)</b> a <b>one(body:*one*)</b> <b>sentence(body:zentence~~2)</b> document.", snippets[0]);
 
     ir.close();
   }
@@ -1054,4 +1055,23 @@ public class TestUnifiedHighlighterMTQ extends LuceneTestCase {
     }
   }
 
+  // LUCENE-7717 bug, ordering of MTQ AutomatonQuery detection
+  public void testRussianPrefixQuery() throws IOException {
+    Analyzer analyzer = new StandardAnalyzer();
+    RandomIndexWriter iw = new RandomIndexWriter(random(), dir, analyzer);
+    String field = "title";
+    Document doc = new Document();
+    doc.add(new Field(field, "я", fieldType)); // Russian char; uses 2 UTF8 bytes
+    iw.addDocument(doc);
+    IndexReader ir = iw.getReader();
+    iw.close();
+
+    IndexSearcher searcher = newSearcher(ir);
+    Query query = new PrefixQuery(new Term(field, "я"));
+    TopDocs topDocs = searcher.search(query, 1);
+    UnifiedHighlighter highlighter = new UnifiedHighlighter(searcher, analyzer);
+    String[] snippets = highlighter.highlight(field, query, topDocs);
+    assertEquals("[<b>я</b>]", Arrays.toString(snippets));
+    ir.close();
+  }
 }
