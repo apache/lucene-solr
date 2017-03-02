@@ -187,6 +187,9 @@ Other
   of LatLonPoint, which offers faster indexing and searching
   performance, smaller index, and less search-time heap usage.  (Mike McCandless)
 
+* LUCENE-7715: NearSpansUnordered simplifications.
+  (Paul Elschot via Adrien Grand)
+
 ======================= Lucene 6.4.2 =======================
 
 Bug Fixes
