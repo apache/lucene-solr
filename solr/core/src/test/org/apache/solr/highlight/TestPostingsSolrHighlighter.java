@@ -145,6 +145,19 @@ public class TestPostingsSolrHighlighter extends SolrTestCaseJ4 {
         "//lst[@name='highlighting']/lst[@name='103']/arr[@name='text']/str='<em>Document</em> one has a first sentence. <em>Document</em> two has a second sentence.'");
   }
   
+  public void testBreakIterator3() {
+    assertU(adoc("text", "This document contains # special characters, while the other document contains the same # special character.", "id", "103"));
+    assertU(adoc("text", "While the other document contains the same # special character.", "id", "104"));
+    assertU(commit());
+    assertQ("different breakiterator", 
+        req("q", "text:document", "sort", "id asc", "hl", "true", "hl.bs.type", "SEPARATOR","hl.bs.separator","#"),
+        "//lst[@name='highlighting']/lst[@name='103']/arr[@name='text']/str='This <em>document</em> contains #'");
+    assertQ("different breakiterator", 
+        req("q", "text:document", "sort", "id asc", "hl", "true", "hl.bs.type", "SEPARATOR","hl.bs.separator","#"),
+        "//lst[@name='highlighting']/lst[@name='104']/arr[@name='text']/str='While the other <em>document</em> contains the same #'");
+
+  }
+  
   public void testEncoder() {
     assertU(adoc("text", "Document one has a first <i>sentence</i>.", "id", "103"));
     assertU(commit());
