@@ -253,6 +253,9 @@ Other
 * LUCENE-7658: queryparser/xml CoreParser now implements SpanQueryBuilder interface.
   (Daniel Collins, Christine Poerschke)
 
+* LUCENE-7715: NearSpansUnordered simplifications.
+  (Paul Elschot via Adrien Grand)
+
 ======================= Lucene 6.4.2 =======================
 
 Bug Fixes
