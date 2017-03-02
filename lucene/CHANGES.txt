@@ -245,6 +245,9 @@ Build
 * LUCENE-7726: Fix HTML entity bugs in Javadocs to be able to build with
   Java 9. (Uwe Schindler, Hossman)
 
+* LUCENE-7727: Replace end-of-life Markdown parser "Pegdown" by "Flexmark"
+  for compatibility with Java 9. (Uwe Schindler)
+
 Other
 
 * LUCENE-7666: Fix typos in lucene-join package info javadoc.

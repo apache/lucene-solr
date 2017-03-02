@@ -202,9 +202,6 @@
           <replaceregex pattern="src\s*=\s*&quot;images/" replace="src=&quot;/solr/assets/images/" flags="gs"/>
           <!-- Redirect to the website's version-specific system requirements page -->
           <replaceregex pattern="\(SYSTEM_REQUIREMENTS.html\)" replace="(/solr/api/SYSTEM_REQUIREMENTS.html)" flags="gs"/>
-          <!-- Remove name anchors.  Unlike pegdown, the website markdown processor automatically attaches id-s to headers.
-               Exception: don't remove the "techproducts" anchor, because it has no following header.                      -->
-          <replaceregex pattern="&lt;a\s+name\s*=\s*&quot;(?!techproducts)[^&quot;]+&quot;\s*&gt;\s*&lt;/a&gt;\s*" replace="" flags="gs"/>
         </tokenfilter>
       </filterchain>
     </copy>
@@ -225,7 +222,7 @@
     </copy>
   </target>
 
-  <target name="process-webpages" depends="define-lucene-javadoc-url,resolve-pegdown">
+  <target name="process-webpages" depends="define-lucene-javadoc-url,resolve-markdown">
     <makeurl property="process-webpages.buildfiles" separator="|">
       <fileset dir="." includes="core/build.xml,test-framework/build.xml,solrj/build.xml,contrib/**/build.xml"/>
     </makeurl>
@@ -244,10 +241,10 @@
       <param name="luceneJavadocUrl" expression="${lucene.javadoc.url}"/>
     </xslt>
     
-    <pegdown todir="${javadoc.dir}">
+    <markdown todir="${javadoc.dir}">
       <fileset dir="site" includes="**/*.mdtext"/>
       <globmapper from="*.mdtext" to="*.html"/>
-    </pegdown>
+    </markdown>
 
     <copy todir="${javadoc.dir}">
       <fileset dir="site/assets" />

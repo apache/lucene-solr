@@ -208,7 +208,7 @@
     <modules-crawl target="-ecj-javadoc-lint"/>
   </target>
 
-  <target name="process-webpages" depends="resolve-pegdown">
+  <target name="process-webpages" depends="resolve-markdown">
     <makeurl property="process-webpages.buildfiles" separator="|">
       <fileset dir="." includes="**/build.xml" excludes="build.xml,analysis/*,build/**,tools/**,site/**"/>
     </makeurl>
@@ -237,10 +237,10 @@
       <param name="defaultCodec" expression="${defaultCodec}"/>
     </xslt>
     
-    <pegdown todir="${javadoc.dir}">
+    <markdown todir="${javadoc.dir}">
       <fileset dir="." includes="MIGRATE.txt,JRE_VERSION_MIGRATION.txt,SYSTEM_REQUIREMENTS.txt"/>
       <globmapper from="*.txt" to="*.html"/>
-    </pegdown>
+    </markdown>
 
     <copy todir="${javadoc.dir}">
       <fileset dir="site/html"/>
