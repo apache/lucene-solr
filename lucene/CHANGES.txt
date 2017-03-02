@@ -43,6 +43,10 @@ API Changes
   instead of once all shard responses are present. (Simon Willnauer,
   Mike McCandless)
 
+* LUCENE-6819: Index-time boosts are deprecated. As a replacement, index-time
+  scoring factors should be indexed into a doc value field and combined at
+  query time using eg. FunctionScoreQuery. (Adrien Grand)
+
 New Features
 
 * LUCENE-7449: Add CROSSES relation support to RangeFieldQuery. (Nick Knize)

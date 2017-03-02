@@ -35,6 +35,10 @@ Detailed Change List
 Upgrade Notes
 ----------------------
 
+* Index-time boosts are now deprecated. As a replacement, index-time scoring
+  factors should be indexed in a separate field and combined with the query
+  score using a function query.
+
 New Features
 ----------------------
 

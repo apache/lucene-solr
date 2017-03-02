@@ -453,7 +453,11 @@ public class Field implements IndexableField {
    * @throws IllegalArgumentException if this field is not indexed, 
    *         or if it omits norms. 
    * @see #boost()
+   * @deprecated Index-time boosts are deprecated, please index index-time scoring
+   *             factors into a doc value field and combine them with the score at
+   *             query time using eg. FunctionScoreQuery.
    */
+  @Deprecated
   public void setBoost(float boost) {
     if (boost != 1.0f) {
       if (type.indexOptions() == IndexOptions.NONE || type.omitNorms()) {

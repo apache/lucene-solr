@@ -131,6 +131,14 @@ public class SolrInputDocument extends SolrDocumentBase<SolrInputField, SolrInpu
     setField(name, value, 1.0f );
   }
   
+  /**
+   * Set a field value.
+   * @deprecated Index-time boosts are deprecated. You should instead index
+   *             scoring factors into a separate field and combine them with
+   *             the main query's score at search time using function queries.
+   *             Use {@link #setField(String, Object)} instead.
+   */
+  @Deprecated
   public void setField(String name, Object value, float boost ) 
   {
     SolrInputField field = new SolrInputField( name );
@@ -150,7 +158,12 @@ public class SolrInputDocument extends SolrDocumentBase<SolrInputField, SolrInpu
    * @param name Name of the field, should match one of the field names defined under "fields" tag in schema.xml.
    * @param value Value of the field, should be of same class type as defined by "type" attribute of the corresponding field in schema.xml. 
    * @param boost Boost value for the field
+   * @deprecated Index-time boosts are deprecated. You should instead index
+   *             scoring factors into a separate field and combine them with
+   *             the main query's score at search time using function queries.
+   *             Use {@link #addField(String, Object)} instead.
    */
+  @Deprecated
   public void addField(String name, Object value, float boost ) 
   {
     SolrInputField field = _fields.get( name );
@@ -187,10 +200,24 @@ public class SolrInputDocument extends SolrDocumentBase<SolrInputField, SolrInpu
     return _fields.values().iterator();
   }
   
+  /**
+   * Get the document boost.
+   * @deprecated Index-time boosts are deprecated. You should instead index
+   *             scoring factors into a separate field and combine them with
+   *             the main query's score at search time using function queries.
+   */
+  @Deprecated
   public float getDocumentBoost() {
     return _documentBoost;
   }
 
+  /**
+   * Set the document boost.
+   * @deprecated Index-time boosts are deprecated. You should instead index
+   *             scoring factors into a separate field and combine them with
+   *             the main query's score at search time using function queries.
+   */
+  @Deprecated
   public void setDocumentBoost(float documentBoost) {
     _documentBoost = documentBoost;
   }

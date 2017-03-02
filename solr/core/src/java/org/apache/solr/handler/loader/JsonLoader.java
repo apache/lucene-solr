@@ -28,6 +28,7 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.UUID;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.apache.commons.io.IOUtils;
 import org.apache.solr.common.SolrException;
@@ -65,6 +66,7 @@ import static org.apache.solr.common.params.CommonParams.PATH;
  */
 public class JsonLoader extends ContentStreamLoader {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
+  private static final AtomicBoolean WARNED_ABOUT_INDEX_TIME_BOOSTS = new AtomicBoolean();
   public static final String CHILD_DOC_KEY = "_childDocuments_";
 
   @Override
@@ -455,6 +457,14 @@ public class JsonLoader extends ContentStreamLoader {
               cmd.commitWithin = (int) parser.getLong();
             } else if ("boost".equals(key)) {
               boost = Float.parseFloat(parser.getNumberChars().toString());
+              String message = "Using document boost: " + boost + " != 1.0 will not be supported anymore in 7.0. "
+                  + "Please index scoring factors into a separate field and combine them with the main query's "
+                  + "score using function queries.";
+              if (WARNED_ABOUT_INDEX_TIME_BOOSTS.compareAndSet(false, true)) {
+                log.warn(message);
+              } else {
+                log.debug(message);
+              }
             } else {
               throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Unknown key '" + key + "' at [" + parser.getPosition() + "]");
             }
@@ -574,6 +584,14 @@ public class JsonLoader extends ContentStreamLoader {
               }
 
               boost = (float) parser.getDouble();
+              String message = "Using field boost: " + boost + " != 1.0 will not be supported anymore in 7.0. "
+                  + "Please index scoring factors into a separate field and combine them with the main query's "
+                  + "score using function queries.";
+              if (WARNED_ABOUT_INDEX_TIME_BOOSTS.compareAndSet(false, true)) {
+                log.warn(message);
+              } else {
+                log.debug(message);
+              }
             } else if ("value".equals(label)) {
               normalFieldValue = parseNormalFieldValue(parser.nextEvent(), sif.getName());
             } else {

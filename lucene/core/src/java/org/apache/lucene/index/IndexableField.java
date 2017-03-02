@@ -76,7 +76,11 @@ public interface IndexableField {
    *
    * @see Similarity#computeNorm(FieldInvertState)
    * @see ClassicSimilarity#encodeNormValue(float)
+   * @deprecated Index-time boosts are deprecated, please index index-time scoring
+   *             factors into a doc value field and combine them with the score at
+   *             query time using eg. FunctionScoreQuery.
    */
+  @Deprecated
   public float boost();
 
   /** Non-null if this field has a binary value */

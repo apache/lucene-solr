@@ -165,10 +165,24 @@ public class SolrInputField implements Iterable<Object>, Serializable
   //---------------------------------------------------------------
   //---------------------------------------------------------------
   
+  /**
+   * Get the field's boost.
+   * @deprecated Index-time boosts are deprecated. You should instead index
+   *             scoring factors into a separate field and combine them with
+   *             the main query's score at search time using function queries.
+   */
+  @Deprecated
   public float getBoost() {
     return boost;
   }
 
+  /**
+   * Set the field's boost.
+   * @deprecated Index-time boosts are deprecated. You should instead index
+   *             scoring factors into a separate field and combine them with
+   *             the main query's score at search time using function queries.
+   */
+  @Deprecated
   public void setBoost(float boost) {
     this.boost = boost;
   }

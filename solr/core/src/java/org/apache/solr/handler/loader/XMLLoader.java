@@ -35,6 +35,7 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import com.google.common.collect.Lists;
 import org.apache.commons.io.IOUtils;
@@ -71,6 +72,7 @@ import static org.apache.solr.common.params.CommonParams.NAME;
 
 public class XMLLoader extends ContentStreamLoader {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
+  private static final AtomicBoolean WARNED_ABOUT_INDEX_TIME_BOOSTS = new AtomicBoolean();
   static final XMLErrorLogger xmllog = new XMLErrorLogger(log);
   
   public static final String CONTEXT_TRANSFORMER_KEY = "xsltupdater.transformer";
@@ -379,6 +381,14 @@ public class XMLLoader extends ContentStreamLoader {
     for (int i = 0; i < parser.getAttributeCount(); i++) {
       attrName = parser.getAttributeLocalName(i);
       if ("boost".equals(attrName)) {
+        String message = "Using document boost: " + parser.getAttributeValue(i) + " != 1.0 will not be supported anymore in 7.0. "
+                  + "Please index scoring factors into a separate field and combine them with the main query's "
+                  + "score using function queries.";
+        if (WARNED_ABOUT_INDEX_TIME_BOOSTS.compareAndSet(false, true)) {
+          log.warn(message);
+        } else {
+          log.debug(message);
+        }
         doc.setDocumentBoost(Float.parseFloat(parser.getAttributeValue(i)));
       } else {
         log.warn("XML element <doc> has invalid XML attr:" + attrName);
@@ -471,6 +481,14 @@ public class XMLLoader extends ContentStreamLoader {
                 name = attrVal;
               } else if ("boost".equals(attrName)) {
                 boost = Float.parseFloat(attrVal);
+                String message = "Using field boost: " + boost + " != 1.0 will not be supported anymore in 7.0. "
+                  + "Please index scoring factors into a separate field and combine them with the main query's "
+                  + "score using function queries.";
+                if (WARNED_ABOUT_INDEX_TIME_BOOSTS.compareAndSet(false, true)) {
+                  log.warn(message);
+                } else {
+                  log.debug(message);
+                }
               } else if ("null".equals(attrName)) {
                 isNull = StrUtils.parseBoolean(attrVal);
               } else if ("update".equals(attrName)) {
