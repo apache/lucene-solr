@@ -269,6 +269,9 @@ Other Changes
   
 * SOLR-10134: EmbeddedSolrServer responds on Schema API requests (Robert Alexandersson via Mikhail Khludnev)  
 
+* SOLR-10219: re-enable HDFS tests under JDK9 (hossman, Uwe Schindler)
+
+
 ==================  6.4.2 ==================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release.
