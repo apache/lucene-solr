@@ -40,8 +40,8 @@ public class StrField extends PrimitiveFieldType {
   }
 
   @Override
-  public List<IndexableField> createFields(SchemaField field, Object value, float boost) {
-    IndexableField fval = createField(field, value, boost);
+  public List<IndexableField> createFields(SchemaField field, Object value) {
+    IndexableField fval = createField(field, value);
 
     if (field.hasDocValues()) {
       IndexableField docval;

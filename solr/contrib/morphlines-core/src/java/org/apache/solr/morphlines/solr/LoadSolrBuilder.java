@@ -17,10 +17,12 @@
 package org.apache.solr.morphlines.solr;
 
 import java.io.IOException;
+import java.lang.invoke.MethodHandles;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.common.SolrInputDocument;
@@ -34,6 +36,9 @@ import org.kitesdk.morphline.base.AbstractCommand;
 import org.kitesdk.morphline.base.Configs;
 import org.kitesdk.morphline.base.Metrics;
 import org.kitesdk.morphline.base.Notifications;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import com.codahale.metrics.Timer;
 import com.typesafe.config.Config;
 import com.typesafe.config.ConfigFactory;
@@ -42,6 +47,9 @@ import com.typesafe.config.ConfigFactory;
  * A command that loads a record into a SolrServer or MapReduce SolrOutputFormat.
  */
 public final class LoadSolrBuilder implements CommandBuilder {
+
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
+  private static final AtomicBoolean WARNED_ABOUT_INDEX_TIME_BOOSTS = new AtomicBoolean();
 
   @Override
   public Collection<String> getNames() {
@@ -60,7 +68,6 @@ public final class LoadSolrBuilder implements CommandBuilder {
   private static final class LoadSolr extends AbstractCommand {
     
     private final DocumentLoader loader;
-    private final Map<String, Float> boosts = new HashMap();
     private final Timer elapsedTime;    
     
     public LoadSolr(CommandBuilder builder, Config config, Command parent, Command child, MorphlineContext context) {
@@ -70,10 +77,13 @@ public final class LoadSolrBuilder implements CommandBuilder {
       LOG.debug("solrLocator: {}", locator);
       this.loader = locator.getLoader();
       Config boostsConfig = getConfigs().getConfig(config, "boosts", ConfigFactory.empty());
-      for (Map.Entry<String, Object> entry : new Configs().getEntrySet(boostsConfig)) {
-        String fieldName = entry.getKey();        
-        float boost = Float.parseFloat(entry.getValue().toString().trim());
-        boosts.put(fieldName, boost);
+      if (new Configs().getEntrySet(boostsConfig).isEmpty() == false) {
+        String message = "Ignoring field boosts: as index-time boosts are not supported anymore";
+        if (WARNED_ABOUT_INDEX_TIME_BOOSTS.compareAndSet(false, true)) {
+          log.warn(message);
+        } else {
+          log.debug(message);
+        }
       }
       validateArguments();
       this.elapsedTime = getTimer(Metrics.ELAPSED_TIME);
@@ -134,19 +144,9 @@ public final class LoadSolrBuilder implements CommandBuilder {
       SolrInputDocument doc = new SolrInputDocument(new HashMap(2 * map.size()));
       for (Map.Entry<String, Collection<Object>> entry : map.entrySet()) {
         String key = entry.getKey();
-        doc.setField(key, entry.getValue(), getBoost(key));
+        doc.setField(key, entry.getValue());
       }
       return doc;
-    }
-
-    private float getBoost(String key) {
-      if (boosts.size() > 0) {
-        Float boost = boosts.get(key);
-        if (boost != null) {
-          return boost.floatValue();
-        }
-      }
-      return 1.0f;
     }
     
   }

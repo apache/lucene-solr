@@ -37,6 +37,10 @@ API Changes
   to be less trappy. See IndexReader.getReaderCacheHelper and
   LeafReader.getCoreCacheHelper. (Adrien Grand)
 
+* LUCENE-6819: Index-time boosts are not supported anymore. As a replacement,
+  index-time scoring factors should be indexed into a doc value field and
+  combined at query time using eg. FunctionScoreQuery. (Adrien Grand)
+
 Bug Fixes
 
 * LUCENE-7626: IndexWriter will no longer accept broken token offsets

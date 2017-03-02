@@ -52,7 +52,7 @@ public class JsonLoaderTest extends SolrTestCaseJ4 {
       "    },\n" +
       "    'array': [ 'aaa', 'bbb' ],\n" +
       "    'boosted': {\n" +
-      "      'boost': 6.7,\n" +
+      "      'boost': 6.7,\n" + // make sure we still accept boosts
       "      'value': [ 'aaa', 'bbb' ]\n" +
       "    }\n" +
       "  }\n" +
@@ -94,7 +94,6 @@ public class JsonLoaderTest extends SolrTestCaseJ4 {
     AddUpdateCommand add = p.addCommands.get(0);
     SolrInputDocument d = add.solrDoc;
     SolrInputField f = d.getField( "boosted" );
-    assertEquals(6.7f, f.getBoost(), 0.1);
     assertEquals(2, f.getValues().size());
 
     // 
@@ -102,7 +101,6 @@ public class JsonLoaderTest extends SolrTestCaseJ4 {
     d = add.solrDoc;
     f = d.getField( "f1" );
     assertEquals(2, f.getValues().size());
-    assertEquals(3.45f, d.getDocumentBoost(), 0.001);
     assertEquals(false, add.overwrite);
 
     assertEquals(0, d.getField("f2").getValueCount());
@@ -262,7 +260,6 @@ public class JsonLoaderTest extends SolrTestCaseJ4 {
     assertEquals(2, d.getFieldNames().size());
     assertEquals("1", d.getFieldValue("id"));
     assertEquals(new Object[] {45L, 67L, 89L} , d.getFieldValues("f").toArray());
-    assertEquals(0.0F, fBoost, d.getField("f").getBoost());
 
     d = p.addCommands.get(1).solrDoc;
     assertEquals(1, d.getFieldNames().size());

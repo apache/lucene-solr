@@ -50,8 +50,8 @@ abstract public class SolrExampleTestsBase extends SolrJettyTestBase {
     
     // Now try a timed commit...
     SolrInputDocument doc3 = new SolrInputDocument();
-    doc3.addField("id", "id3", 1.0f);
-    doc3.addField("name", "doc3", 1.0f);
+    doc3.addField("id", "id3");
+    doc3.addField("name", "doc3");
     doc3.addField("price", 10);
     UpdateRequest up = new UpdateRequest();
     up.add(doc3);
@@ -87,8 +87,8 @@ abstract public class SolrExampleTestsBase extends SolrJettyTestBase {
     
     // Now test the new convenience parameter on the add() for commitWithin
     SolrInputDocument doc4 = new SolrInputDocument();
-    doc4.addField("id", "id4", 1.0f);
-    doc4.addField("name", "doc4", 1.0f);
+    doc4.addField("id", "id4");
+    doc4.addField("name", "doc4");
     doc4.addField("price", 10);
     client.add(doc4, 500);
     
@@ -125,8 +125,8 @@ abstract public class SolrExampleTestsBase extends SolrJettyTestBase {
     
     // Now add one document...
     SolrInputDocument doc3 = new SolrInputDocument();
-    doc3.addField("id", "id3", 1.0f);
-    doc3.addField("name", "doc3", 1.0f);
+    doc3.addField("id", "id3");
+    doc3.addField("name", "doc3");
     doc3.addField("price", 10);
     client.add(doc3);
     client.commit();
@@ -169,7 +169,7 @@ abstract public class SolrExampleTestsBase extends SolrJettyTestBase {
     SolrInputDocument[] doc = new SolrInputDocument[3];
     for (int i = 0; i < 3; i++) {
       doc[i] = new SolrInputDocument();
-      doc[i].setField("id", i + " & 222", 1.0f);
+      doc[i].setField("id", i + " & 222");
     }
     String id = (String) doc[0].getField("id").getFirstValue();
     

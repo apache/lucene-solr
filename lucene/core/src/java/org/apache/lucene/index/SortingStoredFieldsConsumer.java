@@ -183,11 +183,6 @@ final class SortingStoredFieldsConsumer extends StoredFieldsConsumer {
     }
 
     @Override
-    public float boost() {
-      return 1F;
-    }
-
-    @Override
     public TokenStream tokenStream(Analyzer analyzer, TokenStream reuse) {
       return null;
     }

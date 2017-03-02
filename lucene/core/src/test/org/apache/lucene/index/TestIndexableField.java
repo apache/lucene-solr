@@ -111,11 +111,6 @@ public class TestIndexableField extends LuceneTestCase {
     }
 
     @Override
-    public float boost() {
-      return 1.0f + random().nextFloat();
-    }
-
-    @Override
     public BytesRef binaryValue() {
       if ((counter%10) == 3) {
         final byte[] bytes = new byte[10];
@@ -336,11 +331,6 @@ public class TestIndexableField extends LuceneTestCase {
     @Override
     public Reader readerValue() {
       return null;
-    }
-
-    @Override
-    public float boost() {
-      return 1.0f;
     }
 
     @Override

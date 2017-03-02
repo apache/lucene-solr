@@ -391,7 +391,7 @@ public class EnumField extends PrimitiveFieldType {
    * {@inheritDoc}
    */
   @Override
-  public IndexableField createField(SchemaField field, Object value, float boost) {
+  public IndexableField createField(SchemaField field, Object value) {
     final boolean indexed = field.indexed();
     final boolean stored = field.stored();
     final boolean docValues = field.hasDocValues();
@@ -418,21 +418,17 @@ public class EnumField extends PrimitiveFieldType {
     newType.setNumericType(LegacyNumericType.INT);
     newType.setNumericPrecisionStep(DEFAULT_PRECISION_STEP);
 
-    final org.apache.lucene.document.Field f;
-    f = new LegacyIntField(field.getName(), intValue.intValue(), newType);
-
-    f.setBoost(boost);
-    return f;
+    return new LegacyIntField(field.getName(), intValue.intValue(), newType);
   }
 
   /**
    * {@inheritDoc}
    */
   @Override
-  public List<IndexableField> createFields(SchemaField sf, Object value, float boost) {
+  public List<IndexableField> createFields(SchemaField sf, Object value) {
     if (sf.hasDocValues()) {
       List<IndexableField> fields = new ArrayList<>();
-      final IndexableField field = createField(sf, value, boost);
+      final IndexableField field = createField(sf, value);
       fields.add(field);
 
       if (sf.multiValued()) {
@@ -445,7 +441,7 @@ public class EnumField extends PrimitiveFieldType {
       }
       return fields;
     } else {
-      return Collections.singletonList(createField(sf, value, boost));
+      return Collections.singletonList(createField(sf, value));
     }
   }
 

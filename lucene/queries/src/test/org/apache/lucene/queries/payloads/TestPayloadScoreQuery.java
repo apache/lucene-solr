@@ -267,7 +267,7 @@ public class TestPayloadScoreQuery extends LuceneTestCase {
     //!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     @Override
     public float lengthNorm(FieldInvertState state) {
-      return state.getBoost();
+      return 1;
     }
 
     @Override

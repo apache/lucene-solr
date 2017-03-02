@@ -572,7 +572,7 @@ public class TrieField extends NumericFieldType {
   }
   
   @Override
-  public IndexableField createField(SchemaField field, Object value, float boost) {
+  public IndexableField createField(SchemaField field, Object value) {
     boolean indexed = field.indexed();
     boolean stored = field.stored();
     boolean docValues = field.hasDocValues();
@@ -647,15 +647,14 @@ public class TrieField extends NumericFieldType {
         throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Unknown type for trie field: " + type);
     }
 
-    f.setBoost(boost);
     return f;
   }
 
   @Override
-  public List<IndexableField> createFields(SchemaField sf, Object value, float boost) {
+  public List<IndexableField> createFields(SchemaField sf, Object value) {
     if (sf.hasDocValues()) {
       List<IndexableField> fields = new ArrayList<>();
-      final IndexableField field = createField(sf, value, boost);
+      final IndexableField field = createField(sf, value);
       fields.add(field);
       
       if (sf.multiValued()) {
@@ -677,7 +676,7 @@ public class TrieField extends NumericFieldType {
       
       return fields;
     } else {
-      return Collections.singletonList(createField(sf, value, boost));
+      return Collections.singletonList(createField(sf, value));
     }
   }
 

@@ -43,25 +43,22 @@ public class DocumentBuilder {
    * @param doc Document that the field needs to be added to
    * @param field The schema field object for the field
    * @param val The value for the field to be added
-   * @param boost Boost value for the field
    * @param forInPlaceUpdate Whether the field is to be added for in-place update. If true,
    *        only numeric docValues based fields are added to the document. This can be true
    *        when constructing a Lucene document for writing an in-place update, and we don't need
    *        presence of non-updatable fields (non NDV) in such a document.
    */
-  private static void addField(Document doc, SchemaField field, Object val, float boost, 
+  private static void addField(Document doc, SchemaField field, Object val,
       boolean forInPlaceUpdate) {
     if (val instanceof IndexableField) {
       if (forInPlaceUpdate) {
         assert val instanceof NumericDocValuesField: "Expected in-place update to be done on"
             + " NDV fields only.";
       }
-      // set boost to the calculated compound boost
-      ((Field)val).setBoost(boost);
       doc.add((Field)val);
       return;
     }
-    for (IndexableField f : field.getType().createFields(field, val, boost)) {
+    for (IndexableField f : field.getType().createFields(field, val)) {
       if (f != null) { // null fields are not added
         // HACK: workaround for SOLR-9809
         // even though at this point in the code we know the field is single valued and DV only
@@ -126,7 +123,6 @@ public class DocumentBuilder {
     final String uniqueKeyFieldName = null == uniqueKeyField ? null : uniqueKeyField.getName();
     
     Document out = new Document();
-    final float docBoost = doc.getDocumentBoost();
     Set<String> usedFields = Sets.newHashSet();
     
     // Load fields from SolrDocument to Document
@@ -141,19 +137,6 @@ public class DocumentBuilder {
             "ERROR: "+getID(doc, schema)+"multiple values encountered for non multiValued field " + 
               sfield.getName() + ": " +field.getValue() );
       }
-      
-      float fieldBoost = field.getBoost();
-      boolean applyBoost = sfield != null && sfield.indexed() && !sfield.omitNorms();
-
-      if (applyBoost == false && fieldBoost != 1.0F) {
-        throw new SolrException( SolrException.ErrorCode.BAD_REQUEST,
-            "ERROR: "+getID(doc, schema)+"cannot set an index-time boost, unindexed or norms are omitted for field " + 
-              sfield.getName() + ": " +field.getValue() );
-      }
-
-      // Lucene no longer has a native docBoost, so we have to multiply 
-      // it ourselves 
-      float compoundBoost = fieldBoost * docBoost;
 
       List<CopyField> copyFields = schema.getCopyFieldsList(name);
       if( copyFields.size() == 0 ) copyFields = null;
@@ -168,7 +151,7 @@ public class DocumentBuilder {
           hasField = true;
           if (sfield != null) {
             used = true;
-            addField(out, sfield, v, applyBoost ? compoundBoost : 1f, 
+            addField(out, sfield, v,
                      name.equals(uniqueKeyFieldName) ? false : forInPlaceUpdate);
             // record the field as having a value
             usedFields.add(sfield.getName());
@@ -200,27 +183,13 @@ public class DocumentBuilder {
                   val = cf.getLimitedValue((String)val);
                 }
 
-                // we can't copy any boost unless the dest field is 
-                // indexed & !omitNorms, but which boost we copy depends
-                // on whether the dest field already contains values (we
-                // don't want to apply the compounded docBoost more then once)
-                final float destBoost = 
-                    (destinationField.indexed() && !destinationField.omitNorms()) ?
-                        (destHasValues ? fieldBoost : compoundBoost) : 1.0F;
-
-                addField(out, destinationField, val, destBoost, 
+                addField(out, destinationField, val,
                          destinationField.getName().equals(uniqueKeyFieldName) ? false : forInPlaceUpdate);
                 // record the field as having a value
                 usedFields.add(destinationField.getName());
               }
             }
           }
-
-          // The final boost for a given field named is the product of the 
-          // *all* boosts on values of that field. 
-          // For multi-valued fields, we only want to set the boost on the
-          // first field.
-          fieldBoost = compoundBoost = 1.0f;
         }
       }
       catch( SolrException ex ) {
@@ -250,7 +219,7 @@ public class DocumentBuilder {
       for (SchemaField field : schema.getRequiredFields()) {
         if (out.getField(field.getName() ) == null) {
           if (field.getDefaultValue() != null) {
-            addField(out, field, field.getDefaultValue(), 1.0f, false);
+            addField(out, field, field.getDefaultValue(), false);
           } 
           else {
             String msg = getID(doc, schema) + "missing required field: " + field.getName();

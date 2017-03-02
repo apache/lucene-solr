@@ -45,6 +45,11 @@ Upgrading from Solr 6.x
 * Deprecated collection and configset methods on MiniSolrCloudCluster have been
   removed
 
+* Index-time boosts are not supported anymore. If any boosts are provided, they
+  will be ignored by the indexing chain. As a replacement, index-time scoring
+  factors should be indexed in a separate field and combined with the query
+  score using a function query.
+
 Bug Fixes
 ----------------------
 * SOLR-9262: Connection and read timeouts are being ignored by UpdateShardHandler after SOLR-4509.

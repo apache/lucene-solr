@@ -51,6 +51,7 @@ import java.util.concurrent.atomic.AtomicLong;
 public class DocBuilder {
 
   private static final Logger LOG = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
+  private static final AtomicBoolean WARNED_ABOUT_INDEX_TIME_BOOSTS = new AtomicBoolean();
 
   private static final Date EPOCH = new Date(0);
   public static final String DELETE_DOC_BY_ID = "$deleteDocById";
@@ -617,13 +618,12 @@ public class DocBuilder {
     }
     value = arow.get(DOC_BOOST);
     if (value != null) {
-      float value1 = 1.0f;
-      if (value instanceof Number) {
-        value1 = ((Number) value).floatValue();
+      String message = "Ignoring document boost: " + value + " as index-time boosts are not supported anymore";
+      if (WARNED_ABOUT_INDEX_TIME_BOOSTS.compareAndSet(false, true)) {
+        LOG.warn(message);
       } else {
-        value1 = Float.parseFloat(value.toString());
+        LOG.debug(message);
       }
-      doc.setDocumentBoost(value1);
     }
 
     value = arow.get(SKIP_DOC);
@@ -659,7 +659,7 @@ public class DocBuilder {
           sf = config.getSchemaField(key);
         }
         if (sf != null) {
-          addFieldToDoc(entry.getValue(), sf.getName(), 1.0f, sf.multiValued(), doc);
+          addFieldToDoc(entry.getValue(), sf.getName(), sf.multiValued(), doc);
         }
         //else do nothing. if we add it it may fail
       } else {
@@ -679,7 +679,7 @@ public class DocBuilder {
               }
             }
             if (toWrite) {
-              addFieldToDoc(entry.getValue(), name, f.getBoost(), multiValued, doc);
+              addFieldToDoc(entry.getValue(), name, multiValued, doc);
             }
           }
         }
@@ -687,30 +687,30 @@ public class DocBuilder {
     }
   }
 
-  private void addFieldToDoc(Object value, String name, float boost, boolean multiValued, DocWrapper doc) {
+  private void addFieldToDoc(Object value, String name, boolean multiValued, DocWrapper doc) {
     if (value instanceof Collection) {
       Collection collection = (Collection) value;
       if (multiValued) {
         for (Object o : collection) {
           if (o != null)
-            doc.addField(name, o, boost);
+            doc.addField(name, o);
         }
       } else {
         if (doc.getField(name) == null)
           for (Object o : collection) {
             if (o != null)  {
-              doc.addField(name, o, boost);
+              doc.addField(name, o);
               break;
             }
           }
       }
     } else if (multiValued) {
       if (value != null)  {
-        doc.addField(name, value, boost);
+        doc.addField(name, value);
       }
     } else {
       if (doc.getField(name) == null && value != null)
-        doc.addField(name, value, boost);
+        doc.addField(name, value);
     }
   }
 

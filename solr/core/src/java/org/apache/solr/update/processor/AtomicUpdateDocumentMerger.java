@@ -306,18 +306,18 @@ public class AtomicUpdateDocumentMerger {
 
   protected void doSet(SolrInputDocument toDoc, SolrInputField sif, Object fieldVal) {
     SchemaField sf = schema.getField(sif.getName());
-    toDoc.setField(sif.getName(), sf.getType().toNativeType(fieldVal), sif.getBoost());
+    toDoc.setField(sif.getName(), sf.getType().toNativeType(fieldVal));
   }
 
   protected void doAdd(SolrInputDocument toDoc, SolrInputField sif, Object fieldVal) {
     SchemaField sf = schema.getField(sif.getName());
-    toDoc.addField(sif.getName(), sf.getType().toNativeType(fieldVal), sif.getBoost());
+    toDoc.addField(sif.getName(), sf.getType().toNativeType(fieldVal));
   }
 
   protected void doInc(SolrInputDocument toDoc, SolrInputField sif, Object fieldVal) {
     SolrInputField numericField = toDoc.get(sif.getName());
     if (numericField == null) {
-      toDoc.setField(sif.getName(),  fieldVal, sif.getBoost());
+      toDoc.setField(sif.getName(),  fieldVal);
     } else {
       // TODO: fieldtype needs externalToObject?
       String oldValS = numericField.getFirstValue().toString();
@@ -339,7 +339,7 @@ public class AtomicUpdateDocumentMerger {
         result = ((Integer) oldVal).intValue() + Integer.parseInt(fieldValS);
       }
 
-      toDoc.setField(sif.getName(),  result, sif.getBoost());
+      toDoc.setField(sif.getName(),  result);
     }
   }
 

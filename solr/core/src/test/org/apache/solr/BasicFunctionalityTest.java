@@ -506,32 +506,32 @@ public class BasicFunctionalityTest extends SolrTestCaseJ4 {
     IndexableField luf; // Lucene field
 
     f = ischema.getField("test_basictv");
-    luf = f.createField("test", 0f);
+    luf = f.createField("test");
     assertTrue(f.storeTermVector());
     assertTrue(luf.fieldType().storeTermVectors());
 
     f = ischema.getField("test_notv");
-    luf = f.createField("test", 0f);
+    luf = f.createField("test");
     assertTrue(!f.storeTermVector());
     assertTrue(!luf.fieldType().storeTermVectors());
 
     f = ischema.getField("test_postv");
-    luf = f.createField("test", 0f);
+    luf = f.createField("test");
     assertTrue(f.storeTermVector() && f.storeTermPositions());
     assertTrue(luf.fieldType().storeTermVectorPositions());
 
     f = ischema.getField("test_offtv");
-    luf = f.createField("test", 0f);
+    luf = f.createField("test");
     assertTrue(f.storeTermVector() && f.storeTermOffsets());
     assertTrue(luf.fieldType().storeTermVectorOffsets());
 
     f = ischema.getField("test_posofftv");
-    luf = f.createField("test", 0f);
+    luf = f.createField("test");
     assertTrue(f.storeTermVector() && f.storeTermPositions() && f.storeTermOffsets());
     assertTrue(luf.fieldType().storeTermVectorOffsets() && luf.fieldType().storeTermVectorPositions());
 
     f = ischema.getField("test_posoffpaytv");
-    luf = f.createField("test", 0f);
+    luf = f.createField("test");
     assertTrue(f.storeTermVector() && f.storeTermPositions() && f.storeTermOffsets() && f.storeTermPayloads());
     assertTrue(luf.fieldType().storeTermVectorOffsets() && luf.fieldType().storeTermVectorPositions() && luf.fieldType().storeTermVectorPayloads());
 

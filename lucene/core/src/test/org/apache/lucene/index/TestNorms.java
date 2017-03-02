@@ -19,6 +19,8 @@ package org.apache.lucene.index;
 
 import java.io.IOException;
 import java.util.Random;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
@@ -117,7 +119,7 @@ public class TestNorms extends LuceneTestCase {
     assertNotNull(normValues);
     for (int i = 0; i < open.maxDoc(); i++) {
       Document document = open.document(i);
-      int expected = Integer.parseInt(document.get(byteTestField));
+      int expected = Integer.parseInt(document.get(byteTestField).split(" ")[0]);
       assertEquals(i, normValues.nextDoc());
       assertEquals(expected, normValues.longValue());
     }
@@ -139,9 +141,9 @@ public class TestNorms extends LuceneTestCase {
     int num = atLeast(100);
     for (int i = 0; i < num; i++) {
       Document doc = docs.nextDoc();
-      int boost = random().nextInt(255);
-      Field f = new TextField(byteTestField, "" + boost, Field.Store.YES);
-      f.setBoost(boost);
+      int boost = TestUtil.nextInt(random, 1, 255);
+      String value = IntStream.range(0, boost).mapToObj(k -> Integer.toString(boost)).collect(Collectors.joining(" "));
+      Field f = new TextField(byteTestField, value, Field.Store.YES);
       doc.add(f);
       writer.addDocument(doc);
       doc.removeField(byteTestField);
@@ -173,8 +175,7 @@ public class TestNorms extends LuceneTestCase {
 
     @Override
     public long computeNorm(FieldInvertState state) {
-      int boost = (int) state.getBoost();
-      return (0xFF & boost);
+      return state.getLength();
     }
 
     @Override

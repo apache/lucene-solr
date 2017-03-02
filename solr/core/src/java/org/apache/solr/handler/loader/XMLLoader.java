@@ -35,6 +35,7 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import com.google.common.collect.Lists;
 import org.apache.commons.io.IOUtils;
@@ -71,6 +72,7 @@ import static org.apache.solr.common.params.CommonParams.NAME;
 
 public class XMLLoader extends ContentStreamLoader {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
+  private static final AtomicBoolean WARNED_ABOUT_INDEX_TIME_BOOSTS = new AtomicBoolean();
   static final XMLErrorLogger xmllog = new XMLErrorLogger(log);
   
   public static final String CONTEXT_TRANSFORMER_KEY = "xsltupdater.transformer";
@@ -379,7 +381,12 @@ public class XMLLoader extends ContentStreamLoader {
     for (int i = 0; i < parser.getAttributeCount(); i++) {
       attrName = parser.getAttributeLocalName(i);
       if ("boost".equals(attrName)) {
-        doc.setDocumentBoost(Float.parseFloat(parser.getAttributeValue(i)));
+        String message = "Ignoring document boost: " + parser.getAttributeValue(i) + " as index-time boosts are not supported anymore";
+        if (WARNED_ABOUT_INDEX_TIME_BOOSTS.compareAndSet(false, true)) {
+          log.warn(message);
+        } else {
+          log.debug(message);
+        }
       } else {
         log.warn("XML element <doc> has invalid XML attr:" + attrName);
       }
@@ -387,7 +394,6 @@ public class XMLLoader extends ContentStreamLoader {
 
     StringBuilder text = new StringBuilder();
     String name = null;
-    float boost = 1.0f;
     boolean isNull = false;
     String update = null;
     Collection<SolrInputDocument> subDocs = null;
@@ -438,8 +444,7 @@ public class XMLLoader extends ContentStreamLoader {
               }
               break;
             }
-            doc.addField(name, v, boost);
-            boost = 1.0f;
+            doc.addField(name, v);
             // field is over
             name = null;
           }
@@ -460,7 +465,6 @@ public class XMLLoader extends ContentStreamLoader {
               throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,
                                       msg);
             }
-            boost = 1.0f;
             update = null;
             isNull = false;
             String attrVal = "";
@@ -470,7 +474,12 @@ public class XMLLoader extends ContentStreamLoader {
               if (NAME.equals(attrName)) {
                 name = attrVal;
               } else if ("boost".equals(attrName)) {
-                boost = Float.parseFloat(attrVal);
+                String message = "Ignoring field boost: " + attrVal + " as index-time boosts are not supported anymore";
+                if (WARNED_ABOUT_INDEX_TIME_BOOSTS.compareAndSet(false, true)) {
+                  log.warn(message);
+                } else {
+                  log.debug(message);
+                }
               } else if ("null".equals(attrName)) {
                 isNull = StrUtils.parseBoolean(attrVal);
               } else if ("update".equals(attrName)) {
@@ -488,7 +497,7 @@ public class XMLLoader extends ContentStreamLoader {
       for (Map.Entry<String, Map<String, Object>> entry : updateMap.entrySet()) {
         name = entry.getKey();
         Map<String, Object> value = entry.getValue();
-        doc.addField(name, value, 1.0f);
+        doc.addField(name, value);
       }
     }
 

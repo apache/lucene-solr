@@ -119,11 +119,10 @@ public class PreAnalyzedField extends TextField implements HasImplicitIndexAnaly
   }
 
   @Override
-  public IndexableField createField(SchemaField field, Object value,
-          float boost) {
+  public IndexableField createField(SchemaField field, Object value) {
     IndexableField f = null;
     try {
-      f = fromString(field, String.valueOf(value), boost);
+      f = fromString(field, String.valueOf(value));
     } catch (Exception e) {
       LOG.warn("Error parsing pre-analyzed field '" + field.getName() + "'", e);
       return null;
@@ -225,7 +224,7 @@ public class PreAnalyzedField extends TextField implements HasImplicitIndexAnaly
   }
   
   
-  public IndexableField fromString(SchemaField field, String val, float boost) throws Exception {
+  public IndexableField fromString(SchemaField field, String val) throws Exception {
     if (val == null || val.trim().length() == 0) {
       return null;
     }
@@ -268,9 +267,6 @@ public class PreAnalyzedField extends TextField implements HasImplicitIndexAnaly
           type.setTokenized(false);
         }
       }
-    }
-    if (f != null) {
-      f.setBoost(boost);
     }
     return f;
   }

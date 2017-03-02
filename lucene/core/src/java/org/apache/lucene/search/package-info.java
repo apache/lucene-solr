@@ -269,27 +269,8 @@
  *    Fields and the other in one Field may return different scores for the same query due to length
  *    normalization.
  * <h3>Score Boosting</h3>
- * <p>Lucene allows influencing search results by "boosting" at different times:
- *    <ul>                   
- *       <li><b>Index-time boost</b> by calling
- *        {@link org.apache.lucene.document.Field#setBoost(float) Field.setBoost()} before a document is 
- *        added to the index.</li>
- *       <li><b>Query-time boost</b> by applying a boost to a query by wrapping with
- *       {@link org.apache.lucene.search.BoostQuery}.</li>
- *    </ul>    
- * <p>Indexing time boosts are pre-processed for storage efficiency and written to
- *    storage for a field as follows:
- *    <ul>
- *        <li>All boosts of that field (i.e. all boosts under the same field name in that doc) are 
- *            multiplied.</li>
- *        <li>The boost is then encoded into a normalization value by the Similarity
- *            object at index-time: {@link org.apache.lucene.search.similarities.Similarity#computeNorm computeNorm()}.
- *            The actual encoding depends upon the Similarity implementation, but note that most
- *            use a lossy encoding (such as multiplying the boost with document length or similar, packed
- *            into a single byte!).</li>
- *        <li>Decoding of any index-time normalization values and integration into the document's score is also performed 
- *            at search time by the Similarity.</li>
- *     </ul>
+ * <p>Lucene allows influencing the score contribution of various parts of the query by wrapping with
+ *    {@link org.apache.lucene.search.BoostQuery}.</p>
  * 
  * <a name="changingScoring"></a>
  * <h2>Changing Scoring &mdash; Similarity</h2>

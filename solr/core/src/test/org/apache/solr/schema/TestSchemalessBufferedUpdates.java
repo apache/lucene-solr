@@ -149,7 +149,7 @@ public class TestSchemalessBufferedUpdates extends SolrTestCaseJ4 {
         // Non-JSON types (Date in this case) aren't handled properly in noggit-0.6.  Although this is fixed in 
         // https://github.com/yonik/noggit/commit/ec3e732af7c9425e8f40297463cbe294154682b1 to call obj.toString(), 
         // Date::toString produces a Date representation that Solr doesn't like, so we convert using Instant::toString
-        cmd.solrDoc.get("f_dt").setValue(((Date) cmd.solrDoc.get("f_dt").getValue()).toInstant().toString(), 1.0f);
+        cmd.solrDoc.get("f_dt").setValue(((Date) cmd.solrDoc.get("f_dt").getValue()).toInstant().toString());
       }
       return cmd.solrDoc;
     } finally {

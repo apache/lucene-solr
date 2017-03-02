@@ -19,7 +19,6 @@ package org.apache.lucene.index;
 
 import java.io.FileNotFoundException;
 import java.io.IOException;
-import java.io.Reader;
 import java.io.StringReader;
 import java.nio.file.NoSuchFileException;
 import java.util.ArrayList;
@@ -1686,71 +1685,6 @@ public class TestIndexWriterExceptions extends LuceneTestCase {
 
     uoe.doFail = false;
     d.close();
-  }
-
-  public void testBoostOmitNorms() throws Exception {
-    Directory dir = newDirectory();
-    IndexWriterConfig iwc = new IndexWriterConfig(new MockAnalyzer(random()));
-    iwc.setMergePolicy(newLogMergePolicy());
-    IndexWriter iw = new IndexWriter(dir, iwc);
-    Document doc = new Document();
-    doc.add(new StringField("field1", "sometext", Field.Store.YES));
-    doc.add(new TextField("field2", "sometext", Field.Store.NO));
-    doc.add(new StringField("foo", "bar", Field.Store.NO));
-    iw.addDocument(doc); // add an 'ok' document
-    expectThrows(UnsupportedOperationException.class, () -> {
-      // try to boost with norms omitted
-      List<IndexableField> list = new ArrayList<>();
-      list.add(new IndexableField() {
-        @Override
-        public String name() {
-          return "foo";
-        }
-
-        @Override
-        public IndexableFieldType fieldType() {
-          return StringField.TYPE_NOT_STORED;
-        }
-
-        @Override
-        public float boost() {
-          return 5f;
-        }
-
-        @Override
-        public BytesRef binaryValue() {
-          return null;
-        }
-
-        @Override
-        public String stringValue() {
-          return "baz";
-        }
-
-        @Override
-        public Reader readerValue() {
-          return null;
-        }
-
-        @Override
-        public Number numericValue() {
-          return null;
-        }
-
-        @Override
-        public TokenStream tokenStream(Analyzer analyzer, TokenStream reuse) {
-          return null;
-        }
-      });
-      iw.addDocument(list);
-    });
-
-    DirectoryReader ir = DirectoryReader.open(iw);
-    assertEquals(1, ir.numDocs());
-    assertEquals("sometext", ir.document(0).get("field1"));
-    ir.close();
-    iw.close();
-    dir.close();
   }
   
   // See LUCENE-4870 TooManyOpenFiles errors are thrown as

@@ -17,6 +17,8 @@
 package org.apache.lucene.index;
 
 import java.io.IOException;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
@@ -53,9 +55,9 @@ public class TestCustomNorms extends LuceneTestCase {
     int num = atLeast(100);
     for (int i = 0; i < num; i++) {
       Document doc = docs.nextDoc();
-      float nextFloat = random().nextFloat();
-      Field f = new TextField(floatTestField, "" + nextFloat, Field.Store.YES);
-      f.setBoost(nextFloat);
+      int boost = TestUtil.nextInt(random(), 1, 10);
+      String value = IntStream.range(0, boost).mapToObj(k -> Integer.toString(boost)).collect(Collectors.joining(" "));
+      Field f = new TextField(floatTestField, value, Field.Store.YES);
 
       doc.add(f);
       writer.addDocument(doc);
@@ -71,9 +73,9 @@ public class TestCustomNorms extends LuceneTestCase {
     assertNotNull(norms);
     for (int i = 0; i < open.maxDoc(); i++) {
       Document document = open.document(i);
-      float expected = Float.parseFloat(document.get(floatTestField));
+      int expected = Integer.parseInt(document.get(floatTestField).split(" ")[0]);
       assertEquals(i, norms.nextDoc());
-      assertEquals(expected, Float.intBitsToFloat((int)norms.longValue()), 0.0f);
+      assertEquals(expected, norms.longValue());
     }
     open.close();
     dir.close();
@@ -97,7 +99,7 @@ public class TestCustomNorms extends LuceneTestCase {
 
     @Override
     public long computeNorm(FieldInvertState state) {
-      return Float.floatToIntBits(state.getBoost());
+      return state.getLength();
     }
     
     @Override

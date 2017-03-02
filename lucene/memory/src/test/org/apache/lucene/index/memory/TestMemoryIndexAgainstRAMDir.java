@@ -536,14 +536,13 @@ public class TestMemoryIndexAgainstRAMDir extends BaseTokenStreamTestCase {
     MemoryIndex mi = new MemoryIndex(true, true);
     MockAnalyzer mockAnalyzer = new MockAnalyzer(random());
 
-    mi.addField(new BinaryDocValuesField("text", new BytesRef("quick brown fox")), mockAnalyzer, 5f);
-    mi.addField(new TextField("text", "quick brown fox", Field.Store.NO), mockAnalyzer, 5f);
+    mi.addField(new BinaryDocValuesField("text", new BytesRef("quick brown fox")), mockAnalyzer);
+    mi.addField(new TextField("text", "quick brown fox", Field.Store.NO), mockAnalyzer);
     LeafReader leafReader = mi.createSearcher().getIndexReader().leaves().get(0).reader();
 
     Document doc = new Document();
     doc.add(new BinaryDocValuesField("text", new BytesRef("quick brown fox")));
     Field field = new TextField("text", "quick brown fox", Field.Store.NO);
-    field.setBoost(5f);
     doc.add(field);
     Directory dir = newDirectory();
     IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig(random(), mockAnalyzer));

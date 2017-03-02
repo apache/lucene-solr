@@ -113,16 +113,16 @@ public final class SchemaField extends FieldProperties implements IndexableField
   boolean isTokenized() { return (properties & TOKENIZED)!=0; }
   boolean isBinary() { return (properties & BINARY)!=0; }
 
-  public IndexableField createField(Object val, float boost) {
-    return type.createField(this,val,boost);
+  public IndexableField createField(Object val) {
+    return type.createField(this,val);
   }
 
-  public List<IndexableField> createFields(Object val, float boost) {
-    return type.createFields(this,val,boost);
+  public List<IndexableField> createFields(Object val) {
+    return type.createFields(this,val);
   }
 
   /**
-   * If true, then use {@link #createFields(Object, float)}, else use {@link #createField} to save an extra allocation
+   * If true, then use {@link #createFields(Object)}, else use {@link #createField} to save an extra allocation
    * @return true if this field is a poly field
    */
   public boolean isPolyField(){

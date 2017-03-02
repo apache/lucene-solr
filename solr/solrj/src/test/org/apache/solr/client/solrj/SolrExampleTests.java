@@ -100,8 +100,8 @@ abstract public class SolrExampleTests extends SolrExampleTestsBase
     // Now add something...
     SolrInputDocument doc = new SolrInputDocument();
     String docID = "1112211111";
-    doc.addField( "id", docID, 1.0f );
-    doc.addField( "name", "my name!", 1.0f );
+    doc.addField( "id", docID );
+    doc.addField( "name", "my name!" );
     
     Assert.assertEquals( null, doc.getField("foo") );
     Assert.assertTrue(doc.getField("name").getValue() != null );
@@ -127,28 +127,28 @@ abstract public class SolrExampleTests extends SolrExampleTestsBase
     // Now add a few docs for facet testing...
     List<SolrInputDocument> docs = new ArrayList<>();
     SolrInputDocument doc2 = new SolrInputDocument();
-    doc2.addField( "id", "2", 1.0f );
-    doc2.addField( "inStock", true, 1.0f );
-    doc2.addField( "price", 2, 1.0f );
-    doc2.addField( "timestamp_dt", new java.util.Date(), 1.0f );
+    doc2.addField( "id", "2" );
+    doc2.addField( "inStock", true );
+    doc2.addField( "price", 2 );
+    doc2.addField( "timestamp_dt", new java.util.Date() );
     docs.add(doc2);
     SolrInputDocument doc3 = new SolrInputDocument();
-    doc3.addField( "id", "3", 1.0f );
-    doc3.addField( "inStock", false, 1.0f );
-    doc3.addField( "price", 3, 1.0f );
-    doc3.addField( "timestamp_dt", new java.util.Date(), 1.0f );
+    doc3.addField( "id", "3" );
+    doc3.addField( "inStock", false );
+    doc3.addField( "price", 3 );
+    doc3.addField( "timestamp_dt", new java.util.Date() );
     docs.add(doc3);
     SolrInputDocument doc4 = new SolrInputDocument();
-    doc4.addField( "id", "4", 1.0f );
-    doc4.addField( "inStock", true, 1.0f );
-    doc4.addField( "price", 4, 1.0f );
-    doc4.addField( "timestamp_dt", new java.util.Date(), 1.0f );
+    doc4.addField( "id", "4" );
+    doc4.addField( "inStock", true );
+    doc4.addField( "price", 4 );
+    doc4.addField( "timestamp_dt", new java.util.Date() );
     docs.add(doc4);
     SolrInputDocument doc5 = new SolrInputDocument();
-    doc5.addField( "id", "5", 1.0f );
-    doc5.addField( "inStock", false, 1.0f );
-    doc5.addField( "price", 5, 1.0f );
-    doc5.addField( "timestamp_dt", new java.util.Date(), 1.0f );
+    doc5.addField( "id", "5" );
+    doc5.addField( "inStock", false );
+    doc5.addField( "price", 5 );
+    doc5.addField( "timestamp_dt", new java.util.Date() );
     docs.add(doc5);
     
     upres = client.add( docs );
@@ -247,13 +247,13 @@ abstract public class SolrExampleTests extends SolrExampleTestsBase
     
     // Now add something...
     SolrInputDocument doc1 = new SolrInputDocument();
-    doc1.addField( "id", "id1", 1.0f );
-    doc1.addField( "name", "doc1", 1.0f );
+    doc1.addField( "id", "id1" );
+    doc1.addField( "name", "doc1" );
     doc1.addField( "price", 10 );
 
     SolrInputDocument doc2 = new SolrInputDocument();
-    doc2.addField( "id", "id2", 1.0f );
-    doc2.addField( "name", "h\uD866\uDF05llo", 1.0f );
+    doc2.addField( "id", "id2" );
+    doc2.addField( "name", "h\uD866\uDF05llo" );
     doc2.addField( "price", 20 );
     
     Collection<SolrInputDocument> docs = new ArrayList<>();
@@ -302,13 +302,13 @@ abstract public class SolrExampleTests extends SolrExampleTestsBase
      
     // Add two docs
     SolrInputDocument doc = new SolrInputDocument();
-    doc.addField( "id", "id1", 1.0f );
-    doc.addField( "name", "doc1", 1.0f );
+    doc.addField( "id", "id1" );
+    doc.addField( "name", "doc1" );
     doc.addField( "price", 10 );
     client.add(doc);
     
     doc = new SolrInputDocument();
-    doc.addField( "id", "id2", 1.0f );
+    doc.addField( "id", "id2" );
     client.add(doc);
     client.commit();
     
@@ -443,9 +443,9 @@ abstract public class SolrExampleTests extends SolrExampleTestsBase
 
     }
     SolrInputDocument doc = new SolrInputDocument();
-    doc.addField("id", "DOCID", 1.0f);
-    doc.addField("id", "DOCID2", 1.0f);
-    doc.addField("name", "hello", 1.0f);
+    doc.addField("id", "DOCID");
+    doc.addField("id", "DOCID2");
+    doc.addField("name", "hello");
 
     if (client instanceof HttpSolrClient) {
       try {
@@ -484,15 +484,15 @@ abstract public class SolrExampleTests extends SolrExampleTestsBase
     
     // Now add something...
     SolrInputDocument doc = new SolrInputDocument();
-    doc.addField( "id", "111", 1.0f );
-    doc.addField( "name", "doc1", 1.0f );
+    doc.addField( "id", "111" );
+    doc.addField( "name", "doc1" );
     doc.addField( "price", 11 );
     client.add(doc);
     client.commit(); // make sure this gets in first
     
     doc = new SolrInputDocument();
-    doc.addField( "id", "222", 1.0f );
-    doc.addField( "name", "doc2", 1.0f );
+    doc.addField( "id", "222" );
+    doc.addField( "name", "doc2" );
     doc.addField( "price", 22 );
     client.add(doc);
     client.commit();
@@ -539,8 +539,8 @@ abstract public class SolrExampleTests extends SolrExampleTestsBase
     
     // Now add something...
     SolrInputDocument doc = new SolrInputDocument();
-    doc.addField( "id", "111", 1.0f );
-    doc.addField( "name", "doc1", 1.0f );
+    doc.addField( "id", "111" );
+    doc.addField( "name", "doc1" );
     doc.addField( "json_s", rawJson );
     doc.addField( "xml_s", rawXml );
     client.add(doc);
@@ -689,7 +689,7 @@ abstract public class SolrExampleTests extends SolrExampleTestsBase
     SolrInputDocument[] doc = new SolrInputDocument[5];
     for( int i=0; i<doc.length; i++ ) {
       doc[i] = new SolrInputDocument();
-      doc[i].setField( "id", "ID"+i, 1.0f );
+      doc[i].setField( "id", "ID"+i );
       client.add(doc[i]);
     }
     client.commit();
@@ -844,7 +844,7 @@ abstract public class SolrExampleTests extends SolrExampleTestsBase
     ArrayList<SolrInputDocument> docs = new ArrayList<>(10);
     for( int i=1; i<=10; i++ ) {
       SolrInputDocument doc = new SolrInputDocument();
-      doc.setField( "id", i+"", 1.0f );
+      doc.setField( "id", i+"" );
       if( (i%2)==0 ) {
         doc.addField( "features", "two" );
       }
@@ -1576,8 +1576,8 @@ abstract public class SolrExampleTests extends SolrExampleTestsBase
     
     // Now add something...
     SolrInputDocument doc = new SolrInputDocument();
-    doc.addField( "id", "DOCID", 1.0f );
-    doc.addField( "name", "hello", 1.0f );
+    doc.addField( "id", "DOCID" );
+    doc.addField( "name", "hello" );
     client.add(doc);
     client.commit();  // Since the transaction log is disabled in the example, we need to commit
     

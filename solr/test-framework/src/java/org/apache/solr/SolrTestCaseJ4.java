@@ -2161,9 +2161,6 @@ public abstract class SolrTestCaseJ4 extends LuceneTestCase {
 
     SolrInputDocument sdoc1 = (SolrInputDocument) expected;
     SolrInputDocument sdoc2 = (SolrInputDocument) actual;
-    if (Float.compare(sdoc1.getDocumentBoost(), sdoc2.getDocumentBoost()) != 0) {
-      return false;
-    }
 
     if(sdoc1.getFieldNames().size() != sdoc2.getFieldNames().size()) {
       return false;
@@ -2219,10 +2216,6 @@ public abstract class SolrTestCaseJ4 extends LuceneTestCase {
     }
 
     if (!sif1.getValue().equals(sif2.getValue())) {
-      return false;
-    }
-
-    if (Float.compare(sif1.getBoost(), sif2.getBoost()) != 0) {
       return false;
     }
 

@@ -151,12 +151,11 @@ public class UpdateProcessorTestBase extends SolrTestCaseJ4 {
   /**
    * Convenience method for building up SolrInputFields
    */
-  final SolrInputField field(String name, float boost, Object... values) {
+  final SolrInputField field(String name, Object... values) {
     SolrInputField f = new SolrInputField(name);
     for (Object v : values) {
-      f.addValue(v, 1.0F);
+      f.addValue(v);
     }
-    f.setBoost(boost);
     return f;
   }
 
@@ -164,6 +163,6 @@ public class UpdateProcessorTestBase extends SolrTestCaseJ4 {
    * Convenience method for building up SolrInputFields with default boost
    */
   final SolrInputField f(String name, Object... values) {
-    return field(name, 1.0F, values);
+    return field(name, values);
   }
 }

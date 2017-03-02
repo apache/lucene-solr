@@ -69,8 +69,7 @@ public class ClassicSimilarity extends TFIDFSimilarity {
    * represent are rounded down to the largest representable value. Positive
    * values too small to represent are rounded up to the smallest positive
    * representable value.
-   * 
-   * @see org.apache.lucene.document.Field#setBoost(float)
+   *
    * @see org.apache.lucene.util.SmallFloat
    */
   @Override
@@ -103,7 +102,7 @@ public class ClassicSimilarity extends TFIDFSimilarity {
       numTerms = state.getLength() - state.getNumOverlap();
     else
       numTerms = state.getLength();
-    return state.getBoost() * ((float) (1.0 / Math.sqrt(numTerms)));
+    return (float) (1.0 / Math.sqrt(numTerms));
   }
 
   /** Implemented as <code>sqrt(freq)</code>. */

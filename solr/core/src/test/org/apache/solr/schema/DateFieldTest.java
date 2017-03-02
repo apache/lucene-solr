@@ -50,13 +50,13 @@ public class DateFieldTest extends SolrTestCaseJ4 {
     int props = FieldProperties.INDEXED ^ FieldProperties.STORED;
     SchemaField sf = new SchemaField( "test", f, props, null );
     // String
-    IndexableField out = f.createField(sf, "1995-12-31T23:59:59Z", 1.0f );
+    IndexableField out = f.createField(sf, "1995-12-31T23:59:59Z" );
     assertEquals(820454399000L, f.toObject( out ).getTime() );
     // Date obj
-    out = f.createField(sf, new Date(820454399000L), 1.0f );
+    out = f.createField(sf, new Date(820454399000L) );
     assertEquals(820454399000L, f.toObject( out ).getTime() );
     // Date math
-    out = f.createField(sf, "1995-12-31T23:59:59.99Z+5MINUTES", 1.0f);
+    out = f.createField(sf, "1995-12-31T23:59:59.99Z+5MINUTES");
     assertEquals(820454699990L, f.toObject( out ).getTime() );
   }
 

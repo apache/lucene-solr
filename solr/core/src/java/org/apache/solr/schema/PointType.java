@@ -66,7 +66,7 @@ public class PointType extends CoordinateFieldType implements SpatialQueryable {
   }
 
   @Override
-  public List<IndexableField> createFields(SchemaField field, Object value, float boost) {
+  public List<IndexableField> createFields(SchemaField field, Object value) {
     String externalVal = value.toString();
     String[] point = parseCommaSeparatedList(externalVal, dimension);
 
@@ -76,13 +76,13 @@ public class PointType extends CoordinateFieldType implements SpatialQueryable {
     if (field.indexed()) {
       for (int i=0; i<dimension; i++) {
         SchemaField sf = subField(field, i, schema);
-        f.add(sf.createField(point[i], sf.indexed() && !sf.omitNorms() ? boost : 1f));
+        f.add(sf.createField(point[i]));
       }
     }
 
     if (field.stored()) {
       String storedVal = externalVal;  // normalize or not?
-      f.add(createField(field.getName(), storedVal, StoredField.TYPE, 1f));
+      f.add(createField(field.getName(), storedVal, StoredField.TYPE));
     }
     
     return f;
@@ -105,7 +105,7 @@ public class PointType extends CoordinateFieldType implements SpatialQueryable {
    *
    */
   @Override
-  public IndexableField createField(SchemaField field, Object value, float boost) {
+  public IndexableField createField(SchemaField field, Object value) {
     throw new UnsupportedOperationException("PointType uses multiple fields.  field=" + field.getName());
   }
 

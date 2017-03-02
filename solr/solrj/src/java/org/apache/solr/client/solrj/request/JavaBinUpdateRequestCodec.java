@@ -19,12 +19,14 @@ package org.apache.solr.client.solrj.request;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.params.ModifiableSolrParams;
@@ -32,6 +34,8 @@ import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.DataInputInputStream;
 import org.apache.solr.common.util.JavaBinCodec;
 import org.apache.solr.common.util.NamedList;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Provides methods for marshalling an UpdateRequest to a NamedList which can be serialized in the javabin format and
@@ -42,6 +46,9 @@ import org.apache.solr.common.util.NamedList;
  * @since solr 1.4
  */
 public class JavaBinUpdateRequestCodec {
+
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
+  private static final AtomicBoolean WARNED_ABOUT_INDEX_TIME_BOOSTS = new AtomicBoolean();
 
   /**
    * Converts an UpdateRequest to a NamedList which can be serialized to the given OutputStream in the javabin format
@@ -243,11 +250,27 @@ public class JavaBinUpdateRequestCodec {
     for (int i = 0; i < namedList.size(); i++) {
       NamedList nl = namedList.get(i);
       if (i == 0) {
-        doc.setDocumentBoost(nl.getVal(0) == null ? 1.0f : (Float) nl.getVal(0));
+        Float boost = (Float) nl.getVal(0);
+        if (boost != null && boost.floatValue() != 1f) {
+          String message = "Ignoring document boost: " + boost + " as index-time boosts are not supported anymore";
+          if (WARNED_ABOUT_INDEX_TIME_BOOSTS.compareAndSet(false, true)) {
+            log.warn(message);
+          } else {
+            log.debug(message);
+          }
+        }
       } else {
+        Float boost = (Float) nl.getVal(2);
+        if (boost != null && boost.floatValue() != 1f) {
+          String message = "Ignoring field boost: " + boost + " as index-time boosts are not supported anymore";
+          if (WARNED_ABOUT_INDEX_TIME_BOOSTS.compareAndSet(false, true)) {
+            log.warn(message);
+          } else {
+            log.debug(message);
+          }
+        }
         doc.addField((String) nl.getVal(0),
-                nl.getVal(1),
-                nl.getVal(2) == null ? 1.0f : (Float) nl.getVal(2));
+                nl.getVal(1));
       }
     }
     return doc;

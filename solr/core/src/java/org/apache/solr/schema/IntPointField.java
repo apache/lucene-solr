@@ -169,12 +169,9 @@ public class IntPointField extends PointField implements IntValueFieldType {
   }
 
   @Override
-  public IndexableField createField(SchemaField field, Object value, float boost) {
+  public IndexableField createField(SchemaField field, Object value) {
     if (!isFieldUsed(field)) return null;
 
-    if (boost != 1.0 && log.isTraceEnabled()) {
-      log.trace("Can't use document/field boost for PointField. Field: " + field.getName() + ", boost: " + boost);
-    }
     int intValue = (value instanceof Number) ? ((Number) value).intValue() : Integer.parseInt(value.toString());
     return new IntPoint(field.getName(), intValue);
   }

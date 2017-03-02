@@ -1377,7 +1377,7 @@ public class ExportWriter implements SolrCore.RawWriter, Closeable {
             while((o = vals.nextOrd()) != SortedSetDocValues.NO_MORE_ORDS) {
               BytesRef ref = vals.lookupOrd(o);
               fieldType.indexedToReadable(ref, cref);
-              IndexableField f = fieldType.createField(schemaField, cref.toString(), 1.0f);
+              IndexableField f = fieldType.createField(schemaField, cref.toString());
               if (f == null) w.add(cref.toString());
               else w.add(fieldType.toObject(f));
             }

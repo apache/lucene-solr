@@ -39,8 +39,7 @@ public abstract class FieldValueSubsetUpdateProcessorFactory extends FieldMutati
       if (src.getValueCount() <= 1) return src;
 
       SolrInputField result = new SolrInputField(src.getName());
-      result.setValue(pickSubset(src.getValues()),
-          src.getBoost());
+      result.setValue(pickSubset(src.getValues()));
       return result;
     });
   }

@@ -83,7 +83,7 @@ public class PolyFieldTest extends SolrTestCaseJ4 {
     assertEquals(pt.getDimension(), 2);
     double[] xy = new double[]{35.0, -79.34};
     String point = xy[0] + "," + xy[1];
-    List<IndexableField> fields = home.createFields(point, 2);
+    List<IndexableField> fields = home.createFields(point);
     assertEquals(fields.size(), 3);//should be 3, we have a stored field
     //first two fields contain the values, third is just stored and contains the original
     for (int i = 0; i < 3; i++) {
@@ -99,13 +99,13 @@ public class PolyFieldTest extends SolrTestCaseJ4 {
 
     home = schema.getField("home_ns");
     assertNotNull(home);
-    fields = home.createFields(point, 2);
+    fields = home.createFields(point);
     assertEquals(fields.size(), 2);//should be 2, since we aren't storing
 
     home = schema.getField("home_ns");
     assertNotNull(home);
     try {
-      fields = home.createFields("35.0,foo", 2);
+      fields = home.createFields("35.0,foo");
       assertTrue(false);
     } catch (Exception e) {
       //
@@ -115,7 +115,7 @@ public class PolyFieldTest extends SolrTestCaseJ4 {
     SchemaField s1 = schema.getField("test_p");
     SchemaField s2 = schema.getField("test_p");
     // If we use [Int/Double/Long/Float]PointField, we can't get the valueSource, since docValues is false
-    if (s1.createFields("1,2", 0).get(0).fieldType().pointDimensionCount() == 0) {
+    if (s1.createFields("1,2").get(0).fieldType().pointDimensionCount() == 0) {
       assertFalse(s2.getType().isPointField());
       ValueSource v1 = s1.getType().getValueSource(s1, null);
       ValueSource v2 = s2.getType().getValueSource(s2, null);

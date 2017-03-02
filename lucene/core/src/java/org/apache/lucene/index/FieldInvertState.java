@@ -38,7 +38,6 @@ public final class FieldInvertState {
   int offset;
   int maxTermFrequency;
   int uniqueTermCount;
-  float boost;
   // we must track these across field instances (multi-valued case)
   int lastStartOffset = 0;
   int lastPosition = 0;
@@ -57,13 +56,12 @@ public final class FieldInvertState {
   
   /** Creates {code FieldInvertState} for the specified
    *  field name and values for all fields. */
-  public FieldInvertState(String name, int position, int length, int numOverlap, int offset, float boost) {
+  public FieldInvertState(String name, int position, int length, int numOverlap, int offset) {
     this.name = name;
     this.position = position;
     this.length = length;
     this.numOverlap = numOverlap;
     this.offset = offset;
-    this.boost = boost;
   }
 
   /**
@@ -76,7 +74,6 @@ public final class FieldInvertState {
     offset = 0;
     maxTermFrequency = 0;
     uniqueTermCount = 0;
-    boost = 1.0f;
     lastStartOffset = 0;
     lastPosition = 0;
   }
@@ -136,21 +133,6 @@ public final class FieldInvertState {
    */
   public int getOffset() {
     return offset;
-  }
-
-  /**
-   * Get boost value. This is the cumulative product of
-   * document boost and field boost for all field instances
-   * sharing the same field name.
-   * @return the boost
-   */
-  public float getBoost() {
-    return boost;
-  }
-
-  /** Set boost value. */
-  public void setBoost(float boost) {
-    this.boost = boost;
   }
 
   /**

@@ -111,7 +111,7 @@ public class SweetSpotSimilarity extends ClassicSimilarity {
     else
       numTokens = state.getLength();
 
-    return state.getBoost() * computeLengthNorm(numTokens);
+    return computeLengthNorm(numTokens);
   }
 
   /**

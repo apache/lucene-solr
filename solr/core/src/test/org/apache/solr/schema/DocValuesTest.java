@@ -152,7 +152,7 @@ public class DocValuesTest extends SolrTestCaseJ4 {
   }
 
   private void tstToObj(SchemaField sf, Object o) {
-    List<IndexableField> fields = sf.createFields(o, 1.0f);
+    List<IndexableField> fields = sf.createFields(o);
     for (IndexableField field : fields) {
       assertEquals( sf.getType().toObject(field), o);
     }

@@ -75,7 +75,7 @@ public class FieldMutatingUpdateProcessorTest extends UpdateProcessorTestBase {
                        f("name", " Hoss ", new StringBuilder(" Man")),
                        f("foo_t", " some text ", "other Text\t"),
                        f("foo_d", new Integer(42)),
-                       field("foo_s", 5.0F, " string ")));
+                       field("foo_s", " string ")));
 
     assertNotNull(d);
 
@@ -89,8 +89,6 @@ public class FieldMutatingUpdateProcessorTest extends UpdateProcessorTestBase {
     // slightly more interesting
     assertEquals("processor borked non string value", 
                  new Integer(42), d.getFieldValue("foo_d"));
-    assertEquals("wrong boost", 
-                 5.0F, d.getField("foo_s").getBoost(), 0.0F);
   }
 
   public void testUniqValues() throws Exception {
@@ -448,7 +446,7 @@ public class FieldMutatingUpdateProcessorTest extends UpdateProcessorTestBase {
 
     special = new SolrInputField("foo_s");
     special.setValue(new TreeSet<>
-                     (Arrays.asList("ggg", "first", "last", "hhh")), 1.2F);
+                     (Arrays.asList("ggg", "first", "last", "hhh")));
     
     d = processAdd("last-value", 
                    doc(f("id", "1111"),
@@ -461,7 +459,7 @@ public class FieldMutatingUpdateProcessorTest extends UpdateProcessorTestBase {
     // test something that's definitely a List
     
     special = new SolrInputField("foo_s");
-    special.setValue(Arrays.asList("first", "ggg", "hhh", "last"), 1.2F);
+    special.setValue(Arrays.asList("first", "ggg", "hhh", "last"));
     
     d = processAdd("last-value", 
                    doc(f("id", "1111"),
@@ -476,7 +474,7 @@ public class FieldMutatingUpdateProcessorTest extends UpdateProcessorTestBase {
 
     special = new SolrInputField("foo_s");
     special.setValue(new LinkedHashSet<>
-                     (Arrays.asList("first", "ggg", "hhh", "last")), 1.2F);
+                     (Arrays.asList("first", "ggg", "hhh", "last")));
     
     d = processAdd("last-value", 
                    doc(f("id", "1111"),
@@ -819,7 +817,7 @@ public class FieldMutatingUpdateProcessorTest extends UpdateProcessorTestBase {
                    doc(f("id", "1111"),
                        f("foo_t", "string1", "string2"),
                        f("foo_d", new Integer(42)),
-                       field("foo_s", 3.0F, "string3", "string4")));
+                       field("foo_s", "string3", "string4")));
 
     assertNotNull(d);
 
@@ -830,8 +828,6 @@ public class FieldMutatingUpdateProcessorTest extends UpdateProcessorTestBase {
     // slightly more interesting
     assertEquals("processor borked non string value", 
                  new Integer(42), d.getFieldValue("foo_d"));
-    assertEquals("wrong boost", 
-                 3.0F, d.getField("foo_s").getBoost(), 0.0F);
   }
 
 }

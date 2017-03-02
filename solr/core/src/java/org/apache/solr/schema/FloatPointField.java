@@ -179,12 +179,9 @@ public class FloatPointField extends PointField implements FloatValueFieldType {
   }
 
   @Override
-  public IndexableField createField(SchemaField field, Object value, float boost) {
+  public IndexableField createField(SchemaField field, Object value) {
     if (!isFieldUsed(field)) return null;
 
-    if (boost != 1.0 && log.isTraceEnabled()) {
-      log.trace("Can't use document/field boost for PointField. Field: " + field.getName() + ", boost: " + boost);
-    }
     float floatValue = (value instanceof Number) ? ((Number) value).floatValue() : Float.parseFloat(value.toString());
     return new FloatPoint(field.getName(), floatValue);
   }

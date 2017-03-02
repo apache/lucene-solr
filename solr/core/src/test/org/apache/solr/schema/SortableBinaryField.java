@@ -40,10 +40,10 @@ public class SortableBinaryField extends BinaryField {
   }
 
   @Override
-  public List<IndexableField> createFields(SchemaField field, Object value, float boost) {
+  public List<IndexableField> createFields(SchemaField field, Object value) {
     if (field.hasDocValues()) {
       List<IndexableField> fields = new ArrayList<>();
-      IndexableField storedField = createField(field, value, boost);
+      IndexableField storedField = createField(field, value);
       fields.add(storedField);
       ByteBuffer byteBuffer = toObject(storedField);
       BytesRef bytes = new BytesRef
@@ -55,7 +55,7 @@ public class SortableBinaryField extends BinaryField {
       }
       return fields;
     } else {
-      return Collections.singletonList(createField(field, value, boost));
+      return Collections.singletonList(createField(field, value));
     }
   }
 

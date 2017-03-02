@@ -86,7 +86,7 @@ public abstract class FieldType extends FieldProperties {
   /**
    * The default poly field separator.
    *
-   * @see #createFields(SchemaField, Object, float)
+   * @see #createFields(SchemaField, Object)
    * @see #isPolyField()
    */
   public static final String POLY_FIELD_SEPARATOR = "___";
@@ -119,9 +119,9 @@ public abstract class FieldType extends FieldProperties {
   }
 
   /**
-   * A "polyField" is a FieldType that can produce more than one IndexableField instance for a single value, via the {@link #createFields(org.apache.solr.schema.SchemaField, Object, float)} method.  This is useful
+   * A "polyField" is a FieldType that can produce more than one IndexableField instance for a single value, via the {@link #createFields(org.apache.solr.schema.SchemaField, Object)} method.  This is useful
    * when hiding the implementation details of a field from the Solr end user.  For instance, a spatial point may be represented by multiple different fields.
-   * @return true if the {@link #createFields(org.apache.solr.schema.SchemaField, Object, float)} method may return more than one field
+   * @return true if the {@link #createFields(org.apache.solr.schema.SchemaField, Object)} method may return more than one field
    */
   public boolean isPolyField(){
     return false;
@@ -263,7 +263,7 @@ public abstract class FieldType extends FieldProperties {
    *
    *
    */
-  public IndexableField createField(SchemaField field, Object value, float boost) {
+  public IndexableField createField(SchemaField field, Object value) {
     if (!field.indexed() && !field.stored()) {
       if (log.isTraceEnabled())
         log.trace("Ignoring unindexed/unstored field: " + field);
@@ -287,7 +287,7 @@ public abstract class FieldType extends FieldProperties {
       newType.setStoreTermVectorOffsets(field.storeTermOffsets());
       newType.setStoreTermVectorPositions(field.storeTermPositions());
       newType.setStoreTermVectorPayloads(field.storeTermPayloads());*/
-    return createField(field.getName(), val, field, boost);
+    return createField(field.getName(), val, field);
   }
 
   /**
@@ -296,27 +296,23 @@ public abstract class FieldType extends FieldProperties {
    * @param name The name of the field
    * @param val The _internal_ value to index
    * @param type {@link org.apache.lucene.document.FieldType}
-   * @param boost The boost value
    * @return the {@link org.apache.lucene.index.IndexableField}.
    */
-  protected IndexableField createField(String name, String val, org.apache.lucene.index.IndexableFieldType type, float boost){
-    Field f = new Field(name, val, type);
-    f.setBoost(boost);
-    return f;
+  protected IndexableField createField(String name, String val, org.apache.lucene.index.IndexableFieldType type){
+    return new Field(name, val, type);
   }
 
   /**
    * Given a {@link org.apache.solr.schema.SchemaField}, create one or more {@link org.apache.lucene.index.IndexableField} instances
    * @param field the {@link org.apache.solr.schema.SchemaField}
    * @param value The value to add to the field
-   * @param boost The boost to apply
    * @return An array of {@link org.apache.lucene.index.IndexableField}
    *
-   * @see #createField(SchemaField, Object, float)
+   * @see #createField(SchemaField, Object)
    * @see #isPolyField()
    */
-  public List<IndexableField> createFields(SchemaField field, Object value, float boost) {
-    IndexableField f = createField( field, value, boost);
+  public List<IndexableField> createFields(SchemaField field, Object value) {
+    IndexableField f = createField( field, value);
     if (field.hasDocValues() && f.fieldType().docValuesType() == null) {
       // field types that support doc values should either override createField
       // to return a field with doc values or extend createFields if this can't
@@ -366,7 +362,7 @@ public abstract class FieldType extends FieldProperties {
   public Object toObject(SchemaField sf, BytesRef term) {
     final CharsRefBuilder ref = new CharsRefBuilder();
     indexedToReadable(term, ref);
-    final IndexableField f = createField(sf, ref.toString(), 1.0f);
+    final IndexableField f = createField(sf, ref.toString());
     return toObject(f);
   }
 

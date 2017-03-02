@@ -81,12 +81,6 @@ public class Field implements IndexableField {
   protected TokenStream tokenStream;
 
   /**
-   * Field's boost
-   * @see #boost()
-   */
-  protected float boost = 1.0f;
-
-  /**
    * Expert: creates a field with no initial value.
    * Intended only for custom Field subclasses.
    * @param name field name
@@ -431,32 +425,6 @@ public class Field implements IndexableField {
   @Override
   public String name() {
     return name;
-  }
-  
-  /** 
-   * {@inheritDoc}
-   * <p>
-   * The default value is <code>1.0f</code> (no boost).
-   * @see #setBoost(float)
-   */
-  @Override
-  public float boost() {
-    return boost;
-  }
-
-  /** 
-   * Sets the boost factor on this field.
-   * @throws IllegalArgumentException if this field is not indexed, 
-   *         or if it omits norms. 
-   * @see #boost()
-   */
-  public void setBoost(float boost) {
-    if (boost != 1.0f) {
-      if (type.indexOptions() == IndexOptions.NONE || type.omitNorms()) {
-        throw new IllegalArgumentException("You cannot set an index-time boost on an unindexed field, or one that omits norms");
-      }
-    }
-    this.boost = boost;
   }
 
   @Override

@@ -200,7 +200,7 @@ public abstract class AbstractSpatialFieldType<T extends SpatialStrategy> extend
   //--------------------------------------------------------------
 
   @Override
-  public final Field createField(SchemaField field, Object val, float boost) {
+  public final Field createField(SchemaField field, Object val) {
     throw new IllegalStateException("instead call createFields() because isPolyField() is true");
   }
 
@@ -210,7 +210,7 @@ public abstract class AbstractSpatialFieldType<T extends SpatialStrategy> extend
   }
 
   @Override
-  public List<IndexableField> createFields(SchemaField field, Object val, float boost) {
+  public List<IndexableField> createFields(SchemaField field, Object val) {
     String shapeStr = null;
     Shape shape;
     if (val instanceof Shape) {
@@ -237,7 +237,7 @@ public abstract class AbstractSpatialFieldType<T extends SpatialStrategy> extend
     return result;
   }
 
-  /** Called by {@link #createFields(SchemaField, Object, float)} to get the stored value. */
+  /** Called by {@link #createFields(SchemaField, Object)} to get the stored value. */
   protected String getStoredValue(Shape shape, String shapeStr) {
     return (shapeStr == null) ? shapeToString(shape) : shapeStr;
   }

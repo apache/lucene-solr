@@ -20,7 +20,6 @@ import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.nio.ByteBuffer;
 
-import org.apache.lucene.document.Field;
 import org.apache.lucene.index.IndexableField;
 import org.apache.lucene.search.SortField;
 import org.apache.lucene.util.BytesRef;
@@ -71,7 +70,7 @@ public class BinaryField extends FieldType  {
   }
 
   @Override
-  public IndexableField createField(SchemaField field, Object val, float boost) {
+  public IndexableField createField(SchemaField field, Object val) {
     if (val == null) return null;
     if (!field.stored()) {
       log.trace("Ignoring unstored binary field: " + field);
@@ -95,8 +94,6 @@ public class BinaryField extends FieldType  {
       len = buf.length;
     }
 
-    Field f = new org.apache.lucene.document.StoredField(field.getName(), buf, offset, len);
-    f.setBoost(boost);
-    return f;
+    return new org.apache.lucene.document.StoredField(field.getName(), buf, offset, len);
   }
 }

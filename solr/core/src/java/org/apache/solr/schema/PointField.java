@@ -203,12 +203,12 @@ public abstract class PointField extends NumericFieldType {
   }
 
   @Override
-  public List<IndexableField> createFields(SchemaField sf, Object value, float boost) {
+  public List<IndexableField> createFields(SchemaField sf, Object value) {
     if (!(sf.hasDocValues() || sf.stored())) {
-      return Collections.singletonList(createField(sf, value, boost));
+      return Collections.singletonList(createField(sf, value));
     }
     List<IndexableField> fields = new ArrayList<>();
-    final IndexableField field = createField(sf, value, boost);
+    final IndexableField field = createField(sf, value);
     fields.add(field);
     
     if (sf.hasDocValues()) {
