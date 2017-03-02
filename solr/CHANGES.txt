@@ -137,6 +137,9 @@ New Features
 * SOLR-10158: Add support for "preload" option in MMapDirectoryFactory.
   (Amrit Sarkar via Uwe Schindler)
 
+* SOLR-10153 & SOLR-10152: The Unified and Postings based highlighters: Add hl.bs.type=SEPARATOR along with new param
+  hl.bs.separator to break passages by a provided single character. (Amrit Sarkar, David Smiley)
+
 Bug Fixes
 ----------------------
 

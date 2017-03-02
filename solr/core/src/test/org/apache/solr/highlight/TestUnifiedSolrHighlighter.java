@@ -221,6 +221,19 @@ public class TestUnifiedSolrHighlighter extends SolrTestCaseJ4 {
         req("q", "text:document", "sort", "id asc", "hl", "true", "hl.fragsize", "0"),
         "//lst[@name='highlighting']/lst[@name='103']/arr[@name='text']/str='<em>Document</em> one has a first sentence. <em>Document</em> two has a second sentence.'");
   }
+  
+  public void testBreakIteratorCustom() {
+    assertU(adoc("text", "This document contains # special characters, while the other document contains the same # special character.", "id", "103"));
+    assertU(adoc("text", "While the other document contains the same # special character.", "id", "104"));
+    assertU(commit());
+    assertQ("CUSTOM breakiterator", 
+        req("q", "text:document", "sort", "id asc", "hl", "true", "hl.bs.type", "SEPARATOR","hl.bs.separator","#","hl.fragsize", "-1"),
+        "//lst[@name='highlighting']/lst[@name='103']/arr[@name='text']/str='This <em>document</em> contains #'");
+    assertQ("different breakiterator", 
+        req("q", "text:document", "sort", "id asc", "hl", "true", "hl.bs.type", "SEPARATOR","hl.bs.separator","#","hl.fragsize", "-1"),
+        "//lst[@name='highlighting']/lst[@name='104']/arr[@name='text']/str='While the other <em>document</em> contains the same #'");
+
+  }
 
   public void testFragsize() {
     // test default is 70... so make a sentence that is a little less (closer to 70 than end of text)
