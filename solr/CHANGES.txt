@@ -271,6 +271,8 @@ Other Changes
 
 * SOLR-10219: re-enable HDFS tests under JDK9 (hossman, Uwe Schindler)
 
+* SOLR-10155: For numeric types facet.contains= and facet.prefix= are now rejected.
+  (Gus Heck, Christine Poerschke)
 
 ==================  6.4.2 ==================
 
