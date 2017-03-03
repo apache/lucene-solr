@@ -145,6 +145,8 @@ New Features
 * SOLR-10153 & SOLR-10152: The Unified and Postings based highlighters: Add hl.bs.type=SEPARATOR along with new param
   hl.bs.separator to break passages by a provided single character. (Amrit Sarkar, David Smiley)
 
+* SOLR-10156: Add significantTerms Streaming Expression (Joel Bernstein)
+
 Bug Fixes
 ----------------------
 
