@@ -23,6 +23,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import com.github.benmanes.caffeine.cache.Cache;
 import com.github.benmanes.caffeine.cache.Caffeine;
+import com.github.benmanes.caffeine.cache.RemovalCause;
 import com.github.benmanes.caffeine.cache.RemovalListener;
 
 /**
@@ -75,7 +76,7 @@ public class BlockCache {
       lockCounters[i] = new AtomicInteger();
     }
 
-    RemovalListener<BlockCacheKey,BlockCacheLocation> listener = (blockCacheKey, blockCacheLocation, removalCause) -> releaseLocation(blockCacheKey, blockCacheLocation);
+    RemovalListener<BlockCacheKey,BlockCacheLocation> listener = (blockCacheKey, blockCacheLocation, removalCause) -> releaseLocation(blockCacheKey, blockCacheLocation, removalCause);
 
     cache = Caffeine.newBuilder()
         .removalListener(listener)
@@ -88,7 +89,7 @@ public class BlockCache {
     cache.invalidate(key);
   }
   
-  private void releaseLocation(BlockCacheKey blockCacheKey, BlockCacheLocation location) {
+  private void releaseLocation(BlockCacheKey blockCacheKey, BlockCacheLocation location, RemovalCause removalCause) {
     if (location == null) {
       return;
     }
@@ -103,7 +104,9 @@ public class BlockCache {
     for (OnRelease onRelease : onReleases) {
       onRelease.release(blockCacheKey);
     }
-    metrics.blockCacheEviction.incrementAndGet();
+    if (removalCause.wasEvicted()) {
+      metrics.blockCacheEviction.incrementAndGet();
+    }
     metrics.blockCacheSize.decrementAndGet();
   }
 
