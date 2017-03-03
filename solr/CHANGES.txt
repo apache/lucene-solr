@@ -196,6 +196,9 @@ Bug Fixes
 
 * SOLR-10196: ElectionContext#runLeaderProcess can hit NPE on core close. (Mark Miller)
 
+* SOLR-10225: Fix HDFS BlockCache evictions metric to not count explicit removal
+  due to a directory close. (yonik)
+
 Optimizations
 ----------------------
 
