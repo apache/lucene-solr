@@ -30,6 +30,7 @@ import org.apache.lucene.index.LeafReader;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.MultiDocValues.MultiSortedDocValues;
 import org.apache.lucene.index.MultiDocValues.MultiSortedSetDocValues;
+import org.apache.lucene.index.NoMergePolicy;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.LuceneTestCase;
@@ -95,7 +96,7 @@ public class TestSlowCompositeReaderWrapper extends LuceneTestCase {
 
   public void testOrdMapsAreCached() throws Exception {
     Directory dir = newDirectory();
-    RandomIndexWriter w = new RandomIndexWriter(random(), dir);
+    RandomIndexWriter w = new RandomIndexWriter(random(), dir, newIndexWriterConfig().setMergePolicy(NoMergePolicy.INSTANCE));
     Document doc = new Document();
     doc.add(new SortedDocValuesField("sorted", new BytesRef("a")));
     doc.add(new SortedSetDocValuesField("sorted_set", new BytesRef("b")));
