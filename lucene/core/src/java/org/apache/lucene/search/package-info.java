@@ -226,7 +226,7 @@
  *    <a href="http://en.wikipedia.org/wiki/Information_retrieval#Model_types">models</a>, including:
  *    <ul>
  *      <li><a href="http://en.wikipedia.org/wiki/Vector_Space_Model">Vector Space Model (VSM)</a></li>
- *      <li><a href="http://en.wikipedia.org/wiki/Probabilistic_relevance_model">Probablistic Models</a> such as 
+ *      <li><a href="http://en.wikipedia.org/wiki/Probabilistic_relevance_model">Probabilistic Models</a> such as 
  *          <a href="http://en.wikipedia.org/wiki/Probabilistic_relevance_model_(BM25)">Okapi BM25</a> and
  *          <a href="http://en.wikipedia.org/wiki/Divergence-from-randomness_model">DFR</a></li>
  *      <li><a href="http://en.wikipedia.org/wiki/Language_model">Language models</a></li>
