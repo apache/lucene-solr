@@ -340,7 +340,7 @@ mkdir -p "$SOLR_VAR_DIR/logs"
 if [ -f "$SOLR_VAR_DIR/data/solr.xml" ]; then
   echo -e "\n$SOLR_VAR_DIR/data/solr.xml already exists. Skipping install ...\n"
 else
-  cp "$SOLR_INSTALL_DIR/server/solr/solr.xml" "$SOLR_VAR_DIR/data/solr.xml"
+  cp "$SOLR_INSTALL_DIR/server/solr/"{solr.xml,zoo.cfg} "$SOLR_VAR_DIR/data/"
 fi
 if [ -f "$SOLR_VAR_DIR/log4j.properties" ]; then
   echo -e "\n$SOLR_VAR_DIR/log4j.properties already exists. Skipping install ...\n"
