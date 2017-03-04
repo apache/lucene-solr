@@ -311,6 +311,14 @@ limitations under the License.
   right:10px;
 }
 
+#content #collections .shard h2 span.rem {
+  background-image: url( ../../img/ico/cross.png );
+  background-position: 100% 50%;
+  cursor: pointer;
+  padding-right: 21px;
+  right:10px;
+}
+
 #content #collections .replica h2 span .open {
   background-image: url( ../../img/ico/chevron-small.png );
 }
@@ -333,6 +341,15 @@ limitations under the License.
   background-image: url( ../../img/ico/cross.png );
 }
 #content #collections .delete-replica button.submit span
+{
+  background-image: url( ../../img/ico/tick.png );
+}
+
+#content #collections .delete-shard span
+{
+  background-image: url( ../../img/ico/cross.png );
+}
+#content #collections .delete-shard button.submit span
 {
   background-image: url( ../../img/ico/tick.png );
 }
