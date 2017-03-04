@@ -58,8 +58,8 @@ public class SolrMetricManagerTest extends SolrTestCaseJ4 {
 
     Map<String, Counter> metrics1 = SolrMetricTestUtils.getRandomMetrics(r, true);
     Map<String, Counter> metrics2 = SolrMetricTestUtils.getRandomMetrics(r, true);
-    String fromName = TestUtil.randomSimpleString(r, 1, 10);
-    String toName = TestUtil.randomSimpleString(r, 1, 10);
+    String fromName = "from-" + TestUtil.randomSimpleString(r, 1, 10);
+    String toName = "to-" + TestUtil.randomSimpleString(r, 1, 10);
     // register test metrics
     for (Map.Entry<String, Counter> entry : metrics1.entrySet()) {
       metricManager.register(fromName, entry.getValue(), false, entry.getKey(), "metrics1");
