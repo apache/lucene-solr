@@ -210,6 +210,20 @@ solrAdminApp.controller('CollectionsController',
           $scope.hideAll();
           replica.showRemove = !replica.showRemove;
       };
+      
+      $scope.toggleRemoveShard = function(shard) {
+          $scope.hideAll();
+          shard.showRemove = !shard.showRemove;
+      };
+
+      $scope.deleteShard = function(shard) {
+          Collections.deleteShard({collection: shard.collection, shard:shard.name}, function(data) {
+            shard.deleted = true;
+            $timeout(function() {
+              $scope.refresh();
+            }, 2000);
+          });
+        }
 
       $scope.deleteReplica = function(replica) {
         Collections.deleteReplica({collection: replica.collection, shard:replica.shard, replica:replica.name}, function(data) {

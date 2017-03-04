@@ -149,6 +149,8 @@ New Features
 
 * SOLR-8593: Integrate Apache Calcite into the SQLHandler (Kevin Risden, Cao Manh Dat, Joel Bernstein)
 
+* SOLR-10146: Added button to the Admin UI 'Collection' tab for deleting an inactive shard (Amrit Sarkar, janhoy)
+
 Bug Fixes
 ----------------------
 
