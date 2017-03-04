@@ -128,7 +128,7 @@ New Features
   numeric, and conditional evaluators. BooleanOperations have been removed in preference of
   BooleanEvaluators. (Dennis Gove)
 
-* SOLR-9903: Stop interrupting the update executor on shutdown, it can cause graceful shutdowns to put replicas into Leader 
+* SOLR-9903: Stop interrupting the update executor on shutdown, it can cause graceful shutdowns to put replicas into Leader
   Initiated Recovery among other undesirable things. (Mark Miller)
 
 * SOLR-8396: Add support for PointFields in Solr (Ishan Chattopadhyaya, Tomás Fernández Löbbe)
@@ -203,6 +203,8 @@ Bug Fixes
 * SOLR-10225: Fix HDFS BlockCache evictions metric to not count explicit removal
   due to a directory close. (yonik)
 
+* SOLR-10088: Installer script does not put zoo.cfg in SOLR_HOME (janhoy)
+
 Optimizations
 ----------------------
 
@@ -232,9 +234,9 @@ Other Changes
 
 * SOLR-10018: Increase the default hl.maxAnalyzedChars to 51200 for the Unified & Postings Highlighter so that all
   highlighters now have this same default. (David Smiley)
-  
-* SOLR-6246: Added tests to check that the changes in LUCENE-7564 and LUCENE-7670 
-  enable AnalyzingInfixSuggester and BlendedInfixSuggester to play nicely with core reload.  
+
+* SOLR-6246: Added tests to check that the changes in LUCENE-7564 and LUCENE-7670
+  enable AnalyzingInfixSuggester and BlendedInfixSuggester to play nicely with core reload.
   SolrSuggester.build() now throws SolrCoreState.CoreIsClosedException when interrupted
   by a core reload/shutdown. (Steve Rowe)
 
@@ -261,8 +263,8 @@ Other Changes
 * SOLR-9842: UpdateRequestProcessors have no way to guarantee the closing of resources used for a request.
   (Mark Miller)
 
-* SOLR-9848: Lower solr.cloud.wait-for-updates-with-stale-state-pause back down from 7 seconds. 
-  (Mark Miller) 
+* SOLR-9848: Lower solr.cloud.wait-for-updates-with-stale-state-pause back down from 7 seconds.
+  (Mark Miller)
 
 * SOLR-10020: Cannot reload a core if it fails initialization. (Mike Drob via Erick Erickson)
 
@@ -273,8 +275,8 @@ Other Changes
 
 * SOLR-10214: Remove unused HDFS BlockCache metrics and add storeFails, as well as adding total
   counts for lookups, hits, and evictions. (yonik)
-  
-* SOLR-10134: EmbeddedSolrServer responds on Schema API requests (Robert Alexandersson via Mikhail Khludnev)  
+
+* SOLR-10134: EmbeddedSolrServer responds on Schema API requests (Robert Alexandersson via Mikhail Khludnev)
 
 * SOLR-10219: re-enable HDFS tests under JDK9 (hossman, Uwe Schindler)
 
