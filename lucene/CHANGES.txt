@@ -204,6 +204,9 @@ Improvements
   IndexInput description instead of plain IOException (Mike Drob via
   Mike McCandless)
 
+* LUCENE-7695: ComplexPhraseQueryParser to support query time synonyms (Markus Jelsma
+  via Mikhail Khludnev) 
+
 Optimizations
 
 * LUCENE-7641: Optimized point range queries to compute documents that do not
