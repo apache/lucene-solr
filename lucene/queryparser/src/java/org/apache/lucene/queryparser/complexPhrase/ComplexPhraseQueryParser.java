@@ -28,12 +28,14 @@ import org.apache.lucene.index.Term;
 import org.apache.lucene.queryparser.classic.ParseException;
 import org.apache.lucene.queryparser.classic.QueryParser;
 import org.apache.lucene.search.BooleanClause;
+import org.apache.lucene.search.BooleanClause.Occur;
 import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.BoostQuery;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.MatchNoDocsQuery;
 import org.apache.lucene.search.MultiTermQuery;
 import org.apache.lucene.search.Query;
+import org.apache.lucene.search.SynonymQuery;
 import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.search.TermRangeQuery;
 import org.apache.lucene.search.spans.SpanBoostQuery;
@@ -256,6 +258,7 @@ public class ComplexPhraseQueryParser extends QueryParser {
       // ArrayList spanClauses = new ArrayList();
       if (contents instanceof TermQuery 
           || contents instanceof MultiTermQuery
+          || contents instanceof SynonymQuery
           ) {
         return contents;
       }
@@ -286,9 +289,11 @@ public class ComplexPhraseQueryParser extends QueryParser {
           qc = ((BoostQuery) qc).getQuery();
         }
 
-        if (qc instanceof BooleanQuery) {
+        if (qc instanceof BooleanQuery || qc instanceof SynonymQuery) {
           ArrayList<SpanQuery> sc = new ArrayList<>();
-          addComplexPhraseClause(sc, (BooleanQuery) qc);
+          BooleanQuery booleanCaluse = qc instanceof BooleanQuery ?
+              (BooleanQuery) qc : convert((SynonymQuery) qc);
+          addComplexPhraseClause(sc, booleanCaluse);
           if (sc.size() > 0) {
             allSpanClauses[i] = sc.get(0);
           } else {
@@ -308,14 +313,14 @@ public class ComplexPhraseQueryParser extends QueryParser {
           if (qc instanceof TermQuery) {
             TermQuery tq = (TermQuery) qc;
             allSpanClauses[i] = new SpanTermQuery(tq.getTerm());
-          } else {
+            } else { 
             throw new IllegalArgumentException("Unknown query type \""
                 + qc.getClass().getName()
                 + "\" found in phrase query string \""
                 + phrasedQueryStringContents + "\"");
           }
-
         }
+
         i += 1;
       }
       if (numNegatives == 0) {
@@ -351,6 +356,14 @@ public class ComplexPhraseQueryParser extends QueryParser {
           inOrder);
       SpanNotQuery snot = new SpanNotQuery(include, exclude);
       return snot;
+    }
+
+    private BooleanQuery convert(SynonymQuery qc) {
+      BooleanQuery.Builder bqb = new BooleanQuery.Builder();
+      for (Term t : qc.getTerms()){
+        bqb.add(new BooleanClause(new TermQuery(t), Occur.SHOULD));
+      }
+      return bqb.build();
     }
 
     private void addComplexPhraseClause(List<SpanQuery> spanClauses, BooleanQuery qc) {
