@@ -285,7 +285,9 @@ Other Changes
 * SOLR-10155: For numeric types facet.contains= and facet.prefix= are now rejected.
   (Gus Heck, Christine Poerschke)
 
-* SOLR-10171 Add Constant Reduction Rules to Calcite Planner (Kevin Risden)
+* SOLR-10171: Add Constant Reduction Rules to Calcite Planner (Kevin Risden)
+
+* SOLR-10230: default TTL of PKIAuthenticationPlugin increased to 10secs (noble)
 
 ==================  6.4.2 ==================
 
