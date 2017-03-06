@@ -151,6 +151,9 @@ New Features
 
 * SOLR-10146: Added button to the Admin UI 'Collection' tab for deleting an inactive shard (Amrit Sarkar, janhoy)
 
+* SOLR-9999: Instrument DirectUpdateHandler2. This registers existing statistics under metrics API and adds
+  more metrics to track the rates of update and delete commands. (ab)
+
 Bug Fixes
 ----------------------
 

@@ -1072,6 +1072,9 @@ public final class SolrCore implements SolrInfoMBean, Closeable {
     } else {
       newUpdateHandler = createUpdateHandler(updateHandlerClass, updateHandler);
     }
+    if (newUpdateHandler instanceof SolrMetricProducer) {
+      coreMetricManager.registerMetricProducer("updateHandler", (SolrMetricProducer)newUpdateHandler);
+    }
     infoRegistry.put("updateHandler", newUpdateHandler);
     return newUpdateHandler;
   }
