@@ -36,9 +36,9 @@ public interface SolrInfoMBean {
     SEARCHER, REPLICATION, TLOG, INDEX, DIRECTORY, HTTP, OTHER }
 
   /**
-   * Top-level group of beans for a subsystem.
+   * Top-level group of beans or metrics for a subsystem.
    */
-  enum Group { jvm, jetty, node, core }
+  enum Group { jvm, jetty, node, core, collection, shard, cluster, overseer }
 
   /**
    * Simple common usage name, e.g. BasicQueryHandler,

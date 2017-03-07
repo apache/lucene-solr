@@ -41,9 +41,9 @@ public class JmxObjectNameFactory implements ObjectNameFactory {
    * @param additionalProperties additional properties as key, value pairs.
    */
   public JmxObjectNameFactory(String reporterName, String domain, String... additionalProperties) {
-    this.reporterName = reporterName;
+    this.reporterName = reporterName.replaceAll(":", "_");
     this.domain = domain;
-    this.subdomains = domain.split("\\.");
+    this.subdomains = domain.replaceAll(":", "_").split("\\.");
     if (additionalProperties != null && (additionalProperties.length % 2) != 0) {
       throw new IllegalArgumentException("additionalProperties length must be even: " + Arrays.toString(additionalProperties));
     }
@@ -83,7 +83,7 @@ public class JmxObjectNameFactory implements ObjectNameFactory {
         }
         sb.append(','); // separate from other properties
       } else {
-        sb.append(currentDomain);
+        sb.append(currentDomain.replaceAll(":", "_"));
         sb.append(':');
       }
     } else {

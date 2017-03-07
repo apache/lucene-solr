@@ -251,8 +251,8 @@ public class TestCoreAdmin extends AbstractEmbeddedSolrServerTestCase {
 
     // assert initial metrics
     SolrMetricManager metricManager = cores.getMetricManager();
-    String core0RegistryName = SolrCoreMetricManager.createRegistryName(null, "core0");
-    String core1RegistryName = SolrCoreMetricManager.createRegistryName(null, "core1");
+    String core0RegistryName = SolrCoreMetricManager.createRegistryName(false, null, null, null, "core0");
+    String core1RegistryName = SolrCoreMetricManager.createRegistryName(false, null, null,null, "core1");
     MetricRegistry core0Registry = metricManager.registry(core0RegistryName);
     MetricRegistry core1Registry = metricManager.registry(core1RegistryName);
 

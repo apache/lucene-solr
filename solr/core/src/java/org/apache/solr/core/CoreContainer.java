@@ -69,6 +69,7 @@ import org.apache.solr.handler.admin.CollectionsHandler;
 import org.apache.solr.handler.admin.ConfigSetsHandler;
 import org.apache.solr.handler.admin.CoreAdminHandler;
 import org.apache.solr.handler.admin.InfoHandler;
+import org.apache.solr.handler.admin.MetricsCollectorHandler;
 import org.apache.solr.handler.admin.MetricsHandler;
 import org.apache.solr.handler.admin.SecurityConfHandler;
 import org.apache.solr.handler.admin.SecurityConfHandlerLocal;
@@ -176,6 +177,8 @@ public class CoreContainer {
   protected SolrMetricManager metricManager;
 
   protected MetricsHandler metricsHandler;
+
+  protected MetricsCollectorHandler metricsCollectorHandler;
 
   private enum CoreInitFailedAction { fromleader, none }
 
@@ -511,15 +514,18 @@ public class CoreContainer {
     coreAdminHandler   = createHandler(CORES_HANDLER_PATH, cfg.getCoreAdminHandlerClass(), CoreAdminHandler.class);
     configSetsHandler = createHandler(CONFIGSETS_HANDLER_PATH, cfg.getConfigSetsHandlerClass(), ConfigSetsHandler.class);
     metricsHandler = createHandler(METRICS_PATH, MetricsHandler.class.getName(), MetricsHandler.class);
+    metricsCollectorHandler = createHandler(MetricsCollectorHandler.HANDLER_PATH, MetricsCollectorHandler.class.getName(), MetricsCollectorHandler.class);
+    // may want to add some configuration here in the future
+    metricsCollectorHandler.init(null);
     containerHandlers.put(AUTHZ_PATH, securityConfHandler);
     securityConfHandler.initializeMetrics(metricManager, SolrInfoMBean.Group.node.toString(), AUTHZ_PATH);
     containerHandlers.put(AUTHC_PATH, securityConfHandler);
     if(pkiAuthenticationPlugin != null)
       containerHandlers.put(PKIAuthenticationPlugin.PATH, pkiAuthenticationPlugin.getRequestHandler());
 
-    metricManager.loadReporters(cfg.getMetricReporterPlugins(), loader, SolrInfoMBean.Group.node);
-    metricManager.loadReporters(cfg.getMetricReporterPlugins(), loader, SolrInfoMBean.Group.jvm);
-    metricManager.loadReporters(cfg.getMetricReporterPlugins(), loader, SolrInfoMBean.Group.jetty);
+    metricManager.loadReporters(cfg.getMetricReporterPlugins(), loader, null, SolrInfoMBean.Group.node);
+    metricManager.loadReporters(cfg.getMetricReporterPlugins(), loader, null, SolrInfoMBean.Group.jvm);
+    metricManager.loadReporters(cfg.getMetricReporterPlugins(), loader, null, SolrInfoMBean.Group.jetty);
 
     coreConfigService = ConfigSetService.createConfigSetService(cfg, loader, zkSys.zkController);
 
@@ -536,6 +542,10 @@ public class CoreContainer {
         lazyCores, true, "lazy",SolrInfoMBean.Category.CONTAINER.toString(), "cores");
     metricManager.register(SolrMetricManager.getRegistryName(SolrInfoMBean.Group.node),
         unloadedCores, true, "unloaded",SolrInfoMBean.Category.CONTAINER.toString(), "cores");
+
+    if (isZooKeeperAware()) {
+      metricManager.loadClusterReporters(cfg.getMetricReporterPlugins(), this);
+    }
 
     // setup executor to load cores in parallel
     ExecutorService coreLoadExecutor = MetricUtils.instrumentedExecutorService(
@@ -660,10 +670,16 @@ public class CoreContainer {
     isShutDown = true;
 
     ExecutorUtil.shutdownAndAwaitTermination(coreContainerWorkExecutor);
+    if (metricManager != null) {
+      metricManager.closeReporters(SolrMetricManager.getRegistryName(SolrInfoMBean.Group.node));
+    }
 
     if (isZooKeeperAware()) {
       cancelCoreRecoveries();
-      zkSys.zkController.publishNodeAsDown(zkSys.zkController.getNodeName()); 
+      zkSys.zkController.publishNodeAsDown(zkSys.zkController.getNodeName());
+      if (metricManager != null) {
+        metricManager.closeReporters(SolrMetricManager.getRegistryName(SolrInfoMBean.Group.cluster));
+      }
     }
 
     try {
@@ -720,10 +736,6 @@ public class CoreContainer {
           zkSys.close();
         }
       }
-    }
-
-    if (metricManager != null) {
-      metricManager.closeReporters(SolrMetricManager.getRegistryName(SolrInfoMBean.Group.node));
     }
 
     // It should be safe to close the authorization plugin at this point.
@@ -1232,7 +1244,7 @@ public class CoreContainer {
     try (SolrCore core = getCore(name)) {
       if (core != null) {
         String oldRegistryName = core.getCoreMetricManager().getRegistryName();
-        String newRegistryName = SolrCoreMetricManager.createRegistryName(core.getCoreDescriptor().getCollectionName(), toName);
+        String newRegistryName = SolrCoreMetricManager.createRegistryName(core, toName);
         metricManager.swapRegistries(oldRegistryName, newRegistryName);
         registerCore(toName, core, true, false);
         SolrCore old = solrCores.remove(name);

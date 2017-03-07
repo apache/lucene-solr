@@ -19,7 +19,6 @@ package org.apache.solr.metrics;
 
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.Arrays;
 import java.util.Map;
 import java.util.Random;
 
@@ -55,6 +54,11 @@ public class SolrMetricsIntegrationTest extends SolrTestCaseJ4 {
 
   private CoreContainer cc;
   private SolrMetricManager metricManager;
+  private String tag;
+
+  private void assertTagged(Map<String, SolrMetricReporter> reporters, String name) {
+    assertTrue("Reporter '" + name + "' missing in " + reporters, reporters.containsKey(name + "@" + tag));
+  }
 
   @Before
   public void beforeTest() throws Exception {
@@ -68,10 +72,13 @@ public class SolrMetricsIntegrationTest extends SolrTestCaseJ4 {
         new TestHarness.TestCoresLocator(DEFAULT_TEST_CORENAME, initCoreDataDir.getAbsolutePath(), "solrconfig.xml", "schema.xml"));
     h.coreName = DEFAULT_TEST_CORENAME;
     metricManager = cc.getMetricManager();
+    tag = h.getCore().getCoreMetricManager().getTag();
     // initially there are more reporters, because two of them are added via a matching collection name
     Map<String, SolrMetricReporter> reporters = metricManager.getReporters("solr.core." + DEFAULT_TEST_CORENAME);
     assertEquals(INITIAL_REPORTERS.length, reporters.size());
-    assertTrue(reporters.keySet().containsAll(Arrays.asList(INITIAL_REPORTERS)));
+    for (String r : INITIAL_REPORTERS) {
+      assertTagged(reporters, r);
+    }
     // test rename operation
     cc.rename(DEFAULT_TEST_CORENAME, CORE_NAME);
     h.coreName = CORE_NAME;
@@ -101,7 +108,7 @@ public class SolrMetricsIntegrationTest extends SolrTestCaseJ4 {
     deleteCore();
 
     for (String reporterName : RENAMED_REPORTERS) {
-      SolrMetricReporter reporter = reporters.get(reporterName);
+      SolrMetricReporter reporter = reporters.get(reporterName + "@" + tag);
       MockMetricReporter mockReporter = (MockMetricReporter) reporter;
       assertTrue("Reporter " + reporterName + " was not closed: " + mockReporter, mockReporter.didClose);
     }
@@ -130,7 +137,7 @@ public class SolrMetricsIntegrationTest extends SolrTestCaseJ4 {
     // SPECIFIC and MULTIREGISTRY were skipped because they were
     // specific to collection1
     for (String reporterName : RENAMED_REPORTERS) {
-      SolrMetricReporter reporter = reporters.get(reporterName);
+      SolrMetricReporter reporter = reporters.get(reporterName + "@" + tag);
       assertNotNull("Reporter " + reporterName + " was not found.", reporter);
       assertTrue(reporter instanceof MockMetricReporter);
 

@@ -161,11 +161,13 @@ public class PeerSync implements SolrMetricProducer {
     core.getCoreMetricManager().registerMetricProducer(SolrInfoMBean.Category.REPLICATION.toString(), this);
   }
 
+  public static final String METRIC_SCOPE = "peerSync";
+
   @Override
   public void initializeMetrics(SolrMetricManager manager, String registry, String scope) {
-    syncTime = manager.timer(registry, "time", scope);
-    syncErrors = manager.counter(registry, "errors", scope);
-    syncSkipped = manager.counter(registry, "skipped", scope);
+    syncTime = manager.timer(registry, "time", scope, METRIC_SCOPE);
+    syncErrors = manager.counter(registry, "errors", scope, METRIC_SCOPE);
+    syncSkipped = manager.counter(registry, "skipped", scope, METRIC_SCOPE);
   }
 
   /** optional list of updates we had before possibly receiving new updates */

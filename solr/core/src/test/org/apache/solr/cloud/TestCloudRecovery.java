@@ -119,9 +119,9 @@ public class TestCloudRecovery extends SolrCloudTestCase {
           .filter(s -> s.startsWith("solr.core.")).collect(Collectors.toList());
       for (String registry : registryNames) {
         Map<String, Metric> metrics = manager.registry(registry).getMetrics();
-        Timer timer = (Timer)metrics.get("REPLICATION.time");
-        Counter counter = (Counter)metrics.get("REPLICATION.errors");
-        Counter skipped = (Counter)metrics.get("REPLICATION.skipped");
+        Timer timer = (Timer)metrics.get("REPLICATION.peerSync.time");
+        Counter counter = (Counter)metrics.get("REPLICATION.peerSync.errors");
+        Counter skipped = (Counter)metrics.get("REPLICATION.peerSync.skipped");
         replicationCount += timer.getCount();
         errorsCount += counter.getCount();
         skippedCount += skipped.getCount();

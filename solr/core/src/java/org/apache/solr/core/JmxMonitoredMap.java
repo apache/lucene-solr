@@ -20,6 +20,7 @@ import javax.management.Attribute;
 import javax.management.AttributeList;
 import javax.management.AttributeNotFoundException;
 import javax.management.DynamicMBean;
+import javax.management.InstanceNotFoundException;
 import javax.management.InvalidAttributeValueException;
 import javax.management.MBeanAttributeInfo;
 import javax.management.MBeanException;
@@ -53,7 +54,6 @@ import org.apache.lucene.store.AlreadyClosedException;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.core.SolrConfig.JmxConfiguration;
-import org.apache.solr.metrics.SolrCoreMetricManager;
 import org.apache.solr.metrics.reporters.JmxObjectNameFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -93,9 +93,10 @@ public class JmxMonitoredMap<K, V> extends
 
   private final String registryName;
 
-  public JmxMonitoredMap(String coreName, String coreHashCode,
+  public JmxMonitoredMap(String coreName, String coreHashCode, String registryName,
                          final JmxConfiguration jmxConfig) {
     this.coreHashCode = coreHashCode;
+    this.registryName = registryName;
     jmxRootName = (null != jmxConfig.rootName ?
                    jmxConfig.rootName
                    : ("solr" + (null != coreName ? "/" + coreName : "")));
@@ -117,7 +118,6 @@ public class JmxMonitoredMap<K, V> extends
 
       if (servers == null || servers.isEmpty()) {
         server = null;
-        registryName = null;
         nameFactory = null;
         log.debug("No JMX servers found, not exposing Solr information with JMX.");
         return;
@@ -141,7 +141,6 @@ public class JmxMonitoredMap<K, V> extends
       }
       server = newServer;
     }
-    registryName = SolrCoreMetricManager.createRegistryName(null, coreName);
     nameFactory = new JmxObjectNameFactory(REPORTER_NAME + coreHashCode, registryName);
   }
 
@@ -166,6 +165,8 @@ public class JmxMonitoredMap<K, V> extends
         for (ObjectName name : objectNames) {
           try {
             server.unregisterMBean(name);
+          } catch (InstanceNotFoundException ie) {
+            // ignore - someone else already deleted this one
           } catch (Exception e) {
             log.warn("Exception un-registering mbean {}", name, e);
           }
