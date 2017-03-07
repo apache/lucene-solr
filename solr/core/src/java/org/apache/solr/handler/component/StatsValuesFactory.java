@@ -63,8 +63,12 @@ public class StatsValuesFactory {
     
     final FieldType fieldType = sf.getType(); // TODO: allow FieldType to provide impl.
     
-    if (TrieDateField.class.isInstance(fieldType)) {
-      return new DateStatsValues(statsField);
+    if (TrieDateField.class.isInstance(fieldType) || DatePointField.class.isInstance(fieldType)) {
+      DateStatsValues statsValues = new DateStatsValues(statsField);
+      if (sf.multiValued()) {
+        return new SortedDateStatsValues(statsValues, statsField);
+      }
+      return statsValues;
     } else if (TrieField.class.isInstance(fieldType) || PointField.class.isInstance(fieldType)) {
       
       NumericStatsValues statsValue = new NumericStatsValues(statsField);

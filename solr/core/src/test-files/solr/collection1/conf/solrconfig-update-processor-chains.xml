@@ -94,6 +94,7 @@
       <!-- each set of exclusions is checked independently -->
       <lst name="exclude">
         <str name="typeClass">solr.TrieDateField</str>
+        <str name="typeClass">solr.DatePointField</str>
       </lst>
       <lst name="exclude">
         <str name="fieldRegex">.*HOSS.*</str>
@@ -144,6 +145,7 @@
   <updateRequestProcessorChain name="trim-classes">
     <processor class="solr.TrimFieldUpdateProcessorFactory">
       <str name="typeClass">solr.TrieDateField</str>
+      <str name="typeClass">solr.DatePointField</str>
       <str name="typeClass">solr.StrField</str>
     </processor>
   </updateRequestProcessorChain>

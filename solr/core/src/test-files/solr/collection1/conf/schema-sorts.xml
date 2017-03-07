@@ -73,9 +73,9 @@ NOTE: Tests expect every field in this schema to be sortable.
   <field name="date" type="date"/>
   <field name="date_last" type="date_last"/>
   <field name="date_first" type="date_first"/>
-  <field name="date_dv" type="date_dv"/>
-  <field name="date_dv_last" type="date_dv_last"/>
-  <field name="date_dv_first" type="date_dv_first"/>
+  <field name="date_dv" type="${solr.tests.dateClass:pdate}_dv"/>
+  <field name="date_dv_last" type="${solr.tests.dateClass:pdate}_dv_last"/>
+  <field name="date_dv_first" type="${solr.tests.dateClass:pdate}_dv_first"/>
 
   <field name="uuid" type="uuid"/>
   <field name="uuid_last" type="uuid_last"/>
@@ -275,6 +275,11 @@ NOTE: Tests expect every field in this schema to be sortable.
   <fieldType name="date_dv_last" class="solr.TrieDateField" stored="true" indexed="false" docValues="true"
              sortMissingLast="true"/>
   <fieldType name="date_dv_first" class="solr.TrieDateField" stored="true" indexed="false" docValues="true"
+             sortMissingFirst="true"/>
+  <fieldType name="pdate_dv" class="solr.DatePointField" stored="true" indexed="false" docValues="true"/>
+  <fieldType name="pdate_dv_last" class="solr.DatePointField" stored="true" indexed="false" docValues="true"
+             sortMissingLast="true"/>
+  <fieldType name="pdate_dv_first" class="solr.DatePointField" stored="true" indexed="false" docValues="true"
              sortMissingFirst="true"/>
 
   <fieldType name="uuid" class="solr.UUIDField" stored="true" indexed="true"/>

@@ -117,7 +117,7 @@ public class LukeRequestHandlerTest extends AbstractSolrTestCase {
     // only valid for fields that are indexed & stored
     for (String f : Arrays.asList("solr_t","solr_s","solr_ti",
         "solr_td","solr_dt","solr_b")) {
-
+      if (h.getCore().getLatestSchema().getField(f).getType().isPointField()) continue;
       final String xp = getFieldXPathPrefix(f);
       assertQ("Not as many index flags as expected ("+numFlags+") for " + f,
           req("qt","/admin/luke", "fl", f),
@@ -166,7 +166,7 @@ public class LukeRequestHandlerTest extends AbstractSolrTestCase {
       response = h.query(req);
       for (String f : Arrays.asList("solr_t", "solr_s", "solr_ti",
           "solr_td", "solr_dt", "solr_b")) {
-
+        if (h.getCore().getLatestSchema().getField(f).getType().isPointField()) continue;
         assertNull(TestHarness.validateXPath(response,
             getFieldXPathPrefix(f) + "[@name='index']"));
       }

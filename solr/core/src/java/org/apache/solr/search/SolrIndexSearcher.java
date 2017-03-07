@@ -895,7 +895,7 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
                   outValues.add(NumericUtils.sortableLongToDouble(number));
                   break;
                 case DATE:
-                  newVal = new Date(number);
+                  outValues.add(new Date(number));
                   break;
                 default:
                   throw new AssertionError("Unexpected PointType: " + type);
