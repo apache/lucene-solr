@@ -35,6 +35,7 @@ import java.util.Properties;
 
 import javax.sql.DataSource;
 
+import org.apache.solr.common.util.SuppressForbidden;
 import org.apache.solr.handler.dataimport.JdbcDataSource.ResultSetIterator;
 import static org.mockito.Mockito.*;
 import org.junit.After;
@@ -635,6 +636,7 @@ public class TestJdbcDataSource extends AbstractDataImportHandlerTestCase {
       return 0;
     }
     
+    @SuppressForbidden(reason="Required by JDBC")
     @Override
     public java.util.logging.Logger getParentLogger() throws java.sql.SQLFeatureNotSupportedException {
       throw new java.sql.SQLFeatureNotSupportedException();
