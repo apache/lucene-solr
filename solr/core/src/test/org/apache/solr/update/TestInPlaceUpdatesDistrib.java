@@ -30,6 +30,8 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 
+import org.apache.lucene.index.IndexWriter;
+import org.apache.lucene.index.NoMergePolicy;
 import org.apache.lucene.util.LuceneTestCase.Slow;
 import org.apache.lucene.util.TestUtil;
 import org.apache.solr.client.solrj.SolrClient;
@@ -55,6 +57,7 @@ import org.apache.solr.common.util.NamedList;
 import org.apache.solr.index.NoMergePolicyFactory;
 import org.apache.solr.update.processor.DistributedUpdateProcessor;
 import org.apache.solr.util.DefaultSolrThreadFactory;
+import org.apache.solr.util.RefCounted;
 import org.apache.zookeeper.KeeperException;
 import org.junit.After;
 import org.junit.BeforeClass;
@@ -82,7 +85,11 @@ public class TestInPlaceUpdatesDistrib extends AbstractFullDistribZkTestBase {
     // we need consistent segments that aren't re-ordered on merge because we're
     // asserting inplace updates happen by checking the internal [docid]
     systemSetPropertySolrTestsMergePolicyFactory(NoMergePolicyFactory.class.getName());
-    
+
+    // HACK: Don't use a RandomMergePolicy, but only use the mergePolicyFactory that we've just set
+    System.setProperty(SYSTEM_PROPERTY_SOLR_TESTS_USEMERGEPOLICYFACTORY, "true");
+    System.setProperty(SYSTEM_PROPERTY_SOLR_TESTS_USEMERGEPOLICY, "false");
+
     initCore(configString, schemaString);
     
     // sanity check that autocommits are disabled
@@ -90,6 +97,16 @@ public class TestInPlaceUpdatesDistrib extends AbstractFullDistribZkTestBase {
     assertEquals(-1, h.getCore().getSolrConfig().getUpdateHandlerInfo().autoSoftCommmitMaxTime);
     assertEquals(-1, h.getCore().getSolrConfig().getUpdateHandlerInfo().autoCommmitMaxDocs);
     assertEquals(-1, h.getCore().getSolrConfig().getUpdateHandlerInfo().autoSoftCommmitMaxDocs);
+    
+    // assert that NoMergePolicy was chosen
+    RefCounted<IndexWriter> iw = h.getCore().getSolrCoreState().getIndexWriter(h.getCore());
+    try {
+      IndexWriter writer = iw.get();
+      assertTrue("Actual merge policy is: " + writer.getConfig().getMergePolicy(),
+          writer.getConfig().getMergePolicy() instanceof NoMergePolicy); 
+    } finally {
+      iw.decref();
+    }
   }
   
   @After
