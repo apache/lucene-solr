@@ -150,6 +150,10 @@ New Features
   efficiently filter out duplicate suggestions (Uwe Schindler, Mike
   McCandless)
 
+* LUCENE-7712: SimpleQueryParser now supports default fuzziness
+  syntax, mapping foo~ to a FuzzyQuery with edit distance 2.  (Lee
+  Hinman, David Pilato via Mike McCandless)
+
 Bug Fixes
 
 * LUCENE-7630: Fix (Edge)NGramTokenFilter to no longer drop payloads
