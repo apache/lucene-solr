@@ -166,6 +166,10 @@ Optimizations
 * SOLR-10143: PointFields will create IndexOrDocValuesQuery when a field is both, indexed=true and docValues=true
   (Tomás Fernández Löbbe)
 
+* SOLR-10205: Change the HDFS BlockCache to reduce store failures and increase hit ratio. Highly concurrent
+  artificial random queries over random indexes showed performance increases of 5% to 68%, with common values
+  in the teens. (yonik)
+
 Other Changes
 ----------------------
 * SOLR-9980: Expose configVersion in core admin status (Jessica Cheng Mallet via Tomás Fernández Löbbe)
