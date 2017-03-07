@@ -18,7 +18,6 @@ package org.apache.solr.update.processor;
 
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.schema.IndexSchema;
-import org.apache.solr.schema.PointField;
 import org.joda.time.DateTime;
 import org.joda.time.DateTimeZone;
 import org.joda.time.format.DateTimeFormat;
