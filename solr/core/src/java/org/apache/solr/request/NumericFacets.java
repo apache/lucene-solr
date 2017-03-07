@@ -52,7 +52,6 @@ import org.apache.solr.schema.TrieField;
 import org.apache.solr.search.DocIterator;
 import org.apache.solr.search.DocSet;
 import org.apache.solr.search.SolrIndexSearcher;
-import org.apache.solr.util.DateMathParser;
 
 /** Utility class to compute facets on numeric fields. */
 final class NumericFacets {
