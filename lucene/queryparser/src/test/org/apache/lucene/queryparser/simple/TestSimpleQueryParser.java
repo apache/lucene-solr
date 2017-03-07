@@ -88,7 +88,7 @@ public class TestSimpleQueryParser extends LuceneTestCase {
     Query expected = new FuzzyQuery(new Term("field", "foobar"), 2);
 
     assertEquals(expected, parse("foobar~2"));
-    assertEquals(regular, parse("foobar~"));
+    assertEquals(expected, parse("foobar~"));
     assertEquals(regular, parse("foobar~a"));
     assertEquals(regular, parse("foobar~1a"));
 
