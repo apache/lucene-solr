@@ -35,7 +35,6 @@ import java.util.Properties;
 
 import javax.sql.DataSource;
 
-import org.apache.lucene.util.Constants;
 import org.apache.solr.handler.dataimport.JdbcDataSource.ResultSetIterator;
 import static org.mockito.Mockito.*;
 import org.junit.After;
@@ -485,17 +484,16 @@ public class TestJdbcDataSource extends AbstractDataImportHandlerTestCase {
 
   @Test
   public void testRetrieveFromDriverManager() throws Exception {
-    assumeFalse("In Java 9, Class.forName() does not work for mock classes", Constants.JRE_IS_MINIMUM_JAVA9);
-    DriverManager.registerDriver(driver);
+    // we're not (directly) using a Mockito based mock class here because it won't have a consistent class name
+    // that will work with DriverManager's class bindings
+    MockDriver mockDriver = new MockDriver(connection);
+    DriverManager.registerDriver(mockDriver);
     try {
-      when(driver.connect(notNull(),notNull())).thenReturn(connection);
-
-      props.put(JdbcDataSource.DRIVER, driver.getClass().getName());
-      props.put(JdbcDataSource.URL, "jdbc:fakedb");
+      props.put(JdbcDataSource.DRIVER, MockDriver.class.getName());
+      props.put(JdbcDataSource.URL, MockDriver.MY_JDBC_URL);
       props.put("holdability", "HOLD_CURSORS_OVER_COMMIT");
 
-      Connection conn = jdbcDataSource.createConnectionFactory(context, props)
-              .call();
+      Connection conn = jdbcDataSource.createConnectionFactory(context, props).call();
 
       verify(connection).setAutoCommit(false);
       verify(connection).setHoldability(1);
@@ -504,7 +502,7 @@ public class TestJdbcDataSource extends AbstractDataImportHandlerTestCase {
     } catch(Exception e) {
       throw e;
     } finally {
-      DriverManager.deregisterDriver(driver);
+      DriverManager.deregisterDriver(mockDriver);
     }
   }
 
@@ -594,5 +592,63 @@ public class TestJdbcDataSource extends AbstractDataImportHandlerTestCase {
     byte[] content = "secret".getBytes(StandardCharsets.UTF_8);
     createFile(tmpdir, "enckeyfile.txt", content, false);
     return new File(tmpdir, "enckeyfile.txt").getAbsolutePath();
-  }  
+  }
+
+  /**
+   * A stub driver that returns our mocked connection for connection URL {@link #MY_JDBC_URL}.
+   * <p>
+   * This class is used instead of a Mockito mock because {@link DriverManager} uses the class
+   * name to lookup the driver and also requires the driver to behave in a sane way, if other
+   * drivers are registered in the runtime. A simple Mockito mock is likely to break
+   * depending on JVM runtime version. So this class implements a full {@link Driver},
+   * so {@code DriverManager} can do whatever it wants to find the correct driver for a URL.
+   */
+  public static final class MockDriver implements Driver {
+    public static final String MY_JDBC_URL = "jdbc:fakedb";
+    private final Connection conn;
+    
+    public MockDriver() throws SQLException {
+      throw new AssertionError("The driver should never be directly instantiated by DIH's JdbcDataSource");
+    }
+    
+    MockDriver(Connection conn) throws SQLException {
+      this.conn = conn;
+    }
+    
+    @Override
+    public boolean acceptsURL(String url) throws java.sql.SQLException {
+      return MY_JDBC_URL.equals(url);
+    }
+    
+    @Override
+    public Connection connect(String url, Properties info) throws java.sql.SQLException {
+      return acceptsURL(url) ? conn : null;
+    }
+    
+    @Override
+    public int getMajorVersion() {
+      return 1;
+    }
+    
+    @Override
+    public int getMinorVersion() {
+      return 0;
+    }
+    
+    @Override
+    public java.util.logging.Logger getParentLogger() throws java.sql.SQLFeatureNotSupportedException {
+      throw new java.sql.SQLFeatureNotSupportedException();
+    }
+    
+    @Override
+    public java.sql.DriverPropertyInfo[] getPropertyInfo(String url, Properties info) throws SQLException {
+      return new java.sql.DriverPropertyInfo[0];
+    }
+    
+    @Override
+    public boolean jdbcCompliant() {
+      // we are not fully compliant:
+      return false;
+    }
+  }
 }
