@@ -63,7 +63,7 @@ public class MetricUtils {
    * @param ns the amount of time in nanoseconds
    * @return the amount of time in milliseconds
    */
-  static double nsToMs(double ns) {
+  public static double nsToMs(double ns) {
     return ns / TimeUnit.MILLISECONDS.toNanos(1);
   }
 

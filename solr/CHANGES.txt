@@ -96,6 +96,10 @@ Detailed Change List
 
 Upgrade Notes
 ----------------------
+* SOLR-10226: JMX metric "avgTimePerRequest" (and the corresponding metric in the metrics API for
+  each handler) used to be a simple non-decaying average based on total cumulative time and the
+  number of requests. New Codahale Metrics implementation applies exponential decay to this value,
+  which heavily biases the average towards the last 5 minutes. (ab)
 
 New Features
 ----------------------
@@ -211,6 +215,8 @@ Bug Fixes
   due to a directory close. (yonik)
 
 * SOLR-10088: Installer script does not put zoo.cfg in SOLR_HOME (janhoy)
+
+* SOLR-10226: add back "totalTime" metric to all handlers. See also the back-compat note. (ab)
 
 Optimizations
 ----------------------
