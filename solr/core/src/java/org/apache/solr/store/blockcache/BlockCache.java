@@ -39,7 +39,8 @@ public class BlockCache {
   private final AtomicInteger[] lockCounters;
   private final int blockSize;
   private final int numberOfBlocksPerBank;
-  private final int maxEntries;
+  private final int maxBlocks;  // total number of underlying memory blocks allocated
+  private final int maxEntries;  // Target max size for the map.  A few less than maxBlocks due to reserved blocks.  Concurrent maps (like Caffeine) will often temporarily exceed this.
   private final Metrics metrics;
   private final List<OnRelease> onReleases = new CopyOnWriteArrayList<>();
 
@@ -65,7 +66,10 @@ public class BlockCache {
     banks = new ByteBuffer[numberOfBanks];
     locks = new BlockLocks[numberOfBanks];
     lockCounters = new AtomicInteger[numberOfBanks];
-    maxEntries = (numberOfBlocksPerBank * numberOfBanks) - 1;
+    maxBlocks = numberOfBlocksPerBank * numberOfBanks;
+
+    // Reserve 4 blocks for new entries.  This was originally 1, but contributed to many store failures (see SOLR-10205)
+    maxEntries = maxBlocks - (maxBlocks > 4 ? 4 : 1);
     for (int i = 0; i < numberOfBanks; i++) {
       if (directAllocation) {
         banks[i] = ByteBuffer.allocateDirect(numberOfBlocksPerBank * blockSize);
@@ -81,6 +85,7 @@ public class BlockCache {
     cache = Caffeine.newBuilder()
         .removalListener(listener)
         .maximumSize(maxEntries)
+        .executor(Runnable::run)  // Use the current thread for evictions instead of a separate executor.  This helps avoid store fails when cache.estimatedSize >= maxBlocks
         .build();
     this.blockSize = blockSize;
   }
@@ -205,6 +210,16 @@ public class BlockCache {
     // This is a tight loop that will try and find a location to
     // place the block before giving up
     for (int j = 0; j < 10; j++) {
+
+      // If we've been through the loop once already and haven't found a spot, it's because:
+      // 1) a simple race.. another thread stole the open spot(s) we tried to grab
+      // 2) there are currently no free spots because the the underlying map hasn't evicted enough entries yet
+      //
+      // Try to help case #2 by explicitly forcing a cleanup if there are no free blocks
+      if (j>0 && cache.estimatedSize() >= maxBlocks) {
+        cache.cleanUp();
+      }
+
       OUTER: for (int bankId = 0; bankId < banks.length; bankId++) {
         AtomicInteger bitSetCounter = lockCounters[bankId];
         BlockLocks bitSet = locks[bankId];
