@@ -47,6 +47,13 @@
     </processor>
   </updateRequestProcessorChain>
 
+  <updateRequestProcessorChain name="parse-date-explicit-typeclass-point-selector-no-run-processor">
+    <processor class="solr.ParseDateFieldUpdateProcessorFactory">
+      <str name="typeClass">solr.DatePointField</str>
+      <str name="format">yyyy-MM-dd'T'HH:mm:ss.SSSZ</str>
+    </processor>
+  </updateRequestProcessorChain>
+
   <updateRequestProcessorChain name="parse-date-explicit-typeclass-selector-no-run-processor">
     <processor class="solr.ParseDateFieldUpdateProcessorFactory">
       <str name="typeClass">solr.TrieDateField</str>

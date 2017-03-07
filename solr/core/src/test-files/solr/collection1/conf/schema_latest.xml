@@ -221,10 +221,10 @@
   <dynamicField name="*_ds" type="${solr.tests.doubleClass:pdouble}" indexed="true" stored="true" multiValued="true"/>
   <dynamicField name="*_dd" type="${solr.tests.doubleClass:pdouble}" indexed="true" stored="false" docValues="true"/>
   <dynamicField name="*_dds" type="${solr.tests.doubleClass:pdouble}" indexed="true" stored="false" multiValued="true" docValues="true"/>
-  <dynamicField name="*_dt" type="date" indexed="true" stored="true"/>
-  <dynamicField name="*_dts" type="date" indexed="true" stored="true" multiValued="true"/>
-  <dynamicField name="*_dtd" type="date" indexed="true" stored="false" docValues="true"/>
-  <dynamicField name="*_dtds" type="date" indexed="true" stored="false" multiValued="true" docValues="true"/>
+  <dynamicField name="*_dt" type="${solr.tests.dateClass:pdate}" indexed="true" stored="true"/>
+  <dynamicField name="*_dts" type="${solr.tests.dateClass:pdate}" indexed="true" stored="true" multiValued="true"/>
+  <dynamicField name="*_dtd" type="${solr.tests.dateClass:pdate}" indexed="true" stored="false" docValues="true"/>
+  <dynamicField name="*_dtds" type="${solr.tests.dateClass:pdate}" indexed="true" stored="false" multiValued="true" docValues="true"/>
 
   <!-- docvalues and stored (S suffix) -->
   <dynamicField name="*_idS" type="${solr.tests.intClass:pint}" indexed="true" stored="true" docValues="true"/>
@@ -237,8 +237,8 @@
   <dynamicField name="*_fdsS" type="${solr.tests.floatClass:pfloat}" indexed="true" stored="true" multiValued="true" docValues="true"/>
   <dynamicField name="*_ddS" type="${solr.tests.doubleClass:pdouble}" indexed="true" stored="true" docValues="true"/>
   <dynamicField name="*_ddsS" type="${solr.tests.doubleClass:pdouble}" indexed="true" stored="true" multiValued="true" docValues="true"/>
-  <dynamicField name="*_dtdS" type="date" indexed="true" stored="true" docValues="true"/>
-  <dynamicField name="*_dtdsS" type="date" indexed="true" stored="true" multiValued="true" docValues="true"/>
+  <dynamicField name="*_dtdS" type="${solr.tests.dateClass:pdate}" indexed="true" stored="true" docValues="true"/>
+  <dynamicField name="*_dtdsS" type="${solr.tests.dateClass:pdate}" indexed="true" stored="true" multiValued="true" docValues="true"/>
 
 
   <dynamicField name="*_b" type="boolean" indexed="true" stored="true"/>
@@ -400,6 +400,7 @@
   <fieldType name="plong" class="solr.LongPointField" docValues="true"/>
   <fieldType name="pdouble" class="solr.DoublePointField" docValues="true"/>
   <fieldType name="pfloat" class="solr.FloatPointField" docValues="true"/>
+  <fieldType name="pdate" class="solr.DatePointField" docValues="true"/>
   
 
   <!-- The format for this date field is of the form 1995-12-31T23:59:59Z, and

@@ -25,6 +25,7 @@ import org.apache.lucene.search.IndexOrDocValuesQuery;
 import org.apache.lucene.search.PointRangeQuery;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.SolrException;
+import org.apache.solr.util.DateMathParser;
 import org.junit.After;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -587,6 +588,126 @@ public class TestPointFields extends SolrTestCaseJ4 {
     doTestSetQueries("number_p_l_mv", getRandomStringArrayWithLongs(10, false), true);
     doTestSetQueries("number_p_l_ni_dv", getRandomStringArrayWithLongs(10, false), false);
   }
+
+  // Date
+
+  @Test
+  public void testDatePointFieldExactQuery() throws Exception {
+    doTestDatePointFieldExactQuery("number_p_dt", "1995-12-31T23:59:59Z");
+    doTestDatePointFieldExactQuery("number_p_dt_mv", "2015-12-31T23:59:59Z-1DAY");
+    doTestDatePointFieldExactQuery("number_p_dt_ni_dv", "2000-12-31T23:59:59Z+3DAYS");
+    doTestDatePointFieldExactQuery("number_p_dt_ni_ns_dv", "1995-12-31T23:59:59Z-1MONTH");
+    doTestDatePointFieldExactQuery("number_p_dt_ni_mv_dv", "1995-12-31T23:59:59Z+2MONTHS");
+  }
+
+  @Test
+  public void testDatePointFieldReturn() throws Exception {
+    testPointFieldReturn("number_p_dt", "date",
+        new String[]{"1995-12-31T23:59:59Z", "1994-02-28T23:59:59Z",
+            "2015-12-31T23:59:59Z", "2000-10-31T23:59:59Z", "1999-12-31T12:59:59Z"});
+    clearIndex();
+    assertU(commit());
+    testPointFieldReturn("number_p_dt_dv_ns", "date",
+        new String[]{"1995-12-31T23:59:59Z", "1994-02-28T23:59:59Z",
+            "2015-12-31T23:59:59Z", "2000-10-31T23:59:59Z", "1999-12-31T12:59:59Z"});
+  }
+
+  @Test
+  public void testDatePointFieldRangeQuery() throws Exception {
+    doTestDatePointFieldRangeQuery("number_p_dt");
+    doTestDatePointFieldRangeQuery("number_p_dt_ni_ns_dv");
+  }
+
+  @Test
+  public void testDatePointFieldSort() throws Exception {
+    doTestPointFieldSort("number_p_dt", "number_p_dt_dv", getSequentialStringArrayWithDates(10));
+  }
+
+  @Test
+  public void testDatePointFieldFacetField() throws Exception {
+    testPointFieldFacetField("number_p_dt", "number_p_dt_dv", getSequentialStringArrayWithDates(10));
+    clearIndex();
+    assertU(commit());
+    testPointFieldFacetField("number_p_dt", "number_p_dt_dv", getSequentialStringArrayWithDates(10));
+  }
+
+  @Test
+  public void testDatePointFieldRangeFacet() throws Exception {
+    doTestDatePointFieldRangeFacet("number_p_dt_dv", "number_p_dt");
+  }
+
+  @Test
+  public void testDatePointFunctionQuery() throws Exception {
+    doTestDatePointFunctionQuery("number_p_dt_dv", "number_p_dt", "date");
+  }
+
+  @Test
+  public void testDatePointStats() throws Exception {
+    testDatePointStats("number_p_dt", "number_p_dt_dv", getSequentialStringArrayWithDates(10));
+    testDatePointStats("number_p_dt_mv", "number_p_dt_mv_dv", getSequentialStringArrayWithDates(10));
+  }
+
+  @Test
+  public void testDatePointFieldMultiValuedExactQuery() throws Exception {
+    testPointFieldMultiValuedExactQuery("number_p_dt_mv", getSequentialStringArrayWithDates(20));
+    testPointFieldMultiValuedExactQuery("number_p_dt_ni_mv_dv", getSequentialStringArrayWithDates(20));
+  }
+
+  @Test
+  public void testDatePointFieldMultiValuedReturn() throws Exception {
+    testPointFieldMultiValuedReturn("number_p_dt_mv", "date", getSequentialStringArrayWithDates(20));
+    testPointFieldMultiValuedReturn("number_p_dt_ni_mv_dv", "date", getSequentialStringArrayWithDates(20));
+    testPointFieldMultiValuedReturn("number_p_dt_dv_ns_mv", "date", getSequentialStringArrayWithDates(20));
+  }
+
+  @Test
+  public void testDatePointFieldMultiValuedRangeQuery() throws Exception {
+    testPointFieldMultiValuedRangeQuery("number_p_dt_mv", "date", getSequentialStringArrayWithDates(20));
+    testPointFieldMultiValuedRangeQuery("number_p_dt_ni_mv_dv", "date", getSequentialStringArrayWithDates(20));
+  }
+
+  @Test
+  public void testDatePointFieldMultiValuedFacetField() throws Exception {
+    testPointFieldMultiValuedFacetField("number_p_dt_mv", "number_p_dt_mv_dv", getSequentialStringArrayWithDates(20));
+    testPointFieldMultiValuedFacetField("number_p_dt_mv", "number_p_dt_mv_dv", getRandomStringArrayWithDates(20, false));
+  }
+
+  @Test
+  public void testDatePointFieldMultiValuedRangeFacet() throws Exception {
+    doTestDatePointFieldMultiValuedRangeFacet("number_p_dt_mv_dv", "number_p_dt_mv");
+  }
+
+  @Test
+  public void testDatePointMultiValuedFunctionQuery() throws Exception {
+    testPointMultiValuedFunctionQuery("number_p_dt_mv", "number_p_dt_mv_dv", "date", getSequentialStringArrayWithDates(20));
+  }
+
+  @Test
+  public void testDatePointFieldsAtomicUpdates() throws Exception {
+    if (!Boolean.getBoolean("enable.update.log")) {
+      return;
+    }
+    testDatePointFieldsAtomicUpdates("number_p_dt", "date");
+    testDatePointFieldsAtomicUpdates("number_p_dt_dv", "date");
+    testDatePointFieldsAtomicUpdates("number_p_dt_dv_ns", "date");
+  }
+
+  @Test
+  public void testMultiValuedDatePointFieldsAtomicUpdates() throws Exception {
+    if (!Boolean.getBoolean("enable.update.log")) {
+      return;
+    }
+    testMultiValuedDatePointFieldsAtomicUpdates("number_p_dt_mv", "date");
+    testMultiValuedDatePointFieldsAtomicUpdates("number_p_dt_ni_mv_dv", "date");
+    testMultiValuedDatePointFieldsAtomicUpdates("number_p_dt_dv_ns_mv", "date");
+  }
+
+  @Test
+  public void testDatePointSetQuery() throws Exception {
+    doTestSetQueries("number_p_dt", getRandomStringArrayWithDates(10, false), false);
+    doTestSetQueries("number_p_dt_mv", getRandomStringArrayWithDates(10, false), true);
+    doTestSetQueries("number_p_dt_ni_dv", getRandomStringArrayWithDates(10, false), false);
+  }
   
   @Test
   public void testIndexOrDocValuesQuery() throws Exception {
@@ -664,6 +785,15 @@ public class TestPointFields extends SolrTestCaseJ4 {
     }
     return arr;
   }
+
+  private String[] getSequentialStringArrayWithDates(int length) {
+    assert length < 60;
+    String[] arr = new String[length];
+    for (int i = 0; i < length; i++) {
+      arr[i] = String.format(Locale.ROOT, "1995-12-11T19:59:%02dZ", i);
+    }
+    return arr;
+  }
   
   private String[] getSequentialStringArrayWithDoubles(int length) {
     String[] arr = new String[length];
@@ -714,6 +844,27 @@ public class TestPointFields extends SolrTestCaseJ4 {
     int i = 0;
     for (long val:set) {
       stringArr[i] = String.valueOf(val);
+      i++;
+    }
+    return stringArr;
+  }
+
+  private String[] getRandomStringArrayWithDates(int length, boolean sorted) {
+    assert length < 60;
+    Set<Integer> set;
+    if (sorted) {
+      set = new TreeSet<>();
+    } else {
+      set = new HashSet<>();
+    }
+    while (set.size() < length) {
+      int number = random().nextInt(60);
+      set.add(number);
+    }
+    String[] stringArr = new String[length];
+    int i = 0;
+    for (int val:set) {
+      stringArr[i] = String.format(Locale.ROOT, "1995-12-11T19:59:%02dZ", val);
       i++;
     }
     return stringArr;
@@ -1037,12 +1188,21 @@ public class TestPointFields extends SolrTestCaseJ4 {
     }
     assertU(commit());
     for (int i = 0; i < 20; i++) {
-      assertQ(req("q", fieldName + ":" + numbers[i].replace("-", "\\-")), 
-          "//*[@numFound='1']");
+      if (h.getCore().getLatestSchema().getField(fieldName).getType() instanceof DatePointField) {
+        assertQ(req("q", fieldName + ":\"" + numbers[i] + "\""),
+            "//*[@numFound='1']");
+      } else {
+        assertQ(req("q", fieldName + ":" + numbers[i].replace("-", "\\-")),
+            "//*[@numFound='1']");
+      }
     }
     
     for (int i = 0; i < 20; i++) {
-      assertQ(req("q", fieldName + ":" + numbers[i].replace("-", "\\-") + " OR " + fieldName + ":" + numbers[(i+1)%10].replace("-", "\\-")), "//*[@numFound='2']");
+      if (h.getCore().getLatestSchema().getField(fieldName).getType() instanceof DatePointField) {
+        assertQ(req("q", fieldName + ":\"" + numbers[i] + "\"" + " OR " + fieldName + ":\"" + numbers[(i+1)%10]+"\""), "//*[@numFound='2']");
+      } else {
+        assertQ(req("q", fieldName + ":" + numbers[i].replace("-", "\\-") + " OR " + fieldName + ":" + numbers[(i+1)%10].replace("-", "\\-")), "//*[@numFound='2']");
+      }
     }
   }
   
@@ -1089,10 +1249,10 @@ public class TestPointFields extends SolrTestCaseJ4 {
     assertTrue(h.getCore().getLatestSchema().getField(fieldName).multiValued());
     assertTrue(h.getCore().getLatestSchema().getField(fieldName).getType() instanceof PointField);
     for (int i=0; i < 10; i++) {
-      assertU(adoc("id", String.valueOf(i), fieldName, String.valueOf(i), fieldName, String.valueOf(i+10)));
+      assertU(adoc("id", String.valueOf(i), fieldName, numbers[i], fieldName, numbers[i+10]));
     }
     assertU(commit());
-    assertQ(req("q", fieldName + ":[0 TO 3]", "fl", "id, " + fieldName), 
+    assertQ(req("q", String.format(Locale.ROOT, "%s:[%s TO %s]", fieldName, numbers[0], numbers[3]), "fl", "id, " + fieldName),
         "//*[@numFound='4']",
         "//result/doc[1]/arr[@name='" + fieldName + "']/" + type + "[1][.='" + numbers[0] + "']",
         "//result/doc[1]/arr[@name='" + fieldName + "']/" + type + "[2][.='" + numbers[10] + "']",
@@ -1103,36 +1263,36 @@ public class TestPointFields extends SolrTestCaseJ4 {
         "//result/doc[4]/arr[@name='" + fieldName + "']/" + type + "[1][.='" + numbers[3] + "']",
         "//result/doc[4]/arr[@name='" + fieldName + "']/" + type + "[2][.='" + numbers[13] + "']");
     
-    assertQ(req("q", fieldName + ":{0 TO 3]", "fl", "id, " + fieldName), 
+    assertQ(req("q", String.format(Locale.ROOT, "%s:{%s TO %s]", fieldName, numbers[0], numbers[3]), "fl", "id, " + fieldName),
         "//*[@numFound='3']",
         "//result/doc[1]/arr[@name='" + fieldName + "']/" + type + "[1][.='" + numbers[1] + "']",
         "//result/doc[2]/arr[@name='" + fieldName + "']/" + type + "[1][.='" + numbers[2] + "']",
         "//result/doc[3]/arr[@name='" + fieldName + "']/" + type + "[1][.='" + numbers[3] + "']");
     
-    assertQ(req("q", fieldName + ":[0 TO 3}", "fl", "id, " + fieldName), 
+    assertQ(req("q", String.format(Locale.ROOT, "%s:[%s TO %s}", fieldName, numbers[0], numbers[3]), "fl", "id, " + fieldName),
         "//*[@numFound='3']",
         "//result/doc[1]/arr[@name='" + fieldName + "']/" + type + "[1][.='" + numbers[0] + "']",
         "//result/doc[2]/arr[@name='" + fieldName + "']/" + type + "[1][.='" + numbers[1] + "']",
         "//result/doc[3]/arr[@name='" + fieldName + "']/" + type + "[1][.='" + numbers[2] + "']");
     
-    assertQ(req("q", fieldName + ":{0 TO 3}", "fl", "id, " + fieldName), 
+    assertQ(req("q", String.format(Locale.ROOT, "%s:{%s TO %s}", fieldName, numbers[0], numbers[3]), "fl", "id, " + fieldName),
         "//*[@numFound='2']",
         "//result/doc[1]/arr[@name='" + fieldName + "']/" + type + "[1][.='" + numbers[1] + "']",
         "//result/doc[2]/arr[@name='" + fieldName + "']/" + type + "[1][.='" + numbers[2] + "']");
-    
-    assertQ(req("q", fieldName + ":{0 TO *}", "fl", "id, " + fieldName), 
+
+    assertQ(req("q", String.format(Locale.ROOT, "%s:{%s TO *}", fieldName, numbers[0]), "fl", "id, " + fieldName),
         "//*[@numFound='10']",
         "//result/doc[1]/arr[@name='" + fieldName + "']/" + type + "[1][.='" + numbers[0] + "']");
     
-    assertQ(req("q", fieldName + ":{10 TO *}", "fl", "id, " + fieldName), 
+    assertQ(req("q", String.format(Locale.ROOT, "%s:{%s TO *}", fieldName, numbers[10]), "fl", "id, " + fieldName),
         "//*[@numFound='9']",
         "//result/doc[1]/arr[@name='" + fieldName + "']/" + type + "[1][.='" + numbers[1] + "']");
     
-    assertQ(req("q", fieldName + ":{* TO 3}", "fl", "id, " + fieldName), 
+    assertQ(req("q", String.format(Locale.ROOT, "%s:{* TO %s}", fieldName, numbers[3]), "fl", "id, " + fieldName),
         "//*[@numFound='3']",
         "//result/doc[1]/arr[@name='" + fieldName + "']/" + type + "[1][.='" + numbers[0] + "']");
     
-    assertQ(req("q", fieldName + ":[* TO 3}", "fl", "id, " + fieldName), 
+    assertQ(req("q", String.format(Locale.ROOT, "%s:[* TO %s}", fieldName, numbers[3]), "fl", "id, " + fieldName),
         "//*[@numFound='3']",
         "//result/doc[1]/arr[@name='" + fieldName + "']/" + type + "[1][.='" + numbers[0] + "']");
     
@@ -1141,14 +1301,14 @@ public class TestPointFields extends SolrTestCaseJ4 {
         "//result/doc[1]/arr[@name='" + fieldName + "']/" + type + "[1][.='" + numbers[0] + "']",
         "//result/doc[10]/arr[@name='" + fieldName + "']/" + type + "[1][.='" + numbers[9] + "']");
     
-    assertQ(req("q", fieldName + ":[0 TO 1] OR " + fieldName + ":[8 TO 9]", "fl", "id, " + fieldName), 
+    assertQ(req("q", String.format(Locale.ROOT, "%s:[%s TO %s] OR %s:[%s TO %s]", fieldName, numbers[0], numbers[1], fieldName, numbers[8], numbers[9]), "fl", "id, " + fieldName),
         "//*[@numFound='4']",
         "//result/doc[1]/arr[@name='" + fieldName + "']/" + type + "[1][.='" + numbers[0] + "']",
         "//result/doc[2]/arr[@name='" + fieldName + "']/" + type + "[1][.='" + numbers[1] + "']",
         "//result/doc[3]/arr[@name='" + fieldName + "']/" + type + "[1][.='" + numbers[8] + "']",
         "//result/doc[4]/arr[@name='" + fieldName + "']/" + type + "[1][.='" + numbers[9] + "']");
     
-    assertQ(req("q", fieldName + ":[0 TO 0] AND " + fieldName + ":[10 TO 10]", "fl", "id, " + fieldName), 
+    assertQ(req("q", String.format(Locale.ROOT, "%s:[%s TO %s] OR %s:[%s TO %s]", fieldName, numbers[0], numbers[0], fieldName, numbers[10], numbers[10]), "fl", "id, " + fieldName),
         "//*[@numFound='1']",
         "//result/doc[1]/arr[@name='" + fieldName + "']/" + type + "[1][.='" + numbers[0] + "']");
   }
@@ -1238,12 +1398,22 @@ public class TestPointFields extends SolrTestCaseJ4 {
         larger = numbers[1];
       }
     } catch (NumberFormatException e) {
-      if (Double.valueOf(numbers[1]) < Double.valueOf(numbers[2])) {
-        smaller = numbers[1];
-        larger = numbers[2];
-      } else {
-        smaller = numbers[2];
-        larger = numbers[1];
+      try {
+        if (Double.valueOf(numbers[1]) < Double.valueOf(numbers[2])) {
+          smaller = numbers[1];
+          larger = numbers[2];
+        } else {
+          smaller = numbers[2];
+          larger = numbers[1];
+        }
+      } catch (NumberFormatException e2) {
+        if (DateMathParser.parseMath(null, numbers[1]).getTime() < DateMathParser.parseMath(null, numbers[2]).getTime()) {
+          smaller = numbers[1];
+          larger = numbers[2];
+        } else {
+          smaller = numbers[2];
+          larger = numbers[1];
+        }
       }
     }
     
@@ -1818,4 +1988,353 @@ public class TestPointFields extends SolrTestCaseJ4 {
         "//lst[@name='facet_counts']/lst[@name='facet_ranges']/lst[@name='" + nonDocValuesField + "']/lst[@name='counts']/int[@name='18'][.='2']",
         "//lst[@name='facet_counts']/lst[@name='facet_ranges']/lst[@name='" + nonDocValuesField + "']/lst[@name='counts']/int[@name='-10'][.='0']");
   }
+
+
+  private void doTestDatePointFieldExactQuery(String field, String baseDate) throws Exception {
+    for (int i=0; i < 10; i++) {
+      assertU(adoc("id", String.valueOf(i), field, String.format(Locale.ROOT, "%s+%dMINUTES", baseDate, i+1)));
+    }
+    assertU(commit());
+    for (int i = 0; i < 10; i++) {
+      String date = String.format(Locale.ROOT, "%s+%dMINUTES", baseDate, i+1);
+      assertQ(req("q", field + ":\""+date+"\"", "fl", "id, " + field),
+          "//*[@numFound='1']");
+    }
+
+    for (int i = 0; i < 10; i++) {
+      String date1 = String.format(Locale.ROOT, "%s+%dMINUTES", baseDate, i+1);
+      String date2 = String.format(Locale.ROOT, "%s+%dMINUTES", baseDate, ((i+1)%10 + 1));
+      assertQ(req("q", field + ":\"" + date1 + "\""
+          + " OR " + field + ":\"" + date2 + "\""), "//*[@numFound='2']");
+    }
+
+    clearIndex();
+    assertU(commit());
+  }
+
+  private void doTestDatePointFieldRangeQuery(String fieldName) throws Exception {
+    String baseDate = "1995-12-31T10:59:59Z";
+    for (int i = 0; i < 10; i++) {
+      assertU(adoc("id", String.valueOf(i), fieldName, String.format(Locale.ROOT, "%s+%dHOURS", baseDate, i)));
+    }
+    assertU(commit());
+    assertQ(req("q", fieldName + ":" + String.format(Locale.ROOT, "[%s+0HOURS TO %s+3HOURS]", baseDate, baseDate), "fl", "id, " + fieldName),
+        "//*[@numFound='4']",
+        "//result/doc[1]/date[@name='" + fieldName + "'][.='1995-12-31T10:59:59Z']",
+        "//result/doc[2]/date[@name='" + fieldName + "'][.='1995-12-31T11:59:59Z']",
+        "//result/doc[3]/date[@name='" + fieldName + "'][.='1995-12-31T12:59:59Z']",
+        "//result/doc[4]/date[@name='" + fieldName + "'][.='1995-12-31T13:59:59Z']");
+
+    assertQ(req("q", fieldName + ":" + String.format(Locale.ROOT, "{%s+0HOURS TO %s+3HOURS]", baseDate, baseDate), "fl", "id, " + fieldName),
+        "//*[@numFound='3']",
+        "//result/doc[1]/date[@name='" + fieldName + "'][.='1995-12-31T11:59:59Z']",
+        "//result/doc[2]/date[@name='" + fieldName + "'][.='1995-12-31T12:59:59Z']",
+        "//result/doc[3]/date[@name='" + fieldName + "'][.='1995-12-31T13:59:59Z']");
+
+    assertQ(req("q", fieldName + ":"+ String.format(Locale.ROOT, "[%s+0HOURS TO %s+3HOURS}",baseDate,baseDate), "fl", "id, " + fieldName),
+        "//*[@numFound='3']",
+        "//result/doc[1]/date[@name='" + fieldName + "'][.='1995-12-31T10:59:59Z']",
+        "//result/doc[2]/date[@name='" + fieldName + "'][.='1995-12-31T11:59:59Z']",
+        "//result/doc[3]/date[@name='" + fieldName + "'][.='1995-12-31T12:59:59Z']");
+
+    assertQ(req("q", fieldName + ":"+ String.format(Locale.ROOT, "{%s+0HOURS TO %s+3HOURS}",baseDate,baseDate), "fl", "id, " + fieldName),
+        "//*[@numFound='2']",
+        "//result/doc[1]/date[@name='" + fieldName + "'][.='1995-12-31T11:59:59Z']",
+        "//result/doc[2]/date[@name='" + fieldName + "'][.='1995-12-31T12:59:59Z']");
+
+    assertQ(req("q", fieldName + ":" + String.format(Locale.ROOT, "{%s+0HOURS TO *}",baseDate), "fl", "id, " + fieldName),
+        "//*[@numFound='9']",
+        "//result/doc[1]/date[@name='" + fieldName + "'][.='1995-12-31T11:59:59Z']");
+
+    assertQ(req("q", fieldName + ":" + String.format(Locale.ROOT, "{* TO %s+3HOURS}",baseDate), "fl", "id, " + fieldName),
+        "//*[@numFound='3']",
+        "//result/doc[1]/date[@name='" + fieldName + "'][.='1995-12-31T10:59:59Z']");
+
+    assertQ(req("q", fieldName + ":" + String.format(Locale.ROOT, "[* TO %s+3HOURS}",baseDate), "fl", "id, " + fieldName),
+        "//*[@numFound='3']",
+        "//result/doc[1]/date[@name='" + fieldName + "'][.='1995-12-31T10:59:59Z']");
+
+    assertQ(req("q", fieldName + ":[* TO *}", "fl", "id, " + fieldName),
+        "//*[@numFound='10']",
+        "//result/doc[1]/date[@name='" + fieldName + "'][.='1995-12-31T10:59:59Z']",
+        "//result/doc[10]/date[@name='" + fieldName + "'][.='1995-12-31T19:59:59Z']");
+
+    assertQ(req("q", fieldName + ":" + String.format(Locale.ROOT, "[%s+0HOURS TO %s+1HOURS]",baseDate,baseDate)
+            +" OR " + fieldName + ":" + String.format(Locale.ROOT, "[%s+8HOURS TO %s+9HOURS]",baseDate,baseDate) , "fl", "id, " + fieldName),
+        "//*[@numFound='4']",
+        "//result/doc[1]/date[@name='" + fieldName + "'][.='1995-12-31T10:59:59Z']",
+        "//result/doc[2]/date[@name='" + fieldName + "'][.='1995-12-31T11:59:59Z']",
+        "//result/doc[3]/date[@name='" + fieldName + "'][.='1995-12-31T18:59:59Z']",
+        "//result/doc[4]/date[@name='" + fieldName + "'][.='1995-12-31T19:59:59Z']");
+
+    assertQ(req("q", fieldName + ":"+String.format(Locale.ROOT, "[%s+0HOURS TO %s+1HOURS]",baseDate,baseDate)
+            +" AND " + fieldName + ":"+String.format(Locale.ROOT, "[%s+1HOURS TO %s+2HOURS]",baseDate,baseDate) , "fl", "id, " + fieldName),
+        "//*[@numFound='1']",
+        "//result/doc[1]/date[@name='" + fieldName + "'][.='1995-12-31T11:59:59Z']");
+
+    assertQ(req("q", fieldName + ":"+String.format(Locale.ROOT, "[%s+0HOURS TO %s+1HOURS]",baseDate,baseDate)
+            +" AND NOT " + fieldName + ":"+String.format(Locale.ROOT, "[%s+1HOURS TO %s+2HOURS]",baseDate,baseDate) , "fl", "id, " + fieldName),
+        "//*[@numFound='1']",
+        "//result/doc[1]/date[@name='" + fieldName + "'][.='1995-12-31T10:59:59Z']");
+
+    clearIndex();
+    assertU(commit());
+  }
+
+  private void doTestDatePointFieldRangeFacet(String docValuesField, String nonDocValuesField) throws Exception {
+    String baseDate = "1995-01-10T10:59:59Z";
+    for (int i = 0; i < 10; i++) {
+      String date = String.format(Locale.ROOT, "%s+%dDAYS", baseDate, i);
+      assertU(adoc("id", String.valueOf(i), docValuesField, date, nonDocValuesField, date));
+    }
+    assertU(commit());
+    assertTrue(h.getCore().getLatestSchema().getField(docValuesField).hasDocValues());
+    assertTrue(h.getCore().getLatestSchema().getField(docValuesField).getType() instanceof PointField);
+    assertQ(req("q", "*:*", "facet", "true", "facet.range", docValuesField, "facet.range.start", "1995-01-10T10:59:59Z-10DAYS",
+        "facet.range.end", "1995-01-10T10:59:59Z+10DAYS", "facet.range.gap", "+2DAYS"),
+        "//*[@numFound='10']",
+        "//lst[@name='facet_counts']/lst[@name='facet_ranges']/lst[@name='" + docValuesField + "']/lst[@name='counts']/int[@name='1995-01-10T10:59:59Z'][.='2']",
+        "//lst[@name='facet_counts']/lst[@name='facet_ranges']/lst[@name='" + docValuesField + "']/lst[@name='counts']/int[@name='1995-01-12T10:59:59Z'][.='2']",
+        "//lst[@name='facet_counts']/lst[@name='facet_ranges']/lst[@name='" + docValuesField + "']/lst[@name='counts']/int[@name='1995-01-14T10:59:59Z'][.='2']",
+        "//lst[@name='facet_counts']/lst[@name='facet_ranges']/lst[@name='" + docValuesField + "']/lst[@name='counts']/int[@name='1995-01-16T10:59:59Z'][.='2']",
+        "//lst[@name='facet_counts']/lst[@name='facet_ranges']/lst[@name='" + docValuesField + "']/lst[@name='counts']/int[@name='1995-01-18T10:59:59Z'][.='2']",
+        "//lst[@name='facet_counts']/lst[@name='facet_ranges']/lst[@name='" + docValuesField + "']/lst[@name='counts']/int[@name='1995-01-08T10:59:59Z'][.='0']");
+
+    assertQ(req("q", "*:*", "facet", "true", "facet.range", docValuesField, "facet.range.start", "1995-01-10T10:59:59Z-10DAYS",
+        "facet.range.end", "1995-01-10T10:59:59Z+10DAYS", "facet.range.gap", "+2DAYS", "facet.range.method", "dv"),
+        "//*[@numFound='10']",
+        "//lst[@name='facet_counts']/lst[@name='facet_ranges']/lst[@name='" + docValuesField + "']/lst[@name='counts']/int[@name='1995-01-10T10:59:59Z'][.='2']",
+        "//lst[@name='facet_counts']/lst[@name='facet_ranges']/lst[@name='" + docValuesField + "']/lst[@name='counts']/int[@name='1995-01-12T10:59:59Z'][.='2']",
+        "//lst[@name='facet_counts']/lst[@name='facet_ranges']/lst[@name='" + docValuesField + "']/lst[@name='counts']/int[@name='1995-01-14T10:59:59Z'][.='2']",
+        "//lst[@name='facet_counts']/lst[@name='facet_ranges']/lst[@name='" + docValuesField + "']/lst[@name='counts']/int[@name='1995-01-16T10:59:59Z'][.='2']",
+        "//lst[@name='facet_counts']/lst[@name='facet_ranges']/lst[@name='" + docValuesField + "']/lst[@name='counts']/int[@name='1995-01-18T10:59:59Z'][.='2']",
+        "//lst[@name='facet_counts']/lst[@name='facet_ranges']/lst[@name='" + docValuesField + "']/lst[@name='counts']/int[@name='1995-01-08T10:59:59Z'][.='0']");
+
+    assertFalse(h.getCore().getLatestSchema().getField(nonDocValuesField).hasDocValues());
+    assertTrue(h.getCore().getLatestSchema().getField(nonDocValuesField).getType() instanceof PointField);
+    // Range Faceting with method = filter should work
+    assertQ(req("q", "*:*", "facet", "true", "facet.range", nonDocValuesField, "facet.range.start", "1995-01-10T10:59:59Z-10DAYS",
+        "facet.range.end", "1995-01-10T10:59:59Z+10DAYS", "facet.range.gap", "+2DAYS", "facet.range.method", "filter"),
+        "//*[@numFound='10']",
+        "//lst[@name='facet_counts']/lst[@name='facet_ranges']/lst[@name='" + nonDocValuesField + "']/lst[@name='counts']/int[@name='1995-01-10T10:59:59Z'][.='2']",
+        "//lst[@name='facet_counts']/lst[@name='facet_ranges']/lst[@name='" + nonDocValuesField + "']/lst[@name='counts']/int[@name='1995-01-12T10:59:59Z'][.='2']",
+        "//lst[@name='facet_counts']/lst[@name='facet_ranges']/lst[@name='" + nonDocValuesField + "']/lst[@name='counts']/int[@name='1995-01-14T10:59:59Z'][.='2']",
+        "//lst[@name='facet_counts']/lst[@name='facet_ranges']/lst[@name='" + nonDocValuesField + "']/lst[@name='counts']/int[@name='1995-01-16T10:59:59Z'][.='2']",
+        "//lst[@name='facet_counts']/lst[@name='facet_ranges']/lst[@name='" + nonDocValuesField + "']/lst[@name='counts']/int[@name='1995-01-18T10:59:59Z'][.='2']",
+        "//lst[@name='facet_counts']/lst[@name='facet_ranges']/lst[@name='" + nonDocValuesField + "']/lst[@name='counts']/int[@name='1995-01-08T10:59:59Z'][.='0']");
+
+    // this should actually use filter method instead of dv
+    assertQ(req("q", "*:*", "facet", "true", "facet.range", nonDocValuesField, "facet.range.start", "1995-01-10T10:59:59Z-10DAYS",
+        "facet.range.end", "1995-01-10T10:59:59Z+10DAYS", "facet.range.gap", "+2DAYS", "facet.range.method", "dv"),
+        "//*[@numFound='10']",
+        "//lst[@name='facet_counts']/lst[@name='facet_ranges']/lst[@name='" + nonDocValuesField + "']/lst[@name='counts']/int[@name='1995-01-10T10:59:59Z'][.='2']",
+        "//lst[@name='facet_counts']/lst[@name='facet_ranges']/lst[@name='" + nonDocValuesField + "']/lst[@name='counts']/int[@name='1995-01-12T10:59:59Z'][.='2']",
+        "//lst[@name='facet_counts']/lst[@name='facet_ranges']/lst[@name='" + nonDocValuesField + "']/lst[@name='counts']/int[@name='1995-01-14T10:59:59Z'][.='2']",
+        "//lst[@name='facet_counts']/lst[@name='facet_ranges']/lst[@name='" + nonDocValuesField + "']/lst[@name='counts']/int[@name='1995-01-16T10:59:59Z'][.='2']",
+        "//lst[@name='facet_counts']/lst[@name='facet_ranges']/lst[@name='" + nonDocValuesField + "']/lst[@name='counts']/int[@name='1995-01-18T10:59:59Z'][.='2']",
+        "//lst[@name='facet_counts']/lst[@name='facet_ranges']/lst[@name='" + nonDocValuesField + "']/lst[@name='counts']/int[@name='1995-01-08T10:59:59Z'][.='0']");
+  }
+
+  private void doTestDatePointFieldMultiValuedRangeFacet(String docValuesField, String nonDocValuesField) throws Exception {
+    String baseDate = "1995-01-10T10:59:59Z";
+    for (int i = 0; i < 10; i++) {
+      String date1 = String.format(Locale.ROOT, "%s+%dDAYS", baseDate, i);
+      String date2 = String.format(Locale.ROOT, "%s+%dDAYS", baseDate, i+10);
+      assertU(adoc("id", String.valueOf(i), docValuesField, date1, docValuesField, date2,
+          nonDocValuesField, date1, nonDocValuesField, date2));
+    }
+    assertU(commit());
+    assertTrue(h.getCore().getLatestSchema().getField(docValuesField).hasDocValues());
+    assertTrue(h.getCore().getLatestSchema().getField(docValuesField).getType() instanceof PointField);
+    assertQ(req("q", "*:*", "fl", "id", "facet", "true", "facet.range", docValuesField, "facet.range.start", "1995-01-10T10:59:59Z-10DAYS",
+        "facet.range.end", "1995-01-10T10:59:59Z+20DAYS", "facet.range.gap", "+2DAYS"),
+        "//*[@numFound='10']",
+        "//lst[@name='facet_counts']/lst[@name='facet_ranges']/lst[@name='" + docValuesField + "']/lst[@name='counts']/int[@name='1995-01-10T10:59:59Z'][.='2']",
+        "//lst[@name='facet_counts']/lst[@name='facet_ranges']/lst[@name='" + docValuesField + "']/lst[@name='counts']/int[@name='1995-01-12T10:59:59Z'][.='2']",
+        "//lst[@name='facet_counts']/lst[@name='facet_ranges']/lst[@name='" + docValuesField + "']/lst[@name='counts']/int[@name='1995-01-14T10:59:59Z'][.='2']",
+        "//lst[@name='facet_counts']/lst[@name='facet_ranges']/lst[@name='" + docValuesField + "']/lst[@name='counts']/int[@name='1995-01-16T10:59:59Z'][.='2']",
+        "//lst[@name='facet_counts']/lst[@name='facet_ranges']/lst[@name='" + docValuesField + "']/lst[@name='counts']/int[@name='1995-01-18T10:59:59Z'][.='2']",
+        "//lst[@name='facet_counts']/lst[@name='facet_ranges']/lst[@name='" + docValuesField + "']/lst[@name='counts']/int[@name='1995-01-20T10:59:59Z'][.='2']",
+        "//lst[@name='facet_counts']/lst[@name='facet_ranges']/lst[@name='" + docValuesField + "']/lst[@name='counts']/int[@name='1995-01-22T10:59:59Z'][.='2']",
+        "//lst[@name='facet_counts']/lst[@name='facet_ranges']/lst[@name='" + docValuesField + "']/lst[@name='counts']/int[@name='1995-01-24T10:59:59Z'][.='2']",
+        "//lst[@name='facet_counts']/lst[@name='facet_ranges']/lst[@name='" + docValuesField + "']/lst[@name='counts']/int[@name='1995-01-26T10:59:59Z'][.='2']",
+        "//lst[@name='facet_counts']/lst[@name='facet_ranges']/lst[@name='" + docValuesField + "']/lst[@name='counts']/int[@name='1995-01-28T10:59:59Z'][.='2']",
+        "//lst[@name='facet_counts']/lst[@name='facet_ranges']/lst[@name='" + docValuesField + "']/lst[@name='counts']/int[@name='1994-12-31T10:59:59Z'][.='0']");
+
+    assertQ(req("q", "*:*", "fl", "id", "facet", "true", "facet.range", docValuesField, "facet.range.start", "1995-01-10T10:59:59Z-10DAYS",
+        "facet.range.end", "1995-01-10T10:59:59Z+20DAYS", "facet.range.gap", "+2DAYS", "facet.range.method", "dv"),
+        "//*[@numFound='10']",
+        "//lst[@name='facet_counts']/lst[@name='facet_ranges']/lst[@name='" + docValuesField + "']/lst[@name='counts']/int[@name='1995-01-10T10:59:59Z'][.='2']",
+        "//lst[@name='facet_counts']/lst[@name='facet_ranges']/lst[@name='" + docValuesField + "']/lst[@name='counts']/int[@name='1995-01-12T10:59:59Z'][.='2']",
+        "//lst[@name='facet_counts']/lst[@name='facet_ranges']/lst[@name='" + docValuesField + "']/lst[@name='counts']/int[@name='1995-01-14T10:59:59Z'][.='2']",
+        "//lst[@name='facet_counts']/lst[@name='facet_ranges']/lst[@name='" + docValuesField + "']/lst[@name='counts']/int[@name='1995-01-16T10:59:59Z'][.='2']",
+        "//lst[@name='facet_counts']/lst[@name='facet_ranges']/lst[@name='" + docValuesField + "']/lst[@name='counts']/int[@name='1995-01-18T10:59:59Z'][.='2']",
+        "//lst[@name='facet_counts']/lst[@name='facet_ranges']/lst[@name='" + docValuesField + "']/lst[@name='counts']/int[@name='1995-01-20T10:59:59Z'][.='2']",
+        "//lst[@name='facet_counts']/lst[@name='facet_ranges']/lst[@name='" + docValuesField + "']/lst[@name='counts']/int[@name='1995-01-22T10:59:59Z'][.='2']",
+        "//lst[@name='facet_counts']/lst[@name='facet_ranges']/lst[@name='" + docValuesField + "']/lst[@name='counts']/int[@name='1995-01-24T10:59:59Z'][.='2']",
+        "//lst[@name='facet_counts']/lst[@name='facet_ranges']/lst[@name='" + docValuesField + "']/lst[@name='counts']/int[@name='1995-01-26T10:59:59Z'][.='2']",
+        "//lst[@name='facet_counts']/lst[@name='facet_ranges']/lst[@name='" + docValuesField + "']/lst[@name='counts']/int[@name='1995-01-28T10:59:59Z'][.='2']",
+        "//lst[@name='facet_counts']/lst[@name='facet_ranges']/lst[@name='" + docValuesField + "']/lst[@name='counts']/int[@name='1994-12-31T10:59:59Z'][.='0']");
+
+    assertQ(req("q", "*:*", "fl", "id", "facet", "true", "facet.range", docValuesField, "facet.range.start", "1995-01-10T10:59:59Z",
+        "facet.range.end", "1995-01-10T10:59:59Z+20DAYS", "facet.range.gap", "+100DAYS"),
+        "//*[@numFound='10']",
+        "//lst[@name='facet_counts']/lst[@name='facet_ranges']/lst[@name='" + docValuesField + "']/lst[@name='counts']/int[@name='1995-01-10T10:59:59Z'][.='10']");
+
+    assertFalse(h.getCore().getLatestSchema().getField(nonDocValuesField).hasDocValues());
+    assertTrue(h.getCore().getLatestSchema().getField(nonDocValuesField).getType() instanceof PointField);
+    // Range Faceting with method = filter should work
+    assertQ(req("q", "*:*", "fl", "id", "facet", "true", "facet.range", nonDocValuesField, "facet.range.start", "1995-01-10T10:59:59Z-10DAYS",
+        "facet.range.end", "1995-01-10T10:59:59Z+20DAYS", "facet.range.gap", "+2DAYS", "facet.range.method", "filter"),
+        "//*[@numFound='10']",
+        "//lst[@name='facet_counts']/lst[@name='facet_ranges']/lst[@name='" + nonDocValuesField + "']/lst[@name='counts']/int[@name='1995-01-10T10:59:59Z'][.='2']",
+        "//lst[@name='facet_counts']/lst[@name='facet_ranges']/lst[@name='" + nonDocValuesField + "']/lst[@name='counts']/int[@name='1995-01-12T10:59:59Z'][.='2']",
+        "//lst[@name='facet_counts']/lst[@name='facet_ranges']/lst[@name='" + nonDocValuesField + "']/lst[@name='counts']/int[@name='1995-01-14T10:59:59Z'][.='2']",
+        "//lst[@name='facet_counts']/lst[@name='facet_ranges']/lst[@name='" + nonDocValuesField + "']/lst[@name='counts']/int[@name='1995-01-16T10:59:59Z'][.='2']",
+        "//lst[@name='facet_counts']/lst[@name='facet_ranges']/lst[@name='" + nonDocValuesField + "']/lst[@name='counts']/int[@name='1995-01-18T10:59:59Z'][.='2']",
+        "//lst[@name='facet_counts']/lst[@name='facet_ranges']/lst[@name='" + nonDocValuesField + "']/lst[@name='counts']/int[@name='1995-01-20T10:59:59Z'][.='2']",
+        "//lst[@name='facet_counts']/lst[@name='facet_ranges']/lst[@name='" + nonDocValuesField + "']/lst[@name='counts']/int[@name='1995-01-22T10:59:59Z'][.='2']",
+        "//lst[@name='facet_counts']/lst[@name='facet_ranges']/lst[@name='" + nonDocValuesField + "']/lst[@name='counts']/int[@name='1995-01-24T10:59:59Z'][.='2']",
+        "//lst[@name='facet_counts']/lst[@name='facet_ranges']/lst[@name='" + nonDocValuesField + "']/lst[@name='counts']/int[@name='1995-01-26T10:59:59Z'][.='2']",
+        "//lst[@name='facet_counts']/lst[@name='facet_ranges']/lst[@name='" + nonDocValuesField + "']/lst[@name='counts']/int[@name='1995-01-28T10:59:59Z'][.='2']",
+        "//lst[@name='facet_counts']/lst[@name='facet_ranges']/lst[@name='" + nonDocValuesField + "']/lst[@name='counts']/int[@name='1994-12-31T10:59:59Z'][.='0']");
+
+    // this should actually use filter method instead of dv
+    assertQ(req("q", "*:*", "fl", "id", "facet", "true", "facet.range", nonDocValuesField, "facet.range.start", "1995-01-10T10:59:59Z-10DAYS",
+        "facet.range.end", "1995-01-10T10:59:59Z+20DAYS", "facet.range.gap", "+2DAYS", "facet.range.method", "dv"),
+        "//*[@numFound='10']",
+        "//lst[@name='facet_counts']/lst[@name='facet_ranges']/lst[@name='" + nonDocValuesField + "']/lst[@name='counts']/int[@name='1995-01-10T10:59:59Z'][.='2']",
+        "//lst[@name='facet_counts']/lst[@name='facet_ranges']/lst[@name='" + nonDocValuesField + "']/lst[@name='counts']/int[@name='1995-01-12T10:59:59Z'][.='2']",
+        "//lst[@name='facet_counts']/lst[@name='facet_ranges']/lst[@name='" + nonDocValuesField + "']/lst[@name='counts']/int[@name='1995-01-14T10:59:59Z'][.='2']",
+        "//lst[@name='facet_counts']/lst[@name='facet_ranges']/lst[@name='" + nonDocValuesField + "']/lst[@name='counts']/int[@name='1995-01-16T10:59:59Z'][.='2']",
+        "//lst[@name='facet_counts']/lst[@name='facet_ranges']/lst[@name='" + nonDocValuesField + "']/lst[@name='counts']/int[@name='1995-01-18T10:59:59Z'][.='2']",
+        "//lst[@name='facet_counts']/lst[@name='facet_ranges']/lst[@name='" + nonDocValuesField + "']/lst[@name='counts']/int[@name='1995-01-20T10:59:59Z'][.='2']",
+        "//lst[@name='facet_counts']/lst[@name='facet_ranges']/lst[@name='" + nonDocValuesField + "']/lst[@name='counts']/int[@name='1995-01-22T10:59:59Z'][.='2']",
+        "//lst[@name='facet_counts']/lst[@name='facet_ranges']/lst[@name='" + nonDocValuesField + "']/lst[@name='counts']/int[@name='1995-01-24T10:59:59Z'][.='2']",
+        "//lst[@name='facet_counts']/lst[@name='facet_ranges']/lst[@name='" + nonDocValuesField + "']/lst[@name='counts']/int[@name='1995-01-26T10:59:59Z'][.='2']",
+        "//lst[@name='facet_counts']/lst[@name='facet_ranges']/lst[@name='" + nonDocValuesField + "']/lst[@name='counts']/int[@name='1995-01-28T10:59:59Z'][.='2']",
+        "//lst[@name='facet_counts']/lst[@name='facet_ranges']/lst[@name='" + nonDocValuesField + "']/lst[@name='counts']/int[@name='1994-12-31T10:59:59Z'][.='0']");
+  }
+
+  private void doTestDatePointFunctionQuery(String dvFieldName, String nonDvFieldName, String type) throws Exception {
+    String baseDate = "1995-01-10T10:59:10Z";
+    for (int i = 0; i < 10; i++) {
+      String date = String.format(Locale.ROOT, "%s+%dSECONDS", baseDate, i+1);
+      assertU(adoc("id", String.valueOf(i), dvFieldName, date, nonDvFieldName, date));
+    }
+    assertU(commit());
+    assertTrue(h.getCore().getLatestSchema().getField(dvFieldName).hasDocValues());
+    assertTrue(h.getCore().getLatestSchema().getField(dvFieldName).getType() instanceof PointField);
+    assertQ(req("q", "*:*", "fl", "id, " + dvFieldName, "sort", "product(-1," + dvFieldName + ") asc"),
+        "//*[@numFound='10']",
+        "//result/doc[1]/" + type + "[@name='" + dvFieldName + "'][.='1995-01-10T10:59:11Z']",
+        "//result/doc[2]/" + type + "[@name='" + dvFieldName + "'][.='1995-01-10T10:59:12Z']",
+        "//result/doc[3]/" + type + "[@name='" + dvFieldName + "'][.='1995-01-10T10:59:13Z']",
+        "//result/doc[10]/" + type + "[@name='" + dvFieldName + "'][.='1995-01-10T10:59:20Z']");
+
+    assertQ(req("q", "*:*", "fl", "id, " + dvFieldName + ", ms(" + dvFieldName + ","+baseDate+")"),
+        "//*[@numFound='10']",
+        "//result/doc[1]/float[@name='ms(" + dvFieldName + "," + baseDate + ")'][.='1000.0']",
+        "//result/doc[2]/float[@name='ms(" + dvFieldName + "," + baseDate + ")'][.='2000.0']",
+        "//result/doc[3]/float[@name='ms(" + dvFieldName + "," + baseDate + ")'][.='3000.0']",
+        "//result/doc[10]/float[@name='ms(" + dvFieldName + "," + baseDate + ")'][.='10000.0']");
+
+    assertQ(req("q", "*:*", "fl", "id, " + dvFieldName + ", field(" + dvFieldName + ")"),
+        "//*[@numFound='10']",
+        "//result/doc[1]/" + type + "[@name='field(" + dvFieldName + ")'][.='1995-01-10T10:59:11Z']",
+        "//result/doc[2]/" + type + "[@name='field(" + dvFieldName + ")'][.='1995-01-10T10:59:12Z']",
+        "//result/doc[3]/" + type + "[@name='field(" + dvFieldName + ")'][.='1995-01-10T10:59:13Z']",
+        "//result/doc[10]/" + type + "[@name='field(" + dvFieldName + ")'][.='1995-01-10T10:59:20Z']");
+
+    assertFalse(h.getCore().getLatestSchema().getField(nonDvFieldName).hasDocValues());
+    assertTrue(h.getCore().getLatestSchema().getField(nonDvFieldName).getType() instanceof PointField);
+
+    assertQEx("Expecting Exception",
+        "sort param could not be parsed as a query",
+        req("q", "*:*", "fl", "id, " + nonDvFieldName, "sort", "product(-1," + nonDvFieldName + ") asc"),
+        SolrException.ErrorCode.BAD_REQUEST);
+  }
+
+  private void testDatePointStats(String field, String dvField, String[] dates) {
+    for (int i = 0; i < dates.length; i++) {
+      assertU(adoc("id", String.valueOf(i), dvField, dates[i], field, dates[i]));
+    }
+    assertU(adoc("id", String.valueOf(dates.length)));
+    assertU(commit());
+    assertTrue(h.getCore().getLatestSchema().getField(dvField).hasDocValues());
+    assertTrue(h.getCore().getLatestSchema().getField(dvField).getType() instanceof PointField);
+    assertQ(req("q", "*:*", "fl", "id, " + dvField, "stats", "true", "stats.field", dvField),
+        "//*[@numFound='11']",
+        "//lst[@name='stats']/lst[@name='stats_fields']/lst[@name='" + dvField+ "']/date[@name='min'][.='" + dates[0] + "']",
+        "//lst[@name='stats']/lst[@name='stats_fields']/lst[@name='" + dvField+ "']/date[@name='max'][.='" + dates[dates.length-1] + "']",
+        "//lst[@name='stats']/lst[@name='stats_fields']/lst[@name='" + dvField+ "']/long[@name='count'][.='" + dates.length + "']",
+        "//lst[@name='stats']/lst[@name='stats_fields']/lst[@name='" + dvField+ "']/long[@name='missing'][.='1']");
+
+    assertFalse(h.getCore().getLatestSchema().getField(field).hasDocValues());
+    assertTrue(h.getCore().getLatestSchema().getField(field).getType() instanceof PointField);
+    assertQEx("Expecting Exception",
+        "Can't calculate stats on a PointField without docValues",
+        req("q", "*:*", "fl", "id, " + field, "stats", "true", "stats.field", field),
+        SolrException.ErrorCode.BAD_REQUEST);
+  }
+
+  private void testDatePointFieldsAtomicUpdates(String field, String type) throws Exception {
+    String date = "1995-01-10T10:59:10Z";
+    assertU(adoc(sdoc("id", "1", field, date)));
+    assertU(commit());
+
+    assertQ(req("q", "id:1"),
+        "//result/doc[1]/" + type + "[@name='" + field + "'][.='"+date+"']");
+
+    assertU(adoc(sdoc("id", "1", field, ImmutableMap.of("set", date+"+2DAYS"))));
+    assertU(commit());
+
+    assertQ(req("q", "id:1"),
+        "//result/doc[1]/" + type + "[@name='" + field + "'][.='1995-01-12T10:59:10Z']");
+  }
+
+  private void testMultiValuedDatePointFieldsAtomicUpdates(String field, String type) throws Exception {
+    String date1 = "1995-01-10T10:59:10Z";
+    String date2 = "1995-01-11T10:59:10Z";
+    String date3 = "1995-01-12T10:59:10Z";
+    assertU(adoc(sdoc("id", "1", field, date1)));
+    assertU(commit());
+
+    assertQ(req("q", "id:1"),
+        "//result/doc[1]/arr[@name='" + field + "']/" + type + "[.='"+date1+"']",
+        "count(//result/doc[1]/arr[@name='" + field + "']/" + type + ")=1");
+
+    assertU(adoc(sdoc("id", "1", field, ImmutableMap.of("add", date2))));
+    assertU(commit());
+
+    assertQ(req("q", "id:1"),
+        "//result/doc[1]/arr[@name='" + field + "']/" + type + "[.='"+date1+"']",
+        "//result/doc[1]/arr[@name='" + field + "']/" + type + "[.='"+date2+"']",
+        "count(//result/doc[1]/arr[@name='" + field + "']/" + type + ")=2");
+
+    assertU(adoc(sdoc("id", "1", field, ImmutableMap.of("remove", date1))));
+    assertU(commit());
+
+    assertQ(req("q", "id:1"),
+        "//result/doc[1]/arr[@name='" + field + "']/" + type + "[.='"+date2+"']",
+        "count(//result/doc[1]/arr[@name='" + field + "']/" + type + ")=1");
+
+    assertU(adoc(sdoc("id", "1", field, ImmutableMap.of("set", ImmutableList.of(date1, date2, date3)))));
+    assertU(commit());
+
+    assertQ(req("q", "id:1"),
+        "//result/doc[1]/arr[@name='" + field + "']/" + type + "[.='"+date1+"']",
+        "//result/doc[1]/arr[@name='" + field + "']/" + type + "[.='"+date2+"']",
+        "//result/doc[1]/arr[@name='" + field + "']/" + type + "[.='"+date3+"']",
+        "count(//result/doc[1]/arr[@name='" + field + "']/" + type + ")=3");
+
+    assertU(adoc(sdoc("id", "1", field, ImmutableMap.of("removeregex", ".*"))));
+    assertU(commit());
+
+    assertQ(req("q", "id:1"),
+        "count(//result/doc[1]/arr[@name='" + field + "']/" + type + ")=0");
+
+  }
+
+
 }

@@ -19,6 +19,7 @@ package org.apache.solr.request;
 import java.io.IOException;
 import java.util.ArrayDeque;
 import java.util.Collections;
+import java.util.Date;
 import java.util.Deque;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -51,6 +52,7 @@ import org.apache.solr.schema.TrieField;
 import org.apache.solr.search.DocIterator;
 import org.apache.solr.search.DocSet;
 import org.apache.solr.search.SolrIndexSearcher;
+import org.apache.solr.util.DateMathParser;
 
 /** Utility class to compute facets on numeric fields. */
 final class NumericFacets {
@@ -512,7 +514,8 @@ final class NumericFacets {
         return String.valueOf(NumericUtils.sortableIntToFloat((int)bits));
       case DOUBLE:
         return String.valueOf(NumericUtils.sortableLongToDouble(bits));
-        //TODO: DATE
+      case DATE:
+        return new Date(bits).toInstant().toString();
       default:
         throw new AssertionError("Unsupported NumberType: " + fieldType.getNumberType());
     }

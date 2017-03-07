@@ -31,6 +31,7 @@ import org.apache.solr.common.params.RequiredSolrParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SimpleOrderedMap;
+import org.apache.solr.schema.DatePointField;
 import org.apache.solr.schema.DateRangeField;
 import org.apache.solr.schema.FieldType;
 import org.apache.solr.schema.IndexSchema;
@@ -725,7 +726,9 @@ public class RangeFacetRequest extends FacetComponent.FacetBase {
                                        final Date now) {
       super(rangeFacetRequest);
       this.now = now;
-      if (!(field.getType() instanceof TrieDateField) && !(field.getType() instanceof DateRangeField)) {
+      if (!(field.getType() instanceof TrieDateField)
+          && !(field.getType() instanceof DateRangeField)
+          && !(field.getType() instanceof DatePointField)) {
         throw new IllegalArgumentException(TYPE_ERR_MSG);
       }
     }

@@ -515,12 +515,14 @@ public abstract class SolrTestCaseJ4 extends LuceneTestCase {
       System.setProperty("solr.tests.longClass", "long");
       System.setProperty("solr.tests.doubleClass", "double");
       System.setProperty("solr.tests.floatClass", "float");
+      System.setProperty("solr.tests.dateClass", "date");
     } else {
       log.info("Using PointFields");
       System.setProperty("solr.tests.intClass", "pint");
       System.setProperty("solr.tests.longClass", "plong");
       System.setProperty("solr.tests.doubleClass", "pdouble");
       System.setProperty("solr.tests.floatClass", "pfloat");
+      System.setProperty("solr.tests.dateClass", "pdate");
     }
   }
 

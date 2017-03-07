@@ -18,6 +18,7 @@ package org.apache.solr.update.processor;
 
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.schema.IndexSchema;
+import org.apache.solr.schema.PointField;
 import org.joda.time.DateTime;
 import org.joda.time.DateTimeZone;
 import org.joda.time.format.DateTimeFormat;
@@ -148,9 +149,15 @@ public class ParsingFieldUpdateProcessorsTest extends UpdateProcessorTestBase {
     String dateString = "2010-11-12T13:14:15.168Z";
     DateTimeFormatter dateTimeFormatter = ISODateTimeFormat.dateTime();
     DateTime dateTime = dateTimeFormatter.parseDateTime(dateString);
+    SolrInputDocument d;
+    if (schema.getField("date_dt").getType().isPointField()) {
+      d = processAdd("parse-date-explicit-typeclass-point-selector-no-run-processor",
+          doc(f("id", "77"), f("date_dt", dateString)));
+    } else {
+      d = processAdd("parse-date-explicit-typeclass-selector-no-run-processor",
+          doc(f("id", "77"), f("date_dt", dateString)));
+    }
 
-    SolrInputDocument d = processAdd("parse-date-explicit-typeclass-selector-no-run-processor",
-                                     doc(f("id", "77"), f("date_dt", dateString)));
     assertNotNull(d);
     assertTrue(d.getFieldValue("date_dt") instanceof Date);
     assertEquals(dateTime.getMillis(), ((Date)d.getFieldValue("date_dt")).getTime());

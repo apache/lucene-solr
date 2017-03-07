@@ -49,6 +49,7 @@
   <fieldType name="plong" class="solr.LongPointField" docValues="true"/>
   <fieldType name="pdouble" class="solr.DoublePointField" docValues="true"/>
   <fieldType name="pfloat" class="solr.FloatPointField" docValues="true"/>
+  <fieldType name="pdate" class="solr.DatePointField" docValues="true"/>
 
   <!-- Field type demonstrating an Analyzer failure -->
   <fieldType name="failtype1" class="solr.TextField">
@@ -569,13 +570,13 @@
 
   <field name="textgap" type="textgap" indexed="true" stored="true"/>
 
-  <field name="timestamp" type="date" indexed="true" stored="true" docValues="true" default="NOW" multiValued="false"/>
+  <field name="timestamp" type="${solr.tests.dateClass:pdate}" indexed="true" stored="true" docValues="true" default="NOW" multiValued="false"/>
   <field name="multiDefault" type="string" indexed="true" stored="true" default="muLti-Default" multiValued="true"/>
   <field name="intDefault" type="${solr.tests.intClass:pint}" indexed="true" stored="true" default="42" multiValued="false"/>
   <field name="intDvoDefault" type="${solr.tests.intClass:pint}" indexed="false" stored="false" multiValued="false"
          useDocValuesAsStored="true" docValues="true" default="42" />
   <field name="intRemove" type="${solr.tests.intClass:pint}" indexed="true" stored="true" multiValued="true"/>
-  <field name="dateRemove" type="date" indexed="true" stored="true" multiValued="true"/>
+  <field name="dateRemove" type="${solr.tests.dateClass:pdate}" indexed="true" stored="true" multiValued="true"/>
   <field name="floatRemove" type="${solr.tests.floatClass:pfloat}" indexed="true" stored="true" multiValued="true"/>
 
   <field name="nopositionstext" type="nopositions" indexed="true" stored="true"/>
@@ -621,8 +622,8 @@
   <dynamicField name="*_d" type="${solr.tests.doubleClass:pdouble}" indexed="true" stored="true"/>
   <dynamicField name="*_d1" type="${solr.tests.doubleClass:pdouble}" indexed="true" stored="true" multiValued="false"/>
   <dynamicField name="*_d1_ndv" type="${solr.tests.doubleClass:pdouble}" indexed="true" docValues="false" stored="true" multiValued="false"/>
-  <dynamicField name="*_dt" type="date" indexed="true" stored="true"/>
-  <dynamicField name="*_dt1" type="date" indexed="true" stored="true" multiValued="false"/>
+  <dynamicField name="*_dt" type="${solr.tests.dateClass:pdate}" indexed="true" stored="true"/>
+  <dynamicField name="*_dt1" type="${solr.tests.dateClass:pdate}" indexed="true" stored="true" multiValued="false"/>
 
 
   <!-- some trie-coded dynamic fields for faster range queries -->
@@ -683,7 +684,7 @@
   <dynamicField name="*_l_dv" type="${solr.tests.longClass:plong}" indexed="true" stored="true" docValues="true"/>
   <dynamicField name="*_f_dv" type="${solr.tests.floatClass:pfloat}" indexed="true" stored="true" docValues="true"/>
   <dynamicField name="*_d_dv" type="${solr.tests.doubleClass:pdouble}" indexed="true" stored="true" docValues="true"/>
-  <dynamicField name="*_dt_dv" type="date" indexed="true" stored="true" docValues="true"/>
+  <dynamicField name="*_dt_dv" type="${solr.tests.dateClass:pdate}" indexed="true" stored="true" docValues="true"/>
   <dynamicField name="*_f1_dv" type="${solr.tests.floatClass:pfloat}" indexed="true" stored="true" docValues="true" multiValued="false"/>
 
   <!--  Non-stored, DocValues=true -->

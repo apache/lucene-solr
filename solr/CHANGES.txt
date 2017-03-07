@@ -154,6 +154,8 @@ New Features
 * SOLR-9999: Instrument DirectUpdateHandler2. This registers existing statistics under metrics API and adds
   more metrics to track the rates of update and delete commands. (ab)
 
+* SOLR-9986: Implement DatePointField (Cao Manh Dat, Tomás Fernández Löbbe)
+
 Bug Fixes
 ----------------------
 
