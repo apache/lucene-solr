@@ -75,6 +75,7 @@ public class BM25Similarity extends Similarity {
   
   /** Implemented as <code>1 / (distance + 1)</code>. */
   protected float sloppyFreq(int distance) {
+    assert distance <= Integer.MAX_VALUE - 1;
     return 1.0f / (distance + 1);
   }
   

@@ -105,6 +105,15 @@ public final class DisiPriorityQueue implements Iterable<DisiWrapper> {
     return heap[0];
   }
 
+  /** The total {@link DocIdSetIterator#cost()} of the iterators in the queue */
+  public long totalCost() {
+    long res = 0;
+    for (int i = 0; i < size; i++) {
+      res += heap[i].cost;
+    }
+    return res;
+  }
+
   public DisiWrapper pop() {
     final DisiWrapper[] heap = this.heap;
     final DisiWrapper result = heap[0];

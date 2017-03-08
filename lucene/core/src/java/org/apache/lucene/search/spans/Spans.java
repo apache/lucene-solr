@@ -116,4 +116,6 @@ public abstract class Spans extends DocIdSetIterator {
    */
   protected void doCurrentSpans() throws IOException {}
 
+  /** For {@link SpansTreeQuery}. */
+  SpansDocScorer<?> spansDocScorer;
 }

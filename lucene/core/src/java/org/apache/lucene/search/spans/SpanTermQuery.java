@@ -126,7 +126,7 @@ public class SpanTermQuery extends SpanQuery {
    * the relative cost of dealing with the term positions
    * when using a SpanNearQuery instead of a PhraseQuery.
    */
-  private static final float PHRASE_TO_SPAN_TERM_POSITIONS_COST = 4.0f;
+  static final float PHRASE_TO_SPAN_TERM_POSITIONS_COST = 4.0f;
 
   private static final int TERM_POSNS_SEEK_OPS_PER_DOC = 128;
 

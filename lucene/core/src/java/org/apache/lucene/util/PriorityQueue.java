@@ -173,6 +173,14 @@ public abstract class PriorityQueue<T> implements Iterable<T> {
     return heap[1];
   }
 
+  /** Returns the second least element of the PriorityQueue in constant time. */
+  public final T subTop() {
+    if (size == 2) {
+      return heap[2];
+    }
+    return lessThan(heap[2], heap[3]) ? heap[2] : heap[3];
+  }
+
   /** Removes and returns the least element of the PriorityQueue in log(size)
     time. */
   public final T pop() {

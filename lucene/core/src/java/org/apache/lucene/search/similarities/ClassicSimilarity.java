@@ -114,6 +114,7 @@ public class ClassicSimilarity extends TFIDFSimilarity {
   /** Implemented as <code>1 / (distance + 1)</code>. */
   @Override
   public float sloppyFreq(int distance) {
+    assert distance <= Integer.MAX_VALUE - 1;
     return 1.0f / (distance + 1);
   }
   

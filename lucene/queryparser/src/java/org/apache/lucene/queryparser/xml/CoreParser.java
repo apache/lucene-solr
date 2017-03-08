@@ -109,6 +109,10 @@ public class CoreParser implements QueryBuilder, SpanQueryBuilder {
     SpanNotBuilder snot = new SpanNotBuilder(spanFactory);
     spanFactory.addBuilder("SpanNot", snot);
     queryFactory.addBuilder("SpanNot", snot);
+
+    SpanSynonymBuilder ssyn = new SpanSynonymBuilder(analyzer);
+    spanFactory.addBuilder("SpanSynonym", ssyn);
+    queryFactory.addBuilder("SpanSynonym", ssyn);
   }
 
   public Query parse(InputStream xmlStream) throws ParserException {

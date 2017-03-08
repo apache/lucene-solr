@@ -98,7 +98,7 @@ public final class SpanNotQuery extends SpanQuery {
 
   @Override
   public SpanWeight createWeight(IndexSearcher searcher, boolean needsScores, float boost) throws IOException {
-    SpanWeight includeWeight = include.createWeight(searcher, false, boost);
+    SpanWeight includeWeight = include.createWeight(searcher, needsScores, boost);
     SpanWeight excludeWeight = exclude.createWeight(searcher, false, boost);
     return new SpanNotWeight(searcher, needsScores ? getTermContexts(includeWeight, excludeWeight) : null,
                                   includeWeight, excludeWeight, boost);
