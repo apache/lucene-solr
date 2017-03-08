@@ -42,8 +42,6 @@ public class SolrCellMorphlineTest extends AbstractSolrMorphlineTestBase {
   @BeforeClass
   public static void beforeClass2() {
     assumeFalse("FIXME: Morphlines currently has issues with Windows paths", Constants.WINDOWS);
-    assumeFalse("This test fails with Java 9 (https://issues.apache.org/jira/browse/SOLR-8876)",
-        Constants.JRE_IS_MINIMUM_JAVA9);
   }
 
   @Before

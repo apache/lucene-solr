@@ -20,7 +20,6 @@ import com.codahale.metrics.MetricRegistry;
 import com.google.common.io.Files;
 import com.typesafe.config.Config;
 import org.apache.commons.io.FileUtils;
-import org.apache.lucene.util.Constants;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrQuery;
@@ -85,7 +84,6 @@ public class AbstractSolrMorphlineTestBase extends SolrTestCaseJ4 {
 
   @BeforeClass
   public static void beforeClass() throws Exception {
-    assumeFalse("This test fails on Java 9 (https://issues.apache.org/jira/browse/SOLR-8876)", Constants.JRE_IS_MINIMUM_JAVA9);
     
     // TODO: test doesn't work with some Locales, see SOLR-6458
     savedLocale = Locale.getDefault();

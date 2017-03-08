@@ -310,6 +310,8 @@ Other Changes
   correct now if other drivers were installed before test execution (e.g., through IDE).
   (hossman, Uwe Schindler)
 
+* SOLR-8876: change morphline test config files to work around 'importCommands' bug when using java9 (hossman)
+
 ==================  6.4.2 ==================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release.
