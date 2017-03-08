@@ -105,6 +105,7 @@ import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.NamedList;
+import org.apache.solr.common.util.ObjectReleaseTracker;
 import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.core.DirectoryFactory;
 import org.apache.solr.core.DirectoryFactory.DirContext;
@@ -391,6 +392,7 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
     readerStats = snapStatistics(reader);
     // do this at the end since an exception in the constructor means we won't close
     numOpens.incrementAndGet();
+    assert ObjectReleaseTracker.track(this);
   }
 
   /*
@@ -539,6 +541,7 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
 
     // do this at the end so it only gets done if there are no exceptions
     numCloses.incrementAndGet();
+    assert ObjectReleaseTracker.release(this);
   }
 
   /** Direct access to the IndexSchema for use with this searcher */
