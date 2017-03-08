@@ -29,11 +29,14 @@ import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.PostingsEnum;
 import org.apache.lucene.index.Term;
+import org.apache.lucene.index.Terms;
 import org.apache.lucene.index.TermContext;
 import org.apache.lucene.index.TermState;
 import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.search.similarities.Similarity;
 import org.apache.lucene.search.similarities.Similarity.SimScorer;
+import org.apache.lucene.search.MatchNoDocsQuery;
+
 
 /**
  * A query that treats multiple terms as synonyms.
@@ -45,7 +48,8 @@ import org.apache.lucene.search.similarities.Similarity.SimScorer;
  */
 public final class SynonymQuery extends Query {
   private final Term terms[];
-  
+  private final String field;
+
   /**
    * Creates a new SynonymQuery, matching any of the supplied terms.
    * <p>
@@ -62,16 +66,23 @@ public final class SynonymQuery extends Query {
         throw new IllegalArgumentException("Synonyms must be across the same field");
       }
     }
+    this.field = field;
     if (terms.length > BooleanQuery.getMaxClauseCount()) {
       throw new BooleanQuery.TooManyClauses();
     }
     Arrays.sort(this.terms);
   }
 
+  /** The terms to be treated as synonyms. */
   public List<Term> getTerms() {
     return Collections.unmodifiableList(Arrays.asList(terms));
   }
-  
+
+  /** The field of the terms. */
+  public String getField() {
+    return field;
+  }
+
   @Override
   public String toString(String field) {
     StringBuilder builder = new StringBuilder("Synonym(");
@@ -101,7 +112,7 @@ public final class SynonymQuery extends Query {
   public Query rewrite(IndexReader reader) throws IOException {
     // optimize zero and single term cases
     if (terms.length == 0) {
-      return new BooleanQuery.Builder().build();
+      return new MatchNoDocsQuery();
     }
     if (terms.length == 1) {
       return new TermQuery(terms[0]);
@@ -122,8 +133,8 @@ public final class SynonymQuery extends Query {
       return searcher.rewrite(bq.build()).createWeight(searcher, needsScores, boost);
     }
   }
-  
-  class SynonymWeight extends Weight {
+
+  public class SynonymWeight extends Weight {
     private final TermContext termContexts[];
     private final Similarity similarity;
     private final Similarity.SimWeight simWeight;
@@ -183,18 +194,40 @@ public final class SynonymQuery extends Query {
       return Explanation.noMatch("no matching term");
     }
 
+    /**
+     * Expert: Return a SimScorer for this context.
+     * Public only for use in the spans package.
+     * @param context the LeafReaderContext
+     * @return a SimWeight
+     * @throws IOException on error
+     */
+    public Similarity.SimScorer getSimScorer(LeafReaderContext context) throws IOException {
+      return similarity.simScorer(simWeight, context);
+    }
+
+    /**
+     * Expert: Return a TermContext array in the same order as the terms.
+     * Public only for use in the spans package, do not modify.
+     */
+    public TermContext[] getTermContexts() {
+      return termContexts;
+    }
+
     @Override
     public Scorer scorer(LeafReaderContext context) throws IOException {
-      Similarity.SimScorer simScorer = similarity.simScorer(simWeight, context);
+      Similarity.SimScorer simScorer = getSimScorer(context);
       // we use termscorers + disjunction as an impl detail
       List<Scorer> subScorers = new ArrayList<>();
-      for (int i = 0; i < terms.length; i++) {
-        TermState state = termContexts[i].get(context.ord);
-        if (state != null) {
-          TermsEnum termsEnum = context.reader().terms(terms[i].field()).iterator();
-          termsEnum.seekExact(terms[i].bytes(), state);
-          PostingsEnum postings = termsEnum.postings(null, PostingsEnum.FREQS);
-          subScorers.add(new TermScorer(this, postings, simScorer));
+      Terms fieldTerms = context.reader().terms(field);
+      if (fieldTerms != null) {
+        TermsEnum termsEnum = fieldTerms.iterator();
+        for (int i = 0; i < terms.length; i++) {
+          TermState state = termContexts[i].get(context.ord);
+          if (state != null) {
+            termsEnum.seekExact(terms[i].bytes(), state);
+            PostingsEnum postings = termsEnum.postings(null, PostingsEnum.FREQS);
+            subScorers.add(new TermScorer(this, postings, simScorer));
+          }
         }
       }
       if (subScorers.isEmpty()) {
@@ -207,10 +240,10 @@ public final class SynonymQuery extends Query {
       }
     }
   }
-  
+
   static class SynonymScorer extends DisjunctionScorer {
     private final Similarity.SimScorer similarity;
-    
+
     SynonymScorer(Similarity.SimScorer similarity, Weight weight, List<Scorer> subScorers) {
       super(weight, subScorers, true);
       this.similarity = similarity;
@@ -220,7 +253,7 @@ public final class SynonymQuery extends Query {
     protected float score(DisiWrapper topList) throws IOException {
       return similarity.score(topList.doc, tf(topList));
     }
-    
+
     /** combines TF of all subs. */
     final int tf(DisiWrapper topList) throws IOException {
       int tf = 0;
