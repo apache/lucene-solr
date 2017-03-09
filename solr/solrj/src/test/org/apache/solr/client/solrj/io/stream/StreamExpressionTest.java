@@ -335,7 +335,7 @@ public class StreamExpressionTest extends SolrCloudTestCase {
     tuples = getTuples(stream);
     
     assert(tuples.size() == 4);
-    assertOrder(tuples, 4,3,1,2);
+    assertOrder(tuples, 4, 3, 1, 2);
     
     // Basic w/multi comp
     expression = StreamExpressionParser.parse("unique(search(" + COLLECTIONORALIAS + ", q=*:*, fl=\"id,a_s,a_i,a_f\", sort=\"a_f asc, a_i asc\"), over=\"a_f, a_i\")");
@@ -1577,7 +1577,7 @@ public class StreamExpressionTest extends SolrCloudTestCase {
 
     List<Tuple> tuples = getTuples(pstream);
     assert(tuples.size() == 5);
-    assertOrder(tuples, 0,1,3,4,6);
+    assertOrder(tuples, 0, 1, 3, 4, 6);
 
     //Test the eofTuples
 
@@ -4712,8 +4712,6 @@ public class StreamExpressionTest extends SolrCloudTestCase {
   @Test
   public void testSignificantTermsStream() throws Exception {
 
-    Assume.assumeTrue(!useAlias);
-
     UpdateRequest updateRequest = new UpdateRequest();
     for (int i = 0; i < 5000; i++) {
       updateRequest.add(id, "a"+i, "test_t", "a b c d m l");
@@ -4742,105 +4740,185 @@ public class StreamExpressionTest extends SolrCloudTestCase {
 
     StreamFactory factory = new StreamFactory()
         .withCollectionZkHost("collection1", cluster.getZkServer().getZkAddress())
+        .withDefaultZkHost(cluster.getZkServer().getZkAddress())
         .withFunctionName("significantTerms", SignificantTermsStream.class);
 
-    String significantTerms = "significantTerms(collection1, q=\"id:a*\",  field=\"test_t\", limit=3, minTermLength=1, maxDocFreq=\".5\")";
-    stream = factory.constructStream(significantTerms);
-    tuples = getTuples(stream);
+    StreamContext streamContext = new StreamContext();
+    SolrClientCache cache = new SolrClientCache();
+    streamContext.setSolrClientCache(cache);
+    try {
 
-    assert(tuples.size() == 3);
-    assertTrue(tuples.get(0).get("term").equals("l"));
-    assertTrue(tuples.get(0).getLong("background") == 5000);
-    assertTrue(tuples.get(0).getLong("foreground") == 5000);
+      String significantTerms = "significantTerms(collection1, q=\"id:a*\",  field=\"test_t\", limit=3, minTermLength=1, maxDocFreq=\".5\")";
+      stream = factory.constructStream(significantTerms);
+      stream.setStreamContext(streamContext);
+      tuples = getTuples(stream);
 
-
-    assertTrue(tuples.get(1).get("term").equals("m"));
-    assertTrue(tuples.get(1).getLong("background") == 5500);
-    assertTrue(tuples.get(1).getLong("foreground") == 5000);
-
-    assertTrue(tuples.get(2).get("term").equals("d"));
-    assertTrue(tuples.get(2).getLong("background") == 5600);
-    assertTrue(tuples.get(2).getLong("foreground") == 5000);
-
-    //Test maxDocFreq
-    significantTerms = "significantTerms(collection1, q=\"id:a*\",  field=\"test_t\", limit=3, maxDocFreq=2650, minTermLength=1)";
-    stream = factory.constructStream(significantTerms);
-    tuples = getTuples(stream);
-
-    assert(tuples.size() == 1);
-    assertTrue(tuples.get(0).get("term").equals("l"));
-    assertTrue(tuples.get(0).getLong("background") == 5000);
-    assertTrue(tuples.get(0).getLong("foreground") == 5000);
-
-    //Test maxDocFreq percentage
-
-    significantTerms = "significantTerms(collection1, q=\"id:a*\",  field=\"test_t\", limit=3, maxDocFreq=\".45\", minTermLength=1)";
-    stream = factory.constructStream(significantTerms);
-    tuples = getTuples(stream);
-    assert(tuples.size() == 1);
-    assertTrue(tuples.get(0).get("term").equals("l"));
-    assertTrue(tuples.get(0).getLong("background") == 5000);
-    assertTrue(tuples.get(0).getLong("foreground") == 5000);
+      assert (tuples.size() == 3);
+      assertTrue(tuples.get(0).get("term").equals("l"));
+      assertTrue(tuples.get(0).getLong("background") == 5000);
+      assertTrue(tuples.get(0).getLong("foreground") == 5000);
 
 
-    //Test min doc freq
-    significantTerms = "significantTerms(collection1, q=\"id:a*\",  field=\"test_t\", limit=3, minDocFreq=\"2700\", minTermLength=1, maxDocFreq=\".5\")";
-    stream = factory.constructStream(significantTerms);
-    tuples = getTuples(stream);
+      assertTrue(tuples.get(1).get("term").equals("m"));
+      assertTrue(tuples.get(1).getLong("background") == 5500);
+      assertTrue(tuples.get(1).getLong("foreground") == 5000);
 
-    assert(tuples.size() == 3);
+      assertTrue(tuples.get(2).get("term").equals("d"));
+      assertTrue(tuples.get(2).getLong("background") == 5600);
+      assertTrue(tuples.get(2).getLong("foreground") == 5000);
 
-    assertTrue(tuples.get(0).get("term").equals("m"));
-    assertTrue(tuples.get(0).getLong("background") == 5500);
-    assertTrue(tuples.get(0).getLong("foreground") == 5000);
+      //Test maxDocFreq
+      significantTerms = "significantTerms(collection1, q=\"id:a*\",  field=\"test_t\", limit=3, maxDocFreq=2650, minTermLength=1)";
+      stream = factory.constructStream(significantTerms);
+      stream.setStreamContext(streamContext);
+      tuples = getTuples(stream);
 
-    assertTrue(tuples.get(1).get("term").equals("d"));
-    assertTrue(tuples.get(1).getLong("background") == 5600);
-    assertTrue(tuples.get(1).getLong("foreground") == 5000);
+      assert (tuples.size() == 1);
+      assertTrue(tuples.get(0).get("term").equals("l"));
+      assertTrue(tuples.get(0).getLong("background") == 5000);
+      assertTrue(tuples.get(0).getLong("foreground") == 5000);
 
-    assertTrue(tuples.get(2).get("term").equals("c"));
-    assertTrue(tuples.get(2).getLong("background") == 5900);
-    assertTrue(tuples.get(2).getLong("foreground") == 5000);
+      //Test maxDocFreq percentage
 
-
-    //Test min doc freq percent
-    significantTerms = "significantTerms(collection1, q=\"id:a*\",  field=\"test_t\", limit=3, minDocFreq=\".478\", minTermLength=1, maxDocFreq=\".5\")";
-    stream = factory.constructStream(significantTerms);
-    tuples = getTuples(stream);
-
-    assert(tuples.size() == 1);
-
-    assertTrue(tuples.get(0).get("term").equals("c"));
-    assertTrue(tuples.get(0).getLong("background") == 5900);
-    assertTrue(tuples.get(0).getLong("foreground") == 5000);
+      significantTerms = "significantTerms(collection1, q=\"id:a*\",  field=\"test_t\", limit=3, maxDocFreq=\".45\", minTermLength=1)";
+      stream = factory.constructStream(significantTerms);
+      stream.setStreamContext(streamContext);
+      tuples = getTuples(stream);
+      assert (tuples.size() == 1);
+      assertTrue(tuples.get(0).get("term").equals("l"));
+      assertTrue(tuples.get(0).getLong("background") == 5000);
+      assertTrue(tuples.get(0).getLong("foreground") == 5000);
 
 
-    //Test limit
+      //Test min doc freq
+      significantTerms = "significantTerms(collection1, q=\"id:a*\",  field=\"test_t\", limit=3, minDocFreq=\"2700\", minTermLength=1, maxDocFreq=\".5\")";
+      stream = factory.constructStream(significantTerms);
+      stream.setStreamContext(streamContext);
+      tuples = getTuples(stream);
 
-    significantTerms = "significantTerms(collection1, q=\"id:a*\",  field=\"test_t\", limit=2, minDocFreq=\"2700\", minTermLength=1, maxDocFreq=\".5\")";
-    stream = factory.constructStream(significantTerms);
-    tuples = getTuples(stream);
+      assert (tuples.size() == 3);
 
-    assert(tuples.size() == 2);
+      assertTrue(tuples.get(0).get("term").equals("m"));
+      assertTrue(tuples.get(0).getLong("background") == 5500);
+      assertTrue(tuples.get(0).getLong("foreground") == 5000);
 
-    assertTrue(tuples.get(0).get("term").equals("m"));
-    assertTrue(tuples.get(0).getLong("background") == 5500);
-    assertTrue(tuples.get(0).getLong("foreground") == 5000);
+      assertTrue(tuples.get(1).get("term").equals("d"));
+      assertTrue(tuples.get(1).getLong("background") == 5600);
+      assertTrue(tuples.get(1).getLong("foreground") == 5000);
 
-    assertTrue(tuples.get(1).get("term").equals("d"));
-    assertTrue(tuples.get(1).getLong("background") == 5600);
-    assertTrue(tuples.get(1).getLong("foreground") == 5000);
+      assertTrue(tuples.get(2).get("term").equals("c"));
+      assertTrue(tuples.get(2).getLong("background") == 5900);
+      assertTrue(tuples.get(2).getLong("foreground") == 5000);
 
-    //Test term length
 
-    significantTerms = "significantTerms(collection1, q=\"id:a*\",  field=\"test_t\", limit=2, minDocFreq=\"2700\", minTermLength=2)";
-    stream = factory.constructStream(significantTerms);
-    tuples = getTuples(stream);
-    assert(tuples.size() == 0);
+      //Test min doc freq percent
+      significantTerms = "significantTerms(collection1, q=\"id:a*\",  field=\"test_t\", limit=3, minDocFreq=\".478\", minTermLength=1, maxDocFreq=\".5\")";
+      stream = factory.constructStream(significantTerms);
+      stream.setStreamContext(streamContext);
+      tuples = getTuples(stream);
+
+      assert (tuples.size() == 1);
+
+      assertTrue(tuples.get(0).get("term").equals("c"));
+      assertTrue(tuples.get(0).getLong("background") == 5900);
+      assertTrue(tuples.get(0).getLong("foreground") == 5000);
+
+      //Test limit
+
+      significantTerms = "significantTerms(collection1, q=\"id:a*\",  field=\"test_t\", limit=2, minDocFreq=\"2700\", minTermLength=1, maxDocFreq=\".5\")";
+      stream = factory.constructStream(significantTerms);
+      stream.setStreamContext(streamContext);
+      tuples = getTuples(stream);
+
+      assert (tuples.size() == 2);
+
+      assertTrue(tuples.get(0).get("term").equals("m"));
+      assertTrue(tuples.get(0).getLong("background") == 5500);
+      assertTrue(tuples.get(0).getLong("foreground") == 5000);
+
+      assertTrue(tuples.get(1).get("term").equals("d"));
+      assertTrue(tuples.get(1).getLong("background") == 5600);
+      assertTrue(tuples.get(1).getLong("foreground") == 5000);
+
+      //Test term length
+
+      significantTerms = "significantTerms(collection1, q=\"id:a*\",  field=\"test_t\", limit=2, minDocFreq=\"2700\", minTermLength=2)";
+      stream = factory.constructStream(significantTerms);
+      stream.setStreamContext(streamContext);
+      tuples = getTuples(stream);
+      assert (tuples.size() == 0);
+
+
+      //Test with shards parameter
+      List<String> shardUrls = TupleStream.getShards(cluster.getZkServer().getZkAddress(), COLLECTIONORALIAS, streamContext);
+
+      Map<String, List<String>> shardsMap = new HashMap();
+      shardsMap.put("myCollection", shardUrls);
+      StreamContext context = new StreamContext();
+      context.put("shards", shardsMap);
+      context.setSolrClientCache(cache);
+      significantTerms = "significantTerms(myCollection, q=\"id:a*\",  field=\"test_t\", limit=2, minDocFreq=\"2700\", minTermLength=1, maxDocFreq=\".5\")";
+      stream = factory.constructStream(significantTerms);
+      stream.setStreamContext(context);
+      tuples = getTuples(stream);
+
+      assert (tuples.size() == 2);
+
+      assertTrue(tuples.get(0).get("term").equals("m"));
+      assertTrue(tuples.get(0).getLong("background") == 5500);
+      assertTrue(tuples.get(0).getLong("foreground") == 5000);
+
+      assertTrue(tuples.get(1).get("term").equals("d"));
+      assertTrue(tuples.get(1).getLong("background") == 5600);
+      assertTrue(tuples.get(1).getLong("foreground") == 5000);
+
+      //Execersise the /stream hander
+
+      //Add the shards http parameter for the myCollection
+      StringBuilder buf = new StringBuilder();
+      for (String shardUrl : shardUrls) {
+        if (buf.length() > 0) {
+          buf.append(",");
+        }
+        buf.append(shardUrl);
+      }
+
+      ModifiableSolrParams solrParams = new ModifiableSolrParams();
+      solrParams.add("qt", "/stream");
+      solrParams.add("expr", significantTerms);
+      solrParams.add("myCollection.shards", buf.toString());
+      SolrStream solrStream = new SolrStream(shardUrls.get(0), solrParams);
+      tuples = getTuples(solrStream);
+      assert (tuples.size() == 2);
+
+      assertTrue(tuples.get(0).get("term").equals("m"));
+      assertTrue(tuples.get(0).getLong("background") == 5500);
+      assertTrue(tuples.get(0).getLong("foreground") == 5000);
+
+      assertTrue(tuples.get(1).get("term").equals("d"));
+      assertTrue(tuples.get(1).getLong("background") == 5600);
+      assertTrue(tuples.get(1).getLong("foreground") == 5000);
+
+      //Add a negative test to prove that it cannot find slices if shards parameter is removed
+
+      try {
+        ModifiableSolrParams solrParamsBad = new ModifiableSolrParams();
+        solrParamsBad.add("qt", "/stream");
+        solrParamsBad.add("expr", significantTerms);
+        solrStream = new SolrStream(shardUrls.get(0), solrParamsBad);
+        tuples = getTuples(solrStream);
+        throw new Exception("Exception should have been thrown above");
+      } catch (IOException e) {
+        assertTrue(e.getMessage().contains("Slices not found for myCollection"));
+      }
+    } finally {
+      cache.close();
+    }
+
+
+
 
   }
-
-
 
   @Test
   public void testComplementStream() throws Exception {
@@ -4920,12 +4998,16 @@ public class StreamExpressionTest extends SolrCloudTestCase {
   }
 
   protected List<Tuple> getTuples(TupleStream tupleStream) throws IOException {
-    tupleStream.open();
     List<Tuple> tuples = new ArrayList<Tuple>();
-    for(Tuple t = tupleStream.read(); !t.EOF; t = tupleStream.read()) {
-      tuples.add(t);
+
+    try {
+      tupleStream.open();
+      for (Tuple t = tupleStream.read(); !t.EOF; t = tupleStream.read()) {
+        tuples.add(t);
+      }
+    } finally {
+      tupleStream.close();
     }
-    tupleStream.close();
     return tuples;
   }
   protected boolean assertOrder(List<Tuple> tuples, int... ids) throws Exception {

@@ -74,11 +74,8 @@ public class SignificantTermsStream extends TupleStream implements Expressible{
 
   protected transient SolrClientCache cache;
   protected transient boolean isCloseCache;
-  protected transient CloudSolrClient cloudSolrClient;
-
   protected transient StreamContext streamContext;
   protected ExecutorService executorService;
-
 
   public SignificantTermsStream(String zkHost,
                                  String collectionName,
@@ -168,12 +165,12 @@ public class SignificantTermsStream extends TupleStream implements Expressible{
     String zkHost = null;
     if(null == zkHostExpression){
       zkHost = factory.getCollectionZkHost(collectionName);
-    }
-    else if(zkHostExpression.getParameter() instanceof StreamExpressionValue){
+    } else if(zkHostExpression.getParameter() instanceof StreamExpressionValue) {
       zkHost = ((StreamExpressionValue)zkHostExpression.getParameter()).getValue();
     }
-    if(null == zkHost){
-      throw new IOException(String.format(Locale.ROOT,"invalid expression %s - zkHost not found for collection '%s'",expression,collectionName));
+
+    if(zkHost == null){
+      zkHost = factory.getDefaultZkHost();
     }
 
     // We've got all the required items
@@ -238,45 +235,11 @@ public class SignificantTermsStream extends TupleStream implements Expressible{
       isCloseCache = false;
     }
 
-    this.cloudSolrClient = this.cache.getCloudSolrClient(zkHost);
-    this.executorService = ExecutorUtil.newMDCAwareCachedThreadPool(new SolrjNamedThreadFactory("FeaturesSelectionStream"));
+    this.executorService = ExecutorUtil.newMDCAwareCachedThreadPool(new SolrjNamedThreadFactory("SignificantTermsStream"));
   }
 
   public List<TupleStream> children() {
     return null;
-  }
-
-  private List<String> getShardUrls() throws IOException {
-    try {
-      ZkStateReader zkStateReader = cloudSolrClient.getZkStateReader();
-
-      Collection<Slice> slices = CloudSolrStream.getSlices(this.collection, zkStateReader, false);
-
-      ClusterState clusterState = zkStateReader.getClusterState();
-      Set<String> liveNodes = clusterState.getLiveNodes();
-
-      List<String> baseUrls = new ArrayList<>();
-      for(Slice slice : slices) {
-        Collection<Replica> replicas = slice.getReplicas();
-        List<Replica> shuffler = new ArrayList<>();
-        for(Replica replica : replicas) {
-          if(replica.getState() == Replica.State.ACTIVE && liveNodes.contains(replica.getNodeName())) {
-            shuffler.add(replica);
-          }
-        }
-
-        Collections.shuffle(shuffler, new Random());
-        Replica rep = shuffler.get(0);
-        ZkCoreNodeProps zkProps = new ZkCoreNodeProps(rep);
-        String url = zkProps.getCoreUrl();
-        baseUrls.add(url);
-      }
-
-      return baseUrls;
-
-    } catch (Exception e) {
-      throw new IOException(e);
-    }
   }
 
   private List<Future<NamedList>> callShards(List<String> baseUrls) throws IOException {
@@ -326,7 +289,7 @@ public class SignificantTermsStream extends TupleStream implements Expressible{
         Map<String, int[]> mergeFreqs = new HashMap<>();
         long numDocs = 0;
         long resultCount = 0;
-        for (Future<NamedList> getTopTermsCall : callShards(getShardUrls())) {
+        for (Future<NamedList> getTopTermsCall : callShards(getShards(zkHost, collection, streamContext))) {
           NamedList resp = getTopTermsCall.get();
 
           List<String> terms = (List<String>)resp.get("sterms");

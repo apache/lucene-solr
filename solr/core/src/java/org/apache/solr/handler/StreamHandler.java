@@ -18,6 +18,7 @@ package org.apache.solr.handler;
 
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
@@ -246,6 +247,7 @@ public class StreamHandler extends RequestHandlerBase implements SolrCoreAware, 
     int worker = params.getInt("workerID", 0);
     int numWorkers = params.getInt("numWorkers", 1);
     StreamContext context = new StreamContext();
+    context.put("shards", getCollectionShards(params));
     context.workerID = worker;
     context.numWorkers = numWorkers;
     context.setSolrClientCache(clientCache);
@@ -507,6 +509,31 @@ public class StreamHandler extends RequestHandlerBase implements SolrCoreAware, 
         tuple.fields.put("RESPONSE_TIME", totalTime);
       }
       return tuple;
+    }
+  }
+
+  private Map<String, List<String>> getCollectionShards(SolrParams params) {
+
+    Map<String, List<String>> collectionShards = new HashMap();
+    Iterator<String> paramsIt = params.getParameterNamesIterator();
+    while(paramsIt.hasNext()) {
+      String param = paramsIt.next();
+      if(param.indexOf(".shards") > -1) {
+        String collection = param.split("\\.")[0];
+        String shardString = params.get(param);
+        String[] shards = shardString.split(",");
+        List<String> shardList = new ArrayList();
+        for(String shard : shards) {
+          shardList.add(shard);
+        }
+        collectionShards.put(collection, shardList);
+      }
+    }
+
+    if(collectionShards.size() > 0) {
+      return collectionShards;
+    } else {
+      return null;
     }
   }
 }
