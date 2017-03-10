@@ -117,6 +117,12 @@ API Changes
   instead of once all shard responses are present. (Simon Willnauer,
   Mike McCandless)
 
+* LUCENE-7700: A cleanup of merge throughput control logic. Refactored all the
+  code previously scattered throughout the IndexWriter and 
+  ConcurrentMergeScheduler into a more accessible set of public methods (see 
+  MergePolicy.OneMergeProgress, MergeScheduler.wrapForMerge and 
+  OneMerge.mergeInit). (Dawid Weiss, Mike McCandless).
+
 * LUCENE-7734: FieldType's copy constructor was widened to accept any IndexableFieldType.
   (David Smiley)
 
