@@ -117,6 +117,9 @@ API Changes
   instead of once all shard responses are present. (Simon Willnauer,
   Mike McCandless)
 
+* LUCENE-7734: FieldType's copy constructor was widened to accept any IndexableFieldType.
+  (David Smiley)
+
 New Features
 
 * LUCENE-7449: Add CROSSES relation support to RangeFieldQuery. (Nick Knize)

@@ -44,7 +44,7 @@ public class FieldType implements IndexableFieldType  {
   /**
    * Create a new mutable FieldType with all of the properties from <code>ref</code>
    */
-  public FieldType(FieldType ref) {
+  public FieldType(IndexableFieldType ref) {
     this.stored = ref.stored();
     this.tokenized = ref.tokenized();
     this.storeTermVectors = ref.storeTermVectors();
@@ -54,8 +54,8 @@ public class FieldType implements IndexableFieldType  {
     this.omitNorms = ref.omitNorms();
     this.indexOptions = ref.indexOptions();
     this.docValuesType = ref.docValuesType();
-    this.dimensionCount = ref.dimensionCount;
-    this.dimensionNumBytes = ref.dimensionNumBytes;
+    this.dimensionCount = ref.pointDimensionCount();
+    this.dimensionNumBytes = ref.pointNumBytes();
     // Do not copy frozen!
   }
   
