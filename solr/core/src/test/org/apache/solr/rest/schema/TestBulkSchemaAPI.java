@@ -69,7 +69,7 @@ public class TestBulkSchemaAPI extends RestTestBase {
       restTestHarness.setServerProvider(new RESTfulServerProvider() {
         @Override
         public String getBaseURL() {
-          return jetty.getBaseUrl().toString() + "/v2/cores/" + DEFAULT_TEST_CORENAME;
+          return jetty.getBaseUrl().toString() + "/____v2/cores/" + DEFAULT_TEST_CORENAME;
         }
       });
     }

@@ -388,7 +388,7 @@ public class SolrDispatchFilter extends BaseSolrFilter {
       path += request.getPathInfo();
     }
 
-    if (isV2Enabled && (path.startsWith("/v2/") || path.equals("/v2"))) {
+    if (isV2Enabled && (path.startsWith("/____v2/") || path.equals("/____v2"))) {
       return new V2HttpCall(this, cores, request, response, false);
     } else {
       return new HttpSolrCall(this, cores, request, response, retry);

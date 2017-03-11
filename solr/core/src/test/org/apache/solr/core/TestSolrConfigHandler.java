@@ -86,7 +86,7 @@ public class TestSolrConfigHandler extends RestTestBase {
         "/solr", true, extraServlets);
     if (random().nextBoolean()) {
       log.info("These tests are run with V2 API");
-      restTestHarness.setServerProvider(() -> jetty.getBaseUrl().toString() + "/v2/cores/" + DEFAULT_TEST_CORENAME);
+      restTestHarness.setServerProvider(() -> jetty.getBaseUrl().toString() + "/____v2/cores/" + DEFAULT_TEST_CORENAME);
     }
   }
 
@@ -201,7 +201,7 @@ public class TestSolrConfigHandler extends RestTestBase {
         10);
 
     payload = "{\n" +
-        "'update-requesthandler' : { 'name' : '/x', 'class': 'org.apache.solr.handler.DumpRequestHandler' ,registerPath :'/,/v2', " +
+        "'update-requesthandler' : { 'name' : '/x', 'class': 'org.apache.solr.handler.DumpRequestHandler' ,registerPath :'/solr,/v2', " +
         " 'startup' : 'lazy' , 'a':'b' , 'defaults': {'def_a':'def A val', 'multival':['a','b','c']}}\n" +
         "}";
     runConfigCommand(writeHarness, "/config?wt=json", payload);
@@ -442,7 +442,7 @@ public class TestSolrConfigHandler extends RestTestBase {
     payload = "{\n" +
         "    'add-requesthandler': {\n" +
         "        name : '/dump100',\n" +
-        "       registerPath :'/,/v2',"+
+        "       registerPath :'/solr,/v2',"+
     "        class : 'org.apache.solr.handler.DumpRequestHandler'," +
         "        suggester: [{name: s1,lookupImpl: FuzzyLookupFactory, dictionaryImpl : DocumentDictionaryFactory}," +
         "                    {name: s2,lookupImpl: FuzzyLookupFactory , dictionaryImpl : DocumentExpressionDictionaryFactory}]" +
@@ -467,7 +467,7 @@ public class TestSolrConfigHandler extends RestTestBase {
     payload = "{\n" +
         "'add-requesthandler' : { 'name' : '/dump101', 'class': " +
         "'" + CacheTest.class.getName() + "', " +
-        "    registerPath :'/,/v2'"+
+        "    registerPath :'/solr,/v2'"+
         ", 'startup' : 'lazy'}\n" +
         "}";
     runConfigCommand(writeHarness, "/config?wt=json", payload);
@@ -589,7 +589,7 @@ public class TestSolrConfigHandler extends RestTestBase {
         10);
 
     payload = "{\n" +
-        "'create-requesthandler' : { 'name' : '/d', registerPath :'/,/v2' , 'class': 'org.apache.solr.handler.DumpRequestHandler' }\n" +
+        "'create-requesthandler' : { 'name' : '/d', registerPath :'/solr,/v2' , 'class': 'org.apache.solr.handler.DumpRequestHandler' }\n" +
         "}";
 
     TestSolrConfigHandler.runConfigCommand(harness, "/config?wt=json", payload);
@@ -619,7 +619,7 @@ public class TestSolrConfigHandler extends RestTestBase {
         5);
 
     payload = "{\n" +
-        "'create-requesthandler' : { 'name' : '/dump1', registerPath :'/,/v2' , 'class': 'org.apache.solr.handler.DumpRequestHandler', 'useParams':'x' }\n" +
+        "'create-requesthandler' : { 'name' : '/dump1', registerPath :'/solr,/v2' , 'class': 'org.apache.solr.handler.DumpRequestHandler', 'useParams':'x' }\n" +
         "}";
 
     TestSolrConfigHandler.runConfigCommand(harness, "/config?wt=json", payload);
@@ -794,7 +794,7 @@ public class TestSolrConfigHandler extends RestTestBase {
         "org.apache.solr.handler.DumpRequestHandler",
         10);
     RESTfulServerProvider oldProvider = restTestHarness.getServerProvider();
-    restTestHarness.setServerProvider(() -> jetty.getBaseUrl().toString() + "/v2/cores/" + DEFAULT_TEST_CORENAME);
+    restTestHarness.setServerProvider(() -> jetty.getBaseUrl().toString() + "/____v2/cores/" + DEFAULT_TEST_CORENAME);
 
     Map rsp = TestSolrConfigHandler.testForResponseElement(
         harness,

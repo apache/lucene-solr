@@ -168,7 +168,7 @@ public class RulesTest extends SolrCloudTestCase {
   public void testInvokeApi() throws Exception {
     JettySolrRunner jetty = cluster.getRandomJetty(random());
     try (SolrClient client = getHttpSolrClient(jetty.getBaseUrl().toString())) {
-      GenericSolrRequest req =  new GenericSolrRequest(GET, "/v2/node/invoke", new ModifiableSolrParams()
+      GenericSolrRequest req =  new GenericSolrRequest(GET, "/____v2/node/invoke", new ModifiableSolrParams()
           .add("class", ImplicitSnitch.class.getName())
           .add("cores", "1")
           .add("freedisk", "1")

@@ -164,6 +164,8 @@ New Features
 
 * SOLR-9986: Implement DatePointField (Cao Manh Dat, Tomás Fernández Löbbe)
 
+* SOLR-8045: Deploy V2 API at /v2 instead of /solr/v2 (Cao Manh Dat, Noble Paul)
+
 Bug Fixes
 ----------------------
 
