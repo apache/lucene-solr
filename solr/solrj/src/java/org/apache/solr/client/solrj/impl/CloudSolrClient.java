@@ -1047,8 +1047,8 @@ public class CloudSolrClient extends SolrClient {
       CONFIGSETS_HANDLER_PATH,
       AUTHC_PATH,
       AUTHZ_PATH,
-      "/v2/cluster/security/authentication",
-      "/v2/cluster/security/authorization"
+      "/____v2/cluster/security/authentication",
+      "/____v2/cluster/security/authorization"
       ));
 
   /**
