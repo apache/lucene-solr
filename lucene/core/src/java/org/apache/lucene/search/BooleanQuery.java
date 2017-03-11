@@ -183,7 +183,6 @@ public class BooleanQuery extends Query implements Iterable<BooleanClause> {
 
   private BooleanQuery rewriteNoScoring() {
     BooleanQuery.Builder newQuery = new BooleanQuery.Builder();
-    // ignore disableCoord, which only matters for scores
     newQuery.setMinimumNumberShouldMatch(getMinimumNumberShouldMatch());
     for (BooleanClause clause : clauses) {
       if (clause.getOccur() == Occur.MUST) {
