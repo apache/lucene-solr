@@ -41,6 +41,9 @@ API Changes
   index-time scoring factors should be indexed into a doc value field and
   combined at query time using eg. FunctionScoreQuery. (Adrien Grand)
 
+* LUCENE-7734: FieldType's copy constructor was widened to accept any IndexableFieldType.
+  (David Smiley)
+
 Bug Fixes
 
 * LUCENE-7626: IndexWriter will no longer accept broken token offsets
