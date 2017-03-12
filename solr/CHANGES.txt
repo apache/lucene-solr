@@ -166,6 +166,9 @@ New Features
 
 * SOLR-8045: Deploy V2 API at /v2 instead of /solr/v2 (Cao Manh Dat, Noble Paul)
 
+* SOLR-10039: New LatLonPointSpatialField replacement for LatLonType (and some uses of RPT).  Multi-value capable
+  indexed geo lat-lon points, query by rect or circle.  Efficient distance sorting/boosting too. (David Smiley)
+
 Bug Fixes
 ----------------------
 
