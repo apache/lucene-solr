@@ -171,8 +171,8 @@ abstract class RangeFieldQuery extends Query {
           // if query crosses, docs need to be further scrutinized
           byte[] range = getInternalRange(values.getMinPackedValue(), values.getMaxPackedValue());
           // if the internal node is not equal and not contained by the query, all docs do not match
-          if (!Arrays.equals(ranges, range)
-              && (!target.contains(range) || queryType != QueryType.WITHIN)) {
+          if (queryType == QueryType.CROSSES || (!Arrays.equals(ranges, range)
+              && (target.contains(range) == false || queryType != QueryType.WITHIN))) {
             allDocsMatch = false;
           }
         } else {
