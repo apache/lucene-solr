@@ -225,7 +225,7 @@ public abstract class AbstractSpatialFieldType<T extends SpatialStrategy> extend
     }
 
     List<IndexableField> result = new ArrayList<>();
-    if (field.indexed()) {
+    if (field.indexed() || field.hasDocValues()) {
       T strategy = getStrategy(field.getName());
       result.addAll(Arrays.asList(strategy.createIndexableFields(shape)));
     }
