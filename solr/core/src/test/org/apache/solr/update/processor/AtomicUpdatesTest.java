@@ -1204,7 +1204,6 @@ public class AtomicUpdatesTest extends SolrTestCaseJ4 {
     
   }
 
-  @AwaitsFix(bugUrl="https://issues.apache.org/jira/browse/SOLR-9838")
   public void testAtomicUpdateOfFieldsWithDefaultValue() {
     // both fields have the same default value (42)
     for (String fieldToUpdate : Arrays.asList("intDefault", "intDvoDefault")) {
@@ -1254,7 +1253,7 @@ public class AtomicUpdatesTest extends SolrTestCaseJ4 {
               , "count(//doc/*)=6"
               );
       // do atomic update
-      assertU(adoc(sdoc("id", "7", fieldToUpdate, ImmutableMap.of("inc", -555))));
+      assertU(adoc(sdoc("id", "8", fieldToUpdate, ImmutableMap.of("inc", -555))));
       assertQ(fieldToUpdate + ": RTG after atomic update"
               , req("qt", "/get", "id", "8")
               , "count(//doc)=1"

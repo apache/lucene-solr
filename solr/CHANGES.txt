@@ -227,6 +227,8 @@ Bug Fixes
 
 * SOLR-10226: add back "totalTime" metric to all handlers. See also the back-compat note. (ab)
 
+* SOLR-9838: "inc" atomic update doesn't respect default field value (hoss, Amrit Sarkar, Ishan Chattopadhyaya)
+
 Optimizations
 ----------------------
 
