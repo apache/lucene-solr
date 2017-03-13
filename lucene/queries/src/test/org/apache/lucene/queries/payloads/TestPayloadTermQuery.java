@@ -261,7 +261,7 @@ public class TestPayloadTermQuery extends LuceneTestCase {
     @Override
     public float scorePayload(int docId, int start, int end, BytesRef payload) {
       //we know it is size 4 here, so ignore the offset/length
-      return payload.bytes[payload.offset];
+      return payload == null ? 1F : payload.bytes[payload.offset];
     }
 
     //!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!

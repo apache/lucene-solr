@@ -190,8 +190,6 @@ public class PayloadScoreQuery extends SpanQuery {
     @Override
     public void collectLeaf(PostingsEnum postings, int position, Term term) throws IOException {
       BytesRef payload = postings.getPayload();
-      if (payload == null)
-        return;
       float payloadFactor = docScorer.computePayloadFactor(docID(), in.startPosition(), in.endPosition(), payload);
       payloadScore = function.currentScore(docID(), getField(), in.startPosition(), in.endPosition(),
                                             payloadsSeen, payloadScore, payloadFactor);

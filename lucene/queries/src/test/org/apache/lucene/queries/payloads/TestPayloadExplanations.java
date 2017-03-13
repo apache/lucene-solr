@@ -43,7 +43,7 @@ public class TestPayloadExplanations extends BaseExplanationTestCase {
     searcher.setSimilarity(new ClassicSimilarity() {
       @Override
       public float scorePayload(int doc, int start, int end, BytesRef payload) {
-        return 1 + (payload.hashCode() % 10);
+        return payload == null ? 1F : 1 + (payload.hashCode() % 10);
       }
     });
   }
