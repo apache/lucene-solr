@@ -453,6 +453,7 @@ class SolrTable extends AbstractQueryableTable implements TranslatableTable {
 
     params.set(CommonParams.FL, fl);
     params.set(CommonParams.Q, query);
+    params.set(CommonParams.WT, CommonParams.JAVABIN);
     //Always use the /export handler for Group By Queries because it requires exporting full result sets.
     params.set(CommonParams.QT, "/export");
 
@@ -691,6 +692,7 @@ class SolrTable extends AbstractQueryableTable implements TranslatableTable {
 
     params.set(CommonParams.FL, fl);
     params.set(CommonParams.Q, query);
+    params.set(CommonParams.WT, CommonParams.JAVABIN);
     //Always use the /export handler for Distinct Queries because it requires exporting full result sets.
     params.set(CommonParams.QT, "/export");
 
