@@ -17,6 +17,8 @@
 
 package org.apache.solr.handler.admin;
 
+import java.util.Map;
+
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.util.NamedList;
@@ -48,13 +50,14 @@ public class MetricsHandlerTest extends SolrTestCaseJ4 {
     NamedList nl = (NamedList) values.get("solr.core.collection1");
     assertNotNull(nl);
     assertNotNull(nl.get("SEARCHER.new.errors")); // counter type
-    assertNotNull(((NamedList) nl.get("SEARCHER.new.errors")).get("count"));
-    assertEquals(0L, ((NamedList) nl.get("SEARCHER.new.errors")).get("count"));
+    assertNotNull(((Map) nl.get("SEARCHER.new.errors")).get("count"));
+    // response wasn't serialized so we get here whatever MetricUtils produced instead of NamedList
+    assertEquals(0L, ((Map) nl.get("SEARCHER.new.errors")).get("count"));
     nl = (NamedList) values.get("solr.node");
     assertNotNull(nl.get("CONTAINER.cores.loaded")); // int gauge
-    assertEquals(1, ((NamedList) nl.get("CONTAINER.cores.loaded")).get("value"));
+    assertEquals(1, ((Map) nl.get("CONTAINER.cores.loaded")).get("value"));
     assertNotNull(nl.get("ADMIN./admin/authorization.clientErrors")); // timer type
-    assertEquals(5, ((NamedList) nl.get("ADMIN./admin/authorization.clientErrors")).size());
+    assertEquals(5, ((Map) nl.get("ADMIN./admin/authorization.clientErrors")).size());
 
     resp = new SolrQueryResponse();
     handler.handleRequestBody(req(CommonParams.QT, "/admin/metrics", CommonParams.WT, "json", "group", "jvm,jetty"), resp);

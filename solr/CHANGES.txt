@@ -235,6 +235,8 @@ Bug Fixes
 
 * SOLR-9838: "inc" atomic update doesn't respect default field value (hoss, Amrit Sarkar, Ishan Chattopadhyaya)
 
+* SOLR-10269: MetricsHandler JSON output incorrect. (ab)
+
 Optimizations
 ----------------------
 
