@@ -173,6 +173,8 @@ New Features
   However, if there is a leader election while this request is in transit, the versions may not be returned from that
   shard. (Boris Naguet, Ishan Chattopadhyaya)
 
+* SOLR-9045: Make RecoveryStrategy settings configurable. (Christine Poerschke)
+
 Bug Fixes
 ----------------------
 
