@@ -49,6 +49,7 @@ import org.apache.solr.client.solrj.response.RequestStatusState;
 import org.apache.solr.client.solrj.response.UpdateResponse;
 import org.apache.solr.cloud.AbstractDistribZkTestBase;
 import org.apache.solr.cloud.SolrCloudTestCase;
+import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.SolrDocumentList;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrInputDocument;
@@ -61,6 +62,7 @@ import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.ShardParams;
+import org.apache.solr.common.params.UpdateParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.handler.admin.CollectionsHandler;
@@ -633,6 +635,52 @@ public class CloudSolrClientTest extends SolrCloudTestCase {
     }
   }
 
+  @Test
+  public void testVersionsAreReturned() throws Exception {
+    
+    // assert that "adds" are returned
+    UpdateRequest updateRequest = new UpdateRequest()
+        .add("id", "1", "a_t", "hello1")
+        .add("id", "2", "a_t", "hello2");
+    updateRequest.setParam(UpdateParams.VERSIONS, Boolean.TRUE.toString());
+
+    NamedList<Object> response = updateRequest.commit(cluster.getSolrClient(), COLLECTION).getResponse();
+    Object addsObject = response.get("adds");
+    
+    assertNotNull("There must be a adds parameter", addsObject);
+    assertTrue(addsObject instanceof NamedList<?>);
+    NamedList<?> adds = (NamedList<?>) addsObject;
+    assertEquals("There must be 2 versions (one per doc)", 2, adds.size());
+
+    Map<String, Long> versions = new HashMap<>();
+    Object object = adds.get("1");
+    assertNotNull("There must be a version for id 1", object);
+    assertTrue("Version for id 1 must be a long", object instanceof Long);
+    versions.put("1", (Long) object);
+
+    object = adds.get("2");
+    assertNotNull("There must be a version for id 2", object);
+    assertTrue("Version for id 2 must be a long", object instanceof Long);
+    versions.put("2", (Long) object);
+
+    QueryResponse resp = cluster.getSolrClient().query(COLLECTION, new SolrQuery("*:*"));
+    assertEquals("There should be one document because overwrite=true", 2, resp.getResults().getNumFound());
+
+    for (SolrDocument doc : resp.getResults()) {
+      Long version = versions.get(doc.getFieldValue("id"));
+      assertEquals("Version on add must match _version_ field", version, doc.getFieldValue("_version_"));
+    }
+
+    // assert that "deletes" are returned
+    UpdateRequest deleteRequest = new UpdateRequest().deleteById("1");
+    deleteRequest.setParam(UpdateParams.VERSIONS, Boolean.TRUE.toString());
+    response = deleteRequest.commit(cluster.getSolrClient(), COLLECTION).getResponse();
+    Object deletesObject = response.get("deletes");
+    assertNotNull("There must be a deletes parameter", deletesObject);
+    NamedList deletes = (NamedList) deletesObject;
+    assertEquals("There must be 1 version", 1, deletes.size());
+  }
+  
   private static void checkSingleServer(NamedList<Object> response) {
     final CloudSolrClient.RouteResponse rr = (CloudSolrClient.RouteResponse) response;
     final Map<String,LBHttpSolrClient.Req> routes = rr.getRoutes();

@@ -903,7 +903,10 @@ public class CloudSolrClient extends SolrClient {
     // TolerantUpdateProcessor
     List<SimpleOrderedMap<String>> toleratedErrors = null; 
     int maxToleratedErrors = Integer.MAX_VALUE;
-      
+
+    // For "adds", "deletes", "deleteByQuery" etc.
+    Map<String, NamedList> versions = new HashMap<>();
+
     for(int i=0; i<response.size(); i++) {
       NamedList shardResponse = (NamedList)response.getVal(i);
       NamedList header = (NamedList)shardResponse.get("responseHeader");      
@@ -935,6 +938,15 @@ public class CloudSolrClient extends SolrClient {
         }
         for (SimpleOrderedMap<String> err : shardTolerantErrors) {
           toleratedErrors.add(err);
+        }
+      }
+      for (String updateType: Arrays.asList("adds", "deletes", "deleteByQuery")) {
+        Object obj = shardResponse.get(updateType);
+        if (obj instanceof NamedList) {
+          NamedList versionsList = versions.containsKey(updateType) ?
+              versions.get(updateType): new NamedList();
+          versionsList.addAll((NamedList)obj);
+          versions.put(updateType, versionsList);
         }
       }
     }
@@ -970,6 +982,9 @@ public class CloudSolrClient extends SolrClient {
         toThrow.setMetadata(metadata);
         throw toThrow;
       }
+    }
+    for (String updateType: versions.keySet()) {
+      condensed.add(updateType, versions.get(updateType));
     }
     condensed.add("responseHeader", cheader);
     return condensed;
