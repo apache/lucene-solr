@@ -330,22 +330,14 @@ class SolrTable extends AbstractQueryableTable implements TranslatableTable {
 
   private String getFields(Set<String> fieldSet) {
     StringBuilder buf = new StringBuilder();
-    boolean appendVersion = true;
     for(String field : fieldSet) {
 
       if(buf.length() > 0) {
         buf.append(",");
       }
 
-      if(field.equals("_version_")) {
-        appendVersion = false;
-      }
 
       buf.append(field);
-    }
-
-    if(appendVersion){
-      buf.append(",_version_");
     }
 
     return buf.toString();
