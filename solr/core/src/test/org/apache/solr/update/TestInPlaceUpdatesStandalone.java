@@ -32,6 +32,8 @@ import java.util.Random;
 import java.util.Set;
 
 import org.apache.lucene.index.FieldInfo;
+import org.apache.lucene.index.IndexWriter;
+import org.apache.lucene.index.NoMergePolicy;
 import org.apache.lucene.util.TestUtil;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.SolrClient;
@@ -41,6 +43,7 @@ import org.apache.solr.common.SolrDocumentList;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.SolrInputField;
+import org.apache.solr.index.NoMergePolicyFactory;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.update.processor.DistributedUpdateProcessor;
 import org.apache.solr.schema.IndexSchema;
@@ -49,6 +52,7 @@ import org.apache.solr.search.SolrIndexSearcher;
 import org.apache.solr.update.processor.AtomicUpdateDocumentMerger;
 import org.apache.solr.util.RefCounted;
 import org.junit.After;
+import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -67,6 +71,14 @@ public class TestInPlaceUpdatesStandalone extends SolrTestCaseJ4 {
     System.setProperty("solr.tests.floatClassName", random().nextBoolean()? "TrieFloatField": "FloatPointField");
     System.setProperty("solr.tests.doubleClassName", random().nextBoolean()? "TrieDoubleField": "DoublePointField");
 
+    // we need consistent segments that aren't re-ordered on merge because we're
+    // asserting inplace updates happen by checking the internal [docid]
+    systemSetPropertySolrTestsMergePolicyFactory(NoMergePolicyFactory.class.getName());
+
+    // HACK: Don't use a RandomMergePolicy, but only use the mergePolicyFactory that we've just set
+    System.setProperty(SYSTEM_PROPERTY_SOLR_TESTS_USEMERGEPOLICYFACTORY, "true");
+    System.setProperty(SYSTEM_PROPERTY_SOLR_TESTS_USEMERGEPOLICY, "false");
+
     initCore("solrconfig-tlog.xml", "schema-inplace-updates.xml");
 
     // sanity check that autocommits are disabled
@@ -74,6 +86,16 @@ public class TestInPlaceUpdatesStandalone extends SolrTestCaseJ4 {
     assertEquals(-1, h.getCore().getSolrConfig().getUpdateHandlerInfo().autoSoftCommmitMaxTime);
     assertEquals(-1, h.getCore().getSolrConfig().getUpdateHandlerInfo().autoCommmitMaxDocs);
     assertEquals(-1, h.getCore().getSolrConfig().getUpdateHandlerInfo().autoSoftCommmitMaxDocs);
+
+    // assert that NoMergePolicy was chosen
+    RefCounted<IndexWriter> iw = h.getCore().getSolrCoreState().getIndexWriter(h.getCore());
+    try {
+      IndexWriter writer = iw.get();
+      assertTrue("Actual merge policy is: " + writer.getConfig().getMergePolicy(),
+          writer.getConfig().getMergePolicy() instanceof NoMergePolicy); 
+    } finally {
+      iw.decref();
+    }
 
     // validate that the schema was not changed to an unexpected state
     IndexSchema schema = h.getCore().getLatestSchema();
@@ -96,6 +118,11 @@ public class TestInPlaceUpdatesStandalone extends SolrTestCaseJ4 {
 
     // Don't close this client, it would shutdown the CoreContainer
     client = new EmbeddedSolrServer(h.getCoreContainer(), h.coreName);
+  }
+
+  @AfterClass
+  public static void afterClass() {
+    client = null;
   }
 
   @After
