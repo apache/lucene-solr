@@ -17,7 +17,6 @@
 
 package org.apache.solr.schema;
 
-import java.lang.invoke.MethodHandles;
 import java.time.Instant;
 import java.util.Collection;
 import java.util.Date;
@@ -25,7 +24,6 @@ import java.util.Date;
 import org.apache.lucene.document.LongPoint;
 import org.apache.lucene.document.StoredField;
 import org.apache.lucene.index.IndexableField;
-import org.apache.lucene.legacy.LegacyNumericType;
 import org.apache.lucene.queries.function.ValueSource;
 import org.apache.lucene.queries.function.valuesource.LongFieldSource;
 import org.apache.lucene.queries.function.valuesource.MultiValuedLongFieldSource;
@@ -39,12 +37,8 @@ import org.apache.lucene.util.mutable.MutableValueLong;
 import org.apache.solr.search.QParser;
 import org.apache.solr.uninverting.UninvertingReader;
 import org.apache.solr.util.DateMathParser;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 public class DatePointField extends PointField implements DateValueFieldType {
-
-  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   public DatePointField() {
     type = NumberType.DATE;
@@ -162,11 +156,6 @@ public class DatePointField extends PointField implements DateValueFieldType {
   @Override
   protected ValueSource getSingleValueSource(SortedNumericSelector.Type choice, SchemaField field) {
     return new MultiValuedLongFieldSource(field.getName(), choice);
-  }
-
-  @Override
-  public LegacyNumericType getNumericType() {
-    return LegacyNumericType.LONG;
   }
 
   @Override

@@ -39,7 +39,6 @@ import org.apache.lucene.document.Field;
 import org.apache.lucene.document.SortedSetDocValuesField;
 import org.apache.lucene.index.IndexableField;
 import org.apache.lucene.index.Term;
-import org.apache.lucene.legacy.LegacyNumericType;
 import org.apache.lucene.queries.function.ValueSource;
 import org.apache.lucene.search.BooleanClause;
 import org.apache.lucene.search.BooleanQuery;
@@ -610,16 +609,6 @@ public abstract class FieldType extends FieldProperties {
     return similarityFactory;
   }
 
-
-  /** Return the numeric type of this field, or null if this field is not a
-   *  numeric field. 
-   *  @deprecated Please use {@link FieldType#getNumberType()} instead
-   */
-  @Deprecated
-  public LegacyNumericType getNumericType() {
-    return null;
-  }
-  
   /**
    * Return the numeric type of this field, or null if this field is not a
    * numeric field. 

@@ -50,6 +50,8 @@ Upgrading from Solr 6.x
   factors should be indexed in a separate field and combined with the query
   score using a function query.
 
+* Deprecated method getNumericType() has been removed from FieldType. Use getNumberType() instead
+
 New Features
 ----------------------
 * SOLR-9857, SOLR-9858: Collect aggregated metrics from nodes and shard leaders in overseer. (ab)
@@ -80,6 +82,8 @@ Optimizations
   (yonik)
 
 Other Changes
+* SOLR-10236: Removed FieldType.getNumericType(). Use getNumberType() instead. (Tomás Fernández Löbbe)
+
 ----------------------
 
 ==================  6.5.0 ==================

@@ -337,23 +337,6 @@ public class TrieField extends NumericFieldType {
   }
 
   @Override
-  public LegacyNumericType getNumericType() {
-    switch (type) {
-      case INTEGER:
-        return LegacyNumericType.INT;
-      case LONG:
-      case DATE:
-        return LegacyNumericType.LONG;
-      case FLOAT:
-        return LegacyNumericType.FLOAT;
-      case DOUBLE:
-        return LegacyNumericType.DOUBLE;
-      default:
-        throw new AssertionError();
-    }
-  }
-
-  @Override
   public Query getRangeQuery(QParser parser, SchemaField field, String min, String max, boolean minInclusive, boolean maxInclusive) {
     if (field.multiValued() && field.hasDocValues() && !field.indexed()) {
       // for the multi-valued dv-case, the default rangeimpl over toInternal is correct

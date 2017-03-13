@@ -17,13 +17,11 @@
 
 package org.apache.solr.schema;
 
-import java.lang.invoke.MethodHandles;
 import java.util.Collection;
 
 import org.apache.lucene.document.IntPoint;
 import org.apache.lucene.document.StoredField;
 import org.apache.lucene.index.IndexableField;
-import org.apache.lucene.legacy.LegacyNumericType;
 import org.apache.lucene.queries.function.ValueSource;
 import org.apache.lucene.queries.function.valuesource.IntFieldSource;
 import org.apache.lucene.queries.function.valuesource.MultiValuedIntFieldSource;
@@ -34,8 +32,6 @@ import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.BytesRefBuilder;
 import org.apache.solr.search.QParser;
 import org.apache.solr.uninverting.UninvertingReader.Type;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  * {@code PointField} implementation for {@code Integer} values.
@@ -43,8 +39,6 @@ import org.slf4j.LoggerFactory;
  * @see IntPoint
  */
 public class IntPointField extends PointField implements IntValueFieldType {
-
-  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   public IntPointField() {
     type = NumberType.INTEGER;
@@ -161,11 +155,6 @@ public class IntPointField extends PointField implements IntValueFieldType {
   public ValueSource getValueSource(SchemaField field, QParser qparser) {
     field.checkFieldCacheSource();
     return new IntFieldSource(field.getName());
-  }
-
-  @Override
-  public LegacyNumericType getNumericType() {
-    return LegacyNumericType.INT;
   }
 
   @Override

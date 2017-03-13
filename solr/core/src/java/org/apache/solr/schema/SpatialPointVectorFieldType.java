@@ -21,7 +21,6 @@ import java.util.List;
 import java.util.Map;
 
 import org.apache.lucene.legacy.LegacyFieldType;
-import org.apache.lucene.legacy.LegacyNumericType;
 import org.apache.lucene.spatial.vector.PointVectorStrategy;
 
 /**
@@ -79,12 +78,6 @@ public class SpatialPointVectorFieldType extends AbstractSpatialFieldType<PointV
     }
   }
 
-  @Override
-  @Deprecated
-  public LegacyNumericType getNumericType() {
-    return LegacyNumericType.DOUBLE;
-  }
-  
   @Override
   public NumberType getNumberType() {
     return NumberType.DOUBLE;

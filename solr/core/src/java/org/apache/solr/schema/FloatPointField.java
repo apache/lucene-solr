@@ -17,14 +17,12 @@
 
 package org.apache.solr.schema;
 
-import java.lang.invoke.MethodHandles;
 import java.util.Collection;
 
 import org.apache.lucene.document.FloatPoint;
 import org.apache.lucene.document.StoredField;
 import org.apache.lucene.index.DocValuesType;
 import org.apache.lucene.index.IndexableField;
-import org.apache.lucene.legacy.LegacyNumericType;
 import org.apache.lucene.queries.function.ValueSource;
 import org.apache.lucene.queries.function.valuesource.FloatFieldSource;
 import org.apache.lucene.queries.function.valuesource.MultiValuedFloatFieldSource;
@@ -36,8 +34,6 @@ import org.apache.lucene.util.BytesRefBuilder;
 import org.apache.lucene.util.NumericUtils;
 import org.apache.solr.search.QParser;
 import org.apache.solr.uninverting.UninvertingReader.Type;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  * {@code PointField} implementation for {@code Float} values.
@@ -45,8 +41,6 @@ import org.slf4j.LoggerFactory;
  * @see FloatPoint
  */
 public class FloatPointField extends PointField implements FloatValueFieldType {
-
-  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   public FloatPointField() {
     type = NumberType.FLOAT;
@@ -169,13 +163,6 @@ public class FloatPointField extends PointField implements FloatValueFieldType {
   @Override
   protected ValueSource getSingleValueSource(SortedNumericSelector.Type choice, SchemaField f) {
     return new MultiValuedFloatFieldSource(f.getName(), choice);
-  }
-
-
-  @Override
-  public LegacyNumericType getNumericType() {
-    // TODO: refactor this to not use LegacyNumericType
-    return LegacyNumericType.FLOAT;
   }
 
   @Override

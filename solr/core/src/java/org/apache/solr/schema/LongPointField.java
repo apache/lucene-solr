@@ -17,13 +17,11 @@
 
 package org.apache.solr.schema;
 
-import java.lang.invoke.MethodHandles;
 import java.util.Collection;
 
 import org.apache.lucene.document.LongPoint;
 import org.apache.lucene.document.StoredField;
 import org.apache.lucene.index.IndexableField;
-import org.apache.lucene.legacy.LegacyNumericType;
 import org.apache.lucene.queries.function.ValueSource;
 import org.apache.lucene.queries.function.valuesource.LongFieldSource;
 import org.apache.lucene.queries.function.valuesource.MultiValuedLongFieldSource;
@@ -33,8 +31,6 @@ import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.BytesRefBuilder;
 import org.apache.solr.search.QParser;
 import org.apache.solr.uninverting.UninvertingReader.Type;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  * {@code PointField} implementation for {@code Long} values.
@@ -42,8 +38,6 @@ import org.slf4j.LoggerFactory;
  * @see LongPoint
  */
 public class LongPointField extends PointField implements LongValueFieldType {
-
-  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   public LongPointField() {
     type = NumberType.LONG;
@@ -166,11 +160,6 @@ public class LongPointField extends PointField implements LongValueFieldType {
   protected ValueSource getSingleValueSource(org.apache.lucene.search.SortedNumericSelector.Type choice,
       SchemaField field) {
     return new MultiValuedLongFieldSource(field.getName(), choice);
-  }
-
-  @Override
-  public LegacyNumericType getNumericType() {
-    return LegacyNumericType.LONG;
   }
 
   @Override
