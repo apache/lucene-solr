@@ -169,6 +169,10 @@ New Features
 * SOLR-10039: New LatLonPointSpatialField replacement for LatLonType (and some uses of RPT).  Multi-value capable
   indexed geo lat-lon points, query by rect or circle.  Efficient distance sorting/boosting too. (David Smiley)
 
+* SOLR-10250: CloudSolrClient can now return versions for documents added or deleted when "versions=true" is passed.
+  However, if there is a leader election while this request is in transit, the versions may not be returned from that
+  shard. (Boris Naguet, Ishan Chattopadhyaya)
+
 Bug Fixes
 ----------------------
 
