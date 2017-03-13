@@ -19,63 +19,63 @@ package org.apache.lucene.search;
 import java.util.Arrays;
 
 import org.apache.lucene.document.Document;
-import org.apache.lucene.document.LongRangeField;
+import org.apache.lucene.document.FloatRange;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.store.Directory;
 
 /**
- * Random testing for LongRangeField Queries.
+ * Random testing for FloatRange Queries.
  */
-public class TestLongRangeFieldQueries extends BaseRangeFieldQueryTestCase {
-  private static final String FIELD_NAME = "longRangeField";
+public class TestFloatRangeFieldQueries extends BaseRangeFieldQueryTestCase {
+  private static final String FIELD_NAME = "floatRangeField";
 
-  private long nextLongInternal() {
+  private float nextFloatInternal() {
     if (rarely()) {
-      return random().nextBoolean() ? Long.MAX_VALUE : Long.MIN_VALUE;
+      return random().nextBoolean() ? Float.NEGATIVE_INFINITY : Float.POSITIVE_INFINITY;
     }
-    long max = Long.MAX_VALUE / 2;
-    return (max + max) * random().nextLong() - max;
+    float max = Float.MAX_VALUE / 2;
+    return (max + max) * random().nextFloat() - max;
   }
 
   @Override
-  protected Range nextRange(int dimensions) {
-    long[] min = new long[dimensions];
-    long[] max = new long[dimensions];
+  protected Range nextRange(int dimensions) throws Exception {
+    float[] min = new float[dimensions];
+    float[] max = new float[dimensions];
 
-    long minV, maxV;
+    float minV, maxV;
     for (int d=0; d<dimensions; ++d) {
-      minV = nextLongInternal();
-      maxV = nextLongInternal();
+      minV = nextFloatInternal();
+      maxV = nextFloatInternal();
       min[d] = Math.min(minV, maxV);
       max[d] = Math.max(minV, maxV);
     }
-    return new LongRange(min, max);
+    return new FloatTestRange(min, max);
   }
 
   @Override
-  protected LongRangeField newRangeField(Range r) {
-    return new LongRangeField(FIELD_NAME, ((LongRange)r).min, ((LongRange)r).max);
+  protected FloatRange newRangeField(Range r) {
+    return new FloatRange(FIELD_NAME, ((FloatTestRange)r).min, ((FloatTestRange)r).max);
   }
 
   @Override
   protected Query newIntersectsQuery(Range r) {
-    return LongRangeField.newIntersectsQuery(FIELD_NAME, ((LongRange)r).min, ((LongRange)r).max);
+    return FloatRange.newIntersectsQuery(FIELD_NAME, ((FloatTestRange)r).min, ((FloatTestRange)r).max);
   }
 
   @Override
   protected Query newContainsQuery(Range r) {
-    return LongRangeField.newContainsQuery(FIELD_NAME, ((LongRange)r).min, ((LongRange)r).max);
+    return FloatRange.newContainsQuery(FIELD_NAME, ((FloatTestRange)r).min, ((FloatTestRange)r).max);
   }
 
   @Override
   protected Query newWithinQuery(Range r) {
-    return LongRangeField.newWithinQuery(FIELD_NAME, ((LongRange)r).min, ((LongRange)r).max);
+    return FloatRange.newWithinQuery(FIELD_NAME, ((FloatTestRange)r).min, ((FloatTestRange)r).max);
   }
 
   @Override
   protected Query newCrossesQuery(Range r) {
-    return LongRangeField.newCrossesQuery(FIELD_NAME, ((LongRange)r).min, ((LongRange)r).max);
+    return FloatRange.newCrossesQuery(FIELD_NAME, ((FloatTestRange)r).min, ((FloatTestRange)r).max);
   }
 
   /** Basic test */
@@ -85,67 +85,67 @@ public class TestLongRangeFieldQueries extends BaseRangeFieldQueryTestCase {
 
     // intersects (within)
     Document document = new Document();
-    document.add(new LongRangeField(FIELD_NAME, new long[] {-10, -10}, new long[] {9, 10}));
+    document.add(new FloatRange(FIELD_NAME, new float[] {-10.0f, -10.0f}, new float[] {9.1f, 10.1f}));
     writer.addDocument(document);
 
     // intersects (crosses)
     document = new Document();
-    document.add(new LongRangeField(FIELD_NAME, new long[] {10, -10}, new long[] {20, 10}));
+    document.add(new FloatRange(FIELD_NAME, new float[] {10.0f, -10.0f}, new float[] {20.0f, 10.0f}));
     writer.addDocument(document);
 
     // intersects (contains, crosses)
     document = new Document();
-    document.add(new LongRangeField(FIELD_NAME, new long[] {-20, -20}, new long[] {30, 30}));
-    writer.addDocument(document);
-
-    // intersects (within)
-    document = new Document();
-    document.add(new LongRangeField(FIELD_NAME, new long[] {-11, -11}, new long[] {1, 11}));
+    document.add(new FloatRange(FIELD_NAME, new float[] {-20.0f, -20.0f}, new float[] {30.0f, 30.1f}));
     writer.addDocument(document);
 
     // intersects (crosses)
     document = new Document();
-    document.add(new LongRangeField(FIELD_NAME, new long[] {12, 1}, new long[] {15, 29}));
+    document.add(new FloatRange(FIELD_NAME, new float[] {-11.1f, -11.2f}, new float[] {1.23f, 11.5f}));
+    writer.addDocument(document);
+
+    // intersects (crosses)
+    document = new Document();
+    document.add(new FloatRange(FIELD_NAME, new float[] {12.33f, 1.2f}, new float[] {15.1f, 29.9f}));
     writer.addDocument(document);
 
     // disjoint
     document = new Document();
-    document.add(new LongRangeField(FIELD_NAME, new long[] {-122, 1}, new long[] {-115, 29}));
+    document.add(new FloatRange(FIELD_NAME, new float[] {-122.33f, 1.2f}, new float[] {-115.1f, 29.9f}));
     writer.addDocument(document);
 
     // intersects (crosses)
     document = new Document();
-    document.add(new LongRangeField(FIELD_NAME, new long[] {Long.MIN_VALUE, 1}, new long[] {-11, 29}));
+    document.add(new FloatRange(FIELD_NAME, new float[] {Float.NEGATIVE_INFINITY, 1.2f}, new float[] {-11.0f, 29.9f}));
     writer.addDocument(document);
 
     // equal (within, contains, intersects)
     document = new Document();
-    document.add(new LongRangeField(FIELD_NAME, new long[] {-11, -15}, new long[] {15, 20}));
+    document.add(new FloatRange(FIELD_NAME, new float[] {-11f, -15f}, new float[] {15f, 20f}));
     writer.addDocument(document);
 
     // search
     IndexReader reader = writer.getReader();
     IndexSearcher searcher = newSearcher(reader);
-    assertEquals(7, searcher.count(LongRangeField.newIntersectsQuery(FIELD_NAME,
-        new long[] {-11, -15}, new long[] {15, 20})));
-    assertEquals(3, searcher.count(LongRangeField.newWithinQuery(FIELD_NAME,
-        new long[] {-11, -15}, new long[] {15, 20})));
-    assertEquals(2, searcher.count(LongRangeField.newContainsQuery(FIELD_NAME,
-        new long[] {-11, -15}, new long[] {15, 20})));
-    assertEquals(4, searcher.count(LongRangeField.newCrossesQuery(FIELD_NAME,
-        new long[] {-11, -15}, new long[] {15, 20})));
+    assertEquals(7, searcher.count(FloatRange.newIntersectsQuery(FIELD_NAME,
+        new float[] {-11.0f, -15.0f}, new float[] {15.0f, 20.0f})));
+    assertEquals(2, searcher.count(FloatRange.newWithinQuery(FIELD_NAME,
+        new float[] {-11.0f, -15.0f}, new float[] {15.0f, 20.0f})));
+    assertEquals(2, searcher.count(FloatRange.newContainsQuery(FIELD_NAME,
+        new float[] {-11.0f, -15.0f}, new float[] {15.0f, 20.0f})));
+    assertEquals(5, searcher.count(FloatRange.newCrossesQuery(FIELD_NAME,
+        new float[] {-11.0f, -15.0f}, new float[] {15.0f, 20.0f})));
 
     reader.close();
     writer.close();
     dir.close();
   }
 
-  /** LongRange test class implementation - use to validate LongRangeField */
-  private class LongRange extends Range {
-    long[] min;
-    long[] max;
+  /** FloatRange test class implementation - use to validate FloatRange */
+  private class FloatTestRange extends Range {
+    float[] min;
+    float[] max;
 
-    LongRange(long[] min, long[] max) {
+    FloatTestRange(float[] min, float[] max) {
       assert min != null && max != null && min.length > 0 && max.length > 0
           : "test box: min/max cannot be null or empty";
       assert min.length == max.length : "test box: min/max length do not agree";
@@ -159,13 +159,13 @@ public class TestLongRangeFieldQueries extends BaseRangeFieldQueryTestCase {
     }
 
     @Override
-    protected Long getMin(int dim) {
+    protected Float getMin(int dim) {
       return min[dim];
     }
 
     @Override
     protected void setMin(int dim, Object val) {
-      long v = (Long)val;
+      float v = (Float)val;
       if (min[dim] < v) {
         max[dim] = v;
       } else {
@@ -174,13 +174,13 @@ public class TestLongRangeFieldQueries extends BaseRangeFieldQueryTestCase {
     }
 
     @Override
-    protected Long getMax(int dim) {
+    protected Float getMax(int dim) {
       return max[dim];
     }
 
     @Override
     protected void setMax(int dim, Object val) {
-      long v = (Long)val;
+      float v = (Float)val;
       if (max[dim] > v) {
         min[dim] = v;
       } else {
@@ -190,13 +190,13 @@ public class TestLongRangeFieldQueries extends BaseRangeFieldQueryTestCase {
 
     @Override
     protected boolean isEqual(Range other) {
-      LongRange o = (LongRange)other;
+      FloatTestRange o = (FloatTestRange)other;
       return Arrays.equals(min, o.min) && Arrays.equals(max, o.max);
     }
 
     @Override
     protected boolean isDisjoint(Range o) {
-      LongRange other = (LongRange)o;
+      FloatTestRange other = (FloatTestRange)o;
       for (int d=0; d<this.min.length; ++d) {
         if (this.min[d] > other.max[d] || this.max[d] < other.min[d]) {
           // disjoint:
@@ -208,7 +208,7 @@ public class TestLongRangeFieldQueries extends BaseRangeFieldQueryTestCase {
 
     @Override
     protected boolean isWithin(Range o) {
-      LongRange other = (LongRange)o;
+      FloatTestRange other = (FloatTestRange)o;
       for (int d=0; d<this.min.length; ++d) {
         if ((this.min[d] >= other.min[d] && this.max[d] <= other.max[d]) == false) {
           // not within:
@@ -220,7 +220,7 @@ public class TestLongRangeFieldQueries extends BaseRangeFieldQueryTestCase {
 
     @Override
     protected boolean contains(Range o) {
-      LongRange other = (LongRange) o;
+      FloatTestRange other = (FloatTestRange) o;
       for (int d=0; d<this.min.length; ++d) {
         if ((this.min[d] <= other.min[d] && this.max[d] >= other.max[d]) == false) {
           // not contains:

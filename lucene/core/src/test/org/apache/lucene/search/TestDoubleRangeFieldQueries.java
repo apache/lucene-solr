@@ -19,63 +19,63 @@ package org.apache.lucene.search;
 import java.util.Arrays;
 
 import org.apache.lucene.document.Document;
-import org.apache.lucene.document.FloatRangeField;
+import org.apache.lucene.document.DoubleRange;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.store.Directory;
 
 /**
- * Random testing for FloatRangeField Queries.
+ * Random testing for RangeFieldQueries.
  */
-public class TestFloatRangeFieldQueries extends BaseRangeFieldQueryTestCase {
-  private static final String FIELD_NAME = "floatRangeField";
+public class TestDoubleRangeFieldQueries extends BaseRangeFieldQueryTestCase {
+  private static final String FIELD_NAME = "doubleRangeField";
 
-  private float nextFloatInternal() {
+  private double nextDoubleInternal() {
     if (rarely()) {
-      return random().nextBoolean() ? Float.NEGATIVE_INFINITY : Float.POSITIVE_INFINITY;
+      return random().nextBoolean() ? Double.POSITIVE_INFINITY : Double.NEGATIVE_INFINITY;
     }
-    float max = Float.MAX_VALUE / 2;
-    return (max + max) * random().nextFloat() - max;
+    double max = Double.MAX_VALUE / 2;
+    return (max + max) * random().nextDouble() - max;
   }
 
   @Override
-  protected Range nextRange(int dimensions) {
-    float[] min = new float[dimensions];
-    float[] max = new float[dimensions];
+  protected Range nextRange(int dimensions) throws Exception {
+    double[] min = new double[dimensions];
+    double[] max = new double[dimensions];
 
-    float minV, maxV;
+    double minV, maxV;
     for (int d=0; d<dimensions; ++d) {
-      minV = nextFloatInternal();
-      maxV = nextFloatInternal();
+      minV = nextDoubleInternal();
+      maxV = nextDoubleInternal();
       min[d] = Math.min(minV, maxV);
       max[d] = Math.max(minV, maxV);
     }
-    return new FloatRange(min, max);
+    return new DoubleTestRange(min, max);
   }
 
   @Override
-  protected FloatRangeField newRangeField(Range r) {
-    return new FloatRangeField(FIELD_NAME, ((FloatRange)r).min, ((FloatRange)r).max);
+  protected DoubleRange newRangeField(Range r) {
+    return new DoubleRange(FIELD_NAME, ((DoubleTestRange)r).min, ((DoubleTestRange)r).max);
   }
 
   @Override
   protected Query newIntersectsQuery(Range r) {
-    return FloatRangeField.newIntersectsQuery(FIELD_NAME, ((FloatRange)r).min, ((FloatRange)r).max);
+    return DoubleRange.newIntersectsQuery(FIELD_NAME, ((DoubleTestRange)r).min, ((DoubleTestRange)r).max);
   }
 
   @Override
   protected Query newContainsQuery(Range r) {
-    return FloatRangeField.newContainsQuery(FIELD_NAME, ((FloatRange)r).min, ((FloatRange)r).max);
+    return DoubleRange.newContainsQuery(FIELD_NAME, ((DoubleTestRange)r).min, ((DoubleTestRange)r).max);
   }
 
   @Override
   protected Query newWithinQuery(Range r) {
-    return FloatRangeField.newWithinQuery(FIELD_NAME, ((FloatRange)r).min, ((FloatRange)r).max);
+    return DoubleRange.newWithinQuery(FIELD_NAME, ((DoubleTestRange)r).min, ((DoubleTestRange)r).max);
   }
 
   @Override
   protected Query newCrossesQuery(Range r) {
-    return FloatRangeField.newCrossesQuery(FIELD_NAME, ((FloatRange)r).min, ((FloatRange)r).max);
+    return DoubleRange.newCrossesQuery(FIELD_NAME, ((DoubleTestRange)r).min, ((DoubleTestRange)r).max);
   }
 
   /** Basic test */
@@ -85,67 +85,67 @@ public class TestFloatRangeFieldQueries extends BaseRangeFieldQueryTestCase {
 
     // intersects (within)
     Document document = new Document();
-    document.add(new FloatRangeField(FIELD_NAME, new float[] {-10.0f, -10.0f}, new float[] {9.1f, 10.1f}));
+    document.add(new DoubleRange(FIELD_NAME, new double[] {-10.0, -10.0}, new double[] {9.1, 10.1}));
     writer.addDocument(document);
 
     // intersects (crosses)
     document = new Document();
-    document.add(new FloatRangeField(FIELD_NAME, new float[] {10.0f, -10.0f}, new float[] {20.0f, 10.0f}));
+    document.add(new DoubleRange(FIELD_NAME, new double[] {10.0, -10.0}, new double[] {20.0, 10.0}));
     writer.addDocument(document);
 
     // intersects (contains, crosses)
     document = new Document();
-    document.add(new FloatRangeField(FIELD_NAME, new float[] {-20.0f, -20.0f}, new float[] {30.0f, 30.1f}));
+    document.add(new DoubleRange(FIELD_NAME, new double[] {-20.0, -20.0}, new double[] {30.0, 30.1}));
     writer.addDocument(document);
 
     // intersects (crosses)
     document = new Document();
-    document.add(new FloatRangeField(FIELD_NAME, new float[] {-11.1f, -11.2f}, new float[] {1.23f, 11.5f}));
+    document.add(new DoubleRange(FIELD_NAME, new double[] {-11.1, -11.2}, new double[] {1.23, 11.5}));
     writer.addDocument(document);
 
     // intersects (crosses)
     document = new Document();
-    document.add(new FloatRangeField(FIELD_NAME, new float[] {12.33f, 1.2f}, new float[] {15.1f, 29.9f}));
+    document.add(new DoubleRange(FIELD_NAME, new double[] {12.33, 1.2}, new double[] {15.1, 29.9}));
     writer.addDocument(document);
 
     // disjoint
     document = new Document();
-    document.add(new FloatRangeField(FIELD_NAME, new float[] {-122.33f, 1.2f}, new float[] {-115.1f, 29.9f}));
+    document.add(new DoubleRange(FIELD_NAME, new double[] {-122.33, 1.2}, new double[] {-115.1, 29.9}));
     writer.addDocument(document);
 
     // intersects (crosses)
     document = new Document();
-    document.add(new FloatRangeField(FIELD_NAME, new float[] {Float.NEGATIVE_INFINITY, 1.2f}, new float[] {-11.0f, 29.9f}));
+    document.add(new DoubleRange(FIELD_NAME, new double[] {Double.NEGATIVE_INFINITY, 1.2}, new double[] {-11.0, 29.9}));
     writer.addDocument(document);
 
     // equal (within, contains, intersects)
     document = new Document();
-    document.add(new FloatRangeField(FIELD_NAME, new float[] {-11f, -15f}, new float[] {15f, 20f}));
+    document.add(new DoubleRange(FIELD_NAME, new double[] {-11, -15}, new double[] {15, 20}));
     writer.addDocument(document);
 
     // search
     IndexReader reader = writer.getReader();
     IndexSearcher searcher = newSearcher(reader);
-    assertEquals(7, searcher.count(FloatRangeField.newIntersectsQuery(FIELD_NAME,
-        new float[] {-11.0f, -15.0f}, new float[] {15.0f, 20.0f})));
-    assertEquals(2, searcher.count(FloatRangeField.newWithinQuery(FIELD_NAME,
-        new float[] {-11.0f, -15.0f}, new float[] {15.0f, 20.0f})));
-    assertEquals(2, searcher.count(FloatRangeField.newContainsQuery(FIELD_NAME,
-        new float[] {-11.0f, -15.0f}, new float[] {15.0f, 20.0f})));
-    assertEquals(5, searcher.count(FloatRangeField.newCrossesQuery(FIELD_NAME,
-        new float[] {-11.0f, -15.0f}, new float[] {15.0f, 20.0f})));
+    assertEquals(7, searcher.count(DoubleRange.newIntersectsQuery(FIELD_NAME,
+        new double[] {-11.0, -15.0}, new double[] {15.0, 20.0})));
+    assertEquals(2, searcher.count(DoubleRange.newWithinQuery(FIELD_NAME,
+        new double[] {-11.0, -15.0}, new double[] {15.0, 20.0})));
+    assertEquals(2, searcher.count(DoubleRange.newContainsQuery(FIELD_NAME,
+        new double[] {-11.0, -15.0}, new double[] {15.0, 20.0})));
+    assertEquals(5, searcher.count(DoubleRange.newCrossesQuery(FIELD_NAME,
+        new double[] {-11.0, -15.0}, new double[] {15.0, 20.0})));
 
     reader.close();
     writer.close();
     dir.close();
   }
 
-  /** FloatRange test class implementation - use to validate FloatRangeField */
-  private class FloatRange extends Range {
-    float[] min;
-    float[] max;
+  /** DoubleRange test class implementation - use to validate DoubleRange */
+  private class DoubleTestRange extends Range {
+    double[] min;
+    double[] max;
 
-    FloatRange(float[] min, float[] max) {
+    DoubleTestRange(double[] min, double[] max) {
       assert min != null && max != null && min.length > 0 && max.length > 0
           : "test box: min/max cannot be null or empty";
       assert min.length == max.length : "test box: min/max length do not agree";
@@ -159,13 +159,13 @@ public class TestFloatRangeFieldQueries extends BaseRangeFieldQueryTestCase {
     }
 
     @Override
-    protected Float getMin(int dim) {
+    protected Double getMin(int dim) {
       return min[dim];
     }
 
     @Override
     protected void setMin(int dim, Object val) {
-      float v = (Float)val;
+      double v = (Double)val;
       if (min[dim] < v) {
         max[dim] = v;
       } else {
@@ -174,13 +174,13 @@ public class TestFloatRangeFieldQueries extends BaseRangeFieldQueryTestCase {
     }
 
     @Override
-    protected Float getMax(int dim) {
+    protected Double getMax(int dim) {
       return max[dim];
     }
 
     @Override
     protected void setMax(int dim, Object val) {
-      float v = (Float)val;
+      double v = (Double)val;
       if (max[dim] > v) {
         min[dim] = v;
       } else {
@@ -190,13 +190,13 @@ public class TestFloatRangeFieldQueries extends BaseRangeFieldQueryTestCase {
 
     @Override
     protected boolean isEqual(Range other) {
-      FloatRange o = (FloatRange)other;
+      DoubleTestRange o = (DoubleTestRange)other;
       return Arrays.equals(min, o.min) && Arrays.equals(max, o.max);
     }
 
     @Override
     protected boolean isDisjoint(Range o) {
-      FloatRange other = (FloatRange)o;
+      DoubleTestRange other = (DoubleTestRange)o;
       for (int d=0; d<this.min.length; ++d) {
         if (this.min[d] > other.max[d] || this.max[d] < other.min[d]) {
           // disjoint:
@@ -208,7 +208,7 @@ public class TestFloatRangeFieldQueries extends BaseRangeFieldQueryTestCase {
 
     @Override
     protected boolean isWithin(Range o) {
-      FloatRange other = (FloatRange)o;
+      DoubleTestRange other = (DoubleTestRange)o;
       for (int d=0; d<this.min.length; ++d) {
         if ((this.min[d] >= other.min[d] && this.max[d] <= other.max[d]) == false) {
           // not within:
@@ -220,7 +220,7 @@ public class TestFloatRangeFieldQueries extends BaseRangeFieldQueryTestCase {
 
     @Override
     protected boolean contains(Range o) {
-      FloatRange other = (FloatRange) o;
+      DoubleTestRange other = (DoubleTestRange) o;
       for (int d=0; d<this.min.length; ++d) {
         if ((this.min[d] <= other.min[d] && this.max[d] >= other.max[d]) == false) {
           // not contains:

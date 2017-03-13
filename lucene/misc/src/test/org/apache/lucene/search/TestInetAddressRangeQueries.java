@@ -19,13 +19,13 @@ package org.apache.lucene.search;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
 
-import org.apache.lucene.document.InetAddressRangeField;
+import org.apache.lucene.document.InetAddressRange;
 import org.apache.lucene.util.StringHelper;
 
 /**
- * Random testing for {@link InetAddressRangeField}
+ * Random testing for {@link InetAddressRange}
  */
-public class TestIpRangeFieldQueries extends BaseRangeFieldQueryTestCase {
+public class TestInetAddressRangeQueries extends BaseRangeFieldQueryTestCase {
   private static final String FIELD_NAME = "ipRangeField";
 
   private IPVersion ipVersion;
@@ -33,20 +33,15 @@ public class TestIpRangeFieldQueries extends BaseRangeFieldQueryTestCase {
   private enum IPVersion {IPv4, IPv6}
 
   @Override
-  protected Range nextRange(int dimensions) {
-    try {
-      InetAddress min = nextInetaddress();
-      byte[] bMin = min.getAddress();
-      InetAddress max = nextInetaddress();
-      byte[] bMax = max.getAddress();
-      if (StringHelper.compare(bMin.length, bMin, 0, bMax, 0) > 0) {
-        return new IpRange(max, min);
-      }
-      return new IpRange(min, max);
-    } catch (UnknownHostException e) {
-      e.printStackTrace();
+  protected Range nextRange(int dimensions) throws Exception {
+    InetAddress min = nextInetaddress();
+    byte[] bMin = min.getAddress();
+    InetAddress max = nextInetaddress();
+    byte[] bMax = max.getAddress();
+    if (StringHelper.compare(bMin.length, bMin, 0, bMax, 0) > 0) {
+      return new IpRange(max, min);
     }
-    return null;
+    return new IpRange(min, max);
   }
 
   /** return random IPv4 or IPv6 address */
@@ -98,32 +93,32 @@ public class TestIpRangeFieldQueries extends BaseRangeFieldQueryTestCase {
 
   /** return random range */
   @Override
-  protected InetAddressRangeField newRangeField(Range r) {
-    return new InetAddressRangeField(FIELD_NAME, ((IpRange)r).min, ((IpRange)r).max);
+  protected InetAddressRange newRangeField(Range r) {
+    return new InetAddressRange(FIELD_NAME, ((IpRange)r).min, ((IpRange)r).max);
   }
 
   /** return random intersects query */
   @Override
   protected Query newIntersectsQuery(Range r) {
-    return InetAddressRangeField.newIntersectsQuery(FIELD_NAME, ((IpRange)r).min, ((IpRange)r).max);
+    return InetAddressRange.newIntersectsQuery(FIELD_NAME, ((IpRange)r).min, ((IpRange)r).max);
   }
 
   /** return random contains query */
   @Override
   protected Query newContainsQuery(Range r) {
-    return InetAddressRangeField.newContainsQuery(FIELD_NAME, ((IpRange)r).min, ((IpRange)r).max);
+    return InetAddressRange.newContainsQuery(FIELD_NAME, ((IpRange)r).min, ((IpRange)r).max);
   }
 
   /** return random within query */
   @Override
   protected Query newWithinQuery(Range r) {
-    return InetAddressRangeField.newWithinQuery(FIELD_NAME, ((IpRange)r).min, ((IpRange)r).max);
+    return InetAddressRange.newWithinQuery(FIELD_NAME, ((IpRange)r).min, ((IpRange)r).max);
   }
 
   /** return random crosses query */
   @Override
   protected Query newCrossesQuery(Range r) {
-    return InetAddressRangeField.newCrossesQuery(FIELD_NAME, ((IpRange)r).min, ((IpRange)r).max);
+    return InetAddressRange.newCrossesQuery(FIELD_NAME, ((IpRange)r).min, ((IpRange)r).max);
   }
 
   /** encapsulated IpRange for test validation */

@@ -40,7 +40,7 @@ import org.apache.lucene.util.StringHelper;
  *   <li>{@link #newCrossesQuery newCrossesQuery()} matches ip ranges that cross the defined search range
  * </ul>
  */
-public class InetAddressRangeField extends Field {
+public class InetAddressRange extends Field {
   /** The number of bytes per dimension : sync w/ {@code InetAddressPoint} */
   public static final int BYTES = InetAddressPoint.BYTES;
 
@@ -52,12 +52,12 @@ public class InetAddressRangeField extends Field {
   }
 
   /**
-   * Create a new InetAddressRangeField from min/max value
+   * Create a new InetAddressRange from min/max value
    * @param name field name. must not be null.
    * @param min range min value; defined as an {@code InetAddress}
    * @param max range max value; defined as an {@code InetAddress}
    */
-  public InetAddressRangeField(String name, final InetAddress min, final InetAddress max) {
+  public InetAddressRange(String name, final InetAddress min, final InetAddress max) {
     super(name, TYPE);
     setRangeValues(min, max);
   }
@@ -147,7 +147,7 @@ public class InetAddressRangeField extends Field {
     return new RangeFieldQuery(field, encode(min, max), 1, relation) {
       @Override
       protected String toString(byte[] ranges, int dimension) {
-        return InetAddressRangeField.toString(ranges, dimension);
+        return InetAddressRange.toString(ranges, dimension);
       }
     };
   }
