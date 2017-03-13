@@ -84,6 +84,10 @@ Other
 
 API Changes
 
+* LUCENE-7740: Refactor Range Fields to remove Field suffix (e.g., DoubleRange),
+  move InetAddressRange and InetAddressPoint from sandbox to misc module, and
+  refactor all other range fields from sandbox to core. (Nick Knize)
+
 * LUCENE-7624: TermsQuery has been renamed as TermInSetQuery and moved to core.
   (Alan Woodward)
 
@@ -131,8 +135,8 @@ API Changes
 
 New Features
 
-* LUCENE-7738: Add new InetAddressRangeField for indexing and querying
-  InetAddress ranges. (Nick Knize)
+* LUCENE-7738: Add new InetAddressRange for indexing and querying InetAddress
+  ranges. (Nick Knize)
 
 * LUCENE-7449: Add CROSSES relation support to RangeFieldQuery. (Nick Knize)
 

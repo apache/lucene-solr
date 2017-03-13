@@ -39,18 +39,18 @@ import org.apache.lucene.util.NumericUtils;
  *   <li>{@link #newContainsQuery newContainsQuery()} matches ranges that contain the defined search range.
  * </ul>
  */
-public class DoubleRangeField extends Field {
+public class DoubleRange extends Field {
   /** stores double values so number of bytes is 8 */
   public static final int BYTES = Double.BYTES;
 
   /**
-   * Create a new DoubleRangeField type, from min/max parallel arrays
+   * Create a new DoubleRange type, from min/max parallel arrays
    *
    * @param name field name. must not be null.
    * @param min range min values; each entry is the min value for the dimension
    * @param max range max values; each entry is the max value for the dimension
    */
-  public DoubleRangeField(String name, final double[] min, final double[] max) {
+  public DoubleRange(String name, final double[] min, final double[] max) {
     super(name, getType(min.length));
     setRangeValues(min, max);
   }
@@ -58,7 +58,7 @@ public class DoubleRangeField extends Field {
   /** set the field type */
   private static FieldType getType(int dimensions) {
     if (dimensions > 4) {
-      throw new IllegalArgumentException("DoubleRangeField does not support greater than 4 dimensions");
+      throw new IllegalArgumentException("DoubleRange does not support greater than 4 dimensions");
     }
 
     FieldType ft = new FieldType();
@@ -100,7 +100,7 @@ public class DoubleRangeField extends Field {
       throw new IllegalArgumentException("min/max ranges must agree");
     }
     if (min.length > 4) {
-      throw new IllegalArgumentException("DoubleRangeField does not support greater than 4 dimensions");
+      throw new IllegalArgumentException("DoubleRange does not support greater than 4 dimensions");
     }
   }
 
@@ -123,10 +123,10 @@ public class DoubleRangeField extends Field {
   static void verifyAndEncode(double[] min, double[] max, byte[] bytes) {
     for (int d=0,i=0,j=min.length*BYTES; d<min.length; ++d, i+=BYTES, j+=BYTES) {
       if (Double.isNaN(min[d])) {
-        throw new IllegalArgumentException("invalid min value (" + Double.NaN + ")" + " in DoubleRangeField");
+        throw new IllegalArgumentException("invalid min value (" + Double.NaN + ")" + " in DoubleRange");
       }
       if (Double.isNaN(max[d])) {
-        throw new IllegalArgumentException("invalid max value (" + Double.NaN + ")" + " in DoubleRangeField");
+        throw new IllegalArgumentException("invalid max value (" + Double.NaN + ")" + " in DoubleRange");
       }
       if (min[d] > max[d]) {
         throw new IllegalArgumentException("min value (" + min[d] + ") is greater than max value (" + max[d] + ")");
@@ -188,12 +188,7 @@ public class DoubleRangeField extends Field {
    * @throws IllegalArgumentException if {@code field} is null, {@code min} or {@code max} is invalid
    */
   public static Query newIntersectsQuery(String field, final double[] min, final double[] max) {
-    return new RangeFieldQuery(field, encode(min, max), min.length, QueryType.INTERSECTS) {
-      @Override
-      protected String toString(byte[] ranges, int dimension) {
-        return DoubleRangeField.toString(ranges, dimension);
-      }
-    };
+    return newRelationQuery(field, min, max, QueryType.INTERSECTS);
   }
 
   /**
@@ -205,12 +200,7 @@ public class DoubleRangeField extends Field {
    * @throws IllegalArgumentException if {@code field} is null, {@code min} or {@code max} is invalid
    */
   public static Query newContainsQuery(String field, final double[] min, final double[] max) {
-    return new RangeFieldQuery(field, encode(min, max), min.length, QueryType.CONTAINS) {
-      @Override
-      protected String toString(byte[] ranges, int dimension) {
-        return DoubleRangeField.toString(ranges, dimension);
-      }
-    };
+    return newRelationQuery(field, min, max, QueryType.CONTAINS);
   }
 
   /**
@@ -222,13 +212,7 @@ public class DoubleRangeField extends Field {
    * @throws IllegalArgumentException if {@code field} is null, {@code min} or {@code max} is invalid
    */
   public static Query newWithinQuery(String field, final double[] min, final double[] max) {
-    checkArgs(min, max);
-    return new RangeFieldQuery(field, encode(min, max), min.length, QueryType.WITHIN) {
-      @Override
-      protected String toString(byte[] ranges, int dimension) {
-        return DoubleRangeField.toString(ranges, dimension);
-      }
-    };
+    return newRelationQuery(field, min, max, QueryType.WITHIN);
   }
 
   /**
@@ -242,11 +226,16 @@ public class DoubleRangeField extends Field {
    * @throws IllegalArgumentException if {@code field} is null, {@code min} or {@code max} is invalid
    */
   public static Query newCrossesQuery(String field, final double[] min, final double[] max) {
+    return newRelationQuery(field, min, max, QueryType.CROSSES);
+  }
+
+  /** helper method for creating the desired relational query */
+  private static Query newRelationQuery(String field, final double[] min, final double[] max, QueryType relation) {
     checkArgs(min, max);
-    return new RangeFieldQuery(field, encode(min, max), min.length, QueryType.CROSSES) {
+    return new RangeFieldQuery(field, encode(min, max), min.length, relation) {
       @Override
       protected String toString(byte[] ranges, int dimension) {
-        return DoubleRangeField.toString(ranges, dimension);
+        return DoubleRange.toString(ranges, dimension);
       }
     };
   }

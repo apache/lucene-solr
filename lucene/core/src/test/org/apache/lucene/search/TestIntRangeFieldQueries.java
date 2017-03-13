@@ -19,13 +19,13 @@ package org.apache.lucene.search;
 import java.util.Arrays;
 
 import org.apache.lucene.document.Document;
-import org.apache.lucene.document.IntRangeField;
+import org.apache.lucene.document.IntRange;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.store.Directory;
 
 /**
- * Random testing for IntRangeField Queries.
+ * Random testing for IntRange Queries.
  */
 public class TestIntRangeFieldQueries extends BaseRangeFieldQueryTestCase {
   private static final String FIELD_NAME = "intRangeField";
@@ -39,7 +39,7 @@ public class TestIntRangeFieldQueries extends BaseRangeFieldQueryTestCase {
   }
 
   @Override
-  protected Range nextRange(int dimensions) {
+  protected Range nextRange(int dimensions) throws Exception {
     int[] min = new int[dimensions];
     int[] max = new int[dimensions];
 
@@ -50,32 +50,32 @@ public class TestIntRangeFieldQueries extends BaseRangeFieldQueryTestCase {
       min[d] = Math.min(minV, maxV);
       max[d] = Math.max(minV, maxV);
     }
-    return new IntRange(min, max);
+    return new IntTestRange(min, max);
   }
 
   @Override
-  protected IntRangeField newRangeField(Range r) {
-    return new IntRangeField(FIELD_NAME, ((IntRange)r).min, ((IntRange)r).max);
+  protected org.apache.lucene.document.IntRange newRangeField(Range r) {
+    return new IntRange(FIELD_NAME, ((IntTestRange)r).min, ((IntTestRange)r).max);
   }
 
   @Override
   protected Query newIntersectsQuery(Range r) {
-    return IntRangeField.newIntersectsQuery(FIELD_NAME, ((IntRange)r).min, ((IntRange)r).max);
+    return IntRange.newIntersectsQuery(FIELD_NAME, ((IntTestRange)r).min, ((IntTestRange)r).max);
   }
 
   @Override
   protected Query newContainsQuery(Range r) {
-    return IntRangeField.newContainsQuery(FIELD_NAME, ((IntRange)r).min, ((IntRange)r).max);
+    return IntRange.newContainsQuery(FIELD_NAME, ((IntTestRange)r).min, ((IntTestRange)r).max);
   }
 
   @Override
   protected Query newWithinQuery(Range r) {
-    return IntRangeField.newWithinQuery(FIELD_NAME, ((IntRange)r).min, ((IntRange)r).max);
+    return IntRange.newWithinQuery(FIELD_NAME, ((IntTestRange)r).min, ((IntTestRange)r).max);
   }
 
   @Override
   protected Query newCrossesQuery(Range r) {
-    return IntRangeField.newCrossesQuery(FIELD_NAME, ((IntRange)r).min, ((IntRange)r).max);
+    return IntRange.newCrossesQuery(FIELD_NAME, ((IntTestRange)r).min, ((IntTestRange)r).max);
   }
 
   /** Basic test */
@@ -85,54 +85,54 @@ public class TestIntRangeFieldQueries extends BaseRangeFieldQueryTestCase {
 
     // intersects (within)
     Document document = new Document();
-    document.add(new IntRangeField(FIELD_NAME, new int[] {-10, -10}, new int[] {9, 10}));
+    document.add(new IntRange(FIELD_NAME, new int[] {-10, -10}, new int[] {9, 10}));
     writer.addDocument(document);
 
     // intersects (crosses)
     document = new Document();
-    document.add(new IntRangeField(FIELD_NAME, new int[] {10, -10}, new int[] {20, 10}));
+    document.add(new IntRange(FIELD_NAME, new int[] {10, -10}, new int[] {20, 10}));
     writer.addDocument(document);
 
     // intersects (contains / crosses)
     document = new Document();
-    document.add(new IntRangeField(FIELD_NAME, new int[] {-20, -20}, new int[] {30, 30}));
+    document.add(new IntRange(FIELD_NAME, new int[] {-20, -20}, new int[] {30, 30}));
     writer.addDocument(document);
 
     // intersects (within)
     document = new Document();
-    document.add(new IntRangeField(FIELD_NAME, new int[] {-11, -11}, new int[] {1, 11}));
+    document.add(new IntRange(FIELD_NAME, new int[] {-11, -11}, new int[] {1, 11}));
     writer.addDocument(document);
 
     // intersects (crosses)
     document = new Document();
-    document.add(new IntRangeField(FIELD_NAME, new int[] {12, 1}, new int[] {15, 29}));
+    document.add(new IntRange(FIELD_NAME, new int[] {12, 1}, new int[] {15, 29}));
     writer.addDocument(document);
 
     // disjoint
     document = new Document();
-    document.add(new IntRangeField(FIELD_NAME, new int[] {-122, 1}, new int[] {-115, 29}));
+    document.add(new IntRange(FIELD_NAME, new int[] {-122, 1}, new int[] {-115, 29}));
     writer.addDocument(document);
 
     // intersects (crosses)
     document = new Document();
-    document.add(new IntRangeField(FIELD_NAME, new int[] {Integer.MIN_VALUE, 1}, new int[] {-11, 29}));
+    document.add(new IntRange(FIELD_NAME, new int[] {Integer.MIN_VALUE, 1}, new int[] {-11, 29}));
     writer.addDocument(document);
 
     // equal (within, contains, intersects)
     document = new Document();
-    document.add(new IntRangeField(FIELD_NAME, new int[] {-11, -15}, new int[] {15, 20}));
+    document.add(new IntRange(FIELD_NAME, new int[] {-11, -15}, new int[] {15, 20}));
     writer.addDocument(document);
 
     // search
     IndexReader reader = writer.getReader();
     IndexSearcher searcher = newSearcher(reader);
-    assertEquals(7, searcher.count(IntRangeField.newIntersectsQuery(FIELD_NAME,
+    assertEquals(7, searcher.count(IntRange.newIntersectsQuery(FIELD_NAME,
         new int[] {-11, -15}, new int[] {15, 20})));
-    assertEquals(3, searcher.count(IntRangeField.newWithinQuery(FIELD_NAME,
+    assertEquals(3, searcher.count(IntRange.newWithinQuery(FIELD_NAME,
         new int[] {-11, -15}, new int[] {15, 20})));
-    assertEquals(2, searcher.count(IntRangeField.newContainsQuery(FIELD_NAME,
+    assertEquals(2, searcher.count(IntRange.newContainsQuery(FIELD_NAME,
         new int[] {-11, -15}, new int[] {15, 20})));
-    assertEquals(4, searcher.count(IntRangeField.newCrossesQuery(FIELD_NAME,
+    assertEquals(4, searcher.count(IntRange.newCrossesQuery(FIELD_NAME,
         new int[] {-11, -15}, new int[] {15, 20})));
 
     reader.close();
@@ -140,12 +140,12 @@ public class TestIntRangeFieldQueries extends BaseRangeFieldQueryTestCase {
     dir.close();
   }
 
-  /** IntRange test class implementation - use to validate IntRangeField */
-  private class IntRange extends Range {
+  /** IntRange test class implementation - use to validate IntRange */
+  private class IntTestRange extends Range {
     int[] min;
     int[] max;
 
-    IntRange(int[] min, int[] max) {
+    IntTestRange(int[] min, int[] max) {
       assert min != null && max != null && min.length > 0 && max.length > 0
           : "test box: min/max cannot be null or empty";
       assert min.length == max.length : "test box: min/max length do not agree";
@@ -190,13 +190,13 @@ public class TestIntRangeFieldQueries extends BaseRangeFieldQueryTestCase {
 
     @Override
     protected boolean isEqual(Range other) {
-      IntRange o = (IntRange)other;
+      IntTestRange o = (IntTestRange)other;
       return Arrays.equals(min, o.min) && Arrays.equals(max, o.max);
     }
 
     @Override
     protected boolean isDisjoint(Range o) {
-      IntRange other = (IntRange)o;
+      IntTestRange other = (IntTestRange)o;
       for (int d=0; d<this.min.length; ++d) {
         if (this.min[d] > other.max[d] || this.max[d] < other.min[d]) {
           // disjoint:
@@ -208,7 +208,7 @@ public class TestIntRangeFieldQueries extends BaseRangeFieldQueryTestCase {
 
     @Override
     protected boolean isWithin(Range o) {
-      IntRange other = (IntRange)o;
+      IntTestRange other = (IntTestRange)o;
       for (int d=0; d<this.min.length; ++d) {
         if ((this.min[d] >= other.min[d] && this.max[d] <= other.max[d]) == false) {
           // not within:
@@ -220,7 +220,7 @@ public class TestIntRangeFieldQueries extends BaseRangeFieldQueryTestCase {
 
     @Override
     protected boolean contains(Range o) {
-      IntRange other = (IntRange) o;
+      IntTestRange other = (IntTestRange) o;
       for (int d=0; d<this.min.length; ++d) {
         if ((this.min[d] <= other.min[d] && this.max[d] >= other.max[d]) == false) {
           // not contains:

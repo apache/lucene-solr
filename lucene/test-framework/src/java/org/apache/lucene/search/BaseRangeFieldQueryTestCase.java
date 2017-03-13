@@ -53,7 +53,7 @@ public abstract class BaseRangeFieldQueryTestCase extends LuceneTestCase {
 
   protected abstract Query newCrossesQuery(Range box);
 
-  protected abstract Range nextRange(int dimensions);
+  protected abstract Range nextRange(int dimensions) throws Exception;
 
   protected int dimension() {
     return random().nextInt(4) + 1;
@@ -314,10 +314,12 @@ public abstract class BaseRangeFieldQueryTestCase extends LuceneTestCase {
     return relation == queryType;
   }
 
-  abstract static class Range {
+  /** base class for range verification */
+  protected abstract static class Range {
     protected boolean isMissing = false;
 
-    enum QueryType { INTERSECTS, WITHIN, CONTAINS, CROSSES }
+    /** supported query relations */
+    protected enum QueryType { INTERSECTS, WITHIN, CONTAINS, CROSSES }
 
     protected abstract int numDimensions();
     protected abstract Object getMin(int dim);
