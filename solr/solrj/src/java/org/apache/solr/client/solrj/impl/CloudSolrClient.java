@@ -903,10 +903,18 @@ public class CloudSolrClient extends SolrClient {
     // TolerantUpdateProcessor
     List<SimpleOrderedMap<String>> toleratedErrors = null; 
     int maxToleratedErrors = Integer.MAX_VALUE;
-      
+
+    NamedList adds = new NamedList();
+
     for(int i=0; i<response.size(); i++) {
       NamedList shardResponse = (NamedList)response.getVal(i);
-      NamedList header = (NamedList)shardResponse.get("responseHeader");      
+
+      Object addsObject = shardResponse.get("adds");
+      if(addsObject instanceof NamedList) {
+        adds.addAll((NamedList)addsObject);
+      }
+
+      NamedList header = (NamedList)shardResponse.get("responseHeader");
       Integer shardStatus = (Integer)header.get("status");
       int s = shardStatus.intValue();
       if(s > 0) {
@@ -937,6 +945,10 @@ public class CloudSolrClient extends SolrClient {
           toleratedErrors.add(err);
         }
       }
+    }
+
+    if(adds != null && adds.size() > 0) {
+      condensed.add("adds", adds);
     }
 
     NamedList cheader = new NamedList();
