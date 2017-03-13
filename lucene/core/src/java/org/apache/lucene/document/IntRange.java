@@ -188,12 +188,7 @@ public class IntRange extends Field {
    * @throws IllegalArgumentException if {@code field} is null, {@code min} or {@code max} is invalid
    */
   public static Query newIntersectsQuery(String field, final int[] min, final int[] max) {
-    return new RangeFieldQuery(field, encode(min, max), min.length, QueryType.INTERSECTS) {
-      @Override
-      protected String toString(byte[] ranges, int dimension) {
-        return IntRange.toString(ranges, dimension);
-      }
-    };
+    return newRelationQuery(field, min, max, QueryType.INTERSECTS);
   }
 
   /**
