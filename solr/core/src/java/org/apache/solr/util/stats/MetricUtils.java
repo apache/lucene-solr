@@ -33,6 +33,7 @@ import com.codahale.metrics.MetricRegistry;
 import com.codahale.metrics.Snapshot;
 import com.codahale.metrics.Timer;
 import org.apache.solr.common.util.NamedList;
+import org.apache.solr.common.util.SimpleOrderedMap;
 
 /**
  * Metrics specific utility functions.
@@ -80,7 +81,7 @@ public class MetricUtils {
    * @return a {@link NamedList}
    */
   public static NamedList toNamedList(MetricRegistry registry, List<MetricFilter> shouldMatchFilters, MetricFilter mustMatchFilter) {
-    NamedList response = new NamedList();
+    NamedList response = new SimpleOrderedMap();
     Map<String, Metric> metrics = registry.getMetrics();
     SortedSet<String> names = registry.getNames();
     names.stream()
@@ -109,7 +110,7 @@ public class MetricUtils {
   }
 
   static NamedList histogramToNamedList(Histogram histogram) {
-    NamedList response = new NamedList();
+    NamedList response = new SimpleOrderedMap();
     Snapshot snapshot = histogram.getSnapshot();
     response.add("count", histogram.getCount());
     // non-time based values
@@ -161,7 +162,7 @@ public class MetricUtils {
   }
 
   static NamedList timerToNamedList(Timer timer) {
-    NamedList response = new NamedList();
+    NamedList response = new SimpleOrderedMap();
     response.add("count", timer.getCount());
     response.add("meanRate", timer.getMeanRate());
     response.add("1minRate", timer.getOneMinuteRate());
@@ -173,7 +174,7 @@ public class MetricUtils {
   }
 
   static NamedList meterToNamedList(Meter meter) {
-    NamedList response = new NamedList();
+    NamedList response = new SimpleOrderedMap();
     response.add("count", meter.getCount());
     response.add("meanRate", meter.getMeanRate());
     response.add("1minRate", meter.getOneMinuteRate());
@@ -183,13 +184,13 @@ public class MetricUtils {
   }
 
   static NamedList gaugeToNamedList(Gauge gauge) {
-    NamedList response = new NamedList();
+    NamedList response = new SimpleOrderedMap();
     response.add("value", gauge.getValue());
     return response;
   }
 
   static NamedList counterToNamedList(Counter counter) {
-    NamedList response = new NamedList();
+    NamedList response = new SimpleOrderedMap();
     response.add("count", counter.getCount());
     return response;
   }
