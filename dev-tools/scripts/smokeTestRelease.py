@@ -856,7 +856,7 @@ def testSolrExample(unpackPath, javaPath, isSrc):
       print('FAILED: response is:\n%s' % s)
       raise RuntimeError('query on solr example instance failed')
     s = load('http://localhost:8983/v2/cores')
-    if s.find('"responseHeader":{"status":0,"QTime":1}') == -1:
+    if s.find('"responseHeader":{"status":0') == -1:
       print('FAILED: response is:\n%s' % s)
       raise RuntimeError('query api v2 on solr example instance failed')
   finally:
