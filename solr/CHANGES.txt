@@ -114,6 +114,8 @@ New Features
 
 * SOLR-9045: Make RecoveryStrategy settings configurable. (Christine Poerschke)
 
+* SOLR-10224: Add disk total and disk free metrics. (ab)
+
 Bug Fixes
 ----------------------
 
