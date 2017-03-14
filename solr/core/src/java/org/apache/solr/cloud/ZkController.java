@@ -1424,13 +1424,7 @@ public class ZkController {
             errorMessage.set("coreNodeName " + coreNodeName + " does not exist in shard " + cloudDesc.getShardId());
             return false;
           }
-          String baseUrl = replica.getStr(BASE_URL_PROP);
-          String coreName = replica.getStr(CORE_NAME_PROP);
-          if (baseUrl.equals(this.baseURL) && coreName.equals(cd.getName())) {
-            return true;
-          }
-          errorMessage.set("coreNodeName " + coreNodeName + " exists, but does not match expected node or core name");
-          return false;
+          return true;
         });
       } catch (TimeoutException e) {
         String error = errorMessage.get();
