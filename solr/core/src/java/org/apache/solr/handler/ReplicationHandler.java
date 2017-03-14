@@ -209,6 +209,11 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
   private Long pollIntervalNs;
   private String pollIntervalStr;
 
+  private PollListener pollListener;
+  public interface PollListener {
+    void onComplete(SolrCore solrCore, boolean pollSuccess) throws IOException;
+  }
+
   /**
    * Disable the timer task for polling
    */
@@ -216,6 +221,10 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
 
   String getPollInterval() {
     return pollIntervalStr;
+  }
+
+  public void setPollListener(PollListener pollListener) {
+    this.pollListener = pollListener;
   }
 
   @Override
@@ -1142,7 +1151,8 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
       try {
         LOG.debug("Polling for index modifications");
         markScheduledExecutionStart();
-        doFetch(null, false);
+        boolean pollSuccess = doFetch(null, false);
+        if (pollListener != null) pollListener.onComplete(core, pollSuccess);
       } catch (Exception e) {
         LOG.error("Exception in fetching index", e);
       }
@@ -1326,6 +1336,20 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
       @Override
       public void postClose(SolrCore core) {}
     });
+  }
+
+  public void close() {
+    if (executorService != null) executorService.shutdown();
+    if (pollingIndexFetcher != null) {
+      pollingIndexFetcher.destroy();
+    }
+    if (currentIndexFetcher != null && currentIndexFetcher != pollingIndexFetcher) {
+      currentIndexFetcher.destroy();
+    }
+    ExecutorUtil.shutdownAndAwaitTermination(restoreExecutor);
+    if (restoreFuture != null) {
+      restoreFuture.cancel(false);
+    }
   }
 
   /**
@@ -1679,6 +1703,8 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
   private static final String EXCEPTION = "exception";
 
   public static final String MASTER_URL = "masterUrl";
+
+  public static final String FETCH_FROM_LEADER = "fetchFromLeader";
 
   public static final String STATUS = "status";
 

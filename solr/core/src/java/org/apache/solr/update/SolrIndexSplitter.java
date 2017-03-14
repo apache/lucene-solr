@@ -137,7 +137,8 @@ public class SolrIndexSplitter {
         // we commit explicitly instead of sending a CommitUpdateCommand through the processor chain
         // because the sub-shard cores will just ignore such a commit because the update log is not
         // in active state at this time.
-        SolrIndexWriter.setCommitData(iw);
+        //TODO no commitUpdateCommand
+        SolrIndexWriter.setCommitData(iw, -1);
         iw.commit();
         success = true;
       } finally {

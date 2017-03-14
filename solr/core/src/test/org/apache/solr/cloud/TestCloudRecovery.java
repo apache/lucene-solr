@@ -52,6 +52,7 @@ import org.junit.Test;
 public class TestCloudRecovery extends SolrCloudTestCase {
 
   private static final String COLLECTION = "collection1";
+  private static boolean onlyLeaderIndexes;
 
   @BeforeClass
   public static void setupCluster() throws Exception {
@@ -63,8 +64,10 @@ public class TestCloudRecovery extends SolrCloudTestCase {
         .addConfig("config", TEST_PATH().resolve("configsets").resolve("cloud-minimal").resolve("conf"))
         .configure();
 
+    onlyLeaderIndexes = random().nextBoolean();
     CollectionAdminRequest
         .createCollection(COLLECTION, "config", 2, 2)
+        .setRealtimeReplicas(onlyLeaderIndexes? 1: -1)
         .setMaxShardsPerNode(2)
         .process(cluster.getSolrClient());
     AbstractDistribZkTestBase.waitForRecoveriesToFinish(COLLECTION, cluster.getSolrClient().getZkStateReader(),
@@ -107,7 +110,12 @@ public class TestCloudRecovery extends SolrCloudTestCase {
     resp = cloudClient.query(COLLECTION, params);
     assertEquals(4, resp.getResults().getNumFound());
     // Make sure all nodes is recover from tlog
-    assertEquals(4, countReplayLog.get());
+    if (onlyLeaderIndexes) {
+      // Leader election can be kicked off, so 2 append replicas will replay its tlog before becoming new leader
+      assertTrue( countReplayLog.get() >=2);
+    } else {
+      assertEquals(4, countReplayLog.get());
+    }
 
     // check metrics
     int replicationCount = 0;
@@ -127,7 +135,11 @@ public class TestCloudRecovery extends SolrCloudTestCase {
         skippedCount += skipped.getCount();
       }
     }
-    assertEquals(2, replicationCount);
+    if (onlyLeaderIndexes) {
+      assertTrue(replicationCount >= 2);
+    } else {
+      assertEquals(2, replicationCount);
+    }
   }
 
   @Test
