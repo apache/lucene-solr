@@ -243,6 +243,10 @@ Bug Fixes
 
 * SOLR-10269: MetricsHandler JSON output incorrect. (ab)
 
+* SOLR-10279: The autoAddReplica feature can result in SolrCores being assigned new shards when using
+  legacyCloud=false and will also fail on a state check when taking over a core registration with a new
+  core. (Mark Miller, Hrishikesh Gadre, Patrick Dvorack)
+
 Optimizations
 ----------------------
 

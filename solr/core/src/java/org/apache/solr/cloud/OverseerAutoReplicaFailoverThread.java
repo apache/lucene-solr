@@ -243,13 +243,14 @@ public class OverseerAutoReplicaFailoverThread implements Runnable, Closeable {
     final String dataDir = badReplica.replica.getStr("dataDir");
     final String ulogDir = badReplica.replica.getStr("ulogDir");
     final String coreNodeName = badReplica.replica.getName();
+    final String shardId = badReplica.slice.getName();
     if (dataDir != null) {
       // need an async request - full shard goes down leader election
       final String coreName = badReplica.replica.getStr(ZkStateReader.CORE_NAME_PROP);
       log.debug("submit call to {}", createUrl);
       MDC.put("OverseerAutoReplicaFailoverThread.createUrl", createUrl);
       try {
-        updateExecutor.submit(() -> createSolrCore(collection, createUrl, dataDir, ulogDir, coreNodeName, coreName));
+        updateExecutor.submit(() -> createSolrCore(collection, createUrl, dataDir, ulogDir, coreNodeName, coreName, shardId));
       } finally {
         MDC.remove("OverseerAutoReplicaFailoverThread.createUrl");
       }
@@ -440,7 +441,7 @@ public class OverseerAutoReplicaFailoverThread implements Runnable, Closeable {
 
   private boolean createSolrCore(final String collection,
       final String createUrl, final String dataDir, final String ulogDir,
-      final String coreNodeName, final String coreName) {
+      final String coreNodeName, final String coreName, final String shardId) {
 
     try (HttpSolrClient client = new HttpSolrClient.Builder(createUrl).build()) {
       log.debug("create url={}", createUrl);
@@ -451,6 +452,7 @@ public class OverseerAutoReplicaFailoverThread implements Runnable, Closeable {
       createCmd.setCoreNodeName(coreNodeName);
       // TODO: how do we ensure unique coreName
       // for now, the collections API will use unique names
+      createCmd.setShardId(shardId);
       createCmd.setCoreName(coreName);
       createCmd.setDataDir(dataDir);
       createCmd.setUlogDir(ulogDir.substring(0, ulogDir.length() - "/tlog".length()));
