@@ -181,6 +181,8 @@ New Features
 
 * SOLR-9045: Make RecoveryStrategy settings configurable. (Christine Poerschke)
 
+* SOLR-10076: Hide keystore and truststore passwords from /admin/info/* outputs. (Mano Kovacs via Mark Miller)
+
 Bug Fixes
 ----------------------
 
