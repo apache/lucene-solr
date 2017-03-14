@@ -202,6 +202,16 @@ public class UninvertDocValuesMergePolicyFactory extends WrapperMergePolicyFacto
     public FieldInfos getFieldInfos() {
       return uninvertingReader.getFieldInfos();
     }
+
+    @Override
+    public CacheHelper getCoreCacheHelper() {
+      return in.getCoreCacheHelper();
+    }
+
+    @Override
+    public CacheHelper getReaderCacheHelper() {
+      return in.getReaderCacheHelper();
+    }
     
   }
 
