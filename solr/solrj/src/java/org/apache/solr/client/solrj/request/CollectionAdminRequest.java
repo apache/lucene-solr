@@ -366,6 +366,7 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse> 
 
     private Properties properties;
     protected Boolean autoAddReplicas;
+    protected Integer realtimeReplicas;
     protected Integer stateFormat;
     private String[] rule , snitch;
 
@@ -407,6 +408,7 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse> 
     public Create setNumShards(Integer numShards) {this.numShards = numShards; return this; }
     public Create setMaxShardsPerNode(Integer numShards) { this.maxShardsPerNode = numShards; return this; }
     public Create setAutoAddReplicas(boolean autoAddReplicas) { this.autoAddReplicas = autoAddReplicas; return this; }
+    public Create setRealtimeReplicas(Integer realtimeReplicas) { this.realtimeReplicas = realtimeReplicas; return this;}
     @Deprecated
     public Create setReplicationFactor(Integer repl) { this.replicationFactor = repl; return this; }
     public Create setStateFormat(Integer stateFormat) { this.stateFormat = stateFormat; return this; }
@@ -421,6 +423,7 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse> 
     public Integer getMaxShardsPerNode() { return maxShardsPerNode; }
     public Integer getReplicationFactor() { return replicationFactor; }
     public Boolean getAutoAddReplicas() { return autoAddReplicas; }
+    public Integer getRealtimeReplicas() { return realtimeReplicas; }
     public Integer getStateFormat() { return stateFormat; }
     
     /**
@@ -506,6 +509,9 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse> 
       }
       if (autoAddReplicas != null) {
         params.set(ZkStateReader.AUTO_ADD_REPLICAS, autoAddReplicas);
+      }
+      if (realtimeReplicas != null) {
+        params.set(ZkStateReader.REALTIME_REPLICAS, realtimeReplicas);
       }
       if(properties != null) {
         addProperties(params, properties);

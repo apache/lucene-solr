@@ -61,6 +61,7 @@ public class SolrIndexWriter extends IndexWriter {
   /** Stored into each Lucene commit to record the
    *  System.currentTimeMillis() when commit was called. */
   public static final String COMMIT_TIME_MSEC_KEY = "commitTimeMSec";
+  public static final String COMMIT_COMMAND_VERSION = "commitCommandVer";
 
   private final Object CLOSE_LOCK = new Object();
   
@@ -183,10 +184,11 @@ public class SolrIndexWriter extends IndexWriter {
 
   @SuppressForbidden(reason = "Need currentTimeMillis, commit time should be used only for debugging purposes, " +
       " but currently suspiciously used for replication as well")
-  public static void setCommitData(IndexWriter iw) {
-    log.info("Calling setCommitData with IW:" + iw.toString());
+  public static void setCommitData(IndexWriter iw, long commitCommandVersion) {
+    log.info("Calling setCommitData with IW:" + iw.toString() + " commitCommandVersion:"+commitCommandVersion);
     final Map<String,String> commitData = new HashMap<>();
     commitData.put(COMMIT_TIME_MSEC_KEY, String.valueOf(System.currentTimeMillis()));
+    commitData.put(COMMIT_COMMAND_VERSION, String.valueOf(commitCommandVersion));
     iw.setLiveCommitData(commitData.entrySet());
   }
 

@@ -118,7 +118,8 @@ public class RecoveryStrategy extends Thread implements Closeable {
   private boolean recoveringAfterStartup;
   private CoreContainer cc;
   private volatile HttpUriRequest prevSendPreRecoveryHttpUriRequest;
-  
+  private boolean onlyLeaderIndexes;
+
   protected RecoveryStrategy(CoreContainer cc, CoreDescriptor cd, RecoveryListener recoveryListener) {
     this.cc = cc;
     this.coreName = cd.getName();
@@ -128,6 +129,8 @@ public class RecoveryStrategy extends Thread implements Closeable {
     zkStateReader = zkController.getZkStateReader();
     baseUrl = zkController.getBaseUrl();
     coreZkNodeName = cd.getCloudDescriptor().getCoreNodeName();
+    String collection = cd.getCloudDescriptor().getCollectionName();
+    onlyLeaderIndexes = zkStateReader.getClusterState().getCollection(collection).getRealtimeReplicas() == 1;
   }
 
   final public int getWaitForUpdatesWithStaleStatePauseMilliSeconds() {
@@ -260,7 +263,7 @@ public class RecoveryStrategy extends Thread implements Closeable {
       UpdateRequest ureq = new UpdateRequest();
       ureq.setParams(new ModifiableSolrParams());
       ureq.getParams().set(DistributedUpdateProcessor.COMMIT_END_POINT, true);
-      ureq.getParams().set(UpdateParams.OPEN_SEARCHER, false);
+      ureq.getParams().set(UpdateParams.OPEN_SEARCHER, onlyLeaderIndexes);
       ureq.setAction(AbstractUpdateRequest.ACTION.COMMIT, false, true).process(
           client);
     }
@@ -309,7 +312,8 @@ public class RecoveryStrategy extends Thread implements Closeable {
       return;
     }
 
-    boolean firstTime = true;
+    // we temporary ignore peersync for realtimeReplicas mode
+    boolean firstTime = !onlyLeaderIndexes;
 
     List<Long> recentVersions;
     try (UpdateLog.RecentUpdates recentUpdates = ulog.getRecentUpdates()) {
@@ -359,6 +363,10 @@ public class RecoveryStrategy extends Thread implements Closeable {
         SolrException.log(LOG, "Error trying to get ulog starting operation.", e);
         firstTime = false; // skip peersync
       }
+    }
+
+    if (onlyLeaderIndexes) {
+      zkController.stopReplicationFromLeader(coreName);
     }
 
     Future<RecoveryInfo> replayFuture = null;
@@ -514,6 +522,9 @@ public class RecoveryStrategy extends Thread implements Closeable {
         if (successfulRecovery) {
           LOG.info("Registering as Active after recovery.");
           try {
+            if (onlyLeaderIndexes) {
+              zkController.startReplicationFromLeader(coreName);
+            }
             zkController.publish(core.getCoreDescriptor(), Replica.State.ACTIVE);
           } catch (Exception e) {
             LOG.error("Could not publish as ACTIVE after succesful recovery", e);
@@ -587,8 +598,20 @@ public class RecoveryStrategy extends Thread implements Closeable {
     LOG.info("Finished recovery process, successful=[{}]", Boolean.toString(successfulRecovery));
   }
 
+  public static Runnable testing_beforeReplayBufferingUpdates;
+
   final private Future<RecoveryInfo> replay(SolrCore core)
       throws InterruptedException, ExecutionException {
+    if (testing_beforeReplayBufferingUpdates != null) {
+      testing_beforeReplayBufferingUpdates.run();
+    }
+    if (onlyLeaderIndexes) {
+      // roll over all updates during buffering to new tlog, make RTG available
+      SolrQueryRequest req = new LocalSolrQueryRequest(core,
+          new ModifiableSolrParams());
+      core.getUpdateHandler().getUpdateLog().copyOverBufferingUpdates(new CommitUpdateCommand(req, false));
+      return null;
+    }
     Future<RecoveryInfo> future = core.getUpdateHandler().getUpdateLog().applyBufferedUpdates();
     if (future == null) {
       // no replay needed\

@@ -33,6 +33,7 @@ import org.noggit.JSONWriter;
 
 import static org.apache.solr.common.cloud.ZkStateReader.AUTO_ADD_REPLICAS;
 import static org.apache.solr.common.cloud.ZkStateReader.MAX_SHARDS_PER_NODE;
+import static org.apache.solr.common.cloud.ZkStateReader.REALTIME_REPLICAS;
 import static org.apache.solr.common.cloud.ZkStateReader.REPLICATION_FACTOR;
 
 /**
@@ -59,6 +60,7 @@ public class DocCollection extends ZkNodeProps implements Iterable<Slice> {
   private final Integer replicationFactor;
   private final Integer maxShardsPerNode;
   private final Boolean autoAddReplicas;
+  private final Integer realtimeReplicas;
 
 
   public DocCollection(String name, Map<String, Slice> slices, Map<String, Object> props, DocRouter router) {
@@ -84,6 +86,11 @@ public class DocCollection extends ZkNodeProps implements Iterable<Slice> {
     this.maxShardsPerNode = (Integer) verifyProp(props, MAX_SHARDS_PER_NODE);
     Boolean autoAddReplicas = (Boolean) verifyProp(props, AUTO_ADD_REPLICAS);
     this.autoAddReplicas = autoAddReplicas == null ? false : autoAddReplicas;
+    Integer realtimeReplicas = (Integer) verifyProp(props, REALTIME_REPLICAS);
+    this.realtimeReplicas = realtimeReplicas == null ? -1 : realtimeReplicas;
+    if (this.realtimeReplicas != -1 && this.realtimeReplicas != 1) {
+      throw new SolrException(ErrorCode.SERVER_ERROR, "Invalid realtimeReplicas must be 1 or -1, found:" + this.realtimeReplicas);
+    }
     verifyProp(props, RULE);
     verifyProp(props, SNITCH);
     Iterator<Map.Entry<String, Slice>> iter = slices.entrySet().iterator();
@@ -126,6 +133,7 @@ public class DocCollection extends ZkNodeProps implements Iterable<Slice> {
     switch (propName) {
       case MAX_SHARDS_PER_NODE:
       case REPLICATION_FACTOR:
+      case REALTIME_REPLICAS:
         return Integer.parseInt(o.toString());
       case AUTO_ADD_REPLICAS:
         return Boolean.parseBoolean(o.toString());
@@ -224,6 +232,10 @@ public class DocCollection extends ZkNodeProps implements Iterable<Slice> {
       throw new SolrException(ErrorCode.BAD_REQUEST, MAX_SHARDS_PER_NODE + " is not in the cluster state.");
     }
     return maxShardsPerNode;
+  }
+
+  public int getRealtimeReplicas() {
+    return realtimeReplicas;
   }
 
   public String getZNode(){

@@ -279,6 +279,7 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
   // this is set to true in the constructor if the next processors in the chain
   // are custom and may modify the SolrInputDocument racing with its serialization for replication
   private final boolean cloneRequiredOnLeader;
+  private final boolean onlyLeaderIndexes;
 
   public DistributedUpdateProcessor(SolrQueryRequest req, SolrQueryResponse rsp, UpdateRequestProcessor next) {
     this(req, rsp, new AtomicUpdateDocumentMerger(req), next);
@@ -324,8 +325,12 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
     
     if (cloudDesc != null) {
       collection = cloudDesc.getCollectionName();
+      ClusterState cstate = zkController.getClusterState();
+      DocCollection coll = cstate.getCollection(collection);
+      onlyLeaderIndexes = coll.getRealtimeReplicas() == 1;
     } else {
       collection = null;
+      onlyLeaderIndexes = false;
     }
 
     boolean shouldClone = false;
@@ -1186,6 +1191,9 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
                 checkDeleteByQueries = true;
               }
             }
+            if (onlyLeaderIndexes && (cmd.getFlags() & UpdateCommand.REPLAY) == 0) {
+              cmd.setFlags(cmd.getFlags() | UpdateCommand.IGNORE_INDEXWRITER);
+            }
           }
         }
         
@@ -1692,6 +1700,10 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
             return;
           }
 
+          if (onlyLeaderIndexes && (cmd.getFlags() & UpdateCommand.REPLAY) == 0) {
+            cmd.setFlags(cmd.getFlags() | UpdateCommand.IGNORE_INDEXWRITER);
+          }
+
           doLocalDelete(cmd);
         }
       }
@@ -1845,6 +1857,10 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
                 return true;
               }
             }
+
+            if (onlyLeaderIndexes && (cmd.getFlags() & UpdateCommand.REPLAY) == 0) {
+              cmd.setFlags(cmd.getFlags() | UpdateCommand.IGNORE_INDEXWRITER);
+            }
           }
         }
 
@@ -1876,7 +1892,27 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
     }
     
     if (!zkEnabled || req.getParams().getBool(COMMIT_END_POINT, false) || singleLeader) {
-      doLocalCommit(cmd);
+      if (onlyLeaderIndexes) {
+        try {
+          Replica leaderReplica = zkController.getZkStateReader().getLeaderRetry(
+              collection, cloudDesc.getShardId());
+          isLeader = leaderReplica.getName().equals(
+              req.getCore().getCoreDescriptor().getCloudDescriptor()
+                  .getCoreNodeName());
+          if (isLeader) {
+            long commitVersion = vinfo.getNewClock();
+            cmd.setVersion(commitVersion);
+            doLocalCommit(cmd);
+          } else {
+            assert TestInjection.waitForInSyncWithLeader(req.getCore(),
+                zkController, collection, cloudDesc.getShardId());
+          }
+        } catch (InterruptedException e) {
+          throw new SolrException(ErrorCode.SERVICE_UNAVAILABLE, "Exception finding leader for shard " + cloudDesc.getShardId(), e);
+        }
+      } else {
+        doLocalCommit(cmd);
+      }
     } else {
       ModifiableSolrParams params = new ModifiableSolrParams(filterParams(req.getParams()));
       if (!req.getParams().getBool(COMMIT_END_POINT, false)) {

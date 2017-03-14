@@ -21,6 +21,7 @@ import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 
 import org.apache.hadoop.fs.Path;
@@ -420,7 +421,24 @@ final class ShardLeaderElectionContext extends ShardLeaderElectionContextBase {
         try {
           // we must check LIR before registering as leader
           checkLIR(coreName, allReplicasInLine);
-          
+
+          boolean onlyLeaderIndexes = zkController.getClusterState().getCollection(collection).getRealtimeReplicas() == 1;
+          if (onlyLeaderIndexes) {
+            // stop replicate from old leader
+            zkController.stopReplicationFromLeader(coreName);
+            if (weAreReplacement) {
+              try (SolrCore core = cc.getCore(coreName)) {
+                Future<UpdateLog.RecoveryInfo> future = core.getUpdateHandler().getUpdateLog().recoverFromCurrentLog();
+                if (future != null) {
+                  log.info("Replaying tlog before become new leader");
+                  future.get();
+                } else {
+                  log.info("New leader does not have old tlog to replay");
+                }
+              }
+            }
+          }
+
           super.runLeaderProcess(weAreReplacement, 0);
           try (SolrCore core = cc.getCore(coreName)) {
             if (core != null) {

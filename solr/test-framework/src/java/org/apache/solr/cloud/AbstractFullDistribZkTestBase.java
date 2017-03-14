@@ -272,6 +272,10 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
     chaosMonkey = new ChaosMonkey(zkServer, zkStateReader, DEFAULT_COLLECTION,
         shardToJetty, shardToLeaderJetty);
   }
+
+  protected int getRealtimeReplicas() {
+    return -1;
+  }
   
   protected CloudSolrClient createCloudClient(String defaultCollection) {
     CloudSolrClient client = getCloudSolrClient(zkServer.getZkAddress(), random().nextBoolean());
@@ -383,7 +387,8 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
           Utils.toJSON(Utils.makeMap(Overseer.QUEUE_OPERATION,
               CollectionParams.CollectionAction.CREATE.toLower(), "name",
               DEFAULT_COLLECTION, "numShards", String.valueOf(sliceCount),
-              DocCollection.STATE_FORMAT, getStateFormat())));
+              DocCollection.STATE_FORMAT, getStateFormat(),
+              ZkStateReader.REALTIME_REPLICAS, getRealtimeReplicas())));
       zkClient.close();
     }
 
@@ -1619,7 +1624,8 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
         NUM_SLICES, numShards,
         ZkStateReader.REPLICATION_FACTOR, replicationFactor,
         CREATE_NODE_SET, createNodeSetStr,
-        ZkStateReader.MAX_SHARDS_PER_NODE, maxShardsPerNode),
+        ZkStateReader.MAX_SHARDS_PER_NODE, maxShardsPerNode,
+        ZkStateReader.REALTIME_REPLICAS, getRealtimeReplicas()),
         client);
   }
 
@@ -1631,7 +1637,8 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
         NUM_SLICES, numShards,
         ZkStateReader.REPLICATION_FACTOR, replicationFactor,
         CREATE_NODE_SET, createNodeSetStr,
-        ZkStateReader.MAX_SHARDS_PER_NODE, maxShardsPerNode),
+        ZkStateReader.MAX_SHARDS_PER_NODE, maxShardsPerNode,
+        ZkStateReader.REALTIME_REPLICAS, getRealtimeReplicas()),
         client, configName);
   }
 
@@ -1814,6 +1821,7 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
     Map<String, Object> props = makeMap(
         ZkStateReader.REPLICATION_FACTOR, replicationFactor,
         ZkStateReader.MAX_SHARDS_PER_NODE, maxShardsPerNode,
+        ZkStateReader.REALTIME_REPLICAS, getRealtimeReplicas(),
         NUM_SLICES, numShards);
     Map<String,List<Integer>> collectionInfos = new HashMap<>();
     createCollection(collectionInfos, collName, props, client);

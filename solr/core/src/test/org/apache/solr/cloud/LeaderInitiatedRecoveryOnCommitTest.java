@@ -37,10 +37,17 @@ public class LeaderInitiatedRecoveryOnCommitTest extends BasicDistributedZkTest 
 
   private static final long sleepMsBeforeHealPartition = 2000L;
 
+  private final boolean onlyLeaderIndexes = random().nextBoolean();
+
   public LeaderInitiatedRecoveryOnCommitTest() {
     super();
     sliceCount = 1;
     fixShardCount(4);
+  }
+
+  @Override
+  protected int getRealtimeReplicas() {
+    return onlyLeaderIndexes? 1 : -1;
   }
 
   @Override

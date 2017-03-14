@@ -71,6 +71,7 @@ import org.slf4j.LoggerFactory;
 @Slow
 public class TestInPlaceUpdatesDistrib extends AbstractFullDistribZkTestBase {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
+  private final boolean onlyLeaderIndexes = random().nextBoolean();
 
   @BeforeClass
   public static void beforeSuperClass() throws Exception {
@@ -108,7 +109,12 @@ public class TestInPlaceUpdatesDistrib extends AbstractFullDistribZkTestBase {
       iw.decref();
     }
   }
-  
+
+  @Override
+  protected int getRealtimeReplicas() {
+    return onlyLeaderIndexes? 1 : -1;
+  }
+
   @After
   public void after() {
     System.clearProperty("solr.tests.intClassName");
@@ -265,6 +271,10 @@ public class TestInPlaceUpdatesDistrib extends AbstractFullDistribZkTestBase {
   }
 
   private void reorderedDBQIndividualReplicaTest() throws Exception {
+    if (onlyLeaderIndexes) {
+      log.info("RTG with DBQs are not working in append replicas");
+      return;
+    }
     clearIndex();
     commit();
 
@@ -595,7 +605,6 @@ public class TestInPlaceUpdatesDistrib extends AbstractFullDistribZkTestBase {
   }
 
   private void outOfOrderUpdatesIndividualReplicaTest() throws Exception {
-    
     clearIndex();
     commit();
 
@@ -741,6 +750,10 @@ public class TestInPlaceUpdatesDistrib extends AbstractFullDistribZkTestBase {
         DV(id=x, val=5, ver=3)
    */
   private void reorderedDBQsResurrectionTest() throws Exception {
+    if (onlyLeaderIndexes) {
+      log.info("RTG with DBQs are not working in append replicas");
+      return;
+    }
     clearIndex();
     commit();
 
@@ -1016,7 +1029,7 @@ public class TestInPlaceUpdatesDistrib extends AbstractFullDistribZkTestBase {
     String baseUrl = getBaseUrl(""+id);
 
     UpdateRequest ur = new UpdateRequest();
-    if (random().nextBoolean()) {
+    if (random().nextBoolean() || onlyLeaderIndexes) {
       ur.deleteById(""+id);
     } else {
       ur.deleteByQuery("id:"+id);
@@ -1138,6 +1151,10 @@ public class TestInPlaceUpdatesDistrib extends AbstractFullDistribZkTestBase {
    * dbq("inp:14",version=4)
    */
   private void reorderedDBQsUsingUpdatedValueFromADroppedUpdate() throws Exception {
+    if (onlyLeaderIndexes) {
+      log.info("RTG with DBQs are not working in append replicas");
+      return;
+    }
     clearIndex();
     commit();
     
