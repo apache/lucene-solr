@@ -34,9 +34,16 @@
 # Comment out SOLR_HEAP if you are using this though, that takes precedence
 #SOLR_JAVA_MEM="-Xms512m -Xmx512m"
 
-# Enable verbose GC logging
+# Enable verbose GC logging...
+#  * If this is unset, various default options will be selected depending on which JVM version is in use
+#  * For java8 or lower: if this is set, additional params will be added to specify the log file & rotation
+#  * For java9 or higher: each included opt param that starts with '-Xlog:gc', but does not include an output
+#    specifier, will have a 'file' output specifier (as well as formatting & rollover options) appended,
+#    using the effective value of the SOLR_LOGS_DIR.
+#
+#GC_LOG_OPTS='-Xlog:gc*'  # (java9)
 #GC_LOG_OPTS="-verbose:gc -XX:+PrintHeapAtGC -XX:+PrintGCDetails \
-#-XX:+PrintGCDateStamps -XX:+PrintGCTimeStamps -XX:+PrintTenuringDistribution -XX:+PrintGCApplicationStoppedTime"
+#  -XX:+PrintGCDateStamps -XX:+PrintGCTimeStamps -XX:+PrintTenuringDistribution -XX:+PrintGCApplicationStoppedTime"
 
 # These GC settings have shown to work well for a number of common Solr workloads
 #GC_TUNE="-XX:NewRatio=3 -XX:SurvivorRatio=4    etc.
