@@ -47,6 +47,7 @@ import org.apache.solr.metrics.AggregateMetric;
 public class MetricUtils {
 
   public static final String METRIC_NAME = "metric";
+  public static final String VALUE = "value";
   public static final String VALUES = "values";
 
   static final String MS = "_ms";
@@ -110,16 +111,17 @@ public class MetricUtils {
    * @param mustMatchFilter a {@link MetricFilter}.
    *                        A metric <em>must</em> match this filter to be included in the output.
    * @param skipHistograms discard any {@link Histogram}-s and histogram parts of {@link Timer}-s.
+   * @param compact use compact representation for counters and gauges.
    * @param metadata optional metadata. If not null and not empty then this map will be added under a
    *                 {@code _metadata_} key.
    * @return a {@link NamedList}
    */
   public static NamedList toNamedList(MetricRegistry registry, List<MetricFilter> shouldMatchFilters,
                                       MetricFilter mustMatchFilter, boolean skipHistograms,
-                                      boolean skipAggregateValues,
+                                      boolean skipAggregateValues, boolean compact,
                                       Map<String, Object> metadata) {
     NamedList result = new SimpleOrderedMap();
-    toNamedMaps(registry, shouldMatchFilters, mustMatchFilter, skipHistograms, skipAggregateValues, (k, v) -> {
+    toMaps(registry, shouldMatchFilters, mustMatchFilter, skipHistograms, skipAggregateValues, compact, (k, v) -> {
       result.add(k, v);
     });
     if (metadata != null && !metadata.isEmpty()) {
@@ -140,17 +142,18 @@ public class MetricUtils {
    * @param mustMatchFilter a {@link MetricFilter}.
    *                        A metric <em>must</em> match this filter to be included in the output.
    * @param skipHistograms discard any {@link Histogram}-s and histogram parts of {@link Timer}-s.
+   * @param compact use compact representation for counters and gauges.
    * @param metadata optional metadata. If not null and not empty then this map will be added under a
    *                 {@code _metadata_} key.
    * @return a list of {@link SolrInputDocument}-s
    */
   public static List<SolrInputDocument> toSolrInputDocuments(MetricRegistry registry, List<MetricFilter> shouldMatchFilters,
                                                              MetricFilter mustMatchFilter, boolean skipHistograms,
-                                                             boolean skipAggregateValues,
+                                                             boolean skipAggregateValues, boolean compact,
                                                              Map<String, Object> metadata) {
     List<SolrInputDocument> result = new LinkedList<>();
     toSolrInputDocuments(registry, shouldMatchFilters, mustMatchFilter, skipHistograms,
-        skipAggregateValues, metadata, doc -> {
+        skipAggregateValues, compact, metadata, doc -> {
       result.add(doc);
     });
     return result;
@@ -158,10 +161,10 @@ public class MetricUtils {
 
   public static void toSolrInputDocuments(MetricRegistry registry, List<MetricFilter> shouldMatchFilters,
                                           MetricFilter mustMatchFilter, boolean skipHistograms,
-                                          boolean skipAggregateValues,
+                                          boolean skipAggregateValues, boolean compact,
                                           Map<String, Object> metadata, Consumer<SolrInputDocument> consumer) {
     boolean addMetadata = metadata != null && !metadata.isEmpty();
-    toNamedMaps(registry, shouldMatchFilters, mustMatchFilter, skipHistograms, skipAggregateValues, (k, v) -> {
+    toMaps(registry, shouldMatchFilters, mustMatchFilter, skipHistograms, skipAggregateValues, compact, (k, v) -> {
       SolrInputDocument doc = new SolrInputDocument();
       doc.setField(METRIC_NAME, k);
       toSolrInputDocument(null, doc, v);
@@ -172,10 +175,16 @@ public class MetricUtils {
     });
   }
 
-  public static void toSolrInputDocument(String prefix, SolrInputDocument doc, Map<String, Object> map) {
+  public static void toSolrInputDocument(String prefix, SolrInputDocument doc, Object o) {
+    if (!(o instanceof Map)) {
+      String key = prefix != null ? prefix : VALUE;
+      doc.addField(key, o);
+      return;
+    }
+    Map<String, Object> map = (Map<String, Object>)o;
     for (Map.Entry<String, Object> entry : map.entrySet()) {
       if (entry.getValue() instanceof Map) { // flatten recursively
-        toSolrInputDocument(entry.getKey(), doc, (Map<String, Object>)entry.getValue());
+        toSolrInputDocument(entry.getKey(), doc, entry.getValue());
       } else {
         String key = prefix != null ? prefix + "." + entry.getKey() : entry.getKey();
         doc.addField(key, entry.getValue());
@@ -183,9 +192,10 @@ public class MetricUtils {
     }
   }
 
-  public static void toNamedMaps(MetricRegistry registry, List<MetricFilter> shouldMatchFilters,
-                MetricFilter mustMatchFilter, boolean skipHistograms, boolean skipAggregateValues,
-                BiConsumer<String, Map<String, Object>> consumer) {
+  public static void toMaps(MetricRegistry registry, List<MetricFilter> shouldMatchFilters,
+                            MetricFilter mustMatchFilter, boolean skipHistograms, boolean skipAggregateValues,
+                            boolean compact,
+                            BiConsumer<String, Object> consumer) {
     Map<String, Metric> metrics = registry.getMetrics();
     SortedSet<String> names = registry.getNames();
     names.stream()
@@ -195,28 +205,28 @@ public class MetricUtils {
           Metric metric = metrics.get(n);
           if (metric instanceof Counter) {
             Counter counter = (Counter) metric;
-            consumer.accept(n, counterToMap(counter));
+            consumer.accept(n, convertCounter(counter, compact));
           } else if (metric instanceof Gauge) {
             Gauge gauge = (Gauge) metric;
-            consumer.accept(n, gaugeToMap(gauge));
+            consumer.accept(n, convertGauge(gauge, compact));
           } else if (metric instanceof Meter) {
             Meter meter = (Meter) metric;
-            consumer.accept(n, meterToMap(meter));
+            consumer.accept(n, convertMeter(meter));
           } else if (metric instanceof Timer) {
             Timer timer = (Timer) metric;
-            consumer.accept(n, timerToMap(timer, skipHistograms));
+            consumer.accept(n, convertTimer(timer, skipHistograms));
           } else if (metric instanceof Histogram) {
             if (!skipHistograms) {
               Histogram histogram = (Histogram) metric;
-              consumer.accept(n, histogramToMap(histogram));
+              consumer.accept(n, convertHistogram(histogram));
             }
           } else if (metric instanceof AggregateMetric) {
-            consumer.accept(n, aggregateMetricToMap((AggregateMetric)metric, skipAggregateValues));
+            consumer.accept(n, convertAggregateMetric((AggregateMetric)metric, skipAggregateValues));
           }
         });
   }
 
-  static Map<String, Object> aggregateMetricToMap(AggregateMetric metric, boolean skipAggregateValues) {
+  static Map<String, Object> convertAggregateMetric(AggregateMetric metric, boolean skipAggregateValues) {
     Map<String, Object> response = new LinkedHashMap<>();
     response.put("count", metric.size());
     response.put(MAX, metric.getMax());
@@ -237,7 +247,7 @@ public class MetricUtils {
     return response;
   }
 
-  static Map<String, Object> histogramToMap(Histogram histogram) {
+  static Map<String, Object> convertHistogram(Histogram histogram) {
     Map<String, Object> response = new LinkedHashMap<>();
     Snapshot snapshot = histogram.getSnapshot();
     response.put("count", histogram.getCount());
@@ -268,7 +278,7 @@ public class MetricUtils {
     response.put((ms ? P999_MS: P999), nsToMs(ms, snapshot.get999thPercentile()));
   }
 
-  static Map<String,Object> timerToMap(Timer timer, boolean skipHistograms) {
+  static Map<String,Object> convertTimer(Timer timer, boolean skipHistograms) {
     Map<String, Object> response = new LinkedHashMap<>();
     response.put("count", timer.getCount());
     response.put("meanRate", timer.getMeanRate());
@@ -282,7 +292,7 @@ public class MetricUtils {
     return response;
   }
 
-  static Map<String, Object> meterToMap(Meter meter) {
+  static Map<String, Object> convertMeter(Meter meter) {
     Map<String, Object> response = new LinkedHashMap<>();
     response.put("count", meter.getCount());
     response.put("meanRate", meter.getMeanRate());
@@ -292,16 +302,24 @@ public class MetricUtils {
     return response;
   }
 
-  static Map<String, Object> gaugeToMap(Gauge gauge) {
-    Map<String, Object> response = new LinkedHashMap<>();
-    response.put("value", gauge.getValue());
-    return response;
+  static Object convertGauge(Gauge gauge, boolean compact) {
+    if (compact) {
+      return gauge.getValue();
+    } else {
+      Map<String, Object> response = new LinkedHashMap<>();
+      response.put("value", gauge.getValue());
+      return response;
+    }
   }
 
-  static Map<String, Object> counterToMap(Counter counter) {
-    Map<String, Object> response = new LinkedHashMap<>();
-    response.put("count", counter.getCount());
-    return response;
+  static Object convertCounter(Counter counter, boolean compact) {
+    if (compact) {
+      return counter.getCount();
+    } else {
+      Map<String, Object> response = new LinkedHashMap<>();
+      response.put("count", counter.getCount());
+      return response;
+    }
   }
 
   /**

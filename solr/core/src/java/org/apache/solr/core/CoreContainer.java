@@ -36,7 +36,6 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
 
-import com.codahale.metrics.Gauge;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Maps;
 import org.apache.http.auth.AuthSchemeProvider;
@@ -532,16 +531,13 @@ public class CoreContainer {
     containerProperties.putAll(cfg.getSolrProperties());
 
     // initialize gauges for reporting the number of cores
-    Gauge<Integer> loadedCores = () -> solrCores.getCores().size();
-    Gauge<Integer> lazyCores = () -> solrCores.getCoreNames().size() - solrCores.getCores().size();
-    Gauge<Integer> unloadedCores = () -> solrCores.getAllCoreNames().size() - solrCores.getCoreNames().size();
-
-    metricManager.register(SolrMetricManager.getRegistryName(SolrInfoMBean.Group.node),
-        loadedCores, true, "loaded", SolrInfoMBean.Category.CONTAINER.toString(), "cores");
-    metricManager.register(SolrMetricManager.getRegistryName(SolrInfoMBean.Group.node),
-        lazyCores, true, "lazy",SolrInfoMBean.Category.CONTAINER.toString(), "cores");
-    metricManager.register(SolrMetricManager.getRegistryName(SolrInfoMBean.Group.node),
-        unloadedCores, true, "unloaded",SolrInfoMBean.Category.CONTAINER.toString(), "cores");
+    String registryName = SolrMetricManager.getRegistryName(SolrInfoMBean.Group.node);
+    metricManager.registerGauge(registryName, () -> solrCores.getCores().size(),
+        true, "loaded", SolrInfoMBean.Category.CONTAINER.toString(), "cores");
+    metricManager.registerGauge(registryName, () -> solrCores.getCoreNames().size() - solrCores.getCores().size(),
+        true, "lazy",SolrInfoMBean.Category.CONTAINER.toString(), "cores");
+    metricManager.registerGauge(registryName, () -> solrCores.getAllCoreNames().size() - solrCores.getCoreNames().size(),
+        true, "unloaded",SolrInfoMBean.Category.CONTAINER.toString(), "cores");
 
     if (isZooKeeperAware()) {
       metricManager.loadClusterReporters(cfg.getMetricReporterPlugins(), this);
