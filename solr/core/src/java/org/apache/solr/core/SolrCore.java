@@ -30,6 +30,8 @@ import java.lang.reflect.Constructor;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.NoSuchFileException;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -1137,6 +1139,11 @@ public final class SolrCore implements SolrInfoMBean, SolrMetricProducer, Closea
     manager.registerGauge(registry, () -> getIndexSize(), true, "sizeInBytes", Category.INDEX.toString());
     manager.registerGauge(registry, () -> NumberUtils.readableSize(getIndexSize()), true, "size", Category.INDEX.toString());
     manager.registerGauge(registry, () -> coreDescriptor.getCoreContainer().getCoreNames(this), true, "aliases", Category.CORE.toString());
+    // initialize disk total / free metrics
+    Path dataDirPath = Paths.get(dataDir);
+    File dataDirFile = dataDirPath.toFile();
+    manager.registerGauge(registry, () -> dataDirFile.getTotalSpace(), true, "totalSpace", Category.CORE.toString(), "fs");
+    manager.registerGauge(registry, () -> dataDirFile.getUsableSpace(), true, "usableSpace", Category.CORE.toString(), "fs");
   }
 
   private Map<String,SolrInfoMBean> initInfoRegistry(String name, SolrConfig config) {

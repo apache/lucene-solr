@@ -61,9 +61,10 @@ public class SolrShardReporter extends SolrMetricReporter {
 
   public static final List<String> DEFAULT_FILTERS = new ArrayList(){{
     add("TLOG.*");
+    add("CORE\\.fs.*");
     add("REPLICATION.*");
-    add("INDEX.flush.*");
-    add("INDEX.merge.major.*");
+    add("INDEX\\.flush.*");
+    add("INDEX\\.merge\\.major.*");
     add("UPDATE\\./update/.*requests");
     add("QUERY\\./select.*requests");
   }};
