@@ -19,6 +19,8 @@ package org.apache.solr.common;
 
 
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.Map;
 
 /**
@@ -34,6 +36,8 @@ public interface MapWriter extends MapSerializable {
       writeMap(new EntryWriter() {
         @Override
         public EntryWriter put(String k, Object v) throws IOException {
+          if (v instanceof MapWriter) v = ((MapWriter) v).toMap(new LinkedHashMap<>());
+          if (v instanceof IteratorWriter) v = ((IteratorWriter) v).toList(new ArrayList<>());
           map.put(k, v);
           return this;
         }

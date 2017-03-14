@@ -19,6 +19,9 @@ package org.apache.solr.common;
 
 
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.LinkedHashMap;
+import java.util.List;
 
 /**
  * Interface to help do push writing to an array
@@ -61,5 +64,17 @@ public interface IteratorWriter {
       add((Boolean) v);
       return this;
     }
+  }
+  default List toList( List l) throws IOException {
+    writeIter(new IteratorWriter.ItemWriter() {
+      @Override
+      public IteratorWriter.ItemWriter add(Object o) throws IOException {
+        if (o instanceof MapWriter) o = ((MapWriter) o).toMap(new LinkedHashMap<>());
+        if (o instanceof IteratorWriter) o = ((IteratorWriter) o).toList(new ArrayList<>());
+        l.add(o);
+        return this;
+      }
+    });
+    return l;
   }
 }
