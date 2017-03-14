@@ -16,11 +16,13 @@
  */
 package org.apache.solr.util.stats;
 
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.SortedSet;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.TimeUnit;
+import java.util.function.BiConsumer;
 
 import com.codahale.metrics.Counter;
 import com.codahale.metrics.Gauge;
@@ -39,6 +41,29 @@ import org.apache.solr.common.util.SimpleOrderedMap;
  * Metrics specific utility functions.
  */
 public class MetricUtils {
+
+  public static final String VALUE = "value";
+
+  static final String MS = "_ms";
+
+  static final String MIN = "min";
+  static final String MIN_MS = MIN + MS;
+  static final String MAX = "max";
+  static final String MAX_MS = MAX + MS;
+  static final String MEAN = "mean";
+  static final String MEAN_MS = MEAN + MS;
+  static final String MEDIAN = "median";
+  static final String MEDIAN_MS = MEDIAN + MS;
+  static final String STDDEV = "stddev";
+  static final String STDDEV_MS = STDDEV + MS;
+  static final String P75 = "p75";
+  static final String P75_MS = P75 + MS;
+  static final String P95 = "p95";
+  static final String P95_MS = P95 + MS;
+  static final String P99 = "p99";
+  static final String P99_MS = P99 + MS;
+  static final String P999 = "p999";
+  static final String P999_MS = P999 + MS;
 
   /**
    * Adds metrics from a Timer to a NamedList, using well-known back-compat names.
@@ -78,41 +103,62 @@ public class MetricUtils {
    *                           included in the output
    * @param mustMatchFilter a {@link MetricFilter}.
    *                        A metric <em>must</em> match this filter to be included in the output.
+   * @param skipHistograms discard any {@link Histogram}-s and histogram parts of {@link Timer}-s.
+   * @param compact use compact representation for counters and gauges.
+   * @param metadata optional metadata. If not null and not empty then this map will be added under a
+   *                 {@code _metadata_} key.
    * @return a {@link NamedList}
    */
-  public static NamedList toNamedList(MetricRegistry registry, List<MetricFilter> shouldMatchFilters, MetricFilter mustMatchFilter) {
-    NamedList response = new SimpleOrderedMap();
+  public static NamedList toNamedList(MetricRegistry registry, List<MetricFilter> shouldMatchFilters,
+                                      MetricFilter mustMatchFilter, boolean skipHistograms,
+                                      boolean skipAggregateValues, boolean compact,
+                                      Map<String, Object> metadata) {
+    NamedList result = new SimpleOrderedMap();
+    toMaps(registry, shouldMatchFilters, mustMatchFilter, skipHistograms, skipAggregateValues, compact, (k, v) -> {
+      result.add(k, v);
+    });
+    if (metadata != null && !metadata.isEmpty()) {
+      result.add("_metadata_", metadata);
+    }
+    return result;
+  }
+
+  public static void toMaps(MetricRegistry registry, List<MetricFilter> shouldMatchFilters,
+                            MetricFilter mustMatchFilter, boolean skipHistograms, boolean skipAggregateValues,
+                            boolean compact,
+                            BiConsumer<String, Object> consumer) {
     Map<String, Metric> metrics = registry.getMetrics();
     SortedSet<String> names = registry.getNames();
     names.stream()
         .filter(s -> shouldMatchFilters.stream().anyMatch(metricFilter -> metricFilter.matches(s, metrics.get(s))))
         .filter(s -> mustMatchFilter.matches(s, metrics.get(s)))
         .forEach(n -> {
-      Metric metric = metrics.get(n);
-      if (metric instanceof Counter) {
-        Counter counter = (Counter) metric;
-        response.add(n, counterToNamedList(counter));
-      } else if (metric instanceof Gauge) {
-        Gauge gauge = (Gauge) metric;
-        response.add(n, gaugeToNamedList(gauge));
-      } else if (metric instanceof Meter) {
-        Meter meter = (Meter) metric;
-        response.add(n, meterToNamedList(meter));
-      } else if (metric instanceof Timer) {
-        Timer timer = (Timer) metric;
-        response.add(n, timerToNamedList(timer));
-      } else if (metric instanceof Histogram) {
-        Histogram histogram = (Histogram) metric;
-        response.add(n, histogramToNamedList(histogram));
-      }
-    });
-    return response;
+          Metric metric = metrics.get(n);
+          if (metric instanceof Counter) {
+            Counter counter = (Counter) metric;
+            consumer.accept(n, convertCounter(counter, compact));
+          } else if (metric instanceof Gauge) {
+            Gauge gauge = (Gauge) metric;
+            consumer.accept(n, convertGauge(gauge, compact));
+          } else if (metric instanceof Meter) {
+            Meter meter = (Meter) metric;
+            consumer.accept(n, convertMeter(meter));
+          } else if (metric instanceof Timer) {
+            Timer timer = (Timer) metric;
+            consumer.accept(n, convertTimer(timer, skipHistograms));
+          } else if (metric instanceof Histogram) {
+            if (!skipHistograms) {
+              Histogram histogram = (Histogram) metric;
+              consumer.accept(n, convertHistogram(histogram));
+            }
+          }
+        });
   }
 
-  static NamedList histogramToNamedList(Histogram histogram) {
-    NamedList response = new SimpleOrderedMap();
+  static Map<String, Object> convertHistogram(Histogram histogram) {
+    Map<String, Object> response = new LinkedHashMap<>();
     Snapshot snapshot = histogram.getSnapshot();
-    response.add("count", histogram.getCount());
+    response.put("count", histogram.getCount());
     // non-time based values
     addSnapshot(response, snapshot, false);
     return response;
@@ -127,72 +173,61 @@ public class MetricUtils {
     }
   }
 
-  static final String MS = "_ms";
-
-  static final String MIN = "min";
-  static final String MIN_MS = MIN + MS;
-  static final String MAX = "max";
-  static final String MAX_MS = MAX + MS;
-  static final String MEAN = "mean";
-  static final String MEAN_MS = MEAN + MS;
-  static final String MEDIAN = "median";
-  static final String MEDIAN_MS = MEDIAN + MS;
-  static final String STDDEV = "stddev";
-  static final String STDDEV_MS = STDDEV + MS;
-  static final String P75 = "p75";
-  static final String P75_MS = P75 + MS;
-  static final String P95 = "p95";
-  static final String P95_MS = P95 + MS;
-  static final String P99 = "p99";
-  static final String P99_MS = P99 + MS;
-  static final String P999 = "p999";
-  static final String P999_MS = P999 + MS;
-
   // some snapshots represent time in ns, other snapshots represent raw values (eg. chunk size)
-  static void addSnapshot(NamedList response, Snapshot snapshot, boolean ms) {
-    response.add((ms ? MIN_MS: MIN), nsToMs(ms, snapshot.getMin()));
-    response.add((ms ? MAX_MS: MAX), nsToMs(ms, snapshot.getMax()));
-    response.add((ms ? MEAN_MS : MEAN), nsToMs(ms, snapshot.getMean()));
-    response.add((ms ? MEDIAN_MS: MEDIAN), nsToMs(ms, snapshot.getMedian()));
-    response.add((ms ? STDDEV_MS: STDDEV), nsToMs(ms, snapshot.getStdDev()));
-    response.add((ms ? P75_MS: P75), nsToMs(ms, snapshot.get75thPercentile()));
-    response.add((ms ? P95_MS: P95), nsToMs(ms, snapshot.get95thPercentile()));
-    response.add((ms ? P99_MS: P99), nsToMs(ms, snapshot.get99thPercentile()));
-    response.add((ms ? P999_MS: P999), nsToMs(ms, snapshot.get999thPercentile()));
+  static void addSnapshot(Map<String, Object> response, Snapshot snapshot, boolean ms) {
+    response.put((ms ? MIN_MS: MIN), nsToMs(ms, snapshot.getMin()));
+    response.put((ms ? MAX_MS: MAX), nsToMs(ms, snapshot.getMax()));
+    response.put((ms ? MEAN_MS : MEAN), nsToMs(ms, snapshot.getMean()));
+    response.put((ms ? MEDIAN_MS: MEDIAN), nsToMs(ms, snapshot.getMedian()));
+    response.put((ms ? STDDEV_MS: STDDEV), nsToMs(ms, snapshot.getStdDev()));
+    response.put((ms ? P75_MS: P75), nsToMs(ms, snapshot.get75thPercentile()));
+    response.put((ms ? P95_MS: P95), nsToMs(ms, snapshot.get95thPercentile()));
+    response.put((ms ? P99_MS: P99), nsToMs(ms, snapshot.get99thPercentile()));
+    response.put((ms ? P999_MS: P999), nsToMs(ms, snapshot.get999thPercentile()));
   }
 
-  static NamedList timerToNamedList(Timer timer) {
-    NamedList response = new SimpleOrderedMap();
-    response.add("count", timer.getCount());
-    response.add("meanRate", timer.getMeanRate());
-    response.add("1minRate", timer.getOneMinuteRate());
-    response.add("5minRate", timer.getFiveMinuteRate());
-    response.add("15minRate", timer.getFifteenMinuteRate());
-    // time-based values in nanoseconds
-    addSnapshot(response, timer.getSnapshot(), true);
+  static Map<String,Object> convertTimer(Timer timer, boolean skipHistograms) {
+    Map<String, Object> response = new LinkedHashMap<>();
+    response.put("count", timer.getCount());
+    response.put("meanRate", timer.getMeanRate());
+    response.put("1minRate", timer.getOneMinuteRate());
+    response.put("5minRate", timer.getFiveMinuteRate());
+    response.put("15minRate", timer.getFifteenMinuteRate());
+    if (!skipHistograms) {
+      // time-based values in nanoseconds
+      addSnapshot(response, timer.getSnapshot(), true);
+    }
     return response;
   }
 
-  static NamedList meterToNamedList(Meter meter) {
-    NamedList response = new SimpleOrderedMap();
-    response.add("count", meter.getCount());
-    response.add("meanRate", meter.getMeanRate());
-    response.add("1minRate", meter.getOneMinuteRate());
-    response.add("5minRate", meter.getFiveMinuteRate());
-    response.add("15minRate", meter.getFifteenMinuteRate());
+  static Map<String, Object> convertMeter(Meter meter) {
+    Map<String, Object> response = new LinkedHashMap<>();
+    response.put("count", meter.getCount());
+    response.put("meanRate", meter.getMeanRate());
+    response.put("1minRate", meter.getOneMinuteRate());
+    response.put("5minRate", meter.getFiveMinuteRate());
+    response.put("15minRate", meter.getFifteenMinuteRate());
     return response;
   }
 
-  static NamedList gaugeToNamedList(Gauge gauge) {
-    NamedList response = new SimpleOrderedMap();
-    response.add("value", gauge.getValue());
-    return response;
+  static Object convertGauge(Gauge gauge, boolean compact) {
+    if (compact) {
+      return gauge.getValue();
+    } else {
+      Map<String, Object> response = new LinkedHashMap<>();
+      response.put("value", gauge.getValue());
+      return response;
+    }
   }
 
-  static NamedList counterToNamedList(Counter counter) {
-    NamedList response = new SimpleOrderedMap();
-    response.add("count", counter.getCount());
-    return response;
+  static Object convertCounter(Counter counter, boolean compact) {
+    if (compact) {
+      return counter.getCount();
+    } else {
+      Map<String, Object> response = new LinkedHashMap<>();
+      response.put("count", counter.getCount());
+      return response;
+    }
   }
 
   /**

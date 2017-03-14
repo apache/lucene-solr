@@ -17,6 +17,8 @@
 
 package org.apache.solr.handler.admin;
 
+import java.util.Map;
+
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.util.NamedList;
@@ -47,9 +49,12 @@ public class MetricsHandlerTest extends SolrTestCaseJ4 {
     assertNotNull(values.get("solr.node"));
     NamedList nl = (NamedList) values.get("solr.core.collection1");
     assertNotNull(nl);
-    assertNotNull(nl.get("SEARCHER.new.errors")); // counter type
-    assertNotNull(((NamedList) nl.get("SEARCHER.new.errors")).get("count"));
-    assertEquals(0L, ((NamedList) nl.get("SEARCHER.new.errors")).get("count"));
+    Object o = nl.get("SEARCHER.new.errors");
+    assertNotNull(o); // counter type
+    assertTrue(o instanceof Map);
+    // response wasn't serialized so we get here whatever MetricUtils produced instead of NamedList
+    assertNotNull(((Map) o).get("count"));
+    assertEquals(0L, ((Map) nl.get("SEARCHER.new.errors")).get("count"));
     nl = (NamedList) values.get("solr.node");
     assertNotNull(nl.get("CONTAINER.cores.loaded")); // int gauge
     assertEquals(1, ((NamedList) nl.get("CONTAINER.cores.loaded")).get("value"));
@@ -145,5 +150,21 @@ public class MetricsHandlerTest extends SolrTestCaseJ4 {
     values = (NamedList) values.get("metrics");
     assertEquals(1, values.size());
     assertEquals(0, ((NamedList)values.get("solr.node")).size());
+  }
+
+  @Test
+  public void testCompact() throws Exception {
+    MetricsHandler handler = new MetricsHandler(h.getCoreContainer());
+
+    SolrQueryResponse resp = new SolrQueryResponse();
+    handler.handleRequestBody(req(CommonParams.QT, "/admin/metrics", CommonParams.WT, "json", MetricsHandler.COMPACT_PARAM, "true"), resp);
+    NamedList values = resp.getValues();
+    assertNotNull(values.get("metrics"));
+    values = (NamedList) values.get("metrics");
+    NamedList nl = (NamedList) values.get("solr.core.collection1");
+    assertNotNull(nl);
+    Object o = nl.get("SEARCHER.new.errors");
+    assertNotNull(o); // counter type
+    assertTrue(o instanceof Number);
   }
 }

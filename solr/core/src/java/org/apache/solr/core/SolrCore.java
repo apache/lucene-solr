@@ -168,7 +168,7 @@ import static org.apache.solr.common.params.CommonParams.PATH;
 /**
  *
  */
-public final class SolrCore implements SolrInfoMBean, Closeable {
+public final class SolrCore implements SolrInfoMBean, SolrMetricProducer, Closeable {
 
   public static final String version="1.0";
 
@@ -213,11 +213,11 @@ public final class SolrCore implements SolrInfoMBean, Closeable {
   private final ReentrantLock ruleExpiryLock;
   private final ReentrantLock snapshotDelLock; // A lock instance to guard against concurrent deletions.
 
-  private final Timer newSearcherTimer;
-  private final Timer newSearcherWarmupTimer;
-  private final Counter newSearcherCounter;
-  private final Counter newSearcherMaxReachedCounter;
-  private final Counter newSearcherOtherErrorsCounter;
+  private Timer newSearcherTimer;
+  private Timer newSearcherWarmupTimer;
+  private Counter newSearcherCounter;
+  private Counter newSearcherMaxReachedCounter;
+  private Counter newSearcherOtherErrorsCounter;
 
   public Date getStartTimeStamp() { return startTime; }
 
@@ -882,11 +882,7 @@ public final class SolrCore implements SolrInfoMBean, Closeable {
     SolrMetricManager metricManager = this.coreDescriptor.getCoreContainer().getMetricManager();
 
     // initialize searcher-related metrics
-    newSearcherCounter = metricManager.counter(coreMetricManager.getRegistryName(), "new", Category.SEARCHER.toString());
-    newSearcherTimer = metricManager.timer(coreMetricManager.getRegistryName(), "time", Category.SEARCHER.toString(), "new");
-    newSearcherWarmupTimer = metricManager.timer(coreMetricManager.getRegistryName(), "warmup", Category.SEARCHER.toString(), "new");
-    newSearcherMaxReachedCounter = metricManager.counter(coreMetricManager.getRegistryName(), "maxReached", Category.SEARCHER.toString(), "new");
-    newSearcherOtherErrorsCounter = metricManager.counter(coreMetricManager.getRegistryName(), "errors", Category.SEARCHER.toString(), "new");
+    initializeMetrics(metricManager, coreMetricManager.getRegistryName(), null);
 
     // Initialize JMX
     this.infoRegistry = initInfoRegistry(name, config);
@@ -1105,6 +1101,24 @@ public final class SolrCore implements SolrInfoMBean, Closeable {
     SolrCoreMetricManager coreMetricManager = new SolrCoreMetricManager(this);
     coreMetricManager.loadReporters();
     return coreMetricManager;
+  }
+
+  @Override
+  public void initializeMetrics(SolrMetricManager manager, String registry, String scope) {
+    newSearcherCounter = manager.counter(registry, "new", Category.SEARCHER.toString());
+    newSearcherTimer = manager.timer(registry, "time", Category.SEARCHER.toString(), "new");
+    newSearcherWarmupTimer = manager.timer(registry, "warmup", Category.SEARCHER.toString(), "new");
+    newSearcherMaxReachedCounter = manager.counter(registry, "maxReached", Category.SEARCHER.toString(), "new");
+    newSearcherOtherErrorsCounter = manager.counter(registry, "errors", Category.SEARCHER.toString(), "new");
+
+    manager.registerGauge(registry, () -> name == null ? "(null)" : name, true, "coreName", Category.CORE.toString());
+    manager.registerGauge(registry, () -> startTime, true, "startTime", Category.CORE.toString());
+    manager.registerGauge(registry, () -> getOpenCount(), true, "refCount", Category.CORE.toString());
+    manager.registerGauge(registry, () -> resourceLoader.getInstancePath(), true, "instanceDir", Category.CORE.toString());
+    manager.registerGauge(registry, () -> getIndexDir(), true, "indexDir", Category.CORE.toString());
+    manager.registerGauge(registry, () -> getIndexSize(), true, "sizeInBytes", Category.INDEX.toString());
+    manager.registerGauge(registry, () -> NumberUtils.readableSize(getIndexSize()), true, "size", Category.INDEX.toString());
+    manager.registerGauge(registry, () -> coreDescriptor.getCoreContainer().getCoreNames(this), true, "aliases", Category.CORE.toString());
   }
 
   private Map<String,SolrInfoMBean> initInfoRegistry(String name, SolrConfig config) {

@@ -233,9 +233,6 @@ public static final int VERSION_IDX = 1;
 
   // metrics
   protected Gauge<Integer> bufferedOpsGauge;
-  protected Gauge<Integer> replayLogsCountGauge;
-  protected Gauge<Long> replayBytesGauge;
-  protected Gauge<Integer> stateGauge;
   protected Meter applyingBufferedOpsMeter;
   protected Meter replayOpsMeter;
 
@@ -423,16 +420,13 @@ public static final int VERSION_IDX = 1;
         return 0;
       }
     };
-    replayLogsCountGauge = () -> logs.size();
-    replayBytesGauge = () -> getTotalLogsSize();
 
-    manager.register(registry, bufferedOpsGauge, true, "ops", scope, "buffered");
-    manager.register(registry, replayLogsCountGauge, true, "logs", scope, "replay", "remaining");
-    manager.register(registry, replayBytesGauge, true, "bytes", scope, "replay", "remaining");
+    manager.registerGauge(registry, bufferedOpsGauge, true, "ops", scope, "buffered");
+    manager.registerGauge(registry, () -> logs.size(), true, "logs", scope, "replay", "remaining");
+    manager.registerGauge(registry, () -> getTotalLogsSize(), true, "bytes", scope, "replay", "remaining");
     applyingBufferedOpsMeter = manager.meter(registry, "ops", scope, "applyingBuffered");
     replayOpsMeter = manager.meter(registry, "ops", scope, "replay");
-    stateGauge = () -> state.getValue();
-    manager.register(registry, stateGauge, true, "state", scope);
+    manager.registerGauge(registry, () -> state.getValue(), true, "state", scope);
   }
 
   /**
