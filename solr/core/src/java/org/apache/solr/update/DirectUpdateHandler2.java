@@ -26,7 +26,6 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 import java.util.concurrent.atomic.LongAdder;
 
-import com.codahale.metrics.Gauge;
 import com.codahale.metrics.Meter;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
@@ -164,25 +163,18 @@ public class DirectUpdateHandler2 extends UpdateHandler implements SolrCoreState
   @Override
   public void initializeMetrics(SolrMetricManager manager, String registry, String scope) {
     commitCommands = manager.meter(registry, "commits", getCategory().toString(), scope);
-    Gauge<Integer> autoCommits = () -> commitTracker.getCommitCount();
-    manager.register(registry, autoCommits, true, "autoCommits", getCategory().toString(), scope);
-    Gauge<Integer> softAutoCommits = () -> softCommitTracker.getCommitCount();
-    manager.register(registry, softAutoCommits, true, "softAutoCommits", getCategory().toString(), scope);
+    manager.registerGauge(registry, () -> commitTracker.getCommitCount(), true, "autoCommits", getCategory().toString(), scope);
+    manager.registerGauge(registry, () -> softCommitTracker.getCommitCount(), true, "softAutoCommits", getCategory().toString(), scope);
     optimizeCommands = manager.meter(registry, "optimizes", getCategory().toString(), scope);
     rollbackCommands = manager.meter(registry, "rollbacks", getCategory().toString(), scope);
     splitCommands = manager.meter(registry, "splits", getCategory().toString(), scope);
     mergeIndexesCommands = manager.meter(registry, "merges", getCategory().toString(), scope);
     expungeDeleteCommands = manager.meter(registry, "expungeDeletes", getCategory().toString(), scope);
-    Gauge<Long> docsPending = () -> numDocsPending.longValue();
-    manager.register(registry, docsPending, true, "docsPending", getCategory().toString(), scope);
-    Gauge<Long> adds = () -> addCommands.longValue();
-    manager.register(registry, adds, true, "adds", getCategory().toString(), scope);
-    Gauge<Long> deletesById = () -> deleteByIdCommands.longValue();
-    manager.register(registry, deletesById, true, "deletesById", getCategory().toString(), scope);
-    Gauge<Long> deletesByQuery = () -> deleteByQueryCommands.longValue();
-    manager.register(registry, deletesByQuery, true, "deletesByQuery", getCategory().toString(), scope);
-    Gauge<Long> errors = () -> numErrors.longValue();
-    manager.register(registry, errors, true, "errors", getCategory().toString(), scope);
+    manager.registerGauge(registry, () -> numDocsPending.longValue(), true, "docsPending", getCategory().toString(), scope);
+    manager.registerGauge(registry, () -> addCommands.longValue(), true, "adds", getCategory().toString(), scope);
+    manager.registerGauge(registry, () -> deleteByIdCommands.longValue(), true, "deletesById", getCategory().toString(), scope);
+    manager.registerGauge(registry, () -> deleteByQueryCommands.longValue(), true, "deletesByQuery", getCategory().toString(), scope);
+    manager.registerGauge(registry, () -> numErrors.longValue(), true, "errors", getCategory().toString(), scope);
 
     addCommandsCumulative = manager.meter(registry, "cumulativeAdds", getCategory().toString(), scope);
     deleteByIdCommandsCumulative = manager.meter(registry, "cumulativeDeletesById", getCategory().toString(), scope);
