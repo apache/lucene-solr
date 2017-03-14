@@ -530,7 +530,8 @@ public class CoreContainer {
 
     containerProperties.putAll(cfg.getSolrProperties());
 
-    // initialize gauges for reporting the number of cores
+    // initialize gauges for reporting the number of cores and disk total/free
+
     String registryName = SolrMetricManager.getRegistryName(SolrInfoMBean.Group.node);
     metricManager.registerGauge(registryName, () -> solrCores.getCores().size(),
         true, "loaded", SolrInfoMBean.Category.CONTAINER.toString(), "cores");
@@ -538,6 +539,10 @@ public class CoreContainer {
         true, "lazy",SolrInfoMBean.Category.CONTAINER.toString(), "cores");
     metricManager.registerGauge(registryName, () -> solrCores.getAllCoreNames().size() - solrCores.getCoreNames().size(),
         true, "unloaded",SolrInfoMBean.Category.CONTAINER.toString(), "cores");
+    metricManager.registerGauge(registryName, () -> cfg.getCoreRootDirectory().toFile().getTotalSpace(),
+        true, "totalSpace", SolrInfoMBean.Category.CONTAINER.toString(), "fs");
+    metricManager.registerGauge(registryName, () -> cfg.getCoreRootDirectory().toFile().getUsableSpace(),
+        true, "usableSpace", SolrInfoMBean.Category.CONTAINER.toString(), "fs");
 
     if (isZooKeeperAware()) {
       metricManager.loadClusterReporters(cfg.getMetricReporterPlugins(), this);

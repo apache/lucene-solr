@@ -183,6 +183,8 @@ New Features
 
 * SOLR-10076: Hide keystore and truststore passwords from /admin/info/* outputs. (Mano Kovacs via Mark Miller)
 
+* SOLR-10224: Add disk total and disk free metrics. (ab)
+
 Bug Fixes
 ----------------------
 
