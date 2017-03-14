@@ -940,52 +940,59 @@ public class TestPointFields extends SolrTestCaseJ4 {
   }
 
   private void doTestIntPointFieldRangeQuery(String fieldName, String type, boolean testLong) throws Exception {
-    for (int i = 0; i < 10; i++) {
+    for (int i = 9; i >= 0; i--) {
       assertU(adoc("id", String.valueOf(i), fieldName, String.valueOf(i)));
     }
     assertU(commit());
-    assertQ(req("q", fieldName + ":[0 TO 3]", "fl", "id, " + fieldName), 
+    assertQ(req("q", fieldName + ":[0 TO 3]", "fl", "id, " + fieldName, "sort", "id asc"), 
         "//*[@numFound='4']",
         "//result/doc[1]/" + type + "[@name='" + fieldName + "'][.='0']",
         "//result/doc[2]/" + type + "[@name='" + fieldName + "'][.='1']",
         "//result/doc[3]/" + type + "[@name='" + fieldName + "'][.='2']",
         "//result/doc[4]/" + type + "[@name='" + fieldName + "'][.='3']");
     
-    assertQ(req("q", fieldName + ":{0 TO 3]", "fl", "id, " + fieldName), 
+    assertQ(req("q", fieldName + ":{0 TO 3]", "fl", "id, " + fieldName, "sort", "id asc"), 
         "//*[@numFound='3']",
         "//result/doc[1]/" + type + "[@name='" + fieldName + "'][.='1']",
         "//result/doc[2]/" + type + "[@name='" + fieldName + "'][.='2']",
         "//result/doc[3]/" + type + "[@name='" + fieldName + "'][.='3']");
     
-    assertQ(req("q", fieldName + ":[0 TO 3}", "fl", "id, " + fieldName), 
+    assertQ(req("q", fieldName + ":[0 TO 3}", "fl", "id, " + fieldName, "sort", "id asc"), 
         "//*[@numFound='3']",
         "//result/doc[1]/" + type + "[@name='" + fieldName + "'][.='0']",
         "//result/doc[2]/" + type + "[@name='" + fieldName + "'][.='1']",
         "//result/doc[3]/" + type + "[@name='" + fieldName + "'][.='2']");
     
-    assertQ(req("q", fieldName + ":{0 TO 3}", "fl", "id, " + fieldName), 
+    assertQ(req("q", fieldName + ":{0 TO 3}", "fl", "id, " + fieldName, "sort", "id asc"), 
         "//*[@numFound='2']",
         "//result/doc[1]/" + type + "[@name='" + fieldName + "'][.='1']",
         "//result/doc[2]/" + type + "[@name='" + fieldName + "'][.='2']");
     
-    assertQ(req("q", fieldName + ":{0 TO *}", "fl", "id, " + fieldName), 
+    assertQ(req("q", fieldName + ":{0 TO *}", "fl", "id, " + fieldName, "sort", "id asc"), 
         "//*[@numFound='9']",
+        "0=count(//result/doc/" + type + "[@name='" + fieldName + "'][.='0'])",
         "//result/doc[1]/" + type + "[@name='" + fieldName + "'][.='1']");
     
-    assertQ(req("q", fieldName + ":{* TO 3}", "fl", "id, " + fieldName), 
+    assertQ(req("q", fieldName + ":{* TO 3}", "fl", "id, " + fieldName, "sort", "id desc"), 
         "//*[@numFound='3']",
-        "//result/doc[1]/" + type + "[@name='" + fieldName + "'][.='0']");
+        "0=count(//result/doc/" + type + "[@name='" + fieldName + "'][.='3'])",
+        "//result/doc[1]/" + type + "[@name='" + fieldName + "'][.='2']",
+        "//result/doc[2]/" + type + "[@name='" + fieldName + "'][.='1']",
+        "//result/doc[3]/" + type + "[@name='" + fieldName + "'][.='0']");
     
-    assertQ(req("q", fieldName + ":[* TO 3}", "fl", "id, " + fieldName), 
+    assertQ(req("q", fieldName + ":[* TO 3}", "fl", "id, " + fieldName, "sort", "id desc"), 
         "//*[@numFound='3']",
-        "//result/doc[1]/" + type + "[@name='" + fieldName + "'][.='0']");
+        "0=count(//result/doc/" + type + "[@name='" + fieldName + "'][.='3'])",
+        "//result/doc[1]/" + type + "[@name='" + fieldName + "'][.='2']",
+        "//result/doc[2]/" + type + "[@name='" + fieldName + "'][.='1']",
+        "//result/doc[3]/" + type + "[@name='" + fieldName + "'][.='0']");
     
-    assertQ(req("q", fieldName + ":[* TO *}", "fl", "id, " + fieldName), 
+    assertQ(req("q", fieldName + ":[* TO *}", "fl", "id, " + fieldName, "sort", "id asc"), 
         "//*[@numFound='10']",
         "//result/doc[1]/" + type + "[@name='" + fieldName + "'][.='0']",
         "//result/doc[10]/" + type + "[@name='" + fieldName + "'][.='9']");
     
-    assertQ(req("q", fieldName + ":[0 TO 1] OR " + fieldName + ":[8 TO 9]" , "fl", "id, " + fieldName), 
+    assertQ(req("q", fieldName + ":[0 TO 1] OR " + fieldName + ":[8 TO 9]" , "fl", "id, " + fieldName, "sort", "id asc"), 
         "//*[@numFound='4']",
         "//result/doc[1]/" + type + "[@name='" + fieldName + "'][.='0']",
         "//result/doc[2]/" + type + "[@name='" + fieldName + "'][.='1']",
@@ -1114,7 +1121,7 @@ public class TestPointFields extends SolrTestCaseJ4 {
   }
   
   private void doTestIntPointFunctionQuery(String dvFieldName, String nonDvFieldName, String type) throws Exception {
-    for (int i = 0; i < 10; i++) {
+    for (int i = 9; i >= 0; i--) {
       assertU(adoc("id", String.valueOf(i), dvFieldName, String.valueOf(i), nonDvFieldName, String.valueOf(i)));
     }
     assertU(commit());
@@ -1127,14 +1134,14 @@ public class TestPointFields extends SolrTestCaseJ4 {
         "//result/doc[3]/" + type + "[@name='" + dvFieldName + "'][.='7']",
         "//result/doc[10]/" + type + "[@name='" + dvFieldName + "'][.='0']");
     
-    assertQ(req("q", "*:*", "fl", "id, " + dvFieldName + ", product(-1," + dvFieldName + ")"), 
+    assertQ(req("q", "*:*", "fl", "id, " + dvFieldName + ", product(-1," + dvFieldName + ")", "sort", "id asc"), 
         "//*[@numFound='10']",
         "//result/doc[1]/float[@name='product(-1," + dvFieldName + ")'][.='-0.0']",
         "//result/doc[2]/float[@name='product(-1," + dvFieldName + ")'][.='-1.0']",
         "//result/doc[3]/float[@name='product(-1," + dvFieldName + ")'][.='-2.0']",
         "//result/doc[10]/float[@name='product(-1," + dvFieldName + ")'][.='-9.0']");
     
-    assertQ(req("q", "*:*", "fl", "id, " + dvFieldName + ", field(" + dvFieldName + ")"), 
+    assertQ(req("q", "*:*", "fl", "id, " + dvFieldName + ", field(" + dvFieldName + ")", "sort", "id asc"), 
         "//*[@numFound='10']",
         "//result/doc[1]/" + type + "[@name='field(" + dvFieldName + ")'][.='0']",
         "//result/doc[2]/" + type + "[@name='field(" + dvFieldName + ")'][.='1']",
@@ -1210,7 +1217,7 @@ public class TestPointFields extends SolrTestCaseJ4 {
     assert numbers != null && numbers.length == 20;
     assertTrue(h.getCore().getLatestSchema().getField(fieldName).multiValued());
     assertTrue(h.getCore().getLatestSchema().getField(fieldName).getType() instanceof PointField);
-    for (int i=0; i < 10; i++) {
+    for (int i=9; i >= 0; i--) {
       assertU(adoc("id", String.valueOf(i), fieldName, numbers[i], fieldName, numbers[i+10]));
     }
     // Check using RTG before commit
@@ -1232,27 +1239,26 @@ public class TestPointFields extends SolrTestCaseJ4 {
             "count(//doc/arr[@name='" + fieldName + "']/" + type + ")=2");
       }
     }
-    String[] expected = new String[11];
-    String[] expected2 = new String[11];
+    String[] expected = new String[21];
     expected[0] = "//*[@numFound='10']"; 
-    expected2[0] = "//*[@numFound='10']"; 
     for (int i = 1; i <= 10; i++) {
+      // checks for each doc's two values aren't next to eachother in array, but that doesn't matter for correctness
       expected[i] = "//result/doc[" + i + "]/arr[@name='" + fieldName + "']/" + type + "[1][.='" + numbers[i-1] + "']";
-      expected2[i] = "//result/doc[" + i + "]/arr[@name='" + fieldName + "']/" + type + "[2][.='" + numbers[i + 9] + "']";
+      expected[i+10] = "//result/doc[" + i + "]/arr[@name='" + fieldName + "']/" + type + "[2][.='" + numbers[i + 9] + "']";
     }
-    assertQ(req("q", "*:*", "fl", "id, " + fieldName), expected);
-    assertQ(req("q", "*:*", "fl", "id, " + fieldName), expected2);
+    assertQ(req("q", "*:*", "fl", "id, " + fieldName, "sort","id asc"), expected);
   }
   
   private void testPointFieldMultiValuedRangeQuery(String fieldName, String type, String[] numbers) throws Exception {
     assert numbers != null && numbers.length == 20;
     assertTrue(h.getCore().getLatestSchema().getField(fieldName).multiValued());
     assertTrue(h.getCore().getLatestSchema().getField(fieldName).getType() instanceof PointField);
-    for (int i=0; i < 10; i++) {
+    for (int i=9; i >= 0; i--) {
       assertU(adoc("id", String.valueOf(i), fieldName, numbers[i], fieldName, numbers[i+10]));
     }
     assertU(commit());
-    assertQ(req("q", String.format(Locale.ROOT, "%s:[%s TO %s]", fieldName, numbers[0], numbers[3]), "fl", "id, " + fieldName),
+    assertQ(req("q", String.format(Locale.ROOT, "%s:[%s TO %s]", fieldName, numbers[0], numbers[3]),
+                "fl", "id, " + fieldName, "sort", "id asc"),
         "//*[@numFound='4']",
         "//result/doc[1]/arr[@name='" + fieldName + "']/" + type + "[1][.='" + numbers[0] + "']",
         "//result/doc[1]/arr[@name='" + fieldName + "']/" + type + "[2][.='" + numbers[10] + "']",
@@ -1263,52 +1269,61 @@ public class TestPointFields extends SolrTestCaseJ4 {
         "//result/doc[4]/arr[@name='" + fieldName + "']/" + type + "[1][.='" + numbers[3] + "']",
         "//result/doc[4]/arr[@name='" + fieldName + "']/" + type + "[2][.='" + numbers[13] + "']");
     
-    assertQ(req("q", String.format(Locale.ROOT, "%s:{%s TO %s]", fieldName, numbers[0], numbers[3]), "fl", "id, " + fieldName),
+    assertQ(req("q", String.format(Locale.ROOT, "%s:{%s TO %s]", fieldName, numbers[0], numbers[3]),
+                "fl", "id, " + fieldName, "sort", "id asc"),
         "//*[@numFound='3']",
         "//result/doc[1]/arr[@name='" + fieldName + "']/" + type + "[1][.='" + numbers[1] + "']",
         "//result/doc[2]/arr[@name='" + fieldName + "']/" + type + "[1][.='" + numbers[2] + "']",
         "//result/doc[3]/arr[@name='" + fieldName + "']/" + type + "[1][.='" + numbers[3] + "']");
     
-    assertQ(req("q", String.format(Locale.ROOT, "%s:[%s TO %s}", fieldName, numbers[0], numbers[3]), "fl", "id, " + fieldName),
+    assertQ(req("q", String.format(Locale.ROOT, "%s:[%s TO %s}", fieldName, numbers[0], numbers[3]),
+                "fl", "id, " + fieldName, "sort", "id asc"),
         "//*[@numFound='3']",
         "//result/doc[1]/arr[@name='" + fieldName + "']/" + type + "[1][.='" + numbers[0] + "']",
         "//result/doc[2]/arr[@name='" + fieldName + "']/" + type + "[1][.='" + numbers[1] + "']",
         "//result/doc[3]/arr[@name='" + fieldName + "']/" + type + "[1][.='" + numbers[2] + "']");
     
-    assertQ(req("q", String.format(Locale.ROOT, "%s:{%s TO %s}", fieldName, numbers[0], numbers[3]), "fl", "id, " + fieldName),
+    assertQ(req("q", String.format(Locale.ROOT, "%s:{%s TO %s}", fieldName, numbers[0], numbers[3]),
+                "fl", "id, " + fieldName, "sort", "id asc"),
         "//*[@numFound='2']",
         "//result/doc[1]/arr[@name='" + fieldName + "']/" + type + "[1][.='" + numbers[1] + "']",
         "//result/doc[2]/arr[@name='" + fieldName + "']/" + type + "[1][.='" + numbers[2] + "']");
 
-    assertQ(req("q", String.format(Locale.ROOT, "%s:{%s TO *}", fieldName, numbers[0]), "fl", "id, " + fieldName),
+    assertQ(req("q", String.format(Locale.ROOT, "%s:{%s TO *}", fieldName, numbers[0]),
+                "fl", "id, " + fieldName, "sort", "id asc"),
         "//*[@numFound='10']",
         "//result/doc[1]/arr[@name='" + fieldName + "']/" + type + "[1][.='" + numbers[0] + "']");
     
-    assertQ(req("q", String.format(Locale.ROOT, "%s:{%s TO *}", fieldName, numbers[10]), "fl", "id, " + fieldName),
+    assertQ(req("q", String.format(Locale.ROOT, "%s:{%s TO *}", fieldName, numbers[10]),
+                "fl", "id, " + fieldName, "sort", "id asc"),
         "//*[@numFound='9']",
         "//result/doc[1]/arr[@name='" + fieldName + "']/" + type + "[1][.='" + numbers[1] + "']");
     
-    assertQ(req("q", String.format(Locale.ROOT, "%s:{* TO %s}", fieldName, numbers[3]), "fl", "id, " + fieldName),
+    assertQ(req("q", String.format(Locale.ROOT, "%s:{* TO %s}", fieldName, numbers[3]),
+                "fl", "id, " + fieldName, "sort", "id asc"),
         "//*[@numFound='3']",
         "//result/doc[1]/arr[@name='" + fieldName + "']/" + type + "[1][.='" + numbers[0] + "']");
     
-    assertQ(req("q", String.format(Locale.ROOT, "%s:[* TO %s}", fieldName, numbers[3]), "fl", "id, " + fieldName),
+    assertQ(req("q", String.format(Locale.ROOT, "%s:[* TO %s}", fieldName, numbers[3]),
+                "fl", "id, " + fieldName, "sort", "id asc"),
         "//*[@numFound='3']",
         "//result/doc[1]/arr[@name='" + fieldName + "']/" + type + "[1][.='" + numbers[0] + "']");
     
-    assertQ(req("q", fieldName + ":[* TO *}", "fl", "id, " + fieldName), 
+    assertQ(req("q", fieldName + ":[* TO *}", "fl", "id, " + fieldName, "sort", "id asc"), 
         "//*[@numFound='10']",
         "//result/doc[1]/arr[@name='" + fieldName + "']/" + type + "[1][.='" + numbers[0] + "']",
         "//result/doc[10]/arr[@name='" + fieldName + "']/" + type + "[1][.='" + numbers[9] + "']");
     
-    assertQ(req("q", String.format(Locale.ROOT, "%s:[%s TO %s] OR %s:[%s TO %s]", fieldName, numbers[0], numbers[1], fieldName, numbers[8], numbers[9]), "fl", "id, " + fieldName),
+    assertQ(req("q", String.format(Locale.ROOT, "%s:[%s TO %s] OR %s:[%s TO %s]", fieldName, numbers[0], numbers[1], fieldName, numbers[8], numbers[9]),
+                "fl", "id, " + fieldName, "sort", "id asc"),
         "//*[@numFound='4']",
         "//result/doc[1]/arr[@name='" + fieldName + "']/" + type + "[1][.='" + numbers[0] + "']",
         "//result/doc[2]/arr[@name='" + fieldName + "']/" + type + "[1][.='" + numbers[1] + "']",
         "//result/doc[3]/arr[@name='" + fieldName + "']/" + type + "[1][.='" + numbers[8] + "']",
         "//result/doc[4]/arr[@name='" + fieldName + "']/" + type + "[1][.='" + numbers[9] + "']");
     
-    assertQ(req("q", String.format(Locale.ROOT, "%s:[%s TO %s] OR %s:[%s TO %s]", fieldName, numbers[0], numbers[0], fieldName, numbers[10], numbers[10]), "fl", "id, " + fieldName),
+    assertQ(req("q", String.format(Locale.ROOT, "%s:[%s TO %s] OR %s:[%s TO %s]", fieldName, numbers[0], numbers[0], fieldName, numbers[10], numbers[10]),
+                "fl", "id, " + fieldName, "sort", "id asc"),
         "//*[@numFound='1']",
         "//result/doc[1]/arr[@name='" + fieldName + "']/" + type + "[1][.='" + numbers[0] + "']");
   }
@@ -1621,7 +1636,7 @@ public class TestPointFields extends SolrTestCaseJ4 {
   
   private void doTestPointFieldSort(String field, String dvField, String[] arr) throws Exception {
     assert arr != null && arr.length == 10;
-    for (int i = 0; i < arr.length; i++) {
+    for (int i = arr.length-1; i >= 0; i--) {
       assertU(adoc("id", String.valueOf(i), dvField, String.valueOf(arr[i]), field, String.valueOf(arr[i])));
     }
     assertU(commit());
@@ -1645,47 +1660,51 @@ public class TestPointFields extends SolrTestCaseJ4 {
   }
   
   private void doTestFloatPointFieldRangeQuery(String fieldName, String type, boolean testDouble) throws Exception {
-    for (int i = 0; i < 10; i++) {
+    for (int i = 9; i >= 0; i--) {
       assertU(adoc("id", String.valueOf(i), fieldName, String.valueOf(i)));
     }
     assertU(commit());
-    assertQ(req("q", fieldName + ":[0 TO 3]", "fl", "id, " + fieldName), 
+    assertQ(req("q", fieldName + ":[0 TO 3]", "fl", "id, " + fieldName, "sort", "id asc"), 
         "//*[@numFound='4']",
         "//result/doc[1]/" + type + "[@name='" + fieldName + "'][.='0.0']",
         "//result/doc[2]/" + type + "[@name='" + fieldName + "'][.='1.0']",
         "//result/doc[3]/" + type + "[@name='" + fieldName + "'][.='2.0']",
         "//result/doc[4]/" + type + "[@name='" + fieldName + "'][.='3.0']");
     
-    assertQ(req("q", fieldName + ":{0 TO 3]", "fl", "id, " + fieldName), 
+    assertQ(req("q", fieldName + ":{0 TO 3]", "fl", "id, " + fieldName, "sort", "id asc"), 
         "//*[@numFound='3']",
         "//result/doc[1]/" + type + "[@name='" + fieldName + "'][.='1.0']",
         "//result/doc[2]/" + type + "[@name='" + fieldName + "'][.='2.0']",
         "//result/doc[3]/" + type + "[@name='" + fieldName + "'][.='3.0']");
     
-    assertQ(req("q", fieldName + ":[0 TO 3}", "fl", "id, " + fieldName), 
+    assertQ(req("q", fieldName + ":[0 TO 3}", "fl", "id, " + fieldName, "sort", "id asc"), 
         "//*[@numFound='3']",
         "//result/doc[1]/" + type + "[@name='" + fieldName + "'][.='0.0']",
         "//result/doc[2]/" + type + "[@name='" + fieldName + "'][.='1.0']",
         "//result/doc[3]/" + type + "[@name='" + fieldName + "'][.='2.0']");
     
-    assertQ(req("q", fieldName + ":{0 TO 3}", "fl", "id, " + fieldName), 
+    assertQ(req("q", fieldName + ":{0 TO 3}", "fl", "id, " + fieldName, "sort", "id asc"), 
         "//*[@numFound='2']",
         "//result/doc[1]/" + type + "[@name='" + fieldName + "'][.='1.0']",
         "//result/doc[2]/" + type + "[@name='" + fieldName + "'][.='2.0']");
     
-    assertQ(req("q", fieldName + ":{0 TO *}", "fl", "id, " + fieldName), 
+    assertQ(req("q", fieldName + ":{0 TO *}", "fl", "id, " + fieldName, "sort", "id asc"), 
         "//*[@numFound='9']",
         "//result/doc[1]/" + type + "[@name='" + fieldName + "'][.='1.0']");
     
-    assertQ(req("q", fieldName + ":{* TO 3}", "fl", "id, " + fieldName), 
+    assertQ(req("q", fieldName + ":{* TO 3}", "fl", "id, " + fieldName, "sort", "id asc"), 
         "//*[@numFound='3']",
-        "//result/doc[1]/" + type + "[@name='" + fieldName + "'][.='0.0']");
+        "//result/doc[1]/" + type + "[@name='" + fieldName + "'][.='0.0']",
+        "//result/doc[2]/" + type + "[@name='" + fieldName + "'][.='1.0']",
+        "//result/doc[3]/" + type + "[@name='" + fieldName + "'][.='2.0']");
     
-    assertQ(req("q", fieldName + ":[* TO 3}", "fl", "id, " + fieldName), 
+    assertQ(req("q", fieldName + ":[* TO 3}", "fl", "id, " + fieldName, "sort", "id asc"), 
         "//*[@numFound='3']",
-        "//result/doc[1]/" + type + "[@name='" + fieldName + "'][.='0.0']");
+        "//result/doc[1]/" + type + "[@name='" + fieldName + "'][.='0.0']",
+        "//result/doc[2]/" + type + "[@name='" + fieldName + "'][.='1.0']",
+        "//result/doc[3]/" + type + "[@name='" + fieldName + "'][.='2.0']");
     
-    assertQ(req("q", fieldName + ":[* TO *}", "fl", "id, " + fieldName), 
+    assertQ(req("q", fieldName + ":[* TO *}", "fl", "id, " + fieldName, "sort", "id asc"), 
         "//*[@numFound='10']",
         "//result/doc[1]/" + type + "[@name='" + fieldName + "'][.='0.0']",
         "//result/doc[10]/" + type + "[@name='" + fieldName + "'][.='9.0']");
@@ -1769,7 +1788,7 @@ public class TestPointFields extends SolrTestCaseJ4 {
   }
   
   private void doTestFloatPointFunctionQuery(String dvFieldName, String nonDvFieldName, String type) throws Exception {
-    for (int i = 0; i < 10; i++) {
+    for (int i = 9; i >= 0; i--) {
       assertU(adoc("id", String.valueOf(i), dvFieldName, String.format(Locale.ROOT, "%f", (float)i*1.1), nonDvFieldName, String.format(Locale.ROOT, "%f", (float)i*1.1)));
     }
     assertU(commit());
@@ -1782,14 +1801,14 @@ public class TestPointFields extends SolrTestCaseJ4 {
         "//result/doc[3]/" + type + "[@name='" + dvFieldName + "'][.='7.7']",
         "//result/doc[10]/" + type + "[@name='" + dvFieldName + "'][.='0.0']");
     
-    assertQ(req("q", "*:*", "fl", "id, " + dvFieldName + ", product(-1," + dvFieldName + ")"), 
+    assertQ(req("q", "*:*", "fl", "id, " + dvFieldName + ", product(-1," + dvFieldName + ")", "sort", "id asc"), 
         "//*[@numFound='10']",
         "//result/doc[1]/float[@name='product(-1," + dvFieldName + ")'][.='-0.0']",
         "//result/doc[2]/float[@name='product(-1," + dvFieldName + ")'][.='-1.1']",
         "//result/doc[3]/float[@name='product(-1," + dvFieldName + ")'][.='-2.2']",
         "//result/doc[10]/float[@name='product(-1," + dvFieldName + ")'][.='-9.9']");
     
-    assertQ(req("q", "*:*", "fl", "id, " + dvFieldName + ", field(" + dvFieldName + ")"), 
+    assertQ(req("q", "*:*", "fl", "id, " + dvFieldName + ", field(" + dvFieldName + ")", "sort", "id asc"), 
         "//*[@numFound='10']",
         "//result/doc[1]/" + type + "[@name='field(" + dvFieldName + ")'][.='0.0']",
         "//result/doc[2]/" + type + "[@name='field(" + dvFieldName + ")'][.='1.1']",
@@ -2014,53 +2033,61 @@ public class TestPointFields extends SolrTestCaseJ4 {
 
   private void doTestDatePointFieldRangeQuery(String fieldName) throws Exception {
     String baseDate = "1995-12-31T10:59:59Z";
-    for (int i = 0; i < 10; i++) {
+    for (int i = 9; i >= 0; i--) {
       assertU(adoc("id", String.valueOf(i), fieldName, String.format(Locale.ROOT, "%s+%dHOURS", baseDate, i)));
     }
     assertU(commit());
-    assertQ(req("q", fieldName + ":" + String.format(Locale.ROOT, "[%s+0HOURS TO %s+3HOURS]", baseDate, baseDate), "fl", "id, " + fieldName),
+    assertQ(req("q", fieldName + ":" + String.format(Locale.ROOT, "[%s+0HOURS TO %s+3HOURS]", baseDate, baseDate),
+                "fl", "id, " + fieldName, "sort", "id asc"),
         "//*[@numFound='4']",
         "//result/doc[1]/date[@name='" + fieldName + "'][.='1995-12-31T10:59:59Z']",
         "//result/doc[2]/date[@name='" + fieldName + "'][.='1995-12-31T11:59:59Z']",
         "//result/doc[3]/date[@name='" + fieldName + "'][.='1995-12-31T12:59:59Z']",
         "//result/doc[4]/date[@name='" + fieldName + "'][.='1995-12-31T13:59:59Z']");
 
-    assertQ(req("q", fieldName + ":" + String.format(Locale.ROOT, "{%s+0HOURS TO %s+3HOURS]", baseDate, baseDate), "fl", "id, " + fieldName),
+    assertQ(req("q", fieldName + ":" + String.format(Locale.ROOT, "{%s+0HOURS TO %s+3HOURS]", baseDate, baseDate),
+                "fl", "id, " + fieldName, "sort", "id asc"),
         "//*[@numFound='3']",
         "//result/doc[1]/date[@name='" + fieldName + "'][.='1995-12-31T11:59:59Z']",
         "//result/doc[2]/date[@name='" + fieldName + "'][.='1995-12-31T12:59:59Z']",
         "//result/doc[3]/date[@name='" + fieldName + "'][.='1995-12-31T13:59:59Z']");
 
-    assertQ(req("q", fieldName + ":"+ String.format(Locale.ROOT, "[%s+0HOURS TO %s+3HOURS}",baseDate,baseDate), "fl", "id, " + fieldName),
+    assertQ(req("q", fieldName + ":"+ String.format(Locale.ROOT, "[%s+0HOURS TO %s+3HOURS}",baseDate,baseDate),
+                "fl", "id, " + fieldName, "sort", "id asc"),
         "//*[@numFound='3']",
         "//result/doc[1]/date[@name='" + fieldName + "'][.='1995-12-31T10:59:59Z']",
         "//result/doc[2]/date[@name='" + fieldName + "'][.='1995-12-31T11:59:59Z']",
         "//result/doc[3]/date[@name='" + fieldName + "'][.='1995-12-31T12:59:59Z']");
 
-    assertQ(req("q", fieldName + ":"+ String.format(Locale.ROOT, "{%s+0HOURS TO %s+3HOURS}",baseDate,baseDate), "fl", "id, " + fieldName),
+    assertQ(req("q", fieldName + ":"+ String.format(Locale.ROOT, "{%s+0HOURS TO %s+3HOURS}",baseDate,baseDate),
+                "fl", "id, " + fieldName, "sort", "id asc"),
         "//*[@numFound='2']",
         "//result/doc[1]/date[@name='" + fieldName + "'][.='1995-12-31T11:59:59Z']",
         "//result/doc[2]/date[@name='" + fieldName + "'][.='1995-12-31T12:59:59Z']");
 
-    assertQ(req("q", fieldName + ":" + String.format(Locale.ROOT, "{%s+0HOURS TO *}",baseDate), "fl", "id, " + fieldName),
+    assertQ(req("q", fieldName + ":" + String.format(Locale.ROOT, "{%s+0HOURS TO *}",baseDate),
+                "fl", "id, " + fieldName, "sort", "id asc"),
         "//*[@numFound='9']",
         "//result/doc[1]/date[@name='" + fieldName + "'][.='1995-12-31T11:59:59Z']");
 
-    assertQ(req("q", fieldName + ":" + String.format(Locale.ROOT, "{* TO %s+3HOURS}",baseDate), "fl", "id, " + fieldName),
+    assertQ(req("q", fieldName + ":" + String.format(Locale.ROOT, "{* TO %s+3HOURS}",baseDate),
+                "fl", "id, " + fieldName, "sort", "id asc"),
         "//*[@numFound='3']",
         "//result/doc[1]/date[@name='" + fieldName + "'][.='1995-12-31T10:59:59Z']");
 
-    assertQ(req("q", fieldName + ":" + String.format(Locale.ROOT, "[* TO %s+3HOURS}",baseDate), "fl", "id, " + fieldName),
+    assertQ(req("q", fieldName + ":" + String.format(Locale.ROOT, "[* TO %s+3HOURS}",baseDate),
+                "fl", "id, " + fieldName, "sort", "id asc"),
         "//*[@numFound='3']",
         "//result/doc[1]/date[@name='" + fieldName + "'][.='1995-12-31T10:59:59Z']");
 
-    assertQ(req("q", fieldName + ":[* TO *}", "fl", "id, " + fieldName),
+    assertQ(req("q", fieldName + ":[* TO *}", "fl", "id, " + fieldName, "sort", "id asc"),
         "//*[@numFound='10']",
         "//result/doc[1]/date[@name='" + fieldName + "'][.='1995-12-31T10:59:59Z']",
         "//result/doc[10]/date[@name='" + fieldName + "'][.='1995-12-31T19:59:59Z']");
 
     assertQ(req("q", fieldName + ":" + String.format(Locale.ROOT, "[%s+0HOURS TO %s+1HOURS]",baseDate,baseDate)
-            +" OR " + fieldName + ":" + String.format(Locale.ROOT, "[%s+8HOURS TO %s+9HOURS]",baseDate,baseDate) , "fl", "id, " + fieldName),
+                + " OR " + fieldName + ":" + String.format(Locale.ROOT, "[%s+8HOURS TO %s+9HOURS]",baseDate,baseDate) ,
+                "fl", "id, " + fieldName, "sort", "id asc"),
         "//*[@numFound='4']",
         "//result/doc[1]/date[@name='" + fieldName + "'][.='1995-12-31T10:59:59Z']",
         "//result/doc[2]/date[@name='" + fieldName + "'][.='1995-12-31T11:59:59Z']",
@@ -2218,28 +2245,28 @@ public class TestPointFields extends SolrTestCaseJ4 {
 
   private void doTestDatePointFunctionQuery(String dvFieldName, String nonDvFieldName, String type) throws Exception {
     String baseDate = "1995-01-10T10:59:10Z";
-    for (int i = 0; i < 10; i++) {
+    for (int i = 9; i >= 0; i--) {
       String date = String.format(Locale.ROOT, "%s+%dSECONDS", baseDate, i+1);
       assertU(adoc("id", String.valueOf(i), dvFieldName, date, nonDvFieldName, date));
     }
     assertU(commit());
     assertTrue(h.getCore().getLatestSchema().getField(dvFieldName).hasDocValues());
     assertTrue(h.getCore().getLatestSchema().getField(dvFieldName).getType() instanceof PointField);
-    assertQ(req("q", "*:*", "fl", "id, " + dvFieldName, "sort", "product(-1," + dvFieldName + ") asc"),
+    assertQ(req("q", "*:*", "fl", "id, " + dvFieldName, "sort", "product(-1,ms(" + dvFieldName + ")) asc"),
         "//*[@numFound='10']",
-        "//result/doc[1]/" + type + "[@name='" + dvFieldName + "'][.='1995-01-10T10:59:11Z']",
-        "//result/doc[2]/" + type + "[@name='" + dvFieldName + "'][.='1995-01-10T10:59:12Z']",
-        "//result/doc[3]/" + type + "[@name='" + dvFieldName + "'][.='1995-01-10T10:59:13Z']",
-        "//result/doc[10]/" + type + "[@name='" + dvFieldName + "'][.='1995-01-10T10:59:20Z']");
+        "//result/doc[1]/" + type + "[@name='" + dvFieldName + "'][.='1995-01-10T10:59:20Z']",
+        "//result/doc[2]/" + type + "[@name='" + dvFieldName + "'][.='1995-01-10T10:59:19Z']",
+        "//result/doc[3]/" + type + "[@name='" + dvFieldName + "'][.='1995-01-10T10:59:18Z']",
+        "//result/doc[10]/" + type + "[@name='" + dvFieldName + "'][.='1995-01-10T10:59:11Z']");
 
-    assertQ(req("q", "*:*", "fl", "id, " + dvFieldName + ", ms(" + dvFieldName + ","+baseDate+")"),
+    assertQ(req("q", "*:*", "fl", "id, " + dvFieldName + ", ms(" + dvFieldName + ","+baseDate+")", "sort", "id asc"),
         "//*[@numFound='10']",
         "//result/doc[1]/float[@name='ms(" + dvFieldName + "," + baseDate + ")'][.='1000.0']",
         "//result/doc[2]/float[@name='ms(" + dvFieldName + "," + baseDate + ")'][.='2000.0']",
         "//result/doc[3]/float[@name='ms(" + dvFieldName + "," + baseDate + ")'][.='3000.0']",
         "//result/doc[10]/float[@name='ms(" + dvFieldName + "," + baseDate + ")'][.='10000.0']");
 
-    assertQ(req("q", "*:*", "fl", "id, " + dvFieldName + ", field(" + dvFieldName + ")"),
+    assertQ(req("q", "*:*", "fl", "id, " + dvFieldName + ", field(" + dvFieldName + ")", "sort", "id asc"),
         "//*[@numFound='10']",
         "//result/doc[1]/" + type + "[@name='field(" + dvFieldName + ")'][.='1995-01-10T10:59:11Z']",
         "//result/doc[2]/" + type + "[@name='field(" + dvFieldName + ")'][.='1995-01-10T10:59:12Z']",
