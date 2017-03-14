@@ -249,6 +249,8 @@ Bug Fixes
   legacyCloud=false and will also fail on a state check when taking over a core registration with a new
   core. (Mark Miller, Hrishikesh Gadre, Patrick Dvorack)
 
+* SOLR-10184: Fix bin/solr so it can run properly on java9 (hossman, Uwe Schindler)
+
 Optimizations
 ----------------------
 
