@@ -79,20 +79,20 @@ public class PointRangeQueryBuilder implements QueryBuilder {
     try {
       if (type.equalsIgnoreCase("int")) {
         return IntPoint.newRangeQuery(field,
-            (lowerTerm == null ? Integer.MIN_VALUE : Integer.valueOf(lowerTerm)),
-            (upperTerm == null ? Integer.MAX_VALUE : Integer.valueOf(upperTerm)));
+            (lowerTerm == null ? Integer.MIN_VALUE : Integer.parseInt(lowerTerm)),
+            (upperTerm == null ? Integer.MAX_VALUE : Integer.parseInt(upperTerm)));
       } else if (type.equalsIgnoreCase("long")) {
         return LongPoint.newRangeQuery(field,
-            (lowerTerm == null ? Long.MIN_VALUE : Long.valueOf(lowerTerm)),
-            (upperTerm == null ? Long.MAX_VALUE : Long.valueOf(upperTerm)));
+            (lowerTerm == null ? Long.MIN_VALUE : Long.parseLong(lowerTerm)),
+            (upperTerm == null ? Long.MAX_VALUE : Long.parseLong(upperTerm)));
       } else if (type.equalsIgnoreCase("double")) {
         return DoublePoint.newRangeQuery(field,
-            (lowerTerm == null ? Double.NEGATIVE_INFINITY : Double.valueOf(lowerTerm)),
-            (upperTerm == null ? Double.POSITIVE_INFINITY : Double.valueOf(upperTerm)));
+            (lowerTerm == null ? Double.NEGATIVE_INFINITY : Double.parseDouble(lowerTerm)),
+            (upperTerm == null ? Double.POSITIVE_INFINITY : Double.parseDouble(upperTerm)));
       } else if (type.equalsIgnoreCase("float")) {
         return FloatPoint.newRangeQuery(field,
-            (lowerTerm == null ? Float.NEGATIVE_INFINITY : Float.valueOf(lowerTerm)),
-            (upperTerm == null ? Float.POSITIVE_INFINITY : Float.valueOf(upperTerm)));
+            (lowerTerm == null ? Float.NEGATIVE_INFINITY : Float.parseFloat(lowerTerm)),
+            (upperTerm == null ? Float.POSITIVE_INFINITY : Float.parseFloat(upperTerm)));
       } else {
         throw new ParserException("type attribute must be one of: [long, int, double, float]");
       }

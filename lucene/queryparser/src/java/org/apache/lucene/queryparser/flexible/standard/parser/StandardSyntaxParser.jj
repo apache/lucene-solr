@@ -391,7 +391,7 @@ QueryNode Clause(CharSequence field) : {
       if (boost != null) {
       float f = (float)1.0;
       try {
-        f = Float.valueOf(boost.image).floatValue();
+        f = Float.parseFloat(boost.image);
         // avoid boosting null queries, such as those caused by stop words
           if (q != null) {
             q = new BoostQueryNode(q, f);
@@ -431,7 +431,7 @@ QueryNode Term(CharSequence field) : {
        if (fuzzy) {
            float fms = defaultMinSimilarity;
            try {
-            fms = Float.valueOf(fuzzySlop.image.substring(1)).floatValue();
+            fms = Float.parseFloat(fuzzySlop.image.substring(1));
            } catch (Exception ignored) { }
            if(fms < 0.0f){
                 throw new ParseException(new MessageImpl(QueryParserMessages.INVALID_SYNTAX_FUZZY_LIMITS));
@@ -472,7 +472,7 @@ QueryNode Term(CharSequence field) : {
 
          if (fuzzySlop != null) {
            try {
-             phraseSlop = Float.valueOf(fuzzySlop.image.substring(1)).intValue();
+             phraseSlop = (int)Float.parseFloat(fuzzySlop.image.substring(1));
              q = new SlopQueryNode(q, phraseSlop);    
            }
            catch (Exception ignored) {
@@ -488,7 +488,7 @@ QueryNode Term(CharSequence field) : {
     if (boost != null) {
       float f = (float)1.0;
       try {
-        f = Float.valueOf(boost.image).floatValue();
+        f = Float.parseFloat(boost.image);
         // avoid boosting null queries, such as those caused by stop words
           if (q != null) {
             q = new BoostQueryNode(q, f);

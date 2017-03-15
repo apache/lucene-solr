@@ -499,7 +499,7 @@ class FacetRangeProcessor extends FacetProcessor<FacetRange> {
     }
     @Override
     public Float parseAndAddGap(Comparable value, String gap) {
-      return new Float(((Number)value).floatValue() + Float.valueOf(gap).floatValue());
+      return new Float(((Number)value).floatValue() + Float.parseFloat(gap));
     }
   }
   private static class DoubleCalc extends Calc {
@@ -520,7 +520,7 @@ class FacetRangeProcessor extends FacetProcessor<FacetRange> {
     }
     @Override
     public Double parseAndAddGap(Comparable value, String gap) {
-      return new Double(((Number)value).doubleValue() + Double.valueOf(gap).doubleValue());
+      return new Double(((Number)value).doubleValue() + Double.parseDouble(gap));
     }
   }
   private static class IntCalc extends Calc {
@@ -532,7 +532,7 @@ class FacetRangeProcessor extends FacetProcessor<FacetRange> {
     }
     @Override
     public Integer parseAndAddGap(Comparable value, String gap) {
-      return new Integer(((Number)value).intValue() + Integer.valueOf(gap).intValue());
+      return new Integer(((Number)value).intValue() + Integer.parseInt(gap));
     }
   }
   private static class LongCalc extends Calc {
@@ -544,7 +544,7 @@ class FacetRangeProcessor extends FacetProcessor<FacetRange> {
     }
     @Override
     public Long parseAndAddGap(Comparable value, String gap) {
-      return new Long(((Number)value).longValue() + Long.valueOf(gap).longValue());
+      return new Long(((Number)value).longValue() + Long.parseLong(gap));
     }
   }
   private static class DateCalc extends Calc {

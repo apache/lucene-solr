@@ -123,9 +123,9 @@ public class TestValueSources extends LuceneTestCase {
       document.add(new StringField("id", doc[0], Field.Store.NO));
       document.add(new SortedDocValuesField("id", new BytesRef(doc[0])));
       document.add(new NumericDocValuesField("double", Double.doubleToRawLongBits(Double.parseDouble(doc[1]))));
-      document.add(new NumericDocValuesField("float", Float.floatToRawIntBits(Float.valueOf(doc[2]))));
-      document.add(new NumericDocValuesField("int", Integer.valueOf(doc[3])));
-      document.add(new NumericDocValuesField("long", Long.valueOf(doc[4])));
+      document.add(new NumericDocValuesField("float", Float.floatToRawIntBits(Float.parseFloat(doc[2]))));
+      document.add(new NumericDocValuesField("int", Integer.parseInt(doc[3])));
+      document.add(new NumericDocValuesField("long", Long.parseLong(doc[4])));
       document.add(new StringField("string", doc[5], Field.Store.NO));
       document.add(new SortedDocValuesField("string", new BytesRef(doc[5])));
       document.add(new TextField("text", doc[6], Field.Store.NO));

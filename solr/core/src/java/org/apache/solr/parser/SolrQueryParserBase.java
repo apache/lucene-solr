@@ -623,7 +623,7 @@ public abstract class SolrQueryParserBase extends QueryBuilder {
     } else if (fuzzy) {
       float fms = fuzzyMinSim;
       try {
-        fms = Float.valueOf(fuzzySlop.image.substring(1)).floatValue();
+        fms = Float.parseFloat(fuzzySlop.image.substring(1));
       } catch (Exception ignored) { }
       if(fms < 0.0f){
         throw new SyntaxError("Minimum similarity for a FuzzyQuery has to be between 0.0f and 1.0f !");
@@ -644,7 +644,7 @@ public abstract class SolrQueryParserBase extends QueryBuilder {
     int s = phraseSlop;  // default
     if (fuzzySlop != null) {
       try {
-        s = Float.valueOf(fuzzySlop.image.substring(1)).intValue();
+        s = (int)Float.parseFloat(fuzzySlop.image.substring(1));
       }
       catch (Exception ignored) { }
     }

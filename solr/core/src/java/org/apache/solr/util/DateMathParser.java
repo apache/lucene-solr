@@ -381,7 +381,7 @@ public class DateMathParser  {
         }
         int val = 0;
         try {
-          val = Integer.valueOf(ops[pos++]);
+          val = Integer.parseInt(ops[pos++]);
         } catch (NumberFormatException e) {
           throw new ParseException
             ("Not a Number: \"" + ops[pos-1] + "\"", pos-1);
