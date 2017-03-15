@@ -484,6 +484,11 @@ public class SearchHandler extends RequestHandlerBase implements SolrCoreAware ,
     }
     return sb.toString();
   }
+
+  @Override
+  public Boolean registerV2() {
+    return Boolean.TRUE;
+  }
 }
 
 
