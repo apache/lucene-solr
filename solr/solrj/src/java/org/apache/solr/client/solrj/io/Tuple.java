@@ -45,6 +45,8 @@ public class Tuple implements Cloneable, MapWriter {
   public boolean EXCEPTION;
 
   public Map fields = new HashMap();
+  public List<String> fieldNames;
+  public Map<String, String> fieldLabels;
 
   public Tuple(Map fields) {
     if(fields.containsKey("EOF")) {
@@ -198,12 +200,19 @@ public class Tuple implements Cloneable, MapWriter {
 
   @Override
   public void writeMap(EntryWriter ew) throws IOException {
-    fields.forEach((k, v) -> {
-      try {
-        ew.put((String)k,v);
-      } catch (IOException e) {
-        throw new RuntimeException(e);
+    if(fieldNames == null) {
+      fields.forEach((k, v) -> {
+        try {
+          ew.put((String) k, v);
+        } catch (IOException e) {
+          throw new RuntimeException(e);
+        }
+      });
+    } else {
+      for(String fieldName : fieldNames) {
+        String label = fieldLabels.get(fieldName);
+        ew.put(label, fields.get(label));
       }
-    });
+    }
   }
 }
