@@ -185,6 +185,8 @@ New Features
 
 * SOLR-10224: Add disk total and disk free metrics. (ab)
 
+* SOLR-10046: Add UninvertDocValuesMergePolicyFactory class. (Keith Laban, Christine Poerschke)
+
 Bug Fixes
 ----------------------
 
