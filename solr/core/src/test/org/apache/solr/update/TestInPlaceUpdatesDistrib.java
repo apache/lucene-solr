@@ -342,7 +342,7 @@ public class TestInPlaceUpdatesDistrib extends AbstractFullDistribZkTestBase {
     SolrDocumentList results = LEADER.query(params).getResults();
     assertEquals(numDocs, results.size());
     for (SolrDocument doc : results) {
-      luceneDocids.add((int) doc.get("[docid]"));
+      luceneDocids.add((Integer) doc.get("[docid]"));
       valuesList.add((Float) doc.get("inplace_updatable_float"));
     }
     log.info("Initial results: "+results);

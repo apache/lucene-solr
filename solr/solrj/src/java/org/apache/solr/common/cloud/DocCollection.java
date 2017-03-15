@@ -85,7 +85,7 @@ public class DocCollection extends ZkNodeProps implements Iterable<Slice> {
     this.replicationFactor = (Integer) verifyProp(props, REPLICATION_FACTOR);
     this.maxShardsPerNode = (Integer) verifyProp(props, MAX_SHARDS_PER_NODE);
     Boolean autoAddReplicas = (Boolean) verifyProp(props, AUTO_ADD_REPLICAS);
-    this.autoAddReplicas = autoAddReplicas == null ? false : autoAddReplicas;
+    this.autoAddReplicas = autoAddReplicas == null ? Boolean.FALSE : autoAddReplicas;
     Integer realtimeReplicas = (Integer) verifyProp(props, REALTIME_REPLICAS);
     this.realtimeReplicas = realtimeReplicas == null ? -1 : realtimeReplicas;
     if (this.realtimeReplicas != -1 && this.realtimeReplicas != 1) {
