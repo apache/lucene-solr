@@ -253,6 +253,8 @@ Bug Fixes
 
 * SOLR-10184: Fix bin/solr so it can run properly on java9 (hossman, Uwe Schindler)
 
+* SOLR-9516: Admin UI (angular) didn't work with Kerberos (Cassandra Targett, Amrit Sarkar via Ishan Chattopadhyaya)
+
 Optimizations
 ----------------------
 
