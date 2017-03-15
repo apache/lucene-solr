@@ -1075,7 +1075,7 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
       String ss[] = s.split(",");
       List<String> l = new ArrayList<>();
       for (String s1 : ss) {
-        l.add(new Date(Long.valueOf(s1)).toString());
+        l.add(new Date(Long.parseLong(s1)).toString());
       }
       nl.add(key, l);
     } else {

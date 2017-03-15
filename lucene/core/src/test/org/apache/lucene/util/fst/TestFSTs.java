@@ -624,10 +624,10 @@ public class TestFSTs extends LuceneTestCase {
     int idx = 0;
     while (idx < args.length) {
       if (args[idx].equals("-prune")) {
-        prune = Integer.valueOf(args[1 + idx]);
+        prune = Integer.parseInt(args[1 + idx]);
         idx++;
       } else if (args[idx].equals("-limit")) {
-        limit = Integer.valueOf(args[1 + idx]);
+        limit = Integer.parseInt(args[1 + idx]);
         idx++;
       } else if (args[idx].equals("-utf8")) {
         inputMode = 0;

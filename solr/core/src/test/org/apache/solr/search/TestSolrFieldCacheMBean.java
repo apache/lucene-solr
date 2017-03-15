@@ -68,7 +68,7 @@ public class TestSolrFieldCacheMBean extends SolrTestCaseJ4 {
   private void assertEntryListIncluded(boolean checkJmx) {
     SolrFieldCacheMBean mbean = new SolrFieldCacheMBean();
     NamedList stats = checkJmx ? mbean.getStatisticsForJmx() : mbean.getStatistics();
-    assert(new Integer(stats.get("entries_count").toString()) > 0);
+    assert(Integer.parseInt(stats.get("entries_count").toString()) > 0);
     assertNotNull(stats.get("total_size"));
     assertNotNull(stats.get("entry#0"));
   }
@@ -76,7 +76,7 @@ public class TestSolrFieldCacheMBean extends SolrTestCaseJ4 {
   private void assertEntryListNotIncluded(boolean checkJmx) {
     SolrFieldCacheMBean mbean = new SolrFieldCacheMBean();
     NamedList stats = checkJmx ? mbean.getStatisticsForJmx() : mbean.getStatistics();
-    assert(new Integer(stats.get("entries_count").toString()) > 0);
+    assert(Integer.parseInt(stats.get("entries_count").toString()) > 0);
     assertNull(stats.get("total_size"));
     assertNull(stats.get("entry#0"));
   }

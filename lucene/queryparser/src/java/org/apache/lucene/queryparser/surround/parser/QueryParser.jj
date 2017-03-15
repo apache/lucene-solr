@@ -460,7 +460,7 @@ void OptionalWeights(SrndQuery q) : {
   ( <CARAT> weight=<NUMBER> {
       float f;
       try {
-        f = Float.valueOf(weight.image).floatValue();
+        f = Float.parseFloat(weight.image);
       } catch (Exception floatExc) {
         throw new ParseException(boostErrorMessage + weight.image + " (" + floatExc + ")");
       }
