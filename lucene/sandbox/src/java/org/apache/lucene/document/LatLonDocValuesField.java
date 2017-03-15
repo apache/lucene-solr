@@ -106,7 +106,7 @@ public class LatLonDocValuesField extends Field {
     result.append(name);
     result.append(':');
 
-    long currentValue = Long.valueOf((Long)fieldsData);
+    long currentValue = (Long)fieldsData;
     result.append(decodeLatitude((int)(currentValue >> 32)));
     result.append(',');
     result.append(decodeLongitude((int)(currentValue & 0xFFFFFFFF)));

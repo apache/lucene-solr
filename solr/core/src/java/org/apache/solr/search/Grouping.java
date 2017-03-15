@@ -601,7 +601,7 @@ public class Grouping {
       groupResult.add("matches", matches);
       if (totalCount == TotalCount.grouped) {
         Integer totalNrOfGroups = getNumberOfGroups();
-        groupResult.add("ngroups", totalNrOfGroups == null ? 0 : totalNrOfGroups);
+        groupResult.add("ngroups", totalNrOfGroups == null ? Integer.valueOf(0) : totalNrOfGroups);
       }
       maxMatches = Math.max(maxMatches, matches);
       return groupResult;
