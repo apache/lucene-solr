@@ -697,7 +697,7 @@ public class IndexFetcher {
 
       int indexCount = 1, confFilesCount = 1;
       if (props.containsKey(TIMES_INDEX_REPLICATED)) {
-        indexCount = Integer.valueOf(props.getProperty(TIMES_INDEX_REPLICATED)) + 1;
+        indexCount = Integer.parseInt(props.getProperty(TIMES_INDEX_REPLICATED)) + 1;
       }
       StringBuilder sb = readToStringBuilder(replicationTime, props.getProperty(INDEX_REPLICATED_AT_LIST));
       props.setProperty(INDEX_REPLICATED_AT_LIST, sb.toString());
@@ -708,7 +708,7 @@ public class IndexFetcher {
         props.setProperty(CONF_FILES_REPLICATED, confFiles.toString());
         props.setProperty(CONF_FILES_REPLICATED_AT, String.valueOf(replicationTime));
         if (props.containsKey(TIMES_CONFIG_REPLICATED)) {
-          confFilesCount = Integer.valueOf(props.getProperty(TIMES_CONFIG_REPLICATED)) + 1;
+          confFilesCount = Integer.parseInt(props.getProperty(TIMES_CONFIG_REPLICATED)) + 1;
         }
         props.setProperty(TIMES_CONFIG_REPLICATED, String.valueOf(confFilesCount));
       }
@@ -717,7 +717,7 @@ public class IndexFetcher {
       if (!successfulInstall) {
         int numFailures = 1;
         if (props.containsKey(TIMES_FAILED)) {
-          numFailures = Integer.valueOf(props.getProperty(TIMES_FAILED)) + 1;
+          numFailures = Integer.parseInt(props.getProperty(TIMES_FAILED)) + 1;
         }
         props.setProperty(TIMES_FAILED, String.valueOf(numFailures));
         props.setProperty(REPLICATION_FAILED_AT, String.valueOf(replicationTime));

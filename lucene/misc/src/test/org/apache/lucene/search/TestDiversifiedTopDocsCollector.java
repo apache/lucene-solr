@@ -392,7 +392,7 @@ public class TestDiversifiedTopDocsCollector extends LuceneTestCase {
     for (int i = 0; i < hitsOfThe60s.length; i++) {
       String cols[] = hitsOfThe60s[i].split("\t");
       Record record = new Record(String.valueOf(i), cols[0], cols[1], cols[2],
-          Float.valueOf(cols[3]));
+          Float.parseFloat(cols[3]));
       parsedRecords.put(record.id, record);
       idField.setStringValue(record.id);
       yearField.setStringValue(record.year);

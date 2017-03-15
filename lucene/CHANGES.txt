@@ -259,6 +259,10 @@ Optimizations
 * LUCENE-7742: Fix places where we were unboxing and then re-boxing
   according to FindBugs (Daniel Jelinski via Mike McCandless)
 
+* LUCENE-7739: Fix places where we unnecessarily boxed while parsing
+  a numeric value according to FindBugs (Daniel Jelinski via Mike
+  McCandless)
+
 Build
 
 * LUCENE-7653: Update randomizedtesting to version 2.5.0. (Dawid Weiss)

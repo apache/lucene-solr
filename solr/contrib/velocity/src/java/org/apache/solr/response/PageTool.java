@@ -38,7 +38,7 @@ public class PageTool {
     String rows = request.getParams().get("rows");
 
     if (rows != null) {
-      results_per_page = new Integer(rows);
+      results_per_page = Integer.parseInt(rows);
     }
     //TODO: Handle group by results
     Object docs = response.getResponse();

@@ -46,7 +46,7 @@ public class ForceMergeTask extends PerfTask {
   @Override
   public void setParams(String params) {
     super.setParams(params);
-    maxNumSegments = Double.valueOf(params).intValue();
+    maxNumSegments = (int)Double.parseDouble(params);
   }
 
   @Override

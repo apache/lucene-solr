@@ -193,7 +193,7 @@ public class TestQueryParser extends QueryParserTestBase {
         if(fuzzySlop.image.endsWith("€")) {
           float fms = fuzzyMinSim;
           try {
-            fms = Float.valueOf(fuzzySlop.image.substring(1, fuzzySlop.image.length()-1)).floatValue();
+            fms = Float.parseFloat(fuzzySlop.image.substring(1, fuzzySlop.image.length()-1));
           } catch (Exception ignored) { }
           float value = Float.parseFloat(termImage);
           return getRangeQuery(qfield, Float.toString(value-fms/2.f), Float.toString(value+fms/2.f), true, true);
