@@ -207,9 +207,6 @@ public class BoolField extends PrimitiveFieldType {
     return Collections.singletonList(fval);
   }
 
-  @Override
-  public void checkSchemaField(final SchemaField field) {
-  }
 }
 
 // TODO - this can be much more efficient - use FixedBitSet or Bits

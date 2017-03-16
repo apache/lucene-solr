@@ -57,8 +57,7 @@ public class LatLonPointSpatialField extends AbstractSpatialFieldType implements
   // TODO handle polygons
 
   @Override
-  public void checkSchemaField(SchemaField field) {
-    // override because if we didn't, FieldType will complain about docValues not being supported (we do support it)
+  protected void checkSupportsDocValues() { // we support DocValues
   }
 
   @Override

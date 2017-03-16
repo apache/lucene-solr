@@ -49,7 +49,7 @@ public class DocumentBuilder {
    *        when constructing a Lucene document for writing an in-place update, and we don't need
    *        presence of non-updatable fields (non NDV) in such a document.
    */
-  private static void addField(Document doc, SchemaField field, Object val, float boost, 
+  private static void addField(Document doc, SchemaField field, Object val, float boost,
       boolean forInPlaceUpdate) {
     if (val instanceof IndexableField) {
       if (forInPlaceUpdate) {
@@ -57,8 +57,10 @@ public class DocumentBuilder {
             + " NDV fields only.";
       }
       // set boost to the calculated compound boost
-      ((Field)val).setBoost(boost);
-      doc.add((Field)val);
+      if (val instanceof Field) {
+        ((Field)val).setBoost(boost);
+      }
+      doc.add((IndexableField)val);
       return;
     }
     for (IndexableField f : field.getType().createFields(field, val, boost)) {
@@ -72,10 +74,10 @@ public class DocumentBuilder {
         //    assert f instanceof NumericDocValuesField
         if (forInPlaceUpdate) {
           if (f instanceof NumericDocValuesField) {
-            doc.add((Field) f);
+            doc.add(f);
           }
         } else {
-          doc.add((Field) f);
+          doc.add(f);
         }
       }
     }
@@ -141,18 +143,18 @@ public class DocumentBuilder {
             "ERROR: "+getID(doc, schema)+"multiple values encountered for non multiValued field " + 
               sfield.getName() + ": " +field.getValue() );
       }
-      
+
       float fieldBoost = field.getBoost();
       boolean applyBoost = sfield != null && sfield.indexed() && !sfield.omitNorms();
 
       if (applyBoost == false && fieldBoost != 1.0F) {
         throw new SolrException( SolrException.ErrorCode.BAD_REQUEST,
-            "ERROR: "+getID(doc, schema)+"cannot set an index-time boost, unindexed or norms are omitted for field " + 
+            "ERROR: "+getID(doc, schema)+"cannot set an index-time boost, unindexed or norms are omitted for field " +
               sfield.getName() + ": " +field.getValue() );
       }
 
-      // Lucene no longer has a native docBoost, so we have to multiply 
-      // it ourselves 
+      // Lucene no longer has a native docBoost, so we have to multiply
+      // it ourselves
       float compoundBoost = fieldBoost * docBoost;
 
       List<CopyField> copyFields = schema.getCopyFieldsList(name);
@@ -168,7 +170,7 @@ public class DocumentBuilder {
           hasField = true;
           if (sfield != null) {
             used = true;
-            addField(out, sfield, v, applyBoost ? compoundBoost : 1f, 
+            addField(out, sfield, v, applyBoost ? compoundBoost : 1f,
                      name.equals(uniqueKeyFieldName) ? false : forInPlaceUpdate);
             // record the field as having a value
             usedFields.add(sfield.getName());
@@ -200,15 +202,15 @@ public class DocumentBuilder {
                   val = cf.getLimitedValue((String)val);
                 }
 
-                // we can't copy any boost unless the dest field is 
+                // we can't copy any boost unless the dest field is
                 // indexed & !omitNorms, but which boost we copy depends
                 // on whether the dest field already contains values (we
                 // don't want to apply the compounded docBoost more then once)
-                final float destBoost = 
+                final float destBoost =
                     (destinationField.indexed() && !destinationField.omitNorms()) ?
                         (destHasValues ? fieldBoost : compoundBoost) : 1.0F;
 
-                addField(out, destinationField, val, destBoost, 
+                addField(out, destinationField, val, destBoost,
                          destinationField.getName().equals(uniqueKeyFieldName) ? false : forInPlaceUpdate);
                 // record the field as having a value
                 usedFields.add(destinationField.getName());
@@ -216,8 +218,8 @@ public class DocumentBuilder {
             }
           }
 
-          // The final boost for a given field named is the product of the 
-          // *all* boosts on values of that field. 
+          // The final boost for a given field named is the product of the
+          // *all* boosts on values of that field.
           // For multi-valued fields, we only want to set the boost on the
           // first field.
           fieldBoost = compoundBoost = 1.0f;

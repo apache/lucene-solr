@@ -709,9 +709,6 @@ public class TrieField extends NumericFieldType {
     return null;
   }
 
-  @Override
-  public void checkSchemaField(final SchemaField field) {
-  }
 }
 
 class TrieDateFieldSource extends LongFieldSource {

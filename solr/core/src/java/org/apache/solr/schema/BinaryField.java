@@ -24,6 +24,7 @@ import org.apache.lucene.document.Field;
 import org.apache.lucene.index.IndexableField;
 import org.apache.lucene.search.SortField;
 import org.apache.lucene.util.BytesRef;
+import org.apache.solr.common.SolrException;
 import org.apache.solr.common.util.Base64;
 import org.apache.solr.response.TextResponseWriter;
 import org.apache.solr.uninverting.UninvertingReader.Type;
@@ -34,6 +35,14 @@ import org.slf4j.LoggerFactory;
 public class BinaryField extends FieldType  {
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
+
+  @Override
+  public void checkSchemaField(SchemaField field) {
+    super.checkSchemaField(field);
+    if (field.isLarge()) {
+      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Field type " + this + " is 'large'; not supported (yet)");
+    }
+  }
 
   private String toBase64String(ByteBuffer buf) {
     return Base64.byteArrayToBase64(buf.array(), buf.position(), buf.limit()-buf.position());
