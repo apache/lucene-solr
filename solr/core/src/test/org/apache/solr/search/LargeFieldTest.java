@@ -29,6 +29,7 @@ import org.apache.solr.request.SolrQueryRequestBase;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.util.RefCounted;
+import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
@@ -40,29 +41,17 @@ public class LargeFieldTest extends SolrTestCaseJ4 {
 
   @BeforeClass
   public static void initManagedSchemaCore() throws Exception {
-    // TODO propose convenience API for this?
-    // This testing approach means no new solrconfig or schema file or per-test temp solr-home!
+    // This testing approach means no schema file or per-test temp solr-home!
     System.setProperty("managed.schema.mutable", "true");
     System.setProperty("managed.schema.resourceName", "schema-one-field-no-dynamic-field-unique-key.xml");
     System.setProperty("enable.update.log", "false");
+    System.setProperty("documentCache.enabled", "true");
+    System.setProperty("enableLazyFieldLoading", "true");
+
     initCore("solrconfig-managed-schema.xml", "ignoredSchemaName?");
 
-    // modify solr config  TODO propose more convenient API for this; maybe with JSON-ification of a map
-    try (SolrQueryRequestBase req = (SolrQueryRequestBase) req()) {
-      req.getContext().put("httpMethod", "POST");
-      req.setContentStreams(Collections.singleton(new ContentStreamBase.StringStream(
-          "{ 'set-property':{" +
-              "'query.enableLazyFieldLoading':true, " +
-              "'query.documentCache.class':'solr.LRUCache'" +
-              "}}"
-      )));
-      SolrQueryResponse rsp = new SolrQueryResponse();
-      h.getCore().execute(h.getCore().getRequestHandler("/config"), req, rsp);
-      assertNull(rsp.getException());
-    }
-
+    // TODO SOLR-10229 will make this easier
     boolean PERSIST_FALSE = false; // don't write to test resource dir
-
     IndexSchema schema = h.getCore().getLatestSchema();
     schema = schema.addFieldTypes(Collections.singletonList(
         schema.newFieldType("textType", "solr.TextField", // redundant; TODO improve api
@@ -76,6 +65,12 @@ public class LargeFieldTest extends SolrTestCaseJ4 {
         PERSIST_FALSE);
 
     h.getCore().setLatestSchema(schema);
+  }
+
+  @AfterClass
+  public static void afterClass() {
+    System.clearProperty("documentCache.enabled");
+    System.clearProperty("enableLazyFieldLoading");
   }
 
   @Test
