@@ -202,6 +202,13 @@ New Features
   requires "stored" and must not be multiValued.  It's intended for fields that might have very large values so that
   they don't get cached in memory. (David Smiley)
 
+* SOLR-9185: Solr's edismax and "Lucene"/standard query parsers will no longer split on whitespace before sending
+  terms to analysis, if given the "sow=false" request param ("sow"=>"split on whitespace").  This enables multi-term
+  source synonyms to match at query-time using SynonymGraphFilterFactory; other analysis components will also now
+  work at query time, e.g. ShingleFilterFactory.  By default, and when the "sow=true" param is specified, these
+  parsers' behavior remains the same: queries will be split on whitespace before sending individual terms to analysis.
+  (Steve Rowe)
+
 
 Bug Fixes
 ----------------------
