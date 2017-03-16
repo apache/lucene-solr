@@ -16,7 +16,9 @@
  */
 package org.apache.solr.search;
 
+import java.util.Arrays;
 import java.util.HashSet;
+import java.util.Map;
 import java.util.Random;
 import java.util.Set;
 
@@ -32,9 +34,11 @@ import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.request.SolrQueryRequest;
+import org.apache.solr.schema.TextField;
 import org.apache.solr.util.SolrPluginUtils;
 import org.junit.BeforeClass;
 import org.junit.Test;
+import org.noggit.ObjectBuilder;
 
 public class TestExtendedDismaxParser extends SolrTestCaseJ4 {
 
@@ -62,7 +66,7 @@ public class TestExtendedDismaxParser extends SolrTestCaseJ4 {
                  "foo_i", "8"
     ));
     assertU(adoc("id", "47", "trait_ss", "Pig",
-            "text", "line up and fly directly at the enemy death cannons, clogging them with wreckage!"));
+            "text_sw", "line up and fly directly at the enemy death cannons, clogging them with wreckage!"));
     assertU(adoc("id", "48", "text_sw", "this has gigabyte potential", "foo_i","100"));
     assertU(adoc("id", "49", "text_sw", "start the big apple end", "foo_i","-100"));
     assertU(adoc("id", "50", "text_sw", "start new big city end"));
@@ -88,98 +92,109 @@ public class TestExtendedDismaxParser extends SolrTestCaseJ4 {
     assertU(adoc("id", "69", "text_sw", "ties barbie"));
     assertU(adoc("id", "70", "text_sw", "hair"));
     assertU(adoc("id", "71", "text_sw", "ties"));
+    assertU(adoc("id", "72", "text_sw", "wifi ATM"));
     assertU(commit());
   }
 
   @Test
   public void testSyntax() throws Exception {
-    // a bare * should be treated as *:*
-    assertJQ(req("defType","edismax", "q","*", "df","doesnotexist_s")
-        ,"/response/docs/[0]=="   // make sure we get something...
-    );
-    assertJQ(req("defType","edismax", "q","doesnotexist_s:*")
-        ,"/response/numFound==0"   // nothing should be found
-    );
-    assertJQ(req("defType","edismax","q","doesnotexist_s:*")
-        ,"/response/numFound==0"   // nothing should be found
-    );
-    assertJQ(req("defType","edismax","q","doesnotexist_s:( * * * )")
-        ,"/response/numFound==0"   // nothing should be found
-    );
+    for (String sow : Arrays.asList("true", "false")) {
+      // a bare * should be treated as *:*
+      assertJQ(req("defType", "edismax", "q", "*", "df", "doesnotexist_s", "sow", sow)
+          , "/response/docs/[0]=="   // make sure we get something...
+      );
+      assertJQ(req("defType", "edismax", "q", "doesnotexist_s:*", "sow", sow)
+          , "/response/numFound==0"   // nothing should be found
+      );
+      assertJQ(req("defType", "edismax", "q", "doesnotexist_s:*", "sow", sow)
+          , "/response/numFound==0"   // nothing should be found
+      );
+      assertJQ(req("defType", "edismax", "q", "doesnotexist_s:( * * * )", "sow", sow)
+          , "/response/numFound==0"   // nothing should be found
+      );
+    }
   }
 
 
   public void testTrailingOperators() throws Exception {
-    // really just test that exceptions aren't thrown by
-    // single + -
+    for (String sow : Arrays.asList("true", "false")) {
+      // really just test that exceptions aren't thrown by
+      // single + -
 
-    assertJQ(req("defType","edismax", "q","-")
-        ,"/response==");
+      assertJQ(req("defType", "edismax", "q", "-", "df", "text_sw", "sow", sow)
+          , "/response==");
 
-    assertJQ(req("defType","edismax", "q","+")
-        ,"/response==");
+      assertJQ(req("defType", "edismax", "q", "+", "df", "text_sw", "sow", sow)
+          , "/response==");
 
-    assertJQ(req("defType","edismax", "q","+ - +")
-        ,"/response==");
+      assertJQ(req("defType", "edismax", "q", "+ - +", "df", "text_sw", "sow", sow)
+          , "/response==");
 
-    assertJQ(req("defType","edismax", "q","- + -")
-        ,"/response==");
+      assertJQ(req("defType", "edismax", "q", "- + -", "df", "text_sw", "sow", sow)
+          , "/response==");
 
-    assertJQ(req("defType","edismax", "q","id:47 +")
-        ,"/response/numFound==1");
+      assertJQ(req("defType", "edismax", "q", "id:47 +", "df", "text_sw", "sow", sow)
+          , "/response/numFound==1");
 
-    assertJQ(req("defType","edismax", "q","id:47 -")
-        ,"/response/numFound==1");
+      assertJQ(req("defType", "edismax", "q", "id:47 -", "df", "text_sw", "sow", sow)
+          , "/response/numFound==1");
 
-    Random r = random();
-    for (int i=0; i<100; i++) {
-      StringBuilder sb = new StringBuilder();
-      for (int j=0; j<r.nextInt(10); j++) {
-        switch (r.nextInt(3)) {
-          case 0: sb.append(' '); break;
-          case 1: sb.append('+'); break;
-          case 2: sb.append('-'); break;
-          case 3: sb.append((char)r.nextInt(127)); break;
+      Random r = random();
+      for (int i=0; i<100; i++) {
+        StringBuilder sb = new StringBuilder();
+        for (int j=0; j<r.nextInt(10); j++) {
+          switch (r.nextInt(3)) {
+            case 0: sb.append(' '); break;
+            case 1: sb.append('+'); break;
+            case 2: sb.append('-'); break;
+            case 3: sb.append((char)r.nextInt(127)); break;
+          }
         }
-      }
 
-      String q = sb.toString();
-      assertJQ(req("defType","edismax", "q",q)
-          ,"/response==");
+        String q = sb.toString();
+        assertJQ(req("defType", "edismax", "q", q, "df", "text_sw", "sow", sow)
+            , "/response==");
+      }
     }
   }
 
 
   public void testLowercaseOperators() {
-    assertQ("Upper case operator",
-        req("q","Zapp AND Brannigan",
-            "qf", "name",
-            "lowercaseOperators", "false",
-            "defType","edismax")
-        ,"*[count(//doc)=1]");
-    
-    assertQ("Upper case operator, allow lowercase",
-        req("q","Zapp AND Brannigan",
-            "qf", "name",
-            "lowercaseOperators", "true",
-            "defType","edismax")
-        ,"*[count(//doc)=1]");
-    
-    assertQ("Lower case operator, don't allow lowercase operators",
-        req("q","Zapp and Brannigan",
-            "qf", "name",
-            "q.op", "AND", 
-            "lowercaseOperators", "false",
-            "defType","edismax")
-        ,"*[count(//doc)=0]");
-    
-    assertQ("Lower case operator, allow lower case operators",
-        req("q","Zapp and Brannigan",
-            "qf", "name",
-            "q.op", "AND", 
-            "lowercaseOperators", "true",
-            "defType","edismax")
-        ,"*[count(//doc)=1]");
+    for (String sow : Arrays.asList("true", "false")) {
+      assertQ("Upper case operator",
+          req("q", "Zapp AND Brannigan",
+              "qf", "name",
+              "lowercaseOperators", "false",
+              "sow", sow,
+              "defType", "edismax")
+          , "*[count(//doc)=1]");
+
+      assertQ("Upper case operator, allow lowercase",
+          req("q", "Zapp AND Brannigan",
+              "qf", "name",
+              "lowercaseOperators", "true",
+              "sow", sow,
+              "defType", "edismax")
+          , "*[count(//doc)=1]");
+
+      assertQ("Lower case operator, don't allow lowercase operators",
+          req("q", "Zapp and Brannigan",
+              "qf", "name",
+              "q.op", "AND",
+              "lowercaseOperators", "false",
+              "sow", sow,
+              "defType", "edismax")
+          , "*[count(//doc)=0]");
+
+      assertQ("Lower case operator, allow lower case operators",
+          req("q", "Zapp and Brannigan",
+              "qf", "name",
+              "q.op", "AND",
+              "lowercaseOperators", "true",
+              "sow", sow,
+              "defType", "edismax")
+          , "*[count(//doc)=1]");
+    }
   }
     
   // test the edismax query parser based on the dismax parser
@@ -249,42 +264,42 @@ public class TestExtendedDismaxParser extends SolrTestCaseJ4 {
            , twor
            );
    
-   assertQ(req("defType", "edismax", "qf", "name title subject text",
+   assertQ(req("defType", "edismax", "qf", "name title subject text_sw",
                "q","op"), twor
     );
    assertQ(req("defType", "edismax", 
-               "qf", "name title subject text",
+               "qf", "name title subject text_sw",
                "q.op", "AND",
                "q","Order op"), oner
     );
    assertQ(req("defType", "edismax", 
-               "qf", "name title subject text",
+               "qf", "name title subject text_sw",
                "q.op", "OR",
                "q","Order op"), twor
     );
-   assertQ(req("defType", "edismax", "qf", "name title subject text",
+   assertQ(req("defType", "edismax", "qf", "name title subject text_sw",
                "q","Order AND op"), oner
     );
-   assertQ(req("defType", "edismax", "qf", "name title subject text",
+   assertQ(req("defType", "edismax", "qf", "name title subject text_sw",
                "q","Order and op"), oner
     );
-    assertQ(req("defType", "edismax", "qf", "name title subject text",
+    assertQ(req("defType", "edismax", "qf", "name title subject text_sw",
                "q","+Order op"), oner
     );
-    assertQ(req("defType", "edismax", "qf", "name title subject text",
+    assertQ(req("defType", "edismax", "qf", "name title subject text_sw",
                "q","Order OR op"), twor
     );
-    assertQ(req("defType", "edismax", "qf", "name title subject text",
+    assertQ(req("defType", "edismax", "qf", "name title subject text_sw",
                "q","Order or op"), twor
     );
-    assertQ(req("defType", "edismax", "qf", "name title subject text",
+    assertQ(req("defType", "edismax", "qf", "name title subject text_sw",
                "q","*:*"), allr
     );
 
-    assertQ(req("defType", "edismax", "qf", "name title subject text",
+    assertQ(req("defType", "edismax", "qf", "name title subject text_sw",
            "q","star OR (-star)"), allr
     );
-    assertQ(req("defType", "edismax", "qf", "name title subject text",
+    assertQ(req("defType", "edismax", "qf", "name title subject text_sw",
            "q","id:42 OR (-id:42)"), allr
     );
 
@@ -536,7 +551,7 @@ public class TestExtendedDismaxParser extends SolrTestCaseJ4 {
         "//str[@name='parsedquery_toString'][.='+(id:42)^5.0']");
     
     
-    assertQ(req("defType","edismax", "uf","-*", "q","cannons"),
+    assertQ(req("defType","edismax", "uf","-*", "q","cannons", "qf","text_sw"),
         oner);
     
     assertQ(req("defType","edismax", "uf","* -id", "q","42", "qf", "id"), oner);
@@ -870,7 +885,7 @@ public class TestExtendedDismaxParser extends SolrTestCaseJ4 {
         "*[count(//doc)=3]");
     assertQ(
         "Might be double-escaping a client-escaped colon", 
-        req("q", "text_sw:(theos OR thistokenhasa\\:preescapedcolon OR theou)", "defType", "edismax", "qf", "text"),
+        req("q", "text_sw:(theos OR thistokenhasa\\:preescapedcolon OR theou)", "defType", "edismax", "qf", "text_sw"),
         "*[count(//doc)=3]");    
     
   }
@@ -1032,56 +1047,56 @@ public class TestExtendedDismaxParser extends SolrTestCaseJ4 {
     // "line up and fly directly at the enemy death cannons, clogging them with wreckage!"
     assertQ("test default operator with mm (AND + 0% => 0 hits)",
         req("q", "(line notfound) OR notfound",
-            "qf", "text",
+            "qf", "text_sw",
             "q.op", "AND",
             "mm", "0%",
             "defType", "edismax")
         , "*[count(//doc)=0]");
     assertQ("test default operator with mm (OR + 0% => 1 hit)",
         req("q", "line notfound OR notfound",
-            "qf", "text",
+            "qf", "text_sw",
             "q.op", "OR",
             "mm", "0%",
             "defType", "edismax")
         , "*[count(//doc)=1]");
     assertQ("test default operator with mm (OR + 100% => 0 hits)",
         req("q", "line notfound OR notfound",
-            "qf", "text",
+            "qf", "text_sw",
             "q.op", "OR",
             "mm", "100%",
             "defType", "edismax")
         , "*[count(//doc)=0]");
     assertQ("test default operator with mm (OR + 35% => 1 hit)",
         req("q", "line notfound notfound2 OR notfound",
-            "qf", "text",
+            "qf", "text_sw",
             "q.op", "OR",
             "mm", "35%",
             "defType", "edismax")
         , "*[count(//doc)=1]");
     assertQ("test default operator with mm (OR + 75% => 0 hits)",
         req("q", "line notfound notfound2 OR notfound3",
-            "qf", "text",
+            "qf", "text_sw",
             "q.op", "OR",
             "mm", "75%",
             "defType", "edismax")
         , "*[count(//doc)=0]");
     assertQ("test default operator with mm (AND + 0% => 1 hit)",
         req("q", "(line enemy) OR notfound",
-            "qf", "text",
+            "qf", "text_sw",
             "q.op", "AND",
             "mm", "0%",
             "defType", "edismax")
         , "*[count(//doc)=1]");
     assertQ("test default operator with mm (AND + 50% => 1 hit)",
         req("q", "(line enemy) OR (line notfound) OR (death cannons) OR (death notfound)",
-            "qf", "text",
+            "qf", "text_sw",
             "q.op", "AND",
             "mm", "50%",
             "defType", "edismax")
         , "*[count(//doc)=1]");
     assertQ("test default operator with mm (AND + 75% => 0 hits)",
         req("q", "(line enemy) OR (line notfound) OR (death cannons) OR (death notfound)",
-            "qf", "text",
+            "qf", "text_sw",
             "q.op", "AND",
             "mm", "75%",
             "defType", "edismax")
@@ -1092,214 +1107,257 @@ public class TestExtendedDismaxParser extends SolrTestCaseJ4 {
    * Test that minShouldMatch applies to Optional terms only
    */
   public void testMinShouldMatchOptional() throws Exception {
-    assertQ("test minShouldMatch (top level optional terms only)",
-        req("q", "stocks oil gold", // +(((text_sw:stock) (text_sw:oil) (text_sw:gold))~1)
-            "qf", "text_sw",
-            "mm", "50%",
-            "defType", "edismax")
-        , "*[count(//doc)=4]");
-    
-    assertQ("test minShouldMatch (top level optional and negative terms mm=50%)",
-        req("q", "stocks oil gold -stockade", // +(((text_sw:stock) (text_sw:oil) (text_sw:gold) -(text_sw:stockad))~1)
-            "qf", "text_sw",
-            "mm", "50%",
-            "defType", "edismax")
-        , "*[count(//doc)=3]");
+    for (String sow : Arrays.asList("true", "false")) {
+      assertQ("test minShouldMatch (top level optional terms only)",
+          req("q", "stocks oil gold", // +(((text_sw:stock) (text_sw:oil) (text_sw:gold))~1)
+              "qf", "text_sw",
+              "mm", "50%",
+              "sow", sow,
+              "defType", "edismax")
+          , "*[count(//doc)=4]");
 
-    assertQ("test minShouldMatch (top level optional and negative terms mm=100%)",
-        req("q", "stocks gold -stockade", // +(((text_sw:stock) (text_sw:oil) (text_sw:gold) -(text_sw:stockad))~2)
-            "qf", "text_sw",
-            "mm", "100%",
-            "defType", "edismax")
-        , "*[count(//doc)=1]");
+      assertQ("test minShouldMatch (top level optional terms only and sow=false)",
+          req("q", "stocks oil gold", // +(((text_sw:stock) (text_sw:oil) (text_sw:gold))~1)
+              "qf", "text_sw",
+              "mm", "50%",
+              "sow", sow,
+              "defType", "edismax")
+          , "*[count(//doc)=4]");
 
-    assertQ("test minShouldMatch (top level required terms only)",
-        req("q", "stocks AND oil", // +(+(text_sw:stock) +(text_sw:oil))
-            "qf", "text_sw",
-            "mm", "50%",
-            "defType", "edismax")
-        , "*[count(//doc)=1]");
+      assertQ("test minShouldMatch (top level optional and negative terms mm=50%)",
+          req("q", "stocks oil gold -stockade", // +(((text_sw:stock) (text_sw:oil) (text_sw:gold) -(text_sw:stockad))~1)
+              "qf", "text_sw",
+              "mm", "50%",
+              "sow", sow,
+              "defType", "edismax")
+          , "*[count(//doc)=3]");
 
-    assertQ("test minShouldMatch (top level optional and required terms)",
-        req("q", "oil gold +stocks", // +(((text_sw:oil) (text_sw:gold) +(text_sw:stock))~1)
-            "qf", "text_sw",
-            "mm", "50%",
-            "defType", "edismax")
-        , "*[count(//doc)=3]");
+      assertQ("test minShouldMatch (top level optional and negative terms mm=100%)",
+          req("q", "stocks gold -stockade", // +(((text_sw:stock) (text_sw:oil) (text_sw:gold) -(text_sw:stockad))~2)
+              "qf", "text_sw",
+              "mm", "100%",
+              "sow", sow,
+              "defType", "edismax")
+          , "*[count(//doc)=1]");
 
-    assertQ("test minShouldMatch (top level optional with explicit OR and parens)",
-        req("q", "(snake OR stocks) oil",
-            "qf", "text_sw",
-            "mm", "100%",
-            "defType", "edismax")
-        , "*[count(//doc)=2]");
+      assertQ("test minShouldMatch (top level required terms only)",
+          req("q", "stocks AND oil", // +(+(text_sw:stock) +(text_sw:oil))
+              "qf", "text_sw",
+              "mm", "50%",
+              "sow", sow,
+              "defType", "edismax")
+          , "*[count(//doc)=1]");
 
-    // The results for these two appear odd, but are correct as per BooleanQuery processing.
-    // See: http://searchhub.org/2011/12/28/why-not-and-or-and-not/
-    // Non-parenthesis OR/AND precedence is not true to abstract boolean logic in solr when q.op = AND
-    //   and when q.op = OR all three clauses are top-level and optional so mm takes over
-    assertQ("test minShouldMatch (top level optional with explicit OR without parens)",
-        req("q", "snake OR stocks oil",
-            "qf", "text_sw",
-            "q.op", "OR",
-            "mm", "100%",
-            "defType", "edismax")
-        , "*[count(//doc)=0]");
-    assertQ("test minShouldMatch (top level optional with explicit OR without parens)",
-        req("q", "snake OR stocks oil",
-            "qf", "text_sw",
-            "q.op", "AND",
-            "mm", "100%",
-            "defType", "edismax")
-        , "*[count(//doc)=0]");
+      assertQ("test minShouldMatch (top level optional and required terms)",
+          req("q", "oil gold +stocks", // +(((text_sw:oil) (text_sw:gold) +(text_sw:stock))~1)
+              "qf", "text_sw",
+              "mm", "50%",
+              "sow", sow,
+              "defType", "edismax")
+          , "*[count(//doc)=3]");
 
-    // SOLR-9174
-    assertQ("test minShouldMatch=1<-1 with explicit OR, one impossible clause, and no explicit q.op",
-        req("q", "barbie OR (hair AND nonexistentword)",
-            "qf", "text_sw",
-            "mm", "1<-1",
-            "defType", "edismax")
-        , "*[count(//doc)=3]");
+      assertQ("test minShouldMatch (top level optional with explicit OR and parens)",
+          req("q", "(snake OR stocks) oil",
+              "qf", "text_sw",
+              "mm", "100%",
+              "sow", sow,
+              "defType", "edismax")
+          , "*[count(//doc)=2]");
+
+      // The results for these two appear odd, but are correct as per BooleanQuery processing.
+      // See: http://searchhub.org/2011/12/28/why-not-and-or-and-not/
+      // Non-parenthesis OR/AND precedence is not true to abstract boolean logic in solr when q.op = AND
+      //   and when q.op = OR all three clauses are top-level and optional so mm takes over
+      assertQ("test minShouldMatch (top level optional with explicit OR without parens)",
+          req("q", "snake OR stocks oil",
+              "qf", "text_sw",
+              "q.op", "OR",
+              "mm", "100%",
+              "sow", sow,
+              "defType", "edismax")
+          , "*[count(//doc)=0]");
+      assertQ("test minShouldMatch (top level optional with explicit OR without parens)",
+          req("q", "snake OR stocks oil",
+              "qf", "text_sw",
+              "q.op", "AND",
+              "mm", "100%",
+              "sow", sow,
+              "defType", "edismax")
+          , "*[count(//doc)=0]");
+
+      // SOLR-9174
+      assertQ("test minShouldMatch=1<-1 with explicit OR, one impossible clause, and no explicit q.op",
+          req("q", "barbie OR (hair AND nonexistentword)",
+              "qf", "text_sw",
+              "mm", "1<-1",
+              "sow", sow,
+              "defType", "edismax")
+          , "*[count(//doc)=3]");
+    }
   }
 
   /* SOLR-8812 */
   @Test
   public void testDefaultMM() throws Exception {
     // Ensure MM is off when explicit operators (+/-/OR/NOT) are used and no explicit mm spec is specified.
-    assertQ("Explicit OR in query with no explicit mm and q.op=AND => mm = 0%",
-        req("q", "oil OR stocks",
-            "qf", "text_sw",
-            "q.op", "AND",
-            "defType", "edismax")
-        , "*[count(//doc)=4]");
-    assertQ("Explicit 'or' in query with lowercaseOperators=true, no explicit mm and q.op=AND => mm = 0%",
-        req("q", "oil or stocks",
-            "qf", "text_sw",
-            "q.op", "AND",
-            "lowercaseOperators", "true",
-            "defType", "edismax")
-        , "*[count(//doc)=4]");
-    assertQ("Explicit OR in query with no explicit mm and no explicit q.op => mm = 0%",
-        req("q", "oil OR stocks",
-            "qf", "text_sw",
-            "defType", "edismax")
-        , "*[count(//doc)=4]");
-    assertQ("No operator in query with no explicit mm and q.op=OR => mm = 0%",
-        req("q", "oil stocks",
-            "qf", "text_sw",
-            "defType", "edismax")
-        , "*[count(//doc)=4]");
-    assertQ("No operator in query with no explicit mm and q.op=AND => mm = 100%",
-        req("q", "oil stocks",
-            "qf", "text_sw",
-            "q.op", "AND",
-            "defType", "edismax")
-        , "*[count(//doc)=1]");
-    assertQ("No operator in query with no explicit mm and q.op=OR => mm = 0%",
-        req("q", "oil stocks",
-            "qf", "text_sw",
-            "q.op", "OR",
-            "defType", "edismax")
-        , "*[count(//doc)=4]");
+    for (String sow : Arrays.asList("true", "false")) {
+      assertQ("Explicit OR in query with no explicit mm and q.op=AND => mm = 0%",
+          req("q", "oil OR stocks",
+              "qf", "text_sw",
+              "q.op", "AND",
+              "sow", sow,
+              "defType", "edismax")
+          , "*[count(//doc)=4]");
+      assertQ("Explicit 'or' in query with lowercaseOperators=true, no explicit mm and q.op=AND => mm = 0%",
+          req("q", "oil or stocks",
+              "qf", "text_sw",
+              "q.op", "AND",
+              "lowercaseOperators", "true",
+              "sow", sow,
+              "defType", "edismax")
+          , "*[count(//doc)=4]");
+      assertQ("Explicit OR in query with no explicit mm and no explicit q.op => mm = 0%",
+          req("q", "oil OR stocks",
+              "qf", "text_sw",
+              "sow", sow,
+              "defType", "edismax")
+          , "*[count(//doc)=4]");
+      assertQ("No operator in query with no explicit mm and q.op=OR => mm = 0%",
+          req("q", "oil stocks",
+              "qf", "text_sw",
+              "sow", sow,
+              "defType", "edismax")
+          , "*[count(//doc)=4]");
+      assertQ("No operator in query with no explicit mm and q.op=AND => mm = 100%",
+          req("q", "oil stocks",
+              "qf", "text_sw",
+              "q.op", "AND",
+              "sow", sow,
+              "defType", "edismax")
+          , "*[count(//doc)=1]");
+      assertQ("No operator in query with no explicit mm and q.op=OR => mm = 0%",
+          req("q", "oil stocks",
+              "qf", "text_sw",
+              "q.op", "OR",
+              "sow", sow,
+              "defType", "edismax")
+          , "*[count(//doc)=4]");
 
-    assertQ("Explicit '-' operator in query with no explicit mm and no explicit q.op => mm = 0%",
-        req("q", "hair ties -barbie",
-            "qf", "text_sw",
-            "defType", "edismax")
-        , "*[count(//doc)=3]");
-    assertQ("Explicit NOT in query with no explicit mm and no explicit q.op => mm = 0%",
-        req("q", "hair ties NOT barbie",
-            "qf", "text_sw",
-            "defType", "edismax")
-        , "*[count(//doc)=3]");
+      assertQ("Explicit '-' operator in query with no explicit mm and no explicit q.op => mm = 0%",
+          req("q", "hair ties -barbie",
+              "qf", "text_sw",
+              "sow", sow,
+              "defType", "edismax")
+          , "*[count(//doc)=3]");
+      assertQ("Explicit NOT in query with no explicit mm and no explicit q.op => mm = 0%",
+          req("q", "hair ties NOT barbie",
+              "qf", "text_sw",
+              "sow", sow,
+              "defType", "edismax")
+          , "*[count(//doc)=3]");
 
-    assertQ("Explicit '-' operator in query with no explicit mm and q.op=OR => mm = 0%",
-        req("q", "hair ties -barbie",
-            "qf", "text_sw",
-            "q.op", "OR",
-            "defType", "edismax")
-        , "*[count(//doc)=3]");
-    assertQ("Explicit NOT in query with no explicit mm and q.op=OR => mm = 0%",
-        req("q", "hair ties NOT barbie",
-            "qf", "text_sw",
-            "q.op", "OR",
-            "defType", "edismax")
-        , "*[count(//doc)=3]");
+      assertQ("Explicit '-' operator in query with no explicit mm and q.op=OR => mm = 0%",
+          req("q", "hair ties -barbie",
+              "qf", "text_sw",
+              "q.op", "OR",
+              "sow", sow,
+              "defType", "edismax")
+          , "*[count(//doc)=3]");
+      assertQ("Explicit NOT in query with no explicit mm and q.op=OR => mm = 0%",
+          req("q", "hair ties NOT barbie",
+              "qf", "text_sw",
+              "q.op", "OR",
+              "sow", sow,
+              "defType", "edismax")
+          , "*[count(//doc)=3]");
 
-    assertQ("Explicit '-' operator in query with no explicit mm and q.op=OR => mm = 0%",
-        req("q", "hair AND ties -barbie",
-            "qf", "text_sw",
-            "q.op", "OR",
-            "defType", "edismax")
-        , "*[count(//doc)=1]");
-    assertQ("Explicit NOT in query with no explicit mm and q.op=OR => mm = 0%",
-        req("q", "hair AND ties -barbie",
-            "qf", "text_sw",
-            "q.op", "OR",
-            "defType", "edismax")
-        , "*[count(//doc)=1]");
+      assertQ("Explicit '-' operator in query with no explicit mm and q.op=OR => mm = 0%",
+          req("q", "hair AND ties -barbie",
+              "qf", "text_sw",
+              "q.op", "OR",
+              "sow", sow,
+              "defType", "edismax")
+          , "*[count(//doc)=1]");
+      assertQ("Explicit NOT in query with no explicit mm and q.op=OR => mm = 0%",
+          req("q", "hair AND ties -barbie",
+              "qf", "text_sw",
+              "q.op", "OR",
+              "sow", sow,
+              "defType", "edismax")
+          , "*[count(//doc)=1]");
 
-    assertQ("No explicit non-AND operator in query with no explicit mm and q.op=OR => mm = 0%",
-        req("q", "hair AND ties barbie",
-            "qf", "text_sw",
-            "q.op", "OR",
-            "defType", "edismax")
-        , "*[count(//doc)=2]");
-    assertQ("No explicit non-AND operator in query with no explicit mm and q.op=AND => mm = 100%",
-        req("q", "hair AND ties barbie",
-            "qf", "text_sw",
-            "q.op", "AND",
-            "defType", "edismax")
-        , "*[count(//doc)=1]");
-    assertQ("No explicit non-AND operator in query with no explicit mm and no explicit q.op => mm = 0%",
-        req("q", "hair AND ties barbie",
-            "qf", "text_sw",
-            "defType", "edismax")
-        , "*[count(//doc)=2]");
-    assertQ("No explicit non-AND operator in query with no explicit mm and no explicit q.op => mm = 0%",
-        req("q", "hair and ties barbie",
-            "qf", "text_sw",
-            "lowercaseOperators", "true",
-            "defType", "edismax")
-        , "*[count(//doc)=2]");
+      assertQ("No explicit non-AND operator in query with no explicit mm and q.op=OR => mm = 0%",
+          req("q", "hair AND ties barbie",
+              "qf", "text_sw",
+              "q.op", "OR",
+              "sow", sow,
+              "defType", "edismax")
+          , "*[count(//doc)=2]");
+      assertQ("No explicit non-AND operator in query with no explicit mm and q.op=AND => mm = 100%",
+          req("q", "hair AND ties barbie",
+              "qf", "text_sw",
+              "q.op", "AND",
+              "sow", sow,
+              "defType", "edismax")
+          , "*[count(//doc)=1]");
+      assertQ("No explicit non-AND operator in query with no explicit mm and no explicit q.op => mm = 0%",
+          req("q", "hair AND ties barbie",
+              "qf", "text_sw",
+              "sow", sow,
+              "defType", "edismax")
+          , "*[count(//doc)=2]");
+      assertQ("No explicit non-AND operator in query with no explicit mm and no explicit q.op => mm = 0%",
+          req("q", "hair and ties barbie",
+              "qf", "text_sw",
+              "lowercaseOperators", "true",
+              "sow", sow,
+              "defType", "edismax")
+          , "*[count(//doc)=2]");
 
-    assertQ("Explicit '-' operator in query with no explicit mm and q.op=AND => mm = 100%",
-        req("q", "hair ties -barbie",
-            "qf", "text_sw",
-            "q.op", "AND",
-            "defType", "edismax")
-        , "*[count(//doc)=1]");
-    assertQ("Explicit NOT in query with no explicit mm and q.op=AND => mm = 100%",
-        req("q", "hair ties NOT barbie",
-            "qf", "text_sw",
-            "q.op", "AND",
-            "defType", "edismax")
-        , "*[count(//doc)=1]");
+      assertQ("Explicit '-' operator in query with no explicit mm and q.op=AND => mm = 100%",
+          req("q", "hair ties -barbie",
+              "qf", "text_sw",
+              "q.op", "AND",
+              "sow", sow,
+              "defType", "edismax")
+          , "*[count(//doc)=1]");
+      assertQ("Explicit NOT in query with no explicit mm and q.op=AND => mm = 100%",
+          req("q", "hair ties NOT barbie",
+              "qf", "text_sw",
+              "q.op", "AND",
+              "sow", sow,
+              "defType", "edismax")
+          , "*[count(//doc)=1]");
 
-    assertQ("Explicit OR in query with no explicit mm and q.op=AND => mm = 0%",
-        req("q", "hair OR ties barbie",
-            "qf", "text_sw",
-            "q.op", "AND",
-            "defType", "edismax")
-        , "*[count(//doc)=3]");
-    assertQ("Explicit OR in query with no explicit mm and q.op=OR => mm = 0%",
-        req("q", "hair OR ties barbie",
-            "qf", "text_sw",
-            "q.op", "OR",
-            "defType", "edismax")
-        , "*[count(//doc)=6]");
-    assertQ("Explicit OR in query with no explicit mm and no explicit q.op => mm = 0%",
-        req("q", "hair OR ties barbie",
-            "qf", "text_sw",
-            "defType", "edismax")
-        , "*[count(//doc)=6]");
+      assertQ("Explicit OR in query with no explicit mm and q.op=AND => mm = 0%",
+          req("q", "hair OR ties barbie",
+              "qf", "text_sw",
+              "q.op", "AND",
+              "sow", sow,
+              "defType", "edismax")
+          , "*[count(//doc)=3]");
+      assertQ("Explicit OR in query with no explicit mm and q.op=OR => mm = 0%",
+          req("q", "hair OR ties barbie",
+              "qf", "text_sw",
+              "q.op", "OR",
+              "sow", sow,
+              "defType", "edismax")
+          , "*[count(//doc)=6]");
+      assertQ("Explicit OR in query with no explicit mm and no explicit q.op => mm = 0%",
+          req("q", "hair OR ties barbie",
+              "qf", "text_sw",
+              "sow", sow,
+              "defType", "edismax")
+          , "*[count(//doc)=6]");
 
-    assertQ("Explicit '+' operator in query with no explicit mm and q.op=AND => mm = 0%",
-        req("q", "hair ties +barbie",
-            "qf", "text_sw",
-            "q.op", "AND",
-            "defType", "edismax")
-        , "*[count(//doc)=1]");
+      assertQ("Explicit '+' operator in query with no explicit mm and q.op=AND => mm = 0%",
+          req("q", "hair ties +barbie",
+              "qf", "text_sw",
+              "q.op", "AND",
+              "sow", sow,
+              "defType", "edismax")
+          , "*[count(//doc)=1]");
+    }
   }
 
   public void testEdismaxSimpleExtension() throws SyntaxError {
@@ -1335,6 +1393,380 @@ public class TestExtendedDismaxParser extends SolrTestCaseJ4 {
     assertTrue(containsClause(query, "title", "absence", 5, true));
     
   }
+
+  // LUCENE-7533
+  public void testSplitOnWhitespace_with_autoGeneratePhraseQueries() throws Exception {
+    assertTrue(((TextField)h.getCore().getLatestSchema().getField("text").getType()).getAutoGeneratePhraseQueries());
+
+    try (SolrQueryRequest req = req()) {
+      final QParser qparser = QParser.getParser("{!edismax sow=false fq=text}blah blah)", req);
+      expectThrows(IllegalArgumentException.class, qparser::getQuery);
+    }
+  }
+
+  @Test
+  public void testSplitOnWhitespace_Basic() throws Exception {
+    // The "text_sw" field has synonyms loaded from synonyms.txt
+
+    // retrieve the single document containing literal "wifi"
+    assertJQ(req("qf","text_sw title", "defType","edismax", "q","wifi", "sow","true")
+        , "/response/numFound==1"
+        , "/response/docs/[0]/id=='72'"
+    );
+
+    // trigger the "wi fi => wifi" synonym
+    assertJQ(req("qf", "text_sw title", "defType","edismax", "q","wi fi", "sow","false")
+        , "/response/numFound==1"
+        , "/response/docs/[0]/id=='72'"
+    );
+    assertJQ(req("qf", "text_sw title", "defType","edismax", "q","wi fi", "sow","true")
+        , "/response/numFound==0"
+    );
+    assertJQ(req("qf","text_sw title", "defType","edismax", "q","wi fi") // default sow=true
+        , "/response/numFound==0"
+    );
+
+    assertJQ(req("qf","text_sw title", "q","{!edismax sow=false}wi fi")
+        , "/response/numFound==1"
+        , "/response/docs/[0]/id=='72'"
+    );
+    assertJQ(req("df", "text_sw title", "q","{!edismax sow=true}wi fi")
+        , "/response/numFound==0"
+    );
+    assertJQ(req("df", "text_sw title", "q", "{!edismax}wi fi") // default sow=true
+        , "/response/numFound==0"
+    );
+
+    assertQ(req("qf", "name title", 
+                "q", "barking curds of stigma",
+                "defType", "edismax",
+                "sow", "false",
+                "debugQuery", "true"),
+        "//str[@name='parsedquery'][contains(.,'DisjunctionMaxQuery((name:barking | title:barking))')]",
+        "//str[@name='parsedquery'][contains(.,'DisjunctionMaxQuery((name:curds | title:curds))')]",
+        "//str[@name='parsedquery'][contains(.,'DisjunctionMaxQuery((name:of | title:of))')]",
+        "//str[@name='parsedquery'][contains(.,'DisjunctionMaxQuery((name:stigma | title:stigma))')]"
+    );
+    assertQ(req("qf", "name title",
+        "q", "barking curds of stigma",
+        "defType", "edismax",
+        "sow", "true",
+        "debugQuery", "true"),
+        "//str[@name='parsedquery'][contains(.,'DisjunctionMaxQuery((name:barking | title:barking))')]",
+        "//str[@name='parsedquery'][contains(.,'DisjunctionMaxQuery((name:curds | title:curds))')]",
+        "//str[@name='parsedquery'][contains(.,'DisjunctionMaxQuery((name:of | title:of))')]",
+        "//str[@name='parsedquery'][contains(.,'DisjunctionMaxQuery((name:stigma | title:stigma))')]"
+    );
+    assertQ(req("qf", "name title",
+        "q", "barking curds of stigma",
+        "defType", "edismax",
+        "debugQuery", "true"), // Default sow=true
+        "//str[@name='parsedquery'][contains(.,'DisjunctionMaxQuery((name:barking | title:barking))')]",
+        "//str[@name='parsedquery'][contains(.,'DisjunctionMaxQuery((name:curds | title:curds))')]",
+        "//str[@name='parsedquery'][contains(.,'DisjunctionMaxQuery((name:of | title:of))')]",
+        "//str[@name='parsedquery'][contains(.,'DisjunctionMaxQuery((name:stigma | title:stigma))')]"
+    );
+  }
+  
+  public void testSplitOnWhitespace_Different_Field_Analysis() throws Exception {
+    // When the *structure* of produced queries is different in each field, 
+    // sow=true produces boolean-of-dismax query structure,
+    // and sow=false produces dismax-of-boolean query structure.
+    assertQ(req("qf", "text_sw title",
+        "q", "olive the other",
+        "defType", "edismax",
+        "sow", "true",
+        "debugQuery", "true"),
+        "//str[@name='parsedquery'][contains(.,'DisjunctionMaxQuery((text_sw:oliv | title:olive))')]",
+        "//str[@name='parsedquery'][contains(.,'DisjunctionMaxQuery((title:the))')]",
+        "//str[@name='parsedquery'][contains(.,'DisjunctionMaxQuery((text_sw:other | title:other))')]"
+    );
+    assertQ(req("qf", "text_sw title",
+        "q", "olive the other",
+        "defType", "edismax",
+        "sow", "false",
+        "debugQuery", "true"),
+        "//str[@name='parsedquery'][contains(.,'+DisjunctionMaxQuery(((text_sw:oliv text_sw:other) | (title:olive title:the title:other)))')]"
+    );
+
+    // When field's analysis produce different query structures, mm processing is always done on the boolean query.
+    // sow=true produces (boolean-of-dismax)~<mm> query structure,
+    // and sow=false produces dismax-of-(boolean)~<mm> query structure.
+    assertQ(req("qf", "text_sw title",
+        "q", "olive the other",
+        "defType", "edismax",
+        "sow", "true",
+        "mm", "100%",
+        "debugQuery", "true"),
+        "//str[@name='parsedquery'][contains(.,'+(DisjunctionMaxQuery((text_sw:oliv | title:olive)) DisjunctionMaxQuery((title:the)) DisjunctionMaxQuery((text_sw:other | title:other)))~3')]"
+    );
+    assertQ(req("qf", "text_sw title",
+        "q", "olive the other",
+        "defType", "edismax",
+        "sow", "false",
+        "mm", "100%",
+        "debugQuery", "true"),
+        "//str[@name='parsedquery'][contains(.,'+DisjunctionMaxQuery((((text_sw:oliv text_sw:other)~2) | ((title:olive title:the title:other)~3)))')]"
+    );
+
+
+    // When the *structure* of produced queries is the same in each field, 
+    // sow=false/true produce the same boolean-of-dismax query structure 
+    for (String sow : Arrays.asList("true", "false")) {
+      assertQ(req("qf", "text_sw title",
+          "q", "olive blah other",
+          "defType", "edismax",
+          "sow", sow,
+          "debugQuery", "true"),
+          "//str[@name='parsedquery'][contains(.,'"
+              + "+(DisjunctionMaxQuery((text_sw:oliv | title:olive))"
+              + " DisjunctionMaxQuery((text_sw:blah | title:blah))"
+              + " DisjunctionMaxQuery((text_sw:other | title:other)))')]"
+      );
+    }
+  }
+
+  public void testOperatorsAndMultiWordSynonyms() throws Exception {
+    // The "text_sw" field has synonyms loaded from synonyms.txt
+
+    // retrieve the single document containing literal "wifi"
+    assertJQ(req("qf","text_sw title", "defType","edismax", "q","wifi", "sow","true")
+        , "/response/numFound==1"
+        , "/response/docs/[0]/id=='72'"
+    );
+    // trigger the "wi fi => wifi" synonym
+    assertJQ(req("qf","text_sw title", "defType","edismax", "q","wi fi", "sow","false")
+        , "/response/numFound==1"
+        , "/response/docs/[0]/id=='72'"
+    );
+
+    assertJQ(req("qf","text_sw title", "defType","edismax", "q","+wi fi", "sow","false")
+        , "/response/numFound==0"
+    );
+    assertJQ(req("qf","text_sw title", "defType","edismax", "q","-wi fi", "sow","false")
+        , "/response/numFound==0"
+    );
+    assertJQ(req("qf","text_sw title", "defType","edismax", "q","!wi fi", "sow","false")
+        , "/response/numFound==0"
+    );
+    assertJQ(req("qf","text_sw title", "defType","edismax", "q","wi* fi", "sow","false")
+        , "/response/numFound==2"    // matches because wi* matches "wifi" in one doc and "with" in another
+    );
+    assertJQ(req("qf","text_sw title", "defType","edismax", "q","w? fi", "sow","false")
+        , "/response/numFound==0"
+    );
+    assertJQ(req("qf","text_sw title", "defType","edismax", "q","wi~1 fi", "sow","false")
+        , "/response/numFound==4"   // matches because wi~1 matches ti (stemmed "ties")
+    );
+    assertJQ(req("qf","text_sw title", "defType","edismax", "q","wi^2 fi", "sow","false")
+        , "/response/numFound==0"
+    );
+    assertJQ(req("qf","text_sw title", "defType","edismax", "q","wi^=2 fi", "sow","false")
+        , "/response/numFound==0"
+    );
+    assertJQ(req("qf","text_sw title", "defType","edismax", "q","wi +fi", "sow","false")
+        , "/response/numFound==0"
+    );
+    assertJQ(req("qf","text_sw title", "defType","edismax", "q","wi -fi", "sow","false")
+        , "/response/numFound==0"
+    );
+    assertJQ(req("qf","text_sw title", "defType","edismax", "q","wi !fi", "sow","false")
+        , "/response/numFound==0"
+    );
+    assertJQ(req("qf","text_sw title", "defType","edismax", "q","wi fi*", "sow","false")
+        , "/response/numFound==0"
+    );
+    assertJQ(req("qf","text_sw title", "defType","edismax", "q","wi fi?", "sow","false")
+        , "/response/numFound==0"
+    );
+    assertJQ(req("qf","text_sw title", "defType","edismax", "q","wi fi~1", "sow","false")
+        , "/response/numFound==4"   // matches because fi~1 matches ti (stemmed "ties")
+    );
+    assertJQ(req("qf","text_sw title", "defType","edismax", "q","wi fi^2", "sow","false")
+        , "/response/numFound==0"
+    );
+    assertJQ(req("qf","text_sw title", "defType","edismax", "q","wi fi^=2", "sow","false")
+        , "/response/numFound==0"
+    );
+    assertJQ(req("qf","text_sw title", "defType","edismax", "q","text_sw:wi fi", "sow","false")
+        , "/response/numFound==0"
+    );
+    assertJQ(req("qf","text_sw title", "defType","edismax", "q","wi text_sw:fi", "sow","false")
+        , "/response/numFound==0"
+    );
+    assertJQ(req("qf","text_sw title", "defType","edismax", "q","NOT wi fi", "sow","false")
+        , "/response/numFound==0"
+    );
+    assertJQ(req("qf","text_sw title", "defType","edismax", "q","wi NOT fi", "sow","false")
+        , "/response/numFound==0"
+    );
+
+    assertJQ(req("qf","text_sw title", "defType","edismax", "q","wi fi AND ATM", "sow","false")
+        , "/response/numFound==0"
+    );
+    assertJQ(req("qf","text_sw title", "defType","edismax", "q","ATM AND wi fi", "sow","false")
+        , "/response/numFound==0"
+    );
+    assertJQ(req("qf","text_sw title", "defType","edismax", "q","wi fi && ATM", "sow","false")
+        , "/response/numFound==0"
+    );
+    assertJQ(req("qf","text_sw title", "defType","edismax", "q","ATM && wi fi", "sow","false")
+        , "/response/numFound==0"
+    );
+    assertJQ(req("qf","text_sw title", "defType","edismax", "q","(wi fi) AND ATM", "sow","false")
+        , "/response/numFound==1"
+    );
+    assertJQ(req("qf","text_sw title", "defType","edismax", "q","ATM AND (wi fi)", "sow","false")
+        , "/response/numFound==1"
+    );
+    assertJQ(req("qf","text_sw title", "defType","edismax", "q","(wi fi) && ATM", "sow","false")
+        , "/response/numFound==1"
+    );
+    assertJQ(req("qf","text_sw title", "defType","edismax", "q","ATM && (wi fi)", "sow","false")
+        , "/response/numFound==1"
+    );
+
+    assertJQ(req("qf","text_sw title", "defType","edismax", "q","wi fi OR NotThereAtAll", "sow","false")
+        , "/response/numFound==0"
+    );
+    assertJQ(req("qf","text_sw title", "defType","edismax", "q","NotThereAtAll OR wi fi", "sow","false")
+        , "/response/numFound==0"
+    );
+    assertJQ(req("qf","text_sw title", "defType","edismax", "q","wi fi || NotThereAtAll", "sow","false")
+        , "/response/numFound==0"
+    );
+    assertJQ(req("qf","text_sw title", "defType","edismax", "q","NotThereAtAll || wi fi", "sow","false")
+        , "/response/numFound==0"
+    );
+    assertJQ(req("qf","text_sw title", "defType","edismax", "q","(wi fi) OR NotThereAtAll", "sow","false")
+        , "/response/numFound==1"
+    );
+    assertJQ(req("qf","text_sw title", "defType","edismax", "q","NotThereAtAll OR (wi fi)", "sow","false")
+        , "/response/numFound==1"
+    );
+    assertJQ(req("qf","text_sw title", "defType","edismax", "q","(wi fi) || NotThereAtAll", "sow","false")
+        , "/response/numFound==1"
+    );
+    assertJQ(req("qf","text_sw title", "defType","edismax", "q","NotThereAtAll || (wi fi)", "sow","false")
+        , "/response/numFound==1"
+    );
+
+    assertJQ(req("qf","text_sw title", "defType","edismax", "q","\"wi\" fi", "sow","false")
+        , "/response/numFound==0"
+    );
+    assertJQ(req("qf","text_sw title", "defType","edismax", "q","wi \"fi\"", "sow","false")
+        , "/response/numFound==0"
+    );
+    assertJQ(req("qf","text_sw title", "defType","edismax", "q","(wi) fi", "sow","false")
+        , "/response/numFound==0"
+    );
+    assertJQ(req("qf","text_sw title", "defType","edismax", "q","wi (fi)", "sow","false")
+        , "/response/numFound==0"
+    );
+    assertJQ(req("qf","text_sw title", "defType","edismax", "q","/wi/ fi", "sow","false")
+        , "/response/numFound==0"
+    );
+    assertJQ(req("qf","text_sw title", "defType","edismax", "q","wi /fi/", "sow","false")
+        , "/response/numFound==0"
+    );
+    assertJQ(req("qf","text_sw title", "defType","edismax", "q","(wi fi)", "sow","false")
+        , "/response/numFound==1"
+    );
+    assertJQ(req("qf","text_sw title", "defType","edismax", "q","+(wi fi)", "sow","false")
+        , "/response/numFound==1"
+    );
+
+    Map all = (Map)ObjectBuilder.fromJSON(h.query(req("q", "*:*", "rows", "0", "wt", "json")));
+    int totalDocs = Integer.parseInt(((Map)all.get("response")).get("numFound").toString());
+    int allDocsExceptOne = totalDocs - 1;
+
+    assertJQ(req("qf","text_sw title", "defType","edismax", "q","-(wi fi)", "sow","false")
+        , "/response/numFound==" + allDocsExceptOne  // one doc contains "wifi" in the text_sw field
+    );
+    assertJQ(req("qf","text_sw title", "defType","edismax", "q","!(wi fi)", "sow","false")
+        , "/response/numFound==" + allDocsExceptOne  // one doc contains "wifi" in the text_sw field
+    );
+    assertJQ(req("qf","text_sw title", "defType","edismax", "q","NOT (wi fi)", "sow","false")
+        , "/response/numFound==" + allDocsExceptOne  // one doc contains "wifi" in the text_sw field
+    );
+    assertJQ(req("qf","text_sw title", "defType","edismax", "q","(wi fi)^2", "sow","false")
+        , "/response/numFound==1"
+    );
+    assertJQ(req("qf","text_sw title", "defType","edismax", "q","(wi fi)^=2", "sow","false")
+        , "/response/numFound==1"
+    );
+    assertJQ(req("qf","text_sw title", "defType","edismax", "q","text_sw:(wi fi)", "sow","false")
+        , "/response/numFound==1"
+    );
+    assertJQ(req("qf","text_sw title", "defType","edismax", "q","+ATM wi fi", "sow","false")
+        , "/response/numFound==1"
+    );
+    assertJQ(req("qf","text_sw title", "defType","edismax", "q","-ATM wi fi", "sow","false")
+        , "/response/numFound==0"
+    );
+    assertJQ(req("qf","text_sw title", "defType","edismax", "q","-NotThereAtAll wi fi", "sow","false")
+        , "/response/numFound==1"
+    );
+    assertJQ(req("qf","text_sw title", "defType","edismax", "q","!ATM wi fi", "sow","false")
+        , "/response/numFound==0"
+    );
+    assertJQ(req("qf","text_sw title", "defType","edismax", "q","!NotThereAtAll wi fi", "sow","false")
+        , "/response/numFound==1"
+    );
+    assertJQ(req("qf","text_sw title", "defType","edismax", "q","NOT ATM wi fi", "sow","false")
+        , "/response/numFound==0"
+    );
+    assertJQ(req("qf","text_sw title", "defType","edismax", "q","NOT NotThereAtAll wi fi", "sow","false")
+        , "/response/numFound==1"
+    );
+    assertJQ(req("qf","text_sw title", "defType","edismax", "q","AT* wi fi", "sow","false")
+        , "/response/numFound==2"
+    );
+    assertJQ(req("qf","text_sw title", "defType","edismax", "q","AT? wi fi", "sow","false")
+        , "/response/numFound==1"
+    );
+    assertJQ(req("qf","text_sw title", "defType","edismax", "q","\"ATM\" wi fi", "sow","false")
+        , "/response/numFound==1"
+    );
+    assertJQ(req("qf","text_sw title", "defType","edismax", "q","wi fi +ATM", "sow","false")
+        , "/response/numFound==1"
+    );
+    assertJQ(req("qf","text_sw title", "defType","edismax", "q","wi fi -ATM", "sow","false")
+        , "/response/numFound==0"
+    );
+    assertJQ(req("qf","text_sw title", "defType","edismax", "q","wi fi -NotThereAtAll", "sow","false")
+        , "/response/numFound==1"
+    );
+    assertJQ(req("qf","text_sw title", "defType","edismax", "q","wi fi !ATM", "sow","false")
+        , "/response/numFound==0"
+    );
+    assertJQ(req("qf","text_sw title", "defType","edismax", "q","wi fi !NotThereAtAll", "sow","false")
+        , "/response/numFound==1"
+    );
+    assertJQ(req("qf","text_sw title", "defType","edismax", "q","wi fi NOT ATM", "sow","false")
+        , "/response/numFound==0"
+    );
+    assertJQ(req("qf","text_sw title", "defType","edismax", "q","wi fi NOT NotThereAtAll", "sow","false")
+        , "/response/numFound==1"
+    );
+    assertJQ(req("qf","text_sw title", "defType","edismax", "q","wi fi AT*", "sow","false")
+        , "/response/numFound==2"
+    );
+    assertJQ(req("qf","text_sw title", "defType","edismax", "q","wi fi AT?", "sow","false")
+        , "/response/numFound==1"
+    );
+    assertJQ(req("qf","text_sw title", "defType","edismax", "q","wi fi \"ATM\"", "sow","false")
+        , "/response/numFound==1"
+    );
+    assertJQ(req("qf","text_sw title", "defType","edismax", "q","\"wi fi\"~2", "sow","false")
+        , "/response/numFound==1"
+    );
+    assertJQ(req("qf","text_sw title", "defType","edismax", "q","text_sw:\"wi fi\"", "sow","false")
+        , "/response/numFound==1"
+    );
+  }
+  
+  
 
   private boolean containsClause(Query query, String field, String value,
       int boost, boolean fuzzy) {

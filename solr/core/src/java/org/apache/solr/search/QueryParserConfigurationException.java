@@ -14,18 +14,11 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package org.apache.solr.search;
 
-import org.apache.solr.parser.QueryParser;
-
-
-/**
- * Solr's default query parser, a schema-driven superset of the classic lucene query parser.
- */
-public class SolrQueryParser extends QueryParser {
-
-  public SolrQueryParser(QParser parser, String defaultField) {
-    super(defaultField, parser);
+public class QueryParserConfigurationException extends IllegalArgumentException {
+  public QueryParserConfigurationException(String message) {
+    super(message);
   }
-
 }
