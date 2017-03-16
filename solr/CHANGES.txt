@@ -30,8 +30,10 @@ Apache ZooKeeper 3.4.6
 Jetty 9.3.14.v20161028
 
 
-(No Changes)
+Bug Fixes
+----------------------
 
+* SOLR-10302: Solr's zkcli scripts now able to find the metrics libraries, which it couldn't earlier (kiran, Ishan Chattopadhyaya)
 
 ==================  6.4.2 ==================
 
