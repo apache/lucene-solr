@@ -48,4 +48,10 @@
     "params" : {
         "q" : "{!field f=title}${user_query}"
     }
+}, {
+    "name" : "titlePhrasesMatch",
+    "class" : "org.apache.solr.ltr.feature.SolrFeature",
+    "params" : {
+        "fq" : [ "{!field f=title}${userTitlePhrase1}", "{!field f=title}${userTitlePhrase2}"]
+    }
 } ]

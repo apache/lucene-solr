@@ -157,6 +157,9 @@ public class SolrFeature extends Feature {
           for (String fq : fqs) {
             if ((fq != null) && (fq.trim().length() != 0)) {
               fq = macroExpander.expand(fq);
+              if (fq == null) {
+                throw new FeatureException(this.getClass().getSimpleName()+" requires efi parameter that was not passed in request.");
+              }
               final QParser fqp = QParser.getParser(fq, req);
               final Query filterQuery = fqp.getQuery();
               if (filterQuery != null) {
