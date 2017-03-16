@@ -258,6 +258,8 @@ Bug Fixes
 * SOLR-9516: Admin UI (angular) now works with Kerberos, by excluding serving of /solr/libs/* through
   SolrDispatchFilter. (Cassandra Targett, Amrit Sarkar via Ishan Chattopadhyaya)
 
+* SOLR-10302: Solr's zkcli scripts now able to find the metrics libraries, which it couldn't earlier (kiran, Ishan Chattopadhyaya)
+
 Optimizations
 ----------------------
 
