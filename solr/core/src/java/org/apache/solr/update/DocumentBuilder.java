@@ -20,7 +20,6 @@ import java.util.List;
 import java.util.Set;
 
 import org.apache.lucene.document.Document;
-import org.apache.lucene.document.Field;
 import org.apache.lucene.document.NumericDocValuesField;
 import org.apache.lucene.index.IndexableField;
 import org.apache.solr.common.SolrException;
@@ -55,7 +54,7 @@ public class DocumentBuilder {
         assert val instanceof NumericDocValuesField: "Expected in-place update to be done on"
             + " NDV fields only.";
       }
-      doc.add((Field)val);
+      doc.add((IndexableField)val);
       return;
     }
     for (IndexableField f : field.getType().createFields(field, val)) {
@@ -69,10 +68,10 @@ public class DocumentBuilder {
         //    assert f instanceof NumericDocValuesField
         if (forInPlaceUpdate) {
           if (f instanceof NumericDocValuesField) {
-            doc.add((Field) f);
+            doc.add(f);
           }
         } else {
-          doc.add((Field) f);
+          doc.add(f);
         }
       }
     }

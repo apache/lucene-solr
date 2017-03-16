@@ -18,6 +18,7 @@ package org.apache.solr.search;
 
 import java.io.Closeable;
 import java.io.IOException;
+import java.io.Reader;
 import java.lang.invoke.MethodHandles;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
@@ -38,63 +39,16 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 
+import com.google.common.collect.Iterables;
+import org.apache.lucene.analysis.Analyzer;
+import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.DocumentStoredFieldVisitor;
 import org.apache.lucene.document.LazyDocument;
-import org.apache.lucene.index.BinaryDocValues;
-import org.apache.lucene.index.DirectoryReader;
-import org.apache.lucene.index.DocValuesType;
-import org.apache.lucene.index.ExitableDirectoryReader;
-import org.apache.lucene.index.FieldInfo;
-import org.apache.lucene.index.FieldInfos;
-import org.apache.lucene.index.IndexReader;
-import org.apache.lucene.index.IndexableField;
-import org.apache.lucene.index.LeafReader;
-import org.apache.lucene.index.LeafReaderContext;
-import org.apache.lucene.index.MultiPostingsEnum;
-import org.apache.lucene.index.NumericDocValues;
-import org.apache.lucene.index.PostingsEnum;
-import org.apache.lucene.index.ReaderUtil;
-import org.apache.lucene.index.SortedDocValues;
-import org.apache.lucene.index.SortedNumericDocValues;
-import org.apache.lucene.index.SortedSetDocValues;
-import org.apache.lucene.index.StoredFieldVisitor;
+import org.apache.lucene.index.*;
 import org.apache.lucene.index.StoredFieldVisitor.Status;
-import org.apache.lucene.index.Term;
-import org.apache.lucene.index.TermContext;
-import org.apache.lucene.index.Terms;
-import org.apache.lucene.index.TermsEnum;
-import org.apache.lucene.search.BooleanClause;
+import org.apache.lucene.search.*;
 import org.apache.lucene.search.BooleanClause.Occur;
-import org.apache.lucene.search.BooleanQuery;
-import org.apache.lucene.search.CollectionStatistics;
-import org.apache.lucene.search.Collector;
-import org.apache.lucene.search.ConstantScoreQuery;
-import org.apache.lucene.search.DocIdSet;
-import org.apache.lucene.search.DocIdSetIterator;
-import org.apache.lucene.search.EarlyTerminatingSortingCollector;
-import org.apache.lucene.search.Explanation;
-import org.apache.lucene.search.FieldDoc;
-import org.apache.lucene.search.IndexSearcher;
-import org.apache.lucene.search.LeafCollector;
-import org.apache.lucene.search.MatchAllDocsQuery;
-import org.apache.lucene.search.MultiCollector;
-import org.apache.lucene.search.Query;
-import org.apache.lucene.search.ScoreDoc;
-import org.apache.lucene.search.Scorer;
-import org.apache.lucene.search.SimpleCollector;
-import org.apache.lucene.search.Sort;
-import org.apache.lucene.search.SortField;
-import org.apache.lucene.search.TermQuery;
-import org.apache.lucene.search.TermStatistics;
-import org.apache.lucene.search.TimeLimitingCollector;
-import org.apache.lucene.search.TopDocs;
-import org.apache.lucene.search.TopDocsCollector;
-import org.apache.lucene.search.TopFieldCollector;
-import org.apache.lucene.search.TopFieldDocs;
-import org.apache.lucene.search.TopScoreDocCollector;
-import org.apache.lucene.search.TotalHitCountCollector;
-import org.apache.lucene.search.Weight;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
@@ -133,8 +87,6 @@ import org.apache.solr.update.IndexFingerprint;
 import org.apache.solr.update.SolrIndexConfig;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import com.google.common.collect.Iterables;
 
 /**
  * SolrIndexSearcher adds schema awareness and caching functionality over {@link IndexSearcher}.
@@ -192,7 +144,12 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
   /** Contains the names/patterns of all docValues=true,stored=false fields, excluding those that are copyField targets in the schema. */
   private final Set<String> nonStoredDVsWithoutCopyTargets;
 
-  private Collection<String> storedHighlightFieldNames;
+  private static int largeValueLengthCacheThreshold = Integer.getInteger("solr.largeField.cacheThreshold", 512 * 1024); // internal setting
+
+  private final Set<String> largeFields;
+
+  private Collection<String> storedHighlightFieldNames; // lazy populated; use getter
+
   private DirectoryFactory directoryFactory;
 
   private final LeafReader leafReader;
@@ -203,6 +160,7 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
   private boolean releaseDirectory;
 
   private final NamedList<Object> readerStats;
+
 
   private static DirectoryReader getReader(SolrCore core, SolrIndexConfig config, DirectoryFactory directoryFactory,
       String path) throws IOException {
@@ -367,11 +325,15 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
     final Set<String> nonStoredDVsUsedAsStored = new HashSet<>();
     final Set<String> allNonStoredDVs = new HashSet<>();
     final Set<String> nonStoredDVsWithoutCopyTargets = new HashSet<>();
+    final Set<String> storedLargeFields = new HashSet<>();
 
     this.fieldInfos = leafReader.getFieldInfos();
-    for (FieldInfo fieldInfo : fieldInfos) {
+    for (FieldInfo fieldInfo : fieldInfos) { // can find materialized dynamic fields, unlike using the Solr IndexSchema.
       final SchemaField schemaField = schema.getFieldOrNull(fieldInfo.name);
-      if (schemaField != null && !schemaField.stored() && schemaField.hasDocValues()) {
+      if (schemaField == null) {
+        continue;
+      }
+      if (!schemaField.stored() && schemaField.hasDocValues()) {
         if (schemaField.useDocValuesAsStored()) {
           nonStoredDVsUsedAsStored.add(fieldInfo.name);
         }
@@ -380,11 +342,15 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
           nonStoredDVsWithoutCopyTargets.add(fieldInfo.name);
         }
       }
+      if (schemaField.stored() && schemaField.isLarge()) {
+        storedLargeFields.add(schemaField.getName());
+      }
     }
 
     this.nonStoredDVsUsedAsStored = Collections.unmodifiableSet(nonStoredDVsUsedAsStored);
     this.allNonStoredDVs = Collections.unmodifiableSet(allNonStoredDVs);
     this.nonStoredDVsWithoutCopyTargets = Collections.unmodifiableSet(nonStoredDVsWithoutCopyTargets);
+    this.largeFields = Collections.unmodifiableSet(storedLargeFields);
 
     // We already have our own filter cache
     setQueryCache(null);
@@ -677,26 +643,41 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
   /*
    * Future optimizations (yonik)
    *
-   * If no cache is present: - use NO_LOAD instead of LAZY_LOAD - use LOAD_AND_BREAK if a single field is begin
+   * If no cache is present: - use NO_LOAD instead of LAZY_LOAD - use LOAD_AND_BREAK if a single field is being
    * retrieved
    */
 
-  /** FieldSelector which loads the specified fields, and loads all other field lazily. */
-  private static class SetNonLazyFieldSelector extends DocumentStoredFieldVisitor {
+  /** {@link StoredFieldVisitor} which loads the specified fields eagerly (or all if null).
+   * If {@link #enableLazyFieldLoading} then the rest get special lazy field entries.  Designated "large"
+   * fields will always get a special field entry. */
+  private class SolrDocumentStoredFieldVisitor extends DocumentStoredFieldVisitor {
     private final Document doc;
-    private final LazyDocument lazyDoc;
+    private final LazyDocument lazyFieldProducer; // arguably a better name than LazyDocument; at least how we use it here
+    private final int docId;
+    private final boolean addLargeFieldsLazily;
 
-    SetNonLazyFieldSelector(Set<String> toLoad, IndexReader reader, int docID) {
+    SolrDocumentStoredFieldVisitor(Set<String> toLoad, IndexReader reader, int docId) {
       super(toLoad);
-      lazyDoc = new LazyDocument(reader, docID);
-      doc = getDocument();
+      this.docId = docId;
+      this.doc = getDocument();
+      this.lazyFieldProducer = toLoad != null && enableLazyFieldLoading ? new LazyDocument(reader, docId) : null;
+      this.addLargeFieldsLazily = (documentCache != null && !largeFields.isEmpty());
+      //TODO can we return Status.STOP after a val is loaded and we know there are no other fields of interest?
+      //    When: toLoad is one single-valued field, no lazyFieldProducer
     }
 
     @Override
     public Status needsField(FieldInfo fieldInfo) throws IOException {
       Status status = super.needsField(fieldInfo);
-      if (status == Status.NO) {
-        doc.add(lazyDoc.getField(fieldInfo));
+      assert status != Status.STOP : "Status.STOP not supported or expected";
+      if (addLargeFieldsLazily && largeFields.contains(fieldInfo.name)) { // load "large" fields using this lazy mechanism
+        if (lazyFieldProducer != null || status == Status.YES) {
+          doc.add(new LargeLazyField(fieldInfo.name, docId));
+        }
+        return Status.NO;
+      }
+      if (status == Status.NO && lazyFieldProducer != null) { // lazy
+        doc.add(lazyFieldProducer.getField(fieldInfo));
       }
       return status;
     }
@@ -717,15 +698,15 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
    * @see IndexReader#document(int, StoredFieldVisitor)
    */
   @Override
-  public void doc(int n, StoredFieldVisitor visitor) throws IOException {
+  public void doc(int docId, StoredFieldVisitor visitor) throws IOException {
     if (documentCache != null) {
-      Document cached = documentCache.get(n);
+      Document cached = documentCache.get(docId);
       if (cached != null) {
         visitFromCached(cached, visitor);
         return;
       }
     }
-    getIndexReader().document(n, visitor);
+    getIndexReader().document(docId, visitor);
   }
 
   /** Executes a stored field visitor against a hit from the document cache */
@@ -735,13 +716,13 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
       final Status needsField = visitor.needsField(info);
       if (needsField == Status.STOP) return;
       if (needsField == Status.NO) continue;
-      if (f.binaryValue() != null) {
-        final BytesRef binaryValue = f.binaryValue();
-        final byte copy[] = new byte[binaryValue.length];
-        System.arraycopy(binaryValue.bytes, binaryValue.offset, copy, 0, copy.length);
-        visitor.binaryField(info, copy);
-      } else if (f.numericValue() != null) {
-        final Number numericValue = f.numericValue();
+      BytesRef binaryValue = f.binaryValue();
+      if (binaryValue != null) {
+        visitor.binaryField(info, toByteArrayUnwrapIfPossible(binaryValue));
+        continue;
+      }
+      Number numericValue = f.numericValue();
+      if (numericValue != null) {
         if (numericValue instanceof Double) {
           visitor.doubleField(info, numericValue.doubleValue());
         } else if (numericValue instanceof Integer) {
@@ -753,9 +734,22 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
         } else {
           throw new AssertionError();
         }
+        continue;
+      }
+      // must be String
+      if (f instanceof LargeLazyField) { // optimization to avoid premature string conversion
+        visitor.stringField(info, toByteArrayUnwrapIfPossible(((LargeLazyField) f).readBytes()));
       } else {
         visitor.stringField(info, f.stringValue().getBytes(StandardCharsets.UTF_8));
       }
+    }
+  }
+
+  private byte[] toByteArrayUnwrapIfPossible(BytesRef bytesRef) {
+    if (bytesRef.offset == 0 && bytesRef.bytes.length == bytesRef.length) {
+      return bytesRef.bytes;
+    } else {
+      return Arrays.copyOfRange(bytesRef.bytes, bytesRef.offset, bytesRef.offset + bytesRef.length);
     }
   }
 
@@ -775,29 +769,119 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
     }
 
     final DirectoryReader reader = getIndexReader();
-    if (fields != null) {
-      if (enableLazyFieldLoading) {
-        final SetNonLazyFieldSelector visitor = new SetNonLazyFieldSelector(fields, reader, i);
-        reader.document(i, visitor);
-        d = visitor.doc;
-      } else if (documentCache == null) {
-        d = reader.document(i, fields);
-      } else {
-        // we do not pass the fields in this case because that would return an incomplete document which would
-        // be eventually cached. The alternative would be to read the stored fields twice; once with the fields
-        // and then without for caching leading to a performance hit
-        // see SOLR-8858 for related discussion
-        d = reader.document(i);
-      }
-    } else {
-      d = reader.document(i);
+    if (documentCache != null && !enableLazyFieldLoading) {
+      // we do not filter the fields in this case because that would return an incomplete document which would
+      // be eventually cached. The alternative would be to read the stored fields twice; once with the fields
+      // and then without for caching leading to a performance hit
+      // see SOLR-8858 for related discussion
+      fields = null;
     }
+    final SolrDocumentStoredFieldVisitor visitor = new SolrDocumentStoredFieldVisitor(fields, reader, i);
+    reader.document(i, visitor);
+    d = visitor.getDocument();
 
     if (documentCache != null) {
       documentCache.put(i, d);
     }
 
     return d;
+  }
+
+  /** Unlike LazyDocument.LazyField, we (a) don't cache large values, and (b) provide access to the byte[]. */
+  class LargeLazyField implements IndexableField {
+
+    final String name;
+    final int docId;
+    // synchronize on 'this' to access:
+    BytesRef cachedBytes; // we only conditionally populate this if it's big enough
+
+    private LargeLazyField(String name, int docId) {
+      this.name = name;
+      this.docId = docId;
+    }
+
+    @Override
+    public String toString() {
+      return fieldType().toString() + "<" + name() + ">"; // mimic Field.java
+    }
+
+    @Override
+    public String name() {
+      return name;
+    }
+
+    @Override
+    public IndexableFieldType fieldType() {
+      return schema.getField(name());
+    }
+
+    @Override
+    public TokenStream tokenStream(Analyzer analyzer, TokenStream reuse) {
+      return analyzer.tokenStream(name(), stringValue()); // or we could throw unsupported exception?
+    }
+    /** (for tests) */
+    synchronized boolean hasBeenLoaded() {
+      return cachedBytes != null;
+    }
+
+    @Override
+    public synchronized String stringValue() {
+      try {
+        return readBytes().utf8ToString();
+      } catch (IOException e) {
+        throw new RuntimeException(e);
+      }
+    }
+
+    synchronized BytesRef readBytes() throws IOException {
+      if (cachedBytes != null) {
+        return cachedBytes;
+      } else {
+        BytesRef bytesRef = new BytesRef();
+        getIndexReader().document(docId, new StoredFieldVisitor() {
+          boolean done = false;
+          @Override
+          public Status needsField(FieldInfo fieldInfo) throws IOException {
+            if (done) {
+              return Status.STOP;
+            }
+            return fieldInfo.name.equals(name()) ? Status.YES : Status.NO;
+          }
+
+          @Override
+          public void stringField(FieldInfo fieldInfo, byte[] value) throws IOException {
+            bytesRef.bytes = value;
+            bytesRef.length = value.length;
+            done = true;
+          }
+
+          @Override
+          public void binaryField(FieldInfo fieldInfo, byte[] value) throws IOException {
+            throw new UnsupportedOperationException("'large' binary fields are not (yet) supported");
+          }
+        });
+        if (bytesRef.length < largeValueLengthCacheThreshold) {
+          return cachedBytes = bytesRef;
+        } else {
+          return bytesRef;
+        }
+      }
+    }
+
+    @Override
+    public BytesRef binaryValue() {
+      return null;
+    }
+
+    @Override
+    public Reader readerValue() {
+      return null;
+    }
+
+    @Override
+    public Number numericValue() {
+      return null;
+    }
   }
 
   /**

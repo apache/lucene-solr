@@ -281,13 +281,6 @@ public class EnumField extends PrimitiveFieldType {
    * {@inheritDoc}
    */
   @Override
-  public void checkSchemaField(SchemaField field) {
-  }
-
-  /**
-   * {@inheritDoc}
-   */
-  @Override
   public String readableToIndexed(String val) {
     if (val == null)
       return null;

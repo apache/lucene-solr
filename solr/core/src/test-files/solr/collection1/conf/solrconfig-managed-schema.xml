@@ -24,7 +24,7 @@
 
   <schemaFactory class="ManagedIndexSchemaFactory">
     <bool name="mutable">${managed.schema.mutable}</bool>
-    <str name="managedSchemaResourceName">managed-schema</str>
+    <str name="managedSchemaResourceName">${managed.schema.resourceName:managed-schema}</str>
   </schemaFactory>
 
   <codecFactory class="solr.SchemaCodecFactory"/>

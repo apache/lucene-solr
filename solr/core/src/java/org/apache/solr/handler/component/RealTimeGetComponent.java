@@ -690,21 +690,49 @@ public class RealTimeGetComponent extends SearchComponent
           List<Object> vals = new ArrayList<>();
           if (f.fieldType().docValuesType() == DocValuesType.SORTED_NUMERIC) {
             // SORTED_NUMERICS store sortable bits version of the value, need to retrieve the original
-            vals.add(sf.getType().toObject(f));
+            vals.add(sf.getType().toObject(f)); // (will materialize by side-effect)
           } else {
-            vals.add( f );
+            vals.add( materialize(f) );
           }
           out.setField( f.name(), vals );
         }
         else{
-          out.setField( f.name(), f );
+          out.setField( f.name(), materialize(f) );
         }
       }
       else {
-        out.addField( f.name(), f );
+        out.addField( f.name(), materialize(f) );
       }
     }
     return out;
+  }
+
+  /**
+   * Ensure we don't have {@link org.apache.lucene.document.LazyDocument.LazyField} or equivalent.
+   * It can pose problems if the searcher is about to be closed and we haven't fetched a value yet.
+   */
+  private static IndexableField materialize(IndexableField in) {
+    if (in instanceof Field) { // already materialized
+      return in;
+    }
+    return new ClonedField(in);
+  }
+
+  private static class ClonedField extends Field { // TODO Lucene Field has no copy constructor; maybe it should?
+    ClonedField(IndexableField in) {
+      super(in.name(), in.fieldType());
+      this.fieldsData = in.numericValue();
+      if (this.fieldsData == null) {
+        this.fieldsData = in.binaryValue();
+        if (this.fieldsData == null) {
+          this.fieldsData = in.stringValue();
+          if (this.fieldsData == null) {
+            // fallback:
+            assert false : in; // unexpected
+          }
+        }
+      }
+    }
   }
 
   /**

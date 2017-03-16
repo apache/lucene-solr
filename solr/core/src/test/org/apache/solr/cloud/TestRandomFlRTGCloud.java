@@ -160,7 +160,7 @@ public class TestRandomFlRTGCloud extends SolrCloudTestCase {
   }
 
   /** 
-   * Tests thta all TransformerFactories that are implicitly provided by Solr are tested in this class
+   * Tests that all TransformerFactories that are implicitly provided by Solr are tested in this class
    *
    * @see FlValidator#getDefaultTransformerFactoryName
    * @see #FL_VALIDATORS

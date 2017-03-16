@@ -244,8 +244,4 @@ public abstract class PointField extends NumericFieldType {
 
   protected abstract StoredField getStoredField(SchemaField sf, Object value);
 
-  @Override
-  public void checkSchemaField(final SchemaField field) {
-    // PointFields support DocValues
-  }
 }

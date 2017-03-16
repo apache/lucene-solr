@@ -17,11 +17,11 @@
 package org.apache.solr.response.transform;
 
 
-import org.apache.lucene.document.Field;
+import java.util.Set;
+
+import org.apache.lucene.index.IndexableField;
 import org.apache.solr.common.SolrDocument;
 import org.apache.solr.schema.FieldType;
-
-import java.util.Set;
 
 /**
  *
@@ -40,8 +40,7 @@ public abstract class BaseEditorialTransformer extends DocTransformer {
   }
 
   @Override
-  public String getName()
-  {
+  public String getName() {
     return name;
   }
 
@@ -61,22 +60,15 @@ public abstract class BaseEditorialTransformer extends DocTransformer {
   protected abstract Set<String> getIdSet();
 
   protected String getKey(SolrDocument doc) {
-    String key;
-    Object field = doc.get(idFieldName);
-    final Number n;
-    if (field instanceof Field) {
-      n = ((Field) field).numericValue();
-    } else {
-      n = null;
+    Object obj = doc.get(idFieldName);
+    if (obj instanceof IndexableField) {
+      IndexableField f = (IndexableField) obj;
+      Number n = f.numericValue();
+      if (n != null) {
+        return ft.readableToIndexed(n.toString());
+      }
+      return ft.readableToIndexed(f.stringValue());
     }
-    if (n != null) {
-      key = n.toString();
-      key = ft.readableToIndexed(key);
-    } else if (field instanceof Field){
-      key = ((Field)field).stringValue();
-    } else {
-      key = field.toString();
-    }
-    return key;
+    throw new AssertionError("Expected an IndexableField but got: " + obj.getClass());
   }
 }

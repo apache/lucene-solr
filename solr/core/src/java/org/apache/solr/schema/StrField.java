@@ -96,10 +96,6 @@ public class StrField extends PrimitiveFieldType {
   }
 
   @Override
-  public void checkSchemaField(SchemaField field) {
-  }
-
-  @Override
   public Object marshalSortValue(Object value) {
     return marshalStringSortValue(value);
   }
