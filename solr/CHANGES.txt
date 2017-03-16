@@ -365,6 +365,8 @@ Other Changes
 
 * SOLR-10247: Support non-numeric metrics and a "compact" format of /admin/metrics output. (ab)
 
+* SOLR-9990: Add PointFields in example/default schemas (Tomás Fernández Löbbe)
+
 ==================  6.4.2 ==================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release.
