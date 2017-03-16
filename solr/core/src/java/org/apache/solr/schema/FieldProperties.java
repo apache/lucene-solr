@@ -30,29 +30,30 @@ public abstract class FieldProperties {
   // many of the variables are independent or semi-independent.
 
   // bit values for boolean field properties.
-  protected final static int INDEXED             = 0x00000001;
-  protected final static int TOKENIZED           = 0x00000002;
-  protected final static int STORED              = 0x00000004;
-  protected final static int BINARY              = 0x00000008;
-  protected final static int OMIT_NORMS          = 0x00000010;
-  protected final static int OMIT_TF_POSITIONS   = 0x00000020;
-  protected final static int STORE_TERMVECTORS   = 0x00000040;
-  protected final static int STORE_TERMPOSITIONS = 0x00000080;
-  protected final static int STORE_TERMOFFSETS   = 0x00000100;
+  protected final static int INDEXED             = 0b1;
+  protected final static int TOKENIZED           = 0b10;
+  protected final static int STORED              = 0b100;
+  protected final static int BINARY              = 0b1000;
+  protected final static int OMIT_NORMS          = 0b10000;
+  protected final static int OMIT_TF_POSITIONS   = 0b100000;
+  protected final static int STORE_TERMVECTORS   = 0b1000000;
+  protected final static int STORE_TERMPOSITIONS = 0b10000000;
+  protected final static int STORE_TERMOFFSETS   = 0b100000000;
 
 
-  protected final static int MULTIVALUED         = 0x00000200;
-  protected final static int SORT_MISSING_FIRST  = 0x00000400;
-  protected final static int SORT_MISSING_LAST   = 0x00000800;
+  protected final static int MULTIVALUED         = 0b1000000000;
+  protected final static int SORT_MISSING_FIRST  = 0b10000000000;
+  protected final static int SORT_MISSING_LAST   = 0b100000000000;
   
-  protected final static int REQUIRED            = 0x00001000;
-  protected final static int OMIT_POSITIONS      = 0x00002000;
+  protected final static int REQUIRED            = 0b1000000000000;
+  protected final static int OMIT_POSITIONS      = 0b10000000000000;
 
-  protected final static int STORE_OFFSETS       = 0x00004000;
-  protected final static int DOC_VALUES          = 0x00008000;
+  protected final static int STORE_OFFSETS       = 0b100000000000000;
+  protected final static int DOC_VALUES          = 0b1000000000000000;
 
-  protected final static int STORE_TERMPAYLOADS  = 0x00010000;
-  protected final static int USE_DOCVALUES_AS_STORED  = 0x00020000;
+  protected final static int STORE_TERMPAYLOADS  = 0b10000000000000000;
+  protected final static int USE_DOCVALUES_AS_STORED  = 0b100000000000000000;
+  protected final static int LARGE_FIELD         = 0b1000000000000000000;
 
   static final String[] propertyNames = {
           "indexed", "tokenized", "stored",
@@ -60,7 +61,7 @@ public abstract class FieldProperties {
           "termVectors", "termPositions", "termOffsets",
           "multiValued",
           "sortMissingFirst","sortMissingLast","required", "omitPositions",
-          "storeOffsetsWithPositions", "docValues", "termPayloads", "useDocValuesAsStored"
+          "storeOffsetsWithPositions", "docValues", "termPayloads", "useDocValuesAsStored", "large"
   };
 
   static final Map<String,Integer> propertyMap = new HashMap<>();

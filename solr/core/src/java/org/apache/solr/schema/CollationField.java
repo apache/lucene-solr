@@ -247,10 +247,9 @@ public class CollationField extends FieldType {
       return new TermRangeQuery(field.getName(), low, high, minInclusive, maxInclusive);
     }
   }
-  
+
   @Override
-  public void checkSchemaField(SchemaField field) {
-    // no-op
+  protected void checkSupportsDocValues() { // we support DocValues
   }
 
   @Override

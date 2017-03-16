@@ -19,6 +19,7 @@ package org.apache.solr.highlight;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.schema.IndexSchema;
+import org.junit.AfterClass;
 import org.junit.BeforeClass;
 
 /** Tests for the UnifiedHighlighter Solr plugin **/
@@ -26,7 +27,10 @@ public class TestUnifiedSolrHighlighter extends SolrTestCaseJ4 {
   
   @BeforeClass
   public static void beforeClass() throws Exception {
-    initCore("solrconfig-basic.xml", "schema-unifiedhighlight.xml");
+    System.setProperty("filterCache.enabled", "false");
+    System.setProperty("queryResultCache.enabled", "false");
+    System.setProperty("documentCache.enabled", "true"); // this is why we use this particular solrconfig
+    initCore("solrconfig-cache-enable-disable.xml", "schema-unifiedhighlight.xml");
     
     // test our config is sane, just to be sure:
 
@@ -35,6 +39,12 @@ public class TestUnifiedSolrHighlighter extends SolrTestCaseJ4 {
     assertTrue(schema.getField("text").storeOffsetsWithPositions());
     assertTrue(schema.getField("text3").storeOffsetsWithPositions());
     assertFalse(schema.getField("text2").storeOffsetsWithPositions());
+  }
+  @AfterClass
+  public static void afterClass() {
+    System.clearProperty("filterCache.enabled");
+    System.clearProperty("queryResultCache.enabled");
+    System.clearProperty("documentCache.enabled");
   }
   
   @Override

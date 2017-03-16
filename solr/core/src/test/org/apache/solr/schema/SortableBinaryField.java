@@ -35,8 +35,7 @@ import org.apache.lucene.util.BytesRef;
 public class SortableBinaryField extends BinaryField {
 
   @Override
-  public void checkSchemaField(final SchemaField field) {
-    // NOOP, It's Aaaaaall Good.
+  protected void checkSupportsDocValues() { // we support DocValues
   }
 
   @Override

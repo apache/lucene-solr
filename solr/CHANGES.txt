@@ -197,6 +197,12 @@ New Features
 
 * SOLR-10254: significantTerms Streaming Expression should work in non-SolrCloud mode (Joel Bernstein)
 
+* SOLR-10286: string/text fields may now declare themselves as large="true" in the schema.  Large fields are always
+  lazy loaded and will only take up space in the document cache if the actual value is < 512KB.  This option
+  requires "stored" and must not be multiValued.  It's intended for fields that might have very large values so that
+  they don't get cached in memory. (David Smiley)
+
+
 Bug Fixes
 ----------------------
 
