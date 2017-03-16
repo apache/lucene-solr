@@ -210,10 +210,14 @@ public class TestSelectiveWeightCreation extends TestRerankBase {
   @Test
   public void testSelectiveWeightsRequestFeaturesFromDifferentStore() throws Exception {
 
-    final String docs0fv = FeatureLoggerTestUtils.toFeatureVector(
+    final String docs0fv_sparse = FeatureLoggerTestUtils.toFeatureVector(
         "matchedTitle","1.0", "titlePhraseMatch","0.6103343");
+    final String docs0fv_dense = FeatureLoggerTestUtils.toFeatureVector(
+        "matchedTitle","1.0", "titlePhraseMatch","0.6103343", "titlePhrasesMatch","0.0");
     final String docs0fv_fstore4= FeatureLoggerTestUtils.toFeatureVector(
         "popularity","3.0", "originalScore","1.0");
+
+    final String docs0fv = chooseDefaultFeatureVector(docs0fv_dense, docs0fv_sparse);
 
     // extract all features in externalmodel's store (default store)
     // rerank using externalmodel (default store)
@@ -221,7 +225,7 @@ public class TestSelectiveWeightCreation extends TestRerankBase {
     query.setQuery("*:*");
     query.add("fl", "*,score,fv:[fv]");
     query.add("rows", "5");
-    query.add("rq", "{!ltr reRankDocs=10 model=externalmodel efi.user_query=w3}");
+    query.add("rq", "{!ltr reRankDocs=10 model=externalmodel efi.user_query=w3 efi.userTitlePhrase1=w2 efi.userTitlePhrase2=w1}");
 
     assertJQ("/query" + query.toQueryString(), "/response/docs/[0]/id=='3'");
     assertJQ("/query" + query.toQueryString(), "/response/docs/[1]/id=='4'");
