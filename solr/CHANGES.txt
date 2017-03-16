@@ -112,8 +112,8 @@ Upgrade Notes
   number of requests. New Codahale Metrics implementation applies exponential decay to this value,
   which heavily biases the average towards the last 5 minutes. (ab)
 
-* SOLR-8593: Parallel SQL now uses Apache Calcite as it's SQL framework. As part of this change
-  the default aggregation mode has been changed to facet rather map_reduce. There has also beeen changes
+* SOLR-8593: Parallel SQL now uses Apache Calcite as its SQL framework. As part of this change
+  the default aggregation mode has been changed to facet rather than map_reduce. There has also been changes
   to the SQL aggregate response and some SQL syntax changes. Consult the documentation for full details.
 
 
