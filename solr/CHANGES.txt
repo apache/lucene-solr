@@ -100,6 +100,7 @@ Velocity 1.7 and Velocity Tools 2.0
 Apache UIMA 2.3.1
 Apache ZooKeeper 3.4.6
 Jetty 9.3.14.v20161028
+Apache Calcite 1.11.0
 
 Detailed Change List
 ----------------------
@@ -110,6 +111,11 @@ Upgrade Notes
   each handler) used to be a simple non-decaying average based on total cumulative time and the
   number of requests. New Codahale Metrics implementation applies exponential decay to this value,
   which heavily biases the average towards the last 5 minutes. (ab)
+
+* SOLR-8593: Parallel SQL now uses Apache Calcite as it's SQL framework. As part of this change
+  the default aggregation mode has been changed to facet rather map_reduce. There has also beeen changes
+  to the SQL aggregate response and some SQL syntax changes. Consult the documentation for full details.
+
 
 New Features
 ----------------------
@@ -186,6 +192,10 @@ New Features
 * SOLR-10224: Add disk total and disk free metrics. (ab)
 
 * SOLR-10046: Add UninvertDocValuesMergePolicyFactory class. (Keith Laban, Christine Poerschke)
+
+* SOLR-10085: SQL result set fields should be ordered by the field list (Joel Bernstein)
+
+* SOLR-10254: significantTerms Streaming Expression should work in non-SolrCloud mode (Joel Bernstein)
 
 Bug Fixes
 ----------------------
