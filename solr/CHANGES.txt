@@ -260,6 +260,9 @@ Bug Fixes
 
 * SOLR-10302: Solr's zkcli scripts now able to find the metrics libraries, which it couldn't earlier (kiran, Ishan Chattopadhyaya)
 
+* SOLR-10283: Learning to Rank (LTR) SolrFeature to reject searches with missing efi (External Feature Information) used by fq.
+  (Christine Poerschke)
+
 Optimizations
 ----------------------
 
