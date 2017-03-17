@@ -71,12 +71,12 @@ public class PointType extends CoordinateFieldType implements SpatialQueryable {
     String[] point = parseCommaSeparatedList(externalVal, dimension);
 
     // TODO: this doesn't currently support polyFields as sub-field types
-    List<IndexableField> f = new ArrayList<>(dimension+1);
+    List<IndexableField> f = new ArrayList<>((dimension*2)+1);
 
     if (field.indexed()) {
       for (int i=0; i<dimension; i++) {
         SchemaField sf = subField(field, i, schema);
-        f.add(sf.createField(point[i], sf.indexed() && !sf.omitNorms() ? boost : 1f));
+        f.addAll(sf.createFields(point[i], sf.indexed() && !sf.omitNorms() ? boost : 1f));
       }
     }
 
@@ -86,7 +86,7 @@ public class PointType extends CoordinateFieldType implements SpatialQueryable {
       customType.setStored(true);
       f.add(createField(field.getName(), storedVal, customType, 1f));
     }
-    
+
     return f;
   }
 
@@ -158,6 +158,14 @@ public class PointType extends CoordinateFieldType implements SpatialQueryable {
       bq.add(tq, BooleanClause.Occur.MUST);
     }
     return bq.build();
+  }
+  
+  @Override
+  protected void checkSupportsDocValues() {
+    // DocValues supported only when enabled at the fieldType 
+    if (!hasProperty(DOC_VALUES)) {
+      throw new UnsupportedOperationException("PointType can't have docValues=true in the field definition, use docValues=true in the fieldType definition, or in subFieldType/subFieldSuffix");
+    }
   }
 
   /**
