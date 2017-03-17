@@ -18,9 +18,12 @@
 package org.apache.solr.search.facet;
 
 import java.io.IOException;
+import java.util.List;
 
 import org.apache.solr.JSONTestUtil;
 import org.apache.solr.SolrTestCaseHS;
+import org.apache.solr.client.solrj.SolrClient;
+import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.request.SolrQueryRequest;
 import org.junit.AfterClass;
@@ -209,6 +212,97 @@ public class TestJsonFacetRefinement extends SolrTestCaseHS {
   }
 
 
+  @Test
+  public void testBasicRefinement() throws Exception {
+    initServers();
+    Client client = servers.getClient(random().nextInt());
+    client.queryDefaults().set( "shards", servers.getShards(), "debugQuery", Boolean.toString(random().nextBoolean()) );
+
+    List<SolrClient> clients = client.getClientProvider().all();
+    assertTrue(clients.size() >= 3);
+
+    client.deleteByQuery("*:*", null);
+
+    ModifiableSolrParams p = params("cat_s", "cat_s", "num_d", "num_d");
+    String cat_s = p.get("cat_s");
+    String num_d = p.get("num_d");
+
+    clients.get(0).add( sdoc("id", "01", cat_s, "A", num_d, -1) ); // A wins count tie
+    clients.get(0).add( sdoc("id", "02", cat_s, "B", num_d, 3) );
+
+    clients.get(1).add( sdoc("id", "11", cat_s, "B", num_d, -5) ); // B highest count
+    clients.get(1).add( sdoc("id", "12", cat_s, "B", num_d, -11) );
+    clients.get(1).add( sdoc("id", "13", cat_s, "A", num_d, 7) );
+
+    clients.get(2).add( sdoc("id", "21", cat_s, "A", num_d, 17) ); // A highest count
+    clients.get(2).add( sdoc("id", "22", cat_s, "A", num_d, -19) );
+    clients.get(2).add( sdoc("id", "23", cat_s, "B", num_d, 11) );
+
+    client.commit();
+
+    // Shard responses should be A=1, B=2, A=2, merged should be "A=3, B=2"
+    // One shard will have _facet_={"refine":{"cat0":{"_l":["A"]}}} on the second phase
+
+    /****
+    // fake a refinement request... good for development/debugging
+    assertJQ(clients.get(1),
+        params(p, "q", "*:*",     "_facet_","{refine:{cat0:{_l:[A]}}}", "isShard","true", "distrib","false", "shards.purpose","2097216", "ids","11,12,13",
+            "json.facet", "{" +
+                "cat0:{type:terms, field:cat_s, sort:'count desc', limit:1, overrequest:0, refine:true}" +
+                "}"
+        )
+        , "facets=={foo:555}"
+    );
+    ****/
+
+    client.testJQ(params(p, "q", "*:*",
+        "json.facet", "{" +
+            "cat0:{type:terms, field:${cat_s}, sort:'count desc', limit:1, overrequest:0, refine:false}" +
+            "}"
+        )
+        , "facets=={ count:8" +
+            ", cat0:{ buckets:[ {val:A,count:3} ] }" +  // w/o overrequest and refinement, count is lower than it should be (we don't see the A from the middle shard)
+            "}"
+    );
+
+    client.testJQ(params(p, "q", "*:*",
+        "json.facet", "{" +
+            "cat0:{type:terms, field:${cat_s}, sort:'count desc', limit:1, overrequest:0, refine:true}" +
+            "}"
+        )
+        , "facets=={ count:8" +
+            ", cat0:{ buckets:[ {val:A,count:4} ] }" +  // w/o overrequest, we need refining to get the correct count.
+            "}"
+    );
+
+    // test that basic stats work for refinement
+    client.testJQ(params(p, "q", "*:*",
+        "json.facet", "{" +
+            "cat0:{type:terms, field:${cat_s}, sort:'count desc', limit:1, overrequest:0, refine:true, facet:{ stat1:'sum(${num_d})'}   }" +
+            "}"
+        )
+        , "facets=={ count:8" +
+            ", cat0:{ buckets:[ {val:A,count:4, stat1:4.0} ] }" +
+            "}"
+    );
+
+    // test sorting buckets by a different stat
+    client.testJQ(params(p, "q", "*:*",
+        "json.facet", "{" +
+            " cat0:{type:terms, field:${cat_s}, sort:'min1 asc', limit:1, overrequest:0, refine:false, facet:{ min1:'min(${num_d})'}   }" +
+            ",cat1:{type:terms, field:${cat_s}, sort:'min1 asc', limit:1, overrequest:0, refine:true,  facet:{ min1:'min(${num_d})'}   }" +
+            ",sum1:'sum(num_d)'" +  // make sure that root bucket stats aren't affected by refinement
+            "}"
+        )
+        , "facets=={ count:8" +
+            ", cat0:{ buckets:[ {val:A,count:3, min1:-19.0} ] }" +  // B wins in shard2, so we're missing the "A" count for that shar w/o refinement.
+            ", cat1:{ buckets:[ {val:A,count:4, min1:-19.0} ] }" +  // with refinement, we get the right count
+            ", sum1:2.0" +
+            "}"
+    );
+
+
+  }
 
 
 }
