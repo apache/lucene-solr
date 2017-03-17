@@ -19,7 +19,6 @@ package org.apache.lucene.util;
 
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Iterator;
 import java.util.List;
 
@@ -512,21 +511,20 @@ public class QueryBuilder {
       lastState = end;
       final Query queryPos;
       if (graph.hasSidePath(start)) {
-        List<Query> queries = new ArrayList<> ();
-        Iterator<TokenStream> it = graph.getFiniteStrings(start, end);
-        while (it.hasNext()) {
-          TokenStream ts = it.next();
-          // This is a synonym path so all terms are mandatory (MUST).
-          Query q = createFieldQuery(ts, BooleanClause.Occur.MUST, field, getAutoGenerateMultiTermSynonymsPhraseQuery(), 0);
-          if (q != null) {
-            queries.add(q);
+        final Iterator<TokenStream> it = graph.getFiniteStrings(start, end);
+        Iterator<Query> queries = new Iterator<Query>() {
+          @Override
+          public boolean hasNext() {
+            return it.hasNext();
           }
-        }
-        if (queries.size() > 0) {
-          queryPos = newGraphSynonymQuery(queries.toArray(new Query[queries.size()]));
-        } else {
-          queryPos = null;
-        }
+
+          @Override
+          public Query next() {
+            TokenStream ts = it.next();
+            return createFieldQuery(ts, BooleanClause.Occur.MUST, field, getAutoGenerateMultiTermSynonymsPhraseQuery(), 0);
+          }
+        };
+        queryPos = newGraphSynonymQuery(queries);
       } else {
         Term[] terms = graph.getTerms(field, start);
         assert terms.length > 0;
@@ -636,16 +634,16 @@ public class QueryBuilder {
    * This is intended for subclasses that wish to customize the generated queries.
    * @return new Query instance
    */
-  protected Query newGraphSynonymQuery(Query queries[]) {
-    if (queries == null) {
-      return new BooleanQuery.Builder().build();
-    } else if (queries.length == 1) {
-      return queries[0];
-    } else {
-      BooleanQuery.Builder builder = new BooleanQuery.Builder();
-      Arrays.stream(queries).forEachOrdered(qry -> builder.add(qry, BooleanClause.Occur.SHOULD));
-      return builder.build();
+  protected Query newGraphSynonymQuery(Iterator<Query> queries) {
+    BooleanQuery.Builder builder = new BooleanQuery.Builder();
+    while (queries.hasNext()) {
+      builder.add(queries.next(), BooleanClause.Occur.SHOULD);
     }
+    BooleanQuery bq = builder.build();
+    if (bq.clauses().size() == 1) {
+      return bq.clauses().get(0).getQuery();
+    }
+    return bq;
   }
   
   /**
