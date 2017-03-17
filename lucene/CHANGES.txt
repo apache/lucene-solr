@@ -229,7 +229,8 @@ Improvements
 * LUCENE-7695: ComplexPhraseQueryParser to support query time synonyms (Markus Jelsma
   via Mikhail Khludnev) 
 
-* LUCENE_7747: QueryBuilder now iterates lazily over the possible paths when building a graph query
+* LUCENE-7747: QueryBuilder now iterates lazily over the possible paths when building a graph query
+  (Jim Ferenczi)
 
 Optimizations
 
