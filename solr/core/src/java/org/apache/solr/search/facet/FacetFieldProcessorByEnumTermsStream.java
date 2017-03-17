@@ -333,7 +333,7 @@ class FacetFieldProcessorByEnumTermsStream extends FacetFieldProcessor implement
         bucket.add("val", bucketVal);
         addStats(bucket, 0);
         if (hasSubFacets) {
-          processSubs(bucket, bucketQuery, termSet);
+          processSubs(bucket, bucketQuery, termSet, false);
         }
 
         // TODO... termSet needs to stick around for streaming sub-facets?

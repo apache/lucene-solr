@@ -31,6 +31,7 @@ import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.util.PriorityQueue;
 import org.apache.solr.common.util.SimpleOrderedMap;
+import org.apache.solr.schema.FieldType;
 import org.apache.solr.schema.SchemaField;
 import org.apache.solr.search.DocSet;
 
@@ -310,7 +311,7 @@ abstract class FacetFieldProcessor extends FacetProcessor<FacetField> {
     if (freq.missing) {
       // TODO: it would be more efficient to build up a missing DocSet if we need it here anyway.
       SimpleOrderedMap<Object> missingBucket = new SimpleOrderedMap<>();
-      fillBucket(missingBucket, getFieldMissingQuery(fcontext.searcher, freq.field), null);
+      fillBucket(missingBucket, getFieldMissingQuery(fcontext.searcher, freq.field), null, false);
       res.add("missing", missingBucket);
     }
 
@@ -378,7 +379,7 @@ abstract class FacetFieldProcessor extends FacetProcessor<FacetField> {
       }
     }
 
-    processSubs(target, filter, subDomain);
+    processSubs(target, filter, subDomain, false);
   }
 
   @Override
@@ -510,4 +511,41 @@ abstract class FacetFieldProcessor extends FacetProcessor<FacetField> {
       }
     }
   }
+
+
+
+  protected SimpleOrderedMap<Object> refineFacets() throws IOException {
+    List leaves = (List)fcontext.facetInfo.get("_l");
+
+    // For leaf refinements, we do full faceting for each leaf bucket.  Any sub-facets of these buckets will be fully evaluated.  Because of this, we should never
+    // encounter leaf refinements that have sub-facets that return partial results.
+
+    SimpleOrderedMap<Object> res = new SimpleOrderedMap<>();
+    List<SimpleOrderedMap> bucketList = new ArrayList<>(leaves.size());
+    res.add("buckets", bucketList);
+
+    // TODO: an alternate implementations can fill all accs at once
+    createAccs(-1, 1);
+
+    FieldType ft = sf.getType();
+    for (Object bucketVal : leaves) {
+      SimpleOrderedMap<Object> bucket = new SimpleOrderedMap<>();
+      bucketList.add(bucket);
+      bucket.add("val", bucketVal);
+
+      // String internal = ft.toInternal( tobj.toString() );  // TODO - we need a better way to get from object to query...
+
+      Query domainQ = ft.getFieldQuery(null, sf, bucketVal.toString());
+
+      fillBucket(bucket, domainQ, null, false);
+    }
+
+    // If there are just a couple of leaves, and if the domain is large, then
+    // going by term is likely the most efficient?
+    // If the domain is small, or if the number of leaves is large, then doing
+    // the normal collection method may be best.
+
+    return res;
+  }
+
 }
