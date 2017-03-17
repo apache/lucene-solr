@@ -16,7 +16,14 @@
  */
 package org.apache.solr.update;
 
+import java.util.Iterator;
+import java.util.List;
+import java.util.stream.Collectors;
+import java.util.stream.StreamSupport;
+
+import com.carrotsearch.randomizedtesting.generators.RandomStrings;
 import org.apache.lucene.document.Document;
+import org.apache.lucene.index.IndexableField;
 import org.apache.lucene.util.TestUtil;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.SolrDocument;
@@ -25,6 +32,8 @@ import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.SolrInputField;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.schema.FieldType;
+import org.junit.After;
+import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
@@ -33,10 +42,21 @@ import org.junit.Test;
  *
  */
 public class DocumentBuilderTest extends SolrTestCaseJ4 {
+  static final int save_min_len = DocumentBuilder.MIN_LENGTH_TO_MOVE_LAST;
 
   @BeforeClass
   public static void beforeClass() throws Exception {
     initCore("solrconfig.xml", "schema.xml");
+  }
+
+  @AfterClass
+  public static void afterClass() {
+    DocumentBuilder.MIN_LENGTH_TO_MOVE_LAST = save_min_len;
+  }
+
+  @After
+  public void afterTest() {
+    DocumentBuilder.MIN_LENGTH_TO_MOVE_LAST = save_min_len;
   }
 
   @Test
@@ -222,7 +242,54 @@ public class DocumentBuilderTest extends SolrTestCaseJ4 {
     sif2.setName("foo");
     assertFalse(assertSolrInputFieldEquals(sif1, sif2));
 
+  }
 
+  public void testMoveLargestLast() {
+    SolrInputDocument inDoc = new SolrInputDocument();
+    String TEXT_FLD = "text"; // not stored.  It won't be moved.  This value is the longest, however.
+    inDoc.addField(TEXT_FLD,
+        "NOT STORED|" + RandomStrings.randomAsciiOfLength(random(), 4 * DocumentBuilder.MIN_LENGTH_TO_MOVE_LAST));
+
+    String CAT_FLD = "cat"; // stored, multiValued
+    inDoc.addField(CAT_FLD,
+        "STORED V1|");
+    //  pretty long value
+    inDoc.addField(CAT_FLD,
+        "STORED V2|" + RandomStrings.randomAsciiOfLength(random(), 2 * DocumentBuilder.MIN_LENGTH_TO_MOVE_LAST));
+    inDoc.addField(CAT_FLD,
+        "STORED V3|" + RandomStrings.randomAsciiOfLength(random(), DocumentBuilder.MIN_LENGTH_TO_MOVE_LAST));
+
+    String SUBJECT_FLD = "subject"; // stored.  This value is long, but not long enough.
+    inDoc.addField(SUBJECT_FLD,
+        "2ndplace|" + RandomStrings.randomAsciiOfLength(random(), DocumentBuilder.MIN_LENGTH_TO_MOVE_LAST));
+
+    Document outDoc = DocumentBuilder.toDocument(inDoc, h.getCore().getLatestSchema());
+
+    // filter outDoc by stored fields; convert to list.
+    List<IndexableField> storedFields = StreamSupport.stream(outDoc.spliterator(), false)
+        .filter(f -> f.fieldType().stored()).collect(Collectors.toList());
+    // clip to last 3.  We expect these to be for CAT_FLD
+    storedFields = storedFields.subList(storedFields.size() - 3, storedFields.size());
+
+    Iterator<IndexableField> fieldIterator = storedFields.iterator();
+    IndexableField field;
+
+    // Test that we retained the particular value ordering, even though though the 2nd of three was longest
+
+    assertTrue(fieldIterator.hasNext());
+    field = fieldIterator.next();
+    assertEquals(CAT_FLD, field.name());
+    assertTrue(field.stringValue().startsWith("STORED V1|"));
+
+    assertTrue(fieldIterator.hasNext());
+    field = fieldIterator.next();
+    assertEquals(CAT_FLD, field.name());
+    assertTrue(field.stringValue().startsWith("STORED V2|"));
+
+    assertTrue(fieldIterator.hasNext());
+    field = fieldIterator.next();
+    assertEquals(CAT_FLD, field.name());
+    assertTrue(field.stringValue().startsWith("STORED V3|"));
   }
 
 }
