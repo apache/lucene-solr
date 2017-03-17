@@ -33,6 +33,7 @@ import org.apache.solr.client.solrj.io.comp.StreamComparator;
 import org.apache.solr.client.solrj.io.eval.AbsoluteValueEvaluator;
 import org.apache.solr.client.solrj.io.eval.AddEvaluator;
 import org.apache.solr.client.solrj.io.eval.AndEvaluator;
+import org.apache.solr.client.solrj.io.eval.DateEvaluator;
 import org.apache.solr.client.solrj.io.eval.DivideEvaluator;
 import org.apache.solr.client.solrj.io.eval.EqualsEvaluator;
 import org.apache.solr.client.solrj.io.eval.ExclusiveOrEvaluator;
@@ -199,9 +200,15 @@ public class StreamHandler extends RequestHandlerBase implements SolrCoreAware, 
       .withFunctionName("mult", MultiplyEvaluator.class)
       .withFunctionName("sub", SubtractEvaluator.class)
       .withFunctionName("log", NaturalLogEvaluator.class)
+
       // Conditional Stream Evaluators
       .withFunctionName("if", IfThenElseEvaluator.class)
       ;
+
+      // Date evaluators
+      for (DateEvaluator.FUNCTION function:DateEvaluator.FUNCTION.values()) {
+        streamFactory.withFunctionName(function.toString(), DateEvaluator.class);
+      }
 
      // This pulls all the overrides and additions from the config
      List<PluginInfo> pluginInfos = core.getSolrConfig().getPluginInfos(Expressible.class.getName());
