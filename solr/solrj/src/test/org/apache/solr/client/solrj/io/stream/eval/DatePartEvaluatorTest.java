@@ -109,7 +109,7 @@ public class DatePartEvaluatorTest {
       Object result = evaluator.evaluate(new Tuple(values));
       assertTrue(false);
     } catch (Exception e) {
-      assertEquals("Invalid field a - The field must be a string formatted ISO_INSTANT or of type Instant,Date or LocalDateTime.", e.getMessage());
+      assertEquals("Invalid parameter 12 - The parameter must be a string formatted ISO_INSTANT or of type Instant,Date or LocalDateTime.", e.getMessage());
     }
 
     try {
@@ -118,7 +118,7 @@ public class DatePartEvaluatorTest {
       Object result = evaluator.evaluate(new Tuple(values));
       assertTrue(false);
     } catch (Exception e) {
-      assertEquals("Invalid field a - The field must be a string formatted in the ISO_INSTANT date format.", e.getMessage());
+      assertEquals("Invalid parameter 1995-12-31 - The String must be formatted in the ISO_INSTANT date format.", e.getMessage());
     }
 
     values.clear();

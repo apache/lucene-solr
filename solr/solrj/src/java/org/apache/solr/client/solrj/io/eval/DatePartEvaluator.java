@@ -38,10 +38,9 @@ import org.apache.solr.client.solrj.io.stream.expr.StreamFactory;
  */
 public class DatePartEvaluator extends NumberEvaluator {
 
-  public enum FUNCTION {year, month, day, dayofyear, dayofquarter, hour, minute, quarter, week, second, epoch};
+  public enum FUNCTION {year, month, day, dayofyear, dayofquarter, hour, minute, quarter, week, second, epoch}
 
   private FUNCTION function;
-  private String fieldName;
 
   public DatePartEvaluator(StreamExpression expression, StreamFactory factory) throws IOException {
     super(expression, factory);
@@ -51,66 +50,63 @@ public class DatePartEvaluator extends NumberEvaluator {
     try {
       this.function = FUNCTION.valueOf(functionName);
     } catch (IllegalArgumentException e) {
-      throw new IOException(String.format(Locale.ROOT,"Invalid date expression %s - expecting one of %s",functionName, Arrays.toString(FUNCTION.values())));
+      throw new IOException(String.format(Locale.ROOT, "Invalid date expression %s - expecting one of %s", functionName, Arrays.toString(FUNCTION.values())));
     }
 
-    fieldName = factory.getValueOperand(expression, 0);
-
-    //Taken from Field evaluator
-    if(fieldName != null && fieldName.startsWith("'") && fieldName.endsWith("'") && fieldName.length() > 1){
-      fieldName = fieldName.substring(1, fieldName.length() - 1);
-    }
-
-    if(1 != subEvaluators.size()){
-      throw new IOException(String.format(Locale.ROOT,"Invalid expression %s - expecting one value but found %d",expression,subEvaluators.size()));
+    if (1 != subEvaluators.size()) {
+      throw new IOException(String.format(Locale.ROOT, "Invalid expression %s - expecting one value but found %d", expression, subEvaluators.size()));
     }
   }
 
   @Override
   public Number evaluate(Tuple tuple) throws IOException {
 
-    try {
-      Object fieldValue = tuple.get(fieldName);
-      Instant instant = null;
-      LocalDateTime date = null;
+    Instant instant = null;
+    LocalDateTime date = null;
 
-      if (fieldValue == null) return null;
+    //First evaluate the parameter
+    StreamEvaluator streamEvaluator = subEvaluators.get(0);
+    Object tupleValue = streamEvaluator.evaluate(tuple);
 
-      if (fieldValue instanceof String) {
-        instant = getInstant((String)fieldValue);
-      } else if (fieldValue instanceof Instant) {
-        instant = (Instant) fieldValue;
-      } else if (fieldValue instanceof Date) {
-        instant = ((Date) fieldValue).toInstant();
-      } else if (fieldValue instanceof LocalDateTime) {
-        date = ((LocalDateTime) fieldValue);
-      }
+    if (tupleValue == null) return null;
 
-      if (instant != null) {
-        if (function.equals(FUNCTION.epoch)) return instant.toEpochMilli();
-        date = LocalDateTime.ofInstant(instant, ZoneOffset.UTC);
-      }
-
-      if (date != null) {
-        return evaluate(date);
-      }
-
-    } catch (DateTimeParseException e) {
-      throw new IOException(String.format(Locale.ROOT,"Invalid field %s - The field must be a string formatted in the ISO_INSTANT date format.",fieldName));
+    if (tupleValue instanceof String) {
+      instant = getInstant((String) tupleValue);
+    } else if (tupleValue instanceof Instant) {
+      instant = (Instant) tupleValue;
+    } else if (tupleValue instanceof Date) {
+      instant = ((Date) tupleValue).toInstant();
+    } else if (tupleValue instanceof LocalDateTime) {
+      date = ((LocalDateTime) tupleValue);
     }
 
-    throw new IOException(String.format(Locale.ROOT,"Invalid field %s - The field must be a string formatted ISO_INSTANT or of type Instant,Date or LocalDateTime.",fieldName));
+    if (instant != null) {
+      if (function.equals(FUNCTION.epoch)) return instant.toEpochMilli();
+      date = LocalDateTime.ofInstant(instant, ZoneOffset.UTC);
+    }
+
+    if (date != null) {
+      return evaluate(date);
+    }
+
+    throw new IOException(String.format(Locale.ROOT, "Invalid parameter %s - The parameter must be a string formatted ISO_INSTANT or of type Instant,Date or LocalDateTime.", String.valueOf(tupleValue)));
   }
 
-  private Instant getInstant(String dateStr) {
+  private Instant getInstant(String dateStr) throws IOException {
+
     if (dateStr != null && !dateStr.isEmpty()) {
-      return Instant.parse(dateStr);
+      try {
+        return Instant.parse(dateStr);
+      } catch (DateTimeParseException e) {
+        throw new IOException(String.format(Locale.ROOT, "Invalid parameter %s - The String must be formatted in the ISO_INSTANT date format.", dateStr));
+      }
     }
     return null;
   }
 
   /**
    * Evaluate the date based on the specified function
+   *
    * @param date
    * @return the evaluated value
    */
@@ -142,7 +138,13 @@ public class DatePartEvaluator extends NumberEvaluator {
 
   @Override
   public StreamExpressionParameter toExpression(StreamFactory factory) throws IOException {
-    return new StreamExpression(function.toString()).withParameter(fieldName);
+    StreamExpression expression = new StreamExpression(function.toString());
+
+    for (StreamEvaluator evaluator : subEvaluators) {
+      expression.addParameter(evaluator.toExpression(factory));
+    }
+
+    return expression;
   }
 
   @Override
