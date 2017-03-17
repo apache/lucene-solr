@@ -234,6 +234,10 @@ Optimizations
   artificial random queries over random indexes showed performance increases of 5% to 68%, with common values
   in the teens. (yonik)
 
+* SOLR-10273: The field with the longest value (if it exceeds 4K) is moved to be last in the Lucene Document in order
+  to benefit from stored field optimizations in Lucene that can avoid reading it when it's not needed.  If the field is
+  multi-valued, they all move together to the end to retain order. (David Smiley)
+
 Other Changes
 ----------------------
 * SOLR-9980: Expose configVersion in core admin status (Jessica Cheng Mallet via Tomás Fernández Löbbe)

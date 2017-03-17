@@ -16,6 +16,8 @@
  */
 package org.apache.solr.update;
 
+import java.util.Iterator;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Set;
 
@@ -23,6 +25,7 @@ import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.NumericDocValuesField;
 import org.apache.lucene.index.IndexableField;
+import org.apache.lucene.util.BytesRef;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.SolrInputField;
@@ -34,9 +37,12 @@ import org.apache.solr.schema.SchemaField;
 import com.google.common.collect.Sets;
 
 /**
- *
+ * Builds a Lucene {@link Document} from a {@link SolrInputDocument}.
  */
 public class DocumentBuilder {
+
+  // accessible only for tests
+  static int MIN_LENGTH_TO_MOVE_LAST = Integer.getInteger("solr.docBuilder.minLengthToMoveLast", 4*1024); // internal setting
 
   /**
    * Add a field value to a given document.
@@ -261,6 +267,58 @@ public class DocumentBuilder {
         }
       }
     }
+
+    if (!forInPlaceUpdate) {
+      moveLargestFieldLast(out);
+    }
+    
     return out;
+  }
+
+  /** Move the largest stored field last, because Lucene can avoid loading that one if it's not needed. */
+  private static void moveLargestFieldLast(Document doc) {
+    String largestField = null;
+    int largestFieldLen = -1;
+    boolean largestIsLast = true;
+    for (IndexableField field : doc) {
+      if (!field.fieldType().stored()) {
+        continue;
+      }
+      if (largestIsLast && !field.name().equals(largestField)) {
+        largestIsLast = false;
+      }
+      if (field.numericValue() != null) { // just ignore these as non-competitive (avoid toString'ing their number)
+        continue;
+      }
+      String strVal = field.stringValue();
+      if (strVal != null) {
+        if (strVal.length() > largestFieldLen) {
+          largestField = field.name();
+          largestFieldLen = strVal.length();
+          largestIsLast = true;
+        }
+      } else {
+        BytesRef bytesRef = field.binaryValue();
+        if (bytesRef != null && bytesRef.length > largestFieldLen) {
+          largestField = field.name();
+          largestFieldLen = bytesRef.length;
+          largestIsLast = true;
+        }
+      }
+    }
+    if (!largestIsLast && largestField != null && largestFieldLen > MIN_LENGTH_TO_MOVE_LAST) { // only bother if the value isn't tiny
+      LinkedList<IndexableField> addToEnd = new LinkedList<>();
+      Iterator<IndexableField> iterator = doc.iterator();
+      while (iterator.hasNext()) {
+        IndexableField field = iterator.next();
+        if (field.name().equals(largestField)) {
+          addToEnd.add(field);
+          iterator.remove(); // Document may not have "remove" but it's iterator allows mutation
+        }
+      }
+      for (IndexableField field : addToEnd) {
+        doc.add(field);
+      }
+    }
   }
 }

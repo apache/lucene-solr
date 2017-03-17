@@ -16,8 +16,12 @@
  */
 package org.apache.solr.update;
 
+import java.util.Iterator;
 import java.util.List;
+import java.util.stream.Collectors;
+import java.util.stream.StreamSupport;
 
+import com.carrotsearch.randomizedtesting.generators.RandomStrings;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.index.IndexableField;
 import org.apache.lucene.index.LeafReader;
@@ -40,6 +44,8 @@ import org.apache.solr.schema.FieldType;
 import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.search.DocList;
 import org.apache.solr.search.SolrIndexSearcher;
+import org.junit.After;
+import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
@@ -48,10 +54,21 @@ import org.junit.Test;
  *
  */
 public class DocumentBuilderTest extends SolrTestCaseJ4 {
+  static final int save_min_len = DocumentBuilder.MIN_LENGTH_TO_MOVE_LAST;
 
   @BeforeClass
   public static void beforeClass() throws Exception {
     initCore("solrconfig.xml", "schema.xml");
+  }
+
+  @AfterClass
+  public static void afterClass() {
+    DocumentBuilder.MIN_LENGTH_TO_MOVE_LAST = save_min_len;
+  }
+
+  @After
+  public void afterTest() {
+    DocumentBuilder.MIN_LENGTH_TO_MOVE_LAST = save_min_len;
   }
 
   @Test
@@ -144,8 +161,8 @@ public class DocumentBuilderTest extends SolrTestCaseJ4 {
     assertTrue("title_stringNoNorms has the omitNorms attribute set to true, if the boost is different than 1.0, it will fail",1.0f == out.getField( "title_stringNoNorms" ).boost() );
     assertTrue("It is OK that title has a boost of 3",3.0f == out.getField( "title" ).boost() );
   }
-  
-  
+
+
   @Test
   public void testCopyFieldWithFieldBoost() {
     SolrCore core = h.getCore();
@@ -159,7 +176,7 @@ public class DocumentBuilderTest extends SolrTestCaseJ4 {
     assertTrue("title_stringNoNorms has the omitNorms attribute set to true, if the boost is different than 1.0, it will fail",1.0f == out.getField( "title_stringNoNorms" ).boost() );
     assertTrue("It is OK that title has a boost of 3",3.0f == out.getField( "title" ).boost() );
   }
-  
+
   @Test
   public void testWithPolyFieldsAndFieldBoost() {
     SolrCore core = h.getCore();
@@ -170,7 +187,7 @@ public class DocumentBuilderTest extends SolrTestCaseJ4 {
     assertFalse(schema.getField("amount").omitNorms());
     assertTrue(schema.getField("amount" + FieldType.POLY_FIELD_SEPARATOR + "_currency").omitNorms());
     assertTrue(schema.getField("amount" + FieldType.POLY_FIELD_SEPARATOR + "_amount_raw").omitNorms());
-    
+
     SolrInputDocument doc = new SolrInputDocument();
     doc.addField( "store", "40.7143,-74.006", 3.0f );
     doc.addField( "amount", "10.5", 3.0f );
@@ -184,7 +201,7 @@ public class DocumentBuilderTest extends SolrTestCaseJ4 {
     assertTrue(1f == out.getField("amount" + FieldType.POLY_FIELD_SEPARATOR + "_currency").boost());
     assertTrue(1f == out.getField("amount" + FieldType.POLY_FIELD_SEPARATOR + "_amount_raw").boost());
   }
-  
+
   @Test
   public void testWithPolyFieldsAndDocumentBoost() {
     SolrCore core = h.getCore();
@@ -195,7 +212,7 @@ public class DocumentBuilderTest extends SolrTestCaseJ4 {
     assertFalse(schema.getField("amount").omitNorms());
     assertTrue(schema.getField("amount" + FieldType.POLY_FIELD_SEPARATOR + "_currency").omitNorms());
     assertTrue(schema.getField("amount" + FieldType.POLY_FIELD_SEPARATOR + "_amount_raw").omitNorms());
-    
+
     SolrInputDocument doc = new SolrInputDocument();
     doc.setDocumentBoost(3.0f);
     doc.addField( "store", "40.7143,-74.006");
@@ -209,7 +226,7 @@ public class DocumentBuilderTest extends SolrTestCaseJ4 {
     assertTrue(1f == out.getField("amount" + FieldType.POLY_FIELD_SEPARATOR + "_currency").boost());
     assertTrue(1f == out.getField("amount" + FieldType.POLY_FIELD_SEPARATOR + "_amount_raw").boost());
   }
-  
+
   /**
    * It's ok to boost a field if it has norms
    */
@@ -244,7 +261,7 @@ public class DocumentBuilderTest extends SolrTestCaseJ4 {
     assertEquals(15.0f, outF[0].boost(), 0.0f);
     assertEquals(1.0f, outF[1].boost(), 0.0f);
     assertEquals(1.0f, outF[2].boost(), 0.0f);
-    
+
   }
 
   public void testMultiValuedFieldAndDocBoostsWithCopy() throws Exception {
@@ -252,12 +269,12 @@ public class DocumentBuilderTest extends SolrTestCaseJ4 {
     IndexSchema schema = core.getLatestSchema();
     SolrInputField field = new SolrInputField( "foo_t" );
     List<CopyField> copyFields = schema.getCopyFieldsList(field.getName());
-    
+
     assertNotNull( copyFields );
     assertFalse( copyFields.isEmpty() );
     assertMultiValuedFieldAndDocBoosts( field );
   }
-  
+
   public void testMultiValuedFieldAndDocBoostsNoCopy() throws Exception {
     SolrCore core = h.getCore();
     IndexSchema schema = core.getLatestSchema();
@@ -278,15 +295,15 @@ public class DocumentBuilderTest extends SolrTestCaseJ4 {
     doc.addField("id", "42");
 
     SolrInputField inTitle = new SolrInputField( "title" );
-    inTitle.addValue( "titleA" , 2.0F ); 
-    inTitle.addValue( "titleB" , 7.0F ); 
+    inTitle.addValue( "titleA" , 2.0F );
+    inTitle.addValue( "titleB" , 7.0F );
     final float TITLE_BOOST = 2.0F * 7.0F;
     assertEquals(TITLE_BOOST, inTitle.getBoost(), 0.0F);
     doc.put( inTitle.getName(), inTitle );
-    
+
     SolrInputField inFoo = new SolrInputField( "foo_t" );
     inFoo.addValue( "summer time" , 1.0F );
-    inFoo.addValue( "in the city" , 5.0F ); 
+    inFoo.addValue( "in the city" , 5.0F );
     inFoo.addValue( "living is easy" , 11.0F );
     final float FOO_BOOST = 1.0F * 5.0F * 11.0F;
     assertEquals(FOO_BOOST, inFoo.getBoost(), 0.0F);
@@ -326,11 +343,11 @@ public class DocumentBuilderTest extends SolrTestCaseJ4 {
     assertEquals(FOO_BOOST,               outText[2].boost(), 0.0F);
     assertEquals(1.0F,                    outText[3].boost(), 0.0F);
     assertEquals(1.0F,                    outText[4].boost(), 0.0F);
-    
+
     // copyField dest with no norms should not have received any boost
     assertEquals(1.0F, outNoNorms[0].boost(), 0.0F);
     assertEquals(1.0F, outNoNorms[1].boost(), 0.0F);
-    
+
     // now index that SolrInputDocument to check the computed norms
 
     assertU(adoc(doc));
@@ -350,12 +367,12 @@ public class DocumentBuilderTest extends SolrTestCaseJ4 {
       SolrIndexSearcher searcher = req.getSearcher();
       LeafReader reader = SlowCompositeReaderWrapper.wrap(searcher.getTopReaderContext().reader());
 
-      assertTrue("similarity doesn't extend ClassicSimilarity, " + 
+      assertTrue("similarity doesn't extend ClassicSimilarity, " +
                  "config or defaults have changed since test was written",
                  searcher.getSimilarity(true) instanceof ClassicSimilarity);
 
       ClassicSimilarity sim = (ClassicSimilarity) searcher.getSimilarity(true);
-      
+
       NumericDocValues titleNorms = reader.getNormValues("title");
       NumericDocValues fooNorms = reader.getNormValues("foo_t");
       NumericDocValues textNorms =  reader.getNormValues("text");
@@ -366,7 +383,7 @@ public class DocumentBuilderTest extends SolrTestCaseJ4 {
       assertEquals(expectedNorm(sim, 8-3, FOO_BOOST * DOC_BOOST),
                    fooNorms.get(docid));
 
-      assertEquals(expectedNorm(sim, 2 + 8-3, 
+      assertEquals(expectedNorm(sim, 2 + 8-3,
                                 TITLE_BOOST * FOO_BOOST * DOC_BOOST),
                    textNorms.get(docid));
 
@@ -376,13 +393,13 @@ public class DocumentBuilderTest extends SolrTestCaseJ4 {
   }
 
   /**
-   * Given a length, and boost returns the expected encoded norm 
+   * Given a length, and boost returns the expected encoded norm
    */
   private static byte expectedNorm(final ClassicSimilarity sim,
                                    final int length, final float boost) {
     return (byte) sim.encodeNormValue(boost / ((float) Math.sqrt(length)));
   }
-    
+
 
   public void testBoostOmitNorms() throws Exception {
     XmlDoc xml = new XmlDoc();
@@ -404,7 +421,7 @@ public class DocumentBuilderTest extends SolrTestCaseJ4 {
       + "</doc>";
     assertNull(h.validateUpdate(add(xml, new String[0])));
   }
-  
+
   /**
    * It's ok to supply a document boost even if a field omits norms
    */
@@ -516,7 +533,54 @@ public class DocumentBuilderTest extends SolrTestCaseJ4 {
     sif2.setName("foo");
     assertFalse(assertSolrInputFieldEquals(sif1, sif2));
 
+  }
 
+  public void testMoveLargestLast() {
+    SolrInputDocument inDoc = new SolrInputDocument();
+    String TEXT_FLD = "text"; // not stored.  It won't be moved.  This value is the longest, however.
+    inDoc.addField(TEXT_FLD,
+        "NOT STORED|" + RandomStrings.randomAsciiOfLength(random(), 4 * DocumentBuilder.MIN_LENGTH_TO_MOVE_LAST));
+
+    String CAT_FLD = "cat"; // stored, multiValued
+    inDoc.addField(CAT_FLD,
+        "STORED V1|");
+    //  pretty long value
+    inDoc.addField(CAT_FLD,
+        "STORED V2|" + RandomStrings.randomAsciiOfLength(random(), 2 * DocumentBuilder.MIN_LENGTH_TO_MOVE_LAST));
+    inDoc.addField(CAT_FLD,
+        "STORED V3|" + RandomStrings.randomAsciiOfLength(random(), DocumentBuilder.MIN_LENGTH_TO_MOVE_LAST));
+
+    String SUBJECT_FLD = "subject"; // stored.  This value is long, but not long enough.
+    inDoc.addField(SUBJECT_FLD,
+        "2ndplace|" + RandomStrings.randomAsciiOfLength(random(), DocumentBuilder.MIN_LENGTH_TO_MOVE_LAST));
+
+    Document outDoc = DocumentBuilder.toDocument(inDoc, h.getCore().getLatestSchema());
+
+    // filter outDoc by stored fields; convert to list.
+    List<IndexableField> storedFields = StreamSupport.stream(outDoc.spliterator(), false)
+        .filter(f -> f.fieldType().stored()).collect(Collectors.toList());
+    // clip to last 3.  We expect these to be for CAT_FLD
+    storedFields = storedFields.subList(storedFields.size() - 3, storedFields.size());
+
+    Iterator<IndexableField> fieldIterator = storedFields.iterator();
+    IndexableField field;
+
+    // Test that we retained the particular value ordering, even though though the 2nd of three was longest
+
+    assertTrue(fieldIterator.hasNext());
+    field = fieldIterator.next();
+    assertEquals(CAT_FLD, field.name());
+    assertTrue(field.stringValue().startsWith("STORED V1|"));
+
+    assertTrue(fieldIterator.hasNext());
+    field = fieldIterator.next();
+    assertEquals(CAT_FLD, field.name());
+    assertTrue(field.stringValue().startsWith("STORED V2|"));
+
+    assertTrue(fieldIterator.hasNext());
+    field = fieldIterator.next();
+    assertEquals(CAT_FLD, field.name());
+    assertTrue(field.stringValue().startsWith("STORED V3|"));
   }
 
 }
