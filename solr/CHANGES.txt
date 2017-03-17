@@ -301,6 +301,10 @@ Optimizations
 * SOLR-10143: PointFields will create IndexOrDocValuesQuery when a field is both, indexed=true and docValues=true
   (Tomás Fernández Löbbe)
 
+* SOLR-10273: The field with the longest value (if it exceeds 4K) is moved to be last in the Lucene Document in order
+  to benefit from stored field optimizations in Lucene that can avoid reading it when it's not needed.  If the field is
+  multi-valued, they all move together to the end to retain order. (David Smiley)
+
 Other Changes
 ----------------------
 * SOLR-9980: Expose configVersion in core admin status (Jessica Cheng Mallet via Tomás Fernández Löbbe)
