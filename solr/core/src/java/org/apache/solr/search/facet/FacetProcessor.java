@@ -366,10 +366,13 @@ public abstract class FacetProcessor<FacetRequestT extends FacetRequest>  {
     }
   }
 
-  void fillBucket(SimpleOrderedMap<Object> bucket, Query q, DocSet result) throws IOException {
+  // TODO: rather than just have a raw "response", perhaps we should model as a bucket object that contains the response plus extra info?
+  void fillBucket(SimpleOrderedMap<Object> bucket, Query q, DocSet result, boolean skip) throws IOException {
+
+    // TODO: we don't need the DocSet if we've already calculated everything during the first phase
     boolean needDocSet = freq.getFacetStats().size() > 0 || freq.getSubFacets().size() > 0;
 
-    // TODO: always collect counts or not???
+    // TODO: put info in for the merger (like "skip=true"?) Maybe we don't need to if we leave out all extraneous info?
 
     int count;
 
@@ -382,7 +385,7 @@ public abstract class FacetProcessor<FacetRequestT extends FacetRequest>  {
       } else {
         result = fcontext.searcher.getDocSet(q, fcontext.base);
       }
-      count = result.size();
+      count = result.size();  // don't really need this if we are skipping, but it's free.
     } else {
       if (q == null) {
         count = fcontext.base.size();
@@ -392,8 +395,10 @@ public abstract class FacetProcessor<FacetRequestT extends FacetRequest>  {
     }
 
     try {
-      processStats(bucket, result, count);
-      processSubs(bucket, q, result);
+      if (!skip) {
+        processStats(bucket, result, count);
+      }
+      processSubs(bucket, q, result, skip);
     } finally {
       if (result != null) {
         // result.decref(); // OFF-HEAP
@@ -402,7 +407,7 @@ public abstract class FacetProcessor<FacetRequestT extends FacetRequest>  {
     }
   }
 
-  void processSubs(SimpleOrderedMap<Object> response, Query filter, DocSet domain) throws IOException {
+  void processSubs(SimpleOrderedMap<Object> response, Query filter, DocSet domain, boolean skip) throws IOException {
 
     boolean emptyDomain = domain == null || domain.size() == 0;
 
@@ -417,8 +422,18 @@ public abstract class FacetProcessor<FacetRequestT extends FacetRequest>  {
         continue;
       }
 
+      Map<String,Object>facetInfoSub = null;
+      if (fcontext.facetInfo != null) {
+        facetInfoSub = (Map<String,Object>)fcontext.facetInfo.get(sub.getKey());
+      }
+
+      // If we're skipping this node, then we only need to process sub-facets that have facet info specified.
+      if (skip && facetInfoSub == null) continue;
+
       // make a new context for each sub-facet since they can change the domain
       FacetContext subContext = fcontext.sub(filter, domain);
+      subContext.facetInfo = facetInfoSub;
+      if (!skip) subContext.flags &= ~FacetContext.SKIP_FACET;  // turn off the skip flag if we're not skipping this bucket
       FacetProcessor subProcessor = subRequest.createFacetProcessor(subContext);
 
       if (fcontext.getDebugInfo() != null) {   // if fcontext.debugInfo != null, it means rb.debug() == true

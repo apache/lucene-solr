@@ -57,6 +57,10 @@ abstract class FacetFieldProcessorByArray extends FacetFieldProcessor {
   }
 
   private SimpleOrderedMap<Object> calcFacets() throws IOException {
+    if (fcontext.facetInfo != null) {
+      return refineFacets();
+    }
+
     String prefix = freq.prefix;
     if (prefix == null || prefix.length() == 0) {
       prefixRef = null;
