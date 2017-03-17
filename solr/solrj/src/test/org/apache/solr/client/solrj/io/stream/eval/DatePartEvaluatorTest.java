@@ -18,12 +18,17 @@
 package org.apache.solr.client.solrj.io.stream.eval;
 
 import java.io.IOException;
+import java.time.Instant;
+import java.time.LocalDateTime;
+import java.util.Calendar;
 import java.util.Date;
+import java.util.GregorianCalendar;
 import java.util.Map;
+import java.util.TimeZone;
 
 import org.apache.commons.collections.map.HashedMap;
 import org.apache.solr.client.solrj.io.Tuple;
-import org.apache.solr.client.solrj.io.eval.DateEvaluator;
+import org.apache.solr.client.solrj.io.eval.DatePartEvaluator;
 import org.apache.solr.client.solrj.io.eval.StreamEvaluator;
 import org.apache.solr.client.solrj.io.stream.expr.Explanation;
 import org.apache.solr.client.solrj.io.stream.expr.StreamExpression;
@@ -39,20 +44,20 @@ import static junit.framework.Assert.assertTrue;
 /**
  * Tests numeric Date/Time stream evaluators
  */
-public class DateEvaluatorTest {
+public class DatePartEvaluatorTest {
 
 
   StreamFactory factory;
   Map<String, Object> values;
 
-  public DateEvaluatorTest() {
+  public DatePartEvaluatorTest() {
     super();
 
     factory = new StreamFactory();
 
-    factory.withFunctionName("nope", DateEvaluator.class);
-    for (DateEvaluator.FUNCTION function : DateEvaluator.FUNCTION.values()) {
-      factory.withFunctionName(function.toString(), DateEvaluator.class);
+    factory.withFunctionName("nope", DatePartEvaluator.class);
+    for (DatePartEvaluator.FUNCTION function : DatePartEvaluator.FUNCTION.values()) {
+      factory.withFunctionName(function.toString(), DatePartEvaluator.class);
     }
     values = new HashedMap();
   }
@@ -104,7 +109,7 @@ public class DateEvaluatorTest {
       Object result = evaluator.evaluate(new Tuple(values));
       assertTrue(false);
     } catch (Exception e) {
-      assertEquals("Invalid field a - The field must be a string formatted in the ISO_INSTANT date format.", e.getMessage());
+      assertEquals("Invalid field a - The field must be a string formatted ISO_INSTANT or of type Instant,Date or LocalDateTime.", e.getMessage());
     }
 
     try {
@@ -155,7 +160,7 @@ public class DateEvaluatorTest {
     testFunction("epoch(a)",  new Date(820454399990l).toInstant().toString(), 820454399990l);
 
     //Additionally test all functions to make sure they return a non-null number
-    for (DateEvaluator.FUNCTION function : DateEvaluator.FUNCTION.values()) {
+    for (DatePartEvaluator.FUNCTION function : DatePartEvaluator.FUNCTION.values()) {
       StreamEvaluator evaluator = factory.constructEvaluator(function+"(a)");
       values.clear();
       values.put("a", "2017-03-17T10:30:45Z");
@@ -165,7 +170,44 @@ public class DateEvaluatorTest {
     }
   }
 
-  public void testFunction(String expression, String value, Number expected) throws Exception {
+  @Test
+  public void testFunctionsOnDate() throws Exception {
+    Calendar calendar = new GregorianCalendar(2017,12,5, 23, 59);
+    calendar.setTimeZone(TimeZone.getTimeZone("UTC"));
+    Date aDate = calendar.getTime();
+    testFunction("year(a)", aDate, calendar.get(Calendar.YEAR));
+    testFunction("month(a)", aDate, calendar.get(Calendar.MONTH)+1);
+    testFunction("day(a)", aDate, calendar.get(Calendar.DAY_OF_MONTH));
+    testFunction("hour(a)", aDate, calendar.get(Calendar.HOUR_OF_DAY));
+    testFunction("minute(a)", aDate, calendar.get(Calendar.MINUTE));
+    testFunction("epoch(a)", aDate, aDate.getTime());
+  }
+
+  @Test
+  public void testFunctionsOnInstant() throws Exception {
+    Calendar calendar = new GregorianCalendar(2017,12,5, 23, 59);
+    calendar.setTimeZone(TimeZone.getTimeZone("UTC"));
+    Date aDate = calendar.getTime();
+    Instant instant = aDate.toInstant();
+    testFunction("year(a)", instant, calendar.get(Calendar.YEAR));
+    testFunction("month(a)", instant, calendar.get(Calendar.MONTH)+1);
+    testFunction("day(a)", instant, calendar.get(Calendar.DAY_OF_MONTH));
+    testFunction("hour(a)", instant, calendar.get(Calendar.HOUR_OF_DAY));
+    testFunction("minute(a)", instant, calendar.get(Calendar.MINUTE));
+    testFunction("epoch(a)", instant, aDate.getTime());
+  }
+
+  @Test
+  public void testFunctionsLocalDateTime() throws Exception {
+    LocalDateTime localDateTime = LocalDateTime.of(2017,12,5, 23, 59);
+    testFunction("year(a)", localDateTime, 2017);
+    testFunction("month(a)", localDateTime, 12);
+    testFunction("day(a)", localDateTime, 5);
+    testFunction("hour(a)", localDateTime, 23);
+    testFunction("minute(a)", localDateTime, 59);
+  }
+
+  public void testFunction(String expression, Object value, Number expected) throws Exception {
     StreamEvaluator evaluator = factory.constructEvaluator(expression);
     values.clear();
     values.put("a", value);
@@ -177,13 +219,13 @@ public class DateEvaluatorTest {
   @Test
   public void testExplain() throws IOException {
     StreamExpression express = StreamExpressionParser.parse("month('myfield')");
-    DateEvaluator dateEvaluator = new DateEvaluator(express,factory);
-    Explanation explain = dateEvaluator.toExplanation(factory);
+    DatePartEvaluator datePartEvaluator = new DatePartEvaluator(express,factory);
+    Explanation explain = datePartEvaluator.toExplanation(factory);
     assertEquals("month(myfield)", explain.getExpression());
 
     express = StreamExpressionParser.parse("day(aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaabbbbbbbbbbbbbbbbbbbb)");
-    dateEvaluator = new DateEvaluator(express,factory);
-    explain = dateEvaluator.toExplanation(factory);
+    datePartEvaluator = new DatePartEvaluator(express,factory);
+    explain = datePartEvaluator.toExplanation(factory);
     assertEquals("day(aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaabbbbbbbbbbbbbbbbbbbb)", explain.getExpression());
   }
 }
