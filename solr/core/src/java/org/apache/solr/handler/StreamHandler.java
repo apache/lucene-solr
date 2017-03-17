@@ -43,6 +43,7 @@ import org.apache.solr.client.solrj.io.eval.CeilingEvaluator;
 import org.apache.solr.client.solrj.io.eval.CoalesceEvaluator;
 import org.apache.solr.client.solrj.io.eval.CosineEvaluator;
 import org.apache.solr.client.solrj.io.eval.CubedRootEvaluator;
+import org.apache.solr.client.solrj.io.eval.DateEvaluator;
 import org.apache.solr.client.solrj.io.eval.DivideEvaluator;
 import org.apache.solr.client.solrj.io.eval.EqualsEvaluator;
 import org.apache.solr.client.solrj.io.eval.ExclusiveOrEvaluator;
@@ -248,11 +249,16 @@ public class StreamHandler extends RequestHandlerBase implements SolrCoreAware, 
       .withFunctionName("cbrt", CubedRootEvaluator.class)
       .withFunctionName("coalesce", CoalesceEvaluator.class)
       .withFunctionName("uuid", UuidEvaluator.class)
-      
+
       // Conditional Stream Evaluators
       .withFunctionName("if", IfThenElseEvaluator.class)
       .withFunctionName("analyze", AnalyzeEvaluator.class)
       ;
+
+      // Date evaluators
+      for (DateEvaluator.FUNCTION function:DateEvaluator.FUNCTION.values()) {
+        streamFactory.withFunctionName(function.toString(), DateEvaluator.class);
+      }
 
      // This pulls all the overrides and additions from the config
      List<PluginInfo> pluginInfos = core.getSolrConfig().getPluginInfos(Expressible.class.getName());
