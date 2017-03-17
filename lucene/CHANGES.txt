@@ -80,6 +80,9 @@ Other
 
 * LUCENE-7681: MemoryIndex uses new DocValues API (Alan Woodward)
 
+======================= Lucene 6.6.0 =======================
+(No Changes)
+
 ======================= Lucene 6.5.0 =======================
 
 API Changes
