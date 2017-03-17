@@ -303,6 +303,8 @@ Bug Fixes
 * SOLR-10283: Learning to Rank (LTR) SolrFeature to reject searches with missing efi (External Feature Information) used by fq.
   (Christine Poerschke)
 
+* SOLR-10237: Poly-fields should work with subfields that have docValues=true (Tomás Fernández Löbbe, David Smiley)
+
 Optimizations
 ----------------------
 

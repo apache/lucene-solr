@@ -392,15 +392,14 @@
   <fieldType name="uuid" class="solr.UUIDField"/>
 
   <!-- Try out some point types -->
-  <fieldType name="xy" class="solr.PointType" dimension="2" subFieldType="double"/>
-  <fieldType name="x" class="solr.PointType" dimension="1" subFieldType="double"/>
-  <fieldType name="tenD" class="solr.PointType" dimension="10" subFieldType="double"/>
-  <!-- Use the sub field suffix -->
-  <fieldType name="xyd" class="solr.PointType" dimension="2" subFieldSuffix="_d1_ndv"/>
+  <fieldType name="xy" class="solr.PointType" dimension="2" subFieldType="${solr.tests.doubleClass:pdouble}"  docValues="true"/>
+  <fieldType name="x" class="solr.PointType" dimension="1" subFieldType="${solr.tests.doubleClass:pdouble}"/>
+  <fieldType name="tenD" class="solr.PointType" dimension="10" subFieldType="${solr.tests.doubleClass:pdouble}"/>
+  <fieldType name="xyd" class="solr.PointType" dimension="2" subFieldSuffix="_d1"/>
   <fieldType name="geohash" class="solr.GeoHashField"/>
 
 
-  <fieldType name="latLon" class="solr.LatLonType" subFieldType="double"/>
+  <fieldType name="latLon" class="solr.LatLonType" subFieldType="${solr.tests.doubleClass:pdouble}"/>
 
   <!-- Currency type -->
   <fieldType name="currency" class="solr.CurrencyField" currencyConfig="currency.xml" multiValued="false"/>
@@ -621,7 +620,7 @@
   <dynamicField name="*_f1" type="${solr.tests.floatClass:pfloat}" indexed="true" stored="true" multiValued="false"/>
   <dynamicField name="*_d" type="${solr.tests.doubleClass:pdouble}" indexed="true" stored="true"/>
   <dynamicField name="*_d1" type="${solr.tests.doubleClass:pdouble}" indexed="true" stored="true" multiValued="false"/>
-  <dynamicField name="*_d1_ndv" type="${solr.tests.doubleClass:pdouble}" indexed="true" docValues="false" stored="true" multiValued="false"/>
+  <dynamicField name="*_d1_dv" type="${solr.tests.doubleClass:pdouble}" indexed="true" docValues="true" stored="true" multiValued="false"/>
   <dynamicField name="*_dt" type="${solr.tests.dateClass:pdate}" indexed="true" stored="true"/>
   <dynamicField name="*_dt1" type="${solr.tests.dateClass:pdate}" indexed="true" stored="true" multiValued="false"/>
 
@@ -671,7 +670,7 @@
   <dynamicField name="*_mfacet" type="string" indexed="true" stored="false" multiValued="true"/>
 
   <!-- Type used to index the lat and lon components for the "location" FieldType -->
-  <dynamicField name="*_coordinate" type="${solr.tests.doubleClass:pdouble}" indexed="true" stored="false" omitNorms="true"/>
+  <dynamicField name="*_coordinate" type="${solr.tests.doubleClass:pdouble}" indexed="true" stored="false" omitNorms="true" docValues="false"/>
 
   <dynamicField name="*_path" type="path" indexed="true" stored="true" omitNorms="true" multiValued="true"/>
   <dynamicField name="*_ancestor" type="ancestor_path" indexed="true" stored="true" omitNorms="true"

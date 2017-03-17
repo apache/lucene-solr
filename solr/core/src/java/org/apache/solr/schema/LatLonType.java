@@ -75,16 +75,24 @@ public class LatLonType extends AbstractSubTypeFieldType implements SpatialQuery
       Point point = SpatialUtils.parsePointSolrException(externalVal, SpatialContext.GEO);
       //latitude
       SchemaField subLatSF = subField(field, LAT, schema);
-      f.add(subLatSF.createField(String.valueOf(point.getY())));
+      f.addAll(subLatSF.createFields(String.valueOf(point.getY())));
       //longitude
       SchemaField subLonSF = subField(field, LON, schema);
-      f.add(subLonSF.createField(String.valueOf(point.getX())));
+      f.addAll(subLonSF.createFields(String.valueOf(point.getX())));
     }
 
     if (field.stored()) {
       f.add(createField(field.getName(), externalVal, StoredField.TYPE));
     }
     return f;
+  }
+  
+  @Override
+  protected void checkSupportsDocValues() {
+    // DocValues supported only when enabled at the fieldType 
+    if (!hasProperty(DOC_VALUES)) {
+      throw new UnsupportedOperationException("LatLonType can't have docValues=true in the field definition, use docValues=true in the fieldType definition, or in subFieldType/subFieldSuffix");
+    }
   }
 
 

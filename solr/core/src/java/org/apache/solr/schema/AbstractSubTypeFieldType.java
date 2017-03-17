@@ -76,20 +76,25 @@ public abstract class AbstractSubTypeFieldType extends FieldType implements Sche
    * and props of indexed=true, stored=false.
    *
    * @param schema the IndexSchema
-   * @param type   The {@link FieldType} of the prototype.
+   * @param subType   The {@link FieldType} of the prototype.
+   * @param polyField   The poly {@link FieldType}.
    * @return The {@link SchemaField}
    */
 
-  static SchemaField registerPolyFieldDynamicPrototype(IndexSchema schema, FieldType type) {
-    String name = "*" + FieldType.POLY_FIELD_SEPARATOR + type.typeName;
+  static SchemaField registerPolyFieldDynamicPrototype(IndexSchema schema, FieldType subType, FieldType polyField) {
+    String name = "*" + FieldType.POLY_FIELD_SEPARATOR + subType.typeName;
     Map<String, String> props = new HashMap<>();
     //Just set these, delegate everything else to the field type
     props.put("indexed", "true");
     props.put("stored", "false");
     props.put("multiValued", "false");
-    int p = SchemaField.calcProps(name, type, props);
+    // if polyField enables dv, add them to the subtypes
+    if (polyField.hasProperty(DOC_VALUES)) {
+      props.put("docValues", "true");
+    }
+    int p = SchemaField.calcProps(name, subType, props);
     SchemaField proto = SchemaField.create(name,
-            type, p, null);
+        subType, p, null);
     schema.registerDynamicFields(proto);
     return proto;
   }
@@ -107,7 +112,7 @@ public abstract class AbstractSubTypeFieldType extends FieldType implements Sche
     this.schema = schema;
     //Can't do this until here b/c the Dynamic Fields are not initialized until here.
     if (subType != null) {
-      SchemaField proto = registerPolyFieldDynamicPrototype(schema, subType);
+      SchemaField proto = registerPolyFieldDynamicPrototype(schema, subType, this);
       dynFieldProps = proto.getProperties();
     }
   }
