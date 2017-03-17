@@ -33,7 +33,7 @@ import org.apache.solr.client.solrj.io.comp.StreamComparator;
 import org.apache.solr.client.solrj.io.eval.AbsoluteValueEvaluator;
 import org.apache.solr.client.solrj.io.eval.AddEvaluator;
 import org.apache.solr.client.solrj.io.eval.AndEvaluator;
-import org.apache.solr.client.solrj.io.eval.DateEvaluator;
+import org.apache.solr.client.solrj.io.eval.DatePartEvaluator;
 import org.apache.solr.client.solrj.io.eval.DivideEvaluator;
 import org.apache.solr.client.solrj.io.eval.EqualsEvaluator;
 import org.apache.solr.client.solrj.io.eval.ExclusiveOrEvaluator;
@@ -206,8 +206,8 @@ public class StreamHandler extends RequestHandlerBase implements SolrCoreAware, 
       ;
 
       // Date evaluators
-      for (DateEvaluator.FUNCTION function:DateEvaluator.FUNCTION.values()) {
-        streamFactory.withFunctionName(function.toString(), DateEvaluator.class);
+      for (DatePartEvaluator.FUNCTION function: DatePartEvaluator.FUNCTION.values()) {
+        streamFactory.withFunctionName(function.toString(), DatePartEvaluator.class);
       }
 
      // This pulls all the overrides and additions from the config

@@ -24,6 +24,7 @@ import java.time.ZoneOffset;
 import java.time.format.DateTimeParseException;
 import java.time.temporal.IsoFields;
 import java.util.Arrays;
+import java.util.Date;
 import java.util.Locale;
 
 import org.apache.solr.client.solrj.io.Tuple;
@@ -35,14 +36,14 @@ import org.apache.solr.client.solrj.io.stream.expr.StreamFactory;
 /**
  * Provides numeric Date/Time stream evaluators
  */
-public class DateEvaluator extends NumberEvaluator {
+public class DatePartEvaluator extends NumberEvaluator {
 
   public enum FUNCTION {year, month, day, dayofyear, dayofquarter, hour, minute, quarter, week, second, epoch};
 
   private FUNCTION function;
   private String fieldName;
 
-  public DateEvaluator(StreamExpression expression, StreamFactory factory) throws IOException {
+  public DatePartEvaluator(StreamExpression expression, StreamFactory factory) throws IOException {
     super(expression, factory);
 
     String functionName = expression.getFunctionName();
@@ -65,24 +66,46 @@ public class DateEvaluator extends NumberEvaluator {
     }
   }
 
-  //TODO: Support non-string, eg. java.util.date or instant
-
   @Override
   public Number evaluate(Tuple tuple) throws IOException {
 
     try {
-      String dateStr = (String) tuple.get(fieldName);
-      if (dateStr != null && !dateStr.isEmpty()) {
-        Instant instant = Instant.parse(dateStr);
-        if (function.equals(FUNCTION.epoch)) return instant.toEpochMilli();
+      Object fieldValue = tuple.get(fieldName);
+      Instant instant = null;
+      LocalDateTime date = null;
 
-        LocalDateTime date = LocalDateTime.ofInstant(instant, ZoneOffset.UTC);
+      if (fieldValue == null) return null;
+
+      if (fieldValue instanceof String) {
+        instant = getInstant((String)fieldValue);
+      } else if (fieldValue instanceof Instant) {
+        instant = (Instant) fieldValue;
+      } else if (fieldValue instanceof Date) {
+        instant = ((Date) fieldValue).toInstant();
+      } else if (fieldValue instanceof LocalDateTime) {
+        date = ((LocalDateTime) fieldValue);
+      }
+
+      if (instant != null) {
+        if (function.equals(FUNCTION.epoch)) return instant.toEpochMilli();
+        date = LocalDateTime.ofInstant(instant, ZoneOffset.UTC);
+      }
+
+      if (date != null) {
         return evaluate(date);
       }
-    } catch (ClassCastException | DateTimeParseException e) {
+
+    } catch (DateTimeParseException e) {
       throw new IOException(String.format(Locale.ROOT,"Invalid field %s - The field must be a string formatted in the ISO_INSTANT date format.",fieldName));
     }
 
+    throw new IOException(String.format(Locale.ROOT,"Invalid field %s - The field must be a string formatted ISO_INSTANT or of type Instant,Date or LocalDateTime.",fieldName));
+  }
+
+  private Instant getInstant(String dateStr) {
+    if (dateStr != null && !dateStr.isEmpty()) {
+      return Instant.parse(dateStr);
+    }
     return null;
   }
 
