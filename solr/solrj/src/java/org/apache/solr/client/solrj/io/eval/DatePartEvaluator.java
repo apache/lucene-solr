@@ -40,7 +40,7 @@ public class DatePartEvaluator extends NumberEvaluator {
 
   public enum FUNCTION {year, month, day, dayofyear, dayofquarter, hour, minute, quarter, week, second, epoch}
 
-  private FUNCTION function;
+  private final FUNCTION function;
 
   public DatePartEvaluator(StreamExpression expression, StreamFactory factory) throws IOException {
     super(expression, factory);
@@ -110,7 +110,7 @@ public class DatePartEvaluator extends NumberEvaluator {
    * @param date
    * @return the evaluated value
    */
-  private Number evaluate(LocalDateTime date) {
+  private Number evaluate(LocalDateTime date) throws IOException {
     switch (function) {
       case year:
         return date.getYear();
@@ -132,8 +132,10 @@ public class DatePartEvaluator extends NumberEvaluator {
         return date.get(IsoFields.QUARTER_OF_YEAR);
       case week:
         return date.get(IsoFields.WEEK_OF_WEEK_BASED_YEAR);
+      case epoch:
+        return date.atZone(ZoneOffset.UTC).toInstant().toEpochMilli();
     }
-    return null;
+    throw new IOException(String.format(Locale.ROOT, "Unsupported function %s called on LocalDateTime %s", function, date.toString()));
   }
 
   @Override
