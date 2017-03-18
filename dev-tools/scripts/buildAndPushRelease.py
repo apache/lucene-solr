@@ -22,6 +22,8 @@ import os
 import sys
 import subprocess
 import textwrap
+import urllib.request, urllib.error, urllib.parse
+import xml.etree.ElementTree as ET
 
 LOG = '/tmp/release.log'
 
@@ -57,6 +59,14 @@ def runAndSendGPGPassword(command, password):
     print(msg)
     raise RuntimeError(msg)
 
+def load(urlString):
+  try:
+    content = urllib.request.urlopen(urlString).read().decode('utf-8')
+  except Exception as e:
+    print('Retrying download of url %s after exception: %s' % (urlString, e))
+    content = urllib.request.urlopen(urlString).read().decode('utf-8')
+  return content
+
 def getGitRev():
   status = os.popen('git status').read().strip()
   if 'nothing to commit, working directory clean' not in status and 'nothing to commit, working tree clean' not in status:
@@ -83,6 +93,9 @@ def prepare(root, version, gpgKeyID, gpgPassword):
   rev = getGitRev()
   print('  git rev: %s' % rev)
   log('\nGIT rev: %s\n' % rev)
+
+  print('  Check DOAP files')
+  checkDOAPfiles(version)
 
   print('  ant clean test')
   run('ant clean test')
@@ -118,6 +131,57 @@ def prepare(root, version, gpgKeyID, gpgPassword):
   print('  done!')
   print()
   return rev
+
+reVersion1 = re.compile(r'\>(\d+)\.(\d+)\.(\d+)(-alpha|-beta)?/\<', re.IGNORECASE)
+reVersion2 = re.compile(r'-(\d+)\.(\d+)\.(\d+)(-alpha|-beta)?\.zip<', re.IGNORECASE)
+reDoapRevision = re.compile(r'(\d+)\.(\d+)(?:\.(\d+))?(-alpha|-beta)?', re.IGNORECASE)
+def checkDOAPfiles(version):
+  # In Lucene and Solr DOAP files, verify presence of all releases less than the one being produced.
+  errorMessages = []
+  for product in 'lucene', 'solr':
+    url = 'https://archive.apache.org/dist/lucene/%s' % ('java' if product == 'lucene' else product)
+    distpage = load(url)
+    releases = set()
+    for regex in reVersion1, reVersion2:
+      for tup in regex.findall(distpage):
+        if tup[0] in ('1', '2'):                    # Ignore 1.X and 2.X releases
+          continue
+        releases.add(normalizeVersion(tup))
+    doapNS = '{http://usefulinc.com/ns/doap#}'
+    xpathRevision = '{0}Project/{0}release/{0}Version/{0}revision'.format(doapNS)
+    doapFile = "dev-tools/doap/%s.rdf" % product
+    treeRoot = ET.parse(doapFile).getroot()
+    doapRevisions = set()
+    for revision in treeRoot.findall(xpathRevision):
+      match = reDoapRevision.match(revision.text)
+      if (match is not None):
+        if (match.group(1) not in ('0', '1', '2')): # Ignore 0.X, 1.X and 2.X revisions
+          doapRevisions.add(normalizeVersion(match.groups()))
+      else:
+        errorMessages.append('ERROR: Failed to parse revision: %s in %s' % (revision.text, doapFile))
+    missingDoapRevisions = set()
+    for release in releases:
+      if release not in doapRevisions and release < version: # Ignore releases greater than the one being produced
+        missingDoapRevisions.add(release)
+    if len(missingDoapRevisions) > 0:
+      errorMessages.append('ERROR: Missing revision(s) in %s: %s' % (doapFile, ', '.join(sorted(missingDoapRevisions))))
+  if (len(errorMessages) > 0):
+    raise RuntimeError('\n%s\n(Hint: copy/paste from the stable branch version of the file(s).)'
+                       % '\n'.join(errorMessages))
+
+def normalizeVersion(tup):
+  suffix = ''
+  if tup[-1] is not None and tup[-1].lower() == '-alpha':
+    tup = tup[:(len(tup) - 1)]
+    suffix = '-ALPHA'
+  elif tup[-1] is not None and tup[-1].lower() == '-beta':
+    tup = tup[:(len(tup) - 1)]
+    suffix = '-BETA'
+  while tup[-1] in ('', None):
+    tup = tup[:(len(tup) - 1)]
+  while len(tup) < 3:
+    tup = tup + ('0',)
+  return '.'.join(tup) + suffix
 
 def pushLocal(version, root, rev, rcNum, localDir):
   print('Push local [%s]...' % localDir)
