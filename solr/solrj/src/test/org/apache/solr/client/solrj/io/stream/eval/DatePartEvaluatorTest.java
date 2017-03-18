@@ -20,6 +20,7 @@ package org.apache.solr.client.solrj.io.stream.eval;
 import java.io.IOException;
 import java.time.Instant;
 import java.time.LocalDateTime;
+import java.time.ZoneOffset;
 import java.util.Calendar;
 import java.util.Date;
 import java.util.GregorianCalendar;
@@ -121,6 +122,15 @@ public class DatePartEvaluatorTest {
       assertEquals("Invalid parameter 1995-12-31 - The String must be formatted in the ISO_INSTANT date format.", e.getMessage());
     }
 
+    try {
+      values.clear();
+      values.put("a", "");
+      Object result = evaluator.evaluate(new Tuple(values));
+      assertTrue(false);
+    } catch (Exception e) {
+      assertEquals("Invalid parameter  - The parameter must be a string formatted ISO_INSTANT or of type Instant,Date or LocalDateTime.", e.getMessage());
+    }
+
     values.clear();
     values.put("a", null);
     assertNull(evaluator.evaluate(new Tuple(values)));
@@ -199,12 +209,15 @@ public class DatePartEvaluatorTest {
 
   @Test
   public void testFunctionsLocalDateTime() throws Exception {
+
     LocalDateTime localDateTime = LocalDateTime.of(2017,12,5, 23, 59);
+    Date aDate = Date.from(localDateTime.atZone(ZoneOffset.UTC).toInstant());
     testFunction("year(a)", localDateTime, 2017);
     testFunction("month(a)", localDateTime, 12);
     testFunction("day(a)", localDateTime, 5);
     testFunction("hour(a)", localDateTime, 23);
     testFunction("minute(a)", localDateTime, 59);
+    testFunction("epoch(a)", localDateTime, aDate.getTime());
   }
 
   public void testFunction(String expression, Object value, Number expected) throws Exception {
