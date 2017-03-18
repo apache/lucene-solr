@@ -305,6 +305,9 @@ Bug Fixes
 
 * SOLR-10237: Poly-fields should work with subfields that have docValues=true (Tomás Fernández Löbbe, David Smiley)
 
+* SOLR-10218: The Schema API commands "add-field-type" and "replace-field-type" improperly specify SimilarityFactory params.
+  (Benjamin Deininger, Troy Mohl, Steve Rowe)
+
 Optimizations
 ----------------------
 
