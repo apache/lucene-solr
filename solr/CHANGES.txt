@@ -29,7 +29,6 @@ Apache UIMA 2.3.1
 Apache ZooKeeper 3.4.6
 Jetty 9.3.14.v20161028
 
-
 Detailed Change List
 ----------------------
 New Features
@@ -37,6 +36,8 @@ New Features
 
 * SOLR-9992: Add support for grouping with PointFields. (Cao Manh Dat)
 
+* SOLR-10292: Adds CartesianProductStream which turns a single tuple with a multi-valued field into N 
+  tuples, one for each value in the multi-valued field. (Dennis Gove)
 
 ==================  6.5.0 ==================
 

@@ -166,4 +166,9 @@ public class FieldComparator implements StreamComparator {
         order
     );
   }
+  
+  @Override
+  public StreamComparator append(StreamComparator other){
+    return new MultipleFieldComparator(this).append(other);
+  }
 }
