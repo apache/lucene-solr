@@ -22,7 +22,10 @@ import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.ZoneOffset;
 import java.time.format.DateTimeParseException;
+import java.time.temporal.ChronoField;
 import java.time.temporal.IsoFields;
+import java.time.temporal.TemporalAccessor;
+import java.time.temporal.UnsupportedTemporalTypeException;
 import java.util.Arrays;
 import java.util.Date;
 import java.util.Locale;
@@ -62,7 +65,7 @@ public class DatePartEvaluator extends NumberEvaluator {
   public Number evaluate(Tuple tuple) throws IOException {
 
     Instant instant = null;
-    LocalDateTime date = null;
+    TemporalAccessor date = null;
 
     //First evaluate the parameter
     StreamEvaluator streamEvaluator = subEvaluators.get(0);
@@ -76,8 +79,8 @@ public class DatePartEvaluator extends NumberEvaluator {
       instant = (Instant) tupleValue;
     } else if (tupleValue instanceof Date) {
       instant = ((Date) tupleValue).toInstant();
-    } else if (tupleValue instanceof LocalDateTime) {
-      date = ((LocalDateTime) tupleValue);
+    } else if (tupleValue instanceof TemporalAccessor) {
+      date = ((TemporalAccessor) tupleValue);
     }
 
     if (instant != null) {
@@ -110,32 +113,38 @@ public class DatePartEvaluator extends NumberEvaluator {
    * @param date
    * @return the evaluated value
    */
-  private Number evaluate(LocalDateTime date) throws IOException {
-    switch (function) {
-      case year:
-        return date.getYear();
-      case month:
-        return date.getMonthValue();
-      case day:
-        return date.getDayOfMonth();
-      case dayofyear:
-        return date.getDayOfYear();
-      case hour:
-        return date.getHour();
-      case minute:
-        return date.getMinute();
-      case second:
-        return date.getSecond();
-      case dayofquarter:
-        return date.get(IsoFields.DAY_OF_QUARTER);
-      case quarter:
-        return date.get(IsoFields.QUARTER_OF_YEAR);
-      case week:
-        return date.get(IsoFields.WEEK_OF_WEEK_BASED_YEAR);
-      case epoch:
-        return date.atZone(ZoneOffset.UTC).toInstant().toEpochMilli();
+  private Number evaluate(TemporalAccessor date) throws IOException {
+    try {
+      switch (function) {
+        case year:
+          return date.get(ChronoField.YEAR);
+        case month:
+          return date.get(ChronoField.MONTH_OF_YEAR);
+        case day:
+          return date.get(ChronoField.DAY_OF_MONTH);
+        case dayofyear:
+          return date.get(ChronoField.DAY_OF_YEAR);
+        case hour:
+          return date.get(ChronoField.HOUR_OF_DAY);
+        case minute:
+          return date.get(ChronoField.MINUTE_OF_HOUR);
+        case second:
+          return date.get(ChronoField.SECOND_OF_MINUTE);
+        case dayofquarter:
+          return date.get(IsoFields.DAY_OF_QUARTER);
+        case quarter:
+          return date.get(IsoFields.QUARTER_OF_YEAR);
+        case week:
+          return date.get(IsoFields.WEEK_OF_WEEK_BASED_YEAR);
+        case epoch:
+          if (date instanceof LocalDateTime) {
+            return ((LocalDateTime)date).atZone(ZoneOffset.UTC).toInstant().toEpochMilli();
+          }
+      }
+    } catch (UnsupportedTemporalTypeException utte) {
+      throw new IOException(String.format(Locale.ROOT, "It is not possible to call '%s' function on %s", function, date.getClass().getName()));
     }
-    throw new IOException(String.format(Locale.ROOT, "Unsupported function %s called on LocalDateTime %s", function, date.toString()));
+    throw new IOException(String.format(Locale.ROOT, "Unsupported function '%s' called on %s", function, date.toString()));
   }
 
   @Override
