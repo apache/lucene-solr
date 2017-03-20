@@ -444,14 +444,15 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
   static Map<String,Directory> oldIndexDirs;
 
   /**
-   * Randomizes the use of some of hte constructor variations
+   * Randomizes the use of some of the constructor variations
    */
   private static IndexUpgrader newIndexUpgrader(Directory dir) {
     final boolean streamType = random().nextBoolean();
     final int choice = TestUtil.nextInt(random(), 0, 2);
+    
     switch (choice) {
       case 0: return new IndexUpgrader(dir);
-      case 1: return new IndexUpgrader(dir, streamType ? null : InfoStream.NO_OUTPUT, false);
+      case 1: return new IndexUpgrader(dir, streamType ? null : InfoStream.NO_OUTPUT, false, true);
       case 2: return new IndexUpgrader(dir, newIndexWriterConfig(null), false);
       default: fail("case statement didn't get updated when random bounds changed");
     }
@@ -1380,9 +1381,12 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
       
       int numSegmentsBefore = SegmentInfos.readLatestCommit(dir).size();
       
-      newIndexUpgrader(dir).upgrade(Integer.MAX_VALUE);
+      IndexUpgrader upgrader = newIndexUpgrader(dir);
+      upgrader.upgrade(Integer.MAX_VALUE);
+      
+      int expectedNumSegmentsAfter = upgrader.getIndexWriterConfig().getMergePolicy() instanceof UpgradeIndexMergePolicy ? 1 : numSegmentsBefore;
+      assertEquals(expectedNumSegmentsAfter, checkAllSegmentsUpgraded(dir, indexCreatedVersion));
 
-      assertEquals(numSegmentsBefore, checkAllSegmentsUpgraded(dir, indexCreatedVersion));
       
       dir.close();
     }
@@ -1405,12 +1409,10 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
 
       assertFalse("Excpected these segments to be an old version", versionBefore.equals(Version.LATEST));
 
-      UpgradeIndexMergePolicy uimp = new UpgradeIndexMergePolicy(NoMergePolicy.INSTANCE);
-      
-      uimp.setRequireExplicitUpgrades(true);
-      uimp.setIgnoreNewSegments(true);
-
+      LiveUpgradeIndexMergePolicy uimp = new LiveUpgradeIndexMergePolicy(NoMergePolicy.INSTANCE);
+     
       assertEquals(numSegmentsBefore, checkAllSegmentsUpgraded(dir, versionBefore, createdVersionBefore));
+
       
       try (IndexWriter w = new IndexWriter(dir, new IndexWriterConfig(new MockAnalyzer(random())).setMergePolicy(uimp))) {
         w.forceMerge(numSegmentsBefore); // Don't optimize just upgrade
@@ -1419,7 +1421,7 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
       // Upgrade should not have happened yet
       assertEquals(numSegmentsBefore, checkAllSegmentsUpgraded(dir, versionBefore, createdVersionBefore));
 
-      uimp.setUpgradeInProgress(true); // Turn on upgrades
+      uimp.setEnableUpgrades(true); // Turn on upgrades
       
       try (IndexWriter w = new IndexWriter(dir, new IndexWriterConfig(new MockAnalyzer(random())).setMergePolicy(uimp))) {
         w.forceMerge(numSegmentsBefore); // Don't optimize just upgrade
@@ -1536,7 +1538,7 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
       
       // ensure there is only one commit
       assertEquals(1, DirectoryReader.listCommits(dir).size());
-      newIndexUpgrader(dir).upgrade();
+      newIndexUpgrader(dir).upgrade(Integer.MAX_VALUE);
 
       final int segCount = checkAllSegmentsUpgraded(dir, indexCreatedVersion);
       assertEquals("Index must still contain the same number of segments, as only one segment was upgraded and nothing else merged",
