@@ -17,6 +17,8 @@
 package org.apache.solr.client.solrj.io.comp;
 
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
@@ -112,5 +114,25 @@ public class MultipleFieldComparator implements StreamComparator {
     }
     
     return new MultipleFieldComparator(aliasedComps);
+  }
+  
+  @Override
+  public StreamComparator append(StreamComparator other){
+    List<StreamComparator> newComps = new ArrayList<>();
+    
+    for(StreamComparator comp : comps){
+      newComps.add(comp);
+    }
+    
+    if(other instanceof FieldComparator){
+      newComps.add(other);
+    }
+    else if(other instanceof MultipleFieldComparator){
+      for(StreamComparator comp : ((MultipleFieldComparator)other).comps){
+        newComps.add(comp);
+      }
+    }
+    
+    return new MultipleFieldComparator(newComps.toArray(new StreamComparator[newComps.size()]));
   }
 }
