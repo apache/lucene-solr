@@ -1197,10 +1197,7 @@ public static final int VERSION_IDX = 1;
             switch (oper) {
               case UpdateLog.UPDATE_INPLACE:
               case UpdateLog.ADD: {
-                SolrInputDocument sdoc = (SolrInputDocument) entry.get(entry.size() - 1);
-                AddUpdateCommand cmd = new AddUpdateCommand(req);
-                cmd.solrDoc = sdoc;
-                cmd.setVersion(version);
+                AddUpdateCommand cmd = convertTlogEntryToAddUpdateCommand(req, entry, oper, version);
                 cmd.setFlags(UpdateCommand.IGNORE_AUTOCOMMIT);
                 add(cmd);
                 break;
