@@ -323,9 +323,6 @@ public class TestInPlaceUpdatesDistrib extends AbstractFullDistribZkTestBase {
   }
 
   private void docValuesUpdateTest() throws Exception {
-    clearIndex();
-    commit();
-
     // number of docs we're testing (0 <= id), index may contain additional random docs (id < 0)
     final int numDocs = atLeast(100);
     log.info("Trying num docs = " + numDocs);
