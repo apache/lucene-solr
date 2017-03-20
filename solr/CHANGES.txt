@@ -101,8 +101,13 @@ Apache UIMA 2.3.1
 Apache ZooKeeper 3.4.6
 Jetty 9.3.14.v20161028
 
+Detailed Change List
+----------------------
 
-(No Changes)
+New Features
+----------------------
+
+* SOLR-9992: Add support for grouping with PointFIelds. (Cao Manh Dat) 
 
 
 ==================  6.5.0 ==================
