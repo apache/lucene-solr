@@ -41,7 +41,7 @@ import org.apache.solr.client.solrj.io.stream.expr.StreamFactory;
  */
 public class DatePartEvaluator extends NumberEvaluator {
 
-  public enum FUNCTION {year, month, day, dayofyear, dayofquarter, hour, minute, quarter, week, second, epoch}
+  public enum FUNCTION {year, month, day, dayOfYear, dayOfQuarter, hour, minute, quarter, week, second, epoch}
 
   private final FUNCTION function;
 
@@ -122,7 +122,7 @@ public class DatePartEvaluator extends NumberEvaluator {
           return date.get(ChronoField.MONTH_OF_YEAR);
         case day:
           return date.get(ChronoField.DAY_OF_MONTH);
-        case dayofyear:
+        case dayOfYear:
           return date.get(ChronoField.DAY_OF_YEAR);
         case hour:
           return date.get(ChronoField.HOUR_OF_DAY);
@@ -130,7 +130,7 @@ public class DatePartEvaluator extends NumberEvaluator {
           return date.get(ChronoField.MINUTE_OF_HOUR);
         case second:
           return date.get(ChronoField.SECOND_OF_MINUTE);
-        case dayofquarter:
+        case dayOfQuarter:
           return date.get(IsoFields.DAY_OF_QUARTER);
         case quarter:
           return date.get(IsoFields.QUARTER_OF_YEAR);
