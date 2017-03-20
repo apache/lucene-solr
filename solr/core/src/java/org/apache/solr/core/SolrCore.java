@@ -1134,7 +1134,7 @@ public final class SolrCore implements SolrInfoMBean, SolrMetricProducer, Closea
     manager.registerGauge(registry, () -> name == null ? "(null)" : name, true, "coreName", Category.CORE.toString());
     manager.registerGauge(registry, () -> startTime, true, "startTime", Category.CORE.toString());
     manager.registerGauge(registry, () -> getOpenCount(), true, "refCount", Category.CORE.toString());
-    manager.registerGauge(registry, () -> resourceLoader.getInstancePath(), true, "instanceDir", Category.CORE.toString());
+    manager.registerGauge(registry, () -> resourceLoader.getInstancePath().toString(), true, "instanceDir", Category.CORE.toString());
     manager.registerGauge(registry, () -> getIndexDir(), true, "indexDir", Category.CORE.toString());
     manager.registerGauge(registry, () -> getIndexSize(), true, "sizeInBytes", Category.INDEX.toString());
     manager.registerGauge(registry, () -> NumberUtils.readableSize(getIndexSize()), true, "size", Category.INDEX.toString());

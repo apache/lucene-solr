@@ -313,6 +313,8 @@ Bug Fixes
 * SOLR-10218: The Schema API commands "add-field-type" and "replace-field-type" improperly specify SimilarityFactory params.
   (Benjamin Deininger, Troy Mohl, Steve Rowe)
 
+* SOLR-10319: SolrCore "instanceDir" metric not visible in JMX. (ab)
+
 Optimizations
 ----------------------
 
