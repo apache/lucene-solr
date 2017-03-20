@@ -20,8 +20,10 @@ import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.util.Collection;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.TreeMap;
 
 import org.apache.hadoop.fs.FSDataInputStream;
 import org.apache.hadoop.fs.FSDataOutputStream;
@@ -368,6 +370,10 @@ public class HdfsTransactionLog extends TransactionLog {
     return new HDFSLogReader(startingPos);
   }
 
+  public LogReader getSortedReader(long startingPos) {
+    return new HDFSSortedLogReader(startingPos);
+  }
+
   /** Returns a single threaded reverse reader */
   @Override
   public ReverseReader getReverseReader() throws IOException {
@@ -475,6 +481,50 @@ public class HdfsTransactionLog extends TransactionLog {
       return getLogSize();
     }
 
+  }
+
+  public class HDFSSortedLogReader extends HDFSLogReader{
+    private long startingPos;
+    private boolean inOrder = true;
+    private TreeMap<Long, Long> versionToPos;
+    Iterator<Long> iterator;
+
+    public HDFSSortedLogReader(long startingPos) {
+      super(startingPos);
+      this.startingPos = startingPos;
+    }
+
+    @Override
+    public Object next() throws IOException, InterruptedException {
+      if (versionToPos == null) {
+        versionToPos = new TreeMap<>();
+        Object o;
+        long pos = startingPos;
+
+        long lastVersion = Long.MIN_VALUE;
+        while ( (o = super.next()) != null) {
+          List entry = (List) o;
+          long version = (Long) entry.get(UpdateLog.VERSION_IDX);
+          version = Math.abs(version);
+          versionToPos.put(version, pos);
+          pos = currentPos();
+
+          if (version < lastVersion) inOrder = false;
+          lastVersion = version;
+        }
+        fis.seek(startingPos);
+      }
+
+      if (inOrder) {
+        return super.next();
+      } else {
+        if (iterator == null) iterator = versionToPos.values().iterator();
+        if (!iterator.hasNext()) return null;
+        long pos = iterator.next();
+        if (pos != currentPos()) fis.seek(pos);
+        return super.next();
+      }
+    }
   }
 
   public class HDFSReverseReader extends ReverseReader {

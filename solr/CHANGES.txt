@@ -56,6 +56,8 @@ New Features
 ----------------------
 * SOLR-9857, SOLR-9858: Collect aggregated metrics from nodes and shard leaders in overseer. (ab)
 
+* SOLR-9835: Create another replication mode for SolrCloud
+
 Bug Fixes
 ----------------------
 * SOLR-9262: Connection and read timeouts are being ignored by UpdateShardHandler after SOLR-4509.
@@ -179,6 +181,12 @@ New Features
 
 * SOLR-9045: Make RecoveryStrategy settings configurable. (Christine Poerschke)
 
+* SOLR-10076: Hide keystore and truststore passwords from /admin/info/* outputs. (Mano Kovacs via Mark Miller)
+
+* SOLR-10224: Add disk total and disk free metrics. (ab)
+
+* SOLR-10046: Add UninvertDocValuesMergePolicyFactory class. (Keith Laban, Christine Poerschke)
+
 Bug Fixes
 ----------------------
 
@@ -240,6 +248,17 @@ Bug Fixes
 * SOLR-9838: "inc" atomic update doesn't respect default field value (hoss, Amrit Sarkar, Ishan Chattopadhyaya)
 
 * SOLR-10269: MetricsHandler JSON output incorrect. (ab)
+
+* SOLR-10279: The autoAddReplica feature can result in SolrCores being assigned new shards when using
+  legacyCloud=false and will also fail on a state check when taking over a core registration with a new
+  core. (Mark Miller, Hrishikesh Gadre, Patrick Dvorack)
+
+* SOLR-10184: Fix bin/solr so it can run properly on java9 (hossman, Uwe Schindler)
+
+* SOLR-9516: Admin UI (angular) now works with Kerberos, by excluding serving of /solr/libs/* through
+  SolrDispatchFilter. (Cassandra Targett, Amrit Sarkar via Ishan Chattopadhyaya)
+
+* SOLR-10302: Solr's zkcli scripts now able to find the metrics libraries, which it couldn't earlier (kiran, Ishan Chattopadhyaya)
 
 Optimizations
 ----------------------
@@ -330,6 +349,8 @@ Other Changes
   (hossman, Uwe Schindler)
 
 * SOLR-8876: change morphline test config files to work around 'importCommands' bug when using java9 (hossman)
+
+* SOLR-10247: Support non-numeric metrics and a "compact" format of /admin/metrics output. (ab)
 
 ==================  6.4.2 ==================
 

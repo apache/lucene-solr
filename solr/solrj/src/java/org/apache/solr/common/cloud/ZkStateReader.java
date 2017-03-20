@@ -96,6 +96,7 @@ public class ZkStateReader implements Closeable {
   public static final String MAX_SHARDS_PER_NODE = "maxShardsPerNode";
   public static final String AUTO_ADD_REPLICAS = "autoAddReplicas";
   public static final String MAX_CORES_PER_NODE = "maxCoresPerNode";
+  public static final String REALTIME_REPLICAS = "realtimeReplicas";
 
   public static final String ROLES = "/roles.json";
 

@@ -103,10 +103,10 @@ class SolrEnumerator implements Enumerator<Object> {
   private Object getRealVal(Object val) {
     // Check if Double is really a Long
     if(val instanceof Double) {
-      Double doubleVal = (double) val;
+      double doubleVal = (double) val;
       //make sure that double has no decimals and fits within Long
       if(doubleVal % 1 == 0 && doubleVal >= Long.MIN_VALUE && doubleVal <= Long.MAX_VALUE) {
-        return doubleVal.longValue();
+        return (long)doubleVal;
       }
       return doubleVal;
     }

@@ -50,7 +50,7 @@ verbose=false
 THIS_OS=`uname -s`
 
 # What version of Java is required to run this version of Solr.
-JAVA_VER_REQ="8"         # For printing in echo
+JAVA_VER_REQ="1.8"
 
 stop_all=false
 
@@ -130,26 +130,33 @@ if [[ $? -ne 0 ]] ; then
   echo >&2 "Please install latest version of Java $JAVA_VER_REQ or set JAVA_HOME properly."
   echo >&2 "Command that we tried: '${JAVA} -version', with response:"
   echo >&2 "${JAVA_VER}"
-  echo
+  echo >&2
   echo >&2 "Debug information:"
   echo >&2 "JAVA_HOME: ${JAVA_HOME:-N/A}"
   echo >&2 "Active Path:"
   echo >&2 "${PATH}"
   exit 1
 else
-  JAVA_VER=$(echo $JAVA_VER | awk -F '"' '/version/ {print $2}')
-  if [[ "$JAVA_VER" < "1.$JAVA_VER_REQ" ]] ; then
+  JAVA_VER_NUM=$(echo $JAVA_VER | head -1 | awk -F '"' '/version/ {print $2}')
+  if [[ "$JAVA_VER_NUM" < "$JAVA_VER_REQ" ]] ; then
     echo >&2 "Your current version of Java is too old to run this version of Solr"
-    echo >&2 "We found version $JAVA_VER, using command '${JAVA}'"
+    echo >&2 "We found version $JAVA_VER_NUM, using command '${JAVA} -version', with response:"
+    echo >&2 "${JAVA_VER}"
+    echo >&2
     echo >&2 "Please install latest version of Java $JAVA_VER_REQ or set JAVA_HOME properly."
-    echo
+    echo >&2
     echo >&2 "Debug information:"
     echo >&2 "JAVA_HOME: ${JAVA_HOME:-N/A}"
     echo >&2 "Active Path:"
     echo >&2 "${PATH}"
     exit 1
   fi
+  JAVA_VENDOR="Oracle"
+  if [ "`echo $JAVA_VER | grep -i "IBM J9"`" != "" ]; then
+      JAVA_VENDOR="IBM J9"
+  fi
 fi
+
 
 # Select HTTP OR HTTPS related configurations
 SOLR_URL_SCHEME=http
@@ -1519,29 +1526,37 @@ if [ "${SOLR_LOG_PRESTART_ROTATION:=true}" == "true" ]; then
   run_tool utils -s "$DEFAULT_SERVER_DIR" -l "$SOLR_LOGS_DIR" $q -rotate_solr_logs 9     || echo "Failed rotating old solr logs"
 fi
 
-java_ver_out=`echo "$("$JAVA" -version 2>&1)"`
-JAVA_VERSION=`echo $java_ver_out | grep "java version" | awk '{ print substr($3, 2, length($3)-2); }'`
-JAVA_VENDOR="Oracle"
-if [ "`echo $java_ver_out | grep -i "IBM J9"`" != "" ]; then
-  JAVA_VENDOR="IBM J9"
-fi
-
-# Establish default opts no env var set (otherwise init to empty)
+# Establish default GC logging opts if no env var set (otherwise init to sensible default)
 if [ -z ${GC_LOG_OPTS+x} ]; then
-  GC_LOG_OPTS=('-verbose:gc' '-XX:+PrintHeapAtGC' '-XX:+PrintGCDetails' \
-    '-XX:+PrintGCDateStamps' '-XX:+PrintGCTimeStamps' '-XX:+PrintTenuringDistribution' \
-    '-XX:+PrintGCApplicationStoppedTime')
+  if [[ "$JAVA_VER_NUM" < "9" ]] ; then
+    GC_LOG_OPTS=('-verbose:gc' '-XX:+PrintHeapAtGC' '-XX:+PrintGCDetails' \
+                 '-XX:+PrintGCDateStamps' '-XX:+PrintGCTimeStamps' '-XX:+PrintTenuringDistribution' \
+                 '-XX:+PrintGCApplicationStoppedTime')
+  else
+    GC_LOG_OPTS=('-Xlog:gc*')
+  fi
 else
   GC_LOG_OPTS=($GC_LOG_OPTS)
 fi
 
 # if verbose gc logging enabled, setup the location of the log file and rotation
 if [ "$GC_LOG_OPTS" != "" ]; then
-  gc_log_flag="-Xloggc"
-  if [ "$JAVA_VENDOR" == "IBM J9" ]; then
-    gc_log_flag="-Xverbosegclog"
+  if [[ "$JAVA_VER_NUM" < "9" ]] ; then
+    gc_log_flag="-Xloggc"
+    if [ "$JAVA_VENDOR" == "IBM J9" ]; then
+      gc_log_flag="-Xverbosegclog"
+    fi
+    GC_LOG_OPTS+=("$gc_log_flag:$SOLR_LOGS_DIR/solr_gc.log" '-XX:+UseGCLogFileRotation' '-XX:NumberOfGCLogFiles=9' '-XX:GCLogFileSize=20M')
+  else
+    # http://openjdk.java.net/jeps/158
+    for i in "${!GC_LOG_OPTS[@]}";
+    do
+      # for simplicity, we only look at the prefix '-Xlog:gc'
+      # (if 'all' or multiple tags are used starting with anything other then 'gc' the user is on their own)
+      # if a single additional ':' exists in param, then there is already an explicit output specifier
+      GC_LOG_OPTS[$i]=$(echo ${GC_LOG_OPTS[$i]} | sed "s|^\(-Xlog:gc[^:]*$\)|\1:file=$SOLR_LOGS_DIR/solr_gc.log:time,uptime:filecount=9,filesize=20000|")
+    done
   fi
-  GC_LOG_OPTS+=("$gc_log_flag:$SOLR_LOGS_DIR/solr_gc.log" -XX:+UseGCLogFileRotation -XX:NumberOfGCLogFiles=9 -XX:GCLogFileSize=20M)
 fi
 
 # If ZK_HOST is defined, the assume SolrCloud mode

@@ -106,10 +106,12 @@ public class SolrClusterReporter extends SolrMetricReporter {
           add("os\\.FreeSwapSpaceSize");
           add("os\\.OpenFileDescriptorCount");
           add("threads\\.count");
-        }})); // all metrics
-    // XXX anything interesting here?
-    //add(new SolrReporter.Specification(OVERSEER_GROUP, "node", SolrMetricManager.overridableRegistryName(SolrInfoMBean.Group.node.toString()),
-    //    Collections.emptySet())); // all metrics
+        }}));
+    add(new SolrReporter.Report(CLUSTER_GROUP, "node", SolrMetricManager.overridableRegistryName(SolrInfoMBean.Group.node.toString()),
+        new HashSet<String>() {{
+          add("CONTAINER\\.cores\\..*");
+          add("CONTAINER\\.fs\\..*");
+        }}));
     add(new SolrReporter.Report(CLUSTER_GROUP, "leader.$1", "solr\\.collection\\.(.*)\\.leader",
         new HashSet<String>(){{
           add("UPDATE\\./update/.*");

@@ -189,6 +189,7 @@ public class ZkController {
 
   private LeaderElector overseerElector;
 
+  private Map<String, ReplicateFromLeader> replicateFromLeaders = new ConcurrentHashMap<>();
 
   // for now, this can be null in tests, in which case recovery will be inactive, and other features
   // may accept defaults or use mocks rather than pulling things from a CoreContainer
@@ -877,7 +878,7 @@ public class ZkController {
           coreName, baseUrl, cloudDesc.getCollectionName(), shardId);
       
       ZkNodeProps leaderProps = new ZkNodeProps(props);
-      
+
       try {
         // If we're a preferred leader, insert ourselves at the head of the queue
         boolean joinAtHead = false;
@@ -913,9 +914,16 @@ public class ZkController {
         // leader election perhaps?
         
         UpdateLog ulog = core.getUpdateHandler().getUpdateLog();
-        
+        boolean onlyLeaderIndexes = zkStateReader.getClusterState().getCollection(collection).getRealtimeReplicas() == 1;
+        boolean isReplicaInOnlyLeaderIndexes = onlyLeaderIndexes && !isLeader;
+        if (isReplicaInOnlyLeaderIndexes) {
+          String commitVersion = ReplicateFromLeader.getCommitVersion(core);
+          if (commitVersion != null) {
+            ulog.copyOverOldUpdates(Long.parseLong(commitVersion));
+          }
+        }
         // we will call register again after zk expiration and on reload
-        if (!afterExpiration && !core.isReloaded() && ulog != null) {
+        if (!afterExpiration && !core.isReloaded() && ulog != null && !isReplicaInOnlyLeaderIndexes) {
           // disable recovery in case shard is in construction state (for shard splits)
           Slice slice = getClusterState().getSlice(collection, shardId);
           if (slice.getState() != Slice.State.CONSTRUCTION || !isLeader) {
@@ -934,6 +942,9 @@ public class ZkController {
         boolean didRecovery
             = checkRecovery(recoverReloadedCores, isLeader, skipRecovery, collection, coreZkNodeName, core, cc, afterExpiration);
         if (!didRecovery) {
+          if (isReplicaInOnlyLeaderIndexes) {
+            startReplicationFromLeader(coreName);
+          }
           publish(desc, Replica.State.ACTIVE);
         }
         
@@ -945,6 +956,20 @@ public class ZkController {
       return shardId;
     } finally {
       MDCLoggingContext.clear();
+    }
+  }
+
+  public void startReplicationFromLeader(String coreName) throws InterruptedException {
+    ReplicateFromLeader replicateFromLeader = new ReplicateFromLeader(cc, coreName);
+    if (replicateFromLeaders.putIfAbsent(coreName, replicateFromLeader) == null) {
+      replicateFromLeader.startReplication();
+    }
+  }
+
+  public void stopReplicationFromLeader(String coreName) {
+    ReplicateFromLeader replicateFromLeader = replicateFromLeaders.remove(coreName);
+    if (replicateFromLeader != null) {
+      replicateFromLeader.stopReplication();
     }
   }
 
@@ -1424,13 +1449,7 @@ public class ZkController {
             errorMessage.set("coreNodeName " + coreNodeName + " does not exist in shard " + cloudDesc.getShardId());
             return false;
           }
-          String baseUrl = replica.getStr(BASE_URL_PROP);
-          String coreName = replica.getStr(CORE_NAME_PROP);
-          if (baseUrl.equals(this.baseURL) && coreName.equals(cd.getName())) {
-            return true;
-          }
-          errorMessage.set("coreNodeName " + coreNodeName + " exists, but does not match expected node or core name");
-          return false;
+          return true;
         });
       } catch (TimeoutException e) {
         String error = errorMessage.get();

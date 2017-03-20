@@ -481,7 +481,7 @@ public class QueryParser implements QueryParserConstants {
       weight = jj_consume_token(NUMBER);
       float f;
       try {
-        f = Float.valueOf(weight.image).floatValue();
+        f = Float.parseFloat(weight.image);
       } catch (Exception floatExc) {
         {if (true) throw new ParseException(boostErrorMessage + weight.image + " (" + floatExc + ")");}
       }

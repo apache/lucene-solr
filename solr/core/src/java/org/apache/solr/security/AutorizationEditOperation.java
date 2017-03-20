@@ -83,7 +83,7 @@ enum AutorizationEditOperation {
       boolean indexSatisfied = index == null;
       for (int i = 0; i < permissions.size(); i++) {
         Map perm = permissions.get(i);
-        Integer thisIdx = (int) perm.get("index");
+        Integer thisIdx = (Integer) perm.get("index");
         if (thisIdx.equals(beforeIdx)) {
           beforeSatisfied = true;
           permissionsCopy.add(dataMap);

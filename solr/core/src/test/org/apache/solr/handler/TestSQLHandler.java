@@ -16,21 +16,30 @@
  */
 package org.apache.solr.handler;
 
+import java.io.BufferedReader;
 import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
 
+import org.apache.solr.client.solrj.SolrClient;
+import org.apache.solr.client.solrj.SolrRequest;
+import org.apache.solr.client.solrj.SolrServerException;
+import org.apache.solr.client.solrj.impl.InputStreamResponseParser;
 import org.apache.solr.client.solrj.io.Tuple;
 import org.apache.solr.client.solrj.io.stream.ExceptionStream;
 import org.apache.solr.client.solrj.io.stream.SolrStream;
 import org.apache.solr.client.solrj.io.stream.TupleStream;
+import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.cloud.AbstractFullDistribZkTestBase;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
 
+import org.apache.solr.common.util.NamedList;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -160,6 +169,9 @@ public class TestSQLHandler extends AbstractFullDistribZkTestBase {
       assert(tuple.getLong("id") == 1);
       assert(tuple.getLong("field_i") == 7);
       assert(tuple.get("str_s").equals("a"));
+
+      //Assert field order
+      assertResponseContains(clients.get(0), sParams, "{\"docs\":[{\"id\":8,\"field_i\":60,\"str_s\":\"c\"}");
 
       //Test unlimited unsorted result. Should sort on _version_ desc
       sParams = mapParams(CommonParams.QT, "/sql", "stmt", "select id, field_i, str_s from collection1 where text='XXXX'");
@@ -2360,6 +2372,25 @@ public class TestSQLHandler extends AbstractFullDistribZkTestBase {
     }
 
     return params;
+  }
+
+  public void assertResponseContains(SolrClient server, SolrParams requestParams, String json) throws IOException, SolrServerException {
+    String p = requestParams.get("qt");
+    if(p != null) {
+      ModifiableSolrParams modifiableSolrParams = (ModifiableSolrParams) requestParams;
+      modifiableSolrParams.remove("qt");
+    }
+
+    QueryRequest query = new QueryRequest( requestParams );
+    query.setPath(p);
+    query.setResponseParser(new InputStreamResponseParser("json"));
+    query.setMethod(SolrRequest.METHOD.POST);
+    NamedList<Object> genericResponse = server.request(query);
+    InputStream stream = (InputStream)genericResponse.get("stream");
+    InputStreamReader reader = new InputStreamReader(stream, "UTF-8");
+    BufferedReader bufferedReader = new BufferedReader(reader);
+    String response = bufferedReader.readLine();
+    assertTrue(response.contains(json));
   }
 
 }

@@ -68,8 +68,11 @@ import org.apache.solr.client.solrj.impl.HttpClientUtil;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.impl.HttpSolrClient.Builder;
 import org.apache.solr.client.solrj.request.QueryRequest;
+import org.apache.solr.cloud.CloudDescriptor;
+import org.apache.solr.cloud.ZkController;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
+import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.ExecutorUtil;
@@ -115,7 +118,7 @@ public class IndexFetcher {
 
   private static final Logger LOG = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
-  private final String masterUrl;
+  private String masterUrl;
 
   final ReplicationHandler replicationHandler;
 
@@ -150,6 +153,8 @@ public class IndexFetcher {
 
   private boolean useExternalCompression = false;
 
+  private boolean fetchFromLeader = false;
+
   private final HttpClient myHttpClient;
 
   private Integer connTimeout;
@@ -167,11 +172,15 @@ public class IndexFetcher {
 
   public IndexFetcher(final NamedList initArgs, final ReplicationHandler handler, final SolrCore sc) {
     solrCore = sc;
+    Object fetchFromLeader = initArgs.get(FETCH_FROM_LEADER);
+    if (fetchFromLeader != null && fetchFromLeader instanceof Boolean) {
+      this.fetchFromLeader = (boolean) fetchFromLeader;
+    }
     String masterUrl = (String) initArgs.get(MASTER_URL);
-    if (masterUrl == null)
+    if (masterUrl == null && !this.fetchFromLeader)
       throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,
               "'masterUrl' is required for a slave");
-    if (masterUrl.endsWith(ReplicationHandler.PATH)) {
+    if (masterUrl != null && masterUrl.endsWith(ReplicationHandler.PATH)) {
       masterUrl = masterUrl.substring(0, masterUrl.length()-12);
       LOG.warn("'masterUrl' must be specified without the "+ReplicationHandler.PATH+" suffix");
     }
@@ -298,6 +307,15 @@ public class IndexFetcher {
     }
 
     try {
+      if (fetchFromLeader) {
+        Replica replica = getLeaderReplica();
+        CloudDescriptor cd = solrCore.getCoreDescriptor().getCloudDescriptor();
+        if (cd.getCoreNodeName().equals(replica.getName())) {
+          return false;
+        }
+        masterUrl = replica.getCoreUrl();
+        LOG.info("Updated masterUrl to " + masterUrl);
+      }
       //get the current 'replicateable' index version in the master
       NamedList response;
       try {
@@ -404,7 +422,7 @@ public class IndexFetcher {
           isFullCopyNeeded = true;
         }
 
-        if (!isFullCopyNeeded) {
+        if (!isFullCopyNeeded && !fetchFromLeader) {
           // a searcher might be using some flushed but not committed segments
           // because of soft commits (which open a searcher on IW's data)
           // so we need to close the existing searcher on the last commit
@@ -565,6 +583,14 @@ public class IndexFetcher {
     }
   }
 
+  private Replica getLeaderReplica() throws InterruptedException {
+    ZkController zkController = solrCore.getCoreDescriptor().getCoreContainer().getZkController();
+    CloudDescriptor cd = solrCore.getCoreDescriptor().getCloudDescriptor();
+    Replica leaderReplica = zkController.getZkStateReader().getLeaderRetry(
+        cd.getCollectionName(), cd.getShardId());
+    return leaderReplica;
+  }
+
   private void cleanup(final SolrCore core, Directory tmpIndexDir,
       Directory indexDir, boolean deleteTmpIdxDir, File tmpTlogDir, boolean successfulInstall) throws IOException {
     try {
@@ -671,7 +697,7 @@ public class IndexFetcher {
 
       int indexCount = 1, confFilesCount = 1;
       if (props.containsKey(TIMES_INDEX_REPLICATED)) {
-        indexCount = Integer.valueOf(props.getProperty(TIMES_INDEX_REPLICATED)) + 1;
+        indexCount = Integer.parseInt(props.getProperty(TIMES_INDEX_REPLICATED)) + 1;
       }
       StringBuilder sb = readToStringBuilder(replicationTime, props.getProperty(INDEX_REPLICATED_AT_LIST));
       props.setProperty(INDEX_REPLICATED_AT_LIST, sb.toString());
@@ -682,7 +708,7 @@ public class IndexFetcher {
         props.setProperty(CONF_FILES_REPLICATED, confFiles.toString());
         props.setProperty(CONF_FILES_REPLICATED_AT, String.valueOf(replicationTime));
         if (props.containsKey(TIMES_CONFIG_REPLICATED)) {
-          confFilesCount = Integer.valueOf(props.getProperty(TIMES_CONFIG_REPLICATED)) + 1;
+          confFilesCount = Integer.parseInt(props.getProperty(TIMES_CONFIG_REPLICATED)) + 1;
         }
         props.setProperty(TIMES_CONFIG_REPLICATED, String.valueOf(confFilesCount));
       }
@@ -691,7 +717,7 @@ public class IndexFetcher {
       if (!successfulInstall) {
         int numFailures = 1;
         if (props.containsKey(TIMES_FAILED)) {
-          numFailures = Integer.valueOf(props.getProperty(TIMES_FAILED)) + 1;
+          numFailures = Integer.parseInt(props.getProperty(TIMES_FAILED)) + 1;
         }
         props.setProperty(TIMES_FAILED, String.valueOf(numFailures));
         props.setProperty(REPLICATION_FAILED_AT, String.valueOf(replicationTime));

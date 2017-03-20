@@ -28,13 +28,27 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import org.apache.solr.client.solrj.impl.HttpSolrClient;
+import org.apache.solr.client.solrj.request.QueryRequest;
+import org.apache.solr.cloud.ZkController;
 import org.apache.solr.common.NonExistentCoreException;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
+import org.apache.solr.common.cloud.Replica;
+import org.apache.solr.common.params.CommonParams;
+import org.apache.solr.common.params.ModifiableSolrParams;
+import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.Pair;
+import org.apache.solr.common.util.SuppressForbidden;
 import org.apache.solr.core.CoreContainer;
+import org.apache.solr.core.SolrCore;
+import org.apache.solr.handler.ReplicationHandler;
+import org.apache.solr.update.SolrIndexWriter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import static org.apache.solr.handler.ReplicationHandler.CMD_DETAILS;
+import static org.apache.solr.handler.ReplicationHandler.COMMAND;
 
 
 /**
@@ -118,6 +132,8 @@ public class TestInjection {
   public static int randomDelayMaxInCoreCreationInSec = 10;
 
   public static String splitFailureBeforeReplicaCreation = null;
+
+  public static String waitForReplicasInSync = "true:60";
   
   private static Set<Timer> timers = Collections.synchronizedSet(new HashSet<Timer>());
 
@@ -342,6 +358,44 @@ public class TestInjection {
     }
 
     return true;
+  }
+
+  @SuppressForbidden(reason = "Need currentTimeMillis, because COMMIT_TIME_MSEC_KEY use currentTimeMillis as value")
+  public static boolean waitForInSyncWithLeader(SolrCore core, ZkController zkController, String collection, String shardId) throws InterruptedException {
+    if (waitForReplicasInSync == null) return true;
+
+    Pair<Boolean,Integer> pair = parseValue(waitForReplicasInSync);
+    boolean enabled = pair.first();
+    if (!enabled) return true;
+    long t = System.currentTimeMillis() - 100;
+    try {
+      for (int i = 0; i < pair.second(); i++) {
+        if (core.isClosed()) return true;
+        Replica leaderReplica = zkController.getZkStateReader().getLeaderRetry(
+            collection, shardId);
+        try (HttpSolrClient leaderClient = new HttpSolrClient.Builder(leaderReplica.getCoreUrl()).build()) {
+          ModifiableSolrParams params = new ModifiableSolrParams();
+          params.set(CommonParams.QT, ReplicationHandler.PATH);
+          params.set(COMMAND, CMD_DETAILS);
+
+          NamedList<Object> response = leaderClient.request(new QueryRequest(params));
+          long leaderVersion = (long) ((NamedList)response.get("details")).get("indexVersion");
+
+          String localVersion = core.getDeletionPolicy().getLatestCommit().getUserData().get(SolrIndexWriter.COMMIT_TIME_MSEC_KEY);
+          if (localVersion == null && leaderVersion == 0 && !core.getUpdateHandler().getUpdateLog().hasUncommittedChanges()) return true;
+          if (localVersion != null && Long.parseLong(localVersion) == leaderVersion && (leaderVersion >= t || i >= 6)) {
+            return true;
+          } else {
+            Thread.sleep(500);
+          }
+        }
+      }
+
+    } catch (Exception e) {
+      log.error("Exception when wait for replicas in sync with master");
+    }
+
+    return false;
   }
   
   private static Pair<Boolean,Integer> parseValue(String raw) {

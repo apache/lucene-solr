@@ -583,8 +583,8 @@ public class SolrPluginUtils {
         String[] fieldAndSlopVsBoost = caratPattern.split(s);
         String[] fieldVsSlop = tildePattern.split(fieldAndSlopVsBoost[0]);
         String field = fieldVsSlop[0];
-        int slop  = (2 == fieldVsSlop.length) ? Integer.valueOf(fieldVsSlop[1]) : defaultSlop;
-        Float boost = (1 == fieldAndSlopVsBoost.length) ? 1  : Float.valueOf(fieldAndSlopVsBoost[1]);
+        int slop  = (2 == fieldVsSlop.length) ? Integer.parseInt(fieldVsSlop[1]) : defaultSlop;
+        float boost = (1 == fieldAndSlopVsBoost.length) ? 1  : Float.parseFloat(fieldAndSlopVsBoost[1]);
         FieldParams fp = new FieldParams(field,wordGrams,slop,boost);
         out.add(fp);
       }

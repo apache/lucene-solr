@@ -38,6 +38,7 @@ import java.util.regex.PatternSyntaxException;
 import java.util.stream.Collectors;
 
 import com.codahale.metrics.Counter;
+import com.codahale.metrics.Gauge;
 import com.codahale.metrics.Histogram;
 import com.codahale.metrics.Meter;
 import com.codahale.metrics.Metric;
@@ -520,7 +521,9 @@ public class SolrMetricManager {
     }
   }
 
-
+  public void registerGauge(String registry, Gauge<?> gauge, boolean force, String metricName, String... metricPath) {
+    register(registry, gauge, force, metricName, metricPath);
+  }
 
   /**
    * This method creates a hierarchical name with arbitrary levels of hierarchy

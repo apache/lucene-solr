@@ -76,10 +76,17 @@ public class HttpPartitionTest extends AbstractFullDistribZkTestBase {
   // give plenty of time for replicas to recover when running in slow Jenkins test envs
   protected static final int maxWaitSecsToSeeAllActive = 90;
 
+  private final boolean onlyLeaderIndexes = random().nextBoolean();
+
   public HttpPartitionTest() {
     super();
     sliceCount = 2;
     fixShardCount(3);
+  }
+
+  @Override
+  protected int getRealtimeReplicas() {
+    return onlyLeaderIndexes? 1 : -1;
   }
 
   /**

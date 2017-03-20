@@ -36,7 +36,6 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
 
-import com.codahale.metrics.Gauge;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Maps;
 import org.apache.http.auth.AuthSchemeProvider;
@@ -531,17 +530,19 @@ public class CoreContainer {
 
     containerProperties.putAll(cfg.getSolrProperties());
 
-    // initialize gauges for reporting the number of cores
-    Gauge<Integer> loadedCores = () -> solrCores.getCores().size();
-    Gauge<Integer> lazyCores = () -> solrCores.getCoreNames().size() - solrCores.getCores().size();
-    Gauge<Integer> unloadedCores = () -> solrCores.getAllCoreNames().size() - solrCores.getCoreNames().size();
+    // initialize gauges for reporting the number of cores and disk total/free
 
-    metricManager.register(SolrMetricManager.getRegistryName(SolrInfoMBean.Group.node),
-        loadedCores, true, "loaded", SolrInfoMBean.Category.CONTAINER.toString(), "cores");
-    metricManager.register(SolrMetricManager.getRegistryName(SolrInfoMBean.Group.node),
-        lazyCores, true, "lazy",SolrInfoMBean.Category.CONTAINER.toString(), "cores");
-    metricManager.register(SolrMetricManager.getRegistryName(SolrInfoMBean.Group.node),
-        unloadedCores, true, "unloaded",SolrInfoMBean.Category.CONTAINER.toString(), "cores");
+    String registryName = SolrMetricManager.getRegistryName(SolrInfoMBean.Group.node);
+    metricManager.registerGauge(registryName, () -> solrCores.getCores().size(),
+        true, "loaded", SolrInfoMBean.Category.CONTAINER.toString(), "cores");
+    metricManager.registerGauge(registryName, () -> solrCores.getCoreNames().size() - solrCores.getCores().size(),
+        true, "lazy",SolrInfoMBean.Category.CONTAINER.toString(), "cores");
+    metricManager.registerGauge(registryName, () -> solrCores.getAllCoreNames().size() - solrCores.getCoreNames().size(),
+        true, "unloaded",SolrInfoMBean.Category.CONTAINER.toString(), "cores");
+    metricManager.registerGauge(registryName, () -> cfg.getCoreRootDirectory().toFile().getTotalSpace(),
+        true, "totalSpace", SolrInfoMBean.Category.CONTAINER.toString(), "fs");
+    metricManager.registerGauge(registryName, () -> cfg.getCoreRootDirectory().toFile().getUsableSpace(),
+        true, "usableSpace", SolrInfoMBean.Category.CONTAINER.toString(), "fs");
 
     if (isZooKeeperAware()) {
       metricManager.loadClusterReporters(cfg.getMetricReporterPlugins(), this);
@@ -1137,6 +1138,13 @@ public class CoreContainer {
         log.info("Reloading SolrCore '{}' using configuration from {}", cd.getName(), coreConfig.getName());
         SolrCore newCore = core.reload(coreConfig);
         registerCore(cd.getName(), newCore, false, false);
+        if (getZkController() != null) {
+          boolean onlyLeaderIndexes = getZkController().getClusterState().getCollection(cd.getCollectionName()).getRealtimeReplicas() == 1;
+          if (onlyLeaderIndexes && !cd.getCloudDescriptor().isLeader()) {
+            getZkController().stopReplicationFromLeader(core.getName());
+            getZkController().startReplicationFromLeader(newCore.getName());
+          }
+        }
       } catch (SolrCoreState.CoreIsClosedException e) {
         throw e;
       } catch (Exception e) {

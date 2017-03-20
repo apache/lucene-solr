@@ -24,7 +24,6 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 
 import com.codahale.metrics.Counter;
-import com.codahale.metrics.Gauge;
 import com.codahale.metrics.Meter;
 import com.codahale.metrics.Timer;
 import org.apache.lucene.codecs.Codec;
@@ -61,6 +60,7 @@ public class SolrIndexWriter extends IndexWriter {
   /** Stored into each Lucene commit to record the
    *  System.currentTimeMillis() when commit was called. */
   public static final String COMMIT_TIME_MSEC_KEY = "commitTimeMSec";
+  public static final String COMMIT_COMMAND_VERSION = "commitCommandVer";
 
   private final Object CLOSE_LOCK = new Object();
   
@@ -80,17 +80,11 @@ public class SolrIndexWriter extends IndexWriter {
   private boolean mergeTotals = false;
   private boolean mergeDetails = false;
   private final AtomicInteger runningMajorMerges = new AtomicInteger();
-  private Gauge<Integer> runningMajorMergesGauge;
   private final AtomicInteger runningMinorMerges = new AtomicInteger();
-  private Gauge<Integer> runningMinorMergesGauge;
   private final AtomicInteger runningMajorMergesSegments = new AtomicInteger();
-  private Gauge<Integer> runningMajorMergesSegmentsGauge;
   private final AtomicInteger runningMinorMergesSegments = new AtomicInteger();
-  private Gauge<Integer> runningMinorMergesSegmentsGauge;
   private final AtomicLong runningMajorMergesDocs = new AtomicLong();
-  private Gauge<Long> runningMajorMergesDocsGauge;
   private final AtomicLong runningMinorMergesDocs = new AtomicLong();
-  private Gauge<Long> runningMinorMergesDocsGauge;
 
   public static SolrIndexWriter create(SolrCore core, String name, String path, DirectoryFactory directoryFactory, boolean create, IndexSchema schema, SolrIndexConfig config, IndexDeletionPolicy delPolicy, Codec codec) throws IOException {
 
@@ -164,18 +158,12 @@ public class SolrIndexWriter extends IndexWriter {
         minorMerge = metricManager.timer(registry, "minor", SolrInfoMBean.Category.INDEX.toString(), "merge");
         majorMerge = metricManager.timer(registry, "major", SolrInfoMBean.Category.INDEX.toString(), "merge");
         mergeErrors = metricManager.counter(registry, "errors", SolrInfoMBean.Category.INDEX.toString(), "merge");
-        runningMajorMergesGauge = () -> runningMajorMerges.get();
-        runningMinorMergesGauge = () -> runningMinorMerges.get();
-        runningMajorMergesDocsGauge = () -> runningMajorMergesDocs.get();
-        runningMinorMergesDocsGauge = () -> runningMinorMergesDocs.get();
-        runningMajorMergesSegmentsGauge = () -> runningMajorMergesSegments.get();
-        runningMinorMergesSegmentsGauge = () -> runningMinorMergesSegments.get();
-        metricManager.register(registry, runningMajorMergesGauge, true, "running", SolrInfoMBean.Category.INDEX.toString(), "merge", "major");
-        metricManager.register(registry, runningMinorMergesGauge, true, "running", SolrInfoMBean.Category.INDEX.toString(), "merge", "minor");
-        metricManager.register(registry, runningMajorMergesDocsGauge, true, "running.docs", SolrInfoMBean.Category.INDEX.toString(), "merge", "major");
-        metricManager.register(registry, runningMinorMergesDocsGauge, true, "running.docs", SolrInfoMBean.Category.INDEX.toString(), "merge", "minor");
-        metricManager.register(registry, runningMajorMergesSegmentsGauge, true, "running.segments", SolrInfoMBean.Category.INDEX.toString(), "merge", "major");
-        metricManager.register(registry, runningMinorMergesSegmentsGauge, true, "running.segments", SolrInfoMBean.Category.INDEX.toString(), "merge", "minor");
+        metricManager.registerGauge(registry, () -> runningMajorMerges.get(), true, "running", SolrInfoMBean.Category.INDEX.toString(), "merge", "major");
+        metricManager.registerGauge(registry, () -> runningMinorMerges.get(), true, "running", SolrInfoMBean.Category.INDEX.toString(), "merge", "minor");
+        metricManager.registerGauge(registry, () -> runningMajorMergesDocs.get(), true, "running.docs", SolrInfoMBean.Category.INDEX.toString(), "merge", "major");
+        metricManager.registerGauge(registry, () -> runningMinorMergesDocs.get(), true, "running.docs", SolrInfoMBean.Category.INDEX.toString(), "merge", "minor");
+        metricManager.registerGauge(registry, () -> runningMajorMergesSegments.get(), true, "running.segments", SolrInfoMBean.Category.INDEX.toString(), "merge", "major");
+        metricManager.registerGauge(registry, () -> runningMinorMergesSegments.get(), true, "running.segments", SolrInfoMBean.Category.INDEX.toString(), "merge", "minor");
         flushMeter = metricManager.meter(registry, "flush", SolrInfoMBean.Category.INDEX.toString());
       }
     }
@@ -183,10 +171,11 @@ public class SolrIndexWriter extends IndexWriter {
 
   @SuppressForbidden(reason = "Need currentTimeMillis, commit time should be used only for debugging purposes, " +
       " but currently suspiciously used for replication as well")
-  public static void setCommitData(IndexWriter iw) {
-    log.info("Calling setCommitData with IW:" + iw.toString());
+  public static void setCommitData(IndexWriter iw, long commitCommandVersion) {
+    log.info("Calling setCommitData with IW:" + iw.toString() + " commitCommandVersion:"+commitCommandVersion);
     final Map<String,String> commitData = new HashMap<>();
     commitData.put(COMMIT_TIME_MSEC_KEY, String.valueOf(System.currentTimeMillis()));
+    commitData.put(COMMIT_COMMAND_VERSION, String.valueOf(commitCommandVersion));
     iw.setLiveCommitData(commitData.entrySet());
   }
 
