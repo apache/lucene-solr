@@ -19,6 +19,7 @@ package org.apache.solr.search.grouping.distributed.requestfactory;
 import org.apache.lucene.analysis.reverse.ReverseStringFilter;
 import org.apache.lucene.search.grouping.SearchGroup;
 import org.apache.lucene.util.BytesRef;
+import org.apache.lucene.util.CharsRefBuilder;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.GroupParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
@@ -117,9 +118,8 @@ public class TopGroupsShardRequestFactory implements ShardRequestFactory {
       for (SearchGroup<BytesRef> searchGroup : entry.getValue()) {
         String groupValue;
         if (searchGroup.groupValue != null) {
-          String rawGroupValue = searchGroup.groupValue.utf8ToString();
           FieldType fieldType = schema.getField(entry.getKey()).getType();
-          groupValue = fieldType.indexedToReadable(rawGroupValue);
+          groupValue = fieldType.indexedToReadable(searchGroup.groupValue, new CharsRefBuilder()).toString();
         } else {
           groupValue = GROUP_NULL_VALUE;
         }

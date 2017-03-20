@@ -33,6 +33,7 @@ import org.apache.lucene.search.TopFieldDocs;
 import org.apache.lucene.search.grouping.GroupDocs;
 import org.apache.lucene.search.grouping.TopGroups;
 import org.apache.lucene.util.BytesRef;
+import org.apache.lucene.util.CharsRefBuilder;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.handler.component.ResponseBuilder;
 import org.apache.solr.handler.component.ShardDoc;
@@ -232,7 +233,8 @@ public class TopGroupsResultTransformer implements ShardResultTransformer<List<C
         document.add("sortValues", convertedSortValues);
       }
       groupResult.add("documents", documents);
-      String groupValue = searchGroup.groupValue != null ? groupField.getType().indexedToReadable(searchGroup.groupValue.utf8ToString()): null;
+      String groupValue = searchGroup.groupValue != null ?
+          groupField.getType().indexedToReadable(searchGroup.groupValue, new CharsRefBuilder()).toString(): null;
       result.add(groupValue, groupResult);
     }
 

@@ -19,6 +19,8 @@ package org.apache.solr.search.grouping.distributed.shardresultserializer;
 import org.apache.lucene.search.Sort;
 import org.apache.lucene.search.grouping.SearchGroup;
 import org.apache.lucene.util.BytesRef;
+import org.apache.lucene.util.BytesRefBuilder;
+import org.apache.lucene.util.CharsRefBuilder;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.schema.SchemaField;
 import org.apache.solr.search.SolrIndexSearcher;
@@ -56,7 +58,7 @@ public class SearchGroupsResultTransformer implements ShardResultTransformer<Lis
         final SearchGroupsFieldCommandResult fieldCommandResult = fieldCommand.result();
         final Collection<SearchGroup<BytesRef>> searchGroups = fieldCommandResult.getSearchGroups();
         if (searchGroups != null) {
-          commandResult.add(TOP_GROUPS, serializeSearchGroup(searchGroups, fieldCommand.getGroupSort()));
+          commandResult.add(TOP_GROUPS, serializeSearchGroup(searchGroups, fieldCommand));
         }
         final Integer groupedCount = fieldCommandResult.getGroupCount();
         if (groupedCount != null) {
@@ -85,7 +87,17 @@ public class SearchGroupsResultTransformer implements ShardResultTransformer<Lis
       if (rawSearchGroups != null) {
         for (Map.Entry<String, List<Comparable>> rawSearchGroup : rawSearchGroups){
           SearchGroup<BytesRef> searchGroup = new SearchGroup<>();
-          searchGroup.groupValue = rawSearchGroup.getKey() != null ? new BytesRef(rawSearchGroup.getKey()) : null;
+          SchemaField groupField = rawSearchGroup.getKey() != null? searcher.getSchema().getFieldOrNull(command.getKey()) : null;
+          searchGroup.groupValue = null;
+          if (rawSearchGroup.getKey() != null) {
+            if (groupField != null) {
+              BytesRefBuilder builder = new BytesRefBuilder();
+              groupField.getType().readableToIndexed(rawSearchGroup.getKey(), builder);
+              searchGroup.groupValue = builder.get();
+            } else {
+              searchGroup.groupValue = new BytesRef(rawSearchGroup.getKey());
+            }
+          }
           searchGroup.sortValues = rawSearchGroup.getValue().toArray(new Comparable[rawSearchGroup.getValue().size()]);
           for (int i = 0; i < searchGroup.sortValues.length; i++) {
             SchemaField field = groupSort.getSort()[i].getField() != null ? searcher.getSchema().getFieldOrNull(groupSort.getSort()[i].getField()) : null;
@@ -101,17 +113,19 @@ public class SearchGroupsResultTransformer implements ShardResultTransformer<Lis
     return result;
   }
 
-  private NamedList serializeSearchGroup(Collection<SearchGroup<BytesRef>> data, Sort groupSort) {
+  private NamedList serializeSearchGroup(Collection<SearchGroup<BytesRef>> data, SearchGroupsFieldCommand command) {
     final NamedList<Object[]> result = new NamedList<>(data.size());
 
     for (SearchGroup<BytesRef> searchGroup : data) {
       Object[] convertedSortValues = new Object[searchGroup.sortValues.length];
       for (int i = 0; i < searchGroup.sortValues.length; i++) {
         Object sortValue = searchGroup.sortValues[i];
-        SchemaField field = groupSort.getSort()[i].getField() != null ? searcher.getSchema().getFieldOrNull(groupSort.getSort()[i].getField()) : null;
+        SchemaField field = command.getGroupSort().getSort()[i].getField() != null ?
+            searcher.getSchema().getFieldOrNull(command.getGroupSort().getSort()[i].getField()) : null;
         convertedSortValues[i] = ShardResultTransformerUtils.marshalSortValue(sortValue, field);
       }
-      String groupValue = searchGroup.groupValue != null ? searchGroup.groupValue.utf8ToString() : null;
+      SchemaField field = searcher.getSchema().getFieldOrNull(command.getKey());
+      String groupValue = searchGroup.groupValue != null ? field.getType().indexedToReadable(searchGroup.groupValue, new CharsRefBuilder()).toString() : null;
       result.add(groupValue, convertedSortValues);
     }
 
