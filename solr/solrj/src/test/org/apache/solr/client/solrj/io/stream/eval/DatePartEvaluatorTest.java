@@ -145,8 +145,8 @@ public class DatePartEvaluatorTest {
     testFunction("year(a)", "1995-12-31T23:59:59Z", 1995);
     testFunction("month(a)","1995-12-31T23:59:59Z", 12);
     testFunction("day(a)",  "1995-12-31T23:59:59Z", 31);
-    testFunction("dayofyear(a)",  "1995-12-31T23:59:59Z", 365);
-    testFunction("dayofquarter(a)",  "1995-12-31T23:59:59Z", 92);
+    testFunction("dayOfYear(a)",  "1995-12-31T23:59:59Z", 365);
+    testFunction("dayOfQuarter(a)",  "1995-12-31T23:59:59Z", 92);
     testFunction("hour(a)",   "1995-12-31T23:59:59Z", 23);
     testFunction("minute(a)", "1995-12-31T23:59:59Z", 59);
     testFunction("quarter(a)","1995-12-31T23:59:59Z", 4);
@@ -159,8 +159,8 @@ public class DatePartEvaluatorTest {
     testFunction("month(a)","2017-03-17T10:30:45Z", 3);
     testFunction("day(a)",  "2017-03-17T10:30:45Z", 17);
     testFunction("day('a')",  "2017-03-17T10:30:45Z", 17);
-    testFunction("dayofyear(a)",  "2017-03-17T10:30:45Z", 76);
-    testFunction("dayofquarter(a)",  "2017-03-17T10:30:45Z", 76);
+    testFunction("dayOfYear(a)",  "2017-03-17T10:30:45Z", 76);
+    testFunction("dayOfQuarter(a)",  "2017-03-17T10:30:45Z", 76);
     testFunction("hour(a)",   "2017-03-17T10:30:45Z", 10);
     testFunction("minute(a)", "2017-03-17T10:30:45Z", 30);
     testFunction("quarter(a)","2017-03-17T10:30:45Z", 1);
