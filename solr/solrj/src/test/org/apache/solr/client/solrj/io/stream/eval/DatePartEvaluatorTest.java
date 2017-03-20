@@ -20,6 +20,8 @@ package org.apache.solr.client.solrj.io.stream.eval;
 import java.io.IOException;
 import java.time.Instant;
 import java.time.LocalDateTime;
+import java.time.MonthDay;
+import java.time.YearMonth;
 import java.time.ZoneOffset;
 import java.util.Calendar;
 import java.util.Date;
@@ -72,7 +74,7 @@ public class DatePartEvaluatorTest {
       evaluator = factory.constructEvaluator("nope(a)");
       evaluator.evaluate(new Tuple(null));
       assertTrue(false);
-    } catch (Exception e) {
+    } catch (IOException e) {
       assertTrue(e.getCause().getCause().getMessage().contains("Invalid date expression nope"));
       assertTrue(e.getCause().getCause().getMessage().contains("expecting one of [year, month, day"));
     }
@@ -80,21 +82,21 @@ public class DatePartEvaluatorTest {
     try {
       evaluator = factory.constructEvaluator("week()");
       assertTrue(false);
-    } catch (Exception e) {
+    } catch (IOException e) {
       assertTrue(e.getCause().getCause().getMessage().contains("Invalid expression week()"));
     }
 
     try {
       evaluator = factory.constructEvaluator("week(a, b)");
       assertTrue(false);
-    } catch (Exception e) {
+    } catch (IOException e) {
       assertTrue(e.getCause().getCause().getMessage().contains("expecting one value but found 2"));
     }
 
     try {
       evaluator = factory.constructEvaluator("Week()");
       assertTrue(false);
-    } catch (Exception e) {
+    } catch (IOException e) {
       assertTrue(e.getMessage().contains("Invalid evaluator expression Week() - function 'Week' is unknown"));
     }
   }
@@ -109,7 +111,7 @@ public class DatePartEvaluatorTest {
       values.put("a", 12);
       Object result = evaluator.evaluate(new Tuple(values));
       assertTrue(false);
-    } catch (Exception e) {
+    } catch (IOException e) {
       assertEquals("Invalid parameter 12 - The parameter must be a string formatted ISO_INSTANT or of type Instant,Date or LocalDateTime.", e.getMessage());
     }
 
@@ -118,7 +120,7 @@ public class DatePartEvaluatorTest {
       values.put("a", "1995-12-31");
       Object result = evaluator.evaluate(new Tuple(values));
       assertTrue(false);
-    } catch (Exception e) {
+    } catch (IOException e) {
       assertEquals("Invalid parameter 1995-12-31 - The String must be formatted in the ISO_INSTANT date format.", e.getMessage());
     }
 
@@ -127,7 +129,7 @@ public class DatePartEvaluatorTest {
       values.put("a", "");
       Object result = evaluator.evaluate(new Tuple(values));
       assertTrue(false);
-    } catch (Exception e) {
+    } catch (IOException e) {
       assertEquals("Invalid parameter  - The parameter must be a string formatted ISO_INSTANT or of type Instant,Date or LocalDateTime.", e.getMessage());
     }
 
@@ -219,6 +221,34 @@ public class DatePartEvaluatorTest {
     testFunction("minute(a)", localDateTime, 59);
     testFunction("epoch(a)", localDateTime, aDate.getTime());
   }
+
+  @Test
+  public void testLimitedFunctions() throws Exception {
+
+    MonthDay monthDay = MonthDay.of(12,5);
+    testFunction("month(a)", monthDay, 12);
+    testFunction("day(a)", monthDay, 5);
+
+    try {
+      testFunction("year(a)", monthDay, 2017);
+      assertTrue(false);
+    } catch (IOException e) {
+      assertEquals("It is not possible to call 'year' function on java.time.MonthDay", e.getMessage());
+    }
+
+    YearMonth yearMonth = YearMonth.of(2018, 4);
+    testFunction("month(a)", yearMonth, 4);
+    testFunction("year(a)", yearMonth, 2018);
+
+    try {
+      testFunction("day(a)", yearMonth, 5);
+      assertTrue(false);
+    } catch (IOException e) {
+      assertEquals("It is not possible to call 'day' function on java.time.YearMonth", e.getMessage());
+    }
+
+  }
+
 
   public void testFunction(String expression, Object value, Number expected) throws Exception {
     StreamEvaluator evaluator = factory.constructEvaluator(expression);
