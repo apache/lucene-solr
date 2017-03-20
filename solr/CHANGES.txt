@@ -109,6 +109,8 @@ New Features
 
 * SOLR-9992: Add support for grouping with PointFIelds. (Cao Manh Dat) 
 
+* SOLR-10046: Add UninvertDocValuesMergePolicyFactory class. (Keith Laban, Christine Poerschke)
+
 
 ==================  6.5.0 ==================
 
@@ -212,8 +214,6 @@ New Features
 * SOLR-10076: Hide keystore and truststore passwords from /admin/info/* outputs. (Mano Kovacs via Mark Miller)
 
 * SOLR-10224: Add disk total and disk free metrics. (ab)
-
-* SOLR-10046: Add UninvertDocValuesMergePolicyFactory class. (Keith Laban, Christine Poerschke)
 
 * SOLR-10085: SQL result set fields should be ordered by the field list (Joel Bernstein)
 
