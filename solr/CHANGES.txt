@@ -30,7 +30,12 @@ Apache ZooKeeper 3.4.6
 Jetty 9.3.14.v20161028
 
 
-(No Changes)
+Detailed Change List
+----------------------
+New Features
+----------------------
+
+* SOLR-9992: Add support for grouping with PointFields. (Cao Manh Dat)
 
 
 ==================  6.5.0 ==================
