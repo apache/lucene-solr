@@ -58,6 +58,9 @@ New Features
 
 * SOLR-9835: Create another replication mode for SolrCloud
 
+* SOLR-10292: Adds CartesianProductStream which turns a single tuple with a multi-valued field into N 
+  tuples, one for each value in the multi-valued field. (Dennis Gove)
+
 Bug Fixes
 ----------------------
 * SOLR-9262: Connection and read timeouts are being ignored by UpdateShardHandler after SOLR-4509.

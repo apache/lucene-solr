@@ -20,6 +20,8 @@
 package org.apache.solr.client.solrj.io.eval;
 
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
 
 import org.apache.solr.client.solrj.io.Tuple;
 import org.apache.solr.client.solrj.io.stream.expr.Explanation;
@@ -43,7 +45,31 @@ public class FieldEvaluator extends SimpleEvaluator {
   
   @Override
   public Object evaluate(Tuple tuple) {
-    return tuple.get(fieldName); // returns null if field doesn't exist in tuple
+    Object value = tuple.get(fieldName);
+    
+    // if we have an array then convert to an ArrayList
+    // if we have an iterable that is not a list then convert to ArrayList
+    // lists are good to go
+    if(null != value){
+      if(value instanceof Object[]){
+        Object[] array = (Object[])value;
+        List<Object> list = new ArrayList<Object>(array.length);
+        for(Object obj : array){
+          list.add(obj);
+        }
+        return list;
+      }
+      else if(value instanceof Iterable && !(value instanceof List<?>)){
+        Iterable<?> iter = (Iterable<?>)value;
+        List<Object> list = new ArrayList<Object>();
+        for(Object obj : iter){
+          list.add(obj);
+        }
+        return list;
+      }
+    }
+    
+    return value;
   }
   
   @Override
