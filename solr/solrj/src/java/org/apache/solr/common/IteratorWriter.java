@@ -28,7 +28,7 @@ import java.util.List;
  */
 public interface IteratorWriter {
   /**
-   * @param iw after this method returns , the EntryWriter Object is invalid
+   * @param iw after this method returns , the ItemWriter Object is invalid
    *          Do not hold a reference to this object
    */
   void writeIter(ItemWriter iw) throws IOException;
@@ -65,16 +65,20 @@ public interface IteratorWriter {
       return this;
     }
   }
-  default List toList( List l) throws IOException {
-    writeIter(new IteratorWriter.ItemWriter() {
-      @Override
-      public IteratorWriter.ItemWriter add(Object o) throws IOException {
-        if (o instanceof MapWriter) o = ((MapWriter) o).toMap(new LinkedHashMap<>());
-        if (o instanceof IteratorWriter) o = ((IteratorWriter) o).toList(new ArrayList<>());
-        l.add(o);
-        return this;
-      }
-    });
+  default List toList( List l)  {
+    try {
+      writeIter(new ItemWriter() {
+        @Override
+        public ItemWriter add(Object o) throws IOException {
+          if (o instanceof MapWriter) o = ((MapWriter) o).toMap(new LinkedHashMap<>());
+          if (o instanceof IteratorWriter) o = ((IteratorWriter) o).toList(new ArrayList<>());
+          l.add(o);
+          return this;
+        }
+      });
+    } catch (IOException e) {
+      throw new RuntimeException(e);
+    }
     return l;
   }
 }

@@ -19,9 +19,7 @@ package org.apache.solr.recipe;
 
 import java.util.Objects;
 
-/**
- * Created by noble on 3/6/17.
- */
+
 public enum Operand {
   EQUAL(""),
   NOT_EQUAL("!") {

@@ -94,6 +94,7 @@ public interface CollectionParams {
     CREATESNAPSHOT(true, LockLevel.COLLECTION),
     DELETESNAPSHOT(true, LockLevel.COLLECTION),
     LISTSNAPSHOTS(false, LockLevel.NONE),
+    MOVEREPLICA(false, LockLevel.SHARD),
     //only for testing. it just waits for specified time
     // these are not exposed via collection API commands
     // but the overseer is aware of these tasks

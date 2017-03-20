@@ -36,6 +36,8 @@ import java.util.regex.Pattern;
 
 import org.apache.http.HttpEntity;
 import org.apache.http.util.EntityUtils;
+import org.apache.solr.common.IteratorWriter;
+import org.apache.solr.common.MapWriter;
 import org.apache.solr.common.SolrException;
 import org.noggit.CharArr;
 import org.noggit.JSONParser;
@@ -60,23 +62,23 @@ public class Utils {
     Map copy = new LinkedHashMap();
     for (Object o : map.entrySet()) {
       Map.Entry e = (Map.Entry) o;
-      Object v = e.getValue();
-      if (v instanceof Map) v = getDeepCopy((Map) v, maxDepth - 1, mutable);
-      else if (v instanceof Collection) v = getDeepCopy((Collection) v, maxDepth - 1, mutable);
-      copy.put(e.getKey(), v);
+      copy.put(e.getKey(), makeDeepCopy(e.getValue(),maxDepth, mutable));
     }
     return mutable ? copy : Collections.unmodifiableMap(copy);
+  }
+
+  private static Object makeDeepCopy(Object v, int maxDepth, boolean mutable) {
+    if (v instanceof MapWriter) v = ((MapWriter) v).toMap(new LinkedHashMap<>());
+    else if (v instanceof IteratorWriter) v = ((IteratorWriter) v).toList(new ArrayList<>());
+    else if (v instanceof Map) v = getDeepCopy((Map) v, maxDepth - 1, mutable);
+    else if (v instanceof Collection) v = getDeepCopy((Collection) v, maxDepth - 1, mutable);
+    return v;
   }
 
   public static Collection getDeepCopy(Collection c, int maxDepth, boolean mutable) {
     if (c == null || maxDepth < 1) return c;
     Collection result = c instanceof Set ? new HashSet() : new ArrayList();
-    for (Object o : c) {
-      if (o instanceof Map) {
-        o = getDeepCopy((Map) o, maxDepth - 1, mutable);
-      }
-      result.add(o);
-    }
+    for (Object o : c) result.add(makeDeepCopy(o, maxDepth, mutable));
     return mutable ? result : result instanceof Set ? unmodifiableSet((Set) result) : unmodifiableList((List) result);
   }
 

@@ -20,34 +20,40 @@ package org.apache.solr.recipe;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.Collections;
-import java.util.HashMap;
+import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
+import java.util.function.Predicate;
+import java.util.stream.Collectors;
 
 import org.apache.solr.common.IteratorWriter;
 import org.apache.solr.common.MapWriter;
+import org.apache.solr.common.params.CollectionParams.CollectionAction;
 import org.apache.solr.common.util.Utils;
 
 import static java.util.Collections.singletonList;
 import static java.util.stream.Collectors.toList;
-import static org.apache.solr.common.cloud.ZkStateReader.REPLICA_PROP;
-import static org.apache.solr.recipe.Operand.GREATER_THAN;
-import static org.apache.solr.recipe.Operand.LESS_THAN;
-import static org.apache.solr.recipe.Operand.NOT_EQUAL;
+import static org.apache.solr.common.params.CollectionParams.CollectionAction.ADDREPLICA;
+import static org.apache.solr.common.params.CollectionParams.CollectionAction.DELETEREPLICA;
+import static org.apache.solr.common.params.CollectionParams.CollectionAction.MOVEREPLICA;
+import static org.apache.solr.common.params.CollectionParams.CollectionAction.SPLITSHARD;
+import static org.apache.solr.common.params.CoreAdminParams.NODE;
 
 public class RuleSorter {
-  public static final String ALL = "#ALL";
   public static final String EACH = "#EACH";
-  List<Clause> conditionClauses = new ArrayList<>();
+  public static final String ANY = "#ANY";
+  List<Clause> clauses = new ArrayList<>();
   List<Preference> preferences = new ArrayList<>();
   List<String> params= new ArrayList<>();
 
 
   public RuleSorter(Map<String, Object> jsonMap) {
     List<Map<String, Object>> l = getListOfMap("conditions", jsonMap);
-    conditionClauses = l.stream().map(Clause::new).collect(toList());
+    clauses = l.stream().map(Clause::new).collect(toList());
     l = getListOfMap("preferences", jsonMap);
     preferences = l.stream().map(Preference::new).collect(toList());
     for (int i = 0; i < preferences.size() - 1; i++) {
@@ -55,10 +61,7 @@ public class RuleSorter {
       preference.next = preferences.get(i + 1);
     }
 
-    for (Clause c : conditionClauses) {
-      for (Condition condition : c.conditions) params.add(condition.name);
-    }
-
+    for (Clause c : clauses) params.add(c.tag.name);
     for (Preference preference : preferences) {
       if (params.contains(preference.name.name())) {
         throw new RuntimeException(preference.name + " is repeated");
@@ -66,34 +69,64 @@ public class RuleSorter {
       params.add(preference.name.toString());
       preference.idx = params.size() - 1;
     }
-
   }
 
-  public class Session implements MapWriter {
-    private final List<String> nodes;
-    private final NodeValueProvider snitch;
-    private List<Row> matrix;
-    List<String> paramsList = new ArrayList<>(params);
 
-    private Session(List<String> nodes, NodeValueProvider snitch) {
+  public class Session implements MapWriter {
+    final List<String> nodes;
+    final NodeValueProvider snitch;
+    final List<Row> matrix;
+    Set<String> collections = new HashSet<>();
+
+    Session(List<String> nodes, NodeValueProvider snitch) {
       this.nodes = nodes;
       this.snitch = snitch;
       matrix = new ArrayList<>(nodes.size());
-      for (String node : nodes) matrix.add(new Row(node, paramsList, snitch));
-
+      for (String node : nodes) matrix.add(new Row(node, params, snitch));
+      for (Row row : matrix) row.replicaInfo.forEach((s, e) -> collections.add(s));
     }
 
-    public void sort() {
-      if (preferences.size() > 1) {
+    List<Row> getMatrixCopy() {
+      return matrix.stream()
+          .map(Row::copy)
+          .collect(Collectors.toList());
+    }
+
+
+    /**Apply the preferences and conditions
+     */
+    public void applyRules() {
+      if (!preferences.isEmpty()) {
         //this is to set the approximate value according to the precision
         ArrayList<Row> tmpMatrix = new ArrayList<>(matrix);
         for (Preference p : preferences) {
           Collections.sort(tmpMatrix, (r1, r2) -> p.compare(r1, r2, false));
-          p.setNewVal(tmpMatrix);
+          p.setApproxVal(tmpMatrix);
         }
         //approximate values are set now. Let's do recursive sorting
         Collections.sort(matrix, (r1, r2) -> preferences.get(0).compare(r1, r2, true));
       }
+
+      if (!clauses.isEmpty()) {
+        for (Clause clause : clauses) {
+          for (Row row : matrix) {
+            clause.test(row);
+          }
+        }
+      }
+
+    }
+
+    public Map<String, List<Clause>> getViolations() {
+      return matrix.stream()
+          .filter(row -> !row.violations.isEmpty())
+          .collect(Collectors.toMap(r -> r.node, r -> r.violations));
+    }
+
+    public Operation suggest(CollectionAction action) {
+      if (!supportedActions.contains(action))
+        throw new UnsupportedOperationException(action.toString() + "is not supported");
+      return null;
     }
 
     @Override
@@ -130,103 +163,6 @@ public class RuleSorter {
   }
 
 
-  static class Clause {
-    List<Condition> conditions;
-    boolean strict = true;
-
-    Clause(Map<String, Object> m) {
-      conditions = m.entrySet().stream()
-          .filter(e -> !"strict".equals(e.getKey().trim()))
-          .map(Condition::new)
-          .collect(toList());
-      Object o = m.get("strict");
-      if (o == null) return;
-      strict = o instanceof Boolean ? (Boolean) o : Boolean.parseBoolean(o.toString());
-    }
-
-  }
-
-  static class Condition {
-    String name;
-    Object val;
-    Operand operand;
-
-    Condition(Map.Entry<String, Object> m) {
-      Object expectedVal;
-      try {
-        this.name = m.getKey().trim();
-        String value = m.getValue().toString().trim();
-        if ((expectedVal = NOT_EQUAL.match(value)) != null) {
-          operand = NOT_EQUAL;
-        } else if ((expectedVal = GREATER_THAN.match(value)) != null) {
-          operand = GREATER_THAN;
-        } else if ((expectedVal = LESS_THAN.match(value)) != null) {
-          operand = LESS_THAN;
-        } else {
-          operand = Operand.EQUAL;
-          expectedVal = value;
-        }
-
-        if (name.equals(REPLICA_PROP)) {
-          if (!ALL.equals(expectedVal)) {
-            try {
-              expectedVal = Integer.parseInt(expectedVal.toString());
-            } catch (NumberFormatException e) {
-              throw new RuntimeException("The replica tag value can only be '*' or an integer");
-            }
-          }
-        }
-
-      } catch (Exception e) {
-        throw new IllegalArgumentException("Invalid condition : " + name + ":" + val, e);
-      }
-      this.val = expectedVal;
-
-
-    }
-  }
-
-  static class Preference {
-    final SortParam name;
-    Integer precision;
-    final Sort sort;
-    Preference next;
-    public int idx;
-
-    Preference(Map<String, Object> m) {
-      sort = Sort.get(m);
-      name = SortParam.get(m.get(sort.name()).toString());
-      Object p = m.getOrDefault("precision", 0);
-      precision = p instanceof Number ? ((Number) p).intValue() : Integer.parseInt(p.toString());
-
-    }
-
-    // there are 2 modes of compare.
-    // recursive, it uses the precision to tie & when there is a tie use the next preference to compare
-    // in non-recursive mode, precision is not taken into consideration and sort is done on actual value
-    int compare(Row r1, Row r2, boolean recursive) {
-      Object o1 = recursive ? r1.cells[idx].val_ : r1.cells[idx].val;
-      Object o2 = recursive ? r2.cells[idx].val_ : r2.cells[idx].val;
-      int result = 0;
-      if (o1 instanceof Integer && o2 instanceof Integer) result = ((Integer) o1).compareTo((Integer) o2);
-      if (o1 instanceof Long && o2 instanceof Long) result = ((Long) o1).compareTo((Long) o2);
-      if (o1 instanceof Float && o2 instanceof Float) result = ((Float) o1).compareTo((Float) o2);
-      if (o1 instanceof Double && o2 instanceof Double) result = ((Double) o1).compareTo((Double) o2);
-      return result == 0 ? next == null ? 0 : next.compare(r1, r2, recursive) : sort.sortval * result;
-    }
-
-    //sets the new value according to precision in val_
-    void setNewVal(List<Row> tmpMatrix) {
-      Object prevVal = null;
-      for (Row row : tmpMatrix) {
-        prevVal = row.cells[idx].val_ =
-            prevVal == null || Math.abs(((Number) prevVal).longValue() - ((Number) row.cells[idx].val).longValue()) > precision ?
-                row.cells[idx].val :
-                prevVal;
-      }
-    }
-  }
-
   enum SortParam {
     freedisk, cores, heap, cpu;
 
@@ -245,7 +181,7 @@ public class RuleSorter {
       sortval = i;
     }
 
-    public static Sort get(Map<String, Object> m) {
+    static Sort get(Map<String, Object> m) {
       if (m.containsKey(maximize.name()) && m.containsKey(minimize.name())) {
         throw new RuntimeException("Cannot have both 'maximize' and 'minimize'");
       }
@@ -255,29 +191,53 @@ public class RuleSorter {
     }
   }
 
-  public static class Row implements MapWriter {
+  static class Row implements MapWriter {
     public final String node;
     final Cell[] cells;
+    Map<String, Map<String, List<ReplicaStat>>> replicaInfo;
+    List<Clause> violations = new ArrayList<>();
     boolean anyValueMissing = false;
 
     Row(String node, List<String> params, NodeValueProvider snitch) {
+      replicaInfo = snitch.getReplicaCounts(node, params);
+      if (replicaInfo == null) replicaInfo = Collections.emptyMap();
       this.node = node;
       cells = new Cell[params.size()];
-      Map<String, Object> vals = new HashMap<>();
-      for (String param : params) vals.put(param, null);
-      snitch.getValues(node, vals);
+      Map<String, Object> vals = snitch.getValues(node, params);
       for (int i = 0; i < params.size(); i++) {
         String s = params.get(i);
         cells[i] = new Cell(i, s, vals.get(s));
+        if (NODE.equals(s)) cells[i].val = node;
         if (cells[i].val == null) anyValueMissing = true;
       }
+    }
+
+    Row(String node, Cell[] cells, boolean anyValueMissing, Map<String, Map<String, List<ReplicaStat>>> replicaInfo) {
+      this.node = node;
+      this.cells = new Cell[cells.length];
+      for (int i = 0; i < this.cells.length; i++) {
+        this.cells[i] = cells[i].copy();
+
+      }
+      this.anyValueMissing = anyValueMissing;
+      this.replicaInfo = replicaInfo;
     }
 
     @Override
     public void writeMap(EntryWriter ew) throws IOException {
       ew.put(node, (IteratorWriter) iw -> {
+        iw.add((MapWriter) e -> e.put("replicas", replicaInfo));
         for (Cell cell : cells) iw.add(cell);
       });
+    }
+
+    public Row copy() {
+      return new Row(node, cells, anyValueMissing, replicaInfo);
+    }
+
+    public Object getVal(String name) {
+      for (Cell cell : cells) if (cell.name.equals(name)) return cell.val;
+      return null;
     }
   }
 
@@ -292,15 +252,60 @@ public class RuleSorter {
       this.val = val;
     }
 
+    Cell(int index, String name, Object val, Object val_) {
+      this.index = index;
+      this.name = name;
+      this.val = val;
+      this.val_ = val_;
+    }
+
     @Override
     public void writeMap(EntryWriter ew) throws IOException {
       ew.put(name, val);
     }
+
+    public Cell copy() {
+      return new Cell(index, name, val, val_);
+    }
   }
+
+  static class Operation {
+    CollectionAction action;
+    String node, collection, shard, replica;
+    String targetNode;
+
+  }
+
+
+  static class ReplicaStat implements MapWriter {
+    final String name;
+    Map<String, Object> variables;
+
+    ReplicaStat(String name, Map<String, Object> vals) {
+      this.name = name;
+      this.variables = vals;
+    }
+
+    @Override
+    public void writeMap(EntryWriter ew) throws IOException {
+      ew.put(name, variables);
+    }
+  }
+
 
   interface NodeValueProvider {
+    Map<String, Object> getValues(String node, Collection<String> keys);
 
-    void getValues(String node, Map<String, Object> valuesMap);
-
+    /**
+     * Get the details of each replica in a node. It attempts to fetch as much details about
+     * the replica as mentioned in the keys list
+     * <p>
+     * the format is {collection:shard :[{replicaetails}]}
+     */
+    Map<String, Map<String, List<ReplicaStat>>> getReplicaCounts(String node, Collection<String> keys);
   }
+
+  private static final Set<CollectionAction> supportedActions = new HashSet<>(Arrays.asList(ADDREPLICA, DELETEREPLICA, MOVEREPLICA, SPLITSHARD));
+
+
 }
