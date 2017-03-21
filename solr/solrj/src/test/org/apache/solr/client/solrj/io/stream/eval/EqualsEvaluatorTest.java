@@ -17,11 +17,9 @@
 package org.apache.solr.client.solrj.io.stream.eval;
 
 import java.io.IOException;
+import java.util.HashMap;
 import java.util.Map;
 
-import junit.framework.Assert;
-
-import org.apache.commons.collections.map.HashedMap;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.solr.client.solrj.io.Tuple;
 import org.apache.solr.client.solrj.io.eval.EqualsEvaluator;
@@ -29,6 +27,8 @@ import org.apache.solr.client.solrj.io.eval.RawValueEvaluator;
 import org.apache.solr.client.solrj.io.eval.StreamEvaluator;
 import org.apache.solr.client.solrj.io.stream.expr.StreamFactory;
 import org.junit.Test;
+
+import junit.framework.Assert;
 
 public class EqualsEvaluatorTest extends LuceneTestCase {
 
@@ -42,7 +42,7 @@ public class EqualsEvaluatorTest extends LuceneTestCase {
       .withFunctionName("eq", EqualsEvaluator.class)
       .withFunctionName("val", RawValueEvaluator.class)
       ;
-    values = new HashedMap();
+    values = new HashMap<String,Object>();
   }
     
   @Test
