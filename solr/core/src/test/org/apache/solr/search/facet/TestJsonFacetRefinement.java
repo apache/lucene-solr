@@ -227,16 +227,16 @@ public class TestJsonFacetRefinement extends SolrTestCaseHS {
     String cat_s = p.get("cat_s");
     String num_d = p.get("num_d");
 
-    clients.get(0).add( sdoc("id", "01", cat_s, "A", num_d, -1) ); // A wins count tie
-    clients.get(0).add( sdoc("id", "02", cat_s, "B", num_d, 3) );
+    clients.get(0).add( sdoc("id", "01", "all_s","all", cat_s, "A", num_d, -1) ); // A wins count tie
+    clients.get(0).add( sdoc("id", "02", "all_s","all", cat_s, "B", num_d, 3) );
 
-    clients.get(1).add( sdoc("id", "11", cat_s, "B", num_d, -5) ); // B highest count
-    clients.get(1).add( sdoc("id", "12", cat_s, "B", num_d, -11) );
-    clients.get(1).add( sdoc("id", "13", cat_s, "A", num_d, 7) );
+    clients.get(1).add( sdoc("id", "11", "all_s","all", cat_s, "B", num_d, -5) ); // B highest count
+    clients.get(1).add( sdoc("id", "12", "all_s","all", cat_s, "B", num_d, -11) );
+    clients.get(1).add( sdoc("id", "13", "all_s","all", cat_s, "A", num_d, 7) );
 
-    clients.get(2).add( sdoc("id", "21", cat_s, "A", num_d, 17) ); // A highest count
-    clients.get(2).add( sdoc("id", "22", cat_s, "A", num_d, -19) );
-    clients.get(2).add( sdoc("id", "23", cat_s, "B", num_d, 11) );
+    clients.get(2).add( sdoc("id", "21", "all_s","all", cat_s, "A", num_d, 17) ); // A highest count
+    clients.get(2).add( sdoc("id", "22", "all_s","all", cat_s, "A", num_d, -19) );
+    clients.get(2).add( sdoc("id", "23", "all_s","all", cat_s, "B", num_d, 11) );
 
     client.commit();
 
@@ -291,12 +291,16 @@ public class TestJsonFacetRefinement extends SolrTestCaseHS {
         "json.facet", "{" +
             " cat0:{type:terms, field:${cat_s}, sort:'min1 asc', limit:1, overrequest:0, refine:false, facet:{ min1:'min(${num_d})'}   }" +
             ",cat1:{type:terms, field:${cat_s}, sort:'min1 asc', limit:1, overrequest:0, refine:true,  facet:{ min1:'min(${num_d})'}   }" +
+            ",qfacet:{type:query, q:'*:*', facet:{  cat2:{type:terms, field:${cat_s}, sort:'min1 asc', limit:1, overrequest:0, refine:true,  facet:{ min1:'min(${num_d})'}   }  }}" +  // refinement needed through a query facet
+            ",allf:{type:terms, field:all_s,  facet:{  cat3:{type:terms, field:${cat_s}, sort:'min1 asc', limit:1, overrequest:0, refine:true,  facet:{ min1:'min(${num_d})'}   }  }}" +  // refinement needed through field facet
             ",sum1:'sum(num_d)'" +  // make sure that root bucket stats aren't affected by refinement
             "}"
         )
         , "facets=={ count:8" +
-            ", cat0:{ buckets:[ {val:A,count:3, min1:-19.0} ] }" +  // B wins in shard2, so we're missing the "A" count for that shar w/o refinement.
+            ", cat0:{ buckets:[ {val:A,count:3, min1:-19.0} ] }" +  // B wins in shard2, so we're missing the "A" count for that shard w/o refinement.
             ", cat1:{ buckets:[ {val:A,count:4, min1:-19.0} ] }" +  // with refinement, we get the right count
+            ", qfacet:{ count:8,  cat2:{ buckets:[ {val:A,count:4, min1:-19.0} ] }    }" +  // just like the previous response, just nested under a query facet
+            ", allf:{ buckets:[  {cat3:{ buckets:[ {val:A,count:4, min1:-19.0} ] }  ,count:8,val:all   }]  }" +  // just like the previous response, just nested under a field facet
             ", sum1:2.0" +
             "}"
     );
