@@ -235,6 +235,7 @@ public class FacetModule extends SearchComponent {
       Map<String,Object> finfo = new HashMap<>(1);
       finfo.put(FACET_REFINE, refinement);
       String finfoStr = JSONUtil.toJSON(finfo);
+      // System.err.println("##################### REFINE=" + finfoStr);
       shardsRefineRequest.params.add(FACET_INFO, finfoStr);
 
       if (newRequest) {
