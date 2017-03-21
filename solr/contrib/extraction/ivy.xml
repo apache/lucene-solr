@@ -49,6 +49,7 @@
     <dependency org="org.apache.poi" name="poi-scratchpad" rev="${/org.apache.poi/poi-scratchpad}" conf="compile"/>
     <dependency org="org.apache.poi" name="poi-ooxml" rev="${/org.apache.poi/poi-ooxml}" conf="compile"/>
     <dependency org="org.apache.poi" name="poi-ooxml-schemas" rev="${/org.apache.poi/poi-ooxml-schemas}" conf="compile"/>
+    <dependency org="com.github.virtuald" name="curvesapi" rev="${/com.github.virtuald/curvesapi}" conf="compile"/>
     <dependency org="org.apache.xmlbeans" name="xmlbeans" rev="${/org.apache.xmlbeans/xmlbeans}" conf="compile"/>
     <dependency org="org.ccil.cowan.tagsoup" name="tagsoup" rev="${/org.ccil.cowan.tagsoup/tagsoup}" conf="compile"/>
     <dependency org="com.googlecode.mp4parser" name="isoparser" rev="${/com.googlecode.mp4parser/isoparser}" conf="compile"/>
@@ -61,7 +62,7 @@
     <dependency org="org.tukaani" name="xz" rev="${/org.tukaani/xz}" conf="compile"/>
     <dependency org="com.adobe.xmp" name="xmpcore" rev="${/com.adobe.xmp/xmpcore}" conf="compile"/>
     <dependency org="com.pff" name="java-libpst" rev="${/com.pff/java-libpst}" conf="compile"/>
-    <dependency org="net.sourceforge.jmatio" name="jmatio" rev="${/net.sourceforge.jmatio/jmatio}" conf="compile"/>
+    <dependency org="org.tallison" name="jmatio" rev="${/org.tallison/jmatio}" conf="compile"/>
 
     <!-- Other ExtractingRequestHandler dependencies -->
     <dependency org="com.ibm.icu" name="icu4j" rev="${/com.ibm.icu/icu4j}" conf="compile"/>

@@ -1,0 +1,3 @@
+The original project used a BSD license, and remains so.
+
+com.graphbuilder.org.apache.harmony.awt.gl.Crossing is from the Apache Harmony project and is released under the Apache 2.0 license.
