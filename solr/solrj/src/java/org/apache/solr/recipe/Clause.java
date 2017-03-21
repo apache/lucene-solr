@@ -20,15 +20,16 @@ package org.apache.solr.recipe;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 
 import org.apache.solr.common.MapWriter;
 import org.apache.solr.common.util.Utils;
 import org.apache.solr.recipe.RuleSorter.Row;
 
+import static java.util.Collections.singletonMap;
 import static org.apache.solr.common.params.CoreAdminParams.COLLECTION;
 import static org.apache.solr.common.params.CoreAdminParams.REPLICA;
 import static org.apache.solr.common.params.CoreAdminParams.SHARD;
@@ -36,22 +37,20 @@ import static org.apache.solr.recipe.Operand.EQUAL;
 import static org.apache.solr.recipe.Operand.GREATER_THAN;
 import static org.apache.solr.recipe.Operand.LESS_THAN;
 import static org.apache.solr.recipe.Operand.NOT_EQUAL;
-import static org.apache.solr.recipe.RuleSorter.ANY;
 
 
-class Clause implements MapWriter {
+public class Clause implements MapWriter {
   Map<String, Object> original;
   Condition collection, shard, replica, tag;
   boolean strict = true;
 
   Clause(Map<String, Object> m) {
     this.original = m;
-    collection = new Condition(COLLECTION, m.containsKey(COLLECTION) ? (String) m.get(COLLECTION) : ANY, EQUAL);
-    shard = new Condition(SHARD, m.containsKey(SHARD) ? (String) m.get(SHARD) : ANY, EQUAL);
-    String replica = m.containsKey(REPLICA) ? String.valueOf(m.get(REPLICA)) : ANY;
-    this.replica = parse(REPLICA, replica);
+    collection = parse(COLLECTION, m);
+    shard = parse(SHARD, m);
+    this.replica = parse(REPLICA, m);
     strict = Boolean.parseBoolean(String.valueOf(m.getOrDefault("strict", "true")));
-    m.forEach(this::parseCondition);
+    m.forEach((s, o) -> parseCondition(s, o));
     if (tag == null)
       throw new RuntimeException("Invalid op, must have one and only one tag other than collection, shard,replica " + Utils.toJSONString(m));
   }
@@ -61,7 +60,7 @@ class Clause implements MapWriter {
     if (tag != null) {
       throw new IllegalArgumentException("Only one tag other than collection, shard, replica is possible");
     }
-    tag = parse(s, o);
+    tag = parse(s, singletonMap(s, o));
   }
 
   class Condition {
@@ -75,62 +74,72 @@ class Clause implements MapWriter {
       this.op = op;
     }
 
+    boolean isMatch(Row row) {
+      return op.canMatch(val, row.getVal(name));
+    }
     boolean isMatch(Object inputVal) {
       return op.canMatch(val, inputVal);
     }
-
   }
 
-  Condition parse(String s, Object o) {
-    Object expectedVal;
-    String value = null;
+  Condition parse(String s, Map m) {
+    Object expectedVal = null;
+    Object val = m.get(s);
     try {
       String conditionName = s.trim();
-      value = String.valueOf(o).trim();
+      String value = val == null ? null : String.valueOf(val).trim();
       Operand operand = null;
-      if ((expectedVal = NOT_EQUAL.match(value)) != null) {
+      if ((expectedVal = Operand.ANY.parse(value)) != null) {
+        operand = Operand.ANY;
+      } else if ((expectedVal = NOT_EQUAL.parse(value)) != null) {
         operand = NOT_EQUAL;
-      } else if ((expectedVal = GREATER_THAN.match(value)) != null) {
+      } else if ((expectedVal = GREATER_THAN.parse(value)) != null) {
         operand = GREATER_THAN;
-      } else if ((expectedVal = LESS_THAN.match(value)) != null) {
+      } else if ((expectedVal = LESS_THAN.parse(value)) != null) {
         operand = LESS_THAN;
       } else {
         operand = EQUAL;
-        expectedVal = EQUAL.match(value);
+        expectedVal = EQUAL.parse(value);
       }
 
       return new Condition(conditionName, expectedVal, operand);
 
     } catch (Exception e) {
-      throw new IllegalArgumentException("Invalid tag : " + s + ":" + value, e);
+      throw new IllegalArgumentException("Invalid tag : " + s + ":" + val, e);
     }
   }
 
 
   TestStatus test(Row row) {
     AtomicReference<TestStatus> result = new AtomicReference<>(TestStatus.NOT_APPLICABLE);
-    Object val = row.getVal(tag.name);
-    if (tag.isMatch(val)) {
-      checkReplicaCount(row, result);
-      if (result.get() == TestStatus.FAIL) row.violations.add(this);
+    outer:
+    for (Map.Entry<String, Map<String, List<RuleSorter.ReplicaStat>>> e : row.replicaInfo.entrySet()) {
+      if (!collection.isMatch(e.getKey())) break;
+      int count = 0;
+      for (Map.Entry<String, List<RuleSorter.ReplicaStat>> e1 : e.getValue().entrySet()) {
+        if (!shard.isMatch(e1.getKey())) break;
+        count += e1.getValue().size();
+        if (shard.val.equals(RuleSorter.EACH) && count > 0 && replica.isMatch(count) && tag.isMatch(row)) {
+          result.set(TestStatus.FAIL);
+          continue outer;
+        }
+        if (RuleSorter.EACH.equals(shard.val)) count = 0;
+      }
+      if (shard.val.equals(RuleSorter.ANY) && count > 0 && replica.isMatch(count) && !tag.isMatch(row)) {
+        result.set(TestStatus.FAIL);
+      }
     }
+    if (result.get() == TestStatus.FAIL) row.violations.add(this);
     return result.get();
   }
 
-  TestStatus checkReplicaCount(Row row, AtomicReference<TestStatus> result) {
-    row.replicaInfo.forEach((coll, e) -> {
-      if (!collection.isMatch(coll)) return;
-      AtomicInteger count = new AtomicInteger();
-      e.forEach((sh, replicas) -> {
-        if (!shard.isMatch(sh)) return;
-        count.addAndGet(replicas.size());
-      });
-      result.set(replica.isMatch(count) ? TestStatus.PASS : TestStatus.FAIL);
-      if (RuleSorter.EACH.equals(shard.val)) count.set(0);
-    });
-    return TestStatus.PASS;
+  public boolean isStrict() {
+    return strict;
   }
-
+  @Override
+  public String toString() {
+    return Utils.toJSONString(original);
+  }
 
   @Override
   public void writeMap(EntryWriter ew) throws IOException {

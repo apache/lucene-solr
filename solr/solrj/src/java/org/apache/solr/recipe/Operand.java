@@ -21,6 +21,18 @@ import java.util.Objects;
 
 
 public enum Operand {
+  ANY(""){
+    @Override
+    public boolean canMatch(Object ruleVal, Object testVal) {
+      return true;
+    }
+
+    @Override
+    public Object parse(String val) {
+      if(val == null) return RuleSorter.ANY;
+      return RuleSorter.ANY.equals(val) || RuleSorter.EACH.equals(val) ? val : null;
+    }
+  },
   EQUAL(""),
   NOT_EQUAL("!") {
     @Override
@@ -30,31 +42,27 @@ public enum Operand {
   },
   GREATER_THAN(">") {
     @Override
-    public Object match(String val) {
-      return checkNumeric(super.match(val));
+    public Object parse(String val) {
+      return checkNumeric(super.parse(val));
     }
 
-
-    @Override
-    public boolean canMatch(Object ruleVal, Object testVal) {
-      return testVal != null && compareNum(ruleVal, testVal) == 1;
-    }
-
-  },
-  LESS_THAN("<") {
-    @Override
-    public int compare(Object n1Val, Object n2Val) {
-      return GREATER_THAN.compare(n1Val, n2Val) * -1;
-    }
 
     @Override
     public boolean canMatch(Object ruleVal, Object testVal) {
       return testVal != null && compareNum(ruleVal, testVal) == -1;
     }
 
+  },
+  LESS_THAN("<") {
+
     @Override
-    public Object match(String val) {
-      return checkNumeric(super.match(val));
+    public boolean canMatch(Object ruleVal, Object testVal) {
+      return testVal != null && compareNum(ruleVal, testVal) != -1;
+    }
+
+    @Override
+    public Object parse(String val) {
+      return checkNumeric(super.parse(val));
     }
   };
   public final String operand;
@@ -76,7 +84,7 @@ public enum Operand {
     }
   }
 
-  public Object match(String val) {
+  public Object parse(String val) {
     if (operand.isEmpty()) return val;
     return val.startsWith(operand) ? val.substring(1) : null;
   }

@@ -35,7 +35,7 @@ public class TestRuleSorter extends SolrTestCaseJ4 {
   public void testRuleParsing() throws IOException {
     String rules = "{" +
         "conditions:[{nodeRole:'!overseer', strict:false}, " +
-        "{replica:'<2',node:'*', shard:'#EACH'}]," +
+        "{replica:'<2',node:'#ANY', shard:'#EACH'}]," +
         " preferences:[" +
         "{minimize:cores , precision:2}," +
         "{maximize:freedisk, precision:50}, " +
@@ -79,7 +79,7 @@ public class TestRuleSorter extends SolrTestCaseJ4 {
         "          'core_node3':{" +
         "            'core':'gettingstarted_shard2_replica2'," +
         "            'base_url':'http://10.0.0.4:7574/solr'," +
-        "            'node_name':'node2'," +
+        "            'node_name':'node1'," +
         "            'state':'active'}}}}}}";
 
 
