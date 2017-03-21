@@ -61,7 +61,7 @@ class FacetQueryProcessor extends FacetProcessor<FacetQuery> {
       // FIXME - what needs to be done here?
     }
     response = new SimpleOrderedMap<>();
-    fillBucket(response, freq.q, null, (fcontext.flags & FacetContext.SKIP_FACET)!=0);
+    fillBucket(response, freq.q, null, (fcontext.flags & FacetContext.SKIP_FACET)!=0, fcontext.facetInfo);
   }
 
 
