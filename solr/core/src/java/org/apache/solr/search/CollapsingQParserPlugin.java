@@ -63,6 +63,9 @@ import org.apache.solr.request.LocalSolrQueryRequest;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.request.SolrRequestInfo;
 import org.apache.solr.schema.FieldType;
+import org.apache.solr.schema.FloatPointField;
+import org.apache.solr.schema.IntPointField;
+import org.apache.solr.schema.LongPointField;
 import org.apache.solr.schema.StrField;
 import org.apache.solr.schema.TrieFloatField;
 import org.apache.solr.schema.TrieIntField;
@@ -962,14 +965,14 @@ public class CollapsingQParserPlugin extends QParserPlugin {
       } else if (funcQuery != null) {
         this.collapseStrategy =  new OrdValueSourceStrategy(maxDoc, nullPolicy, new int[valueCount], groupHeadSelector, this.needsScores, boostDocs, funcQuery, searcher, collapseValues);
       } else {
-        if(fieldType instanceof TrieIntField) {
+        if (fieldType instanceof TrieIntField || fieldType instanceof IntPointField) {
           this.collapseStrategy = new OrdIntStrategy(maxDoc, nullPolicy, new int[valueCount], groupHeadSelector, this.needsScores, boostDocs, collapseValues);
-        } else if(fieldType instanceof TrieFloatField) {
+        } else if (fieldType instanceof TrieFloatField || fieldType instanceof FloatPointField) {
           this.collapseStrategy = new OrdFloatStrategy(maxDoc, nullPolicy, new int[valueCount], groupHeadSelector, this.needsScores, boostDocs, collapseValues);
-        } else if(fieldType instanceof TrieLongField) {
+        } else if (fieldType instanceof TrieLongField || fieldType instanceof LongPointField) {
           this.collapseStrategy =  new OrdLongStrategy(maxDoc, nullPolicy, new int[valueCount], groupHeadSelector, this.needsScores, boostDocs, collapseValues);
         } else {
-          throw new IOException("min/max must be either TrieInt, TrieLong, TrieFloat.");
+          throw new IOException("min/max must be either Int/Long/Float field types");
         }
       }
     }
@@ -1146,12 +1149,12 @@ public class CollapsingQParserPlugin extends QParserPlugin {
       } else if (funcQuery != null) {
         this.collapseStrategy =  new IntValueSourceStrategy(maxDoc, size, collapseField, nullValue, nullPolicy, groupHeadSelector, this.needsScores, boostDocsMap, funcQuery, searcher);
       } else {
-        if(fieldType instanceof TrieIntField) {
+        if (fieldType instanceof TrieIntField || fieldType instanceof IntPointField) {
           this.collapseStrategy = new IntIntStrategy(maxDoc, size, collapseField, nullValue, nullPolicy, groupHeadSelector, this.needsScores, boostDocsMap);
-        } else if(fieldType instanceof TrieFloatField) {
+        } else if (fieldType instanceof TrieFloatField || fieldType instanceof FloatPointField) {
           this.collapseStrategy = new IntFloatStrategy(maxDoc, size, collapseField, nullValue, nullPolicy, groupHeadSelector, this.needsScores, boostDocsMap);
         } else {
-          throw new IOException("min/max must be TrieInt or TrieFloat when collapsing on numeric fields .");
+          throw new IOException("min/max must be Int or Float field types when collapsing on numeric fields");
         }
       }
     }
@@ -1259,6 +1262,15 @@ public class CollapsingQParserPlugin extends QParserPlugin {
 
   private static class CollectorFactory {
 
+    private boolean isNumericCollapsible(FieldType collapseFieldType) {
+      if (collapseFieldType instanceof TrieIntField || collapseFieldType instanceof IntPointField ||
+          collapseFieldType instanceof TrieFloatField || collapseFieldType instanceof FloatPointField) {
+        return true;
+      } else {
+        return false;
+      }
+    }
+
     public DelegatingCollector getCollector(String collapseField,
                                             GroupHeadSelector groupHeadSelector,
                                             SortSpec sortSpec,
@@ -1335,19 +1347,18 @@ public class CollapsingQParserPlugin extends QParserPlugin {
 
           return new OrdScoreCollector(maxDoc, leafCount, docValuesProducer, nullPolicy, boostDocs);
 
-        } else if (collapseFieldType instanceof TrieIntField ||
-                   collapseFieldType instanceof TrieFloatField) {
+        } else if (isNumericCollapsible(collapseFieldType)) {
 
           int nullValue = 0;
 
-          if(collapseFieldType instanceof TrieFloatField) {
-            if(defaultValue != null) {
+          if (collapseFieldType instanceof TrieFloatField || collapseFieldType instanceof FloatPointField) {
+            if (defaultValue != null) {
               nullValue = Float.floatToIntBits(Float.parseFloat(defaultValue));
             } else {
               nullValue = Float.floatToIntBits(0.0f);
             }
           } else {
-            if(defaultValue != null) {
+              if (defaultValue != null) {
               nullValue = Integer.parseInt(defaultValue);
             }
           }
@@ -1374,12 +1385,11 @@ public class CollapsingQParserPlugin extends QParserPlugin {
                                             funcQuery,
                                             searcher);
 
-        } else if((collapseFieldType instanceof TrieIntField ||
-                   collapseFieldType instanceof TrieFloatField)) {
+        } else if(isNumericCollapsible(collapseFieldType)) {
 
           int nullValue = 0;
 
-          if(collapseFieldType instanceof TrieFloatField) {
+          if (collapseFieldType instanceof TrieFloatField || collapseFieldType instanceof FloatPointField) {
             if(defaultValue != null) {
               nullValue = Float.floatToIntBits(Float.parseFloat(defaultValue));
             } else {
