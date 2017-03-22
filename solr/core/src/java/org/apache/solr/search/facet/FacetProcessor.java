@@ -366,13 +366,9 @@ public abstract class FacetProcessor<FacetRequestT extends FacetRequest>  {
     }
   }
 
-  // TODO: rather than just have a raw "response", perhaps we should model as a bucket object that contains the response plus extra info?
   void fillBucket(SimpleOrderedMap<Object> bucket, Query q, DocSet result, boolean skip, Map<String,Object> facetInfo) throws IOException {
 
-    // TODO: we don't need the DocSet if we've already calculated everything during the first phase
-    boolean needDocSet = freq.getFacetStats().size() > 0 || freq.getSubFacets().size() > 0;
-
-    // TODO: put info in for the merger (like "skip=true"?) Maybe we don't need to if we leave out all extraneous info?
+    boolean needDocSet = (skip==false && freq.getFacetStats().size() > 0) || freq.getSubFacets().size() > 0;
 
     int count;
 
