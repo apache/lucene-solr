@@ -167,7 +167,7 @@ public class IndexFetcher {
 
   public static class IndexFetchResult {
     private final String message;
-    private final boolean status;
+    private final boolean successful;
     private final Throwable exception;
 
     public static final String FAILED_BY_INTERRUPT_MESSAGE = "Fetching index failed by interrupt";
@@ -182,11 +182,11 @@ public class IndexFetcher {
     public static final IndexFetchResult NO_INDEX_COMMIT_EXIST = new IndexFetchResult("No IndexCommit in local index", false, null);
     public static final IndexFetchResult PEER_INDEX_COMMIT_DELETED = new IndexFetchResult("No files to download because IndexCommit in peer was deleted", false, null);
     public static final IndexFetchResult LOCAL_ACTIVITY_DURING_REPLICATION = new IndexFetchResult("Local index modification during replication", false, null);
-    public static final IndexFetchResult CORE_NODE_IS_REPLICA = new IndexFetchResult("Core Name Name Equals Leader Replica Name", false, null);
+    public static final IndexFetchResult CORE_NODE_IS_NOT_LEADER = new IndexFetchResult("Core Name Name Equals Leader Replica Name", false, null);
 
-    IndexFetchResult(String message, boolean status, Throwable exception) {
+    IndexFetchResult(String message, boolean successful, Throwable exception) {
       this.message = message;
-      this.status = status;
+      this.successful = successful;
       this.exception = exception;
     }
 
@@ -200,8 +200,8 @@ public class IndexFetcher {
     /*
      * @return true if index fetch was successful, false otherwise
      */
-    public boolean getStatus() {
-      return this.status;
+    public boolean getSuccessful() {
+      return this.successful;
     }
 
     public String getMessage() {
@@ -359,7 +359,7 @@ public class IndexFetcher {
         Replica replica = getLeaderReplica();
         CloudDescriptor cd = solrCore.getCoreDescriptor().getCloudDescriptor();
         if (cd.getCoreNodeName().equals(replica.getName())) {
-          return IndexFetchResult.CORE_NODE_IS_REPLICA;
+          return IndexFetchResult.CORE_NODE_IS_NOT_LEADER;
         }
         masterUrl = replica.getCoreUrl();
         LOG.info("Updated masterUrl to " + masterUrl);
@@ -369,7 +369,7 @@ public class IndexFetcher {
       try {
         response = getLatestVersion();
       } catch (Exception e) {
-        final String errorMsg = e.getMessage();
+        final String errorMsg = e.toString();
         if (!Strings.isNullOrEmpty(errorMsg) && errorMsg.contains(INTERRUPT_RESPONSE_MESSAGE)) {
             LOG.warn("Master at: " + masterUrl + " is not available. Index fetch failed by interrupt. Exception: " + errorMsg);
             return new IndexFetchResult(IndexFetchResult.FAILED_BY_INTERRUPT_MESSAGE, false, e);
@@ -616,7 +616,7 @@ public class IndexFetcher {
           LOG.warn(
               "Replication attempt was not successful - trying a full index replication reloadCore={}",
               reloadCore);
-          successfulInstall = fetchLatestIndex(true, reloadCore).getStatus();
+          successfulInstall = fetchLatestIndex(true, reloadCore).getSuccessful();
         }
 
         markReplicationStop();

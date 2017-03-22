@@ -1151,7 +1151,7 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
       try {
         LOG.debug("Polling for index modifications");
         markScheduledExecutionStart();
-        boolean pollSuccess = doFetch(null, false).getStatus();
+        boolean pollSuccess = doFetch(null, false).getSuccessful();
         if (pollListener != null) pollListener.onComplete(core, pollSuccess);
       } catch (Exception e) {
         LOG.error("Exception in fetching index", e);
