@@ -58,6 +58,9 @@ New Features
 
 * SOLR-9835: Create another replication mode for SolrCloud
 
+* SOLR-10292: Adds CartesianProductStream which turns a single tuple with a multi-valued field into N 
+  tuples, one for each value in the multi-valued field. (Dennis Gove)
+
 Bug Fixes
 ----------------------
 * SOLR-9262: Connection and read timeouts are being ignored by UpdateShardHandler after SOLR-4509.
@@ -101,8 +104,15 @@ Apache UIMA 2.3.1
 Apache ZooKeeper 3.4.6
 Jetty 9.3.14.v20161028
 
+Detailed Change List
+----------------------
 
-(No Changes)
+New Features
+----------------------
+
+* SOLR-9992: Add support for grouping with PointFIelds. (Cao Manh Dat) 
+
+* SOLR-10046: Add UninvertDocValuesMergePolicyFactory class. (Keith Laban, Christine Poerschke)
 
 
 ==================  6.5.0 ==================
@@ -208,8 +218,6 @@ New Features
 
 * SOLR-10224: Add disk total and disk free metrics. (ab)
 
-* SOLR-10046: Add UninvertDocValuesMergePolicyFactory class. (Keith Laban, Christine Poerschke)
-
 * SOLR-10085: SQL result set fields should be ordered by the field list (Joel Bernstein)
 
 * SOLR-10254: significantTerms Streaming Expression should work in non-SolrCloud mode (Joel Bernstein)
@@ -304,6 +312,11 @@ Bug Fixes
   (Christine Poerschke)
 
 * SOLR-10237: Poly-fields should work with subfields that have docValues=true (Tomás Fernández Löbbe, David Smiley)
+
+* SOLR-10218: The Schema API commands "add-field-type" and "replace-field-type" improperly specify SimilarityFactory params.
+  (Benjamin Deininger, Troy Mohl, Steve Rowe)
+
+* SOLR-10319: SolrCore "instanceDir" metric not visible in JMX. (ab)
 
 Optimizations
 ----------------------

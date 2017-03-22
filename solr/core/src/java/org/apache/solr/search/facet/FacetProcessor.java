@@ -367,7 +367,7 @@ public abstract class FacetProcessor<FacetRequestT extends FacetRequest>  {
   }
 
   // TODO: rather than just have a raw "response", perhaps we should model as a bucket object that contains the response plus extra info?
-  void fillBucket(SimpleOrderedMap<Object> bucket, Query q, DocSet result, boolean skip) throws IOException {
+  void fillBucket(SimpleOrderedMap<Object> bucket, Query q, DocSet result, boolean skip, Map<String,Object> facetInfo) throws IOException {
 
     // TODO: we don't need the DocSet if we've already calculated everything during the first phase
     boolean needDocSet = freq.getFacetStats().size() > 0 || freq.getSubFacets().size() > 0;
@@ -398,7 +398,7 @@ public abstract class FacetProcessor<FacetRequestT extends FacetRequest>  {
       if (!skip) {
         processStats(bucket, result, count);
       }
-      processSubs(bucket, q, result, skip);
+      processSubs(bucket, q, result, skip, facetInfo);
     } finally {
       if (result != null) {
         // result.decref(); // OFF-HEAP
@@ -407,7 +407,7 @@ public abstract class FacetProcessor<FacetRequestT extends FacetRequest>  {
     }
   }
 
-  void processSubs(SimpleOrderedMap<Object> response, Query filter, DocSet domain, boolean skip) throws IOException {
+  void processSubs(SimpleOrderedMap<Object> response, Query filter, DocSet domain, boolean skip, Map<String,Object> facetInfo) throws IOException {
 
     boolean emptyDomain = domain == null || domain.size() == 0;
 
@@ -423,8 +423,8 @@ public abstract class FacetProcessor<FacetRequestT extends FacetRequest>  {
       }
 
       Map<String,Object>facetInfoSub = null;
-      if (fcontext.facetInfo != null) {
-        facetInfoSub = (Map<String,Object>)fcontext.facetInfo.get(sub.getKey());
+      if (facetInfo != null) {
+        facetInfoSub = (Map<String,Object>)facetInfo.get(sub.getKey());
       }
 
       // If we're skipping this node, then we only need to process sub-facets that have facet info specified.

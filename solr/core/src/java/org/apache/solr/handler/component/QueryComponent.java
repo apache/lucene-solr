@@ -49,6 +49,7 @@ import org.apache.lucene.search.grouping.GroupDocs;
 import org.apache.lucene.search.grouping.SearchGroup;
 import org.apache.lucene.search.grouping.TopGroups;
 import org.apache.lucene.util.BytesRef;
+import org.apache.lucene.util.BytesRefBuilder;
 import org.apache.lucene.util.InPlaceMergeSorter;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.common.SolrDocument;
@@ -445,7 +446,9 @@ public class QueryComponent extends SearchComponent
             for (String topGroup : topGroupsParam) {
               SearchGroup<BytesRef> searchGroup = new SearchGroup<>();
               if (!topGroup.equals(TopGroupsShardRequestFactory.GROUP_NULL_VALUE)) {
-                searchGroup.groupValue = new BytesRef(schemaField.getType().readableToIndexed(topGroup));
+                BytesRefBuilder builder = new BytesRefBuilder();
+                schemaField.getType().readableToIndexed(topGroup, builder);
+                searchGroup.groupValue = builder.get();
               }
               topGroups.add(searchGroup);
             }

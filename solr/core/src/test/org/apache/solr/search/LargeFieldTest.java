@@ -45,7 +45,7 @@ public class LargeFieldTest extends SolrTestCaseJ4 {
     System.setProperty("documentCache.enabled", "true");
     System.setProperty("enableLazyFieldLoading", "true");
 
-    initCore("solrconfig-managed-schema.xml", "ignoredSchemaName?");
+    initCore("solrconfig-managed-schema.xml", "ignoredSchemaName");
 
     // TODO SOLR-10229 will make this easier
     boolean PERSIST_FALSE = false; // don't write to test resource dir

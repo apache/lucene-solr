@@ -4960,6 +4960,138 @@ public class StreamExpressionTest extends SolrCloudTestCase {
   }
 
   @Test
+  public void testCartesianProductStream() throws Exception {
+
+    new UpdateRequest()
+        .add(id, "0", "a_ss", "a", "a_ss", "b", "a_ss", "c", "a_ss", "d", "a_ss", "e", "b_ls", "1", "b_ls", "2", "b_ls", "3")
+        .add(id, "1", "a_ss", "a", "a_ss", "b", "a_ss", "c", "a_ss", "d", "a_ss", "e")
+        .commit(cluster.getSolrClient(), COLLECTIONORALIAS);
+    
+    StreamExpression expression;
+    TupleStream stream;
+    List<Tuple> tuples;
+    
+    StreamFactory factory = new StreamFactory()
+      .withCollectionZkHost("collection1", cluster.getZkServer().getZkAddress())
+      .withFunctionName("search", CloudSolrStream.class)
+      .withFunctionName("cartesian", CartesianProductStream.class);
+      
+    // single selection, no sort
+    stream = factory.constructStream("cartesian("
+                                   +   "search(collection1, q=*:*, fl=\"id,a_ss\", sort=\"id asc\"),"
+                                   +   "a_ss"
+                                   + ")");
+    tuples = getTuples(stream);
+   
+    assertEquals(10, tuples.size());
+    assertOrder(tuples, 0,0,0,0,0,1,1,1,1,1);
+    assertEquals("a", tuples.get(0).get("a_ss"));
+    assertEquals("c", tuples.get(2).get("a_ss"));
+    assertEquals("a", tuples.get(5).get("a_ss"));
+    assertEquals("c", tuples.get(7).get("a_ss"));
+
+    // single selection, sort
+    stream = factory.constructStream("cartesian("
+        +   "search(collection1, q=*:*, fl=\"id,a_ss\", sort=\"id asc\"),"
+        +   "a_ss,"
+        +   "productSort=\"a_ss DESC\""
+        + ")");
+    tuples = getTuples(stream);
+    
+    assertEquals(10, tuples.size());
+    assertOrder(tuples, 0,0,0,0,0,1,1,1,1,1);
+    assertEquals("e", tuples.get(0).get("a_ss"));
+    assertEquals("c", tuples.get(2).get("a_ss"));
+    assertEquals("e", tuples.get(5).get("a_ss"));
+    assertEquals("c", tuples.get(7).get("a_ss"));
+    
+    // multi selection, sort
+    stream = factory.constructStream("cartesian("
+        +   "search(collection1, q=*:*, fl=\"id,a_ss,b_ls\", sort=\"id asc\"),"
+        +   "a_ss,"
+        +   "b_ls,"
+        +   "productSort=\"a_ss ASC\""
+        + ")");
+    tuples = getTuples(stream);
+    
+    assertEquals(20, tuples.size()); // (5 * 3) + 5
+    assertOrder(tuples, 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,1,1,1,1);
+    assertEquals("a", tuples.get(0).get("a_ss"));
+    assertEquals(1L, tuples.get(0).get("b_ls"));
+    assertEquals("a", tuples.get(1).get("a_ss"));
+    assertEquals(2L, tuples.get(1).get("b_ls"));
+    assertEquals("a", tuples.get(2).get("a_ss"));
+    assertEquals(3L, tuples.get(2).get("b_ls"));
+    
+    assertEquals("b", tuples.get(3).get("a_ss"));
+    assertEquals(1L, tuples.get(3).get("b_ls"));
+    assertEquals("b", tuples.get(4).get("a_ss"));
+    assertEquals(2L, tuples.get(4).get("b_ls"));
+    assertEquals("b", tuples.get(5).get("a_ss"));
+    assertEquals(3L, tuples.get(5).get("b_ls"));
+    
+    // multi selection, sort
+    stream = factory.constructStream("cartesian("
+    +   "search(collection1, q=*:*, fl=\"id,a_ss,b_ls\", sort=\"id asc\"),"
+    +   "a_ss,"
+    +   "b_ls,"
+    +   "productSort=\"a_ss ASC, b_ls DESC\""
+    + ")");
+    tuples = getTuples(stream);
+    
+    assertEquals(20, tuples.size()); // (5 * 3) + 5
+    assertOrder(tuples, 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,1,1,1,1);
+    assertEquals("a", tuples.get(0).get("a_ss"));
+    assertEquals(3L, tuples.get(0).get("b_ls"));
+    assertEquals("a", tuples.get(1).get("a_ss"));
+    assertEquals(2L, tuples.get(1).get("b_ls"));
+    assertEquals("a", tuples.get(2).get("a_ss"));
+    assertEquals(1L, tuples.get(2).get("b_ls"));
+    
+    assertEquals("b", tuples.get(3).get("a_ss"));
+    assertEquals(3L, tuples.get(3).get("b_ls"));
+    assertEquals("b", tuples.get(4).get("a_ss"));
+    assertEquals(2L, tuples.get(4).get("b_ls"));
+    assertEquals("b", tuples.get(5).get("a_ss"));
+    assertEquals(1L, tuples.get(5).get("b_ls"));
+
+    // multi selection, sort
+    stream = factory.constructStream("cartesian("
+    +   "search(collection1, q=*:*, fl=\"id,a_ss,b_ls\", sort=\"id asc\"),"
+    +   "a_ss,"
+    +   "b_ls,"
+    +   "productSort=\"b_ls DESC\""
+    + ")");
+    tuples = getTuples(stream);
+    
+    assertEquals(20, tuples.size()); // (5 * 3) + 5
+    assertOrder(tuples, 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,1,1,1,1);
+    assertEquals("a", tuples.get(0).get("a_ss"));
+    assertEquals(3L, tuples.get(0).get("b_ls"));
+    assertEquals("b", tuples.get(1).get("a_ss"));
+    assertEquals(3L, tuples.get(1).get("b_ls"));
+    assertEquals("c", tuples.get(2).get("a_ss"));
+    assertEquals(3L, tuples.get(2).get("b_ls"));
+    assertEquals("d", tuples.get(3).get("a_ss"));
+    assertEquals(3L, tuples.get(3).get("b_ls"));
+    assertEquals("e", tuples.get(4).get("a_ss"));
+    assertEquals(3L, tuples.get(4).get("b_ls"));
+    
+    assertEquals("a", tuples.get(5).get("a_ss"));
+    assertEquals(2L, tuples.get(5).get("b_ls"));
+    assertEquals("b", tuples.get(6).get("a_ss"));
+    assertEquals(2L, tuples.get(6).get("b_ls"));
+    assertEquals("c", tuples.get(7).get("a_ss"));
+    assertEquals(2L, tuples.get(7).get("b_ls"));
+    assertEquals("d", tuples.get(8).get("a_ss"));
+    assertEquals(2L, tuples.get(8).get("b_ls"));
+    assertEquals("e", tuples.get(9).get("a_ss"));
+    assertEquals(2L, tuples.get(9).get("b_ls"));
+
+  }
+
+  
+  @Test
   public void testParallelComplementStream() throws Exception {
 
     new UpdateRequest()

@@ -154,6 +154,9 @@ public class StreamHandler extends RequestHandlerBase implements SolrCoreAware, 
       .withFunctionName("gatherNodes", GatherNodesStream.class)
       .withFunctionName("nodes", GatherNodesStream.class)
       .withFunctionName("select", SelectStream.class)
+      .withFunctionName("shortestPath", ShortestPathStream.class)
+      .withFunctionName("gatherNodes", GatherNodesStream.class)
+      .withFunctionName("nodes", GatherNodesStream.class)
       .withFunctionName("scoreNodes", ScoreNodesStream.class)
       .withFunctionName("model", ModelStream.class)
       .withFunctionName("classify", ClassifyStream.class)
@@ -162,6 +165,8 @@ public class StreamHandler extends RequestHandlerBase implements SolrCoreAware, 
       .withFunctionName("null", NullStream.class)
       .withFunctionName("priority", PriorityStream.class)
       .withFunctionName("significantTerms", SignificantTermsStream.class)
+      .withFunctionName("cartesianProduct", CartesianProductStream.class)
+      
       // metrics
       .withFunctionName("min", MinMetric.class)
       .withFunctionName("max", MaxMetric.class)
