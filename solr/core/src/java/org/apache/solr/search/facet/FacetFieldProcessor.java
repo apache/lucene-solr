@@ -528,9 +528,9 @@ abstract class FacetFieldProcessor extends FacetProcessor<FacetField> {
   }
 
   protected SimpleOrderedMap<Object> refineFacets() throws IOException {
-    List leaves = asList(fcontext.facetInfo.get("_l"));
-    List<List> skip = asList(fcontext.facetInfo.get("_s"));
-    List<List> missing = asList(fcontext.facetInfo.get("_m"));
+    List leaves = asList(fcontext.facetInfo.get("_l"));        // We have not seen this bucket: do full faceting for this bucket, including all sub-facets
+    List<List> skip = asList(fcontext.facetInfo.get("_s"));    // We have seen this bucket, so skip stats on it, and skip sub-facets except for the specified sub-facets that should calculate specified buckets.
+    List<List> missing = asList(fcontext.facetInfo.get("_m")); // We have not seen this bucket, do full faceting for this bucket, and most sub-facets... but some sub-facets should only visit specified buckets.
 
     // For leaf refinements, we do full faceting for each leaf bucket.  Any sub-facets of these buckets will be fully evaluated.  Because of this, we should never
     // encounter leaf refinements that have sub-facets that return partial results.
