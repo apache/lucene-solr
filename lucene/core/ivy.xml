@@ -18,4 +18,8 @@
 -->
 <ivy-module version="2.0">
   <info organisation="org.apache.lucene" module="core"/>
+  <dependencies>
+    <dependency org="com.google.guava" name="guava" rev="21.0"/>
+  </dependencies>
+
 </ivy-module>
