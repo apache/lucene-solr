@@ -22,6 +22,7 @@ import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.BytesRefBuilder;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrInputDocument;
+import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.handler.component.RealTimeGetComponent;
@@ -33,7 +34,6 @@ import org.apache.solr.search.SolrIndexSearcher;
 import org.apache.solr.update.AddUpdateCommand;
 import org.apache.solr.update.DeleteUpdateCommand;
 import org.apache.solr.update.UpdateCommand;
-import org.apache.solr.update.VersionInfo;
 import org.apache.solr.util.RefCounted;
 import org.apache.solr.util.plugin.SolrCoreAware;
 import org.slf4j.Logger;
@@ -202,7 +202,7 @@ public class DocBasedVersionConstraintsProcessorFactory extends UpdateRequestPro
       this.core = req.getCore();
       this.versionFieldName = versionField;
       this.userVersionField = core.getLatestSchema().getField(versionField);
-      this.solrVersionField = core.getLatestSchema().getField(VersionInfo.VERSION_FIELD);
+      this.solrVersionField = core.getLatestSchema().getField(CommonParams.VERSION_FIELD);
       this.useFieldCache = useFieldCache;
 
       for (UpdateRequestProcessor proc = next ;proc != null; proc = proc.next) {

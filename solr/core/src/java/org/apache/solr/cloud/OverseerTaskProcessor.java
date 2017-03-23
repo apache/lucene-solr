@@ -34,8 +34,8 @@ import com.codahale.metrics.Timer;
 import com.google.common.collect.ImmutableSet;
 import org.apache.commons.io.IOUtils;
 import org.apache.solr.client.solrj.SolrResponse;
-import org.apache.solr.cloud.OverseerTaskQueue.QueueEvent;
 import org.apache.solr.cloud.Overseer.LeaderStatus;
+import org.apache.solr.cloud.OverseerTaskQueue.QueueEvent;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.cloud.ZkNodeProps;
@@ -50,6 +50,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import static org.apache.solr.common.params.CommonAdminParams.ASYNC;
+import static org.apache.solr.common.params.CommonParams.ID;
 
 /**
  * A generic processor run in the Overseer, used for handling items added
@@ -375,7 +376,7 @@ public class OverseerTaskProcessor implements Runnable, Closeable {
       return null;
     }
     Map m = (Map) Utils.fromJSON(data);
-    return  (String) m.get("id");
+    return  (String) m.get(ID);
   }
 
   protected LeaderStatus amILeader() {
@@ -385,7 +386,7 @@ public class OverseerTaskProcessor implements Runnable, Closeable {
     try {
       ZkNodeProps props = ZkNodeProps.load(zkStateReader.getZkClient().getData(
           Overseer.OVERSEER_ELECT + "/leader", null, null, true));
-      if (myId.equals(props.getStr("id"))) {
+      if (myId.equals(props.getStr(ID))) {
         return LeaderStatus.YES;
       }
     } catch (KeeperException e) {

@@ -16,13 +16,15 @@
  */
 package org.apache.solr.common.cloud;
 
+import java.util.Collection;
+import java.util.Collections;
+
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.Hash;
 
-import java.util.Collection;
-import java.util.Collections;
+import static org.apache.solr.common.params.CommonParams.ID;
 
 public abstract class HashBasedRouter extends DocRouter {
 
@@ -51,7 +53,7 @@ public abstract class HashBasedRouter extends DocRouter {
   }
 
   protected String getId(SolrInputDocument sdoc, SolrParams params) {
-    Object  idObj = sdoc.getFieldValue("id");  // blech
+    Object  idObj = sdoc.getFieldValue(ID);  // blech
     String id = idObj != null ? idObj.toString() : "null";  // should only happen on client side
     return id;
   }

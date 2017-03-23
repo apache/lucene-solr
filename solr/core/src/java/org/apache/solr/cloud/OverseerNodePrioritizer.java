@@ -17,14 +17,13 @@
 package org.apache.solr.cloud;
 
 import java.lang.invoke.MethodHandles;
-
 import java.util.List;
 import java.util.Map;
 
+import org.apache.solr.cloud.overseer.OverseerAction;
 import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.cloud.ZkStateReader;
-import org.apache.solr.cloud.overseer.OverseerAction;
 import org.apache.solr.common.params.CoreAdminParams;
 import org.apache.solr.common.params.CoreAdminParams.CoreAdminAction;
 import org.apache.solr.common.params.ModifiableSolrParams;
@@ -36,6 +35,8 @@ import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.data.Stat;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import static org.apache.solr.common.params.CommonParams.ID;
 
 /**
  * Responsible for prioritization of Overseer nodes, for example with the
@@ -90,7 +91,7 @@ public class OverseerNodePrioritizer {
     //now ask the current leader to QUIT , so that the designate can takeover
     Overseer.getStateUpdateQueue(zkStateReader.getZkClient()).offer(
         Utils.toJSON(new ZkNodeProps(Overseer.QUEUE_OPERATION, OverseerAction.QUIT.toLower(),
-            "id", OverseerTaskProcessor.getLeaderId(zkStateReader.getZkClient()))));
+            ID, OverseerTaskProcessor.getLeaderId(zkStateReader.getZkClient()))));
 
   }
 

@@ -41,6 +41,8 @@ import org.apache.solr.common.util.SolrjNamedThreadFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import static org.apache.solr.common.params.CommonParams.ID;
+
 /**
  *  The executor function wraps a stream with Tuples containing Streaming Expressions
  *  and executes them in parallel. Sample syntax:
@@ -197,7 +199,7 @@ public class ExecutorStream extends TupleStream implements Expressible {
       }
 
       String expr = tuple.getString("expr_s");
-      Object id = tuple.get("id");
+      Object id = tuple.get(ID);
       TupleStream stream = null;
 
       try {

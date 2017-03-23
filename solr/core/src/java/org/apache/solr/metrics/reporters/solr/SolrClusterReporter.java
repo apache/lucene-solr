@@ -41,6 +41,8 @@ import org.apache.zookeeper.KeeperException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import static org.apache.solr.common.params.CommonParams.ID;
+
 /**
  * This reporter sends selected metrics from local registries to {@link Overseer}.
  * <p>The following configuration properties are supported:</p>
@@ -253,7 +255,7 @@ public class SolrClusterReporter extends SolrMetricReporter {
       if (props == null) {
         return lastKnownUrl;
       }
-      String oid = props.getStr("id");
+      String oid = props.getStr(ID);
       if (oid == null) {
         return lastKnownUrl;
       }

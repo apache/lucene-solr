@@ -55,6 +55,8 @@ import org.apache.zookeeper.KeeperException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import static org.apache.solr.common.params.CommonParams.ID;
+
 /**
  * Cluster leader. Responsible for processing state updates, node assignments, creating/deleting
  * collections, shards, replicas and setting various properties.
@@ -292,7 +294,7 @@ public class Overseer implements Closeable {
       }
       try {
         Map m = (Map) Utils.fromJSON(data);
-        String id = (String) m.get("id");
+        String id = (String) m.get(ID);
         if(overseerCollectionConfigSetProcessor.getId().equals(id)){
           try {
             log.warn("I'm exiting, but I'm still the leader");
@@ -372,7 +374,7 @@ public class Overseer implements Closeable {
           case UPDATESHARDSTATE:
             return Collections.singletonList(new SliceMutator(getZkStateReader()).updateShardState(clusterState, message));
           case QUIT:
-            if (myId.equals(message.get("id"))) {
+            if (myId.equals(message.get(ID))) {
               log.info("Quit command received {} {}", message, LeaderElector.getNodeName(myId));
               overseerCollectionConfigSetProcessor.close();
               close();
@@ -396,7 +398,7 @@ public class Overseer implements Closeable {
       try {
         ZkNodeProps props = ZkNodeProps.load(zkClient.getData(
             OVERSEER_ELECT + "/leader", null, null, true));
-        if (myId.equals(props.getStr("id"))) {
+        if (myId.equals(props.getStr(ID))) {
           return LeaderStatus.YES;
         }
       } catch (KeeperException e) {

@@ -15,6 +15,7 @@
  * limitations under the License.
  */
 package org.apache.solr.handler.loader;
+
 import java.io.IOException;
 import java.io.Reader;
 import java.io.StringReader;
@@ -57,8 +58,11 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import static java.util.stream.Collectors.toList;
+import static org.apache.solr.common.params.CommonParams.ID;
 import static org.apache.solr.common.params.CommonParams.JSON;
 import static org.apache.solr.common.params.CommonParams.PATH;
+import static org.apache.solr.common.params.CommonParams.VERSION_FIELD;
+import static org.apache.solr.common.params.ShardParams._ROUTE_;
 
 
 /**
@@ -364,15 +368,15 @@ public class JsonLoader extends ContentStreamLoader {
         if (ev == JSONParser.STRING) {
           String key = parser.getString();
           if (parser.wasKey()) {
-            if ("id".equals(key)) {
+            if (ID.equals(key)) {
               cmd.setId(getString(parser.nextEvent()));
             } else if ("query".equals(key)) {
               cmd.setQuery(parser.getString());
             } else if ("commitWithin".equals(key)) {
               cmd.commitWithin = (int) parser.getLong();
-            } else if ("_version_".equals(key)) {
+            } else if (VERSION_FIELD.equals(key)) {
               cmd.setVersion(parser.getLong());
-            } else if ("_route_".equals(key)) {
+            } else if (_ROUTE_.equals(key)) {
               cmd.setRoute(parser.getString());
             } else {
               throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Unknown key '" + key + "' at [" + parser.getPosition() + "]");

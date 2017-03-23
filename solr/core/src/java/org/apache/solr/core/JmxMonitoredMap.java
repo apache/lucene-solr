@@ -38,7 +38,6 @@ import javax.management.openmbean.SimpleType;
 import javax.management.remote.JMXConnectorServer;
 import javax.management.remote.JMXConnectorServerFactory;
 import javax.management.remote.JMXServiceURL;
-
 import java.lang.invoke.MethodHandles;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
@@ -58,6 +57,7 @@ import org.apache.solr.metrics.reporters.JmxObjectNameFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import static org.apache.solr.common.params.CommonParams.ID;
 import static org.apache.solr.common.params.CommonParams.NAME;
 
 /**
@@ -269,7 +269,7 @@ public class JmxMonitoredMap<K, V> extends
     Hashtable<String, String> map = new Hashtable<>();
     map.put("type", key);
     if (infoBean.getName() != null && !"".equals(infoBean.getName())) {
-      map.put("id", infoBean.getName());
+      map.put(ID, infoBean.getName());
     }
     return ObjectName.getInstance(jmxRootName, map);
   }

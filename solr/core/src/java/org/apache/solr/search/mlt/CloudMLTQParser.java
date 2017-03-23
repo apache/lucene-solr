@@ -15,6 +15,7 @@
  * limitations under the License.
  */
 package org.apache.solr.search.mlt;
+
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -46,6 +47,8 @@ import org.apache.solr.schema.SchemaField;
 import org.apache.solr.search.QParser;
 import org.apache.solr.search.QueryParsing;
 import org.apache.solr.util.SolrPluginUtils;
+
+import static org.apache.solr.common.params.CommonParams.ID;
 
 public class CloudMLTQParser extends QParser {
   // Pattern is thread safe -- TODO? share this with general 'fl' param
@@ -178,7 +181,7 @@ public class CloudMLTQParser extends QParser {
     SolrCore core = req.getCore();
     SolrQueryResponse rsp = new SolrQueryResponse();
     ModifiableSolrParams params = new ModifiableSolrParams();
-    params.add("id", id);
+    params.add(ID, id);
 
     SolrQueryRequestBase request = new SolrQueryRequestBase(core, params) {
     };
