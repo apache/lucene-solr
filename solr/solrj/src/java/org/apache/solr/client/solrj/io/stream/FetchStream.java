@@ -19,11 +19,11 @@ package org.apache.solr.client.solrj.io.stream;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
-import java.util.HashMap;
 
 import org.apache.solr.client.solrj.io.Tuple;
 import org.apache.solr.client.solrj.io.comp.StreamComparator;
@@ -36,6 +36,8 @@ import org.apache.solr.client.solrj.io.stream.expr.StreamExpressionNamedParamete
 import org.apache.solr.client.solrj.io.stream.expr.StreamExpressionValue;
 import org.apache.solr.client.solrj.io.stream.expr.StreamFactory;
 import org.apache.solr.common.params.ModifiableSolrParams;
+
+import static org.apache.solr.common.params.CommonParams.VERSION_FIELD;
 
 /**
  *  Iterates over a stream and fetches additional fields from a specified collection.
@@ -139,7 +141,7 @@ public class FetchStream extends TupleStream implements Expressible {
 
     for(int i=0; i<fields.length; i++) {
       fields[i] = fields[i].trim();
-      if(fields[i].equals("_version_")) {
+      if(fields[i].equals(VERSION_FIELD)) {
         appendVersion = false;
       }
 

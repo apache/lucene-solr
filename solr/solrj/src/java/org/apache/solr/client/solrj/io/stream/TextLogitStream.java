@@ -60,6 +60,8 @@ import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SolrjNamedThreadFactory;
 
+import static org.apache.solr.common.params.CommonParams.ID;
+
 public class TextLogitStream extends TupleStream implements Expressible {
 
   private static final long serialVersionUID = 1;
@@ -463,7 +465,7 @@ public class TextLogitStream extends TupleStream implements Expressible {
 
         this.weights = averageWeights(allWeights);
         Map map = new HashMap();
-        map.put("id", name+"_"+iteration);
+        map.put(ID, name+"_"+iteration);
         map.put("name_s", name);
         map.put("field_s", field);
         map.put("terms_ss", terms);

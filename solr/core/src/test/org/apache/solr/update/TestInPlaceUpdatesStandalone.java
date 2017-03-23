@@ -43,9 +43,9 @@ import org.apache.solr.common.SolrDocumentList;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.SolrInputField;
+import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.index.NoMergePolicyFactory;
 import org.apache.solr.request.SolrQueryRequest;
-import org.apache.solr.update.processor.DistributedUpdateProcessor;
 import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.schema.SchemaField;
 import org.apache.solr.search.SolrIndexSearcher;
@@ -1119,8 +1119,8 @@ public class TestInPlaceUpdatesStandalone extends SolrTestCaseJ4 {
     try (SolrQueryRequest req = req()) {
       AddUpdateCommand cmd = new AddUpdateCommand(req);
       cmd.solrDoc = sdoc;
-      assertTrue(cmd.solrDoc.containsKey(DistributedUpdateProcessor.VERSION_FIELD));
-      cmd.setVersion(Long.parseLong(cmd.solrDoc.getFieldValue(DistributedUpdateProcessor.VERSION_FIELD).toString()));
+      assertTrue(cmd.solrDoc.containsKey(CommonParams.VERSION_FIELD));
+      cmd.setVersion(Long.parseLong(cmd.solrDoc.getFieldValue(CommonParams.VERSION_FIELD).toString()));
       return AtomicUpdateDocumentMerger.computeInPlaceUpdatableFields(cmd);
     }
   }

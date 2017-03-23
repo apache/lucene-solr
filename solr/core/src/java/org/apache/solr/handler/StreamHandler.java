@@ -80,6 +80,8 @@ import org.apache.solr.util.plugin.SolrCoreAware;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import static org.apache.solr.common.params.CommonParams.ID;
+
 public class StreamHandler extends RequestHandlerBase implements SolrCoreAware, PermissionNameProvider {
 
   static SolrClientCache clientCache = new SolrClientCache();
@@ -284,7 +286,7 @@ public class StreamHandler extends RequestHandlerBase implements SolrCoreAware, 
   private void handleAdmin(SolrQueryRequest req, SolrQueryResponse rsp, SolrParams params) {
     String action = params.get("action");
     if("stop".equalsIgnoreCase(action)) {
-      String id = params.get("id");
+      String id = params.get(ID);
       DaemonStream d = daemons.get(id);
       if(d != null) {
         d.close();
@@ -292,21 +294,23 @@ public class StreamHandler extends RequestHandlerBase implements SolrCoreAware, 
       } else {
         rsp.add("result-set", new DaemonResponseStream("Deamon:" + id + " not found on " + coreName));
       }
-    } else if("start".equalsIgnoreCase(action)) {
-      String id = params.get("id");
-      DaemonStream d = daemons.get(id);
-      d.open();
-      rsp.add("result-set", new DaemonResponseStream("Deamon:" + id + " started on " + coreName));
-    } else if("list".equalsIgnoreCase(action)) {
-      Collection<DaemonStream> vals = daemons.values();
-      rsp.add("result-set", new DaemonCollectionStream(vals));
-    } else if("kill".equalsIgnoreCase(action)) {
-      String id = params.get("id");
-      DaemonStream d = daemons.remove(id);
-      if (d != null) {
-        d.close();
+    } else {
+      if ("start".equalsIgnoreCase(action)) {
+        String id = params.get(ID);
+        DaemonStream d = daemons.get(id);
+        d.open();
+        rsp.add("result-set", new DaemonResponseStream("Deamon:" + id + " started on " + coreName));
+      } else if ("list".equalsIgnoreCase(action)) {
+        Collection<DaemonStream> vals = daemons.values();
+        rsp.add("result-set", new DaemonCollectionStream(vals));
+      } else if ("kill".equalsIgnoreCase(action)) {
+        String id = params.get("id");
+        DaemonStream d = daemons.remove(id);
+        if (d != null) {
+          d.close();
+        }
+        rsp.add("result-set", new DaemonResponseStream("Deamon:" + id + " killed on " + coreName));
       }
-      rsp.add("result-set", new DaemonResponseStream("Deamon:" + id + " killed on " + coreName));
     }
   }
 

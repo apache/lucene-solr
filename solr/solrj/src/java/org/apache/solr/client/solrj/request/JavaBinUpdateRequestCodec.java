@@ -30,6 +30,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.params.ModifiableSolrParams;
+import org.apache.solr.common.params.ShardParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.DataInputInputStream;
 import org.apache.solr.common.util.JavaBinCodec;
@@ -226,8 +227,8 @@ public class JavaBinUpdateRequestCodec {
         Map<String,Object> params = entry.getValue();
         if (params != null) {
           Long version = (Long) params.get(UpdateRequest.VER);
-          if (params.containsKey(UpdateRequest.ROUTE))
-            updateRequest.deleteById(entry.getKey(), (String) params.get(UpdateRequest.ROUTE));
+          if (params.containsKey(ShardParams._ROUTE_))
+            updateRequest.deleteById(entry.getKey(), (String) params.get(ShardParams._ROUTE_));
           else
           updateRequest.deleteById(entry.getKey(), version);
         } else {

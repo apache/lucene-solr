@@ -259,5 +259,9 @@ public interface CommonParams {
 
   String NAME = "name";
   String VALUE_LONG = "val";
+
+  String VERSION_FIELD="_version_";
+
+  String ID = "id";
 }
 

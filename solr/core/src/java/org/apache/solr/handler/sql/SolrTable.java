@@ -61,7 +61,6 @@ import java.util.stream.Collectors;
  */
 class SolrTable extends AbstractQueryableTable implements TranslatableTable {
   private static final String DEFAULT_QUERY = "*:*";
-  private static final String DEFAULT_VERSION_FIELD = "_version_";
 
   private final String collection;
   private final SolrSchema schema;
