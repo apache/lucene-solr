@@ -63,7 +63,9 @@ import org.apache.solr.common.util.SolrjNamedThreadFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import static org.apache.solr.common.params.CommonParams.DISTRIB;
 import static org.apache.solr.common.params.CommonParams.ID;
+import static org.apache.solr.common.params.CommonParams.SORT;
 import static org.apache.solr.common.params.CommonParams.VERSION_FIELD;
 
 public class TopicStream extends CloudSolrStream implements Expressible  {
@@ -436,8 +438,8 @@ public class TopicStream extends CloudSolrStream implements Expressible  {
     long checkpoint = -1;
     ModifiableSolrParams params = new ModifiableSolrParams();
     params.set("q","*:*");
-    params.set("sort", "_version_ desc");
-    params.set("distrib", "false");
+    params.set(SORT, "_version_ desc");
+    params.set(DISTRIB, "false");
     params.set("rows", 1);
     for(Replica replica : replicas) {
       if(replica.getState() == Replica.State.ACTIVE && liveNodes.contains(replica.getNodeName())) {
@@ -523,9 +525,9 @@ public class TopicStream extends CloudSolrStream implements Expressible  {
       Collection<Slice> slices = CloudSolrStream.getSlices(this.collection, zkStateReader, false);
 
       ModifiableSolrParams mParams = new ModifiableSolrParams(params);
-      mParams.set("distrib", "false"); // We are the aggregator.
+      mParams.set(DISTRIB, "false"); // We are the aggregator.
       String fl = mParams.get("fl");
-      mParams.set("sort", "_version_ asc");
+      mParams.set(SORT, "_version_ asc");
       if(!fl.contains(VERSION_FIELD)) {
         fl += ",_version_";
       }

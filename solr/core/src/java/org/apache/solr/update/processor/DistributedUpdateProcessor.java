@@ -16,6 +16,7 @@
  */
 package org.apache.solr.update.processor;
 
+import static org.apache.solr.common.params.CommonParams.DISTRIB;
 import static org.apache.solr.update.processor.DistributingUpdateProcessorFactory.DISTRIB_UPDATE_PARAM;
 
 import java.io.IOException;
@@ -1303,7 +1304,7 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
     String id = inplaceAdd.getPrintableId();
     UpdateShardHandler updateShardHandler = inplaceAdd.getReq().getCore().getCoreDescriptor().getCoreContainer().getUpdateShardHandler();
     ModifiableSolrParams params = new ModifiableSolrParams();
-    params.set("distrib", false);
+    params.set(DISTRIB, false);
     params.set("getInputDocument", id);
     params.set("onlyIfActive", true);
     SolrRequest<SimpleSolrResponse> ur = new GenericSolrRequest(METHOD.GET, "/get", params);

@@ -25,6 +25,12 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 
+import com.carrotsearch.hppc.FloatArrayList;
+import com.carrotsearch.hppc.IntArrayList;
+import com.carrotsearch.hppc.IntIntHashMap;
+import com.carrotsearch.hppc.IntLongHashMap;
+import com.carrotsearch.hppc.cursors.IntIntCursor;
+import com.carrotsearch.hppc.cursors.IntLongCursor;
 import org.apache.commons.lang.StringUtils;
 import org.apache.lucene.codecs.DocValuesProducer;
 import org.apache.lucene.index.DocValues;
@@ -72,12 +78,7 @@ import org.apache.solr.schema.TrieIntField;
 import org.apache.solr.schema.TrieLongField;
 import org.apache.solr.uninverting.UninvertingReader;
 
-import com.carrotsearch.hppc.FloatArrayList;
-import com.carrotsearch.hppc.IntArrayList;
-import com.carrotsearch.hppc.IntIntHashMap;
-import com.carrotsearch.hppc.IntLongHashMap;
-import com.carrotsearch.hppc.cursors.IntIntCursor;
-import com.carrotsearch.hppc.cursors.IntLongCursor;
+import static org.apache.solr.common.params.CommonParams.SORT;
 
 /**
 
@@ -187,7 +188,7 @@ public class CollapsingQParserPlugin extends QParserPlugin {
      * returns a new GroupHeadSelector based on the specified local params
      */
     public static GroupHeadSelector build(final SolrParams localParams) {
-      final String sortString = StringUtils.defaultIfBlank(localParams.get("sort"), null);
+      final String sortString = StringUtils.defaultIfBlank(localParams.get(SORT), null);
       final String max = StringUtils.defaultIfBlank(localParams.get("max"), null);
       final String min = StringUtils.defaultIfBlank(localParams.get("min"), null);
 

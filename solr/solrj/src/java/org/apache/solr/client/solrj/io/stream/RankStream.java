@@ -37,6 +37,8 @@ import org.apache.solr.client.solrj.io.stream.expr.StreamExpressionNamedParamete
 import org.apache.solr.client.solrj.io.stream.expr.StreamExpressionValue;
 import org.apache.solr.client.solrj.io.stream.expr.StreamFactory;
 
+import static org.apache.solr.common.params.CommonParams.SORT;
+
 
 /**
 *  Iterates over a TupleStream and Ranks the topN tuples based on a Comparator.
@@ -61,7 +63,7 @@ public class RankStream extends TupleStream implements Expressible {
     // grab all parameters out
     List<StreamExpression> streamExpressions = factory.getExpressionOperandsRepresentingTypes(expression, Expressible.class, TupleStream.class);
     StreamExpressionNamedParameter nParam = factory.getNamedOperand(expression, "n");
-    StreamExpressionNamedParameter sortExpression = factory.getNamedOperand(expression, "sort");
+    StreamExpressionNamedParameter sortExpression = factory.getNamedOperand(expression, SORT);
     
     // validate expression contains only what we want.
     if(expression.getParameters().size() != streamExpressions.size() + 2){
@@ -129,7 +131,7 @@ public class RankStream extends TupleStream implements Expressible {
     }
         
     // sort
-    expression.addParameter(new StreamExpressionNamedParameter("sort",comp.toExpression(factory)));
+    expression.addParameter(new StreamExpressionNamedParameter(SORT, comp.toExpression(factory)));
     
     return expression;   
   }

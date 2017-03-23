@@ -38,6 +38,8 @@ import org.apache.http.client.HttpClient;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import static org.apache.solr.common.params.CommonParams.DISTRIB;
+
 public abstract class IterativeMergeStrategy implements MergeStrategy  {
 
   protected ExecutorService executorService;
@@ -89,7 +91,7 @@ public abstract class IterativeMergeStrategy implements MergeStrategy  {
       this.originalShardResponse = originalShardResponse;
       req.setMethod(SolrRequest.METHOD.POST);
       ModifiableSolrParams params = (ModifiableSolrParams)req.getParams();
-      params.add("distrib", "false");
+      params.add(DISTRIB, "false");
     }
 
     public QueryResponse getResponse() {

@@ -19,11 +19,11 @@ package org.apache.solr.client.solrj.io.stream;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
-import java.util.HashMap;
 
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.io.SolrClientCache;
@@ -41,6 +41,8 @@ import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.TermsParams;
 import org.apache.solr.common.util.NamedList;
+
+import static org.apache.solr.common.params.CommonParams.DISTRIB;
 
 /**
  *  Iterates over a gatherNodes() expression and scores the Tuples based on tf-idf.
@@ -211,7 +213,7 @@ public class ScoreNodesStream extends TupleStream implements Expressible
     params.add(TermsParams.TERMS_STATS, "true");
     params.add(TermsParams.TERMS_LIST, builder.toString());
     params.add(TermsParams.TERMS_LIMIT, Integer.toString(nodes.size()));
-    params.add("distrib", "true");
+    params.add(DISTRIB, "true");
 
     QueryRequest request = new QueryRequest(params);
 

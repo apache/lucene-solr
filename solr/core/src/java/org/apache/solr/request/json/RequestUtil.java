@@ -36,6 +36,7 @@ import org.noggit.JSONParser;
 import org.noggit.ObjectBuilder;
 
 import static org.apache.solr.common.params.CommonParams.JSON;
+import static org.apache.solr.common.params.CommonParams.SORT;
 
 public class RequestUtil {
   /**
@@ -206,8 +207,8 @@ public class RequestUtil {
           out = "start";
         } else if ("limit".equals(key)) {
           out = "rows";
-        } else if ("sort".equals(key)) {
-          out = "sort";
+        } else if (SORT.equals(key)) {
+          out = SORT;
         } else if ("params".equals(key) || "facet".equals(key) ) {
           // handled elsewhere
           continue;

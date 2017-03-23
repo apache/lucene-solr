@@ -49,6 +49,8 @@ import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SolrjNamedThreadFactory;
 
+import static org.apache.solr.common.params.CommonParams.DISTRIB;
+
 public class SignificantTermsStream extends TupleStream implements Expressible{
 
   private static final long serialVersionUID = 1;
@@ -376,7 +378,7 @@ public class SignificantTermsStream extends TupleStream implements Expressible{
       ModifiableSolrParams params = new ModifiableSolrParams();
       HttpSolrClient solrClient = cache.getHttpSolrClient(baseUrl);
 
-      params.add("distrib", "false");
+      params.add(DISTRIB, "false");
       params.add("fq","{!sigificantTerms}");
 
       for(String key : paramsMap.keySet()) {

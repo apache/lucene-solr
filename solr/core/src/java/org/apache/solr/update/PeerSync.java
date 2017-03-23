@@ -60,6 +60,7 @@ import org.apache.solr.update.processor.UpdateRequestProcessorChain;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import static org.apache.solr.common.params.CommonParams.DISTRIB;
 import static org.apache.solr.common.params.CommonParams.ID;
 import static org.apache.solr.update.processor.DistributedUpdateProcessor.DistribPhase.FROMLEADER;
 import static org.apache.solr.update.processor.DistributingUpdateProcessorFactory.DISTRIB_UPDATE_PARAM;
@@ -405,7 +406,7 @@ public class PeerSync implements SolrMetricProducer {
     sreq.params = new ModifiableSolrParams();
     sreq.params = new ModifiableSolrParams();
     sreq.params.set("qt","/get");
-    sreq.params.set("distrib",false);
+    sreq.params.set(DISTRIB,false);
     sreq.params.set("getFingerprint", String.valueOf(Long.MAX_VALUE));
     
     shardHandler.submit(sreq, replica, sreq.params);
@@ -421,7 +422,7 @@ public class PeerSync implements SolrMetricProducer {
     sreq.actualShards = sreq.shards;
     sreq.params = new ModifiableSolrParams();
     sreq.params.set("qt","/get");
-    sreq.params.set("distrib",false);
+    sreq.params.set(DISTRIB,false);
     sreq.params.set("getVersions",nUpdates);
     sreq.params.set("fingerprint",doFingerprint);
     shardHandler.submit(sreq, replica, sreq.params);
@@ -506,7 +507,7 @@ public class PeerSync implements SolrMetricProducer {
     sreq.actualShards = sreq.shards;
     sreq.params = new ModifiableSolrParams();
     sreq.params.set("qt", "/get");
-    sreq.params.set("distrib", false);
+    sreq.params.set(DISTRIB, false);
     sreq.params.set("checkCanHandleVersionRanges", false);
 
     ShardHandler sh = shardHandlerFactory.getShardHandler(client);
@@ -725,7 +726,7 @@ public class PeerSync implements SolrMetricProducer {
     sreq.purpose = 0;
     sreq.params = new ModifiableSolrParams();
     sreq.params.set("qt", "/get");
-    sreq.params.set("distrib", false);
+    sreq.params.set(DISTRIB, false);
     sreq.params.set("getUpdates", versionsAndRanges);
     sreq.params.set("onlyIfActive", onlyIfActive);
     
@@ -890,7 +891,7 @@ public class PeerSync implements SolrMetricProducer {
       sreq.shards = new String[]{replica};
       sreq.params = new ModifiableSolrParams();
       sreq.params.set("qt","/get");
-      sreq.params.set("distrib", false);
+      sreq.params.set(DISTRIB, false);
       sreq.params.set("getVersions",nUpdates);
       shardHandler.submit(sreq, replica, sreq.params);
     }
