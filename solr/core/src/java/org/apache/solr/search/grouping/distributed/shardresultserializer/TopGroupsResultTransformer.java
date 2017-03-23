@@ -47,6 +47,8 @@ import org.apache.solr.search.grouping.distributed.command.TopGroupsFieldCommand
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import static org.apache.solr.common.params.CommonParams.ID;
+
 /**
  * Implementation for transforming {@link TopGroups} and {@link TopDocs} into a {@link NamedList} structure and
  * visa versa.
@@ -158,7 +160,7 @@ public class TopGroupsResultTransformer implements ShardResultTransformer<List<C
     ScoreDoc[] scoreDocs = new ScoreDoc[documents.size()];
     int j = 0;
     for (NamedList<Object> document : documents) {
-      Object docId = document.get("id");
+      Object docId = document.get(ID);
       if (docId != null) {
         docId = docId.toString();
       } else {
@@ -208,7 +210,7 @@ public class TopGroupsResultTransformer implements ShardResultTransformer<List<C
         documents.add(document);
 
         Document doc = retrieveDocument(uniqueField, searchGroup.scoreDocs[i].doc);
-        document.add("id", uniqueField.getType().toExternal(doc.getField(uniqueField.getName())));
+        document.add(ID, uniqueField.getType().toExternal(doc.getField(uniqueField.getName())));
         if (!Float.isNaN(searchGroup.scoreDocs[i].score))  {
           document.add("score", searchGroup.scoreDocs[i].score);
         }
@@ -259,7 +261,7 @@ public class TopGroupsResultTransformer implements ShardResultTransformer<List<C
       documents.add(document);
 
       Document doc = retrieveDocument(uniqueField, scoreDoc.doc);
-      document.add("id", uniqueField.getType().toExternal(doc.getField(uniqueField.getName())));
+      document.add(ID, uniqueField.getType().toExternal(doc.getField(uniqueField.getName())));
       if (!Float.isNaN(scoreDoc.score))  {
         document.add("score", scoreDoc.score);
       }

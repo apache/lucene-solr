@@ -26,8 +26,8 @@ import java.util.concurrent.atomic.AtomicLong;
 import com.codahale.metrics.Gauge;
 import com.codahale.metrics.Meter;
 import com.codahale.metrics.Metric;
-import org.apache.lucene.index.TieredMergePolicy;
 import org.apache.lucene.index.DirectoryReader;
+import org.apache.lucene.index.TieredMergePolicy;
 import org.apache.lucene.store.Directory;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.params.CommonParams;
@@ -45,6 +45,8 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import static org.apache.solr.common.params.CommonParams.VERSION_FIELD;
 
 /**
  * 
@@ -128,7 +130,7 @@ public class DirectUpdateHandlerTest extends SolrTestCaseJ4 {
     assertNull("This test requires a schema that has no version field, " +
                "it appears the schema file in use has been edited to violate " +
                "this requirement",
-               h.getCore().getLatestSchema().getFieldOrNull(VersionInfo.VERSION_FIELD));
+               h.getCore().getLatestSchema().getFieldOrNull(VERSION_FIELD));
 
     assertU(adoc("id","5"));
     assertU(adoc("id","6"));

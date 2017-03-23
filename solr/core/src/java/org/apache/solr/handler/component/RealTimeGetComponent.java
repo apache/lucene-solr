@@ -78,10 +78,12 @@ import org.apache.solr.update.DocumentBuilder;
 import org.apache.solr.update.IndexFingerprint;
 import org.apache.solr.update.PeerSync;
 import org.apache.solr.update.UpdateLog;
-import org.apache.solr.update.processor.DistributedUpdateProcessor;
 import org.apache.solr.util.RefCounted;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import static org.apache.solr.common.params.CommonParams.ID;
+import static org.apache.solr.common.params.CommonParams.VERSION_FIELD;
 
 public class RealTimeGetComponent extends SearchComponent
 {
@@ -473,8 +475,8 @@ public class RealTimeGetComponent extends SearchComponent
       doc = toSolrDoc(luceneDocument, core.getLatestSchema());
       searcher.decorateDocValueFields(doc, docid, decorateFields);
 
-      long docVersion = (long) doc.getFirstValue(DistributedUpdateProcessor.VERSION_FIELD);
-      Object partialVersionObj = partialDoc.getFieldValue(DistributedUpdateProcessor.VERSION_FIELD);
+      long docVersion = (long) doc.getFirstValue(VERSION_FIELD);
+      Object partialVersionObj = partialDoc.getFieldValue(VERSION_FIELD);
       long partialDocVersion = partialVersionObj instanceof Field? ((Field) partialVersionObj).numericValue().longValue():
         partialVersionObj instanceof Number? ((Number) partialVersionObj).longValue(): Long.parseLong(partialVersionObj.toString());
       if (docVersion > partialDocVersion) {
@@ -621,8 +623,8 @@ public class RealTimeGetComponent extends SearchComponent
     }
 
     if (versionReturned != null) {
-      if (sid.containsKey(DistributedUpdateProcessor.VERSION_FIELD)) {
-        versionReturned.set((long)sid.getFieldValue(DistributedUpdateProcessor.VERSION_FIELD));
+      if (sid.containsKey(VERSION_FIELD)) {
+        versionReturned.set((long)sid.getFieldValue(VERSION_FIELD));
       }
     }
     return sid;
@@ -841,7 +843,7 @@ public class RealTimeGetComponent extends SearchComponent
     sreq.params.set("distrib",false);
 
     sreq.params.remove(ShardParams.SHARDS);
-    sreq.params.remove("id");
+    sreq.params.remove(ID);
     sreq.params.remove("ids");
     sreq.params.set("ids", StrUtils.join(ids, ','));
     
@@ -1146,7 +1148,7 @@ public class RealTimeGetComponent extends SearchComponent
         return (IdsRequsted)req.getContext().get(contextKey);
       }
       final SolrParams params = req.getParams();
-      final String id[] = params.getParams("id");
+      final String id[] = params.getParams(ID);
       final String ids[] = params.getParams("ids");
       
       if (id == null && ids == null) {

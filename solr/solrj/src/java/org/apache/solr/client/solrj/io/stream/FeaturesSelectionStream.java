@@ -59,6 +59,8 @@ import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SolrjNamedThreadFactory;
 
+import static org.apache.solr.common.params.CommonParams.ID;
+
 public class FeaturesSelectionStream extends TupleStream implements Expressible{
 
   private static final long serialVersionUID = 1;
@@ -355,7 +357,7 @@ public class FeaturesSelectionStream extends TupleStream implements Expressible{
           if (tuples.size() == numTerms) break;
           index++;
           Map map = new HashMap();
-          map.put("id", featureSet + "_" + index);
+          map.put(ID, featureSet + "_" + index);
           map.put("index_i", index);
           map.put("term_s", termScore.getKey());
           map.put("score_f", termScore.getValue());

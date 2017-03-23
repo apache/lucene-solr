@@ -50,6 +50,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import static org.apache.solr.common.params.CommonAdminParams.ASYNC;
+import static org.apache.solr.common.params.CommonParams.ID;
 
 /**
  * A generic processor run in the Overseer, used for handling items added
@@ -375,7 +376,7 @@ public class OverseerTaskProcessor implements Runnable, Closeable {
       return null;
     }
     Map m = (Map) Utils.fromJSON(data);
-    return  (String) m.get("id");
+    return  (String) m.get(ID);
   }
 
   protected LeaderStatus amILeader() {

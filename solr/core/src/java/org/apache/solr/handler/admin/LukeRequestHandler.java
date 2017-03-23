@@ -102,7 +102,7 @@ public class LukeRequestHandler extends RequestHandlerBase
   public static final String NUMTERMS = "numTerms";
   public static final String INCLUDE_INDEX_FIELD_FLAGS = "includeIndexFieldFlags";
   public static final String DOC_ID = "docId";
-  public static final String ID = "id";
+  public static final String ID = CommonParams.ID;
   public static final int DEFAULT_COUNT = 10;
 
   static final int HIST_ARRAY_SIZE = 33;
