@@ -123,6 +123,11 @@ Optimizations
   instance if it already is modifiable, otherwise creates a new ModifiableSolrParams instance.
   (Jörg Rathlev via Koji)
 
+Bug Fixes
+----------------------
+* SOLR-10281: ADMIN_PATHS is duplicated in two places and inconsistent. This can cause automatic
+  retries to /admin/metrics handler by the CloudSolrClient. (shalin)
+
 ==================  6.5.0 ==================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release.
