@@ -37,6 +37,7 @@ import org.apache.solr.client.solrj.io.stream.expr.StreamExpressionValue;
 import org.apache.solr.client.solrj.io.stream.expr.StreamFactory;
 import org.apache.solr.common.params.ModifiableSolrParams;
 
+import static org.apache.solr.common.params.CommonParams.SORT;
 import static org.apache.solr.common.params.CommonParams.VERSION_FIELD;
 
 /**
@@ -238,7 +239,7 @@ public class FetchStream extends TupleStream implements Expressible {
       params.add("q", buf.toString());
       params.add("fl", fieldList+appendFields());
       params.add("rows", Integer.toString(batchSize));
-      params.add("sort", "_version_ desc");
+      params.add(SORT, "_version_ desc");
 
       CloudSolrStream cloudSolrStream = new CloudSolrStream(zkHost, collection, params);
       StreamContext newContext = new StreamContext();

@@ -36,6 +36,7 @@ import org.apache.solr.search.QueryContext;
 import org.apache.solr.search.SolrIndexSearcher;
 import org.apache.solr.search.SyntaxError;
 
+import static org.apache.solr.common.params.CommonParams.SORT;
 import static org.apache.solr.search.facet.FacetRequest.RefineMethod.NONE;
 
 
@@ -645,7 +646,7 @@ class FacetFieldParser extends FacetParser<FacetField> {
       Object o = m.get("facet");
       parseSubs(o);
 
-      parseSort( m.get("sort") );
+      parseSort( m.get(SORT) );
     }
 
     return facet;

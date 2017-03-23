@@ -66,6 +66,7 @@ import org.slf4j.LoggerFactory;
 import static java.util.Collections.singletonMap;
 import static org.apache.solr.common.params.CommonParams.ID;
 import static org.apache.solr.common.params.CommonParams.JSON;
+import static org.apache.solr.common.params.CommonParams.SORT;
 import static org.apache.solr.common.params.CommonParams.VERSION;
 import static org.apache.solr.common.util.Utils.makeMap;
 
@@ -204,7 +205,7 @@ public class BlobHandler extends RequestHandlerBase implements PluginInfoInitial
             new MapSolrParams((Map) makeMap(
                 "q", StrUtils.formatString(q, blobName, version),
                 "fl", "id,size,version,timestamp,blobName,md5",
-                "sort", "version desc"))
+                SORT, "version desc"))
             , rsp);
       }
     }

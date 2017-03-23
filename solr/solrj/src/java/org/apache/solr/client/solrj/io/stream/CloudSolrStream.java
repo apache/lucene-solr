@@ -63,6 +63,9 @@ import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.common.util.SolrjNamedThreadFactory;
 import org.apache.solr.common.util.StrUtils;
 
+import static org.apache.solr.common.params.CommonParams.DISTRIB;
+import static org.apache.solr.common.params.CommonParams.SORT;
+
 /**
  * Connects to Zookeeper to pick replicas from a specific collection to send the query to.
  * Under the covers the SolrStream instances send the query to the replicas.
@@ -269,10 +272,10 @@ public class CloudSolrStream extends TupleStream implements Expressible {
     }
     String fls = String.join(",", params.getParams("fl"));
 
-    if (params.getParams("sort") == null) {
+    if (params.getParams(SORT) == null) {
       throw new IOException("sort param expected for search function");
     }
-    String sorts = String.join(",", params.getParams("sort"));
+    String sorts = String.join(",", params.getParams(SORT));
     this.comp = parseComp(sorts, fls);
   }
   
@@ -403,7 +406,7 @@ public class CloudSolrStream extends TupleStream implements Expressible {
       Collection<Slice> slices = CloudSolrStream.getSlices(this.collection, zkStateReader, true);
 
       ModifiableSolrParams mParams = new ModifiableSolrParams(params); 
-      mParams.set("distrib", "false"); // We are the aggregator.
+      mParams.set(DISTRIB, "false"); // We are the aggregator.
 
       Set<String> liveNodes = clusterState.getLiveNodes();
       for(Slice slice : slices) {

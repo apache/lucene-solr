@@ -38,6 +38,8 @@ import org.apache.solr.util.plugin.SolrCoreAware;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import static org.apache.solr.common.params.CommonParams.DISTRIB;
+
 /**
  * Ping Request Handler for reporting SolrCore health to a Load Balancer.
  *
@@ -180,10 +182,10 @@ public class PingRequestHandler extends RequestHandlerBase implements SolrCoreAw
     
     // in this case, we want to default distrib to false so
     // we only ping the single node
-    Boolean distrib = params.getBool("distrib");
+    Boolean distrib = params.getBool(DISTRIB);
     if (distrib == null)   {
       ModifiableSolrParams mparams = new ModifiableSolrParams(params);
-      mparams.set("distrib", false);
+      mparams.set(DISTRIB, false);
       req.setParams(mparams);
     }
     
