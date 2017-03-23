@@ -115,16 +115,18 @@ Detailed Change List
 New Features
 ----------------------
 
-* SOLR-9992: Add support for grouping with PointFIelds. (Cao Manh Dat) 
+* SOLR-9992: Add support for grouping with PointFIelds. (Cao Manh Dat)
 
 * SOLR-10046: Add UninvertDocValuesMergePolicyFactory class. (Keith Laban, Christine Poerschke)
 
-* SOLR-9994: Add support for CollapseQParser with PointFields. (Varun Thacker, Cao Manh Dat) 
+* SOLR-9994: Add support for CollapseQParser with PointFields. (Varun Thacker, Cao Manh Dat)
 
 * SOLR-10076: Hide keystore and truststore passwords from /admin/info/* outputs. (Mano Kovacs via Mark Miller)
 
 * SOLR-6736: Adding support for uploading zipped configsets using ConfigSets API (Varun Rajput, Ishan Chattopadhyaya,
   Noble Paul, Anshum Gupta, Gregory Chanan)
+
+* SOLR-10349: Add totalTermFreq support to TermsComponent. (Shai Erera)
 
 Optimizations
 ----------------------
