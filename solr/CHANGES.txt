@@ -116,6 +116,13 @@ New Features
 
 * SOLR-9994: Add support for CollapseQParser with PointFields. (Varun Thacker, Cao Manh Dat) 
 
+Optimizations
+----------------------
+
+* SOLR-9184: Add a static convenience method ModifiableSolrParams#of(SolrParams) which returns the same
+  instance if it already is modifiable, otherwise creates a new ModifiableSolrParams instance.
+  (Jörg Rathlev via Koji)
+
 ==================  6.5.0 ==================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release.
