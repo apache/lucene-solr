@@ -53,6 +53,7 @@ import org.apache.solr.util.plugin.SolrCoreAware;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import static org.apache.solr.common.params.CommonParams.DISTRIB;
 import static org.apache.solr.common.params.CommonParams.PATH;
 
 
@@ -212,7 +213,7 @@ public class SearchHandler extends RequestHandlerBase implements SolrCoreAware ,
 
     CoreContainer cc = req.getCore().getCoreDescriptor().getCoreContainer();
     boolean isZkAware = cc.isZooKeeperAware();
-    rb.isDistrib = req.getParams().getBool("distrib", isZkAware);
+    rb.isDistrib = req.getParams().getBool(DISTRIB, isZkAware);
     if (!rb.isDistrib) {
       // for back compat, a shards param with URLs like localhost:8983/solr will mean that this
       // search is distributed.
@@ -361,7 +362,7 @@ public class SearchHandler extends RequestHandlerBase implements SolrCoreAware ,
             for (String shard : sreq.actualShards) {
               ModifiableSolrParams params = new ModifiableSolrParams(sreq.params);
               params.remove(ShardParams.SHARDS);      // not a top-level request
-              params.set(CommonParams.DISTRIB, "false");               // not a top-level request
+              params.set(DISTRIB, "false");               // not a top-level request
               params.remove("indent");
               params.remove(CommonParams.HEADER_ECHO_PARAMS);
               params.set(ShardParams.IS_SHARD, true);  // a sub (shard) request

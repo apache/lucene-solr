@@ -55,6 +55,7 @@ import org.apache.solr.common.params.ModifiableSolrParams;
 import java.io.IOException;
 import java.util.*;
 import java.util.stream.Collectors;
+import static org.apache.solr.common.params.CommonParams.SORT;
 
 /**
  * Table based on a Solr collection
@@ -271,13 +272,13 @@ class SolrTable extends AbstractQueryableTable implements TranslatableTable {
     String fl = getFields(fields);
 
     if(orders.size() > 0) {
-      params.add(CommonParams.SORT, getSort(orders));
+      params.add(SORT, getSort(orders));
     } else {
       if(limit == null) {
-        params.add(CommonParams.SORT, "_version_ desc");
+        params.add(SORT, "_version_ desc");
         fl = fl+",_version_";
       } else {
-        params.add(CommonParams.SORT, "score desc");
+        params.add(SORT, "score desc");
         if(fl.indexOf("score") == -1) {
           fl = fl + ",score";
         }
@@ -460,7 +461,7 @@ class SolrTable extends AbstractQueryableTable implements TranslatableTable {
       params.set("partitionKeys", getPartitionKeys(buckets));
     }
 
-    params.set("sort", sort);
+    params.set(SORT, sort);
 
     TupleStream tupleStream = null;
 
@@ -699,7 +700,7 @@ class SolrTable extends AbstractQueryableTable implements TranslatableTable {
       params.set("partitionKeys", getPartitionKeys(buckets));
     }
 
-    params.set("sort", sort);
+    params.set(SORT, sort);
 
     TupleStream tupleStream = null;
 

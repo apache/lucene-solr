@@ -96,6 +96,8 @@ import org.apache.solr.util.BoundedTreeSet;
 import org.apache.solr.util.DefaultSolrThreadFactory;
 import org.apache.solr.util.RTimer;
 
+import static org.apache.solr.common.params.CommonParams.SORT;
+
 /**
  * A class that generates simple Facet information for a request.
  *
@@ -531,7 +533,7 @@ public class SimpleFacets {
               default:
                 sortVal = sort;
             }
-            jsonFacet.put("sort", sortVal );
+            jsonFacet.put(SORT, sortVal );
 
             Map<String, Object> topLevel = new HashMap<>();
             topLevel.put(field, jsonFacet);

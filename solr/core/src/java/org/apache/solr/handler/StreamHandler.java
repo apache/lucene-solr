@@ -81,6 +81,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import static org.apache.solr.common.params.CommonParams.ID;
+import static org.apache.solr.common.params.CommonParams.SORT;
 
 public class StreamHandler extends RequestHandlerBase implements SolrCoreAware, PermissionNameProvider {
 
@@ -148,7 +149,7 @@ public class StreamHandler extends RequestHandlerBase implements SolrCoreAware, 
       .withFunctionName("outerHashJoin", OuterHashJoinStream.class)
       .withFunctionName("intersect", IntersectStream.class)
       .withFunctionName("complement", ComplementStream.class)
-      .withFunctionName("sort", SortStream.class)
+      .withFunctionName(SORT, SortStream.class)
       .withFunctionName("train", TextLogitStream.class)
       .withFunctionName("features", FeaturesSelectionStream.class)
       .withFunctionName("daemon", DaemonStream.class)

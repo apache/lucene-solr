@@ -82,6 +82,7 @@ import org.apache.solr.util.RefCounted;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import static org.apache.solr.common.params.CommonParams.DISTRIB;
 import static org.apache.solr.common.params.CommonParams.ID;
 import static org.apache.solr.common.params.CommonParams.VERSION_FIELD;
 
@@ -840,7 +841,7 @@ public class RealTimeGetComponent extends SearchComponent
 
     // TODO: how to avoid hardcoding this and hit the same handler?
     sreq.params.set(ShardParams.SHARDS_QT,"/get");      
-    sreq.params.set("distrib",false);
+    sreq.params.set(DISTRIB,false);
 
     sreq.params.remove(ShardParams.SHARDS);
     sreq.params.remove(ID);

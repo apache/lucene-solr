@@ -51,6 +51,8 @@ import org.apache.solr.search.SolrReturnFields;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import static org.apache.solr.common.params.CommonParams.SORT;
+
 /**
  * TODO!
  * 
@@ -339,7 +341,7 @@ public class MoreLikeThisComponent extends SearchComponent {
     String id = rb.req.getSchema().getUniqueKeyField()
     .getName();
     s.params.set(CommonParams.FL, "score," + id);
-    s.params.set("sort", "score desc");
+    s.params.set(SORT, "score desc");
     // MLT Query is submitted as normal query to shards.
     s.params.set(CommonParams.Q, q);
     
