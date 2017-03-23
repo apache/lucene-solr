@@ -39,6 +39,8 @@ New Features
 * SOLR-10292: Adds CartesianProductStream which turns a single tuple with a multi-valued field into N 
   tuples, one for each value in the multi-valued field. (Dennis Gove)
 
+* SOLR-9994: Add support for CollapseQParser with PointFields. (Varun Thacker, Cao Manh Dat)
+
 ==================  6.5.0 ==================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release.
