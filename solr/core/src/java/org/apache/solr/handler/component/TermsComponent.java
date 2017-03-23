@@ -108,8 +108,9 @@ public class TermsComponent extends SearchComponent {
     }
 
     String termList = params.get(TermsParams.TERMS_LIST);
-    if(termList != null) {
-      fetchTerms(rb.req.getSearcher(), fields, termList, termsResult);
+    if (termList != null) {
+      boolean includeTotalTermFreq = params.getBool(TermsParams.TERMS_TTF, false);
+      fetchTerms(rb.req.getSearcher(), fields, termList, includeTotalTermFreq, termsResult);
       return;
     }
 
@@ -303,7 +304,7 @@ public class TermsComponent extends SearchComponent {
     if (th != null) {
       for (ShardResponse srsp : sreq.responses) {
         @SuppressWarnings("unchecked")
-        NamedList<NamedList<Number>> terms = (NamedList<NamedList<Number>>) srsp.getSolrResponse().getResponse().get("terms");
+        NamedList<NamedList<Object>> terms = (NamedList<NamedList<Object>>) srsp.getSolrResponse().getResponse().get("terms");
         th.parse(terms);
 
 
@@ -376,7 +377,7 @@ public class TermsComponent extends SearchComponent {
       }
     }
 
-    public void parse(NamedList<NamedList<Number>> terms) {
+    public void parse(NamedList<NamedList<Object>> terms) {
       // exit if there is no terms
       if (terms == null) {
         return;
@@ -400,6 +401,7 @@ public class TermsComponent extends SearchComponent {
           if (termmap.containsKey(term)) {
             TermsResponse.Term oldtc = termmap.get(term);
             oldtc.addFrequency(tc.getFrequency());
+            oldtc.addTotalTermFreq(tc.getTotalTermFreq());
             termmap.put(term, oldtc);
           } else {
             termmap.put(term, tc);
@@ -442,7 +444,7 @@ public class TermsComponent extends SearchComponent {
 
       // loop though each field we want terms from
       for (String key : fieldmap.keySet()) {
-        NamedList<Number> fieldterms = new SimpleOrderedMap<>();
+        NamedList<Object> fieldterms = new SimpleOrderedMap<>();
         TermsResponse.Term[] data = null;
         if (sort) {
           data = getCountSorted(fieldmap.get(key));
@@ -450,11 +452,19 @@ public class TermsComponent extends SearchComponent {
           data = getLexSorted(fieldmap.get(key));
         }
 
+        boolean includeTotalTermFreq = params.getBool(TermsParams.TERMS_TTF, false);
         // loop though each term until we hit limit
         int cnt = 0;
         for (TermsResponse.Term tc : data) {
           if (tc.getFrequency() >= freqmin && tc.getFrequency() <= freqmax) {
-            fieldterms.add(tc.getTerm(), num(tc.getFrequency()));
+            if (includeTotalTermFreq) {
+              NamedList<Number> termStats = new SimpleOrderedMap<>();
+              termStats.add("docFreq", tc.getFrequency());
+              termStats.add("totalTermFreq", tc.getTotalTermFreq());
+              fieldterms.add(tc.getTerm(), termStats);
+            } else {
+              fieldterms.add(tc.getTerm(), num(tc.getFrequency()));
+            }
             cnt++;
           }
 
@@ -508,10 +518,9 @@ public class TermsComponent extends SearchComponent {
   private void fetchTerms(SolrIndexSearcher indexSearcher,
                           String[] fields,
                           String termList,
+                          boolean includeTotalTermFreq,
                           NamedList result) throws IOException {
 
-    NamedList termsMap = new SimpleOrderedMap();
-    List<LeafReaderContext> leaves = indexSearcher.getTopReaderContext().leaves();
     String field = fields[0];
     FieldType fieldType = indexSearcher.getSchema().getField(field).getType();
     String[] splitTerms = termList.split(",");
@@ -521,35 +530,43 @@ public class TermsComponent extends SearchComponent {
     }
 
     Term[] terms = new Term[splitTerms.length];
-    TermContext[] termContexts = new TermContext[terms.length];
     for(int i=0; i<splitTerms.length; i++) {
       terms[i] = new Term(field, fieldType.readableToIndexed(splitTerms[i]));
     }
 
     Arrays.sort(terms);
 
-    collectTermContext(indexSearcher.getTopReaderContext().reader(), leaves, termContexts, terms);
+    IndexReaderContext topReaderContext = indexSearcher.getTopReaderContext();
+    TermContext[] termContexts = new TermContext[terms.length];
+    collectTermContext(topReaderContext, termContexts, terms);
 
-    for(int i=0; i<terms.length; i++) {
-      if(termContexts[i] != null) {
+    NamedList termsMap = new SimpleOrderedMap();
+    for (int i = 0; i < terms.length; i++) {
+      if (termContexts[i] != null) {
         String outTerm = fieldType.indexedToReadable(terms[i].bytes().utf8ToString());
         int docFreq = termContexts[i].docFreq();
-        termsMap.add(outTerm, docFreq);
+        if (!includeTotalTermFreq) {
+          termsMap.add(outTerm, docFreq);
+        } else {
+          long totalTermFreq = termContexts[i].totalTermFreq();
+          NamedList<Long> termStats = new SimpleOrderedMap<>();
+          termStats.add("docFreq", (long) docFreq);
+          termStats.add("totalTermFreq", totalTermFreq);
+          termsMap.add(outTerm, termStats);
+        }
       }
     }
 
     result.add(field, termsMap);
   }
 
-  private void collectTermContext(IndexReader reader,
-                                 List<LeafReaderContext> leaves, TermContext[] contextArray,
-                                 Term[] queryTerms) throws IOException {
+  private void collectTermContext(IndexReaderContext topReaderContext, TermContext[] contextArray, Term[] queryTerms)
+      throws IOException {
     TermsEnum termsEnum = null;
-    for (LeafReaderContext context : leaves) {
+    for (LeafReaderContext context : topReaderContext.leaves()) {
       final Fields fields = context.reader().fields();
       for (int i = 0; i < queryTerms.length; i++) {
         Term term = queryTerms[i];
-        TermContext termContext = contextArray[i];
         final Terms terms = fields.terms(term.field());
         if (terms == null) {
           // field does not exist
@@ -559,18 +576,15 @@ public class TermsComponent extends SearchComponent {
         assert termsEnum != null;
 
         if (termsEnum == TermsEnum.EMPTY) continue;
+
+        TermContext termContext = contextArray[i];
         if (termsEnum.seekExact(term.bytes())) {
           if (termContext == null) {
-            contextArray[i] = new TermContext(reader.getContext(),
-                termsEnum.termState(), context.ord, termsEnum.docFreq(),
-                termsEnum.totalTermFreq());
-          } else {
-            termContext.register(termsEnum.termState(), context.ord,
-                termsEnum.docFreq(), termsEnum.totalTermFreq());
+            termContext = new TermContext(topReaderContext);
+            contextArray[i] = termContext;
           }
-
+          termContext.accumulateStatistics(termsEnum.docFreq(), termsEnum.totalTermFreq());
         }
-
       }
     }
   }

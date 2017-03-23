@@ -51,6 +51,8 @@ New Features
 * SOLR-6736: Adding support for uploading zipped configsets using ConfigSets API (Varun Rajput, Ishan Chattopadhyaya,
   Noble Paul, Anshum Gupta, Gregory Chanan)
 
+* SOLR-10349: Add totalTermFreq support to TermsComponent. (Shai Erera)
+
 Optimizations
 ----------------------
 
