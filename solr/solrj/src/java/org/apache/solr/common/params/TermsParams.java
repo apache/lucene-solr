@@ -42,15 +42,18 @@ public interface TermsParams {
 
   /**
    * Optional. The list of terms to be retrieved.
-   *
    */
   public static final String TERMS_LIST = TERMS_PREFIX + "list";
 
   /**
-   * Optional. The list of terms to be retrieved.
-   *
+   * Optional. If true, also returns index-level statistics, such as numDocs.
    */
   public static final String TERMS_STATS = TERMS_PREFIX + "stats";
+
+  /**
+   * Optional. If true, also returns terms' total term frequency.
+   */
+  public static final String TERMS_TTF = TERMS_PREFIX + "ttf";
 
   /**
    * Optional.  The lower bound term to start at.  The TermEnum will start at the next term after this term in the dictionary.
@@ -107,10 +110,11 @@ public interface TermsParams {
       }
   }
 
-    /**
+  /**
    * Optional.  The minimum value of docFreq to be returned.  1 by default
    */
   public static final String TERMS_MINCOUNT = TERMS_PREFIX + "mincount";
+
   /**
    * Optional.  The maximum value of docFreq to be returned.  -1 by default means no boundary
    */

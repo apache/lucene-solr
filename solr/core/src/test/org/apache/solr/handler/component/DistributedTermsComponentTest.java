@@ -52,7 +52,6 @@ public class DistributedTermsComponentTest extends BaseDistributedSearchTestCase
     query("qt", "/terms", "shards.qt", "/terms", "terms", "true", "terms.fl", "b_t", "terms.list", "snake, zebra, ant, bad");
     query("qt", "/terms", "shards.qt", "/terms", "terms", "true", "terms.fl", "foo_i", "terms.list", "2, 3, 1");
     query("qt", "/terms", "shards.qt", "/terms", "terms", "true", "terms.fl", "foo_i", "terms.stats", "true","terms.list", "2, 3, 1");
-
-
+    query("qt", "/terms", "shards.qt", "/terms", "terms", "true", "terms.fl", "b_t", "terms.list", "snake, zebra", "terms.ttf", "true");
   }
 }
