@@ -67,6 +67,8 @@ New Features
 
 * SOLR-10358: New suspend-trigger and resume-trigger APIs for autoscaling. (shalin)
 
+* SOLR-10356: Adds basic math Streaming Evaluators (Dennis Gove)
+
 Bug Fixes
 ----------------------
 * SOLR-9262: Connection and read timeouts are being ignored by UpdateShardHandler after SOLR-4509.

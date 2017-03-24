@@ -22,6 +22,7 @@ import java.util.List;
 import java.util.Locale;
 import java.util.UUID;
 
+import org.apache.solr.client.solrj.io.stream.StreamContext;
 import org.apache.solr.client.solrj.io.stream.expr.Explanation;
 import org.apache.solr.client.solrj.io.stream.expr.Explanation.ExpressionType;
 import org.apache.solr.client.solrj.io.stream.expr.StreamExpression;
@@ -31,6 +32,7 @@ import org.apache.solr.client.solrj.io.stream.expr.StreamFactory;
 
 public abstract class ComplexEvaluator implements StreamEvaluator {
   protected static final long serialVersionUID = 1L;
+  protected StreamContext streamContext;
   
   protected UUID nodeId = UUID.randomUUID();
   
@@ -95,5 +97,9 @@ public abstract class ComplexEvaluator implements StreamEvaluator {
       .withFunctionName(factory.getFunctionName(getClass()))
       .withImplementingClass(getClass().getName())
       .withExpression(toExpression(factory).toString());
+  }
+  
+  public void setStreamContext(StreamContext context) {
+    this.streamContext = context;
   }
 }
