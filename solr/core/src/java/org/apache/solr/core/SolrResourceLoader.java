@@ -90,7 +90,8 @@ public class SolrResourceLoader implements ResourceLoader,Closeable
   static final String[] packages = {
       "", "analysis.", "schema.", "handler.", "search.", "update.", "core.", "response.", "request.",
       "update.processor.", "util.", "spelling.", "handler.component.", "handler.dataimport.",
-      "spelling.suggest.", "spelling.suggest.fst.", "rest.schema.analysis.", "security.","handler.admin."
+      "spelling.suggest.", "spelling.suggest.fst.", "rest.schema.analysis.", "security.","handler.admin.",
+      "cloud.autoscaling."
   };
   private static final java.lang.String SOLR_CORE_NAME = "solr.core.name";
   private static Set<String> loggedOnce = new ConcurrentSkipListSet<>();

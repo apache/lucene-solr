@@ -49,6 +49,7 @@ import org.apache.solr.client.solrj.impl.SolrHttpClientContextBuilder;
 import org.apache.solr.client.solrj.impl.SolrHttpClientContextBuilder.AuthSchemeRegistryProvider;
 import org.apache.solr.client.solrj.impl.SolrHttpClientContextBuilder.CredentialsProviderProvider;
 import org.apache.solr.client.solrj.util.SolrIdentifierValidator;
+import org.apache.solr.cloud.autoscaling.AutoScalingHandler;
 import org.apache.solr.cloud.CloudDescriptor;
 import org.apache.solr.cloud.Overseer;
 import org.apache.solr.cloud.ZkController;
@@ -178,6 +179,8 @@ public class CoreContainer {
   protected MetricsHandler metricsHandler;
 
   protected MetricsCollectorHandler metricsCollectorHandler;
+
+  protected AutoScalingHandler autoScalingHandler;
 
   private enum CoreInitFailedAction { fromleader, none }
 
@@ -516,6 +519,9 @@ public class CoreContainer {
     metricsCollectorHandler = createHandler(MetricsCollectorHandler.HANDLER_PATH, MetricsCollectorHandler.class.getName(), MetricsCollectorHandler.class);
     // may want to add some configuration here in the future
     metricsCollectorHandler.init(null);
+
+    autoScalingHandler = createHandler(AutoScalingHandler.HANDLER_PATH, AutoScalingHandler.class.getName(), AutoScalingHandler.class);
+
     containerHandlers.put(AUTHZ_PATH, securityConfHandler);
     securityConfHandler.initializeMetrics(metricManager, SolrInfoMBean.Group.node.toString(), AUTHZ_PATH);
     containerHandlers.put(AUTHC_PATH, securityConfHandler);
