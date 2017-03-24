@@ -11,7 +11,7 @@
   },
   "commands": {
     "set-trigger": {
-      "type": "object",
+      "type":"object",
       "description": "The set-trigger command allows you to add and update triggers on various system metrics",
       "properties": {
         "name": {
