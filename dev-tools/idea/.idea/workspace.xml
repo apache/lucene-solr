@@ -316,30 +316,6 @@
       <option name="TEST_SEARCH_SCOPE"><value defaultName="singleModule" /></option>
       <patterns><pattern testClass=".*\.Test[^.]*|.*\.[^.]*Test" /></patterns>
     </configuration>
-    <configuration default="false" name="Solr map-reduce contrib" type="JUnit" factoryName="JUnit">
-      <module name="map-reduce" />
-      <option name="TEST_OBJECT" value="pattern" />
-      <option name="WORKING_DIRECTORY" value="file://$PROJECT_DIR$/idea-build/solr/contrib/map-reduce" />
-      <option name="VM_PARAMETERS" value="-ea -DtempDir=temp -Djetty.testMode=1 -Djetty.insecurerandom=1 -Dsolr.directoryFactory=org.apache.solr.core.MockDirectoryFactory" />
-      <option name="TEST_SEARCH_SCOPE"><value defaultName="singleModule" /></option>
-      <patterns><pattern testClass=".*\.Test[^.]*|.*\.[^.]*Test" /></patterns>
-    </configuration>
-    <configuration default="false" name="Solr morphlines-cell contrib" type="JUnit" factoryName="JUnit">
-      <module name="morphlines-cell" />
-      <option name="TEST_OBJECT" value="pattern" />
-      <option name="WORKING_DIRECTORY" value="file://$PROJECT_DIR$/idea-build/solr/contrib/morphlines-cell" />
-      <option name="VM_PARAMETERS" value="-ea -DtempDir=temp -Djetty.testMode=1 -Djetty.insecurerandom=1 -Dsolr.directoryFactory=org.apache.solr.core.MockDirectoryFactory" />
-      <option name="TEST_SEARCH_SCOPE"><value defaultName="singleModule" /></option>
-      <patterns><pattern testClass=".*\.Test[^.]*|.*\.[^.]*Test" /></patterns>
-    </configuration>
-    <configuration default="false" name="Solr morphlines-core contrib" type="JUnit" factoryName="JUnit">
-      <module name="morphlines-core" />
-      <option name="TEST_OBJECT" value="pattern" />
-      <option name="WORKING_DIRECTORY" value="file://$PROJECT_DIR$/idea-build/solr/contrib/morphlines-core" />
-      <option name="VM_PARAMETERS" value="-ea -DtempDir=temp -Djetty.testMode=1 -Djetty.insecurerandom=1 -Dsolr.directoryFactory=org.apache.solr.core.MockDirectoryFactory" />
-      <option name="TEST_SEARCH_SCOPE"><value defaultName="singleModule" /></option>
-      <patterns><pattern testClass=".*\.Test[^.]*|.*\.[^.]*Test" /></patterns>
-    </configuration>
     <configuration default="false" name="Solr uima contrib" type="JUnit" factoryName="JUnit">
       <module name="uima" />
       <option name="TEST_OBJECT" value="pattern" />
@@ -357,7 +333,7 @@
       <patterns><pattern testClass=".*\.Test[^.]*|.*\.[^.]*Test" /></patterns>
     </configuration>
 
-    <list size="44">
+    <list size="41">
       <item index="0" class="java.lang.String" itemvalue="JUnit.Lucene core" />
       <item index="1" class="java.lang.String" itemvalue="JUnit.Module analyzers-common" />
       <item index="2" class="java.lang.String" itemvalue="JUnit.Module analyzers-icu" />
@@ -395,13 +371,10 @@
       <item index="34" class="java.lang.String" itemvalue="JUnit.Solr dataimporthandler contrib" />
       <item index="35" class="java.lang.String" itemvalue="JUnit.Solr dataimporthandler-extras contrib" />
       <item index="36" class="java.lang.String" itemvalue="JUnit.Solr extraction contrib" />
-      <item index="37" class="java.lang.String" itemvalue="JUnit.Solr map-reduce contrib" />
-      <item index="38" class="java.lang.String" itemvalue="JUnit.Solr morphlines-cell contrib" />
-      <item index="39" class="java.lang.String" itemvalue="JUnit.Solr morphlines-core contrib" />
-      <item index="40" class="java.lang.String" itemvalue="JUnit.Solr langid contrib" />
-      <item index="41" class="java.lang.String" itemvalue="JUnit.Solr ltr contrib" />
-      <item index="42" class="java.lang.String" itemvalue="JUnit.Solr uima contrib" />
-      <item index="43" class="java.lang.String" itemvalue="JUnit.Solr velocity contrib" />
+      <item index="37" class="java.lang.String" itemvalue="JUnit.Solr langid contrib" />
+      <item index="38" class="java.lang.String" itemvalue="JUnit.Solr ltr contrib" />
+      <item index="39" class="java.lang.String" itemvalue="JUnit.Solr uima contrib" />
+      <item index="40" class="java.lang.String" itemvalue="JUnit.Solr velocity contrib" />
     </list>
   </component>
 </project>
