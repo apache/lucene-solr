@@ -17,6 +17,11 @@
 
 package org.apache.solr.cloud.autoscaling;
 
+import java.util.Date;
+import java.util.Map;
+import java.util.concurrent.TimeUnit;
+import java.util.function.Predicate;
+
 public class AutoScaling {
 
   public enum EventType {
@@ -27,6 +32,44 @@ public class AutoScaling {
     SCHEDULED,
     SEARCHRATE,
     INDEXRATE
+  }
+
+  public enum TriggerStage {
+    STARTED,
+    ABORTED,
+    SUCCEEDED,
+    FAILED,
+    BEFORE_ACTION,
+    AFTER_ACTION
+  }
+
+  public static interface TriggerListener {
+    public void triggerFired(Trigger trigger, Event event);
+  }
+
+  public static class HttpCallbackListener implements TriggerListener {
+    @Override
+    public void triggerFired(Trigger trigger, Event event) {
+
+    }
+  }
+
+  public static interface Trigger {
+    public String getName();
+
+    public EventType getEventType();
+
+    public boolean isEnabled();
+
+    public Map<String, Object> getProperties();
+  }
+
+  public static interface Event {
+    public String getSource();
+
+    public Date getTime();
+
+    public EventType getType();
   }
 
 }

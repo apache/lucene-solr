@@ -20,10 +20,13 @@ package org.apache.solr.cloud.autoscaling;
 import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
 import org.apache.solr.api.Api;
@@ -88,7 +91,111 @@ public class AutoScalingHandler extends RequestHandlerBase implements Permission
           break;
         case "remove-trigger":
           handleRemoveTrigger(req, rsp, op);
+          break;
+        case "set-listener":
+          handleSetListener(req, rsp, op);
+          break;
+        case "remove-listener":
+          handleRemoveListener(req, rsp, op);
+          break;
       }
+    }
+  }
+
+  private void handleRemoveListener(SolrQueryRequest req, SolrQueryResponse rsp, CommandOperation op) throws KeeperException, InterruptedException {
+    String listenerName = op.getStr("name");
+
+    if (listenerName == null || listenerName.trim().length() == 0) {
+      throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "The listener name cannot be null or empty");
+    }
+    Map<String, Object> autoScalingConf = zkReadAutoScalingConf(container.getZkController().getZkStateReader());
+    Map<String, Object> listeners = (Map<String, Object>) autoScalingConf.get("listeners");
+    if (listeners == null || !listeners.containsKey(listenerName)) {
+      throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "No listener exists with name: " + listenerName);
+    }
+    zkSetListener(container.getZkController().getZkStateReader(), listenerName, null);
+    rsp.getValues().add("result", "success");
+  }
+
+  private void handleSetListener(SolrQueryRequest req, SolrQueryResponse rsp, CommandOperation op) throws KeeperException, InterruptedException {
+    String listenerName = op.getStr("name");
+    String triggerName = op.getStr("trigger");
+    List<String> stageNames = op.getStrs("stage", Collections.emptyList());
+    String listenerClass = op.getStr("class");
+    List<String> beforeActions = op.getStrs("beforeAction", Collections.emptyList());
+    List<String> afterActions = op.getStrs("afterAction", Collections.emptyList());
+
+    if (listenerName == null || listenerName.trim().length() == 0) {
+      throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "The listener name cannot be null or empty");
+    }
+
+    Map<String, Object> autoScalingConf = zkReadAutoScalingConf(container.getZkController().getZkStateReader());
+    Map<String, Object> triggers = (Map<String, Object>) autoScalingConf.get("triggers");
+    if (triggers == null || !triggers.containsKey(triggerName)) {
+      throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "A trigger with the name " + triggerName + " does not exist");
+    }
+    Map<String, Object> triggerProps = (Map<String, Object>) triggers.get(triggerName);
+
+    if (stageNames.isEmpty() && beforeActions.isEmpty() && afterActions.isEmpty()) {
+      throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Either 'stage' or 'beforeAction' or 'afterAction' must be specified");
+    }
+
+    for (String stage : stageNames) {
+      try {
+        AutoScaling.TriggerStage.valueOf(stage);
+      } catch (IllegalArgumentException e) {
+        throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Invalid stage name: " + stage);
+      }
+    }
+
+    if (listenerClass == null || listenerClass.trim().length() == 0) {
+      throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "The 'class' of the listener cannot be null or empty");
+    }
+    // validate that we can load the listener class
+    // todo nocommit -- what about MemClassLoader?
+    try {
+      container.getResourceLoader().findClass(listenerClass, AutoScaling.TriggerListener.class);
+    } catch (Exception e) {
+      throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Listener not found: " + listenerClass, e);
+    }
+
+    List<Map<String, String>> actions = (List<Map<String, String>>) triggerProps.get("actions");
+    Set<String> actionNames = new HashSet<>();
+    actionNames.addAll(beforeActions);
+    actionNames.addAll(afterActions);
+    for (Map<String, String> action : actions) {
+      actionNames.remove(action.get("name"));
+    }
+    if (!actionNames.isEmpty()) {
+      throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "The trigger '" + triggerName + "' does not have actions named: " + actionNames);
+    }
+
+    // todo - handle races between competing set-trigger and set-listener invocations
+    zkSetListener(container.getZkController().getZkStateReader(), listenerName, op.getValuesExcluding("name"));
+    rsp.getValues().add("result", "success");
+  }
+
+  private void zkSetListener(ZkStateReader reader, String listenerName, Map<String, Object> listenerProperties) throws KeeperException, InterruptedException {
+    while (true) {
+      Stat stat = new Stat();
+      ZkNodeProps loaded = null;
+      byte[] data = reader.getZkClient().getData(SOLR_AUTOSCALING_CONF_PATH, null, stat, true);
+      loaded = ZkNodeProps.load(data);
+      Map<String, Object> listeners = (Map<String, Object>) loaded.get("listeners");
+      if (listeners == null) listeners = new HashMap<>(1);
+      if (listenerProperties != null) {
+        listeners.put(listenerName, listenerProperties);
+      } else {
+        listeners.remove(listenerName);
+      }
+      loaded = loaded.plus("listeners", listeners);
+      try {
+        reader.getZkClient().setData(SOLR_AUTOSCALING_CONF_PATH, Utils.toJSON(loaded), stat.getVersion(), true);
+      } catch (KeeperException.BadVersionException bve) {
+        // somebody else has changed the configuration so we must retry
+        continue;
+      }
+      break;
     }
   }
 
@@ -144,7 +251,7 @@ public class AutoScalingHandler extends RequestHandlerBase implements Permission
       try {
         container.getResourceLoader().findClass(klass, TriggerAction.class);
       } catch (Exception e) {
-        throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Error trying to find Action: " + klass, e);
+        throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Action not found: " + klass, e);
       }
     }
 
@@ -154,6 +261,7 @@ public class AutoScalingHandler extends RequestHandlerBase implements Permission
 
   private void handleRemoveTrigger(SolrQueryRequest req, SolrQueryResponse rsp, CommandOperation op) throws KeeperException, InterruptedException {
     String triggerName = op.getStr("name");
+    boolean removeListeners = op.getBoolean("removeListeners", false);
 
     if (triggerName == null || triggerName.trim().length() == 0) {
       throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "The trigger name cannot be null or empty");
@@ -163,6 +271,26 @@ public class AutoScalingHandler extends RequestHandlerBase implements Permission
     if (triggers == null || !triggers.containsKey(triggerName)) {
       throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "No trigger exists with name: " + triggerName);
     }
+
+    Map<String, Map<String, Object>> listeners = (Map<String, Map<String, Object>>) autoScalingConf.get("listeners");
+    Set<String> activeListeners = new HashSet<>();
+    if (listeners != null) {
+      for (Map.Entry<String, Map<String, Object>> entry : listeners.entrySet()) {
+        Map<String, Object> listenerProps = entry.getValue();
+        if (triggerName.equals(listenerProps.get("trigger")) && !removeListeners) {
+          activeListeners.add(entry.getKey());
+        }
+      }
+    }
+    if (removeListeners) {
+      for (String activeListener : activeListeners) {
+        zkSetListener(container.getZkController().getZkStateReader(), activeListener, null);
+      }
+    } else if (!activeListeners.isEmpty()) {
+      throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,
+          "No listeners should exist for trigger: " + triggerName + ". Found listeners: " + activeListeners);
+    }
+
     zkSetTrigger(container.getZkController().getZkStateReader(), triggerName, null);
     rsp.getValues().add("result", "success");
   }
