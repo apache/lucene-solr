@@ -104,6 +104,11 @@ Apache UIMA 2.3.1
 Apache ZooKeeper 3.4.6
 Jetty 9.3.14.v20161028
 
+Upgrade Notes
+----------------------
+
+* Solr contribs map-reduce, morphlines-core and morphlines-cell have been removed.
+
 Detailed Change List
 ----------------------
 
@@ -127,6 +132,11 @@ Bug Fixes
 ----------------------
 * SOLR-10281: ADMIN_PATHS is duplicated in two places and inconsistent. This can cause automatic
   retries to /admin/metrics handler by the CloudSolrClient. (shalin)
+
+Other Changes
+----------------------
+
+* SOLR-9221: Remove Solr contribs: map-reduce, morphlines-core and morphlines-cell. (Steve Rowe)
 
 ==================  6.5.0 ==================
 
