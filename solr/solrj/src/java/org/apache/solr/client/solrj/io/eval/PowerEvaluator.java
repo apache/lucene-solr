@@ -20,40 +20,42 @@
 package org.apache.solr.client.solrj.io.eval;
 
 import java.io.IOException;
-import java.util.ArrayList;
+import java.math.BigDecimal;
 import java.util.List;
+import java.util.Locale;
 
 import org.apache.solr.client.solrj.io.Tuple;
 import org.apache.solr.client.solrj.io.stream.expr.StreamExpression;
 import org.apache.solr.client.solrj.io.stream.expr.StreamFactory;
 
-public abstract class ConditionalEvaluator extends ComplexEvaluator {
+public class PowerEvaluator extends NumberEvaluator {
   protected static final long serialVersionUID = 1L;
   
-  public ConditionalEvaluator(StreamExpression expression, StreamFactory factory) throws IOException{
+  public PowerEvaluator(StreamExpression expression, StreamFactory factory) throws IOException{
     super(expression, factory);
-  }
-  
-  public List<Object> evaluateAll(final Tuple tuple) throws IOException {
-    List<Object> results = new ArrayList<Object>();
-    for(StreamEvaluator subEvaluator : subEvaluators){
-      results.add(subEvaluator.evaluate(tuple));
-    }
     
-    return results;
+    if(2 != subEvaluators.size()){
+      throw new IOException(String.format(Locale.ROOT,"Invalid expression %s - expecting exactly two values but found %d",expression,subEvaluators.size()));
+    }
   }
 
-  public interface Checker {
-    default boolean isNullAllowed(){
-      return false;
-    }
-    boolean isCorrectType(Object value);
-    boolean test(Object left, Object right);
-  }
+  @Override
+  public Number evaluate(Tuple tuple) throws IOException {
     
-  public interface BooleanChecker extends Checker {
-    default boolean isCorrectType(Object value){
-      return value instanceof Boolean;
+    List<BigDecimal> results = evaluateAll(tuple);
+    
+    if(results.stream().anyMatch(item -> null == item)){
+      return null;
     }
-  }  
+    
+    BigDecimal value = results.get(0);
+    BigDecimal exponent = results.get(1);
+    
+    double result = Math.pow(value.doubleValue(), exponent.doubleValue());
+    if(Double.isNaN(result)){
+      return result;
+    }
+    
+    return normalizeType(BigDecimal.valueOf(result));
+  }
 }

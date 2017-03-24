@@ -15,45 +15,47 @@
  * limitations under the License.
  */
 /**
- * 
+ *
  */
 package org.apache.solr.client.solrj.io.eval;
 
 import java.io.IOException;
-import java.util.ArrayList;
+import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.util.List;
+import java.util.Locale;
 
 import org.apache.solr.client.solrj.io.Tuple;
 import org.apache.solr.client.solrj.io.stream.expr.StreamExpression;
 import org.apache.solr.client.solrj.io.stream.expr.StreamFactory;
 
-public abstract class ConditionalEvaluator extends ComplexEvaluator {
+public class CeilingEvaluator extends NumberEvaluator {
   protected static final long serialVersionUID = 1L;
-  
-  public ConditionalEvaluator(StreamExpression expression, StreamFactory factory) throws IOException{
+
+  public CeilingEvaluator(StreamExpression expression, StreamFactory factory) throws IOException{
     super(expression, factory);
-  }
-  
-  public List<Object> evaluateAll(final Tuple tuple) throws IOException {
-    List<Object> results = new ArrayList<Object>();
-    for(StreamEvaluator subEvaluator : subEvaluators){
-      results.add(subEvaluator.evaluate(tuple));
+
+    if(1 != subEvaluators.size()){
+      throw new IOException(String.format(Locale.ROOT,"Invalid expression %s - expecting one value but found %d",expression,subEvaluators.size()));
     }
-    
-    return results;
   }
 
-  public interface Checker {
-    default boolean isNullAllowed(){
-      return false;
+  @Override
+  public Number evaluate(Tuple tuple) throws IOException {
+
+    List<BigDecimal> results = evaluateAll(tuple);
+
+    // we're still doing these checks because if we ever add an array-flatten evaluator,
+    // one found in the constructor could become != 1
+    if(1 != results.size()){
+      throw new IOException(String.format(Locale.ROOT,"%s(...) only works with a 1 value but %d were provided", constructingFactory.getFunctionName(getClass()), results.size()));
     }
-    boolean isCorrectType(Object value);
-    boolean test(Object left, Object right);
+
+    if(null == results.get(0)){
+      return null;
+    }
+
+    return normalizeType(results.get(0).setScale(0, RoundingMode.CEILING));
   }
-    
-  public interface BooleanChecker extends Checker {
-    default boolean isCorrectType(Object value){
-      return value instanceof Boolean;
-    }
-  }  
+
 }

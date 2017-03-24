@@ -61,6 +61,8 @@ New Features
 * SOLR-10292: Adds CartesianProductStream which turns a single tuple with a multi-valued field into N 
   tuples, one for each value in the multi-valued field. (Dennis Gove)
 
+* SOLR-10356: Adds basic math Streaming Evaluators (Dennis Gove)
+
 Bug Fixes
 ----------------------
 * SOLR-9262: Connection and read timeouts are being ignored by UpdateShardHandler after SOLR-4509.
