@@ -125,6 +125,36 @@
       "required": [
         "name"
       ]
+    },
+    "suspend-trigger": {
+      "description": "Pauses a trigger until an explicit resume is invoked or if the optional timeout expires",
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string",
+          "description": "The name of the trigger to be suspended or '#EACH' to suspend all triggers"
+        },
+        "timeout": {
+          "type": "string",
+          "description": "Optional timeout after which all triggers are resumed automatically"
+        }
+      },
+      "required": [
+        "name"
+      ]
+    },
+    "resume-trigger": {
+      "description": "Resumes a suspended trigger",
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string",
+          "description": "The name of the trigger to be resumed or '#EACH' to resume all triggers"
+        }
+      },
+      "required": [
+        "name"
+      ]
     }
   }
 }

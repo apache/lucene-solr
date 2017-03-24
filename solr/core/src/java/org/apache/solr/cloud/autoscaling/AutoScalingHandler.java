@@ -21,6 +21,7 @@ import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -34,6 +35,7 @@ import org.apache.solr.api.ApiBag;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.cloud.ZkStateReader;
+import org.apache.solr.common.util.SuppressForbidden;
 import org.apache.solr.common.util.Utils;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.handler.RequestHandlerBase;
@@ -98,8 +100,72 @@ public class AutoScalingHandler extends RequestHandlerBase implements Permission
         case "remove-listener":
           handleRemoveListener(req, rsp, op);
           break;
+        case "suspend-trigger":
+          handleSuspendTrigger(req, rsp, op);
+          break;
+        case "resume-trigger":
+          handleResumeTrigger(req, rsp, op);
+          break;
       }
     }
+  }
+
+  private void handleResumeTrigger(SolrQueryRequest req, SolrQueryResponse rsp, CommandOperation op) throws KeeperException, InterruptedException {
+    String triggerName = op.getStr("name");
+
+    if (triggerName == null || triggerName.trim().length() == 0) {
+      throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "The trigger name cannot be null or empty");
+    }
+    Map<String, Object> autoScalingConf = zkReadAutoScalingConf(container.getZkController().getZkStateReader());
+    Map<String, Object> triggers = (Map<String, Object>) autoScalingConf.get("triggers");
+    if (triggers == null || (!triggers.containsKey(triggerName)) && !"#EACH".equals(triggerName)) {
+      throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "No trigger exists with name: " + triggerName);
+    }
+    for (Map.Entry<String, Object> entry : triggers.entrySet()) {
+      if ("#EACH".equals(triggerName) || triggerName.equals(entry.getKey())) {
+        Map<String, Object> triggerProps = (Map<String, Object>) entry.getValue();
+        triggerProps.put("enabled", true);
+        zkSetTrigger(container.getZkController().getZkStateReader(), entry.getKey(), triggerProps);
+      }
+    }
+    rsp.getValues().add("result", "success");
+  }
+
+  @SuppressForbidden(reason = "currentTimeMillis is used to find the resume time for the trigger")
+  private void handleSuspendTrigger(SolrQueryRequest req, SolrQueryResponse rsp, CommandOperation op) throws KeeperException, InterruptedException {
+    String triggerName = op.getStr("name");
+
+    if (triggerName == null || triggerName.trim().length() == 0) {
+      throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "The trigger name cannot be null or empty");
+    }
+
+    String timeout = op.getStr("timeout", null);
+    Date resumeTime = null;
+    if (timeout != null) {
+      try {
+        int timeoutSeconds = parseHumanTime(timeout);
+        resumeTime = new Date(System.currentTimeMillis() + TimeUnit.MILLISECONDS.convert(timeoutSeconds, TimeUnit.SECONDS));
+      } catch (IllegalArgumentException e) {
+        throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Invalid 'timeout' value for suspend trigger: " + triggerName);
+      }
+    }
+
+    Map<String, Object> autoScalingConf = zkReadAutoScalingConf(container.getZkController().getZkStateReader());
+    Map<String, Object> triggers = (Map<String, Object>) autoScalingConf.get("triggers");
+    if (triggers == null || (!triggers.containsKey(triggerName)) && !"#EACH".equals(triggerName)) {
+      throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "No trigger exists with name: " + triggerName);
+    }
+    for (Map.Entry<String, Object> entry : triggers.entrySet()) {
+      if ("#EACH".equals(triggerName) || triggerName.equals(entry.getKey())) {
+        Map<String, Object> triggerProps = (Map<String, Object>) entry.getValue();
+        triggerProps.put("enabled", false);
+        if (resumeTime != null) {
+          triggerProps.put("resumeAt", resumeTime.getTime());
+        }
+        zkSetTrigger(container.getZkController().getZkStateReader(), entry.getKey(), triggerProps);
+      }
+    }
+    rsp.getValues().add("result", "success");
   }
 
   private void handleRemoveListener(SolrQueryRequest req, SolrQueryResponse rsp, CommandOperation op) throws KeeperException, InterruptedException {
@@ -214,21 +280,11 @@ public class AutoScalingHandler extends RequestHandlerBase implements Permission
 
     String waitForStr = op.getStr("waitFor", null);
     if (waitForStr != null) {
-      char c = waitForStr.charAt(waitForStr.length() - 1);
-      long waitForValue = Long.parseLong(waitForStr.substring(0, waitForStr.length() - 1));
-      int seconds;
-      switch (c) {
-        case 'h':
-          seconds = (int) TimeUnit.HOURS.toSeconds(waitForValue);
-          break;
-        case 'm':
-          seconds = (int) TimeUnit.MINUTES.toSeconds(waitForValue);
-          break;
-        case 's':
-          seconds = (int) waitForValue;
-          break;
-        default:
-          throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Invalid 'waitFor' value in trigger: " + triggerName);
+      int seconds = 0;
+      try {
+        seconds = parseHumanTime(waitForStr);
+      } catch (IllegalArgumentException e) {
+        throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Invalid 'waitFor' value in trigger: " + triggerName);
       }
       op.getDataMap().put("waitFor", seconds);
     }
@@ -258,6 +314,26 @@ public class AutoScalingHandler extends RequestHandlerBase implements Permission
 
     zkSetTrigger(container.getZkController().getZkStateReader(), triggerName, op.getValuesExcluding("name"));
     rsp.getValues().add("result", "success");
+  }
+
+  private int parseHumanTime(String timeStr) {
+    char c = timeStr.charAt(timeStr.length() - 1);
+    long timeValue = Long.parseLong(timeStr.substring(0, timeStr.length() - 1));
+    int seconds;
+    switch (c) {
+      case 'h':
+        seconds = (int) TimeUnit.HOURS.toSeconds(timeValue);
+        break;
+      case 'm':
+        seconds = (int) TimeUnit.MINUTES.toSeconds(timeValue);
+        break;
+      case 's':
+        seconds = (int) timeValue;
+        break;
+      default:
+        throw new IllegalArgumentException("Invalid time value");
+    }
+    return seconds;
   }
 
   private void handleRemoveTrigger(SolrQueryRequest req, SolrQueryResponse rsp, CommandOperation op) throws KeeperException, InterruptedException {

@@ -50,6 +50,139 @@ public class AutoScalingHandlerTest extends SolrCloudTestCase {
   }
 
   @Test
+  public void testSuspendTrigger() throws Exception {
+    CloudSolrClient solrClient = cluster.getSolrClient();
+    // todo nocommit -- add testing for the v2 path
+    // String path = random().nextBoolean() ? "/admin/autoscaling" : "/v2/cluster/autoscaling";
+    String path = "/admin/autoscaling";
+    String setTriggerCommand = "{\n" +
+        "\t\"set-trigger\" : {\n" +
+        "\t\t\"name\" : \"node_lost_trigger\",\n" +
+        "\t\t\"event\" : \"nodeLost\",\n" +
+        "\t\t\"waitFor\" : \"10m\",\n" +
+        "\t\t\"enabled\" : \"true\"\n" +
+        "\t}\n" +
+        "}";
+    SolrRequest req = new AutoScalingRequest(SolrRequest.METHOD.POST, path, setTriggerCommand);
+    NamedList<Object> response = solrClient.request(req);
+    assertEquals(response.get("result").toString(), "success");
+
+    setTriggerCommand = "{\n" +
+        "\t\"set-trigger\" : {\n" +
+        "\t\t\"name\" : \"node_added_trigger\",\n" +
+        "\t\t\"event\" : \"nodeAdded\",\n" +
+        "\t\t\"waitFor\" : \"10m\",\n" +
+        "\t\t\"enabled\" : \"true\"\n" +
+        "\t}\n" +
+        "}";
+    req = new AutoScalingRequest(SolrRequest.METHOD.POST, path, setTriggerCommand);
+    response = solrClient.request(req);
+    assertEquals(response.get("result").toString(), "success");
+
+    String suspendTriggerCommand = "{\n" +
+        "\t\"suspend-trigger\" : {\n" +
+        "\t\t\"name\" : \"node_lost_trigger\"\n" +
+        "\t}\n" +
+        "}";
+    req = new AutoScalingRequest(SolrRequest.METHOD.POST, path, suspendTriggerCommand);
+    response = solrClient.request(req);
+    assertEquals(response.get("result").toString(), "success");
+
+    byte[] data = zkClient().getData(ZkStateReader.SOLR_AUTOSCALING_CONF_PATH, null, null, true);
+    ZkNodeProps loaded = ZkNodeProps.load(data);
+    Map<String, Object> triggers = (Map<String, Object>) loaded.get("triggers");
+    assertNotNull(triggers);
+    assertEquals(2, triggers.size());
+    assertTrue(triggers.containsKey("node_lost_trigger"));
+    assertTrue(triggers.containsKey("node_added_trigger"));
+    Map<String, Object> nodeLostTrigger = (Map<String, Object>) triggers.get("node_lost_trigger");
+    assertEquals(4, nodeLostTrigger.size());
+    assertEquals("false", nodeLostTrigger.get("enabled").toString());
+    Map<String, Object> nodeAddedTrigger = (Map<String, Object>) triggers.get("node_added_trigger");
+    assertEquals(4, nodeAddedTrigger.size());
+    assertEquals("true", nodeAddedTrigger.get("enabled").toString());
+
+    suspendTriggerCommand = "{\n" +
+        "\t\"suspend-trigger\" : {\n" +
+        "\t\t\"name\" : \"#EACH\"\n" +
+        "\t}\n" +
+        "}";
+    req = new AutoScalingRequest(SolrRequest.METHOD.POST, path, suspendTriggerCommand);
+    response = solrClient.request(req);
+    assertEquals(response.get("result").toString(), "success");
+    data = zkClient().getData(ZkStateReader.SOLR_AUTOSCALING_CONF_PATH, null, null, true);
+    loaded = ZkNodeProps.load(data);
+    triggers = (Map<String, Object>) loaded.get("triggers");
+    assertNotNull(triggers);
+    assertEquals(2, triggers.size());
+    nodeLostTrigger = (Map<String, Object>) triggers.get("node_lost_trigger");
+    assertEquals(4, nodeLostTrigger.size());
+    assertEquals("false", nodeLostTrigger.get("enabled").toString());
+    nodeAddedTrigger = (Map<String, Object>) triggers.get("node_added_trigger");
+    assertEquals(4, nodeAddedTrigger.size());
+    assertEquals("false", nodeAddedTrigger.get("enabled").toString());
+
+    String resumeTriggerCommand = "{\n" +
+        "\t\"resume-trigger\" : {\n" +
+        "\t\t\"name\" : \"node_added_trigger\"\n" +
+        "\t}\n" +
+        "}";
+    req = new AutoScalingRequest(SolrRequest.METHOD.POST, path, resumeTriggerCommand);
+    response = solrClient.request(req);
+    assertEquals(response.get("result").toString(), "success");
+    data = zkClient().getData(ZkStateReader.SOLR_AUTOSCALING_CONF_PATH, null, null, true);
+    loaded = ZkNodeProps.load(data);
+    triggers = (Map<String, Object>) loaded.get("triggers");
+    assertNotNull(triggers);
+    assertEquals(2, triggers.size());
+    nodeLostTrigger = (Map<String, Object>) triggers.get("node_lost_trigger");
+    assertEquals(4, nodeLostTrigger.size());
+    assertEquals("false", nodeLostTrigger.get("enabled").toString());
+    nodeAddedTrigger = (Map<String, Object>) triggers.get("node_added_trigger");
+    assertEquals(4, nodeAddedTrigger.size());
+    assertEquals("true", nodeAddedTrigger.get("enabled").toString());
+
+    resumeTriggerCommand = "{\n" +
+        "\t\"resume-trigger\" : {\n" +
+        "\t\t\"name\" : \"#EACH\"\n" +
+        "\t}\n" +
+        "}";
+    req = new AutoScalingRequest(SolrRequest.METHOD.POST, path, resumeTriggerCommand);
+    response = solrClient.request(req);
+    assertEquals(response.get("result").toString(), "success");
+    data = zkClient().getData(ZkStateReader.SOLR_AUTOSCALING_CONF_PATH, null, null, true);
+    loaded = ZkNodeProps.load(data);
+    triggers = (Map<String, Object>) loaded.get("triggers");
+    assertNotNull(triggers);
+    assertEquals(2, triggers.size());
+    nodeLostTrigger = (Map<String, Object>) triggers.get("node_lost_trigger");
+    assertEquals(4, nodeLostTrigger.size());
+    assertEquals("true", nodeLostTrigger.get("enabled").toString());
+    nodeAddedTrigger = (Map<String, Object>) triggers.get("node_added_trigger");
+    assertEquals(4, nodeAddedTrigger.size());
+    assertEquals("true", nodeAddedTrigger.get("enabled").toString());
+
+    suspendTriggerCommand = "{\n" +
+        "\t\"suspend-trigger\" : {\n" +
+        "\t\t\"name\" : \"node_lost_trigger\",\n" +
+        "\t\t\"timeout\" : \"1h\"\n" +
+        "\t}\n" +
+        "}";
+    req = new AutoScalingRequest(SolrRequest.METHOD.POST, path, suspendTriggerCommand);
+    response = solrClient.request(req);
+    assertEquals(response.get("result").toString(), "success");
+    data = zkClient().getData(ZkStateReader.SOLR_AUTOSCALING_CONF_PATH, null, null, true);
+    loaded = ZkNodeProps.load(data);
+    triggers = (Map<String, Object>) loaded.get("triggers");
+    assertNotNull(triggers);
+    assertEquals(2, triggers.size());
+    nodeLostTrigger = (Map<String, Object>) triggers.get("node_lost_trigger");
+    assertEquals(5, nodeLostTrigger.size());
+    assertEquals("false", nodeLostTrigger.get("enabled").toString());
+    assertTrue(nodeLostTrigger.containsKey("resumeAt"));
+  }
+
+  @Test
   public void test() throws Exception {
     CloudSolrClient solrClient = cluster.getSolrClient();
     // todo nocommit -- add testing for the v2 path

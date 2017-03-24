@@ -65,6 +65,8 @@ New Features
 
 * SOLR-10340: New set-listener and remove-listener API for autoscaling. (shalin)
 
+* SOLR-10358: New suspend-trigger and resume-trigger APIs for autoscaling. (shalin)
+
 Bug Fixes
 ----------------------
 * SOLR-9262: Connection and read timeouts are being ignored by UpdateShardHandler after SOLR-4509.
