@@ -19,8 +19,6 @@ package org.apache.solr.cloud.autoscaling;
 
 import java.util.Date;
 import java.util.Map;
-import java.util.concurrent.TimeUnit;
-import java.util.function.Predicate;
 
 public class AutoScaling {
 

@@ -195,16 +195,16 @@ public class AutoScalingHandlerTest extends SolrCloudTestCase {
         "\t\t\"waitFor\" : \"10m\",\n" +
         "\t\t\"enabled\" : \"true\",\n" +
         "\t\t\"actions\" : [\n" +
-            "\t\t\t{\n" +
-            "\t\t\t\t\"name\" : \"compute_plan\",\n" +
-            "\t\t\t\t\"class\" : \"solr.ComputePlanAction\"\n" +
-            "\t\t\t},\n" +
-            "\t\t\t{\n" +
-            "\t\t\t\t\"name\" : \"log_plan\",\n" +
-            "\t\t\t\t\"class\" : \"solr.LogPlanAction\",\n" +
-            "\t\t\t\t\"collection\" : \".system\"\n" +
-            "\t\t\t}\n" +
-            "\t\t]\n" +
+        "\t\t\t{\n" +
+        "\t\t\t\t\"name\" : \"compute_plan\",\n" +
+        "\t\t\t\t\"class\" : \"solr.ComputePlanAction\"\n" +
+        "\t\t\t},\n" +
+        "\t\t\t{\n" +
+        "\t\t\t\t\"name\" : \"log_plan\",\n" +
+        "\t\t\t\t\"class\" : \"solr.LogPlanAction\",\n" +
+        "\t\t\t\t\"collection\" : \".system\"\n" +
+        "\t\t\t}\n" +
+        "\t\t]\n" +
         "\t}\n" +
         "}";
     SolrRequest req = new AutoScalingRequest(SolrRequest.METHOD.POST, path, setTriggerCommand);
