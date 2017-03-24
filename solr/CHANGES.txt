@@ -71,7 +71,7 @@ New Features
 
 * SOLR-10393: Adds UUID Streaming Evaluator (Dennis Gove)
 
-* SOLR-10339: New set-trigger and remove-trigger APIs for autoscaling. (shalin)
+* SOLR-10356: Adds basic math Streaming Evaluators (Dennis Gove)
 
 Bug Fixes
 ----------------------
