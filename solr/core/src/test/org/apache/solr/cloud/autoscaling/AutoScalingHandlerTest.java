@@ -20,6 +20,7 @@ package org.apache.solr.cloud.autoscaling;
 import java.io.IOException;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.List;
 import java.util.Map;
 
 import org.apache.solr.client.solrj.SolrClient;
@@ -66,10 +67,6 @@ public class AutoScalingHandlerTest extends SolrCloudTestCase {
             "\t\t\t\t\"class\" : \"solr.ComputePlanAction\"\n" +
             "\t\t\t},\n" +
             "\t\t\t{\n" +
-            "\t\t\t\t\"name\" : \"execute_plan\",\n" +
-            "\t\t\t\t\"class\" : \"solr.ExecutePlanAction\"\n" +
-            "\t\t\t},\n" +
-            "\t\t\t{\n" +
             "\t\t\t\t\"name\" : \"log_plan\",\n" +
             "\t\t\t\t\"class\" : \"solr.LogPlanAction\",\n" +
             "\t\t\t\t\"collection\" : \".system\"\n" +
@@ -90,6 +87,9 @@ public class AutoScalingHandlerTest extends SolrCloudTestCase {
     assertTrue(triggers.containsKey("node_lost_trigger"));
     Map<String, Object> nodeLostTrigger = (Map<String, Object>) triggers.get("node_lost_trigger");
     assertEquals(4, nodeLostTrigger.size());
+    List<Map<String, String>> actions = (List<Map<String, String>>) nodeLostTrigger.get("actions");
+    assertNotNull(actions);
+    assertEquals(2, actions.size());
     assertEquals("600", nodeLostTrigger.get("waitFor").toString());
 
     setTriggerCommand = "{\n" +
@@ -97,22 +97,7 @@ public class AutoScalingHandlerTest extends SolrCloudTestCase {
         "\t\t\"name\" : \"node_lost_trigger\",\n" +
         "\t\t\"event\" : \"nodeLost\",\n" +
         "\t\t\"waitFor\" : \"20m\",\n" +
-        "\t\t\"enabled\" : \"false\",\n" +
-        "\t\t\"actions\" : [\n" +
-        "\t\t\t{\n" +
-        "\t\t\t\t\"name\" : \"compute_plan\",\n" +
-        "\t\t\t\t\"class\" : \"solr.ComputePlanAction\"\n" +
-        "\t\t\t},\n" +
-        "\t\t\t{\n" +
-        "\t\t\t\t\"name\" : \"execute_plan\",\n" +
-        "\t\t\t\t\"class\" : \"solr.ExecutePlanAction\"\n" +
-        "\t\t\t},\n" +
-        "\t\t\t{\n" +
-        "\t\t\t\t\"name\" : \"log_plan\",\n" +
-        "\t\t\t\t\"class\" : \"solr.LogPlanAction\",\n" +
-        "\t\t\t\t\"collection\" : \".system\"\n" +
-        "\t\t\t}\n" +
-        "\t\t]\n" +
+        "\t\t\"enabled\" : \"false\"\n" +
         "\t}\n" +
         "}";
     req = new AutoScalingRequest(SolrRequest.METHOD.POST, path, setTriggerCommand);
@@ -128,6 +113,9 @@ public class AutoScalingHandlerTest extends SolrCloudTestCase {
     assertEquals(4, nodeLostTrigger.size());
     assertEquals("1200", nodeLostTrigger.get("waitFor").toString());
     assertEquals("false", nodeLostTrigger.get("enabled").toString());
+    actions = (List<Map<String, String>>) nodeLostTrigger.get("actions");
+    assertNotNull(actions);
+    assertEquals(3, actions.size());
 
     String setListenerCommand = "{\n" +
         "\t\"set-listener\" : \n" +

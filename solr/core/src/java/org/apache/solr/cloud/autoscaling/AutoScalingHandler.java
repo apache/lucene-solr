@@ -239,6 +239,7 @@ public class AutoScalingHandler extends RequestHandlerBase implements Permission
     List<Map<String, String>> actions = (List<Map<String, String>>) op.getVal("actions");
     if (actions == null) {
       actions = DEFAULT_ACTIONS;
+      op.getDataMap().put("actions", actions);
     }
 
     // validate that we can load all the actions
