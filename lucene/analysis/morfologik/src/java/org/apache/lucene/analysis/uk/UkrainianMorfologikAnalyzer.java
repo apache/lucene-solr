@@ -145,7 +145,7 @@ public final class UkrainianMorfologikAnalyzer extends StopwordAnalyzerBase {
 
   private static Dictionary getDictionary() {
     try {
-      return Dictionary.read(UkrainianMorfologikAnalyzer.class.getResource("ukrainian.dict"));
+      return Dictionary.read(UkrainianMorfologikAnalyzer.class.getResource("/ua/net/nlp/ukrainian.dict"));
     } catch (IOException e) {
       throw new RuntimeException(e);
     }
