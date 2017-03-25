@@ -4219,7 +4219,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
       }
     }
     
-    // If any error occured, throw it.
+    // If any error occurred, throw it.
     if (!suppressExceptions) {
       IOUtils.reThrow(th);
     }
