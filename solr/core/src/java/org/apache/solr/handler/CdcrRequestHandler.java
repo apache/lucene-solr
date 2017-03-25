@@ -754,7 +754,7 @@ public class CdcrRequestHandler extends RequestHandlerBase implements SolrCoreAw
         // we do not want the raw tlog files from the source
         solrParams.set(ReplicationHandler.TLOG_FILES, false);
 
-        success = replicationHandler.doFetch(solrParams, false);
+        success = replicationHandler.doFetch(solrParams, false).getSuccessful();
 
         // this is required because this callable can race with HttpSolrCall#destroy
         // which clears the request info.

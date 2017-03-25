@@ -90,6 +90,7 @@ import org.apache.solr.core.SolrEventListener;
 import org.apache.solr.core.backup.repository.BackupRepository;
 import org.apache.solr.core.backup.repository.LocalFileSystemRepository;
 import org.apache.solr.core.snapshots.SolrSnapshotMetaDataManager;
+import org.apache.solr.handler.IndexFetcher.IndexFetchResult;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.search.SolrIndexSearcher;
@@ -392,10 +393,10 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
 
   private volatile IndexFetcher currentIndexFetcher;
 
-  public boolean doFetch(SolrParams solrParams, boolean forceReplication) {
+  public IndexFetchResult doFetch(SolrParams solrParams, boolean forceReplication) {
     String masterUrl = solrParams == null ? null : solrParams.get(MASTER_URL);
     if (!indexFetchLock.tryLock())
-      return false;
+      return IndexFetchResult.LOCK_OBTAIN_FAILED;
     try {
       if (masterUrl != null) {
         if (currentIndexFetcher != null && currentIndexFetcher != pollingIndexFetcher) {
@@ -411,17 +412,16 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
       if (currentIndexFetcher != pollingIndexFetcher) {
         currentIndexFetcher.destroy();
       }
+      return new IndexFetchResult(IndexFetchResult.FAILED_BY_EXCEPTION_MESSAGE, false, e);
     } finally {
       if (pollingIndexFetcher != null) {
        if( currentIndexFetcher != pollingIndexFetcher) {
          currentIndexFetcher.destroy();
        }
-        
         currentIndexFetcher = pollingIndexFetcher;
       }
       indexFetchLock.unlock();
     }
-    return false;
   }
 
   boolean isReplicating() {
@@ -1151,7 +1151,7 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
       try {
         LOG.debug("Polling for index modifications");
         markScheduledExecutionStart();
-        boolean pollSuccess = doFetch(null, false);
+        boolean pollSuccess = doFetch(null, false).getSuccessful();
         if (pollListener != null) pollListener.onComplete(core, pollSuccess);
       } catch (Exception e) {
         LOG.error("Exception in fetching index", e);
