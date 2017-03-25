@@ -140,6 +140,9 @@ Other Changes
 
 * SOLR-10249: Refactor IndexFetcher.doFetch() to return a more detailed result. (Jeff Miller via David Smiley)
 
+* SOLR-10304: Refactor Document handling out of SolrIndexSearcher into a new class "SolrDocumentFetcher".
+  Deprecated SolrPluginUtils.docListToSolrDocumentList(). (David Smiley)
+
 ==================  6.5.0 ==================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release.

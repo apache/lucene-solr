@@ -248,7 +248,7 @@ public class SolrPluginUtils {
                                           SolrQueryRequest req,
                                           SolrQueryResponse res) throws IOException {
     SolrIndexSearcher searcher = req.getSearcher();
-    if(!searcher.enableLazyFieldLoading) {
+    if(!searcher.getDocFetcher().isLazyFieldLoadingEnabled()) {
       // nothing to do
       return;
     }
@@ -1022,6 +1022,7 @@ public class SolrPluginUtils {
    * @return The new {@link org.apache.solr.common.SolrDocumentList} containing all the loaded docs
    * @throws java.io.IOException if there was a problem loading the docs
    * @since solr 1.4
+   * @deprecated TODO in 7.0 remove this. It was inlined into ClusteringComponent. DWS: 'ids' is ugly.
    */
   public static SolrDocumentList docListToSolrDocumentList(
       DocList docs,
@@ -1029,6 +1030,10 @@ public class SolrPluginUtils {
       Set<String> fields,
       Map<SolrDocument, Integer> ids ) throws IOException
   {
+    /*  DWS deprecation note:
+     It's only called by ClusteringComponent, and I think the "ids" param aspect is a bit messy and not worth supporting.
+     If someone wants a similar method they can speak up and we can add a method to SolrDocumentFetcher.
+     */
     IndexSchema schema = searcher.getSchema();
 
     SolrDocumentList list = new SolrDocumentList();

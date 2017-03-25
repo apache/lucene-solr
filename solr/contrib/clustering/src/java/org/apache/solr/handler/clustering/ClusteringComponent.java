@@ -26,6 +26,8 @@ import java.util.Map;
 import java.util.Set;
 
 import org.apache.commons.lang.StringUtils;
+import org.apache.lucene.document.Document;
+import org.apache.lucene.index.IndexableField;
 import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.SolrDocumentList;
 import org.apache.solr.common.SolrException;
@@ -39,8 +41,12 @@ import org.apache.solr.handler.clustering.carrot2.CarrotClusteringEngine;
 import org.apache.solr.handler.component.ResponseBuilder;
 import org.apache.solr.handler.component.SearchComponent;
 import org.apache.solr.handler.component.ShardRequest;
+import org.apache.solr.schema.IndexSchema;
+import org.apache.solr.schema.SchemaField;
+import org.apache.solr.search.DocIterator;
+import org.apache.solr.search.DocList;
 import org.apache.solr.search.DocListAndSet;
-import org.apache.solr.util.SolrPluginUtils;
+import org.apache.solr.search.SolrIndexSearcher;
 import org.apache.solr.util.plugin.SolrCoreAware;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -86,6 +92,60 @@ public class ClusteringComponent extends SearchComponent implements SolrCoreAwar
    * @see #init(NamedList)
    */
   private NamedList<Object> initParams;
+
+  /**
+   * Convert a DocList to a SolrDocumentList
+   *
+   * The optional param "ids" is populated with the lucene document id
+   * for each SolrDocument.
+   *
+   * @param docs The {@link org.apache.solr.search.DocList} to convert
+   * @param searcher The {@link org.apache.solr.search.SolrIndexSearcher} to use to load the docs from the Lucene index
+   * @param fields The names of the Fields to load
+   * @param ids A map to store the ids of the docs
+   * @return The new {@link SolrDocumentList} containing all the loaded docs
+   * @throws IOException if there was a problem loading the docs
+   * @since solr 1.4
+   */
+  public static SolrDocumentList docListToSolrDocumentList(
+      DocList docs,
+      SolrIndexSearcher searcher,
+      Set<String> fields,
+      Map<SolrDocument, Integer> ids ) throws IOException
+  {
+    IndexSchema schema = searcher.getSchema();
+
+    SolrDocumentList list = new SolrDocumentList();
+    list.setNumFound(docs.matches());
+    list.setMaxScore(docs.maxScore());
+    list.setStart(docs.offset());
+
+    DocIterator dit = docs.iterator();
+
+    while (dit.hasNext()) {
+      int docid = dit.nextDoc();
+
+      Document luceneDoc = searcher.doc(docid, fields);
+      SolrDocument doc = new SolrDocument();
+
+      for( IndexableField field : luceneDoc) {
+        if (null == fields || fields.contains(field.name())) {
+          SchemaField sf = schema.getField( field.name() );
+          doc.addField( field.name(), sf.getType().toObject( field ) );
+        }
+      }
+      if (docs.hasScores() && (null == fields || fields.contains("score"))) {
+        doc.addField("score", dit.score());
+      }
+
+      list.add( doc );
+
+      if( ids != null ) {
+        ids.put( doc, new Integer(docid) );
+      }
+    }
+    return list;
+  }
 
   @Override
   @SuppressWarnings({"rawtypes", "unchecked"})
@@ -172,7 +232,7 @@ public class ClusteringComponent extends SearchComponent implements SolrCoreAwar
         checkAvailable(name, engine);
         DocListAndSet results = rb.getResults();
         Map<SolrDocument,Integer> docIds = new HashMap<>(results.docList.size());
-        SolrDocumentList solrDocList = SolrPluginUtils.docListToSolrDocumentList(
+        SolrDocumentList solrDocList = docListToSolrDocumentList(
             results.docList, rb.req.getSearcher(), engine.getFieldsToLoad(rb.req), docIds);
         Object clusters = engine.cluster(rb.getQuery(), solrDocList, docIds, rb.req);
         rb.rsp.add("clusters", clusters);
