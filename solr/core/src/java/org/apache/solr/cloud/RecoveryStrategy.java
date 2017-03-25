@@ -216,7 +216,7 @@ public class RecoveryStrategy extends Thread implements Closeable {
     solrParams.set(ReplicationHandler.MASTER_URL, leaderUrl);
     
     if (isClosed()) return; // we check closed on return
-    boolean success = replicationHandler.doFetch(solrParams, false);
+    boolean success = replicationHandler.doFetch(solrParams, false).getSuccessful();
     
     if (!success) {
       throw new SolrException(ErrorCode.SERVER_ERROR, "Replication for recovery failed.");
