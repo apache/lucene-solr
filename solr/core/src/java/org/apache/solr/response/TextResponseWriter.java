@@ -147,7 +147,7 @@ public abstract class TextResponseWriter implements PushWriter {
     } else if (val instanceof Date) {
       writeDate(name, (Date) val);
     } else if (val instanceof Document) {
-      SolrDocument doc = DocsStreamer.getDoc((Document) val, schema);
+      SolrDocument doc = DocsStreamer.convertLuceneDocToSolrDoc((Document) val, schema);
       writeSolrDocument(name, doc, returnFields, 0);
     } else if (val instanceof SolrDocument) {
       writeSolrDocument(name, (SolrDocument) val, returnFields, 0);

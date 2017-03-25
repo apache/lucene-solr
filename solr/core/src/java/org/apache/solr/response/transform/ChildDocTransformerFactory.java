@@ -139,7 +139,7 @@ class ChildDocTransformer extends DocTransformer {
         while(i.hasNext()) {
           Integer childDocNum = i.next();
           Document childDoc = context.getSearcher().doc(childDocNum);
-          SolrDocument solrChildDoc = DocsStreamer.getDoc(childDoc, schema);
+          SolrDocument solrChildDoc = DocsStreamer.convertLuceneDocToSolrDoc(childDoc, schema);
 
           // TODO: future enhancement...
           // support an fl local param in the transformer, which is used to build

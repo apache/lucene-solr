@@ -277,7 +277,7 @@
   -->
 
   <field name="id" type="string" indexed="true" stored="true" required="true"/>
-  <field name="url" type="string" indexed="true" stored="true" required="true"/>
+  <field name="url" type="string" indexed="true" stored="true" required="false"/>
   <field name="lang" type="string" indexed="true" stored="true" required="false" multiValued="true"/>
 
   <field name="title" type="text" indexed="true" stored="true" multiValued="true"/>
@@ -305,6 +305,10 @@
 
   <dynamicField name="random*" type="random"/>
 
+  <dynamicField name="*_dynamic" type="string" indexed="true" stored="true"/>
+  <dynamicField name="dynamic_*" type="string" indexed="true" stored="true"/>
+
+
   <!-- uncomment the following to ignore any fields that don't already match an existing 
        field name or dynamic field, rather than reporting them as an error. 
        alternately, change the type="ignored" to some other type e.g. "text" if you want 
@@ -330,5 +334,10 @@
   <copyField source="title" dest="text"/>
   <copyField source="body" dest="text"/>
   <copyField source="snippet" dest="text"/>
+
+  <!-- dynamic destination -->
+  <copyField source="*_dynamic" dest="dynamic_*"/>
+
+  <copyField source="id" dest="range_facet_l"/>
 
 </schema>
