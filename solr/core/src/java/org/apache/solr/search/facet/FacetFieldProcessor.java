@@ -545,6 +545,7 @@ abstract class FacetFieldProcessor extends FacetProcessor<FacetField> {
     for (Object bucketVal : leaves) {
       bucketList.add( refineBucket(bucketVal, false, null) );
     }
+
     for (List bucketAndFacetInfo : skip) {
       assert bucketAndFacetInfo.size() == 2;
       Object bucketVal = bucketAndFacetInfo.get(0);
@@ -552,6 +553,16 @@ abstract class FacetFieldProcessor extends FacetProcessor<FacetField> {
 
       bucketList.add( refineBucket(bucketVal, true, facetInfo ) );
     }
+
+    // The only difference between skip and missing is the value of "skip" passed to refineBucket
+    for (List bucketAndFacetInfo : missing) {
+      assert bucketAndFacetInfo.size() == 2;
+      Object bucketVal = bucketAndFacetInfo.get(0);
+      Map<String,Object> facetInfo = (Map<String, Object>) bucketAndFacetInfo.get(1);
+
+      bucketList.add( refineBucket(bucketVal, false, facetInfo ) );
+    }
+
 
     // If there are just a couple of leaves, and if the domain is large, then
     // going by term is likely the most efficient?
