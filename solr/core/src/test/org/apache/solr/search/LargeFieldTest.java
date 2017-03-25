@@ -112,8 +112,8 @@ public class LargeFieldTest extends SolrTestCaseJ4 {
   private void assertLazyNotLoaded(Document d, String fieldName) {
     IndexableField field = d.getField(fieldName);
     if (fieldName == BIG_FIELD) {
-      assertTrue(field instanceof SolrIndexSearcher.LargeLazyField);
-      assertFalse(((SolrIndexSearcher.LargeLazyField)field).hasBeenLoaded());
+      assertTrue(field instanceof SolrDocumentFetcher.LargeLazyField);
+      assertFalse(((SolrDocumentFetcher.LargeLazyField)field).hasBeenLoaded());
     } else {
       assertTrue(field instanceof LazyDocument.LazyField);
       assertFalse(((LazyDocument.LazyField)field).hasBeenLoaded());
@@ -123,8 +123,8 @@ public class LargeFieldTest extends SolrTestCaseJ4 {
   private void assertLazyLoaded(Document d, String fieldName) {
     IndexableField field = d.getField(fieldName);
     if (fieldName == BIG_FIELD) {
-      assertTrue(field instanceof SolrIndexSearcher.LargeLazyField);
-      assertTrue(((SolrIndexSearcher.LargeLazyField)field).hasBeenLoaded());
+      assertTrue(field instanceof SolrDocumentFetcher.LargeLazyField);
+      assertTrue(((SolrDocumentFetcher.LargeLazyField)field).hasBeenLoaded());
     } else {
       assertTrue(field instanceof LazyDocument.LazyField);
       assertTrue(((LazyDocument.LazyField)field).hasBeenLoaded());

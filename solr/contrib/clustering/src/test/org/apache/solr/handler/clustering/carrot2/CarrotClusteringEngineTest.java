@@ -42,7 +42,6 @@ import org.apache.solr.request.LocalSolrQueryRequest;
 import org.apache.solr.search.DocList;
 import org.apache.solr.search.SolrIndexSearcher;
 import org.apache.solr.util.RefCounted;
-import org.apache.solr.util.SolrPluginUtils;
 import org.carrot2.clustering.lingo.LingoClusteringAlgorithm;
 import org.carrot2.core.LanguageCode;
 import org.carrot2.util.attribute.AttributeUtils;
@@ -465,7 +464,7 @@ public class CarrotClusteringEngineTest extends AbstractClusteringTestCase {
       // Perform clustering
       LocalSolrQueryRequest req = new LocalSolrQueryRequest(h.getCore(), solrParams);
       Map<SolrDocument,Integer> docIds = new HashMap<>(docList.size());
-      SolrDocumentList solrDocList = SolrPluginUtils.docListToSolrDocumentList( docList, searcher, engine.getFieldsToLoad(req), docIds );
+      SolrDocumentList solrDocList = ClusteringComponent.docListToSolrDocumentList( docList, searcher, engine.getFieldsToLoad(req), docIds );
 
       @SuppressWarnings("unchecked")
       List<NamedList<Object>> results = (List<NamedList<Object>>) engine.cluster(query, solrDocList, docIds, req);

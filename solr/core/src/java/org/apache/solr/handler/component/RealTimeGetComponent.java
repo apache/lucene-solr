@@ -69,6 +69,7 @@ import org.apache.solr.schema.FieldType;
 import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.schema.SchemaField;
 import org.apache.solr.search.DocList;
+import org.apache.solr.search.SolrDocumentFetcher;
 import org.apache.solr.search.QParser;
 import org.apache.solr.search.ReturnFields;
 import org.apache.solr.search.SolrIndexSearcher;
@@ -290,7 +291,8 @@ public class RealTimeGetComponent extends SearchComponent
        
        Document luceneDocument = searcherInfo.getSearcher().doc(docid, rsp.getReturnFields().getLuceneFieldNames());
        SolrDocument doc = toSolrDoc(luceneDocument,  core.getLatestSchema());
-       searcherInfo.getSearcher().decorateDocValueFields(doc, docid, searcherInfo.getSearcher().getNonStoredDVs(true));
+       SolrDocumentFetcher docFetcher = searcherInfo.getSearcher().getDocFetcher();
+       docFetcher.decorateDocValueFields(doc, docid, docFetcher.getNonStoredDVs(true));
        if ( null != transformer) {
          if (null == resultContext) {
            // either first pass, or we've re-opened searcher - either way now we setContext
@@ -423,7 +425,8 @@ public class RealTimeGetComponent extends SearchComponent
       }
       Document luceneDocument = searcher.doc(docid, returnFields.getLuceneFieldNames());
       SolrDocument doc = toSolrDoc(luceneDocument, core.getLatestSchema());
-      searcher.decorateDocValueFields(doc, docid, searcher.getNonStoredDVs(false));
+      SolrDocumentFetcher docFetcher = searcher.getDocFetcher();
+      docFetcher.decorateDocValueFields(doc, docid, docFetcher.getNonStoredDVs(false));
 
       return doc;
     } finally {
@@ -471,10 +474,10 @@ public class RealTimeGetComponent extends SearchComponent
       }
 
       SolrDocument doc;
-      Set<String> decorateFields = onlyTheseFields == null ? searcher.getNonStoredDVs(false): onlyTheseFields; 
+      Set<String> decorateFields = onlyTheseFields == null ? searcher.getDocFetcher().getNonStoredDVs(false): onlyTheseFields;
       Document luceneDocument = searcher.doc(docid, returnFields.getLuceneFieldNames());
       doc = toSolrDoc(luceneDocument, core.getLatestSchema());
-      searcher.decorateDocValueFields(doc, docid, decorateFields);
+      searcher.getDocFetcher().decorateDocValueFields(doc, docid, decorateFields);
 
       long docVersion = (long) doc.getFirstValue(VERSION_FIELD);
       Object partialVersionObj = partialDoc.getFieldValue(VERSION_FIELD);
@@ -483,7 +486,7 @@ public class RealTimeGetComponent extends SearchComponent
       if (docVersion > partialDocVersion) {
         return doc;
       }
-      for (String fieldName: (Iterable<String>) partialDoc.getFieldNames()) {
+      for (String fieldName: partialDoc.getFieldNames()) {
         doc.setField(fieldName.toString(), partialDoc.getFieldValue(fieldName));  // since partial doc will only contain single valued fields, this is fine
       }
 
@@ -604,17 +607,18 @@ public class RealTimeGetComponent extends SearchComponent
 
         int docid = searcher.getFirstMatch(new Term(idField.getName(), idBytes));
         if (docid < 0) return null;
-        
+
+        SolrDocumentFetcher docFetcher = searcher.getDocFetcher();
         if (avoidRetrievingStoredFields) {
           sid = new SolrInputDocument();
         } else {
-          Document luceneDocument = searcher.doc(docid);
+          Document luceneDocument = docFetcher.doc(docid);
           sid = toSolrInputDocument(luceneDocument, core.getLatestSchema());
         }
         if (onlyTheseNonStoredDVs != null) {
-          searcher.decorateDocValueFields(sid, docid, onlyTheseNonStoredDVs);
+          docFetcher.decorateDocValueFields(sid, docid, onlyTheseNonStoredDVs);
         } else {
-          searcher.decorateDocValueFields(sid, docid, searcher.getNonStoredDVsWithoutCopyTargets());
+          docFetcher.decorateDocValueFields(sid, docid, docFetcher.getNonStoredDVsWithoutCopyTargets());
         }
       }
     } finally {
