@@ -501,7 +501,7 @@ public class JsonRecordReader {
    * <p>
    * We have already enforced that the string must begin with a separator. This
    * method depends heavily on how split behaves if the string starts with the
-   * seperator or if a sequence of multiple separators appear.
+   * separator or if a sequence of multiple separators appear.
    */
   private static List<String> splitEscapeQuote(String str) {
     List<String> result = new LinkedList<>();
