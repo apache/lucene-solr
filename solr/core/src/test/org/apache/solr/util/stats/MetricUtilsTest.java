@@ -75,6 +75,8 @@ public class MetricUtilsTest extends SolrTestCaseJ4 {
     histogram.update(10);
     Gauge<String> gauge = () -> "foobar";
     registry.register("gauge", gauge);
+    Gauge<Long> error = () -> {throw new InternalError("expected error");};
+    registry.register("expected.error", error);
     MetricUtils.toMaps(registry, Collections.singletonList(MetricFilter.ALL), MetricFilter.ALL,
         false, false, false, (k, o) -> {
       Map v = (Map)o;
@@ -89,6 +91,8 @@ public class MetricUtilsTest extends SolrTestCaseJ4 {
         assertEquals(1L, v.get("count"));
       } else if (k.startsWith("histogram")) {
         assertEquals(1L, v.get("count"));
+      } else if (k.startsWith("expected.error")) {
+        assertNull(v);
       }
     });
     // test compact format
@@ -113,6 +117,8 @@ public class MetricUtilsTest extends SolrTestCaseJ4 {
             assertTrue(o instanceof Map);
             Map v = (Map)o;
             assertEquals(1L, v.get("count"));
+          } else if (k.startsWith("expected.error")) {
+            assertNull(o);
           } else {
             Map v = (Map)o;
             assertEquals(1L, v.get("count"));

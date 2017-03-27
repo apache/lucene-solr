@@ -16,6 +16,7 @@
  */
 package org.apache.solr.util.stats;
 
+import java.lang.invoke.MethodHandles;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -36,12 +37,14 @@ import com.codahale.metrics.Snapshot;
 import com.codahale.metrics.Timer;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SimpleOrderedMap;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Metrics specific utility functions.
  */
 public class MetricUtils {
-
+  private static final Logger LOG = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   public static final String VALUE = "value";
 
   static final String MS = "_ms";
@@ -139,7 +142,12 @@ public class MetricUtils {
             consumer.accept(n, convertCounter(counter, compact));
           } else if (metric instanceof Gauge) {
             Gauge gauge = (Gauge) metric;
-            consumer.accept(n, convertGauge(gauge, compact));
+            try {
+              consumer.accept(n, convertGauge(gauge, compact));
+            } catch (InternalError ie) {
+              LOG.warn("Error converting gauge '" + n + "', possible JDK bug: SOLR-10362", ie);
+              consumer.accept(n, null);
+            }
           } else if (metric instanceof Meter) {
             Meter meter = (Meter) metric;
             consumer.accept(n, convertMeter(meter));
