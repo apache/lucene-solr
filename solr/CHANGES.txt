@@ -145,6 +145,9 @@ Other Changes
 * SOLR-10304: Refactor Document handling out of SolrIndexSearcher into a new class "SolrDocumentFetcher".
   Deprecated SolrPluginUtils.docListToSolrDocumentList(). (David Smiley)
 
+* SOLR-10352: bin/solr script now prints warning when available system entropy is lower than 300 (Esther Quansah via
+  Ishan Chattopadhyaya)
+
 ==================  6.5.0 ==================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release.
