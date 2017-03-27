@@ -137,6 +137,8 @@ Bug Fixes
 
 * SOLR-10108: bin/solr script recursive copy broken (Erick Erickson)
 
+* SOLR-10362: "Memory Pool not found" error when reporting JVM metrics. (ab)
+
 Other Changes
 ----------------------
 
