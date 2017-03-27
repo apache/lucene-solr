@@ -496,17 +496,27 @@ function print_usage() {
     echo "                             NOTE: <src> and <dest> may both be Zookeeper resources prefixed by 'zk:'"
     echo "             When <src> is a zk resource, <dest> may be '.'"
     echo "             If <dest> ends with '/', then <dest> will be a local folder or parent znode and the last"
-    echo "             element of the <src> path will be appended."
+    echo "             element of the <src> path will be appended unless <src> also ends in a slash. "
+    echo "             <dest> may be zk:, which may be useful when using the cp -r form to backup/restore "
+    echo "             the entire zk state."
+    echo "             You must enclose local paths that end in a wildcard in quotes or just"
+    echo "             end the local path in a slash. That is,"
+    echo "             'bin/solr zk cp -r /some/dir/ zk:/ -z localhost:2181' is equivalent to"
+    echo "             'bin/solr zk cp -r \"/some/dir/*\" zk:/ -z localhost:2181'"
+    echo "             but 'bin/solr zk cp -r /some/dir/* zk:/ -z localhost:2181' will throw an error"
     echo ""
-    echo "             The 'file:' prefix is stripped, thus 'file:/' specifies an absolute local path and"
-    echo "             'file:somewhere' specifies a relative local path. All paths on Zookeeper are absolute"
-    echo "             so the slash is required."
+    echo "             here's an example of backup/restore for a ZK configuration:"
+    echo "             to copy to local: 'bin/solr zk cp -r zk:/ /some/dir -z localhost:2181'"
+    echo "             to restore to ZK: 'bin/solr zk cp -r /some/dir/ zk:/ -z localhost:2181'"
+    echo ""
+    echo "             The 'file:' prefix is stripped, thus 'file:/wherever' specifies an absolute local path and"
+    echo "             'file:somewhere' specifies a relative local path. All paths on Zookeeper are absolute."
     echo ""
     echo "             Zookeeper nodes CAN have data, so moving a single file to a parent znode"
     echo "             will overlay the data on the parent Znode so specifying the trailing slash"
-    echo "             is important."
+    echo "             can be important."
     echo ""
-    echo "             Wildcards are not supported"
+    echo "             Wildcards are supported when copying from local, trailing only and must be quoted."
     echo ""
     echo "         rm deletes files or folders on Zookeeper"
     echo "             -r     Recursively delete if <path> is a directory. Command will fail if <path>"
@@ -1093,7 +1103,7 @@ if [[ "$SCRIPT_CMD" == "zk" ]]; then
               if [ -z "$ZK_DST" ]; then
                 ZK_DST=$1
               else
-                print_short_zk_usage "Unrecognized or misplaced command $1"
+                print_short_zk_usage "Unrecognized or misplaced command $1. 'cp' with trailing asterisk requires quoting, see help text."
               fi
             fi
             shift

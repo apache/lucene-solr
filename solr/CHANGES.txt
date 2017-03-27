@@ -135,6 +135,8 @@ Bug Fixes
 * SOLR-10281: ADMIN_PATHS is duplicated in two places and inconsistent. This can cause automatic
   retries to /admin/metrics handler by the CloudSolrClient. (shalin)
 
+* SOLR-10108: bin/solr script recursive copy broken (Erick Erickson)
+
 Other Changes
 ----------------------
 

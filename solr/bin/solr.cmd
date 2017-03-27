@@ -479,23 +479,32 @@ echo.
 echo.             ^<src^>, ^<dest^> : [file:][/]path/to/local/file or zk:/path/to/zk/node
 echo                              NOTE: ^<src^> and ^<dest^> may both be Zookeeper resources prefixed by 'zk:'
 echo             When ^<src^> is a zk resource, ^<dest^> may be '.'
-echo             If ^<dest^> ends with '/', then ^<dest^> will be a local folder or parent znode and the last
-echo             element of the ^<src^> path will be appended.
+echo             element of the ^<src^> path will be appended unless ^<src^> also ends in a slash. 
+echo             ^<dest^> may be zk:, which may be useful when using the cp -r form to backup/restore 
+echo              the entire zk state.
+echo              You must enclose local paths that end in a wildcard in quotes or just
+echo              end the local path in a slash. That is,
+echo              'bin/solr zk cp -r /some/dir/ zk:/ -z localhost:2181' is equivalent to
+echo              'bin/solr zk cp -r ^"/some/dir/*^" zk:/ -z localhost:2181'
+echo              but 'bin/solr zk cp -r /some/dir/* zk:/ -z localhost:2181' will throw an error
+echo .
+echo              here's an example of backup/restore for a ZK configuration:
+echo              to copy to local: 'bin/solr zk cp -r zk:/ /some/dir -z localhost:2181'
+echo              to restore to ZK: 'bin/solr zk cp -r /some/dir/ zk:/ -z localhost:2181'
 echo.
-echo             The 'file:' prefix is stripped, thus 'file:/' specifies an absolute local path and
-echo             'file:somewhere' specifies a relative local path. All paths on Zookeeper are absolute
-echo             so the slash is required.
+echo             The 'file:' prefix is stripped, thus 'file:/wherever' specifies an absolute local path and
+echo             'file:somewhere' specifies a relative local path. All paths on Zookeeper are absolute.
 echo.
 echo             Zookeeper nodes CAN have data, so moving a single file to a parent znode
 echo             will overlay the data on the parent Znode so specifying the trailing slash
-echo             is important.
+echo             can be important.
 echo.
-echo             Wildcards are not supported
+echo             Wildcards are supported when copying from local, trailing only and must be quoted.
 echo.
 echo         rm deletes files or folders on Zookeeper
 echo             -r     Recursively delete if ^<path^> is a directory. Command will fail if ^<path^>
 echo                    has children and -r is not specified. Optional
-echo             ^<path^> : [zk:]/path/to/zk/node. ^<path^> may not be the root ('/')"
+echo             ^<path^> : [zk:]/path/to/zk/node. ^<path^> may not be the root ('/')
 echo.
 echo         mv moves (renames) znodes on Zookeeper
 echo             ^<src^>, ^<dest^> : Zookeeper nodes, the 'zk:' prefix is optional.
@@ -512,7 +521,7 @@ echo.
 echo             Only the node names are listed, not data
 echo.
 echo         mkroot makes a znode in Zookeeper with no data. Can be used to make a path of arbitrary
-echo                depth but primarily intended to create a 'chroot'."
+echo                depth but primarily intended to create a 'chroot'.
 echo.
 echo             ^<path^>: The Zookeeper path to create. Leading slash is assumed if not present.
 echo                       Intermediate nodes are created as needed if not present.
