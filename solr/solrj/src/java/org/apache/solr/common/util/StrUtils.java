@@ -297,7 +297,7 @@ public class StrUtils {
 
   /**
    * writes chars from item to out, backslash escaping as needed based on separator -- 
-   * but does not append the seperator itself
+   * but does not append the separator itself
    */
   public static void appendEscapedTextToBuilder(StringBuilder out, 
                                                  String item, 

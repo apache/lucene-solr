@@ -384,7 +384,7 @@ public class TestRandomFlRTGCloud extends SolrCloudTestCase {
             params.add("id",id);
           }
         } else {
-          // add one or more comma seperated ids params
+          // add one or more comma separated ids params
           params.add(buildCommaSepParams(random(), "ids", idsToRequest));
         }
       }
@@ -941,7 +941,7 @@ public class TestRandomFlRTGCloud extends SolrCloudTestCase {
   }
 
   /**
-   * Given an ordered list of values to include in a (key) param, randomly groups them (ie: comma seperated) 
+   * Given an ordered list of values to include in a (key) param, randomly groups them (ie: comma separated) 
    * into actual param key=values which are returned as a new SolrParams instance
    */
   private static SolrParams buildCommaSepParams(final Random rand, final String key, Collection<String> values) {
