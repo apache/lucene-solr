@@ -121,6 +121,8 @@ New Features
 
 * SOLR-9994: Add support for CollapseQParser with PointFields. (Varun Thacker, Cao Manh Dat) 
 
+* SOLR-10076: Hide keystore and truststore passwords from /admin/info/* outputs. (Mano Kovacs via Mark Miller)
+
 Optimizations
 ----------------------
 
@@ -241,8 +243,6 @@ New Features
   shard. (Boris Naguet, Ishan Chattopadhyaya)
 
 * SOLR-9045: Make RecoveryStrategy settings configurable. (Christine Poerschke)
-
-* SOLR-10076: Hide keystore and truststore passwords from /admin/info/* outputs. (Mano Kovacs via Mark Miller)
 
 * SOLR-10224: Add disk total and disk free metrics. (ab)
 
