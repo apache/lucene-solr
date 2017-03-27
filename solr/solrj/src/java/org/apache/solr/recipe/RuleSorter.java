@@ -238,6 +238,11 @@ public class RuleSorter {
       for (Cell cell : cells) if (cell.name.equals(name)) return cell.val;
       return null;
     }
+
+    @Override
+    public String toString() {
+      return node;
+    }
   }
 
   static class Cell implements MapWriter {

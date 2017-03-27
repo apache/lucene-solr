@@ -26,17 +26,25 @@ import java.util.Set;
 import java.util.concurrent.atomic.AtomicReference;
 
 import org.apache.solr.common.MapWriter;
+import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.util.Utils;
+import org.apache.solr.recipe.RuleSorter.ReplicaStat;
 import org.apache.solr.recipe.RuleSorter.Row;
 
 import static java.util.Collections.singletonMap;
 import static org.apache.solr.common.params.CoreAdminParams.COLLECTION;
 import static org.apache.solr.common.params.CoreAdminParams.REPLICA;
 import static org.apache.solr.common.params.CoreAdminParams.SHARD;
+import static org.apache.solr.recipe.Clause.TestStatus.FAIL;
+import static org.apache.solr.recipe.Clause.TestStatus.NOT_APPLICABLE;
+import static org.apache.solr.recipe.Clause.TestStatus.PASS;
 import static org.apache.solr.recipe.Operand.EQUAL;
 import static org.apache.solr.recipe.Operand.GREATER_THAN;
 import static org.apache.solr.recipe.Operand.LESS_THAN;
 import static org.apache.solr.recipe.Operand.NOT_EQUAL;
+import static org.apache.solr.recipe.Operand.WILDCARD;
+import static org.apache.solr.recipe.RuleSorter.ANY;
+import static org.apache.solr.recipe.RuleSorter.EACH;
 
 
 public class Clause implements MapWriter {
@@ -74,12 +82,18 @@ public class Clause implements MapWriter {
       this.op = op;
     }
 
-    boolean isMatch(Row row) {
-      return op.canMatch(val, row.getVal(name));
+    TestStatus match(Row row) {
+      return op.match(val, row.getVal(name));
     }
-    boolean isMatch(Object inputVal) {
-      return op.canMatch(val, inputVal);
+
+    boolean isPass(Object inputVal) {
+      return op.match(val, inputVal) == PASS;
     }
+
+    boolean isPass(Row row) {
+      return op.match(val, row.getVal(name)) == PASS;
+    }
+
   }
 
   Condition parse(String s, Map m) {
@@ -89,8 +103,8 @@ public class Clause implements MapWriter {
       String conditionName = s.trim();
       String value = val == null ? null : String.valueOf(val).trim();
       Operand operand = null;
-      if ((expectedVal = Operand.ANY.parse(value)) != null) {
-        operand = Operand.ANY;
+      if ((expectedVal = WILDCARD.parse(value)) != null) {
+        operand = WILDCARD;
       } else if ((expectedVal = NOT_EQUAL.parse(value)) != null) {
         operand = NOT_EQUAL;
       } else if ((expectedVal = GREATER_THAN.parse(value)) != null) {
@@ -111,26 +125,36 @@ public class Clause implements MapWriter {
 
 
   TestStatus test(Row row) {
-    AtomicReference<TestStatus> result = new AtomicReference<>(TestStatus.NOT_APPLICABLE);
-    outer:
-    for (Map.Entry<String, Map<String, List<RuleSorter.ReplicaStat>>> e : row.replicaInfo.entrySet()) {
-      if (!collection.isMatch(e.getKey())) break;
+    AtomicReference<TestStatus> result = new AtomicReference<>(NOT_APPLICABLE);
+
+    for (Map.Entry<String, Map<String, List<ReplicaStat>>> colls : row.replicaInfo.entrySet()) {
+      if (!collection.isPass(colls.getKey()) || result.get() == FAIL) break;
       int count = 0;
-      for (Map.Entry<String, List<RuleSorter.ReplicaStat>> e1 : e.getValue().entrySet()) {
-        if (!shard.isMatch(e1.getKey())) break;
-        count += e1.getValue().size();
-        if (shard.val.equals(RuleSorter.EACH) && count > 0 && replica.isMatch(count) && tag.isMatch(row)) {
-          result.set(TestStatus.FAIL);
-          continue outer;
+      for (Map.Entry<String, List<ReplicaStat>> shards : colls.getValue().entrySet()) {
+        if (!shard.isPass(shards.getKey()) || result.get() == FAIL) break;
+        count += shards.getValue().size();
+        if (shard.val.equals(EACH)) testReplicaCount(row, result, count);
+        if (EACH.equals(shard.val)) count = 0;
         }
-        if (RuleSorter.EACH.equals(shard.val)) count = 0;
+      if (shard.val.equals(ANY)) testReplicaCount(row, result, count);
       }
-      if (shard.val.equals(RuleSorter.ANY) && count > 0 && replica.isMatch(count) && !tag.isMatch(row)) {
-        result.set(TestStatus.FAIL);
+    if (result.get() == FAIL) row.violations.add(this);
+    return result.get();
+
+  }
+
+  private void testReplicaCount(Row row, AtomicReference<TestStatus> result, int count) {
+    if("node".equals(tag.name)) if(!tag.isPass(row.node)) return;
+    boolean checkCount = replica.op.match(replica.val, 0) != PASS || count > 0;
+    if (replica.op == WILDCARD && count > 0 && !tag.isPass(row)) {
+      result.set(FAIL);
+    } else if (checkCount && !replica.isPass(count)) {
+      if (tag.op != WILDCARD && tag.isPass(row)) {
+        result.set(FAIL);
+      } else {
+        result.set(FAIL);
       }
     }
-    if (result.get() == TestStatus.FAIL) row.violations.add(this);
-    return result.get();
   }
 
   public boolean isStrict() {

@@ -32,9 +32,27 @@ import org.apache.solr.common.util.Utils;
 import org.apache.solr.common.util.ValidatingJsonMap;
 
 public class TestRuleSorter extends SolrTestCaseJ4 {
+
+  public void testOperands() {
+    Clause c = new Clause((Map<String, Object>) Utils.fromJSONString("{replica:'<2', node:'#ANY'}"));
+    assertFalse(c.replica.isPass(3));
+    assertFalse(c.replica.isPass(2));
+    assertTrue(c.replica.isPass(1));
+
+    c = new Clause((Map<String, Object>) Utils.fromJSONString("{replica:'>2', node:'#ANY'}"));
+    assertTrue(c.replica.isPass(3));
+    assertFalse(c.replica.isPass(2));
+    assertFalse(c.replica.isPass(1));
+
+    c = new Clause((Map<String, Object>) Utils.fromJSONString("{nodeRole:'!overseer'}"));
+    assertTrue(c.tag.isPass("OVERSEER"));
+    assertFalse(c.tag.isPass("overseer"));
+
+
+  }
   public void testRuleParsing() throws IOException {
     String rules = "{" +
-        "conditions:[{nodeRole:'!overseer', strict:false}, " +
+        "conditions:[{nodeRole:'!overseer', strict:false},{replica:'<1',node:node3}," +
         "{replica:'<2',node:'#ANY', shard:'#EACH'}]," +
         " preferences:[" +
         "{minimize:cores , precision:2}," +
@@ -46,38 +64,46 @@ public class TestRuleSorter extends SolrTestCaseJ4 {
         "node1:{cores:12, freedisk: 334, heap:10480}," +
         "node2:{cores:4, freedisk: 749, heap:6873}," +
         "node3:{cores:7, freedisk: 262, heap:7834}," +
-        "node4:{cores:8, freedisk: 375, heap:16900}" +
+        "node4:{cores:8, freedisk: 375, heap:16900, nodeRole:overseer}" +
         "}");
     String clusterState = "{'gettingstarted':{" +
         "    'router':{'name':'compositeId'}," +
         "    'shards':{" +
         "      'shard1':{" +
         "        'range':'80000000-ffffffff'," +
-        "        'state':'active'," +
         "        'replicas':{" +
-        "          'core_node1':{" +
-        "            'core':'gettingstarted_shard1_replica1'," +
+        "          'r1':{" +
+        "            'core':r1," +
         "            'base_url':'http://10.0.0.4:8983/solr'," +
         "            'node_name':'node1'," +
         "            'state':'active'," +
         "            'leader':'true'}," +
-        "          'core_node4':{" +
-        "            'core':'gettingstarted_shard1_replica2'," +
+        "          'r2':{" +
+        "            'core':r2," +
         "            'base_url':'http://10.0.0.4:7574/solr'," +
         "            'node_name':'node2'," +
         "            'state':'active'}}}," +
         "      'shard2':{" +
         "        'range':'0-7fffffff'," +
-        "        'state':'active'," +
         "        'replicas':{" +
-        "          'core_node2':{" +
-        "            'core':'gettingstarted_shard2_replica1'," +
+        "          'r3':{" +
+        "            'core':r3," +
         "            'base_url':'http://10.0.0.4:8983/solr'," +
         "            'node_name':'node1'," +
         "            'state':'active'," +
         "            'leader':'true'}," +
-        "          'core_node3':{" +
-        "            'core':'gettingstarted_shard2_replica2'," +
+        "          'r4':{" +
+        "            'core':r4," +
+        "            'base_url':'http://10.0.0.4:8987/solr'," +
+        "            'node_name':'node4'," +
+        "            'state':'active'}," +
+        "          'r6':{" +
+        "            'core':r6," +
+        "            'base_url':'http://10.0.0.4:8989/solr'," +
+        "            'node_name':'node3'," +
+        "            'state':'active'}," +
+        "          'r5':{" +
+        "            'core':r5," +
         "            'base_url':'http://10.0.0.4:7574/solr'," +
         "            'node_name':'node1'," +
         "            'state':'active'}}}}}}";
@@ -95,7 +121,6 @@ public class TestRuleSorter extends SolrTestCaseJ4 {
         Map<String,Object> result = new LinkedHashMap<>();
         keys.stream().forEach(s -> result.put(s, nodeValues.get(node).get(s)));
         return result;
-
       }
 
       @Override
@@ -115,7 +140,6 @@ public class TestRuleSorter extends SolrTestCaseJ4 {
               List<RuleSorter.ReplicaStat> replicaStats = shardVsReplicaStats.get(shard);
               if (replicaStats == null) shardVsReplicaStats.put(shard, replicaStats = new ArrayList<>());
               replicaStats.add(new RuleSorter.ReplicaStat(replicaName, new HashMap<>()));
-
             });
           });
         });
@@ -137,7 +161,23 @@ public class TestRuleSorter extends SolrTestCaseJ4 {
 
 
     System.out.printf(Utils.toJSONString(Utils.getDeepCopy(session.toMap(new LinkedHashMap<>()), 8)));
-    System.out.println(Utils.getDeepCopy(session.getViolations(), 6));
+    Map<String, List<Clause>> violations = session.getViolations();
+    System.out.println(Utils.getDeepCopy(violations, 6));
+    assertEquals(3, violations.size());
+    List<Clause> v = violations.get("node4");
+    assertNotNull(v);
+    assertEquals(v.get(0).tag.name, "nodeRole");
+    v = violations.get("node1");
+    assertNotNull(v);
+    assertEquals(v.get(0).replica.op, Operand.LESS_THAN);
+    assertEquals(v.get(0).replica.val, 2);
+    v = violations.get("node3");
+    assertNotNull(v);
+    assertEquals(v.get(0).replica.op, Operand.LESS_THAN);
+    assertEquals(v.get(0).replica.val, 1);
+    assertEquals(v.get(0).tag.val, "node3");
+
+
 
   }
 

@@ -19,25 +19,29 @@ package org.apache.solr.recipe;
 
 import java.util.Objects;
 
+import org.apache.solr.recipe.Clause.TestStatus;
+import static org.apache.solr.recipe.Clause.TestStatus.*;
+import static org.apache.solr.recipe.RuleSorter.ANY;
+
 
 public enum Operand {
-  ANY(""){
+  WILDCARD(ANY){
     @Override
-    public boolean canMatch(Object ruleVal, Object testVal) {
-      return true;
+    public TestStatus match(Object ruleVal, Object testVal) {
+      return testVal == null ? NOT_APPLICABLE : PASS;
     }
 
     @Override
     public Object parse(String val) {
-      if(val == null) return RuleSorter.ANY;
-      return RuleSorter.ANY.equals(val) || RuleSorter.EACH.equals(val) ? val : null;
+      if(val == null) return ANY;
+      return ANY.equals(val) || RuleSorter.EACH.equals(val) ? val : null;
     }
   },
   EQUAL(""),
   NOT_EQUAL("!") {
     @Override
-    public boolean canMatch(Object ruleVal, Object testVal) {
-      return !super.canMatch(ruleVal, testVal);
+    public TestStatus match(Object ruleVal, Object testVal) {
+      return super.match(ruleVal, testVal) == PASS ? FAIL : PASS;
     }
   },
   GREATER_THAN(">") {
@@ -48,16 +52,18 @@ public enum Operand {
 
 
     @Override
-    public boolean canMatch(Object ruleVal, Object testVal) {
-      return testVal != null && compareNum(ruleVal, testVal) == -1;
+    public TestStatus match(Object ruleVal, Object testVal) {
+      if (testVal == null) return NOT_APPLICABLE;
+      return compareNum(ruleVal, testVal) == 1 ? PASS : FAIL;
     }
 
   },
   LESS_THAN("<") {
 
     @Override
-    public boolean canMatch(Object ruleVal, Object testVal) {
-      return testVal != null && compareNum(ruleVal, testVal) != -1;
+    public TestStatus match(Object ruleVal, Object testVal) {
+      if (testVal == null) return NOT_APPLICABLE;
+      return compareNum(ruleVal, testVal) == -1 ? PASS : FAIL;
     }
 
     @Override
@@ -89,8 +95,8 @@ public enum Operand {
     return val.startsWith(operand) ? val.substring(1) : null;
   }
 
-  public boolean canMatch(Object ruleVal, Object testVal) {
-    return Objects.equals(String.valueOf(ruleVal), String.valueOf(testVal));
+  public TestStatus match(Object ruleVal, Object testVal) {
+    return Objects.equals(String.valueOf(ruleVal), String.valueOf(testVal)) ? PASS : FAIL;
   }
 
 
