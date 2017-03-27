@@ -1084,7 +1084,10 @@ public class TestInPlaceUpdatesStandalone extends SolrTestCaseJ4 {
       AddUpdateCommand cmd = buildAddUpdateCommand(req, sdoc("id", "1", "_version_", 42L,
                                                              "inplace_updatable_float", map("inc", 10)));
       AtomicUpdateDocumentMerger docMerger = new AtomicUpdateDocumentMerger(req);
-      assertTrue(docMerger.doInPlaceUpdateMerge(cmd, AtomicUpdateDocumentMerger.computeInPlaceUpdatableFields(cmd)));
+      assertEquals(
+              AtomicUpdateDocumentMerger.MergeStatus.MERGED_UPDATE,
+              docMerger.doInPlaceUpdateMerge(cmd, AtomicUpdateDocumentMerger.computeInPlaceUpdatableFields(cmd))
+      );
       assertEquals(42L, cmd.getSolrInputDocument().getFieldValue("_version_"));
       assertEquals(42L, cmd.getSolrInputDocument().getFieldValue("_version_"));
       assertEquals(210f, cmd.getSolrInputDocument().getFieldValue("inplace_updatable_float"));

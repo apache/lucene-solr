@@ -1088,7 +1088,9 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
               versionOnUpdate = 0;
             }
 
-            boolean updated = getUpdatedDocument(cmd, versionOnUpdate);
+            if (getUpdatedDocument(cmd, versionOnUpdate) == AtomicUpdateDocumentMerger.MergeStatus.IGNORED_UPDATE) {
+              return true;
+            }
 
             // leaders can also be in buffering state during "migrate" API call, see SOLR-5308
             if (forwardedFromCollection && ulog.getState() != UpdateLog.State.ACTIVE
@@ -1360,15 +1362,19 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
   
   // TODO: may want to switch to using optimistic locking in the future for better concurrency
   // that's why this code is here... need to retry in a loop closely around/in versionAdd
-  boolean getUpdatedDocument(AddUpdateCommand cmd, long versionOnUpdate) throws IOException {
-    if (!AtomicUpdateDocumentMerger.isAtomicUpdate(cmd)) return false;
+  AtomicUpdateDocumentMerger.MergeStatus getUpdatedDocument(AddUpdateCommand cmd, long versionOnUpdate) throws IOException {
+    if (!AtomicUpdateDocumentMerger.isAtomicUpdate(cmd)) return AtomicUpdateDocumentMerger.MergeStatus.PROCESS_UPDATE;
 
     Set<String> inPlaceUpdatedFields = AtomicUpdateDocumentMerger.computeInPlaceUpdatableFields(cmd);
     if (inPlaceUpdatedFields.size() > 0) { // non-empty means this is suitable for in-place updates
-      if (docMerger.doInPlaceUpdateMerge(cmd, inPlaceUpdatedFields)) {
-        return true;
-      } else {
-        // in-place update failed, so fall through and re-try the same with a full atomic update
+      switch (docMerger.doInPlaceUpdateMerge(cmd, inPlaceUpdatedFields)) {
+        case PROCESS_UPDATE:
+          // in-place update failed, so fall through and re-try the same with a full atomic update
+          break;
+        case MERGED_UPDATE:
+          return AtomicUpdateDocumentMerger.MergeStatus.MERGED_UPDATE;
+        case IGNORED_UPDATE:
+          return AtomicUpdateDocumentMerger.MergeStatus.IGNORED_UPDATE;
       }
     }
     
@@ -1389,9 +1395,12 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
       oldDoc.remove(CommonParams.VERSION_FIELD);
     }
 
-
-    cmd.solrDoc = docMerger.merge(sdoc, oldDoc);
-    return true;
+    SolrInputDocument mergeResult = docMerger.merge(sdoc, oldDoc);
+    if (mergeResult == null) {
+      return AtomicUpdateDocumentMerger.MergeStatus.IGNORED_UPDATE;
+    }
+    cmd.solrDoc = mergeResult;
+    return AtomicUpdateDocumentMerger.MergeStatus.MERGED_UPDATE;
   }
 
   @Override
