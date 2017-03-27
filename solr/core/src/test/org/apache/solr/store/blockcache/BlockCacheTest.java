@@ -237,7 +237,8 @@ public class BlockCacheTest extends LuceneTestCase {
     final int nReads=1000000;
     final int readsPerThread=nReads/nThreads;
     final int readLastBlockOdds=10; // odds (1 in N) of the next block operation being on the same block as the previous operation... helps flush concurrency issues
-    final boolean updateAnyway = true; // sometimes insert a new entry for the key even if one was found
+    final int updateAnywayOdds = 3; // sometimes insert a new entry for the key even if one was found
+    final int invalidateOdds = 20; // sometimes invalidate an entry
 
     final AtomicLong hits = new AtomicLong();
     final AtomicLong removals = new AtomicLong();
@@ -286,26 +287,45 @@ public class BlockCacheTest extends LuceneTestCase {
           }
         }
 
-        public void test() {
-          long block = r.nextInt(blocksInTest);
-          if (readLastBlockOdds > 0 && r.nextInt(readLastBlockOdds) == 0) block = lastBlock.get();  // some percent of the time, try to read the last block another thread was just reading/writing
-          lastBlock.set(block);
+        boolean odds(int odds) {
+          return odds > 0 && r.nextInt(odds)==0;
+        }
 
-          Long k = block;
+        long getBlock() {
+          long block;
+          if (odds(readLastBlockOdds)) {
+            block = lastBlock.get();  // some percent of the time, try to read the last block another thread was just reading/writing
+          } else {
+            block = r.nextInt(blocksInTest);
+            lastBlock.set(block);
+          }
+          return block;
+        }
+
+        public void test() {
+          Long k = getBlock();
+
+          if (odds(invalidateOdds)) {
+            // This tests that invalidate always ends up calling the removal listener exactly once
+            // even if the entry may be in the process of concurrent removal in a different thread.
+            // This also inadvertently tests concurrently inserting, getting, and invalidating the same key, which we don't need in Solr's BlockCache.
+            cache.invalidate(k);
+          }
+
           Val v = cache.getIfPresent(k);
           if (v != null) {
             hits.incrementAndGet();
             assert k.equals(v.key);
           }
 
-          if (v == null || updateAnyway && r.nextBoolean()) {
+          if (v == null || odds(updateAnywayOdds)) {
             v = new Val();
             v.key = k;
             cache.put(k, v);
             inserts.incrementAndGet();
           }
 
-          long sz = cache.asMap().size();
+          long sz = cache.estimatedSize();
           if (sz > maxObservedSize.get()) maxObservedSize.set(sz);  // race condition here, but an estimate is OK
 
         }
@@ -323,7 +343,7 @@ public class BlockCacheTest extends LuceneTestCase {
 
 
     // Thread.sleep(1000); // need to wait if executor is used for listener?
-    long cacheSize = cache.asMap().size();
+    long cacheSize = cache.estimatedSize();
     System.out.println("Done! # of Elements = " + cacheSize + " inserts=" + inserts.get() + " removals=" + removals.get() + " hits=" + hits.get() +  " maxObservedSize=" + maxObservedSize);
     assert inserts.get() - removals.get() == cacheSize;
     assertFalse( failed.get() );

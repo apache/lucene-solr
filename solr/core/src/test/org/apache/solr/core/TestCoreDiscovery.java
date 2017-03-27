@@ -337,6 +337,7 @@ public class TestCoreDiscovery extends SolrTestCaseJ4 {
 
     File toSet = new File(coreDir, "core1");
     assumeTrue("Cannot make " + toSet + " non-readable. Test aborted.", toSet.setReadable(false, false));
+    assumeFalse("Appears we are a super user, skip test", toSet.canRead());
     CoreContainer cc = init();
     try (SolrCore core1 = cc.getCore("core1");
          SolrCore core2 = cc.getCore("core2")) {
@@ -362,6 +363,7 @@ public class TestCoreDiscovery extends SolrTestCaseJ4 {
     File toSet = new File(solrHomeDirectory, "cantReadDir");
     assertTrue("Should have been able to make directory '" + toSet.getAbsolutePath() + "' ", toSet.mkdirs());
     assumeTrue("Cannot make " + toSet + " non-readable. Test aborted.", toSet.setReadable(false, false));
+    assumeFalse("Appears we are a super user, skip test", toSet.canRead());
     CoreContainer cc = init();
     try (SolrCore core1 = cc.getCore("core1");
          SolrCore core2 = cc.getCore("core2")) {
@@ -421,7 +423,7 @@ public class TestCoreDiscovery extends SolrTestCaseJ4 {
         new File(homeDir, "core1" + File.separator + CorePropertiesLocator.PROPERTIES_FILENAME));
 
     assumeTrue("Cannot make " + homeDir + " non-readable. Test aborted.", homeDir.setReadable(false, false));
-
+    assumeFalse("Appears we are a super user, skip test", homeDir.canRead());
     CoreContainer cc = null;
     try {
       cc = init();

@@ -54,6 +54,19 @@ public class ModifiableSolrParams extends SolrParams
     }
   }
 
+  /**
+   * If the input params are of type MofifiableSolrParams, returns the input, otherwise, constructs a new
+   * ModifiableSolrParams, copying values from the given params. If params is null, returns an empty
+   * ModifiableSolrParams instance.
+   */
+  public static ModifiableSolrParams of(SolrParams params)
+  {
+    if (params instanceof ModifiableSolrParams) {
+      return (ModifiableSolrParams) params;
+    }
+    return new ModifiableSolrParams(params);
+  }
+
   public int size() {
     return vals == null ? 0 : vals.size();
   }

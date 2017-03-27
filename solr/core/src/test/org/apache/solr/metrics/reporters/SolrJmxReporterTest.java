@@ -64,15 +64,17 @@ public class SolrJmxReporterTest extends SolrTestCaseJ4 {
     coreMetricManager = core.getCoreMetricManager();
     metricManager = core.getCoreDescriptor().getCoreContainer().getMetricManager();
     PluginInfo pluginInfo = createReporterPluginInfo();
-    metricManager.loadReporter(coreMetricManager.getRegistryName(), coreMetricManager.getCore().getResourceLoader(), pluginInfo);
+    metricManager.loadReporter(coreMetricManager.getRegistryName(), coreMetricManager.getCore().getResourceLoader(),
+        pluginInfo, coreMetricManager.getTag());
 
     Map<String, SolrMetricReporter> reporters = metricManager.getReporters(coreMetricManager.getRegistryName());
     assertTrue("reporters.size should be > 0, but was + " + reporters.size(), reporters.size() > 0);
     reporterName = pluginInfo.name;
-    assertNotNull("reporter " + reporterName + " not present among " + reporters, reporters.get(reporterName));
-    assertTrue("wrong reporter class: " + reporters.get(reporterName), reporters.get(reporterName) instanceof SolrJmxReporter);
+    String taggedName = reporterName + "@" + coreMetricManager.getTag();
+    assertNotNull("reporter " + taggedName + " not present among " + reporters, reporters.get(taggedName));
+    assertTrue("wrong reporter class: " + reporters.get(taggedName), reporters.get(taggedName) instanceof SolrJmxReporter);
 
-    reporter = (SolrJmxReporter) reporters.get(reporterName);
+    reporter = (SolrJmxReporter) reporters.get(taggedName);
     mBeanServer = reporter.getMBeanServer();
     assertNotNull("MBean server not found.", mBeanServer);
   }
@@ -144,7 +146,8 @@ public class SolrJmxReporterTest extends SolrTestCaseJ4 {
 
     h.getCoreContainer().reload(h.getCore().getName());
     PluginInfo pluginInfo = createReporterPluginInfo();
-    metricManager.loadReporter(coreMetricManager.getRegistryName(), coreMetricManager.getCore().getResourceLoader(), pluginInfo);
+    metricManager.loadReporter(coreMetricManager.getRegistryName(), coreMetricManager.getCore().getResourceLoader(),
+        pluginInfo, String.valueOf(coreMetricManager.getCore().hashCode()));
     coreMetricManager.registerMetricProducer(scope, producer);
 
     objects = mBeanServer.queryMBeans(null, null);

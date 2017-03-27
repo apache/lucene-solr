@@ -30,7 +30,7 @@ import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.Tokenizer;
 import org.apache.lucene.analysis.core.KeywordTokenizer;
 import org.apache.lucene.analysis.core.WhitespaceTokenizer;
-import org.apache.lucene.analysis.tokenattributes.*;
+import org.apache.lucene.analysis.tokenattributes.TypeAttribute;
 
 public class ShingleFilterTest extends BaseTokenStreamTestCase {
 
@@ -1239,12 +1239,102 @@ public class ShingleFilterTest extends BaseTokenStreamTestCase {
     filter = new ShingleFilter(new CannedTokenStream(2, 20, inputTokens), 2, 3);
     filter.setFillerToken(null);
     filter.setTokenSeparator(null);
-
     assertTokenStreamContents(filter,
         new String[] {"purple", "purplewizard", "purplewizard", "wizard", "wizard", "wizard"},
         new int[] {0, 0, 0, 7, 7, 7},
         new int[] {6, 13, 20, 13, 20, 20},
         new int[] {1, 0, 0, 1, 0, 0},
         20);
+  }
+
+  public void testPositionLength() throws Exception {
+    Analyzer a = new Analyzer() {
+      @Override
+      protected TokenStreamComponents createComponents(String fieldName) {
+        Tokenizer tokenizer = new MockTokenizer(MockTokenizer.WHITESPACE, false);
+        ShingleFilter filter = new ShingleFilter(tokenizer, 4, 4);
+        filter.setOutputUnigrams(false);
+        return new TokenStreamComponents(tokenizer, filter);
+      }
+    };
+    assertTokenStreamContents(a.tokenStream("", "to be or not to be"),
+        new String[] {"to be or not", "be or not to", "or not to be"},
+        new int[] {0, 3, 6},
+        new int[] {12, 15, 18},
+        null,
+        new int[] {1, 1, 1},
+        new int[] {1, 1, 1},
+        18,
+        // offsets are correct but assertTokenStreamContents does not handle multiple terms with different offsets
+        // finishing at the same position
+        false);
+
+
+    a = new Analyzer() {
+      @Override
+      protected TokenStreamComponents createComponents(String fieldName) {
+        Tokenizer tokenizer = new MockTokenizer(MockTokenizer.WHITESPACE, false);
+        ShingleFilter filter = new ShingleFilter(tokenizer, 2, 4);
+        filter.setOutputUnigrams(false);
+        return new TokenStreamComponents(tokenizer, filter);
+      }
+    };
+    assertTokenStreamContents(a.tokenStream("", "to be or not to be"),
+        new String[] {"to be", "to be or", "to be or not", "be or", "be or not", "be or not to", "or not", "or not to",
+            "or not to be", "not to", "not to be", "to be"},
+        new int[] {0, 0, 0, 3, 3, 3, 6, 6, 6, 9, 9, 13},
+        new int[] {5, 8, 12, 8, 12, 15, 12, 15, 18, 15, 18, 18},
+        null,
+        new int[] {1, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 1},
+        new int[] {1, 2, 3, 1, 2, 3, 1, 2, 3, 1, 2, 1},
+        18,
+        // offsets are correct but assertTokenStreamContents does not handle multiple terms with different offsets
+        // finishing at the same position
+        false);
+
+    a = new Analyzer() {
+      @Override
+      protected TokenStreamComponents createComponents(String fieldName) {
+        Tokenizer tokenizer = new MockTokenizer(MockTokenizer.WHITESPACE, false);
+        ShingleFilter filter = new ShingleFilter(tokenizer, 3, 4);
+        filter.setOutputUnigrams(false);
+        return new TokenStreamComponents(tokenizer, filter);
+      }
+    };
+
+    assertTokenStreamContents(a.tokenStream("", "to be or not to be"),
+        new String[] {"to be or", "to be or not", "be or not", "be or not to", "or not to",
+            "or not to be", "not to be"},
+        new int[] {0, 0, 3, 3, 6, 6, 9},
+        new int[] {8, 12, 12, 15, 15, 18, 18},
+        null,
+        new int[] {1, 0, 1, 0, 1, 0, 1, 0},
+        new int[] {1, 2, 1, 2, 1, 2, 1, 2},
+        18,
+        // offsets are correct but assertTokenStreamContents does not handle multiple terms with different offsets
+        // finishing at the same position
+        false);
+
+    a = new Analyzer() {
+      @Override
+      protected TokenStreamComponents createComponents(String fieldName) {
+        Tokenizer tokenizer = new MockTokenizer(MockTokenizer.WHITESPACE, false);
+        ShingleFilter filter = new ShingleFilter(tokenizer, 3, 5);
+        filter.setOutputUnigrams(false);
+        return new TokenStreamComponents(tokenizer, filter);
+      }
+    };
+    assertTokenStreamContents(a.tokenStream("", "to be or not to be"),
+        new String[] {"to be or", "to be or not", "to be or not to", "be or not", "be or not to",
+            "be or not to be", "or not to", "or not to be", "not to be"},
+        new int[] {0, 0, 0, 3, 3, 3, 6, 6, 9, 9},
+        new int[] {8, 12, 15, 12, 15, 18, 15, 18, 18},
+        null,
+        new int[] {1, 0, 0, 1, 0, 0, 1, 0, 1, 0},
+        new int[] {1, 2, 3, 1, 2, 3, 1, 2, 1},
+        18,
+        // offsets are correct but assertTokenStreamContents does not handle multiple terms with different offsets
+        // finishing at the same position
+        false);
   }
 }

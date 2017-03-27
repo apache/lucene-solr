@@ -44,6 +44,8 @@ import org.apache.solr.common.params.UpdateParams;
 import org.apache.solr.common.util.ContentStream;
 import org.apache.solr.common.util.XML;
 
+import static org.apache.solr.common.params.ShardParams._ROUTE_;
+
 /**
  * 
  * 
@@ -54,7 +56,6 @@ public class UpdateRequest extends AbstractUpdateRequest {
   public static final String REPFACT = "rf";
   public static final String MIN_REPFACT = "min_rf";
   public static final String VER = "ver";
-  public static final String ROUTE = "_route_";
   public static final String OVERWRITE = "ow";
   public static final String COMMIT_WITHIN = "cw";
   private Map<SolrInputDocument,Map<String,Object>> documents = null;
@@ -188,7 +189,7 @@ public class UpdateRequest extends AbstractUpdateRequest {
     if (version != null)
       params.put(VER, version);
     if (route != null)
-      params.put(ROUTE, route);
+      params.put(_ROUTE_, route);
     deleteById.put(id, params);
     return this;
   }
@@ -221,7 +222,7 @@ public class UpdateRequest extends AbstractUpdateRequest {
   public UpdateRequest withRoute(String route) {
     if (params == null)
       params = new ModifiableSolrParams();
-    params.set(ROUTE, route);
+    params.set(_ROUTE_, route);
     return this;
   }
 
@@ -461,7 +462,7 @@ public class UpdateRequest extends AbstractUpdateRequest {
           Map<String,Object> map = entry.getValue();
           if (map != null) {
             Long version = (Long) map.get(VER);
-            String route = (String)map.get(ROUTE);
+            String route = (String)map.get(_ROUTE_);
             if (version != null) {
               writer.append(" version=\"" + version + "\"");
             }

@@ -54,10 +54,16 @@ public class BasicDistributedZk2Test extends AbstractFullDistribZkTestBase {
   private static final String SHARD2 = "shard2";
   private static final String SHARD1 = "shard1";
   private static final String ONE_NODE_COLLECTION = "onenodecollection";
+  private final boolean onlyLeaderIndexes = random().nextBoolean();
 
   public BasicDistributedZk2Test() {
     super();
     sliceCount = 2;
+  }
+
+  @Override
+  protected int getRealtimeReplicas() {
+    return onlyLeaderIndexes? 1 : -1;
   }
   
   @Test

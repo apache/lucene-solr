@@ -24,10 +24,35 @@
 
   <schemaFactory class="ManagedIndexSchemaFactory">
     <bool name="mutable">${managed.schema.mutable}</bool>
-    <str name="managedSchemaResourceName">managed-schema</str>
+    <str name="managedSchemaResourceName">${managed.schema.resourceName:managed-schema}</str>
   </schemaFactory>
 
   <codecFactory class="solr.SchemaCodecFactory"/>
+
+  <query>
+    <filterCache
+        enabled="${filterCache.enabled:false}"
+        class="solr.search.FastLRUCache"
+        size="512"
+        initialSize="512"
+        autowarmCount="2"/>
+
+    <queryResultCache
+        enabled="${queryResultCache.enabled:false}"
+        class="solr.search.LRUCache"
+        size="512"
+        initialSize="512"
+        autowarmCount="2"/>
+
+    <documentCache
+        enabled="${documentCache.enabled:false}"
+        class="solr.search.LRUCache"
+        size="512"
+        initialSize="512"
+        autowarmCount="0"/>
+
+    <enableLazyFieldLoading>${enableLazyFieldLoading:false}</enableLazyFieldLoading>
+  </query>
 
   <updateHandler>
     <updateLog enable="${enable.update.log}">
@@ -40,7 +65,7 @@
   </requestHandler>
 
 
-  <requestHandler name="/dump" class="DumpRequestHandler" initParams="a" registerPath="/,/v2">
+  <requestHandler name="/dump" class="DumpRequestHandler" initParams="a" registerPath="/solr,/v2">
     <lst name="defaults">
       <str name="a">${my.custom.variable.a:A}</str>
       <str name="b">${my.custom.variable.b:B}</str>

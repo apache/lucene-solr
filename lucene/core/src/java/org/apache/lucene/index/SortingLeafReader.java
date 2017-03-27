@@ -1246,4 +1246,16 @@ class SortingLeafReader extends FilterLeafReader {
   public String toString() {
     return "SortingLeafReader(" + in + ")";
   }
+
+  // no caching on sorted views
+
+  @Override
+  public CacheHelper getCoreCacheHelper() {
+    return null;
+  }
+
+  @Override
+  public CacheHelper getReaderCacheHelper() {
+    return null;
+  }
 }

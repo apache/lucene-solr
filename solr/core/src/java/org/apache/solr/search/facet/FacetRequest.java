@@ -36,6 +36,7 @@ import org.apache.solr.search.QueryContext;
 import org.apache.solr.search.SolrIndexSearcher;
 import org.apache.solr.search.SyntaxError;
 
+import static org.apache.solr.common.params.CommonParams.SORT;
 import static org.apache.solr.search.facet.FacetRequest.RefineMethod.NONE;
 
 
@@ -168,7 +169,10 @@ public abstract class FacetRequest {
 class FacetContext {
   // Context info for actually executing a local facet command
   public static final int IS_SHARD=0x01;
+  public static final int IS_REFINEMENT=0x02;
+  public static final int SKIP_FACET=0x04;  // refinement: skip calculating this immediate facet, but proceed to specific sub-facets based on facetInfo
 
+  Map<String,Object> facetInfo; // refinement info for this node
   QueryContext qcontext;
   SolrQueryRequest req;  // TODO: replace with params?
   SolrIndexSearcher searcher;
@@ -642,7 +646,7 @@ class FacetFieldParser extends FacetParser<FacetField> {
       Object o = m.get("facet");
       parseSubs(o);
 
-      parseSort( m.get("sort") );
+      parseSort( m.get(SORT) );
     }
 
     return facet;

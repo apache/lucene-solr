@@ -97,35 +97,43 @@
           </New>
         </Arg>
       </Call>
+       <Call name="addRule">
+         <Arg>
+           <New class="org.eclipse.jetty.rewrite.handler.RewritePatternRule">
+             <Set name="pattern">/v2/*</Set>
+             <Set name="replacement">/solr/____v2</Set>
+           </New>
+         </Arg>
+       </Call>
+       <Set name="handler">
+         <New id="Handlers" class="org.eclipse.jetty.server.handler.HandlerCollection">
+           <Set name="handlers">
+             <Array type="org.eclipse.jetty.server.Handler">
+               <Item>
+                 <New id="Contexts" class="org.eclipse.jetty.server.handler.ContextHandlerCollection"/>
+               </Item>
+               <Item>
+                 <New id="InstrumentedHandler" class="com.codahale.metrics.jetty9.InstrumentedHandler">
+                   <Arg><Ref refid="solrJettyMetricRegistry"/></Arg>
+                   <Set name="handler">
+                     <New id="DefaultHandler" class="org.eclipse.jetty.server.handler.DefaultHandler"/>
+                   </Set>
+                 </New>
+               </Item>
+               <Item>
+                 <New id="RequestLog" class="org.eclipse.jetty.server.handler.RequestLogHandler"/>
+               </Item>
+             </Array>
+           </Set>
+         </New>
+       </Set>
      </New>
 
     <!-- =========================================================== -->
     <!-- Set handler Collection Structure                            -->
     <!-- =========================================================== -->
     <Set name="handler">
-      <New id="Handlers" class="org.eclipse.jetty.server.handler.HandlerCollection">
-        <Set name="handlers">
-         <Array type="org.eclipse.jetty.server.Handler">
-           <Item>
-             <Ref id="RewriteHandler"/>
-           </Item>
-           <Item>
-             <New id="Contexts" class="org.eclipse.jetty.server.handler.ContextHandlerCollection"/>
-           </Item>
-           <Item>
-             <New id="InstrumentedHandler" class="com.codahale.metrics.jetty9.InstrumentedHandler">
-               <Arg><Ref refid="solrJettyMetricRegistry"/></Arg>
-               <Set name="handler">
-                 <New id="DefaultHandler" class="org.eclipse.jetty.server.handler.DefaultHandler"/>
-               </Set>
-             </New>
-           </Item>
-           <Item>
-             <New id="RequestLog" class="org.eclipse.jetty.server.handler.RequestLogHandler"/>
-           </Item>
-         </Array>
-        </Set>
-      </New>
+      <Ref id="RewriteHandler"/>
     </Set>
     
     <!-- =========================================================== -->

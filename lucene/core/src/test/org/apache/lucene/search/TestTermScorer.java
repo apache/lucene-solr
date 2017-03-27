@@ -179,6 +179,16 @@ public class TestTermScorer extends LuceneTestCase {
         // unreachable
         return null;
       }
+
+      @Override
+      public CacheHelper getCoreCacheHelper() {
+        return in.getCoreCacheHelper();
+      }
+
+      @Override
+      public CacheHelper getReaderCacheHelper() {
+        return in.getReaderCacheHelper();
+      }
     };
     // We don't use newSearcher because it sometimes runs checkIndex which loads norms
     IndexSearcher indexSearcher = new IndexSearcher(forbiddenNorms);

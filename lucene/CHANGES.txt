@@ -5,6 +5,12 @@ http://s.apache.org/luceneversions
 
 ======================= Lucene 7.0.0 =======================
 
+New Features
+
+* LUCENE-7703: SegmentInfos now record the Lucene version at index creation
+  time. (Adrien Grand)
+
+
 API Changes
 
 * LUCENE-2605: Classic QueryParser no longer splits on whitespace by default.
@@ -26,6 +32,17 @@ API Changes
   actually used. (Adrien Grand)
 
 * LUCENE-7494: Points now have a per-field API, like doc values. (Adrien Grand)
+
+* LUCENE-7410: Cache keys and close listeners have been refactored in order
+  to be less trappy. See IndexReader.getReaderCacheHelper and
+  LeafReader.getCoreCacheHelper. (Adrien Grand)
+
+* LUCENE-6819: Index-time boosts are not supported anymore. As a replacement,
+  index-time scoring factors should be indexed into a doc value field and
+  combined at query time using eg. FunctionScoreQuery. (Adrien Grand)
+
+* LUCENE-7734: FieldType's copy constructor was widened to accept any IndexableFieldType.
+  (David Smiley)
 
 Bug Fixes
 
@@ -63,9 +80,16 @@ Other
 
 * LUCENE-7681: MemoryIndex uses new DocValues API (Alan Woodward)
 
+======================= Lucene 6.6.0 =======================
+(No Changes)
+
 ======================= Lucene 6.5.0 =======================
 
 API Changes
+
+* LUCENE-7740: Refactor Range Fields to remove Field suffix (e.g., DoubleRange),
+  move InetAddressRange and InetAddressPoint from sandbox to misc module, and
+  refactor all other range fields from sandbox to core. (Nick Knize)
 
 * LUCENE-7624: TermsQuery has been renamed as TermInSetQuery and moved to core.
   (Alan Woodward)
@@ -97,7 +121,25 @@ API Changes
 
 * LUCENE-7702: Removed GraphQuery in favour of simple boolean query. (Matt Webber via Jim Ferenczi)
 
+* LUCENE-7707: TopDocs.merge now takes a boolean option telling it
+  when to use the incoming shard index versus when to assign the shard
+  index itself, allowing users to merge shard responses incrementally
+  instead of once all shard responses are present. (Simon Willnauer,
+  Mike McCandless)
+
+* LUCENE-7700: A cleanup of merge throughput control logic. Refactored all the
+  code previously scattered throughout the IndexWriter and 
+  ConcurrentMergeScheduler into a more accessible set of public methods (see 
+  MergePolicy.OneMergeProgress, MergeScheduler.wrapForMerge and 
+  OneMerge.mergeInit). (Dawid Weiss, Mike McCandless).
+
+* LUCENE-7734: FieldType's copy constructor was widened to accept any IndexableFieldType.
+  (David Smiley)
+
 New Features
+
+* LUCENE-7738: Add new InetAddressRange for indexing and querying InetAddress
+  ranges. (Nick Knize)
 
 * LUCENE-7449: Add CROSSES relation support to RangeFieldQuery. (Nick Knize)
 
@@ -130,6 +172,10 @@ New Features
   efficiently filter out duplicate suggestions (Uwe Schindler, Mike
   McCandless)
 
+* LUCENE-7712: SimpleQueryParser now supports default fuzziness
+  syntax, mapping foo~ to a FuzzyQuery with edit distance 2.  (Lee
+  Hinman, David Pilato via Mike McCandless)
+
 Bug Fixes
 
 * LUCENE-7630: Fix (Edge)NGramTokenFilter to no longer drop payloads
@@ -148,6 +194,10 @@ Bug Fixes
 * LUCENE-7698: CommonGramsQueryFilter was producing a disconnected
   token graph, messing up phrase queries when it was used during query
   parsing (Ere Maijala via Mike McCandless)
+
+* LUCENE-7708: ShingleFilter without unigram was producing a disconnected
+  token graph, messing up queries when it was used during query
+  parsing (Jim Ferenczi)
 
 Improvements
 
@@ -172,9 +222,15 @@ Improvements
   earlier than regular queries in order to improve cache efficiency.
   (Adrien Grand)
 
-* LUCENE-7707: Use predefined shard index when mergeing top docs if present. This 
-  allows to use TopDoc#merge to merge shard responses incrementally instead of
-  once all shard responses are present. (Simon Willnauer)
+* LUCENE-7710: BlockPackedReader throws CorruptIndexException and includes
+  IndexInput description instead of plain IOException (Mike Drob via
+  Mike McCandless)
+
+* LUCENE-7695: ComplexPhraseQueryParser to support query time synonyms (Markus Jelsma
+  via Mikhail Khludnev) 
+
+* LUCENE-7747: QueryBuilder now iterates lazily over the possible paths when building a graph query
+  (Jim Ferenczi)
 
 Optimizations
 
@@ -206,6 +262,13 @@ Optimizations
 * LUCENE-7699: Query parsers now use span queries to produce more efficient
   phrase queries for multi-token synonyms. (Matt Webber via Jim Ferenczi)
 
+* LUCENE-7742: Fix places where we were unboxing and then re-boxing
+  according to FindBugs (Daniel Jelinski via Mike McCandless)
+
+* LUCENE-7739: Fix places where we unnecessarily boxed while parsing
+  a numeric value according to FindBugs (Daniel Jelinski via Mike
+  McCandless)
+
 Build
 
 * LUCENE-7653: Update randomizedtesting to version 2.5.0. (Dawid Weiss)
@@ -222,6 +285,12 @@ Build
 * LUCENE-7693: Replace "org.apache." logic in GetMavenDependenciesTask.
   (Daniel Collins, Christine Poerschke)
 
+* LUCENE-7726: Fix HTML entity bugs in Javadocs to be able to build with
+  Java 9. (Uwe Schindler, Hossman)
+
+* LUCENE-7727: Replace end-of-life Markdown parser "Pegdown" by "Flexmark"
+  for compatibility with Java 9. (Uwe Schindler)
+
 Other
 
 * LUCENE-7666: Fix typos in lucene-join package info javadoc.
@@ -230,12 +299,19 @@ Other
 * LUCENE-7658: queryparser/xml CoreParser now implements SpanQueryBuilder interface.
   (Daniel Collins, Christine Poerschke)
 
+* LUCENE-7715: NearSpansUnordered simplifications.
+  (Paul Elschot via Adrien Grand)
+
 ======================= Lucene 6.4.2 =======================
 
 Bug Fixes
 
 * LUCENE-7676: Fixed FilterCodecReader to override more super-class methods.
   Also added TestFilterCodecReader class. (Christine Poerschke)
+
+* LUCENE-7717: The UnifiedHighlighter and PostingsHighlighter were not highlighting
+  prefix queries with multi-byte characters. TermRangeQuery is affected too.
+  (Dmitry Malinin, David Smiley)
 
 ======================= Lucene 6.4.1 =======================
 

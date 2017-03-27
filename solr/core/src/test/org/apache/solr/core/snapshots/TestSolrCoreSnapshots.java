@@ -293,7 +293,7 @@ public class TestSolrCoreSnapshots extends SolrCloudTestCase {
     for(int i = 0 ; i < apiResult.size(); i++) {
       String commitName = apiResult.getName(i);
       String indexDirPath = (String)((NamedList)apiResult.get(commitName)).get("indexDirPath");
-      long genNumber = Long.valueOf((String)((NamedList)apiResult.get(commitName)).get("generation"));
+      long genNumber = Long.parseLong((String)((NamedList)apiResult.get(commitName)).get("generation"));
       result.add(new SnapshotMetaData(commitName, indexDirPath, genNumber));
     }
     return result;

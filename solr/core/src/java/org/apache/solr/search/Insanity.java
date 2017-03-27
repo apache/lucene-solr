@@ -118,13 +118,14 @@ public class Insanity {
     // important to override these, so fieldcaches are shared on what we wrap
     
     @Override
-    public Object getCoreCacheKey() {
-      return in.getCoreCacheKey();
+    public CacheHelper getCoreCacheHelper() {
+      return in.getCoreCacheHelper();
     }
 
     @Override
-    public Object getCombinedCoreAndDeletesKey() {
-      return in.getCombinedCoreAndDeletesKey();
+    public CacheHelper getReaderCacheHelper() {
+      return in.getReaderCacheHelper();
     }
+
   }
 }

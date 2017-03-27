@@ -20,9 +20,13 @@ import java.io.IOException;
 import java.util.Date;
 import java.util.LinkedHashMap;
 import java.util.Map;
+
 import org.apache.solr.client.solrj.io.stream.CloudSolrStream;
 import org.apache.solr.client.solrj.io.stream.StreamContext;
 import org.apache.solr.common.params.ModifiableSolrParams;
+
+import static org.apache.solr.common.params.CommonParams.SORT;
+import static org.apache.solr.common.params.CommonParams.VERSION_FIELD;
 
 
 /**
@@ -71,7 +75,7 @@ public class ModelCache {
     ModifiableSolrParams params = new ModifiableSolrParams();
     params.set("q","name_s:"+modelID);
     params.set("fl", "terms_ss, idfs_ds, weights_ds, iteration_i, _version_");
-    params.set("sort", "iteration_i desc");
+    params.set(SORT, "iteration_i desc");
     StreamContext streamContext = new StreamContext();
     streamContext.setSolrClientCache(solrClientCache);
     CloudSolrStream stream = new CloudSolrStream(zkHost, collection, params);
@@ -92,8 +96,8 @@ public class ModelCache {
       Model m = models.get(modelID);
       if (m != null) {
         Tuple t = m.getTuple();
-        long v = t.getLong("_version_");
-        if (v >= tuple.getLong("_version_")) {
+        long v = t.getLong(VERSION_FIELD);
+        if (v >= tuple.getLong(VERSION_FIELD)) {
           return t;
         } else {
           models.put(modelID, new Model(tuple, currentTime));

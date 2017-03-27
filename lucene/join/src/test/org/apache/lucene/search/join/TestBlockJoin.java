@@ -1011,7 +1011,7 @@ public class TestBlockJoin extends LuceneTestCase {
     TopDocs childHits = new TopDocs(0, new ScoreDoc[0], 0f);
     for (ScoreDoc controlHit : controlHits.scoreDocs) {
       Document controlDoc = r.document(controlHit.doc);
-      int parentID = Integer.valueOf(controlDoc.get("parentID"));
+      int parentID = Integer.parseInt(controlDoc.get("parentID"));
       if (parentID != currentParentID) {
         assertEquals(childHitSlot, childHits.scoreDocs.length);
         currentParentID = parentID;

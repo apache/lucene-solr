@@ -119,7 +119,7 @@ public class SearchGroupShardResponseProcessor implements ShardResponseProcessor
         if (groupCount != null) {
           Integer existingGroupCount = rb.mergedGroupCounts.get(field);
           // Assuming groups don't cross shard boundary...
-          rb.mergedGroupCounts.put(field, existingGroupCount != null ? existingGroupCount + groupCount : groupCount);
+          rb.mergedGroupCounts.put(field, existingGroupCount != null ? Integer.valueOf(existingGroupCount + groupCount) : groupCount);
         }
 
         final Collection<SearchGroup<BytesRef>> searchGroups = firstPhaseCommandResult.getSearchGroups();

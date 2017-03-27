@@ -297,17 +297,10 @@ public abstract class SolrTestCaseJ4 extends LuceneTestCase {
       if (suiteFailureMarker.wasSuccessful()) {
         // if the tests passed, make sure everything was closed / released
         if (!RandomizedContext.current().getTargetClass().isAnnotationPresent(SuppressObjectReleaseTracker.class)) {
-          endTrackingSearchers(120, false);
-          String orr = clearObjectTrackerAndCheckEmpty(120);
+          String orr = clearObjectTrackerAndCheckEmpty(20, false);
           assertNull(orr, orr);
         } else {
-          endTrackingSearchers(15, false);
-          String orr = ObjectReleaseTracker.checkEmpty();
-          if (orr != null) {
-            log.warn(
-                "Some resources were not closed, shutdown, or released. This has been ignored due to the SuppressObjectReleaseTracker annotation, trying to close them now.");
-            ObjectReleaseTracker.tryClose();
-          }
+          clearObjectTrackerAndCheckEmpty(20, true);
         }
       }
       resetFactory();
@@ -341,6 +334,13 @@ public abstract class SolrTestCaseJ4 extends LuceneTestCase {
    * @return null if ok else error message
    */
   public static String clearObjectTrackerAndCheckEmpty(int waitSeconds) {
+    return clearObjectTrackerAndCheckEmpty(waitSeconds, false);
+  }
+  
+  /**
+   * @return null if ok else error message
+   */
+  public static String clearObjectTrackerAndCheckEmpty(int waitSeconds, boolean tryClose) {
     int retries = 0;
     String result;
     do {
@@ -367,6 +367,13 @@ public abstract class SolrTestCaseJ4 extends LuceneTestCase {
     
     
     log.info("------------------------------------------------------- Done waiting for tracked resources to be released");
+    
+    if (tryClose && result != null && RandomizedContext.current().getTargetClass().isAnnotationPresent(SuppressObjectReleaseTracker.class)) {
+      log.warn(
+          "Some resources were not closed, shutdown, or released. This has been ignored due to the SuppressObjectReleaseTracker annotation, trying to close them now.");
+      ObjectReleaseTracker.tryClose();
+    }
+    
     ObjectReleaseTracker.clear();
     
     return result;
@@ -515,12 +522,14 @@ public abstract class SolrTestCaseJ4 extends LuceneTestCase {
       System.setProperty("solr.tests.longClass", "long");
       System.setProperty("solr.tests.doubleClass", "double");
       System.setProperty("solr.tests.floatClass", "float");
+      System.setProperty("solr.tests.dateClass", "date");
     } else {
       log.info("Using PointFields");
       System.setProperty("solr.tests.intClass", "pint");
       System.setProperty("solr.tests.longClass", "plong");
       System.setProperty("solr.tests.doubleClass", "pdouble");
       System.setProperty("solr.tests.floatClass", "pfloat");
+      System.setProperty("solr.tests.dateClass", "pdate");
     }
   }
 
@@ -577,52 +586,6 @@ public abstract class SolrTestCaseJ4 extends LuceneTestCase {
       log.warn("startTrackingSearchers: numOpens="+numOpens+" numCloses="+numCloses);
       numOpens = numCloses = 0;
     }
-  }
-
-  public static void endTrackingSearchers(int waitSeconds, boolean failTest) {
-     long endNumOpens = SolrIndexSearcher.numOpens.get();
-     long endNumCloses = SolrIndexSearcher.numCloses.get();
-
-     // wait a bit in case any ending threads have anything to release
-     int retries = 0;
-     while (endNumOpens - numOpens != endNumCloses - numCloses) {
-       if (retries++ > waitSeconds) {
-         break;
-       }
-       if (retries % 10 == 0) {
-         log.info("Waiting for all SolrIndexSearchers to be released at end of test");
-        if (retries > 10) {
-          TraceFormatting tf = new TraceFormatting();
-          Map<Thread,StackTraceElement[]> stacksMap = Thread.getAllStackTraces();
-          Set<Entry<Thread,StackTraceElement[]>> entries = stacksMap.entrySet();
-          for (Entry<Thread,StackTraceElement[]> entry : entries) {
-            String stack = tf.formatStackTrace(entry.getValue());
-            System.err.println(entry.getKey().getName() + ":\n" + stack);
-          }
-        }
-       }
-       try {
-         Thread.sleep(1000);
-       } catch (InterruptedException e) {}
-       endNumOpens = SolrIndexSearcher.numOpens.get();
-       endNumCloses = SolrIndexSearcher.numCloses.get();
-     }
-
-     log.info("------------------------------------------------------- Done waiting for all SolrIndexSearchers to be released");
-     
-     SolrIndexSearcher.numOpens.getAndSet(0);
-     SolrIndexSearcher.numCloses.getAndSet(0);
-
-     if (endNumOpens-numOpens != endNumCloses-numCloses) {
-       String msg = "ERROR: SolrIndexSearcher opens=" + (endNumOpens-numOpens) + " closes=" + (endNumCloses-numCloses);
-       log.error(msg);
-       // if it's TestReplicationHandler, ignore it. the test is broken and gets no love
-       if ("TestReplicationHandler".equals(RandomizedContext.current().getTargetClass().getSimpleName())) {
-         log.warn("TestReplicationHandler wants to fail!: " + msg);
-       } else {
-         if (failTest) fail(msg);
-       }
-     }
   }
   
   /** Causes an exception matching the regex pattern to not be logged. */
@@ -889,7 +852,7 @@ public abstract class SolrTestCaseJ4 extends LuceneTestCase {
   /** Validates a query matches some XPath test expressions and closes the query */
   public static void assertQ(String message, SolrQueryRequest req, String... tests) {
     try {
-      String m = (null == message) ? "" : message + " ";
+      String m = (null == message) ? "" : message + " "; // TODO log 'm' !!!
       String response = h.query(req);
 
       if (req.getParams().getBool("facet", false)) {
@@ -2019,6 +1982,10 @@ public abstract class SolrTestCaseJ4 extends LuceneTestCase {
   // the string to write to the core.properties file may be null in which case nothing is done with it.
   // propertiesContent may be an empty string, which will actually work.
   public static void copyMinConf(File dstRoot, String propertiesContent) throws IOException {
+    copyMinConf(dstRoot, propertiesContent, "solrconfig-minimal.xml");
+  }
+
+  public static void copyMinConf(File dstRoot, String propertiesContent, String solrconfigXmlName) throws IOException {
 
     File subHome = new File(dstRoot, "conf");
     if (! dstRoot.exists()) {
@@ -2030,7 +1997,7 @@ public abstract class SolrTestCaseJ4 extends LuceneTestCase {
     }
     String top = SolrTestCaseJ4.TEST_HOME() + "/collection1/conf";
     FileUtils.copyFile(new File(top, "schema-tiny.xml"), new File(subHome, "schema.xml"));
-    FileUtils.copyFile(new File(top, "solrconfig-minimal.xml"), new File(subHome, "solrconfig.xml"));
+    FileUtils.copyFile(new File(top, solrconfigXmlName), new File(subHome, "solrconfig.xml"));
     FileUtils.copyFile(new File(top, "solrconfig.snippet.randomindexconfig.xml"), new File(subHome, "solrconfig.snippet.randomindexconfig.xml"));
   }
 
@@ -2157,9 +2124,6 @@ public abstract class SolrTestCaseJ4 extends LuceneTestCase {
 
     SolrInputDocument sdoc1 = (SolrInputDocument) expected;
     SolrInputDocument sdoc2 = (SolrInputDocument) actual;
-    if (Float.compare(sdoc1.getDocumentBoost(), sdoc2.getDocumentBoost()) != 0) {
-      return false;
-    }
 
     if(sdoc1.getFieldNames().size() != sdoc2.getFieldNames().size()) {
       return false;
@@ -2215,10 +2179,6 @@ public abstract class SolrTestCaseJ4 extends LuceneTestCase {
     }
 
     if (!sif1.getValue().equals(sif2.getValue())) {
-      return false;
-    }
-
-    if (Float.compare(sif1.getBoost(), sif2.getBoost()) != 0) {
       return false;
     }
 

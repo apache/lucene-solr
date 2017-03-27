@@ -63,6 +63,7 @@ public interface HighlightParams {
   public static final String BS_LANGUAGE = HIGHLIGHT+".bs.language"; // FVH, UH, PH
   public static final String BS_COUNTRY  = HIGHLIGHT+".bs.country"; // FVH, UH, PH
   public static final String BS_VARIANT  = HIGHLIGHT+".bs.variant"; // FVH, UH, PH
+  public static final String BS_SEP      = HIGHLIGHT+".bs.separator"; // UH, PH
 
   // formatting
   public static final String FORMATTER   = HIGHLIGHT+".formatter"; // OH

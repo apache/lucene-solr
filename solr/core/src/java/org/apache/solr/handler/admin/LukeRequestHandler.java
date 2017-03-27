@@ -102,7 +102,7 @@ public class LukeRequestHandler extends RequestHandlerBase
   public static final String NUMTERMS = "numTerms";
   public static final String INCLUDE_INDEX_FIELD_FLAGS = "includeIndexFieldFlags";
   public static final String DOC_ID = "docId";
-  public static final String ID = "id";
+  public static final String ID = CommonParams.ID;
   public static final int DEFAULT_COUNT = 10;
 
   static final int HIST_ARRAY_SIZE = 33;
@@ -298,7 +298,6 @@ public class LukeRequestHandler extends RequestHandlerBase
       if (bytes != null) {
         f.add( "binary", Base64.byteArrayToBase64(bytes.bytes, bytes.offset, bytes.length));
       }
-      f.add( "boost", field.boost() );
       if (!ftype.isPointField()) {
         Term t = new Term(field.name(), ftype!=null ? ftype.storedToIndexed(field) : field.stringValue());
         f.add( "docFreq", t.text()==null ? 0 : reader.docFreq( t ) ); // this can be 0 for non-indexed fields

@@ -132,6 +132,16 @@ public class TestUnifiedHighlighterTermVec extends LuceneTestCase {
 
             return super.getTermVectors(docID);
           }
+
+          @Override
+          public CacheHelper getCoreCacheHelper() {
+            return null;
+          }
+
+          @Override
+          public CacheHelper getReaderCacheHelper() {
+            return null;
+          }
         };
       }
     };
@@ -143,6 +153,11 @@ public class TestUnifiedHighlighterTermVec extends LuceneTestCase {
     @Override
     protected DirectoryReader doWrapDirectoryReader(DirectoryReader in) throws IOException {
       return new AssertOnceTermVecDirectoryReader(in);
+    }
+
+    @Override
+    public CacheHelper getReaderCacheHelper() {
+      return null;
     }
   }
 

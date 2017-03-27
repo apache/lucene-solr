@@ -194,7 +194,7 @@ public class PluginBag<T> implements AutoCloseable {
       String registerAt = plugin.pluginInfo.attributes.get("registerPath");
       if (registerAt != null) {
         List<String> strs = StrUtils.splitSmart(registerAt, ',');
-        disableHandler = !strs.contains("/");
+        disableHandler = !strs.contains("/solr");
         registerApi = strs.contains("/v2");
       }
     }

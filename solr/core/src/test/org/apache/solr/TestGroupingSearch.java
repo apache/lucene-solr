@@ -50,7 +50,6 @@ import org.noggit.ObjectBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-@SolrTestCaseJ4.SuppressPointFields(bugUrl="https://issues.apache.org/jira/browse/SOLR-9992")
 public class TestGroupingSearch extends SolrTestCaseJ4 {
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
@@ -534,13 +533,6 @@ public class TestGroupingSearch extends SolrTestCaseJ4 {
                  ,"facet","true", "facet.field",f)
       ,"/grouped/"+f+"/matches==10"
       ,"/facet_counts/facet_fields/"+f+"==['1',3, '2',3, '3',2, '4',1, '5',1]"
-    );
-
-    // test that grouping works with highlighting
-    assertJQ(req("fq",filt,  "q","{!func}"+f2, "group","true", "group.field",f, "fl","id"
-                 ,"hl","true", "hl.fl",f)
-      ,"/grouped/"+f+"/matches==10"
-      ,"/highlighting=={'_ORDERED_':'', '8':{},'3':{},'4':{},'1':{},'2':{}}"
     );
 
     // test that grouping works with debugging

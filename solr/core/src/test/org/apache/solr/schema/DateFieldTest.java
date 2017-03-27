@@ -29,7 +29,7 @@ import org.apache.solr.core.SolrResourceLoader;
 public class DateFieldTest extends SolrTestCaseJ4 {
   private final String testInstanceDir = TEST_HOME() + File.separator + "collection1";
   private final String testConfHome = testInstanceDir + File.separator + "conf"+ File.separator;
-  private TrieDateField f = null;
+  private FieldType f = null;
 
   @Override
   public void setUp()  throws Exception {
@@ -40,7 +40,7 @@ public class DateFieldTest extends SolrTestCaseJ4 {
     SolrConfig config = new SolrConfig
         (new SolrResourceLoader(Paths.get(testInstanceDir)), testConfHome + "solrconfig.xml", null);
     IndexSchema schema = IndexSchemaFactory.buildIndexSchema(testConfHome + "schema.xml", config);
-    f = new TrieDateField();
+    f = random().nextBoolean()? new TrieDateField() : new DatePointField();
     f.init(schema, Collections.<String,String>emptyMap());
   }
 
@@ -50,14 +50,14 @@ public class DateFieldTest extends SolrTestCaseJ4 {
     int props = FieldProperties.INDEXED ^ FieldProperties.STORED;
     SchemaField sf = new SchemaField( "test", f, props, null );
     // String
-    IndexableField out = f.createField(sf, "1995-12-31T23:59:59Z", 1.0f );
-    assertEquals(820454399000L, f.toObject( out ).getTime() );
+    IndexableField out = f.createField(sf, "1995-12-31T23:59:59Z" );
+    assertEquals(820454399000L, ((Date) f.toObject( out )).getTime() );
     // Date obj
-    out = f.createField(sf, new Date(820454399000L), 1.0f );
-    assertEquals(820454399000L, f.toObject( out ).getTime() );
+    out = f.createField(sf, new Date(820454399000L) );
+    assertEquals(820454399000L, ((Date) f.toObject( out )).getTime() );
     // Date math
-    out = f.createField(sf, "1995-12-31T23:59:59.99Z+5MINUTES", 1.0f);
-    assertEquals(820454699990L, f.toObject( out ).getTime() );
+    out = f.createField(sf, "1995-12-31T23:59:59.99Z+5MINUTES");
+    assertEquals(820454699990L, ((Date) f.toObject( out )).getTime() );
   }
 
 }

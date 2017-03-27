@@ -443,6 +443,16 @@ public class TestSearcherManager extends ThreadedIndexingAndSearchingTestCase {
     public MyFilterLeafReader(LeafReader in) {
       super(in);
     }
+
+    @Override
+    public CacheHelper getCoreCacheHelper() {
+      return in.getCoreCacheHelper();
+    }
+
+    @Override
+    public CacheHelper getReaderCacheHelper() {
+      return in.getReaderCacheHelper();
+    }
   }
 
   private static class MyFilterDirectoryReader extends FilterDirectoryReader {
@@ -461,6 +471,11 @@ public class TestSearcherManager extends ThreadedIndexingAndSearchingTestCase {
     @Override
     protected DirectoryReader doWrapDirectoryReader(DirectoryReader in) throws IOException {
       return new MyFilterDirectoryReader(in);
+    }
+
+    @Override
+    public CacheHelper getReaderCacheHelper() {
+      return in.getReaderCacheHelper();
     }
   }
 

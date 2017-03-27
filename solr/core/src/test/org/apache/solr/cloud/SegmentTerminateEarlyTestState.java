@@ -22,7 +22,6 @@ import java.util.Map;
 import java.util.Set;
 import java.util.Random;
 
-import org.apache.solr.SolrTestCaseJ4.SuppressPointFields;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.response.QueryResponse;
@@ -32,8 +31,7 @@ import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.ShardParams;
 import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.response.SolrQueryResponse;
-// This test uses grouping requests, which doesn't work yet with PointFields
-@SuppressPointFields(bugUrl="https://issues.apache.org/jira/browse/SOLR-9992")
+
 class SegmentTerminateEarlyTestState {
 
   final String keyField = "id";

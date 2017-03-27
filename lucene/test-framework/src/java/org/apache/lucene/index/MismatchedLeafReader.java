@@ -45,6 +45,16 @@ public class MismatchedLeafReader extends FilterLeafReader {
     in.document(docID, new MismatchedVisitor(visitor));
   }
 
+  @Override
+  public CacheHelper getCoreCacheHelper() {
+    return in.getCoreCacheHelper();
+  }
+
+  @Override
+  public CacheHelper getReaderCacheHelper() {
+    return in.getReaderCacheHelper();
+  }
+
   static FieldInfos shuffleInfos(FieldInfos infos, Random random) {
     // first, shuffle the order
     List<FieldInfo> shuffled = new ArrayList<>();

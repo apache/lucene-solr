@@ -87,6 +87,8 @@ public class BasicDistributedZkTest extends AbstractFullDistribZkTestBase {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   private static final String DEFAULT_COLLECTION = "collection1";
+
+  private final boolean onlyLeaderIndexes = random().nextBoolean();
   String t1="a_t";
   String i1="a_i1";
   String tlong = "other_tl1";
@@ -114,7 +116,12 @@ public class BasicDistributedZkTest extends AbstractFullDistribZkTestBase {
     pending = new HashSet<>();
     
   }
-  
+
+  @Override
+  protected int getRealtimeReplicas() {
+    return onlyLeaderIndexes? 1 : -1;
+  }
+
   @Override
   protected void setDistributedParams(ModifiableSolrParams params) {
 

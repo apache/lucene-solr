@@ -426,12 +426,6 @@ final class DefaultIndexingChain extends DocConsumer {
 
     // Invert indexed fields:
     if (fieldType.indexOptions() != IndexOptions.NONE) {
-      
-      // if the field omits norms, the boost cannot be indexed.
-      if (fieldType.omitNorms() && field.boost() != 1.0f) {
-        throw new UnsupportedOperationException("You cannot set an index-time boost: norms are omitted for field '" + field.name() + "'");
-      }
-      
       fp = getOrAddField(fieldName, fieldType, true);
       boolean first = fp.fieldGen != fieldGen;
       fp.invert(field, first);
@@ -823,8 +817,6 @@ final class DefaultIndexingChain extends DocConsumer {
         invertState.position += docState.analyzer.getPositionIncrementGap(fieldInfo.name);
         invertState.offset += docState.analyzer.getOffsetGap(fieldInfo.name);
       }
-
-      invertState.boost *= field.boost();
     }
   }
 }

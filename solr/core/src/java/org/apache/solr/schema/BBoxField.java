@@ -137,7 +137,7 @@ public class BBoxField extends AbstractSpatialFieldType<BBoxStrategy> implements
     //Solr's FieldType ought to expose Lucene FieldType. Instead as a hack we create a Field with a dummy value.
     final SchemaField solrNumField = new SchemaField("_", numberType);//dummy temp
     org.apache.lucene.document.FieldType luceneType =
-        (org.apache.lucene.document.FieldType) solrNumField.createField(0.0, 1.0f).fieldType();
+        (org.apache.lucene.document.FieldType) solrNumField.createField(0.0).fieldType();
     luceneType.setStored(storeSubFields);
     
     //and annoyingly this Field isn't going to have a docValues format because Solr uses a separate Field for that

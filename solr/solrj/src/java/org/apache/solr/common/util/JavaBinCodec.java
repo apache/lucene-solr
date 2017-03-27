@@ -19,6 +19,7 @@ package org.apache.solr.common.util;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.lang.invoke.MethodHandles;
 import java.nio.ByteBuffer;
 import java.nio.file.Path;
 import java.util.ArrayList;
@@ -31,6 +32,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.apache.solr.common.EnumFieldValue;
 import org.apache.solr.common.IteratorWriter;
@@ -43,6 +45,8 @@ import org.apache.solr.common.SolrDocumentList;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.SolrInputField;
 import org.noggit.CharArr;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Defines a space-efficient serialization/deserialization format for transferring data.
@@ -60,6 +64,9 @@ import org.noggit.CharArr;
  * NOTE -- {@link JavaBinCodec} instances cannot be reused for more than one marshall or unmarshall operation.
  */
 public class JavaBinCodec implements PushWriter {
+
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
+  private static final AtomicBoolean WARNED_ABOUT_INDEX_TIME_BOOSTS = new AtomicBoolean();
 
   public static final byte
           NULL = 0,
@@ -555,14 +562,28 @@ public class JavaBinCodec implements PushWriter {
   public SolrInputDocument readSolrInputDocument(DataInputInputStream dis) throws IOException {
     int sz = readVInt(dis);
     float docBoost = (Float)readVal(dis);
+    if (docBoost != 1f) {
+      String message = "Ignoring document boost: " + docBoost + " as index-time boosts are not supported anymore";
+      if (WARNED_ABOUT_INDEX_TIME_BOOSTS.compareAndSet(false, true)) {
+        log.warn(message);
+      } else {
+        log.debug(message);
+      }
+    }
     SolrInputDocument sdoc = new SolrInputDocument(new LinkedHashMap<>(sz));
-    sdoc.setDocumentBoost(docBoost);
     for (int i = 0; i < sz; i++) {
-      float boost = 1.0f;
       String fieldName;
       Object obj = readVal(dis); // could be a boost, a field name, or a child document
       if (obj instanceof Float) {
-        boost = (Float)obj;
+        float boost = (Float)obj;
+        if (boost != 1f) {
+          String message = "Ignoring field boost: " + boost + " as index-time boosts are not supported anymore";
+          if (WARNED_ABOUT_INDEX_TIME_BOOSTS.compareAndSet(false, true)) {
+            log.warn(message);
+          } else {
+            log.debug(message);
+          }
+        }
         fieldName = (String)readVal(dis);
       } else if (obj instanceof SolrInputDocument) {
         sdoc.addChildDocument((SolrInputDocument)obj);
@@ -571,7 +592,7 @@ public class JavaBinCodec implements PushWriter {
         fieldName = (String)obj;
       }
       Object fieldVal = readVal(dis);
-      sdoc.setField(fieldName, fieldVal, boost);
+      sdoc.setField(fieldName, fieldVal);
     }
     return sdoc;
   }
@@ -580,11 +601,8 @@ public class JavaBinCodec implements PushWriter {
     List<SolrInputDocument> children = sdoc.getChildDocuments();
     int sz = sdoc.size() + (children==null ? 0 : children.size());
     writeTag(SOLRINPUTDOC, sz);
-    writeFloat(sdoc.getDocumentBoost());
+    writeFloat(1f); // document boost
     for (SolrInputField inputField : sdoc.values()) {
-      if (inputField.getBoost() != 1.0f) {
-        writeFloat(inputField.getBoost());
-      }
       writeExternString(inputField.getName());
       writeVal(inputField.getValue());
     }

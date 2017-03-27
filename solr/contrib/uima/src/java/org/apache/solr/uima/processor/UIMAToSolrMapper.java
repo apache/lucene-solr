@@ -76,7 +76,7 @@ public class UIMAToSolrMapper {
           if (log.isDebugEnabled()) {
             log.debug("writing {} in {}", new Object[]{featureValue, fieldName});
           }
-          document.addField(fieldName, featureValue, 1.0f);
+          document.addField(fieldName, featureValue);
         }
       }
     } catch (Exception e) {

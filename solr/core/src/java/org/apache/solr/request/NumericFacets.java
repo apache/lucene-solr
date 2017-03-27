@@ -19,6 +19,7 @@ package org.apache.solr.request;
 import java.io.IOException;
 import java.util.ArrayDeque;
 import java.util.Collections;
+import java.util.Date;
 import java.util.Deque;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -512,7 +513,8 @@ final class NumericFacets {
         return String.valueOf(NumericUtils.sortableIntToFloat((int)bits));
       case DOUBLE:
         return String.valueOf(NumericUtils.sortableLongToDouble(bits));
-        //TODO: DATE
+      case DATE:
+        return new Date(bits).toInstant().toString();
       default:
         throw new AssertionError("Unsupported NumberType: " + fieldType.getNumberType());
     }

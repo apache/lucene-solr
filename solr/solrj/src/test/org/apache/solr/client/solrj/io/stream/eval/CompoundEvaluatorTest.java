@@ -16,11 +16,9 @@
  */
 package org.apache.solr.client.solrj.io.stream.eval;
 
+import java.util.HashMap;
 import java.util.Map;
 
-import junit.framework.Assert;
-
-import org.apache.commons.collections.map.HashedMap;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.solr.client.solrj.io.Tuple;
 import org.apache.solr.client.solrj.io.eval.AddEvaluator;
@@ -33,6 +31,8 @@ import org.apache.solr.client.solrj.io.eval.StreamEvaluator;
 import org.apache.solr.client.solrj.io.eval.SubtractEvaluator;
 import org.apache.solr.client.solrj.io.stream.expr.StreamFactory;
 import org.junit.Test;
+
+import junit.framework.Assert;
 
 public class CompoundEvaluatorTest extends LuceneTestCase {
 
@@ -50,7 +50,7 @@ public class CompoundEvaluatorTest extends LuceneTestCase {
       .withFunctionName("sub", SubtractEvaluator.class)
       .withFunctionName("mult", MultiplyEvaluator.class)
       .withFunctionName("if", IfThenElseEvaluator.class);
-    values = new HashedMap();
+    values = new HashMap<String,Object>();
   }
     
   @Test

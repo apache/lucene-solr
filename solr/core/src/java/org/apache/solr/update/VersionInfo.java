@@ -41,11 +41,11 @@ import org.apache.solr.util.RefCounted;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import static org.apache.solr.common.params.CommonParams.VERSION_FIELD;
+
 public class VersionInfo {
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
-
-  public static final String VERSION_FIELD="_version_";
 
   private final UpdateLog ulog;
   private final VersionBucket[] buckets;
@@ -54,7 +54,7 @@ public class VersionInfo {
   final ReadWriteLock lock = new ReentrantReadWriteLock(true);
 
   /**
-   * Gets and returns the {@link #VERSION_FIELD} from the specified 
+   * Gets and returns the {@link org.apache.solr.common.params.CommonParams#VERSION_FIELD} from the specified
    * schema, after verifying that it is indexed, stored, and single-valued.  
    * If any of these pre-conditions are not met, it throws a SolrException 
    * with a user suitable message indicating the problem.

@@ -20,6 +20,7 @@ import org.apache.solr.client.solrj.request.JavaBinUpdateRequestCodec;
 import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrInputDocument;
+import org.apache.solr.common.params.ShardParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.params.UpdateParams;
 import org.apache.solr.common.util.ContentStream;
@@ -140,7 +141,7 @@ public class JavabinLoader extends ContentStreamLoader {
           }
         }
         if (map != null) {
-          String route = (String) map.get(UpdateRequest.ROUTE);
+          String route = (String) map.get(ShardParams._ROUTE_);
           if (route != null) {
             delcmd.setRoute(route);
           }

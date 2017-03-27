@@ -19,6 +19,8 @@ package org.apache.lucene.index;
 
 import java.io.IOException;
 import java.util.Collections;
+import java.util.Set;
+import java.util.concurrent.CopyOnWriteArraySet;
 
 import org.apache.lucene.codecs.Codec;
 import org.apache.lucene.codecs.DocValuesProducer;
@@ -32,6 +34,7 @@ import org.apache.lucene.search.Sort;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IOContext;
 import org.apache.lucene.util.Bits;
+import org.apache.lucene.util.IOUtils;
 
 /**
  * IndexReader implementation over a single segment. 
@@ -282,32 +285,48 @@ public final class SegmentReader extends CodecReader {
     return si.info.dir;
   }
 
-  // This is necessary so that cloned SegmentReaders (which
-  // share the underlying postings data) will map to the
-  // same entry for CachingWrapperFilter.  See LUCENE-1579.
+  private final Set<ClosedListener> readerClosedListeners = new CopyOnWriteArraySet<>();
+
   @Override
-  public Object getCoreCacheKey() {
-    // NOTE: if this ever changes, be sure to fix
-    // SegmentCoreReader.notifyCoreClosedListeners to match!
-    // Today it passes "this" as its coreCacheKey:
-    return core;
+  void notifyReaderClosedListeners(Throwable th) throws IOException {
+    synchronized(readerClosedListeners) {
+      for(ClosedListener listener : readerClosedListeners) {
+        try {
+          listener.onClose(cacheHelper.getKey());
+        } catch (Throwable t) {
+          if (th == null) {
+            th = t;
+          } else {
+            th.addSuppressed(t);
+          }
+        }
+      }
+      IOUtils.reThrow(th);
+    }
+  }
+
+  private final IndexReader.CacheHelper cacheHelper = new IndexReader.CacheHelper() {
+    private final IndexReader.CacheKey cacheKey = new IndexReader.CacheKey();
+
+    @Override
+    public CacheKey getKey() {
+      return cacheKey;
+    }
+
+    @Override
+    public void addClosedListener(ClosedListener listener) {
+      readerClosedListeners.add(listener);
+    }
+  };
+
+  @Override
+  public CacheHelper getReaderCacheHelper() {
+    return cacheHelper;
   }
 
   @Override
-  public Object getCombinedCoreAndDeletesKey() {
-    return this;
-  }
-
-  @Override
-  public void addCoreClosedListener(CoreClosedListener listener) {
-    ensureOpen();
-    core.addCoreClosedListener(listener);
-  }
-  
-  @Override
-  public void removeCoreClosedListener(CoreClosedListener listener) {
-    ensureOpen();
-    core.removeCoreClosedListener(listener);
+  public CacheHelper getCoreCacheHelper() {
+    return core.getCacheHelper();
   }
 
   @Override

@@ -54,6 +54,7 @@
   <fieldType name="bbox" class="solr.BBoxField"
              numberType="tdoubleDV" distanceUnits="degrees" storeSubFields="false"/>
 
+  <fieldType name="llp" class="solr.LatLonPointSpatialField" distanceUnits="degrees" multiValued="true" />
 
   <field name="id" type="string" required="true"/>
 
@@ -64,6 +65,9 @@
   <field name="pointvector" type="pointvector"/>
   <field name="srptgeom" type="srptgeom"/>
   <field name="bbox" type="bbox"/>
+  <field name="llp" type="llp" indexed="true" docValues="true" />
+  <field name="llp_idx" type="llp" indexed="true" docValues="false" />
+  <field name="llp_dv" type="llp" indexed="false" docValues="true" />
 
   <dynamicField name="bboxD_*" type="bbox" indexed="true"/>
   <dynamicField name="str_*" type="string" indexed="true" stored="true"/>

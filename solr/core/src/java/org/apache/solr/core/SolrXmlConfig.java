@@ -451,7 +451,8 @@ public class SolrXmlConfig {
       return new PluginInfo[0];
     PluginInfo[] configs = new PluginInfo[nodes.getLength()];
     for (int i = 0; i < nodes.getLength(); i++) {
-      configs[i] = new PluginInfo(nodes.item(i), "SolrMetricReporter", true, true);
+      // we don't require class in order to support predefined replica and node reporter classes
+      configs[i] = new PluginInfo(nodes.item(i), "SolrMetricReporter", true, false);
     }
     return configs;
   }

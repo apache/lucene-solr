@@ -52,6 +52,8 @@ import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.common.util.SolrjNamedThreadFactory;
 
+import static org.apache.solr.common.params.CommonParams.SORT;
+
 public class ShortestPathStream extends TupleStream implements Expressible {
 
   private static final long serialVersionUID = 1;
@@ -450,7 +452,7 @@ public class ShortestPathStream extends TupleStream implements Expressible {
 
       joinParams.set("fl", fl);
       joinParams.set("qt", "/export");
-      joinParams.set("sort", toField + " asc,"+fromField +" asc");
+      joinParams.set(SORT, toField + " asc,"+fromField +" asc");
 
       StringBuffer nodeQuery = new StringBuffer();
 

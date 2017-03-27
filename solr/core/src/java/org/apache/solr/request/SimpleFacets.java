@@ -96,6 +96,8 @@ import org.apache.solr.util.BoundedTreeSet;
 import org.apache.solr.util.DefaultSolrThreadFactory;
 import org.apache.solr.util.RTimer;
 
+import static org.apache.solr.common.params.CommonParams.SORT;
+
 /**
  * A class that generates simple Facet information for a request.
  *
@@ -484,15 +486,13 @@ public class SimpleFacets {
         case FCS:
           assert ft.isPointField() || !multiToken;
           if (ft.isPointField() || (ft.getNumberType() != null && !sf.multiValued())) {
-            // force numeric faceting
-            if (prefix != null && !prefix.isEmpty()) {
+            if (prefix != null) {
               throw new SolrException(ErrorCode.BAD_REQUEST, FacetParams.FACET_PREFIX + " is not supported on numeric types");
             }
             if (termFilter != null) {
-              final boolean supportedOperation = (termFilter instanceof SubstringBytesRefFilter) && ((SubstringBytesRefFilter) termFilter).substring().isEmpty();
-              if (!supportedOperation) {
-                throw new SolrException(ErrorCode.BAD_REQUEST, FacetParams.FACET_CONTAINS + " is not supported on numeric types");
-              }
+              throw new SolrException(ErrorCode.BAD_REQUEST, "BytesRef term filters ("
+                      + FacetParams.FACET_CONTAINS + ", "
+                      + FacetParams.FACET_EXCLUDETERMS + ") are not supported on numeric types");
             }
 //            We should do this, but mincount=0 is currently the default
 //            if (ft.isPointField() && mincount <= 0) {
@@ -533,7 +533,7 @@ public class SimpleFacets {
               default:
                 sortVal = sort;
             }
-            jsonFacet.put("sort", sortVal );
+            jsonFacet.put(SORT, sortVal );
 
             Map<String, Object> topLevel = new HashMap<>();
             topLevel.put(field, jsonFacet);

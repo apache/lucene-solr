@@ -19,12 +19,12 @@ package org.apache.solr.search.grouping.distributed.shardresultserializer;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
 import org.apache.lucene.document.Document;
-import org.apache.lucene.document.DocumentStoredFieldVisitor;
 import org.apache.lucene.search.FieldDoc;
 import org.apache.lucene.search.ScoreDoc;
 import org.apache.lucene.search.Sort;
@@ -34,6 +34,7 @@ import org.apache.lucene.search.TopFieldDocs;
 import org.apache.lucene.search.grouping.GroupDocs;
 import org.apache.lucene.search.grouping.TopGroups;
 import org.apache.lucene.util.BytesRef;
+import org.apache.lucene.util.CharsRefBuilder;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.handler.component.ResponseBuilder;
 import org.apache.solr.handler.component.ShardDoc;
@@ -46,6 +47,8 @@ import org.apache.solr.search.grouping.distributed.command.QueryCommandResult;
 import org.apache.solr.search.grouping.distributed.command.TopGroupsFieldCommand;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import static org.apache.solr.common.params.CommonParams.ID;
 
 /**
  * Implementation for transforming {@link TopGroups} and {@link TopDocs} into a {@link NamedList} structure and
@@ -167,7 +170,7 @@ public class TopGroupsResultTransformer implements ShardResultTransformer<List<C
 
     int j = 0;
     for (NamedList<Object> document : documents) {
-      Object docId = document.get("id");
+      Object docId = document.get(ID);
       if (docId != null) {
         docId = docId.toString();
       } else {
@@ -225,7 +228,7 @@ public class TopGroupsResultTransformer implements ShardResultTransformer<List<C
         documents.add(document);
 
         Document doc = retrieveDocument(uniqueField, searchGroup.scoreDocs[i].doc);
-        document.add("id", uniqueField.getType().toExternal(doc.getField(uniqueField.getName())));
+        document.add(ID, uniqueField.getType().toExternal(doc.getField(uniqueField.getName())));
         if (!Float.isNaN(searchGroup.scoreDocs[i].score))  {
           document.add("score", searchGroup.scoreDocs[i].score);
         }
@@ -244,7 +247,8 @@ public class TopGroupsResultTransformer implements ShardResultTransformer<List<C
         document.add("sortValues", convertedSortValues);
       }
       groupResult.add("documents", documents);
-      String groupValue = searchGroup.groupValue != null ? groupField.getType().indexedToReadable(searchGroup.groupValue.utf8ToString()): null;
+      String groupValue = searchGroup.groupValue != null ?
+          groupField.getType().indexedToReadable(searchGroup.groupValue, new CharsRefBuilder()).toString(): null;
       result.add(groupValue, groupResult);
     }
 
@@ -276,7 +280,7 @@ public class TopGroupsResultTransformer implements ShardResultTransformer<List<C
       documents.add(document);
 
       Document doc = retrieveDocument(uniqueField, scoreDoc.doc);
-      document.add("id", uniqueField.getType().toExternal(doc.getField(uniqueField.getName())));
+      document.add(ID, uniqueField.getType().toExternal(doc.getField(uniqueField.getName())));
       if (!Float.isNaN(scoreDoc.score))  {
         document.add("score", scoreDoc.score);
       }
@@ -296,9 +300,7 @@ public class TopGroupsResultTransformer implements ShardResultTransformer<List<C
   }
 
   private Document retrieveDocument(final SchemaField uniqueField, int doc) throws IOException {
-    DocumentStoredFieldVisitor visitor = new DocumentStoredFieldVisitor(uniqueField.getName());
-    rb.req.getSearcher().doc(doc, visitor);
-    return visitor.getDocument();
+    return rb.req.getSearcher().doc(doc, Collections.singleton(uniqueField.getName()));
   }
 
 }

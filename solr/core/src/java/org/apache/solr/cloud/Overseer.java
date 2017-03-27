@@ -55,6 +55,8 @@ import org.apache.zookeeper.KeeperException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import static org.apache.solr.common.params.CommonParams.ID;
+
 /**
  * Cluster leader. Responsible for processing state updates, node assignments, creating/deleting
  * collections, shards, replicas and setting various properties.
@@ -65,7 +67,8 @@ public class Overseer implements Closeable {
   public static final int STATE_UPDATE_DELAY = 1500;  // delay between cloud state updates
 
   public static final int NUM_RESPONSES_TO_STORE = 10000;
-  
+  public static final String OVERSEER_ELECT = "/overseer_elect";
+
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   enum LeaderStatus {DONT_KNOW, NO, YES}
@@ -281,7 +284,7 @@ public class Overseer implements Closeable {
     private void checkIfIamStillLeader() {
       if (zkController != null && zkController.getCoreContainer().isShutDown()) return;//shutting down no need to go further
       org.apache.zookeeper.data.Stat stat = new org.apache.zookeeper.data.Stat();
-      String path = OverseerElectionContext.OVERSEER_ELECT + "/leader";
+      String path = OVERSEER_ELECT + "/leader";
       byte[] data;
       try {
         data = zkClient.getData(path, null, stat, true);
@@ -291,7 +294,7 @@ public class Overseer implements Closeable {
       }
       try {
         Map m = (Map) Utils.fromJSON(data);
-        String id = (String) m.get("id");
+        String id = (String) m.get(ID);
         if(overseerCollectionConfigSetProcessor.getId().equals(id)){
           try {
             log.warn("I'm exiting, but I'm still the leader");
@@ -371,7 +374,7 @@ public class Overseer implements Closeable {
           case UPDATESHARDSTATE:
             return Collections.singletonList(new SliceMutator(getZkStateReader()).updateShardState(clusterState, message));
           case QUIT:
-            if (myId.equals(message.get("id"))) {
+            if (myId.equals(message.get(ID))) {
               log.info("Quit command received {} {}", message, LeaderElector.getNodeName(myId));
               overseerCollectionConfigSetProcessor.close();
               close();
@@ -394,8 +397,8 @@ public class Overseer implements Closeable {
       boolean success = true;
       try {
         ZkNodeProps props = ZkNodeProps.load(zkClient.getData(
-            OverseerElectionContext.OVERSEER_ELECT + "/leader", null, null, true));
-        if (myId.equals(props.getStr("id"))) {
+            OVERSEER_ELECT + "/leader", null, null, true));
+        if (myId.equals(props.getStr(ID))) {
           return LeaderStatus.YES;
         }
       } catch (KeeperException e) {

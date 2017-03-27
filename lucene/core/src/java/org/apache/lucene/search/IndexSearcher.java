@@ -432,7 +432,7 @@ public class IndexSearcher {
         for (TopScoreDocCollector collector : collectors) {
           topDocs[i++] = collector.topDocs();
         }
-        return TopDocs.merge(cappedNumHits, topDocs);
+        return TopDocs.merge(0, cappedNumHits, topDocs, true);
       }
 
     };
@@ -559,7 +559,7 @@ public class IndexSearcher {
         for (TopFieldCollector collector : collectors) {
           topDocs[i++] = collector.topDocs();
         }
-        return TopDocs.merge(sort, cappedNumHits, topDocs);
+        return TopDocs.merge(sort, 0, cappedNumHits, topDocs, true);
       }
 
     };

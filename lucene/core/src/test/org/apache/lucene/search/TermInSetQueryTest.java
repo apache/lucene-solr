@@ -237,12 +237,27 @@ public class TermInSetQueryTest extends LuceneTestCase {
           }
         };
       }
-      
+
+      @Override
+      public CacheHelper getCoreCacheHelper() {
+        return null;
+      }
+
+      @Override
+      public CacheHelper getReaderCacheHelper() {
+        return null;
+      }
+
     }
 
     @Override
     protected DirectoryReader doWrapDirectoryReader(DirectoryReader in) throws IOException {
       return new TermsCountingDirectoryReaderWrapper(in, counter);
+    }
+
+    @Override
+    public CacheHelper getReaderCacheHelper() {
+      return null;
     }
 
   }

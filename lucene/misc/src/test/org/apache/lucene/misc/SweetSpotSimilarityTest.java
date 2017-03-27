@@ -47,7 +47,6 @@ public class SweetSpotSimilarityTest extends LuceneTestCase {
 
     // base case, should degrade
     FieldInvertState invertState = new FieldInvertState("bogus");
-    invertState.setBoost(1.0f);
     for (int i = 1; i < 1000; i++) {
       invertState.setLength(i);
       assertEquals("base case: i="+i,
@@ -108,7 +107,6 @@ public class SweetSpotSimilarityTest extends LuceneTestCase {
     };
 
     invertState = new FieldInvertState("foo");
-    invertState.setBoost(1.0f);
     for (int i = 3; i <=10; i++) {
       invertState.setLength(i);
       assertEquals("f: 3,10: spot i="+i,
@@ -129,7 +127,6 @@ public class SweetSpotSimilarityTest extends LuceneTestCase {
     }
     
     invertState = new FieldInvertState("bar");
-    invertState.setBoost(1.0f);
     for (int i = 8; i <=13; i++) {
       invertState.setLength(i);
       assertEquals("f: 8,13: spot i="+i,
@@ -139,7 +136,6 @@ public class SweetSpotSimilarityTest extends LuceneTestCase {
     }
     
     invertState = new FieldInvertState("yak");
-    invertState.setBoost(1.0f);
     for (int i = 6; i <=9; i++) {
       invertState.setLength(i);
       assertEquals("f: 6,9: spot i="+i,
@@ -149,7 +145,6 @@ public class SweetSpotSimilarityTest extends LuceneTestCase {
     }
     
     invertState = new FieldInvertState("bar");
-    invertState.setBoost(1.0f);
     for (int i = 13; i < 1000; i++) {
       invertState.setLength(i-12);
       final byte normD = computeAndGetNorm(d, invertState);
@@ -162,7 +157,6 @@ public class SweetSpotSimilarityTest extends LuceneTestCase {
     }
     
     invertState = new FieldInvertState("yak");
-    invertState.setBoost(1.0f);
     for (int i = 9; i < 1000; i++) {
       invertState.setLength(i-8);
       final byte normD = computeAndGetNorm(d, invertState);
@@ -179,11 +173,9 @@ public class SweetSpotSimilarityTest extends LuceneTestCase {
 
     for (int i = 9; i < 1000; i++) {
       invertState = new FieldInvertState("a");
-      invertState.setBoost(1.0f);
       invertState.setLength(i);
       final byte normSS = computeAndGetNorm(sp, invertState);
       invertState = new FieldInvertState("b");
-      invertState.setBoost(1.0f);
       invertState.setLength(i);
       final byte normS = computeAndGetNorm(sp, invertState);
       assertTrue("s: i="+i+" : a="+normSS+

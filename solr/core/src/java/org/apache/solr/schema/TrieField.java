@@ -337,23 +337,6 @@ public class TrieField extends NumericFieldType {
   }
 
   @Override
-  public LegacyNumericType getNumericType() {
-    switch (type) {
-      case INTEGER:
-        return LegacyNumericType.INT;
-      case LONG:
-      case DATE:
-        return LegacyNumericType.LONG;
-      case FLOAT:
-        return LegacyNumericType.FLOAT;
-      case DOUBLE:
-        return LegacyNumericType.DOUBLE;
-      default:
-        throw new AssertionError();
-    }
-  }
-
-  @Override
   public Query getRangeQuery(QParser parser, SchemaField field, String min, String max, boolean minInclusive, boolean maxInclusive) {
     if (field.multiValued() && field.hasDocValues() && !field.indexed()) {
       // for the multi-valued dv-case, the default rangeimpl over toInternal is correct
@@ -572,7 +555,7 @@ public class TrieField extends NumericFieldType {
   }
   
   @Override
-  public IndexableField createField(SchemaField field, Object value, float boost) {
+  public IndexableField createField(SchemaField field, Object value) {
     boolean indexed = field.indexed();
     boolean stored = field.stored();
     boolean docValues = field.hasDocValues();
@@ -647,15 +630,14 @@ public class TrieField extends NumericFieldType {
         throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Unknown type for trie field: " + type);
     }
 
-    f.setBoost(boost);
     return f;
   }
 
   @Override
-  public List<IndexableField> createFields(SchemaField sf, Object value, float boost) {
+  public List<IndexableField> createFields(SchemaField sf, Object value) {
     if (sf.hasDocValues()) {
       List<IndexableField> fields = new ArrayList<>();
-      final IndexableField field = createField(sf, value, boost);
+      final IndexableField field = createField(sf, value);
       fields.add(field);
       
       if (sf.multiValued()) {
@@ -677,7 +659,7 @@ public class TrieField extends NumericFieldType {
       
       return fields;
     } else {
-      return Collections.singletonList(createField(sf, value, boost));
+      return Collections.singletonList(createField(sf, value));
     }
   }
 
@@ -708,9 +690,6 @@ public class TrieField extends NumericFieldType {
     return null;
   }
 
-  @Override
-  public void checkSchemaField(final SchemaField field) {
-  }
 }
 
 class TrieDateFieldSource extends LongFieldSource {

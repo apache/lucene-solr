@@ -59,6 +59,9 @@ import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SolrjNamedThreadFactory;
 
+import static org.apache.solr.common.params.CommonParams.DISTRIB;
+import static org.apache.solr.common.params.CommonParams.ID;
+
 public class FeaturesSelectionStream extends TupleStream implements Expressible{
 
   private static final long serialVersionUID = 1;
@@ -355,7 +358,7 @@ public class FeaturesSelectionStream extends TupleStream implements Expressible{
           if (tuples.size() == numTerms) break;
           index++;
           Map map = new HashMap();
-          map.put("id", featureSet + "_" + index);
+          map.put(ID, featureSet + "_" + index);
           map.put("index_i", index);
           map.put("term_s", termScore.getKey());
           map.put("score_f", termScore.getValue());
@@ -413,7 +416,7 @@ public class FeaturesSelectionStream extends TupleStream implements Expressible{
       ModifiableSolrParams params = new ModifiableSolrParams();
       HttpSolrClient solrClient = cache.getHttpSolrClient(baseUrl);
 
-      params.add("distrib", "false");
+      params.add(DISTRIB, "false");
       params.add("fq","{!igain}");
 
       for(String key : paramsMap.keySet()) {

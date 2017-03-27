@@ -59,7 +59,6 @@ import static org.apache.lucene.codecs.compressing.CompressingTermVectorsWriter.
 import static org.apache.lucene.codecs.compressing.CompressingTermVectorsWriter.POSITIONS;
 import static org.apache.lucene.codecs.compressing.CompressingTermVectorsWriter.VECTORS_EXTENSION;
 import static org.apache.lucene.codecs.compressing.CompressingTermVectorsWriter.VECTORS_INDEX_EXTENSION;
-import static org.apache.lucene.codecs.compressing.CompressingTermVectorsWriter.VERSION_CHUNK_STATS;
 import static org.apache.lucene.codecs.compressing.CompressingTermVectorsWriter.VERSION_CURRENT;
 import static org.apache.lucene.codecs.compressing.CompressingTermVectorsWriter.VERSION_START;
 
@@ -148,18 +147,14 @@ public final class CompressingTermVectorsReader extends TermVectorsReader implem
       assert CodecUtil.indexHeaderLength(codecNameDat, segmentSuffix) == vectorsStream.getFilePointer();
       
       long pos = vectorsStream.getFilePointer();
-      
-      if (version >= VERSION_CHUNK_STATS) {
-        vectorsStream.seek(maxPointer);
-        numChunks = vectorsStream.readVLong();
-        numDirtyChunks = vectorsStream.readVLong();
-        if (numDirtyChunks > numChunks) {
-          throw new CorruptIndexException("invalid chunk counts: dirty=" + numDirtyChunks + ", total=" + numChunks, vectorsStream);
-        }
-      } else {
-        numChunks = numDirtyChunks = -1;
+
+      vectorsStream.seek(maxPointer);
+      numChunks = vectorsStream.readVLong();
+      numDirtyChunks = vectorsStream.readVLong();
+      if (numDirtyChunks > numChunks) {
+        throw new CorruptIndexException("invalid chunk counts: dirty=" + numDirtyChunks + ", total=" + numChunks, vectorsStream);
       }
-      
+
       // NOTE: data file is too costly to verify checksum against all the bytes on open,
       // but for now we at least verify proper structure of the checksum footer: which looks
       // for FOOTER_MAGIC + algorithmID. This is cheap and can detect some forms of corruption

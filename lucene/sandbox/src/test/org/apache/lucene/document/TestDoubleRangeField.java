@@ -30,11 +30,11 @@ public class TestDoubleRangeField extends LuceneTestCase {
     IllegalArgumentException expected;
 
     expected = expectThrows(IllegalArgumentException.class, () ->
-        doc.add(new DoubleRangeField(FIELD_NAME, new double[] {Double.NaN}, new double[] {5})));
+        doc.add(new DoubleRange(FIELD_NAME, new double[] {Double.NaN}, new double[] {5})));
     assertTrue(expected.getMessage().contains("invalid min value"));
 
     expected = expectThrows(IllegalArgumentException.class, () ->
-        doc.add(new DoubleRangeField(FIELD_NAME, new double[] {5}, new double[] {Double.NaN})));
+        doc.add(new DoubleRange(FIELD_NAME, new double[] {5}, new double[] {Double.NaN})));
     assertTrue(expected.getMessage().contains("invalid max value"));
   }
 
@@ -43,7 +43,7 @@ public class TestDoubleRangeField extends LuceneTestCase {
     Document doc = new Document();
     IllegalArgumentException expected;
     expected = expectThrows(IllegalArgumentException.class, () ->
-        doc.add(new DoubleRangeField(FIELD_NAME, new double[] {5, 6}, new double[] {5})));
+        doc.add(new DoubleRange(FIELD_NAME, new double[] {5, 6}, new double[] {5})));
     assertTrue(expected.getMessage().contains("min/max ranges must agree"));
   }
 
@@ -52,7 +52,7 @@ public class TestDoubleRangeField extends LuceneTestCase {
     Document doc = new Document();
     IllegalArgumentException expected;
     expected = expectThrows(IllegalArgumentException.class, () ->
-        doc.add(new DoubleRangeField(FIELD_NAME, new double[] {1, 2, 3, 4, 5}, new double[] {5})));
+        doc.add(new DoubleRange(FIELD_NAME, new double[] {1, 2, 3, 4, 5}, new double[] {5})));
     assertTrue(expected.getMessage().contains("does not support greater than 4 dimensions"));
   }
 
@@ -61,7 +61,7 @@ public class TestDoubleRangeField extends LuceneTestCase {
     Document doc = new Document();
     IllegalArgumentException expected;
     expected = expectThrows(IllegalArgumentException.class, () ->
-      doc.add(new DoubleRangeField(FIELD_NAME, new double[] {3, 4}, new double[] {1, 2})));
+      doc.add(new DoubleRange(FIELD_NAME, new double[] {3, 4}, new double[] {1, 2})));
     assertTrue(expected.getMessage().contains("is greater than max value"));
   }
 }

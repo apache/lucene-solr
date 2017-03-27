@@ -521,7 +521,7 @@ public abstract class DocValuesConsumer implements Closeable {
     }
     
     // step 2: create ordinal map (this conceptually does the "merging")
-    final OrdinalMap map = OrdinalMap.build(this, liveTerms, weights, PackedInts.COMPACT);
+    final OrdinalMap map = OrdinalMap.build(null, liveTerms, weights, PackedInts.COMPACT);
     
     // step 3: add field
     addSortedField(fieldInfo,
@@ -689,7 +689,7 @@ public abstract class DocValuesConsumer implements Closeable {
     }
     
     // step 2: create ordinal map (this conceptually does the "merging")
-    final OrdinalMap map = OrdinalMap.build(this, liveTerms, weights, PackedInts.COMPACT);
+    final OrdinalMap map = OrdinalMap.build(null, liveTerms, weights, PackedInts.COMPACT);
     
     // step 3: add field
     addSortedSetField(mergeFieldInfo,

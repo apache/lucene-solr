@@ -159,16 +159,6 @@ public class ParallelLeafReader extends LeafReader {
     return buffer.append(')').toString();
   }
 
-  @Override
-  public void addCoreClosedListener(CoreClosedListener listener) {
-    addCoreClosedListenerAsReaderClosedListener(this, listener);
-  }
-
-  @Override
-  public void removeCoreClosedListener(CoreClosedListener listener) {
-    removeCoreClosedListenerAsReaderClosedListener(this, listener);
-  }
-
   // Single instance of this, per ParallelReader instance
   private final class ParallelFields extends Fields {
     final Map<String,Terms> fields = new TreeMap<>();
@@ -241,6 +231,32 @@ public class ParallelLeafReader extends LeafReader {
     }
   }
   
+  @Override
+  public CacheHelper getCoreCacheHelper() {
+    // ParallelReader instances can be short-lived, which would make caching trappy
+    // so we do not cache on them, unless they wrap a single reader in which
+    // case we delegate
+    if (parallelReaders.length == 1
+        && storedFieldsReaders.length == 1
+        && parallelReaders[0] == storedFieldsReaders[0]) {
+      return parallelReaders[0].getCoreCacheHelper();
+    }
+    return null;
+  }
+
+  @Override
+  public CacheHelper getReaderCacheHelper() {
+    // ParallelReader instances can be short-lived, which would make caching trappy
+    // so we do not cache on them, unless they wrap a single reader in which
+    // case we delegate
+    if (parallelReaders.length == 1
+        && storedFieldsReaders.length == 1
+        && parallelReaders[0] == storedFieldsReaders[0]) {
+      return parallelReaders[0].getReaderCacheHelper();
+    }
+    return null;
+  }
+
   @Override
   public Fields getTermVectors(int docID) throws IOException {
     ensureOpen();

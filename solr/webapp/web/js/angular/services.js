@@ -34,6 +34,7 @@ solrAdminServices.factory('System',
     "deleteAlias": {params:{action: "DELETEALIAS"}},
     "deleteReplica": {params:{action: "DELETEREPLICA"}},
     "addReplica": {params:{action: "ADDREPLICA"}},
+    "deleteShard": {params:{action: "DELETESHARD"}},
     "reload": {method: "GET", params:{action:"RELOAD", core: "@core"}},
     "optimize": {params:{}}
     });

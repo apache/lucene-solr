@@ -552,7 +552,12 @@ public class AtomicUpdatesTest extends SolrTestCaseJ4 {
 
     assertU(commit());
 
-    assertQ(req("q", "dateRemove:*", "indent", "true"), "//result[@numFound = '4']");
+    boolean isPointField = h.getCore().getLatestSchema().getField("dateRemove").getType().isPointField();
+    if (isPointField) {
+      assertQ(req("q", "dateRemove:[* TO *]", "indent", "true"), "//result[@numFound = '4']");
+    } else {
+      assertQ(req("q", "dateRemove:*", "indent", "true"), "//result[@numFound = '4']");
+    }
     assertQ(req("q", "dateRemove:\"2014-09-02T12:00:00Z\"", "indent", "true"), "//result[@numFound = '3']");
 
     doc = new SolrInputDocument();
@@ -565,7 +570,11 @@ public class AtomicUpdatesTest extends SolrTestCaseJ4 {
     assertU(adoc(doc));
     assertU(commit());
 
-    assertQ(req("q", "dateRemove:*", "indent", "true"), "//result[@numFound = '4']");
+    if (isPointField) {
+      assertQ(req("q", "dateRemove:[* TO *]", "indent", "true"), "//result[@numFound = '4']");
+    } else {
+      assertQ(req("q", "dateRemove:*", "indent", "true"), "//result[@numFound = '4']");
+    }
     assertQ(req("q", "dateRemove:\"2014-09-02T12:00:00Z\"", "indent", "true"), "//result[@numFound = '2']");
 
     doc = new SolrInputDocument();
@@ -577,7 +586,11 @@ public class AtomicUpdatesTest extends SolrTestCaseJ4 {
     assertU(adoc(doc));
     assertU(commit());
 
-    assertQ(req("q", "dateRemove:*", "indent", "true"), "//result[@numFound = '4']");
+    if (isPointField) {
+      assertQ(req("q", "dateRemove:[* TO *]", "indent", "true"), "//result[@numFound = '4']");
+    } else {
+      assertQ(req("q", "dateRemove:*", "indent", "true"), "//result[@numFound = '4']");
+    }
     assertQ(req("q", "dateRemove:\"2014-09-02T12:00:00Z\"", "indent", "true"), "//result[@numFound = '1']");
 
     doc = new SolrInputDocument();
@@ -587,7 +600,11 @@ public class AtomicUpdatesTest extends SolrTestCaseJ4 {
     assertU(adoc(doc));
     assertU(commit());
 
-    assertQ(req("q", "dateRemove:*", "indent", "true"), "//result[@numFound = '4']");
+    if (isPointField) {
+      assertQ(req("q", "dateRemove:[* TO *]", "indent", "true"), "//result[@numFound = '4']");
+    } else {
+      assertQ(req("q", "dateRemove:*", "indent", "true"), "//result[@numFound = '4']");
+    }
     assertQ(req("q", "dateRemove:\"2014-09-01T12:00:00Z\"", "indent", "true"), "//result[@numFound = '3']");
   }
   
@@ -1187,7 +1204,6 @@ public class AtomicUpdatesTest extends SolrTestCaseJ4 {
     
   }
 
-  @AwaitsFix(bugUrl="https://issues.apache.org/jira/browse/SOLR-9838")
   public void testAtomicUpdateOfFieldsWithDefaultValue() {
     // both fields have the same default value (42)
     for (String fieldToUpdate : Arrays.asList("intDefault", "intDvoDefault")) {
@@ -1237,7 +1253,7 @@ public class AtomicUpdatesTest extends SolrTestCaseJ4 {
               , "count(//doc/*)=6"
               );
       // do atomic update
-      assertU(adoc(sdoc("id", "7", fieldToUpdate, ImmutableMap.of("inc", -555))));
+      assertU(adoc(sdoc("id", "8", fieldToUpdate, ImmutableMap.of("inc", -555))));
       assertQ(fieldToUpdate + ": RTG after atomic update"
               , req("qt", "/get", "id", "8")
               , "count(//doc)=1"

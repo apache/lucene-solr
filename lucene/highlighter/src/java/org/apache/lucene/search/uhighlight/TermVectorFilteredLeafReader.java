@@ -127,4 +127,14 @@ final class TermVectorFilteredLeafReader extends FilterLeafReader {
     }
 
   }
+
+  @Override
+  public CacheHelper getCoreCacheHelper() {
+    return null;
+  }
+
+  @Override
+  public CacheHelper getReaderCacheHelper() {
+    return null;
+  }
 }

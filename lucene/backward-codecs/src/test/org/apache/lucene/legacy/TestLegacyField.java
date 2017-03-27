@@ -33,7 +33,6 @@ public class TestLegacyField extends LuceneTestCase {
     };
 
     for (Field field : fields) {
-      trySetBoost(field);
       trySetByteValue(field);
       trySetBytesValue(field);
       trySetBytesRefValue(field);
@@ -57,7 +56,6 @@ public class TestLegacyField extends LuceneTestCase {
     };
 
     for (Field field : fields) {
-      trySetBoost(field);
       trySetByteValue(field);
       trySetBytesValue(field);
       trySetBytesRefValue(field);
@@ -81,7 +79,6 @@ public class TestLegacyField extends LuceneTestCase {
     };
 
     for (Field field : fields) {
-      trySetBoost(field);
       trySetByteValue(field);
       trySetBytesValue(field);
       trySetBytesRefValue(field);
@@ -105,7 +102,6 @@ public class TestLegacyField extends LuceneTestCase {
     };
 
     for (Field field : fields) {
-      trySetBoost(field);
       trySetByteValue(field);
       trySetBytesValue(field);
       trySetBytesRefValue(field);
@@ -185,12 +181,6 @@ public class TestLegacyField extends LuceneTestCase {
   private void trySetTokenStreamValue(Field f) {
     expectThrows(IllegalArgumentException.class, () -> {
       f.setTokenStream(new CannedTokenStream(new Token("foo", 0, 3)));
-    });
-  }
-  
-  private void trySetBoost(Field f) {
-    expectThrows(IllegalArgumentException.class, () -> {
-      f.setBoost(5.0f);
     });
   }
 }

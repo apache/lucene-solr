@@ -265,5 +265,15 @@ public class TestMultiTermsEnum extends LuceneTestCase {
         delegate.close();
       }
     }
+
+    @Override
+    public CacheHelper getCoreCacheHelper() {
+      return null;
+    }
+
+    @Override
+    public CacheHelper getReaderCacheHelper() {
+      return null;
+    }
   }
 }

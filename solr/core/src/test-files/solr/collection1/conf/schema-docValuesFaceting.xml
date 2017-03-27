@@ -27,6 +27,7 @@
   <fieldType name="plong" class="solr.LongPointField"/>
   <fieldType name="pdouble" class="solr.DoublePointField"/>
   <fieldType name="pfloat" class="solr.FloatPointField"/>
+  <fieldType name="pdate" class="solr.DatePointField"/>
 
   <field name="id" type="string" indexed="true" stored="true" docValues="false" multiValued="false" required="true"/>
   <field name="id_dv" type="string" indexed="false" stored="false" docValues="true" multiValued="false"
@@ -60,8 +61,8 @@
   <dynamicField name="*_ds_dv" type="double" indexed="true" stored="false" docValues="true" multiValued="true"/>
   <dynamicField name="*_ds_p" type="pdouble" indexed="true" stored="false" docValues="true" multiValued="true"/>
   <dynamicField name="*_dt" type="date" indexed="true" stored="false" docValues="false"/>
-  <dynamicField name="*_dt_dv" type="date" indexed="true" stored="false" docValues="true"/>
-  <dynamicField name="*_dts_dv" type="date" indexed="true" stored="false" docValues="true" multiValued="true"/>
+  <dynamicField name="*_dt_dv" type="${solr.tests.dateClass:pdate}" indexed="true" stored="false" docValues="true"/>
+  <dynamicField name="*_dts_dv" type="${solr.tests.dateClass:pdate}" indexed="true" stored="false" docValues="true" multiValued="true"/>
 
   <defaultSearchField>id</defaultSearchField>
   <uniqueKey>id</uniqueKey>

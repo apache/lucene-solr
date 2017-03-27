@@ -64,7 +64,10 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import static java.util.Collections.singletonMap;
+import static org.apache.solr.common.params.CommonParams.ID;
 import static org.apache.solr.common.params.CommonParams.JSON;
+import static org.apache.solr.common.params.CommonParams.SORT;
+import static org.apache.solr.common.params.CommonParams.VERSION;
 import static org.apache.solr.common.util.Utils.makeMap;
 
 public class BlobHandler extends RequestHandlerBase implements PluginInfoInitialized {
@@ -131,15 +134,15 @@ public class BlobHandler extends RequestHandlerBase implements PluginInfoInitial
         version++;
         String id = blobName + "/" + version;
         Map<String, Object> doc = makeMap(
-            "id", id,
+            ID, id,
             "md5", md5,
             "blobName", blobName,
-            "version", version,
+            VERSION, version,
             "timestamp", new Date(),
             "size", payload.limit(),
             "blob", payload);
         verifyWithRealtimeGet(blobName, version, req, doc);
-        log.info(StrUtils.formatString("inserting new blob {0} ,size {1}, md5 {2}", doc.get("id"), String.valueOf(payload.limit()), md5));
+        log.info(StrUtils.formatString("inserting new blob {0} ,size {1}, md5 {2}", doc.get(ID), String.valueOf(payload.limit()), md5));
         indexMap(req, rsp, doc);
         log.info(" Successfully Added and committed a blob with id {} and size {} ", id, payload.limit());
 
@@ -202,7 +205,7 @@ public class BlobHandler extends RequestHandlerBase implements PluginInfoInitial
             new MapSolrParams((Map) makeMap(
                 "q", StrUtils.formatString(q, blobName, version),
                 "fl", "id,size,version,timestamp,blobName,md5",
-                "sort", "version desc"))
+                SORT, "version desc"))
             , rsp);
       }
     }
@@ -212,7 +215,7 @@ public class BlobHandler extends RequestHandlerBase implements PluginInfoInitial
     for (; ; ) {
       SolrQueryResponse response = new SolrQueryResponse();
       String id = blobName + "/" + version;
-      forward(req, "/get", new MapSolrParams(singletonMap("id", id)), response);
+      forward(req, "/get", new MapSolrParams(singletonMap(ID, id)), response);
       if (response.getValues().get("doc") == null) {
         //ensure that the version does not exist
         return;
@@ -221,7 +224,7 @@ public class BlobHandler extends RequestHandlerBase implements PluginInfoInitial
         version++;
         doc.put("version", version);
         id = blobName + "/" + version;
-        doc.put("id", id);
+        doc.put(ID, id);
       }
     }
 

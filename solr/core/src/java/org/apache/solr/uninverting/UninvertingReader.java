@@ -227,6 +227,15 @@ public class UninvertingReader extends FilterLeafReader {
     protected DirectoryReader doWrapDirectoryReader(DirectoryReader in) throws IOException {
       return new UninvertingDirectoryReader(in, mapping);
     }
+
+    // NOTE: delegating the cache helpers is wrong since this wrapper alters the
+    // content of the reader, it is only fine to do that because Solr ALWAYS
+    // consumes index readers through this wrapper
+
+    @Override
+    public CacheHelper getReaderCacheHelper() {
+      return in.getReaderCacheHelper();
+    }
   }
   
   final Map<String,Type> mapping;
@@ -391,14 +400,18 @@ public class UninvertingReader extends FilterLeafReader {
     return mapping.get(field);
   }
 
+  // NOTE: delegating the cache helpers is wrong since this wrapper alters the
+  // content of the reader, it is only fine to do that because Solr ALWAYS
+  // consumes index readers through this wrapper
+
   @Override
-  public Object getCoreCacheKey() {
-    return in.getCoreCacheKey();
+  public CacheHelper getCoreCacheHelper() {
+    return in.getCoreCacheHelper();
   }
 
   @Override
-  public Object getCombinedCoreAndDeletesKey() {
-    return in.getCombinedCoreAndDeletesKey();
+  public CacheHelper getReaderCacheHelper() {
+    return in.getReaderCacheHelper();
   }
 
   @Override

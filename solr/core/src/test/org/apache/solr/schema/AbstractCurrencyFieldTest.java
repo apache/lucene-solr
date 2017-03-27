@@ -98,7 +98,7 @@ public abstract class AbstractCurrencyFieldTest extends SolrTestCaseJ4 {
     FieldType tmp = amount.getType();
     assertTrue(tmp instanceof CurrencyField);
     String currencyValue = "1.50,EUR";
-    List<IndexableField> fields = amount.createFields(currencyValue, 2);
+    List<IndexableField> fields = amount.createFields(currencyValue);
     assertEquals(fields.size(), 3);
 
     // First field is currency code, second is value, third is stored.

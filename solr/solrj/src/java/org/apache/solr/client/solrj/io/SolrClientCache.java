@@ -22,6 +22,7 @@ import java.lang.invoke.MethodHandles;
 import java.util.Map;
 import java.util.HashMap;
 
+import org.apache.http.client.HttpClient;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
@@ -38,15 +39,27 @@ public class SolrClientCache implements Serializable {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   private final Map<String, SolrClient> solrClients = new HashMap<>();
+  private final HttpClient httpClient;
+
+  public SolrClientCache() {
+    httpClient = null;
+  }
+
+  public SolrClientCache(HttpClient httpClient) {
+    this.httpClient = httpClient;
+  }
 
   public synchronized CloudSolrClient getCloudSolrClient(String zkHost) {
     CloudSolrClient client;
     if (solrClients.containsKey(zkHost)) {
       client = (CloudSolrClient) solrClients.get(zkHost);
     } else {
-      client = new CloudSolrClient.Builder()
-          .withZkHost(zkHost)
-          .build();
+      CloudSolrClient.Builder builder = new CloudSolrClient.Builder()
+          .withZkHost(zkHost);
+      if (httpClient != null) {
+        builder = builder.withHttpClient(httpClient);
+      }
+      client = builder.build();
       client.connect();
       solrClients.put(zkHost, client);
     }
@@ -59,8 +72,11 @@ public class SolrClientCache implements Serializable {
     if (solrClients.containsKey(host)) {
       client = (HttpSolrClient) solrClients.get(host);
     } else {
-      client = new HttpSolrClient.Builder(host)
-          .build();
+      HttpSolrClient.Builder builder = new HttpSolrClient.Builder(host);
+      if (httpClient != null) {
+        builder = builder.withHttpClient(httpClient);
+      }
+      client = builder.build();
       solrClients.put(host, client);
     }
     return client;

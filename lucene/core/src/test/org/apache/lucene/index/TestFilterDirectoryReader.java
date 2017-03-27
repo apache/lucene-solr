@@ -49,6 +49,11 @@ public class TestFilterDirectoryReader extends LuceneTestCase {
     protected DirectoryReader doWrapDirectoryReader(DirectoryReader in) throws IOException {
       return new DummyFilterDirectoryReader(in);
     }
+
+    @Override
+    public CacheHelper getReaderCacheHelper() {
+      return in.getReaderCacheHelper();
+    }
     
   }
 

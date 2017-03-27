@@ -84,11 +84,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.slf4j.MDC;
 
-import static org.apache.solr.common.params.CommonParams.AUTHC_PATH;
-import static org.apache.solr.common.params.CommonParams.AUTHZ_PATH;
-import static org.apache.solr.common.params.CommonParams.COLLECTIONS_HANDLER_PATH;
-import static org.apache.solr.common.params.CommonParams.CONFIGSETS_HANDLER_PATH;
-import static org.apache.solr.common.params.CommonParams.CORES_HANDLER_PATH;
+import static org.apache.solr.common.params.CommonParams.ADMIN_PATHS;
+import static org.apache.solr.common.params.CommonParams.ID;
 
 /**
  * SolrJ client class to communicate with SolrCloud.
@@ -121,7 +118,7 @@ public class CloudSolrClient extends SolrClient {
   private ExecutorService threadPool = ExecutorUtil
       .newMDCAwareCachedThreadPool(new SolrjNamedThreadFactory(
           "CloudSolrClient ThreadPool"));
-  private String idField = "id";
+  private String idField = ID;
   public static final String STATE_VERSION = "_stateVer_";
   private long retryExpiryTime = TimeUnit.NANOSECONDS.convert(3, TimeUnit.SECONDS);//3 seconds or 3 million nanos
   private final Set<String> NON_ROUTABLE_PARAMS;
@@ -903,7 +900,10 @@ public class CloudSolrClient extends SolrClient {
     // TolerantUpdateProcessor
     List<SimpleOrderedMap<String>> toleratedErrors = null; 
     int maxToleratedErrors = Integer.MAX_VALUE;
-      
+
+    // For "adds", "deletes", "deleteByQuery" etc.
+    Map<String, NamedList> versions = new HashMap<>();
+
     for(int i=0; i<response.size(); i++) {
       NamedList shardResponse = (NamedList)response.getVal(i);
       NamedList header = (NamedList)shardResponse.get("responseHeader");      
@@ -935,6 +935,15 @@ public class CloudSolrClient extends SolrClient {
         }
         for (SimpleOrderedMap<String> err : shardTolerantErrors) {
           toleratedErrors.add(err);
+        }
+      }
+      for (String updateType: Arrays.asList("adds", "deletes", "deleteByQuery")) {
+        Object obj = shardResponse.get(updateType);
+        if (obj instanceof NamedList) {
+          NamedList versionsList = versions.containsKey(updateType) ?
+              versions.get(updateType): new NamedList();
+          versionsList.addAll((NamedList)obj);
+          versions.put(updateType, versionsList);
         }
       }
     }
@@ -970,6 +979,9 @@ public class CloudSolrClient extends SolrClient {
         toThrow.setMetadata(metadata);
         throw toThrow;
       }
+    }
+    for (String updateType: versions.keySet()) {
+      condensed.add(updateType, versions.get(updateType));
     }
     condensed.add("responseHeader", cheader);
     return condensed;
@@ -1041,15 +1053,6 @@ public class CloudSolrClient extends SolrClient {
       collection = (reqParams != null) ? reqParams.get("collection", getDefaultCollection()) : getDefaultCollection();
     return requestWithRetryOnStaleState(request, 0, collection);
   }
-  private static final Set<String> ADMIN_PATHS = new HashSet<>(Arrays.asList(
-      CORES_HANDLER_PATH,
-      COLLECTIONS_HANDLER_PATH,
-      CONFIGSETS_HANDLER_PATH,
-      AUTHC_PATH,
-      AUTHZ_PATH,
-      "/v2/cluster/security/authentication",
-      "/v2/cluster/security/authorization"
-      ));
 
   /**
    * As this class doesn't watch external collections on the client side,
@@ -1075,6 +1078,9 @@ public class CloudSolrClient extends SolrClient {
       for (String requestedCollection : requestedCollectionNames) {
         // track the version of state we're using on the client side using the _stateVer_ param
         DocCollection coll = getDocCollection(requestedCollection, null);
+        if (coll == null) {
+          throw new SolrException(ErrorCode.BAD_REQUEST, "Collection not found: " + requestedCollection);
+        }
         int collVer = coll.getZNodeVersion();
         if (coll.getStateFormat()>1) {
           if(requestedCollections == null) requestedCollections = new ArrayList<>(requestedCollectionNames.size());

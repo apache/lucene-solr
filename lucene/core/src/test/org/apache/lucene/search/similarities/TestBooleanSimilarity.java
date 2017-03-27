@@ -106,8 +106,7 @@ public class TestBooleanSimilarity extends LuceneTestCase {
       final int length = TestUtil.nextInt(random(), 1, 100);
       final int position = random().nextInt(length);
       final int numOverlaps = random().nextInt(50);
-      final float boost = random().nextFloat() * 10;
-      FieldInvertState state = new FieldInvertState("foo", position, length, numOverlaps, 100, boost);
+      FieldInvertState state = new FieldInvertState("foo", position, length, numOverlaps, 100);
       assertEquals(
           sim2.computeNorm(state),
           sim1.computeNorm(state),

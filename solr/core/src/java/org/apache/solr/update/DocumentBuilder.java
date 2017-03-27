@@ -16,13 +16,15 @@
  */
 package org.apache.solr.update;
 
+import java.util.Iterator;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Set;
 
 import org.apache.lucene.document.Document;
-import org.apache.lucene.document.Field;
 import org.apache.lucene.document.NumericDocValuesField;
 import org.apache.lucene.index.IndexableField;
+import org.apache.lucene.util.BytesRef;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.SolrInputField;
@@ -34,34 +36,34 @@ import org.apache.solr.schema.SchemaField;
 import com.google.common.collect.Sets;
 
 /**
- *
+ * Builds a Lucene {@link Document} from a {@link SolrInputDocument}.
  */
 public class DocumentBuilder {
+
+  // accessible only for tests
+  static int MIN_LENGTH_TO_MOVE_LAST = Integer.getInteger("solr.docBuilder.minLengthToMoveLast", 4*1024); // internal setting
 
   /**
    * Add a field value to a given document.
    * @param doc Document that the field needs to be added to
    * @param field The schema field object for the field
    * @param val The value for the field to be added
-   * @param boost Boost value for the field
    * @param forInPlaceUpdate Whether the field is to be added for in-place update. If true,
    *        only numeric docValues based fields are added to the document. This can be true
    *        when constructing a Lucene document for writing an in-place update, and we don't need
    *        presence of non-updatable fields (non NDV) in such a document.
    */
-  private static void addField(Document doc, SchemaField field, Object val, float boost, 
+  private static void addField(Document doc, SchemaField field, Object val,
       boolean forInPlaceUpdate) {
     if (val instanceof IndexableField) {
       if (forInPlaceUpdate) {
         assert val instanceof NumericDocValuesField: "Expected in-place update to be done on"
             + " NDV fields only.";
       }
-      // set boost to the calculated compound boost
-      ((Field)val).setBoost(boost);
-      doc.add((Field)val);
+      doc.add((IndexableField)val);
       return;
     }
-    for (IndexableField f : field.getType().createFields(field, val, boost)) {
+    for (IndexableField f : field.getType().createFields(field, val)) {
       if (f != null) { // null fields are not added
         // HACK: workaround for SOLR-9809
         // even though at this point in the code we know the field is single valued and DV only
@@ -72,10 +74,10 @@ public class DocumentBuilder {
         //    assert f instanceof NumericDocValuesField
         if (forInPlaceUpdate) {
           if (f instanceof NumericDocValuesField) {
-            doc.add((Field) f);
+            doc.add(f);
           }
         } else {
-          doc.add((Field) f);
+          doc.add(f);
         }
       }
     }
@@ -126,7 +128,6 @@ public class DocumentBuilder {
     final String uniqueKeyFieldName = null == uniqueKeyField ? null : uniqueKeyField.getName();
     
     Document out = new Document();
-    final float docBoost = doc.getDocumentBoost();
     Set<String> usedFields = Sets.newHashSet();
     
     // Load fields from SolrDocument to Document
@@ -141,19 +142,6 @@ public class DocumentBuilder {
             "ERROR: "+getID(doc, schema)+"multiple values encountered for non multiValued field " + 
               sfield.getName() + ": " +field.getValue() );
       }
-      
-      float fieldBoost = field.getBoost();
-      boolean applyBoost = sfield != null && sfield.indexed() && !sfield.omitNorms();
-
-      if (applyBoost == false && fieldBoost != 1.0F) {
-        throw new SolrException( SolrException.ErrorCode.BAD_REQUEST,
-            "ERROR: "+getID(doc, schema)+"cannot set an index-time boost, unindexed or norms are omitted for field " + 
-              sfield.getName() + ": " +field.getValue() );
-      }
-
-      // Lucene no longer has a native docBoost, so we have to multiply 
-      // it ourselves 
-      float compoundBoost = fieldBoost * docBoost;
 
       List<CopyField> copyFields = schema.getCopyFieldsList(name);
       if( copyFields.size() == 0 ) copyFields = null;
@@ -168,7 +156,7 @@ public class DocumentBuilder {
           hasField = true;
           if (sfield != null) {
             used = true;
-            addField(out, sfield, v, applyBoost ? compoundBoost : 1f, 
+            addField(out, sfield, v,
                      name.equals(uniqueKeyFieldName) ? false : forInPlaceUpdate);
             // record the field as having a value
             usedFields.add(sfield.getName());
@@ -200,27 +188,13 @@ public class DocumentBuilder {
                   val = cf.getLimitedValue((String)val);
                 }
 
-                // we can't copy any boost unless the dest field is 
-                // indexed & !omitNorms, but which boost we copy depends
-                // on whether the dest field already contains values (we
-                // don't want to apply the compounded docBoost more then once)
-                final float destBoost = 
-                    (destinationField.indexed() && !destinationField.omitNorms()) ?
-                        (destHasValues ? fieldBoost : compoundBoost) : 1.0F;
-
-                addField(out, destinationField, val, destBoost, 
+                addField(out, destinationField, val,
                          destinationField.getName().equals(uniqueKeyFieldName) ? false : forInPlaceUpdate);
                 // record the field as having a value
                 usedFields.add(destinationField.getName());
               }
             }
           }
-
-          // The final boost for a given field named is the product of the 
-          // *all* boosts on values of that field. 
-          // For multi-valued fields, we only want to set the boost on the
-          // first field.
-          fieldBoost = compoundBoost = 1.0f;
         }
       }
       catch( SolrException ex ) {
@@ -250,7 +224,7 @@ public class DocumentBuilder {
       for (SchemaField field : schema.getRequiredFields()) {
         if (out.getField(field.getName() ) == null) {
           if (field.getDefaultValue() != null) {
-            addField(out, field, field.getDefaultValue(), 1.0f, false);
+            addField(out, field, field.getDefaultValue(), false);
           } 
           else {
             String msg = getID(doc, schema) + "missing required field: " + field.getName();
@@ -259,6 +233,58 @@ public class DocumentBuilder {
         }
       }
     }
+
+    if (!forInPlaceUpdate) {
+      moveLargestFieldLast(out);
+    }
+    
     return out;
+  }
+
+  /** Move the largest stored field last, because Lucene can avoid loading that one if it's not needed. */
+  private static void moveLargestFieldLast(Document doc) {
+    String largestField = null;
+    int largestFieldLen = -1;
+    boolean largestIsLast = true;
+    for (IndexableField field : doc) {
+      if (!field.fieldType().stored()) {
+        continue;
+      }
+      if (largestIsLast && !field.name().equals(largestField)) {
+        largestIsLast = false;
+      }
+      if (field.numericValue() != null) { // just ignore these as non-competitive (avoid toString'ing their number)
+        continue;
+      }
+      String strVal = field.stringValue();
+      if (strVal != null) {
+        if (strVal.length() > largestFieldLen) {
+          largestField = field.name();
+          largestFieldLen = strVal.length();
+          largestIsLast = true;
+        }
+      } else {
+        BytesRef bytesRef = field.binaryValue();
+        if (bytesRef != null && bytesRef.length > largestFieldLen) {
+          largestField = field.name();
+          largestFieldLen = bytesRef.length;
+          largestIsLast = true;
+        }
+      }
+    }
+    if (!largestIsLast && largestField != null && largestFieldLen > MIN_LENGTH_TO_MOVE_LAST) { // only bother if the value isn't tiny
+      LinkedList<IndexableField> addToEnd = new LinkedList<>();
+      Iterator<IndexableField> iterator = doc.iterator();
+      while (iterator.hasNext()) {
+        IndexableField field = iterator.next();
+        if (field.name().equals(largestField)) {
+          addToEnd.add(field);
+          iterator.remove(); // Document may not have "remove" but it's iterator allows mutation
+        }
+      }
+      for (IndexableField field : addToEnd) {
+        doc.add(field);
+      }
+    }
   }
 }

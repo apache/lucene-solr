@@ -78,10 +78,9 @@ public abstract class FieldValueMutatingUpdateProcessor
           log.debug("replace value from field '{}': {} with {}", 
                     new Object[] { src.getName(), srcVal, destVal });
         }
-        result.addValue(destVal, 1.0F);
+        result.addValue(destVal);
       }
     }
-    result.setBoost(src.getBoost());
     return 0 == result.getValueCount() ? null : result;
   }
 

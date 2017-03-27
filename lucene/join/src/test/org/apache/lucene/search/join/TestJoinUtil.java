@@ -267,7 +267,7 @@ public class TestJoinUtil extends LuceneTestCase {
       values[i] = DocValues.getSorted(leafReader, joinField);
     }
     MultiDocValues.OrdinalMap ordinalMap = MultiDocValues.OrdinalMap.build(
-        r.getCoreCacheKey(), values, PackedInts.DEFAULT
+        null, values, PackedInts.DEFAULT
     );
 
     Query toQuery = new TermQuery(new Term(typeField, "price"));
@@ -372,7 +372,7 @@ public class TestJoinUtil extends LuceneTestCase {
       values[i] = DocValues.getSorted(leafReader, joinField);
     }
     MultiDocValues.OrdinalMap ordinalMap = MultiDocValues.OrdinalMap.build(
-        r.getCoreCacheKey(), values, PackedInts.DEFAULT
+        null, values, PackedInts.DEFAULT
     );
 
     Query toQuery = new TermQuery(new Term("price", "5.0"));
@@ -500,7 +500,7 @@ public class TestJoinUtil extends LuceneTestCase {
       values[leadContext.ord] = DocValues.getSorted(leadContext.reader(), "join_field");
     }
     MultiDocValues.OrdinalMap ordinalMap = MultiDocValues.OrdinalMap.build(
-        searcher.getIndexReader().getCoreCacheKey(), values, PackedInts.DEFAULT
+        null, values, PackedInts.DEFAULT
     );
     BooleanQuery.Builder fromQuery = new BooleanQuery.Builder();
     fromQuery.add(priceQuery, BooleanClause.Occur.MUST);
@@ -621,7 +621,7 @@ public class TestJoinUtil extends LuceneTestCase {
       values[leadContext.ord] = DocValues.getSorted(leadContext.reader(), "join_field");
     }
     MultiDocValues.OrdinalMap ordinalMap = MultiDocValues.OrdinalMap.build(
-        searcher.getIndexReader().getCoreCacheKey(), values, PackedInts.DEFAULT
+        null, values, PackedInts.DEFAULT
     );
     Query fromQuery = new TermQuery(new Term("type", "from"));
     Query toQuery = new TermQuery(new Term("type", "to"));
@@ -1336,7 +1336,7 @@ public class TestJoinUtil extends LuceneTestCase {
         values[leadContext.ord] = DocValues.getSorted(leadContext.reader(), "join_field");
       }
       context.ordinalMap = MultiDocValues.OrdinalMap.build(
-          topLevelReader.getCoreCacheKey(), values, PackedInts.DEFAULT
+          null, values, PackedInts.DEFAULT
       );
     }
 

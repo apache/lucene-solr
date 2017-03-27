@@ -22,6 +22,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 import org.apache.lucene.analysis.Analyzer;
+import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.queries.function.FunctionValues;
 import org.apache.lucene.queries.function.ValueSource;
@@ -162,7 +163,11 @@ public class RptWithGeometrySpatialField extends AbstractSpatialFieldType<Compos
           }
           docId = doc;
           //lookup in cache
-          PerSegCacheKey key = new PerSegCacheKey(readerContext.reader().getCoreCacheKey(), doc);
+          IndexReader.CacheHelper cacheHelper = readerContext.reader().getCoreCacheHelper();
+          if (cacheHelper == null) {
+            throw new IllegalStateException("Leaf " + readerContext.reader() + " is not suited for caching");
+          }
+          PerSegCacheKey key = new PerSegCacheKey(cacheHelper.getKey(), doc);
           shape = cache.get(key);
           if (shape == null) {
             shape = (Shape) targetFuncValues.objectVal(doc);

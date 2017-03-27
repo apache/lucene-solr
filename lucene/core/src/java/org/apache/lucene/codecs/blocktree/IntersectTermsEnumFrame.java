@@ -77,8 +77,6 @@ final class IntersectTermsEnumFrame {
   int transitionIndex;
   int transitionCount;
 
-  final boolean versionAutoPrefix;
-
   FST.Arc<BytesRef> arc;
 
   final BlockTermState termState;
@@ -116,7 +114,6 @@ final class IntersectTermsEnumFrame {
     this.termState = ite.fr.parent.postingsReader.newTermState();
     this.termState.totalTermFreq = -1;
     this.longs = new long[ite.fr.longsSize];
-    this.versionAutoPrefix = ite.fr.parent.anyAutoPrefixTerms;
   }
 
   void loadNextFloorBlock() throws IOException {
@@ -252,64 +249,17 @@ final class IntersectTermsEnumFrame {
     assert nextEnt != -1 && nextEnt < entCount: "nextEnt=" + nextEnt + " entCount=" + entCount + " fp=" + fp;
     nextEnt++;
     final int code = suffixesReader.readVInt();
-    if (versionAutoPrefix == false) {
-      suffix = code >>> 1;
-      startBytePos = suffixesReader.getPosition();
-      suffixesReader.skipBytes(suffix);
-      if ((code & 1) == 0) {
-        // A normal term
-        termState.termBlockOrd++;
-        return false;
-      } else {
-        // A sub-block; make sub-FP absolute:
-        lastSubFP = fp - suffixesReader.readVLong();
-        return true;
-      }
+    suffix = code >>> 1;
+    startBytePos = suffixesReader.getPosition();
+    suffixesReader.skipBytes(suffix);
+    if ((code & 1) == 0) {
+      // A normal term
+      termState.termBlockOrd++;
+      return false;
     } else {
-      suffix = code >>> 2;
-      startBytePos = suffixesReader.getPosition();
-      suffixesReader.skipBytes(suffix);
-      switch (code & 3) {
-      case 0:
-        // A normal term
-        isAutoPrefixTerm = false;
-        termState.termBlockOrd++;
-        return false;
-      case 1:
-        // A sub-block; make sub-FP absolute:
-        isAutoPrefixTerm = false;
-        lastSubFP = fp - suffixesReader.readVLong();
-        return true;
-      case 2:
-        // A normal prefix term, suffix leads with empty string
-        floorSuffixLeadStart = -1;
-        termState.termBlockOrd++;
-        floorSuffixLeadEnd = suffixesReader.readByte() & 0xff;
-        if (floorSuffixLeadEnd == 0xff) {
-          floorSuffixLeadEnd = -1;
-        }
-        isAutoPrefixTerm = true;
-        return false;
-      case 3:
-        // A floor'd prefix term, suffix leads with real byte
-        if (suffix == 0) {
-          // TODO: this is messy, but necessary because we are an auto-prefix term, but our suffix is the empty string here, so we have to
-          // look at the parent block to get the lead suffix byte:
-          assert ord > 0;
-          IntersectTermsEnumFrame parent = ite.stack[ord-1];
-          floorSuffixLeadStart = parent.suffixBytes[parent.startBytePos+parent.suffix-1] & 0xff;
-        } else {
-          floorSuffixLeadStart = suffixBytes[startBytePos+suffix-1] & 0xff;
-        }
-        termState.termBlockOrd++;
-        isAutoPrefixTerm = true;
-        floorSuffixLeadEnd = suffixesReader.readByte() & 0xff;
-        return false;
-      default:
-        // Silly javac:
-        assert false;
-        return false;
-      }
+      // A sub-block; make sub-FP absolute:
+      lastSubFP = fp - suffixesReader.readVLong();
+      return true;
     }
   }
 

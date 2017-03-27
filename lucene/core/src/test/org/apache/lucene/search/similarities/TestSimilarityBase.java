@@ -593,7 +593,6 @@ public class TestSimilarityBase extends LuceneTestCase {
     FieldInvertState state = new FieldInvertState("foo");
     state.setLength(5);
     state.setNumOverlap(2);
-    state.setBoost(3);
     assertEquals(expected.computeNorm(state), actual.computeNorm(state));
     expected.setDiscountOverlaps(true);
     actual.setDiscountOverlaps(true);

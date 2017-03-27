@@ -37,6 +37,8 @@ import org.apache.solr.client.solrj.io.stream.expr.StreamExpressionParameter;
 import org.apache.solr.client.solrj.io.stream.expr.StreamExpressionValue;
 import org.apache.solr.client.solrj.io.stream.expr.StreamFactory;
 
+import static org.apache.solr.common.params.CommonParams.ID;
+
 /**
 *  The ModelStream retrieves a stored model from a Solr Cloud collection.
 *
@@ -87,7 +89,7 @@ public class ModelStream extends TupleStream implements Expressible {
       }
     }
 
-    String modelID = params.get("id");
+    String modelID = params.get(ID);
     if (modelID == null) {
       throw new IOException("id param cannot be null for ModelStream");
     }
@@ -133,7 +135,7 @@ public class ModelStream extends TupleStream implements Expressible {
 
     // zkHost
     expression.addParameter(new StreamExpressionNamedParameter("zkHost", zkHost));
-    expression.addParameter(new StreamExpressionNamedParameter("id", modelID));
+    expression.addParameter(new StreamExpressionNamedParameter(ID, modelID));
     expression.addParameter(new StreamExpressionNamedParameter("cacheMillis", Long.toString(cacheMillis)));
 
     return expression;

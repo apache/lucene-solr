@@ -16,6 +16,11 @@
  */
 package org.apache.solr.handler;
 
+import java.io.IOException;
+import java.lang.invoke.MethodHandles;
+import java.nio.charset.Charset;
+import java.util.List;
+
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.request.UpdateRequest;
@@ -25,14 +30,10 @@ import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.update.CdcrUpdateLog;
 import org.apache.solr.update.UpdateLog;
 import org.apache.solr.update.processor.CdcrUpdateProcessor;
-import org.apache.solr.update.processor.DistributedUpdateProcessor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.IOException;
-import java.lang.invoke.MethodHandles;
-import java.nio.charset.Charset;
-import java.util.List;
+import static org.apache.solr.common.params.CommonParams.VERSION_FIELD;
 
 /**
  * The replication logic. Given a {@link org.apache.solr.handler.CdcrReplicatorState}, it reads all the new entries
@@ -183,14 +184,14 @@ public class CdcrReplicator implements Runnable {
       case UpdateLog.DELETE: {
         byte[] idBytes = (byte[]) entry.get(2);
         req.deleteById(new String(idBytes, Charset.forName("UTF-8")));
-        req.setParam(DistributedUpdateProcessor.VERSION_FIELD, Long.toString(version));
+        req.setParam(VERSION_FIELD, Long.toString(version));
         return req;
       }
 
       case UpdateLog.DELETE_BY_QUERY: {
         String query = (String) entry.get(2);
         req.deleteByQuery(query);
-        req.setParam(DistributedUpdateProcessor.VERSION_FIELD, Long.toString(version));
+        req.setParam(VERSION_FIELD, Long.toString(version));
         return req;
       }
 

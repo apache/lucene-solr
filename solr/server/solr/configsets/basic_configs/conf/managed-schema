@@ -71,14 +71,14 @@
      indexed: true if this field should be indexed (searchable or sortable)
      stored: true if this field should be retrievable
      docValues: true if this field should have doc values. Doc values are
-       useful for faceting, grouping, sorting and function queries. Although not
-       required, doc values will make the index faster to load, more
-       NRT-friendly and more memory-efficient. They however come with some
-       limitations: they are currently only supported by StrField, UUIDField
-       and all Trie*Fields, and depending on the field type, they might
-       require the field to be single-valued, be required or have a default
-       value (check the documentation of the field type you're interested in
-       for more information)
+       useful (required, if you are using *Point fields) for faceting, 
+       grouping, sorting and function queries. Doc values will make the index 
+       faster to load, more NRT-friendly and more memory-efficient. 
+       They however come with some limitations: they are currently only 
+       supported by StrField, UUIDField, all Trie*Fields and *PointFields,
+       and depending on the field type, they might require the field to be
+       single-valued, be required or have a default value (check the
+       documentation of the field type you're interested in for more information)
      multiValued: true if this field may contain multiple values per document
      omitNorms: (expert) set to true to omit the norms associated with
        this field (this disables length normalization and index-time
@@ -148,15 +148,24 @@
     <dynamicField name="*_d"  type="double" indexed="true"  stored="true"/>
     <dynamicField name="*_ds" type="doubles" indexed="true"  stored="true"/>
 
-    <!-- Type used to index the lat and lon components for the "location" FieldType -->
-    <dynamicField name="*_coordinate"  type="tdouble" indexed="true"  stored="false" useDocValuesAsStored="false" />
-
     <dynamicField name="*_dt"  type="date"    indexed="true"  stored="true"/>
     <dynamicField name="*_dts" type="date"    indexed="true"  stored="true" multiValued="true"/>
     <dynamicField name="*_p"  type="location" indexed="true" stored="true"/>
     <dynamicField name="*_srpt"  type="location_rpt" indexed="true" stored="true"/>
+    
+    <!-- KD-tree (point) numerics -->
+    <dynamicField name="*_pi" type="pint"    indexed="true"  stored="true"/>
+    <dynamicField name="*_pis" type="pints"    indexed="true"  stored="true"/>
+    <dynamicField name="*_pl" type="plong"   indexed="true"  stored="true"/>
+    <dynamicField name="*_pls" type="plongs"   indexed="true"  stored="true"/>
+    <dynamicField name="*_pf" type="pfloat"  indexed="true"  stored="true"/>
+    <dynamicField name="*_pfs" type="pfloats"  indexed="true"  stored="true"/>
+    <dynamicField name="*_pd" type="pdouble" indexed="true"  stored="true"/>
+    <dynamicField name="*_pds" type="pdoubles" indexed="true"  stored="true"/>
+    <dynamicField name="*_pdt" type="pdate"  indexed="true"  stored="true"/>
+    <dynamicField name="*_pdts" type="pdates"  indexed="true"  stored="true"/>
 
-    <!-- some trie-coded dynamic fields for faster range queries -->
+    <!-- some trie-coded dynamic fields -->
     <dynamicField name="*_ti" type="tint"    indexed="true"  stored="true"/>
     <dynamicField name="*_tis" type="tints"    indexed="true"  stored="true"/>
     <dynamicField name="*_tl" type="tlong"   indexed="true"  stored="true"/>
@@ -219,8 +228,8 @@
     <!-- sortMissingLast and sortMissingFirst attributes are optional attributes are
          currently supported on types that are sorted internally as strings
          and on numeric types.
-	     This includes "string","boolean", and, as of 3.5 (and 4.x),
-	     int, float, long, date, double, including the "Trie" variants.
+	     This includes "string","boolean", "int", "float", "long", "date", "double",
+	     including the "Trie" and "Point" variants.
        - If sortMissingLast="true", then a sort on this field will cause documents
          without the field to come after documents with the field,
          regardless of the requested sort order (asc or desc).
@@ -230,13 +239,26 @@
        - If sortMissingLast="false" and sortMissingFirst="false" (the default),
          then default lucene sorting will be used which places docs without the
          field first in an ascending sort and last in a descending sort.
-    -->    
+    -->
+    
+    <!--
+      Numeric field types that index values using KD-trees. *Point fields are faster and more efficient than Trie* fields both, at
+      search time and at index time, but some features are still not supported.
+      Point fields don't support FieldCache, so they must have docValues="true" if needed for sorting, faceting, functions, etc.
+    -->
+    <fieldType name="pint" class="solr.IntPointField" docValues="true"/>
+    <fieldType name="pfloat" class="solr.FloatPointField" docValues="true"/>
+    <fieldType name="plong" class="solr.LongPointField" docValues="true"/>
+    <fieldType name="pdouble" class="solr.DoublePointField" docValues="true"/>
+    
+    <fieldType name="pints" class="solr.IntPointField" docValues="true" multiValued="true"/>
+    <fieldType name="pfloats" class="solr.FloatPointField" docValues="true" multiValued="true"/>
+    <fieldType name="plongs" class="solr.LongPointField" docValues="true" multiValued="true"/>
+    <fieldType name="pdoubles" class="solr.DoublePointField" docValues="true" multiValued="true"/>
 
     <!--
-      Default numeric field types. For faster range queries, consider the tint/tfloat/tlong/tdouble types.
-
-      These fields support doc values, but they require the field to be
-      single-valued and either be required or have a default value.
+      Default numeric field types. For faster range queries, consider *PointFields (pint/pfloat/plong/pdouble), or the 
+      tint/tfloat/tlong/tdouble types.
     -->
     <fieldType name="int" class="solr.TrieIntField" docValues="true" precisionStep="0" positionIncrementGap="0"/>
     <fieldType name="float" class="solr.TrieFloatField" docValues="true" precisionStep="0" positionIncrementGap="0"/>
@@ -257,6 +279,8 @@
      Smaller precisionStep values (specified in bits) will lead to more tokens
      indexed per value, slightly larger index size, and faster range queries.
      A precisionStep of 0 disables indexing at different precision levels.
+     
+     Consider using pint/pfloat/plong/pdouble instead of Trie* fields if possible
     -->
     <fieldType name="tint" class="solr.TrieIntField" docValues="true" precisionStep="8" positionIncrementGap="0"/>
     <fieldType name="tfloat" class="solr.TrieFloatField" docValues="true" precisionStep="8" positionIncrementGap="0"/>
@@ -287,15 +311,15 @@
                       the current day
                       
          Consult the TrieDateField javadocs for more information.
-
-         Note: For faster range queries, consider the tdate type
       -->
+    <!-- KD-tree versions of date fields -->
+    <fieldType name="pdate" class="solr.DatePointField" docValues="true"/>
+    <fieldType name="pdates" class="solr.DatePointField" docValues="true" multiValued="true"/>
+    
     <fieldType name="date" class="solr.TrieDateField" docValues="true" precisionStep="0" positionIncrementGap="0"/>
     <fieldType name="dates" class="solr.TrieDateField" docValues="true" precisionStep="0" positionIncrementGap="0" multiValued="true"/>
 
-    <!-- A Trie based date field for faster date range queries and date faceting. -->
     <fieldType name="tdate" class="solr.TrieDateField" docValues="true" precisionStep="6" positionIncrementGap="0"/>
-
     <fieldType name="tdates" class="solr.TrieDateField" docValues="true" precisionStep="6" positionIncrementGap="0" multiValued="true"/>
 
 
@@ -551,8 +575,8 @@
     <dynamicField name="*_point" type="point"  indexed="true"  stored="true"/>
     <fieldType name="point" class="solr.PointType" dimension="2" subFieldSuffix="_d"/>
 
-    <!-- A specialized field for geospatial search. If indexed, this fieldType must not be multivalued. -->
-    <fieldType name="location" class="solr.LatLonType" subFieldSuffix="_coordinate"/>
+    <!-- A specialized field for geospatial search filters and distance sorting. -->
+    <fieldType name="location" class="solr.LatLonPointSpatialField" docValues="true"/>
 
     <!-- An alternative geospatial field type new to Solr 4.  It supports multiValued and polygon shapes.
       For more information about this and other Spatial fields new to Solr 4, see:

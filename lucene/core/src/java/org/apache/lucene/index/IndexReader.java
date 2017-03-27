@@ -20,7 +20,6 @@ package org.apache.lucene.index;
 import java.io.Closeable;
 import java.io.IOException;
 import java.util.Collections;
-import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.WeakHashMap;
@@ -88,42 +87,48 @@ public abstract class IndexReader implements Closeable {
     if (!(this instanceof CompositeReader || this instanceof LeafReader))
       throw new Error("IndexReader should never be directly extended, subclass LeafReader or CompositeReader instead.");
   }
-  
+
   /**
-   * A custom listener that's invoked when the IndexReader
-   * is closed.
-   *
+   * A utility class that gives hooks in order to help build a cache based on
+   * the data that is contained in this index. 
    * @lucene.experimental
    */
-  public static interface ReaderClosedListener {
-    /** Invoked when the {@link IndexReader} is closed. */
-    public void onClose(IndexReader reader) throws IOException;
+  public static interface CacheHelper {
+
+    /**
+     * Get a key that the resource can be cached on. The given entry can be
+     * compared using identity, ie. {@link Object#equals} is implemented as
+     * {@code ==} and {@link Object#hashCode} is implemented as
+     * {@link System#identityHashCode}.
+     */
+    CacheKey getKey();
+
+    /**
+     * Add a {@link ClosedListener} which will be called when the resource
+     * guarded by {@link #getKey()} is closed.
+     */
+    void addClosedListener(ClosedListener listener);
+
   }
 
-  private final Set<ReaderClosedListener> readerClosedListeners = 
-      Collections.synchronizedSet(new LinkedHashSet<ReaderClosedListener>());
+  /** A cache key identifying a resource that is being cached on. */
+  public static final class CacheKey {
+    CacheKey() {} // only instantiable by core impls
+  }
+
+  /**
+   * A listener that is called when a resource gets closed.
+   * @lucene.experimental
+   */
+  @FunctionalInterface
+  public static interface ClosedListener {
+    /** Invoked when the resource (segment core, or index reader) that is
+     *  being cached on is closed. */
+    void onClose(CacheKey key) throws IOException;
+  }
 
   private final Set<IndexReader> parentReaders = 
       Collections.synchronizedSet(Collections.newSetFromMap(new WeakHashMap<IndexReader,Boolean>()));
-
-  /** Expert: adds a {@link ReaderClosedListener}.  The
-   * provided listener will be invoked when this reader is closed.
-   * At this point, it is safe for apps to evict this reader from
-   * any caches keyed on {@link #getCombinedCoreAndDeletesKey()}.
-   *
-   * @lucene.experimental */
-  public final void addReaderClosedListener(ReaderClosedListener listener) {
-    ensureOpen();
-    readerClosedListeners.add(listener);
-  }
-
-  /** Expert: remove a previously added {@link ReaderClosedListener}.
-   *
-   * @lucene.experimental */
-  public final void removeReaderClosedListener(ReaderClosedListener listener) {
-    ensureOpen();
-    readerClosedListeners.remove(listener);
-  }
   
   /** Expert: This method is called by {@code IndexReader}s which wrap other readers
    * (e.g. {@link CompositeReader} or {@link FilterLeafReader}) to register the parent
@@ -136,21 +141,10 @@ public abstract class IndexReader implements Closeable {
     parentReaders.add(reader);
   }
 
-  private void notifyReaderClosedListeners(Throwable th) throws IOException {
-    synchronized(readerClosedListeners) {
-      for(ReaderClosedListener listener : readerClosedListeners) {
-        try {
-          listener.onClose(this);
-        } catch (Throwable t) {
-          if (th == null) {
-            th = t;
-          } else {
-            th.addSuppressed(t);
-          }
-        }
-      }
-      IOUtils.reThrow(th);
-    }
+  // overridden by StandardDirectoryReader and SegmentReader
+  void notifyReaderClosedListeners(Throwable th) throws IOException {
+    // nothing to notify in the base impl, just rethrow
+    IOUtils.reThrow(th);
   }
 
   private void reportCloseToParentReaders() {
@@ -279,10 +273,8 @@ public abstract class IndexReader implements Closeable {
   }
   
   /** {@inheritDoc}
-   * <p>For caching purposes, {@code IndexReader} subclasses are not allowed
+   * <p>{@code IndexReader} subclasses are not allowed
    * to implement equals/hashCode, so methods are declared final.
-   * To lookup instances from caches use {@link #getCoreCacheKey} and 
-   * {@link #getCombinedCoreAndDeletesKey}.
    */
   @Override
   public final boolean equals(Object obj) {
@@ -290,10 +282,8 @@ public abstract class IndexReader implements Closeable {
   }
   
   /** {@inheritDoc}
-   * <p>For caching purposes, {@code IndexReader} subclasses are not allowed
+   * <p>{@code IndexReader} subclasses are not allowed
    * to implement equals/hashCode, so methods are declared final.
-   * To lookup instances from caches use {@link #getCoreCacheKey} and 
-   * {@link #getCombinedCoreAndDeletesKey}.
    */
   @Override
   public final int hashCode() {
@@ -436,24 +426,17 @@ public abstract class IndexReader implements Closeable {
     return getContext().leaves();
   }
 
-  /** Expert: Returns a key for this IndexReader, so CachingWrapperFilter can find
-   * it again.
-   * This key must not have equals()/hashCode() methods, so &quot;equals&quot; means &quot;identical&quot;. */
-  public Object getCoreCacheKey() {
-    // Don't call ensureOpen since FC calls this (to evict)
-    // on close
-    return this;
-  }
+  /**
+   * Optional method: Return a {@link CacheHelper} that can be used to cache
+   * based on the content of this reader. Two readers that have different data
+   * or different sets of deleted documents will be considered different.
+   * <p>A return value of {@code null} indicates that this reader is not suited
+   * for caching, which is typically the case for short-lived wrappers that
+   * alter the content of the wrapped reader.
+   * @lucene.experimental
+   */
+  public abstract CacheHelper getReaderCacheHelper();
 
-  /** Expert: Returns a key for this IndexReader that also includes deletions,
-   * so CachingWrapperFilter can find it again.
-   * This key must not have equals()/hashCode() methods, so &quot;equals&quot; means &quot;identical&quot;. */
-  public Object getCombinedCoreAndDeletesKey() {
-    // Don't call ensureOpen since FC calls this (to evict)
-    // on close
-    return this;
-  }
-  
   /** Returns the number of documents containing the 
    * <code>term</code>.  This method returns 0 if the term or
    * field does not exists.  This method does not take into

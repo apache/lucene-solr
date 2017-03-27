@@ -66,6 +66,7 @@ public abstract class RequestHandlerBase implements SolrRequestHandler, SolrInfo
   private Meter numTimeouts = new Meter();
   private Counter requests = new Counter();
   private Timer requestTimes = new Timer();
+  private Counter totalTime = new Counter();
 
   private final long handlerStart;
 
@@ -143,6 +144,7 @@ public abstract class RequestHandlerBase implements SolrRequestHandler, SolrInfo
     numTimeouts = manager.meter(registryName, "timeouts", getCategory().toString(), scope);
     requests = manager.counter(registryName, "requests", getCategory().toString(), scope);
     requestTimes = manager.timer(registryName, "requestTimes", getCategory().toString(), scope);
+    totalTime = manager.counter(registryName, "totalTime", getCategory().toString(), scope);
   }
 
   public static SolrParams getSolrParamsFromNamedList(NamedList args, String key) {
@@ -209,7 +211,8 @@ public abstract class RequestHandlerBase implements SolrRequestHandler, SolrInfo
         }
       }
     } finally {
-      timer.stop();
+      long elapsed = timer.stop();
+      totalTime.inc(elapsed);
     }
   }
 
@@ -292,6 +295,8 @@ public abstract class RequestHandlerBase implements SolrRequestHandler, SolrInfo
     lst.add("serverErrors", numServerErrors.getCount());
     lst.add("clientErrors", numClientErrors.getCount());
     lst.add("timeouts", numTimeouts.getCount());
+    // convert totalTime to ms
+    lst.add("totalTime", MetricUtils.nsToMs(totalTime.getCount()));
     MetricUtils.addMetrics(lst, requestTimes);
     return lst;
   }

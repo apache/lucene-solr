@@ -51,6 +51,8 @@ import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SolrjNamedThreadFactory;
 
+import static org.apache.solr.common.params.CommonParams.SORT;
+
 public class GatherNodesStream extends TupleStream implements Expressible {
 
   private String zkHost;
@@ -449,7 +451,7 @@ public class GatherNodesStream extends TupleStream implements Expressible {
       ModifiableSolrParams joinSParams = new ModifiableSolrParams(SolrParams.toMultiMap(new NamedList(queryParams)));
       joinSParams.set("fl", buf.toString());
       joinSParams.set("qt", "/export");
-      joinSParams.set("sort", gather + " asc,"+traverseTo +" asc");
+      joinSParams.set(SORT, gather + " asc,"+traverseTo +" asc");
 
       StringBuffer nodeQuery = new StringBuffer();
 

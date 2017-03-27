@@ -16,6 +16,7 @@
  */
 package org.apache.solr.update.processor;
 
+import static org.apache.solr.common.params.CommonParams.DISTRIB;
 import static org.apache.solr.update.processor.DistributingUpdateProcessorFactory.DISTRIB_UPDATE_PARAM;
 
 import java.io.IOException;
@@ -64,6 +65,7 @@ import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.cloud.ZkCoreNodeProps;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.cloud.ZooKeeperException;
+import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.ShardParams;
 import org.apache.solr.common.params.SolrParams;
@@ -240,8 +242,6 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
   private final UpdateRequestProcessor next;
   private final AtomicUpdateDocumentMerger docMerger;
 
-  public static final String VERSION_FIELD = "_version_";
-
   private final UpdateHandler updateHandler;
   private final UpdateLog ulog;
   private final VersionInfo vinfo;
@@ -279,6 +279,7 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
   // this is set to true in the constructor if the next processors in the chain
   // are custom and may modify the SolrInputDocument racing with its serialization for replication
   private final boolean cloneRequiredOnLeader;
+  private final boolean onlyLeaderIndexes;
 
   public DistributedUpdateProcessor(SolrQueryRequest req, SolrQueryResponse rsp, UpdateRequestProcessor next) {
     this(req, rsp, new AtomicUpdateDocumentMerger(req), next);
@@ -309,7 +310,7 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
     
     // this should always be used - see filterParams
     DistributedUpdateProcessorFactory.addParamToDistributedRequestWhitelist
-      (this.req, UpdateParams.UPDATE_CHAIN, TEST_DISTRIB_SKIP_SERVERS, VERSION_FIELD);
+      (this.req, UpdateParams.UPDATE_CHAIN, TEST_DISTRIB_SKIP_SERVERS, CommonParams.VERSION_FIELD);
     
     CoreDescriptor coreDesc = req.getCore().getCoreDescriptor();
     
@@ -324,8 +325,12 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
     
     if (cloudDesc != null) {
       collection = cloudDesc.getCollectionName();
+      ClusterState cstate = zkController.getClusterState();
+      DocCollection coll = cstate.getCollection(collection);
+      onlyLeaderIndexes = coll.getRealtimeReplicas() == 1;
     } else {
       collection = null;
+      onlyLeaderIndexes = false;
     }
 
     boolean shouldClone = false;
@@ -1026,13 +1031,13 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
     long versionOnUpdate = cmd.getVersion();
 
     if (versionOnUpdate == 0) {
-      SolrInputField versionField = cmd.getSolrInputDocument().getField(VersionInfo.VERSION_FIELD);
+      SolrInputField versionField = cmd.getSolrInputDocument().getField(CommonParams.VERSION_FIELD);
       if (versionField != null) {
         Object o = versionField.getValue();
         versionOnUpdate = o instanceof Number ? ((Number) o).longValue() : Long.parseLong(o.toString());
       } else {
         // Find the version
-        String versionOnUpdateS = req.getParams().get(VERSION_FIELD);
+        String versionOnUpdateS = req.getParams().get(CommonParams.VERSION_FIELD);
         versionOnUpdate = versionOnUpdateS == null ? 0 : Long.parseLong(versionOnUpdateS);
       }
     }
@@ -1079,7 +1084,7 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
               // forwarded from a collection but we are not buffering so strip original version and apply our own
               // see SOLR-5308
               log.info("Removing version field from doc: " + cmd.getPrintableId());
-              cmd.solrDoc.remove(VERSION_FIELD);
+              cmd.solrDoc.remove(CommonParams.VERSION_FIELD);
               versionOnUpdate = 0;
             }
 
@@ -1109,7 +1114,7 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
 
             long version = vinfo.getNewClock();
             cmd.setVersion(version);
-            cmd.getSolrInputDocument().setField(VersionInfo.VERSION_FIELD, version);
+            cmd.getSolrInputDocument().setField(CommonParams.VERSION_FIELD, version);
             bucket.updateHighest(version);
           } else {
             // The leader forwarded us this update.
@@ -1147,7 +1152,7 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
                   // Make this update to become a non-inplace update containing the full document obtained from the leader
                   cmd.solrDoc = ((AddUpdateCommand)fetchedFromLeader).solrDoc;
                   cmd.prevVersion = -1;
-                  cmd.setVersion((long)cmd.solrDoc.getFieldValue(VERSION_FIELD));
+                  cmd.setVersion((long)cmd.solrDoc.getFieldValue(CommonParams.VERSION_FIELD));
                   assert cmd.isInPlaceUpdate() == false;
                 }
               } else {
@@ -1185,6 +1190,9 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
                 // also need to re-apply newer deleteByQuery commands
                 checkDeleteByQueries = true;
               }
+            }
+            if (onlyLeaderIndexes && (cmd.getFlags() & UpdateCommand.REPLAY) == 0) {
+              cmd.setFlags(cmd.getFlags() | UpdateCommand.IGNORE_INDEXWRITER);
             }
           }
         }
@@ -1296,7 +1304,7 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
     String id = inplaceAdd.getPrintableId();
     UpdateShardHandler updateShardHandler = inplaceAdd.getReq().getCore().getCoreDescriptor().getCoreContainer().getUpdateShardHandler();
     ModifiableSolrParams params = new ModifiableSolrParams();
-    params.set("distrib", false);
+    params.set(DISTRIB, false);
     params.set("getInputDocument", id);
     params.set("onlyIfActive", true);
     SolrRequest<SimpleSolrResponse> ur = new GenericSolrRequest(METHOD.GET, "/get", params);
@@ -1346,7 +1354,7 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
 
     AddUpdateCommand cmd = new AddUpdateCommand(req);
     cmd.solrDoc = leaderDoc;
-    cmd.setVersion((long)leaderDoc.getFieldValue(VERSION_FIELD));
+    cmd.setVersion((long)leaderDoc.getFieldValue(CommonParams.VERSION_FIELD));
     return cmd;
   }
   
@@ -1378,7 +1386,7 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
         throw new SolrException(ErrorCode.CONFLICT, "Document not found for update.  id=" + cmd.getPrintableId());
       }
     } else {
-      oldDoc.remove(VERSION_FIELD);
+      oldDoc.remove(CommonParams.VERSION_FIELD);
     }
 
 
@@ -1590,7 +1598,7 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
     if (zkEnabled)  {
       // forward to all replicas
       ModifiableSolrParams params = new ModifiableSolrParams(filterParams(req.getParams()));
-      params.set(VERSION_FIELD, Long.toString(cmd.getVersion()));
+      params.set(CommonParams.VERSION_FIELD, Long.toString(cmd.getVersion()));
       params.set(DISTRIB_UPDATE_PARAM, DistribPhase.FROMLEADER.toString());
       params.set(DISTRIB_FROM, ZkCoreNodeProps.getCoreUrl(
           zkController.getBaseUrl(), req.getCore().getName()));
@@ -1659,7 +1667,7 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
     // Find the version
     long versionOnUpdate = cmd.getVersion();
     if (versionOnUpdate == 0) {
-      String versionOnUpdateS = req.getParams().get(VERSION_FIELD);
+      String versionOnUpdateS = req.getParams().get(CommonParams.VERSION_FIELD);
       versionOnUpdate = versionOnUpdateS == null ? 0 : Long.parseLong(versionOnUpdateS);
     }
     versionOnUpdate = Math.abs(versionOnUpdate);  // normalize to positive version
@@ -1690,6 +1698,10 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
             cmd.setFlags(cmd.getFlags() | UpdateCommand.BUFFERING);
             ulog.deleteByQuery(cmd);
             return;
+          }
+
+          if (onlyLeaderIndexes && (cmd.getFlags() & UpdateCommand.REPLAY) == 0) {
+            cmd.setFlags(cmd.getFlags() | UpdateCommand.IGNORE_INDEXWRITER);
           }
 
           doLocalDelete(cmd);
@@ -1764,7 +1776,7 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
     // Find the version
     long versionOnUpdate = cmd.getVersion();
     if (versionOnUpdate == 0) {
-      String versionOnUpdateS = req.getParams().get(VERSION_FIELD);
+      String versionOnUpdateS = req.getParams().get(CommonParams.VERSION_FIELD);
       versionOnUpdate = versionOnUpdateS == null ? 0 : Long.parseLong(versionOnUpdateS);
     }
     long signedVersionOnUpdate = versionOnUpdate;
@@ -1845,6 +1857,10 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
                 return true;
               }
             }
+
+            if (onlyLeaderIndexes && (cmd.getFlags() & UpdateCommand.REPLAY) == 0) {
+              cmd.setFlags(cmd.getFlags() | UpdateCommand.IGNORE_INDEXWRITER);
+            }
           }
         }
 
@@ -1876,7 +1892,27 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
     }
     
     if (!zkEnabled || req.getParams().getBool(COMMIT_END_POINT, false) || singleLeader) {
-      doLocalCommit(cmd);
+      if (onlyLeaderIndexes) {
+        try {
+          Replica leaderReplica = zkController.getZkStateReader().getLeaderRetry(
+              collection, cloudDesc.getShardId());
+          isLeader = leaderReplica.getName().equals(
+              req.getCore().getCoreDescriptor().getCloudDescriptor()
+                  .getCoreNodeName());
+          if (isLeader) {
+            long commitVersion = vinfo.getNewClock();
+            cmd.setVersion(commitVersion);
+            doLocalCommit(cmd);
+          } else {
+            assert TestInjection.waitForInSyncWithLeader(req.getCore(),
+                zkController, collection, cloudDesc.getShardId());
+          }
+        } catch (InterruptedException e) {
+          throw new SolrException(ErrorCode.SERVICE_UNAVAILABLE, "Exception finding leader for shard " + cloudDesc.getShardId(), e);
+        }
+      } else {
+        doLocalCommit(cmd);
+      }
     } else {
       ModifiableSolrParams params = new ModifiableSolrParams(filterParams(req.getParams()));
       if (!req.getParams().getBool(COMMIT_END_POINT, false)) {
