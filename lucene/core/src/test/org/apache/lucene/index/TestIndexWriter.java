@@ -1153,7 +1153,7 @@ public class TestIndexWriter extends LuceneTestCase {
     t.finish = true;
     t.join();
     if (t.failed) {
-      fail(new String(t.bytesLog.toString("UTF-8")));
+      fail(t.bytesLog.toString("UTF-8"));
     }
   }
 
