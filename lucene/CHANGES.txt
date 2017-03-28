@@ -87,6 +87,9 @@ Other
 * LUCENE-7754: Inner classes should be static whenever possible.
   (Daniel Jelinski via Adrien Grand)
 
+* LUCENE-7751: Avoid boxing primitives only to call compareTo.
+  (Daniel Jelinski via Adrien Grand)
+
 ======================= Lucene 6.5.0 =======================
 
 API Changes
