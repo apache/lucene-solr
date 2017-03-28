@@ -37,6 +37,7 @@ public class WordBreakSpellChecker {
   private int maxCombineWordLength = 20;
   private int maxChanges = 1;
   private int maxEvaluations = 1000;
+  private boolean isWordRequiredOnBothSidesOfBreak = true;
   
   /** Term that can be used to prohibit adjacent terms from being combined */
   public static final Term SEPARATOR_TERM = new Term("", "");
@@ -102,8 +103,19 @@ public class WordBreakSpellChecker {
     }
     
     int queueInitialCapacity = maxSuggestions > 10 ? 10 : maxSuggestions;
-    Comparator<SuggestWordArrayWrapper> queueComparator = sortMethod == BreakSuggestionSortMethod.NUM_CHANGES_THEN_MAX_FREQUENCY ? new LengthThenMaxFreqComparator()
-        : new LengthThenSumFreqComparator();
+    
+    Comparator<SuggestWordArrayWrapper> queueComparator;
+    if (sortMethod == BreakSuggestionSortMethod.NUM_CHANGES_THEN_MAX_FREQUENCY) {
+      if (isWordRequiredOnBothSidesOfBreak)
+        queueComparator = new LengthThenMaxFreqComparator();
+      else
+        queueComparator = new MostRealWordUseThenLengthAndMaxFreqComparator();
+    } else {
+      if (isWordRequiredOnBothSidesOfBreak)
+        queueComparator = new LengthThenSumFreqComparator();
+      else
+        queueComparator = new MostRealWordUseThenLengthAndSumFreqComparator();
+    }
     Queue<SuggestWordArrayWrapper> suggestions = new PriorityQueue<>(
         queueInitialCapacity, queueComparator);
     
@@ -118,7 +130,7 @@ public class WordBreakSpellChecker {
     }
     
     generateBreakUpSuggestions(term, ir, 1, maxSuggestions,
-        useMinSuggestionFrequency, new SuggestWord[0], suggestions, 0,
+        useMinSuggestionFrequency, new SuggestWord[0], new SuggestWord[0], suggestions, 0,
         sortMethod);
     
     SuggestWord[][] suggestionArray = new SuggestWord[suggestions.size()][];
@@ -255,7 +267,7 @@ public class WordBreakSpellChecker {
   
   private int generateBreakUpSuggestions(Term term, IndexReader ir,
       int numberBreaks, int maxSuggestions, int useMinSuggestionFrequency,
-      SuggestWord[] prefix, Queue<SuggestWordArrayWrapper> suggestions,
+      SuggestWord[] prefix, SuggestWord[] suffix, Queue<SuggestWordArrayWrapper> suggestions,
       int totalEvaluations, BreakSuggestionSortMethod sortMethod)
       throws IOException {
     String termText = term.text();
@@ -275,23 +287,77 @@ public class WordBreakSpellChecker {
       String rightText = termText.substring(end);
       SuggestWord leftWord = generateSuggestWord(ir, term.field(), leftText);
       
-      if (leftWord.freq >= useMinSuggestionFrequency) {
+      if (leftWord.freq >= useMinSuggestionFrequency || !isWordRequiredOnBothSidesOfBreak) {
         SuggestWord rightWord = generateSuggestWord(ir, term.field(), rightText);
-        if (rightWord.freq >= useMinSuggestionFrequency) {
+        if (rightWord.freq >= useMinSuggestionFrequency || 
+            (!isWordRequiredOnBothSidesOfBreak && leftWord.freq + rightWord.freq >= useMinSuggestionFrequency)) {
+            //This second if check is to make sure that there aren't consecutive non-words.  It should never fail
+            //while isWordRequiredOnBothSidesOfBreak is set to true.
+            if ((leftWord.freq > 0 || prefix.length == 0 || prefix[prefix.length - 1].freq > 0)
+                && (rightWord.freq > 0 || suffix.length == 0 || suffix[0].freq > 0)) {
+          
           SuggestWordArrayWrapper suggestion = new SuggestWordArrayWrapper(
-              newSuggestion(prefix, leftWord, rightWord));
+                  newSuggestion(prefix, leftWord, rightWord, suffix));
+              //Duplicates are possible due to how we recurse if a "word" is not required on both sides, so if either both sides 
+              //have to be a word, or there are no duplicates, then add it.  We check first to see if a "word" is required on both
+              //sides so that we don't have to check the contains method, for efficiency.
+              if (isWordRequiredOnBothSidesOfBreak || !suggestions.contains(suggestion)) {
           suggestions.offer(suggestion);
           if (suggestions.size() > maxSuggestions) {
             suggestions.poll();
           }
         }        
+            }
+        }        
         int newNumberBreaks = numberBreaks + 1;
         if (newNumberBreaks <= maxChanges) {
-          int evaluations = generateBreakUpSuggestions(new Term(term.field(),
+          SuggestWord[] newPrefix = newPrefix(prefix, leftWord);
+          SuggestWord[] newSuffix = newSuffix(rightWord, suffix);
+          
+          int consecutivePrefixesWithNoFrequency = 0;
+          for (SuggestWord word : newPrefix) {
+            if (word.freq == 0)
+              consecutivePrefixesWithNoFrequency++;
+            else 
+              consecutivePrefixesWithNoFrequency = 0;
+            
+            if (consecutivePrefixesWithNoFrequency == 2)
+              break;
+          }
+
+          int consecutiveSuffixesWithNoFrequency = 0;
+          for (SuggestWord word : newSuffix) {
+            if (word.freq == 0)
+              consecutiveSuffixesWithNoFrequency++;
+            else 
+              consecutiveSuffixesWithNoFrequency = 0;
+            
+            if (consecutiveSuffixesWithNoFrequency == 2)
+              break;
+          }
+
+          int evaluationsRight = 0;
+          int evaluationsLeft = 0;
+          
+          //If there are multiple non-words in a row, it is not a valid suggestion, so go no further.
+          if (consecutivePrefixesWithNoFrequency < 2 && consecutiveSuffixesWithNoFrequency < 2) {
+            evaluationsRight = generateBreakUpSuggestions(new Term(term.field(),
               rightWord.string), ir, newNumberBreaks, maxSuggestions,
-              useMinSuggestionFrequency, newPrefix(prefix, leftWord),
+                useMinSuggestionFrequency, newPrefix, suffix,
+                suggestions, totalEvaluations, sortMethod);
+            //If every break has to be a word, then you don't need to re-process both sides, but working from left to right
+            //is sufficient, so this step can be skipped for efficiency.
+            //In fact, if you leave this on, then you may get false positives, as we have not verified that rightWord.freq > 0.
+            if (!isWordRequiredOnBothSidesOfBreak) {
+              evaluationsLeft = generateBreakUpSuggestions(new Term(term.field(),
+                  leftWord.string), ir, newNumberBreaks, maxSuggestions,
+                  useMinSuggestionFrequency, prefix, newSuffix,
               suggestions, totalEvaluations, sortMethod);
-          totalEvaluations += evaluations;
+            }
+          }
+
+          totalEvaluations += evaluationsRight + evaluationsLeft;
+
         }
       }
       
@@ -311,10 +377,17 @@ public class WordBreakSpellChecker {
     return newPrefix;
   }
   
+  private SuggestWord[] newSuffix(SuggestWord append, SuggestWord[] oldSuffix) {
+    SuggestWord[] newSuffix = new SuggestWord[oldSuffix.length + 1];
+    System.arraycopy(oldSuffix, 0, newSuffix, 1, oldSuffix.length);
+    newSuffix[0] = append;
+    return newSuffix;
+  }
+
   private SuggestWord[] newSuggestion(SuggestWord[] prefix,
-      SuggestWord append1, SuggestWord append2) {
-    SuggestWord[] newSuggestion = new SuggestWord[prefix.length + 2];
-    int score = prefix.length + 1;
+      SuggestWord append1, SuggestWord append2, SuggestWord[] suffix) {
+    SuggestWord[] newSuggestion = new SuggestWord[prefix.length + suffix.length + 2];
+    int score = prefix.length + suffix.length + 1;
     for (int i = 0; i < prefix.length; i++) {
       SuggestWord word = new SuggestWord();
       word.string = prefix[i].string;
@@ -324,8 +397,15 @@ public class WordBreakSpellChecker {
     }
     append1.score = score;
     append2.score = score;
-    newSuggestion[newSuggestion.length - 2] = append1;
-    newSuggestion[newSuggestion.length - 1] = append2;
+    newSuggestion[prefix.length] = append1;
+    newSuggestion[prefix.length + 1] = append2;
+    for (int i = 0; i < suffix.length; i++) {
+      SuggestWord word = new SuggestWord();
+      word.string = suffix[i].string;
+      word.freq = suffix[i].freq;
+      word.score = score;
+      newSuggestion[i + prefix.length + 2] = word;
+    }
     return newSuggestion;
   }
   
@@ -378,6 +458,14 @@ public class WordBreakSpellChecker {
    */
   public int getMaxEvaluations() {
     return maxEvaluations;
+  }
+  
+  /**
+   * Returns whether or not a word is required on both sides of the suggested break.
+   * @see #setIsWordRequiredOnBothSidesOfBreak(boolean)
+   */
+  public boolean getIsWordRequiredOnBothSidesOfBreak() {
+    return isWordRequiredOnBothSidesOfBreak;
   }
   
   /**
@@ -441,6 +529,51 @@ public class WordBreakSpellChecker {
     this.maxEvaluations = maxEvaluations;
   }
   
+  /**
+   * <p>
+   * Whether or not both sides of the suggested break have to be "words."  Defaults to true.
+   * </p>
+   * 
+   * @see #getIsWordRequiredOnBothSidesOfBreak()
+   */
+  public void setIsWordRequiredOnBothSidesOfBreak(boolean isWordRequiredOnBothSidesOfBreak) {
+    this.isWordRequiredOnBothSidesOfBreak = isWordRequiredOnBothSidesOfBreak;
+  }
+
+  private class MostRealWordUseThenLengthAndMaxFreqComparator implements
+    Comparator<SuggestWordArrayWrapper> {
+    @Override
+    public int compare(SuggestWordArrayWrapper o1, SuggestWordArrayWrapper o2) {
+      if (o1.realWordCharacterCount != o2.realWordCharacterCount)
+        return o1.realWordCharacterCount - o2.realWordCharacterCount;
+      
+      if (o1.suggestWords.length != o2.suggestWords.length) {
+        return o2.suggestWords.length - o1.suggestWords.length;
+      }
+      if (o1.freqMax != o2.freqMax) {
+        return o1.freqMax - o2.freqMax;
+      }
+      return 0;
+    }
+  }
+
+  private class MostRealWordUseThenLengthAndSumFreqComparator implements
+  Comparator<SuggestWordArrayWrapper> {
+  @Override
+  public int compare(SuggestWordArrayWrapper o1, SuggestWordArrayWrapper o2) {
+    if (o1.realWordCharacterCount != o2.realWordCharacterCount)
+      return o1.realWordCharacterCount - o2.realWordCharacterCount;
+    
+    if (o1.suggestWords.length != o2.suggestWords.length) {
+      return o2.suggestWords.length - o1.suggestWords.length;
+    }
+    if (o1.freqSum != o2.freqSum) {
+      return o1.freqSum - o2.freqSum;
+    }
+    return 0;
+  }
+}
+
   private class LengthThenMaxFreqComparator implements
       Comparator<SuggestWordArrayWrapper> {
     @Override
@@ -488,17 +621,38 @@ public class WordBreakSpellChecker {
     final SuggestWord[] suggestWords;
     final int freqMax;
     final int freqSum;
+    final int realWordCharacterCount;
     
     SuggestWordArrayWrapper(SuggestWord[] suggestWords) {
       this.suggestWords = suggestWords;
       int aFreqSum = 0;
       int aFreqMax = 0;
+      int aRealWordCharacterCount = 0;
       for (SuggestWord sw : suggestWords) {
         aFreqSum += sw.freq;
         aFreqMax = Math.max(aFreqMax, sw.freq);
+        if (sw.freq > 0)
+          aRealWordCharacterCount += sw.string.length();
       }
       this.freqSum = aFreqSum;
       this.freqMax = aFreqMax;
+      this.realWordCharacterCount = aRealWordCharacterCount;
+    }
+    
+    public boolean equals(Object obj) {
+      if (obj == null || !obj.getClass().equals(this.getClass()))
+        return false;
+      
+      SuggestWordArrayWrapper other = (SuggestWordArrayWrapper)obj;
+      if (this.suggestWords == null || other.suggestWords == null || this.suggestWords.length != other.suggestWords.length)
+        return false;
+      
+      for (int i=0; i<suggestWords.length; i++) {
+        if (!suggestWords[i].string.equals(other.suggestWords[i].string))
+          return false;
+      }
+        
+      return true;
     }
   }
   
