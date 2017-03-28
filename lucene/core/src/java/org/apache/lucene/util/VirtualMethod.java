@@ -143,7 +143,7 @@ public final class VirtualMethod<C> {
   public static <C> int compareImplementationDistance(final Class<? extends C> clazz,
     final VirtualMethod<C> m1, final VirtualMethod<C> m2)
   {
-    return Integer.valueOf(m1.getImplementationDistance(clazz)).compareTo(m2.getImplementationDistance(clazz));
+    return Integer.compare(m1.getImplementationDistance(clazz), m2.getImplementationDistance(clazz));
   }
   
 }
