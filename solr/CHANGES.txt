@@ -123,6 +123,9 @@ New Features
 
 * SOLR-10076: Hide keystore and truststore passwords from /admin/info/* outputs. (Mano Kovacs via Mark Miller)
 
+* SOLR-6736: Adding support for uploading zipped configsets using ConfigSets API (Varun Rajput, Ishan Chattopadhyaya,
+  Noble Paul, Anshum Gupta, Gregory Chanan)
+
 Optimizations
 ----------------------
 

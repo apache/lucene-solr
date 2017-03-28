@@ -945,7 +945,8 @@ public class CoreContainer {
       }
 
       ConfigSet coreConfig = coreConfigService.getConfig(dcore);
-      log.info("Creating SolrCore '{}' using configuration from {}", dcore.getName(), coreConfig.getName());
+      dcore.setConfigSetTrusted(coreConfig.isTrusted());
+      log.info("Creating SolrCore '{}' using configuration from {}, trusted={}", dcore.getName(), coreConfig.getName(), dcore.isConfigSetTrusted());
       try {
         core = new SolrCore(dcore, coreConfig);
       } catch (SolrException e) {

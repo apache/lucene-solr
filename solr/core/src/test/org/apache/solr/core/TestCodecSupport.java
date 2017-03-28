@@ -218,7 +218,7 @@ public class TestCodecSupport extends SolrTestCaseJ4 {
     
     try {
       c = new SolrCore(new CoreDescriptor(h.getCoreContainer(), newCoreName, testSolrHome.resolve(newCoreName)), 
-          new ConfigSet("fakeConfigset", config, schema, null));
+          new ConfigSet("fakeConfigset", config, schema, null, true));
       assertNull(h.getCoreContainer().registerCore(newCoreName, c, false, false));
       h.coreName = newCoreName;
       assertEquals("We are not using the correct core", "solrconfig_codec2.xml", h.getCore().getConfigResource());
