@@ -248,7 +248,7 @@ public class TestCloudManagedSchemaConcurrent extends AbstractFullDistribZkTestB
     schemaLockTest();
   }
   
-  private class Info {
+  private static class Info {
     int numAddFieldPuts = 0;
     int numAddFieldPosts = 0;
     int numAddDynamicFieldPuts = 0;

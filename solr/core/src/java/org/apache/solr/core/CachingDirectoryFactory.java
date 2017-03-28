@@ -48,7 +48,7 @@ import org.slf4j.LoggerFactory;
  * 
  */
 public abstract class CachingDirectoryFactory extends DirectoryFactory {
-  protected class CacheValue {
+  protected static class CacheValue {
     final public String path;
     final public Directory directory;
     // for debug

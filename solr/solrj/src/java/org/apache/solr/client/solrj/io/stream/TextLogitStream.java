@@ -532,7 +532,7 @@ public class TextLogitStream extends TupleStream implements Expressible {
     return buf.toString();
   }
 
-  protected class TermsStream extends TupleStream {
+  protected static class TermsStream extends TupleStream {
 
     private List<String> terms;
     private Iterator<String> it;

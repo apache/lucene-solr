@@ -441,7 +441,7 @@ public class WordBreakSpellChecker {
     this.maxEvaluations = maxEvaluations;
   }
   
-  private class LengthThenMaxFreqComparator implements
+  private static class LengthThenMaxFreqComparator implements
       Comparator<SuggestWordArrayWrapper> {
     @Override
     public int compare(SuggestWordArrayWrapper o1, SuggestWordArrayWrapper o2) {
@@ -455,7 +455,7 @@ public class WordBreakSpellChecker {
     }
   }
   
-  private class LengthThenSumFreqComparator implements
+  private static class LengthThenSumFreqComparator implements
       Comparator<SuggestWordArrayWrapper> {
     @Override
     public int compare(SuggestWordArrayWrapper o1, SuggestWordArrayWrapper o2) {
@@ -469,7 +469,7 @@ public class WordBreakSpellChecker {
     }
   }
   
-  private class CombinationsThenFreqComparator implements
+  private static class CombinationsThenFreqComparator implements
       Comparator<CombineSuggestionWrapper> {
     @Override
     public int compare(CombineSuggestionWrapper o1, CombineSuggestionWrapper o2) {
@@ -484,7 +484,7 @@ public class WordBreakSpellChecker {
     }
   }
   
-  private class SuggestWordArrayWrapper {
+  private static class SuggestWordArrayWrapper {
     final SuggestWord[] suggestWords;
     final int freqMax;
     final int freqSum;
@@ -502,7 +502,7 @@ public class WordBreakSpellChecker {
     }
   }
   
-  private class CombineSuggestionWrapper {
+  private static class CombineSuggestionWrapper {
     final CombineSuggestion combineSuggestion;
     final int numCombinations;
     

@@ -1065,7 +1065,7 @@ public class SimplePostTool {
   /**
    * Inner class to filter files based on glob wildcards
    */
-  class GlobFileFilter implements FileFilter
+  static class GlobFileFilter implements FileFilter
   {
     private String _pattern;
     private Pattern p;
@@ -1258,7 +1258,7 @@ public class SimplePostTool {
   /**
    * Utility class to hold the result form a page fetch
    */
-  public class PageFetcherResult {
+  public static class PageFetcherResult {
     int httpStatus = 200;
     String contentType = "text/html";
     URL redirectUrl = null;

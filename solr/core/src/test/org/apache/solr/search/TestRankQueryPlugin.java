@@ -75,7 +75,7 @@ public class TestRankQueryPlugin extends QParserPlugin {
     return new TestRankQueryParser(query, localParams, params, req);
   }
 
-  class TestRankQueryParser extends QParser {
+  static class TestRankQueryParser extends QParser {
 
     public TestRankQueryParser(String query, SolrParams localParams, SolrParams params, SolrQueryRequest req) {
       super(query, localParams, params, req);
@@ -89,7 +89,7 @@ public class TestRankQueryPlugin extends QParserPlugin {
     }
   }
 
-  class TestRankQuery extends RankQuery {
+  static class TestRankQuery extends RankQuery {
 
     private int mergeStrategy;
     private int collector;
@@ -143,7 +143,7 @@ public class TestRankQueryPlugin extends QParserPlugin {
     }
   }
 
-  class TestMergeStrategy implements MergeStrategy {
+  static class TestMergeStrategy implements MergeStrategy {
 
     public int getCost() {
       return 1;
@@ -314,7 +314,7 @@ public class TestRankQueryPlugin extends QParserPlugin {
     }
   }
 
-  class TestMergeStrategy1 implements MergeStrategy {
+  static class TestMergeStrategy1 implements MergeStrategy {
 
     public int getCost() {
       return 1;
@@ -435,7 +435,7 @@ public class TestRankQueryPlugin extends QParserPlugin {
       }
     }
 
-    private class FakeScorer extends Scorer {
+    private static class FakeScorer extends Scorer {
 
       final int docid;
       final float score;
@@ -674,7 +674,7 @@ public class TestRankQueryPlugin extends QParserPlugin {
   }
 
 
-  class TestCollector extends TopDocsCollector {
+  static class TestCollector extends TopDocsCollector {
 
     private List<ScoreDoc> list = new ArrayList();
 
@@ -743,7 +743,7 @@ public class TestRankQueryPlugin extends QParserPlugin {
     }
   }
 
-  class TestCollector1 extends TopDocsCollector {
+  static class TestCollector1 extends TopDocsCollector {
 
     private List<ScoreDoc> list = new ArrayList();
 

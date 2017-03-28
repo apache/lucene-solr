@@ -239,7 +239,7 @@ public class ZkController {
   }
 
   // notifies registered listeners after the ZK reconnect in the background
-  private class OnReconnectNotifyAsync implements Callable {
+  private static class OnReconnectNotifyAsync implements Callable {
 
     private final OnReconnect listener;
 

@@ -50,7 +50,7 @@ import org.apache.lucene.util.TestUtil;
 public class TestNorms extends LuceneTestCase {
   final String byteTestField = "normsTestByte";
 
-  class CustomNormEncodingSimilarity extends TFIDFSimilarity {
+  static class CustomNormEncodingSimilarity extends TFIDFSimilarity {
 
     @Override
     public long encodeNormValue(float f) {

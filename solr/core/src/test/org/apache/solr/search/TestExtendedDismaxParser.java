@@ -1830,7 +1830,7 @@ public class TestExtendedDismaxParser extends SolrTestCaseJ4 {
     return false;
   }
 
-  class MultilanguageQueryParser extends ExtendedDismaxQParser {
+  static class MultilanguageQueryParser extends ExtendedDismaxQParser {
 
     public MultilanguageQueryParser(String qstr, SolrParams localParams,
         SolrParams params, SolrQueryRequest req) {
@@ -1857,10 +1857,10 @@ public class TestExtendedDismaxParser extends SolrTestCaseJ4 {
     }
     
   }
-  
-  
-  
-  class FuzzyDismaxQParser extends ExtendedDismaxQParser {
+
+
+
+  static class FuzzyDismaxQParser extends ExtendedDismaxQParser {
 
     public FuzzyDismaxQParser(String qstr, SolrParams localParams,
         SolrParams params, SolrQueryRequest req) {

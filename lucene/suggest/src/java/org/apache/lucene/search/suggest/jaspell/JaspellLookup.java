@@ -147,17 +147,17 @@ public class JaspellLookup extends Lookup implements Accountable {
       node.data = Long.valueOf(in.readLong());
     }
     if ((mask & LO_KID) != 0) {
-      TSTNode kid = trie.new TSTNode('\0', node);
+      TSTNode kid = new TSTNode('\0', node);
       node.relatives[TSTNode.LOKID] = kid;
       readRecursively(in, kid);
     }
     if ((mask & EQ_KID) != 0) {
-      TSTNode kid = trie.new TSTNode('\0', node);
+      TSTNode kid = new TSTNode('\0', node);
       node.relatives[TSTNode.EQKID] = kid;
       readRecursively(in, kid);
     }
     if ((mask & HI_KID) != 0) {
-      TSTNode kid = trie.new TSTNode('\0', node);
+      TSTNode kid = new TSTNode('\0', node);
       node.relatives[TSTNode.HIKID] = kid;
       readRecursively(in, kid);
     }
@@ -196,7 +196,7 @@ public class JaspellLookup extends Lookup implements Accountable {
   @Override
   public boolean load(DataInput input) throws IOException {
     count = input.readVLong();
-    TSTNode root = trie.new TSTNode('\0', null);
+    TSTNode root = new TSTNode('\0', null);
     readRecursively(input, root);
     trie.setRoot(root);
     return true;

@@ -201,7 +201,7 @@ public class TestEarlyTerminatingSortingCollector extends LuceneTestCase {
     }
   }
 
-  private class TestTerminatedEarlySimpleCollector extends SimpleCollector {
+  private static class TestTerminatedEarlySimpleCollector extends SimpleCollector {
     private boolean collectedSomething;
     public boolean collectedSomething() {
       return collectedSomething;
@@ -216,7 +216,7 @@ public class TestEarlyTerminatingSortingCollector extends LuceneTestCase {
     }
   }
 
-  private class TestEarlyTerminatingSortingcollectorQueryTimeout implements QueryTimeout {
+  private static class TestEarlyTerminatingSortingcollectorQueryTimeout implements QueryTimeout {
     final private boolean shouldExit;
     public TestEarlyTerminatingSortingcollectorQueryTimeout(boolean shouldExit) {
       this.shouldExit = shouldExit;

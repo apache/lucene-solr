@@ -75,7 +75,7 @@ public class TestCodecs extends LuceneTestCase {
     NUM_TEST_ITER = atLeast(20);
   }
 
-  class FieldData implements Comparable<FieldData> {
+  static class FieldData implements Comparable<FieldData> {
     final FieldInfo fieldInfo;
     final TermData[] terms;
     final boolean omitTF;
@@ -107,7 +107,7 @@ public class TestCodecs extends LuceneTestCase {
     }
   }
 
-  class PositionData {
+  static class PositionData {
     int pos;
     BytesRef payload;
 
@@ -117,7 +117,7 @@ public class TestCodecs extends LuceneTestCase {
     }
   }
 
-  class TermData implements Comparable<TermData> {
+  static class TermData implements Comparable<TermData> {
     String text2;
     final BytesRef text;
     int[] docs;
@@ -300,7 +300,7 @@ public class TestCodecs extends LuceneTestCase {
     dir.close();
   }
 
-  private class Verify extends Thread {
+  private static class Verify extends Thread {
     final Fields termsDict;
     final FieldData[] fields;
     final SegmentInfo si;

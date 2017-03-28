@@ -720,7 +720,7 @@ public class GroupFacetCollectorTest extends AbstractGroupingTestCase {
     return null;
   }
 
-  private class IndexContext {
+  private static class IndexContext {
 
     final int numDocs;
     final DirectoryReader indexReader;
@@ -744,7 +744,7 @@ public class GroupFacetCollectorTest extends AbstractGroupingTestCase {
     }
   }
 
-  private class GroupedFacetResult {
+  private static class GroupedFacetResult {
 
     final int totalCount;
     final int totalMissingCount;

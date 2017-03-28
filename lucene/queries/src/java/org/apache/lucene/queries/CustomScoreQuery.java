@@ -238,7 +238,7 @@ public class CustomScoreQuery extends Query implements Cloneable {
   /**
    * A scorer that applies a (callback) function on scores of the subQuery.
    */
-  private class CustomScorer extends FilterScorer {
+  private static class CustomScorer extends FilterScorer {
     private final float qWeight;
     private final Scorer subQueryScorer;
     private final Scorer[] valSrcScorers;

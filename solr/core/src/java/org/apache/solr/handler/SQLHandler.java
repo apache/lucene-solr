@@ -141,7 +141,7 @@ public class SQLHandler extends RequestHandlerBase implements SolrCoreAware, Per
   /*
    * Only necessary for SolrJ JDBC driver since metadata has to be passed back
    */
-  private class SqlHandlerStream extends JDBCStream {
+  private static class SqlHandlerStream extends JDBCStream {
     private final boolean includeMetadata;
     private boolean firstTuple = true;
     List<String> metadataFields = new ArrayList<>();

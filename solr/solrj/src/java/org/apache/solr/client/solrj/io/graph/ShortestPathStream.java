@@ -492,7 +492,7 @@ public class ShortestPathStream extends TupleStream implements Expressible {
     }
   }
 
-  private class Edge {
+  private static class Edge {
 
     private String from;
     private String to;

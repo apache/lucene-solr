@@ -910,7 +910,7 @@ public class AnalyzingInfixSuggesterTest extends LuceneTestCase {
     a.close();
   }
 
-  private class IndexDocument implements Runnable {
+  private static class IndexDocument implements Runnable {
     AnalyzingInfixSuggester suggester;
     String key;
 

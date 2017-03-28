@@ -1627,7 +1627,7 @@ public abstract class SolrTestCaseJ4 extends LuceneTestCase {
     }
   }
 
-  protected class FldType {
+  protected static class FldType {
     public String fname;
     public IVals numValues;
     public Vals vals;

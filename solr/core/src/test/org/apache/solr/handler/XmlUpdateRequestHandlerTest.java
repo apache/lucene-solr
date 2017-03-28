@@ -194,7 +194,7 @@ public class XmlUpdateRequestHandlerTest extends SolrTestCaseJ4 {
       p.assertNoCommandsPending();
     }
 
-    private class MockUpdateRequestProcessor extends UpdateRequestProcessor {
+    private static class MockUpdateRequestProcessor extends UpdateRequestProcessor {
 
       private Queue<DeleteUpdateCommand> deleteCommands = new LinkedList<>();
 

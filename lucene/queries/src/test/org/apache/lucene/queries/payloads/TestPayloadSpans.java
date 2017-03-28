@@ -461,7 +461,7 @@ public class TestPayloadSpans extends LuceneTestCase {
     assertEquals("expected numSpans", numSpans, cnt);
   }
 
-  final class PayloadAnalyzer extends Analyzer {
+  static final class PayloadAnalyzer extends Analyzer {
 
     @Override
     public TokenStreamComponents createComponents(String fieldName) {
@@ -470,7 +470,7 @@ public class TestPayloadSpans extends LuceneTestCase {
     }
   }
 
-  final class PayloadFilter extends TokenFilter {
+  static final class PayloadFilter extends TokenFilter {
     Set<String> entities = new HashSet<>();
     Set<String> nopayload = new HashSet<>();
     int pos;
@@ -515,7 +515,7 @@ public class TestPayloadSpans extends LuceneTestCase {
     }
   }
   
-  public final class TestPayloadAnalyzer extends Analyzer {
+  public static final class TestPayloadAnalyzer extends Analyzer {
 
     @Override
     public TokenStreamComponents createComponents(String fieldName) {

@@ -37,7 +37,7 @@ public class CSVParserTest extends TestCase {
   /**
    * TestCSVParser.
    */
-  class TestCSVParser extends CSVParser {
+  static class TestCSVParser extends CSVParser {
     /**
      * Test parser to investigate the type of the internal Token.
      * @param in a Reader

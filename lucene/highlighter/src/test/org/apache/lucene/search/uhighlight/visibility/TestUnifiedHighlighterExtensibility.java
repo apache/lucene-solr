@@ -202,7 +202,7 @@ public class TestUnifiedHighlighterExtensibility extends LuceneTestCase {
   }
 
   /** Tests maintaining extensibility/visibility of {@link org.apache.lucene.search.uhighlight.FieldHighlighter} out of package. */
-  private class CustomFieldHighlighter extends FieldHighlighter {
+  private static class CustomFieldHighlighter extends FieldHighlighter {
     CustomFieldHighlighter(String field, FieldOffsetStrategy fieldOffsetStrategy, BreakIterator breakIterator, PassageScorer passageScorer, int maxPassages, int maxNoHighlightPassages, PassageFormatter passageFormatter) {
       super(field, fieldOffsetStrategy, breakIterator, passageScorer, maxPassages, maxNoHighlightPassages, passageFormatter);
     }

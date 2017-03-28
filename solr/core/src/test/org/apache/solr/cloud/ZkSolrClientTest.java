@@ -40,7 +40,7 @@ public class ZkSolrClientTest extends AbstractSolrTestCase {
     initCore("solrconfig.xml", "schema.xml");
   }
 
-  class ZkConnection implements AutoCloseable {
+  static class ZkConnection implements AutoCloseable {
 
     private ZkTestServer server = null;
     private SolrZkClient zkClient = null;

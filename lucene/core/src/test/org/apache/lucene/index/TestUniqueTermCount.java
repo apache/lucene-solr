@@ -98,7 +98,7 @@ public class TestUniqueTermCount extends LuceneTestCase {
   /**
    * Simple similarity that encodes maxTermFrequency directly
    */
-  class TestSimilarity extends Similarity {
+  static class TestSimilarity extends Similarity {
 
     @Override
     public long computeNorm(FieldInvertState state) {

@@ -50,7 +50,7 @@ public class CoreMergeIndexesAdminHandlerTest extends SolrTestCaseJ4 {
 
   private static String FAILING_MSG = "Creating a directory using FailingDirectoryFactoryException always fails";
   public static class FailingDirectoryFactory extends MockFSDirectoryFactory {
-    public class FailingDirectoryFactoryException extends RuntimeException {
+    public static class FailingDirectoryFactoryException extends RuntimeException {
       public FailingDirectoryFactoryException() {
         super(FAILING_MSG);
       }

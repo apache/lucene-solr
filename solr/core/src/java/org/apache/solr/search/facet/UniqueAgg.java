@@ -187,7 +187,7 @@ public class UniqueAgg extends StrAggValueSource {
   }
 
 
-  class NumericAcc extends SlotAcc {
+  static class NumericAcc extends SlotAcc {
     SchemaField sf;
     LongSet[] sets;
     NumericDocValues values;
