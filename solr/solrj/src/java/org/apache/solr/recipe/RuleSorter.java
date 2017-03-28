@@ -22,6 +22,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -29,18 +30,12 @@ import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-import org.apache.solr.common.IteratorWriter;
 import org.apache.solr.common.MapWriter;
 import org.apache.solr.common.params.CollectionParams.CollectionAction;
 import org.apache.solr.common.util.Utils;
 
 import static java.util.Collections.singletonList;
 import static java.util.stream.Collectors.toList;
-import static org.apache.solr.common.params.CollectionParams.CollectionAction.ADDREPLICA;
-import static org.apache.solr.common.params.CollectionParams.CollectionAction.DELETEREPLICA;
-import static org.apache.solr.common.params.CollectionParams.CollectionAction.MOVEREPLICA;
-import static org.apache.solr.common.params.CollectionParams.CollectionAction.SPLITSHARD;
-import static org.apache.solr.common.params.CoreAdminParams.NODE;
 
 public class RuleSorter {
   public static final String EACH = "#EACH";
@@ -91,6 +86,10 @@ public class RuleSorter {
           .collect(Collectors.toList());
     }
 
+    RuleSorter getRuleSorter() {
+      return RuleSorter.this;
+
+    }
 
     /**Apply the preferences and conditions
      */
@@ -122,10 +121,10 @@ public class RuleSorter {
           .collect(Collectors.toMap(r -> r.node, r -> r.violations));
     }
 
-    public Operation suggest(CollectionAction action) {
-      if (!supportedActions.contains(action))
-        throw new UnsupportedOperationException(action.toString() + "is not supported");
-      return null;
+    public Map suggest(CollectionAction action, String collection, String shard) {
+      Suggester op = ops.get(action);
+      if (op == null) throw new UnsupportedOperationException(action.toString() + "is not supported");
+      return op.suggest(collection, shard, this);
     }
 
     @Override
@@ -151,7 +150,7 @@ public class RuleSorter {
   }
 
 
-  private static List<Map<String, Object>> getListOfMap(String key, Map<String, Object> jsonMap) {
+  static List<Map<String, Object>> getListOfMap(String key, Map<String, Object> jsonMap) {
     Object o = jsonMap.get(key);
     if (o != null) {
       if (!(o instanceof List)) o = singletonList(o);
@@ -190,96 +189,6 @@ public class RuleSorter {
     }
   }
 
-  static class Row implements MapWriter {
-    public final String node;
-    final Cell[] cells;
-    Map<String, Map<String, List<ReplicaStat>>> replicaInfo;
-    List<Clause> violations = new ArrayList<>();
-    boolean anyValueMissing = false;
-
-    Row(String node, List<String> params, NodeValueProvider snitch) {
-      replicaInfo = snitch.getReplicaCounts(node, params);
-      if (replicaInfo == null) replicaInfo = Collections.emptyMap();
-      this.node = node;
-      cells = new Cell[params.size()];
-      Map<String, Object> vals = snitch.getValues(node, params);
-      for (int i = 0; i < params.size(); i++) {
-        String s = params.get(i);
-        cells[i] = new Cell(i, s, vals.get(s));
-        if (NODE.equals(s)) cells[i].val = node;
-        if (cells[i].val == null) anyValueMissing = true;
-      }
-    }
-
-    Row(String node, Cell[] cells, boolean anyValueMissing, Map<String, Map<String, List<ReplicaStat>>> replicaInfo) {
-      this.node = node;
-      this.cells = new Cell[cells.length];
-      for (int i = 0; i < this.cells.length; i++) {
-        this.cells[i] = cells[i].copy();
-
-      }
-      this.anyValueMissing = anyValueMissing;
-      this.replicaInfo = replicaInfo;
-    }
-
-    @Override
-    public void writeMap(EntryWriter ew) throws IOException {
-      ew.put(node, (IteratorWriter) iw -> {
-        iw.add((MapWriter) e -> e.put("replicas", replicaInfo));
-        for (Cell cell : cells) iw.add(cell);
-      });
-    }
-
-    public Row copy() {
-      return new Row(node, cells, anyValueMissing, replicaInfo);
-    }
-
-    public Object getVal(String name) {
-      for (Cell cell : cells) if (cell.name.equals(name)) return cell.val;
-      return null;
-    }
-
-    @Override
-    public String toString() {
-      return node;
-    }
-  }
-
-  static class Cell implements MapWriter {
-    final int index;
-    final String name;
-    Object val, val_;
-
-    Cell(int index, String name, Object val) {
-      this.index = index;
-      this.name = name;
-      this.val = val;
-    }
-
-    Cell(int index, String name, Object val, Object val_) {
-      this.index = index;
-      this.name = name;
-      this.val = val;
-      this.val_ = val_;
-    }
-
-    @Override
-    public void writeMap(EntryWriter ew) throws IOException {
-      ew.put(name, val);
-    }
-
-    public Cell copy() {
-      return new Cell(index, name, val, val_);
-    }
-  }
-
-  static class Operation {
-    CollectionAction action;
-    String node, collection, shard, replica;
-    String targetNode;
-
-  }
-
 
   static class ReplicaStat implements MapWriter {
     final String name;
@@ -304,12 +213,39 @@ public class RuleSorter {
      * Get the details of each replica in a node. It attempts to fetch as much details about
      * the replica as mentioned in the keys list
      * <p>
-     * the format is {collection:shard :[{replicaetails}]}
+     * the format is {collection:shard :[{replicadetails}]}
      */
     Map<String, Map<String, List<ReplicaStat>>> getReplicaCounts(String node, Collection<String> keys);
   }
 
-  private static final Set<CollectionAction> supportedActions = new HashSet<>(Arrays.asList(ADDREPLICA, DELETEREPLICA, MOVEREPLICA, SPLITSHARD));
+  interface Suggester {
+    Map<String, Object> suggest(String coll, String shard, Session session);
+
+  }
+
+  static class BaseSuggester {
+    final String coll;
+    final String shard;
+    final RuleSorter.Session session;
+    List<Row> matrix;
+
+    BaseSuggester(String coll, String shard, RuleSorter.Session session) {
+      this.coll = coll;
+      this.shard = shard;
+      this.session = session;
+      matrix = session.getMatrixCopy();
+    }
+
+
+  }
+
+  private static final Map<CollectionAction, Suggester> ops = new HashMap<>();
+
+  static {
+    ops.put(CollectionAction.ADDREPLICA, (coll, shard, session) -> new AddReplicaSuggester(coll, shard, session).get());
+    ops.put(CollectionAction.MOVEREPLICA, (coll, shard, session) -> new MoveReplicaSuggester(coll, shard, session).get());
+  }
+
 
 
 }

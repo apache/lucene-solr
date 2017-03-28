@@ -153,7 +153,7 @@ public class TestRuleSorter extends SolrTestCaseJ4 {
     session = ruleSorter.createSession(Arrays.asList("node1", "node2", "node3", "node4"), snitch);
 
     session.applyRules();
-    List<RuleSorter.Row> l = session.getSorted();
+    List<Row> l = session.getSorted();
     assertEquals("node1",l.get(0).node);
     assertEquals("node3",l.get(1).node);
     assertEquals("node4",l.get(2).node);

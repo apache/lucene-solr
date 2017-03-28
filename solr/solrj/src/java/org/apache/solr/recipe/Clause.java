@@ -26,10 +26,8 @@ import java.util.Set;
 import java.util.concurrent.atomic.AtomicReference;
 
 import org.apache.solr.common.MapWriter;
-import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.util.Utils;
 import org.apache.solr.recipe.RuleSorter.ReplicaStat;
-import org.apache.solr.recipe.RuleSorter.Row;
 
 import static java.util.Collections.singletonMap;
 import static org.apache.solr.common.params.CoreAdminParams.COLLECTION;
@@ -46,7 +44,7 @@ import static org.apache.solr.recipe.Operand.WILDCARD;
 import static org.apache.solr.recipe.RuleSorter.ANY;
 import static org.apache.solr.recipe.RuleSorter.EACH;
 
-
+// a set of conditions in a policy
 public class Clause implements MapWriter {
   Map<String, Object> original;
   Condition collection, shard, replica, tag;
