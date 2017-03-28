@@ -13,7 +13,6 @@ import org.apache.lucene.search.BooleanClause;
 import org.apache.lucene.search.Query;
 import org.apache.solr.search.SyntaxError;
 import org.apache.solr.search.QParser;
-import org.apache.solr.search.QueryParserConfigurationException;
 
 
 public class QueryParser extends SolrQueryParserBase implements QueryParserConstants {
@@ -54,11 +53,11 @@ public class QueryParser extends SolrQueryParserBase implements QueryParserConst
   @Override
   protected Query newFieldQuery(Analyzer analyzer, String field, String queryText,
                                 boolean quoted, boolean fieldAutoGenPhraseQueries) throws SyntaxError {
-    if ((getAutoGeneratePhraseQueries() || fieldAutoGenPhraseQueries) && splitOnWhitespace == false) {
-      throw new QueryParserConfigurationException
-          ("Field '" + field + "': autoGeneratePhraseQueries == true is disallowed when sow/splitOnWhitespace == false");
-    }
-    return super.newFieldQuery(analyzer, field, queryText, quoted, fieldAutoGenPhraseQueries);
+    setAutoGenerateMultiTermSynonymsPhraseQuery(fieldAutoGenPhraseQueries || getAutoGeneratePhraseQueries());
+    // Don't auto-quote graph-aware field queries 
+    boolean treatAsQuoted = getSplitOnWhitespace()
+        ? (quoted || fieldAutoGenPhraseQueries || getAutoGeneratePhraseQueries()) : quoted;
+    return super.newFieldQuery(analyzer, field, queryText, treatAsQuoted, false);
   }
 
 // *   Query  ::= ( Clause )*

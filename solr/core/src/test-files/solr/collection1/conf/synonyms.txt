@@ -31,3 +31,4 @@ pixima => pixma
 
 # multiword synonyms
 wi fi => wifi
+crow blackbird, grackle

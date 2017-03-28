@@ -164,6 +164,9 @@ Other Changes
 * SOLR-10365: Handle a SolrCoreInitializationException while publishing core state during SolrCore creation
   (Ishan Chattopadhyaya)
 
+* SOLR-10357: Enable edismax and standard query parsers to handle the option combination 
+  sow=false / autoGeneratePhraseQueries="true" by setting QueryBuilder.autoGenerateMultiTermSynonymsQuery.
+
 ==================  6.5.0 ==================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release.
