@@ -21,6 +21,7 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.Random;
 import java.util.Set;
+import java.util.stream.Stream;
 
 import org.apache.lucene.search.BooleanClause;
 import org.apache.lucene.search.BooleanQuery;
@@ -34,7 +35,6 @@ import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.request.SolrQueryRequest;
-import org.apache.solr.schema.TextField;
 import org.apache.solr.util.SolrPluginUtils;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -66,7 +66,7 @@ public class TestExtendedDismaxParser extends SolrTestCaseJ4 {
                  "foo_i", "8"
     ));
     assertU(adoc("id", "47", "trait_ss", "Pig",
-            "text_sw", "line up and fly directly at the enemy death cannons, clogging them with wreckage!"));
+            "text", "line up and fly directly at the enemy death cannons, clogging them with wreckage!"));
     assertU(adoc("id", "48", "text_sw", "this has gigabyte potential", "foo_i","100"));
     assertU(adoc("id", "49", "text_sw", "start the big apple end", "foo_i","-100"));
     assertU(adoc("id", "50", "text_sw", "start new big city end"));
@@ -121,22 +121,22 @@ public class TestExtendedDismaxParser extends SolrTestCaseJ4 {
       // really just test that exceptions aren't thrown by
       // single + -
 
-      assertJQ(req("defType", "edismax", "q", "-", "df", "text_sw", "sow", sow)
+      assertJQ(req("defType", "edismax", "q", "-", "sow", sow)
           , "/response==");
 
-      assertJQ(req("defType", "edismax", "q", "+", "df", "text_sw", "sow", sow)
+      assertJQ(req("defType", "edismax", "q", "+", "sow", sow)
           , "/response==");
 
-      assertJQ(req("defType", "edismax", "q", "+ - +", "df", "text_sw", "sow", sow)
+      assertJQ(req("defType", "edismax", "q", "+ - +", "sow", sow)
           , "/response==");
 
-      assertJQ(req("defType", "edismax", "q", "- + -", "df", "text_sw", "sow", sow)
+      assertJQ(req("defType", "edismax", "q", "- + -", "sow", sow)
           , "/response==");
 
-      assertJQ(req("defType", "edismax", "q", "id:47 +", "df", "text_sw", "sow", sow)
+      assertJQ(req("defType", "edismax", "q", "id:47 +", "sow", sow)
           , "/response/numFound==1");
 
-      assertJQ(req("defType", "edismax", "q", "id:47 -", "df", "text_sw", "sow", sow)
+      assertJQ(req("defType", "edismax", "q", "id:47 -", "sow", sow)
           , "/response/numFound==1");
 
       Random r = random();
@@ -152,7 +152,7 @@ public class TestExtendedDismaxParser extends SolrTestCaseJ4 {
         }
 
         String q = sb.toString();
-        assertJQ(req("defType", "edismax", "q", q, "df", "text_sw", "sow", sow)
+        assertJQ(req("defType", "edismax", "q", q, "sow", sow)
             , "/response==");
       }
     }
@@ -264,7 +264,7 @@ public class TestExtendedDismaxParser extends SolrTestCaseJ4 {
            , twor
            );
    
-   assertQ(req("defType", "edismax", "qf", "name title subject text_sw",
+   assertQ(req("defType", "edismax", "qf", "name title subject text",
                "q","op"), twor
     );
    assertQ(req("defType", "edismax", 
@@ -277,29 +277,29 @@ public class TestExtendedDismaxParser extends SolrTestCaseJ4 {
                "q.op", "OR",
                "q","Order op"), twor
     );
-   assertQ(req("defType", "edismax", "qf", "name title subject text_sw",
+   assertQ(req("defType", "edismax", "qf", "name title subject text",
                "q","Order AND op"), oner
     );
-   assertQ(req("defType", "edismax", "qf", "name title subject text_sw",
+   assertQ(req("defType", "edismax", "qf", "name title subject text",
                "q","Order and op"), oner
     );
-    assertQ(req("defType", "edismax", "qf", "name title subject text_sw",
+    assertQ(req("defType", "edismax", "qf", "name title subject text",
                "q","+Order op"), oner
     );
-    assertQ(req("defType", "edismax", "qf", "name title subject text_sw",
+    assertQ(req("defType", "edismax", "qf", "name title subject text",
                "q","Order OR op"), twor
     );
-    assertQ(req("defType", "edismax", "qf", "name title subject text_sw",
+    assertQ(req("defType", "edismax", "qf", "name title subject text",
                "q","Order or op"), twor
     );
-    assertQ(req("defType", "edismax", "qf", "name title subject text_sw",
+    assertQ(req("defType", "edismax", "qf", "name title subject text",
                "q","*:*"), allr
     );
 
-    assertQ(req("defType", "edismax", "qf", "name title subject text_sw",
+    assertQ(req("defType", "edismax", "qf", "name title subject text",
            "q","star OR (-star)"), allr
     );
-    assertQ(req("defType", "edismax", "qf", "name title subject text_sw",
+    assertQ(req("defType", "edismax", "qf", "name title subject text",
            "q","id:42 OR (-id:42)"), allr
     );
 
@@ -551,7 +551,7 @@ public class TestExtendedDismaxParser extends SolrTestCaseJ4 {
         "//str[@name='parsedquery_toString'][.='+(id:42)^5.0']");
     
     
-    assertQ(req("defType","edismax", "uf","-*", "q","cannons", "qf","text_sw"),
+    assertQ(req("defType","edismax", "uf","-*", "q","cannons", "qf","text"),
         oner);
     
     assertQ(req("defType","edismax", "uf","* -id", "q","42", "qf", "id"), oner);
@@ -885,7 +885,7 @@ public class TestExtendedDismaxParser extends SolrTestCaseJ4 {
         "*[count(//doc)=3]");
     assertQ(
         "Might be double-escaping a client-escaped colon", 
-        req("q", "text_sw:(theos OR thistokenhasa\\:preescapedcolon OR theou)", "defType", "edismax", "qf", "text_sw"),
+        req("q", "text_sw:(theos OR thistokenhasa\\:preescapedcolon OR theou)", "defType", "edismax", "qf", "text"),
         "*[count(//doc)=3]");    
     
   }
@@ -1047,56 +1047,56 @@ public class TestExtendedDismaxParser extends SolrTestCaseJ4 {
     // "line up and fly directly at the enemy death cannons, clogging them with wreckage!"
     assertQ("test default operator with mm (AND + 0% => 0 hits)",
         req("q", "(line notfound) OR notfound",
-            "qf", "text_sw",
+            "qf", "text",
             "q.op", "AND",
             "mm", "0%",
             "defType", "edismax")
         , "*[count(//doc)=0]");
     assertQ("test default operator with mm (OR + 0% => 1 hit)",
         req("q", "line notfound OR notfound",
-            "qf", "text_sw",
+            "qf", "text",
             "q.op", "OR",
             "mm", "0%",
             "defType", "edismax")
         , "*[count(//doc)=1]");
     assertQ("test default operator with mm (OR + 100% => 0 hits)",
         req("q", "line notfound OR notfound",
-            "qf", "text_sw",
+            "qf", "text",
             "q.op", "OR",
             "mm", "100%",
             "defType", "edismax")
         , "*[count(//doc)=0]");
     assertQ("test default operator with mm (OR + 35% => 1 hit)",
         req("q", "line notfound notfound2 OR notfound",
-            "qf", "text_sw",
+            "qf", "text",
             "q.op", "OR",
             "mm", "35%",
             "defType", "edismax")
         , "*[count(//doc)=1]");
     assertQ("test default operator with mm (OR + 75% => 0 hits)",
         req("q", "line notfound notfound2 OR notfound3",
-            "qf", "text_sw",
+            "qf", "text",
             "q.op", "OR",
             "mm", "75%",
             "defType", "edismax")
         , "*[count(//doc)=0]");
     assertQ("test default operator with mm (AND + 0% => 1 hit)",
         req("q", "(line enemy) OR notfound",
-            "qf", "text_sw",
+            "qf", "text",
             "q.op", "AND",
             "mm", "0%",
             "defType", "edismax")
         , "*[count(//doc)=1]");
     assertQ("test default operator with mm (AND + 50% => 1 hit)",
         req("q", "(line enemy) OR (line notfound) OR (death cannons) OR (death notfound)",
-            "qf", "text_sw",
+            "qf", "text",
             "q.op", "AND",
             "mm", "50%",
             "defType", "edismax")
         , "*[count(//doc)=1]");
     assertQ("test default operator with mm (AND + 75% => 0 hits)",
         req("q", "(line enemy) OR (line notfound) OR (death cannons) OR (death notfound)",
-            "qf", "text_sw",
+            "qf", "text",
             "q.op", "AND",
             "mm", "75%",
             "defType", "edismax")
@@ -1394,16 +1394,6 @@ public class TestExtendedDismaxParser extends SolrTestCaseJ4 {
     
   }
 
-  // LUCENE-7533
-  public void testSplitOnWhitespace_with_autoGeneratePhraseQueries() throws Exception {
-    assertTrue(((TextField)h.getCore().getLatestSchema().getField("text").getType()).getAutoGeneratePhraseQueries());
-
-    try (SolrQueryRequest req = req()) {
-      final QParser qparser = QParser.getParser("{!edismax sow=false fq=text}blah blah)", req);
-      expectThrows(IllegalArgumentException.class, qparser::getQuery);
-    }
-  }
-
   @Test
   public void testSplitOnWhitespace_Basic() throws Exception {
     // The "text_sw" field has synonyms loaded from synonyms.txt
@@ -1550,7 +1540,7 @@ public class TestExtendedDismaxParser extends SolrTestCaseJ4 {
         , "/response/numFound==0"
     );
     assertJQ(req("qf","text_sw title", "defType","edismax", "q","wi* fi", "sow","false")
-        , "/response/numFound==2"    // matches because wi* matches "wifi" in one doc and "with" in another
+        , "/response/numFound==1"    // matches because wi* matches "wifi"
     );
     assertJQ(req("qf","text_sw title", "defType","edismax", "q","w? fi", "sow","false")
         , "/response/numFound==0"
@@ -1720,7 +1710,7 @@ public class TestExtendedDismaxParser extends SolrTestCaseJ4 {
         , "/response/numFound==1"
     );
     assertJQ(req("qf","text_sw title", "defType","edismax", "q","AT* wi fi", "sow","false")
-        , "/response/numFound==2"
+        , "/response/numFound==1"
     );
     assertJQ(req("qf","text_sw title", "defType","edismax", "q","AT? wi fi", "sow","false")
         , "/response/numFound==1"
@@ -1750,7 +1740,7 @@ public class TestExtendedDismaxParser extends SolrTestCaseJ4 {
         , "/response/numFound==1"
     );
     assertJQ(req("qf","text_sw title", "defType","edismax", "q","wi fi AT*", "sow","false")
-        , "/response/numFound==2"
+        , "/response/numFound==1"
     );
     assertJQ(req("qf","text_sw title", "defType","edismax", "q","wi fi AT?", "sow","false")
         , "/response/numFound==1"
@@ -1765,11 +1755,74 @@ public class TestExtendedDismaxParser extends SolrTestCaseJ4 {
         , "/response/numFound==1"
     );
   }
-  
-  
+
+  public void testAutoGeneratePhraseQueries() throws Exception {
+    ModifiableSolrParams noSowParams = new ModifiableSolrParams();
+    ModifiableSolrParams sowFalseParams = new ModifiableSolrParams();
+    sowFalseParams.add("sow", "false");
+    ModifiableSolrParams sowTrueParams = new ModifiableSolrParams();
+    sowTrueParams.add("sow", "true");
+
+    // From synonyms.txt:
+    //
+    //     crow blackbird, grackle
+
+    try (SolrQueryRequest req = req(sowFalseParams)) {
+      QParser qParser = QParser.getParser("text:grackle", "edismax", req); // "text" has autoGeneratePhraseQueries="true"
+      Query q = qParser.getQuery();
+      assertEquals("+(text:\"crow blackbird\" text:grackl)", q.toString());
+    }
+    for (SolrParams params : Arrays.asList(noSowParams, sowTrueParams)) {
+      try (SolrQueryRequest req = req(params)) {
+        QParser qParser = QParser.getParser("text:grackle", "edismax", req);
+        Query q = qParser.getQuery();
+        assertEquals("+spanOr([spanNear([text:crow, text:blackbird], 0, true), text:grackl])", q.toString());
+      }
+    }
+    for (SolrParams params : Arrays.asList(noSowParams, sowTrueParams, sowFalseParams)) {
+      try (SolrQueryRequest req = req(params)) {
+        QParser qParser = QParser.getParser("text_sw:grackle", "edismax", req); // "text_sw" doesn't specify autoGeneratePhraseQueries => default false
+        Query q = qParser.getQuery();
+        assertEquals("+((+text_sw:crow +text_sw:blackbird) text_sw:grackl)", q.toString());
+      }
+    }
+
+    Stream.of(noSowParams, sowTrueParams, sowFalseParams).forEach(p->p.add("qf", "text text_sw"));
+
+    try (SolrQueryRequest req = req(sowFalseParams)) {
+      QParser qParser = QParser.getParser("grackle", "edismax", req);
+      Query q = qParser.getQuery();
+      assertEquals("+((text:\"crow blackbird\" text:grackl)"
+              + " | ((+text_sw:crow +text_sw:blackbird) text_sw:grackl))",
+          q.toString());
+
+      qParser = QParser.getParser("grackle wi fi", "edismax", req);
+      q = qParser.getQuery();
+      assertEquals("+(((text:\"crow blackbird\" text:grackl) text:wifi)"
+              + " | (((+text_sw:crow +text_sw:blackbird) text_sw:grackl) text_sw:wifi))",
+          q.toString());
+    }
+    
+    for (SolrParams params : Arrays.asList(noSowParams, sowTrueParams)) {
+      try (SolrQueryRequest req = req(params)) {
+        QParser qParser = QParser.getParser("grackle", "edismax", req);
+        Query q = qParser.getQuery();
+        assertEquals("+(spanOr([spanNear([text:crow, text:blackbird], 0, true), text:grackl])"
+                + " | ((+text_sw:crow +text_sw:blackbird) text_sw:grackl))",
+            q.toString());
+
+        qParser = QParser.getParser("grackle wi fi", "edismax", req);
+        q = qParser.getQuery();
+        assertEquals("+((spanOr([spanNear([text:crow, text:blackbird], 0, true), text:grackl])"
+            + " | ((+text_sw:crow +text_sw:blackbird) text_sw:grackl)) (text:wi | text_sw:wi) (text:fi | text_sw:fi))",
+            q.toString());
+      }
+    }
+  }
+
 
   private boolean containsClause(Query query, String field, String value,
-      int boost, boolean fuzzy) {
+                                 int boost, boolean fuzzy) {
 
     float queryBoost = 1f;
     if (query instanceof BoostQuery) {
