@@ -529,7 +529,7 @@ public class SchemaTest extends RestTestBase {
     tokenizerAttributes.put("class", "solr.WhitespaceTokenizerFactory");
     analyzerDefinition.setTokenizer(tokenizerAttributes);
     Map<String, Object> filterAttributes = new LinkedHashMap<>();
-    filterAttributes.put("class", "solr.WordDelimiterFilterFactory");
+    filterAttributes.put("class", "solr.WordDelimiterGraphFilterFactory");
     filterAttributes.put("preserveOriginal", "0");
     analyzerDefinition.setFilters(Collections.singletonList(filterAttributes));
     fieldTypeDefinition.setAnalyzer(analyzerDefinition);

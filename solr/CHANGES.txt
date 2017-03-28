@@ -151,6 +151,8 @@ Other Changes
 
 * SOLR-10352: bin/solr script now prints warning when available system entropy is lower than 300 (Esther Quansah via
   Ishan Chattopadhyaya)
+  
+* SOLR-10344: Update Solr default/example and test configs to use WordDelimiterGraphFilterFactory. (Steve Rowe)
 
 ==================  6.5.0 ==================
 

@@ -67,16 +67,17 @@ Test for HighlighterMaxOffsetTest which requires the use of ReversedWildcardFilt
   <fieldType name="text_stx" class="solr.TextField" positionIncrementGap="100">
     <analyzer type="index">
       <tokenizer class="solr.WhitespaceTokenizerFactory"/>
-      <filter class="solr.WordDelimiterFilterFactory" generateWordParts="1" generateNumberParts="1" catenateWords="1"
+      <filter class="solr.WordDelimiterGraphFilterFactory" generateWordParts="1" generateNumberParts="1" catenateWords="1"
               catenateNumbers="1" catenateAll="0" splitOnCaseChange="0"/>
       <filter class="solr.LowerCaseFilterFactory"/>
       <filter class="solr.ReversedWildcardFilterFactory" withOriginal="true"
               maxPosAsterisk="3" maxPosQuestion="2" maxFractionAsterisk="0.33"/>
+      <filter class="solr.FlattenGraphFilterFactory"/>
     </analyzer>
     <analyzer type="query">
       <tokenizer class="solr.WhitespaceTokenizerFactory"/>
       <filter class="solr.SynonymFilterFactory" synonyms="synonyms.txt" ignoreCase="true" expand="true"/>
-      <filter class="solr.WordDelimiterFilterFactory" generateWordParts="1" generateNumberParts="1" catenateWords="0"
+      <filter class="solr.WordDelimiterGraphFilterFactory" generateWordParts="1" generateNumberParts="1" catenateWords="0"
               catenateNumbers="0" catenateAll="0" splitOnCaseChange="0"/>
       <filter class="solr.LowerCaseFilterFactory"/>
     </analyzer>
