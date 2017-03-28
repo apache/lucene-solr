@@ -93,6 +93,7 @@ class SolrToEnumerableConverter extends ConverterImpl implements EnumerableRel {
   }
 
   private List<String> generateFields(List<String> queryFields, Map<String, String> fieldMappings) {
+
     if(fieldMappings.isEmpty()) {
       return queryFields;
     } else {
