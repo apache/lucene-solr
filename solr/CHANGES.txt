@@ -139,6 +139,8 @@ Bug Fixes
 
 * SOLR-10362: "Memory Pool not found" error when reporting JVM metrics. (ab)
 
+* SOLR-10369: bin\solr.cmd delete and healthcheck now works again; fixed continuation chars ^ (Luis Goes via janhoy)
+
 Other Changes
 ----------------------
 
