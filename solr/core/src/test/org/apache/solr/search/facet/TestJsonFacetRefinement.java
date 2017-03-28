@@ -36,7 +36,6 @@ import org.noggit.ObjectBuilder;
 public class TestJsonFacetRefinement extends SolrTestCaseHS {
 
   private static SolrInstances servers;  // for distributed testing
-  private static int origTableSize;
 
   @BeforeClass
   public static void beforeTests() throws Exception {
@@ -209,13 +208,13 @@ public class TestJsonFacetRefinement extends SolrTestCaseHS {
             "}"
     );
 
-    // for testing missing _m, we need a partial facet within a partial facet
+    // for testing partial _p, we need a partial facet within a partial facet
     doTestRefine("{top:{type:terms, field:Afield, refine:true, limit:1, facet:{x : {type:terms, field:X, limit:1, refine:true} } } }",
         "{top: {buckets:[{val:'A', count:2, x:{buckets:[{val:x1, count:5},{val:x2, count:3}]} } ] } }",
         "{top: {buckets:[{val:'B', count:1, x:{buckets:[{val:x2, count:4},{val:x3, count:2}]} } ] } }",
         null,
         "=={top: {" +
-            "_m:[  ['A' , {x:{_l:[x1]}} ]  ]" +
+            "_p:[  ['A' , {x:{_l:[x1]}} ]  ]" +
             "    }  " +
             "}"
     );
@@ -329,7 +328,7 @@ public class TestJsonFacetRefinement extends SolrTestCaseHS {
             "}"
     );
 
-    // test that sibling facets and stats are included for _m buckets, but skipped for _s buckets
+    // test that sibling facets and stats are included for _p buckets, but skipped for _s buckets
     client.testJQ(params(p, "q", "*:*",
         "json.facet", "{" +
             " ab :{type:terms, field:${cat_s}, limit:1, overrequest:0, refine:true,  facet:{  xy:{type:terms, field:${xy_s}, limit:1, overrequest:0, refine:true}, qq:{query:'*:*'},ww:'sum(${num_d})'  }}" +
@@ -339,9 +338,9 @@ public class TestJsonFacetRefinement extends SolrTestCaseHS {
             "}"
         )
         , "facets=={ count:8" +
-            ", ab:{ buckets:[  {val:A, count:4, xy:{buckets:[ {val:X,count:3}]}    ,qq:{count:4}, ww:4.0 }]  }" +  // make sure qq and ww are included for _m buckets
+            ", ab:{ buckets:[  {val:A, count:4, xy:{buckets:[ {val:X,count:3}]}    ,qq:{count:4}, ww:4.0 }]  }" +  // make sure qq and ww are included for _p buckets
             ", allf:{ buckets:[ {count:8, val:all, cat:{buckets:[{val:A,count:4}]} ,qq:{count:8}, ww:2.0 }]  }" +  // make sure qq and ww are excluded (not calculated again in another phase) for _s buckets
-            ", ab2:{ buckets:[  {val:A, count:4, xy:{buckets:[ {val:X,count:3}]}    ,qq:{count:4}, ww:4.0 }]  }" +  // make sure qq and ww are included for _m buckets
+            ", ab2:{ buckets:[  {val:A, count:4, xy:{buckets:[ {val:X,count:3}]}    ,qq:{count:4}, ww:4.0 }]  }" +  // make sure qq and ww are included for _p buckets
             ", allf2:{ buckets:[ {count:8, val:all, cat:{buckets:[{val:A,count:4}]} ,qq:{count:8}, ww:2.0 }]  }" +  // make sure qq and ww are excluded (not calculated again in another phase) for _s buckets
             "}"
     );
