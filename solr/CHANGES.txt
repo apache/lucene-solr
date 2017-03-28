@@ -158,6 +158,9 @@ Other Changes
 
 * SOLR-10343: Update Solr default/example and test configs to use SynonymGraphFilterFactory. (Steve Rowe)
 
+* SOLR-10365: Handle a SolrCoreInitializationException while publishing core state during SolrCore creation
+  (Ishan Chattopadhyaya)
+
 ==================  6.5.0 ==================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release.
