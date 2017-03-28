@@ -624,7 +624,7 @@ public class GatherNodesStream extends TupleStream implements Expressible {
     return null;
   }
 
-  class NodeStream extends TupleStream {
+  static class NodeStream extends TupleStream {
 
     private List<String> ids;
     private Iterator<String> it;

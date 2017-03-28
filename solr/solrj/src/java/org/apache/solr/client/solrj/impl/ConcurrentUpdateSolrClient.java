@@ -380,7 +380,7 @@ public class ConcurrentUpdateSolrClient extends SolrClient {
   /**
    * Class representing an UpdateRequest and an optional collection.
    */
-  class Update {
+  static class Update {
     UpdateRequest request;
     String collection;
     /**

@@ -80,7 +80,7 @@ public class TestLTRReRankingPipeline extends LuceneTestCase {
     return features;
   }
 
-  private class MockModel extends LTRScoringModel {
+  private static class MockModel extends LTRScoringModel {
 
     public MockModel(String name, List<Feature> features,
         List<Normalizer> norms,

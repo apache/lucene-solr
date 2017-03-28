@@ -78,7 +78,7 @@ public class OverseerCollectionConfigSetProcessorTest extends SolrTestCaseJ4 {
   private Thread thread;
   private Queue<QueueEvent> queue = new ArrayBlockingQueue<>(10);
 
-  private class OverseerCollectionConfigSetProcessorToBeTested extends
+  private static class OverseerCollectionConfigSetProcessorToBeTested extends
       OverseerCollectionConfigSetProcessor {
     
 

@@ -750,7 +750,7 @@ public class DefaultSolrHighlighter extends SolrHighlighter implements PluginInf
   }
 
   // Wraps FVH to allow pass-by-reference. Public access to allow use in 3rd party subclasses
-  public class FvhContainer {
+  public static class FvhContainer {
     FastVectorHighlighter fvh;
     FieldQuery fieldQuery;
 

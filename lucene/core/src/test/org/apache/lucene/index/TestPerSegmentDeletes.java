@@ -242,7 +242,7 @@ public class TestPerSegmentDeletes extends LuceneTestCase {
     return Arrays.copyOf(docs, numDocs);
   }
 
-  public class RangeMergePolicy extends MergePolicy {
+  public static class RangeMergePolicy extends MergePolicy {
     boolean doMerge = false;
     int start;
     int length;

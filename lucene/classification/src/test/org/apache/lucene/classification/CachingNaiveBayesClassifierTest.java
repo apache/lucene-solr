@@ -82,7 +82,7 @@ public class CachingNaiveBayesClassifierTest extends ClassificationTestBase<Byte
     }
   }
 
-  private class NGramAnalyzer extends Analyzer {
+  private static class NGramAnalyzer extends Analyzer {
     @Override
     protected TokenStreamComponents createComponents(String fieldName) {
       final Tokenizer tokenizer = new KeywordTokenizer();

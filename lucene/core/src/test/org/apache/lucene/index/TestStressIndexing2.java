@@ -686,7 +686,7 @@ public class TestStressIndexing2 extends LuceneTestCase {
     assertFalse(fieldsEnum2.hasNext());
   }
 
-  private class IndexingThread extends Thread {
+  private static class IndexingThread extends Thread {
     IndexWriter w;
     int base;
     int range;

@@ -400,7 +400,7 @@ public class SolrPluginUtilsTest extends SolrTestCaseJ4 {
     assertEquals(3, q.build().getMinimumNumberShouldMatch());
   }
 
-  private class InvokeSettersTestClass {
+  private static class InvokeSettersTestClass {
     private float aFloat = random().nextFloat();
     public float getAFloat() {
       return aFloat;

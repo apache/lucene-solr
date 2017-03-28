@@ -144,7 +144,7 @@ public class ZkStateReader implements Closeable {
 
   private final ExecutorService notifications = ExecutorUtil.newMDCAwareCachedThreadPool("watches");
 
-  private class CollectionWatch {
+  private static class CollectionWatch {
 
     int coreRefCount = 0;
     Set<CollectionStateWatcher> stateWatchers = ConcurrentHashMap.newKeySet();

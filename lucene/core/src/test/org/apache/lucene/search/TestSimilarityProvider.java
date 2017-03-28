@@ -88,7 +88,7 @@ public class TestSimilarityProvider extends LuceneTestCase {
     assertTrue(foodocs.scoreDocs[0].score < bardocs.scoreDocs[0].score);
   }
   
-  private class ExampleSimilarityProvider extends PerFieldSimilarityWrapper {
+  private static class ExampleSimilarityProvider extends PerFieldSimilarityWrapper {
     private final Similarity sim1 = new Sim1();
     private final Similarity sim2 = new Sim2();
     
@@ -106,7 +106,7 @@ public class TestSimilarityProvider extends LuceneTestCase {
     }
   }
   
-  private class Sim1 extends TFIDFSimilarity {
+  private static class Sim1 extends TFIDFSimilarity {
     
     @Override
     public long encodeNormValue(float f) {
@@ -154,7 +154,7 @@ public class TestSimilarityProvider extends LuceneTestCase {
     }
   }
   
-  private class Sim2 extends TFIDFSimilarity {
+  private static class Sim2 extends TFIDFSimilarity {
     
     @Override
     public long encodeNormValue(float f) {

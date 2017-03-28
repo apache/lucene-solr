@@ -73,7 +73,7 @@ public class AbstractDIHCacheTestCase {
 
   //A limitation of this test class is that the primary key needs to be the first one in the list.
   //DIHCaches, however, can handle any field being the primary key.
-  class ControlData implements Comparable<ControlData>, Iterable<Object> {
+  static class ControlData implements Comparable<ControlData>, Iterable<Object> {
     Object[] data;
 
     ControlData(Object[] data) {

@@ -153,7 +153,7 @@ public class TestCustomScoreQuery extends FunctionTestSetup {
     }
   }
 
-  private final class CustomExternalQuery extends CustomScoreQuery {
+  private static final class CustomExternalQuery extends CustomScoreQuery {
 
     @Override
     protected CustomScoreProvider getCustomScoreProvider(LeafReaderContext context) throws IOException {

@@ -68,7 +68,7 @@ public final class ConstantScoreQuery extends Query {
    *  wraps a query with its own optimized top-level
    *  scorer (e.g. BooleanScorer) we can use that
    *  top-level scorer. */
-  protected class ConstantBulkScorer extends BulkScorer {
+  protected static class ConstantBulkScorer extends BulkScorer {
     final BulkScorer bulkScorer;
     final Weight weight;
     final float theScore;

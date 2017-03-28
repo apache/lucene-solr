@@ -583,7 +583,7 @@ public final class ShingleFilter extends TokenFilter {
     }
   }
     
-  private class InputWindowToken {
+  private static class InputWindowToken {
     final AttributeSource attSource;
     final CharTermAttribute termAtt;
     final OffsetAttribute offsetAtt;

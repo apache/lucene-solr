@@ -185,7 +185,7 @@ public class CollisionMap {
     return memoryUsage;
   }
 
-  private class EntryIterator implements Iterator<Entry> {
+  private static class EntryIterator implements Iterator<Entry> {
     Entry next;    // next entry to return
     int index;        // current slot 
     Entry[] ents;

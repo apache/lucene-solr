@@ -71,7 +71,7 @@ public class JaspellTernarySearchTrie implements Accountable {
   /**
    * An inner class of Ternary Search Trie that represents a node in the trie.
    */
-  protected final class TSTNode implements Accountable {
+  protected static final class TSTNode implements Accountable {
 
     /** Index values for accessing relatives array. */
     protected final static int PARENT = 0, LOKID = 1, EQKID = 2, HIKID = 3;

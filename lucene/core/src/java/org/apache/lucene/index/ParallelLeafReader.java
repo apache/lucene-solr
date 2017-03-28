@@ -170,7 +170,7 @@ public class ParallelLeafReader extends LeafReader {
   }
 
   // Single instance of this, per ParallelReader instance
-  private final class ParallelFields extends Fields {
+  private static final class ParallelFields extends Fields {
     final Map<String,Terms> fields = new TreeMap<>();
     
     ParallelFields() {

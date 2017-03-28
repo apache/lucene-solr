@@ -238,7 +238,7 @@ public class ContextQuery extends CompletionQuery {
     }
   }
 
-  private class ContextCompletionWeight extends CompletionWeight {
+  private static class ContextCompletionWeight extends CompletionWeight {
 
     private final Map<IntsRef, Float> contextMap;
     private final int[] contextLengths;

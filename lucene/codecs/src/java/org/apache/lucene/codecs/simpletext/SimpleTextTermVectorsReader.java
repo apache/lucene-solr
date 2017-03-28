@@ -239,7 +239,7 @@ public class SimpleTextTermVectorsReader extends TermVectorsReader {
     return scratchUTF16.toString();
   }
 
-  private class SimpleTVFields extends Fields {
+  private static class SimpleTVFields extends Fields {
     private final SortedMap<String,SimpleTVTerms> fields;
 
     SimpleTVFields(SortedMap<String,SimpleTVTerms> fields) {

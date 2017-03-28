@@ -1649,7 +1649,7 @@ public class IndexFetcher {
     }
   }
 
-  private class DirectoryFile implements FileInterface {
+  private static class DirectoryFile implements FileInterface {
     private final String saveAs;
     private Directory copy2Dir;
     private IndexOutput outStream;
@@ -1684,7 +1684,7 @@ public class IndexFetcher {
     }
   }
 
-  private class LocalFsFile implements FileInterface {
+  private static class LocalFsFile implements FileInterface {
     private File copy2Dir;
 
     FileChannel fileChannel;

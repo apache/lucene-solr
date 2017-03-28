@@ -41,7 +41,7 @@ import org.apache.lucene.util.TestUtil;
 
 public class TestIndexableField extends LuceneTestCase {
 
-  private class MyField implements IndexableField {
+  private static class MyField implements IndexableField {
 
     private final int counter;
     private final IndexableFieldType fieldType = new IndexableFieldType() {

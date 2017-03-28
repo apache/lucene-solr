@@ -72,7 +72,7 @@ public class TestSolrCLIRunExample extends SolrTestCaseJ4 {
    * Overrides the call to exec bin/solr to start Solr nodes to start them using the Solr test-framework
    * instead of the script, since the script depends on a full build.
    */
-  private class RunExampleExecutor extends DefaultExecutor implements Closeable {
+  private static class RunExampleExecutor extends DefaultExecutor implements Closeable {
 
     private PrintStream stdout;
     private List<org.apache.commons.exec.CommandLine> commandsExecuted = new ArrayList<>();

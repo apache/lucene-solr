@@ -169,7 +169,7 @@ public class FacetFieldMerger extends FacetRequestSortedMerger<FacetField> {
 
 
 
-  private class FacetNumBucketsMerger extends FacetMerger {
+  private static class FacetNumBucketsMerger extends FacetMerger {
     long sumBuckets;
     long shardsMissingSum;
     long shardsTruncatedSum;

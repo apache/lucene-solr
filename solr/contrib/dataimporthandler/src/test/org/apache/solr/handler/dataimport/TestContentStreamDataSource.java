@@ -109,7 +109,7 @@ public class TestContentStreamDataSource extends AbstractDataImportHandlerTestCa
     fail("Commit should have occured but it did not");
   }
   
-  private class SolrInstance {
+  private static class SolrInstance {
     String name;
     Integer port;
     File homeDir;

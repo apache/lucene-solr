@@ -153,7 +153,7 @@ public class TestTermScorer extends LuceneTestCase {
     assertTrue("doc should be number 5", ts.docID() == 5);
   }
   
-  private class TestHit {
+  private static class TestHit {
     public int doc;
     public float score;
     

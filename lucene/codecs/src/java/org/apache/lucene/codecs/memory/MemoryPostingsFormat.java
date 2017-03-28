@@ -111,15 +111,11 @@ public final class MemoryPostingsFormat extends PostingsFormat {
     private final FieldInfo field;
     private final Builder<BytesRef> builder;
     private final ByteSequenceOutputs outputs = ByteSequenceOutputs.getSingleton();
-    private final boolean doPackFST;
-    private final float acceptableOverheadRatio;
     private int termCount;
 
     public TermsWriter(IndexOutput out, FieldInfo field, boolean doPackFST, float acceptableOverheadRatio) {
       this.out = out;
       this.field = field;
-      this.doPackFST = doPackFST;
-      this.acceptableOverheadRatio = acceptableOverheadRatio;
       builder = new Builder<>(FST.INPUT_TYPE.BYTE1, 0, 0, true, true, Integer.MAX_VALUE, outputs, doPackFST, acceptableOverheadRatio, true, 15);
     }
 

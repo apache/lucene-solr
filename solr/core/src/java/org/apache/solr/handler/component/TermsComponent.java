@@ -353,7 +353,7 @@ public class TermsComponent extends SearchComponent {
     return sreq;
   }
 
-  public class TermsHelper {
+  public static class TermsHelper {
     // map to store returned terms
     private HashMap<String, HashMap<String, TermsResponse.Term>> fieldmap;
     private SolrParams params;

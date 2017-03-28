@@ -376,7 +376,7 @@ public class VelocityResponseWriter implements QueryResponseWriter, SolrCoreAwar
   }
 
   // see: http://svn.apache.org/repos/asf/velocity/tools/branches/2.0.x/src/main/java/org/apache/velocity/tools/generic/ResourceTool.java
-  private class SolrVelocityResourceTool extends ResourceTool {
+  private static class SolrVelocityResourceTool extends ResourceTool {
 
     private ClassLoader solrClassLoader;
 

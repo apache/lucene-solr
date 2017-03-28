@@ -301,7 +301,7 @@ public class PivotFacetFieldValueCollection implements Iterable<PivotFacetValue>
   }
     
   /** Sorts {@link PivotFacetValue} instances by their count */
-  public class PivotFacetCountComparator implements Comparator<PivotFacetValue> {    
+  public static class PivotFacetCountComparator implements Comparator<PivotFacetValue> {
     public int compare(PivotFacetValue left, PivotFacetValue right) {
       int countCmp = right.getCount() - left.getCount();
       return (0 != countCmp) ? countCmp : 
@@ -310,7 +310,7 @@ public class PivotFacetFieldValueCollection implements Iterable<PivotFacetValue>
   }
   
   /** Sorts {@link PivotFacetValue} instances by their value */
-  public class PivotFacetValueComparator implements Comparator<PivotFacetValue> {
+  public static class PivotFacetValueComparator implements Comparator<PivotFacetValue> {
     public int compare(PivotFacetValue left, PivotFacetValue right) {
       return compareWithNullLast(left.getValue(), right.getValue());
     }
