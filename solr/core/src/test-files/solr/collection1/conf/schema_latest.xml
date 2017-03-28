@@ -484,14 +484,15 @@
       <tokenizer class="solr.StandardTokenizerFactory"/>
       <filter class="solr.StopFilterFactory" ignoreCase="true" words="stopwords.txt"/>
       <!-- in this example, we will only use synonyms at query time
-      <filter class="solr.SynonymFilterFactory" synonyms="index_synonyms.txt" ignoreCase="true" expand="false"/>
+      <filter class="solr.SynonymGraphFilterFactory" synonyms="index_synonyms.txt" ignoreCase="true" expand="false"/>
+      <filter class="solr.FlattenGraphFilterFactory"/>
       -->
       <filter class="solr.LowerCaseFilterFactory"/>
     </analyzer>
     <analyzer type="query">
       <tokenizer class="solr.StandardTokenizerFactory"/>
       <filter class="solr.StopFilterFactory" ignoreCase="true" words="stopwords.txt"/>
-      <filter class="solr.SynonymFilterFactory" synonyms="synonyms.txt" ignoreCase="true" expand="true"/>
+      <filter class="solr.SynonymGraphFilterFactory" synonyms="synonyms.txt" ignoreCase="true" expand="true"/>
       <filter class="solr.LowerCaseFilterFactory"/>
     </analyzer>
   </fieldType>
@@ -505,7 +506,8 @@
     <analyzer type="index">
       <tokenizer class="solr.StandardTokenizerFactory"/>
       <!-- in this example, we will only use synonyms at query time
-      <filter class="solr.SynonymFilterFactory" synonyms="index_synonyms.txt" ignoreCase="true" expand="false"/>
+      <filter class="solr.SynonymGraphFilterFactory" synonyms="index_synonyms.txt" ignoreCase="true" expand="false"/>
+      <filter class="solr.FlattenGraphFilterFactory"/>
       -->
       <!-- Case insensitive stop word removal.
       -->
@@ -523,7 +525,7 @@
     </analyzer>
     <analyzer type="query">
       <tokenizer class="solr.StandardTokenizerFactory"/>
-      <filter class="solr.SynonymFilterFactory" synonyms="synonyms.txt" ignoreCase="true" expand="true"/>
+      <filter class="solr.SynonymGraphFilterFactory" synonyms="synonyms.txt" ignoreCase="true" expand="true"/>
       <filter class="solr.StopFilterFactory"
               ignoreCase="true"
               words="stopwords.txt"
@@ -552,7 +554,7 @@
     <analyzer type="index">
       <tokenizer class="solr.WhitespaceTokenizerFactory"/>
       <!-- in this example, we will only use synonyms at query time
-      <filter class="solr.SynonymFilterFactory" synonyms="index_synonyms.txt" ignoreCase="true" expand="false"/>
+      <filter class="solr.SynonymGraphFilterFactory" synonyms="index_synonyms.txt" ignoreCase="true" expand="false"/>
       -->
       <!-- Case insensitive stop word removal.
       -->
@@ -569,7 +571,7 @@
     </analyzer>
     <analyzer type="query">
       <tokenizer class="solr.WhitespaceTokenizerFactory"/>
-      <filter class="solr.SynonymFilterFactory" synonyms="synonyms.txt" ignoreCase="true" expand="true"/>
+      <filter class="solr.SynonymGraphFilterFactory" synonyms="synonyms.txt" ignoreCase="true" expand="true"/>
       <filter class="solr.StopFilterFactory"
               ignoreCase="true"
               words="stopwords.txt"
@@ -588,7 +590,7 @@
              autoGeneratePhraseQueries="true">
     <analyzer type="index">
       <tokenizer class="solr.WhitespaceTokenizerFactory"/>
-      <filter class="solr.SynonymFilterFactory" synonyms="synonyms.txt" ignoreCase="true" expand="false"/>
+      <filter class="solr.SynonymGraphFilterFactory" synonyms="synonyms.txt" ignoreCase="true" expand="false"/>
       <filter class="solr.StopFilterFactory" ignoreCase="true" words="stopwords.txt"/>
       <filter class="solr.WordDelimiterGraphFilterFactory" generateWordParts="0" generateNumberParts="0" catenateWords="1"
               catenateNumbers="1" catenateAll="0"/>
@@ -602,7 +604,7 @@
     </analyzer>
     <analyzer type="query">
       <tokenizer class="solr.WhitespaceTokenizerFactory"/>
-      <filter class="solr.SynonymFilterFactory" synonyms="synonyms.txt" ignoreCase="true" expand="false"/>
+      <filter class="solr.SynonymGraphFilterFactory" synonyms="synonyms.txt" ignoreCase="true" expand="false"/>
       <filter class="solr.StopFilterFactory" ignoreCase="true" words="stopwords.txt"/>
       <filter class="solr.WordDelimiterGraphFilterFactory" generateWordParts="0" generateNumberParts="0" catenateWords="1"
               catenateNumbers="1" catenateAll="0"/>
@@ -627,7 +629,7 @@
     </analyzer>
     <analyzer type="query">
       <tokenizer class="solr.StandardTokenizerFactory"/>
-      <filter class="solr.SynonymFilterFactory" synonyms="synonyms.txt" ignoreCase="true" expand="true"/>
+      <filter class="solr.SynonymGraphFilterFactory" synonyms="synonyms.txt" ignoreCase="true" expand="true"/>
       <filter class="solr.StopFilterFactory" ignoreCase="true" words="stopwords.txt"/>
       <filter class="solr.LowerCaseFilterFactory"/>
     </analyzer>

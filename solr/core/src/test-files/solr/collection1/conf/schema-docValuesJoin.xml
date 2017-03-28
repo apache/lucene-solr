@@ -51,7 +51,7 @@
     </analyzer>
     <analyzer type="query">
       <tokenizer class="solr.MockTokenizerFactory"/>
-      <filter class="solr.SynonymFilterFactory" synonyms="synonyms.txt" ignoreCase="true" expand="true"/>
+      <filter class="solr.SynonymGraphFilterFactory" synonyms="synonyms.txt" ignoreCase="true" expand="true"/>
       <filter class="solr.StopFilterFactory"
               ignoreCase="true"
               words="stopwords.txt"
