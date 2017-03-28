@@ -530,13 +530,13 @@ abstract class FacetFieldProcessor extends FacetProcessor<FacetField> {
   protected SimpleOrderedMap<Object> refineFacets() throws IOException {
     List leaves = asList(fcontext.facetInfo.get("_l"));        // We have not seen this bucket: do full faceting for this bucket, including all sub-facets
     List<List> skip = asList(fcontext.facetInfo.get("_s"));    // We have seen this bucket, so skip stats on it, and skip sub-facets except for the specified sub-facets that should calculate specified buckets.
-    List<List> missing = asList(fcontext.facetInfo.get("_m")); // We have not seen this bucket, do full faceting for this bucket, and most sub-facets... but some sub-facets should only visit specified buckets.
+    List<List> partial = asList(fcontext.facetInfo.get("_p")); // We have not seen this bucket, do full faceting for this bucket, and most sub-facets... but some sub-facets are partial and should only visit specified buckets.
 
     // For leaf refinements, we do full faceting for each leaf bucket.  Any sub-facets of these buckets will be fully evaluated.  Because of this, we should never
     // encounter leaf refinements that have sub-facets that return partial results.
 
     SimpleOrderedMap<Object> res = new SimpleOrderedMap<>();
-    List<SimpleOrderedMap> bucketList = new ArrayList<>( leaves.size() + skip.size() + missing.size() );
+    List<SimpleOrderedMap> bucketList = new ArrayList<>( leaves.size() + skip.size() + partial.size() );
     res.add("buckets", bucketList);
 
     // TODO: an alternate implementations can fill all accs at once
@@ -555,7 +555,7 @@ abstract class FacetFieldProcessor extends FacetProcessor<FacetField> {
     }
 
     // The only difference between skip and missing is the value of "skip" passed to refineBucket
-    for (List bucketAndFacetInfo : missing) {
+    for (List bucketAndFacetInfo : partial) {
       assert bucketAndFacetInfo.size() == 2;
       Object bucketVal = bucketAndFacetInfo.get(0);
       Map<String,Object> facetInfo = (Map<String, Object>) bucketAndFacetInfo.get(1);
