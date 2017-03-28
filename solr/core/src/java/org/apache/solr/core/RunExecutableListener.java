@@ -17,8 +17,10 @@
 package org.apache.solr.core;
 
 import org.apache.solr.common.SolrException;
+import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.search.SolrIndexSearcher;
+import org.apache.solr.util.plugin.SolrCoreAware;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -30,7 +32,7 @@ import java.util.ArrayList;
 
 /**
  */
-class RunExecutableListener extends AbstractSolrEventListener {
+class RunExecutableListener extends AbstractSolrEventListener implements SolrCoreAware {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   
   public RunExecutableListener(SolrCore core) {
@@ -64,6 +66,15 @@ class RunExecutableListener extends AbstractSolrEventListener {
     }
 
     if ("false".equals(args.get("wait")) || Boolean.FALSE.equals(args.get("wait"))) wait=false;
+  }
+
+  @Override
+  public void inform(SolrCore core) {
+    if (!core.getCoreDescriptor().isConfigSetTrusted()) {
+      throw new SolrException(ErrorCode.UNAUTHORIZED, "The configset for this collection was uploaded without any authentication in place,"
+          + " and this operation is not available for collections with untrusted configsets. To have this component, re-upload the configset"
+          + " after enabling authentication and authorization.");
+    }
   }
 
   /**

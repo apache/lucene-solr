@@ -40,7 +40,7 @@ public interface PermissionNameProvider {
     CORE_EDIT_PERM("core-admin-edit", null),
     READ_PERM("read", "*"),
     UPDATE_PERM("update", "*"),
-    CONFIG_EDIT_PERM("config-edit", "*"),
+    CONFIG_EDIT_PERM("config-edit", unmodifiableSet(new HashSet<>(asList("*", null)))),
     CONFIG_READ_PERM("config-read", "*"),
     SCHEMA_READ_PERM("schema-read", "*"),
     SCHEMA_EDIT_PERM("schema-edit", "*"),
