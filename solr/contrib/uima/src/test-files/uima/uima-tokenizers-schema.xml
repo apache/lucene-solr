@@ -203,7 +203,7 @@
       <tokenizer class="solr.MockTokenizerFactory"/>
       <!--
         in this example, we will only use synonyms at query time
-        <filter class="solr.SynonymFilterFactory"
+        <filter class="solr.SynonymGraphFilterFactory"
         synonyms="index_synonyms.txt" ignoreCase="true"
         expand="false"/>
       -->

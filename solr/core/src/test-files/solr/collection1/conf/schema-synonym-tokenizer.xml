@@ -15,7 +15,7 @@
   limitations under the License.
   -->
 
-<!-- Test schema file for SynonymFilterFactory argument "tokenizerFactory" -->
+<!-- Test schema file for SynonymGraphFilterFactory argument "tokenizerFactory" -->
 
 <schema name="synonym-test" version="1.0">
   <fieldType name="int" class="solr.TrieIntField" precisionStep="0" omitNorms="true" positionIncrementGap="0"/>
@@ -23,8 +23,9 @@
   <fieldType name="text_synonyms" class="solr.TextField" positionIncrementGap="100">
     <analyzer type="index">
       <tokenizer class="solr.StandardTokenizerFactory"/>
-      <filter class="solr.SynonymFilterFactory" synonyms="synonyms.txt" ignoreCase="true" expand="false"
+      <filter class="solr.SynonymGraphFilterFactory" synonyms="synonyms.txt" ignoreCase="true" expand="false"
               tokenizerFactory="solr.StandardTokenizerFactory"/>
+      <filter class="solr.FlattenGraphFilterFactory"/>
     </analyzer>
     <analyzer type="query">
       <tokenizer class="solr.StandardTokenizerFactory"/>
