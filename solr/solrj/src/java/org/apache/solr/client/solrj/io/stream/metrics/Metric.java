@@ -30,6 +30,7 @@ public abstract class Metric implements Expressible {
   private UUID metricNodeId = UUID.randomUUID();
   private String functionName;
   private String identifier;
+  public boolean outputLong; // This is only used for SQL in facet mode.
 
   public String getFunctionName(){
     return functionName;
