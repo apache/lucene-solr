@@ -767,6 +767,11 @@ public class TestRangeFacetCounts extends FacetTestCase {
     }
 
     @Override
+    public DoubleValuesSource rewrite(IndexSearcher searcher) throws IOException {
+      return this;
+    }
+
+    @Override
     public int hashCode() {
       return 0;
     }

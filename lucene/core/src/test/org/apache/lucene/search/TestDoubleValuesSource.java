@@ -196,6 +196,7 @@ public class TestDoubleValuesSource extends LuceneTestCase {
   }
 
   private void testExplanations(Query q, DoubleValuesSource vs) throws IOException {
+    DoubleValuesSource rewritten = vs.rewrite(searcher);
     searcher.search(q, new SimpleCollector() {
 
       DoubleValues v;
@@ -208,23 +209,23 @@ public class TestDoubleValuesSource extends LuceneTestCase {
 
       @Override
       public void setScorer(Scorer scorer) throws IOException {
-        this.v = vs.getValues(this.ctx, DoubleValuesSource.fromScorer(scorer));
+        this.v = rewritten.getValues(this.ctx, DoubleValuesSource.fromScorer(scorer));
       }
 
       @Override
       public void collect(int doc) throws IOException {
         Explanation scoreExpl = searcher.explain(q, ctx.docBase + doc);
         if (this.v.advanceExact(doc)) {
-          CheckHits.verifyExplanation("", doc, (float) v.doubleValue(), true, vs.explain(ctx, doc, scoreExpl));
+          CheckHits.verifyExplanation("", doc, (float) v.doubleValue(), true, rewritten.explain(ctx, doc, scoreExpl));
         }
         else {
-          assertFalse(vs.explain(ctx, doc, scoreExpl).isMatch());
+          assertFalse(rewritten.explain(ctx, doc, scoreExpl).isMatch());
         }
       }
 
       @Override
       public boolean needsScores() {
-        return vs.needsScores();
+        return rewritten.needsScores();
       }
     });
   }
