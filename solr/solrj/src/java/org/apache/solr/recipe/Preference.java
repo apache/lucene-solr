@@ -21,15 +21,15 @@ import java.util.List;
 import java.util.Map;
 
 class Preference {
-  final RuleSorter.SortParam name;
+  final Policy.SortParam name;
   Integer precision;
-  final RuleSorter.Sort sort;
+  final Policy.Sort sort;
   Preference next;
   public int idx;
 
   Preference(Map<String, Object> m) {
-    sort = RuleSorter.Sort.get(m);
-    name = RuleSorter.SortParam.get(m.get(sort.name()).toString());
+    sort = Policy.Sort.get(m);
+    name = Policy.SortParam.get(m.get(sort.name()).toString());
     Object p = m.getOrDefault("precision", 0);
     precision = p instanceof Number ? ((Number) p).intValue() : Integer.parseInt(p.toString());
 

@@ -21,8 +21,8 @@ import java.util.Map;
 
 import org.apache.solr.common.util.Pair;
 import org.apache.solr.common.util.Utils;
-import org.apache.solr.recipe.RuleSorter.BaseSuggester;
-import org.apache.solr.recipe.RuleSorter.Session;
+import org.apache.solr.recipe.Policy.BaseSuggester;
+import org.apache.solr.recipe.Policy.Session;
 
 import static org.apache.solr.common.cloud.ZkStateReader.COLLECTION_PROP;
 import static org.apache.solr.common.cloud.ZkStateReader.SHARD_ID_PROP;
@@ -46,7 +46,7 @@ public class MoveReplicaSuggester  extends BaseSuggester{
     //iterate through elements and identify the least loaded
     for (int i = 0; i < matrix.size(); i++) {
       Row fromRow = matrix.get(i);
-      Pair<Row, RuleSorter.ReplicaStat> pair = fromRow.removeReplica(coll, shard);
+      Pair<Row, Policy.ReplicaStat> pair = fromRow.removeReplica(coll, shard);
       fromRow = pair.first();
       if(fromRow == null){
         //no such replica available

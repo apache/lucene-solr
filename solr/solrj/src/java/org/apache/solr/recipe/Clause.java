@@ -27,7 +27,7 @@ import java.util.concurrent.atomic.AtomicReference;
 
 import org.apache.solr.common.MapWriter;
 import org.apache.solr.common.util.Utils;
-import org.apache.solr.recipe.RuleSorter.ReplicaStat;
+import org.apache.solr.recipe.Policy.ReplicaStat;
 
 import static java.util.Collections.singletonMap;
 import static org.apache.solr.common.params.CoreAdminParams.COLLECTION;
@@ -41,8 +41,8 @@ import static org.apache.solr.recipe.Operand.GREATER_THAN;
 import static org.apache.solr.recipe.Operand.LESS_THAN;
 import static org.apache.solr.recipe.Operand.NOT_EQUAL;
 import static org.apache.solr.recipe.Operand.WILDCARD;
-import static org.apache.solr.recipe.RuleSorter.ANY;
-import static org.apache.solr.recipe.RuleSorter.EACH;
+import static org.apache.solr.recipe.Policy.ANY;
+import static org.apache.solr.recipe.Policy.EACH;
 
 // a set of conditions in a policy
 public class Clause implements MapWriter {

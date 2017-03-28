@@ -37,7 +37,7 @@ import org.apache.solr.common.util.Utils;
 import static java.util.Collections.singletonList;
 import static java.util.stream.Collectors.toList;
 
-public class RuleSorter {
+public class Policy {
   public static final String EACH = "#EACH";
   public static final String ANY = "#ANY";
   List<Clause> clauses = new ArrayList<>();
@@ -45,7 +45,7 @@ public class RuleSorter {
   List<String> params= new ArrayList<>();
 
 
-  public RuleSorter(Map<String, Object> jsonMap) {
+  public Policy(Map<String, Object> jsonMap) {
     List<Map<String, Object>> l = getListOfMap("conditions", jsonMap);
     clauses = l.stream().map(Clause::new).collect(toList());
     l = getListOfMap("preferences", jsonMap);
@@ -86,8 +86,8 @@ public class RuleSorter {
           .collect(Collectors.toList());
     }
 
-    RuleSorter getRuleSorter() {
-      return RuleSorter.this;
+    Policy getRuleSorter() {
+      return Policy.this;
 
     }
 
@@ -226,10 +226,10 @@ public class RuleSorter {
   static class BaseSuggester {
     final String coll;
     final String shard;
-    final RuleSorter.Session session;
+    final Policy.Session session;
     List<Row> matrix;
 
-    BaseSuggester(String coll, String shard, RuleSorter.Session session) {
+    BaseSuggester(String coll, String shard, Policy.Session session) {
       this.coll = coll;
       this.shard = shard;
       this.session = session;

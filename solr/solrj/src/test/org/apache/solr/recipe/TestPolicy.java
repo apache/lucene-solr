@@ -31,7 +31,7 @@ import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.util.Utils;
 import org.apache.solr.common.util.ValidatingJsonMap;
 
-public class TestRuleSorter extends SolrTestCaseJ4 {
+public class TestPolicy extends SolrTestCaseJ4 {
 
   public void testOperands() {
     Clause c = new Clause((Map<String, Object>) Utils.fromJSONString("{replica:'<2', node:'#ANY'}"));
@@ -113,9 +113,9 @@ public class TestRuleSorter extends SolrTestCaseJ4 {
         .getDeepCopy((Map) Utils.fromJSONString(clusterState), 6, true);
 
 
-    RuleSorter ruleSorter = new RuleSorter((Map<String, Object>) Utils.fromJSONString(rules));
-    RuleSorter.Session session;
-    RuleSorter.NodeValueProvider snitch = new RuleSorter.NodeValueProvider() {
+    Policy policy = new Policy((Map<String, Object>) Utils.fromJSONString(rules));
+    Policy.Session session;
+    Policy.NodeValueProvider snitch = new Policy.NodeValueProvider() {
       @Override
       public Map<String,Object> getValues(String node, Collection<String> keys) {
         Map<String,Object> result = new LinkedHashMap<>();
@@ -124,8 +124,8 @@ public class TestRuleSorter extends SolrTestCaseJ4 {
       }
 
       @Override
-      public Map<String, Map<String, List<RuleSorter.ReplicaStat>>> getReplicaCounts(String node, Collection<String> keys) {
-        Map<String, Map<String, List<RuleSorter.ReplicaStat>>> result = new LinkedHashMap<>();
+      public Map<String, Map<String, List<Policy.ReplicaStat>>> getReplicaCounts(String node, Collection<String> keys) {
+        Map<String, Map<String, List<Policy.ReplicaStat>>> result = new LinkedHashMap<>();
 
         m.forEach((collName, o) -> {
           ValidatingJsonMap coll = (ValidatingJsonMap) o;
@@ -135,11 +135,11 @@ public class TestRuleSorter extends SolrTestCaseJ4 {
               ValidatingJsonMap r = (ValidatingJsonMap) o2;
               String node_name = (String) r.get("node_name");
               if (!node_name.equals(node)) return;
-              Map<String, List<RuleSorter.ReplicaStat>> shardVsReplicaStats = result.get(collName);
+              Map<String, List<Policy.ReplicaStat>> shardVsReplicaStats = result.get(collName);
               if (shardVsReplicaStats == null) result.put(collName, shardVsReplicaStats = new HashMap<>());
-              List<RuleSorter.ReplicaStat> replicaStats = shardVsReplicaStats.get(shard);
+              List<Policy.ReplicaStat> replicaStats = shardVsReplicaStats.get(shard);
               if (replicaStats == null) shardVsReplicaStats.put(shard, replicaStats = new ArrayList<>());
-              replicaStats.add(new RuleSorter.ReplicaStat(replicaName, new HashMap<>()));
+              replicaStats.add(new Policy.ReplicaStat(replicaName, new HashMap<>()));
             });
           });
         });
@@ -150,7 +150,7 @@ public class TestRuleSorter extends SolrTestCaseJ4 {
 
     };
 
-    session = ruleSorter.createSession(Arrays.asList("node1", "node2", "node3", "node4"), snitch);
+    session = policy.createSession(Arrays.asList("node1", "node2", "node3", "node4"), snitch);
 
     session.applyRules();
     List<Row> l = session.getSorted();

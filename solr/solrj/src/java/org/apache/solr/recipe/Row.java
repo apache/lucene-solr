@@ -28,6 +28,7 @@ import org.apache.solr.common.IteratorWriter;
 import org.apache.solr.common.MapWriter;
 import org.apache.solr.common.util.Pair;
 import org.apache.solr.common.util.Utils;
+import org.apache.solr.recipe.Policy.ReplicaStat;
 
 import static org.apache.solr.common.params.CoreAdminParams.NODE;
 
@@ -35,11 +36,11 @@ import static org.apache.solr.common.params.CoreAdminParams.NODE;
 class Row implements MapWriter {
   public final String node;
   final Cell[] cells;
-  Map<String, Map<String, List<RuleSorter.ReplicaStat>>> replicaInfo;
+  Map<String, Map<String, List<ReplicaStat>>> replicaInfo;
   List<Clause> violations = new ArrayList<>();
   boolean anyValueMissing = false;
 
-  Row(String node, List<String> params, RuleSorter.NodeValueProvider snitch) {
+  Row(String node, List<String> params, Policy.NodeValueProvider snitch) {
     replicaInfo = snitch.getReplicaCounts(node, params);
     if (replicaInfo == null) replicaInfo = Collections.emptyMap();
     this.node = node;
@@ -53,7 +54,7 @@ class Row implements MapWriter {
     }
   }
 
-  Row(String node, Cell[] cells, boolean anyValueMissing, Map<String, Map<String, List<RuleSorter.ReplicaStat>>> replicaInfo, List<Clause> violations) {
+  Row(String node, Cell[] cells, boolean anyValueMissing, Map<String, Map<String, List<ReplicaStat>>> replicaInfo, List<Clause> violations) {
     this.node = node;
     this.cells = new Cell[cells.length];
     for (int i = 0; i < this.cells.length; i++) {
@@ -89,20 +90,20 @@ class Row implements MapWriter {
 
   Row addReplica(String coll, String shard) {
     Row row = copy();
-    Map<String, List<RuleSorter.ReplicaStat>> c = row.replicaInfo.get(coll);
+    Map<String, List<ReplicaStat>> c = row.replicaInfo.get(coll);
     if (c == null) row.replicaInfo.put(coll, c = new HashMap<>());
-    List<RuleSorter.ReplicaStat> s = c.get(shard);
+    List<ReplicaStat> s = c.get(shard);
     if (s == null) c.put(shard, s = new ArrayList<>());
     return row;
 
 
   }
 
-  Pair<Row, RuleSorter.ReplicaStat> removeReplica(String coll, String shard) {
+  Pair<Row, ReplicaStat> removeReplica(String coll, String shard) {
     Row row = copy();
-    Map<String, List<RuleSorter.ReplicaStat>> c = row.replicaInfo.get(coll);
+    Map<String, List<ReplicaStat>> c = row.replicaInfo.get(coll);
     if(c == null) return null;
-    List<RuleSorter.ReplicaStat> s = c.get(shard);
+    List<ReplicaStat> s = c.get(shard);
     if (s == null || s.isEmpty()) return null;
     return new Pair(row,s.remove(0));
 

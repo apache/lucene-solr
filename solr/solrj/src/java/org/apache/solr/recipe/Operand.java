@@ -21,7 +21,7 @@ import java.util.Objects;
 
 import org.apache.solr.recipe.Clause.TestStatus;
 import static org.apache.solr.recipe.Clause.TestStatus.*;
-import static org.apache.solr.recipe.RuleSorter.ANY;
+import static org.apache.solr.recipe.Policy.ANY;
 
 
 public enum Operand {
@@ -34,7 +34,7 @@ public enum Operand {
     @Override
     public Object parse(String val) {
       if(val == null) return ANY;
-      return ANY.equals(val) || RuleSorter.EACH.equals(val) ? val : null;
+      return ANY.equals(val) || Policy.EACH.equals(val) ? val : null;
     }
   },
   EQUAL(""),
