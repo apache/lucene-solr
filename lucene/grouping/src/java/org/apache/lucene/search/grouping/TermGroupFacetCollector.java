@@ -14,7 +14,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.lucene.search.grouping.term;
+package org.apache.lucene.search.grouping;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -25,7 +25,6 @@ import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.SortedDocValues;
 import org.apache.lucene.index.SortedSetDocValues;
 import org.apache.lucene.index.TermsEnum;
-import org.apache.lucene.search.grouping.GroupFacetCollector;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.BytesRefBuilder;
 import org.apache.lucene.util.SentinelIntSet;
@@ -401,15 +400,15 @@ public abstract class TermGroupFacetCollector extends GroupFacetCollector {
       }
     }
   }
-}
 
-class GroupedFacetHit {
+  private static class GroupedFacetHit {
 
-  final BytesRef groupValue;
-  final BytesRef facetValue;
+    final BytesRef groupValue;
+    final BytesRef facetValue;
 
-  GroupedFacetHit(BytesRef groupValue, BytesRef facetValue) {
-    this.groupValue = groupValue;
-    this.facetValue = facetValue;
+    GroupedFacetHit(BytesRef groupValue, BytesRef facetValue) {
+      this.groupValue = groupValue;
+      this.facetValue = facetValue;
+    }
   }
 }

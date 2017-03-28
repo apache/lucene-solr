@@ -16,23 +16,25 @@
  */
 package org.apache.solr.search.grouping.distributed.command;
 
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.List;
+
 import org.apache.lucene.queries.function.ValueSource;
 import org.apache.lucene.search.Collector;
 import org.apache.lucene.search.Sort;
 import org.apache.lucene.search.grouping.AllGroupsCollector;
 import org.apache.lucene.search.grouping.FirstPassGroupingCollector;
 import org.apache.lucene.search.grouping.SearchGroup;
-import org.apache.lucene.search.grouping.function.FunctionAllGroupsCollector;
-import org.apache.lucene.search.grouping.function.FunctionFirstPassGroupingCollector;
-import org.apache.lucene.search.grouping.term.TermAllGroupsCollector;
-import org.apache.lucene.search.grouping.term.TermFirstPassGroupingCollector;
+import org.apache.lucene.search.grouping.TermGroupSelector;
+import org.apache.lucene.search.grouping.ValueSourceGroupSelector;
 import org.apache.lucene.util.BytesRef;
 import org.apache.solr.schema.FieldType;
 import org.apache.solr.schema.SchemaField;
 import org.apache.solr.search.grouping.Command;
-
-import java.io.IOException;
-import java.util.*;
 
 /**
  * Creates all the collectors needed for the first phase and how to handle the results.
@@ -98,18 +100,20 @@ public class SearchGroupsFieldCommand implements Command<SearchGroupsFieldComman
     if (topNGroups > 0) {
       if (fieldType.getNumberType() != null) {
         ValueSource vs = fieldType.getValueSource(field, null);
-        firstPassGroupingCollector = new FunctionFirstPassGroupingCollector(vs, new HashMap<Object,Object>(), groupSort, topNGroups);
+        firstPassGroupingCollector
+            = new FirstPassGroupingCollector<>(new ValueSourceGroupSelector(vs, new HashMap<>()), groupSort, topNGroups);
       } else {
-        firstPassGroupingCollector = new TermFirstPassGroupingCollector(field.getName(), groupSort, topNGroups);
+        firstPassGroupingCollector
+            = new FirstPassGroupingCollector<>(new TermGroupSelector(field.getName()), groupSort, topNGroups);
       }
       collectors.add(firstPassGroupingCollector);
     }
     if (includeGroupCount) {
       if (fieldType.getNumberType() != null) {
         ValueSource vs = fieldType.getValueSource(field, null);
-        allGroupsCollector = new FunctionAllGroupsCollector(vs, new HashMap<Object,Object>());
+        allGroupsCollector = new AllGroupsCollector<>(new ValueSourceGroupSelector(vs, new HashMap<>()));
       } else {
-        allGroupsCollector = new TermAllGroupsCollector(field.getName());
+        allGroupsCollector = new AllGroupsCollector<>(new TermGroupSelector(field.getName()));
       }
       collectors.add(allGroupsCollector);
     }

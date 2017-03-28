@@ -49,8 +49,6 @@ import org.apache.lucene.search.ScoreDoc;
 import org.apache.lucene.search.Sort;
 import org.apache.lucene.search.SortField;
 import org.apache.lucene.search.TermQuery;
-import org.apache.lucene.search.grouping.function.FunctionAllGroupHeadsCollector;
-import org.apache.lucene.search.grouping.term.TermAllGroupHeadsCollector;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
@@ -513,19 +511,12 @@ public class AllGroupHeadsCollectorTest extends LuceneTestCase {
 
   @SuppressWarnings({"unchecked","rawtypes"})
   private AllGroupHeadsCollector<?> createRandomCollector(String groupField, Sort sortWithinGroup) {
-    AllGroupHeadsCollector<?> collector;
     if (random().nextBoolean()) {
       ValueSource vs = new BytesRefFieldSource(groupField);
-      collector =  new FunctionAllGroupHeadsCollector(vs, new HashMap<>(), sortWithinGroup);
+      return AllGroupHeadsCollector.newCollector(new ValueSourceGroupSelector(vs, new HashMap<>()), sortWithinGroup);
     } else {
-      collector =  TermAllGroupHeadsCollector.create(groupField, sortWithinGroup);
+      return AllGroupHeadsCollector.newCollector(new TermGroupSelector(groupField), sortWithinGroup);
     }
-
-    if (VERBOSE) {
-      System.out.println("Selected implementation: " + collector.getClass().getSimpleName());
-    }
-
-    return collector;
   }
 
   private void addGroupField(Document doc, String groupField, String value, DocValuesType valueType) {

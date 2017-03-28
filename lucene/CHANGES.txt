@@ -47,6 +47,9 @@ API Changes
 * LUCENE-7734: FieldType's copy constructor was widened to accept any IndexableFieldType.
   (David Smiley)
 
+* LUCENE-7701: Grouping collectors have been refactored, such that groups are
+  now defined by a GroupSelector implementation. (Alan Woodward)
+
 Bug Fixes
 
 * LUCENE-7626: IndexWriter will no longer accept broken token offsets
