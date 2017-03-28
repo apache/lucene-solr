@@ -528,13 +528,14 @@ public class IndexSearcher {
           + after.doc + " limit=" + limit);
     }
     final int cappedNumHits = Math.min(numHits, limit);
+    final Sort rewrittenSort = sort.rewrite(this);
 
     final CollectorManager<TopFieldCollector, TopFieldDocs> manager = new CollectorManager<TopFieldCollector, TopFieldDocs>() {
 
       @Override
       public TopFieldCollector newCollector() throws IOException {
         final boolean fillFields = true;
-        return TopFieldCollector.create(sort, cappedNumHits, after, fillFields, doDocScores, doMaxScore);
+        return TopFieldCollector.create(rewrittenSort, cappedNumHits, after, fillFields, doDocScores, doMaxScore);
       }
 
       @Override
@@ -544,7 +545,7 @@ public class IndexSearcher {
         for (TopFieldCollector collector : collectors) {
           topDocs[i++] = collector.topDocs();
         }
-        return TopDocs.merge(sort, 0, cappedNumHits, topDocs, true);
+        return TopDocs.merge(rewrittenSort, 0, cappedNumHits, topDocs, true);
       }
 
     };
