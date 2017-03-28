@@ -155,7 +155,7 @@ public class StreamExpressionToExpessionTest extends LuceneTestCase {
     assertTrue(expressionString.contains("sort=\"a_f asc, a_i asc\""));
     assertTrue(expressionString.contains("min(a_i)"));
     assertTrue(expressionString.contains("max(a_i)"));
-    assertTrue(expressionString.contains("avg(a_i)"));
+    assertTrue(expressionString.contains("avg(a_i,false)"));
     assertTrue(expressionString.contains("count(*)"));
     assertTrue(expressionString.contains("sum(a_i)"));
     
@@ -274,8 +274,8 @@ public class StreamExpressionToExpessionTest extends LuceneTestCase {
     assertTrue(expressionString.contains("min(a_f)"));
     assertTrue(expressionString.contains("max(a_i)"));
     assertTrue(expressionString.contains("max(a_f)"));
-    assertTrue(expressionString.contains("avg(a_i)"));
-    assertTrue(expressionString.contains("avg(a_f)"));
+    assertTrue(expressionString.contains("avg(a_i,false)"));
+    assertTrue(expressionString.contains("avg(a_f,false)"));
     assertTrue(expressionString.contains("count(*)"));
   }
   
@@ -427,7 +427,7 @@ public class StreamExpressionToExpessionTest extends LuceneTestCase {
     metric = new MeanMetric(StreamExpressionParser.parse("avg(foo)"), factory);
     expressionString = metric.toExpression(factory).toString();
     
-    assertEquals("avg(foo)", expressionString);
+    assertEquals("avg(foo,false)", expressionString);
   }
   
   @Test
