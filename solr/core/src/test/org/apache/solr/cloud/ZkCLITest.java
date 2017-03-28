@@ -272,7 +272,7 @@ public class ZkCLITest extends SolrTestCaseJ4 {
   @Test
   public void testGet() throws Exception {
     String getNode = "/getNode";
-    byte [] data = new String("getNode-data").getBytes(StandardCharsets.UTF_8);
+    byte [] data = "getNode-data".getBytes(StandardCharsets.UTF_8);
     this.zkClient.create(getNode, data, CreateMode.PERSISTENT, true);
     String[] args = new String[] {"-zkhost", zkServer.getZkAddress(), "-cmd",
         "get", getNode};
@@ -284,7 +284,7 @@ public class ZkCLITest extends SolrTestCaseJ4 {
     File tmpDir = createTempDir().toFile();
     
     String getNode = "/getFileNode";
-    byte [] data = new String("getFileNode-data").getBytes(StandardCharsets.UTF_8);
+    byte [] data = "getFileNode-data".getBytes(StandardCharsets.UTF_8);
     this.zkClient.create(getNode, data, CreateMode.PERSISTENT, true);
 
     File file = new File(tmpDir,

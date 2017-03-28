@@ -90,6 +90,9 @@ Other
 * LUCENE-7751: Avoid boxing primitives only to call compareTo.
   (Daniel Jelinski via Adrien Grand)
 
+* LUCENE-7743: Never call new String(String).
+  (Daniel Jelinski via Adrien Grand)
+
 ======================= Lucene 6.5.0 =======================
 
 API Changes

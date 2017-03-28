@@ -47,7 +47,7 @@ public class AbstractDIHCacheTestCase {
   @Before
   public void setup() {
     try {
-      APPLE = new SerialClob(new String("Apples grow on trees and they are good to eat.").toCharArray());
+      APPLE = new SerialClob("Apples grow on trees and they are good to eat.".toCharArray());
     } catch (SQLException sqe) {
       Assert.fail("Could not Set up Test");
     }
