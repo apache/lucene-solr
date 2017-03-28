@@ -28,6 +28,7 @@ import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
 import org.apache.solr.cloud.CloudConfigSetService;
 import org.apache.solr.cloud.ZkController;
+import org.apache.solr.cloud.ZkSolrResourceLoader;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.schema.IndexSchema;
@@ -74,10 +75,22 @@ public abstract class ConfigSetService {
     SolrResourceLoader coreLoader = createCoreResourceLoader(dcore);
 
     try {
+
+      // ConfigSet properties are loaded from ConfigSetProperties.DEFAULT_FILENAME file.
+      // ConfigSet flags are loaded from the metadata of the ZK node of the configset.
+      NamedList properties = createConfigSetProperties(dcore, coreLoader);
+      NamedList flags = getConfigSetFlags(dcore, coreLoader);
+
+      boolean trusted =
+          (coreLoader instanceof ZkSolrResourceLoader
+              && flags != null
+              && flags.get("trusted") != null
+              && !flags.getBooleanArg("trusted")
+              ) ? false: true;
+
       SolrConfig solrConfig = createSolrConfig(dcore, coreLoader);
       IndexSchema schema = createIndexSchema(dcore, solrConfig);
-      NamedList properties = createConfigSetProperties(dcore, coreLoader);
-      return new ConfigSet(configName(dcore), solrConfig, schema, properties);
+      return new ConfigSet(configName(dcore), solrConfig, schema, properties, trusted);
     } catch (Exception e) {
       throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,
           "Could not load conf for core " + dcore.getName() +
@@ -114,6 +127,18 @@ public abstract class ConfigSetService {
    */
   protected NamedList createConfigSetProperties(CoreDescriptor cd, SolrResourceLoader loader) {
     return ConfigSetProperties.readFromResourceLoader(loader, cd.getConfigSetPropertiesName());
+  }
+
+  protected NamedList getConfigSetFlags(CoreDescriptor cd, SolrResourceLoader loader) {
+    if (loader instanceof ZkSolrResourceLoader) {
+      try {
+        return ConfigSetProperties.readFromResourceLoader(loader, ".");
+      } catch (Exception ex) {
+        return null;
+      }
+    } else {
+      return null;
+    }
   }
 
   /**

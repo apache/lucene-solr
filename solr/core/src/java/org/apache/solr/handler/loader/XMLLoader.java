@@ -42,6 +42,7 @@ import com.google.common.collect.Lists;
 import org.apache.commons.io.IOUtils;
 import org.apache.solr.common.EmptyEntityResolver;
 import org.apache.solr.common.SolrException;
+import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
@@ -134,6 +135,12 @@ public class XMLLoader extends ContentStreamLoader {
 
     String tr = req.getParams().get(CommonParams.TR,null);
     if(tr!=null) {
+      if (req.getCore().getCoreDescriptor().isConfigSetTrusted() == false) {
+          throw new SolrException(ErrorCode.UNAUTHORIZED, "The configset for this collection was uploaded without any authentication in place,"
+                  + " and this operation is not available for collections with untrusted configsets. To use this feature, re-upload the configset"
+                  + " after enabling authentication and authorization.");
+      }
+
       final Transformer t = getTransformer(tr,req);
       final DOMResult result = new DOMResult();
       
