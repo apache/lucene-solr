@@ -283,7 +283,7 @@ public class HttpShardHandlerFactory extends ShardHandlerFactory implements org.
    * If all nodes prefer local-cores then a bad/heavily-loaded node will receive less requests from healthy nodes.
    * This will help prevent a distributed deadlock or timeouts in all the healthy nodes due to one bad node.
    */
-  private class IsOnPreferredHostComparator implements Comparator<Object> {
+  private static class IsOnPreferredHostComparator implements Comparator<Object> {
     final private String preferredHostAddress;
     public IsOnPreferredHostComparator(String preferredHostAddress) {
       this.preferredHostAddress = preferredHostAddress;

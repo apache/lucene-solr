@@ -267,7 +267,7 @@ public final class MemoryPostingsFormat extends PostingsFormat {
   private static final int VERSION_START = 1;
   private static final int VERSION_CURRENT = VERSION_START;
 
-  private class MemoryFieldsConsumer extends FieldsConsumer {
+  private static class MemoryFieldsConsumer extends FieldsConsumer {
     private final SegmentWriteState state;
     private final IndexOutput out;
 

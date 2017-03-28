@@ -1458,7 +1458,7 @@ public class TestFSTs extends LuceneTestCase {
   }
 
   // used by slowcompletor
-  class TwoLongs {
+  static class TwoLongs {
     long a;
     long b;
 

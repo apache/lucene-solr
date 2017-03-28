@@ -431,7 +431,7 @@ public class Overseer implements Closeable {
 
   }
 
-  class OverseerThread extends Thread implements Closeable {
+  static class OverseerThread extends Thread implements Closeable {
 
     protected volatile boolean isClosed;
     private Closeable thread;

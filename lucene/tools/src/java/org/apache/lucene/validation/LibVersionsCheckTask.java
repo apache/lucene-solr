@@ -150,7 +150,7 @@ public class LibVersionsCheckTask extends Task {
    */
   private Map<String,HashSet<String>> ignoreConflictVersions = new HashMap<>();
 
-  private class Dependency {
+  private static class Dependency {
     String org;
     String name;
     String directVersion;

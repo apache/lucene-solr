@@ -49,7 +49,7 @@ public class TestManagedResource extends SolrTestCaseJ4 {
    * Mock class that acts like an analysis component that depends on
    * data managed by a ManagedResource
    */
-  private class MockAnalysisComponent implements ManagedResourceObserver {
+  private static class MockAnalysisComponent implements ManagedResourceObserver {
     
     private boolean wasNotified = false;
 
@@ -121,7 +121,7 @@ public class TestManagedResource extends SolrTestCaseJ4 {
   /**
    * Implements a Java serialization based storage format.
    */
-  private class SerializableStorage extends ManagedResourceStorage {
+  private static class SerializableStorage extends ManagedResourceStorage {
     
     SerializableStorage(StorageIO storageIO, SolrResourceLoader loader) {
       super(storageIO, loader);

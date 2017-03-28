@@ -75,7 +75,7 @@ public class TestPrefixRandom extends LuceneTestCase {
   }
   
   /** a stupid prefix query that just blasts thru the terms */
-  private class DumbPrefixQuery extends MultiTermQuery {
+  private static class DumbPrefixQuery extends MultiTermQuery {
     private final BytesRef prefix;
     
     DumbPrefixQuery(Term term) {
@@ -88,7 +88,7 @@ public class TestPrefixRandom extends LuceneTestCase {
       return new SimplePrefixTermsEnum(terms.iterator(), prefix);
     }
 
-    private class SimplePrefixTermsEnum extends FilteredTermsEnum {
+    private static class SimplePrefixTermsEnum extends FilteredTermsEnum {
       private final BytesRef prefix;
 
       private SimplePrefixTermsEnum(TermsEnum tenum, BytesRef prefix) {

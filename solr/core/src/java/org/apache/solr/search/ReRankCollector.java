@@ -139,7 +139,7 @@ public class ReRankCollector extends TopDocsCollector {
     }
   }
 
-  public class BoostedComp implements Comparator {
+  public static class BoostedComp implements Comparator {
     IntFloatHashMap boostedMap;
 
     public BoostedComp(IntIntHashMap boostedDocs, ScoreDoc[] scoreDocs, float maxScore) {

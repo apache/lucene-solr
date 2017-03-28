@@ -98,7 +98,7 @@ class XLSXWriter extends TextResponseWriter {
   SolrQueryRequest req;
   SolrQueryResponse rsp;
 
-  class SerialWriteWorkbook {
+  static class SerialWriteWorkbook {
     SXSSFWorkbook swb;
     Sheet sh;
 

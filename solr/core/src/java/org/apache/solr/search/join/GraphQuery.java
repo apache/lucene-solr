@@ -315,7 +315,7 @@ public class GraphQuery extends Query {
     
   }
   
-  private class GraphScorer extends Scorer {
+  private static class GraphScorer extends Scorer {
     
     final DocIdSetIterator iter;
     final float score;

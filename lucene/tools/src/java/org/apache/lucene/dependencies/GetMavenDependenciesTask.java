@@ -786,7 +786,7 @@ public class GetMavenDependenciesTask extends Task {
   /**
    * Stores information about an external dependency
    */
-  private class ExternalDependency implements Comparable<ExternalDependency> {
+  private static class ExternalDependency implements Comparable<ExternalDependency> {
     String groupId;
     String artifactId;
     boolean isTestDependency;

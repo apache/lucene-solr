@@ -202,7 +202,7 @@ public class DistributedQueueTest extends SolrTestCaseJ4 {
     return new DistributedQueue(zkClient, setupNewDistributedQueueZNode(dqZNode));
   }
 
-  private class QueueChangerThread extends Thread {
+  private static class QueueChangerThread extends Thread {
 
     DistributedQueue dq;
     long waitBeforeOfferMs;

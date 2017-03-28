@@ -112,7 +112,7 @@ public final class ICUTransformFilter extends TokenFilter {
   /**
    * Wrap a {@link CharTermAttribute} with the Replaceable API.
    */
-  final class ReplaceableTermAttribute implements Replaceable {
+  static final class ReplaceableTermAttribute implements Replaceable {
     private char buffer[];
     private int length;
     private CharTermAttribute token;

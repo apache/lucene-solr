@@ -231,7 +231,7 @@ public class PingRequestHandlerTest extends SolrTestCaseJ4 {
     return rsp;
   }
 
-  class SolrPingWithDistrib extends SolrPing {
+  static class SolrPingWithDistrib extends SolrPing {
     public SolrPing setDistrib(boolean distrib) {   
       getParams().add("distrib", distrib ? "true" : "false");
       return this;    

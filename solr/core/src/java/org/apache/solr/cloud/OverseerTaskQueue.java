@@ -108,7 +108,7 @@ public class OverseerTaskQueue extends DistributedQueue {
   /**
    * Watcher that blocks until a WatchedEvent occurs for a znode.
    */
-  private final class LatchWatcher implements Watcher {
+  private static final class LatchWatcher implements Watcher {
 
     private final Object lock;
     private WatchedEvent event;

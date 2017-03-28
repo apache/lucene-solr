@@ -51,7 +51,7 @@ import org.apache.lucene.util.LuceneTestCase.Slow;
 public class TestIndexWriterWithThreads extends LuceneTestCase {
 
   // Used by test cases below
-  private class IndexerThread extends Thread {
+  private static class IndexerThread extends Thread {
 
     boolean diskFull;
     Throwable error;

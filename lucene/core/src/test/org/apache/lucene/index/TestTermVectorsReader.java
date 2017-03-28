@@ -50,7 +50,7 @@ public class TestTermVectorsReader extends LuceneTestCase {
   private FieldInfos fieldInfos = new FieldInfos(new FieldInfo[0]);
   private static int TERM_FREQ = 3;
 
-  private class TestToken implements Comparable<TestToken> {
+  private static class TestToken implements Comparable<TestToken> {
     String text;
     int pos;
     int startOffset;

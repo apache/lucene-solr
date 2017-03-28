@@ -956,7 +956,7 @@ public class ExtendedDismaxQParser extends QParser {
     
     /** A simple container for storing alias info
      */
-    protected class Alias {
+    protected static class Alias {
       public float tie;
       public Map<String,Float> fields;
     }
@@ -1597,7 +1597,7 @@ public class ExtendedDismaxQParser extends QParser {
   /**
    * Simple container for configuration information used when parsing queries
    */
-  public class ExtendedDismaxConfiguration {
+  public static class ExtendedDismaxConfiguration {
     
     /**
      * The field names specified by 'qf' that (most) clauses will 

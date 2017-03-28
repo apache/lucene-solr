@@ -62,7 +62,7 @@ public class TestRestManager extends SolrRestletTestBase {
     
   }
   
-  private class MockAnalysisComponent implements ManagedResourceObserver {
+  private static class MockAnalysisComponent implements ManagedResourceObserver {
 
     @Override
     public void onManagedResourceInitialized(NamedList<?> args, ManagedResource res)

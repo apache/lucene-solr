@@ -742,7 +742,7 @@ public final class CompressingTermVectorsReader extends TermVectorsReader implem
 
   }
 
-  private class TVTerms extends Terms {
+  private static class TVTerms extends Terms {
 
     private final int numTerms, flags;
     private final int[] prefixLengths, suffixLengths, termFreqs, positionIndex, positions, startOffsets, lengths, payloadIndex;

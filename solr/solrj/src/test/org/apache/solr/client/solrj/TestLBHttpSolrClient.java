@@ -247,7 +247,7 @@ public class TestLBHttpSolrClient extends SolrTestCaseJ4 {
     }
   }
   
-  private class SolrInstance {
+  private static class SolrInstance {
     String name;
     File homeDir;
     File dataDir;

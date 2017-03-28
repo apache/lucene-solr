@@ -37,7 +37,7 @@ import org.junit.Test;
 
 public class BlockDirectoryTest extends SolrTestCaseJ4 {
 
-  private class MapperCache implements Cache {
+  private static class MapperCache implements Cache {
     public Map<String, byte[]> map = Caffeine.newBuilder()
         .maximumSize(8)
         .<String, byte[]>build()

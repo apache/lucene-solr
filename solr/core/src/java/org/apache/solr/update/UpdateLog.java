@@ -204,7 +204,7 @@ public static final int VERSION_IDX = 1;
     }
   };
 
-  public class DBQ {
+  public static class DBQ {
     public String q;     // the query string
     public long version; // positive version of the DBQ
 

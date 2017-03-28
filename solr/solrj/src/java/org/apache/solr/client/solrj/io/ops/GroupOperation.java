@@ -133,7 +133,7 @@ public class GroupOperation implements ReduceOperation {
     }
   }
 
-  class ReverseComp implements Comparator<Tuple>, Serializable {
+  static class ReverseComp implements Comparator<Tuple>, Serializable {
     private StreamComparator comp;
 
     public ReverseComp(StreamComparator comp) {

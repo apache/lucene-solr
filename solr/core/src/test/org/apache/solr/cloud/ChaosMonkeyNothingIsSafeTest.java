@@ -400,8 +400,8 @@ public class ChaosMonkeyNothingIsSafeTest extends AbstractFullDistribZkTestBase 
     SolrInputDocument doc = getDoc(fields);
     indexDoc(doc);
   }
-  
-  class ErrorLoggingConcurrentUpdateSolrClient extends ConcurrentUpdateSolrClient {
+
+  static class ErrorLoggingConcurrentUpdateSolrClient extends ConcurrentUpdateSolrClient {
     public ErrorLoggingConcurrentUpdateSolrClient(String serverUrl, HttpClient httpClient, int queueSize, int threadCount) {
       super(serverUrl, httpClient, queueSize, threadCount, null, false);
     }

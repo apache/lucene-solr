@@ -521,7 +521,7 @@ public class ExpandComponent extends SearchComponent implements PluginInfoInitia
     rb.rsp.add("expanded", expanded);
   }
 
-  private class GroupExpandCollector implements Collector, GroupCollector {
+  private static class GroupExpandCollector implements Collector, GroupCollector {
     private SortedDocValues docValues;
     private MultiDocValues.OrdinalMap ordinalMap;
     private SortedDocValues segmentValues;
@@ -614,7 +614,7 @@ public class ExpandComponent extends SearchComponent implements PluginInfoInitia
     }
   }
 
-  private class NumericGroupExpandCollector implements Collector, GroupCollector {
+  private static class NumericGroupExpandCollector implements Collector, GroupCollector {
     private NumericDocValues docValues;
 
     private String field;
@@ -763,7 +763,7 @@ public class ExpandComponent extends SearchComponent implements PluginInfoInitia
 
   // this reader alters the content of the given reader so it should not
   // delegate the caching stuff
-  private class ReaderWrapper extends FilterLeafReader {
+  private static class ReaderWrapper extends FilterLeafReader {
 
     private String field;
 

@@ -339,7 +339,7 @@ public class SignificantTermsStream extends TupleStream implements Expressible{
     }
   }
 
-  private class ScoreComp implements Comparator<Map> {
+  private static class ScoreComp implements Comparator<Map> {
     public int compare(Map a, Map b) {
       Float scorea = (Float)a.get("score");
       Float scoreb = (Float)b.get("score");
