@@ -290,9 +290,14 @@
 
   <!-- less flexible in matching skus, but less chance of a false match -->
   <fieldType name="syn" class="solr.TextField">
-    <analyzer>
+    <analyzer type="index">
       <tokenizer class="solr.MockTokenizerFactory"/>
-      <filter class="solr.SynonymFilterFactory" synonyms="synonyms.txt"/>
+      <filter class="solr.SynonymGraphFilterFactory" synonyms="synonyms.txt"/>
+      <filter class="solr.FlattenGraphFilterFactory"/>
+    </analyzer>
+    <analyzer type="query">
+      <tokenizer class="solr.MockTokenizerFactory"/>
+      <filter class="solr.SynonymGraphFilterFactory" synonyms="synonyms.txt"/>
     </analyzer>
   </fieldType>
 
@@ -300,9 +305,17 @@
        synonyms "better"
     -->
   <fieldType name="dedup" class="solr.TextField">
-    <analyzer>
+    <analyzer type="index">
       <tokenizer class="solr.MockTokenizerFactory"/>
-      <filter class="solr.SynonymFilterFactory"
+      <filter class="solr.SynonymGraphFilterFactory"
+              synonyms="synonyms.txt" expand="true"/>
+      <filter class="solr.PorterStemFilterFactory"/>
+      <filter class="solr.RemoveDuplicatesTokenFilterFactory"/>
+      <filter class="solr.FlattenGraphFilterFactory"/>
+    </analyzer>
+    <analyzer type="query">
+      <tokenizer class="solr.MockTokenizerFactory"/>
+      <filter class="solr.SynonymGraphFilterFactory"
               synonyms="synonyms.txt" expand="true"/>
       <filter class="solr.PorterStemFilterFactory"/>
       <filter class="solr.RemoveDuplicatesTokenFilterFactory"/>
