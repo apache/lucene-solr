@@ -310,8 +310,6 @@ public class ExtendedDismaxQParser extends QParser {
         up.setRemoveStopFilter(true);
         query = up.parse(mainUserQuery);          
       }
-    } catch (QueryParserConfigurationException e) {
-      throw e; // Don't ignore configuration exceptions
     } catch (Exception e) {
       // ignore failure and reparse later after escaping reserved chars
       up.exceptions = false;
@@ -1083,10 +1081,6 @@ public class ExtendedDismaxQParser extends QParser {
     @Override
     protected Query newFieldQuery(Analyzer analyzer, String field, String queryText, 
                                   boolean quoted, boolean fieldAutoGenPhraseQueries) throws SyntaxError {
-      if ((getAutoGeneratePhraseQueries() || fieldAutoGenPhraseQueries) && getSplitOnWhitespace() == false) {
-        throw new QueryParserConfigurationException
-            ("Field '" + field + "': autoGeneratePhraseQueries == true is disallowed when sow/splitOnWhitespace == false");
-      }
       Analyzer actualAnalyzer;
       if (removeStopFilter) {
         if (nonStopFilterAnalyzerPerField == null) {
@@ -1403,8 +1397,6 @@ public class ExtendedDismaxQParser extends QParser {
         }
         return null;
         
-      } catch (QueryParserConfigurationException e) {
-        throw e;  // Don't ignore configuration exceptions
       } catch (Exception e) {
         // an exception here is due to the field query not being compatible with the input text
         // for example, passing a string to a numeric field.
