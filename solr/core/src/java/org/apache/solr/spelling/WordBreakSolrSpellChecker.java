@@ -22,12 +22,16 @@ import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Locale;
+import java.util.Arrays;
+
+
 import java.util.regex.Pattern;
 
 import org.apache.lucene.analysis.Token;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.spell.CombineSuggestion;
+import org.apache.lucene.search.spell.SuggestMode;
 import org.apache.lucene.search.spell.SuggestWord;
 import org.apache.lucene.search.spell.WordBreakSpellChecker;
 import org.apache.lucene.search.spell.WordBreakSpellChecker.BreakSuggestionSortMethod;
@@ -90,7 +94,9 @@ public class WordBreakSolrSpellChecker extends SolrSpellChecker {
    * See {@link WordBreakSpellChecker#setMinSuggestionFrequency}
    */
   public static final String PARAM_MIN_SUGGESTION_FREQUENCY = "minSuggestionFreq";
-  
+
+  public static final String PARAM_SUGGEST_MODE = "suggestMode";
+
   /**
    * <p>
    *  Specify a value on the "breakSugestionTieBreaker" parameter.
@@ -114,6 +120,7 @@ public class WordBreakSolrSpellChecker extends SolrSpellChecker {
   private WordBreakSpellChecker wbsp = null;
   private boolean combineWords = false;
   private boolean breakWords = false;
+  private SuggestMode suggestMode = null;
   private BreakSuggestionSortMethod sortMethod = BreakSuggestionSortMethod.NUM_CHANGES_THEN_MAX_FREQUENCY;
   private static final Pattern spacePattern = Pattern.compile("\\s+");
 
@@ -123,6 +130,16 @@ public class WordBreakSolrSpellChecker extends SolrSpellChecker {
     String name = super.init(config, core);
     combineWords = boolParam(config, PARAM_COMBINE_WORDS);
     breakWords = boolParam(config, PARAM_BREAK_WORDS);
+    if (config.get(PARAM_SUGGEST_MODE)!=null){
+      try{
+        suggestMode = SuggestMode.valueOf(strParam(config,PARAM_SUGGEST_MODE));
+      } catch (IllegalArgumentException iae){
+        String errMsg = "Error initialising " + this.getClass().getName()
+                + ". Invalid `suggestMode` : '" + strParam(config, PARAM_SUGGEST_MODE)
+                + "' . Permitted Values: " + Arrays.asList(SuggestMode.values());
+        throw new IllegalArgumentException(errMsg);
+      }
+    }
     wbsp = new WordBreakSpellChecker();
     String bstb = strParam(config, PARAM_BREAK_SUGGESTION_TIE_BREAKER);
     if (bstb != null) {
@@ -195,7 +212,9 @@ public class WordBreakSolrSpellChecker extends SolrSpellChecker {
       throws IOException {
     IndexReader ir = options.reader;
     int numSuggestions = options.count;
-    
+    if ( suggestMode == null ){
+      suggestMode = options.suggestMode;
+    }
     StringBuilder sb = new StringBuilder();
     Token[] tokenArr = options.tokens.toArray(new Token[options.tokens.size()]);
     List<Token> tokenArrWithSeparators = new ArrayList<>(options.tokens.size() + 2);
@@ -229,7 +248,7 @@ public class WordBreakSolrSpellChecker extends SolrSpellChecker {
       tokenArrWithSeparators.add(tokenArr[i]);
       if (breakWords) {
         SuggestWord[][] breakSuggestions = wbsp.suggestWordBreaks(thisTerm,
-            numSuggestions, ir, options.suggestMode, sortMethod);
+            numSuggestions, ir, suggestMode, sortMethod);
         if(breakSuggestions.length==0) {
           noBreakSuggestionList.add(new ResultEntry(tokenArr[i], null, 0));
         }
@@ -258,7 +277,7 @@ public class WordBreakSolrSpellChecker extends SolrSpellChecker {
     
     List<ResultEntry> combineSuggestionList = Collections.emptyList();
     CombineSuggestion[] combineSuggestions = wbsp.suggestWordCombinations(
-        termArr.toArray(new Term[termArr.size()]), numSuggestions, ir, options.suggestMode);
+        termArr.toArray(new Term[termArr.size()]), numSuggestions, ir, suggestMode);
     if (combineWords) {
       combineSuggestionList = new ArrayList<>(
           combineSuggestions.length);
