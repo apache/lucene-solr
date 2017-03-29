@@ -124,7 +124,7 @@ public class DistributedQueryComponentCustomSortTest extends BaseDistributedSear
     assertFieldValues(rsp.getResults(), id, 11, 13, 8, 9, 5, 3, 12,   10,16,17,18,   2,   4,14,15,   6, 1, 7);
 
 
-//    function sorting
+//    non-function sorting
     {
         rsp = query("q", "id:[1 TO 10]", "fl", "id", "rows", "20",
                     "sort", "payload desc, id asc", "group", "true", "group.field", "val", "group.sort", "id asc");
@@ -190,12 +190,11 @@ public class DistributedQueryComponentCustomSortTest extends BaseDistributedSear
         assertFieldValues((SolrDocumentList)groupList2.get("doclist"), id, 2);
     }
 
-// Dup
-    // function sorting
+
+    // function sorting, limit 1
     {
         rsp = query("q", "id:[1 TO 10]", "fl", "id", "rows", "20",
-                    "sort", "abs(sub(5,id)) asc, id desc", "group", "true", "group.field", "val", "group.sort", "id asc");
-
+                    "sort", "sub(5,id) asc", "group", "true", "group.field", "val", "group.sort", "id asc", "group.limit", 1);
         NamedList grouped = (NamedList)rsp.getResponse().get("grouped");
 
         assertNotNull(grouped);
@@ -209,18 +208,18 @@ public class DistributedQueryComponentCustomSortTest extends BaseDistributedSear
         NamedList groupList0 = (NamedList)groupLists.get(0);
         assertNotNull(groupList0);
 
-        assertFieldValues((SolrDocumentList)groupList0.get("doclist"), id, 1);
+        assertFieldValues((SolrDocumentList)groupList0.get("doclist"), id, 2);
 
         NamedList groupList1 = (NamedList)groupLists.get(1);
         assertNotNull(groupList1);
 
-        assertFieldValues((SolrDocumentList)groupList1.get("doclist"), id, 6);
 
+        assertFieldValues((SolrDocumentList)groupList1.get("doclist"), id, 1);
 
         NamedList groupList2 = (NamedList)groupLists.get(2);
         assertNotNull(groupList2);
 
-        assertFieldValues((SolrDocumentList)groupList2.get("doclist"), id, 2);
+        assertFieldValues((SolrDocumentList)groupList2.get("doclist"), id, 6);
     }
 
 
@@ -256,10 +255,12 @@ public class DistributedQueryComponentCustomSortTest extends BaseDistributedSear
         assertFieldValues((SolrDocumentList)groupList2.get("doclist"), id, 10);
     }
 
-    // function sorting  (dup)
+
+
+    // function sorting (group.sort desc)
     {
         rsp = query("q", "id:[1 TO 10]", "fl", "id", "rows", "20",
-                    "sort", "abs(sub(5,id)) asc, id desc", "group", "true", "group.field", "val", "group.sort", "id desc");
+                    "sort", "abs(sub(5,id)) asc, val desc", "group", "true", "group.field", "val", "group.sort", "id desc");
 
         NamedList grouped = (NamedList)rsp.getResponse().get("grouped");
 
@@ -288,7 +289,8 @@ public class DistributedQueryComponentCustomSortTest extends BaseDistributedSear
         assertFieldValues((SolrDocumentList)groupList2.get("doclist"), id, 10);
     }
 
-    // function sorting
+
+    // function sorting (group.limit=2)
     {
         rsp = query("q", "id:[1 TO 10]", "fl", "id", "rows", "20",
                     "sort", "abs(sub(5,id)) desc, id desc", "group", "true", "group.field", "val", "group.sort", "sum(3,id) asc", "group.limit", "2");
@@ -322,7 +324,7 @@ public class DistributedQueryComponentCustomSortTest extends BaseDistributedSear
     }
 
 
-    //  function sorting
+    //  function sorting (group.limit=3)
     {
         rsp = query("q", "id:[1 TO 10]", "fl", "id", "rows", "20",
                     "sort", "abs(sub(5,id)) asc, id desc", "group", "true", "group.field", "val", "group.sort", "sum(3,id) asc", "group.limit", "3");
@@ -356,7 +358,7 @@ public class DistributedQueryComponentCustomSortTest extends BaseDistributedSear
     }
 
 
-    //  function sorting
+    //  function sorting (start=2)
     //  Pagination is on level of groups, not individual offers. 
     {
         rsp = query("q", "id:[1 TO 10]", "fl", "id", "rows", "20", "start", "2",
@@ -379,7 +381,7 @@ public class DistributedQueryComponentCustomSortTest extends BaseDistributedSear
     }
 
 
-    //  function sorting
+    //  function sorting (group.offset=1)
     {
         rsp = query("q", "id:[1 TO 10]", "fl", "id", "rows", "20",
                     "sort", "abs(sub(5,id)) asc, id desc", "group", "true", "group.field", "val", "group.sort", "sum(3,id) asc", "group.limit", "3", "group.offset", "1");
@@ -411,7 +413,7 @@ public class DistributedQueryComponentCustomSortTest extends BaseDistributedSear
         assertFieldValues((SolrDocumentList)groupList2.get("doclist"), id, 4, 10);
     }
 
-    //  function sorting
+    //  function sorting (group.offset=2)
     {
         rsp = query("q", "id:[1 TO 10]", "fl", "id", "rows", "20",
                     "sort", "abs(sub(5,id)) asc, id desc", "group", "true", "group.field", "val", "group.sort", "sum(3,id) asc", "group.limit", "3", "group.offset", "2");
@@ -443,10 +445,10 @@ public class DistributedQueryComponentCustomSortTest extends BaseDistributedSear
         assertFieldValues((SolrDocumentList)groupList2.get("doclist"), id, 10);
     }
 
-    // function sorting
+    // function sorting (different sort and group.sort functions)
     {
         rsp = query("q", "id:[1 TO 10]", "fl", "id", "rows", "20",
-                    "sort", "abs(sub(5,id)) asc, id desc", "group", "true", "group.field", "val", "group.sort", "sum(3,id) desc", "group.limit", "3");
+                    "sort", "sum(val,id)) asc, id desc", "group", "true", "group.field", "val", "group.sort", "id asc", "group.limit", "3");
 
         NamedList grouped = (NamedList)rsp.getResponse().get("grouped");
 
@@ -460,17 +462,18 @@ public class DistributedQueryComponentCustomSortTest extends BaseDistributedSear
         NamedList groupList0 = (NamedList)groupLists.get(0);
         assertNotNull(groupList0);
 
-        assertFieldValues((SolrDocumentList)groupList0.get("doclist"), id, 9, 5, 3);
 
+        assertFieldValues((SolrDocumentList)groupList0.get("doclist"), id, 2, 4, 10);
         NamedList groupList1 = (NamedList)groupLists.get(1);
         assertNotNull(groupList1);
 
-        assertFieldValues((SolrDocumentList)groupList1.get("doclist"), id, 8, 7, 6);
+        assertFieldValues((SolrDocumentList)groupList1.get("doclist"), id, 1, 3, 5);
+
 
         NamedList groupList2 = (NamedList)groupLists.get(2);
         assertNotNull(groupList2);
+        assertFieldValues((SolrDocumentList)groupList2.get("doclist"), id, 6, 7, 8);
 
-        assertFieldValues((SolrDocumentList)groupList2.get("doclist"), id, 10, 4, 2);
     }
 
     // function sorting (id:[1 TO 2])
@@ -498,7 +501,5 @@ public class DistributedQueryComponentCustomSortTest extends BaseDistributedSear
 
         assertFieldValues((SolrDocumentList)groupList1.get("doclist"), id, 1);
     }
-
-
   }
 }
