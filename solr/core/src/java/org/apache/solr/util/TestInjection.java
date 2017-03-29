@@ -369,7 +369,7 @@ public class TestInjection {
     Pair<Boolean,Integer> pair = parseValue(waitForReplicasInSync);
     boolean enabled = pair.first();
     if (!enabled) return true;
-    long t = System.currentTimeMillis() - 100;
+    long t = System.currentTimeMillis() - 200;
     try {
       for (int i = 0; i < pair.second(); i++) {
         if (core.isClosed()) return true;
