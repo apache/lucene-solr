@@ -57,7 +57,7 @@ public class Pf4jPlugins {
   }
 
   private static Predicate<UpdateRepository.PluginInfo> filterPredicate(String q) {
-    return p -> (q == null || q.length() == 0 || q.equals("*")) || p.name.contains(q);
+    return p -> (q == null || q.length() == 0 || q.equals("*")) || p.id != null && p.id.contains(q);
   }
 
   public List<UpdateRepository.PluginInfo> query(String q) {
