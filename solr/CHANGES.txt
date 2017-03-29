@@ -128,6 +128,8 @@ New Features
 
 * SOLR-10349: Add totalTermFreq support to TermsComponent. (Shai Erera)
 
+* SOLR-9993: Add support for ExpandComponent with PointFields. (Cao Manh Dat)
+
 Optimizations
 ----------------------
 
