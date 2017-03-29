@@ -215,8 +215,12 @@ public class MetricUtils {
             try {
               consumer.accept(n, convertGauge(gauge, compact));
             } catch (InternalError ie) {
-              LOG.warn("Error converting gauge '" + n + "', possible JDK bug: SOLR-10362", ie);
-              consumer.accept(n, null);
+              if (n.startsWith("memory.") && ie.getMessage().contains("Memory Pool not found")) {
+                LOG.warn("Error converting gauge '" + n + "', possible JDK bug: SOLR-10362", ie);
+                consumer.accept(n, null);
+              } else {
+                throw ie;
+              }
             }
           } else if (metric instanceof Meter) {
             Meter meter = (Meter) metric;
