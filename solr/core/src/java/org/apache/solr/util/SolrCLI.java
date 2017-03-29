@@ -103,6 +103,7 @@ import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.ContentStreamBase;
 import org.apache.solr.common.util.NamedList;
+import org.apache.solr.util.pf4j.Pf4jPlugins;
 import org.noggit.CharArr;
 import org.noggit.JSONParser;
 import org.noggit.JSONWriter;
@@ -352,6 +353,8 @@ public class SolrCLI {
       return new AssertTool();
     else if ("utils".equals(toolType))
       return new UtilsTool();
+    else if ("plugin".equals(toolType))
+      return new PluginTool();
 
     // If you add a built-in tool to this class, add it here to avoid
     // classpath scanning
@@ -3715,4 +3718,51 @@ public class SolrCLI {
       this.beQuiet = shouldPrintStdout; 
     }
   } // end UtilsTool class  
+
+  private static class PluginTool implements Tool {
+    @Override
+    public String getName() {
+      return "plugin";
+    }
+
+    @Override
+    public Option[] getOptions() {
+      return new Option[0];
+    }
+
+    @Override
+    public int runTool(CommandLine cli) throws Exception {
+      if (cli.getArgs().length > 0 || cli.hasOption("h")) {
+        new HelpFormatter().printHelp("bin/solr plugin <install|uninstall|list|update> [plugin]", getToolOptions(this));
+        return 1;
+      }
+      List<String> args = cli.getArgList();
+      String command = args.get(0);
+      switch (command) {
+        case "install":
+          break;
+
+        case "list":
+          System.out.println("Listing installed plugins");
+
+          break;
+
+        case "query":
+          if (args.size() > 1) {
+            query(args.get(1));
+          }
+
+          break;
+
+        default:
+          throw new Exception("Unknown plugin command " + command);
+      }
+      return 0;
+    }
+
+    private void query(String q) {
+      Pf4jPlugins mgr = new Pf4jPlugins();
+      mgr.query(q);
+    }
+  }
 }
