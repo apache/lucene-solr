@@ -414,7 +414,6 @@ public class IndexSearcher {
       throw new IllegalArgumentException("after.doc exceeds the number of documents in the reader: after.doc="
           + after.doc + " limit=" + limit);
     }
-    numHits = Math.min(numHits, limit);
 
     final int cappedNumHits = Math.min(numHits, limit);
 
