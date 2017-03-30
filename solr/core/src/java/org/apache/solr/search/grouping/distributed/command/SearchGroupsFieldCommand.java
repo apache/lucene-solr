@@ -52,13 +52,6 @@ public class SearchGroupsFieldCommand implements Command<SearchGroupsFieldComman
       return this;
     }
 
-    // We can't reconstruct a SortSpec from a Sort.
-     @Deprecated  // JTODO
-     public Builder setGroupSort(Sort groupSort) {
-  //      this.groupSort = groupSort;
-        return this;
-      }
-
     public Builder setGroupSortSpec(SortSpec groupSortSpec) {
       this.groupSortSpec = groupSortSpec;
       return this;
