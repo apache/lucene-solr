@@ -65,7 +65,7 @@ public class Lucene50SegmentInfoFormat extends SegmentInfoFormat {
         final Set<String> files = input.readSetOfStrings();
         final Map<String,String> attributes = input.readMapOfStrings();
         
-        si = new SegmentInfo(dir, version, segment, docCount, isCompoundFile, null, diagnostics, segmentID, attributes, null);
+        si = new SegmentInfo(dir, version, null, segment, docCount, isCompoundFile, null, diagnostics, segmentID, attributes, null);
         si.setFiles(files);
       } catch (Throwable exception) {
         priorE = exception;

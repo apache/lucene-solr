@@ -14,18 +14,14 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
-package org.apache.lucene.codecs.lucene62;
+package org.apache.lucene.codecs.lucene70;
 
 import org.apache.lucene.codecs.Codec;
 import org.apache.lucene.index.BaseSegmentInfoFormatTestCase;
 import org.apache.lucene.util.TestUtil;
 import org.apache.lucene.util.Version;
 
-/**
- * Tests Lucene62SegmentInfoFormat
- */
-public class TestLucene62SegmentInfoFormat extends BaseSegmentInfoFormatTestCase {
+public class TestLucene70SegmentInfoFormat extends BaseSegmentInfoFormatTestCase {
 
   @Override
   protected Version[] getVersions() {

@@ -139,7 +139,7 @@ public abstract class ReplicaNode extends Node {
       SegmentInfos infos;
       if (segmentsFileName == null) {
         // No index here yet:
-        infos = new SegmentInfos(Version.LATEST);
+        infos = new SegmentInfos(Version.LATEST.major);
         message("top: init: no segments in index");
       } else {
         message("top: init: read existing segments commit " + segmentsFileName);

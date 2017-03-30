@@ -140,7 +140,7 @@ class ReadersAndUpdates {
   public SegmentReader getReader(IOContext context) throws IOException {
     if (reader == null) {
       // We steal returned ref:
-      reader = new SegmentReader(info, context);
+      reader = new SegmentReader(info, writer.segmentInfos.getIndexCreatedVersionMajor(), context);
       if (liveDocs == null) {
         liveDocs = reader.getLiveDocs();
       }
@@ -552,7 +552,7 @@ class ReadersAndUpdates {
 
       // reader could be null e.g. for a just merged segment (from
       // IndexWriter.commitMergedDeletes).
-      final SegmentReader reader = this.reader == null ? new SegmentReader(info, IOContext.READONCE) : this.reader;
+      final SegmentReader reader = this.reader == null ? new SegmentReader(info, writer.segmentInfos.getIndexCreatedVersionMajor(), IOContext.READONCE) : this.reader;
       try {
         // clone FieldInfos so that we can update their dvGen separately from
         // the reader's infos and write them to a new fieldInfos_gen file

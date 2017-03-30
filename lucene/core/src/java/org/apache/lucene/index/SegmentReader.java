@@ -30,7 +30,6 @@ import org.apache.lucene.codecs.NormsProducer;
 import org.apache.lucene.codecs.PointsReader;
 import org.apache.lucene.codecs.StoredFieldsReader;
 import org.apache.lucene.codecs.TermVectorsReader;
-import org.apache.lucene.search.Sort;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IOContext;
 import org.apache.lucene.util.Bits;
@@ -46,6 +45,7 @@ import org.apache.lucene.util.IOUtils;
 public final class SegmentReader extends CodecReader {
        
   private final SegmentCommitInfo si;
+  private final LeafMetaData metaData;
   private final Bits liveDocs;
 
   // Normally set to si.maxDoc - si.delDocCount, unless we
@@ -68,8 +68,9 @@ public final class SegmentReader extends CodecReader {
    * @throws IOException if there is a low-level IO error
    */
   // TODO: why is this public?
-  public SegmentReader(SegmentCommitInfo si, IOContext context) throws IOException {
+  public SegmentReader(SegmentCommitInfo si, int createdVersionMajor, IOContext context) throws IOException {
     this.si = si;
+    this.metaData = new LeafMetaData(createdVersionMajor, si.info.getMinVersion(), si.info.getIndexSort());
 
     // We pull liveDocs/DV updates from disk:
     this.isNRT = false;
@@ -133,6 +134,7 @@ public final class SegmentReader extends CodecReader {
       throw new IllegalArgumentException("maxDoc=" + si.info.maxDoc() + " but liveDocs.size()=" + liveDocs.length());
     }
     this.si = si;
+    this.metaData = sr.getMetaData();
     this.liveDocs = liveDocs;
     this.isNRT = isNRT;
     this.numDocs = numDocs;
@@ -330,7 +332,7 @@ public final class SegmentReader extends CodecReader {
   }
 
   @Override
-  public Sort getIndexSort() {
-    return si.info.getIndexSort();
+  public LeafMetaData getMetaData() {
+    return metaData;
   }
 }

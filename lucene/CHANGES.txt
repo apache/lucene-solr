@@ -7,9 +7,12 @@ http://s.apache.org/luceneversions
 
 New Features
 
-* LUCENE-7703: SegmentInfos now record the Lucene version at index creation
-  time. (Adrien Grand)
+* LUCENE-7703: SegmentInfos now record the major Lucene version at index
+  creation time. (Adrien Grand)
 
+* LUCENE-7756: LeafReader.getMetaData now exposes the index created version as
+  well as the oldest Lucene version that contributed to the segment.
+  (Adrien Grand)
 
 API Changes
 
