@@ -240,6 +240,14 @@ abstract class FacetRequestSortedMerger<FacetRequestT extends FacetRequestSorted
       if (skipBuckets != null) refinement.put("_s", skipBuckets);
     }
 
+    refinement = getRefinementSpecial(mcontext, refinement, tagsWithPartial);
+
+    return refinement;
+  }
+
+  // utility method for subclasses to override to finish calculating faceting (special buckets in field facets)... this feels hacky and we
+  // should find a better way.
+  Map<String,Object> getRefinementSpecial(Context mcontext, Map<String,Object> refinement, Collection<String> tagsWithPartial) {
     return refinement;
   }
 
