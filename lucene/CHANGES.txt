@@ -93,6 +93,13 @@ Other
 * LUCENE-7743: Never call new String(String).
   (Daniel Jelinski via Adrien Grand)
 
+======================= Lucene 6.5.1 =======================
+
+Bug Fixes
+
+* LUCENE-7755: Fixed join queries to not reference IndexReaders, as it could
+  cause leaks if they are cached. (Adrien Grand)
+
 ======================= Lucene 6.5.0 =======================
 
 API Changes
