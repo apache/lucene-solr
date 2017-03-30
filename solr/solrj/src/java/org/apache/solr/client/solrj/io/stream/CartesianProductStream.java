@@ -49,7 +49,7 @@ public class CartesianProductStream extends TupleStream implements Expressible {
   private List<NamedEvaluator> evaluators;
   private StreamComparator orderBy;
   
-  // Used to contain the sorted queue of generated tuples 
+  // Used to contain the sorted queue of generated tuples
   private LinkedList<Tuple> generatedTuples;
   
   public CartesianProductStream(StreamExpression expression,StreamFactory factory) throws IOException {
@@ -59,7 +59,6 @@ public class CartesianProductStream extends TupleStream implements Expressible {
     List<StreamExpression> streamExpressions = factory.getExpressionOperandsRepresentingTypes(expression, Expressible.class, TupleStream.class);
     List<StreamExpressionParameter> evaluateAsExpressions = factory.getOperandsOfType(expression, StreamExpressionValue.class);
     StreamExpressionNamedParameter orderByExpression = factory.getNamedOperand(expression, "productSort");
-    
     // validate expression contains only what we want.
     if(expression.getParameters().size() != streamExpressions.size() + evaluateAsExpressions.size() + (null == orderByExpression ? 0 : 1)){
       throw new IOException(String.format(Locale.ROOT,"Invalid %s expression %s - unknown operands found", functionName, expression));
@@ -259,6 +258,9 @@ public class CartesianProductStream extends TupleStream implements Expressible {
   
   public void setStreamContext(StreamContext context) {
     this.stream.setStreamContext(context);
+    for(NamedEvaluator evaluator : evaluators) {
+      evaluator.getEvaluator().setStreamContext(context);
+    }
   }
 
   public List<TupleStream> children() {

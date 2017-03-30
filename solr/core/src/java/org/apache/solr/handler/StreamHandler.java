@@ -209,6 +209,7 @@ public class StreamHandler extends RequestHandlerBase implements SolrCoreAware, 
       .withFunctionName("log", NaturalLogEvaluator.class)
       // Conditional Stream Evaluators
       .withFunctionName("if", IfThenElseEvaluator.class)
+      .withFunctionName("analyze", AnalyzeEvaluator.class)
       ;
 
      // This pulls all the overrides and additions from the config
