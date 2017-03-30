@@ -39,7 +39,7 @@ import static ro.fortsoft.pf4j.update.UpdateRepository.PluginRelease;
 public class Plugins {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
-  private final PluginManager pluginManager;
+  private final SolrPluginManager pluginManager;
   private final PluginUpdateManager updateManager;
   private final Version systemVersion;
 
@@ -101,6 +101,10 @@ public class Plugins {
 
   public PluginManager getPluginManager() {
     return pluginManager;
+  }
+
+  public ClassLoader getUberClassLoader(ClassLoader parent) {
+    return pluginManager.getUberClassloader(parent);
   }
   
   public void addUpdateRepository(String id, String url) {

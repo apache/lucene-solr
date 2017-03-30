@@ -39,6 +39,7 @@ import ro.fortsoft.pf4j.util.StringUtils;
  */
 public class SolrPluginManager extends DefaultPluginManager {
   private static final Logger log = LoggerFactory.getLogger(SolrPluginManager.class);
+  private SolrPluginsClassLoader uberLoader;
 
   @Override
   protected PluginDescriptorFinder createPluginDescriptorFinder() {
@@ -60,6 +61,13 @@ public class SolrPluginManager extends DefaultPluginManager {
   @Override
   protected PluginFactory createPluginFactory() {
       return new SolrPluginFactory();
+  }
+
+  public ClassLoader getUberClassloader(ClassLoader parent) {
+    if (uberLoader == null) {
+      uberLoader = new SolrPluginsClassLoader(parent, getPluginClassLoaders().values());
+    }
+    return uberLoader;
   }
 
   private class SolrPluginFactory extends DefaultPluginFactory {
@@ -101,44 +109,4 @@ public class SolrPluginManager extends DefaultPluginManager {
     }
 
   }
-
-
-//  @Override
-//  public PluginState startPlugin(String pluginId) {
-//      if (!plugins.containsKey(pluginId)) {
-//          throw new IllegalArgumentException(String.format("Unknown pluginId %s", pluginId));
-//      }
-//
-//      PluginWrapper pluginWrapper = getPlugin(pluginId);
-//      PluginDescriptor pluginDescriptor = pluginWrapper.getDescriptor();
-//      PluginState pluginState = pluginWrapper.getPluginState();
-//      if (PluginState.STARTED == pluginState) {
-//          log.debug("Already started plugin '{}:{}'", pluginDescriptor.getPluginId(), pluginDescriptor.getVersion());
-//          return PluginState.STARTED;
-//      }
-//
-//      if (PluginState.DISABLED == pluginState) {
-//          // automatically enable plugin on manual plugin start
-//          if (!enablePlugin(pluginId)) {
-//              return pluginState;
-//          }
-//      }
-//
-//      for (PluginDependency dependency : pluginDescriptor.getDependencies()) {
-//          startPlugin(dependency.getPluginId());
-//      }
-//
-//      try {
-//          log.info("Start plugin '{}:{}'", pluginDescriptor.getPluginId(), pluginDescriptor.getVersion());
-//          pluginWrapper.getPlugin().start();
-//          pluginWrapper.setPluginState(PluginState.STARTED);
-//          startedPlugins.add(pluginWrapper);
-//
-//          firePluginStateEvent(new PluginStateEvent(this, pluginWrapper, pluginState));
-//      } catch (PluginException e) {
-//          log.error(e.getMessage(), e);
-//      }
-//
-//      return pluginWrapper.getPluginState();
-//  }
 }

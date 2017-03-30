@@ -29,7 +29,7 @@ import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
 /**
- * Created by janhoy on 29.03.2017.
+ * Test the PF4J integration
  */
 public class PluginsTest {
 
@@ -74,7 +74,7 @@ public class PluginsTest {
   }
 
   @Test
-  public void loadClass() throws Exception {
+  public void installAndCheckClassloading() throws Exception {
     plugins.install("dih");
     assertEquals(1, plugins.listInstalled().size());
     try {
@@ -82,7 +82,12 @@ public class PluginsTest {
       fail();
     } catch (Exception e) {}
     ClassLoader loader = plugins.getPluginManager().getPluginClassLoader("dih");
-    loader.loadClass("org.apache.solr.handler.dataimport.DataImportHandler");
+    assertEquals("DataImportHandler",
+        loader.loadClass("org.apache.solr.handler.dataimport.DataImportHandler").getSimpleName());
+    plugins.install("request-sanitizer");
+    ClassLoader uberLoader = plugins.getUberClassLoader(getClass().getClassLoader());
+    uberLoader.loadClass("com.cominvent.solr.RequestSanitizerComponent");
+    uberLoader.loadClass("org.apache.solr.handler.dataimport.DataImportHandler");
   }
 
 }

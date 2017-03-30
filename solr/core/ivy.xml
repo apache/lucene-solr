@@ -148,7 +148,7 @@
     <dependency org="org.codehaus.janino" name="commons-compiler" rev="${/org.codehaus.janino/commons-compiler}" conf="compile"/>
     <dependency org="com.google.protobuf" name="protobuf-java" rev="${/com.google.protobuf/protobuf-java}" conf="compile"/>
 
-    <dependency org="ro.fortsoft.pf4j" name="pf4j" rev="${/ro.fortsoft.pf4j/pf4j}" conf="compile"/>
+    <!--<dependency org="ro.fortsoft.pf4j" name="pf4j" rev="${/ro.fortsoft.pf4j/pf4j}" conf="compile"/>-->
     <!-- LOCAL OVERRIDE <dependency org="ro.fortsoft.pf4j" name="pf4j-update" rev="${/ro.fortsoft.pf4j/pf4j-update}" conf="compile" />-->
     <dependency org="com.github.zafarkhaja" name="java-semver" rev="${/com.github.zafarkhaja/java-semver}" conf="compile"/>
     <dependency org="com.google.code.gson" name="gson" rev="${/com.google.code.gson/gson}" conf="compile"/>
