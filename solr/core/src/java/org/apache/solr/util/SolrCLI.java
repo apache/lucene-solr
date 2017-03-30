@@ -103,7 +103,7 @@ import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.ContentStreamBase;
 import org.apache.solr.common.util.NamedList;
-import org.apache.solr.util.pf4j.Pf4jPlugins;
+import org.apache.solr.util.pf4j.Plugins;
 import org.noggit.CharArr;
 import org.noggit.JSONParser;
 import org.noggit.JSONWriter;
@@ -3761,7 +3761,7 @@ public class SolrCLI {
     }
 
     private void query(String q) {
-      Pf4jPlugins mgr = new Pf4jPlugins();
+      Plugins mgr = new Plugins();
       mgr.query(q);
     }
   }

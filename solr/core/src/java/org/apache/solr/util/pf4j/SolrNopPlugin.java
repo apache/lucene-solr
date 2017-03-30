@@ -17,26 +17,21 @@
 
 package org.apache.solr.util.pf4j;
 
-import java.util.List;
-
-import org.junit.Test;
-import ro.fortsoft.pf4j.update.UpdateRepository;
-
-import static junit.framework.Assert.assertEquals;
+import ro.fortsoft.pf4j.Plugin;
+import ro.fortsoft.pf4j.PluginWrapper;
 
 /**
- * Created by janhoy on 29.03.2017.
+ * Created by janhoy on 30.03.2017.
  */
-public class Pf4jPluginsTest {
-  @Test
-  public void query() throws Exception {
-    // NOCOMMIT: Get rid of GSON dependency
-    Pf4jPlugins mgr = new Pf4jPlugins();
-    List<UpdateRepository.PluginInfo> res = mgr.query("*");
-    assertEquals(1, res.size());
-    assertEquals("extraction", res.get(0).id);
-
-    assertEquals(1, mgr.query("extract").size());
+public class SolrNopPlugin extends Plugin {
+  /**
+   * Constructor to be used by plugin manager for plugin instantiation.
+   * Your plugins have to provide constructor with this exact signature to
+   * be successfully loaded by manager.
+   *
+   * @param wrapper
+   */
+  public SolrNopPlugin(PluginWrapper wrapper) {
+    super(wrapper);
   }
-
 }

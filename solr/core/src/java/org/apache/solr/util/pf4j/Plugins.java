@@ -26,7 +26,6 @@ import java.util.stream.Collectors;
 import com.github.zafarkhaja.semver.Version;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import ro.fortsoft.pf4j.DefaultPluginManager;
 import ro.fortsoft.pf4j.PluginManager;
 import ro.fortsoft.pf4j.update.UpdateManager;
 import ro.fortsoft.pf4j.update.UpdateRepository;
@@ -37,17 +36,17 @@ import static ro.fortsoft.pf4j.update.UpdateRepository.PluginRelease;
 /**
  * Discovers and loads plugins from plugin folder using PF4J
  */
-public class Pf4jPlugins {
+public class Plugins {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   private final PluginManager pluginManager;
-  private final UpdateManager updateManager;
+  private final PluginUpdateManager updateManager;
   private final Version systemVersion;
 
 
-  public Pf4jPlugins() {
-    pluginManager = new DefaultPluginManager();
-    updateManager = new UpdateManager(pluginManager);
+  public Plugins() {
+    pluginManager = new SolrPluginManager();
+    updateManager = new PluginUpdateManager(pluginManager);
     systemVersion = pluginManager.getSystemVersion();
   }
 
@@ -61,10 +60,14 @@ public class Pf4jPlugins {
   }
 
   public List<UpdateRepository.PluginInfo> query(String q) {
+    // TODO: Allow install from any GitHub repo
     if (updateManager.hasAvailablePlugins()) {
-      List<UpdateRepository.PluginInfo> plugins = updateManager.getAvailablePlugins();
-      log.info("Found these plugins in repos for query " + q + ": " + plugins);
-      return plugins.stream().filter(filterPredicate(q)).collect(Collectors.toList());
+      List<UpdateRepository.PluginInfo> plugins = updateManager.getAvailablePlugins()
+          .stream().filter(filterPredicate(q)).collect(Collectors.toList());
+      log.debug("Found these plugins in repos for query " + q + ": " + plugins);
+      log.info("Found plugins for " + q + ": " + plugins.stream().map(p -> p.id +
+          "(" + p.getLastRelease(systemVersion).version + ")").collect(Collectors.toList()));
+      return plugins;
     } else {
       return Collections.emptyList();
     }
@@ -92,6 +95,23 @@ public class Pf4jPlugins {
 
   public void install(String id) {
     log.info("Installing plugin with id "+id);
+    PluginInfo info = query(id).get(0);
+    updateManager.installPlugin(info.getLastRelease(systemVersion).url);
+  }
+
+  public PluginManager getPluginManager() {
+    return pluginManager;
+  }
+  
+  public void addUpdateRepository(String id, String url) {
+    updateManager.addRepository(id, url);
+  }
+
+  public UpdateManager getUpdateManager() {
+    return updateManager;
+  }
+
+  public void uninstall(String id) {
     updateManager.uninstallPlugin(id);
   }
 }
