@@ -18,6 +18,7 @@
 package org.apache.solr.cloud;
 
 import java.io.ByteArrayOutputStream;
+import java.io.File;
 import java.io.IOException;
 import java.io.PrintStream;
 import java.nio.charset.Charset;
@@ -229,9 +230,9 @@ public class SolrCLIZkUtilsTest extends SolrCloudTestCase {
     // NOTE: really can't test copying to '.' because the test framework doesn't allow altering the source tree
     // and at least IntelliJ's CWD is in the source tree.
 
-    // copy to local ending in '/'
+    // copy to local ending in separator
     //src and cp3 and cp4 are valid
-    String localSlash = tmp.normalize() + "/cpToLocal/";
+    String localSlash = tmp.normalize() +  File.separator +"cpToLocal" + File.separator;
     args = new String[]{
         "-src", "zk:/cp3/schema.xml",
         "-dst", localSlash,
@@ -246,7 +247,7 @@ public class SolrCLIZkUtilsTest extends SolrCloudTestCase {
     // copy to ZK ending in '/'.
     //src and cp3 are valid
     args = new String[]{
-        "-src", "file:" + srcPathCheck.normalize().toAbsolutePath().toString() + "/solrconfig.xml",
+        "-src", "file:" + srcPathCheck.normalize().toAbsolutePath().toString() + File.separator + "solrconfig.xml",
         "-dst", "zk:/powerup/",
         "-recurse", "false",
         "-zkHost", zkAddr,
@@ -259,7 +260,7 @@ public class SolrCLIZkUtilsTest extends SolrCloudTestCase {
     // copy individual file up
     //src and cp3 are valid
     args = new String[]{
-        "-src", "file:" + srcPathCheck.normalize().toAbsolutePath().toString() + "/solrconfig.xml",
+        "-src", "file:" + srcPathCheck.normalize().toAbsolutePath().toString() + File.separator + "solrconfig.xml",
         "-dst", "zk:/copyUpFile.xml",
         "-recurse", "false",
         "-zkHost", zkAddr,
@@ -272,7 +273,7 @@ public class SolrCLIZkUtilsTest extends SolrCloudTestCase {
     // copy individual file down
     //src and cp3 are valid
 
-    String localNamed = tmp.normalize().toString() + "/localnamed/renamed.txt";
+    String localNamed = tmp.normalize().toString() + File.separator + "localnamed" + File.separator +  "renamed.txt";
     args = new String[]{
         "-src", "zk:/cp4/solrconfig.xml",
         "-dst", "file:" + localNamed,
@@ -404,7 +405,7 @@ public class SolrCLIZkUtilsTest extends SolrCloudTestCase {
     // Files are in mv2
     // Now fail if we specify "file:". Everything should still be in /mv2
     args = new String[]{
-        "-src", "file:/mv2",
+        "-src", "file:" + File.separator + "mv2",
         "-dst", "/mv3",
         "-zkHost", zkAddr,
     };
