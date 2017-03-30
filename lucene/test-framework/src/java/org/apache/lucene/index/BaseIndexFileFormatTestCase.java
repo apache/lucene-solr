@@ -147,6 +147,22 @@ abstract class BaseIndexFileFormatTestCase extends LuceneTestCase {
   /** Returns the codec to run tests against */
   protected abstract Codec getCodec();
 
+  /** Returns the major version that this codec is compatible with. */
+  protected int getCreatedVersionMajor() {
+    return Version.LATEST.major;
+  }
+
+  /** Set the created version of the given {@link Directory} and return it. */
+  protected final <D extends Directory> D applyCreatedVersionMajor(D d) throws IOException {
+    if (SegmentInfos.getLastCommitGeneration(d) != -1) {
+      throw new IllegalArgumentException("Cannot set the created version on a Directory that already has segments");
+    }
+    if (getCreatedVersionMajor() != Version.LATEST.major || random().nextBoolean()) {
+      new SegmentInfos(getCreatedVersionMajor()).commit(d);
+    }
+    return d;
+  }
+
   private Codec savedCodec;
 
   public void setUp() throws Exception {
@@ -195,7 +211,7 @@ abstract class BaseIndexFileFormatTestCase extends LuceneTestCase {
   /** The purpose of this test is to make sure that bulk merge doesn't accumulate useless data over runs. */
   public void testMergeStability() throws Exception {
     assumeTrue("merge is not stable", mergeIsStable());
-    Directory dir = newDirectory();
+    Directory dir = applyCreatedVersionMajor(newDirectory());
 
     // do not use newMergePolicy that might return a MockMergePolicy that ignores the no-CFS ratio
     // do not use RIW which will change things up!
@@ -214,7 +230,7 @@ abstract class BaseIndexFileFormatTestCase extends LuceneTestCase {
     w.close();
     DirectoryReader reader = DirectoryReader.open(dir);
 
-    Directory dir2 = newDirectory();
+    Directory dir2 = applyCreatedVersionMajor(newDirectory());
     mp = newTieredMergePolicy();
     mp.setNoCFSRatio(0);
     cfg = new IndexWriterConfig(new MockAnalyzer(random())).setUseCompoundFile(false).setMergePolicy(mp);
@@ -245,7 +261,7 @@ abstract class BaseIndexFileFormatTestCase extends LuceneTestCase {
       avoidCodecs.add(new MockRandomPostingsFormat().getName());
       Codec.setDefault(new RandomCodec(random(), avoidCodecs));
     }
-    Directory dir = newDirectory();
+    Directory dir = applyCreatedVersionMajor(newDirectory());
     IndexWriterConfig cfg = newIndexWriterConfig(new MockAnalyzer(random()));
     IndexWriter w = new IndexWriter(dir, cfg);
     // we need to index enough documents so that constant overhead doesn't dominate
@@ -286,7 +302,7 @@ abstract class BaseIndexFileFormatTestCase extends LuceneTestCase {
   /** Calls close multiple times on closeable codec apis */
   public void testMultiClose() throws IOException {
     // first make a one doc index
-    Directory oneDocIndex = newDirectory();
+    Directory oneDocIndex = applyCreatedVersionMajor(newDirectory());
     IndexWriter iw = new IndexWriter(oneDocIndex, new IndexWriterConfig(new MockAnalyzer(random())));
     Document oneDoc = new Document();
     FieldType customType = new FieldType(TextField.TYPE_STORED);
@@ -303,7 +319,7 @@ abstract class BaseIndexFileFormatTestCase extends LuceneTestCase {
     Directory dir = newFSDirectory(createTempDir("justSoYouGetSomeChannelErrors"));
     Codec codec = getCodec();
     
-    SegmentInfo segmentInfo = new SegmentInfo(dir, Version.LATEST, "_0", 1, false, codec, Collections.emptyMap(), StringHelper.randomId(), new HashMap<>(), null);
+    SegmentInfo segmentInfo = new SegmentInfo(dir, Version.LATEST, Version.LATEST, "_0", 1, false, codec, Collections.emptyMap(), StringHelper.randomId(), new HashMap<>(), null);
     FieldInfo proto = oneDocReader.getFieldInfos().fieldInfo("field");
     FieldInfo field = new FieldInfo(proto.name, proto.number, proto.hasVectors(), proto.omitsNorms(), proto.hasPayloads(), 
                                     proto.getIndexOptions(), proto.getDocValuesType(), proto.getDocValuesGen(), new HashMap<>(),
@@ -499,7 +515,7 @@ abstract class BaseIndexFileFormatTestCase extends LuceneTestCase {
   // codec does not corrupt the index or leak file handles.
   public void testRandomExceptions() throws Exception {
     // disable slow things: we don't rely upon sleeps here.
-    MockDirectoryWrapper dir = newMockDirectory();
+    MockDirectoryWrapper dir = applyCreatedVersionMajor(newMockDirectory());
     dir.setThrottling(MockDirectoryWrapper.Throttling.NEVER);
     dir.setUseSlowOpenClosers(false);
     dir.setRandomIOExceptionRate(0.001); // more rare

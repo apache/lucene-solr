@@ -19,7 +19,6 @@ package org.apache.lucene.index;
 import java.io.IOException;
 
 import org.apache.lucene.index.IndexReader.CacheHelper;
-import org.apache.lucene.search.Sort;
 import org.apache.lucene.util.Bits;
 
 /** {@code LeafReader} is an abstract class, providing an interface for accessing an
@@ -246,6 +245,8 @@ public abstract class LeafReader extends IndexReader {
    */
   public abstract void checkIntegrity() throws IOException;
 
-  /** Returns null if this leaf is unsorted, or the {@link Sort} that it was sorted by */
-  public abstract Sort getIndexSort();
+  /**
+   * Return metadata about this leaf.
+   * @lucene.experimental */
+  public abstract LeafMetaData getMetaData();
 }

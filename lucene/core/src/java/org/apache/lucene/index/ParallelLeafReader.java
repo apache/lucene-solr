@@ -28,6 +28,7 @@ import java.util.TreeMap;
 
 import org.apache.lucene.search.Sort;
 import org.apache.lucene.util.Bits;
+import org.apache.lucene.util.Version;
 
 /** An {@link LeafReader} which reads multiple, parallel indexes.  Each index
  * added must have the same number of documents, but typically each contains
@@ -56,7 +57,7 @@ public class ParallelLeafReader extends LeafReader {
   private final boolean closeSubReaders;
   private final int maxDoc, numDocs;
   private final boolean hasDeletions;
-  private final Sort indexSort;
+  private final LeafMetaData metaData;
   private final SortedMap<String,LeafReader> fieldToReader = new TreeMap<>();
   private final SortedMap<String,LeafReader> tvFieldToReader = new TreeMap<>();
   
@@ -104,14 +105,23 @@ public class ParallelLeafReader extends LeafReader {
     FieldInfos.Builder builder = new FieldInfos.Builder();
 
     Sort indexSort = null;
+    int createdVersionMajor = -1;
 
     // build FieldInfos and fieldToReader map:
     for (final LeafReader reader : this.parallelReaders) {
-      Sort leafIndexSort = reader.getIndexSort();
+      LeafMetaData leafMetaData = reader.getMetaData();
+      
+      Sort leafIndexSort = leafMetaData.getSort();
       if (indexSort == null) {
         indexSort = leafIndexSort;
       } else if (leafIndexSort != null && indexSort.equals(leafIndexSort) == false) {
         throw new IllegalArgumentException("cannot combine LeafReaders that have different index sorts: saw both sort=" + indexSort + " and " + leafIndexSort);
+      }
+
+      if (createdVersionMajor == -1) {
+        createdVersionMajor = leafMetaData.getCreatedVersionMajor();
+      } else if (createdVersionMajor != leafMetaData.getCreatedVersionMajor()) {
+        throw new IllegalArgumentException("cannot combine LeafReaders that have different creation versions: saw both version=" + createdVersionMajor + " and " + leafMetaData.getCreatedVersionMajor());
       }
 
       final FieldInfos readerFieldInfos = reader.getFieldInfos();
@@ -126,8 +136,24 @@ public class ParallelLeafReader extends LeafReader {
         }
       }
     }
+    if (createdVersionMajor == -1) {
+      // empty reader
+      createdVersionMajor = Version.LATEST.major;
+    }
+
+    Version minVersion = Version.LATEST;
+    for (final LeafReader reader : this.parallelReaders) {
+      Version leafVersion = reader.getMetaData().getMinVersion();
+      if (leafVersion == null) {
+        minVersion = null;
+        break;
+      } else if (minVersion.onOrAfter(leafVersion)) {
+        minVersion = leafVersion;
+      }
+    }
+
     fieldInfos = builder.finish();
-    this.indexSort = indexSort;
+    this.metaData = new LeafMetaData(createdVersionMajor, minVersion, indexSort);
     
     // build Fields instance
     for (final LeafReader reader : this.parallelReaders) {
@@ -358,8 +384,8 @@ public class ParallelLeafReader extends LeafReader {
   }
 
   @Override
-  public Sort getIndexSort() {
-    return indexSort;
+  public LeafMetaData getMetaData() {
+    return metaData;
   }
 
 }
