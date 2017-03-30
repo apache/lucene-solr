@@ -81,8 +81,7 @@ public final class ConcatFieldUpdateProcessorFactory extends FieldMutatingUpdate
       if (src.getValueCount() <= 1) return src;
 
       SolrInputField result = new SolrInputField(src.getName());
-      result.setValue(StringUtils.join(src.getValues(), delimiter),
-          src.getBoost());
+      result.setValue(StringUtils.join(src.getValues(), delimiter));
       return result;
     });
   }

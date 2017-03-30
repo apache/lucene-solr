@@ -336,7 +336,7 @@ public class TestMultiFieldQueryParser extends LuceneTestCase {
   }
 
   /** whitespace+lowercase analyzer with synonyms (dogs,dog) and (guinea pig,cavy) */
-  private class MockSynonymAnalyzer extends Analyzer {
+  private static class MockSynonymAnalyzer extends Analyzer {
     @Override
     public TokenStreamComponents createComponents(String fieldName) {
       Tokenizer tokenizer = new MockTokenizer(MockTokenizer.WHITESPACE, true);

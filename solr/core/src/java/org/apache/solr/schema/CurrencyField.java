@@ -171,21 +171,21 @@ public class CurrencyField extends FieldType implements SchemaAware, ResourceLoa
   }
 
   @Override
-  public List<IndexableField> createFields(SchemaField field, Object externalVal, float boost) {
+  public List<IndexableField> createFields(SchemaField field, Object externalVal) {
     CurrencyValue value = CurrencyValue.parse(externalVal.toString(), defaultCurrency);
 
     List<IndexableField> f = new ArrayList<>();
     SchemaField amountField = getAmountField(field);
-    f.add(amountField.createField(String.valueOf(value.getAmount()), amountField.indexed() && !amountField.omitNorms() ? boost : 1F));
+    f.add(amountField.createField(String.valueOf(value.getAmount())));
     SchemaField currencyField = getCurrencyField(field);
-    f.add(currencyField.createField(value.getCurrencyCode(), currencyField.indexed() && !currencyField.omitNorms() ? boost : 1F));
+    f.add(currencyField.createField(value.getCurrencyCode()));
 
     if (field.stored()) {
       String storedValue = externalVal.toString().trim();
       if (storedValue.indexOf(",") < 0) {
         storedValue += "," + defaultCurrency;
       }
-      f.add(createField(field.getName(), storedValue, StoredField.TYPE, 1F));
+      f.add(createField(field.getName(), storedValue, StoredField.TYPE));
     }
 
     return f;

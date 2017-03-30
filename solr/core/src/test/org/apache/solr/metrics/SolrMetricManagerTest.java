@@ -58,8 +58,8 @@ public class SolrMetricManagerTest extends SolrTestCaseJ4 {
 
     Map<String, Counter> metrics1 = SolrMetricTestUtils.getRandomMetrics(r, true);
     Map<String, Counter> metrics2 = SolrMetricTestUtils.getRandomMetrics(r, true);
-    String fromName = TestUtil.randomSimpleString(r, 1, 10);
-    String toName = TestUtil.randomSimpleString(r, 1, 10);
+    String fromName = "from-" + TestUtil.randomSimpleString(r, 1, 10);
+    String toName = "to-" + TestUtil.randomSimpleString(r, 1, 10);
     // register test metrics
     for (Map.Entry<String, Counter> entry : metrics1.entrySet()) {
       metricManager.register(fromName, entry.getValue(), false, entry.getKey(), "metrics1");
@@ -205,32 +205,32 @@ public class SolrMetricManagerTest extends SolrTestCaseJ4 {
         createPluginInfo("node_foo", "node", null),
         createPluginInfo("core_foo", "core", null)
     };
-
-    metricManager.loadReporters(plugins, loader, SolrInfoMBean.Group.node);
+    String tag = "xyz";
+    metricManager.loadReporters(plugins, loader, tag, SolrInfoMBean.Group.node);
     Map<String, SolrMetricReporter> reporters = metricManager.getReporters(
         SolrMetricManager.getRegistryName(SolrInfoMBean.Group.node));
     assertEquals(4, reporters.size());
-    assertTrue(reporters.containsKey("universal_foo"));
-    assertTrue(reporters.containsKey("multigroup_foo"));
-    assertTrue(reporters.containsKey("node_foo"));
-    assertTrue(reporters.containsKey("multiregistry_foo"));
+    assertTrue(reporters.containsKey("universal_foo@" + tag));
+    assertTrue(reporters.containsKey("multigroup_foo@" + tag));
+    assertTrue(reporters.containsKey("node_foo@" + tag));
+    assertTrue(reporters.containsKey("multiregistry_foo@" + tag));
 
-    metricManager.loadReporters(plugins, loader, SolrInfoMBean.Group.core, "collection1");
+    metricManager.loadReporters(plugins, loader, tag, SolrInfoMBean.Group.core, "collection1");
     reporters = metricManager.getReporters(
         SolrMetricManager.getRegistryName(SolrInfoMBean.Group.core, "collection1"));
     assertEquals(5, reporters.size());
-    assertTrue(reporters.containsKey("universal_foo"));
-    assertTrue(reporters.containsKey("multigroup_foo"));
-    assertTrue(reporters.containsKey("specific_foo"));
-    assertTrue(reporters.containsKey("core_foo"));
-    assertTrue(reporters.containsKey("multiregistry_foo"));
+    assertTrue(reporters.containsKey("universal_foo@" + tag));
+    assertTrue(reporters.containsKey("multigroup_foo@" + tag));
+    assertTrue(reporters.containsKey("specific_foo@" + tag));
+    assertTrue(reporters.containsKey("core_foo@" + tag));
+    assertTrue(reporters.containsKey("multiregistry_foo@" + tag));
 
-    metricManager.loadReporters(plugins, loader, SolrInfoMBean.Group.jvm);
+    metricManager.loadReporters(plugins, loader, tag, SolrInfoMBean.Group.jvm);
     reporters = metricManager.getReporters(
         SolrMetricManager.getRegistryName(SolrInfoMBean.Group.jvm));
     assertEquals(2, reporters.size());
-    assertTrue(reporters.containsKey("universal_foo"));
-    assertTrue(reporters.containsKey("multigroup_foo"));
+    assertTrue(reporters.containsKey("universal_foo@" + tag));
+    assertTrue(reporters.containsKey("multigroup_foo@" + tag));
 
     metricManager.removeRegistry("solr.jvm");
     reporters = metricManager.getReporters(

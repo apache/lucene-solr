@@ -73,9 +73,8 @@ public final class CompressingStoredFieldsWriter extends StoredFieldsWriter {
 
   static final String CODEC_SFX_IDX = "Index";
   static final String CODEC_SFX_DAT = "Data";
-  static final int VERSION_START = 0;
-  static final int VERSION_CHUNK_STATS = 1;
-  static final int VERSION_CURRENT = VERSION_CHUNK_STATS;
+  static final int VERSION_START = 1;
+  static final int VERSION_CURRENT = VERSION_START;
 
   private final String segment;
   private CompressingStoredFieldsIndexWriter indexWriter;

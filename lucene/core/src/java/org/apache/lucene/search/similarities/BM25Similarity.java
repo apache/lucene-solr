@@ -96,12 +96,12 @@ public class BM25Similarity extends Similarity {
     }
   }
   
-  /** The default implementation encodes <code>boost / sqrt(length)</code>
+  /** The default implementation encodes <code>1 / sqrt(length)</code>
    * with {@link SmallFloat#floatToByte315(float)}.  This is compatible with 
-   * Lucene's default implementation.  If you change this, then you should 
-   * change {@link #decodeNormValue(byte)} to match. */
-  protected byte encodeNormValue(float boost, int fieldLength) {
-    return SmallFloat.floatToByte315(boost / (float) Math.sqrt(fieldLength));
+   * Lucene's historic implementation: {@link ClassicSimilarity}.  If you
+   * change this, then you should change {@link #decodeNormValue(byte)} to match. */
+  protected byte encodeNormValue(int fieldLength) {
+    return SmallFloat.floatToByte315((float) (1 / Math.sqrt(fieldLength)));
   }
 
   /** The default implementation returns <code>1 / f<sup>2</sup></code>
@@ -146,7 +146,7 @@ public class BM25Similarity extends Similarity {
   @Override
   public final long computeNorm(FieldInvertState state) {
     final int numTerms = discountOverlaps ? state.getLength() - state.getNumOverlap() : state.getLength();
-    return encodeNormValue(state.getBoost(), numTerms);
+    return encodeNormValue(numTerms);
   }
 
   /**

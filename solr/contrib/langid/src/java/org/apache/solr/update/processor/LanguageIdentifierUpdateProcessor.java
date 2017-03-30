@@ -252,7 +252,7 @@ public abstract class LanguageIdentifierUpdateProcessor extends UpdateRequestPro
           if (mappedOutputField != null) {
             log.debug("Mapping field {} to {}", doc.getFieldValue(docIdField), fieldLang);
             SolrInputField inField = doc.getField(fieldName);
-            doc.setField(mappedOutputField, inField.getValue(), inField.getBoost());
+            doc.setField(mappedOutputField, inField.getValue());
             if(!mapKeepOrig) {
               log.debug("Removing old field {}", fieldName);
               doc.removeField(fieldName);

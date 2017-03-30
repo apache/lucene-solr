@@ -58,6 +58,8 @@ import org.apache.velocity.tools.generic.SortTool;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import static org.apache.solr.common.params.CommonParams.SORT;
+
 public class VelocityResponseWriter implements QueryResponseWriter, SolrCoreAware {
   // init param names, these are _only_ loaded at init time (no per-request control of these)
   //   - multiple different named writers could be created with different init params
@@ -204,7 +206,7 @@ public class VelocityResponseWriter implements QueryResponseWriter, SolrCoreAwar
     context.put("esc", new EscapeTool());
     context.put("date", new ComparisonDateTool());
     context.put("list", new ListTool());
-    context.put("sort", new SortTool());
+    context.put(SORT, new SortTool());
 
     MathTool mathTool = new MathTool();
     mathTool.configure(toolConfig);
@@ -374,7 +376,7 @@ public class VelocityResponseWriter implements QueryResponseWriter, SolrCoreAwar
   }
 
   // see: http://svn.apache.org/repos/asf/velocity/tools/branches/2.0.x/src/main/java/org/apache/velocity/tools/generic/ResourceTool.java
-  private class SolrVelocityResourceTool extends ResourceTool {
+  private static class SolrVelocityResourceTool extends ResourceTool {
 
     private ClassLoader solrClassLoader;
 

@@ -30,6 +30,7 @@ import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.handler.SnapShooter;
+import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
@@ -44,6 +45,15 @@ public class CleanupOldIndexTest extends SolrCloudTestCase {
         .addConfig("conf1", TEST_PATH().resolve("configsets").resolve("cloud-dynamic").resolve("conf"))
         .configure();
   }
+  
+  @AfterClass
+  public static void afterClass() throws Exception {
+
+    if (suiteFailureMarker.wasSuccessful()) {
+      zkClient().printLayoutToStdOut();
+    }
+
+  }
 
   private static final String COLLECTION = "oldindextest";
 
@@ -54,14 +64,14 @@ public class CleanupOldIndexTest extends SolrCloudTestCase {
         .processAndWait(cluster.getSolrClient(), DEFAULT_TIMEOUT);
     cluster.getSolrClient().setDefaultCollection(COLLECTION); // TODO make this configurable on StoppableIndexingThread
 
-    int[] maxDocList = new int[] {300, 700, 1200};
+    int[] maxDocList = new int[] {300, 500, 700};
     int maxDoc = maxDocList[random().nextInt(maxDocList.length - 1)];
 
     StoppableIndexingThread indexThread = new StoppableIndexingThread(null, cluster.getSolrClient(), "1", true, maxDoc, 1, true);
     indexThread.start();
 
     // give some time to index...
-    int[] waitTimes = new int[] {200, 2000, 3000};
+    int[] waitTimes = new int[] {3000, 4000};
     Thread.sleep(waitTimes[random().nextInt(waitTimes.length - 1)]);
 
     // create some "old" index directories
@@ -86,13 +96,13 @@ public class CleanupOldIndexTest extends SolrCloudTestCase {
     assertTrue(oldIndexDir2.isDirectory());
 
     // bring shard replica down
-    jetty.stop();
+    ChaosMonkey.stop(jetty);
 
     // wait a moment - lets allow some docs to be indexed so replication time is non 0
     Thread.sleep(waitTimes[random().nextInt(waitTimes.length - 1)]);
 
     // bring shard replica up
-    jetty.start();
+    ChaosMonkey.start(jetty);
 
     // make sure replication can start
     Thread.sleep(3000);

@@ -584,6 +584,16 @@ public class PhraseHelper {
     public NumericDocValues getNormValues(String field) throws IOException {
       return super.getNormValues(fieldName);
     }
+
+    @Override
+    public CacheHelper getCoreCacheHelper() {
+      return null;
+    }
+
+    @Override
+    public CacheHelper getReaderCacheHelper() {
+      return null;
+    }
   }
 
 

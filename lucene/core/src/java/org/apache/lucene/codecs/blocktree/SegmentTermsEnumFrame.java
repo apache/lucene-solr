@@ -37,8 +37,6 @@ final class SegmentTermsEnumFrame {
 
   FST.Arc<BytesRef> arc;
 
-  final boolean versionAutoPrefix;
-
   //static boolean DEBUG = BlockTreeTermsWriter.DEBUG;
 
   // File pointer where this block was loaded from
@@ -100,7 +98,6 @@ final class SegmentTermsEnumFrame {
     this.state = ste.fr.parent.postingsReader.newTermState();
     this.state.totalTermFreq = -1;
     this.longs = new long[ste.fr.longsSize];
-    this.versionAutoPrefix = ste.fr.parent.anyAutoPrefixTerms;
   }
 
   public void setFloorData(ByteArrayDataInput in, BytesRef source) {
@@ -302,58 +299,26 @@ final class SegmentTermsEnumFrame {
       assert nextEnt != -1 && nextEnt < entCount: "nextEnt=" + nextEnt + " entCount=" + entCount + " fp=" + fp;
       nextEnt++;
       final int code = suffixesReader.readVInt();
-      if (versionAutoPrefix == false) {
-        suffix = code >>> 1;
-        startBytePos = suffixesReader.getPosition();
-        ste.term.setLength(prefix + suffix);
-        ste.term.grow(ste.term.length());
-        suffixesReader.readBytes(ste.term.bytes(), prefix, suffix);
-        if ((code & 1) == 0) {
-          // A normal term
-          ste.termExists = true;
-          subCode = 0;
-          state.termBlockOrd++;
-          return false;
-        } else {
-          // A sub-block; make sub-FP absolute:
-          ste.termExists = false;
-          subCode = suffixesReader.readVLong();
-          lastSubFP = fp - subCode;
-          //if (DEBUG) {
-          //System.out.println("    lastSubFP=" + lastSubFP);
-          //}
-          return true;
-        }
+      suffix = code >>> 1;
+      startBytePos = suffixesReader.getPosition();
+      ste.term.setLength(prefix + suffix);
+      ste.term.grow(ste.term.length());
+      suffixesReader.readBytes(ste.term.bytes(), prefix, suffix);
+      if ((code & 1) == 0) {
+        // A normal term
+        ste.termExists = true;
+        subCode = 0;
+        state.termBlockOrd++;
+        return false;
       } else {
-        suffix = code >>> 2;
-        startBytePos = suffixesReader.getPosition();
-        ste.term.setLength(prefix + suffix);
-        ste.term.grow(ste.term.length());
-        suffixesReader.readBytes(ste.term.bytes(), prefix, suffix);
-
-        switch(code & 3) {
-        case 0:
-          // A normal term
-          ste.termExists = true;
-          subCode = 0;
-          state.termBlockOrd++;
-          return false;
-        case 1:
-          // A sub-block; make sub-FP absolute:
-          ste.termExists = false;
-          subCode = suffixesReader.readVLong();
-          lastSubFP = fp - subCode;
-          //if (DEBUG) {
-          //System.out.println("    lastSubFP=" + lastSubFP);
-          //}
-          return true;
-        case 2:
-        case 3:
-          // A prefix term: skip it
-          state.termBlockOrd++;
-          suffixesReader.readByte();
-          continue;
-        }
+        // A sub-block; make sub-FP absolute:
+        ste.termExists = false;
+        subCode = suffixesReader.readVLong();
+        lastSubFP = fp - subCode;
+        //if (DEBUG) {
+        //System.out.println("    lastSubFP=" + lastSubFP);
+        //}
+        return true;
       }
     }
   }
@@ -497,38 +462,16 @@ final class SegmentTermsEnumFrame {
       assert nextEnt < entCount;
       nextEnt++;
       final int code = suffixesReader.readVInt();
-      if (versionAutoPrefix == false) {
-        suffixesReader.skipBytes(code >>> 1);
-        if ((code & 1) != 0) {
-          final long subCode = suffixesReader.readVLong();
-          if (targetSubCode == subCode) {
-            //if (DEBUG) System.out.println("        match!");
-            lastSubFP = subFP;
-            return;
-          }
-        } else {
-          state.termBlockOrd++;
+      suffixesReader.skipBytes(code >>> 1);
+      if ((code & 1) != 0) {
+        final long subCode = suffixesReader.readVLong();
+        if (targetSubCode == subCode) {
+          //if (DEBUG) System.out.println("        match!");
+          lastSubFP = subFP;
+          return;
         }
       } else {
-        int flag = code & 3;
-        suffixesReader.skipBytes(code >>> 2);
-        //if (DEBUG) System.out.println("    " + nextEnt + " (of " + entCount + ") ent isSubBlock=" + ((code&1)==1));
-        if (flag == 1) {
-          // Sub-block
-          final long subCode = suffixesReader.readVLong();
-          //if (DEBUG) System.out.println("      subCode=" + subCode);
-          if (targetSubCode == subCode) {
-            //if (DEBUG) System.out.println("        match!");
-            lastSubFP = subFP;
-            return;
-          }
-        } else {
-          state.termBlockOrd++;
-          if (flag == 2 || flag == 3) {
-            // Floor'd prefix term
-            suffixesReader.readByte();
-          }
-        }
+        state.termBlockOrd++;
       }
     }
   }
@@ -691,11 +634,7 @@ final class SegmentTermsEnumFrame {
       nextEnt++;
 
       final int code = suffixesReader.readVInt();
-      if (versionAutoPrefix == false) {
-        suffix = code >>> 1;
-      } else {
-        suffix = code >>> 2;
-      }
+      suffix = code >>> 1;
 
       //if (DEBUG) {
       //  BytesRef suffixBytesRef = new BytesRef();
@@ -708,38 +647,13 @@ final class SegmentTermsEnumFrame {
       final int termLen = prefix + suffix;
       startBytePos = suffixesReader.getPosition();
       suffixesReader.skipBytes(suffix);
-      if (versionAutoPrefix == false) {
-        ste.termExists = (code & 1) == 0;
-        if (ste.termExists) {
-          state.termBlockOrd++;
-          subCode = 0;
-        } else {
-          subCode = suffixesReader.readVLong();
-          lastSubFP = fp - subCode;
-        }
+      ste.termExists = (code & 1) == 0;
+      if (ste.termExists) {
+        state.termBlockOrd++;
+        subCode = 0;
       } else {
-        switch (code & 3) {
-        case 0:
-          // Normal term
-          ste.termExists = true;
-          state.termBlockOrd++;
-          subCode = 0;
-          break;
-        case 1:
-          // Sub-block
-          ste.termExists = false;
-          subCode = suffixesReader.readVLong();
-          lastSubFP = fp - subCode;
-          break;
-        case 2:
-        case 3:
-          // Floor prefix term: skip it
-          //if (DEBUG) System.out.println("        skip floor prefix term");
-          suffixesReader.readByte();
-          ste.termExists = false;
-          state.termBlockOrd++;
-          continue;
-        }
+        subCode = suffixesReader.readVLong();
+        lastSubFP = fp - subCode;
       }
 
       final int targetLimit = target.offset + (target.length < termLen ? target.length : termLen);

@@ -78,10 +78,11 @@ public class TestFixBrokenOffsets extends LuceneTestCase {
     MockDirectoryWrapper tmpDir = newMockDirectory();
     tmpDir.setCheckIndexOnClose(false);
     IndexWriter w = new IndexWriter(tmpDir, new IndexWriterConfig());
-    w.addIndexes(dir);
+    IndexWriter finalW = w;
+    IllegalArgumentException e = expectThrows(IllegalArgumentException.class, () -> finalW.addIndexes(dir));
+    assertTrue(e.getMessage(), e.getMessage().startsWith("Cannot use addIndexes(Directory) with indexes that have been created by a different Lucene version."));
     w.close();
-    // OK: addIndexes(Directory...) also keeps version as 6.3.0, so offsets not checked:
-    TestUtil.checkIndex(tmpDir);
+    // OK: addIndexes(Directory...) refuses to execute if the index creation version is different so broken offsets are not carried over
     tmpDir.close();
 
     final MockDirectoryWrapper tmpDir2 = newMockDirectory();

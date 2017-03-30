@@ -41,13 +41,8 @@ public class AssertingDirectoryReader extends FilterDirectoryReader {
   }
 
   @Override
-  public Object getCoreCacheKey() {
-    return in.getCoreCacheKey();
-  }
-
-  @Override
-  public Object getCombinedCoreAndDeletesKey() {
-    return in.getCombinedCoreAndDeletesKey();
+  public CacheHelper getReaderCacheHelper() {
+    return in.getReaderCacheHelper();
   }
 
 }

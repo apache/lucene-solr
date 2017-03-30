@@ -35,6 +35,7 @@ import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.SolrInputField;
+import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.handler.component.RealTimeGetComponent;
 import org.apache.solr.request.SolrQueryRequest;
@@ -46,6 +47,8 @@ import org.apache.solr.update.AddUpdateCommand;
 import org.apache.solr.util.RefCounted;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import static org.apache.solr.common.params.CommonParams.ID;
 
 /**
  * @lucene.experimental
@@ -160,7 +163,7 @@ public class AtomicUpdateDocumentMerger {
     final Set<String> candidateFields = new HashSet<>();
 
     // if _version_ field is not supported for in-place update, bail out early
-    SchemaField versionField = schema.getFieldOrNull(DistributedUpdateProcessor.VERSION_FIELD);
+    SchemaField versionField = schema.getFieldOrNull(CommonParams.VERSION_FIELD);
     if (versionField == null || !isSupportedFieldForInPlaceUpdate(versionField)) {
       return Collections.emptySet();
     }
@@ -169,7 +172,7 @@ public class AtomicUpdateDocumentMerger {
     // and bail out early if anything is obviously not a valid in-place update
     for (String fieldName : sdoc.getFieldNames()) {
       if (fieldName.equals(uniqueKeyFieldName)
-          || fieldName.equals(DistributedUpdateProcessor.VERSION_FIELD)) {
+          || fieldName.equals(CommonParams.VERSION_FIELD)) {
         continue;
       }
       Object fieldValue = sdoc.getField(fieldName).getValue();
@@ -245,7 +248,7 @@ public class AtomicUpdateDocumentMerger {
     SolrInputDocument inputDoc = cmd.getSolrInputDocument();
     BytesRef idBytes = cmd.getIndexedId();
 
-    updatedFields.add(DistributedUpdateProcessor.VERSION_FIELD); // add the version field so that it is fetched too
+    updatedFields.add(CommonParams.VERSION_FIELD); // add the version field so that it is fetched too
     SolrInputDocument oldDocument = RealTimeGetComponent.getInputDocument
       (cmd.getReq().getCore(), idBytes,
        null, // don't want the version to be returned
@@ -258,11 +261,11 @@ public class AtomicUpdateDocumentMerger {
       return false;
     }
 
-    if (oldDocument.containsKey(DistributedUpdateProcessor.VERSION_FIELD) == false) {
+    if (oldDocument.containsKey(CommonParams.VERSION_FIELD) == false) {
       throw new SolrException (ErrorCode.INVALID_STATE, "There is no _version_ in previous document. id=" + 
           cmd.getPrintableId());
     }
-    Long oldVersion = (Long) oldDocument.remove(DistributedUpdateProcessor.VERSION_FIELD).getValue();
+    Long oldVersion = (Long) oldDocument.remove(CommonParams.VERSION_FIELD).getValue();
 
     // If the oldDocument contains any other field apart from updatedFields (or id/version field), then remove them.
     // This can happen, despite requesting for these fields in the call to RTGC.getInputDocument, if the document was
@@ -270,7 +273,7 @@ public class AtomicUpdateDocumentMerger {
     if (updatedFields != null) {
       Collection<String> names = new HashSet<String>(oldDocument.getFieldNames());
       for (String fieldName: names) {
-        if (fieldName.equals(DistributedUpdateProcessor.VERSION_FIELD)==false && fieldName.equals("id")==false && updatedFields.contains(fieldName)==false) {
+        if (fieldName.equals(CommonParams.VERSION_FIELD)==false && fieldName.equals(ID)==false && updatedFields.contains(fieldName)==false) {
           oldDocument.remove(fieldName);
         }
       }
@@ -306,22 +309,21 @@ public class AtomicUpdateDocumentMerger {
 
   protected void doSet(SolrInputDocument toDoc, SolrInputField sif, Object fieldVal) {
     SchemaField sf = schema.getField(sif.getName());
-    toDoc.setField(sif.getName(), sf.getType().toNativeType(fieldVal), sif.getBoost());
+    toDoc.setField(sif.getName(), sf.getType().toNativeType(fieldVal));
   }
 
   protected void doAdd(SolrInputDocument toDoc, SolrInputField sif, Object fieldVal) {
     SchemaField sf = schema.getField(sif.getName());
-    toDoc.addField(sif.getName(), sf.getType().toNativeType(fieldVal), sif.getBoost());
+    toDoc.addField(sif.getName(), sf.getType().toNativeType(fieldVal));
   }
 
   protected void doInc(SolrInputDocument toDoc, SolrInputField sif, Object fieldVal) {
     SolrInputField numericField = toDoc.get(sif.getName());
-    if (numericField == null) {
-      toDoc.setField(sif.getName(),  fieldVal, sif.getBoost());
-    } else {
+    SchemaField sf = schema.getField(sif.getName());
+    if (numericField != null || sf.getDefaultValue() != null) {
       // TODO: fieldtype needs externalToObject?
-      String oldValS = numericField.getFirstValue().toString();
-      SchemaField sf = schema.getField(sif.getName());
+      String oldValS = (numericField != null) ?
+          numericField.getFirstValue().toString(): sf.getDefaultValue().toString();
       BytesRefBuilder term = new BytesRefBuilder();
       sf.getType().readableToIndexed(oldValS, term);
       Object oldVal = sf.getType().toObject(sf, term.get());
@@ -339,7 +341,9 @@ public class AtomicUpdateDocumentMerger {
         result = ((Integer) oldVal).intValue() + Integer.parseInt(fieldValS);
       }
 
-      toDoc.setField(sif.getName(),  result, sif.getBoost());
+      toDoc.setField(sif.getName(),  result);
+    } else {
+      toDoc.setField(sif.getName(), fieldVal);
     }
   }
 

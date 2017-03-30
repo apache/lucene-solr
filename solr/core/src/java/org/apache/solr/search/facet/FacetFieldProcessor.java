@@ -19,6 +19,7 @@ package org.apache.solr.search.facet;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -31,6 +32,7 @@ import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.util.PriorityQueue;
 import org.apache.solr.common.util.SimpleOrderedMap;
+import org.apache.solr.schema.FieldType;
 import org.apache.solr.schema.SchemaField;
 import org.apache.solr.search.DocSet;
 
@@ -310,7 +312,7 @@ abstract class FacetFieldProcessor extends FacetProcessor<FacetField> {
     if (freq.missing) {
       // TODO: it would be more efficient to build up a missing DocSet if we need it here anyway.
       SimpleOrderedMap<Object> missingBucket = new SimpleOrderedMap<>();
-      fillBucket(missingBucket, getFieldMissingQuery(fcontext.searcher, freq.field), null);
+      fillBucket(missingBucket, getFieldMissingQuery(fcontext.searcher, freq.field), null, false, null);
       res.add("missing", missingBucket);
     }
 
@@ -378,7 +380,7 @@ abstract class FacetFieldProcessor extends FacetProcessor<FacetField> {
       }
     }
 
-    processSubs(target, filter, subDomain);
+    processSubs(target, filter, subDomain, false, null);
   }
 
   @Override
@@ -510,4 +512,77 @@ abstract class FacetFieldProcessor extends FacetProcessor<FacetField> {
       }
     }
   }
+
+
+  /*
+   "qfacet":{"cat2":{"_l":["A"]}},
+   "all":{"_s":[[
+     "all",
+     {"cat3":{"_l":["A"]}}]]},
+   "cat1":{"_l":["A"]}}}
+
+   */
+
+  static <T> List<T> asList(Object list) {
+    return list != null ? (List<T>)list : Collections.EMPTY_LIST;
+  }
+
+  protected SimpleOrderedMap<Object> refineFacets() throws IOException {
+    List leaves = asList(fcontext.facetInfo.get("_l"));        // We have not seen this bucket: do full faceting for this bucket, including all sub-facets
+    List<List> skip = asList(fcontext.facetInfo.get("_s"));    // We have seen this bucket, so skip stats on it, and skip sub-facets except for the specified sub-facets that should calculate specified buckets.
+    List<List> partial = asList(fcontext.facetInfo.get("_p")); // We have not seen this bucket, do full faceting for this bucket, and most sub-facets... but some sub-facets are partial and should only visit specified buckets.
+
+    // For leaf refinements, we do full faceting for each leaf bucket.  Any sub-facets of these buckets will be fully evaluated.  Because of this, we should never
+    // encounter leaf refinements that have sub-facets that return partial results.
+
+    SimpleOrderedMap<Object> res = new SimpleOrderedMap<>();
+    List<SimpleOrderedMap> bucketList = new ArrayList<>( leaves.size() + skip.size() + partial.size() );
+    res.add("buckets", bucketList);
+
+    // TODO: an alternate implementations can fill all accs at once
+    createAccs(-1, 1);
+
+    for (Object bucketVal : leaves) {
+      bucketList.add( refineBucket(bucketVal, false, null) );
+    }
+
+    for (List bucketAndFacetInfo : skip) {
+      assert bucketAndFacetInfo.size() == 2;
+      Object bucketVal = bucketAndFacetInfo.get(0);
+      Map<String,Object> facetInfo = (Map<String, Object>) bucketAndFacetInfo.get(1);
+
+      bucketList.add( refineBucket(bucketVal, true, facetInfo ) );
+    }
+
+    // The only difference between skip and missing is the value of "skip" passed to refineBucket
+    for (List bucketAndFacetInfo : partial) {
+      assert bucketAndFacetInfo.size() == 2;
+      Object bucketVal = bucketAndFacetInfo.get(0);
+      Map<String,Object> facetInfo = (Map<String, Object>) bucketAndFacetInfo.get(1);
+
+      bucketList.add( refineBucket(bucketVal, false, facetInfo ) );
+    }
+
+
+    // If there are just a couple of leaves, and if the domain is large, then
+    // going by term is likely the most efficient?
+    // If the domain is small, or if the number of leaves is large, then doing
+    // the normal collection method may be best.
+
+    return res;
+  }
+
+  private SimpleOrderedMap<Object> refineBucket(Object bucketVal, boolean skip, Map<String,Object> facetInfo) throws IOException {
+    SimpleOrderedMap<Object> bucket = new SimpleOrderedMap<>();
+    FieldType ft = sf.getType();
+    bucket.add("val", bucketVal);
+    // String internal = ft.toInternal( tobj.toString() );  // TODO - we need a better way to get from object to query...
+
+    Query domainQ = ft.getFieldQuery(null, sf, bucketVal.toString());
+
+    fillBucket(bucket, domainQ, null, skip, facetInfo);
+
+    return bucket;
+  }
+
 }

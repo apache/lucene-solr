@@ -207,6 +207,11 @@ public final class CommitTracker implements Runnable {
       command.openSearcher = openSearcher;
       command.waitSearcher = waitSearcher;
       command.softCommit = softCommit;
+      if (core.getCoreDescriptor().getCloudDescriptor() != null
+          && core.getCoreDescriptor().getCloudDescriptor().isLeader()
+          && !softCommit) {
+        command.version = core.getUpdateHandler().getUpdateLog().getVersionInfo().getNewClock();
+      }
       // no need for command.maxOptimizeSegments = 1; since it is not optimizing
 
       // we increment this *before* calling commit because it was causing a race

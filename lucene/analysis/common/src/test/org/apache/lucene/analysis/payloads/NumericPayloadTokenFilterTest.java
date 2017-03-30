@@ -57,7 +57,7 @@ public class NumericPayloadTokenFilterTest extends BaseTokenStreamTestCase {
     assertTrue(seenDogs + " does not equal: " + true, seenDogs == true);
   }
 
-  private final class WordTokenFilter extends TokenFilter {
+  private static final class WordTokenFilter extends TokenFilter {
     private final CharTermAttribute termAtt = addAttribute(CharTermAttribute.class);
     private final TypeAttribute typeAtt = addAttribute(TypeAttribute.class);
     

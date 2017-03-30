@@ -197,7 +197,7 @@ class CdcrReplicatorState {
 
   }
 
-  class BenchmarkTimer {
+  static class BenchmarkTimer {
 
     private long startTime;
     private long runTime = 0;
@@ -266,7 +266,7 @@ class CdcrReplicatorState {
 
   }
 
-  private class ErrorQueueEntry {
+  private static class ErrorQueueEntry {
 
     private ErrorType type;
     private Date timestamp;
@@ -277,7 +277,7 @@ class CdcrReplicatorState {
     }
   }
 
-  private class FixedQueue<E> extends LinkedList<E> {
+  private static class FixedQueue<E> extends LinkedList<E> {
 
     private int maxSize;
 

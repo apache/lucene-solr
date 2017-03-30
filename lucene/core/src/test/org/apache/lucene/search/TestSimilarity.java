@@ -39,7 +39,7 @@ import org.apache.lucene.document.Document;
 public class TestSimilarity extends LuceneTestCase {
   
   public static class SimpleSimilarity extends ClassicSimilarity {
-    @Override public float lengthNorm(FieldInvertState state) { return state.getBoost(); }
+    @Override public float lengthNorm(FieldInvertState state) { return 1; }
     @Override public float tf(float freq) { return freq; }
     @Override public float sloppyFreq(int distance) { return 2.0f; }
     @Override public float idf(long docFreq, long docCount) { return 1.0f; }

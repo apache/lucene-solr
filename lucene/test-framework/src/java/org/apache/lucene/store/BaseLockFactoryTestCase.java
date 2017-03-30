@@ -274,7 +274,7 @@ public abstract class BaseLockFactoryTestCase extends LuceneTestCase {
     }
   }
 
-  private class SearcherThread extends Thread { 
+  private static class SearcherThread extends Thread {
     private Directory dir;
     private int numIteration;
     public boolean hitException = false;

@@ -113,13 +113,13 @@ public final class SlowCodecReaderWrapper {
         }
 
         @Override
-        public void addCoreClosedListener(CoreClosedListener listener) {
-          reader.addCoreClosedListener(listener);
+        public CacheHelper getCoreCacheHelper() {
+          return reader.getCoreCacheHelper();
         }
 
         @Override
-        public void removeCoreClosedListener(CoreClosedListener listener) {
-          reader.removeCoreClosedListener(listener);
+        public CacheHelper getReaderCacheHelper() {
+          return reader.getReaderCacheHelper();
         }
 
         @Override

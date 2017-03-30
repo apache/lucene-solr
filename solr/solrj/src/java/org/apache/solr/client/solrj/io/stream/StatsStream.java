@@ -58,6 +58,7 @@ public class StatsStream extends TupleStream implements Expressible  {
   private String collection;
   private boolean done;
   private boolean doCount;
+  private Map<String, Metric> metricMap;
   protected transient SolrClientCache cache;
   protected transient CloudSolrClient cloudSolrClient;
 
@@ -82,6 +83,10 @@ public class StatsStream extends TupleStream implements Expressible  {
     this.params = params;
     this.metrics = metrics;
     this.collection = collection;
+    metricMap = new HashMap();
+    for(Metric metric : metrics) {
+      metricMap.put(metric.getIdentifier(), metric);
+    }
   }
 
   public StatsStream(StreamExpression expression, StreamFactory factory) throws IOException{   
@@ -321,7 +326,14 @@ public class StatsStream extends TupleStream implements Expressible  {
 
   private void addStat(Map<String, Object> map, String field, String stat, Object val) {
     if(stat.equals("mean")) {
-      map.put("avg("+field+")", val);
+      String name = "avg("+field+")";
+      Metric m = metricMap.get(name);
+      if(m.outputLong) {
+        Number num = (Number) val;
+        map.put(name, Math.round(num.doubleValue()));
+      } else {
+        map.put(name, val);
+      }
     } else {
       map.put(stat+"("+field+")", val);
     }

@@ -51,6 +51,7 @@ public class QueryParsing {
   public static final String F = "f";      // field that a query or command pertains to
   public static final String TYPE = "type";// parser for this query or command
   public static final String DEFTYPE = "defType"; // default parser for any direct subqueries
+  public static final String SPLIT_ON_WHITESPACE = "sow"; // Whether to split on whitespace prior to analysis
   public static final String LOCALPARAM_START = "{!";
   public static final char LOCALPARAM_END = '}';
   // true if the value was specified by the "v" param (i.e. v=myval, or v=$param)

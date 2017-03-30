@@ -41,6 +41,8 @@ import org.apache.solr.search.SolrIndexSearcher;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import static org.apache.solr.common.params.CommonParams.ID;
+
 public class SpellCheckCollator {
   private static final Logger LOG = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   private int maxCollations = 1;
@@ -116,7 +118,7 @@ public class SpellCheckCollator {
         params.remove(CommonParams.START);
         params.set(CommonParams.ROWS, "" + docCollectionLimit);
         // we don't want any stored fields
-        params.set(CommonParams.FL, "id");
+        params.set(CommonParams.FL, ID);
         // we'll sort by doc id to ensure no scoring is done.
         params.set(CommonParams.SORT, "_docid_ asc");
         // CursorMark does not like _docid_ sorting, and we don't need it.

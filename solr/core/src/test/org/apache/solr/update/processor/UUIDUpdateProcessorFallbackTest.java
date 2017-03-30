@@ -106,9 +106,8 @@ public class UUIDUpdateProcessorFallbackTest extends SolrTestCaseJ4 {
   SolrInputField field(String name, float boost, Object... values) {
     SolrInputField f = new SolrInputField(name);
     for (Object v : values) {
-      f.addValue(v, 1.0F);
+      f.addValue(v);
     }
-    f.setBoost(boost);
     return f;
   }
 

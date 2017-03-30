@@ -18,6 +18,8 @@ package org.apache.solr.common.params;
 
 import java.util.regex.Pattern;
 
+import static org.apache.solr.common.params.CommonParams.SORT;
+
 /**
  *
  *
@@ -40,15 +42,18 @@ public interface TermsParams {
 
   /**
    * Optional. The list of terms to be retrieved.
-   *
    */
   public static final String TERMS_LIST = TERMS_PREFIX + "list";
 
   /**
-   * Optional. The list of terms to be retrieved.
-   *
+   * Optional. If true, also returns index-level statistics, such as numDocs.
    */
   public static final String TERMS_STATS = TERMS_PREFIX + "stats";
+
+  /**
+   * Optional. If true, also returns terms' total term frequency.
+   */
+  public static final String TERMS_TTF = TERMS_PREFIX + "ttf";
 
   /**
    * Optional.  The lower bound term to start at.  The TermEnum will start at the next term after this term in the dictionary.
@@ -105,27 +110,28 @@ public interface TermsParams {
       }
   }
 
-    /**
+  /**
    * Optional.  The minimum value of docFreq to be returned.  1 by default
    */
   public static final String TERMS_MINCOUNT = TERMS_PREFIX + "mincount";
+
   /**
    * Optional.  The maximum value of docFreq to be returned.  -1 by default means no boundary
    */
-  public static final String TERMS_MAXCOUNT = TERMS_PREFIX + "maxcount";
+  String TERMS_MAXCOUNT = TERMS_PREFIX + "maxcount";
 
   /**
    * Optional.  If true, return the raw characters of the indexed term, regardless of if it is readable.
    * For instance, the index form of numeric numbers is not human readable.  The default is false.
    */
-  public static final String TERMS_RAW = TERMS_PREFIX + "raw";
+  String TERMS_RAW = TERMS_PREFIX + "raw";
 
   /**
    * Optional.  If sorting by frequency is enabled.  Defaults to sorting by count.
    */
-  public static final String TERMS_SORT = TERMS_PREFIX + "sort";
+  String TERMS_SORT = TERMS_PREFIX + SORT;
   
-  public static final String TERMS_SORT_COUNT = "count";
-  public static final String TERMS_SORT_INDEX = "index";
+  String TERMS_SORT_COUNT = "count";
+  String TERMS_SORT_INDEX = "index";
 }
 

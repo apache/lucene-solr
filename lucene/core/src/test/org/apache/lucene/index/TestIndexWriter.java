@@ -94,6 +94,7 @@ import org.apache.lucene.util.SetOnce;
 import org.apache.lucene.util.StringHelper;
 import org.apache.lucene.util.TestUtil;
 import org.apache.lucene.util.ThreadInterruptedException;
+import org.apache.lucene.util.Version;
 import org.apache.lucene.util.automaton.Automata;
 import org.apache.lucene.util.automaton.Automaton;
 import org.apache.lucene.util.automaton.CharacterRunAutomaton;
@@ -1153,7 +1154,7 @@ public class TestIndexWriter extends LuceneTestCase {
     t.finish = true;
     t.join();
     if (t.failed) {
-      fail(new String(t.bytesLog.toString("UTF-8")));
+      fail(t.bytesLog.toString("UTF-8"));
     }
   }
 
@@ -2799,5 +2800,13 @@ public class TestIndexWriter extends LuceneTestCase {
     dir.close();
   }
 
-}
+  public void testRecordsIndexCreatedVersion() throws IOException {
+    Directory dir = newDirectory();
+    IndexWriter w = new IndexWriter(dir, newIndexWriterConfig());
+    w.commit();
+    w.close();
+    assertEquals(Version.LATEST, SegmentInfos.readLatestCommit(dir).getIndexCreatedVersion());
+    dir.close();
+  }
 
+}

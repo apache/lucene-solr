@@ -18,6 +18,7 @@ package org.apache.solr.handler.component;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.TermsParams;
+import org.apache.solr.request.SolrQueryRequest;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
@@ -313,4 +314,41 @@ public class TermsComponentTest extends SolrTestCaseJ4 {
        ,"count(//lst[@name='standardfilt']/*)=3"
     );
   }
+
+  @Test
+  public void testDocFreqAndTotalTermFreq() throws Exception {
+    SolrQueryRequest req = req(
+        "indent","true",
+        "qt", "/terms",
+        "terms", "true",
+        "terms.fl", "standardfilt",
+        "terms.ttf", "true",
+        "terms.list", "snake,spider,shark,ddddd");
+    assertQ(req,
+        "count(//lst[@name='standardfilt']/*)=4",
+        "//lst[@name='standardfilt']/lst[@name='ddddd']/long[@name='docFreq'][.='4']",
+        "//lst[@name='standardfilt']/lst[@name='ddddd']/long[@name='totalTermFreq'][.='4']",
+        "//lst[@name='standardfilt']/lst[@name='shark']/long[@name='docFreq'][.='2']",
+        "//lst[@name='standardfilt']/lst[@name='shark']/long[@name='totalTermFreq'][.='2']",
+        "//lst[@name='standardfilt']/lst[@name='snake']/long[@name='docFreq'][.='3']",
+        "//lst[@name='standardfilt']/lst[@name='snake']/long[@name='totalTermFreq'][.='3']",
+        "//lst[@name='standardfilt']/lst[@name='spider']/long[@name='docFreq'][.='1']",
+        "//lst[@name='standardfilt']/lst[@name='spider']/long[@name='totalTermFreq'][.='1']");
+  }
+
+  @Test
+  public void testDocFreqAndTotalTermFreqForNonExistingTerm() throws Exception {
+    SolrQueryRequest req = req(
+        "indent","true",
+        "qt", "/terms",
+        "terms", "true",
+        "terms.fl", "standardfilt",
+        "terms.ttf", "true",
+        "terms.list", "boo,snake");
+    assertQ(req,
+        "count(//lst[@name='standardfilt']/*)=1",
+        "//lst[@name='standardfilt']/lst[@name='snake']/long[@name='docFreq'][.='3']",
+        "//lst[@name='standardfilt']/lst[@name='snake']/long[@name='totalTermFreq'][.='3']");
+  }
+
 }

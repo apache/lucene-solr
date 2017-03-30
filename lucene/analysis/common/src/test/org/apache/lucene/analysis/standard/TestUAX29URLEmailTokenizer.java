@@ -127,7 +127,7 @@ public class TestUAX29URLEmailTokenizer extends BaseTokenStreamTestCase {
   }
 
   /** Passes through tokens with type "<URL>" and blocks all other types. */
-  private class URLFilter extends TokenFilter {
+  private static class URLFilter extends TokenFilter {
     private final TypeAttribute typeAtt = addAttribute(TypeAttribute.class);
     public URLFilter(TokenStream in) {
       super(in);
@@ -146,7 +146,7 @@ public class TestUAX29URLEmailTokenizer extends BaseTokenStreamTestCase {
   }
   
   /** Passes through tokens with type "<EMAIL>" and blocks all other types. */
-  private class EmailFilter extends TokenFilter {
+  private static class EmailFilter extends TokenFilter {
     private final TypeAttribute typeAtt = addAttribute(TypeAttribute.class);
     public EmailFilter(TokenStream in) {
       super(in);

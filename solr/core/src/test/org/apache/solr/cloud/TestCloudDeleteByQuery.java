@@ -244,7 +244,7 @@ public class TestCloudDeleteByQuery extends SolrCloudTestCase {
   
   public static SolrInputField f(String fieldName, Object... values) {
     SolrInputField f = new SolrInputField(fieldName);
-    f.setValue(values, 1.0F);
+    f.setValue(values);
     return f;
   }
 }

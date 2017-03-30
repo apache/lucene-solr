@@ -1047,6 +1047,11 @@ public class UnifiedHighlighter {
         protected void doClose() throws IOException {
           reader.close();
         }
+
+        @Override
+        public CacheHelper getReaderCacheHelper() {
+          return null;
+        }
       };
     }
 
@@ -1064,6 +1069,16 @@ public class UnifiedHighlighter {
         tvFields = in.getTermVectors(docID);
       }
       return tvFields;
+    }
+
+    @Override
+    public CacheHelper getCoreCacheHelper() {
+      return null;
+    }
+
+    @Override
+    public CacheHelper getReaderCacheHelper() {
+      return null;
     }
 
   }

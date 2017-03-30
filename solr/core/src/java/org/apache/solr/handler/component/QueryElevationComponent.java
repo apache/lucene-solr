@@ -92,6 +92,8 @@ import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
 import org.xml.sax.InputSource;
 
+import static org.apache.solr.common.params.CommonParams.ID;
+
 /**
  * A component to elevate some documents to the top of the result set.
  *
@@ -308,7 +310,7 @@ public class QueryElevationComponent extends SearchComponent implements SolrCore
       ArrayList<String> exclude = new ArrayList<>();
       for (int j = 0; j < children.getLength(); j++) {
         Node child = children.item(j);
-        String id = DOMUtil.getAttr(child, "id", "missing 'id'");
+        String id = DOMUtil.getAttr(child, ID, "missing 'id'");
         String e = DOMUtil.getAttr(child, EXCLUDE, null);
         if (e != null) {
           if (Boolean.valueOf(e)) {

@@ -17,14 +17,12 @@
 
 package org.apache.solr.schema;
 
-import java.lang.invoke.MethodHandles;
 import java.util.Collection;
 
 import org.apache.lucene.document.DoublePoint;
 import org.apache.lucene.document.StoredField;
 import org.apache.lucene.index.DocValuesType;
 import org.apache.lucene.index.IndexableField;
-import org.apache.lucene.legacy.LegacyNumericType;
 import org.apache.lucene.queries.function.ValueSource;
 import org.apache.lucene.queries.function.valuesource.DoubleFieldSource;
 import org.apache.lucene.queries.function.valuesource.MultiValuedDoubleFieldSource;
@@ -36,8 +34,6 @@ import org.apache.lucene.util.BytesRefBuilder;
 import org.apache.lucene.util.NumericUtils;
 import org.apache.solr.search.QParser;
 import org.apache.solr.uninverting.UninvertingReader.Type;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  * {@code PointField} implementation for {@code Double} values.
@@ -45,8 +41,6 @@ import org.slf4j.LoggerFactory;
  * @see DoublePoint
  */
 public class DoublePointField extends PointField implements DoubleValueFieldType {
-
-  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   public DoublePointField() {
     type = NumberType.DOUBLE;
@@ -172,18 +166,9 @@ public class DoublePointField extends PointField implements DoubleValueFieldType
   }
 
   @Override
-  public LegacyNumericType getNumericType() {
-    // TODO: refactor this to not use LegacyNumericType
-    return LegacyNumericType.DOUBLE;
-  }
-
-  @Override
-  public IndexableField createField(SchemaField field, Object value, float boost) {
+  public IndexableField createField(SchemaField field, Object value) {
     if (!isFieldUsed(field)) return null;
 
-    if (boost != 1.0 && log.isTraceEnabled()) {
-      log.trace("Can't use document/field boost for PointField. Field: " + field.getName() + ", boost: " + boost);
-    }
     double doubleValue = (value instanceof Number) ? ((Number) value).doubleValue() : Double.parseDouble(value.toString());
     return new DoublePoint(field.getName(), doubleValue);
   }

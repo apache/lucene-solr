@@ -66,25 +66,25 @@ public class PointType extends CoordinateFieldType implements SpatialQueryable {
   }
 
   @Override
-  public List<IndexableField> createFields(SchemaField field, Object value, float boost) {
+  public List<IndexableField> createFields(SchemaField field, Object value) {
     String externalVal = value.toString();
     String[] point = parseCommaSeparatedList(externalVal, dimension);
 
     // TODO: this doesn't currently support polyFields as sub-field types
-    List<IndexableField> f = new ArrayList<>(dimension+1);
+    List<IndexableField> f = new ArrayList<>((dimension*2)+1);
 
     if (field.indexed()) {
       for (int i=0; i<dimension; i++) {
         SchemaField sf = subField(field, i, schema);
-        f.add(sf.createField(point[i], sf.indexed() && !sf.omitNorms() ? boost : 1f));
+        f.addAll(sf.createFields(point[i]));
       }
     }
 
     if (field.stored()) {
       String storedVal = externalVal;  // normalize or not?
-      f.add(createField(field.getName(), storedVal, StoredField.TYPE, 1f));
+      f.add(createField(field.getName(), storedVal, StoredField.TYPE));
     }
-    
+
     return f;
   }
 
@@ -105,7 +105,7 @@ public class PointType extends CoordinateFieldType implements SpatialQueryable {
    *
    */
   @Override
-  public IndexableField createField(SchemaField field, Object value, float boost) {
+  public IndexableField createField(SchemaField field, Object value) {
     throw new UnsupportedOperationException("PointType uses multiple fields.  field=" + field.getName());
   }
 
@@ -154,6 +154,14 @@ public class PointType extends CoordinateFieldType implements SpatialQueryable {
       bq.add(tq, BooleanClause.Occur.MUST);
     }
     return bq.build();
+  }
+  
+  @Override
+  protected void checkSupportsDocValues() {
+    // DocValues supported only when enabled at the fieldType 
+    if (!hasProperty(DOC_VALUES)) {
+      throw new UnsupportedOperationException("PointType can't have docValues=true in the field definition, use docValues=true in the fieldType definition, or in subFieldType/subFieldSuffix");
+    }
   }
 
   /**

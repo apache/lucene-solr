@@ -45,6 +45,8 @@ import org.apache.solr.client.solrj.io.stream.expr.StreamExpressionParameter;
 import org.apache.solr.client.solrj.io.stream.expr.StreamExpressionValue;
 import org.apache.solr.client.solrj.io.stream.expr.StreamFactory;
 
+import static org.apache.solr.common.params.CommonParams.SORT;
+
 /**
  * Connects to a datasource using a registered JDBC driver and execute a query. The results of
  * that query will be returned as tuples. An EOF tuple will indicate that all have been read.
@@ -104,7 +106,7 @@ public class JDBCStream extends TupleStream implements Expressible {
     List<StreamExpressionNamedParameter> namedParams = factory.getNamedOperands(expression);
     StreamExpressionNamedParameter connectionUrlExpression = factory.getNamedOperand(expression, "connection");
     StreamExpressionNamedParameter sqlQueryExpression = factory.getNamedOperand(expression, "sql");
-    StreamExpressionNamedParameter definedSortExpression = factory.getNamedOperand(expression, "sort");
+    StreamExpressionNamedParameter definedSortExpression = factory.getNamedOperand(expression, SORT);
     StreamExpressionNamedParameter driverClassNameExpression = factory.getNamedOperand(expression, "driver");
     
     // Validate there are no unknown parameters - zkHost and alias are namedParameter so we don't need to count it twice
@@ -115,7 +117,7 @@ public class JDBCStream extends TupleStream implements Expressible {
     // All named params we don't care about will be passed to the driver on connection
     Properties connectionProperties = new Properties();
     for(StreamExpressionNamedParameter namedParam : namedParams){
-      if(!namedParam.getName().equals("driver") && !namedParam.getName().equals("connection") && !namedParam.getName().equals("sql") && !namedParam.getName().equals("sort")){
+      if(!namedParam.getName().equals("driver") && !namedParam.getName().equals("connection") && !namedParam.getName().equals("sql") && !namedParam.getName().equals(SORT)){
         connectionProperties.put(namedParam.getName(), namedParam.getParameter().toString().trim());
       }
     }
@@ -367,7 +369,7 @@ public class JDBCStream extends TupleStream implements Expressible {
     expression.addParameter(new StreamExpressionNamedParameter("sql", sqlQuery));
     
     // sort
-    expression.addParameter(new StreamExpressionNamedParameter("sort", definedSort.toExpression(factory)));
+    expression.addParameter(new StreamExpressionNamedParameter(SORT, definedSort.toExpression(factory)));
     
     // driver class
     if(null != driverClassName){

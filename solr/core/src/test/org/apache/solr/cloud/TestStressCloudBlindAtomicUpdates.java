@@ -437,13 +437,13 @@ public class TestStressCloudBlindAtomicUpdates extends SolrCloudTestCase {
   
   public static SolrInputField f(String fieldName, Object... values) {
     SolrInputField f = new SolrInputField(fieldName);
-    f.setValue(values, 1.0F);
+    f.setValue(values);
     // TODO: soooooooooo stupid (but currently neccessary because atomic updates freak out
     // if the Map with the "inc" operation is inside of a collection - even if it's the only "value") ...
     if (1 == values.length) {
-      f.setValue(values[0], 1.0F);
+      f.setValue(values[0]);
     } else {
-      f.setValue(values, 1.0F);
+      f.setValue(values);
     }
     return f;
   }

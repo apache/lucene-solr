@@ -16,7 +16,6 @@
  */
 package org.apache.lucene.search;
 
-
 import org.apache.lucene.util.PriorityQueue;
 
 /** Represents hits returned by {@link
@@ -60,6 +59,8 @@ public class TopDocs {
   private final static class ShardRef {
     // Which shard (index into shardHits[]):
     final int shardIndex;
+
+    // True if we should use the incoming ScoreDoc.shardIndex for sort order
     final boolean useScoreDocIndex;
 
     // Which hit within the shard:
@@ -77,10 +78,12 @@ public class TopDocs {
 
     int getShardIndex(ScoreDoc scoreDoc) {
       if (useScoreDocIndex) {
-        assert scoreDoc.shardIndex != -1 : "scoreDoc shardIndex must be predefined set but wasn't";
+        if (scoreDoc.shardIndex == -1) {
+          throw new IllegalArgumentException("setShardIndex is false but TopDocs[" + shardIndex + "].scoreDocs[" + hitIndex + "] is not set");
+        }
         return scoreDoc.shardIndex;
       } else {
-        assert scoreDoc.shardIndex == -1 : "scoreDoc shardIndex must be undefined but wasn't";
+        // NOTE: we don't assert that shardIndex is -1 here, because caller could in fact have set it but asked us to ignore it now
         return shardIndex;
       }
     }
@@ -201,23 +204,25 @@ public class TopDocs {
    *  the provided TopDocs, sorting by score. Each {@link TopDocs}
    *  instance must be sorted.
    *
-   *  @see #merge(int, int, TopDocs[])
+   *  @see #merge(int, int, TopDocs[], boolean)
    *  @lucene.experimental */
   public static TopDocs merge(int topN, TopDocs[] shardHits) {
-    return merge(0, topN, shardHits);
+    return merge(0, topN, shardHits, true);
   }
 
   /**
    * Same as {@link #merge(int, TopDocs[])} but also ignores the top
    * {@code start} top docs. This is typically useful for pagination.
    *
-   * Note: This method will fill the {@link ScoreDoc#shardIndex} on all score docs returned iff all ScoreDocs passed
-   * to this have it's shard index set to <tt>-1</tt>. Otherwise the shard index is not set. This allows to predefine
-   * the shard index in order to incrementally merge shard responses without losing the original shard index.
+   * Note: If {@code setShardIndex} is true, this method will assume the incoming order of {@code shardHits} reflects
+   * each shard's index and will fill the {@link ScoreDoc#shardIndex}, otherwise
+   * it must already be set for all incoming {@code ScoreDoc}s, which can be useful when doing multiple reductions
+   * (merges) of TopDocs.
+   *
    * @lucene.experimental
    */
-  public static TopDocs merge(int start, int topN, TopDocs[] shardHits) {
-    return mergeAux(null, start, topN, shardHits);
+  public static TopDocs merge(int start, int topN, TopDocs[] shardHits, boolean setShardIndex) {
+    return mergeAux(null, start, topN, shardHits, setShardIndex);
   }
 
   /** Returns a new TopFieldDocs, containing topN results across
@@ -226,31 +231,34 @@ public class TopDocs {
    *  the same Sort, and sort field values must have been
    *  filled (ie, <code>fillFields=true</code> must be
    *  passed to {@link TopFieldCollector#create}).
-   *  @see #merge(Sort, int, int, TopFieldDocs[])
+   *  @see #merge(Sort, int, int, TopFieldDocs[], boolean)
    * @lucene.experimental */
   public static TopFieldDocs merge(Sort sort, int topN, TopFieldDocs[] shardHits) {
-    return merge(sort, 0, topN, shardHits);
+    return merge(sort, 0, topN, shardHits, true);
   }
 
   /**
    * Same as {@link #merge(Sort, int, TopFieldDocs[])} but also ignores the top
    * {@code start} top docs. This is typically useful for pagination.
    *
-   * Note: This method will fill the {@link ScoreDoc#shardIndex} on all score docs returned iff all ScoreDocs passed
-   * to this have it's shard index set to <tt>-1</tt>. Otherwise the shard index is not set. This allows to predefine
-   * the shard index in order to incrementally merge shard responses without losing the original shard index.
+   * Note: If {@code setShardIndex} is true, this method will assume the incoming order of {@code shardHits} reflects
+   * each shard's index and will fill the {@link ScoreDoc#shardIndex}, otherwise
+   * it must already be set for all incoming {@code ScoreDoc}s, which can be useful when doing multiple reductions
+   * (merges) of TopDocs.
+   *
    * @lucene.experimental
    */
-  public static TopFieldDocs merge(Sort sort, int start, int topN, TopFieldDocs[] shardHits) {
+  public static TopFieldDocs merge(Sort sort, int start, int topN, TopFieldDocs[] shardHits, boolean setShardIndex) {
     if (sort == null) {
       throw new IllegalArgumentException("sort must be non-null when merging field-docs");
     }
-    return (TopFieldDocs) mergeAux(sort, start, topN, shardHits);
+    return (TopFieldDocs) mergeAux(sort, start, topN, shardHits, setShardIndex);
   }
 
   /** Auxiliary method used by the {@link #merge} impls. A sort value of null
    *  is used to indicate that docs should be sorted by score. */
-  private static TopDocs mergeAux(Sort sort, int start, int size, TopDocs[] shardHits) {
+  private static TopDocs mergeAux(Sort sort, int start, int size, TopDocs[] shardHits, boolean setShardIndex) {
+
     final PriorityQueue<ShardRef> queue;
     if (sort == null) {
       queue = new ScoreMergeSortQueue(shardHits);
@@ -261,28 +269,15 @@ public class TopDocs {
     int totalHitCount = 0;
     int availHitCount = 0;
     float maxScore = Float.MIN_VALUE;
-    Boolean setShardIndex = null;
     for(int shardIDX=0;shardIDX<shardHits.length;shardIDX++) {
       final TopDocs shard = shardHits[shardIDX];
       // totalHits can be non-zero even if no hits were
       // collected, when searchAfter was used:
       totalHitCount += shard.totalHits;
       if (shard.scoreDocs != null && shard.scoreDocs.length > 0) {
-        if (shard.scoreDocs[0].shardIndex == -1) {
-          if (setShardIndex != null && setShardIndex == false) {
-            throw new IllegalStateException("scoreDocs at index " + shardIDX + " has undefined shard indices but previous scoreDocs were predefined");
-          }
-          setShardIndex = true;
-        } else {
-          if (setShardIndex != null && setShardIndex) {
-            throw new IllegalStateException("scoreDocs at index " + shardIDX + " has predefined shard indices but previous scoreDocs were undefined");
-          }
-          setShardIndex = false;
-        }
         availHitCount += shard.scoreDocs.length;
         queue.add(new ShardRef(shardIDX, setShardIndex == false));
         maxScore = Math.max(maxScore, shard.getMaxScore());
-        //System.out.println("  maxScore now " + maxScore + " vs " + shard.getMaxScore());
       }
     }
 
@@ -303,18 +298,15 @@ public class TopDocs {
         ShardRef ref = queue.top();
         final ScoreDoc hit = shardHits[ref.shardIndex].scoreDocs[ref.hitIndex++];
         if (setShardIndex) {
-          // unless this index is already initialized potentially due to multiple merge phases, or explicitly by the user
-          // we set the shard index to the index of the TopDocs array this hit is coming from.
-          // this allows multiple merge phases if needed but requires extra accounting on the users end.
-          // at the same time this is fully backwards compatible since the value was initialize to -1 from the beginning
+          // caller asked us to record shardIndex (index of the TopDocs array) this hit is coming from:
           hit.shardIndex = ref.shardIndex;
+        } else if (hit.shardIndex == -1) {
+          throw new IllegalArgumentException("setShardIndex is false but TopDocs[" + ref.shardIndex + "].scoreDocs[" + (ref.hitIndex-1) + "] is not set");
         }
+          
         if (hitUpto >= start) {
           hits[hitUpto - start] = hit;
         }
-
-        //System.out.println("  hitUpto=" + hitUpto);
-        //System.out.println("    doc=" + hits[hitUpto].doc + " score=" + hits[hitUpto].score);
 
         hitUpto++;
 

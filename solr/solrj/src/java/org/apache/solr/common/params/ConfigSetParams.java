@@ -27,6 +27,7 @@ public interface ConfigSetParams
 
   public enum ConfigSetAction {
     CREATE,
+    UPLOAD,
     DELETE,
     LIST;
 

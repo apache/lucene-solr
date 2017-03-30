@@ -85,16 +85,6 @@ public class TermVectorLeafReader extends LeafReader {
   }
 
   @Override
-  public void addCoreClosedListener(CoreClosedListener listener) {
-    addCoreClosedListenerAsReaderClosedListener(this, listener);
-  }
-
-  @Override
-  public void removeCoreClosedListener(CoreClosedListener listener) {
-    removeCoreClosedListenerAsReaderClosedListener(this, listener);
-  }
-
-  @Override
   protected void doClose() throws IOException {
   }
 
@@ -176,6 +166,16 @@ public class TermVectorLeafReader extends LeafReader {
 
   @Override
   public Sort getIndexSort() {
+    return null;
+  }
+
+  @Override
+  public CacheHelper getCoreCacheHelper() {
+    return null;
+  }
+
+  @Override
+  public CacheHelper getReaderCacheHelper() {
     return null;
   }
 }

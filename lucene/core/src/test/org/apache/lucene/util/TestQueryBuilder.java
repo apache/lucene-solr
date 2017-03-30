@@ -266,7 +266,7 @@ public class TestQueryBuilder extends LuceneTestCase {
     }
   }
   
-  private class SimpleCJKAnalyzer extends Analyzer {
+  private static class SimpleCJKAnalyzer extends Analyzer {
     @Override
     public TokenStreamComponents createComponents(String fieldName) {
       return new TokenStreamComponents(new SimpleCJKTokenizer());

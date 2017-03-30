@@ -22,9 +22,7 @@ import javax.servlet.ServletResponse;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletRequestWrapper;
 import java.io.IOException;
-import java.io.UnsupportedEncodingException;
 import java.lang.invoke.MethodHandles;
-import java.net.URLDecoder;
 import java.nio.ByteBuffer;
 import java.security.Principal;
 import java.security.PublicKey;
@@ -65,7 +63,7 @@ public class PKIAuthenticationPlugin extends AuthenticationPlugin implements Htt
   private final Map<String, PublicKey> keyCache = new ConcurrentHashMap<>();
   private final CryptoKeys.RSAKeyPair keyPair = new CryptoKeys.RSAKeyPair();
   private final CoreContainer cores;
-  private final int MAX_VALIDITY = Integer.parseInt(System.getProperty("pkiauth.ttl", "5000"));
+  private final int MAX_VALIDITY = Integer.parseInt(System.getProperty("pkiauth.ttl", "10000"));
   private final String myNodeName;
   private final HttpHeaderClientInterceptor interceptor = new HttpHeaderClientInterceptor();
   private boolean interceptorRegistered = false;
@@ -195,14 +193,9 @@ public class PKIAuthenticationPlugin extends AuthenticationPlugin implements Htt
   }
 
   PublicKey getRemotePublicKey(String nodename) {
-    String url, uri = null;
-    if (cores.isZooKeeperAware()) {
-      url = cores.getZkController().getZkStateReader().getBaseUrlForNodeName(nodename);
-    } else {
-      url = getBaseUrlForNodeNameLocal(nodename);
-    }
+    String url = cores.getZkController().getZkStateReader().getBaseUrlForNodeName(nodename);
     try {
-      uri += PATH + "?wt=json&omitHeader=true";
+      String uri = url + PATH + "?wt=json&omitHeader=true";
       log.debug("Fetching fresh public key from : {}",uri);
       HttpResponse rsp = cores.getUpdateShardHandler().getHttpClient()
           .execute(new HttpGet(uri), HttpClientUtil.createNewHttpClientRequestContext());
@@ -219,39 +212,10 @@ public class PKIAuthenticationPlugin extends AuthenticationPlugin implements Htt
       keyCache.put(nodename, pubKey);
       return pubKey;
     } catch (Exception e) {
-      log.error("Exception trying to get public key from : " + uri, e);
+      log.error("Exception trying to get public key from : " + url, e);
       return null;
     }
 
-  }
-
-  protected String getBaseUrlForNodeNameLocal(String nodeName) {
-    final int _offset = nodeName.indexOf("_");
-    if (_offset < 0) {
-      throw new IllegalArgumentException("nodeName does not contain expected '_' seperator: " + nodeName);
-    }
-    final String hostAndPort = nodeName.substring(0,_offset);
-    try {
-      final String path = URLDecoder.decode(nodeName.substring(1+_offset), "UTF-8");
-      // TODO: Find a better way of resolving urlScheme when not using ZK?
-      String urlScheme = resolveUrlScheme();
-      return urlScheme + "://" + hostAndPort + (path.isEmpty() ? "" : ("/" + path));
-    } catch (UnsupportedEncodingException e) {
-      throw new IllegalStateException("JVM Does not seem to support UTF-8", e);
-    }
-  }
-
-  /**
-   * Resolve urlScheme first from sysProp "urlScheme", if not set or invalid value, peek at ssl sysProps
-   * @return "https" if SSL is enabled, else "http"
-   */
-  protected static String resolveUrlScheme() {
-    String urlScheme = System.getProperty("urlScheme");
-    if (urlScheme != null && urlScheme.matches("https?")) {
-      return urlScheme;
-    } else {
-      return System.getProperty("solr.jetty.keystore") == null ? "http" : "https";
-    }
   }
 
   @Override

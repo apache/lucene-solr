@@ -221,10 +221,10 @@
   <dynamicField name="*_ds" type="${solr.tests.doubleClass:pdouble}" indexed="true" stored="true" multiValued="true"/>
   <dynamicField name="*_dd" type="${solr.tests.doubleClass:pdouble}" indexed="true" stored="false" docValues="true"/>
   <dynamicField name="*_dds" type="${solr.tests.doubleClass:pdouble}" indexed="true" stored="false" multiValued="true" docValues="true"/>
-  <dynamicField name="*_dt" type="date" indexed="true" stored="true"/>
-  <dynamicField name="*_dts" type="date" indexed="true" stored="true" multiValued="true"/>
-  <dynamicField name="*_dtd" type="date" indexed="true" stored="false" docValues="true"/>
-  <dynamicField name="*_dtds" type="date" indexed="true" stored="false" multiValued="true" docValues="true"/>
+  <dynamicField name="*_dt" type="${solr.tests.dateClass:pdate}" indexed="true" stored="true"/>
+  <dynamicField name="*_dts" type="${solr.tests.dateClass:pdate}" indexed="true" stored="true" multiValued="true"/>
+  <dynamicField name="*_dtd" type="${solr.tests.dateClass:pdate}" indexed="true" stored="false" docValues="true"/>
+  <dynamicField name="*_dtds" type="${solr.tests.dateClass:pdate}" indexed="true" stored="false" multiValued="true" docValues="true"/>
 
   <!-- docvalues and stored (S suffix) -->
   <dynamicField name="*_idS" type="${solr.tests.intClass:pint}" indexed="true" stored="true" docValues="true"/>
@@ -237,8 +237,8 @@
   <dynamicField name="*_fdsS" type="${solr.tests.floatClass:pfloat}" indexed="true" stored="true" multiValued="true" docValues="true"/>
   <dynamicField name="*_ddS" type="${solr.tests.doubleClass:pdouble}" indexed="true" stored="true" docValues="true"/>
   <dynamicField name="*_ddsS" type="${solr.tests.doubleClass:pdouble}" indexed="true" stored="true" multiValued="true" docValues="true"/>
-  <dynamicField name="*_dtdS" type="date" indexed="true" stored="true" docValues="true"/>
-  <dynamicField name="*_dtdsS" type="date" indexed="true" stored="true" multiValued="true" docValues="true"/>
+  <dynamicField name="*_dtdS" type="${solr.tests.dateClass:pdate}" indexed="true" stored="true" docValues="true"/>
+  <dynamicField name="*_dtdsS" type="${solr.tests.dateClass:pdate}" indexed="true" stored="true" multiValued="true" docValues="true"/>
 
 
   <dynamicField name="*_b" type="boolean" indexed="true" stored="true"/>
@@ -400,6 +400,7 @@
   <fieldType name="plong" class="solr.LongPointField" docValues="true"/>
   <fieldType name="pdouble" class="solr.DoublePointField" docValues="true"/>
   <fieldType name="pfloat" class="solr.FloatPointField" docValues="true"/>
+  <fieldType name="pdate" class="solr.DatePointField" docValues="true"/>
   
 
   <!-- The format for this date field is of the form 1995-12-31T23:59:59Z, and
@@ -483,14 +484,15 @@
       <tokenizer class="solr.StandardTokenizerFactory"/>
       <filter class="solr.StopFilterFactory" ignoreCase="true" words="stopwords.txt"/>
       <!-- in this example, we will only use synonyms at query time
-      <filter class="solr.SynonymFilterFactory" synonyms="index_synonyms.txt" ignoreCase="true" expand="false"/>
+      <filter class="solr.SynonymGraphFilterFactory" synonyms="index_synonyms.txt" ignoreCase="true" expand="false"/>
+      <filter class="solr.FlattenGraphFilterFactory"/>
       -->
       <filter class="solr.LowerCaseFilterFactory"/>
     </analyzer>
     <analyzer type="query">
       <tokenizer class="solr.StandardTokenizerFactory"/>
       <filter class="solr.StopFilterFactory" ignoreCase="true" words="stopwords.txt"/>
-      <filter class="solr.SynonymFilterFactory" synonyms="synonyms.txt" ignoreCase="true" expand="true"/>
+      <filter class="solr.SynonymGraphFilterFactory" synonyms="synonyms.txt" ignoreCase="true" expand="true"/>
       <filter class="solr.LowerCaseFilterFactory"/>
     </analyzer>
   </fieldType>
@@ -504,7 +506,8 @@
     <analyzer type="index">
       <tokenizer class="solr.StandardTokenizerFactory"/>
       <!-- in this example, we will only use synonyms at query time
-      <filter class="solr.SynonymFilterFactory" synonyms="index_synonyms.txt" ignoreCase="true" expand="false"/>
+      <filter class="solr.SynonymGraphFilterFactory" synonyms="index_synonyms.txt" ignoreCase="true" expand="false"/>
+      <filter class="solr.FlattenGraphFilterFactory"/>
       -->
       <!-- Case insensitive stop word removal.
       -->
@@ -522,7 +525,7 @@
     </analyzer>
     <analyzer type="query">
       <tokenizer class="solr.StandardTokenizerFactory"/>
-      <filter class="solr.SynonymFilterFactory" synonyms="synonyms.txt" ignoreCase="true" expand="true"/>
+      <filter class="solr.SynonymGraphFilterFactory" synonyms="synonyms.txt" ignoreCase="true" expand="true"/>
       <filter class="solr.StopFilterFactory"
               ignoreCase="true"
               words="stopwords.txt"
@@ -540,7 +543,7 @@
   <!-- A text field with defaults appropriate for English, plus
  aggressive word-splitting and autophrase features enabled.
  This field is just like text_en, except it adds
- WordDelimiterFilter to enable splitting and matching of
+ WordDelimiterGraphFilter to enable splitting and matching of
  words on case-change, alpha numeric boundaries, and
  non-alphanumeric chars.  This means certain compound word
  cases will work, for example query "wi fi" will match
@@ -551,7 +554,7 @@
     <analyzer type="index">
       <tokenizer class="solr.WhitespaceTokenizerFactory"/>
       <!-- in this example, we will only use synonyms at query time
-      <filter class="solr.SynonymFilterFactory" synonyms="index_synonyms.txt" ignoreCase="true" expand="false"/>
+      <filter class="solr.SynonymGraphFilterFactory" synonyms="index_synonyms.txt" ignoreCase="true" expand="false"/>
       -->
       <!-- Case insensitive stop word removal.
       -->
@@ -559,20 +562,21 @@
               ignoreCase="true"
               words="stopwords.txt"
       />
-      <filter class="solr.WordDelimiterFilterFactory" generateWordParts="1" generateNumberParts="1" catenateWords="1"
+      <filter class="solr.WordDelimiterGraphFilterFactory" generateWordParts="1" generateNumberParts="1" catenateWords="1"
               catenateNumbers="1" catenateAll="0" splitOnCaseChange="1"/>
       <filter class="solr.LowerCaseFilterFactory"/>
       <filter class="solr.KeywordMarkerFilterFactory" protected="protwords.txt"/>
       <filter class="solr.PorterStemFilterFactory"/>
+      <filter class="solr.FlattenGraphFilterFactory"/>
     </analyzer>
     <analyzer type="query">
       <tokenizer class="solr.WhitespaceTokenizerFactory"/>
-      <filter class="solr.SynonymFilterFactory" synonyms="synonyms.txt" ignoreCase="true" expand="true"/>
+      <filter class="solr.SynonymGraphFilterFactory" synonyms="synonyms.txt" ignoreCase="true" expand="true"/>
       <filter class="solr.StopFilterFactory"
               ignoreCase="true"
               words="stopwords.txt"
       />
-      <filter class="solr.WordDelimiterFilterFactory" generateWordParts="1" generateNumberParts="1" catenateWords="0"
+      <filter class="solr.WordDelimiterGraphFilterFactory" generateWordParts="1" generateNumberParts="1" catenateWords="0"
               catenateNumbers="0" catenateAll="0" splitOnCaseChange="1"/>
       <filter class="solr.LowerCaseFilterFactory"/>
       <filter class="solr.KeywordMarkerFilterFactory" protected="protwords.txt"/>
@@ -584,17 +588,31 @@
        but may be good for SKUs.  Can insert dashes in the wrong place and still match. -->
   <fieldType name="text_en_splitting_tight" class="solr.TextField" positionIncrementGap="100"
              autoGeneratePhraseQueries="true">
-    <analyzer>
+    <analyzer type="index">
       <tokenizer class="solr.WhitespaceTokenizerFactory"/>
-      <filter class="solr.SynonymFilterFactory" synonyms="synonyms.txt" ignoreCase="true" expand="false"/>
+      <filter class="solr.SynonymGraphFilterFactory" synonyms="synonyms.txt" ignoreCase="true" expand="false"/>
       <filter class="solr.StopFilterFactory" ignoreCase="true" words="stopwords.txt"/>
-      <filter class="solr.WordDelimiterFilterFactory" generateWordParts="0" generateNumberParts="0" catenateWords="1"
+      <filter class="solr.WordDelimiterGraphFilterFactory" generateWordParts="0" generateNumberParts="0" catenateWords="1"
               catenateNumbers="1" catenateAll="0"/>
       <filter class="solr.LowerCaseFilterFactory"/>
       <filter class="solr.KeywordMarkerFilterFactory" protected="protwords.txt"/>
       <filter class="solr.EnglishMinimalStemFilterFactory"/>
       <!-- this filter can remove any duplicate tokens that appear at the same position - sometimes
-           possible with WordDelimiterFilter in conjuncton with stemming. -->
+           possible with WordDelimiterGraphFilter in conjuncton with stemming. -->
+      <filter class="solr.RemoveDuplicatesTokenFilterFactory"/>
+      <filter class="solr.FlattenGraphFilterFactory"/>
+    </analyzer>
+    <analyzer type="query">
+      <tokenizer class="solr.WhitespaceTokenizerFactory"/>
+      <filter class="solr.SynonymGraphFilterFactory" synonyms="synonyms.txt" ignoreCase="true" expand="false"/>
+      <filter class="solr.StopFilterFactory" ignoreCase="true" words="stopwords.txt"/>
+      <filter class="solr.WordDelimiterGraphFilterFactory" generateWordParts="0" generateNumberParts="0" catenateWords="1"
+              catenateNumbers="1" catenateAll="0"/>
+      <filter class="solr.LowerCaseFilterFactory"/>
+      <filter class="solr.KeywordMarkerFilterFactory" protected="protwords.txt"/>
+      <filter class="solr.EnglishMinimalStemFilterFactory"/>
+      <!-- this filter can remove any duplicate tokens that appear at the same position - sometimes
+           possible with WordDelimiterGraphFilter in conjuncton with stemming. -->
       <filter class="solr.RemoveDuplicatesTokenFilterFactory"/>
     </analyzer>
   </fieldType>
@@ -611,7 +629,7 @@
     </analyzer>
     <analyzer type="query">
       <tokenizer class="solr.StandardTokenizerFactory"/>
-      <filter class="solr.SynonymFilterFactory" synonyms="synonyms.txt" ignoreCase="true" expand="true"/>
+      <filter class="solr.SynonymGraphFilterFactory" synonyms="synonyms.txt" ignoreCase="true" expand="true"/>
       <filter class="solr.StopFilterFactory" ignoreCase="true" words="stopwords.txt"/>
       <filter class="solr.LowerCaseFilterFactory"/>
     </analyzer>

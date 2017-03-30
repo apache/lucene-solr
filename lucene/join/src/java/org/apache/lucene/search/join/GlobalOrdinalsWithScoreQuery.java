@@ -20,7 +20,7 @@ import java.io.IOException;
 import java.util.Set;
 
 import org.apache.lucene.index.DocValues;
-import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.index.IndexReaderContext;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.MultiDocValues;
 import org.apache.lucene.index.SortedDocValues;
@@ -48,9 +48,10 @@ final class GlobalOrdinalsWithScoreQuery extends Query {
   private final Query fromQuery;
   private final int min;
   private final int max;
-  private final IndexReader indexReader;
+  // id of the context rather than the context itself in order not to hold references to index readers
+  private final Object indexReaderContextId;
 
-  GlobalOrdinalsWithScoreQuery(GlobalOrdinalsWithScoreCollector collector, String joinField, MultiDocValues.OrdinalMap globalOrds, Query toQuery, Query fromQuery, int min, int max, IndexReader indexReader) {
+  GlobalOrdinalsWithScoreQuery(GlobalOrdinalsWithScoreCollector collector, String joinField, MultiDocValues.OrdinalMap globalOrds, Query toQuery, Query fromQuery, int min, int max, IndexReaderContext context) {
     this.collector = collector;
     this.joinField = joinField;
     this.globalOrds = globalOrds;
@@ -58,11 +59,14 @@ final class GlobalOrdinalsWithScoreQuery extends Query {
     this.fromQuery = fromQuery;
     this.min = min;
     this.max = max;
-    this.indexReader = indexReader;
+    this.indexReaderContextId = context.id();
   }
 
   @Override
   public Weight createWeight(IndexSearcher searcher, boolean needsScores, float boost) throws IOException {
+    if (searcher.getTopReaderContext().id() != indexReaderContextId) {
+      throw new IllegalStateException("Creating the weight against a different index reader than this query has been built for.");
+    }
     return new W(this, toQuery.createWeight(searcher, false, 1f));
   }
 
@@ -78,7 +82,7 @@ final class GlobalOrdinalsWithScoreQuery extends Query {
            joinField.equals(other.joinField) &&
            fromQuery.equals(other.fromQuery) &&
            toQuery.equals(other.toQuery) &&
-           indexReader.equals(other.indexReader);
+           indexReaderContextId.equals(other.indexReaderContextId);
   }
 
   @Override
@@ -89,7 +93,7 @@ final class GlobalOrdinalsWithScoreQuery extends Query {
     result = 31 * result + fromQuery.hashCode();
     result = 31 * result + min;
     result = 31 * result + max;
-    result = 31 * result + indexReader.hashCode();
+    result = 31 * result + indexReaderContextId.hashCode();
     return result;
   }
 

@@ -15,6 +15,7 @@
  * limitations under the License.
  */
 package org.apache.solr.handler.loader;
+
 import java.io.IOException;
 import java.io.Reader;
 import java.io.StringReader;
@@ -28,6 +29,7 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.UUID;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.apache.commons.io.IOUtils;
 import org.apache.solr.common.SolrException;
@@ -56,8 +58,11 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import static java.util.stream.Collectors.toList;
+import static org.apache.solr.common.params.CommonParams.ID;
 import static org.apache.solr.common.params.CommonParams.JSON;
 import static org.apache.solr.common.params.CommonParams.PATH;
+import static org.apache.solr.common.params.CommonParams.VERSION_FIELD;
+import static org.apache.solr.common.params.ShardParams._ROUTE_;
 
 
 /**
@@ -65,6 +70,7 @@ import static org.apache.solr.common.params.CommonParams.PATH;
  */
 public class JsonLoader extends ContentStreamLoader {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
+  private static final AtomicBoolean WARNED_ABOUT_INDEX_TIME_BOOSTS = new AtomicBoolean();
   public static final String CHILD_DOC_KEY = "_childDocuments_";
 
   @Override
@@ -362,15 +368,15 @@ public class JsonLoader extends ContentStreamLoader {
         if (ev == JSONParser.STRING) {
           String key = parser.getString();
           if (parser.wasKey()) {
-            if ("id".equals(key)) {
+            if (ID.equals(key)) {
               cmd.setId(getString(parser.nextEvent()));
             } else if ("query".equals(key)) {
               cmd.setQuery(parser.getString());
             } else if ("commitWithin".equals(key)) {
               cmd.commitWithin = (int) parser.getLong();
-            } else if ("_version_".equals(key)) {
+            } else if (VERSION_FIELD.equals(key)) {
               cmd.setVersion(parser.getLong());
-            } else if ("_route_".equals(key)) {
+            } else if (_ROUTE_.equals(key)) {
               cmd.setRoute(parser.getString());
             } else {
               throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Unknown key '" + key + "' at [" + parser.getPosition() + "]");
@@ -435,8 +441,6 @@ public class JsonLoader extends ContentStreamLoader {
       cmd.commitWithin = commitWithin;
       cmd.overwrite = overwrite;
 
-      float boost = 1.0f;
-
       while (true) {
         int ev = parser.nextEvent();
         if (ev == JSONParser.STRING) {
@@ -454,7 +458,13 @@ public class JsonLoader extends ContentStreamLoader {
             } else if (UpdateRequestHandler.COMMIT_WITHIN.equals(key)) {
               cmd.commitWithin = (int) parser.getLong();
             } else if ("boost".equals(key)) {
-              boost = Float.parseFloat(parser.getNumberChars().toString());
+              String boost = parser.getNumberChars().toString();
+              String message = "Ignoring document boost: " + boost + " as index-time boosts are not supported anymore";
+              if (WARNED_ABOUT_INDEX_TIME_BOOSTS.compareAndSet(false, true)) {
+                log.warn(message);
+              } else {
+                log.debug(message);
+              }
             } else {
               throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Unknown key '" + key + "' at [" + parser.getPosition() + "]");
             }
@@ -467,7 +477,6 @@ public class JsonLoader extends ContentStreamLoader {
           if (cmd.solrDoc == null) {
             throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Missing solr document at [" + parser.getPosition() + "]");
           }
-          cmd.solrDoc.setDocumentBoost(boost);
           return cmd;
         } else {
           throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,
@@ -536,7 +545,7 @@ public class JsonLoader extends ContentStreamLoader {
           // SolrInputDocument.addField will do the right thing
           // if the doc already has another value for this field
           // (ie: repeating fieldname keys)
-          sdoc.addField(sif.getName(), sif.getValue(), sif.getBoost());
+          sdoc.addField(sif.getName(), sif.getValue());
         }
 
       }
@@ -548,14 +557,13 @@ public class JsonLoader extends ContentStreamLoader {
         parseExtendedFieldValue(sif, ev);
       } else {
         Object val = parseNormalFieldValue(ev, sif.getName());
-        sif.setValue(val, 1.0f);
+        sif.setValue(val);
       }
     }
 
     private void parseExtendedFieldValue(SolrInputField sif, int ev) throws IOException {
       assert ev == JSONParser.OBJECT_START;
 
-      float boost = 1.0f;
       Object normalFieldValue = null;
       Map<String, Object> extendedInfo = null;
 
@@ -573,7 +581,12 @@ public class JsonLoader extends ContentStreamLoader {
                     + "Unexpected " + JSONParser.getEventString(ev) + " at [" + parser.getPosition() + "], field=" + sif.getName());
               }
 
-              boost = (float) parser.getDouble();
+              String message = "Ignoring field boost: " + parser.getDouble() + " as index-time boosts are not supported anymore";
+              if (WARNED_ABOUT_INDEX_TIME_BOOSTS.compareAndSet(false, true)) {
+                log.warn(message);
+              } else {
+                log.debug(message);
+              }
             } else if ("value".equals(label)) {
               normalFieldValue = parseNormalFieldValue(parser.nextEvent(), sif.getName());
             } else {
@@ -593,9 +606,9 @@ public class JsonLoader extends ContentStreamLoader {
               if (normalFieldValue != null) {
                 extendedInfo.put("value", normalFieldValue);
               }
-              sif.setValue(extendedInfo, boost);
+              sif.setValue(extendedInfo);
             } else {
-              sif.setValue(normalFieldValue, boost);
+              sif.setValue(normalFieldValue);
             }
             return;
 

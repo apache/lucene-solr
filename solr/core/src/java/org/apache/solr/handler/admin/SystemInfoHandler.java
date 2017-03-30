@@ -36,6 +36,8 @@ import java.text.DecimalFormat;
 import java.text.DecimalFormatSymbols;
 import java.util.Arrays;
 import java.util.Date;
+import java.util.LinkedList;
+import java.util.List;
 import java.util.Locale;
 
 import org.apache.commons.io.IOUtils;
@@ -50,7 +52,7 @@ import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.util.RTimer;
-
+import org.apache.solr.util.RedactionUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -65,6 +67,8 @@ import static org.apache.solr.common.params.CommonParams.NAME;
 public class SystemInfoHandler extends RequestHandlerBase 
 {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
+
+  public static String REDACT_STRING = RedactionUtils.getRedactString();
 
   /**
    * <p>
@@ -373,7 +377,7 @@ public class SystemInfoHandler extends RequestHandlerBase
 
       // the input arguments passed to the Java virtual machine
       // which does not include the arguments to the main method.
-      jmx.add( "commandLineArgs", mx.getInputArguments());
+      jmx.add( "commandLineArgs", getInputArgumentsRedacted(mx));
 
       jmx.add( "startTime", new Date(mx.getStartTime()));
       jmx.add( "upTimeMS",  mx.getUptime() );
@@ -435,6 +439,18 @@ public class SystemInfoHandler extends RequestHandlerBase
     }
 
     return newSizeAndUnits;
+  }
+
+  private static List<String> getInputArgumentsRedacted(RuntimeMXBean mx) {
+    List<String> list = new LinkedList<>();
+    for (String arg : mx.getInputArguments()) {
+      if (arg.startsWith("-D") && arg.contains("=") && RedactionUtils.isSystemPropertySensitive(arg.substring(2, arg.indexOf("=")))) {
+        list.add(String.format(Locale.ROOT, "%s=%s", arg.substring(0, arg.indexOf("=")), REDACT_STRING));
+      } else {
+        list.add(arg);
+      }
+    }
+    return list;
   }
   
 }

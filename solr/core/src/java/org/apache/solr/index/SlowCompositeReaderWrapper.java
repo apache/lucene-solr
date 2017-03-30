@@ -47,7 +47,6 @@ public final class SlowCompositeReaderWrapper extends LeafReader {
 
   private final CompositeReader in;
   private final Fields fields;
-  private final boolean merging;
   
   /** This method is sugar for getting an {@link LeafReader} from
    * an {@link IndexReader} of any kind. If the reader is already atomic,
@@ -55,19 +54,18 @@ public final class SlowCompositeReaderWrapper extends LeafReader {
    */
   public static LeafReader wrap(IndexReader reader) throws IOException {
     if (reader instanceof CompositeReader) {
-      return new SlowCompositeReaderWrapper((CompositeReader) reader, false);
+      return new SlowCompositeReaderWrapper((CompositeReader) reader);
     } else {
       assert reader instanceof LeafReader;
       return (LeafReader) reader;
     }
   }
 
-  SlowCompositeReaderWrapper(CompositeReader reader, boolean merging) throws IOException {
+  SlowCompositeReaderWrapper(CompositeReader reader) throws IOException {
     super();
     in = reader;
     fields = MultiFields.getFields(in);
     in.registerParentReader(this);
-    this.merging = merging;
   }
 
   @Override
@@ -76,13 +74,16 @@ public final class SlowCompositeReaderWrapper extends LeafReader {
   }
 
   @Override
-  public void addCoreClosedListener(CoreClosedListener listener) {
-    addCoreClosedListenerAsReaderClosedListener(in, listener);
+  public CacheHelper getReaderCacheHelper() {
+    return in.getReaderCacheHelper();
   }
 
   @Override
-  public void removeCoreClosedListener(CoreClosedListener listener) {
-    removeCoreClosedListenerAsReaderClosedListener(in, listener);
+  public CacheHelper getCoreCacheHelper() {
+    // TODO: this is trappy as the expectation is that core keys live for a long
+    // time, but here we need to bound it to the lifetime of the wrapped
+    // composite reader? Unfortunately some features seem to rely on this...
+    return in.getReaderCacheHelper();
   }
 
   @Override
@@ -120,7 +121,8 @@ public final class SlowCompositeReaderWrapper extends LeafReader {
         SortedDocValues dv = MultiDocValues.getSortedValues(in, field);
         if (dv instanceof MultiSortedDocValues) {
           map = ((MultiSortedDocValues)dv).mapping;
-          if (map.owner == getCoreCacheKey() && merging == false) {
+          IndexReader.CacheHelper cacheHelper = getReaderCacheHelper();
+          if (cacheHelper != null && map.owner == cacheHelper.getKey()) {
             cachedOrdMaps.put(field, map);
           }
         }
@@ -161,7 +163,8 @@ public final class SlowCompositeReaderWrapper extends LeafReader {
         SortedSetDocValues dv = MultiDocValues.getSortedSetValues(in, field);
         if (dv instanceof MultiDocValues.MultiSortedSetDocValues) {
           map = ((MultiDocValues.MultiSortedSetDocValues)dv).mapping;
-          if (map.owner == getCoreCacheKey() && merging == false) {
+          IndexReader.CacheHelper cacheHelper = getReaderCacheHelper();
+          if (cacheHelper != null && map.owner == cacheHelper.getKey()) {
             cachedOrdMaps.put(field, map);
           }
         }
@@ -195,7 +198,7 @@ public final class SlowCompositeReaderWrapper extends LeafReader {
   
   // TODO: this could really be a weak map somewhere else on the coreCacheKey,
   // but do we really need to optimize slow-wrapper any more?
-  private final Map<String,OrdinalMap> cachedOrdMaps = new HashMap<>();
+  final Map<String,OrdinalMap> cachedOrdMaps = new HashMap<>();
 
   @Override
   public NumericDocValues getNormValues(String field) throws IOException {
@@ -243,16 +246,6 @@ public final class SlowCompositeReaderWrapper extends LeafReader {
   public FieldInfos getFieldInfos() {
     ensureOpen();
     return MultiFields.getMergedFieldInfos(in);
-  }
-
-  @Override
-  public Object getCoreCacheKey() {
-    return in.getCoreCacheKey();
-  }
-
-  @Override
-  public Object getCombinedCoreAndDeletesKey() {
-    return in.getCombinedCoreAndDeletesKey();
   }
 
   @Override

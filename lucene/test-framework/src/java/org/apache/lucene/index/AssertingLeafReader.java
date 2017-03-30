@@ -51,11 +51,23 @@ public class AssertingLeafReader extends FilterLeafReader {
     assert in.numDeletedDocs() + in.numDocs() == in.maxDoc();
     assert !in.hasDeletions() || in.numDeletedDocs() > 0 && in.numDocs() < in.maxDoc();
 
-    addCoreClosedListener(ownerCoreCacheKey -> {
-      final Object expectedKey = getCoreCacheKey();
-      assert expectedKey == ownerCoreCacheKey
-          : "Core closed listener called on a different key " + expectedKey + " <> " + ownerCoreCacheKey;
-    });
+    CacheHelper coreCacheHelper = in.getCoreCacheHelper();
+    if (coreCacheHelper != null) {
+      coreCacheHelper.addClosedListener(cacheKey -> {
+        final Object expectedKey = coreCacheHelper.getKey();
+        assert expectedKey == cacheKey
+            : "Core closed listener called on a different key " + expectedKey + " <> " + cacheKey;
+      });
+    }
+
+    CacheHelper readerCacheHelper = in.getReaderCacheHelper();
+    if (readerCacheHelper != null) {
+      readerCacheHelper.addClosedListener(cacheKey -> {
+        final Object expectedKey = readerCacheHelper.getKey();
+        assert expectedKey == cacheKey
+            : "Core closed listener called on a different key " + expectedKey + " <> " + cacheKey;
+      });
+    }
   }
 
   @Override
@@ -1137,12 +1149,12 @@ public class AssertingLeafReader extends FilterLeafReader {
   // we don't change behavior of the reader: just validate the API.
 
   @Override
-  public Object getCoreCacheKey() {
-    return in.getCoreCacheKey();
+  public CacheHelper getCoreCacheHelper() {
+    return in.getCoreCacheHelper();
   }
 
   @Override
-  public Object getCombinedCoreAndDeletesKey() {
-    return in.getCombinedCoreAndDeletesKey();
+  public CacheHelper getReaderCacheHelper() {
+    return in.getReaderCacheHelper();
   }
 }

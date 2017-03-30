@@ -106,6 +106,16 @@ public class TestFilterLeafReader extends LuceneTestCase {
     public Fields fields() throws IOException {
       return new TestFields(super.fields());
     }
+
+    @Override
+    public CacheHelper getCoreCacheHelper() {
+      return null;
+    }
+
+    @Override
+    public CacheHelper getReaderCacheHelper() {
+      return null;
+    }
   }
     
   /**
@@ -196,7 +206,16 @@ public class TestFilterLeafReader extends LuceneTestCase {
     w.addDocument(new Document());
     DirectoryReader dr = w.getReader();
     LeafReader r = dr.leaves().get(0).reader();
-    FilterLeafReader r2 = new FilterLeafReader(r) {};
+    FilterLeafReader r2 = new FilterLeafReader(r) {
+      @Override
+      public CacheHelper getCoreCacheHelper() {
+        return in.getCoreCacheHelper();
+      }
+      @Override
+      public CacheHelper getReaderCacheHelper() {
+        return in.getReaderCacheHelper();
+      }
+    };
     assertEquals(r, r2.getDelegate());
     assertEquals(r, FilterLeafReader.unwrap(r2));
     w.close();

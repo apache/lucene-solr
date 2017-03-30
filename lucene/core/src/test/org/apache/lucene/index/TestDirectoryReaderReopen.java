@@ -811,7 +811,8 @@ public class TestDirectoryReaderReopen extends LuceneTestCase {
     assertEquals(1, oldest.leaves().size());
     
     // sharing same core
-    assertSame(latest.leaves().get(0).reader().getCoreCacheKey(), oldest.leaves().get(0).reader().getCoreCacheKey());
+    assertSame(latest.leaves().get(0).reader().getCoreCacheHelper().getKey(),
+        oldest.leaves().get(0).reader().getCoreCacheHelper().getKey());
     
     latest.close();
     oldest.close();
@@ -861,7 +862,8 @@ public class TestDirectoryReaderReopen extends LuceneTestCase {
     assertEquals(1, oldest.leaves().size());
     
     // sharing same core
-    assertSame(latest.leaves().get(0).reader().getCoreCacheKey(), oldest.leaves().get(0).reader().getCoreCacheKey());
+    assertSame(latest.leaves().get(0).reader().getCoreCacheHelper().getKey(),
+        oldest.leaves().get(0).reader().getCoreCacheHelper().getKey());
     
     latest.close();
     oldest.close();
@@ -901,7 +903,8 @@ public class TestDirectoryReaderReopen extends LuceneTestCase {
     assertEquals(1, oldest.leaves().size());
     
     // sharing same core
-    assertSame(latest.leaves().get(0).reader().getCoreCacheKey(), oldest.leaves().get(0).reader().getCoreCacheKey());
+    assertSame(latest.leaves().get(0).reader().getCoreCacheHelper().getKey(),
+        oldest.leaves().get(0).reader().getCoreCacheHelper().getKey());
 
     NumericDocValues values = getOnlyLeafReader(oldest).getNumericDocValues("dv");
     assertEquals(0, values.nextDoc());
@@ -948,7 +951,8 @@ public class TestDirectoryReaderReopen extends LuceneTestCase {
     assertEquals(1, oldest.leaves().size());
     
     // sharing same core
-    assertSame(latest.leaves().get(0).reader().getCoreCacheKey(), oldest.leaves().get(0).reader().getCoreCacheKey());
+    assertSame(latest.leaves().get(0).reader().getCoreCacheHelper().getKey(),
+        oldest.leaves().get(0).reader().getCoreCacheHelper().getKey());
 
     NumericDocValues values = getOnlyLeafReader(oldest).getNumericDocValues("dv");
     assertEquals(0, values.nextDoc());

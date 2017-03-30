@@ -33,7 +33,8 @@ import org.apache.lucene.codecs.PointsReader;
 import org.apache.lucene.codecs.PostingsFormat;
 import org.apache.lucene.codecs.StoredFieldsReader;
 import org.apache.lucene.codecs.TermVectorsReader;
-import org.apache.lucene.index.LeafReader.CoreClosedListener;
+import org.apache.lucene.index.IndexReader.CacheKey;
+import org.apache.lucene.index.IndexReader.ClosedListener;
 import org.apache.lucene.store.AlreadyClosedException;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IOContext;
@@ -84,8 +85,8 @@ final class SegmentCoreReaders {
     }
   };
 
-  private final Set<CoreClosedListener> coreClosedListeners = 
-      Collections.synchronizedSet(new LinkedHashSet<CoreClosedListener>());
+  private final Set<IndexReader.ClosedListener> coreClosedListeners = 
+      Collections.synchronizedSet(new LinkedHashSet<IndexReader.ClosedListener>());
   
   SegmentCoreReaders(Directory dir, SegmentCommitInfo si, IOContext context) throws IOException {
 
@@ -175,14 +176,32 @@ final class SegmentCoreReaders {
       }
     }
   }
-  
+
+  private final IndexReader.CacheHelper cacheHelper = new IndexReader.CacheHelper() {
+    private final IndexReader.CacheKey cacheKey = new IndexReader.CacheKey();
+
+    @Override
+    public CacheKey getKey() {
+      return cacheKey;
+    }
+
+    @Override
+    public void addClosedListener(ClosedListener listener) {
+      coreClosedListeners.add(listener);
+    }
+  };
+
+  IndexReader.CacheHelper getCacheHelper() {
+    return cacheHelper;
+  }
+
   private void notifyCoreClosedListeners(Throwable th) throws IOException {
     synchronized(coreClosedListeners) {
-      for (CoreClosedListener listener : coreClosedListeners) {
+      for (IndexReader.ClosedListener listener : coreClosedListeners) {
         // SegmentReader uses our instance as its
         // coreCacheKey:
         try {
-          listener.onClose(this);
+          listener.onClose(cacheHelper.getKey());
         } catch (Throwable t) {
           if (th == null) {
             th = t;
@@ -193,14 +212,6 @@ final class SegmentCoreReaders {
       }
       IOUtils.reThrow(th);
     }
-  }
-
-  void addCoreClosedListener(CoreClosedListener listener) {
-    coreClosedListeners.add(listener);
-  }
-  
-  void removeCoreClosedListener(CoreClosedListener listener) {
-    coreClosedListeners.remove(listener);
   }
 
   @Override

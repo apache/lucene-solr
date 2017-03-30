@@ -174,7 +174,7 @@ public class TestFiltering extends SolrTestCaseJ4 {
   }
 
 
-  class Model {
+  static class Model {
     int indexSize;
     FixedBitSet answer;
     FixedBitSet multiSelect;

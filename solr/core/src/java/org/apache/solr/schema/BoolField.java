@@ -182,8 +182,8 @@ public class BoolField extends PrimitiveFieldType {
   }
 
   @Override
-  public List<IndexableField> createFields(SchemaField field, Object value, float boost) {
-    IndexableField fval = createField(field, value, boost);
+  public List<IndexableField> createFields(SchemaField field, Object value) {
+    IndexableField fval = createField(field, value);
 
     if (field.hasDocValues()) {
       IndexableField docval;
@@ -207,9 +207,6 @@ public class BoolField extends PrimitiveFieldType {
     return Collections.singletonList(fval);
   }
 
-  @Override
-  public void checkSchemaField(final SchemaField field) {
-  }
 }
 
 // TODO - this can be much more efficient - use FixedBitSet or Bits

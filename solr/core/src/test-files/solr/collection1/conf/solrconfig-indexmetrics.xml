@@ -29,8 +29,6 @@
 
   <indexConfig>
     <metrics>
-      <bool name="directory">${solr.tests.metrics.directory:false}</bool>
-      <bool name="directoryDetails">${solr.tests.metrics.directoryDetails:false}</bool>
       <bool name="merge">${solr.tests.metrics.merge:false}</bool>
       <bool name="mergeDetails">${solr.tests.metrics.mergeDetails:false}</bool>
     </metrics>

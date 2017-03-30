@@ -102,7 +102,7 @@ public class TestRegexpRandom2 extends LuceneTestCase {
   }
   
   /** a stupid regexp query that just blasts thru the terms */
-  private class DumbRegexpQuery extends MultiTermQuery {
+  private static class DumbRegexpQuery extends MultiTermQuery {
     private final Automaton automaton;
     
     DumbRegexpQuery(Term term, int flags) {

@@ -35,11 +35,7 @@ import org.apache.solr.request.LocalSolrQueryRequest;
 import org.apache.solr.request.SolrRequestInfo;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.util.CryptoKeys;
-import org.junit.Test;
-
-import static org.mockito.Mockito.any;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.*;
 
 public class TestPKIAuthenticationPlugin extends SolrTestCaseJ4 {
 
@@ -115,6 +111,9 @@ public class TestPKIAuthenticationPlugin extends SolrTestCaseJ4 {
     assertNull(((HttpServletRequest) wrappedRequestByFilter.get()).getUserPrincipal());
 
     //test 3 . No user request . Request originated from Solr
+    //create pub key in advance because it can take time and it should be
+    //created before the header is set
+    PublicKey key = new CryptoKeys.RSAKeyPair().getPublicKey();
     mock.solrRequestInfo = null;
     header.set(null);
     wrappedRequestByFilter.set(null);
@@ -128,14 +127,13 @@ public class TestPKIAuthenticationPlugin extends SolrTestCaseJ4 {
     assertNotNull(wrappedRequestByFilter.get());
     assertEquals("$", ((HttpServletRequest) wrappedRequestByFilter.get()).getUserPrincipal().getName());
 
-
-
+    /*test4 mock the restart of a node*/
     MockPKIAuthenticationPlugin mock1 = new MockPKIAuthenticationPlugin(null, nodeName) {
       int called = 0;
       @Override
       PublicKey getRemotePublicKey(String nodename) {
         try {
-          return called == 0 ? new CryptoKeys.RSAKeyPair().getPublicKey() : correctKey;
+          return called == 0 ? key : correctKey;
         } finally {
           called++;
         }
@@ -145,38 +143,8 @@ public class TestPKIAuthenticationPlugin extends SolrTestCaseJ4 {
     mock1.doAuthenticate(mockReq, null,filterChain );
     assertNotNull(wrappedRequestByFilter.get());
     assertEquals("$", ((HttpServletRequest) wrappedRequestByFilter.get()).getUserPrincipal().getName());
-  }
 
-  @Test
-  public void testGetBaseUrlForNodeNameLocal() {
-    synchronized (this) {
-      final MockPKIAuthenticationPlugin mock = new MockPKIAuthenticationPlugin(null, "myName");
-      System.clearProperty("solr.jetty.keystore");
-      assertEquals("http://my.host:9876/solr2", mock.getBaseUrlForNodeNameLocal("my.host:9876_solr2"));
-      System.setProperty("solr.jetty.keystore", "foo");
-      assertEquals("https://my.host:9876/solr2", mock.getBaseUrlForNodeNameLocal("my.host:9876_solr2"));
-      System.clearProperty("solr.jetty.keystore");
-    }
-  }
 
-  @Test
-  public void testResolveUrlScheme() {
-    synchronized (this) {
-      System.clearProperty("urlScheme");
-      System.clearProperty("solr.jetty.keystore");
-      assertEquals("http", MockPKIAuthenticationPlugin.resolveUrlScheme());
-      System.setProperty("urlScheme", "http");
-      assertEquals("http", MockPKIAuthenticationPlugin.resolveUrlScheme());
-      System.setProperty("urlScheme", "https");
-      assertEquals("https", MockPKIAuthenticationPlugin.resolveUrlScheme());
-      System.setProperty("urlScheme", "ftp");
-      System.clearProperty("solr.jetty.keystore");
-      assertEquals("http", MockPKIAuthenticationPlugin.resolveUrlScheme());
-      System.setProperty("solr.jetty.keystore", "foo");
-      assertEquals("https", MockPKIAuthenticationPlugin.resolveUrlScheme());
-      System.clearProperty("urlScheme");
-      System.clearProperty("solr.jetty.keystore");
-    }
   }
 
   private HttpServletRequest createMockRequest(final AtomicReference<Header> header) {

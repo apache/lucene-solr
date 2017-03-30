@@ -239,6 +239,11 @@ public class TestDemoParallelLeafReader extends LuceneTestCase {
         // throw the first exception
         IOUtils.reThrow(firstExc);
       }
+
+      @Override
+      public CacheHelper getReaderCacheHelper() {
+        return null;
+      }
     }
 
     @Override
@@ -324,7 +329,7 @@ public class TestDemoParallelLeafReader extends LuceneTestCase {
       }
     }
 
-    private class ParallelReaderClosed implements LeafReader.ReaderClosedListener {
+    private class ParallelReaderClosed implements IndexReader.ClosedListener {
       private final SegmentIDAndGen segIDGen;
       private final Directory dir;
 
@@ -334,7 +339,7 @@ public class TestDemoParallelLeafReader extends LuceneTestCase {
       }
 
       @Override
-      public void onClose(IndexReader ignored) {
+      public void onClose(IndexReader.CacheKey ignored) {
         try {
           // TODO: make this sync finer, i.e. just the segment + schemaGen
           synchronized(ReindexingReader.this) {
@@ -421,7 +426,7 @@ public class TestDemoParallelLeafReader extends LuceneTestCase {
               // the pruning may remove our directory:
               closedSegments.remove(segIDGen);
 
-              parLeafReader.addReaderClosedListener(new ParallelReaderClosed(segIDGen, dir));
+              parLeafReader.getReaderCacheHelper().addClosedListener(new ParallelReaderClosed(segIDGen, dir));
 
             } else {
               // Used only for merged segment warming:

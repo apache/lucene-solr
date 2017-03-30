@@ -86,7 +86,7 @@ public class EqualsEvaluator extends BooleanEvaluator {
       return new BooleanChecker(){
         @Override
         public boolean test(Object left, Object right) {
-          return (boolean)left.equals((boolean)right);
+          return (boolean)left == (boolean)right;
         }
       };
     }

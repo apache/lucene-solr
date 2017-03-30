@@ -88,17 +88,19 @@ public class ExitableDirectoryReader extends FilterDirectoryReader {
         return fields;  // break out of wrapper as soon as possible
       }
     }
-    
+
+    // this impl does not change deletes or data so we can delegate the
+    // CacheHelpers
     @Override
-    public Object getCoreCacheKey() {
-      return in.getCoreCacheKey();  
+    public CacheHelper getReaderCacheHelper() {
+      return in.getReaderCacheHelper();
     }
-    
+
     @Override
-    public Object getCombinedCoreAndDeletesKey() {
-      return in.getCombinedCoreAndDeletesKey();
+    public CacheHelper getCoreCacheHelper() {
+      return in.getCoreCacheHelper();
     }
-    
+
   }
 
   /**
@@ -208,6 +210,11 @@ public class ExitableDirectoryReader extends FilterDirectoryReader {
    */
   public static DirectoryReader wrap(DirectoryReader in, QueryTimeout queryTimeout) throws IOException {
     return new ExitableDirectoryReader(in, queryTimeout);
+  }
+
+  @Override
+  public CacheHelper getReaderCacheHelper() {
+    return in.getReaderCacheHelper();
   }
 
   @Override

@@ -422,11 +422,11 @@ public class TestMemoryIndex extends LuceneTestCase {
     }
   }
 
-  public void testPointValuesDoNotAffectBoostPositionsOrOffset() throws Exception {
+  public void testPointValuesDoNotAffectPositionsOrOffset() throws Exception {
     MemoryIndex mi = new MemoryIndex(true, true);
-    mi.addField(new TextField("text", "quick brown fox", Field.Store.NO), analyzer, 5f);
-    mi.addField(new BinaryPoint("text", "quick".getBytes(StandardCharsets.UTF_8)), analyzer, 5f);
-    mi.addField(new BinaryPoint("text", "brown".getBytes(StandardCharsets.UTF_8)), analyzer, 5f);
+    mi.addField(new TextField("text", "quick brown fox", Field.Store.NO), analyzer);
+    mi.addField(new BinaryPoint("text", "quick".getBytes(StandardCharsets.UTF_8)), analyzer);
+    mi.addField(new BinaryPoint("text", "brown".getBytes(StandardCharsets.UTF_8)), analyzer);
     LeafReader leafReader = mi.createSearcher().getIndexReader().leaves().get(0).reader();
     TermsEnum tenum = leafReader.terms("text").iterator();
 

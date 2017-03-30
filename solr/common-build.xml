@@ -151,14 +151,11 @@
   </macrodef>
 
   <!-- 
-    We don't want to run HDFS tests on Windows, because they require Cygwin.
-    We don't want to run HDFS tests on Java 9 Jigsaw, because Hadoop/HDFS is completely broken with Java's module system.
+    We don't want to run HDFS tests on Windows by default, because they require Cygwin.
+    Cygwin users can explicitly set -Dtests.disableHdfs=false to enable Hdfs related testing.
   -->
   <condition property="tests.disableHdfs" value="true">
-    <or>
-      <os family="windows"/>
-      <available classname="java.lang.reflect.Module"/>
-    </or>
+    <os family="windows"/>
   </condition>
 
   <target name="validate" depends="compile-tools">

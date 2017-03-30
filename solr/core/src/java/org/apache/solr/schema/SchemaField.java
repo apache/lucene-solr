@@ -66,7 +66,7 @@ public final class SchemaField extends FieldProperties implements IndexableField
     args = prototype.args;
   }
 
- /** Create a new SchemaField with the given name and type,
+  /** Create a new SchemaField with the given name and type,
    * and with the specified properties.  Properties are *not*
    * inherited from the type in this case, so users of this
    * constructor should derive the properties from type.getSolrProperties()
@@ -106,23 +106,24 @@ public final class SchemaField extends FieldProperties implements IndexableField
   public boolean multiValued() { return (properties & MULTIVALUED)!=0; }
   public boolean sortMissingFirst() { return (properties & SORT_MISSING_FIRST)!=0; }
   public boolean sortMissingLast() { return (properties & SORT_MISSING_LAST)!=0; }
-  public boolean isRequired() { return required; } 
+  public boolean isRequired() { return required; }
+  public boolean isLarge() { return (properties & LARGE_FIELD)!=0;}
   public Map<String,?> getArgs() { return Collections.unmodifiableMap(args); }
 
   // things that should be determined by field type, not set as options
   boolean isTokenized() { return (properties & TOKENIZED)!=0; }
   boolean isBinary() { return (properties & BINARY)!=0; }
 
-  public IndexableField createField(Object val, float boost) {
-    return type.createField(this,val,boost);
+  public IndexableField createField(Object val) {
+    return type.createField(this,val);
   }
 
-  public List<IndexableField> createFields(Object val, float boost) {
-    return type.createFields(this,val,boost);
+  public List<IndexableField> createFields(Object val) {
+    return type.createFields(this,val);
   }
 
   /**
-   * If true, then use {@link #createFields(Object, float)}, else use {@link #createField} to save an extra allocation
+   * If true, then use {@link #createFields(Object)}, else use {@link #createField} to save an extra allocation
    * @return true if this field is a poly field
    */
   public boolean isPolyField(){
@@ -240,7 +241,7 @@ public final class SchemaField extends FieldProperties implements IndexableField
     // that depend on that.
     //
     if (on(falseProps,STORED)) {
-      int pp = STORED | BINARY;
+      int pp = STORED | BINARY | LARGE_FIELD;
       if (on(pp,trueProps)) {
         throw new RuntimeException("SchemaField: " + name + " conflicting stored field options:" + props);
       }

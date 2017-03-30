@@ -19,7 +19,6 @@ package org.apache.solr.client.solrj.io.stream;
 
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
@@ -27,13 +26,10 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
-import java.util.Random;
-import java.util.Set;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
 
-import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.io.SolrClientCache;
 import org.apache.solr.client.solrj.io.Tuple;
@@ -48,15 +44,12 @@ import org.apache.solr.client.solrj.io.stream.expr.StreamExpressionValue;
 import org.apache.solr.client.solrj.io.stream.expr.StreamFactory;
 import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.client.solrj.response.QueryResponse;
-import org.apache.solr.common.cloud.ClusterState;
-import org.apache.solr.common.cloud.Replica;
-import org.apache.solr.common.cloud.Slice;
-import org.apache.solr.common.cloud.ZkCoreNodeProps;
-import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SolrjNamedThreadFactory;
+
+import static org.apache.solr.common.params.CommonParams.DISTRIB;
 
 public class SignificantTermsStream extends TupleStream implements Expressible{
 
@@ -74,11 +67,8 @@ public class SignificantTermsStream extends TupleStream implements Expressible{
 
   protected transient SolrClientCache cache;
   protected transient boolean isCloseCache;
-  protected transient CloudSolrClient cloudSolrClient;
-
   protected transient StreamContext streamContext;
   protected ExecutorService executorService;
-
 
   public SignificantTermsStream(String zkHost,
                                  String collectionName,
@@ -168,12 +158,12 @@ public class SignificantTermsStream extends TupleStream implements Expressible{
     String zkHost = null;
     if(null == zkHostExpression){
       zkHost = factory.getCollectionZkHost(collectionName);
-    }
-    else if(zkHostExpression.getParameter() instanceof StreamExpressionValue){
+    } else if(zkHostExpression.getParameter() instanceof StreamExpressionValue) {
       zkHost = ((StreamExpressionValue)zkHostExpression.getParameter()).getValue();
     }
-    if(null == zkHost){
-      throw new IOException(String.format(Locale.ROOT,"invalid expression %s - zkHost not found for collection '%s'",expression,collectionName));
+
+    if(zkHost == null){
+      zkHost = factory.getDefaultZkHost();
     }
 
     // We've got all the required items
@@ -238,45 +228,11 @@ public class SignificantTermsStream extends TupleStream implements Expressible{
       isCloseCache = false;
     }
 
-    this.cloudSolrClient = this.cache.getCloudSolrClient(zkHost);
-    this.executorService = ExecutorUtil.newMDCAwareCachedThreadPool(new SolrjNamedThreadFactory("FeaturesSelectionStream"));
+    this.executorService = ExecutorUtil.newMDCAwareCachedThreadPool(new SolrjNamedThreadFactory("SignificantTermsStream"));
   }
 
   public List<TupleStream> children() {
     return null;
-  }
-
-  private List<String> getShardUrls() throws IOException {
-    try {
-      ZkStateReader zkStateReader = cloudSolrClient.getZkStateReader();
-
-      Collection<Slice> slices = CloudSolrStream.getSlices(this.collection, zkStateReader, false);
-
-      ClusterState clusterState = zkStateReader.getClusterState();
-      Set<String> liveNodes = clusterState.getLiveNodes();
-
-      List<String> baseUrls = new ArrayList<>();
-      for(Slice slice : slices) {
-        Collection<Replica> replicas = slice.getReplicas();
-        List<Replica> shuffler = new ArrayList<>();
-        for(Replica replica : replicas) {
-          if(replica.getState() == Replica.State.ACTIVE && liveNodes.contains(replica.getNodeName())) {
-            shuffler.add(replica);
-          }
-        }
-
-        Collections.shuffle(shuffler, new Random());
-        Replica rep = shuffler.get(0);
-        ZkCoreNodeProps zkProps = new ZkCoreNodeProps(rep);
-        String url = zkProps.getCoreUrl();
-        baseUrls.add(url);
-      }
-
-      return baseUrls;
-
-    } catch (Exception e) {
-      throw new IOException(e);
-    }
   }
 
   private List<Future<NamedList>> callShards(List<String> baseUrls) throws IOException {
@@ -326,7 +282,7 @@ public class SignificantTermsStream extends TupleStream implements Expressible{
         Map<String, int[]> mergeFreqs = new HashMap<>();
         long numDocs = 0;
         long resultCount = 0;
-        for (Future<NamedList> getTopTermsCall : callShards(getShardUrls())) {
+        for (Future<NamedList> getTopTermsCall : callShards(getShards(zkHost, collection, streamContext))) {
           NamedList resp = getTopTermsCall.get();
 
           List<String> terms = (List<String>)resp.get("sterms");
@@ -358,7 +314,7 @@ public class SignificantTermsStream extends TupleStream implements Expressible{
           map.put("background", freqs[0]);
           map.put("foreground", freqs[1]);
 
-          float score = (float)Math.log(freqs[1]) * (float) (Math.log(((float)(numDocs + 1)) / (freqs[0] + 1)) + 1.0);
+          float score = (float)(Math.log(freqs[1])+1.0) * (float) (Math.log(((float)(numDocs + 1)) / (freqs[0] + 1)) + 1.0);
 
           map.put("score", score);
           maps.add(map);
@@ -383,7 +339,7 @@ public class SignificantTermsStream extends TupleStream implements Expressible{
     }
   }
 
-  private class ScoreComp implements Comparator<Map> {
+  private static class ScoreComp implements Comparator<Map> {
     public int compare(Map a, Map b) {
       Float scorea = (Float)a.get("score");
       Float scoreb = (Float)b.get("score");
@@ -422,7 +378,7 @@ public class SignificantTermsStream extends TupleStream implements Expressible{
       ModifiableSolrParams params = new ModifiableSolrParams();
       HttpSolrClient solrClient = cache.getHttpSolrClient(baseUrl);
 
-      params.add("distrib", "false");
+      params.add(DISTRIB, "false");
       params.add("fq","{!sigificantTerms}");
 
       for(String key : paramsMap.keySet()) {

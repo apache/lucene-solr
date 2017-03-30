@@ -113,6 +113,7 @@ import org.slf4j.LoggerFactory;
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.apache.solr.common.SolrException.ErrorCode.FORBIDDEN;
 import static org.apache.solr.common.SolrException.ErrorCode.UNAUTHORIZED;
+import static org.apache.solr.common.params.CommonParams.DISTRIB;
 import static org.apache.solr.common.params.CommonParams.NAME;
 
 /**
@@ -1193,7 +1194,7 @@ public class SolrCLI {
             // query this replica directly to get doc count and assess health
             q = new SolrQuery("*:*");
             q.setRows(0);
-            q.set("distrib", "false");
+            q.set(DISTRIB, "false");
             try (HttpSolrClient solr = new HttpSolrClient.Builder(coreUrl).build()) {
 
               String solrUrl = solr.getBaseURL();

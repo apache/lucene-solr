@@ -18,6 +18,7 @@ package org.apache.solr.handler;
 
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
@@ -41,6 +42,7 @@ import org.apache.solr.client.solrj.io.eval.IfThenElseEvaluator;
 import org.apache.solr.client.solrj.io.eval.LessThanEqualToEvaluator;
 import org.apache.solr.client.solrj.io.eval.LessThanEvaluator;
 import org.apache.solr.client.solrj.io.eval.MultiplyEvaluator;
+import org.apache.solr.client.solrj.io.eval.NaturalLogEvaluator;
 import org.apache.solr.client.solrj.io.eval.NotEvaluator;
 import org.apache.solr.client.solrj.io.eval.OrEvaluator;
 import org.apache.solr.client.solrj.io.eval.RawValueEvaluator;
@@ -77,6 +79,9 @@ import org.apache.solr.security.PermissionNameProvider;
 import org.apache.solr.util.plugin.SolrCoreAware;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import static org.apache.solr.common.params.CommonParams.ID;
+import static org.apache.solr.common.params.CommonParams.SORT;
 
 public class StreamHandler extends RequestHandlerBase implements SolrCoreAware, PermissionNameProvider {
 
@@ -144,7 +149,7 @@ public class StreamHandler extends RequestHandlerBase implements SolrCoreAware, 
       .withFunctionName("outerHashJoin", OuterHashJoinStream.class)
       .withFunctionName("intersect", IntersectStream.class)
       .withFunctionName("complement", ComplementStream.class)
-      .withFunctionName("sort", SortStream.class)
+      .withFunctionName(SORT, SortStream.class)
       .withFunctionName("train", TextLogitStream.class)
       .withFunctionName("features", FeaturesSelectionStream.class)
       .withFunctionName("daemon", DaemonStream.class)
@@ -152,6 +157,9 @@ public class StreamHandler extends RequestHandlerBase implements SolrCoreAware, 
       .withFunctionName("gatherNodes", GatherNodesStream.class)
       .withFunctionName("nodes", GatherNodesStream.class)
       .withFunctionName("select", SelectStream.class)
+      .withFunctionName("shortestPath", ShortestPathStream.class)
+      .withFunctionName("gatherNodes", GatherNodesStream.class)
+      .withFunctionName("nodes", GatherNodesStream.class)
       .withFunctionName("scoreNodes", ScoreNodesStream.class)
       .withFunctionName("model", ModelStream.class)
       .withFunctionName("classify", ClassifyStream.class)
@@ -160,6 +168,8 @@ public class StreamHandler extends RequestHandlerBase implements SolrCoreAware, 
       .withFunctionName("null", NullStream.class)
       .withFunctionName("priority", PriorityStream.class)
       .withFunctionName("significantTerms", SignificantTermsStream.class)
+      .withFunctionName("cartesianProduct", CartesianProductStream.class)
+      
       // metrics
       .withFunctionName("min", MinMetric.class)
       .withFunctionName("max", MaxMetric.class)
@@ -196,7 +206,7 @@ public class StreamHandler extends RequestHandlerBase implements SolrCoreAware, 
       .withFunctionName("div", DivideEvaluator.class)
       .withFunctionName("mult", MultiplyEvaluator.class)
       .withFunctionName("sub", SubtractEvaluator.class)
-      
+      .withFunctionName("log", NaturalLogEvaluator.class)
       // Conditional Stream Evaluators
       .withFunctionName("if", IfThenElseEvaluator.class)
       ;
@@ -246,6 +256,7 @@ public class StreamHandler extends RequestHandlerBase implements SolrCoreAware, 
     int worker = params.getInt("workerID", 0);
     int numWorkers = params.getInt("numWorkers", 1);
     StreamContext context = new StreamContext();
+    context.put("shards", getCollectionShards(params));
     context.workerID = worker;
     context.numWorkers = numWorkers;
     context.setSolrClientCache(clientCache);
@@ -276,7 +287,7 @@ public class StreamHandler extends RequestHandlerBase implements SolrCoreAware, 
   private void handleAdmin(SolrQueryRequest req, SolrQueryResponse rsp, SolrParams params) {
     String action = params.get("action");
     if("stop".equalsIgnoreCase(action)) {
-      String id = params.get("id");
+      String id = params.get(ID);
       DaemonStream d = daemons.get(id);
       if(d != null) {
         d.close();
@@ -284,21 +295,23 @@ public class StreamHandler extends RequestHandlerBase implements SolrCoreAware, 
       } else {
         rsp.add("result-set", new DaemonResponseStream("Deamon:" + id + " not found on " + coreName));
       }
-    } else if("start".equalsIgnoreCase(action)) {
-      String id = params.get("id");
-      DaemonStream d = daemons.get(id);
-      d.open();
-      rsp.add("result-set", new DaemonResponseStream("Deamon:" + id + " started on " + coreName));
-    } else if("list".equalsIgnoreCase(action)) {
-      Collection<DaemonStream> vals = daemons.values();
-      rsp.add("result-set", new DaemonCollectionStream(vals));
-    } else if("kill".equalsIgnoreCase(action)) {
-      String id = params.get("id");
-      DaemonStream d = daemons.remove(id);
-      if (d != null) {
-        d.close();
+    } else {
+      if ("start".equalsIgnoreCase(action)) {
+        String id = params.get(ID);
+        DaemonStream d = daemons.get(id);
+        d.open();
+        rsp.add("result-set", new DaemonResponseStream("Deamon:" + id + " started on " + coreName));
+      } else if ("list".equalsIgnoreCase(action)) {
+        Collection<DaemonStream> vals = daemons.values();
+        rsp.add("result-set", new DaemonCollectionStream(vals));
+      } else if ("kill".equalsIgnoreCase(action)) {
+        String id = params.get("id");
+        DaemonStream d = daemons.remove(id);
+        if (d != null) {
+          d.close();
+        }
+        rsp.add("result-set", new DaemonResponseStream("Deamon:" + id + " killed on " + coreName));
       }
-      rsp.add("result-set", new DaemonResponseStream("Deamon:" + id + " killed on " + coreName));
     }
   }
 
@@ -507,6 +520,31 @@ public class StreamHandler extends RequestHandlerBase implements SolrCoreAware, 
         tuple.fields.put("RESPONSE_TIME", totalTime);
       }
       return tuple;
+    }
+  }
+
+  private Map<String, List<String>> getCollectionShards(SolrParams params) {
+
+    Map<String, List<String>> collectionShards = new HashMap();
+    Iterator<String> paramsIt = params.getParameterNamesIterator();
+    while(paramsIt.hasNext()) {
+      String param = paramsIt.next();
+      if(param.indexOf(".shards") > -1) {
+        String collection = param.split("\\.")[0];
+        String shardString = params.get(param);
+        String[] shards = shardString.split(",");
+        List<String> shardList = new ArrayList();
+        for(String shard : shards) {
+          shardList.add(shard);
+        }
+        collectionShards.put(collection, shardList);
+      }
+    }
+
+    if(collectionShards.size() > 0) {
+      return collectionShards;
+    } else {
+      return null;
     }
   }
 }

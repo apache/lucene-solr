@@ -155,7 +155,7 @@
     </analyzer>
   </fieldType>
 
-  <!-- A text field that uses WordDelimiterFilter to enable splitting and matching of
+  <!-- A text field that uses WordDelimiterGraphFilter to enable splitting and matching of
       words on case-change, alpha numeric boundaries, and non-alphanumeric chars,
       so that a query of "wifi" or "wi fi" could match a document containing "Wi-Fi".
       Synonyms and stopwords are customized by external files, and stemming is enabled.
@@ -166,7 +166,7 @@
     <analyzer type="index">
       <tokenizer class="solr.MockTokenizerFactory"/>
       <!-- in this example, we will only use synonyms at query time
-      <filter class="solr.SynonymFilterFactory" synonyms="index_synonyms.txt" ignoreCase="true" expand="false"/>
+      <filter class="solr.SynonymGraphFilterFactory" synonyms="index_synonyms.txt" ignoreCase="true" expand="false"/>
       -->
       <!-- Case insensitive stop word removal.
       -->
@@ -174,18 +174,19 @@
               ignoreCase="true"
               words="stopwords.txt"
       />
-      <filter class="solr.WordDelimiterFilterFactory" generateWordParts="1" generateNumberParts="1" catenateWords="1"
+      <filter class="solr.WordDelimiterGraphFilterFactory" generateWordParts="1" generateNumberParts="1" catenateWords="1"
               catenateNumbers="1" catenateAll="0" splitOnCaseChange="1"/>
       <filter class="solr.LowerCaseFilterFactory"/>
       <filter class="solr.KeywordMarkerFilterFactory" protected="protwords.txt"/>
       <filter class="solr.PorterStemFilterFactory"/>
       <filter class="solr.RemoveDuplicatesTokenFilterFactory"/>
+      <filter class="solr.FlattenGraphFilterFactory" />
     </analyzer>
     <analyzer type="query">
       <tokenizer class="solr.MockTokenizerFactory"/>
-      <!--<filter class="solr.SynonymFilterFactory" synonyms="synonyms.txt" ignoreCase="true" expand="true"/>-->
+      <!--<filter class="solr.SynonymGraphFilterFactory" synonyms="synonyms.txt" ignoreCase="true" expand="true"/>-->
       <!--<filter class="solr.StopFilterFactory" ignoreCase="true" words="stopwords.txt"/>-->
-      <filter class="solr.WordDelimiterFilterFactory" generateWordParts="1" generateNumberParts="1" catenateWords="0"
+      <filter class="solr.WordDelimiterGraphFilterFactory" generateWordParts="1" generateNumberParts="1" catenateWords="0"
               catenateNumbers="0" catenateAll="0" splitOnCaseChange="1"/>
       <filter class="solr.LowerCaseFilterFactory"/>
       <filter class="solr.KeywordMarkerFilterFactory" protected="protwords.txt"/>
@@ -198,11 +199,23 @@
   <!-- Less flexible matching, but less false matches.  Probably not ideal for product names,
        but may be good for SKUs.  Can insert dashes in the wrong place and still match. -->
   <fieldType name="textTight" class="solr.TextField" positionIncrementGap="100">
-    <analyzer>
+    <analyzer type="index">
       <tokenizer class="solr.MockTokenizerFactory"/>
-      <!--<filter class="solr.SynonymFilterFactory" synonyms="synonyms.txt" ignoreCase="true" expand="false"/>
+      <!--<filter class="solr.SynonymGraphFilterFactory" synonyms="synonyms.txt" ignoreCase="true" expand="false"/>
       <filter class="solr.StopFilterFactory" ignoreCase="true" words="stopwords.txt"/>-->
-      <filter class="solr.WordDelimiterFilterFactory" generateWordParts="0" generateNumberParts="0" catenateWords="1"
+      <filter class="solr.WordDelimiterGraphFilterFactory" generateWordParts="0" generateNumberParts="0" catenateWords="1"
+              catenateNumbers="1" catenateAll="0"/>
+      <filter class="solr.LowerCaseFilterFactory"/>
+      <filter class="solr.KeywordMarkerFilterFactory" protected="protwords.txt"/>
+      <filter class="solr.EnglishMinimalStemFilterFactory"/>
+      <filter class="solr.RemoveDuplicatesTokenFilterFactory"/>
+      <filter class="solr.FlattenGraphFilterFactory" />
+    </analyzer>
+    <analyzer type="query">
+      <tokenizer class="solr.MockTokenizerFactory"/>
+      <!--<filter class="solr.SynonymGraphFilterFactory" synonyms="synonyms.txt" ignoreCase="true" expand="false"/>
+      <filter class="solr.StopFilterFactory" ignoreCase="true" words="stopwords.txt"/>-->
+      <filter class="solr.WordDelimiterGraphFilterFactory" generateWordParts="0" generateNumberParts="0" catenateWords="1"
               catenateNumbers="1" catenateAll="0"/>
       <filter class="solr.LowerCaseFilterFactory"/>
       <filter class="solr.KeywordMarkerFilterFactory" protected="protwords.txt"/>
@@ -277,7 +290,7 @@
   -->
 
   <field name="id" type="string" indexed="true" stored="true" required="true"/>
-  <field name="url" type="string" indexed="true" stored="true" required="true"/>
+  <field name="url" type="string" indexed="true" stored="true" required="false"/>
   <field name="lang" type="string" indexed="true" stored="true" required="false" multiValued="true"/>
 
   <field name="title" type="text" indexed="true" stored="true" multiValued="true"/>
@@ -305,6 +318,10 @@
 
   <dynamicField name="random*" type="random"/>
 
+  <dynamicField name="*_dynamic" type="string" indexed="true" stored="true"/>
+  <dynamicField name="dynamic_*" type="string" indexed="true" stored="true"/>
+
+
   <!-- uncomment the following to ignore any fields that don't already match an existing 
        field name or dynamic field, rather than reporting them as an error. 
        alternately, change the type="ignored" to some other type e.g. "text" if you want 
@@ -330,5 +347,10 @@
   <copyField source="title" dest="text"/>
   <copyField source="body" dest="text"/>
   <copyField source="snippet" dest="text"/>
+
+  <!-- dynamic destination -->
+  <copyField source="*_dynamic" dest="dynamic_*"/>
+
+  <copyField source="id" dest="range_facet_l"/>
 
 </schema>

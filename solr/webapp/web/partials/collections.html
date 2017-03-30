@@ -215,7 +215,23 @@ limitations under the License.
 
       <div class="block" id="shard-data">
         <div class="content shard" ng-repeat="shard in collection.shards">
-          <a ng-click="toggleShard(shard)"><h2><span ng-class="{open:shard.show}">Shard: {{shard.name}}</span></h2></a>
+          <a ng-click="toggleShard(shard)">
+            <h2>
+                  <span ng-class="{open:shard.show}"><b>Shard: {{shard.name}}</b></span>
+                  <div style="float:right" ng-show="!shard.range || shard.state == 'inactive'"><a ng-click="toggleRemoveShard(shard)"><span class="rem"></span></a></div>
+              </h2>
+          </a>
+          <ul ng-show="shard.showRemove">
+              <li>
+                <form class="delete-shard">
+                      <p class="clearfix"><em>Are you sure you want to delete this shard?</em></p>
+                      <p class="clearfix buttons">
+                        <button class="submit" ng-class="{success: shard.deleted}" ng-click="deleteShard(shard)"><span>Delete Shard</span></button>
+                        <button type="reset" class="reset" ng-click="toggleRemoveShard(shard)"><span>Cancel</span></button>
+                      </p>
+                  </form>
+            </li>
+            </ul>
           <ul ng-show="shard.show">
               <li>
                   <ul>

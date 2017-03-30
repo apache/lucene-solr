@@ -103,7 +103,7 @@ import org.apache.lucene.util.StringHelper;
  * <a target="_blank" 
  * href="http://bobwyman.pubsub.com/main/2005/05/mary_hodder_poi.html">Prospective Search</a>, 
  * Jim Gray's
- * <a target="_blank" href="http://www.acmqueue.org/modules.php?name=Content&pa=showpage&pid=293&page=4">
+ * <a target="_blank" href="http://www.acmqueue.org/modules.php?name=Content&amp;pa=showpage&amp;pid=293&amp;page=4">
  * A Call to Arms - Custom subscriptions</a>, and Tim Bray's
  * <a target="_blank" 
  * href="http://www.tbray.org/ongoing/When/200x/2003/07/30/OnSearchTOC">On Search, the Series</a>.
@@ -275,7 +275,7 @@ public class MemoryIndex {
       throw new IllegalArgumentException("analyzer must not be null");
     
     TokenStream stream = analyzer.tokenStream(fieldName, text);
-    storeTerms(getInfo(fieldName, defaultFieldType), stream, 1.0f,
+    storeTerms(getInfo(fieldName, defaultFieldType), stream,
         analyzer.getPositionIncrementGap(fieldName), analyzer.getOffsetGap(fieldName));
   }
 
@@ -358,18 +358,7 @@ public class MemoryIndex {
       }
     };
   }
-  
-  /**
-   * Equivalent to <code>addField(fieldName, stream, 1.0f)</code>.
-   *
-   * @param fieldName
-   *            a name to be associated with the text
-   * @param stream
-   *            the token stream to retrieve tokens from
-   */
-  public void addField(String fieldName, TokenStream stream) {
-    addField(fieldName, stream, 1.0f);
-  }
+
 
   /**
    * Adds a lucene {@link IndexableField} to the MemoryIndex using the provided analyzer.
@@ -377,22 +366,8 @@ public class MemoryIndex {
    *
    * @param field the field to add
    * @param analyzer the analyzer to use for term analysis
-   * @throws IllegalArgumentException if the field is a DocValues or Point field, as these
-   *                                  structures are not supported by MemoryIndex
    */
   public void addField(IndexableField field, Analyzer analyzer) {
-    addField(field, analyzer, 1.0f);
-  }
-
-  /**
-   * Adds a lucene {@link IndexableField} to the MemoryIndex using the provided analyzer.
-   * Also stores doc values based on {@link IndexableFieldType#docValuesType()} if set.
-   *
-   * @param field the field to add
-   * @param analyzer the analyzer to use for term analysis
-   * @param boost a field boost
-   */
-  public void addField(IndexableField field, Analyzer analyzer, float boost) {
 
     Info info = getInfo(field.name(), field.fieldType());
 
@@ -409,7 +384,7 @@ public class MemoryIndex {
       positionIncrementGap = 0;
     }
     if (tokenStream != null) {
-      storeTerms(info, tokenStream, boost, positionIncrementGap, offsetGap);
+      storeTerms(info, tokenStream, positionIncrementGap, offsetGap);
     }
 
     DocValuesType docValuesType = field.fieldType().docValuesType();
@@ -451,13 +426,9 @@ public class MemoryIndex {
    *            a name to be associated with the text
    * @param stream
    *            the token stream to retrieve tokens from.
-   * @param boost
-   *            the boost factor for hits for this field
-   *  
-   * @see org.apache.lucene.document.Field#setBoost(float)
    */
-  public void addField(String fieldName, TokenStream stream, float boost) {
-    addField(fieldName, stream, boost, 0);
+  public void addField(String fieldName, TokenStream stream) {
+    addField(fieldName, stream, 0);
   }
 
 
@@ -472,17 +443,13 @@ public class MemoryIndex {
    *            a name to be associated with the text
    * @param stream
    *            the token stream to retrieve tokens from.
-   * @param boost
-   *            the boost factor for hits for this field
    *
    * @param positionIncrementGap
    *            the position increment gap if fields with the same name are added more than once
    *
-   *
-   * @see org.apache.lucene.document.Field#setBoost(float)
    */
-  public void addField(String fieldName, TokenStream stream, float boost, int positionIncrementGap) {
-    addField(fieldName, stream, boost, positionIncrementGap, 1);
+  public void addField(String fieldName, TokenStream stream, int positionIncrementGap) {
+    addField(fieldName, stream, positionIncrementGap, 1);
   }
 
   /**
@@ -497,17 +464,14 @@ public class MemoryIndex {
    *            a name to be associated with the text
    * @param tokenStream
    *            the token stream to retrieve tokens from. It's guaranteed to be closed no matter what.
-   * @param boost
-   *            the boost factor for hits for this field
    * @param positionIncrementGap
    *            the position increment gap if fields with the same name are added more than once
    * @param offsetGap
    *            the offset gap if fields with the same name are added more than once
-   * @see org.apache.lucene.document.Field#setBoost(float)
    */
-  public void addField(String fieldName, TokenStream tokenStream, float boost, int positionIncrementGap, int offsetGap) {
+  public void addField(String fieldName, TokenStream tokenStream, int positionIncrementGap, int offsetGap) {
     Info info = getInfo(fieldName, defaultFieldType);
-    storeTerms(info, tokenStream, boost, positionIncrementGap, offsetGap);
+    storeTerms(info, tokenStream, positionIncrementGap, offsetGap);
   }
 
   private Info getInfo(String fieldName, IndexableFieldType fieldType) {
@@ -600,20 +564,13 @@ public class MemoryIndex {
     }
   }
 
-  private void storeTerms(Info info, TokenStream tokenStream, float boost, int positionIncrementGap, int offsetGap) {
-
-    if (boost <= 0.0f) {
-      throw new IllegalArgumentException("boost factor must be greater than 0.0");
-    }
+  private void storeTerms(Info info, TokenStream tokenStream, int positionIncrementGap, int offsetGap) {
 
     int pos = -1;
     int offset = 0;
-    if (info.numTokens == 0) {
-      info.boost = boost;
-    } else if (info.numTokens > 0) {
+    if (info.numTokens > 0) {
       pos = info.lastPosition + positionIncrementGap;
       offset = info.lastOffset + offsetGap;
-      info.boost *= boost;
     }
 
     try (TokenStream stream = tokenStream) {
@@ -846,9 +803,6 @@ public class MemoryIndex {
     
     /** Number of overlapping tokens for this field */
     private int numOverlapTokens;
-    
-    /** Boost factor for hits for this field */
-    private float boost;
 
     private long sumTotalTermFreq;
 
@@ -939,7 +893,7 @@ public class MemoryIndex {
     NumericDocValues getNormDocValues() {
       if (norm == null) {
         FieldInvertState invertState = new FieldInvertState(fieldInfo.name, fieldInfo.number,
-            numTokens, numOverlapTokens, 0, boost);
+            numTokens, numOverlapTokens, 0);
         final long value = normSimilarity.computeNorm(invertState);
         if (DEBUG) System.err.println("MemoryIndexReader.norms: " + fieldInfo.name + ":" + value + ":" + numTokens);
 
@@ -1180,16 +1134,6 @@ public class MemoryIndex {
       for (Info info : fields.values()) {
         info.prepareDocValuesAndPointValues();
       }
-    }
-
-    @Override
-    public void addCoreClosedListener(CoreClosedListener listener) {
-      addCoreClosedListenerAsReaderClosedListener(this, listener);
-    }
-
-    @Override
-    public void removeCoreClosedListener(CoreClosedListener listener) {
-      removeCoreClosedListenerAsReaderClosedListener(this, listener);
     }
 
     private Info getInfoForExpectedDocValuesType(String fieldName, DocValuesType expectedType) {
@@ -1682,6 +1626,16 @@ public class MemoryIndex {
 
     @Override
     public Sort getIndexSort() {
+      return null;
+    }
+
+    @Override
+    public CacheHelper getCoreCacheHelper() {
+      return null;
+    }
+
+    @Override
+    public CacheHelper getReaderCacheHelper() {
       return null;
     }
   }

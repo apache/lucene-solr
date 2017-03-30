@@ -252,15 +252,13 @@ public class SolrContentHandler extends DefaultHandler implements ExtractingPara
       vals=null;
     }
 
-    float boost = getBoost(name);
-
     if (fval != null) {
-      document.addField(name, transformValue(fval, sf), boost);
+      document.addField(name, transformValue(fval, sf));
     }
 
     if (vals != null) {
       for (String val : vals) {
-        document.addField(name, transformValue(val, sf), boost);
+        document.addField(name, transformValue(val, sf));
       }
     }
 
@@ -334,17 +332,6 @@ public class SolrContentHandler extends DefaultHandler implements ExtractingPara
       }
     }
     return result;
-  }
-
-
-  /**
-   * Get the value of any boost factor for the mapped name.
-   *
-   * @param name The name of the field to see if there is a boost specified
-   * @return The boost value
-   */
-  protected float getBoost(String name) {
-    return params.getFloat(BOOST_PREFIX + name, 1.0f);
   }
 
   /**

@@ -83,7 +83,7 @@ abstract class CSVLoaderBase extends ContentStreamLoader {
   private class FieldAdder {
     void add(SolrInputDocument doc, int line, int column, String val) {
       if (val.length() > 0) {
-        doc.addField(fieldnames[column],val,1.0f);
+        doc.addField(fieldnames[column],val);
       }
     }
   }
@@ -92,7 +92,7 @@ abstract class CSVLoaderBase extends ContentStreamLoader {
   private class FieldAdderEmpty extends CSVLoaderBase.FieldAdder {
     @Override
     void add(SolrInputDocument doc, int line, int column, String val) {
-      doc.addField(fieldnames[column],val,1.0f);
+      doc.addField(fieldnames[column],val);
     }
   }
 

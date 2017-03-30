@@ -498,7 +498,13 @@ public class SimpleQueryParser extends QueryBuilder {
       }
       int fuzziness = 0;
       try {
-        fuzziness = Integer.parseInt(new String(slopText, 0, slopLength));
+        String fuzzyString =  new String(slopText, 0, slopLength);
+        if ("".equals(fuzzyString)) {
+          // Use automatic fuzziness, ~2
+          fuzziness = 2;
+        } else {
+          fuzziness = Integer.parseInt(fuzzyString);
+        }
       } catch (NumberFormatException e) {
         // swallow number format exceptions parsing fuzziness
       }

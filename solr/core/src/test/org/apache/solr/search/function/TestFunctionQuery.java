@@ -432,7 +432,6 @@ public class TestFunctionQuery extends SolrTestCaseJ4 {
             "//float[@name='score']='" + similarity.tf(5)  + "'");
     
     FieldInvertState state = new FieldInvertState("a_tfidf");
-    state.setBoost(1.0f);
     state.setLength(4);
     long norm = similarity.computeNorm(state);
     float nrm = similarity.decodeNormValue((byte) norm);

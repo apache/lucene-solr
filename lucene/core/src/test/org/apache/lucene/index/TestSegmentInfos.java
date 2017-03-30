@@ -29,9 +29,14 @@ import java.util.Collections;
 
 public class TestSegmentInfos extends LuceneTestCase {
 
+  public void testIllegalCreatedVersion() {
+    IllegalArgumentException e = expectThrows(IllegalArgumentException.class, () -> new SegmentInfos(Version.LUCENE_6_5_0));
+    assertEquals("indexCreatedVersion may only be non-null if the index was created on or after 7.0, got 6.5.0", e.getMessage());
+  }
+
   // LUCENE-5954
   public void testVersionsNoSegments() throws IOException {
-    SegmentInfos sis = new SegmentInfos();
+    SegmentInfos sis = new SegmentInfos(Version.LATEST);
     BaseDirectoryWrapper dir = newDirectory();
     dir.setCheckIndexOnClose(false);
     sis.commit(dir);
@@ -48,7 +53,7 @@ public class TestSegmentInfos extends LuceneTestCase {
     byte id[] = StringHelper.randomId();
     Codec codec = Codec.getDefault();
 
-    SegmentInfos sis = new SegmentInfos();
+    SegmentInfos sis = new SegmentInfos(Version.LATEST);
     SegmentInfo info = new SegmentInfo(dir, Version.LUCENE_6_0_0, "_0", 1, false, Codec.getDefault(), 
                                        Collections.<String,String>emptyMap(), id, Collections.<String,String>emptyMap(), null);
     info.setFiles(Collections.<String>emptySet());
@@ -70,7 +75,7 @@ public class TestSegmentInfos extends LuceneTestCase {
     byte id[] = StringHelper.randomId();
     Codec codec = Codec.getDefault();
 
-    SegmentInfos sis = new SegmentInfos();
+    SegmentInfos sis = new SegmentInfos(Version.LATEST);
     SegmentInfo info = new SegmentInfo(dir, Version.LUCENE_6_0_0, "_0", 1, false, Codec.getDefault(), 
                                        Collections.<String,String>emptyMap(), id, Collections.<String,String>emptyMap(), null);
     info.setFiles(Collections.<String>emptySet());

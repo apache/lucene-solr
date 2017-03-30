@@ -28,17 +28,26 @@ import java.util.Map;
 public class TermsResponse {
   private Map<String, List<Term>> termMap = new HashMap<>();
   
-  public TermsResponse(NamedList<NamedList<Number>> termsInfo) {
+  public TermsResponse(NamedList<NamedList<Object>> termsInfo) {
     for (int i = 0; i < termsInfo.size(); i++) {
       String fieldName = termsInfo.getName(i);
       List<Term> itemList = new ArrayList<>();
-      NamedList<Number> items = termsInfo.getVal(i);
+      NamedList<Object> items = termsInfo.getVal(i);
       
       for (int j = 0; j < items.size(); j++) {
-        Term t = new Term(items.getName(j), items.getVal(j).longValue());
+        String term = items.getName(j);
+        Object val = items.getVal(j);
+        Term t;
+        if (val instanceof NamedList) {
+          @SuppressWarnings("unchecked")
+          NamedList<Number> termStats = (NamedList<Number>) val;
+          t = new Term(term, termStats.get("docFreq").longValue(), termStats.get("totalTermFreq").longValue());
+        } else {
+          t = new Term(term, ((Number) val).longValue());
+        }
         itemList.add(t);
       }
-      
+
       termMap.put(fieldName, itemList);
     }
   }
@@ -59,10 +68,16 @@ public class TermsResponse {
   public static class Term {
     private String term;
     private long frequency;
+    private long totalTermFreq;
 
     public Term(String term, long frequency) {
+      this(term, frequency, 0);
+    }
+
+    public Term(String term, long frequency, long totalTermFreq) {
       this.term = term;
       this.frequency = frequency;
+      this.totalTermFreq = totalTermFreq;
     }
 
     public String getTerm() {
@@ -80,9 +95,21 @@ public class TermsResponse {
     public void setFrequency(long frequency) {
       this.frequency = frequency;
     }
-    
+
     public void addFrequency(long frequency) {
       this.frequency += frequency;
+    }
+
+    public long getTotalTermFreq() {
+      return totalTermFreq;
+    }
+
+    public void setTotalTermFreq(long totalTermFreq) {
+      this.totalTermFreq = totalTermFreq;
+    }
+
+    public void addTotalTermFreq(long totalTermFreq) {
+      this.totalTermFreq += totalTermFreq;
     }
   }
 }

@@ -103,6 +103,7 @@ public class SolrCoreMetricManagerTest extends SolrTestCaseJ4 {
 
     String className = MockMetricReporter.class.getName();
     String reporterName = TestUtil.randomUnicodeString(random);
+    String taggedName = reporterName + "@" + coreMetricManager.getTag();
 
     Map<String, Object> attrs = new HashMap<>();
     attrs.put(FieldType.CLASS_NAME, className);
@@ -116,15 +117,16 @@ public class SolrCoreMetricManagerTest extends SolrTestCaseJ4 {
     PluginInfo pluginInfo = shouldDefinePlugin ? new PluginInfo(TestUtil.randomUnicodeString(random), attrs) : null;
 
     try {
-      metricManager.loadReporter(coreMetricManager.getRegistryName(), coreMetricManager.getCore().getResourceLoader(), pluginInfo);
+      metricManager.loadReporter(coreMetricManager.getRegistryName(), coreMetricManager.getCore().getResourceLoader(),
+          pluginInfo, String.valueOf(coreMetricManager.getCore().hashCode()));
       assertNotNull(pluginInfo);
       Map<String, SolrMetricReporter> reporters = metricManager.getReporters(coreMetricManager.getRegistryName());
       assertTrue("reporters.size should be > 0, but was + " + reporters.size(), reporters.size() > 0);
-      assertNotNull("reporter " + reporterName + " not present among " + reporters, reporters.get(reporterName));
-      assertTrue("wrong reporter class: " + reporters.get(reporterName), reporters.get(reporterName) instanceof MockMetricReporter);
+      assertNotNull("reporter " + reporterName + " not present among " + reporters, reporters.get(taggedName));
+      assertTrue("wrong reporter class: " + reporters.get(taggedName), reporters.get(taggedName) instanceof MockMetricReporter);
     } catch (IllegalArgumentException e) {
       assertTrue(pluginInfo == null || attrs.get("configurable") == null);
-      assertNull(metricManager.getReporters(coreMetricManager.getRegistryName()).get(reporterName));
+      assertNull(metricManager.getReporters(coreMetricManager.getRegistryName()).get(taggedName));
     }
   }
 
@@ -152,20 +154,11 @@ public class SolrCoreMetricManagerTest extends SolrTestCaseJ4 {
   }
 
   @Test
-  public void testRegistryName() throws Exception {
-    String collectionName = "my_collection_";
-    String cloudCoreName = "my_collection__shard1_0_replica0";
-    String simpleCoreName = "collection_1_replica0";
-    String simpleRegistryName = "solr.core." + simpleCoreName;
-    String cloudRegistryName = "solr.core." + cloudCoreName;
-    String nestedRegistryName = "solr.core.my_collection_.shard1_0.replica0";
-    // pass through
-    assertEquals(cloudRegistryName, coreMetricManager.createRegistryName(null, cloudCoreName));
-    assertEquals(simpleRegistryName, coreMetricManager.createRegistryName(null, simpleCoreName));
-    // unknown naming scheme -> pass through
-    assertEquals(simpleRegistryName, coreMetricManager.createRegistryName(collectionName, simpleCoreName));
-    // cloud collection
-    assertEquals(nestedRegistryName, coreMetricManager.createRegistryName(collectionName, cloudCoreName));
-
+  public void testNonCloudRegistryName() throws Exception {
+    String registryName = h.getCore().getCoreMetricManager().getRegistryName();
+    String leaderRegistryName = h.getCore().getCoreMetricManager().getLeaderRegistryName();
+    assertNotNull(registryName);
+    assertEquals("solr.core.collection1", registryName);
+    assertNull(leaderRegistryName);
   }
 }

@@ -17,7 +17,6 @@
 package org.apache.solr.uninverting;
 
 import java.io.IOException;
-import java.io.PrintStream;
 
 import org.apache.lucene.document.NumericDocValuesField;
 import org.apache.lucene.index.BinaryDocValues;
@@ -41,7 +40,6 @@ import org.apache.lucene.util.RamUsageEstimator;
  * <p>Created: May 19, 2004 11:13:14 AM
  *
  * @since   lucene 1.4
- * @see FieldCacheSanityChecker
  *
  * @lucene.internal
  */
@@ -357,7 +355,7 @@ public interface FieldCache {
     private final Object custom;
     private final Accountable value;
 
-    public CacheEntry(Object readerKey, String fieldName,
+    public CacheEntry(IndexReader.CacheKey readerKey, String fieldName,
                       Class<?> cacheType,
                       Object custom,
                       Accountable value) {
@@ -437,21 +435,13 @@ public interface FieldCache {
 
   /**
    * Expert: drops all cache entries associated with this
-   * reader {@link IndexReader#getCoreCacheKey}.  NOTE: this cache key must
+   * reader {@link org.apache.lucene.index.IndexReader.CacheHelper#getKey()}.
+   * NOTE: this cache key must
    * precisely match the reader that the cache entry is
    * keyed on. If you pass a top-level reader, it usually
    * will have no effect as Lucene now caches at the segment
    * reader level.
    */
-  public void purgeByCacheKey(Object coreCacheKey);
+  public void purgeByCacheKey(IndexReader.CacheKey coreCacheKey);
 
-  /**
-   * If non-null, FieldCacheImpl will warn whenever
-   * entries are created that are not sane according to
-   * {@link FieldCacheSanityChecker}.
-   */
-  public void setInfoStream(PrintStream stream);
-
-  /** counterpart of {@link #setInfoStream(PrintStream)} */
-  public PrintStream getInfoStream();
 }

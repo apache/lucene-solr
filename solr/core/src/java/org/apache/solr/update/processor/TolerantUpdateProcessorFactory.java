@@ -99,7 +99,7 @@ public class TolerantUpdateProcessorFactory extends UpdateRequestProcessorFactor
     Object maxErrorsObj = args.get(MAX_ERRORS_PARAM); 
     if (maxErrorsObj != null) {
       try {
-        defaultMaxErrors = Integer.valueOf(maxErrorsObj.toString());
+        defaultMaxErrors = Integer.parseInt(maxErrorsObj.toString());
       } catch (Exception e) {
         throw new SolrException(ErrorCode.SERVER_ERROR, "Unnable to parse maxErrors parameter: " + maxErrorsObj, e);
       }

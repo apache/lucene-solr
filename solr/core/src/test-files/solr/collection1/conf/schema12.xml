@@ -42,37 +42,53 @@
   <fieldType name="tfloat" class="solr.TrieFloatField" precisionStep="8" omitNorms="true" positionIncrementGap="0"/>
   <fieldType name="tlong" class="solr.TrieLongField" precisionStep="8" omitNorms="true" positionIncrementGap="0"/>
   <fieldType name="tdouble" class="solr.TrieDoubleField" precisionStep="8" omitNorms="true" positionIncrementGap="0"/>
-  
+
   <!-- Point Fields -->
   <fieldType name="pint" class="solr.IntPointField" docValues="true"/>
   <fieldType name="plong" class="solr.LongPointField" docValues="true"/>
   <fieldType name="pdouble" class="solr.DoublePointField" docValues="true"/>
   <fieldType name="pfloat" class="solr.FloatPointField" docValues="true"/>
+  <fieldType name="pdate" class="solr.DatePointField" docValues="true"/>
 
   <!-- Field type demonstrating an Analyzer failure -->
   <fieldType name="failtype1" class="solr.TextField">
     <analyzer type="index">
       <tokenizer class="solr.MockTokenizerFactory"/>
-      <filter class="solr.WordDelimiterFilterFactory" generateWordParts="1" generateNumberParts="0" catenateWords="0"
+      <filter class="solr.WordDelimiterGraphFilterFactory" generateWordParts="1" generateNumberParts="0" catenateWords="0"
               catenateNumbers="0" catenateAll="0"/>
       <filter class="solr.LowerCaseFilterFactory"/>
+      <filter class="solr.FlattenGraphFilterFactory"/>
     </analyzer>
   </fieldType>
 
   <!-- Demonstrating ignoreCaseChange -->
   <fieldType name="wdf_nocase" class="solr.TextField">
-    <analyzer>
+    <analyzer type="index">
       <tokenizer class="solr.MockTokenizerFactory"/>
-      <filter class="solr.WordDelimiterFilterFactory" generateWordParts="1" generateNumberParts="0" catenateWords="0"
+      <filter class="solr.WordDelimiterGraphFilterFactory" generateWordParts="1" generateNumberParts="0" catenateWords="0"
+              catenateNumbers="0" catenateAll="0" splitOnCaseChange="0" preserveOriginal="0"/>
+      <filter class="solr.LowerCaseFilterFactory"/>
+      <filter class="solr.FlattenGraphFilterFactory"/>
+    </analyzer>
+    <analyzer type="query">
+      <tokenizer class="solr.MockTokenizerFactory"/>
+      <filter class="solr.WordDelimiterGraphFilterFactory" generateWordParts="1" generateNumberParts="0" catenateWords="0"
               catenateNumbers="0" catenateAll="0" splitOnCaseChange="0" preserveOriginal="0"/>
       <filter class="solr.LowerCaseFilterFactory"/>
     </analyzer>
   </fieldType>
 
   <fieldType name="wdf_preserve" class="solr.TextField">
-    <analyzer>
+    <analyzer type="index">
       <tokenizer class="solr.MockTokenizerFactory"/>
-      <filter class="solr.WordDelimiterFilterFactory" generateWordParts="0" generateNumberParts="1" catenateWords="0"
+      <filter class="solr.WordDelimiterGraphFilterFactory" generateWordParts="0" generateNumberParts="1" catenateWords="0"
+              catenateNumbers="0" catenateAll="0" splitOnCaseChange="0" preserveOriginal="1"/>
+      <filter class="solr.LowerCaseFilterFactory"/>
+      <filter class="solr.FlattenGraphFilterFactory"/>
+    </analyzer>
+    <analyzer type="query">
+      <tokenizer class="solr.MockTokenizerFactory"/>
+      <filter class="solr.WordDelimiterGraphFilterFactory" generateWordParts="0" generateNumberParts="1" catenateWords="0"
               catenateNumbers="0" catenateAll="0" splitOnCaseChange="0" preserveOriginal="1"/>
       <filter class="solr.LowerCaseFilterFactory"/>
     </analyzer>
@@ -98,20 +114,21 @@
               ignoreCase="true"
               words="stopwords.txt"
       />
-      <filter class="solr.WordDelimiterFilterFactory" generateWordParts="1" generateNumberParts="1" catenateWords="1"
+      <filter class="solr.WordDelimiterGraphFilterFactory" generateWordParts="1" generateNumberParts="1" catenateWords="1"
               catenateNumbers="1" catenateAll="0" splitOnCaseChange="1"/>
       <filter class="solr.LowerCaseFilterFactory"/>
       <filter class="solr.KeywordMarkerFilterFactory" protected="protwords.txt"/>
       <filter class="solr.PorterStemFilterFactory"/>
+      <filter class="solr.FlattenGraphFilterFactory"/>
     </analyzer>
     <analyzer type="query">
       <tokenizer class="solr.MockTokenizerFactory"/>
-      <filter class="solr.SynonymFilterFactory" synonyms="synonyms.txt" ignoreCase="true" expand="true"/>
+      <filter class="solr.SynonymGraphFilterFactory" synonyms="synonyms.txt" ignoreCase="true" expand="true"/>
       <filter class="solr.StopFilterFactory"
               ignoreCase="true"
               words="stopwords.txt"
       />
-      <filter class="solr.WordDelimiterFilterFactory" generateWordParts="1" generateNumberParts="1" catenateWords="0"
+      <filter class="solr.WordDelimiterGraphFilterFactory" generateWordParts="1" generateNumberParts="1" catenateWords="0"
               catenateNumbers="0" catenateAll="0" splitOnCaseChange="1"/>
       <filter class="solr.LowerCaseFilterFactory"/>
       <filter class="solr.KeywordMarkerFilterFactory" protected="protwords.txt"/>
@@ -128,20 +145,21 @@
               ignoreCase="true"
               words="stopwords.txt"
       />
-      <filter class="solr.WordDelimiterFilterFactory" generateWordParts="1" generateNumberParts="1" catenateWords="1"
+      <filter class="solr.WordDelimiterGraphFilterFactory" generateWordParts="1" generateNumberParts="1" catenateWords="1"
               catenateNumbers="1" catenateAll="0" splitOnCaseChange="1"/>
       <filter class="solr.LowerCaseFilterFactory"/>
       <filter class="solr.KeywordMarkerFilterFactory" protected="protwords.txt"/>
       <filter class="solr.PorterStemFilterFactory"/>
+      <filter class="solr.FlattenGraphFilterFactory"/>
     </analyzer>
     <analyzer type="query">
       <tokenizer class="solr.MockTokenizerFactory"/>
-      <filter class="solr.SynonymFilterFactory" synonyms="synonyms.txt" ignoreCase="true" expand="true"/>
+      <filter class="solr.SynonymGraphFilterFactory" synonyms="synonyms.txt" ignoreCase="true" expand="true"/>
       <filter class="solr.StopFilterFactory"
               ignoreCase="true"
               words="stopwords.txt"
       />
-      <filter class="solr.WordDelimiterFilterFactory" generateWordParts="1" generateNumberParts="1" catenateWords="0"
+      <filter class="solr.WordDelimiterGraphFilterFactory" generateWordParts="1" generateNumberParts="1" catenateWords="0"
               catenateNumbers="0" catenateAll="0" splitOnCaseChange="1"/>
       <filter class="solr.LowerCaseFilterFactory"/>
       <filter class="solr.KeywordMarkerFilterFactory" protected="protwords.txt"/>
@@ -269,15 +287,16 @@
   <fieldType name="subword" class="solr.TextField" multiValued="true" positionIncrementGap="100">
     <analyzer type="index">
       <tokenizer class="solr.MockTokenizerFactory"/>
-      <filter class="solr.WordDelimiterFilterFactory" generateWordParts="1" generateNumberParts="1" catenateWords="1"
+      <filter class="solr.WordDelimiterGraphFilterFactory" generateWordParts="1" generateNumberParts="1" catenateWords="1"
               catenateNumbers="1" catenateAll="0"/>
       <filter class="solr.LowerCaseFilterFactory"/>
       <filter class="solr.StopFilterFactory"/>
       <filter class="solr.PorterStemFilterFactory"/>
+      <filter class="solr.FlattenGraphFilterFactory"/>
     </analyzer>
     <analyzer type="query">
       <tokenizer class="solr.MockTokenizerFactory"/>
-      <filter class="solr.WordDelimiterFilterFactory" generateWordParts="1" generateNumberParts="1" catenateWords="0"
+      <filter class="solr.WordDelimiterGraphFilterFactory" generateWordParts="1" generateNumberParts="1" catenateWords="0"
               catenateNumbers="0" catenateAll="0"/>
       <filter class="solr.LowerCaseFilterFactory"/>
       <filter class="solr.StopFilterFactory"/>
@@ -289,16 +308,17 @@
     <analyzer type="index">
       <tokenizer class="solr.MockTokenizerFactory"/>
       <filter class="solr.LowerCaseFilterFactory"/>
-      <filter class="solr.WordDelimiterFilterFactory" protected="protwords.txt" splitOnNumerics="0"
+      <filter class="solr.WordDelimiterGraphFilterFactory" protected="protwords.txt" splitOnNumerics="0"
               splitOnCaseChange="0" generateWordParts="1" generateNumberParts="0" catenateWords="0" catenateNumbers="0"
               catenateAll="0"/>
       <filter class="solr.StopFilterFactory"/>
       <filter class="solr.PorterStemFilterFactory"/>
+      <filter class="solr.FlattenGraphFilterFactory"/>
     </analyzer>
     <analyzer type="query">
       <tokenizer class="solr.MockTokenizerFactory"/>
       <filter class="solr.LowerCaseFilterFactory"/>
-      <filter class="solr.WordDelimiterFilterFactory" protected="protwords.txt" splitOnNumerics="0"
+      <filter class="solr.WordDelimiterGraphFilterFactory" protected="protwords.txt" splitOnNumerics="0"
               splitOnCaseChange="0" generateWordParts="1" generateNumberParts="1" catenateWords="1" catenateNumbers="1"
               catenateAll="0"/>
       <filter class="solr.StopFilterFactory"/>
@@ -310,9 +330,10 @@
     <analyzer type="index">
       <tokenizer class="solr.MockTokenizerFactory"/>
       <filter class="solr.LowerCaseFilterFactory"/>
-      <filter class="solr.WordDelimiterFilterFactory" protected="protwords.txt" splitOnNumerics="0"
+      <filter class="solr.WordDelimiterGraphFilterFactory" protected="protwords.txt" splitOnNumerics="0"
               splitOnCaseChange="0" generateWordParts="1" generateNumberParts="1" catenateWords="0" catenateNumbers="0"
               catenateAll="0"/>
+      <filter class="solr.FlattenGraphFilterFactory"/>
     </analyzer>
     <analyzer type="query">
       <tokenizer class="solr.MockTokenizerFactory"/>
@@ -325,13 +346,14 @@
   <fieldType name="skutype1" class="solr.TextField">
     <analyzer type="index">
       <tokenizer class="solr.MockTokenizerFactory"/>
-      <filter class="solr.WordDelimiterFilterFactory" generateWordParts="1" generateNumberParts="1" catenateWords="1"
+      <filter class="solr.WordDelimiterGraphFilterFactory" generateWordParts="1" generateNumberParts="1" catenateWords="1"
               catenateNumbers="1" catenateAll="0"/>
       <filter class="solr.LowerCaseFilterFactory"/>
+      <filter class="solr.FlattenGraphFilterFactory"/>
     </analyzer>
     <analyzer type="query">
       <tokenizer class="solr.MockTokenizerFactory"/>
-      <filter class="solr.WordDelimiterFilterFactory" generateWordParts="0" generateNumberParts="0" catenateWords="1"
+      <filter class="solr.WordDelimiterGraphFilterFactory" generateWordParts="0" generateNumberParts="0" catenateWords="1"
               catenateNumbers="1" catenateAll="0"/>
       <filter class="solr.LowerCaseFilterFactory"/>
     </analyzer>
@@ -341,13 +363,14 @@
   <fieldType name="skutype2" class="solr.TextField">
     <analyzer type="index">
       <tokenizer class="solr.MockTokenizerFactory"/>
-      <filter class="solr.WordDelimiterFilterFactory" generateWordParts="0" generateNumberParts="0" catenateWords="1"
+      <filter class="solr.WordDelimiterGraphFilterFactory" generateWordParts="0" generateNumberParts="0" catenateWords="1"
               catenateNumbers="1" catenateAll="0"/>
       <filter class="solr.LowerCaseFilterFactory"/>
+      <filter class="solr.FlattenGraphFilterFactory"/>
     </analyzer>
     <analyzer type="query">
       <tokenizer class="solr.MockTokenizerFactory"/>
-      <filter class="solr.WordDelimiterFilterFactory" generateWordParts="0" generateNumberParts="0" catenateWords="1"
+      <filter class="solr.WordDelimiterGraphFilterFactory" generateWordParts="0" generateNumberParts="0" catenateWords="1"
               catenateNumbers="1" catenateAll="0"/>
       <filter class="solr.LowerCaseFilterFactory"/>
     </analyzer>
@@ -355,31 +378,37 @@
 
   <!-- less flexible in matching skus, but less chance of a false match -->
   <fieldType name="syn" class="solr.TextField">
-    <analyzer>
+    <analyzer type="index">
       <tokenizer class="solr.MockTokenizerFactory"/>
-      <filter class="solr.SynonymFilterFactory" synonyms="synonyms.txt"/>
+      <filter class="solr.SynonymGraphFilterFactory" synonyms="synonyms.txt"/>
+      <filter class="solr.FlattenGraphFilterFactory"/>
+    </analyzer>
+    <analyzer type="query">
+      <tokenizer class="solr.MockTokenizerFactory"/>
+      <filter class="solr.SynonymGraphFilterFactory" synonyms="synonyms.txt"/>
     </analyzer>
   </fieldType>
 
-  <!-- a text field with the stop filter only on the query analyzer 
+  <!-- a text field with the stop filter only on the query analyzer
    -->
   <fieldType name="text_sw" class="solr.TextField" positionIncrementGap="100">
     <analyzer type="index">
       <tokenizer class="solr.MockTokenizerFactory"/>
       <!-- in this example, we will only use synonyms at query time
-      <filter class="solr.SynonymFilterFactory" synonyms="index_synonyms.txt" ignoreCase="true" expand="false"/>
+      <filter class="solr.SynonymGraphFilterFactory" synonyms="index_synonyms.txt" ignoreCase="true" expand="false"/>
       -->
       <!--<filter class="solr.StopFilterFactory" ignoreCase="true" words="stopwords.txt"/>-->
-      <filter class="solr.WordDelimiterFilterFactory" generateWordParts="1" generateNumberParts="1" catenateWords="1"
+      <filter class="solr.WordDelimiterGraphFilterFactory" generateWordParts="1" generateNumberParts="1" catenateWords="1"
               catenateNumbers="1" catenateAll="0" splitOnCaseChange="0"/>
       <filter class="solr.LowerCaseFilterFactory"/>
       <filter class="solr.PorterStemFilterFactory"/>
+      <filter class="solr.FlattenGraphFilterFactory"/>
     </analyzer>
     <analyzer type="query">
       <tokenizer class="solr.MockTokenizerFactory"/>
-      <filter class="solr.SynonymFilterFactory" synonyms="synonyms.txt" ignoreCase="true" expand="true"/>
+      <filter class="solr.SynonymGraphFilterFactory" synonyms="synonyms.txt" ignoreCase="true" expand="true"/>
       <filter class="solr.StopFilterFactory" ignoreCase="true" words="stopwords.txt"/>
-      <filter class="solr.WordDelimiterFilterFactory" generateWordParts="1" generateNumberParts="1" catenateWords="0"
+      <filter class="solr.WordDelimiterGraphFilterFactory" generateWordParts="1" generateNumberParts="1" catenateWords="0"
               catenateNumbers="0" catenateAll="0" splitOnCaseChange="0"/>
       <filter class="solr.LowerCaseFilterFactory"/>
       <filter class="solr.PorterStemFilterFactory"/>
@@ -391,9 +420,17 @@
        synonyms "better"
     -->
   <fieldType name="dedup" class="solr.TextField">
-    <analyzer>
+    <analyzer type="index">
       <tokenizer class="solr.MockTokenizerFactory"/>
-      <filter class="solr.SynonymFilterFactory"
+      <filter class="solr.SynonymGraphFilterFactory"
+              synonyms="synonyms.txt" expand="true"/>
+      <filter class="solr.PorterStemFilterFactory"/>
+      <filter class="solr.RemoveDuplicatesTokenFilterFactory"/>
+      <filter class="solr.FlattenGraphFilterFactory"/>
+    </analyzer>
+    <analyzer type="query">
+      <tokenizer class="solr.MockTokenizerFactory"/>
+      <filter class="solr.SynonymGraphFilterFactory"
               synonyms="synonyms.txt" expand="true"/>
       <filter class="solr.PorterStemFilterFactory"/>
       <filter class="solr.RemoveDuplicatesTokenFilterFactory"/>
@@ -568,8 +605,8 @@
   <dynamicField name="*_b" type="boolean" indexed="true" stored="true"/>
   <dynamicField name="*_f" type="${solr.tests.floatClass:pfloat}" indexed="true" stored="true"/>
   <dynamicField name="*_d" type="${solr.tests.doubleClass:pdouble}" indexed="true" stored="true"/>
-  <dynamicField name="*_dt" type="date" indexed="true" stored="true"/>
-  
+  <dynamicField name="*_dt" type="${solr.tests.dateClass:pdate}" indexed="true" stored="true"/>
+
   <dynamicField name="*_pi" type="pint" indexed="true" stored="true" docValues="false" multiValued="false"/>
 
   <!-- some trie-coded dynamic fields for faster range queries -->

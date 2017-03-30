@@ -72,8 +72,7 @@ public final class CountFieldValuesUpdateProcessorFactory extends FieldMutatingU
                                             UpdateRequestProcessor next) {
     return mutator(getSelector(), next, src -> {
       SolrInputField result = new SolrInputField(src.getName());
-      result.setValue(src.getValueCount(),
-          src.getBoost());
+      result.setValue(src.getValueCount());
       return result;
     });
   }

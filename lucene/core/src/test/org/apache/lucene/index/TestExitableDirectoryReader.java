@@ -86,6 +86,16 @@ public class TestExitableDirectoryReader extends LuceneTestCase {
     public Fields fields() throws IOException {
       return new TestFields(super.fields());
     }
+
+    @Override
+    public CacheHelper getCoreCacheHelper() {
+      return in.getCoreCacheHelper();
+    }
+
+    @Override
+    public CacheHelper getReaderCacheHelper() {
+      return in.getReaderCacheHelper();
+    }
   }
 
   /**

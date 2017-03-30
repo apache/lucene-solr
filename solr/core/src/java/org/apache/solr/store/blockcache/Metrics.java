@@ -17,9 +17,6 @@
 package org.apache.solr.store.blockcache;
 
 import java.net.URL;
-import java.util.Map;
-import java.util.Map.Entry;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicLong;
 
 import org.apache.solr.common.util.NamedList;
@@ -33,92 +30,78 @@ import org.apache.solr.search.SolrCacheBase;
  * @lucene.experimental
  */
 public class Metrics extends SolrCacheBase implements SolrInfoMBean {
-  
-  public static class MethodCall {
-    public AtomicLong invokes = new AtomicLong();
-    public AtomicLong times = new AtomicLong();
-  }
 
+
+  public AtomicLong blockCacheSize = new AtomicLong(0);
   public AtomicLong blockCacheHit = new AtomicLong(0);
   public AtomicLong blockCacheMiss = new AtomicLong(0);
   public AtomicLong blockCacheEviction = new AtomicLong(0);
-  public AtomicLong blockCacheSize = new AtomicLong(0);
-  public AtomicLong rowReads = new AtomicLong(0);
-  public AtomicLong rowWrites = new AtomicLong(0);
-  public AtomicLong recordReads = new AtomicLong(0);
-  public AtomicLong recordWrites = new AtomicLong(0);
-  public AtomicLong queriesExternal = new AtomicLong(0);
-  public AtomicLong queriesInternal = new AtomicLong(0);
+  public AtomicLong blockCacheStoreFail = new AtomicLong(0);
+
+  // since the last call
+  private AtomicLong blockCacheHit_last = new AtomicLong(0);
+  private AtomicLong blockCacheMiss_last = new AtomicLong(0);
+  private AtomicLong blockCacheEviction_last = new AtomicLong(0);
+  public AtomicLong blockCacheStoreFail_last = new AtomicLong(0);
+
+
+  // These are used by the BufferStore (just a generic cache of byte[]).
+  // TODO: If this (the Store) is a good idea, we should make it more general and use it across more places in Solr.
   public AtomicLong shardBuffercacheAllocate = new AtomicLong(0);
   public AtomicLong shardBuffercacheLost = new AtomicLong(0);
-  public Map<String,MethodCall> methodCalls = new ConcurrentHashMap<>();
-  
-  public AtomicLong tableCount = new AtomicLong(0);
-  public AtomicLong rowCount = new AtomicLong(0);
-  public AtomicLong recordCount = new AtomicLong(0);
-  public AtomicLong indexCount = new AtomicLong(0);
-  public AtomicLong indexMemoryUsage = new AtomicLong(0);
-  public AtomicLong segmentCount = new AtomicLong(0);
+
 
   private long previous = System.nanoTime();
 
-  public static void main(String[] args) throws InterruptedException {
-    Metrics metrics = new Metrics();
-    MethodCall methodCall = new MethodCall();
-    metrics.methodCalls.put("test", methodCall);
-    for (int i = 0; i < 100; i++) {
-      metrics.blockCacheHit.incrementAndGet();
-      metrics.blockCacheMiss.incrementAndGet();
-      methodCall.invokes.incrementAndGet();
-      methodCall.times.addAndGet(56000000);
-      Thread.sleep(500);
-    }
-  }
 
   public NamedList<Number> getStatistics() {
     NamedList<Number> stats = new SimpleOrderedMap<>(21); // room for one method call before growing
-    
+
     long now = System.nanoTime();
-    float seconds = (now - previous) / 1000000000.0f;
-    
-    long hits = blockCacheHit.getAndSet(0);
-    long lookups = hits + blockCacheMiss.getAndSet(0);
-    
-    stats.add("lookups", getPerSecond(lookups, seconds));
-    stats.add("hits", getPerSecond(hits, seconds));
-    stats.add("hitratio", calcHitRatio(lookups, hits));
-    stats.add("evictions", getPerSecond(blockCacheEviction.getAndSet(0), seconds));
+    long delta = Math.max(now - previous, 1);
+    double seconds = delta / 1000000000.0;
+
+    long hits_total = blockCacheHit.get();
+    long hits_delta = hits_total - blockCacheHit_last.get();
+    blockCacheHit_last.set(hits_total);
+
+    long miss_total = blockCacheMiss.get();
+    long miss_delta = miss_total - blockCacheMiss_last.get();
+    blockCacheMiss_last.set(miss_total);
+
+    long evict_total = blockCacheEviction.get();
+    long evict_delta = evict_total - blockCacheEviction_last.get();
+    blockCacheEviction_last.set(evict_total);
+
+    long storeFail_total = blockCacheStoreFail.get();
+    long storeFail_delta = storeFail_total - blockCacheStoreFail_last.get();
+    blockCacheStoreFail_last.set(storeFail_total);
+
+    long lookups_delta = hits_delta + miss_delta;
+    long lookups_total = hits_total + miss_total;
+
     stats.add("size", blockCacheSize.get());
-    stats.add("row.reads", getPerSecond(rowReads.getAndSet(0), seconds));
-    stats.add("row.writes", getPerSecond(rowWrites.getAndSet(0), seconds));
-    stats.add("record.reads", getPerSecond(recordReads.getAndSet(0), seconds));
-    stats.add("record.writes", getPerSecond(recordWrites.getAndSet(0), seconds));
-    stats.add("query.external", getPerSecond(queriesExternal.getAndSet(0), seconds));
-    stats.add("query.internal", getPerSecond(queriesInternal.getAndSet(0), seconds));
+    stats.add("lookups", lookups_total);
+    stats.add("hits", hits_total);
+    stats.add("evictions", evict_total);
+    stats.add("storeFails", storeFail_total);
+    stats.add("hitratio_current", calcHitRatio(lookups_delta, hits_delta));  // hit ratio since the last call
+    stats.add("lookups_persec", getPerSecond(lookups_delta, seconds)); // lookups per second since the last call
+    stats.add("hits_persec", getPerSecond(hits_delta, seconds));       // hits per second since the last call
+    stats.add("evictions_persec", getPerSecond(evict_delta, seconds));  // evictions per second since the last call
+    stats.add("storeFails_persec", getPerSecond(storeFail_delta, seconds));  // evictions per second since the last call
+    stats.add("time_delta", seconds);  // seconds since last call
+
+    // TODO: these aren't really related to the BlockCache
     stats.add("buffercache.allocations", getPerSecond(shardBuffercacheAllocate.getAndSet(0), seconds));
     stats.add("buffercache.lost", getPerSecond(shardBuffercacheLost.getAndSet(0), seconds));
-    for (Entry<String,MethodCall> entry : methodCalls.entrySet()) {
-      String key = entry.getKey();
-      MethodCall value = entry.getValue();
-      long invokes = value.invokes.getAndSet(0);
-      long times = value.times.getAndSet(0);
-      
-      float avgTimes = (times / (float) invokes) / 1000000000.0f;
-      stats.add("methodcalls." + key + ".count", getPerSecond(invokes, seconds));
-      stats.add("methodcalls." + key + ".time", avgTimes);
-    }
-    stats.add("tables", tableCount.get());
-    stats.add("rows", rowCount.get());
-    stats.add("records", recordCount.get());
-    stats.add("index.count", indexCount.get());
-    stats.add("index.memoryusage", indexMemoryUsage.get());
-    stats.add("index.segments", segmentCount.get());
+
     previous = now;
-    
+
     return stats;
   }
 
-  private float getPerSecond(long value, float seconds) {
+  private float getPerSecond(long value, double seconds) {
     return (float) (value / seconds);
   }
 

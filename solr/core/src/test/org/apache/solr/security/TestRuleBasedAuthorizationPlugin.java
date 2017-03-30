@@ -305,6 +305,21 @@ public class TestRuleBasedAuthorizationPlugin extends SolrTestCaseJ4 {
         "handler", new DumpRequestHandler(),
         "params", new MapSolrParams(singletonMap("key", "VAL2")))
         , FORBIDDEN);
+
+    checkRules(makeMap("resource", "/update",
+        "userPrincipal", "solr",
+        "requestType", RequestType.UNKNOWN,
+        "collectionRequests", "go",
+        "handler", new UpdateRequestHandler(),
+        "params", new MapSolrParams(singletonMap("key", "VAL2")))
+        , FORBIDDEN, (Map<String, Object>) Utils.fromJSONString( "{user-role:{" +
+        "      admin:[admin_role]," +
+        "      update:[update_role]," +
+        "      solr:[read_role]}," +
+        "    permissions:[" +
+        "      {name:update, role:[admin_role,update_role]}," +
+        "      {name:read, role:[admin_role,update_role,read_role]}" +
+        "]}"));
   }
 
   public void testEditRules() throws IOException {
@@ -438,5 +453,13 @@ public class TestRuleBasedAuthorizationPlugin extends SolrTestCaseJ4 {
     }
   }
 
+static String testPerms = "{user-role:{" +
+    "      admin:[admin_role]," +
+    "      update:[update_role]," +
+    "      solr:[read_role]}," +
+    "    permissions:[" +
+    "      {name:update,role:[admin_role,update_role]}," +
+    "      {name:read,role:[admin_role,update_role,read_role]" +
+    "]}";
 
 }

@@ -26,12 +26,14 @@ import java.util.Set;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.search.Query;
+import org.apache.lucene.search.postingshighlight.CustomSeparatorBreakIterator;
 import org.apache.lucene.search.postingshighlight.DefaultPassageFormatter;
 import org.apache.lucene.search.postingshighlight.Passage;
 import org.apache.lucene.search.postingshighlight.PassageFormatter;
 import org.apache.lucene.search.postingshighlight.PassageScorer;
 import org.apache.lucene.search.postingshighlight.PostingsHighlighter;
 import org.apache.lucene.search.postingshighlight.WholeBreakIterator;
+import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.HighlightParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;
@@ -239,12 +241,33 @@ public class PostingsSolrHighlighter extends SolrHighlighter implements PluginIn
 
     @Override
     protected BreakIterator getBreakIterator(String field) {
-      String language = params.getFieldParam(field, HighlightParams.BS_LANGUAGE);
-      String country = params.getFieldParam(field, HighlightParams.BS_COUNTRY);
-      String variant = params.getFieldParam(field, HighlightParams.BS_VARIANT);
-      Locale locale = parseLocale(language, country, variant);
       String type = params.getFieldParam(field, HighlightParams.BS_TYPE);
-      return parseBreakIterator(type, locale);
+      if ("WHOLE".equals(type)) {
+        return new WholeBreakIterator();
+      } else if ("SEPARATOR".equals(type)) {
+        char customSep = parseBiSepChar(params.getFieldParam(field, HighlightParams.BS_SEP));
+        return new CustomSeparatorBreakIterator(customSep);
+      } else {
+        String language = params.getFieldParam(field, HighlightParams.BS_LANGUAGE);
+        String country = params.getFieldParam(field, HighlightParams.BS_COUNTRY);
+        String variant = params.getFieldParam(field, HighlightParams.BS_VARIANT);
+        Locale locale = parseLocale(language, country, variant);
+        return parseBreakIterator(type, locale);
+      }
+    }
+
+    /**
+     * parse custom separator char for {@link CustomSeparatorBreakIterator}
+     */
+    protected char parseBiSepChar(String sepChar) {
+      if (sepChar == null) {
+        throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, HighlightParams.BS_SEP + " not passed");
+      }
+      if (sepChar.length() != 1) {
+        throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, HighlightParams.BS_SEP +
+            " must be a single char but got: '" + sepChar + "'");
+      }
+      return sepChar.charAt(0);
     }
 
     @Override
@@ -276,8 +299,6 @@ public class PostingsSolrHighlighter extends SolrHighlighter implements PluginIn
       return BreakIterator.getWordInstance(locale);
     } else if ("CHARACTER".equals(type)) {
       return BreakIterator.getCharacterInstance(locale);
-    } else if ("WHOLE".equals(type)) {
-      return new WholeBreakIterator();
     } else {
       throw new IllegalArgumentException("Unknown " + HighlightParams.BS_TYPE + ": " + type);
     }

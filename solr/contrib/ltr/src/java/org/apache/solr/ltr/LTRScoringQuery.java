@@ -300,7 +300,7 @@ public class LTRScoringQuery extends Query {
     return field;
   }
 
-  public class FeatureInfo {
+  public static class FeatureInfo {
     final private String name;
     private float value;
     private boolean used;

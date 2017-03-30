@@ -247,17 +247,16 @@ public class CollationField extends FieldType {
       return new TermRangeQuery(field.getName(), low, high, minInclusive, maxInclusive);
     }
   }
-  
+
   @Override
-  public void checkSchemaField(SchemaField field) {
-    // no-op
+  protected void checkSupportsDocValues() { // we support DocValues
   }
 
   @Override
-  public List<IndexableField> createFields(SchemaField field, Object value, float boost) {
+  public List<IndexableField> createFields(SchemaField field, Object value) {
     if (field.hasDocValues()) {
       List<IndexableField> fields = new ArrayList<>();
-      fields.add(createField(field, value, boost));
+      fields.add(createField(field, value));
       final BytesRef bytes = getCollationKey(field.getName(), value.toString());
       if (field.multiValued()) {
         fields.add(new SortedSetDocValuesField(field.getName(), bytes));
@@ -266,7 +265,7 @@ public class CollationField extends FieldType {
       }
       return fields;
     } else {
-      return Collections.singletonList(createField(field, value, boost));
+      return Collections.singletonList(createField(field, value));
     }
   }
 

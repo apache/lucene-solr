@@ -18,6 +18,7 @@ package org.apache.solr.rest.schema;
 
 import org.apache.commons.io.FileUtils;
 
+import org.apache.lucene.search.similarities.DFISimilarity;
 import org.apache.lucene.search.similarities.PerFieldSimilarityWrapper;
 import org.apache.lucene.search.similarities.BM25Similarity;
 import org.apache.lucene.misc.SweetSpotSimilarity;
@@ -42,10 +43,12 @@ import java.io.File;
 import java.io.StringReader;
 import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.function.Consumer;
 
 
 public class TestBulkSchemaAPI extends RestTestBase {
@@ -69,7 +72,7 @@ public class TestBulkSchemaAPI extends RestTestBase {
       restTestHarness.setServerProvider(new RESTfulServerProvider() {
         @Override
         public String getBaseURL() {
-          return jetty.getBaseUrl().toString() + "/v2/cores/" + DEFAULT_TEST_CORENAME;
+          return jetty.getBaseUrl().toString() + "/____v2/cores/" + DEFAULT_TEST_CORENAME;
         }
       });
     }
@@ -393,7 +396,7 @@ public class TestBulkSchemaAPI extends RestTestBase {
         "                       'name' : 'myNewTxtField',\n" +
         "                       'class':'solr.TextField',\n" +
         "                       'positionIncrementGap':'100',\n" +
-        "                       'analyzer' : {\n" +
+        "                       'indexAnalyzer' : {\n" +
         "                               'charFilters':[\n" +
         "                                          {\n" +
         "                                           'class':'solr.PatternReplaceCharFilterFactory',\n" +
@@ -404,7 +407,32 @@ public class TestBulkSchemaAPI extends RestTestBase {
         "                               'tokenizer':{'class':'solr.WhitespaceTokenizerFactory'},\n" +
         "                               'filters':[\n" +
         "                                          {\n" +
-        "                                           'class':'solr.WordDelimiterFilterFactory',\n" +
+        "                                           'class':'solr.WordDelimiterGraphFilterFactory',\n" +
+        "                                           'preserveOriginal':'0'\n" +
+        "                                          },\n" +
+        "                                          {\n" +
+        "                                           'class':'solr.StopFilterFactory',\n" +
+        "                                           'words':'stopwords.txt',\n" +
+        "                                           'ignoreCase':'true'\n" +
+        "                                          },\n" +
+        "                                          {'class':'solr.LowerCaseFilterFactory'},\n" +
+        "                                          {'class':'solr.ASCIIFoldingFilterFactory'},\n" +
+        "                                          {'class':'solr.KStemFilterFactory'},\n" +
+        "                                          {'class':'solr.FlattenGraphFilterFactory'}\n" +
+        "                                         ]\n" +
+        "                               },\n" +
+        "                       'queryAnalyzer' : {\n" +
+        "                               'charFilters':[\n" +
+        "                                          {\n" +
+        "                                           'class':'solr.PatternReplaceCharFilterFactory',\n" +
+        "                                           'replacement':'$1$1',\n" +
+        "                                           'pattern':'([a-zA-Z])\\\\\\\\1+'\n" +
+        "                                          }\n" +
+        "                                         ],\n" +
+        "                               'tokenizer':{'class':'solr.WhitespaceTokenizerFactory'},\n" +
+        "                               'filters':[\n" +
+        "                                          {\n" +
+        "                                           'class':'solr.WordDelimiterGraphFilterFactory',\n" +
         "                                           'preserveOriginal':'0'\n" +
         "                                          },\n" +
         "                                          {\n" +
@@ -798,6 +826,68 @@ public class TestBulkSchemaAPI extends RestTestBase {
     assertNull(map.get("errors"));
   }
 
+  public void testSimilarityParser() throws Exception {
+    RestTestHarness harness = restTestHarness;
+
+    final float k1 = 2.25f;
+    final float b = 0.33f;
+
+    String fieldTypeName = "MySimilarityField";
+    String fieldName = "similarityTestField";
+    String payload = "{\n" +
+        "  'add-field-type' : {" +
+        "    'name' : '" + fieldTypeName + "',\n" +
+        "    'class':'solr.TextField',\n" +
+        "    'analyzer' : {'tokenizer':{'class':'solr.WhitespaceTokenizerFactory'}},\n" +
+        "    'similarity' : {'class':'org.apache.solr.search.similarities.BM25SimilarityFactory', 'k1':"+k1+", 'b':"+b+" }\n" +
+        "  },\n"+
+        "  'add-field' : {\n" +
+        "    'name':'" + fieldName + "',\n" +
+        "    'type': 'MySimilarityField',\n" +
+        "    'stored':true,\n" +
+        "    'indexed':true\n" +
+        "  }\n" +
+        "}\n";
+
+    String response = harness.post("/schema?wt=json&indent=on", json(payload));
+
+    Map map = (Map) ObjectBuilder.getVal(new JSONParser(new StringReader(response)));
+    assertNull(response, map.get("errors"));
+
+    Map fields = getObj(harness, fieldName, "fields");
+    assertNotNull("field " + fieldName + " not created", fields);
+    
+    assertFieldSimilarity(fieldName, BM25Similarity.class,
+       sim -> assertEquals("Unexpected k1", k1, sim.getK1(), .001),
+       sim -> assertEquals("Unexpected b", b, sim.getB(), .001));
+
+    final String independenceMeasure = "Saturated";
+    final boolean discountOverlaps = false; 
+    payload = "{\n" +
+        "  'replace-field-type' : {" +
+        "    'name' : '" + fieldTypeName + "',\n" +
+        "    'class':'solr.TextField',\n" +
+        "    'analyzer' : {'tokenizer':{'class':'solr.WhitespaceTokenizerFactory'}},\n" +
+        "    'similarity' : {\n" +
+        "      'class':'org.apache.solr.search.similarities.DFISimilarityFactory',\n" +
+        "      'independenceMeasure':'" + independenceMeasure + "',\n" +
+        "      'discountOverlaps':" + discountOverlaps + "\n" +
+        "     }\n" +
+        "  }\n"+
+        "}\n";
+
+    response = harness.post("/schema?wt=json&indent=on", json(payload));
+
+    map = (Map)ObjectBuilder.getVal(new JSONParser(new StringReader(response)));
+    assertNull(response, map.get("errors"));
+    fields = getObj(harness, fieldName, "fields");
+    assertNotNull("field " + fieldName + " not created", fields);
+
+    assertFieldSimilarity(fieldName, DFISimilarity.class,
+        sim -> assertEquals("Unexpected independenceMeasure", independenceMeasure, sim.getIndependence().toString()),
+        sim -> assertEquals("Unexpected discountedOverlaps", discountOverlaps, sim.getDiscountOverlaps()));
+  }
+
   public static Map getObj(RestTestHarness restHarness, String fld, String key) throws Exception {
     Map map = getRespMap(restHarness);
     List l = (List) ((Map)map.get("schema")).get(key);
@@ -842,8 +932,11 @@ public class TestBulkSchemaAPI extends RestTestBase {
 
   /**
    * whitebox checks the Similarity for the specified field according to {@link SolrCore#getLatestSchema}
+   * 
+   * Executes each of the specified Similarity-accepting validators.
    */
-  private static void assertFieldSimilarity(String fieldname, Class<? extends Similarity> expected) {
+  @SafeVarargs
+  private static <T extends Similarity> void assertFieldSimilarity(String fieldname, Class<T> expected, Consumer<T>... validators) {
     CoreContainer cc = jetty.getCoreContainer();
     try (SolrCore core = cc.getCore("collection1")) {
       SimilarityFactory simfac = core.getLatestSchema().getSimilarityFactory();
@@ -861,7 +954,7 @@ public class TestBulkSchemaAPI extends RestTestBase {
                  mainSim instanceof PerFieldSimilarityWrapper);
       Similarity fieldSim = ((PerFieldSimilarityWrapper)mainSim).get(fieldname);
       assertEquals("wrong sim for field=" + fieldname, expected, fieldSim.getClass());
-      
+      Arrays.asList(validators).forEach(v -> v.accept((T)fieldSim));
     }
   }
 }

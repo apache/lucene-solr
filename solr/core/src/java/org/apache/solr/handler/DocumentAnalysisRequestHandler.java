@@ -84,8 +84,6 @@ public class DocumentAnalysisRequestHandler extends AnalysisRequestHandlerBase {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   private static final XMLErrorLogger xmllog = new XMLErrorLogger(log);
 
-  private static final float DEFAULT_BOOST = 1.0f;
-
   private XMLInputFactory inputFactory;
 
   @Override
@@ -298,7 +296,7 @@ public class DocumentAnalysisRequestHandler extends AnalysisRequestHandlerBase {
             }
             return doc;
           } else if ("field".equals(reader.getLocalName())) {
-            doc.addField(fieldName, text.toString(), DEFAULT_BOOST);
+            doc.addField(fieldName, text.toString());
             if (uniqueKeyField.equals(fieldName)) {
               hasId = true;
             }

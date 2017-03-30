@@ -45,7 +45,6 @@ parent.iml
 /solr/example/example-DIH/solr/mail/lib/*.jar
 
 solr/contrib/dataimporthandler/test-lib/
-solr/contrib/morphlines-core/test-lib/
 
 solr/core/test-lib/
 
