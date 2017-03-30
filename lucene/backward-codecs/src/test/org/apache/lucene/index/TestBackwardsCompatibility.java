@@ -1392,7 +1392,7 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
     }
   }
   
-  public void testUpgradeWithExcplicitUpgrades() throws Exception {
+  public void testUpgradeWithExplicitUpgrades() throws Exception {
     List<String> names = new ArrayList<>(oldNames.length + oldSingleSegmentNames.length);
     names.addAll(Arrays.asList(oldNames));
     names.addAll(Arrays.asList(oldSingleSegmentNames));
@@ -1469,15 +1469,20 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
           args.add("-dir-impl");
           args.add(dirImpl.getName());
         }
+        
+        if(random().nextBoolean()) {
+          args.add("-num-segments");
+          args.add(String.valueOf(Integer.MAX_VALUE));
+          args.add("-include-new-segments");
+        }
+        
         args.add(path);
         
-        IndexUpgrader upgrader = null;
         try {
-          upgrader = IndexUpgrader.parseArgs(args.toArray(new String[0]));
+          IndexUpgrader.doUpgrade(args.toArray(new String[0]));
         } catch (Exception e) {
           throw new AssertionError("unable to parse args: " + args, e);
         }
-        upgrader.upgrade();
         
         Directory upgradedDir = newFSDirectory(dir);
         try {
