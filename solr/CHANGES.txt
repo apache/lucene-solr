@@ -148,6 +148,9 @@ Bug Fixes
 
 * SOLR-10369: bin\solr.cmd delete and healthcheck now works again; fixed continuation chars ^ (Luis Goes via janhoy)
 
+* SOLR-10387: zkTransfer normalizes destination path incorrectly if source is a windows directory 
+  (gopikannan venugopalsamy, Erick Erickson)
+
 Other Changes
 ----------------------
 
