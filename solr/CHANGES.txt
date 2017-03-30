@@ -207,8 +207,6 @@ New Features
 
 * SOLR-10224: Add disk total and disk free metrics. (ab)
 
-* SOLR-10046: Add UninvertDocValuesMergePolicyFactory class. (Keith Laban, Christine Poerschke)
-
 * SOLR-10085: SQL result set fields should be ordered by the field list (Joel Bernstein)
 
 * SOLR-10254: significantTerms Streaming Expression should work in non-SolrCloud mode (Joel Bernstein)
