@@ -59,13 +59,7 @@ public class SearchGroupsResultTransformer implements ShardResultTransformer<Lis
         final SearchGroupsFieldCommandResult fieldCommandResult = fieldCommand.result();
         final Collection<SearchGroup<BytesRef>> searchGroups = fieldCommandResult.getSearchGroups();
         if (searchGroups != null) {
-<<<<<<< HEAD
-          commandResult.add(TOP_GROUPS, serializeSearchGroup(searchGroups, fieldCommand.getGroupSortSpec()));
-||||||| merged common ancestors
-          commandResult.add(TOP_GROUPS, serializeSearchGroup(searchGroups, fieldCommand.getGroupSort()));
-=======
           commandResult.add(TOP_GROUPS, serializeSearchGroup(searchGroups, fieldCommand));
->>>>>>> master
         }
         final Integer groupedCount = fieldCommandResult.getGroupCount();
         if (groupedCount != null) {
@@ -125,15 +119,9 @@ public class SearchGroupsResultTransformer implements ShardResultTransformer<Lis
     return result;
   }
 
-<<<<<<< HEAD
-
-  private NamedList serializeSearchGroup(Collection<SearchGroup<BytesRef>> data, SortSpec groupSortSpec) {
-||||||| merged common ancestors
-  private NamedList serializeSearchGroup(Collection<SearchGroup<BytesRef>> data, Sort groupSort) {
-=======
   private NamedList serializeSearchGroup(Collection<SearchGroup<BytesRef>> data, SearchGroupsFieldCommand command) {
->>>>>>> master
     final NamedList<Object[]> result = new NamedList<>(data.size());
+    final SortSpec groupSortSpec = command.getGroupSortSpec();
     final List<SchemaField> groupSchemaFields = groupSortSpec.getSchemaFields();
     final SortField[] groupSortFields = groupSortSpec.getSort().getSort();
 
@@ -142,18 +130,7 @@ public class SearchGroupsResultTransformer implements ShardResultTransformer<Lis
     for (SearchGroup<BytesRef> searchGroup : data) {
       Object[] convertedSortValues = new Object[searchGroup.sortValues.length];
       for (int i = 0; i < searchGroup.sortValues.length; i++) {
-<<<<<<< HEAD
         convertedSortValues[i] = ShardResultTransformerUtils.marshalSortValue(searchGroup.sortValues[i], groupSchemaFields.get(i));
-||||||| merged common ancestors
-        Object sortValue = searchGroup.sortValues[i];
-        SchemaField field = groupSort.getSort()[i].getField() != null ? searcher.getSchema().getFieldOrNull(groupSort.getSort()[i].getField()) : null;
-        convertedSortValues[i] = ShardResultTransformerUtils.marshalSortValue(sortValue, field);
-=======
-        Object sortValue = searchGroup.sortValues[i];
-        SchemaField field = command.getGroupSort().getSort()[i].getField() != null ?
-            searcher.getSchema().getFieldOrNull(command.getGroupSort().getSort()[i].getField()) : null;
-        convertedSortValues[i] = ShardResultTransformerUtils.marshalSortValue(sortValue, field);
->>>>>>> master
       }
       SchemaField field = searcher.getSchema().getFieldOrNull(command.getKey());
       String groupValue = searchGroup.groupValue != null ? field.getType().indexedToReadable(searchGroup.groupValue, new CharsRefBuilder()).toString() : null;
