@@ -61,7 +61,6 @@ import org.apache.solr.cloud.AbstractDistribZkTestBase;
 import org.apache.solr.cloud.SolrCloudTestCase;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
-import org.apache.solr.handler.AnalyzeEvaluator;
 import org.junit.Assume;
 import org.junit.Before;
 import org.junit.BeforeClass;
