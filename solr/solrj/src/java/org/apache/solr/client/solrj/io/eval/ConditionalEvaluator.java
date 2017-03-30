@@ -24,11 +24,13 @@ import java.util.ArrayList;
 import java.util.List;
 
 import org.apache.solr.client.solrj.io.Tuple;
+import org.apache.solr.client.solrj.io.stream.StreamContext;
 import org.apache.solr.client.solrj.io.stream.expr.StreamExpression;
 import org.apache.solr.client.solrj.io.stream.expr.StreamFactory;
 
 public abstract class ConditionalEvaluator extends ComplexEvaluator {
   protected static final long serialVersionUID = 1L;
+  protected StreamContext streamContext;
   
   public ConditionalEvaluator(StreamExpression expression, StreamFactory factory) throws IOException{
     super(expression, factory);
@@ -41,6 +43,10 @@ public abstract class ConditionalEvaluator extends ComplexEvaluator {
     }
     
     return results;
+  }
+
+  public void setStreamContext(StreamContext streamContext) {
+    this.streamContext = streamContext;
   }
   
   public interface Checker {

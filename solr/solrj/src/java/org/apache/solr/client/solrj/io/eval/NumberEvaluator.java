@@ -26,11 +26,13 @@ import java.util.List;
 import java.util.Locale;
 
 import org.apache.solr.client.solrj.io.Tuple;
+import org.apache.solr.client.solrj.io.stream.StreamContext;
 import org.apache.solr.client.solrj.io.stream.expr.StreamExpression;
 import org.apache.solr.client.solrj.io.stream.expr.StreamFactory;
 
 public abstract class NumberEvaluator extends ComplexEvaluator {
   protected static final long serialVersionUID = 1L;
+  protected StreamContext streamContext;
   
   public NumberEvaluator(StreamExpression expression, StreamFactory factory) throws IOException{
     super(expression, factory);
@@ -38,6 +40,10 @@ public abstract class NumberEvaluator extends ComplexEvaluator {
   
   // restrict result to a Number
   public abstract Number evaluate(Tuple tuple) throws IOException;
+
+  public void setStreamContext(StreamContext context) {
+    this.streamContext = context;
+  }
   
   public List<BigDecimal> evaluateAll(final Tuple tuple) throws IOException {
     // evaluate each and confirm they are all either null or numeric
