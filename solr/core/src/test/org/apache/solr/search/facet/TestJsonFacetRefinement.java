@@ -219,6 +219,17 @@ public class TestJsonFacetRefinement extends SolrTestCaseHS {
             "}"
     );
 
+    // test partial _p under a missing bucket
+    doTestRefine("{top:{type:terms, field:Afield, refine:true, limit:1, missing:true, facet:{x : {type:terms, field:X, limit:1, refine:true} } } }",
+        "{top: {buckets:[], missing:{count:12, x:{buckets:[{val:x2, count:4},{val:x3, count:2}]} }  } }",
+        "{top: {buckets:[], missing:{count:10, x:{buckets:[{val:x1, count:5},{val:x4, count:3}]} }  } }",
+        "=={top: {" +
+            "missing:{x:{_l:[x1]}}" +
+            "    }  " +
+            "}"
+        , null
+    );
+
   }
 
 
@@ -265,6 +276,17 @@ public class TestJsonFacetRefinement extends SolrTestCaseHS {
         , "facets=={foo:555}"
     );
     ****/
+
+    // test refining under the special "missing" bucket of a field facet
+    client.testJQ(params(p, "q", "*:*",
+        "json.facet", "{" +
+            "f:{type:terms, field:missing_s, limit:1, overrequest:0, missing:true, refine:true,  facet:{  cat:{type:terms, field:${cat_s}, limit:1, overrequest:0, refine:true   }  }}" +
+            "}"
+        )
+        , "facets=={ count:8" +
+            ", f:{ buckets:[], missing:{count:8, cat:{buckets:[{val:A,count:4}]}  }  }" +  // just like the previous response, just nested under a field facet
+            "}"
+    );
 
 
     client.testJQ(params(p, "q", "*:*",
@@ -317,7 +339,7 @@ public class TestJsonFacetRefinement extends SolrTestCaseHS {
             "}"
     );
 
-    // test missing buckets (field facet within field facet)
+    // test partial buckets (field facet within field facet)
     client.testJQ(params(p, "q", "*:*",
         "json.facet", "{" +
             "ab:{type:terms, field:${cat_s}, limit:1, overrequest:0, refine:true,  facet:{  xy:{type:terms, field:${xy_s}, limit:1, overrequest:0, refine:true   }  }}" +
@@ -344,6 +366,8 @@ public class TestJsonFacetRefinement extends SolrTestCaseHS {
             ", allf2:{ buckets:[ {count:8, val:all, cat:{buckets:[{val:A,count:4}]} ,qq:{count:8}, ww:2.0 }]  }" +  // make sure qq and ww are excluded (not calculated again in another phase) for _s buckets
             "}"
     );
+
+
 
   }
 
