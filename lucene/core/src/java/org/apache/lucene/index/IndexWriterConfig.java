@@ -466,7 +466,7 @@ public final class IndexWriterConfig extends LiveIndexWriterConfig {
                                                                                      SortField.Type.FLOAT);
 
   /**
-   * Set the {@link Sort} order to use when merging segments.  Note that newly flushed segments will remain unsorted.
+   * Set the {@link Sort} order to use when merging segments.
    */
   public IndexWriterConfig setIndexSort(Sort sort) {
     for(SortField sortField : sort.getSort()) {
