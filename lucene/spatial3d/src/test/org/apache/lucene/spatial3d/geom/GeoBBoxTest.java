@@ -27,7 +27,7 @@ import static org.junit.Assert.assertTrue;
 
 public class GeoBBoxTest {
 
-  protected final double DEGREES_TO_RADIANS = Math.PI / 180.0;
+  protected static final double DEGREES_TO_RADIANS = Math.PI / 180.0;
 
   @Test
   public void testBBoxDegenerate() {

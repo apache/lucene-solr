@@ -504,7 +504,7 @@ public class CurrencyField extends FieldType implements SchemaAware, ResourceLoa
       final FunctionValues currencies = currencyValues.getValues(context, reader);
 
       return new FunctionValues() {
-        private final int MAX_CURRENCIES_TO_CACHE = 256;
+        private static final int MAX_CURRENCIES_TO_CACHE = 256;
         private final int[] fractionDigitCache = new int[MAX_CURRENCIES_TO_CACHE];
         private final String[] currencyOrdToCurrencyCache = new String[MAX_CURRENCIES_TO_CACHE];
         private final double[] exchangeRateCache = new double[MAX_CURRENCIES_TO_CACHE];

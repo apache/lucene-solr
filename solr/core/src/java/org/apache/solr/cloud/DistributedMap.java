@@ -36,7 +36,7 @@ public class DistributedMap {
 
   protected SolrZkClient zookeeper;
 
-  protected final String prefix = "mn-";
+  protected static final String PREFIX = "mn-";
 
   public DistributedMap(SolrZkClient zookeeper, String dir) {
     this.dir = dir;
@@ -56,15 +56,15 @@ public class DistributedMap {
 
 
   public void put(String trackingId, byte[] data) throws KeeperException, InterruptedException {
-    zookeeper.makePath(dir + "/" + prefix + trackingId, data, CreateMode.PERSISTENT, null, false, true);
+    zookeeper.makePath(dir + "/" + PREFIX + trackingId, data, CreateMode.PERSISTENT, null, false, true);
   }
 
   public byte[] get(String trackingId) throws KeeperException, InterruptedException {
-    return zookeeper.getData(dir + "/" + prefix + trackingId, null, null, true);
+    return zookeeper.getData(dir + "/" + PREFIX + trackingId, null, null, true);
   }
 
   public boolean contains(String trackingId) throws KeeperException, InterruptedException {
-    return zookeeper.exists(dir + "/" + prefix + trackingId, true);
+    return zookeeper.exists(dir + "/" + PREFIX + trackingId, true);
   }
 
   public int size() throws KeeperException, InterruptedException {
@@ -80,7 +80,7 @@ public class DistributedMap {
    */
   public boolean remove(String trackingId) throws KeeperException, InterruptedException {
     try {
-      zookeeper.delete(dir + "/" + prefix + trackingId, -1, true);
+      zookeeper.delete(dir + "/" + PREFIX + trackingId, -1, true);
     } catch (KeeperException.NoNodeException e) {
       return false;
     }

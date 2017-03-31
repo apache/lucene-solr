@@ -123,7 +123,7 @@ public class TestSegmentSorting extends SolrCloudTestCase {
   public void testAtomicUpdateOfSegmentSortField() throws Exception {
 
     final CloudSolrClient cloudSolrClient = cluster.getSolrClient();
-    final String updateField = SegmentTerminateEarlyTestState.timestampField;
+    final String updateField = SegmentTerminateEarlyTestState.TIMESTAMP_FIELD;
 
     // sanity check that updateField is in fact a DocValues only field, meaning it
     // would normally be eligable for inplace updates -- if it weren't also used for merge sorting

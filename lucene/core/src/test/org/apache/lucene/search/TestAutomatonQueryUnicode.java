@@ -39,7 +39,7 @@ public class TestAutomatonQueryUnicode extends LuceneTestCase {
   private IndexSearcher searcher;
   private Directory directory;
 
-  private final String FN = "field";
+  private static final String FN = "field";
 
   @Override
   public void setUp() throws Exception {
