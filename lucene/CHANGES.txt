@@ -93,6 +93,9 @@ Other
 * LUCENE-7743: Never call new String(String).
   (Daniel Jelinski via Adrien Grand)
 
+* LUCENE-7761: Fixed comment in ReqExclScorer.
+  (Pablo Pita Leira via Adrien Grand)
+
 ======================= Lucene 6.5.1 =======================
 
 Bug Fixes
