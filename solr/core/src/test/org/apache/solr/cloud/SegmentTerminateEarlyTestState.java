@@ -34,14 +34,14 @@ import org.apache.solr.response.SolrQueryResponse;
 
 class SegmentTerminateEarlyTestState {
 
-  final String keyField = "id";
+  static final String KEY_FIELD = "id";
 
   // for historic reasons, this is refered to as a "timestamp" field, but in actuallity is just an int
   // value representing a number of "minutes" between 0-60.
   // aka: I decided not to rename a million things while refactoring this test
-  public static final String timestampField = "timestamp_i_dvo";
-  public static final String oddField = "odd_l1"; // <dynamicField name="*_l1"  type="long"   indexed="true"  stored="true" multiValued="false"/>
-  public static final String quadField = "quad_l1"; // <dynamicField name="*_l1"  type="long"   indexed="true"  stored="true" multiValued="false"/>
+  public static final String TIMESTAMP_FIELD = "timestamp_i_dvo";
+  public static final String ODD_FIELD = "odd_l1"; // <dynamicField name="*_l1"  type="long"   indexed="true"  stored="true" multiValued="false"/>
+  public static final String QUAD_FIELD = "quad_l1"; // <dynamicField name="*_l1"  type="long"   indexed="true"  stored="true" multiValued="false"/>
 
   final Set<Integer> minTimestampDocKeys = new HashSet<>();
   final Set<Integer> maxTimestampDocKeys = new HashSet<>();
@@ -63,7 +63,7 @@ class SegmentTerminateEarlyTestState {
         ++numDocs;
         final Integer docKey = new Integer(numDocs);
         SolrInputDocument doc = new SolrInputDocument();
-        doc.setField(keyField, ""+docKey);
+        doc.setField(KEY_FIELD, ""+docKey);
         final int MM = rand.nextInt(60); // minutes
         if (minTimestampMM == null || MM <= minTimestampMM.intValue()) {
           if (minTimestampMM != null && MM < minTimestampMM.intValue()) {
@@ -79,9 +79,9 @@ class SegmentTerminateEarlyTestState {
           maxTimestampMM = new Integer(MM);
           maxTimestampDocKeys.add(docKey);
         }
-        doc.setField(timestampField, (Integer)MM);
-        doc.setField(oddField, ""+(numDocs % 2));
-        doc.setField(quadField, ""+(numDocs % 4)+1);
+        doc.setField(TIMESTAMP_FIELD, (Integer)MM);
+        doc.setField(ODD_FIELD, ""+(numDocs % 2));
+        doc.setField(QUAD_FIELD, ""+(numDocs % 4)+1);
         cloudSolrClient.add(doc);
       }
       cloudSolrClient.commit();
@@ -95,9 +95,9 @@ class SegmentTerminateEarlyTestState {
     TestMiniSolrCloudCluster.assertFalse(maxTimestampDocKeys.isEmpty());
     TestMiniSolrCloudCluster.assertTrue("numDocs="+numDocs+" is not even", (numDocs%2)==0);
     final Long oddFieldValue = new Long(maxTimestampDocKeys.iterator().next().intValue()%2);
-    final SolrQuery query = new SolrQuery(oddField+":"+oddFieldValue);
-    query.setSort(timestampField, SolrQuery.ORDER.desc);
-    query.setFields(keyField, oddField, timestampField);
+    final SolrQuery query = new SolrQuery(ODD_FIELD +":"+oddFieldValue);
+    query.setSort(TIMESTAMP_FIELD, SolrQuery.ORDER.desc);
+    query.setFields(KEY_FIELD, ODD_FIELD, TIMESTAMP_FIELD);
     query.setRows(1);
     // CommonParams.SEGMENT_TERMINATE_EARLY parameter intentionally absent
     final QueryResponse rsp = cloudSolrClient.query(query);
@@ -106,9 +106,9 @@ class SegmentTerminateEarlyTestState {
     // check correctness of the first result
     if (rsp.getResults().getNumFound() > 0) {
       final SolrDocument solrDocument0 = rsp.getResults().get(0);
-      TestMiniSolrCloudCluster.assertTrue(keyField+" of ("+solrDocument0+") is not in maxTimestampDocKeys("+maxTimestampDocKeys+")",
-          maxTimestampDocKeys.contains(solrDocument0.getFieldValue(keyField)));
-      TestMiniSolrCloudCluster.assertEquals(oddField, oddFieldValue, solrDocument0.getFieldValue(oddField));
+      TestMiniSolrCloudCluster.assertTrue(KEY_FIELD +" of ("+solrDocument0+") is not in maxTimestampDocKeys("+maxTimestampDocKeys+")",
+          maxTimestampDocKeys.contains(solrDocument0.getFieldValue(KEY_FIELD)));
+      TestMiniSolrCloudCluster.assertEquals(ODD_FIELD, oddFieldValue, solrDocument0.getFieldValue(ODD_FIELD));
     }
     // check segmentTerminatedEarly flag
     TestMiniSolrCloudCluster.assertNull("responseHeader.segmentTerminatedEarly present in "+rsp.getResponseHeader(),
@@ -119,9 +119,9 @@ class SegmentTerminateEarlyTestState {
     TestMiniSolrCloudCluster.assertFalse(maxTimestampDocKeys.isEmpty());
     TestMiniSolrCloudCluster.assertTrue("numDocs="+numDocs+" is not even", (numDocs%2)==0);
     final Long oddFieldValue = new Long(maxTimestampDocKeys.iterator().next().intValue()%2);
-    final SolrQuery query = new SolrQuery(oddField+":"+oddFieldValue);
-    query.setSort(timestampField, SolrQuery.ORDER.desc);
-    query.setFields(keyField, oddField, timestampField);
+    final SolrQuery query = new SolrQuery(ODD_FIELD +":"+oddFieldValue);
+    query.setSort(TIMESTAMP_FIELD, SolrQuery.ORDER.desc);
+    query.setFields(KEY_FIELD, ODD_FIELD, TIMESTAMP_FIELD);
     final int rowsWanted = 1;
     query.setRows(rowsWanted);
     final Boolean shardsInfoWanted = (rand.nextBoolean() ? null : new Boolean(rand.nextBoolean()));
@@ -136,9 +136,9 @@ class SegmentTerminateEarlyTestState {
     // check correctness of the first result
     if (rsp.getResults().getNumFound() > 0) {
       final SolrDocument solrDocument0 = rsp.getResults().get(0);
-      TestMiniSolrCloudCluster.assertTrue(keyField+" of ("+solrDocument0+") is not in maxTimestampDocKeys("+maxTimestampDocKeys+")",
-          maxTimestampDocKeys.contains(solrDocument0.getFieldValue(keyField)));
-      TestMiniSolrCloudCluster.assertEquals(oddField, oddFieldValue, rsp.getResults().get(0).getFieldValue(oddField));
+      TestMiniSolrCloudCluster.assertTrue(KEY_FIELD +" of ("+solrDocument0+") is not in maxTimestampDocKeys("+maxTimestampDocKeys+")",
+          maxTimestampDocKeys.contains(solrDocument0.getFieldValue(KEY_FIELD)));
+      TestMiniSolrCloudCluster.assertEquals(ODD_FIELD, oddFieldValue, rsp.getResults().get(0).getFieldValue(ODD_FIELD));
     }
     // check segmentTerminatedEarly flag
     TestMiniSolrCloudCluster.assertNotNull("responseHeader.segmentTerminatedEarly missing in "+rsp.getResponseHeader(),
@@ -167,9 +167,9 @@ class SegmentTerminateEarlyTestState {
     TestMiniSolrCloudCluster.assertFalse(maxTimestampDocKeys.isEmpty());
     TestMiniSolrCloudCluster.assertTrue("numDocs="+numDocs+" is not even", (numDocs%2)==0);
     final Long oddFieldValue = new Long(maxTimestampDocKeys.iterator().next().intValue()%2);
-    final SolrQuery query = new SolrQuery(oddField+":"+oddFieldValue);
-    query.setSort(timestampField, SolrQuery.ORDER.desc);
-    query.setFields(keyField, oddField, timestampField);
+    final SolrQuery query = new SolrQuery(ODD_FIELD +":"+oddFieldValue);
+    query.setSort(TIMESTAMP_FIELD, SolrQuery.ORDER.desc);
+    query.setFields(KEY_FIELD, ODD_FIELD, TIMESTAMP_FIELD);
     query.setRows(1);
     final Boolean shardsInfoWanted = (rand.nextBoolean() ? null : new Boolean(rand.nextBoolean()));
     if (shardsInfoWanted != null) {
@@ -182,9 +182,9 @@ class SegmentTerminateEarlyTestState {
     // check correctness of the first result
     if (rsp.getResults().getNumFound() > 0) {
       final SolrDocument solrDocument0 = rsp.getResults().get(0);
-      TestMiniSolrCloudCluster.assertTrue(keyField+" of ("+solrDocument0+") is not in maxTimestampDocKeys("+maxTimestampDocKeys+")",
-          maxTimestampDocKeys.contains(solrDocument0.getFieldValue(keyField)));
-      TestMiniSolrCloudCluster.assertEquals(oddField, oddFieldValue, rsp.getResults().get(0).getFieldValue(oddField));
+      TestMiniSolrCloudCluster.assertTrue(KEY_FIELD +" of ("+solrDocument0+") is not in maxTimestampDocKeys("+maxTimestampDocKeys+")",
+          maxTimestampDocKeys.contains(solrDocument0.getFieldValue(KEY_FIELD)));
+      TestMiniSolrCloudCluster.assertEquals(ODD_FIELD, oddFieldValue, rsp.getResults().get(0).getFieldValue(ODD_FIELD));
     }
     // check segmentTerminatedEarly flag
     TestMiniSolrCloudCluster.assertNull("responseHeader.segmentTerminatedEarly present in "+rsp.getResponseHeader(),
@@ -212,13 +212,13 @@ class SegmentTerminateEarlyTestState {
     TestMiniSolrCloudCluster.assertFalse(maxTimestampDocKeys.isEmpty());
     TestMiniSolrCloudCluster.assertTrue("numDocs="+numDocs+" is not even", (numDocs%2)==0);
     final Long oddFieldValue = new Long(maxTimestampDocKeys.iterator().next().intValue()%2);
-    final SolrQuery query = new SolrQuery(oddField+":"+oddFieldValue);
-    query.setSort(timestampField, SolrQuery.ORDER.desc);
-    query.setFields(keyField, oddField, timestampField);
+    final SolrQuery query = new SolrQuery(ODD_FIELD +":"+oddFieldValue);
+    query.setSort(TIMESTAMP_FIELD, SolrQuery.ORDER.desc);
+    query.setFields(KEY_FIELD, ODD_FIELD, TIMESTAMP_FIELD);
     query.setRows(1);
     query.set(CommonParams.SEGMENT_TERMINATE_EARLY, true);
     TestMiniSolrCloudCluster.assertTrue("numDocs="+numDocs+" is not quad-able", (numDocs%4)==0);
-    query.add("group.field", quadField);
+    query.add("group.field", QUAD_FIELD);
     query.set("group", true);
     final QueryResponse rsp = cloudSolrClient.query(query);
     // check correctness of the results count
@@ -226,9 +226,9 @@ class SegmentTerminateEarlyTestState {
     // check correctness of the first result
     if (rsp.getGroupResponse().getValues().get(0).getMatches() > 0) {
       final SolrDocument solrDocument = rsp.getGroupResponse().getValues().get(0).getValues().get(0).getResult().get(0);
-      TestMiniSolrCloudCluster.assertTrue(keyField+" of ("+solrDocument+") is not in maxTimestampDocKeys("+maxTimestampDocKeys+")",
-          maxTimestampDocKeys.contains(solrDocument.getFieldValue(keyField)));
-      TestMiniSolrCloudCluster.assertEquals(oddField, oddFieldValue, solrDocument.getFieldValue(oddField));
+      TestMiniSolrCloudCluster.assertTrue(KEY_FIELD +" of ("+solrDocument+") is not in maxTimestampDocKeys("+maxTimestampDocKeys+")",
+          maxTimestampDocKeys.contains(solrDocument.getFieldValue(KEY_FIELD)));
+      TestMiniSolrCloudCluster.assertEquals(ODD_FIELD, oddFieldValue, solrDocument.getFieldValue(ODD_FIELD));
     }
     // check segmentTerminatedEarly flag
     // at present segmentTerminateEarly cannot be used with grouped queries
@@ -240,9 +240,9 @@ class SegmentTerminateEarlyTestState {
     TestMiniSolrCloudCluster.assertFalse(minTimestampDocKeys.isEmpty());
     TestMiniSolrCloudCluster.assertTrue("numDocs="+numDocs+" is not even", (numDocs%2)==0);
     final Long oddFieldValue = new Long(minTimestampDocKeys.iterator().next().intValue()%2);
-    final SolrQuery query = new SolrQuery(oddField+":"+oddFieldValue);
-    query.setSort(timestampField, SolrQuery.ORDER.asc); // a sort order that is _not_ compatible with the merge sort order
-    query.setFields(keyField, oddField, timestampField);
+    final SolrQuery query = new SolrQuery(ODD_FIELD +":"+oddFieldValue);
+    query.setSort(TIMESTAMP_FIELD, SolrQuery.ORDER.asc); // a sort order that is _not_ compatible with the merge sort order
+    query.setFields(KEY_FIELD, ODD_FIELD, TIMESTAMP_FIELD);
     query.setRows(1);
     query.set(CommonParams.SEGMENT_TERMINATE_EARLY, true);
     final QueryResponse rsp = cloudSolrClient.query(query);
@@ -251,9 +251,9 @@ class SegmentTerminateEarlyTestState {
     // check correctness of the first result
     if (rsp.getResults().getNumFound() > 0) {
       final SolrDocument solrDocument0 = rsp.getResults().get(0);
-      TestMiniSolrCloudCluster.assertTrue(keyField+" of ("+solrDocument0+") is not in minTimestampDocKeys("+minTimestampDocKeys+")",
-          minTimestampDocKeys.contains(solrDocument0.getFieldValue(keyField)));
-      TestMiniSolrCloudCluster.assertEquals(oddField, oddFieldValue, solrDocument0.getFieldValue(oddField));
+      TestMiniSolrCloudCluster.assertTrue(KEY_FIELD +" of ("+solrDocument0+") is not in minTimestampDocKeys("+minTimestampDocKeys+")",
+          minTimestampDocKeys.contains(solrDocument0.getFieldValue(KEY_FIELD)));
+      TestMiniSolrCloudCluster.assertEquals(ODD_FIELD, oddFieldValue, solrDocument0.getFieldValue(ODD_FIELD));
     }
     // check segmentTerminatedEarly flag
     TestMiniSolrCloudCluster.assertNotNull("responseHeader.segmentTerminatedEarly missing in "+rsp.getResponseHeader(),

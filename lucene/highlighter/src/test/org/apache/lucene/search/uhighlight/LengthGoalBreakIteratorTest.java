@@ -39,7 +39,7 @@ public class LengthGoalBreakIteratorTest extends LuceneTestCase {
   // We do a '.' BreakIterator and test varying the length goal.
   //                      0         1
   //                      01234567890123456789
-  final String content = "Aa bb. Cc dd. Ee ff";
+  static final String CONTENT = "Aa bb. Cc dd. Ee ff";
 
   public void testTargetLen() throws IOException {
     // "goal" means target length goal to find closest break
@@ -47,22 +47,22 @@ public class LengthGoalBreakIteratorTest extends LuceneTestCase {
     // at first word:
     Query query = query("aa");
     assertEquals("almost two sent",
-        "<b>Aa</b> bb.", highlightClosestToLen(content, query, 9));
+        "<b>Aa</b> bb.", highlightClosestToLen(CONTENT, query, 9));
     assertEquals( "barely two sent",
-        "<b>Aa</b> bb. Cc dd.", highlightClosestToLen(content, query, 10));
+        "<b>Aa</b> bb. Cc dd.", highlightClosestToLen(CONTENT, query, 10));
     assertEquals("long goal",
-        "<b>Aa</b> bb. Cc dd. Ee ff", highlightClosestToLen(content, query, 17 + random().nextInt(20)));
+        "<b>Aa</b> bb. Cc dd. Ee ff", highlightClosestToLen(CONTENT, query, 17 + random().nextInt(20)));
 
     // at some word not at start of passage
     query = query("dd");
     assertEquals("short goal",
-        " Cc <b>dd</b>.", highlightClosestToLen(content, query, random().nextInt(5)));
+        " Cc <b>dd</b>.", highlightClosestToLen(CONTENT, query, random().nextInt(5)));
     assertEquals("almost two sent",
-        " Cc <b>dd</b>.", highlightClosestToLen(content, query, 10));
+        " Cc <b>dd</b>.", highlightClosestToLen(CONTENT, query, 10));
     assertEquals("barely two sent",
-        " Cc <b>dd</b>. Ee ff", highlightClosestToLen(content, query, 11));
+        " Cc <b>dd</b>. Ee ff", highlightClosestToLen(CONTENT, query, 11));
     assertEquals("long goal",
-        " Cc <b>dd</b>. Ee ff", highlightClosestToLen(content, query, 12 + random().nextInt(20)));
+        " Cc <b>dd</b>. Ee ff", highlightClosestToLen(CONTENT, query, 12 + random().nextInt(20)));
   }
 
   public void testMinLen() throws IOException {
@@ -70,19 +70,19 @@ public class LengthGoalBreakIteratorTest extends LuceneTestCase {
 
     Query query = query("dd");
     assertEquals("almost two sent",
-        " Cc <b>dd</b>.", highlightMinLen(content, query, 6));
+        " Cc <b>dd</b>.", highlightMinLen(CONTENT, query, 6));
     assertEquals("barely two sent",
-        " Cc <b>dd</b>. Ee ff", highlightMinLen(content, query, 7));
+        " Cc <b>dd</b>. Ee ff", highlightMinLen(CONTENT, query, 7));
   }
 
   public void testDefaultSummaryTargetLen() throws IOException {
     Query query = query("zz");
     assertEquals("Aa bb.",
-        highlightClosestToLen(content, query, random().nextInt(10))); // < 10
+        highlightClosestToLen(CONTENT, query, random().nextInt(10))); // < 10
     assertEquals("Aa bb. Cc dd.",
-        highlightClosestToLen(content, query, 10 + 6)); // cusp of adding 3rd sentence
+        highlightClosestToLen(CONTENT, query, 10 + 6)); // cusp of adding 3rd sentence
     assertEquals("Aa bb. Cc dd. Ee ff",
-        highlightClosestToLen(content, query, 17 + random().nextInt(20))); // >= 14
+        highlightClosestToLen(CONTENT, query, 17 + random().nextInt(20))); // >= 14
   }
 
   private Query query(String qStr) {

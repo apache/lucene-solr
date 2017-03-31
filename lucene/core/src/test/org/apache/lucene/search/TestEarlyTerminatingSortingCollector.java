@@ -35,14 +35,6 @@ import org.apache.lucene.index.QueryTimeout;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.SerialMergeScheduler;
 import org.apache.lucene.index.Term;
-import org.apache.lucene.search.IndexSearcher;
-import org.apache.lucene.search.MatchAllDocsQuery;
-import org.apache.lucene.search.Query;
-import org.apache.lucene.search.ScoreDoc;
-import org.apache.lucene.search.Sort;
-import org.apache.lucene.search.SortField;
-import org.apache.lucene.search.TermQuery;
-import org.apache.lucene.search.TopFieldCollector;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.TestUtil;
@@ -57,7 +49,7 @@ public class TestEarlyTerminatingSortingCollector extends LuceneTestCase {
   private final Sort sort = new Sort(new SortField("ndv1", SortField.Type.LONG));
   private RandomIndexWriter iw;
   private IndexReader reader;
-  private final int forceMergeMaxSegmentCount = 5;
+  private static final int FORCE_MERGE_MAX_SEGMENT_COUNT = 5;
 
   private Document randomDocument() {
     final Document doc = new Document();
@@ -107,7 +99,7 @@ public class TestEarlyTerminatingSortingCollector extends LuceneTestCase {
       iw.forceMerge(1);
     }
     else if (random().nextBoolean()) {
-      iw.forceMerge(forceMergeMaxSegmentCount);
+      iw.forceMerge(FORCE_MERGE_MAX_SEGMENT_COUNT);
     }
     reader = iw.getReader();
   }

@@ -1105,7 +1105,7 @@ public class SimplePostTool {
   //
   class PageFetcher {
     Map<String, List<String>> robotsCache;
-    final String DISALLOW = "Disallow:";
+    static final String DISALLOW = "Disallow:";
     
     public PageFetcher() {
       robotsCache = new HashMap<>();

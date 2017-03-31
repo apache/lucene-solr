@@ -80,6 +80,9 @@ Other
 
 * LUCENE-7681: MemoryIndex uses new DocValues API (Alan Woodward)
 
+* LUCENE-7753: Make fields static when possible.
+  (Daniel Jelinski via Adrien Grand)
+
 ======================= Lucene 6.6.0 =======================
 
 Other
