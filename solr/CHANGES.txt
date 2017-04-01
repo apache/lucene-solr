@@ -180,6 +180,8 @@ Other Changes
 
 * SOLR-10399: Generalize some internal facet logic to simplify points/non-points field handling (Adrien Grand, hossman)
 
+* SOLR-7383: New DataImportHandler 'atom' example, replacing broken 'rss' example (Alexandre Rafalovitch)
+
 ==================  6.5.0 ==================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release.
