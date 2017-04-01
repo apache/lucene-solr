@@ -67,7 +67,7 @@ Solr includes a few examples to help you get started. To run a specific example,
   bin/solr -e <EXAMPLE> where <EXAMPLE> is one of:
 
     cloud        : SolrCloud example
-    dih          : Data Import Handler (rdbms, mail, rss, tika)
+    dih          : Data Import Handler (rdbms, mail, atom, tika)
     schemaless   : Schema-less example (schema is inferred from data during indexing)
     techproducts : Kitchen sink example providing comprehensive examples of Solr features
 

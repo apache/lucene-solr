@@ -1,0 +1,61 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!--
+ Licensed to the Apache Software Foundation (ASF) under one or more
+ contributor license agreements.  See the NOTICE file distributed with
+ this work for additional information regarding copyright ownership.
+ The ASF licenses this file to You under the Apache License, Version 2.0
+ (the "License"); you may not use this file except in compliance with
+ the License.  You may obtain a copy of the License at
+
+     http://www.apache.org/licenses/LICENSE-2.0
+
+ Unless required by applicable law or agreed to in writing, software
+ distributed under the License is distributed on an "AS IS" BASIS,
+ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ See the License for the specific language governing permissions and
+ limitations under the License.
+-->
+
+<!-- 
+ This is a DEMO configuration, highlighting elements 
+ specifically needed to get this example running
+ such as libraries and request handler specifics.
+
+ It uses defaults or does not define most of production-level settings
+ such as various caches or auto-commit policies.
+
+ See Solr Reference Guide and other examples for 
+ more details on a well configured solrconfig.xml
+ https://cwiki.apache.org/confluence/display/solr/The+Well-Configured+Solr+Instance
+-->
+<config>
+
+  <!-- Controls what version of Lucene various components of Solr
+    adhere to.  Generally, you want to use the latest version to
+    get all bug fixes and improvements. It is highly recommended
+    that you fully re-index after changing this setting as it can
+    affect both how text is indexed and queried.
+  -->
+  <luceneMatchVersion>6.6.0</luceneMatchVersion>
+
+  <lib dir="${solr.install.dir:../../../..}/dist/" regex="solr-dataimporthandler-.*\.jar"/>
+
+  <requestHandler name="/select" class="solr.SearchHandler">
+    <lst name="defaults">
+      <str name="echoParams">explicit</str>
+      <str name="df">text</str>
+    </lst>
+  </requestHandler>
+
+  <requestHandler name="/dataimport" class="solr.DataImportHandler">
+    <lst name="defaults">
+      <str name="config">atom-data-config.xml</str>
+      <str name="processor">trim_text</str>
+    </lst>
+  </requestHandler>
+
+  <updateProcessor class="solr.processor.TrimFieldUpdateProcessorFactory" name="trim_text">
+    <str name="typeName">text_en_splitting</str>
+  </updateProcessor>
+
+</config>
