@@ -178,6 +178,8 @@ Other Changes
 
 * SOLR-10338: Configure SecureRandom non blocking for tests. (Mihaly Toth, hossman, Ishan Chattopadhyaya, via Mark Miller)
 
+* SOLR-10399: Generalize some internal facet logic to simplify points/non-points field handling (Adrien Grand, hossman)
+
 ==================  6.5.0 ==================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release.
