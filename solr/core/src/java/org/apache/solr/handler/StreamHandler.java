@@ -67,6 +67,7 @@ import org.apache.solr.client.solrj.io.eval.SineEvaluator;
 import org.apache.solr.client.solrj.io.eval.SquareRootEvaluator;
 import org.apache.solr.client.solrj.io.eval.SubtractEvaluator;
 import org.apache.solr.client.solrj.io.eval.TangentEvaluator;
+import org.apache.solr.client.solrj.io.eval.UuidEvaluator;
 import org.apache.solr.client.solrj.io.graph.GatherNodesStream;
 import org.apache.solr.client.solrj.io.graph.ShortestPathStream;
 import org.apache.solr.client.solrj.io.ops.ConcatOperation;
@@ -277,6 +278,7 @@ public class StreamHandler extends RequestHandlerBase implements SolrCoreAware, 
       .withFunctionName("sqrt", SquareRootEvaluator.class)
       .withFunctionName("cbrt", CubedRootEvaluator.class)
       .withFunctionName("coalesce", CoalesceEvaluator.class)
+      .withFunctionName("uuid", UuidEvaluator.class)
       
       // Conditional Stream Evaluators
       .withFunctionName("if", IfThenElseEvaluator.class)
