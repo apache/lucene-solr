@@ -55,6 +55,8 @@ New Features
 
 * SOLR-9993: Add support for ExpandComponent with PointFields. (Cao Manh Dat)
 
+* SOLR-10356: Adds basic math Streaming Evaluators (Dennis Gove)
+
 Optimizations
 ----------------------
 

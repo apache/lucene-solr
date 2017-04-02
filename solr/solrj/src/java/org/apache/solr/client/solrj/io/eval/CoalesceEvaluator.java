@@ -20,40 +20,33 @@
 package org.apache.solr.client.solrj.io.eval;
 
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.List;
+import java.util.Locale;
 
 import org.apache.solr.client.solrj.io.Tuple;
 import org.apache.solr.client.solrj.io.stream.expr.StreamExpression;
 import org.apache.solr.client.solrj.io.stream.expr.StreamFactory;
 
-public abstract class ConditionalEvaluator extends ComplexEvaluator {
+public class CoalesceEvaluator extends ComplexEvaluator {
   protected static final long serialVersionUID = 1L;
   
-  public ConditionalEvaluator(StreamExpression expression, StreamFactory factory) throws IOException{
+  public CoalesceEvaluator(StreamExpression expression, StreamFactory factory) throws IOException{
     super(expression, factory);
-  }
-  
-  public List<Object> evaluateAll(final Tuple tuple) throws IOException {
-    List<Object> results = new ArrayList<Object>();
-    for(StreamEvaluator subEvaluator : subEvaluators){
-      results.add(subEvaluator.evaluate(tuple));
-    }
     
-    return results;
+    if(subEvaluators.size() < 1){
+      throw new IOException(String.format(Locale.ROOT,"Invalid expression %s - expecting at least one value but found %d",expression,subEvaluators.size()));
+    }
   }
 
-  public interface Checker {
-    default boolean isNullAllowed(){
-      return false;
-    }
-    boolean isCorrectType(Object value);
-    boolean test(Object left, Object right);
-  }
+  @Override
+  public Object evaluate(Tuple tuple) throws IOException {
     
-  public interface BooleanChecker extends Checker {
-    default boolean isCorrectType(Object value){
-      return value instanceof Boolean;
+    for(StreamEvaluator evaluator : subEvaluators){
+      Object result = evaluator.evaluate(tuple);
+      if(null != result){
+        return result;
+      }
     }
-  }  
+        
+    return null;    
+  }
 }
