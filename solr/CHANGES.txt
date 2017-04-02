@@ -57,6 +57,8 @@ New Features
 
 * SOLR-10356: Adds basic math Streaming Evaluators (Dennis Gove)
 
+* SOLR-10393: Adds UUID Streaming Evaluator (Dennis Gove)
+
 Optimizations
 ----------------------
 
