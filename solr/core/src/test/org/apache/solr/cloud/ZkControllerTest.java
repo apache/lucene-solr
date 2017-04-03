@@ -38,6 +38,8 @@ import org.apache.solr.common.util.Utils;
 import org.apache.solr.core.CloudConfig;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.CoreDescriptor;
+import org.apache.solr.core.SolrXmlConfig;
+import org.apache.solr.core.TransientSolrCoreCache;
 import org.apache.solr.handler.admin.CoreAdminHandler;
 import org.apache.solr.handler.component.HttpShardHandlerFactory;
 import org.apache.solr.update.UpdateShardHandler;
@@ -338,7 +340,7 @@ public class ZkControllerTest extends SolrTestCaseJ4 {
     UpdateShardHandler updateShardHandler;
 
     public MockCoreContainer() {
-      super((Object)null);
+      super(SolrXmlConfig.fromString(null, "<solr/>"));
       this.shardHandlerFactory = new HttpShardHandlerFactory();
       this.coreAdminHandler = new CoreAdminHandler();
     }
@@ -356,5 +358,11 @@ public class ZkControllerTest extends SolrTestCaseJ4 {
       super.shutdown();
       updateShardHandler.close();
     }
+
+    @Override
+    public TransientSolrCoreCache getTransientCacheHandler() {
+      return transientSolrCoreCache;
+    }
+
   }
 }

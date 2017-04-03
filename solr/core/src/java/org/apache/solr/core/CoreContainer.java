@@ -126,6 +126,7 @@ public class CoreContainer {
 
   protected CoreAdminHandler coreAdminHandler = null;
   protected CollectionsHandler collectionsHandler = null;
+  protected TransientSolrCoreCache transientSolrCoreCache = null;
   private InfoHandler infoHandler;
   protected ConfigSetsHandler configSetsHandler = null;
 
@@ -140,6 +141,8 @@ public class CoreContainer {
 
   private UpdateShardHandler updateShardHandler;
 
+  private TransientSolrCoreCacheFactory transientCoreCache;
+  
   private ExecutorService coreContainerWorkExecutor = ExecutorUtil.newMDCAwareCachedThreadPool(
       new DefaultSolrThreadFactory("coreContainerWorkExecutor") );
 
@@ -468,7 +471,7 @@ public class CoreContainer {
     updateShardHandler = new UpdateShardHandler(cfg.getUpdateShardHandlerConfig());
     updateShardHandler.initializeMetrics(metricManager, SolrInfoMBean.Group.node.toString(), "updateShardHandler");
 
-    solrCores.allocateLazyCores(cfg.getTransientCacheSize(), loader);
+    transientCoreCache = TransientSolrCoreCacheFactory.newInstance(loader, this);
 
     logging = LogWatcher.newRegisteredLogWatcher(cfg.getLogWatcherConfig(), loader);
 
@@ -509,9 +512,9 @@ public class CoreContainer {
     String registryName = SolrMetricManager.getRegistryName(SolrInfoMBean.Group.node);
     metricManager.registerGauge(registryName, () -> solrCores.getCores().size(),
         true, "loaded", SolrInfoMBean.Category.CONTAINER.toString(), "cores");
-    metricManager.registerGauge(registryName, () -> solrCores.getCoreNames().size() - solrCores.getCores().size(),
+    metricManager.registerGauge(registryName, () -> solrCores.getLoadedCoreNames().size() - solrCores.getCores().size(),
         true, "lazy",SolrInfoMBean.Category.CONTAINER.toString(), "cores");
-    metricManager.registerGauge(registryName, () -> solrCores.getAllCoreNames().size() - solrCores.getCoreNames().size(),
+    metricManager.registerGauge(registryName, () -> solrCores.getAllCoreNames().size() - solrCores.getLoadedCoreNames().size(),
         true, "unloaded",SolrInfoMBean.Category.CONTAINER.toString(), "cores");
     metricManager.registerGauge(registryName, () -> cfg.getCoreRootDirectory().toFile().getTotalSpace(),
         true, "totalSpace", SolrInfoMBean.Category.CONTAINER.toString(), "fs");
@@ -599,6 +602,16 @@ public class CoreContainer {
     }
   }
 
+  public TransientSolrCoreCache getTransientCacheHandler() {
+
+    if (transientCoreCache == null) {
+      log.error("No transient handler has been defined. Check solr.xml to see if an attempt to provide a custom " +
+          "TransientSolrCoreCacheFactory was done incorrectly since the default should have been used otherwise.");
+      return null;
+    }
+    return transientCoreCache.getTransientSolrCoreCache();
+  }
+  
   public void securityNodeChanged() {
     log.info("Security node changed, reloading security.json");
     reloadSecurityProperties();
@@ -1044,10 +1057,10 @@ public class CoreContainer {
   }
 
   /**
-   * @return a Collection of the names that cores are mapped to
+   * @return a Collection of the names that loaded cores are mapped to
    */
   public Collection<String> getCoreNames() {
-    return solrCores.getCoreNames();
+    return solrCores.getLoadedCoreNames();
   }
 
   /** This method is currently experimental.
@@ -1060,6 +1073,8 @@ public class CoreContainer {
   /**
    * get a list of all the cores that are currently loaded
    * @return a list of al lthe available core names in either permanent or transient core lists.
+   * 
+   * Note: this implies that the core is loaded
    */
   public Collection<String> getAllCoreNames() {
     return solrCores.getAllCoreNames();
