@@ -62,6 +62,7 @@ import org.apache.commons.cli.Options;
 import org.apache.commons.cli.ParseException;
 import org.apache.commons.exec.DefaultExecuteResultHandler;
 import org.apache.commons.exec.DefaultExecutor;
+import org.apache.commons.exec.ExecuteException;
 import org.apache.commons.exec.Executor;
 import org.apache.commons.exec.OS;
 import org.apache.commons.exec.environment.EnvironmentUtils;
@@ -2928,18 +2929,25 @@ public class SolrCLI {
             }
           }
         }
-        executor.execute(org.apache.commons.exec.CommandLine.parse(startCmd), startEnv, new DefaultExecuteResultHandler());
+        DefaultExecuteResultHandler handler = new DefaultExecuteResultHandler();
+        executor.execute(org.apache.commons.exec.CommandLine.parse(startCmd), startEnv, handler);
 
-        // brief wait before proceeding on Windows
+        // wait for execution.
         try {
-          Thread.sleep(3000);
+          handler.waitFor();
         } catch (InterruptedException ie) {
           // safe to ignore ...
           Thread.interrupted();
         }
-
+        if (handler.getExitValue() != 0) {
+          throw new Exception("Failed to start Solr using command: "+startCmd+" Exception : "+handler.getException());
+        }
       } else {
-        code = executor.execute(org.apache.commons.exec.CommandLine.parse(startCmd));
+        try {
+          code = executor.execute(org.apache.commons.exec.CommandLine.parse(startCmd));
+        } catch(ExecuteException e){
+          throw new Exception("Failed to start Solr using command: "+startCmd+" Exception : "+ e);
+        }
       }
       if (code != 0)
         throw new Exception("Failed to start Solr using command: "+startCmd);
