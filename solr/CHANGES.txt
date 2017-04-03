@@ -190,6 +190,8 @@ Other Changes
 
 * SOLR-8906: Make transient core cache pluggable (Erick Erickson)
 
+* SOLR-9745: print errors from solr.cmd (Gopikannan Venugopalsamy via Mikhail Khludnev)
+
 ==================  6.5.1 ==================
 
 Bug Fixes
