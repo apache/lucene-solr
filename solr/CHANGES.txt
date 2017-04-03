@@ -188,6 +188,8 @@ Other Changes
 
 * SOLR-9601: Redone DataImportHandler 'tika' example, removing all unused and irrelevant definitions (Alexandre Rafalovitch)
 
+* SOLR-8906: Make transient core cache pluggable (Erick Erickson)
+
 ==================  6.5.1 ==================
 
 Bug Fixes
