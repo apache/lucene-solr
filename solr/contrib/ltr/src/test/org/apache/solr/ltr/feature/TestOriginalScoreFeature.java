@@ -20,6 +20,7 @@ import java.util.ArrayList;
 import java.util.Map;
 
 import org.apache.solr.client.solrj.SolrQuery;
+import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.ltr.FeatureLoggerTestUtils;
 import org.apache.solr.ltr.TestRerankBase;
 import org.apache.solr.ltr.model.LinearModel;
@@ -106,7 +107,10 @@ public class TestOriginalScoreFeature extends TestRerankBase {
     final String doc3Score = ((Double) ((Map<String,Object>) ((ArrayList<Object>) ((Map<String,Object>) jsonParse
         .get("response")).get("docs")).get(3)).get("score")).toString();
 
-    final boolean debugQuery = false;
+    final boolean debugQuery = random().nextBoolean();
+    if (debugQuery) {
+      query.add(CommonParams.DEBUG_QUERY, "true");
+    }
 
     query.remove("fl");
     query.add("fl", "*, score, fv:[fv]");
@@ -142,7 +146,10 @@ public class TestOriginalScoreFeature extends TestRerankBase {
     }
 
     assertJQ("/query" + query.toQueryString(), "/response/docs/["+docIdx+"]/fv=='"+fv+"'");
-    // TODO: use debugQuery
+    if (debugQuery) {
+      assertJQ("/query" + query.toQueryString(),
+          "/debug/explain/"+docId+"=='\n"+origScoreFeatureValue+" = LinearModel(name="+modelName+",featureWeights=["+origScoreFeatureName+"=1.0]) model applied to features, sum of:\n  "+origScoreFeatureValue+" = prod of:\n    1.0 = weight on feature\n    "+origScoreFeatureValue+" = OriginalScoreFeature [query:"+query.getQuery()+"]\n'");
+    }
   }
 
 }
