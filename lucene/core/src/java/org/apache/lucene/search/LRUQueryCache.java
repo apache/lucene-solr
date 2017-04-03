@@ -716,19 +716,19 @@ public class LRUQueryCache implements QueryCache, Accountable {
     }
 
     @Override
-    public Scorer scorer(LeafReaderContext context) throws IOException {
+    public ScorerSupplier scorerSupplier(LeafReaderContext context) throws IOException {
       if (used.compareAndSet(false, true)) {
         policy.onUse(getQuery());
       }
       // Short-circuit: Check whether this segment is eligible for caching
       // before we take a lock because of #get
       if (shouldCache(context) == false) {
-        return in.scorer(context);
+        return in.scorerSupplier(context);
       }
 
       // If the lock is already busy, prefer using the uncached version than waiting
       if (lock.tryLock() == false) {
-        return in.scorer(context);
+        return in.scorerSupplier(context);
       }
 
       DocIdSet docIdSet;
@@ -743,7 +743,7 @@ public class LRUQueryCache implements QueryCache, Accountable {
           docIdSet = cache(context);
           putIfAbsent(in.getQuery(), context, docIdSet);
         } else {
-          return in.scorer(context);
+          return in.scorerSupplier(context);
         }
       }
 
@@ -756,7 +756,27 @@ public class LRUQueryCache implements QueryCache, Accountable {
         return null;
       }
 
-      return new ConstantScoreScorer(this, 0f, disi);
+      return new ScorerSupplier() {
+        @Override
+        public Scorer get(boolean randomAccess) throws IOException {
+          return new ConstantScoreScorer(CachingWrapperWeight.this, 0f, disi);
+        }
+        
+        @Override
+        public long cost() {
+          return disi.cost();
+        }
+      };
+
+    }
+
+    @Override
+    public Scorer scorer(LeafReaderContext context) throws IOException {
+      ScorerSupplier scorerSupplier = scorerSupplier(context);
+      if (scorerSupplier == null) {
+        return null;
+      }
+      return scorerSupplier.get(false);
     }
 
     @Override
