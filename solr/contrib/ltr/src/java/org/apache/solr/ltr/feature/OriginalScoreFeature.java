@@ -104,7 +104,7 @@ public class OriginalScoreFeature extends Feature {
         // was already scored in step 1
         // we shouldn't need to calc original score again.
         final DocInfo docInfo = getDocInfo();
-        return (docInfo.hasOriginalDocScore() ? docInfo.getOriginalDocScore() : originalScorer.score());
+        return (docInfo != null && docInfo.hasOriginalDocScore() ? docInfo.getOriginalDocScore() : originalScorer.score());
       }
 
       @Override
