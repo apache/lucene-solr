@@ -106,6 +106,9 @@ Bug Fixes
 * LUCENE-7755: Fixed join queries to not reference IndexReaders, as it could
   cause leaks if they are cached. (Adrien Grand)
 
+* LUCENE-7749: Made LRUQueryCache delegate the scoreSupplier method.
+  (Martin Amirault via Adrien Grand)
+
 Other
 
 * LUCENE-7763: Remove outdated comment in IndexWriterConfig.setIndexSort javadocs.
