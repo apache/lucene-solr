@@ -29,14 +29,19 @@ import org.apache.solr.client.solrj.SolrResponse;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.cloud.SolrCloudTestCase;
+import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.ContentStream;
 import org.apache.solr.common.util.ContentStreamBase;
 import org.apache.solr.common.util.NamedList;
+import org.apache.solr.common.util.Utils;
+import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
+
+import static org.apache.solr.common.cloud.ZkStateReader.SOLR_AUTOSCALING_CONF_PATH;
 
 /**
  * Test for AutoScalingHandler
@@ -47,6 +52,12 @@ public class AutoScalingHandlerTest extends SolrCloudTestCase {
     configureCluster(2)
         .addConfig("conf", configset("cloud-minimal"))
         .configure();
+  }
+
+  @Before
+  public void beforeTest() throws Exception {
+    // clear any persisted auto scaling configuration
+    zkClient().setData(SOLR_AUTOSCALING_CONF_PATH, Utils.toJSON(new ZkNodeProps()), true);
   }
 
   @Test
@@ -88,7 +99,7 @@ public class AutoScalingHandlerTest extends SolrCloudTestCase {
     response = solrClient.request(req);
     assertEquals(response.get("result").toString(), "success");
 
-    byte[] data = zkClient().getData(ZkStateReader.SOLR_AUTOSCALING_CONF_PATH, null, null, true);
+    byte[] data = zkClient().getData(SOLR_AUTOSCALING_CONF_PATH, null, null, true);
     ZkNodeProps loaded = ZkNodeProps.load(data);
     Map<String, Object> triggers = (Map<String, Object>) loaded.get("triggers");
     assertNotNull(triggers);
@@ -110,7 +121,7 @@ public class AutoScalingHandlerTest extends SolrCloudTestCase {
     req = new AutoScalingRequest(SolrRequest.METHOD.POST, path, suspendTriggerCommand);
     response = solrClient.request(req);
     assertEquals(response.get("result").toString(), "success");
-    data = zkClient().getData(ZkStateReader.SOLR_AUTOSCALING_CONF_PATH, null, null, true);
+    data = zkClient().getData(SOLR_AUTOSCALING_CONF_PATH, null, null, true);
     loaded = ZkNodeProps.load(data);
     triggers = (Map<String, Object>) loaded.get("triggers");
     assertNotNull(triggers);
@@ -130,7 +141,7 @@ public class AutoScalingHandlerTest extends SolrCloudTestCase {
     req = new AutoScalingRequest(SolrRequest.METHOD.POST, path, resumeTriggerCommand);
     response = solrClient.request(req);
     assertEquals(response.get("result").toString(), "success");
-    data = zkClient().getData(ZkStateReader.SOLR_AUTOSCALING_CONF_PATH, null, null, true);
+    data = zkClient().getData(SOLR_AUTOSCALING_CONF_PATH, null, null, true);
     loaded = ZkNodeProps.load(data);
     triggers = (Map<String, Object>) loaded.get("triggers");
     assertNotNull(triggers);
@@ -150,7 +161,7 @@ public class AutoScalingHandlerTest extends SolrCloudTestCase {
     req = new AutoScalingRequest(SolrRequest.METHOD.POST, path, resumeTriggerCommand);
     response = solrClient.request(req);
     assertEquals(response.get("result").toString(), "success");
-    data = zkClient().getData(ZkStateReader.SOLR_AUTOSCALING_CONF_PATH, null, null, true);
+    data = zkClient().getData(SOLR_AUTOSCALING_CONF_PATH, null, null, true);
     loaded = ZkNodeProps.load(data);
     triggers = (Map<String, Object>) loaded.get("triggers");
     assertNotNull(triggers);
@@ -171,7 +182,7 @@ public class AutoScalingHandlerTest extends SolrCloudTestCase {
     req = new AutoScalingRequest(SolrRequest.METHOD.POST, path, suspendTriggerCommand);
     response = solrClient.request(req);
     assertEquals(response.get("result").toString(), "success");
-    data = zkClient().getData(ZkStateReader.SOLR_AUTOSCALING_CONF_PATH, null, null, true);
+    data = zkClient().getData(SOLR_AUTOSCALING_CONF_PATH, null, null, true);
     loaded = ZkNodeProps.load(data);
     triggers = (Map<String, Object>) loaded.get("triggers");
     assertNotNull(triggers);
@@ -212,7 +223,7 @@ public class AutoScalingHandlerTest extends SolrCloudTestCase {
     NamedList<Object> response = solrClient.request(req);
     assertEquals(response.get("result").toString(), "success");
 
-    byte[] data = zkClient().getData(ZkStateReader.SOLR_AUTOSCALING_CONF_PATH, null, null, true);
+    byte[] data = zkClient().getData(SOLR_AUTOSCALING_CONF_PATH, null, null, true);
     ZkNodeProps loaded = ZkNodeProps.load(data);
     Map<String, Object> triggers = (Map<String, Object>) loaded.get("triggers");
     assertNotNull(triggers);
@@ -236,7 +247,7 @@ public class AutoScalingHandlerTest extends SolrCloudTestCase {
     req = new AutoScalingRequest(SolrRequest.METHOD.POST, path, setTriggerCommand);
     response = solrClient.request(req);
     assertEquals(response.get("result").toString(), "success");
-    data = zkClient().getData(ZkStateReader.SOLR_AUTOSCALING_CONF_PATH, null, null, true);
+    data = zkClient().getData(SOLR_AUTOSCALING_CONF_PATH, null, null, true);
     loaded = ZkNodeProps.load(data);
     triggers = (Map<String, Object>) loaded.get("triggers");
     assertNotNull(triggers);
@@ -264,7 +275,7 @@ public class AutoScalingHandlerTest extends SolrCloudTestCase {
     req = new AutoScalingRequest(SolrRequest.METHOD.POST, path, setListenerCommand);
     response = solrClient.request(req);
     assertEquals(response.get("result").toString(), "success");
-    data = zkClient().getData(ZkStateReader.SOLR_AUTOSCALING_CONF_PATH, null, null, true);
+    data = zkClient().getData(SOLR_AUTOSCALING_CONF_PATH, null, null, true);
     loaded = ZkNodeProps.load(data);
     Map<String, Object> listeners = (Map<String, Object>) loaded.get("listeners");
     assertNotNull(listeners);
@@ -295,7 +306,7 @@ public class AutoScalingHandlerTest extends SolrCloudTestCase {
     req = new AutoScalingRequest(SolrRequest.METHOD.POST, path, removeListenerCommand);
     response = solrClient.request(req);
     assertEquals(response.get("result").toString(), "success");
-    data = zkClient().getData(ZkStateReader.SOLR_AUTOSCALING_CONF_PATH, null, null, true);
+    data = zkClient().getData(SOLR_AUTOSCALING_CONF_PATH, null, null, true);
     loaded = ZkNodeProps.load(data);
     listeners = (Map<String, Object>) loaded.get("listeners");
     assertNotNull(listeners);
@@ -309,7 +320,7 @@ public class AutoScalingHandlerTest extends SolrCloudTestCase {
     req = new AutoScalingRequest(SolrRequest.METHOD.POST, path, removeTriggerCommand);
     response = solrClient.request(req);
     assertEquals(response.get("result").toString(), "success");
-    data = zkClient().getData(ZkStateReader.SOLR_AUTOSCALING_CONF_PATH, null, null, true);
+    data = zkClient().getData(SOLR_AUTOSCALING_CONF_PATH, null, null, true);
     loaded = ZkNodeProps.load(data);
     triggers = (Map<String, Object>) loaded.get("triggers");
     assertNotNull(triggers);
