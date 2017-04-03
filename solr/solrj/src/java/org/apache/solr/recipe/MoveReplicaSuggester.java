@@ -21,8 +21,7 @@ import java.util.Map;
 
 import org.apache.solr.common.util.Pair;
 import org.apache.solr.common.util.Utils;
-import org.apache.solr.recipe.Policy.BaseSuggester;
-import org.apache.solr.recipe.Policy.Session;
+import org.apache.solr.recipe.Policy.Suggester;
 
 import static org.apache.solr.common.cloud.ZkStateReader.COLLECTION_PROP;
 import static org.apache.solr.common.cloud.ZkStateReader.SHARD_ID_PROP;
@@ -30,13 +29,9 @@ import static org.apache.solr.common.params.CollectionParams.CollectionAction.MO
 import static org.apache.solr.common.params.CoreAdminParams.NODE;
 import static org.apache.solr.common.params.CoreAdminParams.REPLICA;
 
-public class MoveReplicaSuggester  extends BaseSuggester{
-
-  MoveReplicaSuggester(String coll, String shard, Session session) {
-    super(coll, shard, session);
-  }
-
-  Map get() {
+public class MoveReplicaSuggester extends Suggester {
+  @Override
+  Map init() {
     Map operation = tryEachNode(true);
     if (operation == null) operation = tryEachNode(false);
     return operation;
@@ -46,24 +41,27 @@ public class MoveReplicaSuggester  extends BaseSuggester{
     //iterate through elements and identify the least loaded
     for (int i = 0; i < matrix.size(); i++) {
       Row fromRow = matrix.get(i);
-      Pair<Row, Policy.ReplicaStat> pair = fromRow.removeReplica(coll, shard);
+      Pair<Row, Policy.ReplicaInfo> pair = fromRow.removeReplica(coll, shard);
       fromRow = pair.first();
       if(fromRow == null){
         //no such replica available
         continue;
       }
 
-      for (Clause clause : session.getRuleSorter().clauses) {
+      for (Clause clause : session.getPolicy().clauses) {
         if (strict || clause.strict) clause.test(fromRow);
       }
       if (fromRow.violations.isEmpty()) {
         for (int j = matrix.size() - 1; j > i; i--) {
           Row targetRow = matrix.get(i);
           targetRow = targetRow.addReplica(coll, shard);
-          for (Clause clause : session.getRuleSorter().clauses) {
+          targetRow.violations.clear();
+          for (Clause clause : session.getPolicy().clauses) {
             if (strict || clause.strict) clause.test(targetRow);
           }
           if (targetRow.violations.isEmpty()) {
+            matrix.set(i, matrix.get(i).removeReplica(coll, shard).first());
+            matrix.set(j, matrix.get(j).addReplica(coll, shard));
                 return Utils.makeMap("operation", MOVEREPLICA.toLower(),
                     COLLECTION_PROP, coll,
                     SHARD_ID_PROP, shard,

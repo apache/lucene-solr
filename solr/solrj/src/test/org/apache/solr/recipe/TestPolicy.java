@@ -31,6 +31,8 @@ import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.util.Utils;
 import org.apache.solr.common.util.ValidatingJsonMap;
 
+import static org.apache.solr.common.params.CollectionParams.CollectionAction.ADDREPLICA;
+
 public class TestPolicy extends SolrTestCaseJ4 {
 
   public void testOperands() {
@@ -47,10 +49,18 @@ public class TestPolicy extends SolrTestCaseJ4 {
     c = new Clause((Map<String, Object>) Utils.fromJSONString("{nodeRole:'!overseer'}"));
     assertTrue(c.tag.isPass("OVERSEER"));
     assertFalse(c.tag.isPass("overseer"));
-
-
   }
-  public void testRuleParsing() throws IOException {
+
+  public void testRow(){
+    Row row = new Row("nodex", new Cell[]{new Cell(0,"node", "nodex")}, false, new HashMap<>(), new ArrayList<>());
+    Row r1 = row.addReplica("c1", "s1");
+    Row r2 = r1.addReplica("c1", "s1");
+    assertEquals(1,r1.replicaInfo.get("c1").get("s1").size());
+    assertEquals(2,r2.replicaInfo.get("c1").get("s1").size());
+    assertTrue(r2.replicaInfo.get("c1").get("s1").get(0) instanceof Policy.ReplicaInfo);
+    assertTrue(r2.replicaInfo.get("c1").get("s1").get(1) instanceof Policy.ReplicaInfo);
+  }
+  public void testRules() throws IOException {
     String rules = "{" +
         "conditions:[{nodeRole:'!overseer', strict:false},{replica:'<1',node:node3}," +
         "{replica:'<2',node:'#ANY', shard:'#EACH'}]," +
@@ -115,17 +125,22 @@ public class TestPolicy extends SolrTestCaseJ4 {
 
     Policy policy = new Policy((Map<String, Object>) Utils.fromJSONString(rules));
     Policy.Session session;
-    Policy.NodeValueProvider snitch = new Policy.NodeValueProvider() {
+    Policy.ClusterDataProvider snitch = new Policy.ClusterDataProvider() {
       @Override
-      public Map<String,Object> getValues(String node, Collection<String> keys) {
+      public Map<String,Object> getNodeValues(String node, Collection<String> keys) {
         Map<String,Object> result = new LinkedHashMap<>();
         keys.stream().forEach(s -> result.put(s, nodeValues.get(node).get(s)));
         return result;
       }
 
       @Override
-      public Map<String, Map<String, List<Policy.ReplicaStat>>> getReplicaCounts(String node, Collection<String> keys) {
-        Map<String, Map<String, List<Policy.ReplicaStat>>> result = new LinkedHashMap<>();
+      public Collection<String> getNodes() {
+        return Arrays.asList("node1", "node2", "node3", "node4");
+      }
+
+      @Override
+      public Map<String, Map<String, List<Policy.ReplicaInfo>>> getReplicaInfo(String node, Collection<String> keys) {
+        Map<String, Map<String, List<Policy.ReplicaInfo>>> result = new LinkedHashMap<>();
 
         m.forEach((collName, o) -> {
           ValidatingJsonMap coll = (ValidatingJsonMap) o;
@@ -135,11 +150,11 @@ public class TestPolicy extends SolrTestCaseJ4 {
               ValidatingJsonMap r = (ValidatingJsonMap) o2;
               String node_name = (String) r.get("node_name");
               if (!node_name.equals(node)) return;
-              Map<String, List<Policy.ReplicaStat>> shardVsReplicaStats = result.get(collName);
+              Map<String, List<Policy.ReplicaInfo>> shardVsReplicaStats = result.get(collName);
               if (shardVsReplicaStats == null) result.put(collName, shardVsReplicaStats = new HashMap<>());
-              List<Policy.ReplicaStat> replicaStats = shardVsReplicaStats.get(shard);
-              if (replicaStats == null) shardVsReplicaStats.put(shard, replicaStats = new ArrayList<>());
-              replicaStats.add(new Policy.ReplicaStat(replicaName, new HashMap<>()));
+              List<Policy.ReplicaInfo> replicaInfos = shardVsReplicaStats.get(shard);
+              if (replicaInfos == null) shardVsReplicaStats.put(shard, replicaInfos = new ArrayList<>());
+              replicaInfos.add(new Policy.ReplicaInfo(replicaName, new HashMap<>()));
             });
           });
         });
@@ -150,7 +165,7 @@ public class TestPolicy extends SolrTestCaseJ4 {
 
     };
 
-    session = policy.createSession(Arrays.asList("node1", "node2", "node3", "node4"), snitch);
+    session = policy.createSession( snitch);
 
     session.applyRules();
     List<Row> l = session.getSorted();
@@ -176,6 +191,11 @@ public class TestPolicy extends SolrTestCaseJ4 {
     assertEquals(v.get(0).replica.op, Operand.LESS_THAN);
     assertEquals(v.get(0).replica.val, 1);
     assertEquals(v.get(0).tag.val, "node3");
+
+    Policy.Suggester suggester = session.getSuggester(ADDREPLICA, "gettingstarted", "r1");
+    Map operation = suggester.getOperation();
+    assertEquals("node2", operation.get("node"));
+    System.out.println(Utils.toJSONString(operation));
 
 
 

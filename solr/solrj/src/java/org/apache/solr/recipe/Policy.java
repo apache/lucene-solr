@@ -28,6 +28,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
 import org.apache.solr.common.MapWriter;
@@ -68,16 +69,26 @@ public class Policy {
 
   public class Session implements MapWriter {
     final List<String> nodes;
-    final NodeValueProvider snitch;
+    final ClusterDataProvider snitch;
     final List<Row> matrix;
     Set<String> collections = new HashSet<>();
 
-    Session(List<String> nodes, NodeValueProvider snitch) {
+    Session(List<String> nodes, ClusterDataProvider snitch, List<Row> matrix) {
       this.nodes = nodes;
+      this.snitch = snitch;
+      this.matrix = matrix;
+    }
+
+    Session(ClusterDataProvider snitch) {
+      this.nodes = new ArrayList<>(snitch.getNodes());
       this.snitch = snitch;
       matrix = new ArrayList<>(nodes.size());
       for (String node : nodes) matrix.add(new Row(node, params, snitch));
       for (Row row : matrix) row.replicaInfo.forEach((s, e) -> collections.add(s));
+    }
+
+    Session copy() {
+      return new Session(nodes, snitch, getMatrixCopy());
     }
 
     List<Row> getMatrixCopy() {
@@ -86,7 +97,7 @@ public class Policy {
           .collect(Collectors.toList());
     }
 
-    Policy getRuleSorter() {
+    Policy getPolicy() {
       return Policy.this;
 
     }
@@ -121,10 +132,10 @@ public class Policy {
           .collect(Collectors.toMap(r -> r.node, r -> r.violations));
     }
 
-    public Map suggest(CollectionAction action, String collection, String shard) {
-      Suggester op = ops.get(action);
+    public Suggester getSuggester(CollectionAction action, String collection, String shard) {
+      Suggester op = ops.get(action).get();
       if (op == null) throw new UnsupportedOperationException(action.toString() + "is not supported");
-      return op.suggest(collection, shard, this);
+      return op.init(collection, shard, this);
     }
 
     @Override
@@ -145,8 +156,8 @@ public class Policy {
   }
 
 
-  public Session createSession(List<String> nodes, NodeValueProvider snitch) {
-    return new Session(nodes, snitch);
+  public Session createSession(ClusterDataProvider snitch) {
+    return new Session(snitch);
   }
 
 
@@ -190,11 +201,11 @@ public class Policy {
   }
 
 
-  static class ReplicaStat implements MapWriter {
+  static class ReplicaInfo implements MapWriter {
     final String name;
     Map<String, Object> variables;
 
-    ReplicaStat(String name, Map<String, Object> vals) {
+    ReplicaInfo(String name, Map<String, Object> vals) {
       this.name = name;
       this.variables = vals;
     }
@@ -206,44 +217,51 @@ public class Policy {
   }
 
 
-  interface NodeValueProvider {
-    Map<String, Object> getValues(String node, Collection<String> keys);
+  interface ClusterDataProvider {
+    Map<String, Object> getNodeValues(String node, Collection<String> keys);
 
     /**
      * Get the details of each replica in a node. It attempts to fetch as much details about
-     * the replica as mentioned in the keys list
+     * the replica as mentioned in the keys list. It is not necessary to give al details
      * <p>
      * the format is {collection:shard :[{replicadetails}]}
      */
-    Map<String, Map<String, List<ReplicaStat>>> getReplicaCounts(String node, Collection<String> keys);
+    Map<String, Map<String, List<ReplicaInfo>>> getReplicaInfo(String node, Collection<String> keys);
+
+    Collection<String> getNodes();
   }
 
-  interface Suggester {
-    Map<String, Object> suggest(String coll, String shard, Session session);
-
-  }
-
-  static class BaseSuggester {
-    final String coll;
-    final String shard;
-    final Policy.Session session;
+  static abstract class Suggester {
+    String coll;
+    String shard;
+    Policy.Session session;
     List<Row> matrix;
 
-    BaseSuggester(String coll, String shard, Policy.Session session) {
+    Map operation;
+
+    Suggester init(String coll, String shard, Policy.Session session) {
       this.coll = coll;
       this.shard = shard;
-      this.session = session;
+      this.session = session.copy();
       matrix = session.getMatrixCopy();
+      this.operation = init();
+      return this;
     }
 
+    abstract Map init();
+
+
+    public Map getOperation() {
+      return operation;
+    }
 
   }
 
-  private static final Map<CollectionAction, Suggester> ops = new HashMap<>();
+  private static final Map<CollectionAction, Supplier<Suggester>> ops = new HashMap<>();
 
   static {
-    ops.put(CollectionAction.ADDREPLICA, (coll, shard, session) -> new AddReplicaSuggester(coll, shard, session).get());
-    ops.put(CollectionAction.MOVEREPLICA, (coll, shard, session) -> new MoveReplicaSuggester(coll, shard, session).get());
+    ops.put(CollectionAction.ADDREPLICA, () -> new AddReplicaSuggester());
+    ops.put(CollectionAction.MOVEREPLICA, () -> new MoveReplicaSuggester());
   }
 
 

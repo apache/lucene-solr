@@ -68,9 +68,10 @@ public class Utils {
   }
 
   private static Object makeDeepCopy(Object v, int maxDepth, boolean mutable) {
-    if (v instanceof MapWriter) v = ((MapWriter) v).toMap(new LinkedHashMap<>());
-    else if (v instanceof IteratorWriter) v = ((IteratorWriter) v).toList(new ArrayList<>());
-    else if (v instanceof Map) v = getDeepCopy((Map) v, maxDepth - 1, mutable);
+    if (v instanceof MapWriter && maxDepth > 1) v = ((MapWriter) v).toMap(new LinkedHashMap<>());
+    else if (v instanceof IteratorWriter && maxDepth > 1) v = ((IteratorWriter) v).toList(new ArrayList<>());
+
+    if (v instanceof Map) v = getDeepCopy((Map) v, maxDepth - 1, mutable);
     else if (v instanceof Collection) v = getDeepCopy((Collection) v, maxDepth - 1, mutable);
     return v;
   }

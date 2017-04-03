@@ -20,21 +20,16 @@ package org.apache.solr.recipe;
 import java.util.Map;
 
 import org.apache.solr.common.util.Utils;
-import org.apache.solr.recipe.Policy.BaseSuggester;
-import org.apache.solr.recipe.Policy.Session;
+import org.apache.solr.recipe.Policy.Suggester;
 
 import static org.apache.solr.common.cloud.ZkStateReader.COLLECTION_PROP;
 import static org.apache.solr.common.cloud.ZkStateReader.SHARD_ID_PROP;
 import static org.apache.solr.common.params.CollectionParams.CollectionAction.ADDREPLICA;
 import static org.apache.solr.common.params.CoreAdminParams.NODE;
 
-class AddReplicaSuggester extends BaseSuggester {
+class AddReplicaSuggester extends Suggester {
 
-  AddReplicaSuggester(String coll, String shard, Session session) {
-    super(coll, shard, session);
-  }
-
-  Map get() {
+  Map init() {
     Map operation = tryEachNode(true);
     if (operation == null) operation = tryEachNode(false);
     return operation;
@@ -46,11 +41,12 @@ class AddReplicaSuggester extends BaseSuggester {
       Row row = matrix.get(i);
       row = row.addReplica(coll, shard);
       row.violations.clear();
-      for (Clause clause : session.getRuleSorter().clauses) {
+      for (Clause clause : session.getPolicy().clauses) {
         if (strict || clause.strict) clause.test(row);
       }
-      if (row.violations.isEmpty()) {
-        return Utils.makeMap("operation", ADDREPLICA,
+      if (row.violations.isEmpty()) {// there are no rule violations
+        matrix.set(i, matrix.get(i).addReplica(coll, shard));
+        return Utils.makeMap("operation", ADDREPLICA.toLower(),
             COLLECTION_PROP, coll,
             SHARD_ID_PROP, shard,
             NODE, row.node);

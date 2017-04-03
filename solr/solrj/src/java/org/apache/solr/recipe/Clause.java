@@ -27,7 +27,7 @@ import java.util.concurrent.atomic.AtomicReference;
 
 import org.apache.solr.common.MapWriter;
 import org.apache.solr.common.util.Utils;
-import org.apache.solr.recipe.Policy.ReplicaStat;
+import org.apache.solr.recipe.Policy.ReplicaInfo;
 
 import static java.util.Collections.singletonMap;
 import static org.apache.solr.common.params.CoreAdminParams.COLLECTION;
@@ -125,10 +125,10 @@ public class Clause implements MapWriter {
   TestStatus test(Row row) {
     AtomicReference<TestStatus> result = new AtomicReference<>(NOT_APPLICABLE);
 
-    for (Map.Entry<String, Map<String, List<ReplicaStat>>> colls : row.replicaInfo.entrySet()) {
+    for (Map.Entry<String, Map<String, List<ReplicaInfo>>> colls : row.replicaInfo.entrySet()) {
       if (!collection.isPass(colls.getKey()) || result.get() == FAIL) break;
       int count = 0;
-      for (Map.Entry<String, List<ReplicaStat>> shards : colls.getValue().entrySet()) {
+      for (Map.Entry<String, List<ReplicaInfo>> shards : colls.getValue().entrySet()) {
         if (!shard.isPass(shards.getKey()) || result.get() == FAIL) break;
         count += shards.getValue().size();
         if (shard.val.equals(EACH)) testReplicaCount(row, result, count);

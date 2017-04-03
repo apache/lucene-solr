@@ -34,6 +34,7 @@ import org.apache.http.NoHttpResponseException;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.common.cloud.ClusterState;
+import org.apache.solr.common.cloud.ClusterState.CollectionRef;
 import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.util.NamedList;
 import static org.mockito.Mockito.*;
@@ -118,10 +119,10 @@ public class CloudSolrClientCacheTest extends SolrTestCaseJ4 {
   }
 
   private CloudSolrClient.ClusterStateProvider getStateProvider(Set<String> livenodes,
-                                                                Map<String, ClusterState.CollectionRef> colls) {
+                                                                Map<String, CollectionRef> colls) {
     return new CloudSolrClient.ClusterStateProvider() {
       @Override
-      public ClusterState.CollectionRef getState(String collection) {
+      public CollectionRef getState(String collection) {
         return colls.get(collection);
       }
 
@@ -147,6 +148,11 @@ public class CloudSolrClientCacheTest extends SolrTestCaseJ4 {
 
       @Override
       public void connect() { }
+
+      @Override
+      public Map<String, CollectionRef> getCollections() {
+        return Collections.emptyMap();
+      }
 
       @Override
       public void close() throws IOException {
