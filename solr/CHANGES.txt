@@ -22,12 +22,6 @@ Bug Fixes
 ----------------------
 * SOLR-10369: bin\solr.cmd delete and healthcheck now works again; fixed continuation chars ^ (Luis Goes via janhoy)
 
-
-==================  6.5.1 ==================
-
-Bug Fixes
-----------------------
-
 * SOLR-10383: Fix debug related NullPointerException in solr/contrib/ltr OriginalScoreFeature class.
   (Vitezslav Zak, Christine Poerschke)
 
