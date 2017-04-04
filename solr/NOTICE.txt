@@ -82,6 +82,9 @@ the Apache Blur incubating project and are Apache License 2.0.
 ASM (Java bytecode manipulation and analysis framework): http://asm.ow2.org/
 Copyright (c) 2000-2005 INRIA, France Telecom
 
+PluginFramework4J (pf4j): https://github.com/decebals/pf4j
+Copyright (c) 2014-2017, Decebal Suiu. License: Apache-2.0
+
 =========================================================================
 ==  Antlr2 Notice                                                       ==
 =========================================================================

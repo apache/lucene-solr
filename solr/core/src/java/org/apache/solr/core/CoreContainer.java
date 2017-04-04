@@ -89,6 +89,7 @@ import org.apache.solr.security.SecurityPluginHolder;
 import org.apache.solr.update.SolrCoreState;
 import org.apache.solr.update.UpdateShardHandler;
 import org.apache.solr.util.DefaultSolrThreadFactory;
+import org.apache.solr.util.modules.Modules;
 import org.apache.solr.util.stats.MetricUtils;
 import org.apache.zookeeper.KeeperException;
 import org.slf4j.Logger;
@@ -114,6 +115,9 @@ public class CoreContainer {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   final SolrCores solrCores = new SolrCores(this);
+  // Holds the module system entry point
+  private Modules modules;
+  private boolean useModules;
 
   public static class CoreLoadFailure {
 
@@ -452,6 +456,14 @@ public class CoreContainer {
     return metricManager;
   }
 
+  /**
+   * Gets the Modules manager, from where you can install, stop, start modules (plugins)
+   * @return the plugins start point
+   */
+  public Modules getModules() {
+    return modules;
+  }
+
   //-------------------------------------------------------------------
   // Initialization / Cleanup
   //-------------------------------------------------------------------
@@ -474,6 +486,13 @@ public class CoreContainer {
           log.warn("Couldn't add files from {} to classpath: {}", libPath, e.getMessage());
         }
       }
+    }
+
+    // Initialize the module system and load modules
+    useModules = cfg.getModulesConfig().isActive();
+    if (useModules()) {
+      modules = new Modules(Paths.get(getSolrHome(), "modules"));
+      modules.load();
     }
 
     metricManager = new SolrMetricManager();
@@ -627,6 +646,14 @@ public class CoreContainer {
     if (isZooKeeperAware()) {
       zkSys.getZkController().checkOverseerDesignate();
     }
+  }
+
+  /**
+   * Check if the module system is active
+   * @return true if modules are loaded
+   */
+  public boolean useModules() {
+    return useModules;
   }
 
   public void securityNodeChanged() {

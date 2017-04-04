@@ -117,6 +117,10 @@
     <path refid="solr.lucene.libs" />
     <path refid="additional.dependencies"/>
     <path refid="base.classpath"/>
+
+    <!-- NOCOMMIT: Remove -->
+    <fileset dir="/Users/janhoy/git/pf4j/pf4j/target" includes="pf4j-1.3.0-SNAPSHOT.jar"/>
+    <fileset dir="/Users/janhoy/git/pf4j-update/target" includes="pf4j-update-0.4.0-SNAPSHOT.jar"/>
   </path>
 
   <path id="classpath" refid="solr.base.classpath"/>

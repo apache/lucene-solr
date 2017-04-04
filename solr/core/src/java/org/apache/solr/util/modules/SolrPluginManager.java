@@ -15,10 +15,12 @@
  * limitations under the License.
  */
 
-package org.apache.solr.util.pf4j;
+package org.apache.solr.util.modules;
 
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Modifier;
+import java.nio.file.Path;
+import java.util.Map;
 
 import org.apache.solr.common.SolrException;
 import org.slf4j.Logger;
@@ -39,23 +41,29 @@ import ro.fortsoft.pf4j.util.StringUtils;
  */
 public class SolrPluginManager extends DefaultPluginManager {
   private static final Logger log = LoggerFactory.getLogger(SolrPluginManager.class);
-  private SolrPluginsClassLoader uberLoader;
+
+  public SolrPluginManager(Path pluginsRoot) {
+    super(pluginsRoot);
+  }
+
+  @Override
+  public Path getPluginsRoot() {
+    return super.getPluginsRoot();
+  }
 
   @Override
   protected PluginDescriptorFinder createPluginDescriptorFinder() {
-    return isDevelopment() ? new PropertiesPluginDescriptorFinder() :
-        new PropertiesPluginDescriptorFinder() {
-          // Do not require plugin.class, since we don't use pf4j resolving right now
-          @Override
-          protected void validatePluginDescriptor(PluginDescriptor pluginDescriptor) throws PluginException {
-            if (StringUtils.isEmpty(pluginDescriptor.getPluginId())) {
-              throw new PluginException("plugin.id cannot be empty");
-            }
-            if (pluginDescriptor.getVersion() == null) {
-              throw new PluginException("plugin.version cannot be empty");
-            }
-          }
-        };
+    return new PropertiesPluginDescriptorFinder();
+  }
+
+  @Override
+  protected void validatePluginDescriptor(PluginDescriptor descriptor) throws PluginException {
+    if (StringUtils.isEmpty(descriptor.getPluginId())) {
+      throw new PluginException("id cannot be empty");
+    }
+    if (descriptor.getVersion() == null) {
+      throw new PluginException("version cannot be empty");
+    }
   }
 
   @Override
@@ -63,11 +71,8 @@ public class SolrPluginManager extends DefaultPluginManager {
       return new SolrPluginFactory();
   }
 
-  public ClassLoader getUberClassloader(ClassLoader parent) {
-    if (uberLoader == null) {
-      uberLoader = new SolrPluginsClassLoader(parent, getPluginClassLoaders().values());
-    }
-    return uberLoader;
+  public Map<String, ClassLoader> getPluginClassLoaders() {
+    return super.getPluginClassLoaders();
   }
 
   private class SolrPluginFactory extends DefaultPluginFactory {
@@ -103,7 +108,7 @@ public class SolrPluginManager extends DefaultPluginManager {
             throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Failed to create plugin", e);
           }
         } else {
-          log.info("Plugin " + pluginWrapper.getPluginId() + " has no PluginClass, creating NOP placeholder");
+          log.debug("Plugin " + pluginWrapper.getPluginId() + " has no PluginClass, creating NOP placeholder");
           return new SolrNopPlugin(pluginWrapper);
         }
     }

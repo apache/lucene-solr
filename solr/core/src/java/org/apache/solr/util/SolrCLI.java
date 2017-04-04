@@ -103,13 +103,14 @@ import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.ContentStreamBase;
 import org.apache.solr.common.util.NamedList;
-import org.apache.solr.util.pf4j.Plugins;
+import org.apache.solr.util.modules.Modules;
 import org.noggit.CharArr;
 import org.noggit.JSONParser;
 import org.noggit.JSONWriter;
 import org.noggit.ObjectBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import ro.fortsoft.pf4j.update.UpdateRepository;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.apache.solr.common.SolrException.ErrorCode.FORBIDDEN;
@@ -353,8 +354,8 @@ public class SolrCLI {
       return new AssertTool();
     else if ("utils".equals(toolType))
       return new UtilsTool();
-    else if ("plugin".equals(toolType))
-      return new PluginTool();
+    else if ("module".equals(toolType))
+      return new ModuleTool();
 
     // If you add a built-in tool to this class, add it here to avoid
     // classpath scanning
@@ -3719,50 +3720,121 @@ public class SolrCLI {
     }
   } // end UtilsTool class  
 
-  private static class PluginTool implements Tool {
-    @Override
-    public String getName() {
-      return "plugin";
-    }
+  private static class ModuleTool implements Tool {
+    public static Option[] moduleOptions =  new Option[] {
+      OptionBuilder
+          .withArgName("solrHome")
+          .hasArg(true)
+          .isRequired(true)
+          .withDescription("Set SOLR_HOME")
+          .create("s"),
+      OptionBuilder
+          .withArgName("ids")
+          .withDescription("Output IDs only")
+          .hasArg(false)
+          .create("i")
+    };
+    private static final com.github.zafarkhaja.semver.Version SOLR_VERSION =
+        com.github.zafarkhaja.semver.Version.valueOf(Version.LATEST.toString());
+    private Modules modules;
 
     @Override
+    public String getName() {
+      return "module";
+    }
+    
+    @Override
     public Option[] getOptions() {
-      return new Option[0];
+      return moduleOptions;
     }
 
     @Override
     public int runTool(CommandLine cli) throws Exception {
-      if (cli.getArgs().length > 0 || cli.hasOption("h")) {
-        new HelpFormatter().printHelp("bin/solr plugin <install|uninstall|list|update> [plugin]", getToolOptions(this));
+      if (cli.getArgs().length == 0 || cli.hasOption("h")) {
+        printHelp();
         return 1;
       }
+      boolean idsOnly = cli.hasOption("i");
+      String solrHome = cli.getOptionValue("s");
+      if (!Files.exists(Paths.get(solrHome))) {
+        System.out.println("Solr Home " + solrHome + " does not exist");
+        return 1;
+      }
+      modules = new Modules(Paths.get(solrHome).toAbsolutePath().resolve("modules"));
+      modules.getPluginManager().loadPlugins();
       List<String> args = cli.getArgList();
       String command = args.get(0);
       switch (command) {
         case "install":
+          if (args.size() > 1) {
+            String moduleId = args.get(1);
+            if (modules.install(moduleId)) {
+              System.out.println("Installed " + moduleId);
+            } else {
+              System.out.println("Module with id " + moduleId + " not found in any repository. Please attempt query");
+              return 1;
+            }
+          } else {
+            System.out.println("Neeeds name of module to install");
+            printHelp();
+            return 1;
+          }
+          break;
+
+        case "uninstall":
+          if (args.size() > 1) {
+            String moduleId = args.get(1);
+            if (modules.uninstall(moduleId)) {
+              System.out.println("Uninstalled " + moduleId);
+            } else {
+              System.out.println("Module with id " + moduleId + " does not exist");
+            }
+          } else {
+            System.out.println("Neeeds name of module to uninstall");
+            printHelp();
+            return 1;
+          }
+          break;
+
+        case "update":
+          if (args.size() == 1) {
+            modules.updateAll();
+          } else {
+            System.out.println("Update does not take any arguments");
+            printHelp();
+            return 1;
+          }
           break;
 
         case "list":
-          System.out.println("Listing installed plugins");
-
+          if (idsOnly) {
+            modules.listInstalled().forEach(d -> System.out.println(d.getPluginId()));
+          } else {
+            System.out.println("Listing modules from " + modules.getPluginsRoot());
+            modules.listInstalled().forEach(d -> System.out.println(d.getPluginId() + "@" + d.getVersion()));
+            System.out.println("Done");
+          }
           break;
 
         case "query":
-          if (args.size() > 1) {
-            query(args.get(1));
-          }
-
+          query(args.size() >1 ? args.get(1) : null);
           break;
 
         default:
-          throw new Exception("Unknown plugin command " + command);
+          System.out.println("Unknown module command '" + command + "'");
+          return 1;
       }
       return 0;
     }
 
+    private void printHelp() {
+      new HelpFormatter().printHelp("bin/solr module <install|uninstall|list|update|query> [module]", getToolOptions(this));
+    }
+
     private void query(String q) {
-      Plugins mgr = new Plugins();
-      mgr.query(q);
+      List<UpdateRepository.PluginInfo> plugins = modules.query(q);
+      System.out.println(plugins.stream().map(p -> p.id +
+                "(" + p.getLastRelease(SOLR_VERSION).version + ")").collect(Collectors.toList()));
     }
   }
 }

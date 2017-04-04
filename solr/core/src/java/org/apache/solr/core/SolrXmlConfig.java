@@ -38,6 +38,7 @@ import org.apache.solr.logging.LogWatcherConfig;
 import org.apache.solr.update.UpdateShardHandlerConfig;
 import org.apache.solr.util.DOMUtil;
 import org.apache.solr.util.PropertiesUtil;
+import org.apache.solr.util.modules.ModulesConfig;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.w3c.dom.Node;
@@ -87,6 +88,14 @@ public class SolrXmlConfig {
       }
       updateConfig = deprecatedUpdateConfig;
     }
+
+    ModulesConfig modulesConfig = null;
+    if (config.getNodeList("solr/modules", false).getLength() > 0) {
+      NamedList<Object> modulesSection = readNodeListAsNamedList(config, "solr/modules/*[@name]", "<modules>");
+      modulesConfig = fillModulesSection(modulesSection);
+    }
+
+
 
     NodeConfig.NodeConfigBuilder configBuilder = new NodeConfig.NodeConfigBuilder(nodeName, config.getResourceLoader());
     configBuilder.setUpdateShardHandlerConfig(updateConfig);
@@ -386,6 +395,27 @@ public class SolrXmlConfig {
           break;
         default:
           throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Unknown configuration parameter in <solrcloud> section of solr.xml: " + name);
+      }
+    }
+
+    return builder.build();
+  }
+
+  private static ModulesConfig fillModulesSection(NamedList<Object> nl) {
+
+    ModulesConfig.ModulesConfigBuilder builder = new ModulesConfig.ModulesConfigBuilder();
+
+    for (Map.Entry<String, Object> entry : nl) {
+      String name = entry.getKey();
+      if (entry.getValue() == null)
+        continue;
+      String value = entry.getValue().toString();
+      switch (name) {
+        case "active":
+          builder.setActive(Boolean.parseBoolean(value));
+          break;
+        default:
+          throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Unknown configuration parameter in <modules> section of solr.xml: " + name);
       }
     }
 

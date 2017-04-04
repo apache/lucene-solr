@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.solr.util.pf4j;
+package org.apache.solr.util.modules;
 
 import ro.fortsoft.pf4j.Plugin;
 import ro.fortsoft.pf4j.PluginWrapper;
@@ -29,7 +29,7 @@ public class SolrNopPlugin extends Plugin {
    * Your plugins have to provide constructor with this exact signature to
    * be successfully loaded by manager.
    *
-   * @param wrapper
+   * @param wrapper The wrapper
    */
   public SolrNopPlugin(PluginWrapper wrapper) {
     super(wrapper);

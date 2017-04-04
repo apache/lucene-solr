@@ -14,72 +14,47 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
-package org.apache.solr.util.pf4j;
-
-/*
- * Copyright 2012 Decebal Suiu
- *
- * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this work except in compliance with
- * the License. You may obtain a copy of the License in the LICENSE file, or at:
- *
- * http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software distributed under the License is distributed on
- * an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the
- * specific language governing permissions and limitations under the License.
- */
+package org.apache.solr.util.modules;
 
 import java.io.IOException;
+import java.lang.invoke.MethodHandles;
 import java.net.URL;
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.Collections;
 import java.util.Enumeration;
-import java.util.HashSet;
 import java.util.List;
-import java.util.Set;
+import java.util.Map;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * A class loader that has multiple loaders and uses them for loading classes and resources.
- *
- * @author Decebal Suiu
  */
-public class SolrPluginsClassLoader extends ClassLoader {
+public class ModulesClassLoader extends ClassLoader {
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
-  private Set<ClassLoader> loaders = new HashSet<ClassLoader>();
+  private final Map<String, ClassLoader> loaderMap;
 
-  public SolrPluginsClassLoader(ClassLoader parent, Collection<ClassLoader> loaders) {
+  public ModulesClassLoader(ClassLoader parent, Map<String, ClassLoader> loaders) {
     super(parent);
-    loaders.forEach(l -> {
-      this.loaders.add(l);
-    });
-  }
-
-  public void addLoader(ClassLoader loader) {
-    loaders.add(loader);
-  }
-
-  public void removeLoader(ClassLoader loader) {
-    loaders.remove(loader);
+    this.loaderMap = loaders;
   }
 
   @Override
   public Class<?> findClass(String name) throws ClassNotFoundException {
-    for (ClassLoader loader : loaders) {
+    for (ClassLoader loader : loaderMap.values()) {
       try {
         return loader.loadClass(name);
-      } catch (ClassNotFoundException e) {
-        // try next
-      }
+      } catch (ClassNotFoundException e) {}
     }
 
-    throw new ClassNotFoundException(name);
+    throw new ClassNotFoundException("Class " + name + " not found in any plugin. Tried: " + loaderMap.keySet());
   }
 
   @Override
   public URL findResource(String name) {
-    for (ClassLoader loader : loaders) {
+    for (ClassLoader loader : loaderMap.values()) {
       URL url = loader.getResource(name);
       if (url != null) {
         return url;
@@ -92,7 +67,7 @@ public class SolrPluginsClassLoader extends ClassLoader {
   @Override
   protected Enumeration<URL> findResources(String name) throws IOException {
     List<URL> resources = new ArrayList<URL>();
-    for (ClassLoader loader : loaders) {
+    for (ClassLoader loader : loaderMap.values()) {
       resources.addAll(Collections.list(loader.getResources(name)));
     }
 

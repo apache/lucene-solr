@@ -767,6 +767,12 @@ if [ "$SCRIPT_CMD" == "assert" ]; then
   exit $?
 fi
 
+# module tool
+if [ "$SCRIPT_CMD" == "module" ]; then
+  run_tool module $*
+  exit $?
+fi
+
 # run a healthcheck and exit if requested
 if [ "$SCRIPT_CMD" == "healthcheck" ]; then
 

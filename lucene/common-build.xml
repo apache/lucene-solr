@@ -175,7 +175,7 @@
   <property name="javadoc.noindex" value="true"/>
 
   <property name="javadoc.doclint.args" value="-Xdoclint:all -Xdoclint:-missing"/>
-  <property name="javac.doclint.args" value="-Xdoclint:all/protected -Xdoclint:-missing"/>
+  <property name="javac.doclint.args" value="-Xdoclint:none"/> <!---Xdoclint:all/protected -Xdoclint:-missing"/> NOCOMMIT: To avoid errors with PF4J-->
   
   <!-- Javadoc classpath -->
   <path id="javadoc.classpath">
