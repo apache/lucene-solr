@@ -93,6 +93,9 @@ Optimizations
 Other Changes
 * SOLR-10236: Removed FieldType.getNumericType(). Use getNumberType() instead. (Tomás Fernández Löbbe)
 
+* SOLR-10347: Removed index level boost support from "documents" section of the admin UI (Amrit Sarkar via
+  Tomás Fernández Löbbe)
+
 ----------------------
 
 ==================  6.6.0 ==================
