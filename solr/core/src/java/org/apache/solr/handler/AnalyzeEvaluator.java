@@ -81,17 +81,16 @@ public class AnalyzeEvaluator extends SimpleEvaluator {
       return null;
     }
 
-    TokenStream tokenStream = analyzer.tokenStream(analyzerField, value);
-    CharTermAttribute termAtt = tokenStream.getAttribute(CharTermAttribute.class);
-    tokenStream.reset();
     List<String> tokens = new ArrayList();
-    while (tokenStream.incrementToken()) {
-      tokens.add(termAtt.toString());
+
+    try(TokenStream tokenStream = analyzer.tokenStream(analyzerField, value)) {
+      CharTermAttribute termAtt = tokenStream.getAttribute(CharTermAttribute.class);
+      tokenStream.reset();
+      while (tokenStream.incrementToken()) {
+        tokens.add(termAtt.toString());
+      }
+      tokenStream.end();
     }
-
-    tokenStream.end();
-    tokenStream.close();
-
     return tokens;
   }
 
