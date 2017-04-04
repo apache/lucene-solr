@@ -16,7 +16,7 @@
  */
 
 /**
- * Common classes for recipe parsing filtering nodes & sorting
+ * Common classes for recipe parsing filtering nodes and sorting
  */
 
 package org.apache.solr.recipe;

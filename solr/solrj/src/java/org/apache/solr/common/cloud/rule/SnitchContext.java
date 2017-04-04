@@ -44,10 +44,6 @@ public abstract class SnitchContext implements RemoteCallback {
     this.session = session;
   }
 
-  public SnitchInfo getSnitchInfo() {
-    return snitchInfo;
-  }
-
   public Map<String, Object> getTags() {
     return tags;
   }

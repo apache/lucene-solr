@@ -60,7 +60,6 @@ import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.ToleratedUpdateError;
 import org.apache.solr.common.cloud.ClusterState;
-import org.apache.solr.common.cloud.ClusterState.CollectionRef;
 import org.apache.solr.common.cloud.CollectionStatePredicate;
 import org.apache.solr.common.cloud.CollectionStateWatcher;
 import org.apache.solr.common.cloud.DocCollection;
@@ -1446,7 +1445,7 @@ public class CloudSolrClient extends SolrClient {
           && !cacheEntry.shoulRetry()) return col;
     }
 
-    CollectionRef ref = getCollectionRef(collection);
+    ClusterState.CollectionRef ref = getCollectionRef(collection);
     if (ref == null) {
       //no such collection exists
       return null;
@@ -1481,7 +1480,7 @@ public class CloudSolrClient extends SolrClient {
     }
   }
 
-  CollectionRef getCollectionRef(String collection) {
+  ClusterState.CollectionRef getCollectionRef(String collection) {
     return stateProvider.getState(collection);
   }
 
@@ -1732,7 +1731,7 @@ public class CloudSolrClient extends SolrClient {
 
   public interface ClusterStateProvider extends Closeable {
 
-    CollectionRef getState(String collection);
+    ClusterState.CollectionRef getState(String collection);
 
     Set<String> liveNodes();
 
@@ -1741,8 +1740,6 @@ public class CloudSolrClient extends SolrClient {
     String getCollectionName(String name);
 
     Map<String, Object> getClusterProperties();
-
-    Map<String,CollectionRef> getCollections();
 
     void connect();
   }

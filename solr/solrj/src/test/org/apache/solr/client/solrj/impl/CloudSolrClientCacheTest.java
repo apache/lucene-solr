@@ -150,11 +150,6 @@ public class CloudSolrClientCacheTest extends SolrTestCaseJ4 {
       public void connect() { }
 
       @Override
-      public Map<String, CollectionRef> getCollections() {
-        return Collections.emptyMap();
-      }
-
-      @Override
       public void close() throws IOException {
 
       }

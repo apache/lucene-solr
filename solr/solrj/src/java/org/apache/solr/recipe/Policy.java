@@ -201,11 +201,11 @@ public class Policy {
   }
 
 
-  static class ReplicaInfo implements MapWriter {
+  public static class ReplicaInfo implements MapWriter {
     final String name;
     Map<String, Object> variables;
 
-    ReplicaInfo(String name, Map<String, Object> vals) {
+    public ReplicaInfo(String name, Map<String, Object> vals) {
       this.name = name;
       this.variables = vals;
     }
@@ -217,7 +217,7 @@ public class Policy {
   }
 
 
-  interface ClusterDataProvider {
+  public interface ClusterDataProvider {
     Map<String, Object> getNodeValues(String node, Collection<String> keys);
 
     /**

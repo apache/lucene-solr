@@ -27,8 +27,6 @@ import java.util.Set;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.Aliases;
 import org.apache.solr.common.cloud.ClusterState;
-import org.apache.solr.common.cloud.ClusterState.CollectionRef;
-import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.cloud.ZooKeeperException;
 import org.apache.zookeeper.KeeperException;
@@ -54,7 +52,7 @@ public class ZkClientClusterStateProvider implements CloudSolrClient.ClusterStat
   }
 
   @Override
-  public CollectionRef getState(String collection) {
+  public ClusterState.CollectionRef getState(String collection) {
     return zkStateReader.getClusterState().getCollectionRef(collection);
   }
 
@@ -181,11 +179,6 @@ public class ZkClientClusterStateProvider implements CloudSolrClient.ClusterStat
     final String zkHostString = zkBuilder.toString();
     log.debug("Final constructed zkHost string: " + zkHostString);
     return zkHostString;
-  }
-
-  @Override
-  public Map<String, CollectionRef> getCollections() {
-    return zkStateReader.getClusterState().getCollectionStates();
   }
 
   @Override

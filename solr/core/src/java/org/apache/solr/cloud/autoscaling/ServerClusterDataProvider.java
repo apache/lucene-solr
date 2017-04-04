@@ -15,29 +15,36 @@
  * limitations under the License.
  */
 
-package org.apache.solr.recipe;
+package org.apache.solr.cloud.autoscaling;
 
 
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
-import org.apache.solr.client.solrj.impl.CloudSolrClient.ClusterStateProvider;
+import org.apache.solr.cloud.rule.ServerSnitchContext;
 import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.DocCollection;
+import org.apache.solr.core.CoreContainer;
 import org.apache.solr.recipe.Policy.ClusterDataProvider;
 import org.apache.solr.recipe.Policy.ReplicaInfo;
 
-public class SolrClientClusterDataProvider implements ClusterDataProvider {
+public class ServerClusterDataProvider implements ClusterDataProvider {
 
-  private final ClusterStateProvider clusterStateProvider;
+  private final CoreContainer coreContainer;
+  private Set<String> liveNodes;
+  private Map<String,Object> snitchSession = new HashMap<>();
   private final Map<String, Map<String, Map<String, List<ReplicaInfo>>>> data = new HashMap<>();
 
-  public SolrClientClusterDataProvider(ClusterStateProvider csp) {
-    this.clusterStateProvider = csp;
-    Map<String, ClusterState.CollectionRef> all = clusterStateProvider.getCollections();
+  public ServerClusterDataProvider(CoreContainer coreContainer) {
+    this.coreContainer = coreContainer;
+    ClusterState clusterState = coreContainer.getZkController().getZkStateReader().getClusterState();
+    this.liveNodes = clusterState.getLiveNodes();
+    Map<String, ClusterState.CollectionRef> all = clusterState.getCollectionStates();
     all.forEach((collName, ref) -> {
       DocCollection coll = ref.get();
       if (coll == null) return;
@@ -55,8 +62,10 @@ public class SolrClientClusterDataProvider implements ClusterDataProvider {
 
   @Override
   public Map<String, Object> getNodeValues(String node, Collection<String> keys) {
-    //todo
-    return new HashMap<>();
+    AutoScalingSnitch  snitch = new AutoScalingSnitch();
+    ServerSnitchContext ctx = new ServerSnitchContext(null, node, snitchSession, coreContainer);
+    snitch.getRemoteInfo(node, new HashSet<>(keys), ctx);
+    return ctx.getTags();
   }
 
   @Override
@@ -66,6 +75,6 @@ public class SolrClientClusterDataProvider implements ClusterDataProvider {
 
   @Override
   public Collection<String> getNodes() {
-    return clusterStateProvider.liveNodes();
+    return liveNodes;
   }
 }
