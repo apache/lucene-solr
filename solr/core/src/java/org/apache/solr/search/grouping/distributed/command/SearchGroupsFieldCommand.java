@@ -138,7 +138,7 @@ public class SearchGroupsFieldCommand implements Command<SearchGroupsFieldComman
   }
 
   @Override
-  public Sort getSortWithinGroup() {
+  public Sort getWithinGroupSort() {
     return null;
   }
 

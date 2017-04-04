@@ -190,6 +190,9 @@ Other Changes
 
 * SOLR-9745: print errors from solr.cmd (Gopikannan Venugopalsamy via Mikhail Khludnev)
 
+* SOLR-10394: Rename getSortWithinGroup to getWithinGroupSort in search.grouping.Command class.
+  (Judith Silverman, Christine Poerschke)
+
 ==================  6.5.1 ==================
 
 Bug Fixes
