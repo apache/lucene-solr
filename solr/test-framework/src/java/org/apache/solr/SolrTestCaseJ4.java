@@ -39,7 +39,6 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.security.SecureRandom;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -2439,14 +2438,6 @@ public abstract class SolrTestCaseJ4 extends LuceneTestCase {
     }
   }
 
-  @BeforeClass
-  public static void assertNonBlockingRandomGeneratorAvailable() {
-    if(Boolean.parseBoolean(System.getProperty("test.solr.allow.any.securerandom","false")))
-      return;
-    // Use -Djava.security.egd=file:/dev/./urandom VM option if you hit this 
-    assertEquals("SHA1PRNG", new SecureRandom().getAlgorithm());
-  }
-  
   @AfterClass
   public static void unchooseMPForMP() {
     System.clearProperty(SYSTEM_PROPERTY_SOLR_TESTS_USEMERGEPOLICYFACTORY);
