@@ -42,7 +42,7 @@ public class TestRegexpQuery extends LuceneTestCase {
   private IndexSearcher searcher;
   private IndexReader reader;
   private Directory directory;
-  private final String FN = "field";
+  private static final String FN = "field";
   
   @Override
   public void setUp() throws Exception {

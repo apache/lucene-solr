@@ -48,13 +48,18 @@ import org.apache.lucene.util.Version;
  * if there is some bug in a given si Format that this
  * test fails to catch then this test needs to be improved! */
 public abstract class BaseSegmentInfoFormatTestCase extends BaseIndexFileFormatTestCase {
-  
+
+  /** Whether this format records min versions. */
+  protected boolean supportsMinVersion() {
+    return true;
+  }
+
   /** Test files map */
   public void testFiles() throws Exception {
     Directory dir = newDirectory();
     Codec codec = getCodec();
     byte id[] = StringHelper.randomId();
-    SegmentInfo info = new SegmentInfo(dir, getVersions()[0], "_123", 1, false, codec, 
+    SegmentInfo info = new SegmentInfo(dir, getVersions()[0], getVersions()[0], "_123", 1, false, codec, 
                                        Collections.<String,String>emptyMap(), id, new HashMap<>(), null);
     info.setFiles(Collections.<String>emptySet());
     codec.segmentInfoFormat().write(dir, info, IOContext.DEFAULT);
@@ -68,7 +73,7 @@ public abstract class BaseSegmentInfoFormatTestCase extends BaseIndexFileFormatT
     Directory dir = newDirectory();
     Codec codec = getCodec();
     byte id[] = StringHelper.randomId();
-    SegmentInfo info = new SegmentInfo(dir, getVersions()[0], "_123", 1, false, codec, 
+    SegmentInfo info = new SegmentInfo(dir, getVersions()[0], getVersions()[0], "_123", 1, false, codec, 
                                        Collections.<String,String>emptyMap(), id, new HashMap<>(), null);
     Set<String> originalFiles = Collections.singleton("_123.a");
     info.setFiles(originalFiles);
@@ -97,7 +102,7 @@ public abstract class BaseSegmentInfoFormatTestCase extends BaseIndexFileFormatT
     Map<String,String> diagnostics = new HashMap<>();
     diagnostics.put("key1", "value1");
     diagnostics.put("key2", "value2");
-    SegmentInfo info = new SegmentInfo(dir, getVersions()[0], "_123", 1, false, codec, 
+    SegmentInfo info = new SegmentInfo(dir, getVersions()[0], getVersions()[0], "_123", 1, false, codec, 
                                        diagnostics, id, new HashMap<>(), null);
     info.setFiles(Collections.<String>emptySet());
     codec.segmentInfoFormat().write(dir, info, IOContext.DEFAULT);
@@ -120,7 +125,7 @@ public abstract class BaseSegmentInfoFormatTestCase extends BaseIndexFileFormatT
     Map<String,String> attributes = new HashMap<>();
     attributes.put("key1", "value1");
     attributes.put("key2", "value2");
-    SegmentInfo info = new SegmentInfo(dir, getVersions()[0], "_123", 1, false, codec, 
+    SegmentInfo info = new SegmentInfo(dir, getVersions()[0], getVersions()[0], "_123", 1, false, codec, 
                                        Collections.emptyMap(), id, attributes, null);
     info.setFiles(Collections.<String>emptySet());
     codec.segmentInfoFormat().write(dir, info, IOContext.DEFAULT);
@@ -140,7 +145,7 @@ public abstract class BaseSegmentInfoFormatTestCase extends BaseIndexFileFormatT
     Codec codec = getCodec();
     Directory dir = newDirectory();
     byte id[] = StringHelper.randomId();
-    SegmentInfo info = new SegmentInfo(dir, getVersions()[0], "_123", 1, false, codec, 
+    SegmentInfo info = new SegmentInfo(dir, getVersions()[0], getVersions()[0], "_123", 1, false, codec, 
                                        Collections.<String,String>emptyMap(), id, new HashMap<>(), null);
     info.setFiles(Collections.<String>emptySet());
     codec.segmentInfoFormat().write(dir, info, IOContext.DEFAULT);
@@ -153,15 +158,22 @@ public abstract class BaseSegmentInfoFormatTestCase extends BaseIndexFileFormatT
   public void testVersions() throws Exception {
     Codec codec = getCodec();
     for (Version v : getVersions()) {
-      Directory dir = newDirectory();
-      byte id[] = StringHelper.randomId();
-      SegmentInfo info = new SegmentInfo(dir, v, "_123", 1, false, codec, 
-                                         Collections.<String,String>emptyMap(), id, new HashMap<>(), null);
-      info.setFiles(Collections.<String>emptySet());
-      codec.segmentInfoFormat().write(dir, info, IOContext.DEFAULT);
-      SegmentInfo info2 = codec.segmentInfoFormat().read(dir, "_123", id, IOContext.DEFAULT);
-      assertEquals(info2.getVersion(), v);
-      dir.close();
+      for (Version minV : new Version[] { v, null}) {
+        Directory dir = newDirectory();
+        byte id[] = StringHelper.randomId();
+        SegmentInfo info = new SegmentInfo(dir, v, minV, "_123", 1, false, codec, 
+                                           Collections.<String,String>emptyMap(), id, new HashMap<>(), null);
+        info.setFiles(Collections.<String>emptySet());
+        codec.segmentInfoFormat().write(dir, info, IOContext.DEFAULT);
+        SegmentInfo info2 = codec.segmentInfoFormat().read(dir, "_123", id, IOContext.DEFAULT);
+        assertEquals(info2.getVersion(), v);
+        if (supportsMinVersion()) {
+          assertEquals(info2.getMinVersion(), minV);
+        } else {
+          assertEquals(info2.getMinVersion(), null);
+        }
+        dir.close();
+      }
     }
   }
 
@@ -262,7 +274,7 @@ public abstract class BaseSegmentInfoFormatTestCase extends BaseIndexFileFormatT
       Directory dir = newDirectory();
       Codec codec = getCodec();
       byte id[] = StringHelper.randomId();
-      SegmentInfo info = new SegmentInfo(dir, getVersions()[0], "_123", 1, false, codec, 
+      SegmentInfo info = new SegmentInfo(dir, getVersions()[0], getVersions()[0], "_123", 1, false, codec, 
           Collections.<String,String>emptyMap(), id, new HashMap<>(), sort);
       info.setFiles(Collections.<String>emptySet());
       codec.segmentInfoFormat().write(dir, info, IOContext.DEFAULT);
@@ -292,7 +304,7 @@ public abstract class BaseSegmentInfoFormatTestCase extends BaseIndexFileFormatT
     dir.failOn(fail);
     Codec codec = getCodec();
     byte id[] = StringHelper.randomId();
-    SegmentInfo info = new SegmentInfo(dir, getVersions()[0], "_123", 1, false, codec, 
+    SegmentInfo info = new SegmentInfo(dir, getVersions()[0], getVersions()[0], "_123", 1, false, codec, 
                                        Collections.<String,String>emptyMap(), id, new HashMap<>(), null);
     info.setFiles(Collections.<String>emptySet());
     
@@ -325,7 +337,7 @@ public abstract class BaseSegmentInfoFormatTestCase extends BaseIndexFileFormatT
     dir.failOn(fail);
     Codec codec = getCodec();
     byte id[] = StringHelper.randomId();
-    SegmentInfo info = new SegmentInfo(dir, getVersions()[0], "_123", 1, false, codec, 
+    SegmentInfo info = new SegmentInfo(dir, getVersions()[0], getVersions()[0], "_123", 1, false, codec, 
                                        Collections.<String,String>emptyMap(), id, new HashMap<>(), null);
     info.setFiles(Collections.<String>emptySet());
     
@@ -358,7 +370,7 @@ public abstract class BaseSegmentInfoFormatTestCase extends BaseIndexFileFormatT
     dir.failOn(fail);
     Codec codec = getCodec();
     byte id[] = StringHelper.randomId();
-    SegmentInfo info = new SegmentInfo(dir, getVersions()[0], "_123", 1, false, codec, 
+    SegmentInfo info = new SegmentInfo(dir, getVersions()[0], getVersions()[0], "_123", 1, false, codec, 
                                        Collections.<String,String>emptyMap(), id, new HashMap<>(), null);
     info.setFiles(Collections.<String>emptySet());
     codec.segmentInfoFormat().write(dir, info, IOContext.DEFAULT);
@@ -392,7 +404,7 @@ public abstract class BaseSegmentInfoFormatTestCase extends BaseIndexFileFormatT
     dir.failOn(fail);
     Codec codec = getCodec();
     byte id[] = StringHelper.randomId();
-    SegmentInfo info = new SegmentInfo(dir, getVersions()[0], "_123", 1, false, codec, 
+    SegmentInfo info = new SegmentInfo(dir, getVersions()[0], getVersions()[0], "_123", 1, false, codec, 
                                        Collections.<String,String>emptyMap(), id, new HashMap<>(), null);
     info.setFiles(Collections.<String>emptySet());
     codec.segmentInfoFormat().write(dir, info, IOContext.DEFAULT);
@@ -442,7 +454,7 @@ public abstract class BaseSegmentInfoFormatTestCase extends BaseIndexFileFormatT
                        TestUtil.randomUnicodeString(random()));
       }
       
-      SegmentInfo info = new SegmentInfo(dir, version, name, docCount, isCompoundFile, codec, diagnostics, id, attributes, null);
+      SegmentInfo info = new SegmentInfo(dir, version, null, name, docCount, isCompoundFile, codec, diagnostics, id, attributes, null);
       info.setFiles(files);
       codec.segmentInfoFormat().write(dir, info, IOContext.DEFAULT);
       SegmentInfo info2 = codec.segmentInfoFormat().read(dir, name, id, IOContext.DEFAULT);

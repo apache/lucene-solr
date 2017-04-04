@@ -33,6 +33,7 @@ import com.codahale.metrics.MetricRegistry;
 import com.codahale.metrics.Timer;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.util.NamedList;
+import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.handler.RequestHandlerBase;
@@ -79,7 +80,7 @@ public class MetricsHandler extends RequestHandlerBase implements PermissionName
     List<MetricFilter> metricFilters = metricTypes.stream().map(MetricType::asMetricFilter).collect(Collectors.toList());
     Set<String> requestedRegistries = parseRegistries(req);
 
-    NamedList response = new NamedList();
+    NamedList response = new SimpleOrderedMap();
     for (String registryName : requestedRegistries) {
       MetricRegistry registry = metricManager.registry(registryName);
       response.add(registryName, MetricUtils.toNamedList(registry, metricFilters, mustMatchFilter, false,

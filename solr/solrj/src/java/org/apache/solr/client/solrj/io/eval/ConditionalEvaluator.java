@@ -42,7 +42,7 @@ public abstract class ConditionalEvaluator extends ComplexEvaluator {
     
     return results;
   }
-  
+
   public interface Checker {
     default boolean isNullAllowed(){
       return false;

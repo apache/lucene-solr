@@ -197,7 +197,7 @@ public class TestReloadDeadlock extends TestRTGBase {
   private void addDoc(int id, long nextVal, long version) throws Exception {
     ifVerbose("adding id", id, "val=", nextVal, "version", version);
 
-    Long returnedVersion = addAndGetVersion(sdoc("id", Integer.toString(id), field, Long.toString(nextVal),
+    Long returnedVersion = addAndGetVersion(sdoc("id", Integer.toString(id), FIELD, Long.toString(nextVal),
         "_version_", Long.toString(version)), params(DISTRIB_UPDATE_PARAM, FROM_LEADER));
     if (returnedVersion != null) {
       assertEquals(version, returnedVersion.longValue());

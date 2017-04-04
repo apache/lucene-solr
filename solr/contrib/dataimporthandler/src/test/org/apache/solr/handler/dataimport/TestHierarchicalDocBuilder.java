@@ -155,7 +155,7 @@ public class TestHierarchicalDocBuilder extends AbstractDataImportHandlerTestCas
     
     int totalDocsNum = parentsNum + childrenNum + grandChildrenNum;
     
-    runFullImport(threeLevelHierarchyConfig);
+    runFullImport(THREE_LEVEL_HIERARCHY_CONFIG);
     
     assertTrue("Update request processor processAdd was not called", TestUpdateRequestProcessor.processAddCalled);
     assertTrue("Update request processor processCommit was not callled", TestUpdateRequestProcessor.processCommitCalled);
@@ -333,9 +333,9 @@ public class TestHierarchicalDocBuilder extends AbstractDataImportHandlerTestCas
     String children = createChildren(parentType, 0, depth, parentData, holder);
     
     String rootFields = createFieldsList(FIELD_ID, "desc", "type_s");
-    String rootEntity = StrUtils.formatString(rootEntityTemplate, parentType, "SELECT * FROM " + parentType, rootFields, children);
+    String rootEntity = StrUtils.formatString(ROOT_ENTITY_TEMPLATE, parentType, "SELECT * FROM " + parentType, rootFields, children);
 
-    String config = StrUtils.formatString(dataConfigTemplate, rootEntity);
+    String config = StrUtils.formatString(DATA_CONFIG_TEMPLATE, rootEntity);
     return config;
   }
   
@@ -396,7 +396,7 @@ public class TestHierarchicalDocBuilder extends AbstractDataImportHandlerTestCas
       List<Hierarchy> childData = createMockedIterator(childName, parentData, holder);
       
       String subChildren = createChildren(childName, currentLevel + 1, maxLevel, childData, holder);
-      String child = StrUtils.formatString(childEntityTemplate, childName, select, fields, subChildren);
+      String child = StrUtils.formatString(CHILD_ENTITY_TEMPLATE, childName, select, fields, subChildren);
       builder.append(child);
       builder.append('\n');
     }
@@ -414,7 +414,7 @@ public class TestHierarchicalDocBuilder extends AbstractDataImportHandlerTestCas
     return builder.toString();
   }
 
-  private final String threeLevelHierarchyConfig = "<dataConfig>\n" +
+  private static final String THREE_LEVEL_HIERARCHY_CONFIG = "<dataConfig>\n" +
       "  <dataSource type='MockDataSource' />\n" +
       "  <document>\n" +
       "    <entity name='PARENT' query='select * from PARENT'>\n" +
@@ -436,7 +436,7 @@ public class TestHierarchicalDocBuilder extends AbstractDataImportHandlerTestCas
       "</dataConfig>";
   
   /** {0} is rootEntity block **/
-  private final String dataConfigTemplate = "<dataConfig><dataSource type=\"MockDataSource\" />\n<document>\n {0}</document></dataConfig>";
+  private static final String DATA_CONFIG_TEMPLATE = "<dataConfig><dataSource type=\"MockDataSource\" />\n<document>\n {0}</document></dataConfig>";
   
   /** 
    * {0} - entityName, 
@@ -444,7 +444,7 @@ public class TestHierarchicalDocBuilder extends AbstractDataImportHandlerTestCas
    * {2} - fieldsList
    * {3} - childEntitiesList 
    **/
-  private final String rootEntityTemplate = "<entity name=\"{0}\" query=\"{1}\">\n{2} {3}\n</entity>\n";
+  private static final String ROOT_ENTITY_TEMPLATE = "<entity name=\"{0}\" query=\"{1}\">\n{2} {3}\n</entity>\n";
   
   /** 
    * {0} - entityName, 
@@ -452,7 +452,7 @@ public class TestHierarchicalDocBuilder extends AbstractDataImportHandlerTestCas
    * {2} - fieldsList
    * {3} - childEntitiesList 
    **/
-  private final String childEntityTemplate = "<entity " + ConfigNameConstants.CHILD + "=\"true\" name=\"{0}\" query=\"{1}\">\n {2} {3} </entity>\n";
+  private static final String CHILD_ENTITY_TEMPLATE = "<entity " + ConfigNameConstants.CHILD + "=\"true\" name=\"{0}\" query=\"{1}\">\n {2} {3} </entity>\n";
   
   private BitSetProducer createParentFilter(String type) {
     BooleanQuery.Builder parentQuery = new BooleanQuery.Builder();

@@ -693,10 +693,18 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
         System.out.println("\nTEST: index=" + name);
       }
       Directory dir = newDirectory(oldIndexDirs.get(name));
+
+      final SegmentInfos oldSegInfos = SegmentInfos.readLatestCommit(dir);
+
       IndexWriter w = new IndexWriter(dir, new IndexWriterConfig(new MockAnalyzer(random())));
       w.forceMerge(1);
       w.close();
-      
+
+      final SegmentInfos segInfos = SegmentInfos.readLatestCommit(dir);
+      assertEquals(oldSegInfos.getIndexCreatedVersionMajor(), segInfos.getIndexCreatedVersionMajor());
+      assertEquals(Version.LATEST, segInfos.asList().get(0).info.getVersion());
+      assertEquals(oldSegInfos.asList().get(0).info.getMinVersion(), segInfos.asList().get(0).info.getMinVersion());
+
       dir.close();
     }
   }
@@ -707,26 +715,30 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
         System.out.println("\nTEST: old index " + name);
       }
       Directory oldDir = oldIndexDirs.get(name);
-      Version indexCreatedVersion = SegmentInfos.readLatestCommit(oldDir).getIndexCreatedVersion();
+      SegmentInfos infos = SegmentInfos.readLatestCommit(oldDir);
 
       Directory targetDir = newDirectory();
-      // Simulate writing into an index that was created on the same version
-      new SegmentInfos(indexCreatedVersion).commit(targetDir);
+      if (infos.getCommitLuceneVersion().major != Version.LATEST.major) {
+        // both indexes are not compatible
+        Directory targetDir2 = newDirectory();
+        IndexWriter w = new IndexWriter(targetDir2, newIndexWriterConfig(new MockAnalyzer(random())));
+        IllegalArgumentException e = expectThrows(IllegalArgumentException.class, () -> w.addIndexes(oldDir));
+        assertTrue(e.getMessage(), e.getMessage().startsWith("Cannot use addIndexes(Directory) with indexes that have been created by a different Lucene version."));
+        w.close();
+        targetDir2.close();
+
+        // for the next test, we simulate writing to an index that was created on the same major version
+        new SegmentInfos(infos.getIndexCreatedVersionMajor()).commit(targetDir);
+      }
+
       IndexWriter w = new IndexWriter(targetDir, newIndexWriterConfig(new MockAnalyzer(random())));
       w.addIndexes(oldDir);
       w.close();
       targetDir.close();
 
-      // Now check that we forbid calling addIndexes with a different version
-      targetDir = newDirectory();
-      IndexWriter oldWriter = new IndexWriter(targetDir, newIndexWriterConfig(new MockAnalyzer(random())));
-      IllegalArgumentException e = expectThrows(IllegalArgumentException.class, () -> oldWriter.addIndexes(oldDir));
-      assertTrue(e.getMessage(), e.getMessage().startsWith("Cannot use addIndexes(Directory) with indexes that have been created by a different Lucene version."));
-
       if (VERBOSE) {
         System.out.println("\nTEST: done adding indices; now close");
       }
-      oldWriter.close();
       
       targetDir.close();
     }
@@ -734,9 +746,22 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
 
   public void testAddOldIndexesReader() throws IOException {
     for (String name : oldNames) {
-      DirectoryReader reader = DirectoryReader.open(oldIndexDirs.get(name));
+      Directory oldDir = oldIndexDirs.get(name);
+      SegmentInfos infos = SegmentInfos.readLatestCommit(oldDir);
+      DirectoryReader reader = DirectoryReader.open(oldDir);
       
       Directory targetDir = newDirectory();
+      if (infos.getCommitLuceneVersion().major != Version.LATEST.major) {
+        Directory targetDir2 = newDirectory();
+        IndexWriter w = new IndexWriter(targetDir2, newIndexWriterConfig(new MockAnalyzer(random())));
+        IllegalArgumentException e = expectThrows(IllegalArgumentException.class, () -> TestUtil.addIndexesSlowly(w, reader));
+        assertEquals(e.getMessage(), "Cannot merge a segment that has been created with major version 6 into this index which has been created by major version 7");
+        w.close();
+        targetDir2.close();
+
+        // for the next test, we simulate writing to an index that was created on the same major version
+        new SegmentInfos(infos.getIndexCreatedVersionMajor()).commit(targetDir);
+      }
       IndexWriter w = new IndexWriter(targetDir, newIndexWriterConfig(new MockAnalyzer(random())));
       TestUtil.addIndexesSlowly(w, reader);
       w.close();
@@ -1245,11 +1270,7 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
       SegmentInfos infos = SegmentInfos.readLatestCommit(dir);
       // those indexes are created by a single version so we can
       // compare the commit version with the created version
-      if (infos.getCommitLuceneVersion().onOrAfter(Version.LUCENE_7_0_0)) {
-        assertEquals(infos.getCommitLuceneVersion(), infos.getIndexCreatedVersion());
-      } else {
-        assertNull(infos.getIndexCreatedVersion());
-      }
+      assertEquals(infos.getCommitLuceneVersion().major, infos.getIndexCreatedVersionMajor());
     }
   }
 
@@ -1316,7 +1337,7 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
     }
   }
   
-  private int checkAllSegmentsUpgraded(Directory dir, Version indexCreatedVersion) throws IOException {
+  private int checkAllSegmentsUpgraded(Directory dir, int indexCreatedVersion) throws IOException {
     final SegmentInfos infos = SegmentInfos.readLatestCommit(dir);
     if (VERBOSE) {
       System.out.println("checkAllSegmentsUpgraded: " + infos);
@@ -1325,7 +1346,7 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
       assertEquals(Version.LATEST, si.info.getVersion());
     }
     assertEquals(Version.LATEST, infos.getCommitLuceneVersion());
-    assertEquals(indexCreatedVersion, infos.getIndexCreatedVersion());
+    assertEquals(indexCreatedVersion, infos.getIndexCreatedVersionMajor());
     return infos.size();
   }
   
@@ -1343,7 +1364,7 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
         System.out.println("testUpgradeOldIndex: index=" +name);
       }
       Directory dir = newDirectory(oldIndexDirs.get(name));
-      Version indexCreatedVersion = SegmentInfos.readLatestCommit(dir).getIndexCreatedVersion();
+      int indexCreatedVersion = SegmentInfos.readLatestCommit(dir).getIndexCreatedVersionMajor();
 
       newIndexUpgrader(dir).upgrade();
 
@@ -1360,7 +1381,7 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
     try {
       for (Map.Entry<String,Directory> entry : oldIndexDirs.entrySet()) {
         String name = entry.getKey();
-        Version indexCreatedVersion = SegmentInfos.readLatestCommit(entry.getValue()).getIndexCreatedVersion();
+        int indexCreatedVersion = SegmentInfos.readLatestCommit(entry.getValue()).getIndexCreatedVersionMajor();
         Path dir = createTempDir(name);
         TestUtil.unzip(getDataInputStream("index." + name + ".zip"), dir);
         
@@ -1413,7 +1434,7 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
       }
       Directory dir = newDirectory(oldIndexDirs.get(name));
       assertEquals("Original index must be single segment", 1, getNumberOfSegments(dir));
-      Version indexCreatedVersion = SegmentInfos.readLatestCommit(dir).getIndexCreatedVersion();
+      int indexCreatedVersion = SegmentInfos.readLatestCommit(dir).getIndexCreatedVersionMajor();
 
       // create a bunch of dummy segments
       int id = 40;
@@ -1472,7 +1493,7 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
 
     newIndexUpgrader(dir).upgrade();
 
-    checkAllSegmentsUpgraded(dir, null);
+    checkAllSegmentsUpgraded(dir, 6);
     
     dir.close();
   }
@@ -1598,7 +1619,7 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
 
       DirectoryReader reader = DirectoryReader.open(dir);
       assertEquals(1, reader.leaves().size());
-      Sort sort = reader.leaves().get(0).reader().getIndexSort();
+      Sort sort = reader.leaves().get(0).reader().getMetaData().getSort();
       assertNotNull(sort);
       assertEquals("<long: \"dateDV\">!", sort.toString());
       reader.close();

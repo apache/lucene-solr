@@ -697,7 +697,7 @@ public final class CheckIndex implements Closeable {
         long startOpenReaderNS = System.nanoTime();
         if (infoStream != null)
           infoStream.print("    test: open reader.........");
-        reader = new SegmentReader(info, IOContext.DEFAULT);
+        reader = new SegmentReader(info, sis.getIndexCreatedVersionMajor(), IOContext.DEFAULT);
         msg(infoStream, String.format(Locale.ROOT, "OK [took %.3f sec]", nsToSec(System.nanoTime()-startOpenReaderNS)));
 
         segInfoStat.openReaderPassed = true;

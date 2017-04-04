@@ -40,7 +40,6 @@ import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.Scorer;
 import org.apache.lucene.search.SimpleCollector;
-import org.apache.lucene.search.Sort;
 import org.apache.lucene.search.similarities.Similarity;
 import org.apache.lucene.store.RAMDirectory;
 import org.apache.lucene.util.ArrayUtil;
@@ -58,6 +57,7 @@ import org.apache.lucene.util.IntBlockPool.SliceWriter;
 import org.apache.lucene.util.RecyclingByteBlockAllocator;
 import org.apache.lucene.util.RecyclingIntBlockAllocator;
 import org.apache.lucene.util.StringHelper;
+import org.apache.lucene.util.Version;
 
 /**
  * High-performance single-document main memory Apache Lucene fulltext search index. 
@@ -1625,8 +1625,8 @@ public class MemoryIndex {
     }
 
     @Override
-    public Sort getIndexSort() {
-      return null;
+    public LeafMetaData getMetaData() {
+      return new LeafMetaData(Version.LATEST.major, Version.LATEST, null);
     }
 
     @Override

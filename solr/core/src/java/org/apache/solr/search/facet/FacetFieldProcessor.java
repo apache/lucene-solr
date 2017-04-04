@@ -36,6 +36,8 @@ import org.apache.solr.schema.FieldType;
 import org.apache.solr.schema.SchemaField;
 import org.apache.solr.search.DocSet;
 
+import static org.apache.solr.search.facet.FacetContext.SKIP_FACET;
+
 /**
  * Facet processing based on field values. (not range nor by query)
  * @see FacetField
@@ -528,6 +530,9 @@ abstract class FacetFieldProcessor extends FacetProcessor<FacetField> {
   }
 
   protected SimpleOrderedMap<Object> refineFacets() throws IOException {
+    boolean skipThisFacet = (fcontext.flags & SKIP_FACET) != 0;
+
+
     List leaves = asList(fcontext.facetInfo.get("_l"));        // We have not seen this bucket: do full faceting for this bucket, including all sub-facets
     List<List> skip = asList(fcontext.facetInfo.get("_s"));    // We have seen this bucket, so skip stats on it, and skip sub-facets except for the specified sub-facets that should calculate specified buckets.
     List<List> partial = asList(fcontext.facetInfo.get("_p")); // We have not seen this bucket, do full faceting for this bucket, and most sub-facets... but some sub-facets are partial and should only visit specified buckets.
@@ -563,6 +568,15 @@ abstract class FacetFieldProcessor extends FacetProcessor<FacetField> {
       bucketList.add( refineBucket(bucketVal, false, facetInfo ) );
     }
 
+    if (freq.missing) {
+      Map<String,Object> bucketFacetInfo = (Map<String,Object>)fcontext.facetInfo.get("missing");
+
+      if (bucketFacetInfo != null || !skipThisFacet) {
+        SimpleOrderedMap<Object> missingBucket = new SimpleOrderedMap<>();
+        fillBucket(missingBucket, getFieldMissingQuery(fcontext.searcher, freq.field), null, skipThisFacet, bucketFacetInfo);
+        res.add("missing", missingBucket);
+      }
+    }
 
     // If there are just a couple of leaves, and if the domain is large, then
     // going by term is likely the most efficient?

@@ -35,34 +35,34 @@ import org.xml.sax.SAXException;
  */
 public class AnalyticsContentHandler implements ContentHandler {
   // XML Element/Attribute Name Constants
-  public final String ANALYTICS_REQUEST_ENVELOPE="analyticsRequestEnvelope";
+  public static final String ANALYTICS_REQUEST_ENVELOPE="analyticsRequestEnvelope";
   
-  public final String ANALYTICS_REQUEST="analyticsRequest";
-  public final String NAME="name";
+  public static final String ANALYTICS_REQUEST="analyticsRequest";
+  public static final String NAME="name";
   
-  public final String STATISTIC="statistic";
-  public final String EXPRESSION="expression";
+  public static final String STATISTIC="statistic";
+  public static final String EXPRESSION="expression";
   
-  public final String FIELD_FACET="fieldFacet";
-  public final String FIELD="field";
-  public final String SHOW_MISSING="showMissing";
-  public final String LIMIT="limit";
-  public final String MIN_COUNT="minCount";
+  public static final String FIELD_FACET="fieldFacet";
+  public static final String FIELD="field";
+  public static final String SHOW_MISSING="showMissing";
+  public static final String LIMIT="limit";
+  public static final String MIN_COUNT="minCount";
   
-  public final String SORT_SPECIFICATION="sortSpecification";
-  public final String STAT_NAME="statName";
-  public final String DIRECTION="direction";
+  public static final String SORT_SPECIFICATION="sortSpecification";
+  public static final String STAT_NAME="statName";
+  public static final String DIRECTION="direction";
   
-  public final String RANGE_FACET="rangeFacet";
-  public final String START="start";
-  public final String END="end";
-  public final String GAP="gap";
-  public final String INCLUDE_BOUNDARY="includeBoundary";
-  public final String OTHER_RANGE="otherRange";
-  public final String HARD_END="hardend";
+  public static final String RANGE_FACET="rangeFacet";
+  public static final String START="start";
+  public static final String END="end";
+  public static final String GAP="gap";
+  public static final String INCLUDE_BOUNDARY="includeBoundary";
+  public static final String OTHER_RANGE="otherRange";
+  public static final String HARD_END="hardend";
   
-  public final String QUERY_FACET="queryFacet";
-  public final String QUERY="query";
+  public static final String QUERY_FACET="queryFacet";
+  public static final String QUERY="query";
   
   // Default Values
   public static final int DEFAULT_FACET_LIMIT = -1;

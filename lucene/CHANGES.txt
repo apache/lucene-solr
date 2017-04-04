@@ -7,9 +7,12 @@ http://s.apache.org/luceneversions
 
 New Features
 
-* LUCENE-7703: SegmentInfos now record the Lucene version at index creation
-  time. (Adrien Grand)
+* LUCENE-7703: SegmentInfos now record the major Lucene version at index
+  creation time. (Adrien Grand)
 
+* LUCENE-7756: LeafReader.getMetaData now exposes the index created version as
+  well as the oldest Lucene version that contributed to the segment.
+  (Adrien Grand)
 
 API Changes
 
@@ -80,6 +83,9 @@ Other
 
 * LUCENE-7681: MemoryIndex uses new DocValues API (Alan Woodward)
 
+* LUCENE-7753: Make fields static when possible.
+  (Daniel Jelinski via Adrien Grand)
+
 ======================= Lucene 6.6.0 =======================
 
 Other
@@ -93,12 +99,23 @@ Other
 * LUCENE-7743: Never call new String(String).
   (Daniel Jelinski via Adrien Grand)
 
+* LUCENE-7761: Fixed comment in ReqExclScorer.
+  (Pablo Pita Leira via Adrien Grand)
+
 ======================= Lucene 6.5.1 =======================
 
 Bug Fixes
 
 * LUCENE-7755: Fixed join queries to not reference IndexReaders, as it could
   cause leaks if they are cached. (Adrien Grand)
+
+* LUCENE-7749: Made LRUQueryCache delegate the scoreSupplier method.
+  (Martin Amirault via Adrien Grand)
+
+Other
+
+* LUCENE-7763: Remove outdated comment in IndexWriterConfig.setIndexSort javadocs.
+  (马可阳 via Christine Poerschke)
 
 ======================= Lucene 6.5.0 =======================
 

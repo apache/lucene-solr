@@ -42,7 +42,7 @@ import org.slf4j.LoggerFactory;
 public class OverseerTaskQueue extends DistributedQueue {
   private static final Logger LOG = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   
-  private final String response_prefix = "qnr-" ;
+  private static final String RESPONSE_PREFIX = "qnr-" ;
 
   public OverseerTaskQueue(SolrZkClient zookeeper, String dir) {
     this(zookeeper, dir, new Overseer.Stats());
@@ -88,7 +88,7 @@ public class OverseerTaskQueue extends DistributedQueue {
     Timer.Context time = stats.time(dir + "_remove_event");
     try {
       String path = event.getId();
-      String responsePath = dir + "/" + response_prefix
+      String responsePath = dir + "/" + RESPONSE_PREFIX
           + path.substring(path.lastIndexOf("-") + 1);
       if (zookeeper.exists(responsePath, true)) {
         zookeeper.setData(responsePath, event.getBytes(), true);
@@ -217,7 +217,7 @@ public class OverseerTaskQueue extends DistributedQueue {
 
   String createResponseNode() throws KeeperException, InterruptedException {
     return createData(
-            dir + "/" + response_prefix,
+            dir + "/" + RESPONSE_PREFIX,
             null, CreateMode.EPHEMERAL_SEQUENTIAL);
   }
 

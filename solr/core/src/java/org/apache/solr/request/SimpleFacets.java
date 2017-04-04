@@ -42,7 +42,6 @@ import org.apache.lucene.index.LeafReader;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.MultiPostingsEnum;
 import org.apache.lucene.index.PostingsEnum;
-import org.apache.lucene.index.Term;
 import org.apache.lucene.index.Terms;
 import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.search.BooleanClause.Occur;
@@ -52,7 +51,6 @@ import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.search.FilterCollector;
 import org.apache.lucene.search.LeafCollector;
 import org.apache.lucene.search.Query;
-import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.search.grouping.AllGroupHeadsCollector;
 import org.apache.lucene.search.grouping.term.TermAllGroupsCollector;
 import org.apache.lucene.search.grouping.term.TermGroupFacetCollector;
@@ -851,17 +849,9 @@ public class SimpleFacets {
     SchemaField sf = searcher.getSchema().getField(field);
     FieldType ft = sf.getType();
     NamedList<Integer> res = new NamedList<>();
-    if (ft.isPointField()) {
-      for (String term : terms) {
-        int count = searcher.numDocs(ft.getFieldQuery(null, sf, term), parsed.docs);
-        res.add(term, count);
-      }
-    } else {
-      for (String term : terms) {
-        String internal = ft.toInternal(term);
-        int count = searcher.numDocs(new TermQuery(new Term(field, internal)), parsed.docs);
-        res.add(term, count);
-      }
+    for (String term : terms) {
+      int count = searcher.numDocs(ft.getFieldQuery(null, sf, term), parsed.docs);
+      res.add(term, count);
     }
     return res;    
   }

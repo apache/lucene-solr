@@ -60,12 +60,12 @@ public class TestCoreDiscovery extends SolrTestCaseJ4 {
     setMeUp(null);
   }
 
-  private Properties makeCorePropFile(String name, boolean isLazy, boolean loadOnStartup, String... extraProps) {
+  private Properties makeCorePropFile(String name, boolean isTransient, boolean loadOnStartup, String... extraProps) {
     Properties props = new Properties();
     props.put(CoreDescriptor.CORE_NAME, name);
     props.put(CoreDescriptor.CORE_SCHEMA, "schema-tiny.xml");
     props.put(CoreDescriptor.CORE_CONFIG, "solrconfig-minimal.xml");
-    props.put(CoreDescriptor.CORE_TRANSIENT, Boolean.toString(isLazy));
+    props.put(CoreDescriptor.CORE_TRANSIENT, Boolean.toString(isTransient));
     props.put(CoreDescriptor.CORE_LOADONSTARTUP, Boolean.toString(loadOnStartup));
     props.put(CoreDescriptor.CORE_DATADIR, "${core.dataDir:stuffandnonsense}");
 
@@ -140,7 +140,7 @@ public class TestCoreDiscovery extends SolrTestCaseJ4 {
     try {
 
       TestLazyCores.checkInCores(cc, "core1");
-      TestLazyCores.checkNotInCores(cc, "lazy1", "core2", "collection1");
+      TestLazyCores.checkNotInCores(cc, "lazy1", "core2");
 
       // force loading of core2 and lazy1 by getting them from the CoreContainer
       try (SolrCore core1 = cc.getCore("core1");
@@ -463,4 +463,5 @@ public class TestCoreDiscovery extends SolrTestCaseJ4 {
     NodeConfig absConfig = SolrXmlConfig.fromString(loader, "<solr><str name=\"coreRootDirectory\">/absolute</str></solr>");
     assertThat(absConfig.getCoreRootDirectory().toString(), not(containsString(solrHomeDirectory.getAbsolutePath())));
   }
+  
 }

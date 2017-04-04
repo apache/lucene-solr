@@ -23,9 +23,8 @@ import java.util.Map;
 import org.apache.lucene.index.*;
 import org.apache.lucene.index.MultiDocValues.MultiSortedDocValues;
 import org.apache.lucene.index.MultiDocValues.OrdinalMap;
-import org.apache.lucene.index.NumericDocValues;
-import org.apache.lucene.search.Sort;
 import org.apache.lucene.util.Bits;
+import org.apache.lucene.util.Version;
 
 /**
  * This class forces a composite reader (eg a {@link
@@ -47,6 +46,7 @@ public final class SlowCompositeReaderWrapper extends LeafReader {
 
   private final CompositeReader in;
   private final Fields fields;
+  private final LeafMetaData metaData;
   
   /** This method is sugar for getting an {@link LeafReader} from
    * an {@link IndexReader} of any kind. If the reader is already atomic,
@@ -66,6 +66,17 @@ public final class SlowCompositeReaderWrapper extends LeafReader {
     in = reader;
     fields = MultiFields.getFields(in);
     in.registerParentReader(this);
+    if (reader.leaves().isEmpty()) {
+      metaData = new LeafMetaData(Version.LATEST.major, Version.LATEST, null);
+    } else {
+      Version minVersion = reader.leaves().stream()
+          .map(LeafReaderContext::reader)
+          .map(LeafReader::getMetaData)
+          .map(LeafMetaData::getMinVersion)
+          .reduce((v1, v2) -> v1 == null ? null : v2 == null ? null : v2.onOrAfter(v1) ? v1 : v2)
+          .get();
+      metaData = new LeafMetaData(reader.leaves().get(0).reader().getMetaData().getCreatedVersionMajor(), minVersion, null);
+    }
   }
 
   @Override
@@ -263,7 +274,7 @@ public final class SlowCompositeReaderWrapper extends LeafReader {
   }
 
   @Override
-  public Sort getIndexSort() {
-    return null;
+  public LeafMetaData getMetaData() {
+    return metaData;
   }
 }

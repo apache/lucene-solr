@@ -2001,8 +2001,7 @@ public abstract class SolrTestCaseJ4 extends LuceneTestCase {
     FileUtils.copyFile(new File(top, "solrconfig.snippet.randomindexconfig.xml"), new File(subHome, "solrconfig.snippet.randomindexconfig.xml"));
   }
 
-  // Creates minimal full setup, including the old solr.xml file that used to be hard coded in ConfigSolrXmlOld
-  // TODO: remove for 5.0
+  // Creates minimal full setup, including solr.xml
   public static void copyMinFullSetup(File dstRoot) throws IOException {
     if (! dstRoot.exists()) {
       assertTrue("Failed to make subdirectory ", dstRoot.mkdirs());
@@ -2012,6 +2011,15 @@ public abstract class SolrTestCaseJ4 extends LuceneTestCase {
     copyMinConf(dstRoot);
   }
 
+  // Just copies the file indicated to the tmp home directory naming it "solr.xml"
+  public static void copyXmlToHome(File dstRoot, String fromFile) throws IOException {
+    if (! dstRoot.exists()) {
+      assertTrue("Failed to make subdirectory ", dstRoot.mkdirs());
+    }
+    File xmlF = new File(SolrTestCaseJ4.TEST_HOME(), fromFile);
+    FileUtils.copyFile(xmlF, new File(dstRoot, "solr.xml"));
+    
+  }
   // Creates a consistent configuration, _including_ solr.xml at dstRoot. Creates collection1/conf and copies
   // the stock files in there.
 
@@ -2019,7 +2027,6 @@ public abstract class SolrTestCaseJ4 extends LuceneTestCase {
     if (!dstRoot.exists()) {
       assertTrue("Failed to make subdirectory ", dstRoot.mkdirs());
     }
-
     FileUtils.copyFile(new File(SolrTestCaseJ4.TEST_HOME(), "solr.xml"), new File(dstRoot, "solr.xml"));
 
     File subHome = new File(dstRoot, collection + File.separator + "conf");

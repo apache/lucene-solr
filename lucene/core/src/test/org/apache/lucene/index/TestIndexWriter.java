@@ -2805,7 +2805,7 @@ public class TestIndexWriter extends LuceneTestCase {
     IndexWriter w = new IndexWriter(dir, newIndexWriterConfig());
     w.commit();
     w.close();
-    assertEquals(Version.LATEST, SegmentInfos.readLatestCommit(dir).getIndexCreatedVersion());
+    assertEquals(Version.LATEST.major, SegmentInfos.readLatestCommit(dir).getIndexCreatedVersionMajor());
     dir.close();
   }
 

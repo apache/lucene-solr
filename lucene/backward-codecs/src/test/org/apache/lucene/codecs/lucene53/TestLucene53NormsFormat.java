@@ -19,12 +19,18 @@ package org.apache.lucene.codecs.lucene53;
 import org.apache.lucene.codecs.Codec;
 import org.apache.lucene.codecs.lucene62.Lucene62RWCodec;
 import org.apache.lucene.index.BaseNormsFormatTestCase;
+import org.apache.lucene.util.Version;
 
 /**
  * Tests Lucene53NormsFormat
  */
 public class TestLucene53NormsFormat extends BaseNormsFormatTestCase {
   private final Codec codec = new Lucene62RWCodec();
+
+  @Override
+  protected int getCreatedVersionMajor() {
+    return Version.LUCENE_6_2_0.major;
+  }
 
   @Override
   protected Codec getCodec() {
