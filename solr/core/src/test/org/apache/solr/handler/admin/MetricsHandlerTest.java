@@ -22,6 +22,7 @@ import java.util.Map;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.util.NamedList;
+import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.response.SolrQueryResponse;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -147,9 +148,9 @@ public class MetricsHandlerTest extends SolrTestCaseJ4 {
     handler.handleRequestBody(req(CommonParams.QT, "/admin/metrics", CommonParams.WT, "json", "group", "node", "type", "timer", "prefix", "CONTAINER.cores"), resp);
     values = resp.getValues();
     assertNotNull(values.get("metrics"));
-    values = (NamedList) values.get("metrics");
-    assertEquals(1, values.size());
-    assertEquals(0, ((NamedList)values.get("solr.node")).size());
+    SimpleOrderedMap map = (SimpleOrderedMap) values.get("metrics");
+    assertEquals(1, map.size());
+    assertEquals(0, ((NamedList)map.get("solr.node")).size());
   }
 
   @Test
