@@ -21,7 +21,8 @@ var solrAdminApp = angular.module("solrAdminApp", [
   "ngCookies",
   "ngtimeago",
   "solrAdminServices",
-  "localytics.directives"
+  "localytics.directives",
+  "ui.grid"
 ]);
 
 solrAdminApp.config([
@@ -112,6 +113,10 @@ solrAdminApp.config([
       when('/:core/stream', {
         templateUrl: 'partials/stream.html',
         controller: 'StreamController'
+      }).
+      when('/:core/sqlquery', {
+        templateUrl: 'partials/sqlquery.html',
+        controller: 'SQLQueryController'
       }).
       when('/:core/replication', {
         templateUrl: 'partials/replication.html',
