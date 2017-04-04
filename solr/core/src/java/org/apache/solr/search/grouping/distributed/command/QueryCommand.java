@@ -149,7 +149,7 @@ public class QueryCommand implements Command<QueryCommandResult> {
   }
 
   @Override
-  public Sort getSortWithinGroup() {
+  public Sort getWithinGroupSort() {
     return null;
   }
 }
