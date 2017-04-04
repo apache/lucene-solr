@@ -2940,7 +2940,7 @@ public class SolrCLI {
           // safe to ignore ...
           Thread.interrupted();
         }
-        if (handler.getExitValue() != 0) {
+        if (handler.hasResult() && handler.getExitValue() != 0) {
           throw new Exception("Failed to start Solr using command: "+startCmd+" Exception : "+handler.getException());
         }
       } else {
