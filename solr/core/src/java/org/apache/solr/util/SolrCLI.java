@@ -2934,7 +2934,7 @@ public class SolrCLI {
 
         // wait for execution.
         try {
-          handler.waitFor();
+          handler.waitFor(3000);
         } catch (InterruptedException ie) {
           // safe to ignore ...
           Thread.interrupted();
