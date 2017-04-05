@@ -1044,7 +1044,7 @@ public class StreamExpressionTest extends SolrCloudTestCase {
   @Test
   public void testFetchStream() throws Exception {
 
-    SolrClientCache solrClientCache = new SolrClientCache();
+    SolrClientCache solrClientCache = new SolrClientCache();//TODO share in @Before ; close in @After ?
 
     new UpdateRequest()
         .add(id, "0", "a_s", "hello0", "a_i", "0", "a_f", "1", "subject", "blah blah blah 0")
@@ -1123,6 +1123,22 @@ public class StreamExpressionTest extends SolrCloudTestCase {
     assertTrue("blah blah blah 8".equals(t.getString("subject")));
     t = tuples.get(9);
     assertTrue("blah blah blah 9".equals(t.getString("subject")));
+
+    // SOLR-10404 test that "hello 99" as a value gets escaped
+    new UpdateRequest()
+        .add(id, "99", "a1_s", "hello 99", "a2_s", "hello 99", "subject", "blah blah blah 99")
+        .commit(cluster.getSolrClient(), COLLECTIONORALIAS);
+
+    stream = factory.constructStream("fetch("+ COLLECTIONORALIAS +",  search(" + COLLECTIONORALIAS + ", q=" + id + ":99, fl=\"id,a1_s\", sort=\"id asc\"), on=\"a1_s=a2_s\", fl=\"subject\")");
+    context = new StreamContext();
+    context.setSolrClientCache(solrClientCache);
+    stream.setStreamContext(context);
+    tuples = getTuples(stream);
+
+    assertEquals(1, tuples.size());
+    t = tuples.get(0);
+    assertTrue("blah blah blah 99".equals(t.getString("subject")));
+
     solrClientCache.close();
   }
 
