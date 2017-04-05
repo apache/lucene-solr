@@ -383,7 +383,7 @@ public class Overseer implements Closeable {
             }
             break;
           case DOWNNODE:
-            return new NodeMutator(getZkStateReader()).downNode(clusterState, message);
+            return new NodeMutator().downNode(clusterState, message);
           default:
             throw new RuntimeException("unknown operation:" + operation + " contents:" + message.getProperties());
         }

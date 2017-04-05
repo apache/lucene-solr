@@ -207,6 +207,9 @@ Bug Fixes
 * SOLR-10416: The JSON output of /admin/metrics is fixed to write the container as a
   map (SimpleOrderedMap) instead of an array (NamedList). (shalin)
 
+* SOLR-10277: On 'downnode', lots of wasteful mutations are done to ZK.
+  (Joshua Humphries, Scott Blum, Varun Thacker, shalin)
+
 ==================  6.5.0 ==================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release.
