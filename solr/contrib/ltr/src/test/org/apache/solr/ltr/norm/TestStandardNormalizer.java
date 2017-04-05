@@ -40,6 +40,7 @@ public class TestStandardNormalizer {
     final StandardNormalizer sn = (StandardNormalizer)n;
     assertEquals(sn.getAvg(), expectedAvg, 0.0);
     assertEquals(sn.getStd(), expectedStd, 0.0);
+    assertEquals("{avg=\""+expectedAvg+"\", std=\""+expectedStd+"\"}", sn.paramsToMap().toString());
     return n;
   }
 
