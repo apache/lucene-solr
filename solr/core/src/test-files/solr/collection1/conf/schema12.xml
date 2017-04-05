@@ -467,7 +467,14 @@
 
   <fieldType name="currency" class="solr.CurrencyField" currencyConfig="currency.xml" multiValued="false"/>
 
-
+  <fieldType name="shingle23" class="solr.TextField" enableGraphQueries="false" multiValued="true">
+    <analyzer>
+      <tokenizer class="solr.WhitespaceTokenizerFactory"/>
+      <filter class="solr.ShingleFilterFactory" minShingleSize="2" maxShingleSize="3" 
+              tokenSeparator="_" outputUnigrams="false"/>
+    </analyzer>
+  </fieldType>
+  
   <field name="id" type="string" indexed="true" stored="true" multiValued="false" required="true"/>
   <field name="signatureField" type="string" indexed="true" stored="false"/>
   <field name="uuid" type="uuid" stored="true"/>
@@ -568,6 +575,8 @@
   <field name="uniq2" type="string" indexed="true" stored="true" multiValued="true"/>
   <field name="uniq3" type="string" indexed="true" stored="true"/>
   <field name="nouniq" type="string" indexed="true" stored="true" multiValued="true"/>
+  
+  <field name="shingle23" type="shingle23" indexed="true" stored="true"/>
 
 
   <!--
