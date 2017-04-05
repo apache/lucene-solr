@@ -19,6 +19,7 @@ package org.apache.solr.util.modules;
 
 import java.lang.invoke.MethodHandles;
 import java.nio.file.Path;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
@@ -31,11 +32,11 @@ import org.slf4j.LoggerFactory;
 import ro.fortsoft.pf4j.PluginDescriptor;
 import ro.fortsoft.pf4j.PluginManager;
 import ro.fortsoft.pf4j.PluginWrapper;
+import ro.fortsoft.pf4j.update.DefaultUpdateRepository;
+import ro.fortsoft.pf4j.update.PluginInfo;
+import ro.fortsoft.pf4j.update.PluginInfo.PluginRelease;
 import ro.fortsoft.pf4j.update.UpdateManager;
 import ro.fortsoft.pf4j.update.UpdateRepository;
-
-import static ro.fortsoft.pf4j.update.UpdateRepository.PluginInfo;
-import static ro.fortsoft.pf4j.update.UpdateRepository.PluginRelease;
 
 /**
  * Discovers and loads plugins from plugin folder using PF4J
@@ -52,8 +53,10 @@ public class Modules {
   public Modules(Path pluginsRoot) {
     this.pluginsRoot = pluginsRoot;
     pluginManager = new SolrPluginManager(pluginsRoot);
-    updateManager = new ModuleUpdateManager(pluginManager);
     systemVersion = Version.valueOf(org.apache.lucene.util.Version.LATEST.toString());
+    ApacheMirrorsUpdateRepository apacheRepo = new ApacheMirrorsUpdateRepository("apache", "lucene/solr/" + systemVersion.toString() + "/");
+    updateManager = new ModuleUpdateManager(pluginManager,
+        Arrays.asList(apacheRepo, new DefaultUpdateRepository("file","http://people.apache.org/~janhoy/dist/plugins/")));
     pluginManager.setSystemVersion(systemVersion);
   }
 
@@ -86,8 +89,7 @@ public class Modules {
   }
 
   public List<PluginDescriptor> listInstalled() {
-    List<PluginDescriptor> modules = pluginManager.getPlugins().stream().map(PluginWrapper::getDescriptor).collect(Collectors.toList());
-    return modules;
+    return pluginManager.getPlugins().stream().map(PluginWrapper::getDescriptor).collect(Collectors.toList());
   }
 
   public void updateAll() {

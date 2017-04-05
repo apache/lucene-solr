@@ -36,6 +36,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import ro.fortsoft.pf4j.PluginManager;
 import ro.fortsoft.pf4j.PluginState;
+import ro.fortsoft.pf4j.update.DefaultUpdateRepository;
 import ro.fortsoft.pf4j.update.UpdateManager;
 import ro.fortsoft.pf4j.update.UpdateRepository;
 import ro.fortsoft.pf4j.util.FileUtils;
@@ -52,7 +53,7 @@ public class ModuleUpdateManager extends UpdateManager {
     super(pluginManager);
     repositories = new ArrayList<>();
 //    repositories.add(new UpdateRepository("apache", resolveApacheDistUrl(Version.LATEST)));
-    repositories.add(new UpdateRepository("local", "file:///Users/janhoy/solr-repo/"));
+    repositories.add(new DefaultUpdateRepository("local", "file:///Users/janhoy/solr-repo/"));
   }
 
   /**
@@ -65,21 +66,26 @@ public class ModuleUpdateManager extends UpdateManager {
     repositories.addAll(repos);
   }
 
-  /*
-  Find closest mirror that has the requested Solr version, or fall back to archive
-   */
-  private String resolveApacheDistUrl(Version latest) {
-    // TODO: Hack
-    return "http://people.apache.org/~janhoy/dist/plugins/";
-  }
-
   public void addRepository(String id, String url) {
     if (repositories.stream().map(UpdateRepository::getId).filter(id::equals).count() > 0) {
       log.warn("Repository with id " + id + " already exists, doing nothing");
     } else {
-      repositories.add(new UpdateRepository(id, url));
+      repositories.add(new DefaultUpdateRepository(id, url));
     }
+  }
 
+  public void addRepository(UpdateRepository newRepo) {
+    newRepo.refresh();
+    repositories.add(newRepo);
+  }
+
+  public void removeRepository(String id) {
+    for (UpdateRepository repo : getRepositories()) {
+      if (id == repo.getId()) {
+        repositories.remove(repo);
+        break;
+      }
+    }
   }
 
   public boolean installModule(String url) {

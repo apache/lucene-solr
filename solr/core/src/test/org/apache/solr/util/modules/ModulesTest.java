@@ -23,7 +23,7 @@ import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
-import ro.fortsoft.pf4j.update.UpdateRepository;
+import ro.fortsoft.pf4j.update.PluginInfo;
 
 import static junit.framework.Assert.assertEquals;
 import static junit.framework.TestCase.assertFalse;
@@ -50,7 +50,7 @@ public class ModulesTest {
   @Test
   public void query() throws Exception {
     // NOCOMMIT: Get rid of GSON dependency
-    List<UpdateRepository.PluginInfo> res = modules.query("*");
+    List<PluginInfo> res = modules.query("*");
     assertTrue(res.size()>0);
 //    assertEquals(4, res.size());
 //    assertTrue(res.stream().map(p -> p.id).collect(Collectors.toList()).contains("extraction"));

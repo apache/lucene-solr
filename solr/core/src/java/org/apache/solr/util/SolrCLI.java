@@ -110,7 +110,7 @@ import org.noggit.JSONWriter;
 import org.noggit.ObjectBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import ro.fortsoft.pf4j.update.UpdateRepository;
+import ro.fortsoft.pf4j.update.PluginInfo;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.apache.solr.common.SolrException.ErrorCode.FORBIDDEN;
@@ -3832,7 +3832,7 @@ public class SolrCLI {
     }
 
     private void query(String q) {
-      List<UpdateRepository.PluginInfo> plugins = modules.query(q);
+      List<PluginInfo> plugins = modules.query(q);
       System.out.println(plugins.stream().map(p -> p.id +
                 "(" + p.getLastRelease(SOLR_VERSION).version + ")").collect(Collectors.toList()));
     }
