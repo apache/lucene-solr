@@ -80,7 +80,7 @@ public class CloudSolrStream extends TupleStream implements Expressible {
   protected String zkHost;
   protected String collection;
   protected SolrParams params;
-  private Map<String, String> fieldMappings;
+  protected Map<String, String> fieldMappings;
   protected StreamComparator comp;
   private boolean trace;
   protected transient Map<String, Tuple> eofTuples;
@@ -191,7 +191,7 @@ public class CloudSolrStream extends TupleStream implements Expressible {
     // functionName(collectionName, param1, param2, ..., paramN, sort="comp", [aliases="field=alias,..."])
     
     // function name
-    StreamExpression expression = new StreamExpression(factory.getFunctionName(this.getClass()));
+    StreamExpression expression = new StreamExpression(factory.getFunctionName(getClass()));
     
     // collection
     expression.addParameter(collection);
@@ -254,7 +254,7 @@ public class CloudSolrStream extends TupleStream implements Expressible {
     return explanation;
   }
 
-  private void init(String collectionName, String zkHost, SolrParams params) throws IOException {
+  protected void init(String collectionName, String zkHost, SolrParams params) throws IOException {
     this.zkHost = zkHost;
     this.collection = collectionName;
     this.params = new ModifiableSolrParams(params);
@@ -405,7 +405,8 @@ public class CloudSolrStream extends TupleStream implements Expressible {
 
       Collection<Slice> slices = CloudSolrStream.getSlices(this.collection, zkStateReader, true);
 
-      ModifiableSolrParams mParams = new ModifiableSolrParams(params); 
+      ModifiableSolrParams mParams = new ModifiableSolrParams(params);
+      mParams = adjustParams(mParams);
       mParams.set(DISTRIB, "false"); // We are the aggregator.
 
       Set<String> liveNodes = clusterState.getLiveNodes();
@@ -570,5 +571,9 @@ public class CloudSolrStream extends TupleStream implements Expressible {
         return null;
       }
     }
+  }
+
+  protected ModifiableSolrParams adjustParams(ModifiableSolrParams params) {
+    return params;
   }
 }
