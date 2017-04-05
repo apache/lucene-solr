@@ -68,9 +68,6 @@ public class InetAddressRange extends Field {
    * @param max range max value; defined as an {@code InetAddress}
    */
   public void setRangeValues(InetAddress min, InetAddress max) {
-    if (StringHelper.compare(BYTES, min.getAddress(), 0, max.getAddress(), 0) > 0) {
-      throw new IllegalArgumentException("min value cannot be greater than max value for range field (name=" + name + ")");
-    }
     final byte[] bytes;
     if (fieldsData == null) {
       bytes = new byte[BYTES*2];
@@ -83,8 +80,15 @@ public class InetAddressRange extends Field {
 
   /** encode the min/max range into the provided byte array */
   private static void encode(final InetAddress min, final InetAddress max, final byte[] bytes) {
-    System.arraycopy(InetAddressPoint.encode(min), 0, bytes, 0, BYTES);
-    System.arraycopy(InetAddressPoint.encode(max), 0, bytes, BYTES, BYTES);
+    // encode min and max value (consistent w/ InetAddressPoint encoding)
+    final byte[] minEncoded = InetAddressPoint.encode(min);
+    final byte[] maxEncoded = InetAddressPoint.encode(max);
+    // ensure min is lt max
+    if (StringHelper.compare(BYTES, minEncoded, 0, maxEncoded, 0) > 0) {
+      throw new IllegalArgumentException("min value cannot be greater than max value for InetAddressRange field");
+    }
+    System.arraycopy(minEncoded, 0, bytes, 0, BYTES);
+    System.arraycopy(maxEncoded, 0, bytes, BYTES, BYTES);
   }
 
   /** encode the min/max range and return the byte array */
