@@ -1409,7 +1409,7 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
 
       assertFalse("Excpected these segments to be an old version", versionBefore.equals(Version.LATEST));
 
-      LiveUpgradeIndexMergePolicy uimp = new LiveUpgradeIndexMergePolicy(NoMergePolicy.INSTANCE);
+      LiveUpgradeSegmentsMergePolicy uimp = new LiveUpgradeSegmentsMergePolicy(NoMergePolicy.INSTANCE);
      
       assertEquals(numSegmentsBefore, checkAllSegmentsUpgraded(dir, versionBefore, createdVersionBefore));
 

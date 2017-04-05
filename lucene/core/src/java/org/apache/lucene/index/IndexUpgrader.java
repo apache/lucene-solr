@@ -203,7 +203,7 @@ public final class IndexUpgrader {
     
     MergePolicy mp;
     if(includeNewSegments) {
-      LiveUpgradeIndexMergePolicy uimp = new LiveUpgradeIndexMergePolicy(iwc.getMergePolicy());
+      LiveUpgradeSegmentsMergePolicy uimp = new LiveUpgradeSegmentsMergePolicy(iwc.getMergePolicy());
       uimp.setEnableUpgrades(true);
       mp = uimp;
     } else {

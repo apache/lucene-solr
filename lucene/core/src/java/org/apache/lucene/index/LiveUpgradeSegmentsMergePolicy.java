@@ -55,15 +55,15 @@ import org.apache.lucene.util.Version;
   * @lucene.experimental
   * @see IndexUpgrader
   */
-public class LiveUpgradeIndexMergePolicy extends MergePolicyWrapper {
+public class LiveUpgradeSegmentsMergePolicy extends MergePolicyWrapper {
   
   private int maxUpgradesAtATime = 5;
   private volatile boolean enableUpgrades = false;
-  private Predicate<SegmentCommitInfo> shouldSegmentUpgrade = LiveUpgradeIndexMergePolicy::segmentIsLatestVersion; 
+  private Predicate<SegmentCommitInfo> shouldSegmentUpgrade = LiveUpgradeSegmentsMergePolicy::segmentIsLatestVersion; 
 
   /** Wrap the given {@link MergePolicy} and intercept forceMerge requests to
    * only upgrade segments written with previous Lucene versions. */
-  public LiveUpgradeIndexMergePolicy(MergePolicy in) {
+  public LiveUpgradeSegmentsMergePolicy(MergePolicy in) {
     super(in);
   }
     
