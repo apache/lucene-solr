@@ -20,7 +20,7 @@ package org.apache.solr.util.modules;
 import org.junit.Before;
 import org.junit.Test;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
 
 /**
  * Test apache mirror download
@@ -59,4 +59,10 @@ public class ApacheMirrorsUpdateRepositoryTest {
     assertEquals(0, mirrorExist.getPlugins().size());
   }
 
+  @Test
+  public void testMd5() throws Exception {
+    // TODO: Mock
+//    Path file = mirrorExist.getFileDownloader().downloadFile(new URL(mirrorExist.getLocation() + "file"));
+//    assertTrue(Files.exists(file));
+  }
 }

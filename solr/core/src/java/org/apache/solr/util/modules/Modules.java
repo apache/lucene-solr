@@ -110,8 +110,9 @@ public class Modules {
     Optional<PluginInfo> info = updateManager.getPlugins().stream()
         .filter(p -> id.equals(p.id) && p.getLastRelease(systemVersion) != null).findFirst();
     if (info.isPresent()) {
-      log.debug("Installing module id {} version @{}", id, info.get().getLastRelease(systemVersion).version);
-      return updateManager.installModule(info.get().getLastRelease(systemVersion).url);
+      String version = info.get().getLastRelease(systemVersion).version;
+      log.debug("Installing module id {} version @{}", id, version);
+      return updateManager.installModule(id, version);
     } else {
       log.debug("Failed to find module with id {}", id);
       return false;

@@ -17,6 +17,7 @@
 
 package org.apache.solr.util.modules;
 
+import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.Reader;
@@ -24,15 +25,21 @@ import java.lang.invoke.MethodHandles;
 import java.net.HttpURLConnection;
 import java.net.MalformedURLException;
 import java.net.URL;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
+import org.apache.commons.codec.digest.DigestUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import ro.fortsoft.pf4j.PluginException;
+import ro.fortsoft.pf4j.update.FileDownloader;
 import ro.fortsoft.pf4j.update.PluginInfo;
+import ro.fortsoft.pf4j.update.SimpleFileDownloader;
 import ro.fortsoft.pf4j.update.UpdateRepository;
 
 /**
@@ -49,6 +56,7 @@ public class ApacheMirrorsUpdateRepository implements UpdateRepository {
   private final String modulesJson;
   private Map<String, PluginInfo> plugins;
   private String modulesUrl;
+  private boolean modulesUrlResolved = false;
 
   public ApacheMirrorsUpdateRepository(String id, String modulesPath, String modulesJson) {
     this.id = id;
@@ -71,8 +79,9 @@ public class ApacheMirrorsUpdateRepository implements UpdateRepository {
   }
 
   public String getModulesUrl() {
-    if (modulesUrl == null) {
+    if (modulesUrl == null && !modulesUrlResolved) {
       modulesUrl = resolveModulesUrl();
+      modulesUrlResolved = true;
     }
     return modulesUrl;
   }
@@ -123,6 +132,11 @@ public class ApacheMirrorsUpdateRepository implements UpdateRepository {
     plugins = null;
   }
 
+  @Override
+  public FileDownloader getFileDownloader() {
+    return new ApacheChecksumVerifyingDownloader();
+  }
+
   private void initPlugins() {
     Reader pluginsJsonReader;
     URL pluginsUrl = null;
@@ -164,5 +178,36 @@ public class ApacheMirrorsUpdateRepository implements UpdateRepository {
           return getFinalURL(redirectUrl);
       }
       return url;
+  }
+
+  private class ApacheChecksumVerifyingDownloader extends SimpleFileDownloader {
+    @Override
+    public Path downloadFile(URL url) throws PluginException, IOException {
+      String md5FileUrl = getMD5FileUrl(url.toString());
+      String md5 = getAndParseMd5File(md5FileUrl);
+      if (md5 == null) {
+        throw new PluginException("Failed to fetch md5 of " + url + ", aborting");
+      }
+      Path downloadFile = super.downloadFile(url);
+      if (!DigestUtils.md5Hex(Files.newInputStream(downloadFile)).equalsIgnoreCase(md5)) {
+        throw new PluginException("MD5 checksum of file " + url + " does not match the one from " + md5FileUrl + ", aborting");
+      }
+      return downloadFile;
+    }
+
+    private String getMD5FileUrl(String url) {
+      return APACHE_ARCHIVE_URL + url.substring(url.indexOf(modulesPath)) + ".md5";
+    }
+
+    private String getAndParseMd5File(String url) {
+      try {
+        BufferedReader reader = new BufferedReader(new InputStreamReader(
+            new URL(url).openStream()));
+        return reader.readLine().split(" ")[0];
+      } catch (IOException e) {
+        log.warn("Failed to find md5 sun file " + url);
+        return null;
+      }
+    }
   }
 }
