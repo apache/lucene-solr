@@ -215,6 +215,10 @@ Bug Fixes
 
 * SOLR-10404: The fetch() streaming expression wouldn't work if a value included query syntax chars (like :+-).
   Fixed, and enhanced the generated query to not pollute the queryCache. (David Smiley)
+  
+* SOLR-10423: Disable graph query production via schema configuration <fieldtype ... enableGraphQueries="false">.
+  This fixes broken queries for ShingleFilter-containing query-time analyzers when request param sow=false.
+  (Steve Rowe)
 
 ==================  6.5.0 ==================
 

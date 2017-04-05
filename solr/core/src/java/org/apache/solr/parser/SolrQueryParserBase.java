@@ -437,10 +437,14 @@ public abstract class SolrQueryParserBase extends QueryBuilder {
   }
 
   protected Query newFieldQuery(Analyzer analyzer, String field, String queryText,
-                                boolean quoted, boolean fieldAutoGenPhraseQueries)  throws SyntaxError {
+                                boolean quoted, boolean fieldAutoGenPhraseQueries, boolean fieldEnableGraphQueries) 
+      throws SyntaxError {
     BooleanClause.Occur occur = operator == Operator.AND ? BooleanClause.Occur.MUST : BooleanClause.Occur.SHOULD;
-    return createFieldQuery(analyzer, occur, field, queryText,
+    setEnableGraphQueries(fieldEnableGraphQueries);
+    Query query = createFieldQuery(analyzer, occur, field, queryText,
         quoted || fieldAutoGenPhraseQueries || autoGeneratePhraseQueries, phraseSlop);
+    setEnableGraphQueries(true); // reset back to default
+    return query;
   }
 
 
@@ -632,8 +636,10 @@ public abstract class SolrQueryParserBase extends QueryBuilder {
           Query subq;
           if (ft.isTokenized() && sfield.indexed()) {
             boolean fieldAutoGenPhraseQueries = ft instanceof TextField && ((TextField)ft).getAutoGeneratePhraseQueries();
+            boolean fieldEnableGraphQueries = ft instanceof TextField && ((TextField)ft).getEnableGraphQueries();
+
             subq = newFieldQuery(getAnalyzer(), sfield.getName(), rawq.getJoinedExternalVal(),
-                false, fieldAutoGenPhraseQueries);
+                false, fieldAutoGenPhraseQueries, fieldEnableGraphQueries);
             booleanBuilder.add(subq, BooleanClause.Occur.SHOULD);
           } else {
             for (String externalVal : rawq.getExternalVals()) {
@@ -949,7 +955,8 @@ public abstract class SolrQueryParserBase extends QueryBuilder {
       // delegate to type for everything except tokenized fields
       if (ft.isTokenized() && sf.indexed()) {
         boolean fieldAutoGenPhraseQueries = ft instanceof TextField && ((TextField)ft).getAutoGeneratePhraseQueries();
-        return newFieldQuery(getAnalyzer(), field, queryText, quoted, fieldAutoGenPhraseQueries);
+        boolean fieldEnableGraphQueries = ft instanceof TextField && ((TextField)ft).getEnableGraphQueries();
+        return newFieldQuery(getAnalyzer(), field, queryText, quoted, fieldAutoGenPhraseQueries, fieldEnableGraphQueries);
       } else {
         if (raw) {
           return new RawQuery(sf, queryText);
@@ -960,7 +967,7 @@ public abstract class SolrQueryParserBase extends QueryBuilder {
     }
 
     // default to a normal field query
-    return newFieldQuery(getAnalyzer(), field, queryText, quoted, false);
+    return newFieldQuery(getAnalyzer(), field, queryText, quoted, false, true);
   }
 
   // Assumption: quoted is always false
@@ -993,7 +1000,9 @@ public abstract class SolrQueryParserBase extends QueryBuilder {
       if (ft.isTokenized() && sf.indexed()) {
         String queryText = queryTerms.size() == 1 ? queryTerms.get(0) : String.join(" ", queryTerms);
         boolean fieldAutoGenPhraseQueries = ft instanceof TextField && ((TextField)ft).getAutoGeneratePhraseQueries();
-        return newFieldQuery(getAnalyzer(), field, queryText, false, fieldAutoGenPhraseQueries);
+        boolean fieldEnableGraphQueries = ft instanceof TextField && ((TextField)ft).getEnableGraphQueries();
+        return newFieldQuery
+            (getAnalyzer(), field, queryText, false, fieldAutoGenPhraseQueries, fieldEnableGraphQueries);
       } else {
         if (raw) {
           return new RawQuery(sf, queryTerms);
@@ -1025,7 +1034,7 @@ public abstract class SolrQueryParserBase extends QueryBuilder {
 
     // default to a normal field query
     String queryText = queryTerms.size() == 1 ? queryTerms.get(0) : String.join(" ", queryTerms);
-    return newFieldQuery(getAnalyzer(), field, queryText, false, false);
+    return newFieldQuery(getAnalyzer(), field, queryText, false, false, true);
   }
 
   protected boolean isRangeShouldBeProtectedFromReverse(String field, String part1){
