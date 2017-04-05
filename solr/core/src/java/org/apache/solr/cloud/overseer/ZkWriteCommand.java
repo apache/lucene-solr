@@ -41,5 +41,10 @@ public class ZkWriteCommand {
   public static ZkWriteCommand noop() {
     return new ZkWriteCommand();
   }
+
+  @Override
+  public String toString() {
+    return getClass().getSimpleName() + ": " + (noop ? "no-op" : name + "=" + collection);
+  }
 }
 
