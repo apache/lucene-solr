@@ -39,6 +39,7 @@ import org.apache.lucene.document.Document;
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.ExitableDirectoryReader;
 import org.apache.lucene.index.FieldInfos;
+import org.apache.lucene.index.FilterDirectoryReader;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.LeafReader;
 import org.apache.lucene.index.LeafReaderContext;
@@ -154,24 +155,25 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
   private static DirectoryReader wrapReader(SolrCore core, DirectoryReader reader) throws IOException {
     assert reader != null;
     return ExitableDirectoryReader.wrap(
-        new UninvertingDirectoryReaderMappingPerSegment(reader, core),
+        new UninvertingDirectoryReaderPerSegmentMapping(reader, core),
         SolrQueryTimeoutImpl.getInstance());
   }
 
   /**
-   * Without per segment mappings an IllegalStateException will be thrown if 
-   * there exists a mix of segments, some with doc values and some without.
+   * If docvalues are enabled or disabled after data has already been indexed for a field, such that
+   * only some segments have docvalues, uninverting on the top level reader will cause 
+   * IllegalStateException to be thrown when trying to use a field with such mixed data. This is because
+   * the {@link IndexSchema#getUninversionMap(IndexReader)} method decides to put a field 
+   * into the uninverteding map only if *NO* segment in the index contains docvalues for that field.
    * 
-   * The way {@link IndexSchema#getUninversionMap(IndexReader)} works, is to check whether
-   * there is a ANY segment in the index which contains docvalues for a given field. If it does
-   * it does not get added to the uninverting map for use with the UninvertingReader. If there is
-   * no mapping for a field UninvertingReader will not use fieldcache. Having a map per segment
-   * will allow us to decide more fine grained when to use field cache.
+   * Therefore, this class provides a uninverting map per segment such that for any field, 
+   * DocValues are used from segments if they exist and uninversion of the field is performed on the rest
+   * of the segments.
    */
-  static class UninvertingDirectoryReaderMappingPerSegment extends FilterDirectoryReader {
+  static class UninvertingDirectoryReaderPerSegmentMapping extends FilterDirectoryReader {
     final SolrCore core;
     
-    public UninvertingDirectoryReaderMappingPerSegment(DirectoryReader in, final SolrCore core) throws IOException {
+    public UninvertingDirectoryReaderPerSegmentMapping(DirectoryReader in, final SolrCore core) throws IOException {
       super(in, new FilterDirectoryReader.SubReaderWrapper() {
         @Override
         public LeafReader wrap(LeafReader reader) {
@@ -183,7 +185,16 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
 
     @Override
     protected DirectoryReader doWrapDirectoryReader(DirectoryReader in) throws IOException {
-      return new UninvertingDirectoryReaderMappingPerSegment(in, core);
+      return new UninvertingDirectoryReaderPerSegmentMapping(in, core);
+    }
+    
+    // NOTE: delegating the cache helpers is wrong since this wrapper alters the
+    // content of the reader, it is only fine to do that because Solr ALWAYS
+    // consumes index readers through this wrapper
+
+    @Override
+    public CacheHelper getReaderCacheHelper() {
+      return in.getReaderCacheHelper();
     }
   }
 
