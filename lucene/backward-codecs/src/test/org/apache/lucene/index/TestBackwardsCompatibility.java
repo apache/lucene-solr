@@ -1531,7 +1531,10 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
       IndexWriterConfig iwc = new IndexWriterConfig(null)
         .setMergePolicy(mp);
       IndexWriter w = new IndexWriter(dir, iwc);
-      w.addIndexes(ramDir);
+      DirectoryReader ramDirReader = DirectoryReader.open(ramDir);
+      CodecReader[] readers = new CodecReader[ramDirReader.leaves().size()];
+      for(int i = 0; i < readers.length; ++i) { readers[i] = SlowCodecReaderWrapper.wrap(ramDirReader.leaves().get(i).reader()); }
+      w.addIndexes(readers);
       try {
         w.commit();
       } finally {
