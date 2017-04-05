@@ -53,12 +53,13 @@ public class QueryParser extends SolrQueryParserBase implements QueryParserConst
 
   @Override
   protected Query newFieldQuery(Analyzer analyzer, String field, String queryText,
-                                boolean quoted, boolean fieldAutoGenPhraseQueries) throws SyntaxError {
+                                boolean quoted, boolean fieldAutoGenPhraseQueries, boolean fieldEnableGraphQueries)
+      throws SyntaxError {
     if ((getAutoGeneratePhraseQueries() || fieldAutoGenPhraseQueries) && splitOnWhitespace == false) {
       throw new QueryParserConfigurationException
           ("Field '" + field + "': autoGeneratePhraseQueries == true is disallowed when sow/splitOnWhitespace == false");
     }
-    return super.newFieldQuery(analyzer, field, queryText, quoted, fieldAutoGenPhraseQueries);
+    return super.newFieldQuery(analyzer, field, queryText, quoted, fieldAutoGenPhraseQueries, fieldEnableGraphQueries);
   }
 
 // *   Query  ::= ( Clause )*
@@ -616,11 +617,6 @@ public class QueryParser extends SolrQueryParserBase implements QueryParserConst
     finally { jj_save(2, xla); }
   }
 
-  private boolean jj_3R_7() {
-    if (jj_scan_token(TERM)) return true;
-    return false;
-  }
-
   private boolean jj_3R_4() {
     if (jj_scan_token(TERM)) return true;
     if (jj_scan_token(COLON)) return true;
@@ -669,6 +665,11 @@ public class QueryParser extends SolrQueryParserBase implements QueryParserConst
   private boolean jj_3R_5() {
     if (jj_scan_token(STAR)) return true;
     if (jj_scan_token(COLON)) return true;
+    return false;
+  }
+
+  private boolean jj_3R_7() {
+    if (jj_scan_token(TERM)) return true;
     return false;
   }
 

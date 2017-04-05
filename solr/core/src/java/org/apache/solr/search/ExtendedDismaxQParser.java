@@ -1083,8 +1083,9 @@ public class ExtendedDismaxQParser extends QParser {
     }
     
     @Override
-    protected Query newFieldQuery(Analyzer analyzer, String field, String queryText, 
-                                  boolean quoted, boolean fieldAutoGenPhraseQueries) throws SyntaxError {
+    protected Query newFieldQuery(Analyzer analyzer, String field, String queryText,
+                                  boolean quoted, boolean fieldAutoGenPhraseQueries, boolean enableGraphQueries)
+        throws SyntaxError {
       if ((getAutoGeneratePhraseQueries() || fieldAutoGenPhraseQueries) && getSplitOnWhitespace() == false) {
         throw new QueryParserConfigurationException
             ("Field '" + field + "': autoGeneratePhraseQueries == true is disallowed when sow/splitOnWhitespace == false");
@@ -1101,7 +1102,7 @@ public class ExtendedDismaxQParser extends QParser {
       } else {
         actualAnalyzer = parser.getReq().getSchema().getFieldType(field).getQueryAnalyzer();
       }
-      return super.newFieldQuery(actualAnalyzer, field, queryText, quoted, fieldAutoGenPhraseQueries);
+      return super.newFieldQuery(actualAnalyzer, field, queryText, quoted, fieldAutoGenPhraseQueries, enableGraphQueries);
     }
     
     @Override

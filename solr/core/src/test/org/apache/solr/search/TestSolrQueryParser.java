@@ -34,6 +34,7 @@ import org.apache.lucene.search.TermInSetQuery;
 import org.apache.lucene.search.TermQuery;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.params.MapSolrParams;
+import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.core.SolrInfoMBean;
 import org.apache.solr.parser.QueryParser;
 import org.apache.solr.query.FilterQuery;
@@ -66,6 +67,8 @@ public class TestSolrQueryParser extends SolrTestCaseJ4 {
     assertU(adoc("id", "13", "eee_s", "'balance'", "rrr_s", "/leading_slash"));
 
     assertU(adoc("id", "20", "syn", "wifi ATM"));
+    
+    assertU(adoc("id", "30", "shingle23", "A B X D E"));
 
     assertU(commit());
   }
@@ -966,6 +969,22 @@ public class TestSolrQueryParser extends SolrTestCaseJ4 {
         , "/response/numFound==1"
     );
     assertJQ(req("df", "syn", "q", "syn:\"wi fi\"", "sow", "false")
+        , "/response/numFound==1"
+    );
+  }
+
+  @Test
+  public void testShingleQueries() throws Exception {
+    ModifiableSolrParams sowFalseParams = new ModifiableSolrParams();
+    sowFalseParams.add("sow", "false");
+
+    try (SolrQueryRequest req = req(sowFalseParams)) {
+      QParser qParser = QParser.getParser("shingle23:(A B C)", req);
+      Query q = qParser.getQuery();
+      assertEquals("Synonym(shingle23:A_B shingle23:A_B_C) shingle23:B_C", q.toString());
+    }
+
+    assertJQ(req("df", "shingle23", "q", "A B C", "sow", "false")
         , "/response/numFound==1"
     );
   }
