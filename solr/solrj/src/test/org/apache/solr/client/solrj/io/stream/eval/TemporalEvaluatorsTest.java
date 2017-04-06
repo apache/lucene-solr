@@ -31,8 +31,19 @@ import java.util.TimeZone;
 
 import org.apache.commons.collections.map.HashedMap;
 import org.apache.solr.client.solrj.io.Tuple;
+import org.apache.solr.client.solrj.io.eval.TemporalEvaluatorDay;
+import org.apache.solr.client.solrj.io.eval.TemporalEvaluatorDayOfQuarter;
+import org.apache.solr.client.solrj.io.eval.TemporalEvaluatorDayOfYear;
+import org.apache.solr.client.solrj.io.eval.TemporalEvaluatorEpoch;
+import org.apache.solr.client.solrj.io.eval.TemporalEvaluatorHour;
+import org.apache.solr.client.solrj.io.eval.TemporalEvaluatorMinute;
+import org.apache.solr.client.solrj.io.eval.TemporalEvaluatorMonth;
 import org.apache.solr.client.solrj.io.eval.DatePartEvaluator;
 import org.apache.solr.client.solrj.io.eval.StreamEvaluator;
+import org.apache.solr.client.solrj.io.eval.TemporalEvaluatorQuarter;
+import org.apache.solr.client.solrj.io.eval.TemporalEvaluatorSecond;
+import org.apache.solr.client.solrj.io.eval.TemporalEvaluatorWeek;
+import org.apache.solr.client.solrj.io.eval.TemporalEvaluatorYear;
 import org.apache.solr.client.solrj.io.stream.expr.Explanation;
 import org.apache.solr.client.solrj.io.stream.expr.StreamExpression;
 import org.apache.solr.client.solrj.io.stream.expr.StreamExpressionParser;
@@ -47,21 +58,30 @@ import static junit.framework.Assert.assertTrue;
 /**
  * Tests numeric Date/Time stream evaluators
  */
-public class DatePartEvaluatorTest {
+public class TemporalEvaluatorsTest {
 
 
   StreamFactory factory;
   Map<String, Object> values;
 
-  public DatePartEvaluatorTest() {
+  public TemporalEvaluatorsTest() {
     super();
 
     factory = new StreamFactory();
 
     factory.withFunctionName("nope", DatePartEvaluator.class);
-    for (DatePartEvaluator.FUNCTION function : DatePartEvaluator.FUNCTION.values()) {
-      factory.withFunctionName(function.toString(), DatePartEvaluator.class);
-    }
+    factory.withFunctionName(TemporalEvaluatorYear.FUNCTION_NAME,  TemporalEvaluatorYear.class);
+    factory.withFunctionName(TemporalEvaluatorMonth.FUNCTION_NAME, TemporalEvaluatorMonth.class);
+    factory.withFunctionName(TemporalEvaluatorDay.FUNCTION_NAME,   TemporalEvaluatorDay.class);
+    factory.withFunctionName(TemporalEvaluatorDayOfYear.FUNCTION_NAME,   TemporalEvaluatorDayOfYear.class);
+    factory.withFunctionName(TemporalEvaluatorHour.FUNCTION_NAME,   TemporalEvaluatorHour.class);
+    factory.withFunctionName(TemporalEvaluatorMinute.FUNCTION_NAME,   TemporalEvaluatorMinute.class);
+    factory.withFunctionName(TemporalEvaluatorSecond.FUNCTION_NAME,   TemporalEvaluatorSecond.class);
+    factory.withFunctionName(TemporalEvaluatorEpoch.FUNCTION_NAME,   TemporalEvaluatorEpoch.class);
+    factory.withFunctionName(TemporalEvaluatorWeek.FUNCTION_NAME,   TemporalEvaluatorWeek.class);
+    factory.withFunctionName(TemporalEvaluatorQuarter.FUNCTION_NAME,   TemporalEvaluatorQuarter.class);
+    factory.withFunctionName(TemporalEvaluatorDayOfQuarter.FUNCTION_NAME,   TemporalEvaluatorDayOfQuarter.class);
+
     values = new HashedMap();
   }
 
@@ -220,6 +240,21 @@ public class DatePartEvaluatorTest {
     testFunction("hour(a)", localDateTime, 23);
     testFunction("minute(a)", localDateTime, 59);
     testFunction("epoch(a)", localDateTime, aDate.getTime());
+  }
+
+  @Test
+  public void testFunctionsOnLong() throws Exception {
+
+    Long longDate = 1512518340000l;
+
+    testFunction("year(a)", longDate, 2017);
+    testFunction("month(a)", longDate, 12);
+    testFunction("day(a)", longDate, 5);
+    testFunction("hour(a)", longDate, 23);
+    testFunction("minute(a)", longDate, 59);
+    testFunction("second(a)", longDate, 0);
+    testFunction("epoch(a)", longDate, longDate);
+
   }
 
   @Test

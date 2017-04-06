@@ -33,7 +33,6 @@ import org.apache.solr.client.solrj.io.comp.StreamComparator;
 import org.apache.solr.client.solrj.io.eval.AbsoluteValueEvaluator;
 import org.apache.solr.client.solrj.io.eval.AddEvaluator;
 import org.apache.solr.client.solrj.io.eval.AndEvaluator;
-import org.apache.solr.client.solrj.io.eval.DatePartEvaluator;
 import org.apache.solr.client.solrj.io.eval.DivideEvaluator;
 import org.apache.solr.client.solrj.io.eval.EqualsEvaluator;
 import org.apache.solr.client.solrj.io.eval.ExclusiveOrEvaluator;
@@ -54,7 +53,42 @@ import org.apache.solr.client.solrj.io.ops.ConcatOperation;
 import org.apache.solr.client.solrj.io.ops.DistinctOperation;
 import org.apache.solr.client.solrj.io.ops.GroupOperation;
 import org.apache.solr.client.solrj.io.ops.ReplaceOperation;
-import org.apache.solr.client.solrj.io.stream.*;
+import org.apache.solr.client.solrj.io.stream.CloudSolrStream;
+import org.apache.solr.client.solrj.io.stream.CommitStream;
+import org.apache.solr.client.solrj.io.stream.ComplementStream;
+import org.apache.solr.client.solrj.io.stream.DaemonStream;
+import org.apache.solr.client.solrj.io.stream.ExceptionStream;
+import org.apache.solr.client.solrj.io.stream.ExecutorStream;
+import org.apache.solr.client.solrj.io.stream.FacetStream;
+import org.apache.solr.client.solrj.io.stream.FeaturesSelectionStream;
+import org.apache.solr.client.solrj.io.stream.FetchStream;
+import org.apache.solr.client.solrj.io.stream.HashJoinStream;
+import org.apache.solr.client.solrj.io.stream.HavingStream;
+import org.apache.solr.client.solrj.io.stream.InnerJoinStream;
+import org.apache.solr.client.solrj.io.stream.IntersectStream;
+import org.apache.solr.client.solrj.io.stream.JDBCStream;
+import org.apache.solr.client.solrj.io.stream.LeftOuterJoinStream;
+import org.apache.solr.client.solrj.io.stream.MergeStream;
+import org.apache.solr.client.solrj.io.stream.ModelStream;
+import org.apache.solr.client.solrj.io.stream.NullStream;
+import org.apache.solr.client.solrj.io.stream.OuterHashJoinStream;
+import org.apache.solr.client.solrj.io.stream.ParallelStream;
+import org.apache.solr.client.solrj.io.stream.PriorityStream;
+import org.apache.solr.client.solrj.io.stream.RandomStream;
+import org.apache.solr.client.solrj.io.stream.RankStream;
+import org.apache.solr.client.solrj.io.stream.ReducerStream;
+import org.apache.solr.client.solrj.io.stream.RollupStream;
+import org.apache.solr.client.solrj.io.stream.ScoreNodesStream;
+import org.apache.solr.client.solrj.io.stream.SelectStream;
+import org.apache.solr.client.solrj.io.stream.SignificantTermsStream;
+import org.apache.solr.client.solrj.io.stream.SortStream;
+import org.apache.solr.client.solrj.io.stream.StatsStream;
+import org.apache.solr.client.solrj.io.stream.StreamContext;
+import org.apache.solr.client.solrj.io.stream.TextLogitStream;
+import org.apache.solr.client.solrj.io.stream.TopicStream;
+import org.apache.solr.client.solrj.io.stream.TupleStream;
+import org.apache.solr.client.solrj.io.stream.UniqueStream;
+import org.apache.solr.client.solrj.io.stream.UpdateStream;
 import org.apache.solr.client.solrj.io.stream.expr.Explanation;
 import org.apache.solr.client.solrj.io.stream.expr.Explanation.ExpressionType;
 import org.apache.solr.client.solrj.io.stream.expr.Expressible;
@@ -65,6 +99,17 @@ import org.apache.solr.client.solrj.io.stream.metrics.MaxMetric;
 import org.apache.solr.client.solrj.io.stream.metrics.MeanMetric;
 import org.apache.solr.client.solrj.io.stream.metrics.MinMetric;
 import org.apache.solr.client.solrj.io.stream.metrics.SumMetric;
+import org.apache.solr.client.solrj.io.eval.TemporalEvaluatorDay;
+import org.apache.solr.client.solrj.io.eval.TemporalEvaluatorDayOfQuarter;
+import org.apache.solr.client.solrj.io.eval.TemporalEvaluatorDayOfYear;
+import org.apache.solr.client.solrj.io.eval.TemporalEvaluatorEpoch;
+import org.apache.solr.client.solrj.io.eval.TemporalEvaluatorHour;
+import org.apache.solr.client.solrj.io.eval.TemporalEvaluatorMinute;
+import org.apache.solr.client.solrj.io.eval.TemporalEvaluatorMonth;
+import org.apache.solr.client.solrj.io.eval.TemporalEvaluatorQuarter;
+import org.apache.solr.client.solrj.io.eval.TemporalEvaluatorSecond;
+import org.apache.solr.client.solrj.io.eval.TemporalEvaluatorWeek;
+import org.apache.solr.client.solrj.io.eval.TemporalEvaluatorYear;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
@@ -192,7 +237,20 @@ public class StreamHandler extends RequestHandlerBase implements SolrCoreAware, 
       .withFunctionName("lteq", LessThanEqualToEvaluator.class)
       .withFunctionName("not", NotEvaluator.class)
       .withFunctionName("or", OrEvaluator.class)
-      
+
+      // Date Time Evaluators
+      .withFunctionName(TemporalEvaluatorYear.FUNCTION_NAME, TemporalEvaluatorYear.class)
+      .withFunctionName(TemporalEvaluatorMonth.FUNCTION_NAME, TemporalEvaluatorMonth.class)
+      .withFunctionName(TemporalEvaluatorDay.FUNCTION_NAME, TemporalEvaluatorDay.class)
+      .withFunctionName(TemporalEvaluatorDayOfYear.FUNCTION_NAME, TemporalEvaluatorDayOfYear.class)
+      .withFunctionName(TemporalEvaluatorHour.FUNCTION_NAME, TemporalEvaluatorHour.class)
+      .withFunctionName(TemporalEvaluatorMinute.FUNCTION_NAME, TemporalEvaluatorMinute.class)
+      .withFunctionName(TemporalEvaluatorSecond.FUNCTION_NAME, TemporalEvaluatorSecond.class)
+      .withFunctionName(TemporalEvaluatorEpoch.FUNCTION_NAME, TemporalEvaluatorEpoch.class)
+      .withFunctionName(TemporalEvaluatorWeek.FUNCTION_NAME, TemporalEvaluatorWeek.class)
+      .withFunctionName(TemporalEvaluatorQuarter.FUNCTION_NAME, TemporalEvaluatorQuarter.class)
+      .withFunctionName(TemporalEvaluatorDayOfQuarter.FUNCTION_NAME, TemporalEvaluatorDayOfQuarter.class)
+
       // Number Stream Evaluators
       .withFunctionName("abs", AbsoluteValueEvaluator.class)
       .withFunctionName("add", AddEvaluator.class)
@@ -200,15 +258,9 @@ public class StreamHandler extends RequestHandlerBase implements SolrCoreAware, 
       .withFunctionName("mult", MultiplyEvaluator.class)
       .withFunctionName("sub", SubtractEvaluator.class)
       .withFunctionName("log", NaturalLogEvaluator.class)
-
       // Conditional Stream Evaluators
       .withFunctionName("if", IfThenElseEvaluator.class)
       ;
-
-      // Date evaluators
-      for (DatePartEvaluator.FUNCTION function: DatePartEvaluator.FUNCTION.values()) {
-        streamFactory.withFunctionName(function.toString(), DatePartEvaluator.class);
-      }
 
      // This pulls all the overrides and additions from the config
      List<PluginInfo> pluginInfos = core.getSolrConfig().getPluginInfos(Expressible.class.getName());
