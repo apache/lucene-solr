@@ -859,6 +859,16 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
       return null;
     }),
     REPLACENODE_OP(REPLACENODE, (req, rsp, h) -> req.getParams().required().getAll(req.getParams().getAll(null, "parallel"), "source", "target")),
+    MOVEREPLICA_OP(MOVEREPLICA, (req, rsp, h) -> {
+      Map<String, Object> map = req.getParams().required().getAll(null,
+          COLLECTION_PROP);
+
+      return req.getParams().getAll(map,
+          "fromNode",
+          "targetNode",
+          "replica",
+          "shard");
+    }),
     DELETENODE_OP(DELETENODE, (req, rsp, h) -> req.getParams().required().getAll(null, "node"));
     public final CollectionOp fun;
     CollectionAction action;
@@ -881,7 +891,7 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
       for (CollectionOperation op : values()) {
         if (op.action == action) return op;
       }
-      throw new SolrException(ErrorCode.SERVER_ERROR, "No such action" + action);
+      throw new SolrException(ErrorCode.SERVER_ERROR, "No such action " + action);
     }
 
     @Override

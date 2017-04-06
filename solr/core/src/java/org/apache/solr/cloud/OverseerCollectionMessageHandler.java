@@ -208,6 +208,7 @@ public class OverseerCollectionMessageHandler implements OverseerMessageHandler 
         .put(DELETESHARD, new DeleteShardCmd(this))
         .put(DELETEREPLICA, new DeleteReplicaCmd(this))
         .put(ADDREPLICA, new AddReplicaCmd(this))
+        .put(MOVEREPLICA, new MoveReplicaCmd(this))
         .build()
     ;
   }
