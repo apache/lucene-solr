@@ -132,7 +132,7 @@ public class TemporalEvaluatorsTest {
       Object result = evaluator.evaluate(new Tuple(values));
       assertTrue(false);
     } catch (IOException e) {
-      assertEquals("Invalid parameter 12 - The parameter must be a string formatted ISO_INSTANT or of type Instant,Date or LocalDateTime.", e.getMessage());
+      assertEquals("Invalid parameter 12 - The parameter must be a string formatted ISO_INSTANT or of type Long,Instant,Date,LocalDateTime or TemporalAccessor.", e.getMessage());
     }
 
     try {
@@ -150,7 +150,7 @@ public class TemporalEvaluatorsTest {
       Object result = evaluator.evaluate(new Tuple(values));
       assertTrue(false);
     } catch (IOException e) {
-      assertEquals("Invalid parameter  - The parameter must be a string formatted ISO_INSTANT or of type Instant,Date or LocalDateTime.", e.getMessage());
+      assertEquals("Invalid parameter  - The parameter must be a string formatted ISO_INSTANT or of type Long,Instant,Date,LocalDateTime or TemporalAccessor.", e.getMessage());
     }
 
     values.clear();
