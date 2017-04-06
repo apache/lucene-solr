@@ -1,0 +1,11 @@
+dist: trusty
+language: java
+git:
+  depth: 3
+branches:
+  only:
+    - mt-cft-5.5.4
+notifications:
+  slack: mt360:XEmOCg3QPacmS849gdYbGc56
+jdk:
+  - oraclejdk8
