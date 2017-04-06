@@ -29,6 +29,7 @@ import org.apache.solr.client.solrj.request.CollectionAdminRequest.SplitShard;
 import org.apache.solr.client.solrj.response.RequestStatusState;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrInputDocument;
+import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.Slice;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -178,11 +179,22 @@ public class CollectionsAPIAsyncDistributedZkTest extends SolrCloudTestCase {
       //expected
     }
 
-    String replica = shard1.getReplicas().iterator().next().getName();
+    Replica replica = shard1.getReplicas().iterator().next();
+    for (String liveNode : client.getZkStateReader().getClusterState().getLiveNodes()) {
+      if (!replica.getNodeName().equals(liveNode)) {
+        state = new CollectionAdminRequest.MoveReplica(collection, replica.getName(), liveNode)
+            .processAndWait(client, MAX_TIMEOUT_SECONDS);
+        assertSame("MoveReplica did not complete", RequestStatusState.COMPLETED, state);
+        break;
+      }
+    }
+
+    shard1 = client.getZkStateReader().getClusterState().getSlice(collection, "shard1");
+    String replicaName = shard1.getReplicas().iterator().next().getName();
     state = new CollectionAdminRequest.DeleteReplica()
         .setCollectionName(collection)
         .setShardName("shard1")
-        .setReplica(replica)
+        .setReplica(replicaName)
         .processAndWait(client, MAX_TIMEOUT_SECONDS);
     assertSame("DeleteReplica did not complete", RequestStatusState.COMPLETED, state);
 
