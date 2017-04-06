@@ -43,7 +43,6 @@ import org.apache.solr.client.solrj.io.eval.CeilingEvaluator;
 import org.apache.solr.client.solrj.io.eval.CoalesceEvaluator;
 import org.apache.solr.client.solrj.io.eval.CosineEvaluator;
 import org.apache.solr.client.solrj.io.eval.CubedRootEvaluator;
-import org.apache.solr.client.solrj.io.eval.DatePartEvaluator;
 import org.apache.solr.client.solrj.io.eval.DivideEvaluator;
 import org.apache.solr.client.solrj.io.eval.EqualsEvaluator;
 import org.apache.solr.client.solrj.io.eval.ExclusiveOrEvaluator;
@@ -86,6 +85,17 @@ import org.apache.solr.client.solrj.io.stream.metrics.MaxMetric;
 import org.apache.solr.client.solrj.io.stream.metrics.MeanMetric;
 import org.apache.solr.client.solrj.io.stream.metrics.MinMetric;
 import org.apache.solr.client.solrj.io.stream.metrics.SumMetric;
+import org.apache.solr.client.solrj.io.eval.TemporalEvaluatorDay;
+import org.apache.solr.client.solrj.io.eval.TemporalEvaluatorDayOfQuarter;
+import org.apache.solr.client.solrj.io.eval.TemporalEvaluatorDayOfYear;
+import org.apache.solr.client.solrj.io.eval.TemporalEvaluatorEpoch;
+import org.apache.solr.client.solrj.io.eval.TemporalEvaluatorHour;
+import org.apache.solr.client.solrj.io.eval.TemporalEvaluatorMinute;
+import org.apache.solr.client.solrj.io.eval.TemporalEvaluatorMonth;
+import org.apache.solr.client.solrj.io.eval.TemporalEvaluatorQuarter;
+import org.apache.solr.client.solrj.io.eval.TemporalEvaluatorSecond;
+import org.apache.solr.client.solrj.io.eval.TemporalEvaluatorWeek;
+import org.apache.solr.client.solrj.io.eval.TemporalEvaluatorYear;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
@@ -223,7 +233,20 @@ public class StreamHandler extends RequestHandlerBase implements SolrCoreAware, 
       .withFunctionName("lteq", LessThanEqualToEvaluator.class)
       .withFunctionName("not", NotEvaluator.class)
       .withFunctionName("or", OrEvaluator.class)
-      
+
+      // Date Time Evaluators
+      .withFunctionName(TemporalEvaluatorYear.FUNCTION_NAME, TemporalEvaluatorYear.class)
+      .withFunctionName(TemporalEvaluatorMonth.FUNCTION_NAME, TemporalEvaluatorMonth.class)
+      .withFunctionName(TemporalEvaluatorDay.FUNCTION_NAME, TemporalEvaluatorDay.class)
+      .withFunctionName(TemporalEvaluatorDayOfYear.FUNCTION_NAME, TemporalEvaluatorDayOfYear.class)
+      .withFunctionName(TemporalEvaluatorHour.FUNCTION_NAME, TemporalEvaluatorHour.class)
+      .withFunctionName(TemporalEvaluatorMinute.FUNCTION_NAME, TemporalEvaluatorMinute.class)
+      .withFunctionName(TemporalEvaluatorSecond.FUNCTION_NAME, TemporalEvaluatorSecond.class)
+      .withFunctionName(TemporalEvaluatorEpoch.FUNCTION_NAME, TemporalEvaluatorEpoch.class)
+      .withFunctionName(TemporalEvaluatorWeek.FUNCTION_NAME, TemporalEvaluatorWeek.class)
+      .withFunctionName(TemporalEvaluatorQuarter.FUNCTION_NAME, TemporalEvaluatorQuarter.class)
+      .withFunctionName(TemporalEvaluatorDayOfQuarter.FUNCTION_NAME, TemporalEvaluatorDayOfQuarter.class)
+
       // Number Stream Evaluators
       .withFunctionName("abs", AbsoluteValueEvaluator.class)
       .withFunctionName("add", AddEvaluator.class)
@@ -250,15 +273,11 @@ public class StreamHandler extends RequestHandlerBase implements SolrCoreAware, 
       .withFunctionName("coalesce", CoalesceEvaluator.class)
       .withFunctionName("uuid", UuidEvaluator.class)
 
+
       // Conditional Stream Evaluators
       .withFunctionName("if", IfThenElseEvaluator.class)
       .withFunctionName("analyze", AnalyzeEvaluator.class)
       ;
-
-      // Date evaluators
-      for (DatePartEvaluator.FUNCTION function: DatePartEvaluator.FUNCTION.values()) {
-        streamFactory.withFunctionName(function.toString(), DatePartEvaluator.class);
-      }
 
      // This pulls all the overrides and additions from the config
      List<PluginInfo> pluginInfos = core.getSolrConfig().getPluginInfos(Expressible.class.getName());
