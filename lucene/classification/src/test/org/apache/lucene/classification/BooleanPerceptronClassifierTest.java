@@ -19,8 +19,12 @@ package org.apache.lucene.classification;
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.classification.utils.ConfusionMatrixGenerator;
 import org.apache.lucene.index.LeafReader;
+import org.apache.lucene.index.MultiFields;
 import org.apache.lucene.index.Term;
+import org.apache.lucene.index.Terms;
+import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.search.TermQuery;
+import org.apache.lucene.util.BytesRef;
 import org.junit.Test;
 
 /**
@@ -90,16 +94,45 @@ public class BooleanPerceptronClassifierTest extends ClassificationTestBase<Bool
 
       long evaluationStart = System.currentTimeMillis();
       ConfusionMatrixGenerator.ConfusionMatrix confusionMatrix = ConfusionMatrixGenerator.getConfusionMatrix(leafReader,
-          classifier, categoryFieldName, textFieldName, -1);
+          classifier, booleanFieldName, textFieldName, -1);
       assertNotNull(confusionMatrix);
       long evaluationEnd = System.currentTimeMillis();
       long evaluationTime = evaluationEnd - evaluationStart;
       assertTrue("evaluation took more than 1m: " + evaluationTime / 1000 + "s", evaluationTime < 60000);
       double avgClassificationTime = confusionMatrix.getAvgClassificationTime();
       assertTrue(5000 > avgClassificationTime);
-      // accuracy check disabled until LUCENE-6853 is fixed
+
+      double f1 = confusionMatrix.getF1Measure();
+      assertTrue(f1 >= 0d);
+      assertTrue(f1 <= 1d);
+
       double accuracy = confusionMatrix.getAccuracy();
-      assertTrue(accuracy > 0d);
+      assertTrue(accuracy >= 0d);
+      assertTrue(accuracy <= 1d);
+
+      double recall = confusionMatrix.getRecall();
+      assertTrue(recall >= 0d);
+      assertTrue(recall <= 1d);
+
+      double precision = confusionMatrix.getPrecision();
+      assertTrue(precision >= 0d);
+      assertTrue(precision <= 1d);
+
+      Terms terms = MultiFields.getTerms(leafReader, booleanFieldName);
+      TermsEnum iterator = terms.iterator();
+      BytesRef term;
+      while ((term = iterator.next()) != null) {
+        String s = term.utf8ToString();
+        recall = confusionMatrix.getRecall(s);
+        assertTrue(recall >= 0d);
+        assertTrue(recall <= 1d);
+        precision = confusionMatrix.getPrecision(s);
+        assertTrue(precision >= 0d);
+        assertTrue(precision <= 1d);
+        double f1Measure = confusionMatrix.getF1Measure(s);
+        assertTrue(f1Measure >= 0d);
+        assertTrue(f1Measure <= 1d);
+      }
     } finally {
       leafReader.close();
     }
