@@ -83,7 +83,7 @@ public abstract class TemporalEvaluator extends ComplexEvaluator {
       }
     }
 
-    throw new IOException(String.format(Locale.ROOT, "Invalid parameter %s - The parameter must be a string formatted ISO_INSTANT or of type Instant,Date or LocalDateTime.", String.valueOf(tupleValue)));
+    throw new IOException(String.format(Locale.ROOT, "Invalid parameter %s - The parameter must be a string formatted ISO_INSTANT or of type Long,Instant,Date,LocalDateTime or TemporalAccessor.", String.valueOf(tupleValue)));
   }
 
   public abstract Object evaluateDate(TemporalAccessor aDate) throws IOException;
