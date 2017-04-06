@@ -122,7 +122,7 @@ public class MoveReplicaCmd implements Cmd{
     removeReplicasProps.getProperties().put(CoreAdminParams.DELETE_INDEX, false);
     if(async!=null) removeReplicasProps.getProperties().put(ASYNC, async);
     NamedList deleteResult = new NamedList();
-    ocmh.deleteReplica(clusterState, removeReplicasProps, deleteResult, ()->{});
+    ocmh.deleteReplica(clusterState, removeReplicasProps, deleteResult, null);
     if (deleteResult.get("failure") != null) {
       String errorString = String.format(Locale.ROOT, "Failed to cleanup replica collection=%s shard=%s name=%s",
           coll.getName(), slice.getName(), replica.getName());
@@ -139,7 +139,7 @@ public class MoveReplicaCmd implements Cmd{
         CoreAdminParams.DATA_DIR, dataDir);
     if(async!=null) addReplicasProps.getProperties().put(ASYNC, async);
     NamedList addResult = new NamedList();
-    ocmh.addReplica(clusterState, addReplicasProps, addResult, ()->{});
+    ocmh.addReplica(clusterState, addReplicasProps, addResult, null);
     if (addResult.get("failure") != null) {
       String errorString = String.format(Locale.ROOT, "Failed to create replica for collection=%s shard=%s" +
           " on node=%s", coll.getName(), slice.getName(), targetNode);
@@ -163,7 +163,7 @@ public class MoveReplicaCmd implements Cmd{
         CoreAdminParams.NAME, newCoreName);
     if(async!=null) addReplicasProps.getProperties().put(ASYNC, async);
     NamedList addResult = new NamedList();
-    ocmh.addReplica(clusterState, addReplicasProps, addResult, ()->{});
+    ocmh.addReplica(clusterState, addReplicasProps, addResult, null);
     if (addResult.get("failure") != null) {
       String errorString = String.format(Locale.ROOT, "Failed to create replica for collection=%s shard=%s" +
           " on node=%s", coll.getName(), slice.getName(), targetNode);
@@ -178,7 +178,7 @@ public class MoveReplicaCmd implements Cmd{
         REPLICA_PROP, replica.getName());
     if(async!=null) removeReplicasProps.getProperties().put(ASYNC, async);
     NamedList deleteResult = new NamedList();
-    ocmh.deleteReplica(clusterState, removeReplicasProps, deleteResult, ()->{});
+    ocmh.deleteReplica(clusterState, removeReplicasProps, deleteResult, null);
     if (deleteResult.get("failure") != null) {
       String errorString = String.format(Locale.ROOT, "Failed to cleanup replica collection=%s shard=%s name=%s",
           coll.getName(), slice.getName(), replica.getName());
