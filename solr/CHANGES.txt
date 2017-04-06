@@ -225,6 +225,8 @@ Bug Fixes
   This fixes broken queries for ShingleFilter-containing query-time analyzers when request param sow=false.
   (Steve Rowe)
 
+* SOLR-10425: Fix indexed="false" on numeric PointFields (Tomás Fernández Löbbe, hossman)
+
 ==================  6.5.0 ==================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release.
