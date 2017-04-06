@@ -34,7 +34,9 @@ public class BooleanPerceptronClassifierTest extends ClassificationTestBase<Bool
     try {
       MockAnalyzer analyzer = new MockAnalyzer(random());
       leafReader = getSampleIndex(analyzer);
-      checkCorrectClassification(new BooleanPerceptronClassifier(leafReader, analyzer, null, 1, null, booleanFieldName, textFieldName), TECHNOLOGY_INPUT, false);
+      BooleanPerceptronClassifier classifier = new BooleanPerceptronClassifier(leafReader, analyzer, null, 1, null, booleanFieldName, textFieldName);
+      checkCorrectClassification(classifier, TECHNOLOGY_INPUT, false);
+      checkCorrectClassification(classifier, POLITICS_INPUT, true);
     } finally {
       if (leafReader != null) {
         leafReader.close();
@@ -60,12 +62,14 @@ public class BooleanPerceptronClassifierTest extends ClassificationTestBase<Bool
 
   @Test
   public void testBasicUsageWithQuery() throws Exception {
-    TermQuery query = new TermQuery(new Term(textFieldName, "it"));
+    TermQuery query = new TermQuery(new Term(textFieldName, "of"));
     LeafReader leafReader = null;
     try {
       MockAnalyzer analyzer = new MockAnalyzer(random());
       leafReader = getSampleIndex(analyzer);
-      checkCorrectClassification(new BooleanPerceptronClassifier(leafReader, analyzer, query, 1, null, booleanFieldName, textFieldName), TECHNOLOGY_INPUT, false);
+      BooleanPerceptronClassifier classifier = new BooleanPerceptronClassifier(leafReader, analyzer, query, 1, null, booleanFieldName, textFieldName);
+      checkCorrectClassification(classifier, TECHNOLOGY_INPUT, false);
+      checkCorrectClassification(classifier, POLITICS_INPUT, true);
     } finally {
       if (leafReader != null) {
         leafReader.close();
@@ -94,8 +98,8 @@ public class BooleanPerceptronClassifierTest extends ClassificationTestBase<Bool
       double avgClassificationTime = confusionMatrix.getAvgClassificationTime();
       assertTrue(5000 > avgClassificationTime);
       // accuracy check disabled until LUCENE-6853 is fixed
-//      double accuracy = confusionMatrix.getAccuracy();
-//      assertTrue(accuracy > 0d);
+      double accuracy = confusionMatrix.getAccuracy();
+      assertTrue(accuracy > 0d);
     } finally {
       leafReader.close();
     }
