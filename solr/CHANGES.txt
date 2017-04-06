@@ -160,6 +160,9 @@ Bug Fixes
 * SOLR-10387: zkTransfer normalizes destination path incorrectly if source is a windows directory 
   (gopikannan venugopalsamy, Erick Erickson)
 
+* SOLR-10323: fix to SpellingQueryConverter to properly strip out colons in field-specific queries.
+  (Amrit Sarkar via James Dyer)
+
 Other Changes
 ----------------------
 
