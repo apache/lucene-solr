@@ -37,7 +37,10 @@ solrAdminApp.controller('SQLQueryController',
       params.core = $routeParams.core;
       params.handler = $scope.qt;
       params.stmt = [$scope.stmt]
-
+      if(params.stmt[0] === undefined||params.stmt[0].length < 1){
+          $scope.sqlError = "SQL stmt is required"
+          return;
+      }
       $scope.lang = "json";
       $scope.response = null;
       $scope.url = "";
@@ -77,5 +80,4 @@ solrAdminApp.controller('SQLQueryController',
           $scope.gridApi.core.notifyDataChange
       });
     };
-  }
-);
+});
