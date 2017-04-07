@@ -163,6 +163,9 @@ Bug Fixes
 * SOLR-10323: fix to SpellingQueryConverter to properly strip out colons in field-specific queries.
   (Amrit Sarkar via James Dyer)
 
+* SOLR-10264: Fixes multi-term synonym parsing in ManagedSynonymFilterFactory.
+  (Jörg Rathlev, Steve Rowe, Christine Poerschke)
+
 Other Changes
 ----------------------
 
