@@ -201,6 +201,9 @@ Other Changes
 * SOLR-10394: Rename getSortWithinGroup to getWithinGroupSort in search.grouping.Command class.
   (Judith Silverman, Christine Poerschke)
 
+* SOLR-10440: LBHttpSolrClient.doRequest is now always wrapped in a Mapped Diagnostic Context (MDC).
+  (Christine Poerschke)
+
 ==================  6.5.1 ==================
 
 Bug Fixes
