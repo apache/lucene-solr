@@ -115,6 +115,10 @@ public class StreamHandler extends RequestHandlerBase implements SolrCoreAware, 
     return PermissionNameProvider.Name.READ_PERM;
   }
 
+  public static SolrClientCache getClientCache() {
+    return clientCache;
+  }
+
   public void inform(SolrCore core) {
     
     /* The stream factory will always contain the zkUrl for the given collection
