@@ -227,6 +227,10 @@ Bug Fixes
 
 * SOLR-10425: Fix indexed="false" on numeric PointFields (Tomás Fernández Löbbe, hossman)
 
+* SOLR-10341: SQL AVG function mis-interprets field type. (Joel Bernstein)
+
+* SOLR-10444: SQL interface does not use client cache. (Joel Bernstein)
+
 ==================  6.5.0 ==================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release.
