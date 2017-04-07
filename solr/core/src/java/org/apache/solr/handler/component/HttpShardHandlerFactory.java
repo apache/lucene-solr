@@ -124,10 +124,6 @@ public class HttpShardHandlerFactory extends ShardHandlerFactory implements org.
 
   // Configure if the threadpool favours fairness over throughput
   static final String INIT_FAIRNESS_POLICY = "fairnessPolicy";
-  
-  // Turn on retries for certain IOExceptions, many of which can happen
-  // due to connection pooling limitations / races
-  static final String USE_RETRIES = "useRetries";
 
   /**
    * Get {@link ShardHandler} that uses the default http client.
