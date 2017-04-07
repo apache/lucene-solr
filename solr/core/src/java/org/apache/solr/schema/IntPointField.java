@@ -103,6 +103,9 @@ public class IntPointField extends PointField implements IntValueFieldType {
   @Override
   public Query getSetQuery(QParser parser, SchemaField field, Collection<String> externalVal) {
     assert externalVal.size() > 0;
+    if (!field.indexed()) {
+      return super.getSetQuery(parser, field, externalVal);
+    }
     int[] values = new int[externalVal.size()];
     int i = 0;
     for (String val:externalVal) {
@@ -159,8 +162,6 @@ public class IntPointField extends PointField implements IntValueFieldType {
 
   @Override
   public IndexableField createField(SchemaField field, Object value) {
-    if (!isFieldUsed(field)) return null;
-
     int intValue = (value instanceof Number) ? ((Number) value).intValue() : Integer.parseInt(value.toString());
     return new IntPoint(field.getName(), intValue);
   }

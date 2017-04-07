@@ -93,6 +93,9 @@ Optimizations
 Other Changes
 * SOLR-10236: Removed FieldType.getNumericType(). Use getNumberType() instead. (Tomás Fernández Löbbe)
 
+* SOLR-10347: Removed index level boost support from "documents" section of the admin UI (Amrit Sarkar via
+  Tomás Fernández Löbbe)
+
 ----------------------
 
 ==================  6.6.0 ==================
@@ -134,6 +137,8 @@ New Features
 
 * SOLR-9993: Add support for ExpandComponent with PointFields. (Cao Manh Dat)
 
+* SOLR-10239: MOVEREPLICA API (Cao Manh Dat, Noble Paul, shalin)
+
 Optimizations
 ----------------------
 
@@ -154,6 +159,12 @@ Bug Fixes
 
 * SOLR-10387: zkTransfer normalizes destination path incorrectly if source is a windows directory 
   (gopikannan venugopalsamy, Erick Erickson)
+
+* SOLR-10323: fix to SpellingQueryConverter to properly strip out colons in field-specific queries.
+  (Amrit Sarkar via James Dyer)
+
+* SOLR-10264: Fixes multi-term synonym parsing in ManagedSynonymFilterFactory.
+  (Jörg Rathlev, Steve Rowe, Christine Poerschke)
 
 Other Changes
 ----------------------
@@ -193,6 +204,9 @@ Other Changes
 * SOLR-10394: Rename getSortWithinGroup to getWithinGroupSort in search.grouping.Command class.
   (Judith Silverman, Christine Poerschke)
 
+* SOLR-10440: LBHttpSolrClient.doRequest is now always wrapped in a Mapped Diagnostic Context (MDC).
+  (Christine Poerschke)
+
 ==================  6.5.1 ==================
 
 Bug Fixes
@@ -203,6 +217,25 @@ Bug Fixes
 
 * SOLR-10416: The JSON output of /admin/metrics is fixed to write the container as a
   map (SimpleOrderedMap) instead of an array (NamedList). (shalin)
+
+* SOLR-10277: On 'downnode', lots of wasteful mutations are done to ZK.
+  (Joshua Humphries, Scott Blum, Varun Thacker, shalin)
+
+* SOLR-10421: Fix params persistence for solr/contrib/ltr (MinMax|Standard)Normalizer classes.
+  (Jianxiong Dong, Christine Poerschke)
+
+* SOLR-10404: The fetch() streaming expression wouldn't work if a value included query syntax chars (like :+-).
+  Fixed, and enhanced the generated query to not pollute the queryCache. (David Smiley)
+  
+* SOLR-10423: Disable graph query production via schema configuration <fieldtype ... enableGraphQueries="false">.
+  This fixes broken queries for ShingleFilter-containing query-time analyzers when request param sow=false.
+  (Steve Rowe)
+
+* SOLR-10425: Fix indexed="false" on numeric PointFields (Tomás Fernández Löbbe, hossman)
+
+* SOLR-10341: SQL AVG function mis-interprets field type. (Joel Bernstein)
+
+* SOLR-10444: SQL interface does not use client cache. (Joel Bernstein)
 
 ==================  6.5.0 ==================
 

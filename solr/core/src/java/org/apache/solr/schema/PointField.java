@@ -21,6 +21,7 @@ import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.Date;
 import java.util.List;
 
 import org.apache.lucene.document.NumericDocValuesField;
@@ -111,7 +112,9 @@ public abstract class PointField extends NumericFieldType {
   }
 
   @Override
-  public abstract Query getSetQuery(QParser parser, SchemaField field, Collection<String> externalVals);
+  public Query getSetQuery(QParser parser, SchemaField field, Collection<String> externalVals) {
+    return super.getSetQuery(parser, field, externalVals);
+  }
 
   @Override
   public Query getFieldQuery(QParser parser, SchemaField field, String externalVal) {
@@ -204,34 +207,48 @@ public abstract class PointField extends NumericFieldType {
 
   @Override
   public List<IndexableField> createFields(SchemaField sf, Object value) {
-    if (!(sf.hasDocValues() || sf.stored())) {
-      return Collections.singletonList(createField(sf, value));
+    if (!isFieldUsed(sf)) {
+      return Collections.emptyList();
     }
-    List<IndexableField> fields = new ArrayList<>();
-    final IndexableField field = createField(sf, value);
-    fields.add(field);
+    List<IndexableField> fields = new ArrayList<>(3);
+    IndexableField field = null;
+    if (sf.indexed()) {
+      field = createField(sf, value);
+      fields.add(field);
+    }
     
     if (sf.hasDocValues()) {
+      final Number numericValue;
+      if (field == null) {
+        final Object nativeTypeObject = toNativeType(value);
+        if (getNumberType() == NumberType.DATE) {
+          numericValue = ((Date)nativeTypeObject).getTime();
+        } else {
+          numericValue = (Number) nativeTypeObject;
+        }
+      } else {
+        numericValue = field.numericValue();
+      }
       final long bits;
       if (!sf.multiValued()) {
-        if (field.numericValue() instanceof Integer || field.numericValue() instanceof Long) {
-          bits = field.numericValue().longValue();
-        } else if (field.numericValue() instanceof Float) {
-          bits = Float.floatToIntBits(field.numericValue().floatValue());
+        if (numericValue instanceof Integer || numericValue instanceof Long) {
+          bits = numericValue.longValue();
+        } else if (numericValue instanceof Float) {
+          bits = Float.floatToIntBits(numericValue.floatValue());
         } else {
-          assert field.numericValue() instanceof Double;
-          bits = Double.doubleToLongBits(field.numericValue().doubleValue());
+          assert numericValue instanceof Double;
+          bits = Double.doubleToLongBits(numericValue.doubleValue());
         }
         fields.add(new NumericDocValuesField(sf.getName(), bits));
       } else {
         // MultiValued
-        if (field.numericValue() instanceof Integer || field.numericValue() instanceof Long) {
-          bits = field.numericValue().longValue();
-        } else if (field.numericValue() instanceof Float) {
-          bits = NumericUtils.floatToSortableInt(field.numericValue().floatValue());
+        if (numericValue instanceof Integer || numericValue instanceof Long) {
+          bits = numericValue.longValue();
+        } else if (numericValue instanceof Float) {
+          bits = NumericUtils.floatToSortableInt(numericValue.floatValue());
         } else {
-          assert field.numericValue() instanceof Double;
-          bits = NumericUtils.doubleToSortableLong(field.numericValue().doubleValue());
+          assert numericValue instanceof Double;
+          bits = NumericUtils.doubleToSortableLong(numericValue.doubleValue());
         }
         fields.add(new SortedNumericDocValuesField(sf.getName(), bits));
       }

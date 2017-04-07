@@ -24,6 +24,8 @@ import org.apache.lucene.util.BytesRefBuilder;
 import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.schema.SchemaField;
 
+import static org.apache.solr.search.facet.FacetContext.SKIP_FACET;
+
 /**
  * Base class for DV/UIF accumulating counts into an array by ordinal.  It's
  * for {@link org.apache.lucene.index.SortedDocValues} and {@link org.apache.lucene.index.SortedSetDocValues} only.
@@ -57,8 +59,14 @@ abstract class FacetFieldProcessorByArray extends FacetFieldProcessor {
   }
 
   private SimpleOrderedMap<Object> calcFacets() throws IOException {
+    SimpleOrderedMap<Object> refineResult = null;
+    boolean skipThisFacet = (fcontext.flags & SKIP_FACET) != 0;
+
     if (fcontext.facetInfo != null) {
-      return refineFacets();
+      refineResult = refineFacets();
+      // if we've seen this facet bucket, then refining can be done.  If we haven't, we still
+      // only need to continue if we need allBuckets or numBuckets info.
+      if (skipThisFacet || (!freq.allBuckets && !freq.numBuckets)) return refineResult;
     }
 
     String prefix = freq.prefix;
@@ -70,6 +78,20 @@ abstract class FacetFieldProcessorByArray extends FacetFieldProcessor {
     }
 
     findStartAndEndOrds();
+
+    if (refineResult != null) {
+      if (freq.allBuckets) {
+        createAccs(nDocs, 1);
+        allBucketsAcc = new SpecialSlotAcc(fcontext, null, -1, accs, 0);
+        collectDocs();
+
+        SimpleOrderedMap<Object> allBuckets = new SimpleOrderedMap<>();
+        allBuckets.add("count", allBucketsAcc.getSpecialCount());
+        allBucketsAcc.setValues(allBuckets, -1); // -1 slotNum is unused for SpecialSlotAcc
+        refineResult.add("allBuckets", allBuckets);
+        return refineResult;
+      }
+    }
 
     maxSlots = nTerms;
 

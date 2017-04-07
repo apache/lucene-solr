@@ -93,6 +93,7 @@ public class TestExtendedDismaxParser extends SolrTestCaseJ4 {
     assertU(adoc("id", "70", "text_sw", "hair"));
     assertU(adoc("id", "71", "text_sw", "ties"));
     assertU(adoc("id", "72", "text_sw", "wifi ATM"));
+    assertU(adoc("id", "73", "shingle23", "A B X D E"));
     assertU(commit());
   }
 
@@ -1945,5 +1946,22 @@ public class TestExtendedDismaxParser extends SolrTestCaseJ4 {
         return super.getFieldQuery(field, val, quoted, raw);
       }
     }
+  }
+
+  @Test
+  public void testShingleQueries() throws Exception {
+    ModifiableSolrParams params = new ModifiableSolrParams();
+    params.add("sow", "false");
+    params.add("defType", "edismax");
+
+    try (SolrQueryRequest req = req(params)) {
+      QParser qParser = QParser.getParser("shingle23:(A B C)", req);
+      Query q = qParser.getQuery();
+      assertEquals("Synonym(shingle23:A_B shingle23:A_B_C) shingle23:B_C", q.toString());
+    }
+
+    assertJQ(req("df", "shingle23", "q", "A B C", "sow", "false")
+        , "/response/numFound==1"
+    );
   }
 }

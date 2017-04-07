@@ -29,7 +29,6 @@ var content_generator = {
 
 //Utiltity function for turning on/off various elements
 function toggles(documents_form, show_json, show_file, show_doc, doc_text, show_wizard) {
-  var json_only = $('#json-only');
   var the_document = $('#document', documents_form);
   if (show_doc) {
     //console.log("doc: " + doc_text);
@@ -37,11 +36,6 @@ function toggles(documents_form, show_json, show_file, show_doc, doc_text, show_
     the_document.show();
   } else {
     the_document.hide();
-  }
-  if (show_json) {
-    json_only.show();
-  } else {
-    json_only.hide();
   }
   var file_upload = $('#file-upload', documents_form);
   var upload_only = $('#upload-only', documents_form);
@@ -233,7 +227,6 @@ sammy.get
                       .trigger('change');
                   var the_document = $('#document', documents_form).val();
                   var commit_within = $('#commitWithin', documents_form).val();
-                  var boost = $('#boost', documents_form).val();
                   var overwrite = $('#overwrite', documents_form).val();
                   var the_command = "";
                   var content_type = "";
@@ -245,7 +238,6 @@ sammy.get
                     //create a JSON command
                     the_command = "{"
                         + '"add":{ "doc":' + the_document + ","
-                        + '"boost":' + boost + ","
                         + '"overwrite":' + overwrite + ","
                         + '"commitWithin":' + commit_within
                         + "}}";
