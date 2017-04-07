@@ -564,6 +564,7 @@ public class CloudSolrClient extends SolrClient {
   public ZkStateReader getZkStateReader() {
     if (stateProvider instanceof ZkClientClusterStateProvider) {
       ZkClientClusterStateProvider provider = (ZkClientClusterStateProvider) stateProvider;
+      stateProvider.connect();
       return provider.zkStateReader;
     }
     throw new IllegalStateException("This has no Zk stateReader");

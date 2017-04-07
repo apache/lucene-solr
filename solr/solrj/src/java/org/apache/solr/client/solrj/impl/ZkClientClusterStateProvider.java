@@ -55,6 +55,9 @@ public class ZkClientClusterStateProvider implements CloudSolrClient.ClusterStat
   public ClusterState.CollectionRef getState(String collection) {
     return zkStateReader.getClusterState().getCollectionRef(collection);
   }
+  public ZkStateReader getZkStateReader(){
+    return zkStateReader;
+  }
 
   @Override
   public Set<String> liveNodes() {
