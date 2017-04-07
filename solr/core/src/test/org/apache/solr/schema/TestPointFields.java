@@ -19,7 +19,6 @@ package org.apache.solr.schema;
 import java.io.IOException;
 import java.text.SimpleDateFormat;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.Date;
 import java.util.HashSet;
 import java.util.LinkedHashSet;
@@ -48,8 +47,10 @@ import org.apache.lucene.search.PointRangeQuery;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrInputDocument;
+import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.schema.IndexSchema.DynamicField;
 import org.apache.solr.search.SolrIndexSearcher;
+import org.apache.solr.search.SolrQueryParser;
 import org.apache.solr.util.DateMathParser;
 import org.apache.solr.util.RefCounted;
 import org.junit.After;
@@ -218,9 +219,9 @@ public class TestPointFields extends SolrTestCaseJ4 {
   
   @Test
   public void testIntPointSetQuery() throws Exception {
-    doTestSetQueries("number_p_i", getRandomStringArrayWithInts(10, false), false);
-    doTestSetQueries("number_p_i_mv", getRandomStringArrayWithInts(10, false), true);
-    doTestSetQueries("number_p_i_ni_dv", getRandomStringArrayWithInts(10, false), false);
+    doTestSetQueries("number_p_i", getRandomStringArrayWithInts(20, false), false);
+    doTestSetQueries("number_p_i_mv", getRandomStringArrayWithInts(20, false), true);
+    doTestSetQueries("number_p_i_ni_dv", getRandomStringArrayWithInts(20, false), false);
   }
   
   // DoublePointField
@@ -408,9 +409,9 @@ public class TestPointFields extends SolrTestCaseJ4 {
   
   @Test
   public void testDoublePointSetQuery() throws Exception {
-    doTestSetQueries("number_p_d", getRandomStringArrayWithDoubles(10, false), false);
-    doTestSetQueries("number_p_d_mv", getRandomStringArrayWithDoubles(10, false), true);
-    doTestSetQueries("number_p_d_ni_dv", getRandomStringArrayWithDoubles(10, false), false);
+    doTestSetQueries("number_p_d", getRandomStringArrayWithDoubles(20, false), false);
+    doTestSetQueries("number_p_d_mv", getRandomStringArrayWithDoubles(20, false), true);
+    doTestSetQueries("number_p_d_ni_dv", getRandomStringArrayWithDoubles(20, false), false);
   }
   
   // Float
@@ -557,9 +558,9 @@ public class TestPointFields extends SolrTestCaseJ4 {
 
   @Test
   public void testFloatPointSetQuery() throws Exception {
-    doTestSetQueries("number_p_f", getRandomStringArrayWithFloats(10, false), false);
-    doTestSetQueries("number_p_f_mv", getRandomStringArrayWithFloats(10, false), true);
-    doTestSetQueries("number_p_f_ni_dv", getRandomStringArrayWithFloats(10, false), false);
+    doTestSetQueries("number_p_f", getRandomStringArrayWithFloats(20, false), false);
+    doTestSetQueries("number_p_f_mv", getRandomStringArrayWithFloats(20, false), true);
+    doTestSetQueries("number_p_f_ni_dv", getRandomStringArrayWithFloats(20, false), false);
   }
   
   @Test
@@ -705,9 +706,9 @@ public class TestPointFields extends SolrTestCaseJ4 {
   
   @Test
   public void testLongPointSetQuery() throws Exception {
-    doTestSetQueries("number_p_l", getRandomStringArrayWithLongs(10, false), false);
-    doTestSetQueries("number_p_l_mv", getRandomStringArrayWithLongs(10, false), true);
-    doTestSetQueries("number_p_l_ni_dv", getRandomStringArrayWithLongs(10, false), false);
+    doTestSetQueries("number_p_l", getRandomStringArrayWithLongs(20, false), false);
+    doTestSetQueries("number_p_l_mv", getRandomStringArrayWithLongs(20, false), true);
+    doTestSetQueries("number_p_l_ni_dv", getRandomStringArrayWithLongs(20, false), false);
   }
   
   @Test
@@ -850,9 +851,9 @@ public class TestPointFields extends SolrTestCaseJ4 {
 
   @Test
   public void testDatePointSetQuery() throws Exception {
-    doTestSetQueries("number_p_dt", getRandomStringArrayWithDates(10, false), false);
-    doTestSetQueries("number_p_dt_mv", getRandomStringArrayWithDates(10, false), true);
-    doTestSetQueries("number_p_dt_ni_dv", getRandomStringArrayWithDates(10, false), false);
+    doTestSetQueries("number_p_dt", getRandomStringArrayWithDates(20, false), false);
+    doTestSetQueries("number_p_dt_mv", getRandomStringArrayWithDates(20, false), true);
+    doTestSetQueries("number_p_dt_ni_dv", getRandomStringArrayWithDates(20, false), false);
   }
   
   
@@ -2087,7 +2088,8 @@ public class TestPointFields extends SolrTestCaseJ4 {
       assertU(adoc("id", String.valueOf(i), fieldName, values[i]));
     }
     assertU(commit());
-    assertTrue(h.getCore().getLatestSchema().getField(fieldName).getType() instanceof PointField);
+    SchemaField sf = h.getCore().getLatestSchema().getField(fieldName); 
+    assertTrue(sf.getType() instanceof PointField);
     
     for (int i = 0; i < values.length; i++) {
       assertQ(req("q", "{!term f='" + fieldName + "'}" + values[i], "fl", "id," + fieldName), 
@@ -2099,6 +2101,27 @@ public class TestPointFields extends SolrTestCaseJ4 {
           "//*[@numFound='2']");
     }
     
+    assertTrue(values.length > SolrQueryParser.TERMS_QUERY_THRESHOLD);
+    int numTerms = SolrQueryParser.TERMS_QUERY_THRESHOLD + 1;
+    StringBuilder builder = new StringBuilder(fieldName + ":(");
+    for (int i = 0; i < numTerms; i++) {
+      if (sf.getType().getNumberType() == NumberType.DATE) {
+        builder.append(String.valueOf(values[i]).replace(":", "\\:") + ' ');
+      } else {
+        builder.append(String.valueOf(values[i]).replace("-", "\\-") + ' ');
+      }
+    }
+    builder.append(')');
+    if (sf.indexed()) { // SolrQueryParser should also be generating a PointInSetQuery if indexed
+      assertQ(req(CommonParams.DEBUG, CommonParams.QUERY, "q", "*:*", "fq", builder.toString(), "fl", "id," + fieldName), 
+          "//*[@numFound='" + numTerms + "']",
+          "//*[@name='parsed_filter_queries']/str[.='(" + getSetQueryToString(fieldName, values, numTerms) + ")']");
+    } else {
+      // Won't use PointInSetQuery if the fiels is not indexed, but should match the same docs
+      assertQ(req(CommonParams.DEBUG, CommonParams.QUERY, "q", "*:*", "fq", builder.toString(), "fl", "id," + fieldName), 
+          "//*[@numFound='" + numTerms + "']");
+    }
+
     if (multiValued) {
       clearIndex();
       assertU(commit());
@@ -2118,6 +2141,11 @@ public class TestPointFields extends SolrTestCaseJ4 {
     }
   }
   
+  private String getSetQueryToString(String fieldName, String[] values, int numTerms) {
+    SchemaField sf = h.getCore().getLatestSchema().getField(fieldName);
+    return sf.getType().getSetQuery(null, sf, Arrays.asList(Arrays.copyOf(values, numTerms))).toString();
+  }
+
   private void doTestDoublePointFieldMultiValuedRangeFacet(String docValuesField, String nonDocValuesField) throws Exception {
     for (int i = 0; i < 10; i++) {
       assertU(adoc("id", String.valueOf(i), docValuesField, String.valueOf(i), docValuesField, String.valueOf(i + 10), 
@@ -2681,9 +2709,9 @@ public class TestPointFields extends SolrTestCaseJ4 {
       for (LeafReaderContext leave:ir.leaves()) {
         LeafReader reader = leave.reader();
         for (int i = 0; i < reader.numDocs(); i++) {
-          Document doc = reader.document(i, Collections.singleton(field));
+          Document doc = reader.document(i);
           if (sf.stored()) {
-            assertNotNull(doc.get(field));
+            assertNotNull("Field " + field + " not found. Doc: " + doc, doc.get(field));
           } else {
             assertNull(doc.get(field));
           }
@@ -2692,6 +2720,8 @@ public class TestPointFields extends SolrTestCaseJ4 {
     } finally {
       ref.decref();
     }
+    clearIndex();
+    assertU(commit());
   }
 
   public void testNonReturnable() throws Exception {
