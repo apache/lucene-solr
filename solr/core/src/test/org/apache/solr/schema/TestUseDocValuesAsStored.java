@@ -250,6 +250,34 @@ public class TestUseDocValuesAsStored extends AbstractBadConfigTestBase {
             + "{'id':'myid6','test_s_dvo':'hello'}"
             + "]");
   }
+  
+  @Test
+  public void testUseDocValuesAsStoredFalse() throws Exception {
+    SchemaField sf = h.getCore().getLatestSchema().getField("nonstored_dv_str");
+    assertNotNull(sf);
+    assertTrue(sf.hasDocValues());
+    assertFalse(sf.useDocValuesAsStored());
+    assertFalse(sf.stored());
+    assertU(adoc("id", "myid", "nonstored_dv_str", "dont see me"));
+    assertU(commit());
+    
+    assertJQ(req("q", "id:myid"),
+        "/response/docs==["
+            + "{'id':'myid'}"
+            + "]");
+    assertJQ(req("q", "id:myid", "fl", "*"),
+        "/response/docs==["
+            + "{'id':'myid'}"
+            + "]");
+    assertJQ(req("q", "id:myid", "fl", "id,nonstored_dv_*"),
+        "/response/docs==["
+            + "{'id':'myid'}"
+            + "]");
+    assertJQ(req("q", "id:myid", "fl", "id,nonstored_dv_str"),
+        "/response/docs==["
+            + "{'id':'myid','nonstored_dv_str':'dont see me'}"
+            + "]");
+  }
 
   public void testManagedSchema() throws Exception {
     IndexSchema oldSchema = h.getCore().getLatestSchema();
