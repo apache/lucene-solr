@@ -54,6 +54,7 @@
    <dynamicField name="*_p_i_ni"  type="pint"    indexed="false"  stored="true" docValues="false"/>
    <dynamicField name="*_p_i_ni_dv"  type="pint"    indexed="false"  stored="true" docValues="true"/>
    <dynamicField name="*_p_i_ni_dv_ns"  type="pint"    indexed="false"  stored="false" docValues="true" useDocValuesAsStored="false"/>
+   <dynamicField name="*_p_i_ni_dv_ns_mv"  type="pint"    indexed="false"  stored="false" docValues="true" useDocValuesAsStored="false" multiValued="true"/>
    <dynamicField name="*_p_i_ni_mv"  type="pint"    indexed="false"  stored="true" docValues="false" multiValued="true"/>
    <dynamicField name="*_p_i_ni_mv_dv"  type="pint"    indexed="false"  stored="true" docValues="true" multiValued="true"/>
    <dynamicField name="*_p_i_ni_ns"  type="pint"    indexed="false"  stored="false" docValues="false" />
@@ -66,6 +67,7 @@
    <dynamicField name="*_p_l_ni"  type="plong"    indexed="false"  stored="true" docValues="false"/>
    <dynamicField name="*_p_l_ni_dv"  type="plong"    indexed="false"  stored="true" docValues="true"/>
    <dynamicField name="*_p_l_ni_dv_ns"  type="plong"    indexed="false"  stored="false" docValues="true" useDocValuesAsStored="false"/>
+   <dynamicField name="*_p_l_ni_dv_ns_mv"  type="plong"    indexed="false"  stored="false" docValues="true" useDocValuesAsStored="false" multiValued="true"/>
    <dynamicField name="*_p_l_ni_mv"  type="plong"    indexed="false"  stored="true" docValues="false" multiValued="true"/>
    <dynamicField name="*_p_l_ni_mv_dv"  type="plong"    indexed="false"  stored="true" docValues="true" multiValued="true"/>
    <dynamicField name="*_p_l_ni_ns"  type="plong"    indexed="false"  stored="false" docValues="false" />
@@ -78,6 +80,7 @@
    <dynamicField name="*_p_d_ni"  type="pdouble"    indexed="false"  stored="true" docValues="false"/>
    <dynamicField name="*_p_d_ni_dv"  type="pdouble"    indexed="false"  stored="true" docValues="true"/>
    <dynamicField name="*_p_d_ni_dv_ns"  type="pdouble"    indexed="false"  stored="false" docValues="true" useDocValuesAsStored="false"/>
+   <dynamicField name="*_p_d_ni_dv_ns_mv"  type="pdouble"    indexed="false"  stored="false" docValues="true" useDocValuesAsStored="false" multiValued="true"/>
    <dynamicField name="*_p_d_ni_mv"  type="pdouble"    indexed="false"  stored="true" docValues="false" multiValued="true"/>
    <dynamicField name="*_p_d_ni_mv_dv"  type="pdouble"    indexed="false"  stored="true" docValues="true" multiValued="true"/>
    <dynamicField name="*_p_d_ni_ns"  type="pdouble"    indexed="false"  stored="false" docValues="false"/>
@@ -90,6 +93,7 @@
    <dynamicField name="*_p_f_ni"  type="pfloat"    indexed="false"  stored="true" docValues="false"/>
    <dynamicField name="*_p_f_ni_dv"  type="pfloat"    indexed="false"  stored="true" docValues="true"/>
    <dynamicField name="*_p_f_ni_dv_ns"  type="pfloat"    indexed="false"  stored="false" docValues="true" useDocValuesAsStored="false"/>
+   <dynamicField name="*_p_f_ni_dv_ns_mv"  type="pfloat"    indexed="false"  stored="false" docValues="true" useDocValuesAsStored="false" multiValued="true"/>
    <dynamicField name="*_p_f_ni_mv"  type="pfloat"    indexed="false"  stored="true" docValues="false" multiValued="true"/>
    <dynamicField name="*_p_f_ni_mv_dv"  type="pfloat"    indexed="false"  stored="true" docValues="true" multiValued="true"/>
    <dynamicField name="*_p_f_ni_ns"  type="pfloat"    indexed="false"  stored="false" docValues="false"/>
@@ -102,6 +106,7 @@
    <dynamicField name="*_p_dt_ni"  type="pdate"    indexed="false"  stored="true" docValues="false"/>
    <dynamicField name="*_p_dt_ni_dv"  type="pdate"    indexed="false"  stored="true" docValues="true"/>
    <dynamicField name="*_p_dt_ni_dv_ns"  type="pdate"    indexed="false"  stored="false" docValues="true" useDocValuesAsStored="false"/>
+   <dynamicField name="*_p_dt_ni_dv_ns_mv"  type="pdate"    indexed="false"  stored="false" docValues="true" useDocValuesAsStored="false" multiValued="true"/>
    <dynamicField name="*_p_dt_ni_mv"  type="pdate"    indexed="false"  stored="true" docValues="false" multiValued="true"/>
    <dynamicField name="*_p_dt_ni_mv_dv"  type="pdate"    indexed="false"  stored="true" docValues="true" multiValued="true"/>
    <dynamicField name="*_p_dt_ni_ns"  type="pdate"    indexed="false"  stored="false" docValues="false"/>

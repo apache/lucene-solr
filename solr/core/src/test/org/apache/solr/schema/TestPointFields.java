@@ -17,6 +17,7 @@
 package org.apache.solr.schema;
 
 import java.io.IOException;
+import java.text.SimpleDateFormat;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.Date;
@@ -57,7 +58,6 @@ import org.junit.Test;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
-import com.ibm.icu.text.SimpleDateFormat;
 
 /**
  * Tests for PointField functionality
@@ -885,7 +885,7 @@ public class TestPointFields extends SolrTestCaseJ4 {
   
   public void testInternals() throws IOException {
     String[] types = new String[]{"i", "l", "f", "d"};
-    String[] suffixes = new String[]{"", "_dv", "_mv", "_mv_dv", "_ni", "_ni_dv", "_ni_dv_ns", "_ni_mv", "_ni_mv_dv", "_ni_ns", "_ni_ns_mv", "_dv_ns", "_ni_ns_dv", "_dv_ns_mv"};
+    String[] suffixes = new String[]{"", "_dv", "_mv", "_mv_dv", "_ni", "_ni_dv", "_ni_dv_ns", "_ni_dv_ns_mv", "_ni_mv", "_ni_mv_dv", "_ni_ns", "_ni_ns_mv", "_dv_ns", "_ni_ns_dv", "_dv_ns_mv"};
     Set<String> typesTested = new HashSet<>();
     for (String type:types) {
       for (String suffix:suffixes) {
@@ -2696,38 +2696,36 @@ public class TestPointFields extends SolrTestCaseJ4 {
 
   public void testNonReturnable() throws Exception {
     
-    doTestNonReturnable("foo_p_i_ni_ns", "42");
-    doTestNonReturnable("foo_p_i_ni_ns_mv", "42", "666");
+    doTestReturnNonStored("foo_p_i_ni_ns", false, "42");
+    doTestReturnNonStored("foo_p_i_ni_dv_ns", true, "42");
+    doTestReturnNonStored("foo_p_i_ni_ns_mv", false, "42", "666");
+    doTestReturnNonStored("foo_p_i_ni_dv_ns_mv", true, "42", "666");
 
-    doTestNonReturnable("foo_p_l_ni_ns", "3333333333");
-    doTestNonReturnable("foo_p_l_ni_ns_mv", "3333333333", "-4444444444");
+    doTestReturnNonStored("foo_p_l_ni_ns", false, "3333333333");
+    doTestReturnNonStored("foo_p_l_ni_dv_ns", true, "3333333333");
+    doTestReturnNonStored("foo_p_l_ni_ns_mv", false, "3333333333", "-4444444444");
+    doTestReturnNonStored("foo_p_l_ni_dv_ns_mv", true, "3333333333", "-4444444444");
 
-    doTestNonReturnable("foo_p_f_ni_ns", "42.3");
-    doTestNonReturnable("foo_p_f_ni_ns_mv", "42.3", "-66.6");
+    doTestReturnNonStored("foo_p_f_ni_ns", false, "42.3");
+    doTestReturnNonStored("foo_p_f_ni_dv_ns", true, "42.3");
+    doTestReturnNonStored("foo_p_f_ni_ns_mv", false, "42.3", "-66.6");
+    doTestReturnNonStored("foo_p_f_ni_dv_ns_mv", true, "42.3", "-66.6");
     
-    doTestNonReturnable("foo_p_d_ni_ns", "42.3");
-    doTestNonReturnable("foo_p_d_ni_ns_mv", "42.3", "-66.6");
+    doTestReturnNonStored("foo_p_d_ni_ns", false, "42.3");
+    doTestReturnNonStored("foo_p_d_ni_dv_ns", true, "42.3");
+    doTestReturnNonStored("foo_p_d_ni_ns_mv", false, "42.3", "-66.6");
+    doTestReturnNonStored("foo_p_d_ni_dv_ns_mv", true, "42.3", "-66.6");
 
-    doTestNonReturnable("foo_p_dt_ni_ns", "1995-12-31T23:59:59Z");
-    doTestNonReturnable("foo_p_dt_ni_ns_mv", "1995-12-31T23:59:59Z", "2000-12-31T23:59:59Z+3DAYS");
-
+    doTestReturnNonStored("foo_p_dt_ni_ns", false, "1995-12-31T23:59:59Z");
+    doTestReturnNonStored("foo_p_dt_ni_dv_ns", true, "1995-12-31T23:59:59Z");
+    doTestReturnNonStored("foo_p_dt_ni_ns_mv", false, "1995-12-31T23:59:59Z", "2000-12-31T23:59:59Z+3DAYS");
+    doTestReturnNonStored("foo_p_dt_ni_dv_ns_mv", true, "1995-12-31T23:59:59Z", "2000-12-31T23:59:59Z+3DAYS");
   }
 
-  @AwaitsFix(bugUrl="https://issues.apache.org/jira/browse/SOLR-10437")
-  public void testNonReturnableDocValues() throws Exception {
-    // TODO: once SOLR-10437 is resolved, this test method can be folded into testNonReturnable()
-    
-    // these fields are stored=false, docValues=true, useDocValuesAsStored=false and yet they are
-    // still returned and failing this test.
-    
-    doTestNonReturnable("foo_p_i_ni_dv_ns", "42");
-    doTestNonReturnable("foo_p_l_ni_dv_ns", "3333333333");
-    doTestNonReturnable("foo_p_f_ni_dv_ns", "42.3");
-    doTestNonReturnable("foo_p_d_ni_dv_ns", "42.3");
-    doTestNonReturnable("foo_p_dt_ni_dv_ns", "1995-12-31T23:59:59Z");
-  }
-
-  public void doTestNonReturnable(final String fieldName, final String... values) throws Exception {
+  public void doTestReturnNonStored(final String fieldName, boolean shouldReturnFieldIfRequested, final String... values) throws Exception {
+    final String RETURN_FIELD = "count(//doc/*[@name='" + fieldName + "'])=10";
+    final String DONT_RETURN_FIELD = "count(//doc/*[@name='" + fieldName + "'])=0";
+    assertFalse(h.getCore().getLatestSchema().getField(fieldName).stored());
     for (int i=0; i < 10; i++) {
       SolrInputDocument doc = sdoc("id", String.valueOf(i));
       for (String value : values) {
@@ -2739,17 +2737,24 @@ public class TestPointFields extends SolrTestCaseJ4 {
     assertQ(req("q", "*:*", "rows", "100", "fl", "id," + fieldName), 
             "//*[@numFound='10']",
             "count(//doc)=10", // exactly 10 docs in response
-            "count(//doc/*)=10", // exactly 10 fields across all docs
-            "count(//doc/*[@name!='id'])=0"); // no field in any doc other then 'id'
+            (shouldReturnFieldIfRequested?RETURN_FIELD:DONT_RETURN_FIELD)); // no field in any doc other then 'id'
+
+    assertQ(req("q", "*:*", "rows", "100", "fl", "*"), 
+        "//*[@numFound='10']",
+        "count(//doc)=10", // exactly 10 docs in response
+        DONT_RETURN_FIELD); // no field in any doc other then 'id'
+
+    assertQ(req("q", "*:*", "rows", "100"), 
+        "//*[@numFound='10']",
+        "count(//doc)=10", // exactly 10 docs in response
+        DONT_RETURN_FIELD); // no field in any doc other then 'id'
     clearIndex();
     assertU(commit());
   }
 
   public void testWhiteboxCreateFields() throws Exception {
-    // TODO: we should have a "coverage" assert that we're looping over all the dynamic (point) fields in the schema
-    
     String[] typeNames = new String[]{"i", "l", "f", "d", "dt"};
-    String[] suffixes = new String[]{"", "_dv", "_mv", "_mv_dv", "_ni", "_ni_dv", "_ni_dv_ns", "_ni_mv", "_ni_mv_dv", "_ni_ns", "_ni_ns_mv", "_dv_ns", "_ni_ns_dv", "_dv_ns_mv"};
+    String[] suffixes = new String[]{"", "_dv", "_mv", "_mv_dv", "_ni", "_ni_dv", "_ni_dv_ns", "_ni_dv_ns_mv", "_ni_mv", "_ni_mv_dv", "_ni_ns", "_ni_ns_mv", "_dv_ns", "_ni_ns_dv", "_dv_ns_mv"};
     Class<?>[] expectedClasses = new Class[]{IntPoint.class, LongPoint.class, FloatPoint.class, DoublePoint.class, LongPoint.class};
     
     Date dateToTest = new Date();
