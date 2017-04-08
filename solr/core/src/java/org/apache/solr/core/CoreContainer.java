@@ -216,7 +216,9 @@ public class CoreContainer {
  // private ClientConnectionManager clientConnectionManager = new PoolingClientConnectionManager();
 
   {
-    log.debug("New CoreContainer " + System.identityHashCode(this));
+    if (log.isDebugEnabled()) {
+      log.debug("New CoreContainer " + System.identityHashCode(this));
+    }
   }
 
   /**
@@ -323,11 +325,11 @@ public class CoreContainer {
     }
 
     if (pluginClassName != null) {
-      log.debug("Authentication plugin class obtained from security.json: "+pluginClassName);
+      log.debug("Authentication plugin class obtained from security.json: {}", pluginClassName);
     } else if (System.getProperty(AUTHENTICATION_PLUGIN_PROP) != null) {
       pluginClassName = System.getProperty(AUTHENTICATION_PLUGIN_PROP);
-      log.debug("Authentication plugin class obtained from system property '" +
-          AUTHENTICATION_PLUGIN_PROP + "': " + pluginClassName);
+      log.debug("Authentication plugin class obtained from system property'{}': {}",
+          AUTHENTICATION_PLUGIN_PROP, pluginClassName);
     } else {
       log.debug("No authentication plugin used.");
     }
@@ -721,9 +723,7 @@ public class CoreContainer {
           }
         } catch (InterruptedException e) {
           Thread.currentThread().interrupt();
-          if (log.isDebugEnabled()) {
-            log.debug("backgroundCloser thread was interrupted before finishing");
-          }
+          log.debug("backgroundCloser thread was interrupted before finishing");
         }
       }
       // Now clear all the cores that are being operated upon.
@@ -840,14 +840,14 @@ public class CoreContainer {
     coreInitFailures.remove(name);
 
     if( old == null || old == core) {
-      log.debug( "registering core: "+name );
+      log.debug( "registering core: {}", name );
       if (registerInZk) {
         zkSys.registerInZk(core, false, skipRecovery);
       }
       return null;
     }
     else {
-      log.debug( "replacing core: "+name );
+      log.debug( "replacing core: {}", name );
       old.close();
       if (registerInZk) {
         zkSys.registerInZk(core, false, skipRecovery);

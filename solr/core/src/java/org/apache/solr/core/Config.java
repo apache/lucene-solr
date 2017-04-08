@@ -265,7 +265,7 @@ public class Config {
         if (errIfMissing) {
           throw new RuntimeException(name + " missing "+path);
         } else {
-          log.debug(name + " missing optional " + path);
+          log.debug("{} missing optional {}", name, path);
           return null;
         }
       }
@@ -299,7 +299,7 @@ public class Config {
         if (errIfMissing) {
           throw new RuntimeException(name + " missing "+path);
         } else {
-          log.debug(name + " missing optional " + path);
+          log.debug("{} missing optional {}", name, path);
           return null;
         }
       }
@@ -385,8 +385,7 @@ public class Config {
     if (nd==null) return null;
 
     String txt = DOMUtil.getText(nd);
-
-    log.debug(name + ' '+path+'='+txt);
+    log.debug("{} {}={}", name, path, txt);
     return txt;
 
     /******

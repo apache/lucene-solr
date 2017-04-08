@@ -401,7 +401,7 @@ public final class ManagedIndexSchema extends IndexSchema {
         newSchema.fields.put(newField.getName(), newField);
 
         if (null != newField.getDefaultValue()) {
-          log.debug(newField.getName() + " contains default value: " + newField.getDefaultValue());
+          log.debug("{} contains default value: {}", newField.getName(), newField.getDefaultValue());
           newSchema.fieldsWithDefaultValue.add(newField);
         }
         if (newField.isRequired()) {
@@ -501,7 +501,7 @@ public final class ManagedIndexSchema extends IndexSchema {
       SchemaField replacementField = SchemaField.create(fieldName, replacementFieldType, replacementArgs);
       newSchema.fields.put(fieldName, replacementField);
       if (null != replacementField.getDefaultValue()) {
-        log.debug(replacementField.getName() + " contains default value: " + replacementField.getDefaultValue());
+        log.debug("{} contains default value: {}", replacementField.getName(), replacementField.getDefaultValue());
         newSchema.fieldsWithDefaultValue.add(replacementField);
       }
       if (replacementField.isRequired()) {
@@ -966,7 +966,7 @@ public final class ManagedIndexSchema extends IndexSchema {
             if (i > 0) fieldTypeNames.append(", ");
             fieldTypeNames.append(fieldTypeList.get(i).typeName);
           }
-          log.debug("Added field types: {}", fieldTypeNames.toString());
+          log.debug("Added field types: " + fieldTypeNames);
         }
       } else {
         // this is unlikely to happen as most errors are handled as exceptions in the persist code
@@ -1067,7 +1067,7 @@ public final class ManagedIndexSchema extends IndexSchema {
           SchemaField replacementField = SchemaField.create(fieldName, replacementFieldType, oldField.getArgs());
           replacementFields.add(replacementField); // Save the new field to be added after iteration is finished
           if (null != replacementField.getDefaultValue()) {
-            log.debug(replacementField.getName() + " contains default value: " + replacementField.getDefaultValue());
+            log.debug("{} contains default value: {}", replacementField.getName(), replacementField.getDefaultValue());
             newSchema.fieldsWithDefaultValue.add(replacementField);
           }
           if (replacementField.isRequired()) {

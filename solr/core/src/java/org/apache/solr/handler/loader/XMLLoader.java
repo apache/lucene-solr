@@ -105,7 +105,7 @@ public class XMLLoader extends ContentStreamLoader {
     } catch (IllegalArgumentException ex) {
       // Other implementations will likely throw this exception since "reuse-instance"
       // isimplementation specific.
-      log.debug("Unable to set the 'reuse-instance' property for the input chain: " + inputFactory);
+      log.debug("Unable to set the 'reuse-instance' property for the input chain: {}", inputFactory);
     }
     
     // Init SAX parser (for XSL):
@@ -116,7 +116,7 @@ public class XMLLoader extends ContentStreamLoader {
     xsltCacheLifetimeSeconds = XSLT_CACHE_DEFAULT;
     if(args != null) {
       xsltCacheLifetimeSeconds = args.getInt(XSLT_CACHE_PARAM,XSLT_CACHE_DEFAULT);
-      log.debug("xsltCacheLifetimeSeconds=" + xsltCacheLifetimeSeconds);
+      log.debug("xsltCacheLifetimeSeconds={}", xsltCacheLifetimeSeconds);
     }
     return this;
   }

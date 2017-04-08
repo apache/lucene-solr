@@ -611,7 +611,7 @@ public class RestManager {
                    StorageIO storageIO) 
       throws SolrException
   {
-    log.debug("Initializing RestManager with initArgs: "+initArgs);
+    log.debug("Initializing RestManager with initArgs: {}", initArgs);
 
     if (storageIO == null)
       throw new IllegalArgumentException(

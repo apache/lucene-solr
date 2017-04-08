@@ -197,7 +197,7 @@ public class Suggester extends SolrSpellChecker {
 
   @Override
   public SpellingResult getSuggestions(SpellingOptions options) throws IOException {
-    LOG.debug("getSuggestions: " + options.tokens);
+    LOG.debug("getSuggestions: {}", options.tokens);
     if (lookup == null) {
       LOG.info("Lookup is null - invoke spellchecker.build first");
       return EMPTY_RESULT;

@@ -301,7 +301,7 @@ public class DistributedQueue {
         for (String childName : childNames) {
           // Check format
           if (!childName.regionMatches(0, PREFIX, 0, PREFIX.length())) {
-            LOG.debug("Found child node with improper name: " + childName);
+            LOG.debug("Found child node with improper name: {}", childName);
             continue;
           }
           orderedChildren.add(childName);

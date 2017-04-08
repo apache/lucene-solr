@@ -104,7 +104,7 @@ public class DocumentAnalysisRequestHandler extends AnalysisRequestHandlerBase {
     } catch (IllegalArgumentException ex) {
       // Other implementations will likely throw this exception since "reuse-instance"
       // is implementation specific.
-      log.debug("Unable to set the 'reuse-instance' property for the input factory: " + inputFactory);
+      log.debug("Unable to set the 'reuse-instance' property for the input factory: {}", inputFactory);
     }
   }
 

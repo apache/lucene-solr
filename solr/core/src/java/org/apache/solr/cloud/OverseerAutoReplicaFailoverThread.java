@@ -123,7 +123,9 @@ public class OverseerAutoReplicaFailoverThread implements Runnable, Closeable {
     this.thread = Thread.currentThread();
     while (!this.isClosed) {
       // work loop
-      log.debug("do " + this.getClass().getSimpleName() + " work loop");
+      if (log.isDebugEnabled()) {
+        log.debug("do " + this.getClass().getSimpleName() + " work loop");
+      }
 
       // every n, look at state and make add / remove calls
 
@@ -165,7 +167,8 @@ public class OverseerAutoReplicaFailoverThread implements Runnable, Closeable {
       lastClusterStateVersion = clusterState.getZkClusterStateVersion();
       Map<String, DocCollection> collections = clusterState.getCollectionsMap();
       for (Map.Entry<String, DocCollection> entry : collections.entrySet()) {
-        log.debug("look at collection={}", entry.getKey());
+        String collectionName = entry.getKey();
+        log.debug("look at collection={}", collectionName);
         DocCollection docCollection = entry.getValue();
         if (!docCollection.getAutoAddReplicas()) {
           log.debug("Collection {} is not setup to use autoAddReplicas, skipping..", docCollection.getName());
@@ -175,7 +178,7 @@ public class OverseerAutoReplicaFailoverThread implements Runnable, Closeable {
           log.debug("Skipping collection because it has no defined replicationFactor, name={}", docCollection.getName());
           continue;
         }
-        log.debug("Found collection, name={} replicationFactor={}", entry.getKey(), docCollection.getReplicationFactor());
+        log.debug("Found collection, name={} replicationFactor={}", collectionName, docCollection.getReplicationFactor());
         
         Collection<Slice> slices = docCollection.getSlices();
         for (Slice slice : slices) {
@@ -189,7 +192,7 @@ public class OverseerAutoReplicaFailoverThread implements Runnable, Closeable {
             
             if (downReplicas.size() > 0 && goodReplicas < docCollection.getReplicationFactor()) {
               // badReplicaMap.put(collection, badReplicas);
-              processBadReplicas(entry.getKey(), downReplicas);
+              processBadReplicas(collectionName, downReplicas);
             } else if (goodReplicas > docCollection.getReplicationFactor()) {
               log.debug("There are too many replicas");
             }
@@ -215,9 +218,9 @@ public class OverseerAutoReplicaFailoverThread implements Runnable, Closeable {
         long elasped = System.nanoTime() - wentBadAtNS;
         if (elasped < TimeUnit.NANOSECONDS.convert(waitAfterExpiration, TimeUnit.MILLISECONDS)) {
           // protect against ZK 'flapping', startup and shutdown
-          log.debug("Looks troublesome...continue. Elapsed={}", elasped + "ns");
+          log.debug("Looks troublesome...continue. Elapsed={}ns", elasped);
         } else {
-          log.debug("We need to add a replica. Elapsed={}", elasped + "ns");
+          log.debug("We need to add a replica. Elapsed={}ns", elasped);
           
           if (addReplica(collection, badReplica)) {
             baseUrlForBadNodes.invalidate(baseUrl);
@@ -282,7 +285,7 @@ public class OverseerAutoReplicaFailoverThread implements Runnable, Closeable {
             || state == Replica.State.RECOVERING
             || state == Replica.State.ACTIVE;
         
-        log.debug("Process replica name={} live={} state={}", replica.getName(), live, state.toString());
+        log.debug("Process replica name={} live={} state={}", replica.getName(), live, state);
         
         if (live && okayState) {
           goodReplicas++;
@@ -308,7 +311,7 @@ public class OverseerAutoReplicaFailoverThread implements Runnable, Closeable {
     assert badReplica != null;
     assert badReplica.collection != null;
     assert badReplica.slice != null;
-    log.debug("getBestCreateUrl for " + badReplica.replica);
+    log.debug("getBestCreateUrl for {}", badReplica.replica);
     Map<String,Counts> counts = new HashMap<>();
     Set<String> unsuitableHosts = new HashSet<>();
     

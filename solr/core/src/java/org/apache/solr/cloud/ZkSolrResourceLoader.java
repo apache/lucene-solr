@@ -100,7 +100,7 @@ public class ZkSolrResourceLoader extends SolrResourceLoader {
           // Retry in case of session expiry
           try {
             Thread.sleep(1000);
-            log.debug("Sleeping for 1s before retrying fetching resource=" + resource);
+            log.debug("Sleeping for 1s before retrying fetching resource={}", resource);
           } catch (InterruptedException ie) {
             Thread.currentThread().interrupt();
             throw new IOException("Could not load resource=" + resource, ie);

@@ -473,7 +473,7 @@ public class ZkController {
 
         final String coreZkNodeName = descriptor.getCloudDescriptor().getCoreNodeName();
         try {
-          log.debug("calling waitForLeaderToSeeDownState for coreZkNodeName={} collection={} shard={}", new Object[]{coreZkNodeName, collection, slice});
+          log.debug("calling waitForLeaderToSeeDownState for coreZkNodeName={} collection={} shard={}", coreZkNodeName, collection, slice);
           waitForLeaderToSeeDownState(descriptor, coreZkNodeName);
         } catch (Exception e) {
           SolrException.log(log, "", e);
@@ -903,7 +903,7 @@ public class ZkController {
       String leaderUrl = getLeader(cloudDesc, leaderVoteWait + 600000);
       
       String ourUrl = ZkCoreNodeProps.getCoreUrl(baseUrl, coreName);
-      log.debug("We are " + ourUrl + " and leader is " + leaderUrl);
+      log.debug("We are {} and leader is {}", ourUrl, leaderUrl);
       boolean isLeader = leaderUrl.equals(ourUrl);
       
       try (SolrCore core = cc.getCore(desc.getName())) {
@@ -1173,7 +1173,7 @@ public class ZkController {
     try {
       String collection = cd.getCloudDescriptor().getCollectionName();
       
-      log.debug("publishing state={}", state.toString());
+      log.debug("publishing state={}", state);
       // System.out.println(Thread.currentThread().getStackTrace()[3]);
       Integer numShards = cd.getCloudDescriptor().getNumShards();
       if (numShards == null) { // XXX sys prop hack
@@ -1519,8 +1519,8 @@ public class ZkController {
       }
 
       if (lirState != null) {
-        log.debug("Replica " + myCoreNodeName +
-            " is already in leader-initiated recovery, so not waiting for leader to see down state.");
+        log.debug("Replica {}" +
+            " is already in leader-initiated recovery, so not waiting for leader to see down state.", myCoreNodeName);
       } else {
 
         log.info("Replica " + myCoreNodeName +
@@ -1587,7 +1587,7 @@ public class ZkController {
 
   public static void linkConfSet(SolrZkClient zkClient, String collection, String confSetName) throws KeeperException, InterruptedException {
     String path = ZkStateReader.COLLECTIONS_ZKNODE + "/" + collection;
-    log.debug("Load collection config from:" + path);
+    log.debug("Load collection config from: {}", path);
     byte[] data;
     try {
       data = zkClient.getData(path, null, null, true);
@@ -2023,7 +2023,7 @@ public class ZkController {
           zkClient.makePath(znodePath, znodeData, retryOnConnLoss);
         }
       }
-      log.debug("Wrote {} to {}", state.toString(), znodePath);
+      log.debug("Wrote {} to {}", state, znodePath);
     } catch (Exception exc) {
       if (exc instanceof SolrException) {
         throw (SolrException) exc;
@@ -2120,7 +2120,7 @@ public class ZkController {
     if (listener != null) {
       synchronized (reconnectListeners) {
         reconnectListeners.add(listener);
-        log.debug("Added new OnReconnect listener "+listener);
+        log.debug("Added new OnReconnect listener {}", listener);
       }
     }
   }
@@ -2135,7 +2135,7 @@ public class ZkController {
         wasRemoved = reconnectListeners.remove(listener);
       }
       if (wasRemoved) {
-        log.debug("Removed OnReconnect listener "+listener);
+        log.debug("Removed OnReconnect listener {}", listener);
       } else {
         log.warn("Was asked to remove OnReconnect listener "+listener+
             ", but remove operation did not find it in the list of registered listeners.");

@@ -170,7 +170,7 @@ public class SolrDispatchFilter extends BaseSolrFilter {
                                        extraProperties);
       this.httpClient = cores.getUpdateShardHandler().getHttpClient();
       setupJvmMetrics();
-      log.debug("user.dir=" + System.getProperty("user.dir"));
+      log.debug("user.dir={}", System.getProperty("user.dir"));
     }
     catch( Throwable t ) {
       // catch this so our filter still works

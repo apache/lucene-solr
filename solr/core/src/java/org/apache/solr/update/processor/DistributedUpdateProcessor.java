@@ -1183,7 +1183,9 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
                 Long lastVersion = vinfo.lookupVersion(cmd.getIndexedId());
                 if (lastVersion != null && Math.abs(lastVersion) >= versionOnUpdate) {
                   // This update is a repeat, or was reordered.  We need to drop this update.
-                  log.debug("Dropping add update due to version {}", idBytes.utf8ToString());
+                  if (log.isDebugEnabled()) {
+                    log.debug("Dropping add update due to version " + idBytes.utf8ToString());
+                  }
                   return true;
                 }
 

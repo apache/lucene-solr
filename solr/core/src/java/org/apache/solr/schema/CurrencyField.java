@@ -785,7 +785,7 @@ class FileExchangeRateProvider implements ExchangeRateProvider {
     InputStream is = null;
     Map<String, Map<String, Double>> tmpRates = new HashMap<>();
     try {
-      log.debug("Reloading exchange rates from file "+this.currencyConfigFile);
+      log.debug("Reloading exchange rates from file {}", this.currencyConfigFile);
 
       is = loader.openResource(currencyConfigFile);
       javax.xml.parsers.DocumentBuilderFactory dbf = DocumentBuilderFactory.newInstance();

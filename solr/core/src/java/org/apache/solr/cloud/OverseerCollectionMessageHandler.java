@@ -216,7 +216,7 @@ public class OverseerCollectionMessageHandler implements OverseerMessageHandler 
   @Override
   @SuppressWarnings("unchecked")
   public SolrResponse processMessage(ZkNodeProps message, String operation) {
-    log.debug("OverseerCollectionMessageHandler.processMessage : "+ operation + " , "+ message.toString());
+    log.debug("OverseerCollectionMessageHandler.processMessage : {} , {}", operation, message);
 
     NamedList results = new NamedList();
     try {
@@ -910,9 +910,11 @@ public class OverseerCollectionMessageHandler implements OverseerMessageHandler 
 
   @SuppressWarnings("unchecked")
   private void waitForAsyncCallsToComplete(Map<String, String> requestMap, NamedList results) {
-    for (String k:requestMap.keySet()) {
-      log.debug("I am Waiting for :{}/{}", k, requestMap.get(k));
-      results.add(requestMap.get(k), waitForCoreAdminAsyncCallToComplete(k, requestMap.get(k)));
+    for (Map.Entry<String, String> entry : requestMap.entrySet()) {
+      String key = entry.getKey();
+      String value = entry.getValue();
+      log.debug("I am Waiting for :{}/{}", key, value);
+      results.add(key, waitForCoreAdminAsyncCallToComplete(key, value));
     }
   }
 

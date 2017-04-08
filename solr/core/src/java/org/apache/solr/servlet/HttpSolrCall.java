@@ -335,7 +335,7 @@ public class HttpSolrCall {
         return; // we are done with a valid handler
       }
     }
-    log.debug("no handler or core retrieved for " + path + ", follow through...");
+    log.debug("no handler or core retrieved for {}, follow through...", path);
 
     action = PASSTHROUGH;
   }
@@ -493,7 +493,9 @@ public class HttpSolrCall {
           if (headers != null) {
             for (Map.Entry<String, String> e : headers.entrySet()) response.setHeader(e.getKey(), e.getValue());
           }
-          log.debug("USER_REQUIRED "+req.getHeader("Authorization")+" "+ req.getUserPrincipal());
+          if (log.isDebugEnabled()) {
+            log.debug("USER_REQUIRED " + req.getHeader("Authorization") + " " + req.getUserPrincipal());
+          }
         }
         if (!(authResponse.statusCode == HttpStatus.SC_ACCEPTED) && !(authResponse.statusCode == HttpStatus.SC_OK)) {
           log.info("USER_REQUIRED auth header {} context : {} ", req.getHeader("Authorization"), context);

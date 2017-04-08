@@ -252,7 +252,7 @@ public class SolrResourceLoader implements ResourceLoader,Closeable
     allURLs.addAll(Arrays.asList(oldLoader.getURLs()));
     allURLs.addAll(urls);
     for (URL url : urls) {
-      log.debug("Adding '{}' to classloader", url.toString());
+      log.debug("Adding '{}' to classloader", url);
     }
 
     ClassLoader oldParent = oldLoader.getParent();
@@ -776,9 +776,9 @@ public class SolrResourceLoader implements ResourceLoader,Closeable
       home = (String)c.lookup("java:comp/env/"+project+"/home");
       logOnceInfo("home_using_jndi", "Using JNDI solr.home: "+home );
     } catch (NoInitialContextException e) {
-      log.debug("JNDI not configured for "+project+" (NoInitialContextEx)");
+      log.debug("JNDI not configured for {} (NoInitialContextEx)", project);
     } catch (NamingException e) {
-      log.debug("No /"+project+"/home in JNDI");
+      log.debug("No /{}/home in JNDI", project);
     } catch( RuntimeException ex ) {
       log.warn("Odd RuntimeException while testing for JNDI: " + ex.getMessage());
     } 

@@ -113,7 +113,7 @@ public class MoreLikeThisComponent extends SearchComponent {
             Entry<String,BooleanQuery> idToQuery = idToQueryIt.next();
             String s = idToQuery.getValue().toString();
 
-            log.debug("MLT Query:" + s);
+            log.debug("MLT Query:{}", s);
             temp.add(idToQuery.getKey(), idToQuery.getValue().toString());
           }
 
@@ -136,7 +136,7 @@ public class MoreLikeThisComponent extends SearchComponent {
   public void handleResponses(ResponseBuilder rb, ShardRequest sreq) {
     if ((sreq.purpose & ShardRequest.PURPOSE_GET_TOP_IDS) != 0
         && rb.req.getParams().getBool(COMPONENT_NAME, false)) {
-      log.debug("ShardRequest.response.size: " + sreq.responses.size());
+      log.debug("ShardRequest.response.size: {}", sreq.responses.size());
       for (ShardResponse r : sreq.responses) {
         if (r.getException() != null) {
           // This should only happen in case of using shards.tolerant=true. Omit this ShardResponse
@@ -144,11 +144,10 @@ public class MoreLikeThisComponent extends SearchComponent {
         }
         NamedList<?> moreLikeThisReponse = (NamedList<?>) r.getSolrResponse()
             .getResponse().get("moreLikeThis");
-        log.debug("ShardRequest.response.shard: " + r.getShard());
+        log.debug("ShardRequest.response.shard: {}", r.getShard());
         if (moreLikeThisReponse != null) {
           for (Entry<String,?> entry : moreLikeThisReponse) {
-            log.debug("id: \"" + entry.getKey() + "\" Query: \""
-                + entry.getValue() + "\"");
+            log.debug("id: \"{}\" Query: \"{}\"", entry.getKey(), entry.getValue());
             ShardRequest s = buildShardQuery(rb, (String) entry.getValue(),
                 entry.getKey());
             rb.addRequest(this, s);
@@ -157,7 +156,7 @@ public class MoreLikeThisComponent extends SearchComponent {
       }
     }
     
-    if ((sreq.purpose & ShardRequest.PURPOSE_GET_MLT_RESULTS) != 0) {
+    if (log.isDebugEnabled() && ((sreq.purpose & ShardRequest.PURPOSE_GET_MLT_RESULTS) != 0)) {
       for (ShardResponse r : sreq.responses) {
         log.debug("MLT Query returned: "
             + r.getSolrResponse().getResponse().toString());
@@ -181,7 +180,7 @@ public class MoreLikeThisComponent extends SearchComponent {
       for (ShardRequest sreq : rb.finished) {
         if ((sreq.purpose & ShardRequest.PURPOSE_GET_MLT_RESULTS) != 0) {
           for (ShardResponse r : sreq.responses) {
-            log.debug("ShardRequest.response.shard: " + r.getShard());
+            log.debug("ShardRequest.response.shard: {}", r.getShard());
             String key = r.getShardRequest().params
                 .get(MoreLikeThisComponent.DIST_DOC_ID);
             SolrDocumentList shardDocList =  (SolrDocumentList) r.getSolrResponse().getResponse().get("response");
@@ -209,7 +208,7 @@ public class MoreLikeThisComponent extends SearchComponent {
               mergedDocList = mergeSolrDocumentList(mergedDocList,
                   shardDocList, mltcount, keyName);
             }
-            log.debug("Adding docs for key: " + key);
+            log.debug("Adding docs for key: {}", key);
             tempResults.put(key, mergedDocList);
           }
         }

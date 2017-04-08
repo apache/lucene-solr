@@ -958,9 +958,10 @@ public class IndexFetcher {
     for (Map<String,Object> file : filesToDownload) {
       String filename = (String) file.get(NAME);
       long size = (Long) file.get(SIZE);
-      CompareResult compareResult = compareFile(indexDir, filename, size, (Long) file.get(CHECKSUM));
+      Long checksum = (Long) file.get(CHECKSUM);
+      CompareResult compareResult = compareFile(indexDir, filename, size, checksum);
       boolean alwaysDownload = filesToAlwaysDownloadIfNoChecksums(filename, size, compareResult);
-      LOG.debug("Downloading file={} size={} checksum={} alwaysDownload={}", filename, size, file.get(CHECKSUM), alwaysDownload);
+      LOG.debug("Downloading file={} size={} checksum={} alwaysDownload={}", filename, size, checksum, alwaysDownload);
       if (!compareResult.equal || downloadCompleteIndex || alwaysDownload) {
         dirFileFetcher = new DirectoryFileFetcher(tmpIndexDir, file,
             (String) file.get(NAME), FILE, latestGeneration);

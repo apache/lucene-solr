@@ -109,7 +109,7 @@ public abstract class ManagedResourceStorage {
     } else {
       if (zkClient != null) {
         String znodeBase = "/configs/"+zkConfigName;
-        log.debug("Setting up ZooKeeper-based storage for the RestManager with znodeBase: "+znodeBase);
+        log.debug("Setting up ZooKeeper-based storage for the RestManager with znodeBase: {}", znodeBase);
         storageIO = new ManagedResourceStorage.ZooKeeperStorageIO(zkClient, znodeBase);
       } else {
         storageIO = new FileStorageIO();        

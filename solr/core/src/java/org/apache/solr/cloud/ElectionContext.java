@@ -462,7 +462,9 @@ final class ShardLeaderElectionContext extends ShardLeaderElectionContextBase {
           try (SolrCore core = cc.getCore(coreName)) {
             
             if (core == null) {
-              log.debug("SolrCore not found:" + coreName + " in " + cc.getCoreNames());
+              if (log.isDebugEnabled()) {
+                log.debug("SolrCore not found:" + coreName + " in " + cc.getCoreNames());
+              }
               return;
             }
             
@@ -720,9 +722,11 @@ final class ShardLeaderElectionContext extends ShardLeaderElectionContextBase {
       log.debug("My last published State was Active, it's okay to be the leader.");
       return true;
     }
-    log.debug("My last published State was "
-        + core.getCoreDescriptor().getCloudDescriptor().getLastPublished()
-        + ", I won't be the leader.");
+    if (log.isDebugEnabled()) {
+      log.debug("My last published State was "
+          + core.getCoreDescriptor().getCloudDescriptor().getLastPublished()
+          + ", I won't be the leader.");
+    }
     // TODO: and if no one is a good candidate?
     
     return false;
