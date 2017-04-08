@@ -939,7 +939,7 @@ public class ExportWriter implements SolrCore.RawWriter, Closeable {
     public int resetValue();
   }
 
-  class IntDesc implements IntComp {
+  static class IntDesc implements IntComp {
 
     public int resetValue() {
       return Integer.MIN_VALUE;
@@ -956,7 +956,7 @@ public class ExportWriter implements SolrCore.RawWriter, Closeable {
     }
   }
 
-  class IntAsc implements IntComp {
+  static class IntAsc implements IntComp {
 
     public int resetValue() {
       return Integer.MAX_VALUE;
@@ -1032,7 +1032,7 @@ public class ExportWriter implements SolrCore.RawWriter, Closeable {
     public long resetValue();
   }
 
-  class LongDesc implements LongComp {
+  static class LongDesc implements LongComp {
 
     public long resetValue() {
       return Long.MIN_VALUE;
@@ -1049,7 +1049,7 @@ public class ExportWriter implements SolrCore.RawWriter, Closeable {
     }
   }
 
-  class LongAsc implements LongComp {
+  static class LongAsc implements LongComp {
 
     public long resetValue() {
       return Long.MAX_VALUE;
@@ -1125,7 +1125,7 @@ public class ExportWriter implements SolrCore.RawWriter, Closeable {
     public float resetValue();
   }
 
-  public class FloatDesc implements FloatComp {
+  public static class FloatDesc implements FloatComp {
     public float resetValue() {
       return -Float.MAX_VALUE;
     }
@@ -1141,7 +1141,7 @@ public class ExportWriter implements SolrCore.RawWriter, Closeable {
     }
   }
 
-  public class FloatAsc implements FloatComp {
+  public static class FloatAsc implements FloatComp {
     public float resetValue() {
       return Float.MAX_VALUE;
     }
@@ -1219,7 +1219,7 @@ public class ExportWriter implements SolrCore.RawWriter, Closeable {
     public double resetValue();
   }
 
-  public class DoubleDesc implements DoubleComp {
+  public static class DoubleDesc implements DoubleComp {
     public double resetValue() {
       return -Double.MAX_VALUE;
     }
@@ -1235,7 +1235,7 @@ public class ExportWriter implements SolrCore.RawWriter, Closeable {
     }
   }
 
-  public class DoubleAsc implements DoubleComp {
+  public static class DoubleAsc implements DoubleComp {
     public double resetValue() {
       return Double.MAX_VALUE;
     }
@@ -1712,7 +1712,7 @@ public class ExportWriter implements SolrCore.RawWriter, Closeable {
     }
   }
 
-  public class IgnoreException extends IOException {
+  public static class IgnoreException extends IOException {
     public void printStackTrace(PrintWriter pw) {
       pw.print("Early Client Disconnect");
     }

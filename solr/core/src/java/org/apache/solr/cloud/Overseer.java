@@ -383,7 +383,7 @@ public class Overseer implements Closeable {
             }
             break;
           case DOWNNODE:
-            return new NodeMutator(getZkStateReader()).downNode(clusterState, message);
+            return new NodeMutator().downNode(clusterState, message);
           default:
             throw new RuntimeException("unknown operation:" + operation + " contents:" + message.getProperties());
         }
@@ -431,7 +431,7 @@ public class Overseer implements Closeable {
 
   }
 
-  class OverseerThread extends Thread implements Closeable {
+  static class OverseerThread extends Thread implements Closeable {
 
     protected volatile boolean isClosed;
     private Closeable thread;

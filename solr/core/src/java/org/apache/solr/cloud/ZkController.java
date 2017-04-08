@@ -85,6 +85,7 @@ import org.apache.solr.core.CloudConfig;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.CoreDescriptor;
 import org.apache.solr.core.SolrCore;
+import org.apache.solr.core.SolrCoreInitializationException;
 import org.apache.solr.logging.MDCLoggingContext;
 import org.apache.solr.update.UpdateLog;
 import org.apache.zookeeper.CreateMode;
@@ -239,7 +240,7 @@ public class ZkController {
   }
 
   // notifies registered listeners after the ZK reconnect in the background
-  private class OnReconnectNotifyAsync implements Callable {
+  private static class OnReconnectNotifyAsync implements Callable {
 
     private final OnReconnect listener;
 
@@ -1232,6 +1233,9 @@ public class ZkController {
             }
           }
         }
+      } catch (SolrCoreInitializationException ex) {
+        // The core had failed to initialize (in a previous request, not this one), hence nothing to do here.
+        log.info("The core '{}' had failed to initialize before.", cd.getName());
       }
       
       ZkNodeProps m = new ZkNodeProps(props);

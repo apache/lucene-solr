@@ -106,6 +106,9 @@ public class DoublePointField extends PointField implements DoubleValueFieldType
   @Override
   public Query getSetQuery(QParser parser, SchemaField field, Collection<String> externalVal) {
     assert externalVal.size() > 0;
+    if (!field.indexed()) {
+      return super.getSetQuery(parser, field, externalVal);
+    }
     double[] values = new double[externalVal.size()];
     int i = 0;
     for (String val:externalVal) {
@@ -167,8 +170,6 @@ public class DoublePointField extends PointField implements DoubleValueFieldType
 
   @Override
   public IndexableField createField(SchemaField field, Object value) {
-    if (!isFieldUsed(field)) return null;
-
     double doubleValue = (value instanceof Number) ? ((Number) value).doubleValue() : Double.parseDouble(value.toString());
     return new DoublePoint(field.getName(), doubleValue);
   }

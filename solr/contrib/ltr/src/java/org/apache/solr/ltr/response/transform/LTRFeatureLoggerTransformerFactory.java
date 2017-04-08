@@ -17,7 +17,6 @@
 package org.apache.solr.ltr.response.transform;
 
 import java.io.IOException;
-import java.lang.invoke.MethodHandles;
 import java.util.Collections;
 import java.util.List;
 import java.util.Locale;
@@ -47,8 +46,6 @@ import org.apache.solr.response.transform.DocTransformer;
 import org.apache.solr.response.transform.TransformerFactory;
 import org.apache.solr.search.SolrIndexSearcher;
 import org.apache.solr.util.SolrPluginUtils;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  * This transformer will take care to generate and append in the response the
@@ -64,8 +61,6 @@ import org.slf4j.LoggerFactory;
 */
 
 public class LTRFeatureLoggerTransformerFactory extends TransformerFactory {
-
-  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   // used inside fl to specify the format (dense|sparse) of the extracted features
   private static final String FV_FORMAT = "format";

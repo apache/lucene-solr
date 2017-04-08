@@ -78,7 +78,7 @@ public class SolrGraphiteReporterTest extends SolrTestCaseJ4 {
     }
   }
 
-  private class MockGraphite extends Thread {
+  private static class MockGraphite extends Thread {
     private List<String> lines = new ArrayList<>();
     private ServerSocket server = null;
     private int port;

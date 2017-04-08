@@ -36,7 +36,6 @@ import org.noggit.ObjectBuilder;
 public class TestJsonFacetRefinement extends SolrTestCaseHS {
 
   private static SolrInstances servers;  // for distributed testing
-  private static int origTableSize;
 
   @BeforeClass
   public static void beforeTests() throws Exception {
@@ -209,15 +208,26 @@ public class TestJsonFacetRefinement extends SolrTestCaseHS {
             "}"
     );
 
-    // for testing missing _m, we need a partial facet within a partial facet
+    // for testing partial _p, we need a partial facet within a partial facet
     doTestRefine("{top:{type:terms, field:Afield, refine:true, limit:1, facet:{x : {type:terms, field:X, limit:1, refine:true} } } }",
         "{top: {buckets:[{val:'A', count:2, x:{buckets:[{val:x1, count:5},{val:x2, count:3}]} } ] } }",
         "{top: {buckets:[{val:'B', count:1, x:{buckets:[{val:x2, count:4},{val:x3, count:2}]} } ] } }",
         null,
         "=={top: {" +
-            "_m:[  ['A' , {x:{_l:[x1]}} ]  ]" +
+            "_p:[  ['A' , {x:{_l:[x1]}} ]  ]" +
             "    }  " +
             "}"
+    );
+
+    // test partial _p under a missing bucket
+    doTestRefine("{top:{type:terms, field:Afield, refine:true, limit:1, missing:true, facet:{x : {type:terms, field:X, limit:1, refine:true} } } }",
+        "{top: {buckets:[], missing:{count:12, x:{buckets:[{val:x2, count:4},{val:x3, count:2}]} }  } }",
+        "{top: {buckets:[], missing:{count:10, x:{buckets:[{val:x1, count:5},{val:x4, count:3}]} }  } }",
+        "=={top: {" +
+            "missing:{x:{_l:[x1]}}" +
+            "    }  " +
+            "}"
+        , null
     );
 
   }
@@ -234,21 +244,22 @@ public class TestJsonFacetRefinement extends SolrTestCaseHS {
 
     client.deleteByQuery("*:*", null);
 
-    ModifiableSolrParams p = params("cat_s", "cat_s", "xy_s", "xy_s", "num_d", "num_d");
+    ModifiableSolrParams p = params("cat_s", "cat_s", "xy_s", "xy_s", "num_d", "num_d", "qw_s", "qw_s");
     String cat_s = p.get("cat_s");
     String xy_s = p.get("xy_s");
+    String qw_s = p.get("qw_s");
     String num_d = p.get("num_d");
 
-    clients.get(0).add( sdoc("id", "01", "all_s","all", cat_s, "A", xy_s, "X" ,num_d, -1) ); // A wins count tie
-    clients.get(0).add( sdoc("id", "02", "all_s","all", cat_s, "B", xy_s, "Y", num_d, 3) );
+    clients.get(0).add( sdoc("id", "01", "all_s","all", cat_s, "A", xy_s, "X" ,num_d, -1,  qw_s, "Q") ); // A wins count tie
+    clients.get(0).add( sdoc("id", "02", "all_s","all", cat_s, "B", xy_s, "Y", num_d, 3             ) );
 
-    clients.get(1).add( sdoc("id", "11", "all_s","all", cat_s, "B", xy_s, "X", num_d, -5) ); // B highest count
-    clients.get(1).add( sdoc("id", "12", "all_s","all", cat_s, "B", xy_s, "Y", num_d, -11) );
-    clients.get(1).add( sdoc("id", "13", "all_s","all", cat_s, "A", xy_s, "X", num_d, 7) );
+    clients.get(1).add( sdoc("id", "11", "all_s","all", cat_s, "B", xy_s, "X", num_d, -5            ) ); // B highest count
+    clients.get(1).add( sdoc("id", "12", "all_s","all", cat_s, "B", xy_s, "Y", num_d, -11, qw_s, "W") );
+    clients.get(1).add( sdoc("id", "13", "all_s","all", cat_s, "A", xy_s, "X", num_d, 7             ) );
 
-    clients.get(2).add( sdoc("id", "21", "all_s","all", cat_s, "A", xy_s, "X", num_d, 17) ); // A highest count
-    clients.get(2).add( sdoc("id", "22", "all_s","all", cat_s, "A", xy_s, "Y", num_d, -19) );
-    clients.get(2).add( sdoc("id", "23", "all_s","all", cat_s, "B", xy_s, "X", num_d, 11) );
+    clients.get(2).add( sdoc("id", "21", "all_s","all", cat_s, "A", xy_s, "X", num_d, 17,  qw_s, "W") ); // A highest count
+    clients.get(2).add( sdoc("id", "22", "all_s","all", cat_s, "A", xy_s, "Y", num_d, -19           ) );
+    clients.get(2).add( sdoc("id", "23", "all_s","all", cat_s, "B", xy_s, "X", num_d, 11            ) );
 
     client.commit();
 
@@ -266,7 +277,6 @@ public class TestJsonFacetRefinement extends SolrTestCaseHS {
         , "facets=={foo:555}"
     );
     ****/
-
 
     client.testJQ(params(p, "q", "*:*",
         "json.facet", "{" +
@@ -318,7 +328,7 @@ public class TestJsonFacetRefinement extends SolrTestCaseHS {
             "}"
     );
 
-    // test missing buckets (field facet within field facet)
+    // test partial buckets (field facet within field facet)
     client.testJQ(params(p, "q", "*:*",
         "json.facet", "{" +
             "ab:{type:terms, field:${cat_s}, limit:1, overrequest:0, refine:true,  facet:{  xy:{type:terms, field:${xy_s}, limit:1, overrequest:0, refine:true   }  }}" +
@@ -329,7 +339,7 @@ public class TestJsonFacetRefinement extends SolrTestCaseHS {
             "}"
     );
 
-    // test that sibling facets and stats are included for _m buckets, but skipped for _s buckets
+    // test that sibling facets and stats are included for _p buckets, but skipped for _s buckets
     client.testJQ(params(p, "q", "*:*",
         "json.facet", "{" +
             " ab :{type:terms, field:${cat_s}, limit:1, overrequest:0, refine:true,  facet:{  xy:{type:terms, field:${xy_s}, limit:1, overrequest:0, refine:true}, qq:{query:'*:*'},ww:'sum(${num_d})'  }}" +
@@ -339,13 +349,59 @@ public class TestJsonFacetRefinement extends SolrTestCaseHS {
             "}"
         )
         , "facets=={ count:8" +
-            ", ab:{ buckets:[  {val:A, count:4, xy:{buckets:[ {val:X,count:3}]}    ,qq:{count:4}, ww:4.0 }]  }" +  // make sure qq and ww are included for _m buckets
+            ", ab:{ buckets:[  {val:A, count:4, xy:{buckets:[ {val:X,count:3}]}    ,qq:{count:4}, ww:4.0 }]  }" +  // make sure qq and ww are included for _p buckets
             ", allf:{ buckets:[ {count:8, val:all, cat:{buckets:[{val:A,count:4}]} ,qq:{count:8}, ww:2.0 }]  }" +  // make sure qq and ww are excluded (not calculated again in another phase) for _s buckets
-            ", ab2:{ buckets:[  {val:A, count:4, xy:{buckets:[ {val:X,count:3}]}    ,qq:{count:4}, ww:4.0 }]  }" +  // make sure qq and ww are included for _m buckets
+            ", ab2:{ buckets:[  {val:A, count:4, xy:{buckets:[ {val:X,count:3}]}    ,qq:{count:4}, ww:4.0 }]  }" +  // make sure qq and ww are included for _p buckets
             ", allf2:{ buckets:[ {count:8, val:all, cat:{buckets:[{val:A,count:4}]} ,qq:{count:8}, ww:2.0 }]  }" +  // make sure qq and ww are excluded (not calculated again in another phase) for _s buckets
             "}"
     );
 
+    // test refining under the special "missing" bucket of a field facet
+    client.testJQ(params(p, "q", "*:*",
+        "json.facet", "{" +
+            "f:{type:terms, field:missing_s, limit:1, overrequest:0, missing:true, refine:true,  facet:{  cat:{type:terms, field:${cat_s}, limit:1, overrequest:0, refine:true   }  }}" +
+            "}"
+        )
+        , "facets=={ count:8" +
+            ", f:{ buckets:[], missing:{count:8, cat:{buckets:[{val:A,count:4}]}  }  }" +  // just like the previous response, just nested under a field facet
+            "}"
+    );
+
+    // test filling in "missing" bucket for partially refined facets
+    client.testJQ(params(p, "q", "*:*",
+        "json.facet", "{" +
+            // test all values missing in sub-facet
+            " ab :{type:terms, field:${cat_s}, limit:1, overrequest:0, refine:false,  facet:{  zz:{type:terms, field:missing_s, limit:1, overrequest:0, refine:false, missing:true}  }}" +
+            ",ab2:{type:terms, field:${cat_s}, limit:1, overrequest:0, refine:true ,  facet:{  zz:{type:terms, field:missing_s, limit:1, overrequest:0, refine:true , missing:true}  }}" +
+            // test some values missing in sub-facet (and test that this works with normal partial bucket refinement)
+            ", cd :{type:terms, field:${cat_s}, limit:1, overrequest:0, refine:false,  facet:{  qw:{type:terms, field:${qw_s}, limit:1, overrequest:0, refine:false, missing:true,   facet:{qq:{query:'*:*'}}   }  }}" +
+            ", cd2:{type:terms, field:${cat_s}, limit:1, overrequest:0, refine:true ,  facet:{  qw:{type:terms, field:${qw_s}, limit:1, overrequest:0, refine:true , missing:true,   facet:{qq:{query:'*:*'}}   }  }}" +
+
+            "}"
+        )
+        , "facets=={ count:8" +
+            ", ab:{ buckets:[  {val:A, count:3, zz:{buckets:[], missing:{count:3}}}]  }" +
+            ",ab2:{ buckets:[  {val:A, count:4, zz:{buckets:[], missing:{count:4}}}]  }" +
+            ", cd:{ buckets:[  {val:A, count:3,  qw:{buckets:[{val:Q, count:1, qq:{count:1}}], missing:{count:1,qq:{count:1}}}}]  }" +
+            ",cd2:{ buckets:[  {val:A, count:4,  qw:{buckets:[{val:Q, count:1, qq:{count:1}}], missing:{count:2,qq:{count:2}}}}]  }" +
+            "}"
+    );
+
+    // test filling in missing "allBuckets"
+    // test filling in "missing" bucket for partially refined facets
+    client.testJQ(params(p, "q", "*:*",
+        "json.facet", "{" +
+            "  cat :{type:terms, field:${cat_s}, limit:1, overrequest:0, refine:false, allBuckets:true, facet:{  xy:{type:terms, field:${xy_s}, limit:1, overrequest:0, allBuckets:true, refine:false}  }  }" +
+            ", cat2:{type:terms, field:${cat_s}, limit:1, overrequest:0, refine:true , allBuckets:true, facet:{  xy:{type:terms, field:${xy_s}, limit:1, overrequest:0, allBuckets:true, refine:true }  }  }" +
+            ", cat3:{type:terms, field:${cat_s}, limit:1, overrequest:0, refine:true , allBuckets:true, facet:{  xy:{type:terms, field:${xy_s}, limit:1, overrequest:0, allBuckets:true, refine:true , facet:{f:'sum(${num_d})'}   }  }  }" +
+            "}"
+        )
+        , "facets=={ count:8" +
+            ", cat:{ allBuckets:{count:8}, buckets:[  {val:A, count:3, xy:{buckets:[{count:2, val:X}], allBuckets:{count:3}}}]  }" +
+            ",cat2:{ allBuckets:{count:8}, buckets:[  {val:A, count:4, xy:{buckets:[{count:3, val:X}], allBuckets:{count:4}}}]  }" +
+            ",cat3:{ allBuckets:{count:8}, buckets:[  {val:A, count:4, xy:{buckets:[{count:3, val:X, f:23.0}], allBuckets:{count:4, f:4.0}}}]  }" +
+            "}"
+    );
   }
 
 

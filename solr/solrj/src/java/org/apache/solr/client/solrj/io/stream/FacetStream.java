@@ -234,7 +234,6 @@ public class FacetStream extends TupleStream implements Expressible  {
     this.zkHost  = zkHost;
     this.params = params;
     this.buckets = buckets;
-    System.out.println("####### Bucket count:"+buckets.length);
     this.metrics = metrics;
     this.bucketSizeLimit   = bucketSizeLimit;
     this.collection = collection;
@@ -356,6 +355,7 @@ public class FacetStream extends TupleStream implements Expressible  {
       NamedList response = cloudSolrClient.request(request, collection);
       getTuples(response, buckets, metrics);
       Collections.sort(tuples, getStreamSort());
+
     } catch (Exception e) {
       throw new IOException(e);
     }
@@ -509,7 +509,11 @@ public class FacetStream extends TupleStream implements Expressible  {
           String identifier = metric.getIdentifier();
           if(!identifier.startsWith("count(")) {
             double d = (double)bucket.get("facet_"+m);
-            t.put(identifier, d);
+            if(metric.outputLong) {
+              t.put(identifier, Math.round(d));
+            } else {
+              t.put(identifier, d);
+            }
             ++m;
           } else {
             long l = ((Number)bucket.get("count")).longValue();

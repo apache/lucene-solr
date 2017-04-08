@@ -449,7 +449,7 @@ public abstract class BaseNormsFormatTestCase extends BaseIndexFileFormatTestCas
       norms[i] = longs.getAsLong();
     }
     
-    Directory dir = newDirectory();
+    Directory dir = applyCreatedVersionMajor(newDirectory());
     Analyzer analyzer = new MockAnalyzer(random(), MockTokenizer.KEYWORD, false);
     IndexWriterConfig conf = newIndexWriterConfig(analyzer);conf.setMergePolicy(NoMergePolicy.INSTANCE);
     conf.setSimilarity(new CannedNormSimilarity(norms));
@@ -585,7 +585,7 @@ public abstract class BaseNormsFormatTestCase extends BaseIndexFileFormatTestCas
    *
    */
   public void testUndeadNorms() throws Exception {
-    Directory dir = newDirectory();
+    Directory dir = applyCreatedVersionMajor(newDirectory());
     RandomIndexWriter w = new RandomIndexWriter(random(), dir);
     int numDocs = atLeast(500);
     List<Integer> toDelete = new ArrayList<>();
@@ -646,7 +646,7 @@ public abstract class BaseNormsFormatTestCase extends BaseIndexFileFormatTestCas
       norms[i] = random().nextLong();
     }
 
-    Directory dir = newDirectory();
+    Directory dir = applyCreatedVersionMajor(newDirectory());
     Analyzer analyzer = new MockAnalyzer(random(), MockTokenizer.KEYWORD, false);
     IndexWriterConfig conf = newIndexWriterConfig(analyzer);conf.setMergePolicy(NoMergePolicy.INSTANCE);
     conf.setSimilarity(new CannedNormSimilarity(norms));

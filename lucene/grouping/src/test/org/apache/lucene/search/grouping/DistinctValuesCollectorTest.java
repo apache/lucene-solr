@@ -59,8 +59,8 @@ public class DistinctValuesCollectorTest extends AbstractGroupingTestCase {
 
   private final static NullComparator nullComparator = new NullComparator();
   
-  private final String groupField = "author";
-  private final String countField = "publisher";
+  private static final String GROUP_FIELD = "author";
+  private static final String COUNT_FIELD = "publisher";
 
   public void testSimple() throws Exception {
     Random random = random();
@@ -70,24 +70,24 @@ public class DistinctValuesCollectorTest extends AbstractGroupingTestCase {
         dir,
         newIndexWriterConfig(new MockAnalyzer(random)).setMergePolicy(newLogMergePolicy()));
     Document doc = new Document();
-    addField(doc, groupField, "1");
-    addField(doc, countField, "1");
+    addField(doc, GROUP_FIELD, "1");
+    addField(doc, COUNT_FIELD, "1");
     doc.add(new TextField("content", "random text", Field.Store.NO));
     doc.add(new StringField("id", "1", Field.Store.NO));
     w.addDocument(doc);
 
     // 1
     doc = new Document();
-    addField(doc, groupField, "1");
-    addField(doc, countField, "1");
+    addField(doc, GROUP_FIELD, "1");
+    addField(doc, COUNT_FIELD, "1");
     doc.add(new TextField("content", "some more random text blob", Field.Store.NO));
     doc.add(new StringField("id", "2", Field.Store.NO));
     w.addDocument(doc);
 
     // 2
     doc = new Document();
-    addField(doc, groupField, "1");
-    addField(doc, countField, "2");
+    addField(doc, GROUP_FIELD, "1");
+    addField(doc, COUNT_FIELD, "2");
     doc.add(new TextField("content", "some more random textual data", Field.Store.NO));
     doc.add(new StringField("id", "3", Field.Store.NO));
     w.addDocument(doc);
@@ -95,23 +95,23 @@ public class DistinctValuesCollectorTest extends AbstractGroupingTestCase {
 
     // 3 -- no count field
     doc = new Document();
-    addField(doc, groupField, "2");
+    addField(doc, GROUP_FIELD, "2");
     doc.add(new TextField("content", "some random text", Field.Store.NO));
     doc.add(new StringField("id", "4", Field.Store.NO));
     w.addDocument(doc);
 
     // 4
     doc = new Document();
-    addField(doc, groupField, "3");
-    addField(doc, countField, "1");
+    addField(doc, GROUP_FIELD, "3");
+    addField(doc, COUNT_FIELD, "1");
     doc.add(new TextField("content", "some more random text", Field.Store.NO));
     doc.add(new StringField("id", "5", Field.Store.NO));
     w.addDocument(doc);
 
     // 5
     doc = new Document();
-    addField(doc, groupField, "3");
-    addField(doc, countField, "1");
+    addField(doc, GROUP_FIELD, "3");
+    addField(doc, COUNT_FIELD, "1");
     doc.add(new TextField("content", "random blob", Field.Store.NO));
     doc.add(new StringField("id", "6", Field.Store.NO));
     w.addDocument(doc);
@@ -119,7 +119,7 @@ public class DistinctValuesCollectorTest extends AbstractGroupingTestCase {
     // 6 -- no author field
     doc = new Document();
     doc.add(new TextField("content", "random word stuck in alot of other text", Field.Store.YES));
-    addField(doc, countField, "1");
+    addField(doc, COUNT_FIELD, "1");
     doc.add(new StringField("id", "6", Field.Store.NO));
     w.addDocument(doc);
 
@@ -145,10 +145,10 @@ public class DistinctValuesCollectorTest extends AbstractGroupingTestCase {
     };
 
     // === Search for content:random
-    FirstPassGroupingCollector<Comparable<Object>> firstCollector = createRandomFirstPassCollector(new Sort(), groupField, 10);
+    FirstPassGroupingCollector<Comparable<Object>> firstCollector = createRandomFirstPassCollector(new Sort(), GROUP_FIELD, 10);
     indexSearcher.search(new TermQuery(new Term("content", "random")), firstCollector);
     DistinctValuesCollector<Comparable<Object>> distinctValuesCollector
-        = createDistinctCountCollector(firstCollector, groupField, countField);
+        = createDistinctCountCollector(firstCollector, GROUP_FIELD, COUNT_FIELD);
     indexSearcher.search(new TermQuery(new Term("content", "random")), distinctValuesCollector);
 
     List<DistinctValuesCollector.GroupCount<Comparable<Object>>> gcs = distinctValuesCollector.getGroups();
@@ -178,9 +178,9 @@ public class DistinctValuesCollectorTest extends AbstractGroupingTestCase {
     compare("1", countValues.get(0));
 
     // === Search for content:some
-    firstCollector = createRandomFirstPassCollector(new Sort(), groupField, 10);
+    firstCollector = createRandomFirstPassCollector(new Sort(), GROUP_FIELD, 10);
     indexSearcher.search(new TermQuery(new Term("content", "some")), firstCollector);
-    distinctValuesCollector = createDistinctCountCollector(firstCollector, groupField, countField);
+    distinctValuesCollector = createDistinctCountCollector(firstCollector, GROUP_FIELD, COUNT_FIELD);
     indexSearcher.search(new TermQuery(new Term("content", "some")), distinctValuesCollector);
 
     gcs = distinctValuesCollector.getGroups();
@@ -205,9 +205,9 @@ public class DistinctValuesCollectorTest extends AbstractGroupingTestCase {
     compare("1", countValues.get(0));
 
      // === Search for content:blob
-    firstCollector = createRandomFirstPassCollector(new Sort(), groupField, 10);
+    firstCollector = createRandomFirstPassCollector(new Sort(), GROUP_FIELD, 10);
     indexSearcher.search(new TermQuery(new Term("content", "blob")), firstCollector);
-    distinctValuesCollector = createDistinctCountCollector(firstCollector, groupField, countField);
+    distinctValuesCollector = createDistinctCountCollector(firstCollector, GROUP_FIELD, COUNT_FIELD);
     indexSearcher.search(new TermQuery(new Term("content", "blob")), distinctValuesCollector);
 
     gcs = distinctValuesCollector.getGroups();
@@ -242,10 +242,10 @@ public class DistinctValuesCollectorTest extends AbstractGroupingTestCase {
 
         List<DistinctValuesCollector.GroupCount<Comparable<?>>> expectedResult = createExpectedResult(context, term, groupSort, topN);
 
-        FirstPassGroupingCollector<Comparable<?>> firstCollector = createRandomFirstPassCollector(groupSort, groupField, topN);
+        FirstPassGroupingCollector<Comparable<?>> firstCollector = createRandomFirstPassCollector(groupSort, GROUP_FIELD, topN);
         searcher.search(new TermQuery(new Term("content", term)), firstCollector);
         DistinctValuesCollector<Comparable<?>> distinctValuesCollector
-            = createDistinctCountCollector(firstCollector, groupField, countField);
+            = createDistinctCountCollector(firstCollector, GROUP_FIELD, COUNT_FIELD);
         searcher.search(new TermQuery(new Term("content", term)), distinctValuesCollector);
         @SuppressWarnings("unchecked")
         List<DistinctValuesCollector.GroupCount<Comparable<?>>> actualResult = distinctValuesCollector.getGroups();
@@ -440,10 +440,10 @@ public class DistinctValuesCollectorTest extends AbstractGroupingTestCase {
       doc.add(new StringField("id", String.format(Locale.ROOT, "%09d", i), Field.Store.YES));
       doc.add(new SortedDocValuesField("id", new BytesRef(String.format(Locale.ROOT, "%09d", i))));
       if (groupValue != null) {
-        addField(doc, groupField, groupValue);
+        addField(doc, GROUP_FIELD, groupValue);
       }
       if (countValue != null) {
-        addField(doc, countField, countValue);
+        addField(doc, COUNT_FIELD, countValue);
       }
       doc.add(new TextField("content", content, Field.Store.YES));
       w.addDocument(doc);

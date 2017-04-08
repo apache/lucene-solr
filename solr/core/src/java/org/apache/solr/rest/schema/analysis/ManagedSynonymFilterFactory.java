@@ -33,6 +33,7 @@ import org.apache.lucene.analysis.synonym.SynonymFilterFactory;
 import org.apache.lucene.analysis.synonym.SynonymMap;
 import org.apache.lucene.analysis.util.ResourceLoader;
 import org.apache.lucene.util.CharsRef;
+import org.apache.lucene.util.CharsRefBuilder;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.util.NamedList;
@@ -358,9 +359,9 @@ public class ManagedSynonymFilterFactory extends BaseManagedTokenFilterFactory {
         for (String term : cpsm.mappings.keySet()) {
           for (String mapping : cpsm.mappings.get(term)) {
             // apply the case setting to match the behavior of the SynonymMap builder
-            String casedTerm = synonymManager.applyCaseSetting(ignoreCase, term);
-            String casedMapping = synonymManager.applyCaseSetting(ignoreCase, mapping);
-            add(new CharsRef(casedTerm), new CharsRef(casedMapping), false);
+            CharsRef casedTerm = analyze(synonymManager.applyCaseSetting(ignoreCase, term), new CharsRefBuilder());
+            CharsRef casedMapping = analyze(synonymManager.applyCaseSetting(ignoreCase, mapping), new CharsRefBuilder());
+            add(casedTerm, casedMapping, false);
           }          
         }
       }      

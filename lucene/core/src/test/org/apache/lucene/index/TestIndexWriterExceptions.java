@@ -346,7 +346,7 @@ public class TestIndexWriterExceptions extends LuceneTestCase {
 
   private static String CRASH_FAIL_MESSAGE = "I'm experiencing problems";
 
-  private class CrashingFilter extends TokenFilter {
+  private static class CrashingFilter extends TokenFilter {
     String fieldName;
     int count;
 

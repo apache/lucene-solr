@@ -76,7 +76,7 @@ public class AnalyticsStats {
     // Get filter to all docs
     Filter filter = docs.getTopFilter();
     
-    // Computing each Analytics Request Seperately
+    // Computing each Analytics Request Separately
     for( AnalyticsRequest areq : requests ){
       // The Accumulator which will control the statistics generation
       // for the entire analytics request

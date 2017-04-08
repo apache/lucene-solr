@@ -75,7 +75,7 @@ public class TestCodecs extends LuceneTestCase {
     NUM_TEST_ITER = atLeast(20);
   }
 
-  class FieldData implements Comparable<FieldData> {
+  static class FieldData implements Comparable<FieldData> {
     final FieldInfo fieldInfo;
     final TermData[] terms;
     final boolean omitTF;
@@ -107,7 +107,7 @@ public class TestCodecs extends LuceneTestCase {
     }
   }
 
-  class PositionData {
+  static class PositionData {
     int pos;
     BytesRef payload;
 
@@ -117,7 +117,7 @@ public class TestCodecs extends LuceneTestCase {
     }
   }
 
-  class TermData implements Comparable<TermData> {
+  static class TermData implements Comparable<TermData> {
     String text2;
     final BytesRef text;
     int[] docs;
@@ -217,7 +217,7 @@ public class TestCodecs extends LuceneTestCase {
     final FieldInfos fieldInfos = builder.finish();
     final Directory dir = newDirectory();
     Codec codec = Codec.getDefault();
-    final SegmentInfo si = new SegmentInfo(dir, Version.LATEST, SEGMENT, 10000, false, codec, Collections.emptyMap(), StringHelper.randomId(), new HashMap<>(), null);
+    final SegmentInfo si = new SegmentInfo(dir, Version.LATEST, Version.LATEST, SEGMENT, 10000, false, codec, Collections.emptyMap(), StringHelper.randomId(), new HashMap<>(), null);
     
     this.write(si, fieldInfos, dir, fields);
     final FieldsProducer reader = codec.postingsFormat().fieldsProducer(new SegmentReadState(dir, si, fieldInfos, newIOContext(random())));
@@ -274,7 +274,7 @@ public class TestCodecs extends LuceneTestCase {
     }
 
     Codec codec = Codec.getDefault();
-    final SegmentInfo si = new SegmentInfo(dir, Version.LATEST, SEGMENT, 10000, false, codec, Collections.emptyMap(), StringHelper.randomId(), new HashMap<>(), null);
+    final SegmentInfo si = new SegmentInfo(dir, Version.LATEST, Version.LATEST, SEGMENT, 10000, false, codec, Collections.emptyMap(), StringHelper.randomId(), new HashMap<>(), null);
     this.write(si, fieldInfos, dir, fields);
 
     if (VERBOSE) {
@@ -300,7 +300,7 @@ public class TestCodecs extends LuceneTestCase {
     dir.close();
   }
 
-  private class Verify extends Thread {
+  private static class Verify extends Thread {
     final Fields termsDict;
     final FieldData[] fields;
     final SegmentInfo si;

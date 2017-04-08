@@ -23,8 +23,10 @@ import java.io.IOException;
 import java.io.Serializable;
 
 import org.apache.solr.client.solrj.io.Tuple;
+import org.apache.solr.client.solrj.io.stream.StreamContext;
 import org.apache.solr.client.solrj.io.stream.expr.Expressible;
 
 public interface StreamEvaluator extends Expressible, Serializable {
   Object evaluate(final Tuple tuple) throws IOException;
+  void setStreamContext(StreamContext streamContext);
 }

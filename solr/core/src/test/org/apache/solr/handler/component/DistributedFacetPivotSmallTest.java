@@ -1636,8 +1636,7 @@ public class DistributedFacetPivotSmallTest extends BaseDistributedSearchTestCas
     
     @Override
     public int compare(PivotField o1, PivotField o2) {
-      Integer compare = (Integer.valueOf(o2.getCount())).compareTo(Integer
-          .valueOf(o1.getCount()));
+      int compare = Integer.compare(o2.getCount(), o1.getCount());
       if (compare == 0) {
         compare = ((String) o2.getValue()).compareTo((String) o1.getValue());
       }
@@ -1650,7 +1649,7 @@ public class DistributedFacetPivotSmallTest extends BaseDistributedSearchTestCas
           }
         }
         if (compare == 0) {
-          compare = Integer.valueOf(o1.getFacetQuery().size()).compareTo(
+          compare = Integer.compare(o1.getFacetQuery().size(),
               o2.getFacetQuery().size());
         }
       }

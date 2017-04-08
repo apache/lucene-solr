@@ -43,6 +43,7 @@ import org.apache.solr.common.util.SuppressForbidden;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.handler.ReplicationHandler;
+import org.apache.solr.search.SolrIndexSearcher;
 import org.apache.solr.update.SolrIndexWriter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -363,11 +364,12 @@ public class TestInjection {
   @SuppressForbidden(reason = "Need currentTimeMillis, because COMMIT_TIME_MSEC_KEY use currentTimeMillis as value")
   public static boolean waitForInSyncWithLeader(SolrCore core, ZkController zkController, String collection, String shardId) throws InterruptedException {
     if (waitForReplicasInSync == null) return true;
-
+    log.info("Start waiting for replica in sync with leader");
+    long currentTime = System.currentTimeMillis();
     Pair<Boolean,Integer> pair = parseValue(waitForReplicasInSync);
     boolean enabled = pair.first();
     if (!enabled) return true;
-    long t = System.currentTimeMillis() - 100;
+    long t = System.currentTimeMillis() - 200;
     try {
       for (int i = 0; i < pair.second(); i++) {
         if (core.isClosed()) return true;
@@ -380,14 +382,20 @@ public class TestInjection {
 
           NamedList<Object> response = leaderClient.request(new QueryRequest(params));
           long leaderVersion = (long) ((NamedList)response.get("details")).get("indexVersion");
-
-          String localVersion = core.getDeletionPolicy().getLatestCommit().getUserData().get(SolrIndexWriter.COMMIT_TIME_MSEC_KEY);
-          if (localVersion == null && leaderVersion == 0 && !core.getUpdateHandler().getUpdateLog().hasUncommittedChanges()) return true;
-          if (localVersion != null && Long.parseLong(localVersion) == leaderVersion && (leaderVersion >= t || i >= 6)) {
-            return true;
-          } else {
-            Thread.sleep(500);
+          RefCounted<SolrIndexSearcher> searcher = core.getSearcher();
+          try {
+            String localVersion = searcher.get().getIndexReader().getIndexCommit().getUserData().get(SolrIndexWriter.COMMIT_TIME_MSEC_KEY);
+            if (localVersion == null && leaderVersion == 0 && !core.getUpdateHandler().getUpdateLog().hasUncommittedChanges()) return true;
+            if (localVersion != null && Long.parseLong(localVersion) == leaderVersion && (leaderVersion >= t || i >= 6)) {
+              log.info("Waiting time for replica in sync with leader: {}", System.currentTimeMillis()-currentTime);
+              return true;
+            } else {
+              Thread.sleep(500);
+            }
+          } finally {
+            searcher.decref();
           }
+
         }
       }
 

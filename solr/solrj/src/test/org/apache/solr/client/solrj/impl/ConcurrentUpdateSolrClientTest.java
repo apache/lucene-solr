@@ -252,7 +252,7 @@ public class ConcurrentUpdateSolrClientTest extends SolrJettyTestBase {
 
   }
 
-  class SendDocsRunnable implements Runnable {
+  static class SendDocsRunnable implements Runnable {
     
     private String id;
     private int numDocs;
@@ -289,8 +289,8 @@ public class ConcurrentUpdateSolrClientTest extends SolrJettyTestBase {
       }      
     }    
   }
-  
-  class OutcomeCountingConcurrentUpdateSolrClient extends ConcurrentUpdateSolrClient {
+
+  static class OutcomeCountingConcurrentUpdateSolrClient extends ConcurrentUpdateSolrClient {
     private final AtomicInteger successCounter;
     private final AtomicInteger failureCounter;
     private final StringBuilder errors;

@@ -962,6 +962,7 @@ public final class SolrCore implements SolrInfoMBean, SolrMetricProducer, Closea
       // Finally tell anyone who wants to know
       resourceLoader.inform(resourceLoader);
       resourceLoader.inform(this); // last call before the latch is released.
+      this.updateHandler.informEventListeners(this);
     } catch (Throwable e) {
       // release the latch, otherwise we block trying to do the close. This
       // should be fine, since counting down on a latch of 0 is still fine

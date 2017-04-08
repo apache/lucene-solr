@@ -59,21 +59,6 @@ public class TopGroupsFieldCommand implements Command<TopGroups<BytesRef>> {
       return this;
     }
 
-    //JTODO
-    // We can't reconstruct a SortSpec from a Sort.
-    @Deprecated
-    public Builder setGroupSort(Sort groupSort) {
-  //      this.groupSort = groupSort;
-      return this;
-    }
-
-    // Same as above
-    @Deprecated
-    public Builder setSortWithinGroup(Sort sortWithinGroup) {
-//      this.withinGroupSort = sortWithinGroup;
-      return this;
-    }
-
     public Builder setGroupSortSpec(SortSpec groupSortSpec) {
         this.groupSortSpec = groupSortSpec;
         return this;

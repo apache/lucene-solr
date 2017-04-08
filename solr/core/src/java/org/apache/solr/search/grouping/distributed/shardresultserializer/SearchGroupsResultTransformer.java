@@ -119,9 +119,7 @@ public class SearchGroupsResultTransformer implements ShardResultTransformer<Lis
     return result;
   }
 
-
   private NamedList serializeSearchGroup(Collection<SearchGroup<BytesRef>> data, SearchGroupsFieldCommand command) {
-
     final NamedList<Object[]> result = new NamedList<>(data.size());
     final SortSpec groupSortSpec = command.getGroupSortSpec();
     final List<SchemaField> groupSchemaFields = groupSortSpec.getSchemaFields();

@@ -264,7 +264,7 @@ public abstract class QueryParserTestBase extends LuceneTestCase {
     }
   }
 
-  private class SimpleCJKAnalyzer extends Analyzer {
+  private static class SimpleCJKAnalyzer extends Analyzer {
     @Override
     public TokenStreamComponents createComponents(String fieldName) {
       return new TokenStreamComponents(new SimpleCJKTokenizer());
@@ -1095,7 +1095,7 @@ public abstract class QueryParserTestBase extends LuceneTestCase {
   }
 
   /** whitespace+lowercase analyzer with synonyms */
-  protected class Analyzer1 extends Analyzer {
+  protected static class Analyzer1 extends Analyzer {
     public Analyzer1(){
       super();
     }
@@ -1107,7 +1107,7 @@ public abstract class QueryParserTestBase extends LuceneTestCase {
   }
   
   /** whitespace+lowercase analyzer without synonyms */
-  protected class Analyzer2 extends Analyzer {
+  protected static class Analyzer2 extends Analyzer {
     public Analyzer2(){
       super();
     }
@@ -1122,7 +1122,7 @@ public abstract class QueryParserTestBase extends LuceneTestCase {
   /**
    * Mock collation analyzer: indexes terms as "collated" + term
    */
-  private class MockCollationFilter extends TokenFilter {
+  private static class MockCollationFilter extends TokenFilter {
     private final CharTermAttribute termAtt = addAttribute(CharTermAttribute.class);
 
     protected MockCollationFilter(TokenStream input) {
@@ -1141,7 +1141,7 @@ public abstract class QueryParserTestBase extends LuceneTestCase {
     }
     
   }
-  private class MockCollationAnalyzer extends Analyzer {
+  private static class MockCollationAnalyzer extends Analyzer {
     @Override
     public TokenStreamComponents createComponents(String fieldName) {
       Tokenizer tokenizer = new MockTokenizer(MockTokenizer.WHITESPACE, true);

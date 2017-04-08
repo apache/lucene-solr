@@ -167,7 +167,7 @@ public class VariableResolver {
     return TemplateUpdateProcessorFactory.getVariables(expr, cache);
   }
 
-  class CurrentLevel {
+  static class CurrentLevel {
     final Map<String,Object> map;
     final int level;
     CurrentLevel(int level, Map<String,Object> map) {

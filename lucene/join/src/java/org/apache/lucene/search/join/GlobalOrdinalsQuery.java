@@ -20,7 +20,7 @@ import java.io.IOException;
 import java.util.Set;
 
 import org.apache.lucene.index.DocValues;
-import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.index.IndexReaderContext;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.MultiDocValues;
 import org.apache.lucene.index.SortedDocValues;
@@ -48,19 +48,23 @@ final class GlobalOrdinalsQuery extends Query {
 
   // just for hashcode and equals:
   private final Query fromQuery;
-  private final IndexReader indexReader;
+  // id of the context rather than the context itself in order not to hold references to index readers
+  private final Object indexReaderContextId;
 
-  GlobalOrdinalsQuery(LongBitSet foundOrds, String joinField, MultiDocValues.OrdinalMap globalOrds, Query toQuery, Query fromQuery, IndexReader indexReader) {
+  GlobalOrdinalsQuery(LongBitSet foundOrds, String joinField, MultiDocValues.OrdinalMap globalOrds, Query toQuery, Query fromQuery, IndexReaderContext context) {
     this.foundOrds = foundOrds;
     this.joinField = joinField;
     this.globalOrds = globalOrds;
     this.toQuery = toQuery;
     this.fromQuery = fromQuery;
-    this.indexReader = indexReader;
+    this.indexReaderContextId = context.id();
   }
 
   @Override
   public Weight createWeight(IndexSearcher searcher, boolean needsScores, float boost) throws IOException {
+    if (searcher.getTopReaderContext().id() != indexReaderContextId) {
+      throw new IllegalStateException("Creating the weight against a different index reader than this query has been built for.");
+    }
     return new W(this, toQuery.createWeight(searcher, false, 1f), boost);
   }
 
@@ -74,7 +78,7 @@ final class GlobalOrdinalsQuery extends Query {
     return fromQuery.equals(other.fromQuery) &&
            joinField.equals(other.joinField) &&
            toQuery.equals(other.toQuery) &&
-           indexReader.equals(other.indexReader);
+           indexReaderContextId.equals(other.indexReaderContextId);
   }
 
   @Override
@@ -83,7 +87,7 @@ final class GlobalOrdinalsQuery extends Query {
     result = 31 * result + joinField.hashCode();
     result = 31 * result + toQuery.hashCode();
     result = 31 * result + fromQuery.hashCode();
-    result = 31 * result + indexReader.hashCode();
+    result = 31 * result + indexReaderContextId.hashCode();
     return result;
   }
 

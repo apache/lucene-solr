@@ -81,6 +81,8 @@ public class MetricUtilsTest extends SolrTestCaseJ4 {
     am.set("bar", 2);
     Gauge<String> gauge = () -> "foobar";
     registry.register("gauge", gauge);
+    Gauge<Long> error = () -> {throw new InternalError("Memory Pool not found error");};
+    registry.register("memory.expected.error", error);
     MetricUtils.toMaps(registry, Collections.singletonList(MetricFilter.ALL), MetricFilter.ALL,
         false, false, false, (k, o) -> {
       Map v = (Map)o;
@@ -106,6 +108,8 @@ public class MetricUtilsTest extends SolrTestCaseJ4 {
         update = (Map<String, Object>)values.get("bar");
         assertEquals(2, update.get("value"));
         assertEquals(2, update.get("updateCount"));
+      } else if (k.startsWith("memory.expected.error")) {
+        assertNull(v);
       }
     });
     // test compact format
@@ -143,6 +147,8 @@ public class MetricUtilsTest extends SolrTestCaseJ4 {
             update = (Map<String, Object>)values.get("bar");
             assertEquals(2, update.get("value"));
             assertEquals(2, update.get("updateCount"));
+          } else if (k.startsWith("memory.expected.error")) {
+            assertNull(o);
           } else {
             Map v = (Map)o;
             assertEquals(1L, v.get("count"));

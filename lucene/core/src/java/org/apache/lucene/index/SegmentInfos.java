@@ -161,16 +161,19 @@ public final class SegmentInfos implements Cloneable, Iterable<SegmentCommitInfo
   /** Version of the oldest segment in the index, or null if there are no segments. */
   private Version minSegmentLuceneVersion;
 
-  /** The Lucene version that was used to create the index. */
-  private final Version indexCreatedVersion;
+  /** The Lucene version major that was used to create the index. */
+  private final int indexCreatedVersionMajor;
 
   /** Sole constructor.
-   *  @param indexCreatedVersion the Lucene version at index creation time, or {@code null} if the index was created before 7.0 */
-  public SegmentInfos(Version indexCreatedVersion) {
-    if (indexCreatedVersion != null && indexCreatedVersion.onOrAfter(Version.LUCENE_7_0_0) == false) {
-      throw new IllegalArgumentException("indexCreatedVersion may only be non-null if the index was created on or after 7.0, got " + indexCreatedVersion);
+   *  @param indexCreatedVersionMajor the Lucene version major at index creation time, or 6 if the index was created before 7.0 */
+  public SegmentInfos(int indexCreatedVersionMajor) {
+    if (indexCreatedVersionMajor > Version.LATEST.major) {
+      throw new IllegalArgumentException("indexCreatedVersionMajor is in the future: " + indexCreatedVersionMajor);
     }
-    this.indexCreatedVersion = indexCreatedVersion;
+    if (indexCreatedVersionMajor < 6) {
+      throw new IllegalArgumentException("indexCreatedVersionMajor must be >= 6, got: " + indexCreatedVersionMajor);
+    }
+    this.indexCreatedVersionMajor = indexCreatedVersionMajor;
   }
 
   /** Returns {@link SegmentCommitInfo} at the provided
@@ -314,24 +317,9 @@ public final class SegmentInfos implements Cloneable, Iterable<SegmentCommitInfo
       throw new IndexFormatTooOldException(input, "this index is too old (version: " + luceneVersion + ")");
     }
 
-    Version indexCreatedVersion;
+    int indexCreatedVersion = 6;
     if (format >= VERSION_70) {
-      byte b = input.readByte();
-      switch (b) {
-        case 0:
-          // version is not known: pre-7.0 index that has been modified since the 7.0 upgrade
-          indexCreatedVersion = null;
-          break;
-        case 1:
-          // version is known: index has been created on or after 7.0
-          indexCreatedVersion = Version.fromBits(input.readVInt(), input.readVInt(), input.readVInt());
-          break;
-        default:
-          throw new CorruptIndexException("Illegal byte value for a boolean: " + b + ", expected 0 or 1", input);
-      }
-    } else {
-      // pre-7.0 index that has not been modified since the 7.0 upgrade
-      indexCreatedVersion = null;
+      indexCreatedVersion = input.readVInt();
     }
 
     SegmentInfos infos = new SegmentInfos(indexCreatedVersion);
@@ -398,6 +386,14 @@ public final class SegmentInfos implements Cloneable, Iterable<SegmentCommitInfo
 
       if (segmentVersion.onOrAfter(infos.minSegmentLuceneVersion) == false) {
         throw new CorruptIndexException("segments file recorded minSegmentLuceneVersion=" + infos.minSegmentLuceneVersion + " but segment=" + info + " has older version=" + segmentVersion, input);
+      }
+
+      if (infos.indexCreatedVersionMajor >= 7 && segmentVersion.major < infos.indexCreatedVersionMajor) {
+        throw new CorruptIndexException("segments file recorded indexCreatedVersionMajor=" + infos.indexCreatedVersionMajor + " but segment=" + info + " has older version=" + segmentVersion, input);
+      }
+
+      if (infos.indexCreatedVersionMajor >= 7 && info.getMinVersion() == null) {
+        throw new CorruptIndexException("segments infos must record minVersion with indexCreatedVersionMajor=" + infos.indexCreatedVersionMajor, input);
       }
     }
 
@@ -495,16 +491,7 @@ public final class SegmentInfos implements Cloneable, Iterable<SegmentCommitInfo
     out.writeVInt(Version.LATEST.bugfix);
     //System.out.println(Thread.currentThread().getName() + ": now write " + out.getName() + " with version=" + version);
 
-    if (indexCreatedVersion != null) {
-      // 7.0+ index
-      out.writeByte((byte) 1);
-      out.writeVInt(indexCreatedVersion.major);
-      out.writeVInt(indexCreatedVersion.minor);
-      out.writeVInt(indexCreatedVersion.bugfix);
-    } else {
-      // pre-7.0 index
-      out.writeByte((byte) 0);
-    }
+    out.writeVInt(indexCreatedVersionMajor);
 
     out.writeLong(version); 
     out.writeInt(counter); // write counter
@@ -531,6 +518,9 @@ public final class SegmentInfos implements Cloneable, Iterable<SegmentCommitInfo
     // write infos
     for (SegmentCommitInfo siPerCommit : this) {
       SegmentInfo si = siPerCommit.info;
+      if (indexCreatedVersionMajor >= 7 && si.minVersion == null) {
+        throw new IllegalStateException("Segments must record minVersion if they have been created on or after Lucene 7: " + si);
+      }
       out.writeString(si.name);
       byte segmentID[] = si.getId();
       // TODO: remove this in lucene 6, we don't need to include 4.x segments in commits anymore
@@ -917,6 +907,10 @@ public final class SegmentInfos implements Cloneable, Iterable<SegmentCommitInfo
 
   /** applies all changes caused by committing a merge to this SegmentInfos */
   void applyMergeChanges(MergePolicy.OneMerge merge, boolean dropSegment) {
+    if (indexCreatedVersionMajor >= 7 && merge.info.info.minVersion == null) {
+      throw new IllegalArgumentException("All segments must record the minVersion for indices created on or after Lucene 7");
+    }
+
     final Set<SegmentCommitInfo> mergedAway = new HashSet<>(merge.segments);
     boolean inserted = false;
     int newSegIdx = 0;
@@ -981,6 +975,10 @@ public final class SegmentInfos implements Cloneable, Iterable<SegmentCommitInfo
 
   /** Appends the provided {@link SegmentCommitInfo}. */
   public void add(SegmentCommitInfo si) {
+    if (indexCreatedVersionMajor >= 7 && si.info.minVersion == null) {
+      throw new IllegalArgumentException("All segments must record the minVersion for indices created on or after Lucene 7");
+    }
+    
     segments.add(si);
   }
   
@@ -1038,10 +1036,11 @@ public final class SegmentInfos implements Cloneable, Iterable<SegmentCommitInfo
     return minSegmentLuceneVersion;
   }
 
-  /** Return the version that was used to initially create the index. This
-   *  version is set when the index is first created and then never changes.
-   *  This returns {@code null} if the index was created before 7.0. */
-  public Version getIndexCreatedVersion() {
-    return indexCreatedVersion;
+  /** Return the version major that was used to initially create the index.
+   *  This version is set when the index is first created and then never
+   *  changes. This information was added as of version 7.0 so older
+   *  indices report 6 as a creation version. */
+  public int getIndexCreatedVersionMajor() {
+    return indexCreatedVersionMajor;
   }
 }

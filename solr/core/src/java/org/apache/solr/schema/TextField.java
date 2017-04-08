@@ -41,6 +41,7 @@ import org.apache.solr.uninverting.UninvertingReader.Type;
  */
 public class TextField extends FieldType {
   protected boolean autoGeneratePhraseQueries;
+  protected boolean enableGraphQueries;
 
   /**
    * Analyzer set by schema for text types to use when searching fields
@@ -69,9 +70,15 @@ public class TextField extends FieldType {
     } else {
       autoGeneratePhraseQueries = true;
     }
-    String autoGeneratePhraseQueriesStr = args.remove("autoGeneratePhraseQueries");
+    String autoGeneratePhraseQueriesStr = args.remove(AUTO_GENERATE_PHRASE_QUERIES);
     if (autoGeneratePhraseQueriesStr != null)
       autoGeneratePhraseQueries = Boolean.parseBoolean(autoGeneratePhraseQueriesStr);
+    
+    enableGraphQueries = true;
+    String enableGraphQueriesStr = args.remove(ENABLE_GRAPH_QUERIES);
+    if (enableGraphQueriesStr != null)
+      enableGraphQueries = Boolean.parseBoolean(enableGraphQueriesStr);
+
     super.init(schema, args);    
   }
 
@@ -92,6 +99,10 @@ public class TextField extends FieldType {
 
   public boolean getAutoGeneratePhraseQueries() {
     return autoGeneratePhraseQueries;
+  }
+  
+  public boolean getEnableGraphQueries() {
+    return enableGraphQueries;
   }
 
   @Override

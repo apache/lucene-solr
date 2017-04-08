@@ -201,7 +201,7 @@ public class TestInPlaceUpdatesDistrib extends AbstractFullDistribZkTestBase {
     assertEquals(2, NONLEADERS.size());
   }
 
-  final int NUM_RETRIES = 100, WAIT_TIME = 10;
+  final int NUM_RETRIES = 100, WAIT_TIME = 50;
 
   // The following should work: full update to doc 0, in-place update for doc 0, delete doc 0
   private void reorderedDBQsSimpleTest() throws Exception {
@@ -266,8 +266,6 @@ public class TestInPlaceUpdatesDistrib extends AbstractFullDistribZkTestBase {
     }
 
     log.info("reorderedDBQsSimpleTest: This test passed fine...");
-    clearIndex();
-    commit();
   }
 
   private void reorderedDBQIndividualReplicaTest() throws Exception {
@@ -324,7 +322,8 @@ public class TestInPlaceUpdatesDistrib extends AbstractFullDistribZkTestBase {
 
   private void docValuesUpdateTest() throws Exception {
     // number of docs we're testing (0 <= id), index may contain additional random docs (id < 0)
-    final int numDocs = atLeast(100);
+    int numDocs = atLeast(100);
+    if (onlyLeaderIndexes) numDocs = TestUtil.nextInt(random(), 10, 50);
     log.info("Trying num docs = " + numDocs);
     final List<Integer> ids = new ArrayList<Integer>(numDocs);
     for (int id = 0; id < numDocs; id++) {
@@ -667,8 +666,6 @@ public class TestInPlaceUpdatesDistrib extends AbstractFullDistribZkTestBase {
     }
 
     log.info("outOfOrderUpdatesIndividualReplicaTest: This test passed fine...");
-    clearIndex();
-    commit();
   }
   
   // The following should work: full update to doc 0, in-place update for doc 0, delete doc 0
@@ -733,8 +730,6 @@ public class TestInPlaceUpdatesDistrib extends AbstractFullDistribZkTestBase {
     }
 
     log.info("reorderedDeletesTest: This test passed fine...");
-    clearIndex();
-    commit();
   }
 
   /* Test for a situation when a document requiring in-place update cannot be "resurrected"
@@ -972,10 +967,11 @@ public class TestInPlaceUpdatesDistrib extends AbstractFullDistribZkTestBase {
     assertEquals("Field: " + fieldName, expected, rsp.getField());
   }
 
-  private static class AsyncUpdateWithRandomCommit implements Callable<UpdateResponse> {
+  private class AsyncUpdateWithRandomCommit implements Callable<UpdateResponse> {
     UpdateRequest update;
     SolrClient solrClient;
     final Random rnd;
+    int commitBound = onlyLeaderIndexes ? 50 : 3;
 
     public AsyncUpdateWithRandomCommit (UpdateRequest update, SolrClient solrClient, long seed) {
       this.update = update;
@@ -986,7 +982,7 @@ public class TestInPlaceUpdatesDistrib extends AbstractFullDistribZkTestBase {
     @Override
     public UpdateResponse call() throws Exception {
       UpdateResponse resp = update.process(solrClient); //solrClient.request(update);
-      if (rnd.nextInt(3) == 0)
+      if (rnd.nextInt(commitBound) == 0)
         solrClient.commit();
       return resp;
     }
@@ -1113,9 +1109,9 @@ public class TestInPlaceUpdatesDistrib extends AbstractFullDistribZkTestBase {
    * @return the versions of each of the specials document returned when indexing it
    */
   protected List<Long> buildRandomIndex(Float initFloat, List<Integer> specialIds) throws Exception {
-    
+
     int id = -1; // used for non special docs
-    final int numPreDocs = rarely() ? TestUtil.nextInt(random(),0,9) : atLeast(10);
+    final int numPreDocs = rarely() || onlyLeaderIndexes ? TestUtil.nextInt(random(),0,9) : atLeast(10);
     for (int i = 1; i <= numPreDocs; i++) {
       addDocAndGetVersion("id", id, "title_s", "title" + id, "id_i", id);
       id--;
@@ -1128,7 +1124,7 @@ public class TestInPlaceUpdatesDistrib extends AbstractFullDistribZkTestBase {
         versions.add(addDocAndGetVersion("id", special, "title_s", "title" + special, "id_i", special,
                                          "inplace_updatable_float", initFloat));
       }
-      final int numPostDocs = rarely() ? TestUtil.nextInt(random(),0,9) : atLeast(10);
+      final int numPostDocs = rarely() || onlyLeaderIndexes ? TestUtil.nextInt(random(),0,2) : atLeast(10);
       for (int i = 1; i <= numPostDocs; i++) {
         addDocAndGetVersion("id", id, "title_s", "title" + id, "id_i", id);
         id--;

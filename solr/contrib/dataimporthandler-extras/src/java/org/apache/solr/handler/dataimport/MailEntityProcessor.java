@@ -728,8 +728,8 @@ public class MailEntityProcessor extends EntityProcessorBase {
       return true;
     }
   }
-  
-  class MailsSinceLastCheckFilter implements CustomFilter {
+
+  static class MailsSinceLastCheckFilter implements CustomFilter {
     
     private Date since;
     

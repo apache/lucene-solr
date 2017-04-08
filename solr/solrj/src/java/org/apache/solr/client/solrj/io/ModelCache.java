@@ -110,7 +110,7 @@ public class ModelCache {
     }
   }
 
-  private class Model {
+  private static class Model {
     private Tuple tuple;
     private long lastChecked;
 
@@ -128,7 +128,7 @@ public class ModelCache {
     }
   }
 
-  private class LRU extends LinkedHashMap<String, Model> {
+  private static class LRU extends LinkedHashMap<String, Model> {
 
     private int maxSize;
 

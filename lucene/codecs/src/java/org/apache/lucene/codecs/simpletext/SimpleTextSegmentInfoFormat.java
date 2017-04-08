@@ -55,6 +55,7 @@ import org.apache.lucene.util.Version;
  */
 public class SimpleTextSegmentInfoFormat extends SegmentInfoFormat {
   final static BytesRef SI_VERSION          = new BytesRef("    version ");
+  final static BytesRef SI_MIN_VERSION      = new BytesRef("    min version ");
   final static BytesRef SI_DOCCOUNT         = new BytesRef("    number of documents ");
   final static BytesRef SI_USECOMPOUND      = new BytesRef("    uses compound file ");
   final static BytesRef SI_NUM_DIAG         = new BytesRef("    diagnostics ");
@@ -88,7 +89,21 @@ public class SimpleTextSegmentInfoFormat extends SegmentInfoFormat {
       } catch (ParseException pe) {
         throw new CorruptIndexException("unable to parse version string: " + pe.getMessage(), input, pe);
       }
-    
+
+      SimpleTextUtil.readLine(input, scratch);
+      assert StringHelper.startsWith(scratch.get(), SI_MIN_VERSION);
+      Version minVersion;
+      try {
+        String versionString = readString(SI_MIN_VERSION.length, scratch);
+        if (versionString.equals("null")) {
+          minVersion = null;
+        } else {
+          minVersion = Version.parse(versionString);
+        }
+      } catch (ParseException pe) {
+        throw new CorruptIndexException("unable to parse version string: " + pe.getMessage(), input, pe);
+      }
+
       SimpleTextUtil.readLine(input, scratch);
       assert StringHelper.startsWith(scratch.get(), SI_DOCCOUNT);
       final int docCount = Integer.parseInt(readString(SI_DOCCOUNT.length, scratch));
@@ -288,7 +303,7 @@ public class SimpleTextSegmentInfoFormat extends SegmentInfoFormat {
 
       SimpleTextUtil.checkFooter(input);
 
-      SegmentInfo info = new SegmentInfo(directory, version, segmentName, docCount,
+      SegmentInfo info = new SegmentInfo(directory, version, minVersion, segmentName, docCount,
                                          isCompoundFile, null, Collections.unmodifiableMap(diagnostics),
                                          id, Collections.unmodifiableMap(attributes), indexSort);
       info.setFiles(files);
@@ -345,7 +360,15 @@ public class SimpleTextSegmentInfoFormat extends SegmentInfoFormat {
       SimpleTextUtil.write(output, SI_VERSION);
       SimpleTextUtil.write(output, si.getVersion().toString(), scratch);
       SimpleTextUtil.writeNewline(output);
-    
+
+      SimpleTextUtil.write(output, SI_MIN_VERSION);
+      if (si.getMinVersion() == null) {
+        SimpleTextUtil.write(output, "null", scratch);
+      } else {
+        SimpleTextUtil.write(output, si.getMinVersion().toString(), scratch);
+      }
+      SimpleTextUtil.writeNewline(output);
+
       SimpleTextUtil.write(output, SI_DOCCOUNT);
       SimpleTextUtil.write(output, Integer.toString(si.maxDoc()), scratch);
       SimpleTextUtil.writeNewline(output);

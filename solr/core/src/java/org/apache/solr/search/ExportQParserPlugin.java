@@ -121,7 +121,7 @@ public class ExportQParserPlugin extends QParserPlugin {
     }
   }
   
-  private class ExportCollector extends TopDocsCollector  {
+  private static class ExportCollector extends TopDocsCollector  {
 
     private FixedBitSet[] sets;
 

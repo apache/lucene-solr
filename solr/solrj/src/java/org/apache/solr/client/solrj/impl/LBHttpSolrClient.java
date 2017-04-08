@@ -404,9 +404,14 @@ public class LBHttpSolrClient extends SolrClient {
           break;
         }
 
-        ex = doRequest(wrapper.client, req, rsp, isNonRetryable, true, wrapper.getKey());
-        if (ex == null) {
-          return rsp; // SUCCESS
+        try {
+          MDC.put("LBHttpSolrClient.url", wrapper.client.getBaseURL());
+          ex = doRequest(wrapper.client, req, rsp, isNonRetryable, true, wrapper.getKey());
+          if (ex == null) {
+            return rsp; // SUCCESS
+          }
+        } finally {
+          MDC.remove("LBHttpSolrClient.url");
         }
       }
     }

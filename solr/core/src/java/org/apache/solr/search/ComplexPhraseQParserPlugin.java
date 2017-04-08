@@ -59,9 +59,9 @@ public class ComplexPhraseQParserPlugin extends QParserPlugin {
   /**
    * Modified from {@link org.apache.solr.search.LuceneQParser} and {@link org.apache.solr.search.SurroundQParserPlugin.SurroundQParser}
    */
-  class ComplexPhraseQParser extends QParser {
+  static class ComplexPhraseQParser extends QParser {
 
-    final class SolrQueryParserDelegate extends SolrQueryParser {
+    static final class SolrQueryParserDelegate extends SolrQueryParser {
       private SolrQueryParserDelegate(QParser parser, String defaultField) {
         super(parser, defaultField);
       }

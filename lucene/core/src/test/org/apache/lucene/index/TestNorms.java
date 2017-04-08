@@ -48,9 +48,9 @@ import org.apache.lucene.util.TestUtil;
 @SuppressCodecs({ "Memory", "Direct", "SimpleText" })
 @Slow
 public class TestNorms extends LuceneTestCase {
-  final String byteTestField = "normsTestByte";
+  static final String BYTE_TEST_FIELD = "normsTestByte";
 
-  class CustomNormEncodingSimilarity extends TFIDFSimilarity {
+  static class CustomNormEncodingSimilarity extends TFIDFSimilarity {
 
     @Override
     public long encodeNormValue(float f) {
@@ -115,11 +115,11 @@ public class TestNorms extends LuceneTestCase {
     Directory dir = newFSDirectory(createTempDir("TestNorms.testMaxByteNorms"));
     buildIndex(dir);
     DirectoryReader open = DirectoryReader.open(dir);
-    NumericDocValues normValues = MultiDocValues.getNormValues(open, byteTestField);
+    NumericDocValues normValues = MultiDocValues.getNormValues(open, BYTE_TEST_FIELD);
     assertNotNull(normValues);
     for (int i = 0; i < open.maxDoc(); i++) {
       Document document = open.document(i);
-      int expected = Integer.parseInt(document.get(byteTestField).split(" ")[0]);
+      int expected = Integer.parseInt(document.get(BYTE_TEST_FIELD).split(" ")[0]);
       assertEquals(i, normValues.nextDoc());
       assertEquals(expected, normValues.longValue());
     }
@@ -143,10 +143,10 @@ public class TestNorms extends LuceneTestCase {
       Document doc = docs.nextDoc();
       int boost = TestUtil.nextInt(random, 1, 255);
       String value = IntStream.range(0, boost).mapToObj(k -> Integer.toString(boost)).collect(Collectors.joining(" "));
-      Field f = new TextField(byteTestField, value, Field.Store.YES);
+      Field f = new TextField(BYTE_TEST_FIELD, value, Field.Store.YES);
       doc.add(f);
       writer.addDocument(doc);
-      doc.removeField(byteTestField);
+      doc.removeField(BYTE_TEST_FIELD);
       if (rarely()) {
         writer.commit();
       }
@@ -162,7 +162,7 @@ public class TestNorms extends LuceneTestCase {
 
     @Override
     public Similarity get(String field) {
-      if (byteTestField.equals(field)) {
+      if (BYTE_TEST_FIELD.equals(field)) {
         return new ByteEncodingBoostSimilarity();
       } else {
         return delegate;

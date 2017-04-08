@@ -16,6 +16,9 @@
  */
 package org.apache.solr.handler;
 
+import static org.apache.solr.common.params.CommonParams.ID;
+import static org.apache.solr.common.params.CommonParams.SORT;
+
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
@@ -33,20 +36,38 @@ import org.apache.solr.client.solrj.io.comp.StreamComparator;
 import org.apache.solr.client.solrj.io.eval.AbsoluteValueEvaluator;
 import org.apache.solr.client.solrj.io.eval.AddEvaluator;
 import org.apache.solr.client.solrj.io.eval.AndEvaluator;
+import org.apache.solr.client.solrj.io.eval.ArcCosineEvaluator;
+import org.apache.solr.client.solrj.io.eval.ArcSineEvaluator;
+import org.apache.solr.client.solrj.io.eval.ArcTangentEvaluator;
+import org.apache.solr.client.solrj.io.eval.CeilingEvaluator;
+import org.apache.solr.client.solrj.io.eval.CoalesceEvaluator;
+import org.apache.solr.client.solrj.io.eval.CosineEvaluator;
+import org.apache.solr.client.solrj.io.eval.CubedRootEvaluator;
 import org.apache.solr.client.solrj.io.eval.DivideEvaluator;
 import org.apache.solr.client.solrj.io.eval.EqualsEvaluator;
 import org.apache.solr.client.solrj.io.eval.ExclusiveOrEvaluator;
+import org.apache.solr.client.solrj.io.eval.FloorEvaluator;
 import org.apache.solr.client.solrj.io.eval.GreaterThanEqualToEvaluator;
 import org.apache.solr.client.solrj.io.eval.GreaterThanEvaluator;
+import org.apache.solr.client.solrj.io.eval.HyperbolicCosineEvaluator;
+import org.apache.solr.client.solrj.io.eval.HyperbolicSineEvaluator;
+import org.apache.solr.client.solrj.io.eval.HyperbolicTangentEvaluator;
 import org.apache.solr.client.solrj.io.eval.IfThenElseEvaluator;
 import org.apache.solr.client.solrj.io.eval.LessThanEqualToEvaluator;
 import org.apache.solr.client.solrj.io.eval.LessThanEvaluator;
+import org.apache.solr.client.solrj.io.eval.ModuloEvaluator;
 import org.apache.solr.client.solrj.io.eval.MultiplyEvaluator;
 import org.apache.solr.client.solrj.io.eval.NaturalLogEvaluator;
 import org.apache.solr.client.solrj.io.eval.NotEvaluator;
 import org.apache.solr.client.solrj.io.eval.OrEvaluator;
+import org.apache.solr.client.solrj.io.eval.PowerEvaluator;
 import org.apache.solr.client.solrj.io.eval.RawValueEvaluator;
+import org.apache.solr.client.solrj.io.eval.RoundEvaluator;
+import org.apache.solr.client.solrj.io.eval.SineEvaluator;
+import org.apache.solr.client.solrj.io.eval.SquareRootEvaluator;
 import org.apache.solr.client.solrj.io.eval.SubtractEvaluator;
+import org.apache.solr.client.solrj.io.eval.TangentEvaluator;
+import org.apache.solr.client.solrj.io.eval.UuidEvaluator;
 import org.apache.solr.client.solrj.io.graph.GatherNodesStream;
 import org.apache.solr.client.solrj.io.graph.ShortestPathStream;
 import org.apache.solr.client.solrj.io.ops.ConcatOperation;
@@ -80,9 +101,6 @@ import org.apache.solr.util.plugin.SolrCoreAware;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import static org.apache.solr.common.params.CommonParams.ID;
-import static org.apache.solr.common.params.CommonParams.SORT;
-
 public class StreamHandler extends RequestHandlerBase implements SolrCoreAware, PermissionNameProvider {
 
   static SolrClientCache clientCache = new SolrClientCache();
@@ -95,6 +113,10 @@ public class StreamHandler extends RequestHandlerBase implements SolrCoreAware, 
   @Override
   public PermissionNameProvider.Name getPermissionName(AuthorizationContext request) {
     return PermissionNameProvider.Name.READ_PERM;
+  }
+
+  public static SolrClientCache getClientCache() {
+    return clientCache;
   }
 
   public void inform(SolrCore core) {
@@ -169,6 +191,7 @@ public class StreamHandler extends RequestHandlerBase implements SolrCoreAware, 
       .withFunctionName("priority", PriorityStream.class)
       .withFunctionName("significantTerms", SignificantTermsStream.class)
       .withFunctionName("cartesianProduct", CartesianProductStream.class)
+      .withFunctionName("shuffle", ShuffleStream.class)
       
       // metrics
       .withFunctionName("min", MinMetric.class)
@@ -207,8 +230,28 @@ public class StreamHandler extends RequestHandlerBase implements SolrCoreAware, 
       .withFunctionName("mult", MultiplyEvaluator.class)
       .withFunctionName("sub", SubtractEvaluator.class)
       .withFunctionName("log", NaturalLogEvaluator.class)
+      .withFunctionName("pow", PowerEvaluator.class)
+      .withFunctionName("mod", ModuloEvaluator.class)
+      .withFunctionName("ceil", CeilingEvaluator.class)
+      .withFunctionName("floor", FloorEvaluator.class)
+      .withFunctionName("sin", SineEvaluator.class)
+      .withFunctionName("asin", ArcSineEvaluator.class)
+      .withFunctionName("sinh", HyperbolicSineEvaluator.class)
+      .withFunctionName("cos", CosineEvaluator.class)
+      .withFunctionName("acos", ArcCosineEvaluator.class)
+      .withFunctionName("cosh", HyperbolicCosineEvaluator.class)
+      .withFunctionName("tan", TangentEvaluator.class)
+      .withFunctionName("atan", ArcTangentEvaluator.class)
+      .withFunctionName("tanh", HyperbolicTangentEvaluator.class)
+      .withFunctionName("round", RoundEvaluator.class)
+      .withFunctionName("sqrt", SquareRootEvaluator.class)
+      .withFunctionName("cbrt", CubedRootEvaluator.class)
+      .withFunctionName("coalesce", CoalesceEvaluator.class)
+      .withFunctionName("uuid", UuidEvaluator.class)
+      
       // Conditional Stream Evaluators
       .withFunctionName("if", IfThenElseEvaluator.class)
+      .withFunctionName("analyze", AnalyzeEvaluator.class)
       ;
 
      // This pulls all the overrides and additions from the config

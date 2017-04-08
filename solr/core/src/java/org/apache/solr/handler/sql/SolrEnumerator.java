@@ -43,6 +43,7 @@ class SolrEnumerator implements Enumerator<Object> {
    * @param fields Fields to get from each Tuple
    */
   SolrEnumerator(TupleStream tupleStream, List<Map.Entry<String, Class>> fields) {
+
     this.tupleStream = tupleStream;
     try {
       this.tupleStream.open();

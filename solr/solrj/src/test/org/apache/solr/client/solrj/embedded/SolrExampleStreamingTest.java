@@ -104,8 +104,8 @@ public class SolrExampleStreamingTest extends SolrExampleTests {
                    null, failures.get(0));
     }
   }
-  
-  class FailureRecordingConcurrentUpdateSolrClient extends ConcurrentUpdateSolrClient {
+
+  static class FailureRecordingConcurrentUpdateSolrClient extends ConcurrentUpdateSolrClient {
     private final List<Throwable> failures = new ArrayList<>();
     
     public FailureRecordingConcurrentUpdateSolrClient(String serverUrl, int queueSize, int numThreads) {

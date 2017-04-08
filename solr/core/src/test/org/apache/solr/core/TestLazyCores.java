@@ -38,6 +38,7 @@ import org.apache.solr.handler.admin.CoreAdminHandler;
 import org.apache.solr.request.LocalSolrQueryRequest;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
+import org.apache.solr.servlet.SolrDispatchFilter;
 import org.apache.solr.update.AddUpdateCommand;
 import org.apache.solr.update.CommitUpdateCommand;
 import org.apache.solr.update.UpdateHandler;
@@ -83,13 +84,13 @@ public class TestLazyCores extends SolrTestCaseJ4 {
   private CoreContainer init() throws Exception {
     solrHomeDirectory = createTempDir().toFile();
     
+    copyXmlToHome(solrHomeDirectory.getAbsoluteFile(), "solr.xml");
     for (int idx = 1; idx < 10; ++idx) {
       copyMinConf(new File(solrHomeDirectory, "collection" + idx));
     }
 
-    SolrResourceLoader loader = new SolrResourceLoader(solrHomeDirectory.toPath());
-    NodeConfig config = new NodeConfig.NodeConfigBuilder("testNode", loader).setTransientCacheSize(4).build();
-    return createCoreContainer(config, testCores);
+    NodeConfig cfg = SolrDispatchFilter.loadNodeConfig(solrHomeDirectory.toPath(), null);
+    return createCoreContainer(cfg, testCores);
   }
   
   @Test
@@ -188,7 +189,7 @@ public class TestLazyCores extends SolrTestCaseJ4 {
           , "//result[@numFound='0']"
       );
 
-      checkInCores(cc, "collection4");
+      checkInCores(cc, "collection1", "collection2", "collection4", "collection5");
 
       core4.close();
       collection1.close();
@@ -454,11 +455,14 @@ public class TestLazyCores extends SolrTestCaseJ4 {
   // 1> produce errors as appropriate when the config or schema files are foo'd
   // 2> "self heal". That is, if the problem is corrected can the core be reloaded and used?
   // 3> that OK cores can be searched even when some cores failed to load.
+  // 4> that having no solr.xml entry for transient chache handler correctly uses the default.
   @Test
   public void testBadConfigsGenerateErrors() throws Exception {
     final CoreContainer cc = initGoodAndBad(Arrays.asList("core1", "core2"),
         Arrays.asList("badSchema1", "badSchema2"),
         Arrays.asList("badConfig1", "badConfig2"));
+    
+    
     try {
       // first, did the two good cores load successfully?
       checkInCores(cc, "core1", "core2");
@@ -491,8 +495,9 @@ public class TestLazyCores extends SolrTestCaseJ4 {
       copyGoodConf("badSchema1", "schema-tiny.xml", "schema.xml");
       copyGoodConf("badSchema2", "schema-tiny.xml", "schema.xml");
 
+      
       // This should force a reload of the cores.
-      SolrCore bc1 = cc.getCore("badConfig1");
+      SolrCore bc1 = cc.getCore("badConfig1");;
       SolrCore bc2 = cc.getCore("badConfig2");
       SolrCore bs1 = cc.getCore("badSchema1");
       SolrCore bs2 = cc.getCore("badSchema2");
@@ -635,16 +640,46 @@ public class TestLazyCores extends SolrTestCaseJ4 {
   }
 
   public static void checkNotInCores(CoreContainer cc, String... nameCheck) {
-    Collection<String> names = cc.getCoreNames();
+    Collection<String> loadedNames = cc.getCoreNames();
     for (String name : nameCheck) {
-      assertFalse("core " + name + " was found in the list of cores", names.contains(name));
+      assertFalse("core " + name + " was found in the list of cores", loadedNames.contains(name));
+    }
+    
+    // There was a problem at one point exacerbated by the poor naming conventions. So parallel to loaded cores, there
+    // should be the ability to get the core _names_ that are loaded as well as all the core names _possible_
+    //
+    // the names above should only contain loaded core names. Every name in names should be in allNames, but none of 
+    // the names in nameCheck should be loaded and thus should not be in names.
+    
+    Collection<String> allNames = cc.getAllCoreNames();
+    // Every core, loaded or not should be in the accumulated coredescriptors:
+    List<CoreDescriptor> descriptors = cc.getCoreDescriptors();
+
+    assertEquals("There should be as many coreDescriptors as coreNames", allNames.size(), descriptors.size());
+    for (CoreDescriptor desc : descriptors) {
+      assertTrue("Name should have a corresponding descriptor", allNames.contains(desc.getName()));
+    }
+    
+    // First check that all loaded cores are in allNames.
+    for (String name : loadedNames) {                                                                                        
+      assertTrue("Loaded core " + name + " should have been found in the list of all possible core names",
+          allNames.contains(name));
+    }
+
+    for (String name : nameCheck) {
+      assertTrue("Not-currently-loaded core " + name + " should have been found in the list of all possible core names",
+          allNames.contains(name));
     }
   }
 
   public static void checkInCores(CoreContainer cc, String... nameCheck) {
-    Collection<String> names = cc.getCoreNames();
+    Collection<String> loadedNames = cc.getCoreNames();
+    
+    assertEquals("There whould be exactly as many loaded cores as loaded names returned. ", 
+        loadedNames.size(), nameCheck.length);
+    
     for (String name : nameCheck) {
-      assertTrue("core " + name + " was not found in the list of cores", names.contains(name));
+      assertTrue("core " + name + " was not found in the list of cores", loadedNames.contains(name));
     }
   }
 

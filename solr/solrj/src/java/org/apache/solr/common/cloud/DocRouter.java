@@ -134,8 +134,8 @@ public abstract class DocRouter {
 
     @Override
     public int compareTo(Range that) {
-      int mincomp = Integer.valueOf(this.min).compareTo(that.min);
-      return mincomp == 0 ? Integer.valueOf(this.max).compareTo(that.max) : mincomp;
+      int mincomp = Integer.compare(this.min, that.min);
+      return mincomp == 0 ? Integer.compare(this.max, that.max) : mincomp;
     }
   }
 

@@ -99,7 +99,7 @@ public class TestMaxTermFrequency extends LuceneTestCase {
   /**
    * Simple similarity that encodes maxTermFrequency directly as a byte
    */
-  class TestSimilarity extends TFIDFSimilarity {
+  static class TestSimilarity extends TFIDFSimilarity {
 
     @Override
     public float lengthNorm(FieldInvertState state) {

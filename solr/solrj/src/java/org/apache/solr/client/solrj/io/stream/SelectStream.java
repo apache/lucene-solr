@@ -22,6 +22,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Set;
 
 import org.apache.solr.client.solrj.io.Tuple;
 import org.apache.solr.client.solrj.io.comp.StreamComparator;
@@ -213,6 +214,11 @@ public class SelectStream extends TupleStream implements Expressible {
 
   public void setStreamContext(StreamContext context) {
     this.stream.setStreamContext(context);
+    Set<StreamEvaluator> evaluators = selectedEvaluators.keySet();
+
+    for(StreamEvaluator evaluator : evaluators) {
+      evaluator.setStreamContext(context);
+    }
   }
 
   public List<TupleStream> children() {

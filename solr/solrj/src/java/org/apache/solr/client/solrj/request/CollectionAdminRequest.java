@@ -613,6 +613,44 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse> 
 
   }
 
+  public static class MoveReplica extends AsyncCollectionAdminRequest {
+    String collection, replica, targetNode;
+    String shard, fromNode;
+    boolean randomlyMoveReplica;
+
+    public MoveReplica(String collection, String replica, String targetNode) {
+      super(CollectionAction.MOVEREPLICA);
+      this.collection = collection;
+      this.replica = replica;
+      this.targetNode = targetNode;
+      this.randomlyMoveReplica = false;
+    }
+
+    public MoveReplica(String collection, String shard, String fromNode, String targetNode) {
+      super(CollectionAction.MOVEREPLICA);
+      this.collection = collection;
+      this.shard = shard;
+      this.fromNode = fromNode;
+      this.targetNode = targetNode;
+      this.randomlyMoveReplica = true;
+    }
+
+    @Override
+    public SolrParams getParams() {
+      ModifiableSolrParams params = (ModifiableSolrParams) super.getParams();
+      params.set("collection", collection);
+      params.set("targetNode", targetNode);
+      if (randomlyMoveReplica) {
+        params.set("shard", shard);
+        params.set("fromNode", fromNode);
+      } else {
+        params.set("replica", replica);
+      }
+      return params;
+    }
+  }
+
+
   /*
    * Returns a RebalanceLeaders object to rebalance leaders for a collection
    */

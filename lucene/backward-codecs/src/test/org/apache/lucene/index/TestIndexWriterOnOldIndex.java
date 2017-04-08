@@ -36,16 +36,16 @@ public class TestIndexWriterOnOldIndex extends LuceneTestCase {
     Directory dir = newFSDirectory(path);
     for (OpenMode openMode : OpenMode.values()) {
       Directory tmpDir = newDirectory(dir);
-      assertEquals(null /** 6.3.0 */, SegmentInfos.readLatestCommit(tmpDir).getIndexCreatedVersion());
+      assertEquals(6 /** 6.3.0 */, SegmentInfos.readLatestCommit(tmpDir).getIndexCreatedVersionMajor());
       IndexWriter w = new IndexWriter(tmpDir, newIndexWriterConfig().setOpenMode(openMode));
       w.commit();
       w.close();
       switch (openMode) {
         case CREATE:
-          assertEquals(Version.LATEST, SegmentInfos.readLatestCommit(tmpDir).getIndexCreatedVersion());
+          assertEquals(Version.LATEST.major, SegmentInfos.readLatestCommit(tmpDir).getIndexCreatedVersionMajor());
           break;
         default:
-          assertEquals(null /** 6.3.0 */, SegmentInfos.readLatestCommit(tmpDir).getIndexCreatedVersion());
+          assertEquals(6 /** 6.3.0 */, SegmentInfos.readLatestCommit(tmpDir).getIndexCreatedVersionMajor());
       }
       tmpDir.close();
     }

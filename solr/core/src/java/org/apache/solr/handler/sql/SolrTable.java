@@ -51,6 +51,7 @@ import org.apache.solr.client.solrj.io.stream.expr.StreamFactory;
 import org.apache.solr.client.solrj.io.stream.metrics.*;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
+import org.apache.solr.handler.StreamHandler;
 
 import java.io.IOException;
 import java.util.*;
@@ -128,7 +129,7 @@ class SolrTable extends AbstractQueryableTable implements TranslatableTable {
         tupleStream = handleSelect(zk, collection, q, fields, orders, limit);
       } else {
         if(buckets.isEmpty()) {
-          tupleStream = handleStats(zk, collection, q, metricPairs);
+          tupleStream = handleStats(zk, collection, q, metricPairs, fields);
         } else {
           if(mapReduce) {
             tupleStream = handleGroupByMapReduce(zk,
@@ -157,6 +158,10 @@ class SolrTable extends AbstractQueryableTable implements TranslatableTable {
     } catch (IOException e) {
       throw new RuntimeException(e);
     }
+
+    StreamContext streamContext = new StreamContext();
+    streamContext.setSolrClientCache(StreamHandler.getClientCache());
+    tupleStream.setStreamContext(streamContext);
 
     final TupleStream finalStream = tupleStream;
 
@@ -430,6 +435,11 @@ class SolrTable extends AbstractQueryableTable implements TranslatableTable {
                                              final String limit,
                                              final String havingPredicate) throws IOException {
 
+    Map<String, Class> fmap = new HashMap();
+    for(Map.Entry<String, Class> entry : fields) {
+      fmap.put(entry.getKey(), entry.getValue());
+    }
+
     int numWorkers = Integer.parseInt(properties.getProperty("numWorkers", "1"));
 
     Bucket[] buckets = buildBuckets(_buckets, fields);
@@ -437,6 +447,13 @@ class SolrTable extends AbstractQueryableTable implements TranslatableTable {
 
     if(metrics.length == 0) {
       return handleSelectDistinctMapReduce(zk, collection, properties, fields, query, orders, buckets, limit);
+    } else {
+      for(Metric metric : metrics) {
+        Class c = fmap.get(metric.getIdentifier());
+        if(Long.class.equals(c)) {
+          metric.outputLong = true;
+        }
+      }
     }
 
     Set<String> fieldSet = getFieldSet(metrics, fields);
@@ -556,6 +573,12 @@ class SolrTable extends AbstractQueryableTable implements TranslatableTable {
                                          final String lim,
                                          final String havingPredicate) throws IOException {
 
+
+    Map<String, Class> fmap = new HashMap();
+    for(Map.Entry<String, Class> f : fields) {
+      fmap.put(f.getKey(), f.getValue());
+    }
+
     ModifiableSolrParams solrParams = new ModifiableSolrParams();
     solrParams.add(CommonParams.Q, query);
 
@@ -564,6 +587,13 @@ class SolrTable extends AbstractQueryableTable implements TranslatableTable {
     if(metrics.length == 0) {
       metrics = new Metric[1];
       metrics[0] = new CountMetric();
+    } else {
+      for(Metric metric : metrics) {
+        Class c = fmap.get(metric.getIdentifier());
+        if(Long.class.equals(c)) {
+          metric.outputLong = true;
+        }
+      }
     }
 
     int limit = lim != null ? Integer.parseInt(lim) : 1000;
@@ -767,12 +797,26 @@ class SolrTable extends AbstractQueryableTable implements TranslatableTable {
   private TupleStream handleStats(String zk,
                                   String collection,
                                   String query,
-                                  List<Pair<String, String>> metricPairs) {
+                                  List<Pair<String, String>> metricPairs,
+                                  List<Map.Entry<String, Class>> fields) {
 
+
+    Map<String, Class> fmap = new HashMap();
+    for(Map.Entry<String, Class> entry : fields) {
+      fmap.put(entry.getKey(), entry.getValue());
+    }
 
     ModifiableSolrParams solrParams = new ModifiableSolrParams();
     solrParams.add(CommonParams.Q, query);
     Metric[] metrics = buildMetrics(metricPairs, false).toArray(new Metric[0]);
+
+    for(Metric metric : metrics) {
+      Class c = fmap.get(metric.getIdentifier());
+      if(Long.class.equals(c)) {
+        metric.outputLong = true;
+      }
+    }
+
     return new StatsStream(zk, collection, solrParams, metrics);
   }
 

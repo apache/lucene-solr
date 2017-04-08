@@ -217,8 +217,8 @@ public final class BloomFilteringPostingsFormat extends PostingsFormat {
     public int size() {
       return delegateFieldsProducer.size();
     }
-    
-    class BloomFilteredTerms extends Terms {
+
+    static class BloomFilteredTerms extends Terms {
       private Terms delegateTerms;
       private FuzzySet filter;
       
@@ -288,8 +288,8 @@ public final class BloomFilteringPostingsFormat extends PostingsFormat {
         return delegateTerms.getMax();
       }
     }
-    
-    final class BloomFilteredTermsEnum extends TermsEnum {
+
+    static final class BloomFilteredTermsEnum extends TermsEnum {
       private Terms delegateTerms;
       private TermsEnum delegateTermsEnum;
       private final FuzzySet filter;

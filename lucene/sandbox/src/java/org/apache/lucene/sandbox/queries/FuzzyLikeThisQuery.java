@@ -112,7 +112,7 @@ public class FuzzyLikeThisQuery extends Query
     this.maxNumTerms = maxNumTerms;
   }
 
-  class FieldVals
+  static class FieldVals
   {
     String queryString;
     String fieldName;

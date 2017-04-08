@@ -133,13 +133,13 @@ public class IndexSplitter {
   public void split(Path destDir, String[] segs) throws IOException {
     Files.createDirectories(destDir);
     FSDirectory destFSDir = FSDirectory.open(destDir);
-    SegmentInfos destInfos = new SegmentInfos(infos.getIndexCreatedVersion());
+    SegmentInfos destInfos = new SegmentInfos(infos.getIndexCreatedVersionMajor());
     destInfos.counter = infos.counter;
     for (String n : segs) {
       SegmentCommitInfo infoPerCommit = getInfo(n);
       SegmentInfo info = infoPerCommit.info;
       // Same info just changing the dir:
-      SegmentInfo newInfo = new SegmentInfo(destFSDir, info.getVersion(), info.name, info.maxDoc(),
+      SegmentInfo newInfo = new SegmentInfo(destFSDir, info.getVersion(), info.getMinVersion(), info.name, info.maxDoc(),
                                             info.getUseCompoundFile(), info.getCodec(), info.getDiagnostics(), info.getId(), new HashMap<>(), null);
       destInfos.add(new SegmentCommitInfo(newInfo, infoPerCommit.getDelCount(),
           infoPerCommit.getDelGen(), infoPerCommit.getFieldInfosGen(),

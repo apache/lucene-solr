@@ -160,6 +160,9 @@ public class DatePointField extends PointField implements DateValueFieldType {
   @Override
   public Query getSetQuery(QParser parser, SchemaField field, Collection<String> externalVals) {
     assert externalVals.size() > 0;
+    if (!field.indexed()) {
+      return super.getSetQuery(parser, field, externalVals);
+    }
     long[] values = new long[externalVals.size()];
     int i = 0;
     for (String val:externalVals) {
@@ -222,8 +225,6 @@ public class DatePointField extends PointField implements DateValueFieldType {
 
   @Override
   public IndexableField createField(SchemaField field, Object value) {
-    if (!isFieldUsed(field)) return null;
-
     Date date = (value instanceof Date)
         ? ((Date)value)
         : DateMathParser.parseMath(null, value.toString());

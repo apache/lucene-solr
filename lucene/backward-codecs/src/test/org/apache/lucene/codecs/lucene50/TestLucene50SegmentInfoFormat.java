@@ -29,12 +29,22 @@ public class TestLucene50SegmentInfoFormat extends BaseSegmentInfoFormatTestCase
   }
 
   @Override
+  protected int getCreatedVersionMajor() {
+    return Version.LUCENE_6_0_0.major;
+  }
+
+  @Override
   protected Version[] getVersions() {
     return new Version[] { Version.LUCENE_6_0_0 };
   }
 
   @Override
   protected boolean supportsIndexSort() {
+    return false;
+  }
+
+  @Override
+  protected boolean supportsMinVersion() {
     return false;
   }
 }

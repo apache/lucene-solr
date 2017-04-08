@@ -45,7 +45,7 @@ public class CollapseScoreFunction extends ValueSource {
     return new CollapseScoreFunctionValues(context);
   }
 
-  public class CollapseScoreFunctionValues extends FunctionValues {
+  public static class CollapseScoreFunctionValues extends FunctionValues {
 
     private CollapseScore cscore;
 

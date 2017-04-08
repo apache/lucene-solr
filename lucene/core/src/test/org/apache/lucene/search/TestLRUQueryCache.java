@@ -1273,4 +1273,80 @@ public class TestLRUQueryCache extends LuceneTestCase {
     w.close();
     dir.close();
   }
+
+  private static class DummyQuery2 extends Query {
+
+    private final AtomicBoolean scorerCreated;
+
+    DummyQuery2(AtomicBoolean scorerCreated) {
+      this.scorerCreated = scorerCreated;
+    }
+
+    @Override
+    public Weight createWeight(IndexSearcher searcher, boolean needsScores, float boost) throws IOException {
+      return new ConstantScoreWeight(this, boost) {
+        @Override
+        public Scorer scorer(LeafReaderContext context) throws IOException {
+          return scorerSupplier(context).get(false);
+        }
+        @Override
+        public ScorerSupplier scorerSupplier(LeafReaderContext context) throws IOException {
+          final Weight weight = this;
+          return new ScorerSupplier() {
+            @Override
+            public Scorer get(boolean randomAccess) throws IOException {
+              scorerCreated.set(true);
+              return new ConstantScoreScorer(weight, boost, DocIdSetIterator.all(1));
+            }
+
+            @Override
+            public long cost() {
+              return 1;
+            }
+          };
+        }
+      };
+    }
+
+    @Override
+    public boolean equals(Object other) {
+      return sameClassAs(other);
+    }
+
+    @Override
+    public int hashCode() {
+      return 0;
+    }
+
+    @Override
+    public String toString(String field) {
+      return "DummyQuery2";
+    }
+
+  }
+
+  public void testPropagatesScorerSupplier() throws IOException {
+    Directory dir = newDirectory();
+    IndexWriterConfig iwc = newIndexWriterConfig().setMergePolicy(NoMergePolicy.INSTANCE);
+    RandomIndexWriter w = new RandomIndexWriter(random(), dir, iwc);
+    w.addDocument(new Document());
+    DirectoryReader reader = w.getReader();
+    IndexSearcher searcher = newSearcher(reader);
+    searcher.setQueryCachingPolicy(NEVER_CACHE);
+
+    LRUQueryCache cache = new LRUQueryCache(1, 1000);
+    searcher.setQueryCache(cache);
+
+    AtomicBoolean scorerCreated = new AtomicBoolean(false);
+    Query query = new DummyQuery2(scorerCreated);
+    Weight weight = searcher.createNormalizedWeight(query, false);
+    ScorerSupplier supplier = weight.scorerSupplier(searcher.getIndexReader().leaves().get(0));
+    assertFalse(scorerCreated.get());
+    supplier.get(random().nextBoolean());
+    assertTrue(scorerCreated.get());
+
+    reader.close();
+    w.close();
+    dir.close();
+  }
 }

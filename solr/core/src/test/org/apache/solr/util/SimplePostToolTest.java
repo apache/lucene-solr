@@ -225,7 +225,7 @@ public class SimplePostToolTest extends SolrTestCaseJ4 {
     
     @Override
     public PageFetcherResult readPageFromUrl(URL u) {
-      PageFetcherResult res = (new SimplePostTool()).new PageFetcherResult();
+      PageFetcherResult res = new PageFetcherResult();
       if (isDisallowedByRobots(u)) {
         res.httpStatus = 403;
         return res;

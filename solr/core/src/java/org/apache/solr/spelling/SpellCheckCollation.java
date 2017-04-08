@@ -26,7 +26,7 @@ public class SpellCheckCollation implements Comparable<SpellCheckCollation> {
 
   @Override
   public int compareTo(SpellCheckCollation scc) {
-    int c = new Integer(internalRank).compareTo(scc.internalRank);
+    int c = Integer.compare(internalRank, scc.internalRank);
     if (c == 0) {
       return collationQuery.compareTo(scc.collationQuery);
     }

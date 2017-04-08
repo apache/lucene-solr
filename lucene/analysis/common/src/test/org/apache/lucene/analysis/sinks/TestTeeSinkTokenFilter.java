@@ -223,7 +223,7 @@ public class TestTeeSinkTokenFilter extends BaseTokenStreamTestCase {
   }
 
 
-  class ModuloTokenFilter extends TokenFilter {
+  static class ModuloTokenFilter extends TokenFilter {
 
     int modCount;
 
@@ -248,7 +248,7 @@ public class TestTeeSinkTokenFilter extends BaseTokenStreamTestCase {
     }
   }
 
-  class ModuloSinkFilter extends FilteringTokenFilter {
+  static class ModuloSinkFilter extends FilteringTokenFilter {
     int count = 0;
     int modCount;
 

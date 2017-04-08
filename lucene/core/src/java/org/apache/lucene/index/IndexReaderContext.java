@@ -46,7 +46,15 @@ public abstract class IndexReaderContext {
     this.ordInParent = ordInParent;
     this.isTopLevel = parent==null;
   }
-  
+
+  /** Expert: Return an {@link Object} that uniquely identifies this context.
+   *  The returned object does neither reference this {@link IndexReaderContext}
+   *  nor the wrapped {@link IndexReader}.
+   *  @lucene.experimental */
+  public Object id() {
+    return identity;
+  }
+
   /** Returns the {@link IndexReader}, this context represents. */
   public abstract IndexReader reader();
   

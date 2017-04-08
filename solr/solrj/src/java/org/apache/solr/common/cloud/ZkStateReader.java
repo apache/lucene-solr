@@ -145,7 +145,7 @@ public class ZkStateReader implements Closeable {
 
   private final ExecutorService notifications = ExecutorUtil.newMDCAwareCachedThreadPool("watches");
 
-  private class CollectionWatch {
+  private static class CollectionWatch {
 
     int coreRefCount = 0;
     Set<CollectionStateWatcher> stateWatchers = ConcurrentHashMap.newKeySet();
@@ -931,7 +931,7 @@ public class ZkStateReader implements Closeable {
   public static String getBaseUrlForNodeName(final String nodeName, String urlScheme) {
     final int _offset = nodeName.indexOf("_");
     if (_offset < 0) {
-      throw new IllegalArgumentException("nodeName does not contain expected '_' seperator: " + nodeName);
+      throw new IllegalArgumentException("nodeName does not contain expected '_' separator: " + nodeName);
     }
     final String hostAndPort = nodeName.substring(0,_offset);
     try {

@@ -72,6 +72,22 @@ public abstract class UpdateHandler implements SolrInfoMBean {
     }
   }
 
+  /**
+   * Call the {@link SolrCoreAware#inform(SolrCore)} on all the applicable registered listeners.
+   */
+  public void informEventListeners(SolrCore core) {
+    for (SolrEventListener listener: commitCallbacks) {
+      if (listener instanceof SolrCoreAware) {
+        ((SolrCoreAware) listener).inform(core);
+      }
+    }
+    for (SolrEventListener listener: optimizeCallbacks) {
+      if (listener instanceof SolrCoreAware) {
+        ((SolrCoreAware) listener).inform(core);
+      }
+    }
+  }
+
   protected void callPostCommitCallbacks() {
     for (SolrEventListener listener : commitCallbacks) {
       listener.postCommit();

@@ -213,7 +213,7 @@ public class RankStream extends TupleStream implements Expressible {
     return 0;
   }
 
-  class ReverseComp implements Comparator<Tuple>, Serializable {
+  static class ReverseComp implements Comparator<Tuple>, Serializable {
 
     private static final long serialVersionUID = 1L;
     private StreamComparator comp;

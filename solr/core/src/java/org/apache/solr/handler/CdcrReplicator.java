@@ -207,7 +207,7 @@ public class CdcrReplicator implements Runnable {
   /**
    * Exception to catch update request issues with the target cluster.
    */
-  public class CdcrReplicatorException extends Exception {
+  public static class CdcrReplicatorException extends Exception {
 
     private final UpdateRequest req;
     private final UpdateResponse rsp;

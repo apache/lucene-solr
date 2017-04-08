@@ -72,7 +72,7 @@ public class TestSolrCLIRunExample extends SolrTestCaseJ4 {
    * Overrides the call to exec bin/solr to start Solr nodes to start them using the Solr test-framework
    * instead of the script, since the script depends on a full build.
    */
-  private class RunExampleExecutor extends DefaultExecutor implements Closeable {
+  private static class RunExampleExecutor extends DefaultExecutor implements Closeable {
 
     private PrintStream stdout;
     private List<org.apache.commons.exec.CommandLine> commandsExecuted = new ArrayList<>();
@@ -481,5 +481,43 @@ public class TestSolrCLIRunExample extends SolrTestCaseJ4 {
 
     // stop the test instance
     executor.execute(org.apache.commons.exec.CommandLine.parse("bin/solr stop -p "+bindPort));
+  }
+  
+  @Test
+  public void testFailExecuteScript() throws Exception {
+    File solrHomeDir = new File(ExternalPaths.SERVER_HOME);
+    if (!solrHomeDir.isDirectory())
+      fail(solrHomeDir.getAbsolutePath()+" not found and is required to run this test!");
+   
+    Path tmpDir = createTempDir();
+    File solrExampleDir = tmpDir.toFile();
+    File solrServerDir = solrHomeDir.getParentFile();
+
+    // need a port to start the example server on
+    int bindPort = -1;
+    try (ServerSocket socket = new ServerSocket(0)) {
+      bindPort = socket.getLocalPort();
+    }
+
+    File toExecute = new File(tmpDir.toString(), "failExecuteScript");
+    assertTrue("Should have been able to create file '" + toExecute.getAbsolutePath() + "' ", toExecute.createNewFile());
+    
+    String[] toolArgs = new String[] {
+        "-e", "techproducts",
+        "-serverDir", solrServerDir.getAbsolutePath(),
+        "-exampleDir", solrExampleDir.getAbsolutePath(),
+        "-p", String.valueOf(bindPort),
+        "-script", toExecute.getAbsolutePath().toString()
+    };
+
+    // capture tool output to stdout
+    ByteArrayOutputStream baos = new ByteArrayOutputStream();
+    PrintStream stdoutSim = new PrintStream(baos, true, StandardCharsets.UTF_8.name());
+
+    DefaultExecutor executor = new DefaultExecutor();
+
+    SolrCLI.RunExampleTool tool = new SolrCLI.RunExampleTool(executor, System.in, stdoutSim);
+    int code = tool.runTool(SolrCLI.processCommandLineArgs(SolrCLI.joinCommonAndToolOptions(tool.getOptions()), toolArgs));
+    assertTrue("Execution should have failed with return code 1", code == 1);
   }
 }

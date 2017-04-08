@@ -396,7 +396,7 @@ public class TestBulkSchemaAPI extends RestTestBase {
         "                       'name' : 'myNewTxtField',\n" +
         "                       'class':'solr.TextField',\n" +
         "                       'positionIncrementGap':'100',\n" +
-        "                       'analyzer' : {\n" +
+        "                       'indexAnalyzer' : {\n" +
         "                               'charFilters':[\n" +
         "                                          {\n" +
         "                                           'class':'solr.PatternReplaceCharFilterFactory',\n" +
@@ -407,7 +407,32 @@ public class TestBulkSchemaAPI extends RestTestBase {
         "                               'tokenizer':{'class':'solr.WhitespaceTokenizerFactory'},\n" +
         "                               'filters':[\n" +
         "                                          {\n" +
-        "                                           'class':'solr.WordDelimiterFilterFactory',\n" +
+        "                                           'class':'solr.WordDelimiterGraphFilterFactory',\n" +
+        "                                           'preserveOriginal':'0'\n" +
+        "                                          },\n" +
+        "                                          {\n" +
+        "                                           'class':'solr.StopFilterFactory',\n" +
+        "                                           'words':'stopwords.txt',\n" +
+        "                                           'ignoreCase':'true'\n" +
+        "                                          },\n" +
+        "                                          {'class':'solr.LowerCaseFilterFactory'},\n" +
+        "                                          {'class':'solr.ASCIIFoldingFilterFactory'},\n" +
+        "                                          {'class':'solr.KStemFilterFactory'},\n" +
+        "                                          {'class':'solr.FlattenGraphFilterFactory'}\n" +
+        "                                         ]\n" +
+        "                               },\n" +
+        "                       'queryAnalyzer' : {\n" +
+        "                               'charFilters':[\n" +
+        "                                          {\n" +
+        "                                           'class':'solr.PatternReplaceCharFilterFactory',\n" +
+        "                                           'replacement':'$1$1',\n" +
+        "                                           'pattern':'([a-zA-Z])\\\\\\\\1+'\n" +
+        "                                          }\n" +
+        "                                         ],\n" +
+        "                               'tokenizer':{'class':'solr.WhitespaceTokenizerFactory'},\n" +
+        "                               'filters':[\n" +
+        "                                          {\n" +
+        "                                           'class':'solr.WordDelimiterGraphFilterFactory',\n" +
         "                                           'preserveOriginal':'0'\n" +
         "                                          },\n" +
         "                                          {\n" +

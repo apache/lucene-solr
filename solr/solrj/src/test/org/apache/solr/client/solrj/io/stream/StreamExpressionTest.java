@@ -379,7 +379,7 @@ public class StreamExpressionTest extends SolrCloudTestCase {
     stream = factory.constructStream("sort(search(" + COLLECTIONORALIAS + ", q=*:*, fl=\"id,a_s,a_i,a_f\", sort=\"a_f asc\"), by=\"a_i asc\")");
     tuples = getTuples(stream);
     assert(tuples.size() == 6);
-    assertOrder(tuples, 0,1,5,2,3,4);
+    assertOrder(tuples, 0, 1, 5, 2, 3, 4);
 
     // Basic test desc
     stream = factory.constructStream("sort(search(" + COLLECTIONORALIAS + ", q=*:*, fl=\"id,a_s,a_i,a_f\", sort=\"a_f asc\"), by=\"a_i desc\")");
@@ -1044,7 +1044,7 @@ public class StreamExpressionTest extends SolrCloudTestCase {
   @Test
   public void testFetchStream() throws Exception {
 
-    SolrClientCache solrClientCache = new SolrClientCache();
+    SolrClientCache solrClientCache = new SolrClientCache();//TODO share in @Before ; close in @After ?
 
     new UpdateRequest()
         .add(id, "0", "a_s", "hello0", "a_i", "0", "a_f", "1", "subject", "blah blah blah 0")
@@ -1096,7 +1096,7 @@ public class StreamExpressionTest extends SolrCloudTestCase {
     assertTrue("blah blah blah 9".equals(t.getString("subject")));
 
     //Change the batch size
-    stream = factory.constructStream("fetch("+ COLLECTIONORALIAS +",  search(" + COLLECTIONORALIAS + ", q=*:*, fl=\"id,a_s,a_i,a_f\", sort=\"a_f asc\"), on=\"id=a_i\", batchSize=\"3\", fl=\"subject\")");
+    stream = factory.constructStream("fetch(" + COLLECTIONORALIAS + ",  search(" + COLLECTIONORALIAS + ", q=*:*, fl=\"id,a_s,a_i,a_f\", sort=\"a_f asc\"), on=\"id=a_i\", batchSize=\"3\", fl=\"subject\")");
     context = new StreamContext();
     context.setSolrClientCache(solrClientCache);
     stream.setStreamContext(context);
@@ -1123,6 +1123,22 @@ public class StreamExpressionTest extends SolrCloudTestCase {
     assertTrue("blah blah blah 8".equals(t.getString("subject")));
     t = tuples.get(9);
     assertTrue("blah blah blah 9".equals(t.getString("subject")));
+
+    // SOLR-10404 test that "hello 99" as a value gets escaped
+    new UpdateRequest()
+        .add(id, "99", "a1_s", "hello 99", "a2_s", "hello 99", "subject", "blah blah blah 99")
+        .commit(cluster.getSolrClient(), COLLECTIONORALIAS);
+
+    stream = factory.constructStream("fetch("+ COLLECTIONORALIAS +",  search(" + COLLECTIONORALIAS + ", q=" + id + ":99, fl=\"id,a1_s\", sort=\"id asc\"), on=\"a1_s=a2_s\", fl=\"subject\")");
+    context = new StreamContext();
+    context.setSolrClientCache(solrClientCache);
+    stream.setStreamContext(context);
+    tuples = getTuples(stream);
+
+    assertEquals(1, tuples.size());
+    t = tuples.get(0);
+    assertTrue("blah blah blah 99".equals(t.getString("subject")));
+
     solrClientCache.close();
   }
 
@@ -1587,6 +1603,90 @@ public class StreamExpressionTest extends SolrCloudTestCase {
   }
 
   @Test
+  public void testParallelShuffleStream() throws Exception {
+
+    new UpdateRequest()
+        .add(id, "0", "a_s", "hello0", "a_i", "0", "a_f", "0")
+        .add(id, "2", "a_s", "hello2", "a_i", "2", "a_f", "0")
+        .add(id, "3", "a_s", "hello3", "a_i", "3", "a_f", "3")
+        .add(id, "4", "a_s", "hello4", "a_i", "4", "a_f", "4")
+        .add(id, "1", "a_s", "hello1", "a_i", "1", "a_f", "1")
+        .add(id, "5", "a_s", "hello1", "a_i", "10", "a_f", "1")
+        .add(id, "6", "a_s", "hello1", "a_i", "11", "a_f", "5")
+        .add(id, "7", "a_s", "hello1", "a_i", "12", "a_f", "5")
+        .add(id, "8", "a_s", "hello1", "a_i", "13", "a_f", "4")
+        .add(id, "9", "a_s", "hello1", "a_i", "13", "a_f", "4")
+        .add(id, "10", "a_s", "hello1", "a_i", "13", "a_f", "4")
+        .add(id, "11", "a_s", "hello1", "a_i", "13", "a_f", "4")
+        .add(id, "12", "a_s", "hello1", "a_i", "13", "a_f", "4")
+        .add(id, "13", "a_s", "hello1", "a_i", "13", "a_f", "4")
+        .add(id, "14", "a_s", "hello1", "a_i", "13", "a_f", "4")
+        .add(id, "15", "a_s", "hello1", "a_i", "13", "a_f", "4")
+        .add(id, "16", "a_s", "hello1", "a_i", "13", "a_f", "4")
+        .add(id, "17", "a_s", "hello1", "a_i", "13", "a_f", "4")
+        .add(id, "18", "a_s", "hello1", "a_i", "13", "a_f", "4")
+        .add(id, "19", "a_s", "hello1", "a_i", "13", "a_f", "4")
+        .add(id, "20", "a_s", "hello1", "a_i", "13", "a_f", "4")
+        .add(id, "21", "a_s", "hello1", "a_i", "13", "a_f", "4")
+        .add(id, "22", "a_s", "hello1", "a_i", "13", "a_f", "4")
+        .add(id, "23", "a_s", "hello1", "a_i", "13", "a_f", "4")
+        .add(id, "24", "a_s", "hello1", "a_i", "13", "a_f", "4")
+        .add(id, "25", "a_s", "hello1", "a_i", "13", "a_f", "4")
+        .add(id, "26", "a_s", "hello1", "a_i", "13", "a_f", "4")
+        .add(id, "27", "a_s", "hello1", "a_i", "13", "a_f", "4")
+        .add(id, "28", "a_s", "hello1", "a_i", "13", "a_f", "4")
+        .add(id, "29", "a_s", "hello1", "a_i", "13", "a_f", "4")
+        .add(id, "30", "a_s", "hello1", "a_i", "13", "a_f", "4")
+        .add(id, "31", "a_s", "hello1", "a_i", "13", "a_f", "4")
+        .add(id, "32", "a_s", "hello1", "a_i", "13", "a_f", "4")
+        .add(id, "33", "a_s", "hello1", "a_i", "13", "a_f", "4")
+        .add(id, "34", "a_s", "hello1", "a_i", "13", "a_f", "4")
+        .add(id, "35", "a_s", "hello1", "a_i", "13", "a_f", "4")
+        .add(id, "36", "a_s", "hello1", "a_i", "13", "a_f", "4")
+        .add(id, "37", "a_s", "hello1", "a_i", "13", "a_f", "4")
+        .add(id, "38", "a_s", "hello1", "a_i", "13", "a_f", "4")
+        .add(id, "39", "a_s", "hello1", "a_i", "13", "a_f", "4")
+        .add(id, "40", "a_s", "hello1", "a_i", "13", "a_f", "4")
+        .add(id, "41", "a_s", "hello1", "a_i", "13", "a_f", "4")
+        .add(id, "42", "a_s", "hello1", "a_i", "13", "a_f", "4")
+        .add(id, "43", "a_s", "hello1", "a_i", "13", "a_f", "4")
+        .add(id, "44", "a_s", "hello1", "a_i", "13", "a_f", "4")
+        .add(id, "45", "a_s", "hello1", "a_i", "13", "a_f", "4")
+        .add(id, "46", "a_s", "hello1", "a_i", "13", "a_f", "4")
+        .add(id, "47", "a_s", "hello1", "a_i", "13", "a_f", "4")
+        .add(id, "48", "a_s", "hello1", "a_i", "13", "a_f", "4")
+        .add(id, "49", "a_s", "hello1", "a_i", "13", "a_f", "4")
+        .add(id, "50", "a_s", "hello1", "a_i", "13", "a_f", "4")
+        .add(id, "51", "a_s", "hello1", "a_i", "13", "a_f", "4")
+        .add(id, "52", "a_s", "hello1", "a_i", "13", "a_f", "4")
+        .add(id, "53", "a_s", "hello1", "a_i", "13", "a_f", "4")
+        .add(id, "54", "a_s", "hello1", "a_i", "13", "a_f", "4")
+        .add(id, "55", "a_s", "hello1", "a_i", "13", "a_f", "4")
+        .add(id, "56", "a_s", "hello1", "a_i", "13", "a_f", "1000")
+
+        .commit(cluster.getSolrClient(), COLLECTIONORALIAS);
+
+    String zkHost = cluster.getZkServer().getZkAddress();
+    StreamFactory streamFactory = new StreamFactory().withCollectionZkHost(COLLECTIONORALIAS, zkHost)
+        .withFunctionName("shuffle", ShuffleStream.class)
+        .withFunctionName("unique", UniqueStream.class)
+        .withFunctionName("parallel", ParallelStream.class);
+
+    ParallelStream pstream = (ParallelStream)streamFactory.constructStream("parallel(" + COLLECTIONORALIAS + ", unique(shuffle(collection1, q=*:*, fl=\"id,a_s,a_i,a_f\", sort=\"a_f asc, a_i asc\", partitionKeys=\"a_f\"), over=\"a_f\"), workers=\"2\", zkHost=\""+zkHost+"\", sort=\"a_f asc\")");
+
+    List<Tuple> tuples = getTuples(pstream);
+    assert(tuples.size() == 6);
+    assertOrder(tuples, 0, 1, 3, 4, 6, 56);
+
+    //Test the eofTuples
+
+    Map<String,Tuple> eofTuples = pstream.getEofTuples();
+    assert(eofTuples.size() == 2); //There should be an EOF tuple for each worker.
+    assert(pstream.toExpression(streamFactory).toString().contains("shuffle"));
+  }
+
+
+  @Test
   public void testParallelReducerStream() throws Exception {
 
     new UpdateRequest()
@@ -1908,7 +2008,7 @@ public class StreamExpressionTest extends SolrCloudTestCase {
     stream = new InnerJoinStream(expression, factory);
     tuples = getTuples(stream);    
     assert(tuples.size() == 8);
-    assertOrder(tuples, 1,1,15,15,3,4,5,7);
+    assertOrder(tuples, 1, 1, 15, 15, 3, 4, 5, 7);
 
     // Basic desc
     expression = StreamExpressionParser.parse("innerJoin("
@@ -1922,9 +2022,9 @@ public class StreamExpressionTest extends SolrCloudTestCase {
     
     // Results in both searches, no join matches
     expression = StreamExpressionParser.parse("innerJoin("
-                                                + "search(" + COLLECTIONORALIAS + ", q=\"side_s:left\", fl=\"id,join1_i,join2_s,ident_s\", sort=\"ident_s asc\"),"
-                                                + "search(" + COLLECTIONORALIAS + ", q=\"side_s:right\", fl=\"id,join1_i,join2_s,ident_s\", sort=\"ident_s asc\", aliases=\"id=right.id, join1_i=right.join1_i, join2_s=right.join2_s, ident_s=right.ident_s\"),"
-                                                + "on=\"ident_s=right.ident_s\")");
+        + "search(" + COLLECTIONORALIAS + ", q=\"side_s:left\", fl=\"id,join1_i,join2_s,ident_s\", sort=\"ident_s asc\"),"
+        + "search(" + COLLECTIONORALIAS + ", q=\"side_s:right\", fl=\"id,join1_i,join2_s,ident_s\", sort=\"ident_s asc\", aliases=\"id=right.id, join1_i=right.join1_i, join2_s=right.join2_s, ident_s=right.ident_s\"),"
+        + "on=\"ident_s=right.ident_s\")");
     stream = new InnerJoinStream(expression, factory);
     tuples = getTuples(stream);    
     assert(tuples.size() == 0);
@@ -1938,7 +2038,7 @@ public class StreamExpressionTest extends SolrCloudTestCase {
     tuples = getTuples(stream);
     
     assert(tuples.size() == 8);
-    assertOrder(tuples, 1,1,15,15,3,4,5,7);
+    assertOrder(tuples, 1, 1, 15, 15, 3, 4, 5, 7);
 
   }
 
@@ -4346,6 +4446,126 @@ public class StreamExpressionTest extends SolrCloudTestCase {
     CollectionAdminRequest.deleteCollection("uknownCollection").process(cluster.getSolrClient());
     CollectionAdminRequest.deleteCollection("checkpointCollection").process(cluster.getSolrClient());
   }
+
+  @Test
+  public void testAnalyzeEvaluator() throws Exception {
+
+    UpdateRequest updateRequest = new UpdateRequest();
+    updateRequest.add(id, "1", "test_t", "l b c d c");
+    updateRequest.commit(cluster.getSolrClient(), COLLECTIONORALIAS);
+
+
+    SolrClientCache cache = new SolrClientCache();
+    try {
+
+      String expr = "cartesianProduct(search("+COLLECTIONORALIAS+", q=\"*:*\", fl=\"id, test_t\", sort=\"id desc\"), analyze(test_t, test_t) as test_t)";
+      ModifiableSolrParams paramsLoc = new ModifiableSolrParams();
+      paramsLoc.set("expr", expr);
+      paramsLoc.set("qt", "/stream");
+      String url = cluster.getJettySolrRunners().get(0).getBaseUrl().toString()+"/"+COLLECTIONORALIAS;
+
+      SolrStream solrStream = new SolrStream(url, paramsLoc);
+
+      StreamContext context = new StreamContext();
+      solrStream.setStreamContext(context);
+      List<Tuple> tuples = getTuples(solrStream);
+      assertTrue(tuples.size() == 5);
+
+      Tuple t = tuples.get(0);
+      assertTrue(t.getString("test_t").equals("l"));
+      assertTrue(t.getString("id").equals("1"));
+
+      t = tuples.get(1);
+      assertTrue(t.getString("test_t").equals("b"));
+      assertTrue(t.getString("id").equals("1"));
+
+
+      t = tuples.get(2);
+      assertTrue(t.getString("test_t").equals("c"));
+      assertTrue(t.getString("id").equals("1"));
+
+
+      t = tuples.get(3);
+      assertTrue(t.getString("test_t").equals("d"));
+      assertTrue(t.getString("id").equals("1"));
+
+      t = tuples.get(4);
+      assertTrue(t.getString("test_t").equals("c"));
+      assertTrue(t.getString("id").equals("1"));
+
+
+      //Try with single param
+      expr = "cartesianProduct(search("+COLLECTIONORALIAS+", q=\"*:*\", fl=\"id, test_t\", sort=\"id desc\"), analyze(test_t) as test_t)";
+      paramsLoc = new ModifiableSolrParams();
+      paramsLoc.set("expr", expr);
+      paramsLoc.set("qt", "/stream");
+
+      solrStream = new SolrStream(url, paramsLoc);
+
+      context = new StreamContext();
+      solrStream.setStreamContext(context);
+      tuples = getTuples(solrStream);
+      assertTrue(tuples.size() == 5);
+
+      t = tuples.get(0);
+      assertTrue(t.getString("test_t").equals("l"));
+      assertTrue(t.getString("id").equals("1"));
+
+      t = tuples.get(1);
+      assertTrue(t.getString("test_t").equals("b"));
+      assertTrue(t.getString("id").equals("1"));
+
+
+      t = tuples.get(2);
+      assertTrue(t.getString("test_t").equals("c"));
+      assertTrue(t.getString("id").equals("1"));
+
+
+      t = tuples.get(3);
+      assertTrue(t.getString("test_t").equals("d"));
+      assertTrue(t.getString("id").equals("1"));
+
+      t = tuples.get(4);
+      assertTrue(t.getString("test_t").equals("c"));
+      assertTrue(t.getString("id").equals("1"));
+
+
+      //Try with null in the test_t field
+      expr = "cartesianProduct(search("+COLLECTIONORALIAS+", q=\"*:*\", fl=\"id\", sort=\"id desc\"), analyze(test_t, test_t) as test_t)";
+      paramsLoc = new ModifiableSolrParams();
+      paramsLoc.set("expr", expr);
+      paramsLoc.set("qt", "/stream");
+
+      solrStream = new SolrStream(url, paramsLoc);
+
+      context = new StreamContext();
+      solrStream.setStreamContext(context);
+      tuples = getTuples(solrStream);
+      assertTrue(tuples.size() == 1);
+
+      //Test annotating tuple
+      expr = "select(search("+COLLECTIONORALIAS+", q=\"*:*\", fl=\"id, test_t\", sort=\"id desc\"), analyze(test_t, test_t) as test1_t)";
+      paramsLoc = new ModifiableSolrParams();
+      paramsLoc.set("expr", expr);
+      paramsLoc.set("qt", "/stream");
+
+      solrStream = new SolrStream(url, paramsLoc);
+
+      context = new StreamContext();
+      solrStream.setStreamContext(context);
+      tuples = getTuples(solrStream);
+      assertTrue(tuples.size() == 1);
+      List l = (List)tuples.get(0).get("test1_t");
+      assertTrue(l.get(0).equals("l"));
+      assertTrue(l.get(1).equals("b"));
+      assertTrue(l.get(2).equals("c"));
+      assertTrue(l.get(3).equals("d"));
+      assertTrue(l.get(4).equals("c"));
+    } finally {
+      cache.close();
+    }
+  }
+
 
   @Test
   public void testExecutorStream() throws Exception {

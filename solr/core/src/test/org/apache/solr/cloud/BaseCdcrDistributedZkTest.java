@@ -816,7 +816,7 @@ public class BaseCdcrDistributedZkTest extends AbstractDistribZkTestBase {
     return info;
   }
 
-  protected class CollectionInfo {
+  protected static class CollectionInfo {
 
     List<CoreInfo> coreInfos = new ArrayList<>();
 
@@ -869,7 +869,7 @@ public class BaseCdcrDistributedZkTest extends AbstractDistribZkTestBase {
       this.coreInfos.add(info);
     }
 
-    public class CoreInfo {
+    public static class CoreInfo {
       String collectionName;
       String shard;
       boolean isLeader;

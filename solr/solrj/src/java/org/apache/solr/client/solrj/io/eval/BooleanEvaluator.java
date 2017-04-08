@@ -45,7 +45,7 @@ public abstract class BooleanEvaluator extends ComplexEvaluator {
     
     return results;
   }
-  
+
   public interface Checker {
     default boolean isNullAllowed(){
       return false;

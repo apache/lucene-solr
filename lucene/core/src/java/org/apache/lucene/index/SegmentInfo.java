@@ -77,7 +77,13 @@ public final class SegmentInfo {
   // The format expected is "x.y" - "2.x" for pre-3.0 indexes (or null), and
   // specific versions afterwards ("3.0.0", "3.1.0" etc.).
   // see o.a.l.util.Version.
-  private Version version;
+  private final Version version;
+
+  // Tracks the minimum version that contributed documents to a segment. For
+  // flush segments, that is the version that wrote it. For merged segments,
+  // this is the minimum minVersion of all the segments that have been merged
+  // into this segment
+  Version minVersion;
 
   void setDiagnostics(Map<String, String> diagnostics) {
     this.diagnostics = Objects.requireNonNull(diagnostics);
@@ -94,12 +100,13 @@ public final class SegmentInfo {
    * <p>Note: this is public only to allow access from
    * the codecs package.</p>
    */
-  public SegmentInfo(Directory dir, Version version, String name, int maxDoc,
+  public SegmentInfo(Directory dir, Version version, Version minVersion, String name, int maxDoc,
                      boolean isCompoundFile, Codec codec, Map<String,String> diagnostics,
                      byte[] id, Map<String,String> attributes, Sort indexSort) {
     assert !(dir instanceof TrackingDirectoryWrapper);
     this.dir = Objects.requireNonNull(dir);
     this.version = Objects.requireNonNull(version);
+    this.minVersion = minVersion;
     this.name = Objects.requireNonNull(name);
     this.maxDoc = maxDoc;
     this.isCompoundFile = isCompoundFile;
@@ -231,6 +238,14 @@ public final class SegmentInfo {
    */
   public Version getVersion() {
     return version;
+  }
+
+  /**
+   * Return the minimum Lucene version that contributed documents to this
+   * segment, or {@code null} if it is unknown.
+   */
+  public Version getMinVersion() {
+    return minVersion;
   }
 
   /** Return the id that uniquely identifies this segment. */

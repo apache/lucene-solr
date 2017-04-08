@@ -34,11 +34,12 @@ import org.apache.lucene.search.TermInSetQuery;
 import org.apache.lucene.search.TermQuery;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.params.MapSolrParams;
+import org.apache.solr.common.params.ModifiableSolrParams;
+import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.core.SolrInfoMBean;
 import org.apache.solr.parser.QueryParser;
 import org.apache.solr.query.FilterQuery;
 import org.apache.solr.request.SolrQueryRequest;
-import org.apache.solr.schema.TextField;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import org.noggit.ObjectBuilder;
@@ -66,6 +67,8 @@ public class TestSolrQueryParser extends SolrTestCaseJ4 {
     assertU(adoc("id", "13", "eee_s", "'balance'", "rrr_s", "/leading_slash"));
 
     assertU(adoc("id", "20", "syn", "wifi ATM"));
+    
+    assertU(adoc("id", "30", "shingle23", "A B X D E"));
 
     assertU(commit());
   }
@@ -573,16 +576,6 @@ public class TestSolrQueryParser extends SolrTestCaseJ4 {
     req.close();
   }
 
-  // LUCENE-7533
-  public void testSplitOnWhitespace_with_autoGeneratePhraseQueries() throws Exception {
-    assertTrue(((TextField)h.getCore().getLatestSchema().getField("text").getType()).getAutoGeneratePhraseQueries());
-    
-    try (SolrQueryRequest req = req()) {
-      final QParser qparser = QParser.getParser("{!lucene sow=false qf=text}blah blah", req);
-      expectThrows(QueryParserConfigurationException.class, qparser::getQuery);
-    }
-  }
-
   @Test
   public void testSplitOnWhitespace_Basic() throws Exception {
     // The "syn" field has synonyms loaded from synonyms.txt
@@ -966,6 +959,57 @@ public class TestSolrQueryParser extends SolrTestCaseJ4 {
         , "/response/numFound==1"
     );
     assertJQ(req("df", "syn", "q", "syn:\"wi fi\"", "sow", "false")
+        , "/response/numFound==1"
+    );
+  }
+
+  @Test
+  public void testAutoGeneratePhraseQueries() throws Exception {
+    ModifiableSolrParams noSowParams = new ModifiableSolrParams();
+    ModifiableSolrParams sowFalseParams = new ModifiableSolrParams();
+    sowFalseParams.add("sow", "false");
+    ModifiableSolrParams sowTrueParams = new ModifiableSolrParams();
+    sowTrueParams.add("sow", "true");
+
+    // From synonyms.txt:
+    //
+    //     crow blackbird, grackle
+    //
+    try (SolrQueryRequest req = req()) {
+
+      QParser qParser = QParser.getParser("text:grackle", req); // "text" has autoGeneratePhraseQueries="true"
+      qParser.setParams(sowFalseParams);
+      Query q = qParser.getQuery();
+      assertEquals("text:\"crow blackbird\" text:grackl", q.toString());
+
+      for (SolrParams params : Arrays.asList(noSowParams, sowTrueParams)) {
+        qParser = QParser.getParser("text:grackle", req);
+        qParser.setParams(params);
+        q = qParser.getQuery();
+        assertEquals("spanOr([spanNear([text:crow, text:blackbird], 0, true), text:grackl])", q.toString());
+      }
+
+      for (SolrParams params : Arrays.asList(noSowParams, sowTrueParams, sowFalseParams)) {
+        qParser = QParser.getParser("text_sw:grackle", req); // "text_sw" doesn't specify autoGeneratePhraseQueries => default false
+        qParser.setParams(params);
+        q = qParser.getQuery();
+        assertEquals("(+text_sw:crow +text_sw:blackbird) text_sw:grackl", q.toString());
+      }
+    }
+  }
+
+  @Test
+  public void testShingleQueries() throws Exception {
+    ModifiableSolrParams sowFalseParams = new ModifiableSolrParams();
+    sowFalseParams.add("sow", "false");
+
+    try (SolrQueryRequest req = req(sowFalseParams)) {
+      QParser qParser = QParser.getParser("shingle23:(A B C)", req);
+      Query q = qParser.getQuery();
+      assertEquals("Synonym(shingle23:A_B shingle23:A_B_C) shingle23:B_C", q.toString());
+    }
+
+    assertJQ(req("df", "shingle23", "q", "A B C", "sow", "false")
         , "/response/numFound==1"
     );
   }
