@@ -207,6 +207,8 @@ Other Changes
 * SOLR-10440: LBHttpSolrClient.doRequest is now always wrapped in a Mapped Diagnostic Context (MDC).
   (Christine Poerschke)
 
+* SOLR-10429: UpdateRequest#getRoutes()should copy the response parser (noble)
+
 ==================  6.5.1 ==================
 
 Bug Fixes
