@@ -169,6 +169,8 @@ Bug Fixes
 * SOLR-8807: fix Spellcheck "collateMaxCollectDocs" parameter to work with queries that have the 
   CollpasingQParserPlugin applied.  (James Dyer)
 
+* SOLR-10474: TestPointFields.testPointFieldReturn() depends on order of unsorted hits. (Steve Rowe)
+
 Other Changes
 ----------------------
 
