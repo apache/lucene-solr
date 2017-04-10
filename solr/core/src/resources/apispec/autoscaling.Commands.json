@@ -179,6 +179,36 @@
       "required": [
         "name"
       ]
+    },
+    "set-policy" : {
+      "type":"object",
+      "description": "The set-policy command allows you to add and update policies",
+      "properties": {
+        "name": {
+          "type": "string",
+          "description": "The name of the policy"
+        },
+        "conditions" : {
+          "type": "array",
+          "description": "Conditions of the policy"
+        },
+        "preferences": {
+          "type": "array",
+          "description": "Preferences of the policy"
+        }
+      },
+      "oneOf": [{
+        "required": ["name", "preferences"]
+      },{
+        "required": ["name", "conditions"]
+      },{
+        "required": ["name", "preferences", "conditions"]
+      }],
+      "additionalProperties": false
+    },
+    "remove-policy": {
+      "description": "The remove-policy command allows you to remove a policy",
+      "type": "string"
     }
   }
 }

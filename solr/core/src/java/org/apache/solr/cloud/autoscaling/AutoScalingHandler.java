@@ -106,8 +106,54 @@ public class AutoScalingHandler extends RequestHandlerBase implements Permission
         case "resume-trigger":
           handleResumeTrigger(req, rsp, op);
           break;
+        case "set-policy":
+          handleSetPolicies(req, rsp, op);
+          break;
+        case "remove-policy":
+          handleRemovePolicy(req, rsp, op);
       }
     }
+  }
+
+  private void handleRemovePolicy(SolrQueryRequest req, SolrQueryResponse rsp, CommandOperation op) throws KeeperException, InterruptedException {
+    String policyName = (String) op.getCommandData();
+
+    if (policyName.trim().length() == 0) {
+      throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "The policy name cannot be empty");
+    }
+    Map<String, Object> autoScalingConf = zkReadAutoScalingConf(container.getZkController().getZkStateReader());
+    Map<String, Object> policies = (Map<String, Object>) autoScalingConf.get("policies");
+    if (policies == null || !policies.containsKey(policyName)) {
+      throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "No policy exists with name: " + policyName);
+    }
+
+    zkSetPolicies(container.getZkController().getZkStateReader(), policyName, null);
+    rsp.getValues().add("result", "success");
+  }
+
+  private void handleSetPolicies(SolrQueryRequest req, SolrQueryResponse rsp, CommandOperation op) throws KeeperException, InterruptedException {
+    String policyName = op.getStr("name");
+
+    if (policyName == null || policyName.trim().length() == 0) {
+      throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "The policy name cannot be null or empty");
+    }
+
+    Set<String> keys = op.getDataMap().keySet();
+    boolean isValid = false;
+    for (String key : keys) {
+      if (key.equals("conditions") || key.equals("preferences")) isValid = true;
+      else if(!key.equals("name")){
+        isValid = false;
+        break;
+      }
+    }
+    if (!isValid) {
+      throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,
+          "No conditions or peferences are specified for the policy " + policyName);
+    }
+
+    zkSetPolicies(container.getZkController().getZkStateReader(), policyName, op.getValuesExcluding("name"));
+    rsp.getValues().add("result", "success");
   }
 
   private void handleResumeTrigger(SolrQueryRequest req, SolrQueryResponse rsp, CommandOperation op) throws KeeperException, InterruptedException {
@@ -386,6 +432,30 @@ public class AutoScalingHandler extends RequestHandlerBase implements Permission
         triggers.remove(triggerName);
       }
       loaded = loaded.plus("triggers", triggers);
+      try {
+        reader.getZkClient().setData(SOLR_AUTOSCALING_CONF_PATH, Utils.toJSON(loaded), stat.getVersion(), true);
+      } catch (KeeperException.BadVersionException bve) {
+        // somebody else has changed the configuration so we must retry
+        continue;
+      }
+      break;
+    }
+  }
+
+  private void zkSetPolicies(ZkStateReader reader, String policyName, Map<String, Object> policyProperties) throws KeeperException, InterruptedException {
+    while (true) {
+      Stat stat = new Stat();
+      ZkNodeProps loaded = null;
+      byte[] data = reader.getZkClient().getData(SOLR_AUTOSCALING_CONF_PATH, null, stat, true);
+      loaded = ZkNodeProps.load(data);
+      Map<String, Object> policies = (Map<String, Object>) loaded.get("policies");
+      if (policies == null) policies = new HashMap<>(1);
+      if (policyProperties != null) {
+        policies.put(policyName, policyProperties);
+      } else {
+        policies.remove(policyName);
+      }
+      loaded = loaded.plus("policies", policies);
       try {
         reader.getZkClient().setData(SOLR_AUTOSCALING_CONF_PATH, Utils.toJSON(loaded), stat.getVersion(), true);
       } catch (KeeperException.BadVersionException bve) {

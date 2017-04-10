@@ -345,6 +345,88 @@ public class AutoScalingHandlerTest extends SolrCloudTestCase {
     } catch (HttpSolrClient.RemoteSolrException e) {
       // expected
     }
+
+    // add multiple poilicies
+    String setPolicyCommand =  "{\n" +
+        "\t\"set-policy\": {\n" +
+        "\t\t\"name\" : \"default\",\n" +
+        "\t\t\"preferences\": [\n" +
+        "\t\t\t{\n" +
+        "\t\t\t\t\"minimize\": \"replicas\",\n" +
+        "\t\t\t\t\"precision\": 3\n" +
+        "\t\t\t},\n" +
+        "\t\t\t{\n" +
+        "\t\t\t\t\"maximize\": \"freedisk\",\n" +
+        "\t\t\t\t\"precision\": 100\n" +
+        "\t\t\t}\n" +
+        "\t\t]\t\t\n" +
+        "\t}, \n" +
+        "\t\"set-policy\": {\n" +
+        "\t\t\"name\" : \"policy1\",\n" +
+        "\t\t\"preferences\": [\n" +
+        "\t\t\t{\n" +
+        "\t\t\t\t\"minimize\": \"cpu\",\n" +
+        "\t\t\t\t\"precision\": 10\n" +
+        "\t\t\t}\n" +
+        "\t\t]\n" +
+        "\t}\n" +
+        "}";
+    req = new AutoScalingRequest(SolrRequest.METHOD.POST, path, setPolicyCommand);
+    response = solrClient.request(req);
+    assertEquals(response.get("result").toString(), "success");
+    data = zkClient().getData(SOLR_AUTOSCALING_CONF_PATH, null, null, true);
+    loaded = ZkNodeProps.load(data);
+    Map<String, Object> policies = (Map<String, Object>) loaded.get("policies");
+    assertNotNull(policies);
+    assertNotNull(policies.get("default"));
+    assertNotNull(policies.get("policy1"));
+
+    // update default policy
+    setPolicyCommand = "{\n" +
+        "\t\"set-policy\": {\n" +
+        "\t\t\"name\" : \"default\",\n" +
+        "\t\t\"preferences\": [\n" +
+        "\t\t\t{\n" +
+        "\t\t\t\t\"minimize\": \"replicas\",\n" +
+        "\t\t\t\t\"precision\": 3\n" +
+        "\t\t\t}\n" +
+        "\t\t]\t\t\n" +
+        "\t}\n" +
+        "}";
+    req = new AutoScalingRequest(SolrRequest.METHOD.POST, path, setPolicyCommand);
+    response = solrClient.request(req);
+    assertEquals(response.get("result").toString(), "success");
+    data = zkClient().getData(SOLR_AUTOSCALING_CONF_PATH, null, null, true);
+    loaded = ZkNodeProps.load(data);
+    policies = (Map<String, Object>) loaded.get("policies");
+    Map<String,Object> properties = (Map<String, Object>) policies.get("default");
+    List preferences = (List) properties.get("preferences");
+    assertEquals(1, preferences.size());
+
+    // policy is not valid
+    setPolicyCommand = "{\n" +
+        "\t\"set-policy\": {\n" +
+        "\t\t\"name\" : \"default\"\t\n" +
+        "\t}\n" +
+        "}";
+    req = new AutoScalingRequest(SolrRequest.METHOD.POST, path, setPolicyCommand);
+    try {
+      response = solrClient.request(req);
+      fail("Adding a policy without conditions or preferences should have failed");
+    } catch (HttpSolrClient.RemoteSolrException e) {
+      // expected
+    }
+
+    String removePolicyCommand = "{\n" +
+        "\t\"remove-policy\" : \"policy1\"\n" +
+        "}";
+    req = new AutoScalingRequest(SolrRequest.METHOD.POST, path, removePolicyCommand);
+    response = solrClient.request(req);
+    assertEquals(response.get("result").toString(), "success");
+    data = zkClient().getData(SOLR_AUTOSCALING_CONF_PATH, null, null, true);
+    loaded = ZkNodeProps.load(data);
+    policies = (Map<String, Object>) loaded.get("policies");
+    assertNull(policies.get("policy1"));
   }
 
   static class AutoScalingRequest extends SolrRequest {
