@@ -67,25 +67,23 @@ public class AutoScalingHandlerTest extends SolrCloudTestCase {
     // todo nocommit -- add testing for the v2 path
     // String path = random().nextBoolean() ? "/admin/autoscaling" : "/v2/cluster/autoscaling";
     String path = "/admin/autoscaling";
-    String setTriggerCommand = "{\n" +
-        "\t\"set-trigger\" : {\n" +
-        "\t\t\"name\" : \"node_lost_trigger\",\n" +
-        "\t\t\"event\" : \"nodeLost\",\n" +
-        "\t\t\"waitFor\" : \"10m\",\n" +
-        "\t\t\"enabled\" : \"true\"\n" +
-        "\t}\n" +
-        "}";
+    String setTriggerCommand = "{" +
+        "'set-trigger' : {" +
+        "'name' : 'node_lost_trigger'," +
+        "'event' : 'nodeLost'," +
+        "'waitFor' : '10m'," +
+        "'enabled' : 'true'}}";
     SolrRequest req = new AutoScalingRequest(SolrRequest.METHOD.POST, path, setTriggerCommand);
     NamedList<Object> response = solrClient.request(req);
     assertEquals(response.get("result").toString(), "success");
 
-    setTriggerCommand = "{\n" +
-        "\t\"set-trigger\" : {\n" +
-        "\t\t\"name\" : \"node_added_trigger\",\n" +
-        "\t\t\"event\" : \"nodeAdded\",\n" +
-        "\t\t\"waitFor\" : \"10m\",\n" +
-        "\t\t\"enabled\" : \"true\"\n" +
-        "\t}\n" +
+    setTriggerCommand = "{" +
+        "'set-trigger' : {" +
+        "'name' : 'node_added_trigger'," +
+        "'event' : 'nodeAdded'," +
+        "'waitFor' : '10m'," +
+        "'enabled' : 'true'" +
+        "}" +
         "}";
     req = new AutoScalingRequest(SolrRequest.METHOD.POST, path, setTriggerCommand);
     response = solrClient.request(req);
@@ -114,10 +112,10 @@ public class AutoScalingHandlerTest extends SolrCloudTestCase {
     assertEquals(4, nodeAddedTrigger.size());
     assertEquals("true", nodeAddedTrigger.get("enabled").toString());
 
-    suspendTriggerCommand = "{\n" +
-        "\t\"suspend-trigger\" : {\n" +
-        "\t\t\"name\" : \"#EACH\"\n" +
-        "\t}\n" +
+    suspendTriggerCommand = "{" +
+        "'suspend-trigger' : {" +
+        "'name' : '#EACH'" +
+        "}" +
         "}";
     req = new AutoScalingRequest(SolrRequest.METHOD.POST, path, suspendTriggerCommand);
     response = solrClient.request(req);
@@ -134,10 +132,10 @@ public class AutoScalingHandlerTest extends SolrCloudTestCase {
     assertEquals(4, nodeAddedTrigger.size());
     assertEquals("false", nodeAddedTrigger.get("enabled").toString());
 
-    String resumeTriggerCommand = "{\n" +
-        "\t\"resume-trigger\" : {\n" +
-        "\t\t\"name\" : \"node_added_trigger\"\n" +
-        "\t}\n" +
+    String resumeTriggerCommand = "{" +
+        "'resume-trigger' : {" +
+        "'name' : 'node_added_trigger'" +
+        "}" +
         "}";
     req = new AutoScalingRequest(SolrRequest.METHOD.POST, path, resumeTriggerCommand);
     response = solrClient.request(req);
@@ -154,10 +152,10 @@ public class AutoScalingHandlerTest extends SolrCloudTestCase {
     assertEquals(4, nodeAddedTrigger.size());
     assertEquals("true", nodeAddedTrigger.get("enabled").toString());
 
-    resumeTriggerCommand = "{\n" +
-        "\t\"resume-trigger\" : {\n" +
-        "\t\t\"name\" : \"#EACH\"\n" +
-        "\t}\n" +
+    resumeTriggerCommand = "{" +
+        "'resume-trigger' : {" +
+        "'name' : '#EACH'" +
+        "}" +
         "}";
     req = new AutoScalingRequest(SolrRequest.METHOD.POST, path, resumeTriggerCommand);
     response = solrClient.request(req);
@@ -174,11 +172,11 @@ public class AutoScalingHandlerTest extends SolrCloudTestCase {
     assertEquals(4, nodeAddedTrigger.size());
     assertEquals("true", nodeAddedTrigger.get("enabled").toString());
 
-    suspendTriggerCommand = "{\n" +
-        "\t\"suspend-trigger\" : {\n" +
-        "\t\t\"name\" : \"node_lost_trigger\",\n" +
-        "\t\t\"timeout\" : \"1h\"\n" +
-        "\t}\n" +
+    suspendTriggerCommand = "{" +
+        "'suspend-trigger' : {" +
+        "'name' : 'node_lost_trigger'," +
+        "'timeout' : '1h'" +
+        "}" +
         "}";
     req = new AutoScalingRequest(SolrRequest.METHOD.POST, path, suspendTriggerCommand);
     response = solrClient.request(req);
@@ -200,25 +198,22 @@ public class AutoScalingHandlerTest extends SolrCloudTestCase {
     // todo nocommit -- add testing for the v2 path
     // String path = random().nextBoolean() ? "/admin/autoscaling" : "/v2/cluster/autoscaling";
     String path = "/admin/autoscaling";
-    String setTriggerCommand = "{\n" +
-        "\t\"set-trigger\" : {\n" +
-        "\t\t\"name\" : \"node_lost_trigger\",\n" +
-        "\t\t\"event\" : \"nodeLost\",\n" +
-        "\t\t\"waitFor\" : \"10m\",\n" +
-        "\t\t\"enabled\" : \"true\",\n" +
-        "\t\t\"actions\" : [\n" +
-        "\t\t\t{\n" +
-        "\t\t\t\t\"name\" : \"compute_plan\",\n" +
-        "\t\t\t\t\"class\" : \"solr.ComputePlanAction\"\n" +
-        "\t\t\t},\n" +
-        "\t\t\t{\n" +
-        "\t\t\t\t\"name\" : \"log_plan\",\n" +
-        "\t\t\t\t\"class\" : \"solr.LogPlanAction\",\n" +
-        "\t\t\t\t\"collection\" : \".system\"\n" +
-        "\t\t\t}\n" +
-        "\t\t]\n" +
-        "\t}\n" +
-        "}";
+    String setTriggerCommand = "{" +
+        "'set-trigger' : {" +
+        "'name' : 'node_lost_trigger'," +
+        "'event' : 'nodeLost'," +
+        "'waitFor' : '10m'," +
+        "'enabled' : 'true'," +
+        "'actions' : [" +
+        "{" +
+        "'name' : 'compute_plan'," +
+        "'class' : 'solr.ComputePlanAction'" +
+        "}," +
+        "{" +
+        "'name' : 'log_plan'," +
+        "'class' : 'solr.LogPlanAction'," +
+        "'collection' : '.system'" +
+        "}]}}";
     SolrRequest req = new AutoScalingRequest(SolrRequest.METHOD.POST, path, setTriggerCommand);
 
     NamedList<Object> response = solrClient.request(req);
@@ -237,14 +232,13 @@ public class AutoScalingHandlerTest extends SolrCloudTestCase {
     assertEquals(2, actions.size());
     assertEquals("600", nodeLostTrigger.get("waitFor").toString());
 
-    setTriggerCommand = "{\n" +
-        "\t\"set-trigger\" : {\n" +
-        "\t\t\"name\" : \"node_lost_trigger\",\n" +
-        "\t\t\"event\" : \"nodeLost\",\n" +
-        "\t\t\"waitFor\" : \"20m\",\n" +
-        "\t\t\"enabled\" : \"false\"\n" +
-        "\t}\n" +
-        "}";
+    setTriggerCommand = "{" +
+        "'set-trigger' : {" +
+        "'name' : 'node_lost_trigger'," +
+        "'event' : 'nodeLost'," +
+        "'waitFor' : '20m'," +
+        "'enabled' : 'false'" +
+        "}}";
     req = new AutoScalingRequest(SolrRequest.METHOD.POST, path, setTriggerCommand);
     response = solrClient.request(req);
     assertEquals(response.get("result").toString(), "success");
@@ -262,16 +256,16 @@ public class AutoScalingHandlerTest extends SolrCloudTestCase {
     assertNotNull(actions);
     assertEquals(3, actions.size());
 
-    String setListenerCommand = "{\n" +
-        "\t\"set-listener\" : \n" +
-        "\t\t{\n" +
-        "\t\t\t\"name\" : \"xyz\",\n" +
-        "\t\t\t\"trigger\" : \"node_lost_trigger\",\n" +
-        "\t\t\t\"stage\" : [\"STARTED\",\"ABORTED\",\"SUCCEEDED\"],\n" +
-        "\t\t\t\"beforeAction\" : \"execute_plan\",\n" +
-        "\t\t\t\"class\" : \"org.apache.solr.cloud.autoscaling.AutoScaling$HttpCallbackListener\",\n" +
-        "\t\t\t\"url\" : \"http://xyz.com/on_node_lost?node={$LOST_NODE_NAME}\"\n" +
-        "\t\t}\n" +
+    String setListenerCommand = "{" +
+        "'set-listener' : " +
+        "{" +
+        "'name' : 'xyz'," +
+        "'trigger' : 'node_lost_trigger'," +
+        "'stage' : ['STARTED','ABORTED','SUCCEEDED']," +
+        "'beforeAction' : 'execute_plan'," +
+        "'class' : 'org.apache.solr.cloud.autoscaling.AutoScaling$HttpCallbackListener'," +
+        "'url' : 'http://xyz.com/on_node_lost?node={$LOST_NODE_NAME}'" +
+        "}" +
         "}";
     req = new AutoScalingRequest(SolrRequest.METHOD.POST, path, setListenerCommand);
     response = solrClient.request(req);
@@ -286,10 +280,10 @@ public class AutoScalingHandlerTest extends SolrCloudTestCase {
     assertEquals(5, xyzListener.size());
     assertEquals("org.apache.solr.cloud.autoscaling.AutoScaling$HttpCallbackListener", xyzListener.get("class").toString());
 
-    String removeTriggerCommand = "{\n" +
-        "\t\"remove-trigger\" : {\n" +
-        "\t\t\"name\" : \"node_lost_trigger\"\n" +
-        "\t}\n" +
+    String removeTriggerCommand = "{" +
+        "'remove-trigger' : {" +
+        "'name' : 'node_lost_trigger'" +
+        "}" +
         "}";
     req = new AutoScalingRequest(SolrRequest.METHOD.POST, path, removeTriggerCommand);
     try {
@@ -313,10 +307,10 @@ public class AutoScalingHandlerTest extends SolrCloudTestCase {
     assertNotNull(listeners);
     assertEquals(0, listeners.size());
 
-    removeTriggerCommand = "{\n" +
-        "\t\"remove-trigger\" : {\n" +
-        "\t\t\"name\" : \"node_lost_trigger\"\n" +
-        "\t}\n" +
+    removeTriggerCommand = "{" +
+        "'remove-trigger' : {" +
+        "'name' : 'node_lost_trigger'" +
+        "}" +
         "}";
     req = new AutoScalingRequest(SolrRequest.METHOD.POST, path, removeTriggerCommand);
     response = solrClient.request(req);
@@ -327,16 +321,15 @@ public class AutoScalingHandlerTest extends SolrCloudTestCase {
     assertNotNull(triggers);
     assertEquals(0, triggers.size());
 
-    setListenerCommand = "{\n" +
-        "\t\"set-listener\" : \n" +
-        "\t\t{\n" +
-        "\t\t\t\"name\" : \"xyz\",\n" +
-        "\t\t\t\"trigger\" : \"node_lost_trigger\",\n" +
-        "\t\t\t\"stage\" : [\"STARTED\",\"ABORTED\",\"SUCCEEDED\"],\n" +
-        "\t\t\t\"beforeAction\" : \"execute_plan\",\n" +
-        "\t\t\t\"class\" : \"org.apache.solr.cloud.autoscaling.AutoScaling$HttpCallbackListener\",\n" +
-        "\t\t\t\"url\" : \"http://xyz.com/on_node_lost?node={$LOST_NODE_NAME}\"\n" +
-        "\t\t}\n" +
+    setListenerCommand = "{" +
+        "'set-listener' : {" +
+        "'name' : 'xyz'," +
+        "'trigger' : 'node_lost_trigger'," +
+        "'stage' : ['STARTED','ABORTED','SUCCEEDED']," +
+        "'beforeAction' : 'execute_plan'," +
+        "'class' : 'org.apache.solr.cloud.autoscaling.AutoScaling$HttpCallbackListener'," +
+        "'url' : 'http://xyz.com/on_node_lost?node={$LOST_NODE_NAME}'" +
+        "}" +
         "}";
     req = new AutoScalingRequest(SolrRequest.METHOD.POST, path, removeListenerCommand);
     try {
@@ -347,30 +340,16 @@ public class AutoScalingHandlerTest extends SolrCloudTestCase {
     }
 
     // add multiple poilicies
-    String setPolicyCommand =  "{\n" +
-        "\t\"set-policy\": {\n" +
-        "\t\t\"name\" : \"default\",\n" +
-        "\t\t\"preferences\": [\n" +
-        "\t\t\t{\n" +
-        "\t\t\t\t\"minimize\": \"replicas\",\n" +
-        "\t\t\t\t\"precision\": 3\n" +
-        "\t\t\t},\n" +
-        "\t\t\t{\n" +
-        "\t\t\t\t\"maximize\": \"freedisk\",\n" +
-        "\t\t\t\t\"precision\": 100\n" +
-        "\t\t\t}\n" +
-        "\t\t]\t\t\n" +
-        "\t}, \n" +
-        "\t\"set-policy\": {\n" +
-        "\t\t\"name\" : \"policy1\",\n" +
-        "\t\t\"preferences\": [\n" +
-        "\t\t\t{\n" +
-        "\t\t\t\t\"minimize\": \"cpu\",\n" +
-        "\t\t\t\t\"precision\": 10\n" +
-        "\t\t\t}\n" +
-        "\t\t]\n" +
-        "\t}\n" +
-        "}";
+    String setPolicyCommand =  "{" +
+        "'set-policy': {" +
+        "'name' : 'default'," +
+        "'preferences': [" +
+        "{'minimize': 'replicas','precision': 3}," +
+        "{'maximize': 'freedisk','precision': 100}]" +
+        "}, " +
+        "'set-policy': {" +
+        "'name' : 'policy1'," +
+        "'preferences': [{'minimize': 'cpu','precision': 10}]}}";
     req = new AutoScalingRequest(SolrRequest.METHOD.POST, path, setPolicyCommand);
     response = solrClient.request(req);
     assertEquals(response.get("result").toString(), "success");
@@ -382,17 +361,14 @@ public class AutoScalingHandlerTest extends SolrCloudTestCase {
     assertNotNull(policies.get("policy1"));
 
     // update default policy
-    setPolicyCommand = "{\n" +
-        "\t\"set-policy\": {\n" +
-        "\t\t\"name\" : \"default\",\n" +
-        "\t\t\"preferences\": [\n" +
-        "\t\t\t{\n" +
-        "\t\t\t\t\"minimize\": \"replicas\",\n" +
-        "\t\t\t\t\"precision\": 3\n" +
-        "\t\t\t}\n" +
-        "\t\t]\t\t\n" +
-        "\t}\n" +
-        "}";
+    setPolicyCommand = "{" +
+        "'set-policy': {" +
+        "'name' : 'default'," +
+        "'preferences': [" +
+        "{" +
+        "'minimize': 'replicas'," +
+        "'precision': 3" +
+        "}]}}";
     req = new AutoScalingRequest(SolrRequest.METHOD.POST, path, setPolicyCommand);
     response = solrClient.request(req);
     assertEquals(response.get("result").toString(), "success");
@@ -404,11 +380,10 @@ public class AutoScalingHandlerTest extends SolrCloudTestCase {
     assertEquals(1, preferences.size());
 
     // policy is not valid
-    setPolicyCommand = "{\n" +
-        "\t\"set-policy\": {\n" +
-        "\t\t\"name\" : \"default\"\t\n" +
-        "\t}\n" +
-        "}";
+    setPolicyCommand = "{" +
+        "'set-policy': {" +
+        "'name' : 'default'" +
+        "}}";
     req = new AutoScalingRequest(SolrRequest.METHOD.POST, path, setPolicyCommand);
     try {
       response = solrClient.request(req);
@@ -417,9 +392,7 @@ public class AutoScalingHandlerTest extends SolrCloudTestCase {
       // expected
     }
 
-    String removePolicyCommand = "{\n" +
-        "\t\"remove-policy\" : \"policy1\"\n" +
-        "}";
+    String removePolicyCommand = "{remove-policy : policy1}";
     req = new AutoScalingRequest(SolrRequest.METHOD.POST, path, removePolicyCommand);
     response = solrClient.request(req);
     assertEquals(response.get("result").toString(), "success");
