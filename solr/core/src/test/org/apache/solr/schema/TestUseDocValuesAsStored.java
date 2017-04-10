@@ -107,12 +107,13 @@ public class TestUseDocValuesAsStored extends AbstractBadConfigTestBase {
   }
 
   @After
-  private void afterClass() throws Exception {
+  private void afterTest() throws Exception {
+    clearIndex();
+    commit();
     deleteCore();
     System.clearProperty("managed.schema.mutable");
     System.clearProperty("enable.update.log");
   }
-
 
   public String getCoreName() {
     return "basic";
@@ -225,7 +226,6 @@ public class TestUseDocValuesAsStored extends AbstractBadConfigTestBase {
 
   @Test
   public void testMultipleSearchResults() throws Exception {
-
     // Three documents with different numbers of values for a field
     assertU(adoc("id", "myid1", "test_is_dvo", "101", "test_is_dvo", "102", "test_is_dvo", "103"));
     assertU(adoc("id", "myid2", "test_is_dvo", "201", "test_is_dvo", "202"));
