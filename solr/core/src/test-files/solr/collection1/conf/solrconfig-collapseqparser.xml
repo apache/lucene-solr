@@ -239,75 +239,14 @@ based HashBitset. -->
 
   <searchComponent name="spellcheck" class="org.apache.solr.handler.component.SpellCheckComponent">
     <!-- This is slightly different from the field value so we can test dealing with token offset changes -->
-    <str name="queryAnalyzerFieldType">lowerpunctfilt</str>
+    <str name="queryAnalyzerFieldType">a_s</str>
 
-    <lst name="spellchecker">
-      <str name="name">default</str>
-      <str name="field">lowerfilt</str>
-      <str name="spellcheckIndexDir">spellchecker1</str>
-      <str name="buildOnCommit">false</str>
-    </lst>
-    <lst name="spellchecker">
+   <lst name="spellchecker">
       <str name="name">direct</str>
       <str name="classname">DirectSolrSpellChecker</str>
-      <str name="field">lowerfilt</str>
+      <str name="field">a_s</str>
       <int name="minQueryLength">3</int>
-    </lst>
-    <lst name="spellchecker">
-      <str name="name">wordbreak</str>
-      <str name="classname">solr.WordBreakSolrSpellChecker</str>
-      <str name="field">lowerfilt</str>
-      <str name="combineWords">true</str>
-      <str name="breakWords">true</str>
-      <int name="maxChanges">10</int>
-    </lst>
-    <lst name="spellchecker">
-      <str name="name">multipleFields</str>
-      <str name="field">lowerfilt1and2</str>
-      <str name="spellcheckIndexDir">spellcheckerMultipleFields</str>
-      <str name="buildOnCommit">false</str>
-    </lst>
-    <!-- Example of using different distance measure -->
-    <lst name="spellchecker">
-      <str name="name">jarowinkler</str>
-      <str name="field">lowerfilt</str>
-      <!-- Use a different Distance Measure -->
-      <str name="distanceMeasure">org.apache.lucene.search.spell.JaroWinklerDistance</str>
-      <str name="spellcheckIndexDir">spellchecker2</str>
-
-    </lst>
-    <lst name="spellchecker">
-      <str name="classname">solr.FileBasedSpellChecker</str>
-      <str name="name">external</str>
-      <str name="sourceLocation">spellings.txt</str>
-      <str name="characterEncoding">UTF-8</str>
-      <str name="spellcheckIndexDir">spellchecker3</str>
-    </lst>
-    <!-- Comparator -->
-    <lst name="spellchecker">
-      <str name="name">freq</str>
-      <str name="field">lowerfilt</str>
-      <str name="spellcheckIndexDir">spellcheckerFreq</str>
-      <!-- comparatorClass be one of:
-        1. score (default)
-        2. freq (Frequency first, then score)
-        3. A fully qualified class name
-       -->
-      <str name="comparatorClass">freq</str>
-      <str name="buildOnCommit">false</str>
-    </lst>
-    <lst name="spellchecker">
-      <str name="name">fqcn</str>
-      <str name="field">lowerfilt</str>
-      <str name="spellcheckIndexDir">spellcheckerFQCN</str>
-      <str name="comparatorClass">org.apache.solr.spelling.SampleComparator</str>
-      <str name="buildOnCommit">false</str>
-    </lst>
-    <lst name="spellchecker">
-      <str name="name">perDict</str>
-      <str name="classname">org.apache.solr.handler.component.DummyCustomParamSpellChecker</str>
-      <str name="field">lowerfilt</str>
-    </lst>
+    </lst>    
   </searchComponent>
 
   <searchComponent name="termsComp" class="org.apache.solr.handler.component.TermsComponent"/>
@@ -323,54 +262,12 @@ based HashBitset. -->
    -->
   <queryConverter name="queryConverter" class="org.apache.solr.spelling.SpellingQueryConverter"/>
 
-  <requestHandler name="spellCheckCompRH" class="org.apache.solr.handler.component.SearchHandler">
-    <lst name="defaults">
-      <!-- omp = Only More Popular -->
-      <str name="spellcheck.onlyMorePopular">false</str>
-      <!-- exr = Extended Results -->
-      <str name="spellcheck.extendedResults">false</str>
-      <!--  The number of suggestions to return -->
-      <str name="spellcheck.count">1</str>
-    </lst>
-    <arr name="last-components">
-      <str>spellcheck</str>
-    </arr>
-  </requestHandler>
   <requestHandler name="spellCheckCompRH_Direct" class="org.apache.solr.handler.component.SearchHandler">
     <lst name="defaults">
       <str name="spellcheck.dictionary">direct</str>
       <str name="spellcheck.onlyMorePopular">false</str>
       <str name="spellcheck.extendedResults">false</str>
       <str name="spellcheck.count">1</str>
-    </lst>
-    <arr name="last-components">
-      <str>spellcheck</str>
-    </arr>
-  </requestHandler>
-  <requestHandler name="spellCheckWithWordbreak" class="org.apache.solr.handler.component.SearchHandler">
-    <lst name="defaults">
-      <str name="spellcheck.dictionary">default</str>
-      <str name="spellcheck.dictionary">wordbreak</str>
-      <str name="spellcheck.count">20</str>
-    </lst>
-    <arr name="last-components">
-      <str>spellcheck</str>
-    </arr>
-  </requestHandler>
-  <requestHandler name="spellCheckWithWordbreak_Direct" class="org.apache.solr.handler.component.SearchHandler">
-    <lst name="defaults">
-      <str name="spellcheck.dictionary">direct</str>
-      <str name="spellcheck.dictionary">wordbreak</str>
-      <str name="spellcheck.count">20</str>
-    </lst>
-    <arr name="last-components">
-      <str>spellcheck</str>
-    </arr>
-  </requestHandler>
-  <requestHandler name="spellCheckCompRH1" class="org.apache.solr.handler.component.SearchHandler">
-    <lst name="defaults">
-      <str name="defType">dismax</str>
-      <str name="qf">lowerfilt1^1</str>
     </lst>
     <arr name="last-components">
       <str>spellcheck</str>
