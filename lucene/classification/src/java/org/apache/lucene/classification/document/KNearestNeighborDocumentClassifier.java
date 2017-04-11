@@ -77,17 +77,7 @@ public class KNearestNeighborDocumentClassifier extends KNearestNeighborClassifi
    */
   @Override
   public ClassificationResult<BytesRef> assignClass(Document document) throws IOException {
-    TopDocs knnResults = knnSearch(document);
-    List<ClassificationResult<BytesRef>> assignedClasses = buildListFromTopDocs(knnResults);
-    ClassificationResult<BytesRef> assignedClass = null;
-    double maxscore = -Double.MAX_VALUE;
-    for (ClassificationResult<BytesRef> cl : assignedClasses) {
-      if (cl.getScore() > maxscore) {
-        assignedClass = cl;
-        maxscore = cl.getScore();
-      }
-    }
-    return assignedClass;
+    return classifyFromTopDocs(knnSearch(document));
   }
 
   /**

@@ -38,6 +38,7 @@ import org.apache.lucene.search.Query;
 import org.apache.lucene.search.ScoreDoc;
 import org.apache.lucene.search.TopDocs;
 import org.apache.lucene.search.WildcardQuery;
+import org.apache.lucene.search.similarities.BM25Similarity;
 import org.apache.lucene.search.similarities.ClassicSimilarity;
 import org.apache.lucene.search.similarities.Similarity;
 import org.apache.lucene.util.BytesRef;
@@ -106,7 +107,7 @@ public class KNearestNeighborClassifier implements Classifier<BytesRef> {
     if (similarity != null) {
       this.indexSearcher.setSimilarity(similarity);
     } else {
-      this.indexSearcher.setSimilarity(new ClassicSimilarity());
+      this.indexSearcher.setSimilarity(new BM25Similarity());
     }
     if (minDocsFreq > 0) {
       mlt.setMinDocFreq(minDocsFreq);
@@ -124,7 +125,10 @@ public class KNearestNeighborClassifier implements Classifier<BytesRef> {
    */
   @Override
   public ClassificationResult<BytesRef> assignClass(String text) throws IOException {
-    TopDocs knnResults = knnSearch(text);
+    return classifyFromTopDocs(knnSearch(text));
+  }
+
+  protected ClassificationResult<BytesRef> classifyFromTopDocs(TopDocs knnResults) throws IOException {
     List<ClassificationResult<BytesRef>> assignedClasses = buildListFromTopDocs(knnResults);
     ClassificationResult<BytesRef> assignedClass = null;
     double maxscore = -Double.MAX_VALUE;
