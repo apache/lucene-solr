@@ -188,6 +188,9 @@ Bug Fixes
 
 * SOLR-10474: TestPointFields.testPointFieldReturn() depends on order of unsorted hits. (Steve Rowe)
 
+* SOLR-10473: Correct LBHttpSolrClient's confusing SolrServerException message when timeAllowed is exceeded.
+  (Christine Poerschke)
+
 Other Changes
 ----------------------
 
