@@ -21,7 +21,6 @@ import javax.management.ObjectInstance;
 import javax.management.ObjectName;
 
 import java.rmi.registry.LocateRegistry;
-import java.rmi.registry.Registry;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Random;

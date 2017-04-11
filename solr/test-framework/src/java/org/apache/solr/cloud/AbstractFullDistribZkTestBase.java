@@ -19,7 +19,6 @@ package org.apache.solr.cloud;
 import java.io.File;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
-import java.net.ServerSocket;
 import java.net.URI;
 import java.net.URL;
 import java.nio.file.Path;
