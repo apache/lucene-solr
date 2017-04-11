@@ -16,6 +16,7 @@
  */
 package org.apache.solr.handler.admin;
 
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -52,6 +53,9 @@ public class ModulesHandler extends RequestHandlerBase
     if (modules == null) {
       throw new SolrException(INVALID_STATE, "Not initialized");
     }
+    modules.getUpdateManager().refresh();
+    modules.getPluginManager().loadPlugins();
+    modules.getPluginManager().startPlugins();
     rsp.add( "modules", getModulesInfo( modules ));
     rsp.setHttpCaching(false);
   }
@@ -78,7 +82,7 @@ public class ModulesHandler extends RequestHandlerBase
     for (PluginWrapper p : modules.listInstalled()) {
       SimpleOrderedMap<Object> desc = new SimpleOrderedMap<>();
       desc.add("id", p.getPluginId());
-      desc.add("path", p.getPluginPath().toAbsolutePath().toString());
+      desc.add("path", p.getPluginPath().toString());
       desc.add("version", p.getDescriptor().getVersion().toString());
       desc.add("description", p.getDescriptor().getPluginDescription());
       desc.add("state", p.getPluginState().toString());
@@ -96,9 +100,6 @@ public class ModulesHandler extends RequestHandlerBase
       }
       updates.add(pi);
     }
-
-    map.add("solrVersion", org.apache.lucene.util.Version.LATEST.toString().split(" ")[0]);
-
     return map;
   }
 
@@ -110,7 +111,8 @@ public class ModulesHandler extends RequestHandlerBase
     info.add("projectUrl", p.projectUrl);
     info.add("provider", p.provider);
     info.add("version", p.getLastRelease(modules.getPluginManager().getSystemVersion()).version);
-    info.add("date", p.getLastRelease(modules.getPluginManager().getSystemVersion()).date);
+    SimpleDateFormat df = new SimpleDateFormat("yyyy-MM-dd");
+    info.add("date", df.format(p.getLastRelease(modules.getPluginManager().getSystemVersion()).date));
     info.add("url", p.getLastRelease(modules.getPluginManager().getSystemVersion()).url);
     return info;
   }

@@ -15,47 +15,60 @@ See the License for the specific language governing permissions and
 limitations under the License.
 -->
     <div id="modules">
-      <p1>Solr Modules</p1>
-      System version: {{modules.solrVersion}}
+      <div ng-show="modules.updates.length">
+        <h3>Available updates</h3>
+        <table class="table">
+          <tr><th width="10%">Id</th><th width="20%">Name</th><th width="*">Description</th><th width="10%">Version</th><th width="80">Date</th><th width="10%">Provider</th><th width="100"><button>Update all</button></th></tr>
+          <tr ng-repeat="p in modules.updates">
+            <td ng-bind-html="p.id | unsafe"></td>
+            <td ng-bind-html="p.name | unsafe"></td>
+            <td ng-bind-html="p.description | unsafe"></td>
+            <td ng-bind-html="p.version | unsafe"></td>
+            <td ng-bind-html="p.date | unsafe"></td>
+            <td><a href="{{p.projectUrl}}">{{p.provider}}</a></td>
+            <td><button>Update</button></td>
+          </tr>
+        </table>
+      </div>
 
-      <p2>Repositories</p2>
-      <ul>
-        <li ng-class="{odd:$odd}" ng-repeat="r in modules.repositories">
-          <dl class="clearfix">
-            <dt ng-bind-html="r.id | unsafe"></dt>
-            <dd ng-class="{odd:$odd, multi:props.length&gt;1}">{{r.location}}</dd>
-          </dl>
-        </li>
-      </ul>
+      <h3>Installed</h3>
+      <table class="table">
+        <tr><th>Id</th><th>Name</th><th>Description</th><th>Version</th><th>State</th><th>Path</th><th width="80"></th></tr>
+        <tr ng-repeat="p in modules.installed">
+          <td ng-bind-html="p.id | unsafe"></td>
+          <td ng-bind-html="p.name | unsafe"></td>
+          <td ng-bind-html="p.description | unsafe"></td>
+          <td ng-bind-html="p.version | unsafe"></td>
+          <td ng-bind-html="p.state | unsafe"></td>
+          <td ng-bind-html="p.path | unsafe"></td>
+          <td><button>Uninstall</button></td>
+        </tr>
+      </table>
 
-      <p2>Installed</p2>
-      <ul>
-        <li ng-class="{odd:$odd}" ng-repeat="p in modules.installed">
-          <dl class="clearfix">
-            <dt ng-bind-html="p.id | unsafe"></dt>
-            <dd ng-class="{odd:$odd, multi:props.length&gt;1}">{{p}}</dd>
-          </dl>
-        </li>
-      </ul>
+      <h3>Available in repositories</h3>
+      <table class="table">
+        <tr><th width="10%">Id</th><th width="20%">Name</th><th width="*">Description</th><th width="10%">Version</th><th width="80">Date</th><th width="10%">Provider</th><th width="80"></th></tr>
+        <tr ng-repeat="p in modules.available">
+          <td ng-bind-html="p.id | unsafe"></td>
+          <td ng-bind-html="p.name | unsafe"></td>
+          <td ng-bind-html="p.description | unsafe"></td>
+          <td ng-bind-html="p.version | unsafe"></td>
+          <td ng-bind-html="p.date | unsafe"></td>
+          <td><a href="{{p.projectUrl}}">{{p.provider}}</a></td>
+          <td><button>Install</button></td>
+        </tr>
+      </table>
 
-      <p2>Available</p2>
-      <ul>
-        <li ng-class="{odd:$odd}" ng-repeat="p in modules.available">
-          <dl class="clearfix">
-            <dt ng-bind-html="p.id | unsafe"></dt>
-            <dd ng-class="{odd:$odd, multi:props.length&gt;1}">{{p}}</dd>
-          </dl>
-        </li>
-      </ul>
-
-      <p2>Updates</p2>
-      <ul>
-        <li ng-class="{odd:$odd}" ng-repeat="p in modules.updates">
-          <dl class="clearfix">
-            <dt ng-bind-html="p.id | unsafe"></dt>
-            <dd ng-class="{odd:$odd, multi:props.length&gt;1}">{{p}}</dd>
-          </dl>
-        </li>
-      </ul>
+      <h3>Repositories</h3>
+      <table class="table">
+        <tr><th>Id</th><th>Location</th><th width="80"></th></tr>
+        <tr ng-repeat="r in modules.repositories">
+          <td ng-bind-html="r.id | unsafe"></td>
+          <td>{{r.location}}</td>
+          <td><button>Remove</button></td>
+        </tr>
+      </table>
+      <button>Add repository</button> <button>Update from repositories</button>
+      
     </div>
 

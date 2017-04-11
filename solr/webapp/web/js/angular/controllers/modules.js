@@ -21,7 +21,7 @@ solrAdminApp.controller('ModulesController',
     $scope.refresh = function() {
       Modules.get(function(data) {
         var modules = data["modules"];
-        $scope.modules = modules["modules"];
+        $scope.modules = modules;
       });
     };
 
