@@ -86,7 +86,7 @@ public class KNearestNeighborClassifier implements Classifier<BytesRef> {
    * @param indexReader     the reader on the index to be used for classification
    * @param analyzer       an {@link Analyzer} used to analyze unseen text
    * @param similarity     the {@link Similarity} to be used by the underlying {@link IndexSearcher} or {@code null}
-   *                       (defaults to {@link org.apache.lucene.search.similarities.ClassicSimilarity})
+   *                       (defaults to {@link org.apache.lucene.search.similarities.BM25Similarity})
    * @param query          a {@link Query} to eventually filter the docs used for training the classifier, or {@code null}
    *                       if all the indexed docs should be used
    * @param k              the no. of docs to select in the MLT results to find the nearest neighbor
@@ -127,6 +127,9 @@ public class KNearestNeighborClassifier implements Classifier<BytesRef> {
     return classifyFromTopDocs(knnSearch(text));
   }
 
+  /**
+   * TODO
+   */
   protected ClassificationResult<BytesRef> classifyFromTopDocs(TopDocs knnResults) throws IOException {
     List<ClassificationResult<BytesRef>> assignedClasses = buildListFromTopDocs(knnResults);
     ClassificationResult<BytesRef> assignedClass = null;
