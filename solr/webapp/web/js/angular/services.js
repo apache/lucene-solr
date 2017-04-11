@@ -61,6 +61,10 @@ solrAdminServices.factory('System',
       "setLevel": {}
       });
   }])
+.factory('Modules',
+   ['$resource', function($resource) {
+     return $resource('admin/modules', {'wt':'json', '_':Date.now()});
+}])
 .factory('Zookeeper',
   ['$resource', function($resource) {
     return $resource('admin/zookeeper', {wt:'json', _:Date.now()}, {
@@ -256,4 +260,5 @@ solrAdminServices.factory('System',
      return $resource(':core/config', {wt: 'json', core: '@core', _:Date.now()}, {
        get: {method: "GET"}
      })
-}]);
+   }])
+;

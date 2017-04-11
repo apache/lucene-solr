@@ -93,7 +93,7 @@ public class ModulesTest {
 
   @Test
   public void installAndCheckClassloading() throws Exception {
-    modules.install("dih");
+    assertTrue(modules.install("dih"));
     assertEquals(1, modules.listInstalled().size());
     try {
       this.getClass().getClassLoader().loadClass("org.apache.solr.handler.dataimport.DataImportHandler");

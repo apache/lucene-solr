@@ -56,7 +56,7 @@ public class Modules {
     systemVersion = Version.valueOf(org.apache.lucene.util.Version.LATEST.toString());
     ApacheMirrorsUpdateRepository apacheRepo = new ApacheMirrorsUpdateRepository("apache", "lucene/solr/" + systemVersion.toString() + "/");
     updateManager = new ModuleUpdateManager(pluginManager,
-        Arrays.asList(apacheRepo, new DefaultUpdateRepository("file","http://people.apache.org/~janhoy/dist/plugins/")));
+        Arrays.asList(new DefaultUpdateRepository("people","http://people.apache.org/~janhoy/dist/plugins/")));
     pluginManager.setSystemVersion(systemVersion);
   }
 
@@ -88,8 +88,8 @@ public class Modules {
     }
   }
 
-  public List<PluginDescriptor> listInstalled() {
-    return pluginManager.getPlugins().stream().map(PluginWrapper::getDescriptor).collect(Collectors.toList());
+  public List<PluginWrapper> listInstalled() {
+    return pluginManager.getPlugins().stream().collect(Collectors.toList());
   }
 
   public void updateAll() {
@@ -125,7 +125,7 @@ public class Modules {
 
   public ClassLoader getUberClassLoader(ClassLoader parent) {
     if (uberLoader == null) {
-      uberLoader = new ModulesClassLoader(parent, pluginManager.getPluginClassLoaders());
+      uberLoader = new ModulesClassLoader(parent, pluginManager.getPluginClassLoaders(), null);
     }
     return uberLoader;
   }

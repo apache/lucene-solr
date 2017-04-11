@@ -3811,7 +3811,7 @@ public class SolrCLI {
             modules.listInstalled().forEach(d -> System.out.println(d.getPluginId()));
           } else {
             System.out.println("Listing modules from " + modules.getPluginsRoot());
-            modules.listInstalled().forEach(d -> System.out.println(d.getPluginId() + "@" + d.getVersion()));
+            modules.listInstalled().forEach(d -> System.out.println(d.getPluginId() + "@" + d.getDescriptor().getVersion()));
             System.out.println("Done");
           }
           break;

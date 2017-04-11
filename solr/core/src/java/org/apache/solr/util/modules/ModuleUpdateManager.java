@@ -36,8 +36,8 @@ public class ModuleUpdateManager extends UpdateManager {
   public ModuleUpdateManager(PluginManager pluginManager) {
     super(pluginManager);
     repositories = new ArrayList<>();
-    repositories.add(new ApacheMirrorsUpdateRepository("solr-contribs", "lucene/solr/" + pluginManager.getSystemVersion()));
-    repositories.add(new DefaultUpdateRepository("local", "file:///Users/janhoy/solr-repo/"));
+//    repositories.add(new ApacheMirrorsUpdateRepository("solr-contribs", "lucene/solr/" + pluginManager.getSystemVersion()));
+//    repositories.add(new DefaultUpdateRepository("local", "file:///Users/janhoy/solr-repo/"));
   }
 
   /**

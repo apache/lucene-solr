@@ -181,6 +181,7 @@ public interface CommonParams {
   String AUTHC_PATH = "/admin/authentication";
   String ZK_PATH = "/admin/zookeeper";
   String METRICS_PATH = "/admin/metrics";
+  String MODULES_PATH = "/admin/modules";
 
   Set<String> ADMIN_PATHS = new HashSet<>(Arrays.asList(
       CORES_HANDLER_PATH,

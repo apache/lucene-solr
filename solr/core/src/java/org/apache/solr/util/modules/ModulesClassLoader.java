@@ -19,6 +19,7 @@ package org.apache.solr.util.modules;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.net.URL;
+import java.net.URLClassLoader;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Enumeration;
@@ -31,25 +32,27 @@ import org.slf4j.LoggerFactory;
 /**
  * A class loader that has multiple loaders and uses them for loading classes and resources.
  */
-public class ModulesClassLoader extends ClassLoader {
+public class ModulesClassLoader extends URLClassLoader {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   private final Map<String, ClassLoader> loaderMap;
 
-  public ModulesClassLoader(ClassLoader parent, Map<String, ClassLoader> loaders) {
-    super(parent);
-    this.loaderMap = loaders;
+  public ModulesClassLoader(ClassLoader parent, Map<String, ClassLoader> moduleClassLoaders, URL[] urls) {
+    super(urls == null ? new URL[] {} : urls, parent);
+    this.loaderMap = moduleClassLoaders;
   }
 
   @Override
   public Class<?> findClass(String name) throws ClassNotFoundException {
+    // First try Solr URLs
+    Class<?> clazz = super.findClass(name);
     for (ClassLoader loader : loaderMap.values()) {
       try {
         return loader.loadClass(name);
       } catch (ClassNotFoundException e) {}
     }
 
-    throw new ClassNotFoundException("Class " + name + " not found in any plugin. Tried: " + loaderMap.keySet());
+    throw new ClassNotFoundException("Class " + name + " not found in any module. Tried: " + loaderMap.keySet());
   }
 
   @Override
@@ -65,7 +68,7 @@ public class ModulesClassLoader extends ClassLoader {
   }
 
   @Override
-  protected Enumeration<URL> findResources(String name) throws IOException {
+  public Enumeration<URL> findResources(String name) throws IOException {
     List<URL> resources = new ArrayList<URL>();
     for (ClassLoader loader : loaderMap.values()) {
       resources.addAll(Collections.list(loader.getResources(name)));

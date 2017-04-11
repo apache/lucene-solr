@@ -96,6 +96,7 @@ public class SolrResourceLoader implements ResourceLoader,Closeable
   private static Set<String> loggedOnce = new ConcurrentSkipListSet<>();
 
   protected URLClassLoader classLoader;
+  protected ClassLoader modulesClassLoader;
   private final Path instanceDir;
   private String dataDir;
   
@@ -114,7 +115,7 @@ public class SolrResourceLoader implements ResourceLoader,Closeable
   // initialize themselves. This two-step process is required because not all resources are available
   // (such as the SolrZkClient) when XML docs are being parsed.    
   private RestManager.Registry managedResourceRegistry;
-  
+
   public synchronized RestManager.Registry getManagedResourceRegistry() {
     if (managedResourceRegistry == null) {
       managedResourceRegistry = new RestManager.Registry();      
@@ -400,6 +401,14 @@ public class SolrResourceLoader implements ResourceLoader,Closeable
     // TODO can we nuke this?
     if (is == null && System.getProperty("jetty.testMode") != null) {
       is = classLoader.getResourceAsStream(("conf/" + resource).replace(File.separatorChar, '/'));
+    }
+
+    if (is == null && modulesClassLoader != null) {
+      log.debug("Attempting to load resource {} from modules class loader", resource);
+      is = modulesClassLoader.getResourceAsStream(resource.replace(File.separatorChar, '/'));
+      if (is == null) {
+        log.warn("Can't find resource {} in modules classpaths", resource);
+      }
     }
 
     if (is == null) {
@@ -914,4 +923,11 @@ public class SolrResourceLoader implements ResourceLoader,Closeable
     }
   }
 
+  /**
+   * If the modules system is in use, set modules class loader
+   * @param classLoader
+   */
+  public void setModulesClassLoader(ClassLoader classLoader) {
+    modulesClassLoader = classLoader;
+  }
 }

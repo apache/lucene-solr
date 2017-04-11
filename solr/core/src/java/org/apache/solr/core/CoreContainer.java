@@ -70,6 +70,7 @@ import org.apache.solr.handler.admin.CoreAdminHandler;
 import org.apache.solr.handler.admin.InfoHandler;
 import org.apache.solr.handler.admin.MetricsCollectorHandler;
 import org.apache.solr.handler.admin.MetricsHandler;
+import org.apache.solr.handler.admin.ModulesHandler;
 import org.apache.solr.handler.admin.SecurityConfHandler;
 import org.apache.solr.handler.admin.SecurityConfHandlerLocal;
 import org.apache.solr.handler.admin.SecurityConfHandlerZk;
@@ -103,6 +104,7 @@ import static org.apache.solr.common.params.CommonParams.CONFIGSETS_HANDLER_PATH
 import static org.apache.solr.common.params.CommonParams.CORES_HANDLER_PATH;
 import static org.apache.solr.common.params.CommonParams.INFO_HANDLER_PATH;
 import static org.apache.solr.common.params.CommonParams.METRICS_PATH;
+import static org.apache.solr.common.params.CommonParams.MODULES_PATH;
 import static org.apache.solr.common.params.CommonParams.ZK_PATH;
 import static org.apache.solr.security.AuthenticationPlugin.AUTHENTICATION_PLUGIN_PROP;
 
@@ -136,6 +138,7 @@ public class CoreContainer {
   protected CollectionsHandler collectionsHandler = null;
   private InfoHandler infoHandler;
   protected ConfigSetsHandler configSetsHandler = null;
+  protected ModulesHandler modulesHandler;
 
   private PKIAuthenticationPlugin pkiAuthenticationPlugin;
 
@@ -489,10 +492,13 @@ public class CoreContainer {
     }
 
     // Initialize the module system and load modules
-    useModules = cfg.getModulesConfig().isActive();
+    useModules = cfg.getModulesConfig() == null ? true : cfg.getModulesConfig().isActive();
     if (useModules()) {
       modules = new Modules(Paths.get(getSolrHome(), "modules"));
       modules.load();
+//      loader.setModulesClassLoader(modules.getUberClassLoader(null));
+    } else {
+//      loader
     }
 
     metricManager = new SolrMetricManager();
@@ -540,6 +546,10 @@ public class CoreContainer {
     containerHandlers.put(AUTHC_PATH, securityConfHandler);
     if(pkiAuthenticationPlugin != null)
       containerHandlers.put(PKIAuthenticationPlugin.PATH, pkiAuthenticationPlugin.getRequestHandler());
+    if (useModules()) {
+      modulesHandler = createHandler(MODULES_PATH, ModulesHandler.class.getName(), ModulesHandler.class);
+      modulesHandler.initializeModules(getModules());
+    }
 
     metricManager.loadReporters(cfg.getMetricReporterPlugins(), loader, null, SolrInfoMBean.Group.node);
     metricManager.loadReporters(cfg.getMetricReporterPlugins(), loader, null, SolrInfoMBean.Group.jvm);
