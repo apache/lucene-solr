@@ -50,6 +50,10 @@ public class StreamContext implements Serializable{
     this.entries.put(key, value);
   }
 
+  public boolean containsKey(Object key) {
+    return entries.containsKey(key);
+  }
+
   public Map getEntries() {
     return this.entries;
   }

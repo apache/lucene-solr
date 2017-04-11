@@ -263,27 +263,7 @@ public class ParallelStream extends CloudSolrStream implements Expressible {
     try {
       Object pushStream = ((Expressible) tupleStream).toExpression(streamFactory);
 
-      ZkStateReader zkStateReader = cloudSolrClient.getZkStateReader();
-
-      Collection<Slice> slices = CloudSolrStream.getSlices(this.collection, zkStateReader, true);
-
-      ClusterState clusterState = zkStateReader.getClusterState();
-      Set<String> liveNodes = clusterState.getLiveNodes();
-
-      List<Replica> shuffler = new ArrayList<>();
-      for(Slice slice : slices) {
-        Collection<Replica> replicas = slice.getReplicas();
-        for (Replica replica : replicas) {
-          if(replica.getState() == Replica.State.ACTIVE && liveNodes.contains(replica.getNodeName()))
-          shuffler.add(replica);
-        }
-      }
-
-      if(workers > shuffler.size()) {
-        throw new IOException("Number of workers exceeds nodes in the worker collection");
-      }
-
-      Collections.shuffle(shuffler, new Random());
+      List<String> shardUrls = getShards(this.zkHost, this.collection, this.streamContext);
 
       for(int w=0; w<workers; w++) {
         ModifiableSolrParams paramsLoc = new ModifiableSolrParams();
@@ -293,9 +273,8 @@ public class ParallelStream extends CloudSolrStream implements Expressible {
 
         paramsLoc.set("expr", pushStream.toString());
         paramsLoc.set("qt","/stream");
-        Replica rep = shuffler.get(w);
-        ZkCoreNodeProps zkProps = new ZkCoreNodeProps(rep);
-        String url = zkProps.getCoreUrl();
+
+        String url = shardUrls.get(w);
         SolrStream solrStream = new SolrStream(url, paramsLoc);
         solrStreams.add(solrStream);
       }
