@@ -91,6 +91,12 @@ Other
 
 ======================= Lucene 6.6.0 =======================
 
+Bug Fixes
+
+* LUCENE-7777: ByteBlockPool.readBytes sometimes throws
+  ArrayIndexOutOfBoundsException when byte blocks larger than 32 KB
+  were added (Mike McCandless)
+
 Other
 
 * LUCENE-7754: Inner classes should be static whenever possible.
