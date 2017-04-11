@@ -99,7 +99,7 @@ public class TestNumericTerms32 extends LuceneTestCase {
     map.put("field2", Type.LEGACY_INTEGER);
     map.put("field4", Type.LEGACY_INTEGER);
     map.put("field8", Type.LEGACY_INTEGER);
-    reader = UninvertingReader.wrap(writer.getReader(), reader -> map);
+    reader = UninvertingReader.wrap(writer.getReader(), map);
     searcher=newSearcher(reader);
     writer.close();
   }

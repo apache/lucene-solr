@@ -229,7 +229,7 @@ public class TestSort extends SolrTestCaseJ4 {
       mapping.put("f", UninvertingReader.Type.SORTED);
       mapping.put("f2", UninvertingReader.Type.SORTED);
 
-      DirectoryReader reader = UninvertingReader.wrap(DirectoryReader.open(dir), r -> mapping);
+      DirectoryReader reader = UninvertingReader.wrap(DirectoryReader.open(dir), mapping);
       IndexSearcher searcher = new IndexSearcher(reader);
       // System.out.println("segments="+searcher.getIndexReader().getSequentialSubReaders().length);
       assertTrue(reader.leaves().size() > 1);
