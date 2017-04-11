@@ -70,7 +70,7 @@ public class TestUninvertingReader extends LuceneTestCase {
     iw.close();
     
     DirectoryReader ir = UninvertingReader.wrap(DirectoryReader.open(dir), 
-                         Collections.singletonMap("foo", Type.SORTED_SET_INTEGER));
+                         r -> Collections.singletonMap("foo", Type.SORTED_SET_INTEGER));
     LeafReader ar = ir.leaves().get(0).reader();
     SortedSetDocValues v = ar.getSortedSetDocValues("foo");
     assertEquals(2, v.getValueCount());
@@ -111,7 +111,7 @@ public class TestUninvertingReader extends LuceneTestCase {
     iw.close();
     
     DirectoryReader ir = UninvertingReader.wrap(DirectoryReader.open(dir), 
-                         Collections.singletonMap("foo", Type.SORTED_SET_FLOAT));
+                         r -> Collections.singletonMap("foo", Type.SORTED_SET_FLOAT));
     LeafReader ar = ir.leaves().get(0).reader();
     
     SortedSetDocValues v = ar.getSortedSetDocValues("foo");
@@ -153,7 +153,7 @@ public class TestUninvertingReader extends LuceneTestCase {
     iw.close();
     
     DirectoryReader ir = UninvertingReader.wrap(DirectoryReader.open(dir), 
-        Collections.singletonMap("foo", Type.SORTED_SET_LONG));
+       r ->  Collections.singletonMap("foo", Type.SORTED_SET_LONG));
     LeafReader ar = ir.leaves().get(0).reader();
     SortedSetDocValues v = ar.getSortedSetDocValues("foo");
     assertEquals(2, v.getValueCount());
@@ -194,7 +194,7 @@ public class TestUninvertingReader extends LuceneTestCase {
     iw.close();
     
     DirectoryReader ir = UninvertingReader.wrap(DirectoryReader.open(dir), 
-        Collections.singletonMap("foo", Type.SORTED_SET_DOUBLE));
+        r -> Collections.singletonMap("foo", Type.SORTED_SET_DOUBLE));
     LeafReader ar = ir.leaves().get(0).reader();
     SortedSetDocValues v = ar.getSortedSetDocValues("foo");
     assertEquals(2, v.getValueCount());
@@ -272,7 +272,7 @@ public class TestUninvertingReader extends LuceneTestCase {
 
     iw.close();
     
-    final DirectoryReader ir = UninvertingReader.wrap(DirectoryReader.open(dir), UNINVERT_MAP);
+    final DirectoryReader ir = UninvertingReader.wrap(DirectoryReader.open(dir), r -> UNINVERT_MAP);
     TestUtil.checkReader(ir);
     
     final int NUM_LEAVES = ir.leaves().size();
@@ -320,7 +320,7 @@ public class TestUninvertingReader extends LuceneTestCase {
       UNINVERT_MAP.put(t.name(), t);
     }
 
-    final DirectoryReader ir = UninvertingReader.wrap(DirectoryReader.open(dir), UNINVERT_MAP);
+    final DirectoryReader ir = UninvertingReader.wrap(DirectoryReader.open(dir), r -> UNINVERT_MAP);
     TestUtil.checkReader(ir);
     
     final LeafReader composite = SlowCompositeReaderWrapper.wrap(ir);
@@ -368,7 +368,7 @@ public class TestUninvertingReader extends LuceneTestCase {
     uninvertingMap.put("dint", Type.INTEGER_POINT);
 
     DirectoryReader ir = UninvertingReader.wrap(DirectoryReader.open(dir), 
-                         uninvertingMap);
+                         r -> uninvertingMap);
     LeafReader leafReader = ir.leaves().get(0).reader();
 
     FieldInfo intFInfo = leafReader.getFieldInfos().fieldInfo("int");

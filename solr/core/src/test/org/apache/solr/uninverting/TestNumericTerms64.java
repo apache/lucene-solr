@@ -104,7 +104,7 @@ public class TestNumericTerms64 extends LuceneTestCase {
     map.put("field4", Type.LEGACY_LONG);
     map.put("field6", Type.LEGACY_LONG);
     map.put("field8", Type.LEGACY_LONG);
-    reader = UninvertingReader.wrap(writer.getReader(), map);
+    reader = UninvertingReader.wrap(writer.getReader(), r -> map);
     searcher=newSearcher(reader);
     writer.close();
   }

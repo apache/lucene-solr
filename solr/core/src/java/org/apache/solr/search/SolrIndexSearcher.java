@@ -155,7 +155,7 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
   private static DirectoryReader wrapReader(SolrCore core, DirectoryReader reader) throws IOException {
     assert reader != null;
     return ExitableDirectoryReader.wrap(
-        new UninvertingDirectoryReaderPerSegmentMapping(reader, core),
+        wrapUninvertingReaderPerSegment(core, reader),
         SolrQueryTimeoutImpl.getInstance());
   }
 
@@ -170,33 +170,9 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
    * DocValues are used from segments if they exist and uninversion of the field is performed on the rest
    * of the segments.
    */
-  static class UninvertingDirectoryReaderPerSegmentMapping extends FilterDirectoryReader {
-    final SolrCore core;
-    
-    public UninvertingDirectoryReaderPerSegmentMapping(DirectoryReader in, final SolrCore core) throws IOException {
-      super(in, new FilterDirectoryReader.SubReaderWrapper() {
-        @Override
-        public LeafReader wrap(LeafReader reader) {
-          return new UninvertingReader(reader, core.getLatestSchema().getUninversionMap(reader));
-        }
-      });
-      this.core = core;
-    }
-
-    @Override
-    protected DirectoryReader doWrapDirectoryReader(DirectoryReader in) throws IOException {
-      return new UninvertingDirectoryReaderPerSegmentMapping(in, core);
-    }
-    
-    // NOTE: delegating the cache helpers is wrong since this wrapper alters the
-    // content of the reader, it is only fine to do that because Solr ALWAYS
-    // consumes index readers through this wrapper
-
-    @Override
-    public CacheHelper getReaderCacheHelper() {
-      return in.getReaderCacheHelper();
-    }
-  }
+   private static DirectoryReader wrapUninvertingReaderPerSegment(SolrCore core, DirectoryReader reader) throws IOException {
+     return UninvertingReader.wrap(reader, r -> core.getLatestSchema().getUninversionMap(r));
+   }
 
   /**
    * Builds the necessary collector chain (via delegate wrapping) and executes the query against it. This method takes
