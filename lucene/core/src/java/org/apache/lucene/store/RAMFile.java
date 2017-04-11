@@ -60,11 +60,11 @@ public class RAMFile implements Accountable {
     return buffer;
   }
 
-  protected final synchronized byte[] getBuffer(int index) {
+  protected final byte[] getBuffer(int index) {
     return buffers.get(index);
   }
 
-  protected final synchronized int numBuffers() {
+  protected final int numBuffers() {
     return buffers.size();
   }
 
