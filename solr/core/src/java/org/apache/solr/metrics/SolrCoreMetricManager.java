@@ -20,11 +20,12 @@ import java.io.Closeable;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 
+import com.codahale.metrics.MetricRegistry;
 import org.apache.solr.cloud.CloudDescriptor;
 import org.apache.solr.core.NodeConfig;
 import org.apache.solr.core.PluginInfo;
 import org.apache.solr.core.SolrCore;
-import org.apache.solr.core.SolrInfoMBean;
+import org.apache.solr.core.SolrInfoBean;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -76,14 +77,14 @@ public class SolrCoreMetricManager implements Closeable {
   }
 
   /**
-   * Load reporters configured globally and specific to {@link org.apache.solr.core.SolrInfoMBean.Group#core}
+   * Load reporters configured globally and specific to {@link org.apache.solr.core.SolrInfoBean.Group#core}
    * group or with a registry name specific to this core.
    */
   public void loadReporters() {
     NodeConfig nodeConfig = core.getCoreDescriptor().getCoreContainer().getConfig();
     PluginInfo[] pluginInfos = nodeConfig.getMetricReporterPlugins();
     metricManager.loadReporters(pluginInfos, core.getResourceLoader(), tag,
-        SolrInfoMBean.Group.core, registryName);
+        SolrInfoBean.Group.core, registryName);
     if (cloudMode) {
       metricManager.loadShardReporters(pluginInfos, core);
     }
@@ -127,11 +128,25 @@ public class SolrCoreMetricManager implements Closeable {
   }
 
   /**
+   * Return the registry used by this SolrCore.
+   */
+  public MetricRegistry getRegistry() {
+    if (registryName != null) {
+      return metricManager.registry(registryName);
+    } else {
+      return null;
+    }
+  }
+
+  /**
    * Closes reporters specific to this core.
    */
   @Override
   public void close() throws IOException {
     metricManager.closeReporters(getRegistryName(), tag);
+    if (getLeaderRegistryName() != null) {
+      metricManager.closeReporters(getLeaderRegistryName(), tag);
+    }
   }
 
   public SolrCore getCore() {
@@ -176,9 +191,9 @@ public class SolrCoreMetricManager implements Closeable {
 
   public static String createRegistryName(boolean cloud, String collectionName, String shardName, String replicaName, String coreName) {
     if (cloud) { // build registry name from logical names
-      return SolrMetricManager.getRegistryName(SolrInfoMBean.Group.core, collectionName, shardName, replicaName);
+      return SolrMetricManager.getRegistryName(SolrInfoBean.Group.core, collectionName, shardName, replicaName);
     } else {
-      return SolrMetricManager.getRegistryName(SolrInfoMBean.Group.core, coreName);
+      return SolrMetricManager.getRegistryName(SolrInfoBean.Group.core, coreName);
     }
   }
 
@@ -224,7 +239,7 @@ public class SolrCoreMetricManager implements Closeable {
 
   public static String createLeaderRegistryName(boolean cloud, String collectionName, String shardName) {
     if (cloud) {
-      return SolrMetricManager.getRegistryName(SolrInfoMBean.Group.collection, collectionName, shardName, "leader");
+      return SolrMetricManager.getRegistryName(SolrInfoBean.Group.collection, collectionName, shardName, "leader");
     } else {
       return null;
     }

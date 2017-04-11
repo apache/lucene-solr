@@ -29,7 +29,7 @@ import org.apache.lucene.util.TestUtil;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.params.CoreAdminParams;
 import org.apache.solr.core.PluginInfo;
-import org.apache.solr.core.SolrInfoMBean;
+import org.apache.solr.core.SolrInfoBean;
 import org.apache.solr.metrics.reporters.MockMetricReporter;
 import org.apache.solr.schema.FieldType;
 import org.junit.After;
@@ -61,7 +61,7 @@ public class SolrCoreMetricManagerTest extends SolrTestCaseJ4 {
     Random random = random();
 
     String scope = SolrMetricTestUtils.getRandomScope(random);
-    SolrInfoMBean.Category category = SolrMetricTestUtils.getRandomCategory(random);
+    SolrInfoBean.Category category = SolrMetricTestUtils.getRandomCategory(random);
     Map<String, Counter> metrics = SolrMetricTestUtils.getRandomMetrics(random);
     SolrMetricProducer producer = SolrMetricTestUtils.getProducerOf(metricManager, category, scope, metrics);
     try {
@@ -82,7 +82,7 @@ public class SolrCoreMetricManagerTest extends SolrTestCaseJ4 {
 
     Map<String, Counter> registered = new HashMap<>();
     String scope = SolrMetricTestUtils.getRandomScope(random, true);
-    SolrInfoMBean.Category category = SolrMetricTestUtils.getRandomCategory(random, true);
+    SolrInfoBean.Category category = SolrMetricTestUtils.getRandomCategory(random, true);
 
     int iterations = TestUtil.nextInt(random, 0, MAX_ITERATIONS);
     for (int i = 0; i < iterations; ++i) {

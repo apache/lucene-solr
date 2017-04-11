@@ -128,40 +128,58 @@ public class DefaultSolrHighlighter extends SolrHighlighter implements PluginInf
 
     // Load the fragmenters
     SolrFragmenter frag = solrCore.initPlugins(info.getChildren("fragmenter") , fragmenters,SolrFragmenter.class,null);
-    if (frag == null) frag = new GapFragmenter();
+    if (frag == null) {
+      frag = new GapFragmenter();
+      solrCore.initDefaultPlugin(frag, SolrFragmenter.class);
+    }
     fragmenters.put("", frag);
     fragmenters.put(null, frag);
 
     // Load the formatters
     SolrFormatter fmt = solrCore.initPlugins(info.getChildren("formatter"), formatters,SolrFormatter.class,null);
-    if (fmt == null) fmt = new HtmlFormatter();
+    if (fmt == null) {
+      fmt = new HtmlFormatter();
+      solrCore.initDefaultPlugin(fmt, SolrFormatter.class);
+    }
     formatters.put("", fmt);
     formatters.put(null, fmt);
 
     // Load the encoders
     SolrEncoder enc = solrCore.initPlugins(info.getChildren("encoder"), encoders,SolrEncoder.class,null);
-    if (enc == null) enc = new DefaultEncoder();
+    if (enc == null) {
+      enc = new DefaultEncoder();
+      solrCore.initDefaultPlugin(enc, SolrEncoder.class);
+    }
     encoders.put("", enc);
     encoders.put(null, enc);
 
     // Load the FragListBuilders
     SolrFragListBuilder fragListBuilder = solrCore.initPlugins(info.getChildren("fragListBuilder"),
         fragListBuilders, SolrFragListBuilder.class, null );
-    if( fragListBuilder == null ) fragListBuilder = new SimpleFragListBuilder();
+    if( fragListBuilder == null ) {
+      fragListBuilder = new SimpleFragListBuilder();
+      solrCore.initDefaultPlugin(fragListBuilder, SolrFragListBuilder.class);
+    }
     fragListBuilders.put( "", fragListBuilder );
     fragListBuilders.put( null, fragListBuilder );
 
     // Load the FragmentsBuilders
     SolrFragmentsBuilder fragsBuilder = solrCore.initPlugins(info.getChildren("fragmentsBuilder"),
         fragmentsBuilders, SolrFragmentsBuilder.class, null);
-    if( fragsBuilder == null ) fragsBuilder = new ScoreOrderFragmentsBuilder();
+    if( fragsBuilder == null ) {
+      fragsBuilder = new ScoreOrderFragmentsBuilder();
+      solrCore.initDefaultPlugin(fragsBuilder, SolrFragmentsBuilder.class);
+    }
     fragmentsBuilders.put( "", fragsBuilder );
     fragmentsBuilders.put( null, fragsBuilder );
 
     // Load the BoundaryScanners
     SolrBoundaryScanner boundaryScanner = solrCore.initPlugins(info.getChildren("boundaryScanner"),
         boundaryScanners, SolrBoundaryScanner.class, null);
-    if(boundaryScanner == null) boundaryScanner = new SimpleBoundaryScanner();
+    if(boundaryScanner == null) {
+      boundaryScanner = new SimpleBoundaryScanner();
+      solrCore.initDefaultPlugin(boundaryScanner, SolrBoundaryScanner.class);
+    }
     boundaryScanners.put("", boundaryScanner);
     boundaryScanners.put(null, boundaryScanner);
 

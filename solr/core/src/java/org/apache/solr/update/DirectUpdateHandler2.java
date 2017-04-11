@@ -18,7 +18,6 @@ package org.apache.solr.update;
 
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
-import java.net.URL;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
@@ -48,8 +47,6 @@ import org.apache.solr.cloud.ZkController;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.params.ModifiableSolrParams;
-import org.apache.solr.common.util.NamedList;
-import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.core.SolrConfig.UpdateHandlerInfo;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.metrics.SolrMetricManager;
@@ -162,24 +159,40 @@ public class DirectUpdateHandler2 extends UpdateHandler implements SolrCoreState
 
   @Override
   public void initializeMetrics(SolrMetricManager manager, String registry, String scope) {
-    commitCommands = manager.meter(registry, "commits", getCategory().toString(), scope);
-    manager.registerGauge(registry, () -> commitTracker.getCommitCount(), true, "autoCommits", getCategory().toString(), scope);
-    manager.registerGauge(registry, () -> softCommitTracker.getCommitCount(), true, "softAutoCommits", getCategory().toString(), scope);
-    optimizeCommands = manager.meter(registry, "optimizes", getCategory().toString(), scope);
-    rollbackCommands = manager.meter(registry, "rollbacks", getCategory().toString(), scope);
-    splitCommands = manager.meter(registry, "splits", getCategory().toString(), scope);
-    mergeIndexesCommands = manager.meter(registry, "merges", getCategory().toString(), scope);
-    expungeDeleteCommands = manager.meter(registry, "expungeDeletes", getCategory().toString(), scope);
-    manager.registerGauge(registry, () -> numDocsPending.longValue(), true, "docsPending", getCategory().toString(), scope);
-    manager.registerGauge(registry, () -> addCommands.longValue(), true, "adds", getCategory().toString(), scope);
-    manager.registerGauge(registry, () -> deleteByIdCommands.longValue(), true, "deletesById", getCategory().toString(), scope);
-    manager.registerGauge(registry, () -> deleteByQueryCommands.longValue(), true, "deletesByQuery", getCategory().toString(), scope);
-    manager.registerGauge(registry, () -> numErrors.longValue(), true, "errors", getCategory().toString(), scope);
+    commitCommands = manager.meter(this, registry, "commits", getCategory().toString(), scope);
+    manager.registerGauge(this, registry, () -> commitTracker.getCommitCount(), true, "autoCommits", getCategory().toString(), scope);
+    manager.registerGauge(this, registry, () -> softCommitTracker.getCommitCount(), true, "softAutoCommits", getCategory().toString(), scope);
+    if (commitTracker.getDocsUpperBound() > 0) {
+      manager.registerGauge(this, registry, () -> commitTracker.getDocsUpperBound(), true, "autoCommitMaxDocs",
+          getCategory().toString(), scope);
+    }
+    if (commitTracker.getTimeUpperBound() > 0) {
+      manager.registerGauge(this, registry, () -> "" + commitTracker.getTimeUpperBound() + "ms", true, "autoCommitMaxTime",
+          getCategory().toString(), scope);
+    }
+    if (softCommitTracker.getDocsUpperBound() > 0) {
+      manager.registerGauge(this, registry, () -> softCommitTracker.getDocsUpperBound(), true, "softAutoCommitMaxDocs",
+          getCategory().toString(), scope);
+    }
+    if (softCommitTracker.getTimeUpperBound() > 0) {
+      manager.registerGauge(this, registry, () -> "" + softCommitTracker.getTimeUpperBound() + "ms", true, "softAutoCommitMaxTime",
+          getCategory().toString(), scope);
+    }
+    optimizeCommands = manager.meter(this, registry, "optimizes", getCategory().toString(), scope);
+    rollbackCommands = manager.meter(this, registry, "rollbacks", getCategory().toString(), scope);
+    splitCommands = manager.meter(this, registry, "splits", getCategory().toString(), scope);
+    mergeIndexesCommands = manager.meter(this, registry, "merges", getCategory().toString(), scope);
+    expungeDeleteCommands = manager.meter(this, registry, "expungeDeletes", getCategory().toString(), scope);
+    manager.registerGauge(this, registry, () -> numDocsPending.longValue(), true, "docsPending", getCategory().toString(), scope);
+    manager.registerGauge(this, registry, () -> addCommands.longValue(), true, "adds", getCategory().toString(), scope);
+    manager.registerGauge(this, registry, () -> deleteByIdCommands.longValue(), true, "deletesById", getCategory().toString(), scope);
+    manager.registerGauge(this, registry, () -> deleteByQueryCommands.longValue(), true, "deletesByQuery", getCategory().toString(), scope);
+    manager.registerGauge(this, registry, () -> numErrors.longValue(), true, "errors", getCategory().toString(), scope);
 
-    addCommandsCumulative = manager.meter(registry, "cumulativeAdds", getCategory().toString(), scope);
-    deleteByIdCommandsCumulative = manager.meter(registry, "cumulativeDeletesById", getCategory().toString(), scope);
-    deleteByQueryCommandsCumulative = manager.meter(registry, "cumulativeDeletesByQuery", getCategory().toString(), scope);
-    numErrorsCumulative = manager.meter(registry, "cumulativeErrors", getCategory().toString(), scope);
+    addCommandsCumulative = manager.meter(this, registry, "cumulativeAdds", getCategory().toString(), scope);
+    deleteByIdCommandsCumulative = manager.meter(this, registry, "cumulativeDeletesById", getCategory().toString(), scope);
+    deleteByQueryCommandsCumulative = manager.meter(this, registry, "cumulativeDeletesByQuery", getCategory().toString(), scope);
+    numErrorsCumulative = manager.meter(this, registry, "cumulativeErrors", getCategory().toString(), scope);
   }
 
   private void deleteAll() throws IOException {
@@ -951,7 +964,7 @@ public class DirectUpdateHandler2 extends UpdateHandler implements SolrCoreState
 
 
   /////////////////////////////////////////////////////////////////////
-  // SolrInfoMBean stuff: Statistics and Module Info
+  // SolrInfoBean stuff: Statistics and Module Info
   /////////////////////////////////////////////////////////////////////
 
   @Override
@@ -960,69 +973,10 @@ public class DirectUpdateHandler2 extends UpdateHandler implements SolrCoreState
   }
 
   @Override
-  public String getVersion() {
-    return SolrCore.version;
-  }
-
-  @Override
   public String getDescription() {
     return "Update handler that efficiently directly updates the on-disk main lucene index";
   }
 
-  @Override
-  public String getSource() {
-    return null;
-  }
-
-  @Override
-  public URL[] getDocs() {
-    return null;
-  }
-
-  @Override
-  public NamedList getStatistics() {
-    NamedList lst = new SimpleOrderedMap();
-    lst.add("commits", commitCommands.getCount());
-    if (commitTracker.getDocsUpperBound() > 0) {
-      lst.add("autocommit maxDocs", commitTracker.getDocsUpperBound());
-    }
-    if (commitTracker.getTimeUpperBound() > 0) {
-      lst.add("autocommit maxTime", "" + commitTracker.getTimeUpperBound() + "ms");
-    }
-    lst.add("autocommits", commitTracker.getCommitCount());
-    if (softCommitTracker.getDocsUpperBound() > 0) {
-      lst.add("soft autocommit maxDocs", softCommitTracker.getDocsUpperBound());
-    }
-    if (softCommitTracker.getTimeUpperBound() > 0) {
-      lst.add("soft autocommit maxTime", "" + softCommitTracker.getTimeUpperBound() + "ms");
-    }
-    lst.add("soft autocommits", softCommitTracker.getCommitCount());
-    lst.add("optimizes", optimizeCommands.getCount());
-    lst.add("rollbacks", rollbackCommands.getCount());
-    lst.add("expungeDeletes", expungeDeleteCommands.getCount());
-    lst.add("docsPending", numDocsPending.longValue());
-    // pset.size() not synchronized, but it should be fine to access.
-    // lst.add("deletesPending", pset.size());
-    lst.add("adds", addCommands.longValue());
-    lst.add("deletesById", deleteByIdCommands.longValue());
-    lst.add("deletesByQuery", deleteByQueryCommands.longValue());
-    lst.add("errors", numErrors.longValue());
-    lst.add("cumulative_adds", addCommandsCumulative.getCount());
-    lst.add("cumulative_deletesById", deleteByIdCommandsCumulative.getCount());
-    lst.add("cumulative_deletesByQuery", deleteByQueryCommandsCumulative.getCount());
-    lst.add("cumulative_errors", numErrorsCumulative.getCount());
-    if (this.ulog != null) {
-      lst.add("transaction_logs_total_size", ulog.getTotalLogsSize());
-      lst.add("transaction_logs_total_number", ulog.getTotalLogsNumber());
-    }
-    return lst;
-  }
-
-  @Override
-  public String toString() {
-    return "DirectUpdateHandler2" + getStatistics();
-  }
-  
   @Override
   public SolrCoreState getSolrCoreState() {
     return solrCoreState;

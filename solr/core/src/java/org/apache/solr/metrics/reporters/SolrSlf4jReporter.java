@@ -18,6 +18,8 @@ package org.apache.solr.metrics.reporters;
 
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.concurrent.TimeUnit;
 
 import com.codahale.metrics.MetricFilter;
@@ -47,7 +49,7 @@ public class SolrSlf4jReporter extends SolrMetricReporter {
   private int period = 60;
   private String instancePrefix = null;
   private String logger = null;
-  private String filterPrefix = null;
+  private List<String> filters = new ArrayList<>();
   private Slf4jReporter reporter;
 
   /**
@@ -65,9 +67,24 @@ public class SolrSlf4jReporter extends SolrMetricReporter {
     this.instancePrefix = prefix;
   }
 
-  public void setFilter(String filter) {
-    this.filterPrefix = filter;
+  /**
+   * Report only metrics with names matching any of the prefix filters.
+   * @param filters list of 0 or more prefixes. If the list is empty then
+   *                all names will match.
+   */
+  public void setFilter(List<String> filters) {
+    if (filters == null || filters.isEmpty()) {
+      return;
+    }
+    this.filters.addAll(filters);
   }
+
+  public void setFilter(String filter) {
+    if (filter != null && !filter.isEmpty()) {
+      this.filters.add(filter);
+    }
+  }
+
 
   public void setLogger(String logger) {
     this.logger = logger;
@@ -79,6 +96,10 @@ public class SolrSlf4jReporter extends SolrMetricReporter {
 
   @Override
   protected void validate() throws IllegalStateException {
+    if (!enabled) {
+      log.info("Reporter disabled for registry " + registryName);
+      return;
+    }
     if (period < 1) {
       throw new IllegalStateException("Init argument 'period' is in time unit 'seconds' and must be at least 1.");
     }
@@ -93,8 +114,8 @@ public class SolrSlf4jReporter extends SolrMetricReporter {
         .convertDurationsTo(TimeUnit.MILLISECONDS);
 
     MetricFilter filter;
-    if (filterPrefix != null) {
-      filter = new SolrMetricManager.PrefixFilter(filterPrefix);
+    if (!filters.isEmpty()) {
+      filter = new SolrMetricManager.PrefixFilter(filters);
     } else {
       filter = MetricFilter.ALL;
     }

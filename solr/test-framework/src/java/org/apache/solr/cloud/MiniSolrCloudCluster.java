@@ -87,6 +87,11 @@ public class MiniSolrCloudCluster {
       "    <int name=\"distribUpdateConnTimeout\">${distribUpdateConnTimeout:45000}</int>\n" +
       "    <int name=\"distribUpdateSoTimeout\">${distribUpdateSoTimeout:340000}</int>\n" +
       "  </solrcloud>\n" +
+      "  <metrics>\n" +
+      "    <reporter name=\"default\" class=\"org.apache.solr.metrics.reporters.SolrJmxReporter\">\n" +
+      "      <str name=\"rootName\">solr_${hostPort:8983}</str>\n" +
+      "    </reporter>\n" +
+      "  </metrics>\n" +
       "  \n" +
       "</solr>\n";
 

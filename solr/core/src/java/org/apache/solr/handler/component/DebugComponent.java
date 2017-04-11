@@ -17,7 +17,6 @@
 package org.apache.solr.handler.component;
 
 import java.io.IOException;
-import java.net.URL;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -380,7 +379,7 @@ public class DebugComponent extends SearchComponent
 
   
   /////////////////////////////////////////////
-  ///  SolrInfoMBean
+  ///  SolrInfoBean
   ////////////////////////////////////////////
 
   @Override
@@ -391,10 +390,5 @@ public class DebugComponent extends SearchComponent
   @Override
   public Category getCategory() {
     return Category.OTHER;
-  }
-
-  @Override
-  public URL[] getDocs() {
-    return null;
   }
 }

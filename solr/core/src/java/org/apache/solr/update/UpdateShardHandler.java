@@ -17,10 +17,11 @@
 package org.apache.solr.update;
 
 import java.lang.invoke.MethodHandles;
-import java.net.URL;
+import java.util.HashSet;
+import java.util.Set;
 import java.util.concurrent.ExecutorService;
 
-import com.codahale.metrics.InstrumentedExecutorService;
+import com.codahale.metrics.MetricRegistry;
 import org.apache.http.client.HttpClient;
 import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.conn.PoolingHttpClientConnectionManager;
@@ -29,20 +30,20 @@ import org.apache.solr.cloud.RecoveryStrategy;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.ExecutorUtil;
-import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SolrjNamedThreadFactory;
-import org.apache.solr.core.SolrInfoMBean;
+import org.apache.solr.core.SolrInfoBean;
 import org.apache.solr.metrics.SolrMetricManager;
 import org.apache.solr.metrics.SolrMetricProducer;
 import org.apache.solr.util.stats.HttpClientMetricNameStrategy;
 import org.apache.solr.util.stats.InstrumentedHttpRequestExecutor;
 import org.apache.solr.util.stats.InstrumentedPoolingHttpClientConnectionManager;
+import org.apache.solr.util.stats.MetricUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import static org.apache.solr.util.stats.InstrumentedHttpRequestExecutor.KNOWN_METRIC_NAME_STRATEGIES;
 
-public class UpdateShardHandler implements SolrMetricProducer, SolrInfoMBean {
+public class UpdateShardHandler implements SolrMetricProducer, SolrInfoBean {
   
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
@@ -64,6 +65,9 @@ public class UpdateShardHandler implements SolrMetricProducer, SolrInfoMBean {
   private final InstrumentedPoolingHttpClientConnectionManager clientConnectionManager;
 
   private final InstrumentedHttpRequestExecutor httpRequestExecutor;
+
+  private final Set<String> metricNames = new HashSet<>();
+  private MetricRegistry registry;
 
   public UpdateShardHandler(UpdateShardHandlerConfig cfg) {
     clientConnectionManager = new InstrumentedPoolingHttpClientConnectionManager(HttpClientUtil.getSchemaRegisteryProvider().getSchemaRegistry());
@@ -104,20 +108,14 @@ public class UpdateShardHandler implements SolrMetricProducer, SolrInfoMBean {
   }
 
   @Override
-  public String getVersion() {
-    return getClass().getPackage().getSpecificationVersion();
-  }
-
-  @Override
-  public void initializeMetrics(SolrMetricManager manager, String registry, String scope) {
+  public void initializeMetrics(SolrMetricManager manager, String registryName, String scope) {
+    registry = manager.registry(registryName);
     String expandedScope = SolrMetricManager.mkName(scope, getCategory().name());
-    clientConnectionManager.initializeMetrics(manager, registry, expandedScope);
-    httpRequestExecutor.initializeMetrics(manager, registry, expandedScope);
-    updateExecutor = new InstrumentedExecutorService(updateExecutor,
-        manager.registry(registry),
+    clientConnectionManager.initializeMetrics(manager, registryName, expandedScope);
+    httpRequestExecutor.initializeMetrics(manager, registryName, expandedScope);
+    updateExecutor = MetricUtils.instrumentedExecutorService(updateExecutor, this, registry,
         SolrMetricManager.mkName("updateExecutor", expandedScope, "threadPool"));
-    recoveryExecutor = new InstrumentedExecutorService(recoveryExecutor,
-        manager.registry(registry),
+    recoveryExecutor = MetricUtils.instrumentedExecutorService(recoveryExecutor, this, registry,
         SolrMetricManager.mkName("recoveryExecutor", expandedScope, "threadPool"));
   }
 
@@ -132,18 +130,13 @@ public class UpdateShardHandler implements SolrMetricProducer, SolrInfoMBean {
   }
 
   @Override
-  public String getSource() {
-    return null;
+  public Set<String> getMetricNames() {
+    return metricNames;
   }
 
   @Override
-  public URL[] getDocs() {
-    return new URL[0];
-  }
-
-  @Override
-  public NamedList getStatistics() {
-    return null;
+  public MetricRegistry getMetricRegistry() {
+    return registry;
   }
 
   public HttpClient getHttpClient() {

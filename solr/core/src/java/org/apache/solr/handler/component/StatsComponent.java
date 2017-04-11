@@ -160,7 +160,7 @@ public class StatsComponent extends SearchComponent {
   }
 
   /////////////////////////////////////////////
-  ///  SolrInfoMBean
+  ///  SolrInfoBean
   ////////////////////////////////////////////
 
   @Override

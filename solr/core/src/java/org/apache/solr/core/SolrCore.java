@@ -27,7 +27,6 @@ import java.io.OutputStreamWriter;
 import java.io.Writer;
 import java.lang.invoke.MethodHandles;
 import java.lang.reflect.Constructor;
-import java.net.URL;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.NoSuchFileException;
 import java.nio.file.Path;
@@ -58,6 +57,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.locks.ReentrantLock;
 
 import com.codahale.metrics.Counter;
+import com.codahale.metrics.MetricRegistry;
 import com.codahale.metrics.Timer;
 import com.google.common.collect.MapMaker;
 import org.apache.commons.io.FileUtils;
@@ -133,7 +133,7 @@ import org.apache.solr.schema.IndexSchemaFactory;
 import org.apache.solr.schema.ManagedIndexSchema;
 import org.apache.solr.schema.SimilarityFactory;
 import org.apache.solr.search.QParserPlugin;
-import org.apache.solr.search.SolrFieldCacheMBean;
+import org.apache.solr.search.SolrFieldCacheBean;
 import org.apache.solr.search.SolrIndexSearcher;
 import org.apache.solr.search.ValueSourceParser;
 import org.apache.solr.search.stats.LocalStatsCache;
@@ -171,7 +171,7 @@ import static org.apache.solr.common.params.CommonParams.PATH;
 /**
  *
  */
-public final class SolrCore implements SolrInfoMBean, SolrMetricProducer, Closeable {
+public final class SolrCore implements SolrInfoBean, SolrMetricProducer, Closeable {
 
   public static final String version="1.0";
 
@@ -202,7 +202,7 @@ public final class SolrCore implements SolrInfoMBean, SolrMetricProducer, Closea
   private final PluginBag<UpdateRequestProcessorFactory> updateProcessors = new PluginBag<>(UpdateRequestProcessorFactory.class, this, true);
   private final Map<String,UpdateRequestProcessorChain> updateProcessorChains;
   private final SolrCoreMetricManager coreMetricManager;
-  private final Map<String, SolrInfoMBean> infoRegistry;
+  private final Map<String, SolrInfoBean> infoRegistry = new ConcurrentHashMap<>();
   private final IndexDeletionPolicyWrapper solrDelPolicy;
   private final SolrSnapshotMetaDataManager snapshotMgr;
   private final DirectoryFactory directoryFactory;
@@ -221,6 +221,12 @@ public final class SolrCore implements SolrInfoMBean, SolrMetricProducer, Closea
   private Counter newSearcherCounter;
   private Counter newSearcherMaxReachedCounter;
   private Counter newSearcherOtherErrorsCounter;
+
+  private Set<String> metricNames = new HashSet<>();
+
+  public Set<String> getMetricNames() {
+    return metricNames;
+  }
 
   public Date getStartTimeStamp() { return startTime; }
 
@@ -448,14 +454,14 @@ public final class SolrCore implements SolrInfoMBean, SolrMetricProducer, Closea
   }
 
   /**
-   * Returns a Map of name vs SolrInfoMBean objects. The returned map is an instance of
+   * Returns a Map of name vs SolrInfoBean objects. The returned map is an instance of
    * a ConcurrentHashMap and therefore no synchronization is needed for putting, removing
    * or iterating over it.
    *
-   * @return the Info Registry map which contains SolrInfoMBean objects keyed by name
+   * @return the Info Registry map which contains SolrInfoBean objects keyed by name
    * @since solr 1.3
    */
-  public Map<String, SolrInfoMBean> getInfoRegistry() {
+  public Map<String, SolrInfoBean> getInfoRegistry() {
     return infoRegistry;
   }
 
@@ -905,9 +911,12 @@ public final class SolrCore implements SolrInfoMBean, SolrMetricProducer, Closea
     // initialize searcher-related metrics
     initializeMetrics(metricManager, coreMetricManager.getRegistryName(), null);
 
-    // Initialize JMX
-    this.infoRegistry = initInfoRegistry(name, config);
-    infoRegistry.put("fieldCache", new SolrFieldCacheMBean());
+    SolrFieldCacheBean solrFieldCacheBean = new SolrFieldCacheBean();
+    // this is registered at the CONTAINER level because it's not core-specific - for now we
+    // also register it here for back-compat
+    solrFieldCacheBean.initializeMetrics(metricManager, coreMetricManager.getRegistryName(), "core");
+    infoRegistry.put("fieldCache", solrFieldCacheBean);
+
 
     initSchema(config, schema);
 
@@ -998,15 +1007,9 @@ public final class SolrCore implements SolrInfoMBean, SolrMetricProducer, Closea
     // from the core.
     resourceLoader.inform(infoRegistry);
 
-    // Allow the directory factory to register MBeans as well
-    for (SolrInfoMBean bean : directoryFactory.offerMBeans()) {
-      log.debug("Registering JMX bean [{}] from directory factory.", bean.getName());
-      // Not worried about concurrency, so no reason to use putIfAbsent
-      if (infoRegistry.containsKey(bean.getName())){
-        log.debug("Ignoring JMX bean [{}] due to name conflict.", bean.getName());
-      } else {
-        infoRegistry.put(bean.getName(), bean);
-      }
+    // Allow the directory factory to report metrics
+    if (directoryFactory instanceof SolrMetricProducer) {
+      ((SolrMetricProducer)directoryFactory).initializeMetrics(metricManager, coreMetricManager.getRegistryName(), "directoryFactory");
     }
 
     // seed version buckets with max from index during core initialization ... requires a searcher!
@@ -1126,34 +1129,46 @@ public final class SolrCore implements SolrInfoMBean, SolrMetricProducer, Closea
 
   @Override
   public void initializeMetrics(SolrMetricManager manager, String registry, String scope) {
-    newSearcherCounter = manager.counter(registry, "new", Category.SEARCHER.toString());
-    newSearcherTimer = manager.timer(registry, "time", Category.SEARCHER.toString(), "new");
-    newSearcherWarmupTimer = manager.timer(registry, "warmup", Category.SEARCHER.toString(), "new");
-    newSearcherMaxReachedCounter = manager.counter(registry, "maxReached", Category.SEARCHER.toString(), "new");
-    newSearcherOtherErrorsCounter = manager.counter(registry, "errors", Category.SEARCHER.toString(), "new");
+    newSearcherCounter = manager.counter(this, registry, "new", Category.SEARCHER.toString());
+    newSearcherTimer = manager.timer(this, registry, "time", Category.SEARCHER.toString(), "new");
+    newSearcherWarmupTimer = manager.timer(this, registry, "warmup", Category.SEARCHER.toString(), "new");
+    newSearcherMaxReachedCounter = manager.counter(this, registry, "maxReached", Category.SEARCHER.toString(), "new");
+    newSearcherOtherErrorsCounter = manager.counter(this, registry, "errors", Category.SEARCHER.toString(), "new");
 
-    manager.registerGauge(registry, () -> name == null ? "(null)" : name, true, "coreName", Category.CORE.toString());
-    manager.registerGauge(registry, () -> startTime, true, "startTime", Category.CORE.toString());
-    manager.registerGauge(registry, () -> getOpenCount(), true, "refCount", Category.CORE.toString());
-    manager.registerGauge(registry, () -> resourceLoader.getInstancePath().toString(), true, "instanceDir", Category.CORE.toString());
-    manager.registerGauge(registry, () -> getIndexDir(), true, "indexDir", Category.CORE.toString());
-    manager.registerGauge(registry, () -> getIndexSize(), true, "sizeInBytes", Category.INDEX.toString());
-    manager.registerGauge(registry, () -> NumberUtils.readableSize(getIndexSize()), true, "size", Category.INDEX.toString());
-    manager.registerGauge(registry, () -> coreDescriptor.getCoreContainer().getCoreNames(this), true, "aliases", Category.CORE.toString());
+    manager.registerGauge(this, registry, () -> name == null ? "(null)" : name, true, "coreName", Category.CORE.toString());
+    manager.registerGauge(this, registry, () -> startTime, true, "startTime", Category.CORE.toString());
+    manager.registerGauge(this, registry, () -> getOpenCount(), true, "refCount", Category.CORE.toString());
+    manager.registerGauge(this, registry, () -> resourceLoader.getInstancePath().toString(), true, "instanceDir", Category.CORE.toString());
+    manager.registerGauge(this, registry, () -> getIndexDir(), true, "indexDir", Category.CORE.toString());
+    manager.registerGauge(this, registry, () -> getIndexSize(), true, "sizeInBytes", Category.INDEX.toString());
+    manager.registerGauge(this, registry, () -> NumberUtils.readableSize(getIndexSize()), true, "size", Category.INDEX.toString());
+    if (coreDescriptor != null && coreDescriptor.getCoreContainer() != null) {
+      manager.registerGauge(this, registry, () -> coreDescriptor.getCoreContainer().getCoreNames(this), true, "aliases", Category.CORE.toString());
+      final CloudDescriptor cd = coreDescriptor.getCloudDescriptor();
+      if (cd != null) {
+        manager.registerGauge(this, registry, () -> {
+          if (cd.getCollectionName() != null) {
+            return cd.getCollectionName();
+          } else {
+            return "_notset_";
+          }
+        }, true, "collection", Category.CORE.toString());
+
+        manager.registerGauge(this, registry, () -> {
+          if (cd.getShardId() != null) {
+            return cd.getShardId();
+          } else {
+            return "_auto_";
+          }
+        }, true, "shard", Category.CORE.toString());
+      }
+    }
+
     // initialize disk total / free metrics
     Path dataDirPath = Paths.get(dataDir);
     File dataDirFile = dataDirPath.toFile();
-    manager.registerGauge(registry, () -> dataDirFile.getTotalSpace(), true, "totalSpace", Category.CORE.toString(), "fs");
-    manager.registerGauge(registry, () -> dataDirFile.getUsableSpace(), true, "usableSpace", Category.CORE.toString(), "fs");
-  }
-
-  private Map<String,SolrInfoMBean> initInfoRegistry(String name, SolrConfig config) {
-    if (config.jmxConfig.enabled) {
-      return new JmxMonitoredMap<String, SolrInfoMBean>(name, coreMetricManager.getRegistryName(), String.valueOf(this.hashCode()), config.jmxConfig);
-    } else  {
-      log.debug("JMX monitoring not detected for core: " + name);
-      return new ConcurrentHashMap<>();
-    }
+    manager.registerGauge(this, registry, () -> dataDirFile.getTotalSpace(), true, "totalSpace", Category.CORE.toString(), "fs");
+    manager.registerGauge(this, registry, () -> dataDirFile.getUsableSpace(), true, "usableSpace", Category.CORE.toString(), "fs");
   }
 
   private void checkVersionFieldExistsInSchema(IndexSchema schema, CoreDescriptor coreDescriptor) {
@@ -2685,11 +2700,20 @@ public final class SolrCore implements SolrInfoMBean, SolrMetricProducer, Closea
     for (PluginInfo info : pluginInfos) {
       T o = createInitInstance(info,type, type.getSimpleName(), defClassName);
       registry.put(info.name, o);
+      if (o instanceof SolrMetricProducer) {
+        coreMetricManager.registerMetricProducer(type.getSimpleName() + "." + info.name, (SolrMetricProducer)o);
+      }
       if(info.isDefault()){
         def = o;
       }
     }
     return def;
+  }
+
+  public void initDefaultPlugin(Object plugin, Class type) {
+    if (plugin instanceof SolrMetricProducer) {
+      coreMetricManager.registerMetricProducer(type.getSimpleName() + ".default", (SolrMetricProducer)plugin);
+    }
   }
 
   /**For a given List of PluginInfo return the instances as a List
@@ -2775,13 +2799,8 @@ public final class SolrCore implements SolrInfoMBean, SolrMetricProducer, Closea
   }
 
   /////////////////////////////////////////////////////////////////////
-  // SolrInfoMBean stuff: Statistics and Module Info
+  // SolrInfoBean stuff: Statistics and Module Info
   /////////////////////////////////////////////////////////////////////
-
-  @Override
-  public String getVersion() {
-    return SolrCore.version;
-  }
 
   @Override
   public String getDescription() {
@@ -2794,48 +2813,8 @@ public final class SolrCore implements SolrInfoMBean, SolrMetricProducer, Closea
   }
 
   @Override
-  public String getSource() {
-    return null;
-  }
-
-  @Override
-  public URL[] getDocs() {
-    return null;
-  }
-
-  @Override
-  public NamedList getStatistics() {
-    NamedList<Object> lst = new SimpleOrderedMap<>(8);
-    lst.add("coreName", name==null ? "(null)" : name);
-    lst.add("startTime", startTime);
-    lst.add("refCount", getOpenCount());
-    lst.add("instanceDir", resourceLoader.getInstancePath());
-    lst.add("indexDir", getIndexDir());
-    long size = getIndexSize();
-    lst.add("sizeInBytes", size);
-    lst.add("size", NumberUtils.readableSize(size));
-
-    CoreDescriptor cd = getCoreDescriptor();
-    if (cd != null) {
-      if (null != cd && cd.getCoreContainer() != null) {
-        lst.add("aliases", getCoreDescriptor().getCoreContainer().getCoreNames(this));
-      }
-      CloudDescriptor cloudDesc = cd.getCloudDescriptor();
-      if (cloudDesc != null) {
-        String collection = cloudDesc.getCollectionName();
-        if (collection == null) {
-          collection = "_notset_";
-        }
-        lst.add("collection", collection);
-        String shard = cloudDesc.getShardId();
-        if (shard == null) {
-          shard = "_auto_";
-        }
-        lst.add("shard", shard);
-      }
-    }
-
-    return lst;
+  public MetricRegistry getMetricRegistry() {
+    return coreMetricManager.getRegistry();
   }
 
   public Codec getCodec() {
@@ -2983,11 +2962,11 @@ public final class SolrCore implements SolrInfoMBean, SolrMetricProducer, Closea
     };
   }
 
-  public void registerInfoBean(String name, SolrInfoMBean solrInfoMBean) {
-    infoRegistry.put(name, solrInfoMBean);
+  public void registerInfoBean(String name, SolrInfoBean solrInfoBean) {
+    infoRegistry.put(name, solrInfoBean);
 
-    if (solrInfoMBean instanceof SolrMetricProducer) {
-      SolrMetricProducer producer = (SolrMetricProducer) solrInfoMBean;
+    if (solrInfoBean instanceof SolrMetricProducer) {
+      SolrMetricProducer producer = (SolrMetricProducer) solrInfoBean;
       coreMetricManager.registerMetricProducer(name, producer);
     }
   }

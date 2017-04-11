@@ -17,6 +17,7 @@
 
 package org.apache.solr.handler.admin;
 
+import java.lang.management.ManagementFactory;
 import java.util.Map;
 
 import org.apache.solr.SolrTestCaseJ4;
@@ -33,6 +34,9 @@ import org.junit.Test;
 public class MetricsHandlerTest extends SolrTestCaseJ4 {
   @BeforeClass
   public static void beforeClass() throws Exception {
+    // this is needed to enable default SolrJmxReporter in TestHarness
+    ManagementFactory.getPlatformMBeanServer();
+
     initCore("solrconfig.xml", "schema.xml");
   }
 
@@ -132,6 +136,17 @@ public class MetricsHandlerTest extends SolrTestCaseJ4 {
     assertNotNull(values.get("solr.node"));
     values = (NamedList) values.get("solr.node");
     assertNotNull(values.get("CONTAINER.cores.lazy")); // this is a gauge node
+    assertNotNull(values.get("CONTAINER.threadPool.coreContainerWorkExecutor.completed"));
+    assertNotNull(values.get("CONTAINER.threadPool.coreLoadExecutor.completed"));
+
+    resp = new SolrQueryResponse();
+    handler.handleRequestBody(req(CommonParams.QT, "/admin/metrics", CommonParams.WT, "json", "prefix", "CONTAINER.cores", "regex", "C.*thread.*completed"), resp);
+    values = resp.getValues();
+    assertNotNull(values.get("metrics"));
+    values = (NamedList) values.get("metrics");
+    assertNotNull(values.get("solr.node"));
+    values = (NamedList) values.get("solr.node");
+    assertEquals(5, values.size());
     assertNotNull(values.get("CONTAINER.threadPool.coreContainerWorkExecutor.completed"));
     assertNotNull(values.get("CONTAINER.threadPool.coreLoadExecutor.completed"));
 

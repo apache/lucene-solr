@@ -16,11 +16,14 @@
  */
 package org.apache.solr;
 
-import org.apache.solr.core.SolrInfoMBean;
+import org.apache.lucene.util.TestUtil;
+import org.apache.solr.core.SolrInfoBean;
 import org.apache.solr.handler.StandardRequestHandler;
 import org.apache.solr.handler.admin.LukeRequestHandler;
 import org.apache.solr.handler.component.SearchComponent;
 import org.apache.solr.highlight.DefaultSolrHighlighter;
+import org.apache.solr.metrics.SolrMetricManager;
+import org.apache.solr.metrics.SolrMetricProducer;
 import org.apache.solr.search.LRUCache;
 import org.junit.BeforeClass;
 import java.io.File;
@@ -33,7 +36,7 @@ import java.util.List;
 /**
  * A simple test used to increase code coverage for some standard things...
  */
-public class SolrInfoMBeanTest extends SolrTestCaseJ4
+public class SolrInfoBeanTest extends SolrTestCaseJ4
 {
   @BeforeClass
   public static void beforeClass() throws Exception {
@@ -54,10 +57,16 @@ public class SolrInfoMBeanTest extends SolrTestCaseJ4
    // System.out.println(classes);
     
     int checked = 0;
+    SolrMetricManager metricManager = h.getCoreContainer().getMetricManager();
+    String registry = h.getCore().getCoreMetricManager().getRegistryName();
+    String scope = TestUtil.randomSimpleString(random(), 2, 10);
     for( Class clazz : classes ) {
-      if( SolrInfoMBean.class.isAssignableFrom( clazz ) ) {
+      if( SolrInfoBean.class.isAssignableFrom( clazz ) ) {
         try {
-          SolrInfoMBean info = (SolrInfoMBean)clazz.newInstance();
+          SolrInfoBean info = (SolrInfoBean)clazz.newInstance();
+          if (info instanceof SolrMetricProducer) {
+            ((SolrMetricProducer)info).initializeMetrics(metricManager, registry, scope);
+          }
           
           //System.out.println( info.getClass() );
           assertNotNull( info.getName() );
@@ -69,9 +78,6 @@ public class SolrInfoMBeanTest extends SolrTestCaseJ4
           }
           
           assertNotNull( info.toString() );
-          // increase code coverage...
-          assertNotNull( info.getDocs() + "" );
-          assertNotNull( info.getStatistics()+"" );
           checked++;
         }
         catch( InstantiationException ex ) {
@@ -80,7 +86,7 @@ public class SolrInfoMBeanTest extends SolrTestCaseJ4
         }
       }
     }
-    assertTrue( "there are at least 10 SolrInfoMBean that should be found in the classpath, found " + checked, checked > 10 );
+    assertTrue( "there are at least 10 SolrInfoBean that should be found in the classpath, found " + checked, checked > 10 );
   }
   
   private static List<Class> getClassesForPackage(String pckgname) throws Exception {

@@ -19,13 +19,13 @@ package org.apache.solr.search;
 import java.io.Closeable;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
-import java.net.URL;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.Date;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -34,6 +34,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 
+import com.codahale.metrics.MetricRegistry;
 import com.google.common.collect.Iterables;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.index.DirectoryReader;
@@ -58,15 +59,15 @@ import org.apache.lucene.util.FixedBitSet;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.params.ModifiableSolrParams;
-import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.ObjectReleaseTracker;
-import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.core.DirectoryFactory;
 import org.apache.solr.core.DirectoryFactory.DirContext;
 import org.apache.solr.core.SolrConfig;
 import org.apache.solr.core.SolrCore;
-import org.apache.solr.core.SolrInfoMBean;
+import org.apache.solr.core.SolrInfoBean;
 import org.apache.solr.index.SlowCompositeReaderWrapper;
+import org.apache.solr.metrics.SolrMetricManager;
+import org.apache.solr.metrics.SolrMetricProducer;
 import org.apache.solr.request.LocalSolrQueryRequest;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.request.SolrRequestInfo;
@@ -86,7 +87,7 @@ import org.slf4j.LoggerFactory;
  *
  * @since solr 0.9
  */
-public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrInfoMBean {
+public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrInfoBean, SolrMetricProducer {
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
@@ -136,7 +137,7 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
   private final String path;
   private boolean releaseDirectory;
 
-  private final NamedList<Object> readerStats;
+  private Set<String> metricNames = new HashSet<>();
 
   private static DirectoryReader getReader(SolrCore core, SolrIndexConfig config, DirectoryFactory directoryFactory,
                                            String path) throws IOException {
@@ -302,7 +303,6 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
     // We already have our own filter cache
     setQueryCache(null);
 
-    readerStats = snapStatistics(reader);
     // do this at the end since an exception in the constructor means we won't close
     numOpens.incrementAndGet();
     assert ObjectReleaseTracker.track(this);
@@ -404,10 +404,10 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
   }
 
   /**
-   * Register sub-objects such as caches
+   * Register sub-objects such as caches and our own metrics
    */
   public void register() {
-    final Map<String,SolrInfoMBean> infoRegistry = core.getInfoRegistry();
+    final Map<String,SolrInfoBean> infoRegistry = core.getInfoRegistry();
     // register self
     infoRegistry.put(STATISTICS_KEY, this);
     infoRegistry.put(name, this);
@@ -415,6 +415,12 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
       cache.setState(SolrCache.State.LIVE);
       infoRegistry.put(cache.name(), cache);
     }
+    SolrMetricManager manager = core.getCoreDescriptor().getCoreContainer().getMetricManager();
+    String registry = core.getCoreMetricManager().getRegistryName();
+    for (SolrCache cache : cacheList) {
+      cache.initializeMetrics(manager, registry, SolrMetricManager.mkName(cache.name(), STATISTICS_KEY));
+    }
+    initializeMetrics(manager, registry, STATISTICS_KEY);
     registerTime = new Date();
   }
 
@@ -2190,17 +2196,12 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
 
 
   /////////////////////////////////////////////////////////////////////
-  // SolrInfoMBean stuff: Statistics and Module Info
+  // SolrInfoBean stuff: Statistics and Module Info
   /////////////////////////////////////////////////////////////////////
 
   @Override
   public String getName() {
     return SolrIndexSearcher.class.getName();
-  }
-
-  @Override
-  public String getVersion() {
-    return SolrCore.version;
   }
 
   @Override
@@ -2214,38 +2215,31 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
   }
 
   @Override
-  public String getSource() {
-    return null;
+  public Set<String> getMetricNames() {
+    return metricNames;
   }
 
   @Override
-  public URL[] getDocs() {
-    return null;
+  public void initializeMetrics(SolrMetricManager manager, String registry, String scope) {
+
+    manager.registerGauge(this, registry, () -> name, true, "searcherName", Category.SEARCHER.toString(), scope);
+    manager.registerGauge(this, registry, () -> cachingEnabled, true, "caching", Category.SEARCHER.toString(), scope);
+    manager.registerGauge(this, registry, () -> openTime, true, "openedAt", Category.SEARCHER.toString(), scope);
+    manager.registerGauge(this, registry, () -> warmupTime, true, "warmupTime", Category.SEARCHER.toString(), scope);
+    manager.registerGauge(this, registry, () -> registerTime, true, "registeredAt", Category.SEARCHER.toString(), scope);
+    // reader stats
+    manager.registerGauge(this, registry, () -> reader.numDocs(), true, "numDocs", Category.SEARCHER.toString(), scope);
+    manager.registerGauge(this, registry, () -> reader.maxDoc(), true, "maxDoc", Category.SEARCHER.toString(), scope);
+    manager.registerGauge(this, registry, () -> reader.maxDoc() - reader.numDocs(), true, "deletedDocs", Category.SEARCHER.toString(), scope);
+    manager.registerGauge(this, registry, () -> reader.toString(), true, "reader", Category.SEARCHER.toString(), scope);
+    manager.registerGauge(this, registry, () -> reader.directory().toString(), true, "readerDir", Category.SEARCHER.toString(), scope);
+    manager.registerGauge(this, registry, () -> reader.getVersion(), true, "indexVersion", Category.SEARCHER.toString(), scope);
+
   }
 
   @Override
-  public NamedList<Object> getStatistics() {
-    final NamedList<Object> lst = new SimpleOrderedMap<>();
-    lst.add("searcherName", name);
-    lst.add("caching", cachingEnabled);
-
-    lst.addAll(readerStats);
-
-    lst.add("openedAt", openTime);
-    if (registerTime != null) lst.add("registeredAt", registerTime);
-    lst.add("warmupTime", warmupTime);
-    return lst;
-  }
-
-  static private NamedList<Object> snapStatistics(DirectoryReader reader) {
-    final NamedList<Object> lst = new SimpleOrderedMap<>();
-    lst.add("numDocs", reader.numDocs());
-    lst.add("maxDoc", reader.maxDoc());
-    lst.add("deletedDocs", reader.maxDoc() - reader.numDocs());
-    lst.add("reader", reader.toString());
-    lst.add("readerDir", reader.directory());
-    lst.add("indexVersion", reader.getVersion());
-    return lst;
+  public MetricRegistry getMetricRegistry() {
+    return core.getMetricRegistry();
   }
 
   private static class FilterImpl extends Filter {

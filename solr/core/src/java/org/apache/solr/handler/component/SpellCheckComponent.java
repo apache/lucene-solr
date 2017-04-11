@@ -853,7 +853,7 @@ public class SpellCheckComponent extends SearchComponent implements SolrCoreAwar
   }
 
   // ///////////////////////////////////////////
-  // / SolrInfoMBean
+  // / SolrInfoBean
   // //////////////////////////////////////////
 
   @Override

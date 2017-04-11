@@ -90,6 +90,8 @@ import org.apache.solr.core.SolrEventListener;
 import org.apache.solr.core.backup.repository.BackupRepository;
 import org.apache.solr.core.backup.repository.LocalFileSystemRepository;
 import org.apache.solr.core.snapshots.SolrSnapshotMetaDataManager;
+import org.apache.solr.metrics.MetricsMap;
+import org.apache.solr.metrics.SolrMetricManager;
 import org.apache.solr.handler.IndexFetcher.IndexFetchResult;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
@@ -161,6 +163,10 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
         LOG.warn("Unable to get version from commitData, commit: " + commit, e);
       }
       return new CommitVersionInfo(generation, version);
+    }
+
+    public String toString() {
+      return "generation=" + generation + ",version=" + version;
     }
   }
 
@@ -851,52 +857,56 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
   }
 
   @Override
-  @SuppressWarnings("unchecked")
-  public NamedList getStatistics() {
-    NamedList list = super.getStatistics();
-    if (core != null) {
-      list.add("indexSize", NumberUtils.readableSize(core.getIndexSize()));
-      CommitVersionInfo vInfo = (core != null && !core.isClosed()) ? getIndexVersion(): null;
-      list.add("indexVersion", null == vInfo ? 0 : vInfo.version);
-      list.add(GENERATION, null == vInfo ? 0 : vInfo.generation);
+  public void initializeMetrics(SolrMetricManager manager, String registry, String scope) {
+    super.initializeMetrics(manager, registry, scope);
 
-      list.add("indexPath", core.getIndexDir());
-      list.add("isMaster", String.valueOf(isMaster));
-      list.add("isSlave", String.valueOf(isSlave));
-
+    manager.registerGauge(this, registry, () -> core != null ? NumberUtils.readableSize(core.getIndexSize()) : "", true,
+        "indexSize", getCategory().toString(), scope);
+    manager.registerGauge(this, registry, () -> (core != null && !core.isClosed() ? getIndexVersion().toString() : ""), true,
+        "indexVersion", getCategory().toString(), scope);
+    manager.registerGauge(this, registry, () -> (core != null && !core.isClosed() ? getIndexVersion().generation : 0), true,
+        GENERATION, getCategory().toString(), scope);
+    manager.registerGauge(this, registry, () -> core != null ? core.getIndexDir() : "", true,
+        "indexPath", getCategory().toString(), scope);
+    manager.registerGauge(this, registry, () -> isMaster, true,
+        "isMaster", getCategory().toString(), scope);
+    manager.registerGauge(this, registry, () -> isSlave, true,
+        "isSlave", getCategory().toString(), scope);
+    final MetricsMap fetcherMap = new MetricsMap((detailed, map) -> {
       IndexFetcher fetcher = currentIndexFetcher;
       if (fetcher != null) {
-        list.add(MASTER_URL, fetcher.getMasterUrl());
+        map.put(MASTER_URL, fetcher.getMasterUrl());
         if (getPollInterval() != null) {
-          list.add(POLL_INTERVAL, getPollInterval());
+          map.put(POLL_INTERVAL, getPollInterval());
         }
-        list.add("isPollingDisabled", String.valueOf(isPollingDisabled()));
-        list.add("isReplicating", String.valueOf(isReplicating()));
+        map.put("isPollingDisabled", isPollingDisabled());
+        map.put("isReplicating", isReplicating());
         long elapsed = fetcher.getReplicationTimeElapsed();
         long val = fetcher.getTotalBytesDownloaded();
         if (elapsed > 0) {
-          list.add("timeElapsed", elapsed);
-          list.add("bytesDownloaded", val);
-          list.add("downloadSpeed", val / elapsed);
+          map.put("timeElapsed", elapsed);
+          map.put("bytesDownloaded", val);
+          map.put("downloadSpeed", val / elapsed);
         }
         Properties props = loadReplicationProperties();
-        addVal(list, IndexFetcher.PREVIOUS_CYCLE_TIME_TAKEN, props, Long.class);
-        addVal(list, IndexFetcher.INDEX_REPLICATED_AT, props, Date.class);
-        addVal(list, IndexFetcher.CONF_FILES_REPLICATED_AT, props, Date.class);
-        addVal(list, IndexFetcher.REPLICATION_FAILED_AT, props, Date.class);
-        addVal(list, IndexFetcher.TIMES_FAILED, props, Integer.class);
-        addVal(list, IndexFetcher.TIMES_INDEX_REPLICATED, props, Integer.class);
-        addVal(list, IndexFetcher.LAST_CYCLE_BYTES_DOWNLOADED, props, Long.class);
-        addVal(list, IndexFetcher.TIMES_CONFIG_REPLICATED, props, Integer.class);
-        addVal(list, IndexFetcher.CONF_FILES_REPLICATED, props, String.class);
+        addVal(map, IndexFetcher.PREVIOUS_CYCLE_TIME_TAKEN, props, Long.class);
+        addVal(map, IndexFetcher.INDEX_REPLICATED_AT, props, Date.class);
+        addVal(map, IndexFetcher.CONF_FILES_REPLICATED_AT, props, Date.class);
+        addVal(map, IndexFetcher.REPLICATION_FAILED_AT, props, Date.class);
+        addVal(map, IndexFetcher.TIMES_FAILED, props, Integer.class);
+        addVal(map, IndexFetcher.TIMES_INDEX_REPLICATED, props, Integer.class);
+        addVal(map, IndexFetcher.LAST_CYCLE_BYTES_DOWNLOADED, props, Long.class);
+        addVal(map, IndexFetcher.TIMES_CONFIG_REPLICATED, props, Integer.class);
+        addVal(map, IndexFetcher.CONF_FILES_REPLICATED, props, String.class);
       }
-      if (isMaster) {
-        if (includeConfFiles != null) list.add("confFilesToReplicate", includeConfFiles);
-        list.add(REPLICATE_AFTER, getReplicateAfterStrings());
-        list.add("replicationEnabled", String.valueOf(replicationEnabled.get()));
-      }
-    }
-    return list;
+    });
+    manager.registerGauge(this, registry, fetcherMap, true, "fetcher", getCategory().toString(), scope);
+    manager.registerGauge(this, registry, () -> isMaster && includeConfFiles != null ? includeConfFiles : "", true,
+        "confFilesToReplicate", getCategory().toString(), scope);
+    manager.registerGauge(this, registry, () -> isMaster ? getReplicateAfterStrings() : Collections.<String>emptyList(), true,
+        REPLICATE_AFTER, getCategory().toString(), scope);
+    manager.registerGauge(this, registry, () -> isMaster && replicationEnabled.get(), true,
+        "replicationEnabled", getCategory().toString(), scope);
   }
 
   /**
@@ -1064,24 +1074,39 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
   }
 
   private void addVal(NamedList<Object> nl, String key, Properties props, Class clzz) {
+    Object val = formatVal(key, props, clzz);
+    if (val != null) {
+      nl.add(key, val);
+    }
+  }
+
+  private void addVal(Map<String, Object> map, String key, Properties props, Class clzz) {
+    Object val = formatVal(key, props, clzz);
+    if (val != null) {
+      map.put(key, val);
+    }
+  }
+
+  private Object formatVal(String key, Properties props, Class clzz) {
     String s = props.getProperty(key);
-    if (s == null || s.trim().length() == 0) return;
+    if (s == null || s.trim().length() == 0) return null;
     if (clzz == Date.class) {
       try {
         Long l = Long.parseLong(s);
-        nl.add(key, new Date(l).toString());
-      } catch (NumberFormatException e) {/*no op*/ }
+        return new Date(l).toString();
+      } catch (NumberFormatException e) {
+        return null;
+      }
     } else if (clzz == List.class) {
       String ss[] = s.split(",");
       List<String> l = new ArrayList<>();
       for (String s1 : ss) {
         l.add(new Date(Long.parseLong(s1)).toString());
       }
-      nl.add(key, l);
+      return l;
     } else {
-      nl.add(key, s);
+      return s;
     }
-
   }
 
   private List<String> getReplicateAfterStrings() {

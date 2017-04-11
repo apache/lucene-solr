@@ -16,7 +16,6 @@
  */
 package org.apache.solr.servlet;
 
-import javax.management.MBeanServer;
 import javax.servlet.FilterChain;
 import javax.servlet.FilterConfig;
 import javax.servlet.ServletException;
@@ -34,7 +33,6 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.lang.invoke.MethodHandles;
-import java.lang.management.ManagementFactory;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.time.Instant;
@@ -47,7 +45,6 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import com.codahale.metrics.jvm.BufferPoolMetricSet;
 import com.codahale.metrics.jvm.ClassLoadingGaugeSet;
 import com.codahale.metrics.jvm.GarbageCollectorMetricSet;
 import com.codahale.metrics.jvm.MemoryUsageGaugeSet;
@@ -66,9 +63,10 @@ import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.NodeConfig;
 import org.apache.solr.core.SolrCore;
-import org.apache.solr.core.SolrInfoMBean;
+import org.apache.solr.core.SolrInfoBean;
 import org.apache.solr.core.SolrResourceLoader;
 import org.apache.solr.core.SolrXmlConfig;
+import org.apache.solr.metrics.AltBufferPoolMetricSet;
 import org.apache.solr.metrics.OperatingSystemMetricSet;
 import org.apache.solr.metrics.SolrMetricManager;
 import org.apache.solr.request.SolrRequestInfo;
@@ -185,13 +183,12 @@ public class SolrDispatchFilter extends BaseSolrFilter {
   }
 
   private void setupJvmMetrics()  {
-    MBeanServer platformMBeanServer = ManagementFactory.getPlatformMBeanServer();
     SolrMetricManager metricManager = cores.getMetricManager();
     try {
-      String registry = SolrMetricManager.getRegistryName(SolrInfoMBean.Group.jvm);
-      metricManager.registerAll(registry, new BufferPoolMetricSet(platformMBeanServer), true, "buffers");
+      String registry = SolrMetricManager.getRegistryName(SolrInfoBean.Group.jvm);
+      metricManager.registerAll(registry, new AltBufferPoolMetricSet(), true, "buffers");
       metricManager.registerAll(registry, new ClassLoadingGaugeSet(), true, "classes");
-      metricManager.registerAll(registry, new OperatingSystemMetricSet(platformMBeanServer), true, "os");
+      metricManager.registerAll(registry, new OperatingSystemMetricSet(), true, "os");
       metricManager.registerAll(registry, new GarbageCollectorMetricSet(), true, "gc");
       metricManager.registerAll(registry, new MemoryUsageGaugeSet(), true, "memory");
       metricManager.registerAll(registry, new ThreadStatesGaugeSet(), true, "threads"); // todo should we use CachedThreadStatesGaugeSet instead?

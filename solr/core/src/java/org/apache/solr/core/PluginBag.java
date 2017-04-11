@@ -294,8 +294,8 @@ public class PluginBag<T> implements AutoCloseable {
 
   private void registerMBean(Object inst, SolrCore core, String pluginKey) {
     if (core == null) return;
-    if (inst instanceof SolrInfoMBean) {
-      SolrInfoMBean mBean = (SolrInfoMBean) inst;
+    if (inst instanceof SolrInfoBean) {
+      SolrInfoBean mBean = (SolrInfoBean) inst;
       String name = (inst instanceof SolrRequestHandler) ? pluginKey : mBean.getName();
       core.registerInfoBean(name, mBean);
     }

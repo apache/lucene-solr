@@ -27,6 +27,8 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 
+import com.codahale.metrics.Gauge;
+import com.codahale.metrics.Metric;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.LazyDocument;
@@ -38,6 +40,7 @@ import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.handler.RequestHandlerBase;
+import org.apache.solr.metrics.SolrMetricManager;
 import org.apache.solr.request.LocalSolrQueryRequest;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.request.SolrRequestHandler;
@@ -122,10 +125,14 @@ public class BasicFunctionalityTest extends SolrTestCaseJ4 {
     assertNotNull(core.getRequestHandler("mock"));
 
     // test stats call
-    NamedList stats = core.getStatistics();
-    assertEquals("collection1", stats.get("coreName"));
-    assertTrue(stats.get("refCount") != null);
-    
+    SolrMetricManager manager = core.getCoreDescriptor().getCoreContainer().getMetricManager();
+    String registry = core.getCoreMetricManager().getRegistryName();
+    Map<String, Metric> metrics = manager.registry(registry).getMetrics();
+    assertTrue(metrics.containsKey("CORE.coreName"));
+    assertTrue(metrics.containsKey("CORE.refCount"));
+    Gauge<Number> g = (Gauge<Number>)metrics.get("CORE.refCount");
+    assertTrue(g.getValue().intValue() > 0);
+
     lrf.args.put(CommonParams.VERSION,"2.2");
     assertQ("test query on empty index",
             req("qlkciyopsbgzyvkylsjhchghjrdf")
@@ -377,8 +384,6 @@ public class BasicFunctionalityTest extends SolrTestCaseJ4 {
     SolrRequestHandler handler = new RequestHandlerBase() {
         @Override
         public String getDescription() { return tmp; }
-        @Override
-        public String getSource() { return tmp; }
         @Override
         public void handleRequestBody
           ( SolrQueryRequest req, SolrQueryResponse rsp ) {

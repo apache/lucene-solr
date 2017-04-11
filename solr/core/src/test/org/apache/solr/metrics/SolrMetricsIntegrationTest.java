@@ -29,10 +29,11 @@ import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.NodeConfig;
 import org.apache.solr.core.PluginInfo;
-import org.apache.solr.core.SolrInfoMBean;
+import org.apache.solr.core.SolrInfoBean;
 import org.apache.solr.core.SolrResourceLoader;
 import org.apache.solr.core.SolrXmlConfig;
 import org.apache.solr.metrics.reporters.MockMetricReporter;
+import org.apache.solr.util.JmxUtil;
 import org.apache.solr.util.TestHarness;
 import org.junit.After;
 import org.junit.Before;
@@ -50,11 +51,12 @@ public class SolrMetricsIntegrationTest extends SolrTestCaseJ4 {
   private static final String MULTIREGISTRY = "multiregistry";
   private static final String[] INITIAL_REPORTERS = {REPORTER_NAMES[0], REPORTER_NAMES[1], UNIVERSAL, SPECIFIC, MULTIGROUP, MULTIREGISTRY};
   private static final String[] RENAMED_REPORTERS = {REPORTER_NAMES[0], REPORTER_NAMES[1], UNIVERSAL, MULTIGROUP};
-  private static final SolrInfoMBean.Category HANDLER_CATEGORY = SolrInfoMBean.Category.QUERY;
+  private static final SolrInfoBean.Category HANDLER_CATEGORY = SolrInfoBean.Category.QUERY;
 
   private CoreContainer cc;
   private SolrMetricManager metricManager;
   private String tag;
+  private int jmxReporter;
 
   private void assertTagged(Map<String, SolrMetricReporter> reporters, String name) {
     assertTrue("Reporter '" + name + "' missing in " + reporters, reporters.containsKey(name + "@" + tag));
@@ -71,11 +73,12 @@ public class SolrMetricsIntegrationTest extends SolrTestCaseJ4 {
     cc = createCoreContainer(cfg,
         new TestHarness.TestCoresLocator(DEFAULT_TEST_CORENAME, initCoreDataDir.getAbsolutePath(), "solrconfig.xml", "schema.xml"));
     h.coreName = DEFAULT_TEST_CORENAME;
+    jmxReporter = JmxUtil.findFirstMBeanServer() != null ? 1 : 0;
     metricManager = cc.getMetricManager();
     tag = h.getCore().getCoreMetricManager().getTag();
     // initially there are more reporters, because two of them are added via a matching collection name
     Map<String, SolrMetricReporter> reporters = metricManager.getReporters("solr.core." + DEFAULT_TEST_CORENAME);
-    assertEquals(INITIAL_REPORTERS.length, reporters.size());
+    assertEquals(INITIAL_REPORTERS.length + jmxReporter, reporters.size());
     for (String r : INITIAL_REPORTERS) {
       assertTagged(reporters, r);
     }
@@ -85,9 +88,9 @@ public class SolrMetricsIntegrationTest extends SolrTestCaseJ4 {
     cfg = cc.getConfig();
     PluginInfo[] plugins = cfg.getMetricReporterPlugins();
     assertNotNull(plugins);
-    assertEquals(10, plugins.length);
+    assertEquals(10 + jmxReporter, plugins.length);
     reporters = metricManager.getReporters("solr.node");
-    assertEquals(4, reporters.size());
+    assertEquals(4 + jmxReporter, reporters.size());
     assertTrue("Reporter '" + REPORTER_NAMES[0] + "' missing in solr.node", reporters.containsKey(REPORTER_NAMES[0]));
     assertTrue("Reporter '" + UNIVERSAL + "' missing in solr.node", reporters.containsKey(UNIVERSAL));
     assertTrue("Reporter '" + MULTIGROUP + "' missing in solr.node", reporters.containsKey(MULTIGROUP));
@@ -120,7 +123,7 @@ public class SolrMetricsIntegrationTest extends SolrTestCaseJ4 {
 
     String metricName = SolrMetricManager.mkName(METRIC_NAME, HANDLER_CATEGORY.toString(), HANDLER_NAME);
     SolrCoreMetricManager coreMetricManager = h.getCore().getCoreMetricManager();
-    Timer timer = (Timer) metricManager.timer(coreMetricManager.getRegistryName(), metricName);
+    Timer timer = (Timer) metricManager.timer(null, coreMetricManager.getRegistryName(), metricName);
 
     long initialCount = timer.getCount();
 
@@ -132,7 +135,7 @@ public class SolrMetricsIntegrationTest extends SolrTestCaseJ4 {
     long finalCount = timer.getCount();
     assertEquals("metric counter incorrect", iterations, finalCount - initialCount);
     Map<String, SolrMetricReporter> reporters = metricManager.getReporters(coreMetricManager.getRegistryName());
-    assertEquals(RENAMED_REPORTERS.length, reporters.size());
+    assertEquals(RENAMED_REPORTERS.length + jmxReporter, reporters.size());
 
     // SPECIFIC and MULTIREGISTRY were skipped because they were
     // specific to collection1

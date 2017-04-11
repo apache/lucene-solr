@@ -59,6 +59,7 @@ import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
+import java.net.URL;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -752,19 +753,28 @@ public class BasicDistributedZkTest extends AbstractFullDistribZkTestBase {
 
   private Long getNumCommits(HttpSolrClient sourceClient) throws
       SolrServerException, IOException {
-    try (HttpSolrClient client = getHttpSolrClient(sourceClient.getBaseURL())) {
+    // construct the /admin/metrics URL
+    URL url = new URL(sourceClient.getBaseURL());
+    String path = url.getPath().substring(1);
+    String[] elements = path.split("/");
+    String collection = elements[elements.length - 1];
+    String urlString = url.toString();
+    urlString = urlString.substring(0, urlString.length() - collection.length() - 1);
+    try (HttpSolrClient client = getHttpSolrClient(urlString)) {
       client.setConnectionTimeout(15000);
       client.setSoTimeout(60000);
       ModifiableSolrParams params = new ModifiableSolrParams();
-      params.set("qt", "/admin/mbeans?key=updateHandler&stats=true");
+      //params.set("qt", "/admin/metrics?prefix=UPDATE.updateHandler&registry=solr.core." + collection);
+      params.set("qt", "/admin/metrics");
+      params.set("prefix", "UPDATE.updateHandler");
+      params.set("registry", "solr.core." + collection);
       // use generic request to avoid extra processing of queries
       QueryRequest req = new QueryRequest(params);
       NamedList<Object> resp = client.request(req);
-      NamedList mbeans = (NamedList) resp.get("solr-mbeans");
-      NamedList uhandlerCat = (NamedList) mbeans.get("UPDATE");
-      NamedList uhandler = (NamedList) uhandlerCat.get("updateHandler");
-      NamedList stats = (NamedList) uhandler.get("stats");
-      return (Long) stats.get("commits");
+      NamedList metrics = (NamedList) resp.get("metrics");
+      NamedList uhandlerCat = (NamedList) metrics.getVal(0);
+      Map<String,Object> commits = (Map<String,Object>) uhandlerCat.get("UPDATE.updateHandler.commits");
+      return (Long) commits.get("count");
     }
   }
 

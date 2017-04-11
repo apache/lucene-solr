@@ -598,14 +598,6 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
     return proxy;
   }
 
-  protected int getNextAvailablePort() throws Exception {
-    int port = -1;
-    try (ServerSocket s = new ServerSocket(0)) {
-      port = s.getLocalPort();
-    }
-    return port;
-  }
-
   private File getRelativeSolrHomePath(File solrHome) {
     final Path solrHomePath = solrHome.toPath();
     final Path curDirPath = new File("").getAbsoluteFile().toPath();

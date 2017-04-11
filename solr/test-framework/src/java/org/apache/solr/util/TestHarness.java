@@ -193,10 +193,10 @@ public class TestHarness extends BaseTestHarness {
                                        30000, 30000,
                                         UpdateShardHandlerConfig.DEFAULT_METRICNAMESTRATEGY);
     // universal default metric reporter
-    Map<String,String> attributes = new HashMap<>();
+    Map<String,Object> attributes = new HashMap<>();
     attributes.put("name", "default");
     attributes.put("class", SolrJmxReporter.class.getName());
-    PluginInfo defaultPlugin = new PluginInfo("reporter", attributes, null, null);
+    PluginInfo defaultPlugin = new PluginInfo("reporter", attributes);
 
     return new NodeConfig.NodeConfigBuilder("testNode", loader)
         .setUseSchemaCache(Boolean.getBoolean("shareSchema"))

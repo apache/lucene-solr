@@ -20,6 +20,7 @@ import javax.management.MBeanServer;
 import javax.management.MBeanServerFactory;
 import javax.management.ObjectName;
 import java.io.IOException;
+import java.lang.invoke.MethodHandles;
 import java.lang.management.ManagementFactory;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -37,6 +38,7 @@ import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
 import com.google.common.collect.ImmutableList;
+import org.apache.commons.io.IOUtils;
 import org.apache.lucene.util.LuceneTestCase.Slow;
 import org.apache.lucene.util.TestUtil;
 import org.apache.solr.client.solrj.SolrClient;
@@ -68,12 +70,14 @@ import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.SolrCore;
-import org.apache.solr.core.SolrInfoMBean.Category;
+import org.apache.solr.core.SolrInfoBean.Category;
 import org.apache.solr.util.TestInjection;
 import org.apache.solr.util.TimeOut;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import static org.apache.solr.common.cloud.ZkStateReader.CORE_NAME_PROP;
 import static org.apache.solr.common.cloud.ZkStateReader.REPLICATION_FACTOR;
@@ -83,6 +87,7 @@ import static org.apache.solr.common.cloud.ZkStateReader.REPLICATION_FACTOR;
  */
 @Slow
 public class CollectionsAPIDistributedZkTest extends SolrCloudTestCase {
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   @BeforeClass
   public static void beforeCollectionsAPIDistributedZkTest() {
@@ -94,9 +99,11 @@ public class CollectionsAPIDistributedZkTest extends SolrCloudTestCase {
 
   @BeforeClass
   public static void setupCluster() throws Exception {
+    String solrXml = IOUtils.toString(CollectionsAPIDistributedZkTest.class.getResourceAsStream("/solr/solr-jmxreporter.xml"), "UTF-8");
     configureCluster(4)
         .addConfig("conf", configset("cloud-minimal"))
         .addConfig("conf2", configset("cloud-minimal-jmx"))
+        .withSolrXml(solrXml)
         .configure();
   }
 
@@ -549,7 +556,7 @@ public class CollectionsAPIDistributedZkTest extends SolrCloudTestCase {
     for (SolrCore core : theCores) {
 
       // look for core props file
-      Path instancedir = (Path) core.getStatistics().get("instanceDir");
+      Path instancedir = (Path) core.getResourceLoader().getInstancePath();
       assertTrue("Could not find expected core.properties file", Files.exists(instancedir.resolve("core.properties")));
 
       Path expected = Paths.get(jetty.getSolrHome()).toAbsolutePath().resolve(core.getName());
@@ -620,25 +627,22 @@ public class CollectionsAPIDistributedZkTest extends SolrCloudTestCase {
       Set<ObjectName> mbeans = new HashSet<>();
       mbeans.addAll(server.queryNames(null, null));
       for (final ObjectName mbean : mbeans) {
-        Object value;
-        Object indexDir;
-        Object name;
 
         try {
-          if (((value = server.getAttribute(mbean, "category")) != null && value
-              .toString().equals(Category.CORE.toString()))
-              && ((indexDir = server.getAttribute(mbean, "coreName")) != null)
-              && ((indexDir = server.getAttribute(mbean, "indexDir")) != null)
-              && ((name = server.getAttribute(mbean, "name")) != null)) {
-            if (!indexDirToShardNamesMap.containsKey(indexDir.toString())) {
-              indexDirToShardNamesMap.put(indexDir.toString(),
-                  new HashSet<String>());
+          Map<String, String> props = mbean.getKeyPropertyList();
+          String category = props.get("category");
+          String name = props.get("name");
+          if ((category != null && category.toString().equals(Category.CORE.toString())) &&
+              (name != null && name.equals("indexDir"))) {
+            String indexDir = server.getAttribute(mbean, "Value").toString();
+            String key = props.get("dom2") + "." + props.get("dom3") + "." + props.get("dom4");
+            if (!indexDirToShardNamesMap.containsKey(indexDir)) {
+              indexDirToShardNamesMap.put(indexDir.toString(), new HashSet<>());
             }
-            indexDirToShardNamesMap.get(indexDir.toString()).add(
-                name.toString());
+            indexDirToShardNamesMap.get(indexDir.toString()).add(key);
           }
         } catch (Exception e) {
-          // ignore, just continue - probably a "category" or "source" attribute
+          // ignore, just continue - probably a "Value" attribute
           // not found
         }
       }

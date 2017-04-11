@@ -17,8 +17,6 @@
 package org.apache.solr.handler.component;
 
 import java.io.IOException;
-import java.net.MalformedURLException;
-import java.net.URL;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -764,7 +762,7 @@ public class ExpandComponent extends SearchComponent implements PluginInfoInitia
 
 
   ////////////////////////////////////////////
-  ///  SolrInfoMBean
+  ///  SolrInfoBean
   ////////////////////////////////////////////
 
   @Override
@@ -775,17 +773,6 @@ public class ExpandComponent extends SearchComponent implements PluginInfoInitia
   @Override
   public Category getCategory() {
     return Category.QUERY;
-  }
-
-  @Override
-  public URL[] getDocs() {
-    try {
-      return new URL[]{
-          new URL("http://wiki.apache.org/solr/ExpandComponent")
-      };
-    } catch (MalformedURLException e) {
-      throw new RuntimeException(e);
-    }
   }
 
   // this reader alters the content of the given reader so it should not

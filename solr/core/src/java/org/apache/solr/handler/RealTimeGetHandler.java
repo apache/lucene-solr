@@ -20,7 +20,6 @@ import org.apache.solr.api.Api;
 import org.apache.solr.api.ApiBag;
 import org.apache.solr.handler.component.*;
 
-import java.net.URL;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
@@ -40,11 +39,6 @@ public class RealTimeGetHandler extends SearchHandler {
   @Override
   public String getDescription() {
     return "The realtime get handler";
-  }
-
-  @Override
-  public URL[] getDocs() {
-    return null;
   }
 
   @Override

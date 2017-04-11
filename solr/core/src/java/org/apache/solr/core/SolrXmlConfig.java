@@ -16,6 +16,7 @@
  */
 package org.apache.solr.core;
 
+import javax.management.MBeanServer;
 import javax.xml.xpath.XPath;
 import javax.xml.xpath.XPathConstants;
 import javax.xml.xpath.XPathExpressionException;
@@ -25,7 +26,10 @@ import java.lang.invoke.MethodHandles;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Properties;
 import java.util.Set;
@@ -35,8 +39,10 @@ import org.apache.commons.io.IOUtils;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.logging.LogWatcherConfig;
+import org.apache.solr.metrics.reporters.SolrJmxReporter;
 import org.apache.solr.update.UpdateShardHandlerConfig;
 import org.apache.solr.util.DOMUtil;
+import org.apache.solr.util.JmxUtil;
 import org.apache.solr.util.PropertiesUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -448,14 +454,30 @@ public class SolrXmlConfig {
 
   private static PluginInfo[] getMetricReporterPluginInfos(Config config) {
     NodeList nodes = (NodeList) config.evaluate("solr/metrics/reporter", XPathConstants.NODESET);
-    if (nodes == null || nodes.getLength() == 0)
-      return new PluginInfo[0];
-    PluginInfo[] configs = new PluginInfo[nodes.getLength()];
-    for (int i = 0; i < nodes.getLength(); i++) {
-      // we don't require class in order to support predefined replica and node reporter classes
-      configs[i] = new PluginInfo(nodes.item(i), "SolrMetricReporter", true, false);
+    List<PluginInfo> configs = new ArrayList<>();
+    boolean hasJmxReporter = false;
+    if (nodes != null && nodes.getLength() > 0) {
+      for (int i = 0; i < nodes.getLength(); i++) {
+        // we don't require class in order to support predefined replica and node reporter classes
+        PluginInfo info = new PluginInfo(nodes.item(i), "SolrMetricReporter", true, false);
+        String clazz = info.className;
+        if (clazz != null && clazz.equals(SolrJmxReporter.class.getName())) {
+          hasJmxReporter = true;
+        }
+        configs.add(info);
+      }
     }
-    return configs;
+    // if there's an MBean server running but there was no JMX reporter then add a default one
+    MBeanServer mBeanServer = JmxUtil.findFirstMBeanServer();
+    if (mBeanServer != null && !hasJmxReporter) {
+      log.info("MBean server found: " + mBeanServer + ", but no JMX reporters were configured - adding default JMX reporter.");
+      Map<String,Object> attributes = new HashMap<>();
+      attributes.put("name", "default");
+      attributes.put("class", SolrJmxReporter.class.getName());
+      PluginInfo defaultPlugin = new PluginInfo("reporter", attributes);
+      configs.add(defaultPlugin);
+    }
+    return configs.toArray(new PluginInfo[configs.size()]);
   }
   private static PluginInfo getTransientCoreCacheFactoryPluginInfo(Config config) {
     Node node = config.getNode("solr/transientCoreCacheFactory", false);

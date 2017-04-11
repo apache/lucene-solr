@@ -23,6 +23,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import com.codahale.metrics.Counter;
 import org.apache.lucene.util.TestUtil;
 import org.apache.solr.BaseDistributedSearchTestCase;
 import org.apache.solr.SolrTestCaseJ4;
@@ -39,6 +40,7 @@ import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.util.Utils;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.SolrCore;
+import org.apache.solr.metrics.SolrMetricManager;
 import org.apache.solr.request.SolrRequestHandler;
 import org.junit.Test;
 import org.slf4j.Logger;
@@ -109,10 +111,13 @@ public class TestRandomRequestDistribution extends AbstractFullDistribZkTestBase
     Map<String, Integer> shardVsCount = new HashMap<>();
     for (JettySolrRunner runner : jettys) {
       CoreContainer container = runner.getCoreContainer();
+      SolrMetricManager metricManager = container.getMetricManager();
       for (SolrCore core : container.getCores()) {
+        String registry = core.getCoreMetricManager().getRegistryName();
+        Counter cnt = metricManager.counter(null, registry, "requests", "QUERY.standard");
         SolrRequestHandler select = core.getRequestHandler("");
-        long c = (long) select.getStatistics().get("requests");
-        shardVsCount.put(core.getName(), (int) c);
+//        long c = (long) select.getStatistics().get("requests");
+        shardVsCount.put(core.getName(), (int) cnt.getCount());
       }
     }
 
@@ -190,6 +195,10 @@ public class TestRandomRequestDistribution extends AbstractFullDistribZkTestBase
       }
       assertNotNull(leaderCore);
 
+      SolrMetricManager leaderMetricManager = leaderCore.getCoreDescriptor().getCoreContainer().getMetricManager();
+      String leaderRegistry = leaderCore.getCoreMetricManager().getRegistryName();
+      Counter cnt = leaderMetricManager.counter(null, leaderRegistry, "requests", "QUERY.standard");
+
       // All queries should be served by the active replica
       // To make sure that's true we keep querying the down replica
       // If queries are getting processed by the down replica then the cluster state hasn't updated for that replica
@@ -200,8 +209,7 @@ public class TestRandomRequestDistribution extends AbstractFullDistribZkTestBase
         count++;
         client.query(new SolrQuery("*:*"));
 
-        SolrRequestHandler select = leaderCore.getRequestHandler("");
-        long c = (long) select.getStatistics().get("requests");
+        long c = cnt.getCount();
 
         if (c == 1) {
           break; // cluster state has got update locally
@@ -222,8 +230,7 @@ public class TestRandomRequestDistribution extends AbstractFullDistribZkTestBase
         client.query(new SolrQuery("*:*"));
         count++;
 
-        SolrRequestHandler select = leaderCore.getRequestHandler("");
-        long c = (long) select.getStatistics().get("requests");
+        long c = cnt.getCount();
 
         assertEquals("Query wasn't served by leader", count, c);
       }

@@ -17,7 +17,6 @@
 package org.apache.solr.handler.admin;
 
 import java.util.List;
-import java.util.Map;
 import java.util.Random;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -68,7 +67,7 @@ public class StatsReloadRaceTest extends SolrTestCaseJ4 {
       boolean isCompleted;
       do {
         if (random.nextBoolean()) {
-          requestMbeans();
+          requestMetrics();
         } else {
           requestCoreStatus();
         }
@@ -106,22 +105,31 @@ public class StatsReloadRaceTest extends SolrTestCaseJ4 {
     return isCompleted;
   }
 
-  private void requestMbeans() throws Exception {
-    String stats = h.query(req(
-        CommonParams.QT, "/admin/mbeans",
-        "stats", "true"));
+  private void requestMetrics() throws Exception {
+    SolrQueryResponse rsp = new SolrQueryResponse();
+    String registry = "solr.core." + h.coreName;
+    String key = "SEARCHER.searcher.indexVersion";
+    boolean found = false;
+    int count = 10;
+    while (!found && count-- > 0) {
+      h.getCoreContainer().getRequestHandler("/admin/metrics").handleRequest(
+          req("prefix", "SEARCHER", "registry", registry, "compact", "true"), rsp);
 
-    NamedList<NamedList<Object>> actualStats = SolrInfoMBeanHandler.fromXML(stats).get("CORE");
-    
-    for (Map.Entry<String, NamedList<Object>> tuple : actualStats) {
-      if (tuple.getKey().contains("earcher")) { // catches "searcher" and "Searcher@345345 blah"
-        NamedList<Object> searcherStats = tuple.getValue();
-        @SuppressWarnings("unchecked")
-        NamedList<Object> statsList = (NamedList<Object>)searcherStats.get("stats");
-        assertEquals("expect to have exactly one indexVersion at "+statsList, 1, statsList.getAll("indexVersion").size());
-        assertTrue(statsList.get("indexVersion") instanceof Long); 
+      NamedList values = rsp.getValues();
+      NamedList metrics = (NamedList)values.get("metrics");
+      metrics = (NamedList)metrics.get(registry);
+      // this is not guaranteed to exist right away after core reload - there's a
+      // small window between core load and before searcher metrics are registered
+      // so we may have to check a few times
+      if (metrics.get(key) != null) {
+        found = true;
+        assertTrue(metrics.get(key) instanceof Long);
+        break;
+      } else {
+        Thread.sleep(500);
       }
     }
+    assertTrue("Key " + key + " not found in registry " + registry, found);
   }
 
 }

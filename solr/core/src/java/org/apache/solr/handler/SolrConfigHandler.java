@@ -702,12 +702,6 @@ public class SolrConfigHandler extends RequestHandlerBase implements SolrCoreAwa
     return "Edit solrconfig.xml";
   }
 
-
-  @Override
-  public String getVersion() {
-    return getClass().getPackage().getSpecificationVersion();
-  }
-
   @Override
   public Category getCategory() {
     return Category.ADMIN;
