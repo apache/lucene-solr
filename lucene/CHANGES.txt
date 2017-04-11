@@ -16,6 +16,10 @@ Bug Fixes
 * LUCENE-7769: The UnifiedHighligter wasn't highlighting portions of the query
   wrapped in BoostQuery or SpanBoostQuery. (David Smiley, Dmitry Malinin)
 
+* LUCENE-7777: ByteBlockPool.readBytes sometimes throws
+  ArrayIndexOutOfBoundsException when byte blocks larger than 32 KB
+  were added (Mike McCandless)
+
 Other
 
 * LUCENE-7763: Remove outdated comment in IndexWriterConfig.setIndexSort javadocs.
