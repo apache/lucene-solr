@@ -4787,7 +4787,7 @@ public class StreamExpressionTest extends SolrCloudTestCase {
 
   @Test
   public void testCalculatorStream() throws Exception {
-    String expr = "select(calc(), add(1, 1) as result)";
+    String expr = "select(eval(), add(1, 1) as result)";
     ModifiableSolrParams paramsLoc = new ModifiableSolrParams();
     paramsLoc.set("expr", expr);
     paramsLoc.set("qt", "/stream");
