@@ -126,7 +126,7 @@ public class StatsReloadRaceTest extends SolrTestCaseJ4 {
         assertTrue(metrics.get(key) instanceof Long);
         break;
       } else {
-        Thread.sleep(500);
+        Thread.sleep(1000);
       }
     }
     assertTrue("Key " + key + " not found in registry " + registry, found);
