@@ -185,14 +185,14 @@ public class StreamHandler extends RequestHandlerBase implements SolrCoreAware, 
       .withFunctionName(SORT, SortStream.class)
       .withFunctionName("train", TextLogitStream.class)
       .withFunctionName("features", FeaturesSelectionStream.class)
-      .withFunctionName("daemon", DaemonStream.class)
+         .withFunctionName("daemon", DaemonStream.class)
       .withFunctionName("shortestPath", ShortestPathStream.class)
       .withFunctionName("gatherNodes", GatherNodesStream.class)
       .withFunctionName("nodes", GatherNodesStream.class)
       .withFunctionName("select", SelectStream.class)
       .withFunctionName("shortestPath", ShortestPathStream.class)
       .withFunctionName("gatherNodes", GatherNodesStream.class)
-      .withFunctionName("nodes", GatherNodesStream.class)
+         .withFunctionName("nodes", GatherNodesStream.class)
       .withFunctionName("scoreNodes", ScoreNodesStream.class)
       .withFunctionName("model", ModelStream.class)
       .withFunctionName("classify", ClassifyStream.class)
@@ -202,29 +202,29 @@ public class StreamHandler extends RequestHandlerBase implements SolrCoreAware, 
       .withFunctionName("priority", PriorityStream.class)
       .withFunctionName("significantTerms", SignificantTermsStream.class)
       .withFunctionName("cartesianProduct", CartesianProductStream.class)
-      .withFunctionName("shuffle", ShuffleStream.class)
-      
-      // metrics
-      .withFunctionName("min", MinMetric.class)
+         .withFunctionName("shuffle", ShuffleStream.class)
+
+             // metrics
+         .withFunctionName("min", MinMetric.class)
       .withFunctionName("max", MaxMetric.class)
       .withFunctionName("avg", MeanMetric.class)
       .withFunctionName("sum", SumMetric.class)
       .withFunctionName("count", CountMetric.class)
       
       // tuple manipulation operations
-      .withFunctionName("replace", ReplaceOperation.class)
+         .withFunctionName("replace", ReplaceOperation.class)
       .withFunctionName("concat", ConcatOperation.class)
       
       // stream reduction operations
-      .withFunctionName("group", GroupOperation.class)
+         .withFunctionName("group", GroupOperation.class)
       .withFunctionName("distinct", DistinctOperation.class)
       .withFunctionName("having", HavingStream.class)
       
       // Stream Evaluators
-      .withFunctionName("val", RawValueEvaluator.class)
+         .withFunctionName("val", RawValueEvaluator.class)
       
       // Boolean Stream Evaluators
-      .withFunctionName("and", AndEvaluator.class)
+         .withFunctionName("and", AndEvaluator.class)
       .withFunctionName("eor", ExclusiveOrEvaluator.class)
       .withFunctionName("eq", EqualsEvaluator.class)
       .withFunctionName("gt", GreaterThanEvaluator.class)
@@ -232,23 +232,23 @@ public class StreamHandler extends RequestHandlerBase implements SolrCoreAware, 
       .withFunctionName("lt", LessThanEvaluator.class)
       .withFunctionName("lteq", LessThanEqualToEvaluator.class)
       .withFunctionName("not", NotEvaluator.class)
-      .withFunctionName("or", OrEvaluator.class)
+         .withFunctionName("or", OrEvaluator.class)
 
       // Date Time Evaluators
-      .withFunctionName(TemporalEvaluatorYear.FUNCTION_NAME, TemporalEvaluatorYear.class)
+         .withFunctionName(TemporalEvaluatorYear.FUNCTION_NAME, TemporalEvaluatorYear.class)
       .withFunctionName(TemporalEvaluatorMonth.FUNCTION_NAME, TemporalEvaluatorMonth.class)
       .withFunctionName(TemporalEvaluatorDay.FUNCTION_NAME, TemporalEvaluatorDay.class)
       .withFunctionName(TemporalEvaluatorDayOfYear.FUNCTION_NAME, TemporalEvaluatorDayOfYear.class)
-      .withFunctionName(TemporalEvaluatorHour.FUNCTION_NAME, TemporalEvaluatorHour.class)
+         .withFunctionName(TemporalEvaluatorHour.FUNCTION_NAME, TemporalEvaluatorHour.class)
       .withFunctionName(TemporalEvaluatorMinute.FUNCTION_NAME, TemporalEvaluatorMinute.class)
-      .withFunctionName(TemporalEvaluatorSecond.FUNCTION_NAME, TemporalEvaluatorSecond.class)
+         .withFunctionName(TemporalEvaluatorSecond.FUNCTION_NAME, TemporalEvaluatorSecond.class)
       .withFunctionName(TemporalEvaluatorEpoch.FUNCTION_NAME, TemporalEvaluatorEpoch.class)
       .withFunctionName(TemporalEvaluatorWeek.FUNCTION_NAME, TemporalEvaluatorWeek.class)
-      .withFunctionName(TemporalEvaluatorQuarter.FUNCTION_NAME, TemporalEvaluatorQuarter.class)
-      .withFunctionName(TemporalEvaluatorDayOfQuarter.FUNCTION_NAME, TemporalEvaluatorDayOfQuarter.class)
+         .withFunctionName(TemporalEvaluatorQuarter.FUNCTION_NAME, TemporalEvaluatorQuarter.class)
+         .withFunctionName(TemporalEvaluatorDayOfQuarter.FUNCTION_NAME, TemporalEvaluatorDayOfQuarter.class)
 
       // Number Stream Evaluators
-      .withFunctionName("abs", AbsoluteValueEvaluator.class)
+         .withFunctionName("abs", AbsoluteValueEvaluator.class)
       .withFunctionName("add", AddEvaluator.class)
       .withFunctionName("div", DivideEvaluator.class)
       .withFunctionName("mult", MultiplyEvaluator.class)
@@ -256,7 +256,7 @@ public class StreamHandler extends RequestHandlerBase implements SolrCoreAware, 
       .withFunctionName("log", NaturalLogEvaluator.class)
       .withFunctionName("pow", PowerEvaluator.class)
       .withFunctionName("mod", ModuloEvaluator.class)
-      .withFunctionName("ceil", CeilingEvaluator.class)
+         .withFunctionName("ceil", CeilingEvaluator.class)
       .withFunctionName("floor", FloorEvaluator.class)
       .withFunctionName("sin", SineEvaluator.class)
       .withFunctionName("asin", ArcSineEvaluator.class)
@@ -267,7 +267,7 @@ public class StreamHandler extends RequestHandlerBase implements SolrCoreAware, 
       .withFunctionName("tan", TangentEvaluator.class)
       .withFunctionName("atan", ArcTangentEvaluator.class)
       .withFunctionName("tanh", HyperbolicTangentEvaluator.class)
-      .withFunctionName("round", RoundEvaluator.class)
+         .withFunctionName("round", RoundEvaluator.class)
       .withFunctionName("sqrt", SquareRootEvaluator.class)
       .withFunctionName("cbrt", CubedRootEvaluator.class)
       .withFunctionName("coalesce", CoalesceEvaluator.class)
@@ -275,8 +275,8 @@ public class StreamHandler extends RequestHandlerBase implements SolrCoreAware, 
 
 
       // Conditional Stream Evaluators
-      .withFunctionName("if", IfThenElseEvaluator.class)
-      .withFunctionName("analyze", AnalyzeEvaluator.class)
+         .withFunctionName("if", IfThenElseEvaluator.class)
+         .withFunctionName("analyze", AnalyzeEvaluator.class)
       ;
 
      // This pulls all the overrides and additions from the config

@@ -26,6 +26,7 @@ import java.time.temporal.TemporalAccessor;
 import java.time.temporal.UnsupportedTemporalTypeException;
 import java.util.Date;
 import java.util.Locale;
+import java.util.Map;
 
 import org.apache.solr.client.solrj.io.Tuple;
 import org.apache.solr.client.solrj.io.stream.expr.Explanation;
@@ -37,6 +38,8 @@ import org.apache.solr.client.solrj.io.stream.expr.StreamFactory;
  * A generic date evaluator for use with a TemporalAccessor
  */
 public abstract class TemporalEvaluator extends ComplexEvaluator {
+
+  private String field;
 
   public TemporalEvaluator(StreamExpression expression, StreamFactory factory) throws IOException {
     super(expression, factory);
@@ -58,21 +61,32 @@ public abstract class TemporalEvaluator extends ComplexEvaluator {
 
     if (tupleValue == null) return null;
 
-    if (tupleValue instanceof String) {
-      instant = getInstant((String) tupleValue);
-    } else if (tupleValue instanceof Long) {
-      instant = Instant.ofEpochMilli((Long)tupleValue);
-    } else if (tupleValue instanceof Instant) {
-      instant = (Instant) tupleValue;
-    } else if (tupleValue instanceof Date) {
-      instant = ((Date) tupleValue).toInstant();
-    } else if (tupleValue instanceof TemporalAccessor) {
-      date = ((TemporalAccessor) tupleValue);
+    if(field == null) {
+      field = streamEvaluator.toExpression(constructingFactory).toString();
+    }
+
+    Map tupleContext = streamContext.getTupleContext();
+    date = (LocalDateTime)tupleContext.get(field); // Check to see if the date has already been created for this field
+
+    if(date == null) {
+      if (tupleValue instanceof String) {
+        instant = getInstant((String) tupleValue);
+      } else if (tupleValue instanceof Long) {
+        instant = Instant.ofEpochMilli((Long) tupleValue);
+      } else if (tupleValue instanceof Instant) {
+        instant = (Instant) tupleValue;
+      } else if (tupleValue instanceof Date) {
+        instant = ((Date) tupleValue).toInstant();
+      } else if (tupleValue instanceof TemporalAccessor) {
+        date = ((TemporalAccessor) tupleValue);
+        tupleContext.put(field, date); // Cache the date in the TupleContext
+      }
     }
 
     if (instant != null) {
       if (TemporalEvaluatorEpoch.FUNCTION_NAME.equals(getFunction())) return instant.toEpochMilli();
       date = LocalDateTime.ofInstant(instant, ZoneOffset.UTC);
+      tupleContext.put(field, date); // Cache the date in the TupleContext
     }
 
     if (date != null) {
