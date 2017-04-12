@@ -43,6 +43,7 @@ import org.apache.solr.client.solrj.io.eval.TemporalEvaluatorQuarter;
 import org.apache.solr.client.solrj.io.eval.TemporalEvaluatorSecond;
 import org.apache.solr.client.solrj.io.eval.TemporalEvaluatorWeek;
 import org.apache.solr.client.solrj.io.eval.TemporalEvaluatorYear;
+import org.apache.solr.client.solrj.io.stream.StreamContext;
 import org.apache.solr.client.solrj.io.stream.expr.Explanation;
 import org.apache.solr.client.solrj.io.stream.expr.StreamExpression;
 import org.apache.solr.client.solrj.io.stream.expr.StreamExpressionParser;
@@ -50,7 +51,6 @@ import org.apache.solr.client.solrj.io.stream.expr.StreamFactory;
 import org.junit.Test;
 
 import static junit.framework.Assert.assertEquals;
-import static junit.framework.Assert.assertNotNull;
 import static junit.framework.Assert.assertNull;
 import static junit.framework.Assert.assertTrue;
 
@@ -90,6 +90,8 @@ public class TemporalEvaluatorsTest {
 
     try {
       evaluator = factory.constructEvaluator("week()");
+      StreamContext streamContext = new StreamContext();
+      evaluator.setStreamContext(streamContext);
       assertTrue(false);
     } catch (IOException e) {
       assertTrue(e.getCause().getCause().getMessage().contains("Invalid expression week()"));
@@ -97,6 +99,8 @@ public class TemporalEvaluatorsTest {
 
     try {
       evaluator = factory.constructEvaluator("week(a, b)");
+      StreamContext streamContext = new StreamContext();
+      evaluator.setStreamContext(streamContext);
       assertTrue(false);
     } catch (IOException e) {
       assertTrue(e.getCause().getCause().getMessage().contains("expecting one value but found 2"));
@@ -104,6 +108,8 @@ public class TemporalEvaluatorsTest {
 
     try {
       evaluator = factory.constructEvaluator("Week()");
+      StreamContext streamContext = new StreamContext();
+      evaluator.setStreamContext(streamContext);
       assertTrue(false);
     } catch (IOException e) {
       assertTrue(e.getMessage().contains("Invalid evaluator expression Week() - function 'Week' is unknown"));
@@ -115,9 +121,12 @@ public class TemporalEvaluatorsTest {
   public void testInvalidValues() throws Exception {
     StreamEvaluator evaluator = factory.constructEvaluator("year(a)");
 
+
     try {
       values.clear();
       values.put("a", 12);
+      StreamContext streamContext = new StreamContext();
+      evaluator.setStreamContext(streamContext);
       Object result = evaluator.evaluate(new Tuple(values));
       assertTrue(false);
     } catch (IOException e) {
@@ -127,6 +136,8 @@ public class TemporalEvaluatorsTest {
     try {
       values.clear();
       values.put("a", "1995-12-31");
+      StreamContext streamContext = new StreamContext();
+      evaluator.setStreamContext(streamContext);
       Object result = evaluator.evaluate(new Tuple(values));
       assertTrue(false);
     } catch (IOException e) {
@@ -136,6 +147,8 @@ public class TemporalEvaluatorsTest {
     try {
       values.clear();
       values.put("a", "");
+      StreamContext streamContext = new StreamContext();
+      evaluator.setStreamContext(streamContext);
       Object result = evaluator.evaluate(new Tuple(values));
       assertTrue(false);
     } catch (IOException e) {
@@ -267,6 +280,8 @@ public class TemporalEvaluatorsTest {
 
   public void testFunction(String expression, Object value, Number expected) throws Exception {
     StreamEvaluator evaluator = factory.constructEvaluator(expression);
+    StreamContext streamContext = new StreamContext();
+    evaluator.setStreamContext(streamContext);
     values.clear();
     values.put("a", value);
     Object result = evaluator.evaluate(new Tuple(values));
