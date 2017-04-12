@@ -28,12 +28,16 @@ import org.apache.lucene.search.join.ScoreMode;
 import org.apache.solr.cloud.ZkController;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.Aliases;
+import org.apache.solr.common.cloud.DocCollection;
+import org.apache.solr.common.cloud.DocRouter;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.CommonParams;
+import org.apache.solr.common.params.SearchParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.core.CoreContainer;
+import org.apache.solr.core.CoreDescriptor;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.request.LocalSolrQueryRequest;
 import org.apache.solr.request.SolrQueryRequest;
@@ -223,8 +227,7 @@ public class ScoreJoinQParserPlugin extends QParserPlugin {
 
         if (fromIndex != null && (!fromIndex.equals(myCore) || byPassShortCircutCheck)) {
           CoreContainer container = req.getCore().getCoreDescriptor().getCoreContainer();
-
-          final String coreName = getCoreName(fromIndex, container);
+          final String coreName = getCoreName(fromIndex, container, req);
           final SolrCore fromCore = container.getCore(coreName);
           RefCounted<SolrIndexSearcher> fromHolder = null;
 
@@ -271,7 +274,7 @@ public class ScoreJoinQParserPlugin extends QParserPlugin {
    * @param  container the core container for searching the core with fromIndex name or alias
    * @return      the string with name of core
    */
-  public static String getCoreName(final String fromIndex, CoreContainer container) {
+  public static String getCoreName(final String fromIndex, CoreContainer container, SolrQueryRequest req) {
     if (container.isZooKeeperAware()) {
       ZkController zkController = container.getZkController();
       final String resolved =
@@ -281,7 +284,7 @@ public class ScoreJoinQParserPlugin extends QParserPlugin {
         throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,
             "SolrCloud join: Collection '" + fromIndex + "' not found!");
       }
-      return findLocalReplicaForFromIndex(zkController, resolved);
+      return findLocalReplicaForFromIndex(zkController, resolved, req);
     }
     return fromIndex;
   }
@@ -305,37 +308,119 @@ public class ScoreJoinQParserPlugin extends QParserPlugin {
     return null;
   }
 
-  private static String findLocalReplicaForFromIndex(ZkController zkController, String fromIndex) {
+  /**
+   * Find local replica for from index. Replica can be selected on 2 criteria rangeCheck or 
+   * if fromCollection is singly sharded.
+   *
+   * @param zkController the zk controller
+   * @param fromIndex the from index
+   * @param req the req
+   * @return the string
+   */
+  private static String findLocalReplicaForFromIndex(ZkController zkController, String fromIndex, SolrQueryRequest req) {
+    String fromReplica = null;
+    
+    boolean isRangeCheck = req.getParams().getBool(SearchParams.RANGE_CHECK, false);
+    if(isRangeCheck){
+      //In-case of exact range match option, find a shard of fromCollection which resides on this node and whose range matches
+      //toShard range exactly.
+      fromReplica = findExactMatchShard(zkController,fromIndex, req);
+    }else{
+      //In-case fromReplica is singly sharded, find its replica on this node
+      fromReplica = findLocalReplica(zkController,fromIndex);
+    }
+    
+    if (fromReplica == null){
+      throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,
+          "SolrCloud join: No active replicas for "+fromIndex+
+              " found in node " + zkController.getNodeName());
+    }
+    
+    return fromReplica;
+  }
+  
+  /**
+   * Find local replica. The fromCollection should be singly sharded and it should have a replica
+   * on this node. 
+   *
+   * @param zkController the zk controller
+   * @param fromIndex the from index
+   * @return the string
+   */
+  private static String findLocalReplica(ZkController zkController, String fromIndex) {
     String fromReplica = null;
 
     String nodeName = zkController.getNodeName();
-    for (Slice slice : zkController.getClusterState().getActiveSlices(fromIndex)) {
+    for (Slice slice : zkController.getClusterState().getCollection(fromIndex).getActiveSlices()) {
       if (fromReplica != null)
         throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,
-            "SolrCloud join: multiple shards not yet supported " + fromIndex);
+            "SolrCloud join: for multiple shards use rangeCheck option " + fromIndex);
 
-      for (Replica replica : slice.getReplicas()) {
-        if (replica.getNodeName().equals(nodeName)) {
-          fromReplica = replica.getStr(ZkStateReader.CORE_NAME_PROP);
-          // found local replica, but is it Active?
-          if (replica.getState() != Replica.State.ACTIVE)
-            throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,
-                "SolrCloud join: "+fromIndex+" has a local replica ("+fromReplica+
-                    ") on "+nodeName+", but it is "+replica.getState());
-
-          break;
-        }
-      }
+      fromReplica = findSliceReplica(fromIndex, nodeName, slice);
     }
 
     if (fromReplica == null)
       throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,
-          "SolrCloud join: No active replicas for "+fromIndex+
+          "SolrCloud join: No active replicas for " + fromIndex +
               " found in node " + nodeName);
 
     return fromReplica;
   }
+
+
+  /**
+   * Find replica which is present on given shard.
+   *
+   * @param fromIndex the from index
+   * @param nodeName - node name for which replica should be found
+   * @param slice - slice for which replica has to be found
+   * @return replica name
+   */
+  private static String findSliceReplica(String fromIndex, String nodeName, Slice slice) {
+    String fromReplica = null;
+    for (Replica replica : slice.getReplicas()) {
+      if (replica.getNodeName().equals(nodeName)) {
+        fromReplica = replica.getStr(ZkStateReader.CORE_NAME_PROP);
+        // found local replica, but is it Active?
+        if (replica.getState() != Replica.State.ACTIVE)
+          throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,
+              "SolrCloud join: "+fromIndex+" has a local replica ("+fromReplica+
+                  ") on "+nodeName+", but it is "+replica.getState());
+
+        break;
+      }
+    }
+    return fromReplica;
+  }
+  
+  /**
+   * Find a shard whose range matches toShard range. Check if this shard has a replica on given node, if so
+   * return matching shard replica.
+   *
+   * @param zkController the zk controller
+   * @param fromIndex the from index
+   * @param req the req
+   * @return matching shard replica name, if no matching shard null is returned
+   */
+  private static String findExactMatchShard(ZkController zkController, String fromIndex, SolrQueryRequest req){
+    String fromReplica = null;
+    
+    CoreDescriptor containerDesc = req.getCore().getCoreDescriptor();
+    String nodeName = zkController.getNodeName();
+    
+    //Get collection information of to_shard or shard on which query is applied
+    DocCollection toCollection = zkController.getClusterState().getCollection(containerDesc.getCollectionName());
+    Slice toShardSlice = toCollection.getActiveSlicesMap().get(req.getCore().getCoreDescriptor().getCoreProperty(CoreDescriptor.CORE_SHARD, null));
+    
+    
+    DocRouter.Range toRange = toShardSlice.getRange();
+    
+    for (Slice slice : zkController.getClusterState().getCollection(fromIndex).getActiveSlices()) {
+      if(toRange.equals(slice.getRange())){
+        return findSliceReplica(fromIndex, nodeName, slice);
+      }
+    }
+    
+    return fromReplica;
+  }
 }
-
-
-

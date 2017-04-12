@@ -87,7 +87,7 @@ public class JoinQParserPlugin extends QParserPlugin {
           CoreContainer container = req.getCore().getCoreDescriptor().getCoreContainer();
 
           // if in SolrCloud mode, fromIndex should be the name of a single-sharded collection
-          coreName = ScoreJoinQParserPlugin.getCoreName(fromIndex, container);
+          coreName = ScoreJoinQParserPlugin.getCoreName(fromIndex, container, req);
 
           final SolrCore fromCore = container.getCore(coreName);
           if (fromCore == null) {
