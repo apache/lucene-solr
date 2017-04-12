@@ -38,7 +38,6 @@ import org.apache.solr.client.solrj.io.eval.TemporalEvaluatorEpoch;
 import org.apache.solr.client.solrj.io.eval.TemporalEvaluatorHour;
 import org.apache.solr.client.solrj.io.eval.TemporalEvaluatorMinute;
 import org.apache.solr.client.solrj.io.eval.TemporalEvaluatorMonth;
-import org.apache.solr.client.solrj.io.eval.DatePartEvaluator;
 import org.apache.solr.client.solrj.io.eval.StreamEvaluator;
 import org.apache.solr.client.solrj.io.eval.TemporalEvaluatorQuarter;
 import org.apache.solr.client.solrj.io.eval.TemporalEvaluatorSecond;
@@ -69,7 +68,6 @@ public class TemporalEvaluatorsTest {
 
     factory = new StreamFactory();
 
-    factory.withFunctionName("nope", DatePartEvaluator.class);
     factory.withFunctionName(TemporalEvaluatorYear.FUNCTION_NAME,  TemporalEvaluatorYear.class);
     factory.withFunctionName(TemporalEvaluatorMonth.FUNCTION_NAME, TemporalEvaluatorMonth.class);
     factory.withFunctionName(TemporalEvaluatorDay.FUNCTION_NAME,   TemporalEvaluatorDay.class);
@@ -89,15 +87,6 @@ public class TemporalEvaluatorsTest {
   public void testInvalidExpression() throws Exception {
 
     StreamEvaluator evaluator;
-
-    try {
-      evaluator = factory.constructEvaluator("nope(a)");
-      evaluator.evaluate(new Tuple(null));
-      assertTrue(false);
-    } catch (IOException e) {
-      assertTrue(e.getCause().getCause().getMessage().contains("Invalid date expression nope"));
-      assertTrue(e.getCause().getCause().getMessage().contains("expecting one of [year, month, day"));
-    }
 
     try {
       evaluator = factory.constructEvaluator("week()");
@@ -191,15 +180,6 @@ public class TemporalEvaluatorsTest {
     testFunction("epoch(a)",  new Date(1489746645500l).toInstant().toString(), 1489746645500l);
     testFunction("epoch(a)",  new Date(820454399990l).toInstant().toString(), 820454399990l);
 
-    //Additionally test all functions to make sure they return a non-null number
-    for (DatePartEvaluator.FUNCTION function : DatePartEvaluator.FUNCTION.values()) {
-      StreamEvaluator evaluator = factory.constructEvaluator(function+"(a)");
-      values.clear();
-      values.put("a", "2017-03-17T10:30:45Z");
-      Object result = evaluator.evaluate(new Tuple(values));
-      assertNotNull(function+" should return a result",result);
-      assertTrue(function+" should return a number", result instanceof Number);
-    }
   }
 
   @Test
@@ -297,13 +277,13 @@ public class TemporalEvaluatorsTest {
   @Test
   public void testExplain() throws IOException {
     StreamExpression express = StreamExpressionParser.parse("month('myfield')");
-    DatePartEvaluator datePartEvaluator = new DatePartEvaluator(express,factory);
+    TemporalEvaluatorMonth datePartEvaluator = new TemporalEvaluatorMonth(express,factory);
     Explanation explain = datePartEvaluator.toExplanation(factory);
     assertEquals("month(myfield)", explain.getExpression());
 
     express = StreamExpressionParser.parse("day(aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaabbbbbbbbbbbbbbbbbbbb)");
-    datePartEvaluator = new DatePartEvaluator(express,factory);
-    explain = datePartEvaluator.toExplanation(factory);
+    TemporalEvaluatorDay dayPartEvaluator = new TemporalEvaluatorDay(express,factory);
+    explain = dayPartEvaluator.toExplanation(factory);
     assertEquals("day(aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaabbbbbbbbbbbbbbbbbbbb)", explain.getExpression());
   }
 }
