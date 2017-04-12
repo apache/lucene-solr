@@ -249,9 +249,14 @@ public class OfflineSorter {
     TrackingDirectoryWrapper trackingDir = new TrackingDirectoryWrapper(dir);
 
     boolean success = false;
+    boolean[] isExhausted = new boolean[1];
     try (ByteSequencesReader is = getReader(dir.openChecksumInput(inputFileName, IOContext.READONCE), inputFileName)) {
-      int lineCount;
-      while ((lineCount = readPartition(is)) > 0) {
+      while (isExhausted[0] == false) {
+        int lineCount = readPartition(is, isExhausted);
+        if (lineCount == 0) {
+          assert isExhausted[0];
+          break;
+        }
         segments.add(sortPartition(trackingDir));
         sortInfo.tempMergeFiles++;
         sortInfo.lineCount += lineCount;
@@ -420,8 +425,8 @@ public class OfflineSorter {
     sortInfo.tempMergeFiles++;
   }
 
-  /** Read in a single partition of data */
-  int readPartition(ByteSequencesReader reader) throws IOException {
+  /** Read in a single partition of data, setting isExhausted[0] to true if there are no more items. */
+  int readPartition(ByteSequencesReader reader, boolean[] isExhausted) throws IOException {
     long start = System.currentTimeMillis();
     if (valueLength != -1) {
       int limit = ramBufferSize.bytes / valueLength;
@@ -433,6 +438,7 @@ public class OfflineSorter {
           verifyChecksum(t, reader);
         }
         if (item == null) {
+          isExhausted[0] = true;
           break;
         }
         buffer.append(item);
@@ -446,6 +452,7 @@ public class OfflineSorter {
           verifyChecksum(t, reader);
         }
         if (item == null) {
+          isExhausted[0] = true;
           break;
         }
         buffer.append(item);
