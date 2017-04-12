@@ -200,9 +200,10 @@ public class StreamHandler extends RequestHandlerBase implements SolrCoreAware, 
       .withFunctionName("executor", ExecutorStream.class)
       .withFunctionName("null", NullStream.class)
       .withFunctionName("priority", PriorityStream.class)
-      .withFunctionName("significantTerms", SignificantTermsStream.class)
+         .withFunctionName("significantTerms", SignificantTermsStream.class)
       .withFunctionName("cartesianProduct", CartesianProductStream.class)
          .withFunctionName("shuffle", ShuffleStream.class)
+         .withFunctionName("calc", CalculatorStream.class)
 
              // metrics
          .withFunctionName("min", MinMetric.class)

@@ -564,7 +564,7 @@ public class StreamExpressionTest extends SolrCloudTestCase {
   public void testNulls() throws Exception {
 
     new UpdateRequest()
-        .add(id, "0",                  "a_i", "1", "a_f", "0", "s_multi", "aaa", "s_multi", "bbb", "i_multi", "100", "i_multi", "200")
+        .add(id, "0", "a_i", "1", "a_f", "0", "s_multi", "aaa", "s_multi", "bbb", "i_multi", "100", "i_multi", "200")
         .add(id, "2", "a_s", "hello2", "a_i", "3", "a_f", "0")
         .add(id, "3", "a_s", "hello3", "a_i", "4", "a_f", "3")
         .add(id, "4", "a_s", "hello4",             "a_f", "4")
@@ -4122,7 +4122,7 @@ public class StreamExpressionTest extends SolrCloudTestCase {
         false, true, TIMEOUT);
 
     new UpdateRequest()
-        .add(id, "0", "a_s", "hello", "a_i", "0", "a_f", "0", "s_multi", "aaaa",  "s_multi", "bbbb",  "i_multi", "4", "i_multi", "7")
+        .add(id, "0", "a_s", "hello", "a_i", "0", "a_f", "0", "s_multi", "aaaa", "s_multi", "bbbb", "i_multi", "4", "i_multi", "7")
         .add(id, "2", "a_s", "hello", "a_i", "2", "a_f", "0", "s_multi", "aaaa1", "s_multi", "bbbb1", "i_multi", "44", "i_multi", "77")
         .add(id, "3", "a_s", "hello", "a_i", "3", "a_f", "3", "s_multi", "aaaa2", "s_multi", "bbbb2", "i_multi", "444", "i_multi", "777")
         .add(id, "4", "a_s", "hello", "a_i", "4", "a_f", "4", "s_multi", "aaaa3", "s_multi", "bbbb3", "i_multi", "4444", "i_multi", "7777")
@@ -4784,7 +4784,24 @@ public class StreamExpressionTest extends SolrCloudTestCase {
     CollectionAdminRequest.deleteCollection("checkpointCollection").process(cluster.getSolrClient());
   }
 
+
   @Test
+  public void testCalculatorStream() throws Exception {
+    String expr = "select(calc(), add(1, 1) as result)";
+    ModifiableSolrParams paramsLoc = new ModifiableSolrParams();
+    paramsLoc.set("expr", expr);
+    paramsLoc.set("qt", "/stream");
+    String url = cluster.getJettySolrRunners().get(0).getBaseUrl().toString()+"/"+COLLECTIONORALIAS;
+    SolrStream solrStream = new SolrStream(url, paramsLoc);
+    StreamContext context = new StreamContext();
+    solrStream.setStreamContext(context);
+    List<Tuple> tuples = getTuples(solrStream);
+    assertTrue(tuples.size() == 1);
+    Tuple t = tuples.get(0);
+    assertTrue(t.getLong("result").equals(2L));
+  }
+
+    @Test
   public void testAnalyzeEvaluator() throws Exception {
 
     UpdateRequest updateRequest = new UpdateRequest();
