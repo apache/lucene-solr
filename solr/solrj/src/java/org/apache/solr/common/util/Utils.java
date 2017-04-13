@@ -115,12 +115,18 @@ public class Utils {
   }
 
   public static Map<String, Object> makeMap(Object... keyVals) {
+    return makeMap(false, keyVals);
+  }
+
+  public static Map<String, Object> makeMap(boolean skipNulls, Object... keyVals) {
     if ((keyVals.length & 0x01) != 0) {
       throw new IllegalArgumentException("arguments should be key,value");
     }
     Map<String, Object> propMap = new LinkedHashMap<>(keyVals.length >> 1);
     for (int i = 0; i < keyVals.length; i += 2) {
-      propMap.put(keyVals[i].toString(), keyVals[i + 1]);
+      Object keyVal = keyVals[i + 1];
+      if(keyVal == null) continue;
+      propMap.put(keyVals[i].toString(), keyVal);
     }
     return propMap;
   }
@@ -155,6 +161,7 @@ public class Utils {
   }
 
   public static Object getObjectByPath(Map root, boolean onlyPrimitive, List<String> hierarchy) {
+    if(root == null) return null;
     Map obj = root;
     for (int i = 0; i < hierarchy.size(); i++) {
       int idx = -1;

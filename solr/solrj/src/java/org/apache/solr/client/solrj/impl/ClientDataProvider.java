@@ -45,7 +45,7 @@ import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.common.util.Utils;
-import org.apache.solr.recipe.Policy.ClusterDataProvider;
+import org.apache.solr.recipe.ClusterDataProvider;
 import org.apache.solr.recipe.Policy.ReplicaInfo;
 import org.apache.zookeeper.data.Stat;
 import org.slf4j.Logger;

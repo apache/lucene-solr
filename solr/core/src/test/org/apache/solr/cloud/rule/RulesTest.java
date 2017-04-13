@@ -16,18 +16,14 @@
  */
 package org.apache.solr.cloud.rule;
 
-import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.nio.file.Paths;
-import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.solr.client.solrj.SolrClient;
-import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
-import org.apache.solr.client.solrj.impl.ClientDataProvider;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.GenericSolrRequest;
@@ -35,7 +31,6 @@ import org.apache.solr.client.solrj.response.SimpleSolrResponse;
 import org.apache.solr.cloud.SolrCloudTestCase;
 import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.params.ModifiableSolrParams;
-import org.apache.solr.common.util.Utils;
 import org.junit.After;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -66,18 +61,6 @@ public class RulesTest extends SolrCloudTestCase {
   @After
   public void removeCollections() throws Exception {
     cluster.deleteAllCollections();
-  }
-
-  public void testDataProvider() throws IOException, SolrServerException {
-    CollectionAdminRequest.createCollectionWithImplicitRouter("policiesTest", "conf", "shard1", 2)
-        .process(cluster.getSolrClient());
-    DocCollection rulesCollection = getCollectionState("policiesTest");
-    ClientDataProvider provider = new ClientDataProvider(cluster.getSolrClient());
-
-    Map<String, Object> val = provider.getNodeValues(rulesCollection.getReplicas().get(0).getNodeName(), Arrays.asList("freedisk", "cores"));
-    assertTrue(((Number)val.get("cores")).intValue() > 0 );
-    assertTrue(((Number)val.get("freedisk")).intValue() > 0 );
-    System.out.println(Utils.toJSONString(val));
   }
 
   @Test

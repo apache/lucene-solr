@@ -27,16 +27,23 @@ import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
+import java.util.function.Consumer;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
 import org.apache.solr.common.MapWriter;
+import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.CollectionParams.CollectionAction;
+import org.apache.solr.common.params.CoreAdminParams;
 import org.apache.solr.common.util.Utils;
 
+import static java.util.Arrays.asList;
 import static java.util.Collections.singletonList;
 import static java.util.stream.Collectors.toList;
+import static org.apache.solr.common.params.CollectionParams.CollectionAction.ADDREPLICA;
+import static org.apache.solr.common.util.Utils.getDeepCopy;
 
 public class Policy {
   public static final String EACH = "#EACH";
@@ -173,11 +180,11 @@ public class Policy {
 
 
   enum SortParam {
-    freedisk, cores, heap, cpu;
+    replica, freedisk, cores, heap, cpu;
 
     static SortParam get(String m) {
       for (SortParam p : values()) if (p.name().equals(m)) return p;
-      throw new RuntimeException("Sort must be on one of these " + Arrays.asList(values()));
+      throw new RuntimeException( "Invalid sort "+ m+  " Sort must be on one of these " + Arrays.asList(values()));
     }
 
   }
@@ -217,21 +224,7 @@ public class Policy {
   }
 
 
-  public interface ClusterDataProvider {
-    Map<String, Object> getNodeValues(String node, Collection<String> keys);
-
-    /**
-     * Get the details of each replica in a node. It attempts to fetch as much details about
-     * the replica as mentioned in the keys list. It is not necessary to give al details
-     * <p>
-     * the format is {collection:shard :[{replicadetails}]}
-     */
-    Map<String, Map<String, List<ReplicaInfo>>> getReplicaInfo(String node, Collection<String> keys);
-
-    Collection<String> getNodes();
-  }
-
-  static abstract class Suggester {
+  public static abstract class Suggester {
     String coll;
     String shard;
     Policy.Session session;
@@ -255,6 +248,78 @@ public class Policy {
       return operation;
     }
 
+    public Session getSession() {
+      return session;
+    }
+  }
+
+  public static Map<String, List<String>> getReplicaLocations(String collName, Map<String, Object> autoScalingJson,
+                                                              String policyName, ClusterDataProvider cdp,
+                                                              List<String> shardNames,
+                                                              int repFactor) {
+    Map<String, List<String>> positionMapping = new HashMap<>();
+    for (String shardName : shardNames) positionMapping.put(shardName, new ArrayList<>(repFactor));
+    Map policyJson = (Map) Utils.getObjectByPath(autoScalingJson, false, asList("policies", policyName));
+    if (policyJson == null) {
+      throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "no such policy exists " + policyName);
+    }
+    Map defaultPolicy = (Map) Utils.getObjectByPath(autoScalingJson, false, asList("policies", "default"));
+
+    Policy policy = new Policy(Policy.mergePolicies(collName, policyJson, defaultPolicy));
+    Policy.Session session = policy.createSession(cdp);
+    for (String shardName : shardNames) {
+      for (int i = 0; i < repFactor; i++) {
+        Policy.Suggester suggester = session.getSuggester(ADDREPLICA, collName, shardName);
+        Map op = suggester.getOperation();
+        if (op == null) {
+          throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "No node can satisfy the rules");
+        }
+        session = suggester.getSession();
+        positionMapping.get(shardName).add((String) op.get(CoreAdminParams.NODE));
+      }
+    }
+
+    return positionMapping;
+  }
+
+  public static Map<String, Object> mergePolicies(String coll,
+                                                  Map<String, Object> collPolicy,
+                                                  Map<String, Object> defaultPolicy) {
+    Collection<Map<String, Object>> conditions = getDeepCopy(getListOfMap("conditions", collPolicy), 4, true);
+    insertColl(coll, conditions);
+    List<Clause> parsedConditions = conditions.stream().map(Clause::new).collect(toList());
+    Collection<Map<String, Object>> preferences = getDeepCopy(getListOfMap("preferences", collPolicy), 4, true);
+    List<Preference> parsedPreferences = preferences.stream().map(Preference::new).collect(toList());
+    if (defaultPolicy != null) {
+      Collection<Map<String, Object>> defaultConditions = getDeepCopy(getListOfMap("conditions", defaultPolicy), 4, true);
+      insertColl(coll,defaultConditions);
+      defaultConditions.forEach(e -> {
+        Clause clause = new Clause(e);
+        for (Clause c : parsedConditions) {
+          if (c.collection.equals(clause.collection) &&
+              c.tag.name.equals(clause.tag.name) ) return;
+        }
+        conditions.add(e);
+      });
+      Collection<Map<String,Object>> defaultPreferences = getDeepCopy(getListOfMap("preferences", defaultPolicy), 4, true);
+      defaultPreferences.forEach(e -> {
+        Preference preference = new Preference(e);
+        for (Preference p : parsedPreferences) {
+          if(p.name == preference.name) return;
+        }
+        preferences.add(e);
+
+      });
+  }
+    return Utils.makeMap("conditions", conditions, "preferences", preferences );
+
+  }
+
+  private static Collection<Map<String, Object>> insertColl(String coll, Collection<Map<String, Object>> conditions) {
+    conditions.forEach(e -> {
+      if (!e.containsKey("collection")) e.put("collection", coll);
+    });
+    return conditions;
   }
 
   private static final Map<CollectionAction, Supplier<Suggester>> ops = new HashMap<>();

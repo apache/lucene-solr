@@ -22,6 +22,7 @@ import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicReference;
 
@@ -69,7 +70,7 @@ public class Clause implements MapWriter {
     tag = parse(s, singletonMap(s, o));
   }
 
-  class Condition {
+  static class Condition {
     final String name;
     final Object val;
     final Operand op;
@@ -92,9 +93,17 @@ public class Clause implements MapWriter {
       return op.match(val, row.getVal(name)) == PASS;
     }
 
+    @Override
+    public boolean equals(Object that) {
+      if (that instanceof Condition) {
+        Condition c = (Condition) that;
+        return Objects.equals(c.name, name) && Objects.equals(c.val, val) && c.op == op;
+      }
+      return false;
+    }
   }
 
-  Condition parse(String s, Map m) {
+  static Condition parse(String s, Map m) {
     Object expectedVal = null;
     Object val = m.get(s);
     try {

@@ -41,7 +41,7 @@ class Row implements MapWriter {
   List<Clause> violations = new ArrayList<>();
   boolean anyValueMissing = false;
 
-  Row(String node, List<String> params, Policy.ClusterDataProvider snitch) {
+  Row(String node, List<String> params, ClusterDataProvider snitch) {
     replicaInfo = snitch.getReplicaInfo(node, params);
     if (replicaInfo == null) replicaInfo = Collections.emptyMap();
     this.node = node;
