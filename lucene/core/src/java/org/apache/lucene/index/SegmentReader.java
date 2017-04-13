@@ -294,7 +294,7 @@ public final class SegmentReader extends CodecReader {
     synchronized(readerClosedListeners) {
       for(ClosedListener listener : readerClosedListeners) {
         try {
-          listener.onClose(cacheHelper.getKey());
+          listener.onClose(readerCacheHelper.getKey());
         } catch (Throwable t) {
           if (th == null) {
             th = t;
@@ -307,7 +307,7 @@ public final class SegmentReader extends CodecReader {
     }
   }
 
-  private final IndexReader.CacheHelper cacheHelper = new IndexReader.CacheHelper() {
+  private final IndexReader.CacheHelper readerCacheHelper = new IndexReader.CacheHelper() {
     private final IndexReader.CacheKey cacheKey = new IndexReader.CacheKey();
 
     @Override
@@ -317,18 +317,35 @@ public final class SegmentReader extends CodecReader {
 
     @Override
     public void addClosedListener(ClosedListener listener) {
+      ensureOpen();
       readerClosedListeners.add(listener);
     }
   };
 
   @Override
   public CacheHelper getReaderCacheHelper() {
-    return cacheHelper;
+    return readerCacheHelper;
   }
+
+  /** Wrap the cache helper of the core to add ensureOpen() calls that make
+   *  sure users do not register closed listeners on closed indices. */
+  private final IndexReader.CacheHelper coreCacheHelper = new IndexReader.CacheHelper() {
+
+    @Override
+    public CacheKey getKey() {
+      return core.getCacheHelper().getKey();
+    }
+
+    @Override
+    public void addClosedListener(ClosedListener listener) {
+      ensureOpen();
+      core.getCacheHelper().addClosedListener(listener);
+    }
+  };
 
   @Override
   public CacheHelper getCoreCacheHelper() {
-    return core.getCacheHelper();
+    return coreCacheHelper;
   }
 
   @Override
