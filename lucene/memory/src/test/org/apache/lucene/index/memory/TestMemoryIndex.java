@@ -40,6 +40,7 @@ import org.apache.lucene.document.NumericDocValuesField;
 import org.apache.lucene.document.SortedDocValuesField;
 import org.apache.lucene.document.SortedNumericDocValuesField;
 import org.apache.lucene.document.SortedSetDocValuesField;
+import org.apache.lucene.document.StoredField;
 import org.apache.lucene.document.StringField;
 import org.apache.lucene.document.TextField;
 import org.apache.lucene.index.BinaryDocValues;
@@ -420,6 +421,17 @@ public class TestMemoryIndex extends LuceneTestCase {
       query = rangeQueryFunction.apply(48L, 68L);
       assertEquals(0, indexSearcher.count(query));
     }
+  }
+
+  public void testMissingPoints() throws IOException {
+    Document doc = new Document();
+    doc.add(new StoredField("field", 42));
+    MemoryIndex mi = MemoryIndex.fromDocument(doc, analyzer);
+    IndexSearcher indexSearcher = mi.createSearcher();
+    // field that exists but does not have points
+    assertNull(indexSearcher.getIndexReader().leaves().get(0).reader().getPointValues("field"));
+    // field that does not exist
+    assertNull(indexSearcher.getIndexReader().leaves().get(0).reader().getPointValues("some_missing_field"));
   }
 
   public void testPointValuesDoNotAffectPositionsOrOffset() throws Exception {
