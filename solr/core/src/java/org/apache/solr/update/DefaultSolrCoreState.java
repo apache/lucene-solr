@@ -281,7 +281,7 @@ public final class DefaultSolrCoreState extends SolrCoreState implements Recover
     Thread thread = new Thread() {
       @Override
       public void run() {
-        MDCLoggingContext.setCoreDescriptor(cd);
+        MDCLoggingContext.setCoreDescriptor(cc, cd);
         try {
           if (SKIP_AUTO_RECOVERY) {
             log.warn("Skipping recovery according to sys prop solrcloud.skip.autorecovery");

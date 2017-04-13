@@ -112,7 +112,7 @@ class CdcrUpdateLogSynchronizer implements CdcrStateManager.CdcrStateObserver {
   private class UpdateLogSynchronisation implements Runnable {
 
     private String getLeaderUrl() {
-      ZkController zkController = core.getCoreDescriptor().getCoreContainer().getZkController();
+      ZkController zkController = core.getCoreContainer().getZkController();
       ClusterState cstate = zkController.getClusterState();
       DocCollection docCollection = cstate.getCollection(collection);
       ZkNodeProps leaderProps = docCollection.getLeader(shardId);

@@ -70,7 +70,7 @@ public class SolrCloudReportersTest extends SolrCloudTestCase {
     cluster.getJettySolrRunners().forEach(jetty -> {
       CoreContainer cc = jetty.getCoreContainer();
       // verify registry names
-      for (String name : cc.getCoreNames()) {
+      for (String name : cc.getLoadedCoreNames()) {
         SolrCore core = cc.getCore(name);
         try {
           String registryName = core.getCoreMetricManager().getRegistryName();

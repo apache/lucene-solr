@@ -222,12 +222,18 @@ public class TestHarness extends BaseTestHarness {
 
     @Override
     public List<CoreDescriptor> discover(CoreContainer cc) {
-      return ImmutableList.of(new CoreDescriptor(cc, coreName, cc.getCoreRootDirectory().resolve(coreName),
+      return ImmutableList.of(new CoreDescriptor(coreName, cc.getCoreRootDirectory().resolve(coreName),
+          cc.getContainerProperties(), cc.isZooKeeperAware(),
           CoreDescriptor.CORE_DATADIR, dataDir,
           CoreDescriptor.CORE_CONFIG, solrConfig,
           CoreDescriptor.CORE_SCHEMA, schema,
           CoreDescriptor.CORE_COLLECTION, System.getProperty("collection", "collection1"),
           CoreDescriptor.CORE_SHARD, System.getProperty("shard", "shard1")));
+    }
+
+    @Override
+    public CoreDescriptor reload(CoreContainer cc, CoreDescriptor cd) {
+      return cd;
     }
   }
   

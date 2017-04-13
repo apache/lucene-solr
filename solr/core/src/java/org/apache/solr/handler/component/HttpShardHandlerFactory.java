@@ -320,7 +320,7 @@ public class HttpShardHandlerFactory extends ShardHandlerFactory implements org.
 
     if (params.getBool(CommonParams.PREFER_LOCAL_SHARDS, false)) {
       final CoreDescriptor coreDescriptor = req.getCore().getCoreDescriptor();
-      final ZkController zkController = coreDescriptor.getCoreContainer().getZkController();
+      final ZkController zkController = req.getCore().getCoreContainer().getZkController();
       final String preferredHostAddress = (zkController != null) ? zkController.getBaseUrl() : null;
       if (preferredHostAddress == null) {
         log.warn("Couldn't determine current host address to prefer local shards");

@@ -126,7 +126,7 @@ public class SolrIndexWriter extends IndexWriter {
     infoStream = getConfig().getInfoStream();
     this.directory = directory;
     numOpens.incrementAndGet();
-    SolrMetricManager metricManager = core.getCoreDescriptor().getCoreContainer().getMetricManager();
+    SolrMetricManager metricManager = core.getCoreContainer().getMetricManager();
     String registry = core.getCoreMetricManager().getRegistryName();
     if (config.metricsInfo != null && config.metricsInfo.initArgs != null) {
       Object v = config.metricsInfo.initArgs.get("majorMergeDocs");

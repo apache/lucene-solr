@@ -75,7 +75,7 @@ public class SolrJmxReporterTest extends SolrTestCaseJ4 {
     rootName = TestUtil.randomSimpleString(random(), 1, 10);
 
     coreMetricManager = core.getCoreMetricManager();
-    metricManager = core.getCoreDescriptor().getCoreContainer().getMetricManager();
+    metricManager = core.getCoreContainer().getMetricManager();
     PluginInfo pluginInfo = createReporterPluginInfo(rootName, true);
     metricManager.loadReporter(coreMetricManager.getRegistryName(), coreMetricManager.getCore().getResourceLoader(),
         pluginInfo, coreMetricManager.getTag());

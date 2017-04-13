@@ -415,7 +415,7 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
       cache.setState(SolrCache.State.LIVE);
       infoRegistry.put(cache.name(), cache);
     }
-    SolrMetricManager manager = core.getCoreDescriptor().getCoreContainer().getMetricManager();
+    SolrMetricManager manager = core.getCoreContainer().getMetricManager();
     String registry = core.getCoreMetricManager().getRegistryName();
     for (SolrCache cache : cacheList) {
       cache.initializeMetrics(manager, registry, SolrMetricManager.mkName(cache.name(), STATISTICS_KEY));

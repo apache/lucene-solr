@@ -47,7 +47,8 @@ class SolrCores implements Observer {
   private static Object modifyLock = new Object(); // for locking around manipulating any of the core maps.
   private final Map<String, SolrCore> cores = new LinkedHashMap<>(); // For "permanent" cores
 
-  private final Map<String, CoreDescriptor> lazyDescriptors = new LinkedHashMap<>();
+  // These descriptors, once loaded, will _not_ be unloaded, i.e. they are not "transient".
+  private final Map<String, CoreDescriptor> residentDesciptors = new LinkedHashMap<>();
 
   private final CoreContainer container;
   
@@ -67,17 +68,26 @@ class SolrCores implements Observer {
     this.container = container;
   }
   
-  protected void putDynamicDescriptor(String rawName, CoreDescriptor cd) {
+  protected void addCoreDescriptor(CoreDescriptor p) {
     synchronized (modifyLock) {
-      if (cd.isTransient()) {
+      if (p.isTransient()) {
         if (container.getTransientCacheHandler() != null) {
-          container.getTransientCacheHandler().addTransientDescriptor(rawName, cd);
-        } else {
-          log.error("Tried to add transient core to transient handler, but no transient core handler has been found. "
-              + " Descriptor: " + cd.toString());
+          container.getTransientCacheHandler().addTransientDescriptor(p.getName(), p);
         }
       } else {
-        lazyDescriptors.put(rawName, cd);
+        residentDesciptors.put(p.getName(), p);
+      }
+    }
+  }
+
+  protected void removeCoreDescriptor(CoreDescriptor p) {
+    synchronized (modifyLock) {
+      if (p.isTransient()) {
+        if (container.getTransientCacheHandler() != null) {
+          container.getTransientCacheHandler().removeTransientDescriptor(p.getName());
+        }
+      } else {
+        residentDesciptors.remove(p.getName());
       }
     }
   }
@@ -149,10 +159,18 @@ class SolrCores implements Observer {
     return retCore;
   }
 
-  protected SolrCore putCore(String name, SolrCore core) {
+  // Returns the old core if there was a core of the same name.
+  protected SolrCore putCore(CoreDescriptor cd, SolrCore core) {
     synchronized (modifyLock) {
-      return cores.put(name, core);
+      if (cd.isTransient()) {
+        if (container.getTransientCacheHandler() != null) {
+          return container.getTransientCacheHandler().addCore(cd.getName(), core);
+        }
+      } else {
+        return cores.put(cd.getName(), core);
+      }
     }
+    return null;
   }
 
   /**
@@ -231,7 +249,7 @@ class SolrCores implements Observer {
       if (container.getTransientCacheHandler() != null) {
         set.addAll(container.getTransientCacheHandler().getAllCoreNames());
       }
-      set.addAll(lazyDescriptors.keySet());
+      set.addAll(residentDesciptors.keySet());
     }
     return set;
   }
@@ -260,13 +278,19 @@ class SolrCores implements Observer {
           throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "No such core: " + n1);
         }
       }
+      // When we swap the cores, we also need to swap the associated core descriptors. Note, this changes the 
+      // name of the coreDescriptor by virtue of the c-tor
+      CoreDescriptor cd1 = c1.getCoreDescriptor(); 
+      addCoreDescriptor(new CoreDescriptor(n1, c0.getCoreDescriptor()));
+      addCoreDescriptor(new CoreDescriptor(n0, cd1));
       cores.put(n0, c1);
       cores.put(n1, c0);
+      c0.setName(n1);
+      c1.setName(n0);
+      
       container.getMetricManager().swapRegistries(
           c0.getCoreMetricManager().getRegistryName(),
           c1.getCoreMetricManager().getRegistryName());
-      c0.setName(n1);
-      c1.setName(n0);
     }
 
   }
@@ -277,12 +301,10 @@ class SolrCores implements Observer {
       SolrCore ret = cores.remove(name);
       // It could have been a newly-created core. It could have been a transient core. The newly-created cores
       // in particular should be checked. It could have been a dynamic core.
-      TransientSolrCoreCache transientHandler = container.getTransientCacheHandler(); 
+      TransientSolrCoreCache transientHandler = container.getTransientCacheHandler();
       if (ret == null && transientHandler != null) {
         ret = transientHandler.removeCore(name);
-        transientHandler.removeTransientDescriptor(name);
       }
-      lazyDescriptors.remove(name);
       return ret;
     }
   }
@@ -301,14 +323,6 @@ class SolrCores implements Observer {
       }
 
       return core;
-    }
-  }
-
-  protected CoreDescriptor getDynamicDescriptor(String name) {
-    synchronized (modifyLock) {
-      CoreDescriptor cd = lazyDescriptors.get(name);
-      if (cd != null || container.getTransientCacheHandler() == null) return cd;
-      return container.getTransientCacheHandler().getTransientDescriptor(name);
     }
   }
 
@@ -350,7 +364,7 @@ class SolrCores implements Observer {
 
   protected CoreDescriptor getUnloadedCoreDescriptor(String cname) {
     synchronized (modifyLock) {
-      CoreDescriptor desc = lazyDescriptors.get(cname);
+      CoreDescriptor desc = residentDesciptors.get(cname);
       if (desc == null) {
         if (container.getTransientCacheHandler() == null) return null;
         desc = container.getTransientCacheHandler().getTransientDescriptor(cname);
@@ -439,10 +453,8 @@ class SolrCores implements Observer {
    */
   public CoreDescriptor getCoreDescriptor(String coreName) {
     synchronized (modifyLock) {
-      if (cores.containsKey(coreName))
-        return cores.get(coreName).getCoreDescriptor();
-      if (lazyDescriptors.containsKey(coreName) || container.getTransientCacheHandler() == null)
-        return lazyDescriptors.get(coreName);
+      if (residentDesciptors.containsKey(coreName))
+        return residentDesciptors.get(coreName);
       return container.getTransientCacheHandler().getTransientDescriptor(coreName);
     }
   }

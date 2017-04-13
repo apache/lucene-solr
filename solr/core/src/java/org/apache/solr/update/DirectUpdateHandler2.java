@@ -121,7 +121,7 @@ public class DirectUpdateHandler2 extends UpdateHandler implements SolrCoreState
     commitWithinSoftCommit = updateHandlerInfo.commitWithinSoftCommit;
     indexWriterCloseWaitsForMerges = updateHandlerInfo.indexWriterCloseWaitsForMerges;
 
-    ZkController zkController = core.getCoreDescriptor().getCoreContainer().getZkController();
+    ZkController zkController = core.getCoreContainer().getZkController();
     if (zkController != null) {
       DocCollection dc = zkController.getClusterState().getCollection(core.getCoreDescriptor().getCollectionName());
       if (dc.getRealtimeReplicas() == 1) {
@@ -768,7 +768,7 @@ public class DirectUpdateHandler2 extends UpdateHandler implements SolrCoreState
    */
   @Override
   public void rollback(RollbackUpdateCommand cmd) throws IOException {
-    if (core.getCoreDescriptor().getCoreContainer().isZooKeeperAware()) {
+    if (core.getCoreContainer().isZooKeeperAware()) {
       throw new UnsupportedOperationException("Rollback is currently not supported in SolrCloud mode. (SOLR-4895)");
     }
 
@@ -824,7 +824,7 @@ public class DirectUpdateHandler2 extends UpdateHandler implements SolrCoreState
   @Override
   public void closeWriter(IndexWriter writer) throws IOException {
 
-    assert TestInjection.injectNonGracefullClose(core.getCoreDescriptor().getCoreContainer());
+    assert TestInjection.injectNonGracefullClose(core.getCoreContainer());
     
     boolean clearRequestInfo = false;
     solrCoreState.getCommitLock().lock();

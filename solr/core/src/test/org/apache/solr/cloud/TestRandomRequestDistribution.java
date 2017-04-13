@@ -195,7 +195,7 @@ public class TestRandomRequestDistribution extends AbstractFullDistribZkTestBase
       }
       assertNotNull(leaderCore);
 
-      SolrMetricManager leaderMetricManager = leaderCore.getCoreDescriptor().getCoreContainer().getMetricManager();
+      SolrMetricManager leaderMetricManager = leaderCore.getCoreContainer().getMetricManager();
       String leaderRegistry = leaderCore.getCoreMetricManager().getRegistryName();
       Counter cnt = leaderMetricManager.counter(null, leaderRegistry, "requests", "QUERY.standard");
 

@@ -125,7 +125,7 @@ public class BasicFunctionalityTest extends SolrTestCaseJ4 {
     assertNotNull(core.getRequestHandler("mock"));
 
     // test stats call
-    SolrMetricManager manager = core.getCoreDescriptor().getCoreContainer().getMetricManager();
+    SolrMetricManager manager = core.getCoreContainer().getMetricManager();
     String registry = core.getCoreMetricManager().getRegistryName();
     Map<String, Metric> metrics = manager.registry(registry).getMetrics();
     assertTrue(metrics.containsKey("CORE.coreName"));

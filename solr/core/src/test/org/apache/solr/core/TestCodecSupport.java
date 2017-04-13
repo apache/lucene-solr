@@ -215,11 +215,15 @@ public class TestCodecSupport extends SolrTestCaseJ4 {
     assertNull("Unexpected configuration of codec factory for this test. Expecting empty element", 
         config.getNode("codecFactory", false).getFirstChild());
     IndexSchema schema = IndexSchemaFactory.buildIndexSchema("schema_codec.xml", config);
+
+    CoreContainer coreContainer = h.getCoreContainer();
     
     try {
-      c = new SolrCore(new CoreDescriptor(h.getCoreContainer(), newCoreName, testSolrHome.resolve(newCoreName)), 
+      CoreDescriptor cd = new CoreDescriptor(newCoreName, testSolrHome.resolve(newCoreName),
+          coreContainer.getContainerProperties(), coreContainer.isZooKeeperAware());
+      c = new SolrCore(coreContainer, cd,
           new ConfigSet("fakeConfigset", config, schema, null, true));
-      assertNull(h.getCoreContainer().registerCore(newCoreName, c, false, false));
+      assertNull(coreContainer.registerCore(cd, c, false, false));
       h.coreName = newCoreName;
       assertEquals("We are not using the correct core", "solrconfig_codec2.xml", h.getCore().getConfigResource());
       assertU(add(doc("string_f", "foo")));
@@ -227,7 +231,7 @@ public class TestCodecSupport extends SolrTestCaseJ4 {
       assertCompressionMode(SchemaCodecFactory.SOLR_DEFAULT_COMPRESSION_MODE.name(), h.getCore());
     } finally {
       h.coreName = previousCoreName;
-      h.getCoreContainer().unload(newCoreName);
+      coreContainer.unload(newCoreName);
     }
     
   }

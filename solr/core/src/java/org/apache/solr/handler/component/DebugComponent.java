@@ -160,7 +160,7 @@ public class DebugComponent extends SearchComponent
 
   @SuppressForbidden(reason = "Need currentTimeMillis, only used for naming")
   private String generateRid(ResponseBuilder rb) {
-    String hostName = rb.req.getCore().getCoreDescriptor().getCoreContainer().getHostName();
+    String hostName = rb.req.getCore().getCoreContainer().getHostName();
     return hostName + "-" + rb.req.getCore().getName() + "-" + System.currentTimeMillis() + "-" + ridCounter.getAndIncrement();
   }
 

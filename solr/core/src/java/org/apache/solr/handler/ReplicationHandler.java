@@ -443,7 +443,7 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
     String location = params.get(CoreAdminParams.BACKUP_LOCATION);
 
     String repoName = params.get(CoreAdminParams.BACKUP_REPOSITORY);
-    CoreContainer cc = core.getCoreDescriptor().getCoreContainer();
+    CoreContainer cc = core.getCoreContainer();
     BackupRepository repo = null;
     if (repoName != null) {
       repo = cc.newBackupRepository(Optional.of(repoName));
@@ -561,7 +561,7 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
 
       String location = params.get(CoreAdminParams.BACKUP_LOCATION);
       String repoName = params.get(CoreAdminParams.BACKUP_REPOSITORY);
-      CoreContainer cc = core.getCoreDescriptor().getCoreContainer();
+      CoreContainer cc = core.getCoreContainer();
       BackupRepository repo = null;
       if (repoName != null) {
         repo = cc.newBackupRepository(Optional.of(repoName));
@@ -699,7 +699,7 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
       }
     }
 
-    if (confFileNameAlias.size() < 1 || core.getCoreDescriptor().getCoreContainer().isZooKeeperAware())
+    if (confFileNameAlias.size() < 1 || core.getCoreContainer().isZooKeeperAware())
       return;
     LOG.debug("Adding config files to list: " + includeConfFiles);
     //if configuration files need to be included get their details
@@ -1214,7 +1214,7 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
     boolean enableMaster = isEnabled( master );
 
     if (enableMaster || enableSlave) {
-      if (core.getCoreDescriptor().getCoreContainer().getZkController() != null) {
+      if (core.getCoreContainer().getZkController() != null) {
         LOG.warn("SolrCloud is enabled for core " + core.getName() + " but so is old-style replication. Make sure you" +
             " intend this behavior, it usually indicates a mis-configuration. Master setting is " +
             Boolean.toString(enableMaster) + " and slave setting is " + Boolean.toString(enableSlave));

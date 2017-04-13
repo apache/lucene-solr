@@ -180,7 +180,6 @@ public final class SolrCore implements SolrInfoBean, SolrMetricProducer, Closeab
 
   private String name;
   private String logid; // used to show what name is set
-  private CoreDescriptor coreDescriptor;
 
   private boolean isReloaded = false;
 
@@ -221,12 +220,14 @@ public final class SolrCore implements SolrInfoBean, SolrMetricProducer, Closeab
   private Counter newSearcherCounter;
   private Counter newSearcherMaxReachedCounter;
   private Counter newSearcherOtherErrorsCounter;
+  private final CoreContainer coreContainer;
 
   private Set<String> metricNames = new HashSet<>();
 
   public Set<String> getMetricNames() {
     return metricNames;
   }
+
 
   public Date getStartTimeStamp() { return startTime; }
 
@@ -430,10 +431,8 @@ public final class SolrCore implements SolrInfoBean, SolrMetricProducer, Closeab
   }
 
   public void setName(String v) {
-    String oldName = this.name;
     this.name = v;
     this.logid = (v==null)?"":("["+v+"] ");
-    this.coreDescriptor = new CoreDescriptor(v, this.coreDescriptor);
     if (coreMetricManager != null) {
       coreMetricManager.afterCoreSetName();
     }
@@ -642,9 +641,9 @@ public final class SolrCore implements SolrInfoBean, SolrMetricProducer, Closeab
       boolean success = false;
       SolrCore core = null;
       try {
-        CoreDescriptor cd = new CoreDescriptor(coreDescriptor.getName(), coreDescriptor);
+        CoreDescriptor cd = new CoreDescriptor(name, getCoreDescriptor());
         cd.loadExtraProperties(); //Reload the extra properties
-        core = new SolrCore(getName(), getDataDir(), coreConfig.getSolrConfig(),
+        core = new SolrCore(coreContainer, getName(), getDataDir(), coreConfig.getSolrConfig(),
             coreConfig.getIndexSchema(), coreConfig.getProperties(),
             cd, updateHandler, solrDelPolicy, currentCore, true);
         
@@ -664,7 +663,7 @@ public final class SolrCore implements SolrInfoBean, SolrMetricProducer, Closeab
   }
 
   private DirectoryFactory initDirectoryFactory() {
-    return DirectoryFactory.loadDirectoryFactory(solrConfig, getCoreDescriptor().getCoreContainer(), coreMetricManager.getRegistryName());
+    return DirectoryFactory.loadDirectoryFactory(solrConfig, coreContainer, coreMetricManager.getRegistryName());
   }
 
   private RecoveryStrategy.Builder initRecoveryStrategyBuilder() {
@@ -851,12 +850,16 @@ public final class SolrCore implements SolrInfoBean, SolrMetricProducer, Closeab
     return createReloadedUpdateHandler(className, "Update Handler", updateHandler);
   }
 
-  public SolrCore(CoreDescriptor cd, ConfigSet coreConfig) {
-    this(cd.getName(), null, coreConfig.getSolrConfig(), coreConfig.getIndexSchema(), coreConfig.getProperties(),
+  public SolrCore(CoreContainer coreContainer, CoreDescriptor cd, ConfigSet coreConfig) {
+    this(coreContainer, cd.getName(), null, coreConfig.getSolrConfig(), coreConfig.getIndexSchema(), coreConfig.getProperties(),
         cd, null, null, null, false);
   }
 
-  
+  public CoreContainer getCoreContainer() {
+    return coreContainer;
+  }
+
+
   /**
    * Creates a new core and register it in the list of cores. If a core with the
    * same name already exists, it will be stopped and replaced by this one.
@@ -870,14 +873,18 @@ public final class SolrCore implements SolrInfoBean, SolrMetricProducer, Closeab
    *
    * @since solr 1.3
    */
-  public SolrCore(String name, String dataDir, SolrConfig config,
-      IndexSchema schema, NamedList configSetProperties,
-      CoreDescriptor coreDescriptor, UpdateHandler updateHandler,
-      IndexDeletionPolicyWrapper delPolicy, SolrCore prev, boolean reload) {
+  public SolrCore(CoreContainer coreContainer, String name, String dataDir, SolrConfig config,
+                  IndexSchema schema, NamedList configSetProperties,
+                  CoreDescriptor coreDescriptor, UpdateHandler updateHandler,
+                  IndexDeletionPolicyWrapper delPolicy, SolrCore prev, boolean reload) {
+
+    this.coreContainer = coreContainer;
     
     assert ObjectReleaseTracker.track(searcherExecutor); // ensure that in unclean shutdown tests we still close this
-    
-    this.coreDescriptor = Objects.requireNonNull(coreDescriptor, "coreDescriptor cannot be null");
+
+    CoreDescriptor cd = Objects.requireNonNull(coreDescriptor, "coreDescriptor cannot be null");
+    coreContainer.solrCores.addCoreDescriptor(cd);
+
     setName(name);
     MDCLoggingContext.setCore(this);
     
@@ -906,7 +913,7 @@ public final class SolrCore implements SolrInfoBean, SolrMetricProducer, Closeab
 
     checkVersionFieldExistsInSchema(schema, coreDescriptor);
 
-    SolrMetricManager metricManager = this.coreDescriptor.getCoreContainer().getMetricManager();
+    SolrMetricManager metricManager = coreContainer.getMetricManager();
 
     // initialize searcher-related metrics
     initializeMetrics(metricManager, coreMetricManager.getRegistryName(), null);
@@ -1043,15 +1050,15 @@ public final class SolrCore implements SolrInfoBean, SolrMetricProducer, Closeab
 
   /** Set UpdateLog to buffer updates if the slice is in construction. */
   private void bufferUpdatesIfConstructing(CoreDescriptor coreDescriptor) {
-    final CoreContainer cc = coreDescriptor.getCoreContainer();
-    if (cc != null && cc.isZooKeeperAware()) {
+    
+    if (coreContainer != null && coreContainer.isZooKeeperAware()) {
       if (reqHandlers.get("/get") == null) {
         log.warn("WARNING: RealTimeGetHandler is not registered at /get. " +
             "SolrCloud will always use full index replication instead of the more efficient PeerSync method.");
       }
 
       // ZK pre-register would have already happened so we read slice properties now
-      final ClusterState clusterState = cc.getZkController().getClusterState();
+      final ClusterState clusterState = coreContainer.getZkController().getClusterState();
       final DocCollection collection = clusterState.getCollection(coreDescriptor.getCloudDescriptor().getCollectionName());
       final Slice slice = collection.getSlice(coreDescriptor.getCloudDescriptor().getShardId());
       if (slice.getState() == Slice.State.CONSTRUCTION) {
@@ -1142,9 +1149,9 @@ public final class SolrCore implements SolrInfoBean, SolrMetricProducer, Closeab
     manager.registerGauge(this, registry, () -> getIndexDir(), true, "indexDir", Category.CORE.toString());
     manager.registerGauge(this, registry, () -> getIndexSize(), true, "sizeInBytes", Category.INDEX.toString());
     manager.registerGauge(this, registry, () -> NumberUtils.readableSize(getIndexSize()), true, "size", Category.INDEX.toString());
-    if (coreDescriptor != null && coreDescriptor.getCoreContainer() != null) {
-      manager.registerGauge(this, registry, () -> coreDescriptor.getCoreContainer().getCoreNames(this), true, "aliases", Category.CORE.toString());
-      final CloudDescriptor cd = coreDescriptor.getCloudDescriptor();
+    if (coreContainer != null) {
+      manager.registerGauge(this, registry, () -> coreContainer.getCoreNames(this), true, "aliases", Category.CORE.toString());
+      final CloudDescriptor cd = getCoreDescriptor().getCloudDescriptor();
       if (cd != null) {
         manager.registerGauge(this, registry, () -> {
           if (cd.getCollectionName() != null) {
@@ -1163,7 +1170,6 @@ public final class SolrCore implements SolrInfoBean, SolrMetricProducer, Closeab
         }, true, "shard", Category.CORE.toString());
       }
     }
-
     // initialize disk total / free metrics
     Path dataDirPath = Paths.get(dataDir);
     File dataDirFile = dataDirPath.toFile();
@@ -2770,7 +2776,7 @@ public final class SolrCore implements SolrInfoBean, SolrMetricProducer, Closeab
     if (initArgs == null)
       initArgs = new NamedList<>();
 
-    String collection = coreDescriptor.getCollectionName();
+    String collection = getCoreDescriptor().getCollectionName();
     StorageIO storageIO =
         ManagedResourceStorage.newStorageIO(collection, resourceLoader, initArgs);
     mgr.init(resourceLoader, initArgs, storageIO);
@@ -2779,7 +2785,7 @@ public final class SolrCore implements SolrInfoBean, SolrMetricProducer, Closeab
   }
 
   public CoreDescriptor getCoreDescriptor() {
-    return coreDescriptor;
+    return coreContainer.getCoreDescriptor(name);
   }
 
   public IndexDeletionPolicyWrapper getDeletionPolicy(){
@@ -2821,7 +2827,7 @@ public final class SolrCore implements SolrInfoBean, SolrMetricProducer, Closeab
     return codec;
   }
 
-  public void unloadOnClose(boolean deleteIndexDir, boolean deleteDataDir, boolean deleteInstanceDir) {
+  public void unloadOnClose(final CoreDescriptor desc, boolean deleteIndexDir, boolean deleteDataDir, boolean deleteInstanceDir) {
     if (deleteIndexDir) {
       try {
         directoryFactory.remove(getIndexDir());
@@ -2844,13 +2850,12 @@ public final class SolrCore implements SolrInfoBean, SolrMetricProducer, Closeab
 
         @Override
         public void postClose(SolrCore core) {
-          CoreDescriptor cd = core.getCoreDescriptor();
-          if (cd != null) {
+          if (desc != null) {
             try {
-              FileUtils.deleteDirectory(cd.getInstanceDir().toFile());
+              FileUtils.deleteDirectory(desc.getInstanceDir().toFile());
             } catch (IOException e) {
               SolrException.log(log, "Failed to delete instance dir for core:"
-                  + core.getName() + " dir:" + cd.getInstanceDir());
+                  + core.getName() + " dir:" + desc.getInstanceDir());
             }
           }
         }
@@ -2909,7 +2914,7 @@ public final class SolrCore implements SolrInfoBean, SolrMetricProducer, Closeab
 
   public static Runnable getConfListener(SolrCore core, ZkSolrResourceLoader zkSolrResourceLoader) {
     final String coreName = core.getName();
-    final CoreContainer cc = core.getCoreDescriptor().getCoreContainer();
+    final CoreContainer cc = core.getCoreContainer();
     final String overlayPath = zkSolrResourceLoader.getConfigSetZkPath() + "/" + ConfigOverlay.RESOURCE_NAME;
     final String solrConfigPath = zkSolrResourceLoader.getConfigSetZkPath() + "/" + core.getSolrConfig().getName();
     String schemaRes = null;
@@ -3043,7 +3048,6 @@ public final class SolrCore implements SolrInfoBean, SolrMetricProducer, Closeab
     if (!BlobRepository.BLOB_KEY_PATTERN_CHECKER.matcher(key).matches()) {
       throw new IllegalArgumentException("invalid key format, must end in /N where N is the version number");
     }
-    CoreContainer coreContainer = getCoreDescriptor().getCoreContainer();
     // define the blob
     BlobRepository.BlobContentRef blobRef = coreContainer.getBlobRepository().getBlobIncRef(key, decoder);
     addCloseHook(new CloseHook() {
@@ -3053,7 +3057,7 @@ public final class SolrCore implements SolrInfoBean, SolrMetricProducer, Closeab
 
       @Override
       public void postClose(SolrCore core) {
-        core.getCoreDescriptor().getCoreContainer().getBlobRepository().decrementBlobRefCount(blobRef);
+        coreContainer.getBlobRepository().decrementBlobRefCount(blobRef);
       }
     });
     return blobRef;

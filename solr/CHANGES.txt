@@ -234,6 +234,8 @@ Other Changes
 
 * SOLR-10429: UpdateRequest#getRoutes()should copy the response parser (noble)
 
+* SOLR-10007: Clean up references to CoreContainer and CoreDescriptors (Erick Erickson)
+
 ==================  6.5.1 ==================
 
 Bug Fixes

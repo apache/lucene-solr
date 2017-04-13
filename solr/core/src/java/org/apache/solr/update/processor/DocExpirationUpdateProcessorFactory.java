@@ -454,7 +454,7 @@ public final class DocExpirationUpdateProcessorFactory
    * </p>
    */
   private boolean iAmInChargeOfPeriodicDeletes() {
-    ZkController zk = core.getCoreDescriptor().getCoreContainer().getZkController();
+    ZkController zk = core.getCoreContainer().getZkController();
 
     if (null == zk) return true;
     

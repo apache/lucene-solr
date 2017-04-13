@@ -55,7 +55,7 @@ public class SolrCoreMetricManager implements Closeable {
   public SolrCoreMetricManager(SolrCore core) {
     this.core = core;
     this.tag = String.valueOf(core.hashCode());
-    this.metricManager = core.getCoreDescriptor().getCoreContainer().getMetricManager();
+    this.metricManager = core.getCoreContainer().getMetricManager();
     initCloudMode();
     registryName = createRegistryName(cloudMode, collectionName, shardName, replicaName, core.getName());
     leaderRegistryName = createLeaderRegistryName(cloudMode, collectionName, shardName);
@@ -81,7 +81,7 @@ public class SolrCoreMetricManager implements Closeable {
    * group or with a registry name specific to this core.
    */
   public void loadReporters() {
-    NodeConfig nodeConfig = core.getCoreDescriptor().getCoreContainer().getConfig();
+    NodeConfig nodeConfig = core.getCoreContainer().getConfig();
     PluginInfo[] pluginInfos = nodeConfig.getMetricReporterPlugins();
     metricManager.loadReporters(pluginInfos, core.getResourceLoader(), tag,
         SolrInfoBean.Group.core, registryName);

@@ -163,6 +163,14 @@ public class CorePropertiesLocator implements CoresLocator {
     return cds;
   }
 
+  @Override
+  public CoreDescriptor reload(CoreContainer cc, CoreDescriptor cd) {
+    if (cd == null) return null;
+    
+    Path coreProps = cd.getInstanceDir().resolve(CoreDescriptor.DEFAULT_EXTERNAL_PROPERTIES_FILE);
+    return buildCoreDescriptor(coreProps, cc);
+  }
+
   protected CoreDescriptor buildCoreDescriptor(Path propertiesFile, CoreContainer cc) {
 
     Path instanceDir = propertiesFile.getParent();
@@ -174,7 +182,7 @@ public class CorePropertiesLocator implements CoresLocator {
       for (String key : coreProperties.stringPropertyNames()) {
         propMap.put(key, coreProperties.getProperty(key));
       }
-      return new CoreDescriptor(cc, name, instanceDir, propMap);
+      return new CoreDescriptor(name, instanceDir, propMap, cc.getContainerProperties(), cc.isZooKeeperAware());
     }
     catch (IOException e) {
       logger.error("Couldn't load core descriptor from {}:{}", propertiesFile, e.toString());

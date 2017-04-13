@@ -130,7 +130,7 @@ public class SolrInfoMBeanHandler extends RequestHandlerBase {
       addMBean(req, cats, requestedKeys, entry.getKey(),entry.getValue());
     }
 
-    for (SolrInfoBean infoMBean : req.getCore().getCoreDescriptor().getCoreContainer().getResourceLoader().getInfoMBeans()) {
+    for (SolrInfoBean infoMBean : req.getCore().getCoreContainer().getResourceLoader().getInfoMBeans()) {
       addMBean(req,cats,requestedKeys,infoMBean.getName(),infoMBean);
     }
     return cats;

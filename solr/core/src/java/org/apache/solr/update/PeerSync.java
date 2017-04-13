@@ -151,13 +151,13 @@ public class PeerSync implements SolrMetricProducer {
     this.cantReachIsSuccess = cantReachIsSuccess;
     this.getNoVersionsIsSuccess = getNoVersionsIsSuccess;
     this.doFingerprint = doFingerprint && !("true".equals(System.getProperty("solr.disableFingerprint")));
-    this.client = core.getCoreDescriptor().getCoreContainer().getUpdateShardHandler().getHttpClient();
+    this.client = core.getCoreContainer().getUpdateShardHandler().getHttpClient();
     this.onlyIfActive = onlyIfActive;
     
     uhandler = core.getUpdateHandler();
     ulog = uhandler.getUpdateLog();
     // TODO: close
-    shardHandlerFactory = (HttpShardHandlerFactory) core.getCoreDescriptor().getCoreContainer().getShardHandlerFactory();
+    shardHandlerFactory = (HttpShardHandlerFactory) core.getCoreContainer().getShardHandlerFactory();
     shardHandler = shardHandlerFactory.getShardHandler(client);
 
     core.getCoreMetricManager().registerMetricProducer(SolrInfoBean.Category.REPLICATION.toString(), this);
@@ -184,7 +184,7 @@ public class PeerSync implements SolrMetricProducer {
 
   // start of peersync related debug messages.  includes the core name for correlation.
   private String msg() {
-    ZkController zkController = uhandler.core.getCoreDescriptor().getCoreContainer().getZkController();
+    ZkController zkController = uhandler.core.getCoreContainer().getZkController();
 
     String myURL = "";
 
@@ -882,7 +882,7 @@ public class PeerSync implements SolrMetricProducer {
 
   /** Requests and applies recent updates from peers */
   public static void sync(SolrCore core, List<String> replicas, int nUpdates) {
-    ShardHandlerFactory shardHandlerFactory = core.getCoreDescriptor().getCoreContainer().getShardHandlerFactory();
+    ShardHandlerFactory shardHandlerFactory = core.getCoreContainer().getShardHandlerFactory();
 
     ShardHandler shardHandler = shardHandlerFactory.getShardHandler();
    

@@ -161,7 +161,7 @@ public class SolrShardReporter extends SolrMetricReporter {
         .cloudClient(false) // we want to send reports specifically to a selected leader instance
         .skipAggregateValues(true) // we don't want to transport details of aggregates
         .skipHistograms(true) // we don't want to transport histograms
-        .build(core.getCoreDescriptor().getCoreContainer().getUpdateShardHandler().getHttpClient(), new LeaderUrlSupplier(core));
+        .build(core.getCoreContainer().getUpdateShardHandler().getHttpClient(), new LeaderUrlSupplier(core));
 
     reporter.start(period, TimeUnit.SECONDS);
   }
@@ -179,7 +179,7 @@ public class SolrShardReporter extends SolrMetricReporter {
       if (cd == null) {
         return null;
       }
-      ClusterState state = core.getCoreDescriptor().getCoreContainer().getZkController().getClusterState();
+      ClusterState state = core.getCoreContainer().getZkController().getClusterState();
       DocCollection collection = state.getCollection(core.getCoreDescriptor().getCollectionName());
       Replica replica = collection.getLeader(core.getCoreDescriptor().getCloudDescriptor().getShardId());
       if (replica == null) {
