@@ -23,6 +23,7 @@ import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 import org.apache.lucene.analysis.Analyzer;
@@ -58,6 +59,9 @@ import org.apache.solr.schema.TextField;
 import org.apache.solr.search.QParser;
 import org.apache.solr.search.SolrConstantScoreQuery;
 import org.apache.solr.search.SyntaxError;
+import org.apache.solr.util.SolrPluginUtils;
+
+import static java.util.Optional.empty;
 
 /** This class is overridden by QueryParser in QueryParser.jj
  * and acts to separate the majority of the Java code from the .jj grammar file.
@@ -102,6 +106,12 @@ public abstract class SolrQueryParserBase extends QueryBuilder {
 
   // implementation detail - caching ReversedWildcardFilterFactory based on type
   private Map<FieldType, ReversedWildcardFilterFactory> leadingWildcards;
+
+  public void setDefaultMinShouldMatchSpec(String defaultMinShouldMatchSpec) {
+    this.defaultMinShouldMatchSpec = Optional.ofNullable(defaultMinShouldMatchSpec);
+  }
+
+  private Optional<String> defaultMinShouldMatchSpec = empty();
 
   /**
    * Identifies the list of all known "magic fields" that trigger
@@ -655,6 +665,10 @@ public abstract class SolrQueryParserBase extends QueryBuilder {
         if (onlyRawQueries && termCount == allRawQueriesTermCount) return subq; // if this is everything, don't wrap in a boolean query
         booleanBuilder.add(subq, BooleanClause.Occur.SHOULD);
       }
+    }
+
+    if (defaultMinShouldMatchSpec.isPresent()) {
+      SolrPluginUtils.setMinShouldMatch(booleanBuilder, defaultMinShouldMatchSpec.get());
     }
 
     BooleanQuery bq = booleanBuilder.build();

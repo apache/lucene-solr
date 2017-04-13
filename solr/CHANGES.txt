@@ -67,6 +67,8 @@ Upgrading from Solr 6.x
 
 New Features
 ----------------------
+* SOLR-1384: minShouldMatch parameter is supported for boolean query.
+
 * SOLR-9857, SOLR-9858: Collect aggregated metrics from nodes and shard leaders in overseer. (ab)
 
 * SOLR-9835: Create another replication mode for SolrCloud
