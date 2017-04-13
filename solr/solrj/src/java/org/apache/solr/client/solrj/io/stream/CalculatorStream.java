@@ -30,13 +30,6 @@ import org.apache.solr.client.solrj.io.stream.expr.StreamExplanation;
 import org.apache.solr.client.solrj.io.stream.expr.StreamExpression;
 import org.apache.solr.client.solrj.io.stream.expr.StreamFactory;
 
-
-/**
- *  The NullStream Iterates over a TupleStream and eats the tuples. It returns the tuple count in the EOF tuple.
- *  Because the NullStreaam eats all the Tuples it see's it can be used as a simple tool for performance analysis of
- *  underlying streams.
- **/
-
 public class CalculatorStream extends TupleStream implements Expressible {
 
   private static final long serialVersionUID = 1;
