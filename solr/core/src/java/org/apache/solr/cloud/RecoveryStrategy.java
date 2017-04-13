@@ -230,7 +230,7 @@ public class RecoveryStrategy extends Thread implements Closeable {
         SolrIndexSearcher searcher = searchHolder.get();
         Directory dir = core.getDirectoryFactory().get(core.getIndexDir(), DirContext.META_DATA, null);
         try {
-          LOG.debug(core.getCoreDescriptor().getCoreContainer()
+          LOG.debug(core.getCoreContainer()
               .getZkController().getNodeName()
               + " replicated "
               + searcher.search(new MatchAllDocsQuery(), 1).totalHits
@@ -618,7 +618,7 @@ public class RecoveryStrategy extends Thread implements Closeable {
       SolrIndexSearcher searcher = searchHolder.get();
       try {
         final int totalHits = searcher.search(new MatchAllDocsQuery(), 1).totalHits;
-        final String nodeName = core.getCoreDescriptor().getCoreContainer().getZkController().getNodeName();
+        final String nodeName = core.getCoreContainer().getZkController().getNodeName();
         LOG.debug("[{}] {} [{} total hits]", nodeName, op, totalHits);
       } finally {
         searchHolder.decref();

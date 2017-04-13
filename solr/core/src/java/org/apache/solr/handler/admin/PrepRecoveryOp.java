@@ -196,7 +196,7 @@ class PrepRecoveryOp implements CoreAdminHandler.CoreAdminOp {
                 .getNewestSearcher(false);
             SolrIndexSearcher searcher = searchHolder.get();
             try {
-              log.debug(core.getCoreDescriptor().getCoreContainer()
+              log.debug(core.getCoreContainer()
                   .getZkController().getNodeName()
                   + " to replicate "
                   + searcher.search(new MatchAllDocsQuery(), 1).totalHits

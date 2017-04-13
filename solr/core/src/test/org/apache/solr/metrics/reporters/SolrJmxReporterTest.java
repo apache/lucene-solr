@@ -62,7 +62,7 @@ public class SolrJmxReporterTest extends SolrTestCaseJ4 {
     domain = core.getName();
 
     coreMetricManager = core.getCoreMetricManager();
-    metricManager = core.getCoreDescriptor().getCoreContainer().getMetricManager();
+    metricManager = core.getCoreContainer().getMetricManager();
     PluginInfo pluginInfo = createReporterPluginInfo();
     metricManager.loadReporter(coreMetricManager.getRegistryName(), coreMetricManager.getCore().getResourceLoader(), pluginInfo);
 

@@ -44,7 +44,7 @@ public class ZKPropertiesWriter extends SimplePropertiesWriter {
   @Override
   public void init(DataImporter dataImporter, Map<String, String> params) {
     super.init(dataImporter, params);    
-    zkClient = dataImporter.getCore().getCoreDescriptor().getCoreContainer().getZkController().getZkClient();
+    zkClient = dataImporter.getCore().getCoreContainer().getZkController().getZkClient();
   }
   
   @Override

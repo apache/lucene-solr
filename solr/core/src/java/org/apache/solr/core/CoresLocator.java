@@ -69,4 +69,13 @@ public interface CoresLocator {
    */
   public List<CoreDescriptor> discover(CoreContainer cc);
 
+  /**
+   * reload an existing CoreDescriptor, that is read it from disk.
+   * 
+   * @param cc the CoreContainer
+   * @param cd the old CoreDescriptor. If null, this is a no-op
+   * @return the reloaded coreDescriptor or null          
+   */
+  public CoreDescriptor reload(CoreContainer cc, CoreDescriptor cd);
+
 }

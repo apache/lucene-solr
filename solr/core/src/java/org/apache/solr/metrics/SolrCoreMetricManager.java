@@ -46,7 +46,7 @@ public class SolrCoreMetricManager implements Closeable {
    */
   public SolrCoreMetricManager(SolrCore core) {
     this.core = core;
-    this.metricManager = core.getCoreDescriptor().getCoreContainer().getMetricManager();
+    this.metricManager = core.getCoreContainer().getMetricManager();
     registryName = createRegistryName(core.getCoreDescriptor().getCollectionName(), core.getName());
   }
 
@@ -55,7 +55,7 @@ public class SolrCoreMetricManager implements Closeable {
    * group or with a registry name specific to this core.
    */
   public void loadReporters() {
-    NodeConfig nodeConfig = core.getCoreDescriptor().getCoreContainer().getConfig();
+    NodeConfig nodeConfig = core.getCoreContainer().getConfig();
     PluginInfo[] pluginInfos = nodeConfig.getMetricReporterPlugins();
     metricManager.loadReporters(pluginInfos, core.getResourceLoader(), SolrInfoMBean.Group.core, registryName);
   }

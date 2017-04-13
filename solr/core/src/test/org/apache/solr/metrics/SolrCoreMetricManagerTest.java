@@ -46,7 +46,7 @@ public class SolrCoreMetricManagerTest extends SolrTestCaseJ4 {
   public void beforeTest() throws Exception {
     initCore("solrconfig-basic.xml", "schema.xml");
     coreMetricManager = h.getCore().getCoreMetricManager();
-    metricManager = h.getCore().getCoreDescriptor().getCoreContainer().getMetricManager();
+    metricManager = h.getCore().getCoreContainer().getMetricManager();
   }
 
   @After

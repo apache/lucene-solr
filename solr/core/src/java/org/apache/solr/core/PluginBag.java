@@ -455,7 +455,7 @@ public class PluginBag<T> implements AutoCloseable {
     }
 
     public RuntimeLib(SolrCore core) {
-      coreContainer = core.getCoreDescriptor().getCoreContainer();
+      coreContainer = core.getCoreContainer();
     }
 
 

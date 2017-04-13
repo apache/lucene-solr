@@ -167,7 +167,7 @@ public class SolrInfoMBeanHandler extends RequestHandlerBase {
       }
     }
 
-    for (SolrInfoMBean infoMBean : req.getCore().getCoreDescriptor().getCoreContainer().getResourceLoader().getInfoMBeans()) {
+    for (SolrInfoMBean infoMBean : req.getCore().getCoreContainer().getResourceLoader().getInfoMBeans()) {
       String cat = infoMBean.getCategory().name();
       addMBean(req,cat, cats,requestedKeys,infoMBean.getName(),infoMBean);
       // add it also under back-compat name

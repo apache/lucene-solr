@@ -499,7 +499,7 @@ public class HdfsDirectoryFactory extends CachingDirectoryFactory implements Sol
 
   @Override
   public void inform(SolrCore core) {
-    setHost(core.getCoreDescriptor().getCoreContainer().getHostName());
+    setHost(core.getCoreContainer().getHostName());
   }
 
   @VisibleForTesting
