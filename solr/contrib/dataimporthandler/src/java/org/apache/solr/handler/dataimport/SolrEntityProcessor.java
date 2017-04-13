@@ -63,9 +63,14 @@ public class SolrEntityProcessor extends EntityProcessorBase {
   
   public static final String SOLR_SERVER = "url";
   public static final String QUERY = "query";
-  public static final String TIMEOUT = "timeout";
+  public static final String TIMEOUT = "timeout"; // kept for backward compatibility
+  public static final String CONNECTION_TIMEOUT = "connectionTimeout";
+  public static final String READ_TIMEOUT = "readTimeout";
+  public static final String QUERY_TIMEOUT = "queryTimeout";
 
-  public static final int TIMEOUT_SECS = 5 * 60; // 5 minutes
+  public static final int CONNECTION_TIMEOUT_SECS = 10; // 10 seconds
+  public static final int QUERY_TIMEOUT_SECS = 5 * 60; // 5 minutes
+  public static final int READ_TIMEOUT_SECS = QUERY_TIMEOUT_SECS + 5; // 5 min 5 seconds
   public static final int ROWS_DEFAULT = 50;
   
   private SolrClient solrClient = null;
@@ -74,7 +79,9 @@ public class SolrEntityProcessor extends EntityProcessorBase {
   private String[] filterQueries;
   private String[] fields;
   private String requestHandler;// 'qt' param
-  private int timeout = TIMEOUT_SECS;
+  private int connectionTimeout = CONNECTION_TIMEOUT_SECS;
+  private int readTimeout = READ_TIMEOUT_SECS;
+  private int queryTimeout = QUERY_TIMEOUT_SECS;
   
   @Override
   public void destroy() {
@@ -108,6 +115,14 @@ public class SolrEntityProcessor extends EntityProcessorBase {
         throw new DataImportHandlerException(DataImportHandlerException.SEVERE,
             "SolrEntityProcessor: parameter 'url' is required");
       }
+      String connectionTimeoutAsString = context.getResolvedEntityAttribute(CONNECTION_TIMEOUT);
+      if (connectionTimeoutAsString != null) {
+        this.connectionTimeout = Integer.parseInt(connectionTimeoutAsString);
+      }
+      String readTimeoutAsString = context.getResolvedEntityAttribute(READ_TIMEOUT);
+      if (readTimeoutAsString != null) {
+        this.readTimeout = Integer.parseInt(readTimeoutAsString);
+      }
 
       HttpClient client = getHttpClient();
       URL url = new URL(serverPath);
@@ -126,6 +141,9 @@ public class SolrEntityProcessor extends EntityProcessorBase {
             .build();
         LOG.info("using BinaryResponseParser");
       }
+      // TODO: Set these values when SolrClient is built
+      ((HttpSolrClient)solrClient).setConnectionTimeout(connectionTimeout * 1000);
+      ((HttpSolrClient)solrClient).setSoTimeout(readTimeout * 1000);
     } catch (MalformedURLException e) {
       throw new DataImportHandlerException(DataImportHandlerException.SEVERE, e);
     }
@@ -274,10 +292,10 @@ public class SolrEntityProcessor extends EntityProcessorBase {
     protected void passNextPage(SolrQuery solrQuery) {
       String timeoutAsString = context.getResolvedEntityAttribute(TIMEOUT);
       if (timeoutAsString != null) {
-        SolrEntityProcessor.this.timeout = Integer.parseInt(timeoutAsString);
+        SolrEntityProcessor.this.queryTimeout = Integer.parseInt(timeoutAsString);
       }
       
-      solrQuery.setTimeAllowed(timeout * 1000);
+      solrQuery.setTimeAllowed(queryTimeout * 1000);
       
       solrQuery.setStart(getStart() + getSize());
     }
