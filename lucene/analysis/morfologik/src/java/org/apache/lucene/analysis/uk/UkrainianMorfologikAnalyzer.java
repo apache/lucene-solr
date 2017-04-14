@@ -109,14 +109,13 @@ public final class UkrainianMorfologikAnalyzer extends StopwordAnalyzerBase {
     NormalizeCharMap.Builder builder = new NormalizeCharMap.Builder();
     // different apostrophes
     builder.add("\u2019", "'");
-    builder.add("\u0218", "'");
+    builder.add("\u2018", "'");
     builder.add("\u02BC", "'");
     builder.add("`", "'");
     builder.add("´", "'");
     // ignored characters
     builder.add("\u0301", "");
     builder.add("\u00AD", "");
-    builder.add("\uFEFF", "");
 
     NormalizeCharMap normMap = builder.build();
     reader = new MappingCharFilter(normMap, reader);
