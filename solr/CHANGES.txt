@@ -236,6 +236,8 @@ Other Changes
 
 * SOLR-10007: Clean up references to CoreContainer and CoreDescriptors (Erick Erickson)
 
+* SOLR-10151: Use monotonically incrementing counter for doc ids in TestRecovery. (Peter Szantai-Kis, Mano Kovacs via Mark Miller)
+
 ==================  6.5.1 ==================
 
 Bug Fixes
