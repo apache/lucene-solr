@@ -63,8 +63,7 @@ public class UpdateShardHandler implements SolrMetricProducer, SolrInfoMBean {
   private ExecutorService updateExecutor = ExecutorUtil.newMDCAwareCachedThreadPool(
       new SolrjNamedThreadFactory("updateExecutor"));
   
-  private ExecutorService recoveryExecutor = ExecutorUtil.newMDCAwareCachedThreadPool(
-      new SolrjNamedThreadFactory("recoveryExecutor"));
+  private ExecutorService recoveryExecutor;
   
   private final CloseableHttpClient client;
 
@@ -102,6 +101,15 @@ public class UpdateShardHandler implements SolrMetricProducer, SolrInfoMBean {
       idleConnectionsEvictor.start();
     }
     log.trace("Created UpdateShardHandler HTTP client with params: {}", clientParams);
+
+    ThreadFactory recoveryThreadFactory = new SolrjNamedThreadFactory("recoveryExecutor");
+    if (cfg != null && cfg.getMaxRecoveryThreads() > 0) {
+      log.debug("Creating recoveryExecutor with pool size {}", cfg.getMaxRecoveryThreads());
+      recoveryExecutor = ExecutorUtil.newMDCAwareFixedThreadPool(cfg.getMaxRecoveryThreads(), recoveryThreadFactory);
+    } else {
+      log.debug("Creating recoveryExecutor with unbounded pool");
+      recoveryExecutor = ExecutorUtil.newMDCAwareCachedThreadPool(recoveryThreadFactory);
+    }
   }
 
   protected ModifiableSolrParams getClientParams() {
