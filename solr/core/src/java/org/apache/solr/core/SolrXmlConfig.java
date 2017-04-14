@@ -290,6 +290,7 @@ public class SolrXmlConfig {
     int distributedSocketTimeout = UpdateShardHandlerConfig.DEFAULT_DISTRIBUPDATESOTIMEOUT;
     int distributedConnectionTimeout = UpdateShardHandlerConfig.DEFAULT_DISTRIBUPDATECONNTIMEOUT;
     String metricNameStrategy = UpdateShardHandlerConfig.DEFAULT_METRICNAMESTRATEGY;
+    int maxRecoveryThreads = UpdateShardHandlerConfig.DEFAULT_MAXRECOVERYTHREADS;
 
     Object muc = nl.remove("maxUpdateConnections");
     if (muc != null) {
@@ -321,10 +322,17 @@ public class SolrXmlConfig {
       defined = true;
     }
 
+    Object mrt = nl.remove("maxRecoveryThreads");
+    if (mrt != null)  {
+      maxRecoveryThreads = parseInt("maxRecoveryThreads", mrt.toString());
+      defined = true;
+    }
+
     if (!defined && !alwaysDefine)
       return null;
 
-    return new UpdateShardHandlerConfig(maxUpdateConnections, maxUpdateConnectionsPerHost, distributedSocketTimeout, distributedConnectionTimeout, metricNameStrategy);
+    return new UpdateShardHandlerConfig(maxUpdateConnections, maxUpdateConnectionsPerHost, distributedSocketTimeout,
+                                        distributedConnectionTimeout, metricNameStrategy, maxRecoveryThreads);
 
   }
 

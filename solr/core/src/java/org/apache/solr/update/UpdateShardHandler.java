@@ -20,6 +20,7 @@ import java.lang.invoke.MethodHandles;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.concurrent.ExecutorService;
+import java.util.concurrent.ThreadFactory;
 
 import com.codahale.metrics.MetricRegistry;
 import org.apache.http.client.HttpClient;
@@ -57,8 +58,7 @@ public class UpdateShardHandler implements SolrMetricProducer, SolrInfoBean {
   private ExecutorService updateExecutor = ExecutorUtil.newMDCAwareCachedThreadPool(
       new SolrjNamedThreadFactory("updateExecutor"));
   
-  private ExecutorService recoveryExecutor = ExecutorUtil.newMDCAwareCachedThreadPool(
-      new SolrjNamedThreadFactory("recoveryExecutor"));
+  private ExecutorService recoveryExecutor;
   
   private final CloseableHttpClient client;
 
@@ -100,6 +100,15 @@ public class UpdateShardHandler implements SolrMetricProducer, SolrInfoBean {
       clientParams.set(HttpClientUtil.PROP_MAX_CONNECTIONS_PER_HOST, cfg.getMaxUpdateConnectionsPerHost());
     }
     log.debug("Created UpdateShardHandler HTTP client with params: {}", clientParams);
+
+    ThreadFactory recoveryThreadFactory = new SolrjNamedThreadFactory("recoveryExecutor");
+    if (cfg != null && cfg.getMaxRecoveryThreads() > 0) {
+      log.debug("Creating recoveryExecutor with pool size {}", cfg.getMaxRecoveryThreads());
+      recoveryExecutor = ExecutorUtil.newMDCAwareFixedThreadPool(cfg.getMaxRecoveryThreads(), recoveryThreadFactory);
+    } else {
+      log.debug("Creating recoveryExecutor with unbounded pool");
+      recoveryExecutor = ExecutorUtil.newMDCAwareCachedThreadPool(recoveryThreadFactory);
+    }
   }
 
   @Override

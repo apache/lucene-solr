@@ -187,11 +187,11 @@ public class TestHarness extends BaseTestHarness {
         .build();
     if (System.getProperty("zkHost") == null)
       cloudConfig = null;
-    UpdateShardHandlerConfig updateShardHandlerConfig
-        = new UpdateShardHandlerConfig(UpdateShardHandlerConfig.DEFAULT_MAXUPDATECONNECTIONS,
-                                       UpdateShardHandlerConfig.DEFAULT_MAXUPDATECONNECTIONSPERHOST,
-                                       30000, 30000,
-                                        UpdateShardHandlerConfig.DEFAULT_METRICNAMESTRATEGY);
+    UpdateShardHandlerConfig updateShardHandlerConfig = new UpdateShardHandlerConfig(
+        UpdateShardHandlerConfig.DEFAULT_MAXUPDATECONNECTIONS,
+        UpdateShardHandlerConfig.DEFAULT_MAXUPDATECONNECTIONSPERHOST,
+        30000, 30000,
+        UpdateShardHandlerConfig.DEFAULT_METRICNAMESTRATEGY, UpdateShardHandlerConfig.DEFAULT_MAXRECOVERYTHREADS);
     // universal default metric reporter
     Map<String,Object> attributes = new HashMap<>();
     attributes.put("name", "default");

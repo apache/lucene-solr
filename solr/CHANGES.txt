@@ -156,6 +156,8 @@ New Features
 
 * SOLR-10239: MOVEREPLICA API (Cao Manh Dat, Noble Paul, shalin)
 
+* SOLR-9936: Allow configuration for recoveryExecutor thread pool size. (Tim Owen via Mark Miller)
+
 Optimizations
 ----------------------
 
