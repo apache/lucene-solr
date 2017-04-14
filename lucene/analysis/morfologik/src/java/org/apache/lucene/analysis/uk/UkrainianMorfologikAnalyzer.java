@@ -107,11 +107,18 @@ public final class UkrainianMorfologikAnalyzer extends StopwordAnalyzerBase {
   @Override
   protected Reader initReader(String fieldName, Reader reader) {
     NormalizeCharMap.Builder builder = new NormalizeCharMap.Builder();
+    // different apostrophes
     builder.add("\u2019", "'");
+    builder.add("\u0218", "'");
     builder.add("\u02BC", "'");
+    builder.add("`", "'");
+    builder.add("´", "'");
+    // ignored characters
     builder.add("\u0301", "");
-    NormalizeCharMap normMap = builder.build();
+    builder.add("\u00AD", "");
+    builder.add("\uFEFF", "");
 
+    NormalizeCharMap normMap = builder.build();
     reader = new MappingCharFilter(normMap, reader);
     return reader;
   }
