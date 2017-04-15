@@ -33,7 +33,7 @@ import org.apache.solr.cloud.ZkController;
 import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.core.CoreContainer;
-import org.apache.solr.core.SolrInfoMBean;
+import org.apache.solr.core.SolrInfoBean;
 import org.apache.solr.handler.admin.MetricsCollectorHandler;
 import org.apache.solr.metrics.SolrMetricManager;
 import org.apache.solr.metrics.SolrMetricReporter;
@@ -92,14 +92,14 @@ import static org.apache.solr.common.params.CommonParams.ID;
 public class SolrClusterReporter extends SolrMetricReporter {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
-  public static final String CLUSTER_GROUP = SolrMetricManager.overridableRegistryName(SolrInfoMBean.Group.cluster.toString());
+  public static final String CLUSTER_GROUP = SolrMetricManager.overridableRegistryName(SolrInfoBean.Group.cluster.toString());
 
   public static final List<SolrReporter.Report> DEFAULT_REPORTS = new ArrayList<SolrReporter.Report>() {{
     add(new SolrReporter.Report(CLUSTER_GROUP, "jetty",
-        SolrMetricManager.overridableRegistryName(SolrInfoMBean.Group.jetty.toString()),
+        SolrMetricManager.overridableRegistryName(SolrInfoBean.Group.jetty.toString()),
         Collections.emptySet())); // all metrics
     add(new SolrReporter.Report(CLUSTER_GROUP, "jvm",
-        SolrMetricManager.overridableRegistryName(SolrInfoMBean.Group.jvm.toString()),
+        SolrMetricManager.overridableRegistryName(SolrInfoBean.Group.jvm.toString()),
         new HashSet<String>() {{
           add("memory\\.total\\..*");
           add("memory\\.heap\\..*");
@@ -109,7 +109,7 @@ public class SolrClusterReporter extends SolrMetricReporter {
           add("os\\.OpenFileDescriptorCount");
           add("threads\\.count");
         }}));
-    add(new SolrReporter.Report(CLUSTER_GROUP, "node", SolrMetricManager.overridableRegistryName(SolrInfoMBean.Group.node.toString()),
+    add(new SolrReporter.Report(CLUSTER_GROUP, "node", SolrMetricManager.overridableRegistryName(SolrInfoBean.Group.node.toString()),
         new HashSet<String>() {{
           add("CONTAINER\\.cores\\..*");
           add("CONTAINER\\.fs\\..*");
@@ -159,6 +159,16 @@ public class SolrClusterReporter extends SolrMetricReporter {
     });
   }
 
+  public void setReport(Map map) {
+    if (map == null || map.isEmpty()) {
+      return;
+    }
+    SolrReporter.Report r = SolrReporter.Report.fromMap(map);
+    if (r != null) {
+      reports.add(r);
+    }
+  }
+
   // for unit tests
   int getPeriod() {
     return period;
@@ -170,9 +180,6 @@ public class SolrClusterReporter extends SolrMetricReporter {
 
   @Override
   protected void validate() throws IllegalStateException {
-    if (period < 1) {
-      log.info("Turning off node reporter, period=" + period);
-    }
     if (reports.isEmpty()) { // set defaults
       reports = DEFAULT_REPORTS;
     }
@@ -189,12 +196,17 @@ public class SolrClusterReporter extends SolrMetricReporter {
     if (reporter != null) {
       reporter.close();;
     }
+    if (!enabled) {
+      log.info("Reporter disabled for registry " + registryName);
+      return;
+    }
     // start reporter only in cloud mode
     if (!cc.isZooKeeperAware()) {
       log.warn("Not ZK-aware, not starting...");
       return;
     }
     if (period < 1) { // don't start it
+      log.info("Turning off node reporter, period=" + period);
       return;
     }
     HttpClient httpClient = cc.getUpdateShardHandler().getHttpClient();

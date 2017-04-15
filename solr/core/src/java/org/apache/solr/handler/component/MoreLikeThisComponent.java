@@ -18,7 +18,6 @@ package org.apache.solr.handler.component;
 
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
-import java.net.URL;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
@@ -413,7 +412,7 @@ public class MoreLikeThisComponent extends SearchComponent {
   }
   
   // ///////////////////////////////////////////
-  // / SolrInfoMBean
+  // / SolrInfoBean
   // //////////////////////////////////////////
   
   @Override
@@ -424,10 +423,5 @@ public class MoreLikeThisComponent extends SearchComponent {
   @Override
   public Category getCategory() {
     return Category.QUERY;
-  }
-
-  @Override
-  public URL[] getDocs() {
-    return null;
   }
 }

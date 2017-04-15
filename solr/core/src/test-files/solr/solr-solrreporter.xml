@@ -38,6 +38,10 @@
   </solrcloud>
 
   <metrics>
+    <!-- disable default JMX reporter to avoid conflicts with multiple CoreContainers. -->
+    <reporter name="defaultJmx" class="org.apache.solr.metrics.reporters.SolrJmxReporter">
+      <bool name="enabled">false</bool>
+    </reporter>
     <reporter name="test" group="shard">
       <int name="period">5</int>
       <str name="filter">UPDATE\./update/.*requests</str>

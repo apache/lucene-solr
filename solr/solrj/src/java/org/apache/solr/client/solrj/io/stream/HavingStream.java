@@ -43,6 +43,7 @@ public class HavingStream extends TupleStream implements Expressible {
 
   private TupleStream stream;
   private BooleanEvaluator evaluator;
+  private StreamContext streamContext;
 
   private transient Tuple currentGroupHead;
 
@@ -128,6 +129,7 @@ public class HavingStream extends TupleStream implements Expressible {
   }
 
   public void setStreamContext(StreamContext context) {
+    this.streamContext = context;
     this.stream.setStreamContext(context);
   }
 
@@ -152,6 +154,7 @@ public class HavingStream extends TupleStream implements Expressible {
         return tuple;
       }
 
+      streamContext.getTupleContext().clear();
       if(evaluator.evaluate(tuple)){
         return tuple;
       }

@@ -16,11 +16,14 @@
  */
 package org.apache.solr.cloud;
 
+import java.util.Map;
+
+import com.codahale.metrics.Gauge;
+import com.codahale.metrics.Metric;
 import org.apache.lucene.util.LuceneTestCase.Slow;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
-import org.apache.solr.common.util.NamedList;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.request.LocalSolrQueryRequest;
 import org.apache.solr.request.SolrQueryRequest;
@@ -158,11 +161,11 @@ public class BasicZkTest extends AbstractZkTestCase {
     }
     
     // test stats call
-    NamedList stats = core.getStatistics();
-    assertEquals("collection1", stats.get("coreName"));
-    assertEquals("collection1", stats.get("collection"));
-    assertEquals("shard1", stats.get("shard"));
-    assertTrue(stats.get("refCount") != null);
+    Map<String, Metric> metrics = h.getCore().getCoreMetricManager().getRegistry().getMetrics();
+    assertEquals("collection1", ((Gauge)metrics.get("CORE.coreName")).getValue());
+    assertEquals("collection1", ((Gauge)metrics.get("CORE.collection")).getValue());
+    assertEquals("shard1", ((Gauge)metrics.get("CORE.shard")).getValue());
+    assertTrue(metrics.get("CORE.refCount") != null);
 
     //zkController.getZkClient().printLayoutToStdOut();
   }

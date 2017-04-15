@@ -244,7 +244,7 @@ public class CdcrRequestHandler extends RequestHandlerBase implements SolrCoreAw
     collection = core.getCoreDescriptor().getCloudDescriptor().getCollectionName();
 
     // Make sure that the core is ZKAware
-    if (!core.getCoreDescriptor().getCoreContainer().isZooKeeperAware()) {
+    if (!core.getCoreContainer().isZooKeeperAware()) {
       throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,
           "Solr instance is not running in SolrCloud mode.");
     }
@@ -390,7 +390,7 @@ public class CdcrRequestHandler extends RequestHandlerBase implements SolrCoreAw
    */
   private void handleCollectionCheckpointAction(SolrQueryRequest req, SolrQueryResponse rsp)
       throws IOException, SolrServerException {
-    ZkController zkController = core.getCoreDescriptor().getCoreContainer().getZkController();
+    ZkController zkController = core.getCoreContainer().getZkController();
     try {
       zkController.getZkStateReader().forceUpdateCollection(collection);
     } catch (Exception e) {
@@ -638,7 +638,7 @@ public class CdcrRequestHandler extends RequestHandlerBase implements SolrCoreAw
           running.set(true);
           String masterUrl = req.getParams().get(ReplicationHandler.MASTER_URL);
           bootstrapCallable = new BootstrapCallable(masterUrl, core);
-          bootstrapFuture = core.getCoreDescriptor().getCoreContainer().getUpdateShardHandler().getRecoveryExecutor().submit(bootstrapCallable);
+          bootstrapFuture = core.getCoreContainer().getUpdateShardHandler().getRecoveryExecutor().submit(bootstrapCallable);
           try {
             bootstrapFuture.get();
           } catch (InterruptedException e) {
@@ -659,7 +659,7 @@ public class CdcrRequestHandler extends RequestHandlerBase implements SolrCoreAw
     };
 
     try {
-      core.getCoreDescriptor().getCoreContainer().getUpdateShardHandler().getUpdateExecutor().submit(runnable);
+      core.getCoreContainer().getUpdateShardHandler().getUpdateExecutor().submit(runnable);
       rsp.add(RESPONSE_STATUS, "submitted");
     } catch (RejectedExecutionException ree)  {
       // no problem, we're probably shutting down

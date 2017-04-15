@@ -84,7 +84,7 @@ public class JoinQParserPlugin extends QParserPlugin {
         long fromCoreOpenTime = 0;
 
         if (fromIndex != null && !fromIndex.equals(req.getCore().getCoreDescriptor().getName()) ) {
-          CoreContainer container = req.getCore().getCoreDescriptor().getCoreContainer();
+          CoreContainer container = req.getCore().getCoreContainer();
 
           // if in SolrCloud mode, fromIndex should be the name of a single-sharded collection
           coreName = ScoreJoinQParserPlugin.getCoreName(fromIndex, container);
@@ -173,7 +173,7 @@ class JoinQuery extends Query {
           throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Cross-core join must have SolrRequestInfo");
         }
 
-        CoreContainer container = searcher.getCore().getCoreDescriptor().getCoreContainer();
+        CoreContainer container = searcher.getCore().getCoreContainer();
         final SolrCore fromCore = container.getCore(fromIndex);
 
         if (fromCore == null) {

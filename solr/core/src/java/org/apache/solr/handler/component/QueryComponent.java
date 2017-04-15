@@ -20,7 +20,6 @@ import java.io.IOException;
 import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.lang.invoke.MethodHandles;
-import java.net.URL;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -1378,7 +1377,7 @@ public class QueryComponent extends SearchComponent
   }
 
   /////////////////////////////////////////////
-  ///  SolrInfoMBean
+  ///  SolrInfoBean
   ////////////////////////////////////////////
 
   @Override
@@ -1389,11 +1388,6 @@ public class QueryComponent extends SearchComponent
   @Override
   public Category getCategory() {
     return Category.QUERY;
-  }
-
-  @Override
-  public URL[] getDocs() {
-    return null;
   }
 
   /**

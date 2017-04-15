@@ -58,7 +58,7 @@ public class TestLazyCores extends SolrTestCaseJ4 {
   }
 
   private static CoreDescriptor makeCoreDescriptor(CoreContainer cc, String coreName, String isTransient, String loadOnStartup) {
-    return new CoreDescriptor(cc, coreName, cc.getCoreRootDirectory().resolve(coreName),
+    return new CoreDescriptor(coreName, cc.getCoreRootDirectory().resolve(coreName), cc.getContainerProperties(), false,
         CoreDescriptor.CORE_TRANSIENT, isTransient,
         CoreDescriptor.CORE_LOADONSTARTUP, loadOnStartup);
   }
@@ -372,8 +372,7 @@ public class TestLazyCores extends SolrTestCaseJ4 {
             resp);
 
   }
-
-
+  
   // Make sure that creating a transient core from the admin handler correctly respects the transient limits etc.
   @Test
   public void testCreateTransientFromAdmin() throws Exception {
@@ -496,7 +495,13 @@ public class TestLazyCores extends SolrTestCaseJ4 {
       copyGoodConf("badSchema2", "schema-tiny.xml", "schema.xml");
 
       
-      // This should force a reload of the cores.
+      // Reload the cores and insure that
+      // 1> they pick up the new configs
+      // 2> they don't fail again b/c they still have entries in loadFailure in core container.
+      cc.reload("badConfig1");
+      cc.reload("badConfig2");
+      cc.reload("badSchema1");
+      cc.reload("badSchema2");
       SolrCore bc1 = cc.getCore("badConfig1");;
       SolrCore bc2 = cc.getCore("badConfig2");
       SolrCore bs1 = cc.getCore("badSchema1");
@@ -640,7 +645,7 @@ public class TestLazyCores extends SolrTestCaseJ4 {
   }
 
   public static void checkNotInCores(CoreContainer cc, String... nameCheck) {
-    Collection<String> loadedNames = cc.getCoreNames();
+    Collection<String> loadedNames = cc.getLoadedCoreNames();
     for (String name : nameCheck) {
       assertFalse("core " + name + " was found in the list of cores", loadedNames.contains(name));
     }
@@ -673,7 +678,7 @@ public class TestLazyCores extends SolrTestCaseJ4 {
   }
 
   public static void checkInCores(CoreContainer cc, String... nameCheck) {
-    Collection<String> loadedNames = cc.getCoreNames();
+    Collection<String> loadedNames = cc.getLoadedCoreNames();
     
     assertEquals("There whould be exactly as many loaded cores as loaded names returned. ", 
         loadedNames.size(), nameCheck.length);

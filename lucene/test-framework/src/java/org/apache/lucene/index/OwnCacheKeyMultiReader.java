@@ -40,7 +40,8 @@ public final class OwnCacheKeyMultiReader extends MultiReader {
 
     @Override
     public void addClosedListener(ClosedListener listener) {
-        readerClosedListeners.add(listener);
+      ensureOpen();
+      readerClosedListeners.add(listener);
     }
 
   };

@@ -18,7 +18,6 @@ package org.apache.solr.handler.component;
 
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
-import java.net.URL;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -140,7 +139,7 @@ public class RealTimeGetComponent extends SearchComponent
               .getNewestSearcher(false);
           SolrIndexSearcher searcher = searchHolder.get();
           try {
-            log.debug(req.getCore().getCoreDescriptor()
+            log.debug(req.getCore()
                 .getCoreContainer().getZkController().getNodeName()
                 + " min count to sync to (from most recent searcher view) "
                 + searcher.search(new MatchAllDocsQuery(), 1).totalHits);
@@ -789,7 +788,7 @@ public class RealTimeGetComponent extends SearchComponent
 
     // TODO: handle collection=...?
 
-    ZkController zkController = rb.req.getCore().getCoreDescriptor().getCoreContainer().getZkController();
+    ZkController zkController = rb.req.getCore().getCoreContainer().getZkController();
 
     // if shards=... then use that
     if (zkController != null && params.get(ShardParams.SHARDS) == null) {
@@ -927,7 +926,7 @@ public class RealTimeGetComponent extends SearchComponent
                                                                                                
 
   ////////////////////////////////////////////
-  ///  SolrInfoMBean
+  ///  SolrInfoBean
   ////////////////////////////////////////////
 
   @Override
@@ -940,13 +939,6 @@ public class RealTimeGetComponent extends SearchComponent
     return Category.QUERY;
   }
 
-  @Override
-  public URL[] getDocs() {
-    return null;
-  }
-
-  
-  
   public void processGetFingeprint(ResponseBuilder rb) throws IOException {
     SolrQueryRequest req = rb.req;
     SolrParams params = req.getParams();

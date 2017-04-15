@@ -19,7 +19,6 @@ package org.apache.solr.cloud;
 import java.io.File;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
-import java.net.ServerSocket;
 import java.net.URI;
 import java.net.URL;
 import java.nio.file.Path;
@@ -596,14 +595,6 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
     }
     assertNotNull("No proxy found for " + baseUrl + "!", proxy);
     return proxy;
-  }
-
-  protected int getNextAvailablePort() throws Exception {
-    int port = -1;
-    try (ServerSocket s = new ServerSocket(0)) {
-      port = s.getLocalPort();
-    }
-    return port;
   }
 
   private File getRelativeSolrHomePath(File solrHome) {

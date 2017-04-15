@@ -1140,8 +1140,8 @@ public class TestPointFields extends SolrTestCaseJ4 {
     assertU(commit());
     String[] expected = new String[values.length + 1];
     expected[0] = "//*[@numFound='" + values.length + "']"; 
-    for (int i = 1; i <= values.length; i++) {
-      expected[i] = "//result/doc[" + i + "]/" + type + "[@name='" + field + "'][.='" + values[i-1] + "']";
+    for (int i = 0; i < values.length; i++) {
+      expected[i + 1] = "//result/doc[str[@name='id']='" + i + "']/" + type + "[@name='" + field + "'][.='" + values[i] + "']";
     }
     assertQ(req("q", "*:*", "fl", "id, " + field, "rows", String.valueOf(values.length)), expected);
 

@@ -214,7 +214,9 @@ public class TestCoreContainer extends SolrTestCaseJ4 {
 
     final CoreContainer cc = new CoreContainer(SolrXmlConfig.fromString(resourceLoader, CONFIGSETS_SOLR_XML), new Properties(), cl);
     Path corePath = resourceLoader.getInstancePath().resolve("badcore");
-    CoreDescriptor badcore = new CoreDescriptor(cc, "badcore", corePath, "configSet", "nosuchconfigset");
+    CoreDescriptor badcore = new CoreDescriptor("badcore", corePath, cc.getContainerProperties(), cc.isZooKeeperAware(),
+        "configSet", "nosuchconfigset");
+
     cl.add(badcore);
 
     try {
@@ -383,6 +385,12 @@ public class TestCoreContainer extends SolrTestCaseJ4 {
     public List<CoreDescriptor> discover(CoreContainer cc) {
       return cores;
     }
+
+    @Override
+    public CoreDescriptor reload(CoreContainer cc, CoreDescriptor cd) {
+      return cd;
+    }
+
   }
 
   @Test
@@ -397,7 +405,7 @@ public class TestCoreContainer extends SolrTestCaseJ4 {
     CoreContainer cc = init(CONFIGSETS_SOLR_XML);
 
     // check that we have the cores we expect
-    cores = cc.getCoreNames();
+    cores = cc.getLoadedCoreNames();
     assertNotNull("core names is null", cores);
     assertEquals("wrong number of cores", 0, cores.size());
 
@@ -420,7 +428,7 @@ public class TestCoreContainer extends SolrTestCaseJ4 {
     }
 
     // check that we have the cores we expect
-    cores = cc.getCoreNames();
+    cores = cc.getLoadedCoreNames();
     assertNotNull("core names is null", cores);
     assertEquals("wrong number of cores", 0, cores.size());
 
@@ -467,12 +475,14 @@ public class TestCoreContainer extends SolrTestCaseJ4 {
     System.setProperty("configsets", getFile("solr/configsets").getAbsolutePath());
 
     final CoreContainer cc = new CoreContainer(SolrXmlConfig.fromString(resourceLoader, CONFIGSETS_SOLR_XML), new Properties(), cl);
-    cl.add(new CoreDescriptor(cc, "col_ok", resourceLoader.getInstancePath().resolve("col_ok"), "configSet", "minimal"));
-    cl.add(new CoreDescriptor(cc, "col_bad", resourceLoader.getInstancePath().resolve("col_bad"), "configSet", "bad-mergepolicy"));
+    cl.add(new CoreDescriptor("col_ok", resourceLoader.getInstancePath().resolve("col_ok"),
+        cc.getContainerProperties(), cc.isZooKeeperAware(), "configSet", "minimal"));
+    cl.add(new CoreDescriptor("col_bad", resourceLoader.getInstancePath().resolve("col_bad"),
+        cc.getContainerProperties(), cc.isZooKeeperAware(), "configSet", "bad-mergepolicy"));
     cc.load();
 
     // check that we have the cores we expect
-    cores = cc.getCoreNames();
+    cores = cc.getLoadedCoreNames();
     assertNotNull("core names is null", cores);
     assertEquals("wrong number of cores", 1, cores.size());
     assertTrue("col_ok not found", cores.contains("col_ok"));
@@ -509,7 +519,7 @@ public class TestCoreContainer extends SolrTestCaseJ4 {
     cc.create("col_bad", ImmutableMap.of());
 
     // check that we have the cores we expect
-    cores = cc.getCoreNames();
+    cores = cc.getLoadedCoreNames();
     assertNotNull("core names is null", cores);
     assertEquals("wrong number of cores", 2, cores.size());
     assertTrue("col_ok not found", cores.contains("col_ok"));
@@ -534,7 +544,7 @@ public class TestCoreContainer extends SolrTestCaseJ4 {
     }
 
     // check that we have the cores we expect
-    cores = cc.getCoreNames();
+    cores = cc.getLoadedCoreNames();
     assertNotNull("core names is null", cores);
     assertEquals("wrong number of cores", 2, cores.size());
     assertTrue("col_ok not found", cores.contains("col_ok"));
@@ -591,7 +601,7 @@ public class TestCoreContainer extends SolrTestCaseJ4 {
         col_bad_old_start, getCoreStartTime(cc, "col_bad"));
 
     // check that we have the cores we expect
-    cores = cc.getCoreNames();
+    cores = cc.getLoadedCoreNames();
     assertNotNull("core names is null", cores);
     assertEquals("wrong number of cores", 2, cores.size());
     assertTrue("col_ok not found", cores.contains("col_ok"));
@@ -619,7 +629,7 @@ public class TestCoreContainer extends SolrTestCaseJ4 {
 
 
     // check that we have the cores we expect
-    cores = cc.getCoreNames();
+    cores = cc.getLoadedCoreNames();
     assertNotNull("core names is null", cores);
     assertEquals("wrong number of cores", 2, cores.size());
     assertTrue("col_ok not found", cores.contains("col_ok"));

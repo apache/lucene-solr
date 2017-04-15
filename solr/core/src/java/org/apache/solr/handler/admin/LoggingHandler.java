@@ -60,7 +60,7 @@ public class LoggingHandler extends RequestHandlerBase implements SolrCoreAware 
   @Override
   public void inform(SolrCore core) {
     if (watcher == null) {
-      watcher = core.getCoreDescriptor().getCoreContainer().getLogging();
+      watcher = core.getCoreContainer().getLogging();
     }
   }
 

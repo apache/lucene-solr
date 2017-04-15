@@ -63,7 +63,7 @@ public class SolrShardReporterTest extends AbstractFullDistribZkTestBase {
     for (JettySolrRunner jetty : jettys) {
       CoreContainer cc = jetty.getCoreContainer();
       SolrMetricManager metricManager = cc.getMetricManager();
-      for (final String coreName : cc.getCoreNames()) {
+      for (final String coreName : cc.getLoadedCoreNames()) {
         CoreDescriptor cd = cc.getCoreDescriptor(coreName);
         if (cd.getCloudDescriptor() == null) { // not a cloud collection
           continue;

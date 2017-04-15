@@ -288,8 +288,7 @@ public class DataImporter {
     if (propertyWriterTags.isEmpty()) {
       boolean zookeeper = false;
       if (this.core != null
-          && this.core.getCoreDescriptor().getCoreContainer()
-              .isZooKeeperAware()) {
+          && this.core.getCoreContainer().isZooKeeperAware()) {
         zookeeper = true;
       }
       pw = new PropertyWriter(zookeeper ? "ZKPropertiesWriter"

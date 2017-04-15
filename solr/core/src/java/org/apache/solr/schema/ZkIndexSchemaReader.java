@@ -55,7 +55,7 @@ public class ZkIndexSchemaReader implements OnReconnect {
     solrCore.addCloseHook(new CloseHook() {
       @Override
       public void preClose(SolrCore core) {
-        CoreContainer cc = core.getCoreDescriptor().getCoreContainer();
+        CoreContainer cc = core.getCoreContainer();
         if (cc.isZooKeeperAware()) {
           log.debug("Removing ZkIndexSchemaReader OnReconnect listener as core {} is shutting down.", core.getName());
           ZkIndexSchemaReader.this.isRemoved = true;

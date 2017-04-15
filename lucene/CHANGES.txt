@@ -47,6 +47,9 @@ API Changes
 * LUCENE-7734: FieldType's copy constructor was widened to accept any IndexableFieldType.
   (David Smiley)
 
+* LUCENE-7701: Grouping collectors have been refactored, such that groups are
+  now defined by a GroupSelector implementation. (Alan Woodward)
+
 Bug Fixes
 
 * LUCENE-7626: IndexWriter will no longer accept broken token offsets
@@ -87,6 +90,17 @@ Other
   (Daniel Jelinski via Adrien Grand)
 
 ======================= Lucene 6.6.0 =======================
+
+Bug Fixes
+
+* LUCENE-7777: ByteBlockPool.readBytes sometimes throws
+  ArrayIndexOutOfBoundsException when byte blocks larger than 32 KB
+  were added (Mike McCandless)
+
+Improvements
+
+* LUCENE-7782: OfflineSorter now passes the total number of items it
+  will write to getWriter (Mike McCandless)
 
 Other
 

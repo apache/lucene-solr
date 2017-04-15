@@ -324,28 +324,25 @@ public final class ByteBlockPool {
    * the current position.
    */
   public void append(final BytesRef bytes) {
-    int length = bytes.length;
-    if (length == 0) {
-      return;
-    }
+    int bytesLeft = bytes.length;
     int offset = bytes.offset;
-    int overflow = (length + byteUpto) - BYTE_BLOCK_SIZE;
-    do {
-      if (overflow <= 0) { 
-        System.arraycopy(bytes.bytes, offset, buffer, byteUpto, length);
-        byteUpto += length;
+    while (bytesLeft > 0) {
+      int bufferLeft = BYTE_BLOCK_SIZE - byteUpto;
+      if (bytesLeft < bufferLeft) {
+        // fits within current buffer
+        System.arraycopy(bytes.bytes, offset, buffer, byteUpto, bytesLeft);
+        byteUpto += bytesLeft;
         break;
       } else {
-        final int bytesToCopy = length-overflow;
-        if (bytesToCopy > 0) {
-          System.arraycopy(bytes.bytes, offset, buffer, byteUpto, bytesToCopy);
-          offset += bytesToCopy;
-          length -= bytesToCopy;
+        // fill up this buffer and move to next one
+        if (bufferLeft > 0) {
+          System.arraycopy(bytes.bytes, offset, buffer, byteUpto, bufferLeft);
         }
         nextBuffer();
-        overflow = overflow - BYTE_BLOCK_SIZE;
+        bytesLeft -= bufferLeft;
+        offset += bufferLeft;
       }
-    }  while(true);
+    }
   }
   
   /**
@@ -353,30 +350,18 @@ public final class ByteBlockPool {
    * length into the given byte array at offset <tt>off</tt>.
    * <p>Note: this method allows to copy across block boundaries.</p>
    */
-  public void readBytes(final long offset, final byte bytes[], final int off, final int length) {
-    if (length == 0) {
-      return;
-    }
-    int bytesOffset = off;
-    int bytesLength = length;
+  public void readBytes(final long offset, final byte bytes[], int bytesOffset, int bytesLength) {
+    int bytesLeft = bytesLength;
     int bufferIndex = (int) (offset >> BYTE_BLOCK_SHIFT);
-    byte[] buffer = buffers[bufferIndex];
     int pos = (int) (offset & BYTE_BLOCK_MASK);
-    int overflow = (pos + length) - BYTE_BLOCK_SIZE;
-    do {
-      if (overflow <= 0) {
-        System.arraycopy(buffer, pos, bytes, bytesOffset, bytesLength);
-        break;
-      } else {
-        final int bytesToCopy = length - overflow;
-        System.arraycopy(buffer, pos, bytes, bytesOffset, bytesToCopy);
-        pos = 0;
-        bytesLength -= bytesToCopy;
-        bytesOffset += bytesToCopy;
-        buffer = buffers[++bufferIndex];
-        overflow = overflow - BYTE_BLOCK_SIZE;
-      }
-    } while (true);
+    while (bytesLeft > 0) {
+      byte[] buffer = buffers[bufferIndex++];
+      int chunk = Math.min(bytesLeft, BYTE_BLOCK_SIZE - pos);
+      System.arraycopy(buffer, pos, bytes, bytesOffset, chunk);
+      bytesOffset += chunk;
+      bytesLeft -= chunk;
+      pos = 0;
+    }
   }
 
   /**

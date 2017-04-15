@@ -28,7 +28,7 @@ public class SingleFragListBuilder extends HighlightingPluginBase implements
     // If that ever changes, it should wrap them with defaults...
     // params = SolrParams.wrapDefaults(params, defaults)
 
-    numRequests++;
+    numRequests.inc();
 
     return new org.apache.lucene.search.vectorhighlight.SingleFragListBuilder();
   }

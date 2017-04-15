@@ -64,7 +64,7 @@ public class SolrGangliaReporterTest extends SolrTestCaseJ4 {
     h.coreName = DEFAULT_TEST_CORENAME;
     SolrMetricManager metricManager = cc.getMetricManager();
     Map<String, SolrMetricReporter> reporters = metricManager.getReporters("solr.node");
-    assertEquals(1, reporters.size());
+    assertTrue(reporters.toString(), reporters.size() >= 1);
     SolrMetricReporter reporter = reporters.get("test");
     assertNotNull(reporter);
     assertTrue(reporter instanceof SolrGangliaReporter);

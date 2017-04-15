@@ -269,7 +269,7 @@ public class UpdateRequest extends AbstractUpdateRequest {
           return null;
         }
         String leaderUrl = urls.get(0);
-        LBHttpSolrClient.Req request = (LBHttpSolrClient.Req) routes
+        LBHttpSolrClient.Req request = routes
             .get(leaderUrl);
         if (request == null) {
           UpdateRequest updateRequest = new UpdateRequest();
@@ -278,6 +278,7 @@ public class UpdateRequest extends AbstractUpdateRequest {
           updateRequest.setParams(params);
           updateRequest.setPath(getPath());
           updateRequest.setBasicAuthCredentials(getBasicAuthUser(), getBasicAuthPassword());
+          updateRequest.setResponseParser(getResponseParser());
           request = new LBHttpSolrClient.Req(updateRequest, urls);
           routes.put(leaderUrl, request);
         }

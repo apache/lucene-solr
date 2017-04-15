@@ -17,6 +17,7 @@
 package org.apache.solr.search;
 
 import java.io.IOException;
+import java.util.Date;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CountDownLatch;
@@ -25,6 +26,8 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import com.codahale.metrics.Gauge;
+import com.codahale.metrics.Metric;
 import com.google.common.collect.ImmutableMap;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexReaderContext;
@@ -137,13 +140,15 @@ public class TestIndexSearcher extends SolrTestCaseJ4 {
     int baseRefCount = r3.getRefCount();
     assertEquals(1, baseRefCount);
 
-    Object sr3SearcherRegAt = sr3.getSearcher().getStatistics().get("registeredAt");
+    Map<String, Metric> metrics = h.getCore().getCoreMetricManager().getRegistry().getMetrics();
+    Gauge<Date> g = (Gauge<Date>)metrics.get("SEARCHER.searcher.registeredAt");
+    Date sr3SearcherRegAt = g.getValue();
     assertU(commit()); // nothing has changed
     SolrQueryRequest sr4 = req("q","foo");
     assertSame("nothing changed, searcher should be the same",
                sr3.getSearcher(), sr4.getSearcher());
     assertEquals("nothing changed, searcher should not have been re-registered",
-                 sr3SearcherRegAt, sr4.getSearcher().getStatistics().get("registeredAt"));
+                 sr3SearcherRegAt, g.getValue());
     IndexReader r4 = sr4.getSearcher().getRawReader();
 
     // force an index change so the registered searcher won't be the one we are testing (and

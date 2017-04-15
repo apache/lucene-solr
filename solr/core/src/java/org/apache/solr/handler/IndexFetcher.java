@@ -215,7 +215,7 @@ public class IndexFetcher {
     httpClientParams.set(HttpClientUtil.PROP_BASIC_AUTH_PASS, httpBasicAuthPassword);
     httpClientParams.set(HttpClientUtil.PROP_ALLOW_COMPRESSION, useCompression);
 
-    return HttpClientUtil.createClient(httpClientParams, core.getCoreDescriptor().getCoreContainer().getUpdateShardHandler().getConnectionManager(), true);
+    return HttpClientUtil.createClient(httpClientParams, core.getCoreContainer().getUpdateShardHandler().getConnectionManager(), true);
   }
 
   public IndexFetcher(final NamedList initArgs, final ReplicationHandler handler, final SolrCore sc) {
@@ -482,7 +482,7 @@ public class IndexFetcher {
           // because of soft commits (which open a searcher on IW's data)
           // so we need to close the existing searcher on the last commit
           // and wait until we are able to clean up all unused lucene files
-          if (solrCore.getCoreDescriptor().getCoreContainer().isZooKeeperAware()) {
+          if (solrCore.getCoreContainer().isZooKeeperAware()) {
             solrCore.closeSearcher();
           }
 
@@ -639,7 +639,7 @@ public class IndexFetcher {
   }
 
   private Replica getLeaderReplica() throws InterruptedException {
-    ZkController zkController = solrCore.getCoreDescriptor().getCoreContainer().getZkController();
+    ZkController zkController = solrCore.getCoreContainer().getZkController();
     CloudDescriptor cd = solrCore.getCoreDescriptor().getCloudDescriptor();
     Replica leaderReplica = zkController.getZkStateReader().getLeaderRetry(
         cd.getCollectionName(), cd.getShardId());
@@ -658,7 +658,7 @@ public class IndexFetcher {
         }
       }
 
-      if (core.getCoreDescriptor().getCoreContainer().isZooKeeperAware()) {
+      if (core.getCoreContainer().isZooKeeperAware()) {
         // we only track replication success in SolrCloud mode
         core.getUpdateHandler().getSolrCoreState().setLastReplicateIndexSuccess(successfulInstall);
       }
@@ -846,7 +846,7 @@ public class IndexFetcher {
     IndexCommit commitPoint;
     // must get the latest solrCore object because the one we have might be closed because of a reload
     // todo stop keeping solrCore around
-    SolrCore core = solrCore.getCoreDescriptor().getCoreContainer().getCore(solrCore.getName());
+    SolrCore core = solrCore.getCoreContainer().getCore(solrCore.getName());
     try {
       Future[] waitSearcher = new Future[1];
       searcher = core.getSearcher(true, true, waitSearcher, true);
@@ -874,7 +874,7 @@ public class IndexFetcher {
     final CountDownLatch latch = new CountDownLatch(1);
     new Thread(() -> {
       try {
-        solrCore.getCoreDescriptor().getCoreContainer().reload(solrCore.getName());
+        solrCore.getCoreContainer().reload(solrCore.getName());
       } catch (Exception e) {
         LOG.error("Could not reload core ", e);
       } finally {

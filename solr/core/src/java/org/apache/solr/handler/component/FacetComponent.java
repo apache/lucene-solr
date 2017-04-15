@@ -18,7 +18,6 @@ package org.apache.solr.handler.component;
 
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
-import java.net.URL;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -1215,7 +1214,7 @@ public class FacetComponent extends SearchComponent {
 
 
   /////////////////////////////////////////////
-  ///  SolrInfoMBean
+  ///  SolrInfoBean
   ////////////////////////////////////////////
 
   @Override
@@ -1226,11 +1225,6 @@ public class FacetComponent extends SearchComponent {
   @Override
   public Category getCategory() {
     return Category.QUERY;
-  }
-
-  @Override
-  public URL[] getDocs() {
-    return null;
   }
 
   /**

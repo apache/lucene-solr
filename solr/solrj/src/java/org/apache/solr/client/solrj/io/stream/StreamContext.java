@@ -36,6 +36,7 @@ import org.apache.solr.client.solrj.io.stream.expr.StreamFactory;
 public class StreamContext implements Serializable{
 
   private Map entries = new HashMap();
+  private Map tupleContext = new HashMap();
   public int workerID;
   public int numWorkers;
   private SolrClientCache clientCache;
@@ -48,6 +49,10 @@ public class StreamContext implements Serializable{
 
   public void put(Object key, Object value) {
     this.entries.put(key, value);
+  }
+
+  public boolean containsKey(Object key) {
+    return entries.containsKey(key);
   }
 
   public Map getEntries() {
@@ -72,6 +77,10 @@ public class StreamContext implements Serializable{
 
   public void setStreamFactory(StreamFactory streamFactory) {
     this.streamFactory = streamFactory;
+  }
+
+  public Map getTupleContext() {
+    return tupleContext;
   }
 
   public StreamFactory getStreamFactory() {
