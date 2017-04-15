@@ -168,8 +168,7 @@ public class PreAnalyzedField extends TextField implements HasImplicitIndexAnaly
    */
   public static org.apache.lucene.document.FieldType createFieldType(SchemaField field) {
     if (!field.indexed() && !field.stored()) {
-      if (LOG.isTraceEnabled())
-        LOG.trace("Ignoring unindexed/unstored field: " + field);
+      LOG.trace("Ignoring unindexed/unstored field: {}", field);
       return null;
     }
     org.apache.lucene.document.FieldType newType = new org.apache.lucene.document.FieldType();

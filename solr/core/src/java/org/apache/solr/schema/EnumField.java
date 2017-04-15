@@ -381,8 +381,7 @@ public class EnumField extends PrimitiveFieldType {
     final boolean docValues = field.hasDocValues();
 
     if (!indexed && !stored && !docValues) {
-      if (log.isTraceEnabled())
-        log.trace("Ignoring unindexed/unstored field: " + field);
+      log.trace("Ignoring unindexed/unstored field: {}", field);
       return null;
     }
     final Integer intValue = stringValueToIntValue(value.toString());

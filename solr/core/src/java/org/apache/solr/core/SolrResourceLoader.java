@@ -546,7 +546,7 @@ public class SolrResourceLoader implements ResourceLoader,Closeable
         for (String subpackage : subpackages) {
           try {
             String name = base + '.' + subpackage + newName;
-            log.trace("Trying class name " + name);
+            log.trace("Trying class name {}", name);
             return clazz = Class.forName(name,true,classLoader).asSubclass(expectedType);
           } catch (ClassNotFoundException e1) {
             // ignore... assume first exception is best.

@@ -263,7 +263,7 @@ public class XMLLoader extends ContentStreamLoader {
               throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Unexpected <doc> tag without an <add> tag surrounding it.");
             }
           } else if (UpdateRequestHandler.COMMIT.equals(currTag) || UpdateRequestHandler.OPTIMIZE.equals(currTag)) {
-            log.trace("parsing " + currTag);
+            log.trace("parsing {}", currTag);
 
             CommitUpdateCommand cmd = new CommitUpdateCommand(req, UpdateRequestHandler.OPTIMIZE.equals(currTag));
             ModifiableSolrParams mp = new ModifiableSolrParams();

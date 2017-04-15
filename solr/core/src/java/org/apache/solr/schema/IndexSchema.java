@@ -648,7 +648,7 @@ public class IndexSchema {
       NamedNodeMap attrs = node.getAttributes();
 
       String name = DOMUtil.getAttr(attrs, NAME, "field definition");
-      log.trace("reading field def "+name);
+      log.trace("reading field def {}", name);
       String type = DOMUtil.getAttr(attrs, TYPE, "field " + name);
 
       FieldType ft = fieldTypes.get(type);
@@ -710,7 +710,9 @@ public class IndexSchema {
     DynamicField[] dFields = dynamicFieldList.toArray(new DynamicField[dynamicFieldList.size()]);
     Arrays.sort(dFields);
 
-    log.trace("Dynamic Field Ordering:" + Arrays.toString(dFields));
+    if (log.isTraceEnabled()) {
+      log.trace("Dynamic Field Ordering:" + Arrays.toString(dFields));
+    }
 
     return dFields; 
   }
@@ -977,7 +979,7 @@ public class IndexSchema {
       temp[temp.length -1] = dcopy;
       dynamicCopyFields = temp;
     }
-    log.trace("Dynamic Copy Field:" + dcopy);
+    log.trace("Dynamic Copy Field:{}", dcopy);
   }
 
   static SimilarityFactory readSimilarity(SolrResourceLoader loader, Node node) {

@@ -274,7 +274,7 @@ public class Config {
                                  name + " contains more than one value for config path: " + path);
       }
       Node nd = nodes.item(0);
-      log.trace(name + ":" + path + "=" + nd);
+      log.trace("{}:{}={}", name, path, nd);
       return nd;
 
     } catch (XPathExpressionException e) {
@@ -304,7 +304,7 @@ public class Config {
         }
       }
 
-      log.trace(name + ":" + path + "=" + nodeList);
+      log.trace("{}:{}={}", name, path, nodeList);
       return nodeList;
 
     } catch (XPathExpressionException e) {

@@ -135,7 +135,9 @@ public class SolrDispatchFilter extends BaseSolrFilter {
   @Override
   public void init(FilterConfig config) throws ServletException
   {
-    log.trace("SolrDispatchFilter.init(): {}", this.getClass().getClassLoader());
+    if (log.isTraceEnabled()) {
+      log.trace("SolrDispatchFilter.init(): " + this.getClass().getClassLoader());
+    }
 
     SolrRequestParsers.fileCleaningTracker = new SolrFileCleaningTracker();
 

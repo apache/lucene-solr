@@ -869,11 +869,14 @@ public class FacetComponent extends SearchComponent {
     // The
     int minCount = rb.req.getParams().getInt(FacetParams.FACET_MINCOUNT, 0);
     boolean replace = false;
+    boolean isTraceEnabled = log.isTraceEnabled();
     for (Map.Entry<String, QueryFacet> ent : query_facets.entrySet()) {
       if (ent.getValue().count >= minCount) {
         newQueryFacets.put(ent.getKey(), ent.getValue());
       } else {
-        log.trace("Removing facetQuery/key: " + ent.getKey() + "/" + ent.getValue().toString() + " mincount=" + minCount);
+        if (isTraceEnabled) {
+          log.trace("Removing facetQuery/key: " + ent.getKey() + "/" + ent.getValue().toString() + " mincount=" + minCount);
+        }
         replace = true;
       }
     }
@@ -1547,11 +1550,14 @@ public class FacetComponent extends SearchComponent {
     public void respectMinCount(long minCount) {
       HashMap<String, ShardFacetCount> newOne = new HashMap<>();
       boolean replace = false;
+      boolean isTraceEnabled = log.isTraceEnabled();
       for (Map.Entry<String, ShardFacetCount> ent : counts.entrySet()) {
         if (ent.getValue().count >= minCount) {
           newOne.put(ent.getKey(), ent.getValue());
         } else {
-          log.trace("Removing facet/key: " + ent.getKey() + "/" + ent.getValue().toString() + " mincount=" + minCount);
+          if (isTraceEnabled) {
+            log.trace("Removing facet/key: " + ent.getKey() + "/" + ent.getValue().toString() + " mincount=" + minCount);
+          }
           replace = true;
         }
       }
