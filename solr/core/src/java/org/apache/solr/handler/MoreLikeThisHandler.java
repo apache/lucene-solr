@@ -19,8 +19,6 @@ package org.apache.solr.handler;
 import java.io.IOException;
 import java.io.Reader;
 import java.lang.invoke.MethodHandles;
-import java.net.MalformedURLException;
-import java.net.URL;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Iterator;
@@ -480,13 +478,5 @@ public class MoreLikeThisHandler extends RequestHandlerBase
   @Override
   public String getDescription() {
     return "Solr MoreLikeThis";
-  }
-
-  @Override
-  public URL[] getDocs() {
-    try {
-      return new URL[] { new URL("http://wiki.apache.org/solr/MoreLikeThis") };
-    }
-    catch( MalformedURLException ex ) { return null; }
   }
 }

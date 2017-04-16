@@ -245,10 +245,10 @@ public class SolrCoreTest extends SolrTestCaseJ4 {
     //TEst that SolrInfoMBeans are registered, including SearchComponents
     SolrCore core = h.getCore();
 
-    Map<String, SolrInfoMBean> infoRegistry = core.getInfoRegistry();
+    Map<String, SolrInfoBean> infoRegistry = core.getInfoRegistry();
     assertTrue("infoRegistry Size: " + infoRegistry.size() + " is not greater than: " + 0, infoRegistry.size() > 0);
     //try out some that we know are in the config
-    SolrInfoMBean bean = infoRegistry.get(SpellCheckComponent.COMPONENT_NAME);
+    SolrInfoBean bean = infoRegistry.get(SpellCheckComponent.COMPONENT_NAME);
     assertNotNull("bean not registered", bean);
     //try a default one
     bean = infoRegistry.get(QueryComponent.COMPONENT_NAME);

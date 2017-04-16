@@ -46,7 +46,7 @@ public abstract class SortedDocValues extends BinaryDocValues {
    * @return ordinal for the document: this is dense, starts at 0, then
    *         increments by 1 for the next value in sorted order.
    */
-  public abstract int ordValue();
+  public abstract int ordValue() throws IOException;
 
   /** Retrieves the value for the specified ordinal. The returned
    * {@link BytesRef} may be re-used across calls to {@link #lookupOrd(int)}

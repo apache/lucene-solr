@@ -121,7 +121,7 @@ public class CoreAdminHandler extends RequestHandlerBase implements PermissionNa
   @Override
   public void initializeMetrics(SolrMetricManager manager, String registryName, String scope) {
     super.initializeMetrics(manager, registryName, scope);
-    parallelExecutor = MetricUtils.instrumentedExecutorService(parallelExecutor, manager.registry(registryName),
+    parallelExecutor = MetricUtils.instrumentedExecutorService(parallelExecutor, this, manager.registry(registryName),
         SolrMetricManager.mkName("parallelCoreAdminExecutor", getCategory().name(),scope, "threadPool"));
   }
   @Override

@@ -49,6 +49,7 @@ public class SelectStream extends TupleStream implements Expressible {
   private static final long serialVersionUID = 1;
 
   private TupleStream stream;
+  private StreamContext streamContext;
   private Map<String,String> selectedFields;
   private Map<StreamEvaluator,String> selectedEvaluators;
   private List<StreamOperation> operations;
@@ -213,6 +214,7 @@ public class SelectStream extends TupleStream implements Expressible {
   }
 
   public void setStreamContext(StreamContext context) {
+    this.streamContext = context;
     this.stream.setStreamContext(context);
     Set<StreamEvaluator> evaluators = selectedEvaluators.keySet();
 
@@ -245,6 +247,14 @@ public class SelectStream extends TupleStream implements Expressible {
     // create a copy with the limited set of fields
     Tuple workingToReturn = new Tuple(new HashMap<>());
     Tuple workingForEvaluators = new Tuple(new HashMap<>());
+
+    //Clear the TupleContext before running the evaluators.
+    //The TupleContext allows evaluators to cache values within the scope of a single tuple.
+    //For example a LocalDateTime could be parsed by one evaluator and used by other evaluators within the scope of the tuple.
+    //This avoids the need to create multiple LocalDateTime instances for the same tuple to satisfy a select expression.
+
+    streamContext.getTupleContext().clear();
+
     for(Object fieldName : original.fields.keySet()){
       workingForEvaluators.put(fieldName, original.get(fieldName));
       if(selectedFields.containsKey(fieldName)){

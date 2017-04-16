@@ -15,7 +15,34 @@
  * limitations under the License.
  */
 
+package org.apache.solr.client.solrj.io.eval;
+
+import java.io.IOException;
+import java.time.temporal.ChronoField;
+import java.time.temporal.TemporalAccessor;
+
+import org.apache.solr.client.solrj.io.stream.expr.StreamExpression;
+import org.apache.solr.client.solrj.io.stream.expr.StreamFactory;
+
 /**
- * Support for grouping by {@link org.apache.lucene.queries.function.ValueSource}.
+ * Provides a year stream evaluator
  */
-package org.apache.lucene.search.grouping.function;
+public class TemporalEvaluatorYear extends TemporalEvaluator {
+
+  public static final String FUNCTION_NAME = "year";
+
+  public TemporalEvaluatorYear(StreamExpression expression, StreamFactory factory) throws IOException {
+    super(expression, factory);
+  }
+
+  @Override
+  public String getFunction() {
+    return FUNCTION_NAME;
+  }
+
+  @Override
+  public Object evaluateDate(TemporalAccessor aDate) {
+    return aDate.get(ChronoField.YEAR);
+  }
+
+}

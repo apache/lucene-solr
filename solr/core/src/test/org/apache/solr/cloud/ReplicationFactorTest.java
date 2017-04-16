@@ -18,7 +18,6 @@ package org.apache.solr.cloud;
 
 import java.io.File;
 import java.lang.invoke.MethodHandles;
-import java.net.ServerSocket;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
@@ -71,14 +70,6 @@ public class ReplicationFactorTest extends AbstractFullDistribZkTestBase {
     return createProxiedJetty(solrHome, dataDir, shardList, solrConfigOverride, schemaOverride);
   }
   
-  protected int getNextAvailablePort() throws Exception {    
-    int port = -1;
-    try (ServerSocket s = new ServerSocket(0)) {
-      port = s.getLocalPort();
-    }
-    return port;
-  }
-
   @Test
   public void test() throws Exception {
     log.info("replication factor test running");

@@ -20,6 +20,7 @@ import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.FacetParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
+import org.apache.solr.metrics.MetricsMap;
 import org.apache.solr.request.SolrQueryRequest;
 import org.junit.Before;
 import org.junit.BeforeClass;
@@ -117,13 +118,13 @@ public class TestSolr4Spatial2 extends SolrTestCaseJ4 {
 
     // The tricky thing is verifying the cache works correctly...
 
-    SolrCache cache = (SolrCache) h.getCore().getInfoRegistry().get("perSegSpatialFieldCache_srptgeom");
-    assertEquals("1", cache.getStatistics().get("cumulative_inserts").toString());
-    assertEquals("0", cache.getStatistics().get("cumulative_hits").toString());
+    MetricsMap cacheMetrics = (MetricsMap) h.getCore().getCoreMetricManager().getRegistry().getMetrics().get("CACHE.searcher.perSegSpatialFieldCache_srptgeom");
+    assertEquals("1", cacheMetrics.getValue().get("cumulative_inserts").toString());
+    assertEquals("0", cacheMetrics.getValue().get("cumulative_hits").toString());
 
     // Repeat the query earlier
     assertJQ(sameReq, "/response/numFound==1", "/response/docs/[0]/id=='1'");
-    assertEquals("1", cache.getStatistics().get("cumulative_hits").toString());
+    assertEquals("1", cacheMetrics.getValue().get("cumulative_hits").toString());
 
     assertEquals("1 segment",
         1, getSearcher().getRawReader().leaves().size());
@@ -141,7 +142,7 @@ public class TestSolr4Spatial2 extends SolrTestCaseJ4 {
     // When there are new segments, we accumulate another hit. This tests the cache was not blown away on commit.
     // Checking equality for the first reader's cache key indicates wether the cache should still be valid.
     Object leafKey2 = getFirstLeafReaderKey();
-    assertEquals(leafKey1.equals(leafKey2) ? "2" : "1", cache.getStatistics().get("cumulative_hits").toString());
+    assertEquals(leafKey1.equals(leafKey2) ? "2" : "1", cacheMetrics.getValue().get("cumulative_hits").toString());
 
 
     // Now try to see if heatmaps work:

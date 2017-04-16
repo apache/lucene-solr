@@ -24,7 +24,6 @@ import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.nio.file.NoSuchFileException;
 import java.util.Arrays;
-import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 
@@ -319,13 +318,6 @@ public abstract class DirectoryFactory implements NamedListInitializedPlugin,
   public String getDataHome(CoreDescriptor cd) throws IOException {
     // by default, we go off the instance directory
     return cd.getInstanceDir().resolve(cd.getDataDir()).toAbsolutePath().toString();
-  }
-
-  /**
-   * Optionally allow the DirectoryFactory to request registration of some MBeans.
-   */
-  public Collection<SolrInfoMBean> offerMBeans() {
-    return Collections.emptySet();
   }
 
   public void cleanupOldIndexDirectories(final String dataDirPath, final String currentIndexDirPath, boolean afterCoreReload) {

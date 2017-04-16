@@ -22,8 +22,6 @@ import static org.apache.lucene.index.IndexOptions.DOCS_AND_FREQS_AND_POSITIONS_
 
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
-import java.net.MalformedURLException;
-import java.net.URL;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Date;
@@ -705,14 +703,6 @@ public class LukeRequestHandler extends RequestHandlerBase
   @Override
   public Category getCategory() {
     return Category.ADMIN;
-  }
-
-  @Override
-  public URL[] getDocs() {
-    try {
-      return new URL[] { new URL("http://wiki.apache.org/solr/LukeRequestHandler") };
-    }
-    catch( MalformedURLException ex ) { return null; }
   }
 
   ///////////////////////////////////////////////////////////////////////////////////////

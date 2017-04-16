@@ -19,7 +19,7 @@ package org.apache.solr.core;
 import java.util.Map;
 
 import org.apache.solr.SolrTestCaseJ4;
-import org.apache.solr.common.util.NamedList;
+import org.apache.solr.metrics.MetricsMap;
 import org.apache.solr.response.SolrQueryResponse;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -88,11 +88,11 @@ public class ExitableDirectoryReaderTest extends SolrTestCaseJ4 {
   public void testCacheAssumptions() throws Exception {
     String fq= "name:d*";
     SolrCore core = h.getCore();
-    SolrInfoMBean filterCacheStats = core.getInfoRegistry().get("filterCache");
-    long fqInserts = (long) filterCacheStats.getStatistics().get("inserts");
+    MetricsMap filterCacheStats = (MetricsMap)core.getCoreMetricManager().getRegistry().getMetrics().get("CACHE.searcher.filterCache");
+    long fqInserts = (long) filterCacheStats.getValue().get("inserts");
 
-    SolrInfoMBean queryCacheStats = core.getInfoRegistry().get("queryResultCache");
-    long qrInserts = (long) queryCacheStats.getStatistics().get("inserts");
+    MetricsMap queryCacheStats = (MetricsMap)core.getCoreMetricManager().getRegistry().getMetrics().get("CACHE.searcher.queryResultCache");
+    long qrInserts = (long) queryCacheStats.getValue().get("inserts");
 
     // This gets 0 docs back. Use 10000 instead of 1 for timeAllowed and it gets 100 back and the for loop below
     // succeeds.
@@ -105,16 +105,16 @@ public class ExitableDirectoryReaderTest extends SolrTestCaseJ4 {
     assertTrue("Should have partial results", (Boolean) (header.get(SolrQueryResponse.RESPONSE_HEADER_PARTIAL_RESULTS_KEY)));
 
     assertEquals("Should NOT have inserted partial results in the cache!",
-        (long) queryCacheStats.getStatistics().get("inserts"), qrInserts);
+        (long) queryCacheStats.getValue().get("inserts"), qrInserts);
 
-    assertEquals("Should NOT have another insert", fqInserts, (long) filterCacheStats.getStatistics().get("inserts"));
+    assertEquals("Should NOT have another insert", fqInserts, (long) filterCacheStats.getValue().get("inserts"));
 
     // At the end of all this, we should have no hits in the queryResultCache.
     response = JQ(req("q", "*:*", "fq", fq, "indent", "true", "timeAllowed", longTimeout));
 
     // Check that we did insert this one.
-    assertEquals("Hits should still be 0", (long) filterCacheStats.getStatistics().get("hits"), 0L);
-    assertEquals("Inserts should be bumped", (long) filterCacheStats.getStatistics().get("inserts"), fqInserts + 1);
+    assertEquals("Hits should still be 0", (long) filterCacheStats.getValue().get("hits"), 0L);
+    assertEquals("Inserts should be bumped", (long) filterCacheStats.getValue().get("inserts"), fqInserts + 1);
 
     res = (Map) ObjectBuilder.fromJSON(response);
     body = (Map) (res.get("response"));
@@ -130,14 +130,14 @@ public class ExitableDirectoryReaderTest extends SolrTestCaseJ4 {
   public void testQueryResults() throws Exception {
     String q = "name:e*";
     SolrCore core = h.getCore();
-    SolrInfoMBean queryCacheStats = core.getInfoRegistry().get("queryResultCache");
-    NamedList nl = queryCacheStats.getStatistics();
+    MetricsMap queryCacheStats = (MetricsMap)core.getCoreMetricManager().getRegistry().getMetrics().get("CACHE.searcher.queryResultCache");
+    Map<String,Object> nl = queryCacheStats.getValue();
     long inserts = (long) nl.get("inserts");
 
     String response = JQ(req("q", q, "indent", "true", "timeAllowed", "1", "sleep", sleep));
 
     // The queryResultCache should NOT get an entry here.
-    nl = queryCacheStats.getStatistics();
+    nl = queryCacheStats.getValue();
     assertEquals("Should NOT have inserted partial results!", inserts, (long) nl.get("inserts"));
 
     Map res = (Map) ObjectBuilder.fromJSON(response);
@@ -150,7 +150,7 @@ public class ExitableDirectoryReaderTest extends SolrTestCaseJ4 {
     response = JQ(req("q", q, "indent", "true", "timeAllowed", longTimeout));
 
     // Check that we did insert this one.
-    NamedList nl2 = queryCacheStats.getStatistics();
+    Map<String,Object> nl2 = queryCacheStats.getValue();
     assertEquals("Hits should still be 0", (long) nl.get("hits"), (long) nl2.get("hits"));
     assertTrue("Inserts should be bumped", inserts < (long) nl2.get("inserts"));
 

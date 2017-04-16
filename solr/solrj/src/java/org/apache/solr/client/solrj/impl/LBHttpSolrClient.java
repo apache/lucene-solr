@@ -360,10 +360,11 @@ public class LBHttpSolrClient extends SolrClient {
     boolean isNonRetryable = req.request instanceof IsUpdateRequest || ADMIN_PATHS.contains(req.request.getPath());
     List<ServerWrapper> skipped = null;
 
+    boolean timeAllowedExceeded = false;
     long timeAllowedNano = getTimeAllowedInNanos(req.getRequest());
     long timeOutTime = System.nanoTime() + timeAllowedNano;
     for (String serverStr : req.getServers()) {
-      if(isTimeExceeded(timeAllowedNano, timeOutTime)) {
+      if (timeAllowedExceeded = isTimeExceeded(timeAllowedNano, timeOutTime)) {
         break;
       }
       
@@ -400,7 +401,7 @@ public class LBHttpSolrClient extends SolrClient {
     // try the servers we previously skipped
     if (skipped != null) {
       for (ServerWrapper wrapper : skipped) {
-        if(isTimeExceeded(timeAllowedNano, timeOutTime)) {
+        if (timeAllowedExceeded = isTimeExceeded(timeAllowedNano, timeOutTime)) {
           break;
         }
 
@@ -417,10 +418,16 @@ public class LBHttpSolrClient extends SolrClient {
     }
 
 
-    if (ex == null) {
-      throw new SolrServerException("No live SolrServers available to handle this request");
+    final String solrServerExceptionMessage;
+    if (timeAllowedExceeded) {
+      solrServerExceptionMessage = "Time allowed to handle this request exceeded";
     } else {
-      throw new SolrServerException("No live SolrServers available to handle this request:" + zombieServers.keySet(), ex);
+      solrServerExceptionMessage = "No live SolrServers available to handle this request";
+    }
+    if (ex == null) {
+      throw new SolrServerException(solrServerExceptionMessage);
+    } else {
+      throw new SolrServerException(solrServerExceptionMessage+":" + zombieServers.keySet(), ex);
     }
 
   }
@@ -593,10 +600,11 @@ public class LBHttpSolrClient extends SolrClient {
     int maxTries = serverList.length;
     Map<String,ServerWrapper> justFailed = null;
 
+    boolean timeAllowedExceeded = false;
     long timeAllowedNano = getTimeAllowedInNanos(request);
     long timeOutTime = System.nanoTime() + timeAllowedNano;
     for (int attempts=0; attempts<maxTries; attempts++) {
-      if(isTimeExceeded(timeAllowedNano, timeOutTime)) {
+      if (timeAllowedExceeded = isTimeExceeded(timeAllowedNano, timeOutTime)) {
         break;
       }
       
@@ -624,7 +632,7 @@ public class LBHttpSolrClient extends SolrClient {
 
     // try other standard servers that we didn't try just now
     for (ServerWrapper wrapper : zombieServers.values()) {
-      if(isTimeExceeded(timeAllowedNano, timeOutTime)) {
+      if (timeAllowedExceeded = isTimeExceeded(timeAllowedNano, timeOutTime)) {
         break;
       }
       
@@ -651,10 +659,16 @@ public class LBHttpSolrClient extends SolrClient {
     }
 
 
-    if (ex == null) {
-      throw new SolrServerException("No live SolrServers available to handle this request");
+    final String solrServerExceptionMessage;
+    if (timeAllowedExceeded) {
+      solrServerExceptionMessage = "Time allowed to handle this request exceeded";
     } else {
-      throw new SolrServerException("No live SolrServers available to handle this request", ex);
+      solrServerExceptionMessage = "No live SolrServers available to handle this request";
+    }
+    if (ex == null) {
+      throw new SolrServerException(solrServerExceptionMessage);
+    } else {
+      throw new SolrServerException(solrServerExceptionMessage, ex);
     }
   }
   

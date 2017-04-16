@@ -129,7 +129,7 @@ public class SearchHandler extends RequestHandlerBase implements SolrCoreAware ,
         "First/Last components only valid if you do not declare 'components'");
 
     if (shfInfo == null) {
-      shardHandlerFactory = core.getCoreDescriptor().getCoreContainer().getShardHandlerFactory();
+      shardHandlerFactory = core.getCoreContainer().getShardHandlerFactory();
     } else {
       shardHandlerFactory = core.createInitInstance(shfInfo, ShardHandlerFactory.class, null, null);
       core.addCloseHook(new CloseHook() {
@@ -211,7 +211,7 @@ public class SearchHandler extends RequestHandlerBase implements SolrCoreAware ,
   private ShardHandler getAndPrepShardHandler(SolrQueryRequest req, ResponseBuilder rb) {
     ShardHandler shardHandler = null;
 
-    CoreContainer cc = req.getCore().getCoreDescriptor().getCoreContainer();
+    CoreContainer cc = req.getCore().getCoreContainer();
     boolean isZkAware = cc.isZooKeeperAware();
     rb.isDistrib = req.getParams().getBool(DISTRIB, isZkAware);
     if (!rb.isDistrib) {

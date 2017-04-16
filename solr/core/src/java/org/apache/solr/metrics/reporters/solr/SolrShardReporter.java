@@ -98,7 +98,13 @@ public class SolrShardReporter extends SolrMetricReporter {
     if (filterConfig == null || filterConfig.isEmpty()) {
       return;
     }
-    filters = filterConfig;
+    filters.addAll(filterConfig);
+  }
+
+  public void setFilter(String filter) {
+    if (filter != null && !filter.isEmpty()) {
+      this.filters.add(filter);
+    }
   }
 
   // for unit tests
@@ -108,9 +114,6 @@ public class SolrShardReporter extends SolrMetricReporter {
 
   @Override
   protected void validate() throws IllegalStateException {
-    if (period < 1) {
-      log.info("Turning off shard reporter, period=" + period);
-    }
     if (filters.isEmpty()) {
       filters = DEFAULT_FILTERS;
     }
@@ -128,13 +131,17 @@ public class SolrShardReporter extends SolrMetricReporter {
     if (reporter != null) {
       reporter.close();
     }
+    if (!enabled) {
+      log.info("Reporter disabled for registry " + registryName);
+      return;
+    }
     if (core.getCoreDescriptor().getCloudDescriptor() == null) {
       // not a cloud core
       log.warn("Not initializing shard reporter for non-cloud core " + core.getName());
       return;
     }
     if (period < 1) { // don't start it
-      log.warn("Not starting shard reporter ");
+      log.warn("period=" + period + ", not starting shard reporter ");
       return;
     }
     // our id is coreNodeName
@@ -154,7 +161,7 @@ public class SolrShardReporter extends SolrMetricReporter {
         .cloudClient(false) // we want to send reports specifically to a selected leader instance
         .skipAggregateValues(true) // we don't want to transport details of aggregates
         .skipHistograms(true) // we don't want to transport histograms
-        .build(core.getCoreDescriptor().getCoreContainer().getUpdateShardHandler().getHttpClient(), new LeaderUrlSupplier(core));
+        .build(core.getCoreContainer().getUpdateShardHandler().getHttpClient(), new LeaderUrlSupplier(core));
 
     reporter.start(period, TimeUnit.SECONDS);
   }
@@ -172,7 +179,7 @@ public class SolrShardReporter extends SolrMetricReporter {
       if (cd == null) {
         return null;
       }
-      ClusterState state = core.getCoreDescriptor().getCoreContainer().getZkController().getClusterState();
+      ClusterState state = core.getCoreContainer().getZkController().getClusterState();
       DocCollection collection = state.getCollection(core.getCoreDescriptor().getCollectionName());
       Replica replica = collection.getLeader(core.getCoreDescriptor().getCloudDescriptor().getShardId());
       if (replica == null) {

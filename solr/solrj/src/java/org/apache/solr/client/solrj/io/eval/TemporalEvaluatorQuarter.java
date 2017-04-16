@@ -15,7 +15,34 @@
  * limitations under the License.
  */
 
+package org.apache.solr.client.solrj.io.eval;
+
+import java.io.IOException;
+import java.time.temporal.IsoFields;
+import java.time.temporal.TemporalAccessor;
+
+import org.apache.solr.client.solrj.io.stream.expr.StreamExpression;
+import org.apache.solr.client.solrj.io.stream.expr.StreamFactory;
+
 /**
- * Support for grouping by indexed terms via {@link org.apache.lucene.index.DocValues}.
+ * Provides a quarter stream evaluator
  */
-package org.apache.lucene.search.grouping.term;
+public class TemporalEvaluatorQuarter extends TemporalEvaluator {
+
+  public static final String FUNCTION_NAME = "quarter";
+
+  public TemporalEvaluatorQuarter(StreamExpression expression, StreamFactory factory) throws IOException {
+    super(expression, factory);
+  }
+
+  @Override
+  public String getFunction() {
+    return FUNCTION_NAME;
+  }
+
+  @Override
+  public Object evaluateDate(TemporalAccessor aDate) {
+    return aDate.get(IsoFields.QUARTER_OF_YEAR);
+  }
+
+}

@@ -79,7 +79,7 @@ public abstract class MergeIndexesExampleTestBase extends SolrExampleTestBase {
     System.setProperty( "solr.core1.data.dir", this.dataDir2.getCanonicalPath() );
 
     setupCoreContainer();
-    log.info("CORES=" + cores + " : " + cores.getCoreNames());
+    log.info("CORES=" + cores + " : " + cores.getLoadedCoreNames());
 
   }
 

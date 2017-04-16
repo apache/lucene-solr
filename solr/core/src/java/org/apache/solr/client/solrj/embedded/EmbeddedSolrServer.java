@@ -89,7 +89,7 @@ public class EmbeddedSolrServer extends SolrClient {
    * Create an EmbeddedSolrServer wrapping a particular SolrCore
    */
   public EmbeddedSolrServer(SolrCore core) {
-    this(core.getCoreDescriptor().getCoreContainer(), core.getName());
+    this(core.getCoreContainer(), core.getName());
   }
 
   /**

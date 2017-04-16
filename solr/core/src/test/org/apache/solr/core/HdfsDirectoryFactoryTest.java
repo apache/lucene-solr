@@ -20,9 +20,9 @@ import java.nio.file.Path;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.HashMap;
-import java.util.Iterator;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Random;
 
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FileSystem;
@@ -30,11 +30,14 @@ import org.apache.hadoop.hdfs.MiniDFSCluster;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IndexOutput;
 import org.apache.lucene.store.NoLockFactory;
+import org.apache.lucene.util.TestUtil;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.cloud.hdfs.HdfsTestUtil;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.core.DirectoryFactory.DirContext;
 import org.apache.solr.handler.SnapShooter;
+import org.apache.solr.metrics.MetricsMap;
+import org.apache.solr.metrics.SolrMetricManager;
 import org.apache.solr.store.hdfs.HdfsLocalityReporter;
 import org.apache.solr.util.BadHdfsThreadsFilter;
 import org.apache.solr.util.MockCoreContainer.MockCoreDescriptor;
@@ -175,24 +178,24 @@ public class HdfsDirectoryFactoryTest extends SolrTestCaseJ4 {
   public void testLocalityReporter() throws Exception {
     Configuration conf = HdfsTestUtil.getClientConfiguration(dfsCluster);
     conf.set("dfs.permissions.enabled", "false");
-    
+
+    Random r = random();
     HdfsDirectoryFactory factory = new HdfsDirectoryFactory();
+    SolrMetricManager metricManager = new SolrMetricManager();
+    String registry = TestUtil.randomSimpleString(r, 2, 10);
+    String scope = TestUtil.randomSimpleString(r,2, 10);
     Map<String,String> props = new HashMap<String,String>();
     props.put(HdfsDirectoryFactory.HDFS_HOME, HdfsTestUtil.getURI(dfsCluster) + "/solr");
     props.put(HdfsDirectoryFactory.BLOCKCACHE_ENABLED, "false");
     props.put(HdfsDirectoryFactory.NRTCACHINGDIRECTORY_ENABLE, "false");
     props.put(HdfsDirectoryFactory.LOCALITYMETRICS_ENABLED, "true");
     factory.init(new NamedList<>(props));
-    
-    Iterator<SolrInfoMBean> it = factory.offerMBeans().iterator();
-    it.next(); // skip
-    SolrInfoMBean localityBean = it.next(); // brittle, but it's ok
-    
-    // Make sure we have the right bean.
-    assertEquals("Got the wrong bean: " + localityBean.getName(), "hdfs-locality", localityBean.getName());
-    
+    factory.initializeMetrics(metricManager, registry, scope);
+
+    // get the metrics map for the locality bean
+    MetricsMap metrics = (MetricsMap)metricManager.registry(registry).getMetrics().get("OTHER." + scope + ".hdfsLocality");
     // We haven't done anything, so there should be no data
-    NamedList<?> statistics = localityBean.getStatistics();
+    Map<String,Object> statistics = metrics.getValue();
     assertEquals("Saw bytes that were not written: " + statistics.get(HdfsLocalityReporter.LOCALITY_BYTES_TOTAL), 0l,
         statistics.get(HdfsLocalityReporter.LOCALITY_BYTES_TOTAL));
     assertEquals(
@@ -210,7 +213,7 @@ public class HdfsDirectoryFactoryTest extends SolrTestCaseJ4 {
     
     // no locality because hostname not set
     factory.setHost("bogus");
-    statistics = localityBean.getStatistics();
+    statistics = metrics.getValue();
     assertEquals("Wrong number of total bytes counted: " + statistics.get(HdfsLocalityReporter.LOCALITY_BYTES_TOTAL),
         long_bytes, statistics.get(HdfsLocalityReporter.LOCALITY_BYTES_TOTAL));
     assertEquals("Wrong number of total blocks counted: " + statistics.get(HdfsLocalityReporter.LOCALITY_BLOCKS_TOTAL),
@@ -221,7 +224,7 @@ public class HdfsDirectoryFactoryTest extends SolrTestCaseJ4 {
         
     // set hostname and check again
     factory.setHost("127.0.0.1");
-    statistics = localityBean.getStatistics();
+    statistics = metrics.getValue();
     assertEquals(
         "Did not count block as local after setting hostname: "
             + statistics.get(HdfsLocalityReporter.LOCALITY_BYTES_LOCAL),

@@ -18,23 +18,34 @@ package org.apache.lucene.search.grouping;
 
 import java.io.IOException;
 import java.util.Collection;
+import java.util.HashSet;
+import java.util.Set;
 
+import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.search.Scorer;
 import org.apache.lucene.search.SimpleCollector;
-import org.apache.lucene.util.BytesRef;
 
 /**
  * A collector that collects all groups that match the
  * query. Only the group value is collected, and the order
  * is undefined.  This collector does not determine
  * the most relevant document of a group.
- * <p>
- * This is an abstract version. Concrete implementations define
- * what a group actually is and how it is internally collected.
  *
  * @lucene.experimental
  */
-public abstract class AllGroupsCollector<T> extends SimpleCollector {
+public class AllGroupsCollector<T> extends SimpleCollector {
+
+  private final GroupSelector<T> groupSelector;
+
+  private final Set<T> groups = new HashSet<T>();
+
+  /**
+   * Create a new AllGroupsCollector
+   * @param groupSelector the GroupSelector to determine groups
+   */
+  public AllGroupsCollector(GroupSelector<T> groupSelector) {
+    this.groupSelector = groupSelector;
+  }
 
   /**
    * Returns the total number of groups for the executed search.
@@ -49,16 +60,29 @@ public abstract class AllGroupsCollector<T> extends SimpleCollector {
   /**
    * Returns the group values
    * <p>
-   * This is an unordered collections of group values. For each group that matched the query there is a {@link BytesRef}
-   * representing a group value.
+   * This is an unordered collections of group values.
    *
    * @return the group values
    */
-  public abstract Collection<T> getGroups();
+  public Collection<T> getGroups() {
+    return groups;
+  }
 
-  // Empty not necessary
   @Override
   public void setScorer(Scorer scorer) throws IOException {}
+
+  @Override
+  protected void doSetNextReader(LeafReaderContext context) throws IOException {
+    groupSelector.setNextReader(context);
+  }
+
+  @Override
+  public void collect(int doc) throws IOException {
+    groupSelector.advanceTo(doc);
+    if (groups.contains(groupSelector.currentValue()))
+      return;
+    groups.add(groupSelector.copyValue());
+  }
 
   @Override
   public boolean needsScores() {

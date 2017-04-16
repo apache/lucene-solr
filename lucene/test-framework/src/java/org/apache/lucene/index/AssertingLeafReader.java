@@ -630,7 +630,7 @@ public class AssertingLeafReader extends FilterLeafReader {
     }
 
     @Override
-    public int ordValue() {
+    public int ordValue() throws IOException {
       assertThread("Sorted doc values", creationThread);
       assert exists;
       int ord = in.ordValue();

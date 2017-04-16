@@ -45,7 +45,7 @@ public class ImplicitSnitch implements CoreAdminHandler.Invocable {
     Map<String, Object> result = new HashMap<>();
     CoreContainer cc = (CoreContainer) req.getContext().get(CoreContainer.class.getName());
     if (req.getParams().getInt(CORES, -1) == 1) {
-      result.put(CORES, cc.getCoreNames().size());
+      result.put(CORES, cc.getLoadedCoreNames().size());
     }
     if (req.getParams().getInt(DISK, -1) == 1) {
       try {

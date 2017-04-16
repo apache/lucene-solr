@@ -28,6 +28,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.apache.lucene.codecs.CodecUtil;
 import org.apache.lucene.index.CorruptIndexException;
+import org.apache.lucene.store.ChecksumIndexInput;
 import org.apache.lucene.store.CorruptingIndexOutput;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.FilterDirectory;
@@ -452,6 +453,47 @@ public class TestOfflineSorter extends LuceneTestCase {
       sorter.sort(out.getName());
       });
     assertEquals("value length is 4 but is supposed to always be 8", e.getMessage());
+    dir.close();
+  }
+
+  // OfflineSorter should not call my BytesSequencesReader.next() again after it already returned null:
+  public void testOverNexting() throws Exception {
+    Directory dir = newDirectory();
+    IndexOutput out = dir.createTempOutput("unsorted", "tmp", IOContext.DEFAULT);
+    try (ByteSequencesWriter w = new OfflineSorter.ByteSequencesWriter(out)) {
+      byte[] bytes = new byte[Integer.BYTES];
+      random().nextBytes(bytes);
+      w.write(bytes);
+      CodecUtil.writeFooter(out);
+    }
+
+    new OfflineSorter(dir, "foo", OfflineSorter.DEFAULT_COMPARATOR, BufferSize.megabytes(4), OfflineSorter.MAX_TEMPFILES, Integer.BYTES) {
+      @Override
+      protected ByteSequencesReader getReader(ChecksumIndexInput in, String name) throws IOException {
+        ByteSequencesReader other = super.getReader(in, name);
+
+        return new ByteSequencesReader(in, name) {
+
+          private boolean alreadyEnded;
+              
+          @Override
+          public BytesRef next() throws IOException {
+            // if we returned null already, OfflineSorter should not call next() again
+            assertFalse(alreadyEnded);
+            BytesRef result = other.next();
+            if (result == null) {
+              alreadyEnded = true;
+            }
+            return result;
+          }
+
+          @Override
+          public void close() throws IOException {
+            other.close();
+          }
+        };
+      }
+    }.sort(out.getName());
     dir.close();
   }
 

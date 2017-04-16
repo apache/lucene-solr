@@ -16,17 +16,21 @@
  */
 package org.apache.solr.search;
 
+import org.apache.lucene.util.TestUtil;
 import org.apache.solr.SolrTestCaseJ4;
-import org.apache.solr.common.util.NamedList;
 
+import org.apache.solr.metrics.MetricsMap;
+import org.apache.solr.metrics.SolrMetricManager;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.lang.invoke.MethodHandles;
+import java.util.Map;
+import java.util.Random;
 
-public class TestSolrFieldCacheMBean extends SolrTestCaseJ4 {
+public class TestSolrFieldCacheBean extends SolrTestCaseJ4 {
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
@@ -66,18 +70,28 @@ public class TestSolrFieldCacheMBean extends SolrTestCaseJ4 {
   }
 
   private void assertEntryListIncluded(boolean checkJmx) {
-    SolrFieldCacheMBean mbean = new SolrFieldCacheMBean();
-    NamedList stats = checkJmx ? mbean.getStatisticsForJmx() : mbean.getStatistics();
-    assert(Integer.parseInt(stats.get("entries_count").toString()) > 0);
-    assertNotNull(stats.get("total_size"));
-    assertNotNull(stats.get("entry#0"));
+    SolrFieldCacheBean mbean = new SolrFieldCacheBean();
+    Random r = random();
+    String registryName = TestUtil.randomSimpleString(r, 1, 10);
+    SolrMetricManager metricManager = h.getCoreContainer().getMetricManager();
+    mbean.initializeMetrics(metricManager, registryName, null);
+    MetricsMap metricsMap = (MetricsMap)metricManager.registry(registryName).getMetrics().get("CACHE.fieldCache");
+    Map<String, Object> metrics = checkJmx ? metricsMap.getValue(true) : metricsMap.getValue();
+    assertTrue(((Number)metrics.get("entries_count")).longValue() > 0);
+    assertNotNull(metrics.get("total_size"));
+    assertNotNull(metrics.get("entry#0"));
   }
 
   private void assertEntryListNotIncluded(boolean checkJmx) {
-    SolrFieldCacheMBean mbean = new SolrFieldCacheMBean();
-    NamedList stats = checkJmx ? mbean.getStatisticsForJmx() : mbean.getStatistics();
-    assert(Integer.parseInt(stats.get("entries_count").toString()) > 0);
-    assertNull(stats.get("total_size"));
-    assertNull(stats.get("entry#0"));
+    SolrFieldCacheBean mbean = new SolrFieldCacheBean();
+    Random r = random();
+    String registryName = TestUtil.randomSimpleString(r, 1, 10);
+    SolrMetricManager metricManager = h.getCoreContainer().getMetricManager();
+    mbean.initializeMetrics(metricManager, registryName, null);
+    MetricsMap metricsMap = (MetricsMap)metricManager.registry(registryName).getMetrics().get("CACHE.fieldCache");
+    Map<String, Object> metrics = checkJmx ? metricsMap.getValue(true) : metricsMap.getValue();
+    assertTrue(((Number)metrics.get("entries_count")).longValue() > 0);
+    assertNull(metrics.get("total_size"));
+    assertNull(metrics.get("entry#0"));
   }
 }

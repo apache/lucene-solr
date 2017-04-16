@@ -100,7 +100,7 @@ public class SolrResourceLoader implements ResourceLoader,Closeable
   private String dataDir;
   
   private final List<SolrCoreAware> waitingForCore = Collections.synchronizedList(new ArrayList<SolrCoreAware>());
-  private final List<SolrInfoMBean> infoMBeans = Collections.synchronizedList(new ArrayList<SolrInfoMBean>());
+  private final List<SolrInfoBean> infoMBeans = Collections.synchronizedList(new ArrayList<SolrInfoBean>());
   private final List<ResourceLoaderAware> waitingForResources = Collections.synchronizedList(new ArrayList<ResourceLoaderAware>());
   private static final Charset UTF_8 = StandardCharsets.UTF_8;
 
@@ -664,9 +664,9 @@ public class SolrResourceLoader implements ResourceLoader,Closeable
         assertAwareCompatibility( ResourceLoaderAware.class, obj );
         waitingForResources.add( (ResourceLoaderAware)obj );
       }
-      if (obj instanceof SolrInfoMBean){
+      if (obj instanceof SolrInfoBean){
         //TODO: Assert here?
-        infoMBeans.add((SolrInfoMBean) obj);
+        infoMBeans.add((SolrInfoBean) obj);
       }
     }
 
@@ -722,21 +722,21 @@ public class SolrResourceLoader implements ResourceLoader,Closeable
   }
 
   /**
-   * Register any {@link org.apache.solr.core.SolrInfoMBean}s
+   * Register any {@link SolrInfoBean}s
    * @param infoRegistry The Info Registry
    */
-  public void inform(Map<String, SolrInfoMBean> infoRegistry) {
+  public void inform(Map<String, SolrInfoBean> infoRegistry) {
     // this can currently happen concurrently with requests starting and lazy components
     // loading.  Make sure infoMBeans doesn't change.
 
-    SolrInfoMBean[] arr;
+    SolrInfoBean[] arr;
     synchronized (infoMBeans) {
-      arr = infoMBeans.toArray(new SolrInfoMBean[infoMBeans.size()]);
+      arr = infoMBeans.toArray(new SolrInfoBean[infoMBeans.size()]);
       waitingForResources.clear();
     }
 
 
-    for (SolrInfoMBean bean : arr) {
+    for (SolrInfoBean bean : arr) {
       // Too slow? I suspect not, but we may need
       // to start tracking this in a Set.
       if (!infoRegistry.containsValue(bean)) {
@@ -879,7 +879,7 @@ public class SolrResourceLoader implements ResourceLoader,Closeable
   public void close() throws IOException {
     IOUtils.close(classLoader);
   }
-  public List<SolrInfoMBean> getInfoMBeans(){
+  public List<SolrInfoBean> getInfoMBeans(){
     return Collections.unmodifiableList(infoMBeans);
   }
 

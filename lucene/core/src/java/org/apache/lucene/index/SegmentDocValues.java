@@ -85,7 +85,7 @@ final class SegmentDocValues {
       try {
         dvp.decRef();
       } catch (Throwable th) {
-        if (t != null) {
+        if (t == null) {
           t = th;
         }
       }

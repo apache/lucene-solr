@@ -16,11 +16,11 @@
  */
 package org.apache.solr.analytics.plugin;
 
+import java.util.HashMap;
+import java.util.Map;
 import java.util.concurrent.atomic.AtomicLong;
 
 import com.codahale.metrics.Timer;
-import org.apache.solr.common.util.NamedList;
-import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.util.stats.MetricUtils;
 
 public class AnalyticsStatisticsCollector {
@@ -85,17 +85,20 @@ public class AnalyticsStatisticsCollector {
     currentTimer.stop();
   }
 
-  public NamedList<Object> getStatistics() {
-    NamedList<Object> lst = new SimpleOrderedMap<>();
-    lst.add("requests", numRequests.longValue());
-    lst.add("analyticsRequests", numAnalyticsRequests.longValue());
-    lst.add("statsRequests", numStatsRequests.longValue());
-    lst.add("statsCollected", numCollectedStats.longValue());
-    lst.add("fieldFacets", numFieldFacets.longValue());
-    lst.add("rangeFacets", numRangeFacets.longValue());
-    lst.add("queryFacets", numQueryFacets.longValue());
-    lst.add("queriesInQueryFacets", numQueries.longValue());
-    MetricUtils.addMetrics(lst, requestTimes);
-    return lst;
+  public Map<String, Object> getStatistics() {
+
+    Map<String, Object> map = new HashMap<>();
+    MetricUtils.convertTimer("", requestTimes, false, false, (k, v) -> {
+      map.putAll((Map<String, Object>)v);
+    });
+    map.put("requests", numRequests.longValue());
+    map.put("analyticsRequests", numAnalyticsRequests.longValue());
+    map.put("statsRequests", numStatsRequests.longValue());
+    map.put("statsCollected", numCollectedStats.longValue());
+    map.put("fieldFacets", numFieldFacets.longValue());
+    map.put("rangeFacets", numRangeFacets.longValue());
+    map.put("queryFacets", numQueryFacets.longValue());
+    map.put("queriesInQueryFacets", numQueries.longValue());
+    return map;
   }
 }
