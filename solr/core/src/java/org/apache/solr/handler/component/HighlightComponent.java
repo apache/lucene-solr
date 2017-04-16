@@ -17,7 +17,6 @@
 package org.apache.solr.handler.component;
 
 import java.io.IOException;
-import java.net.URL;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -266,7 +265,7 @@ public class HighlightComponent extends SearchComponent implements PluginInfoIni
   }
 
   ////////////////////////////////////////////
-  ///  SolrInfoMBean
+  ///  SolrInfoBean
   ////////////////////////////////////////////
   
   @Override
@@ -277,10 +276,5 @@ public class HighlightComponent extends SearchComponent implements PluginInfoIni
   @Override
   public Category getCategory() {
     return Category.HIGHLIGHTER;
-  }
-  
-  @Override
-  public URL[] getDocs() {
-    return null;
   }
 }

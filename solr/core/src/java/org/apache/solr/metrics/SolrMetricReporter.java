@@ -30,6 +30,7 @@ public abstract class SolrMetricReporter implements Closeable, PluginInfoInitial
   protected final String registryName;
   protected final SolrMetricManager metricManager;
   protected PluginInfo pluginInfo;
+  protected boolean enabled = true;
 
   /**
    * Create a reporter for metrics managed in a named registry.
@@ -55,6 +56,17 @@ public abstract class SolrMetricReporter implements Closeable, PluginInfoInitial
       }
     }
     validate();
+  }
+
+  /**
+   * Enable reporting, defaults to true. Implementations should check this flag in
+   * {@link #validate()} and accordingly enable or disable reporting.
+   * @param enabled enable, defaults to true when null or not set.
+   */
+  public void setEnabled(Boolean enabled) {
+    if (enabled != null) {
+      this.enabled = enabled;
+    }
   }
 
   /**

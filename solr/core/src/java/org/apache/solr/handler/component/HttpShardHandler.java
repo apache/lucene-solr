@@ -279,7 +279,7 @@ public class HttpShardHandler extends ShardHandler {
     Map<String,Slice> slices = null;
     CoreDescriptor coreDescriptor = req.getCore().getCoreDescriptor();
     CloudDescriptor cloudDescriptor = coreDescriptor.getCloudDescriptor();
-    ZkController zkController = coreDescriptor.getCoreContainer().getZkController();
+    ZkController zkController = req.getCore().getCoreContainer().getZkController();
 
     final ReplicaListTransformer replicaListTransformer = httpShardHandlerFactory.getReplicaListTransformer(req);
 

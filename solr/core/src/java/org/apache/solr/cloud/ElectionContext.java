@@ -292,7 +292,7 @@ final class ShardLeaderElectionContext extends ShardLeaderElectionContextBase {
         if (cc.isShutDown()) {
           return;
         } else {
-          throw new SolrException(ErrorCode.SERVER_ERROR, "SolrCore not found:" + coreName + " in " + cc.getCoreNames());
+          throw new SolrException(ErrorCode.SERVER_ERROR, "SolrCore not found:" + coreName + " in " + cc.getLoadedCoreNames());
         }
       }
       MDCLoggingContext.setCore(core);
@@ -332,7 +332,7 @@ final class ShardLeaderElectionContext extends ShardLeaderElectionContextBase {
           if (!zkController.getCoreContainer().isShutDown())  {
             cancelElection();
             throw new SolrException(ErrorCode.SERVER_ERROR,
-                "SolrCore not found:" + coreName + " in " + cc.getCoreNames());
+                "SolrCore not found:" + coreName + " in " + cc.getLoadedCoreNames());
           } else  {
             return;
           }
@@ -402,7 +402,7 @@ final class ShardLeaderElectionContext extends ShardLeaderElectionContextBase {
             RefCounted<SolrIndexSearcher> searchHolder = core.getNewestSearcher(false);
             SolrIndexSearcher searcher = searchHolder.get();
             try {
-              log.debug(core.getCoreDescriptor().getCoreContainer().getZkController().getNodeName() + " synched "
+              log.debug(core.getCoreContainer().getZkController().getNodeName() + " synched "
                   + searcher.search(new MatchAllDocsQuery(), 1).totalHits);
             } finally {
               searchHolder.decref();
@@ -462,7 +462,7 @@ final class ShardLeaderElectionContext extends ShardLeaderElectionContextBase {
           try (SolrCore core = cc.getCore(coreName)) {
             
             if (core == null) {
-              log.debug("SolrCore not found:" + coreName + " in " + cc.getCoreNames());
+              log.debug("SolrCore not found:" + coreName + " in " + cc.getLoadedCoreNames());
               return;
             }
             

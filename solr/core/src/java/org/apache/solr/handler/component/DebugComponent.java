@@ -17,7 +17,6 @@
 package org.apache.solr.handler.component;
 
 import java.io.IOException;
-import java.net.URL;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -161,7 +160,7 @@ public class DebugComponent extends SearchComponent
 
   @SuppressForbidden(reason = "Need currentTimeMillis, only used for naming")
   private String generateRid(ResponseBuilder rb) {
-    String hostName = rb.req.getCore().getCoreDescriptor().getCoreContainer().getHostName();
+    String hostName = rb.req.getCore().getCoreContainer().getHostName();
     return hostName + "-" + rb.req.getCore().getName() + "-" + System.currentTimeMillis() + "-" + ridCounter.getAndIncrement();
   }
 
@@ -380,7 +379,7 @@ public class DebugComponent extends SearchComponent
 
   
   /////////////////////////////////////////////
-  ///  SolrInfoMBean
+  ///  SolrInfoBean
   ////////////////////////////////////////////
 
   @Override
@@ -391,10 +390,5 @@ public class DebugComponent extends SearchComponent
   @Override
   public Category getCategory() {
     return Category.OTHER;
-  }
-
-  @Override
-  public URL[] getDocs() {
-    return null;
   }
 }

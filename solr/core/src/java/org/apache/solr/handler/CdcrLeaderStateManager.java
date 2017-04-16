@@ -53,8 +53,8 @@ class CdcrLeaderStateManager extends CdcrStateManager {
 
     // Fetch leader state and register the watcher at startup
     try {
-      SolrZkClient zkClient = core.getCoreDescriptor().getCoreContainer().getZkController().getZkClient();
-      ClusterState clusterState = core.getCoreDescriptor().getCoreContainer().getZkController().getClusterState();
+      SolrZkClient zkClient = core.getCoreContainer().getZkController().getZkClient();
+      ClusterState clusterState = core.getCoreContainer().getZkController().getClusterState();
 
       watcher = this.initWatcher(zkClient);
       // if the node does not exist, it means that the leader was not yet registered. This can happen
@@ -89,7 +89,7 @@ class CdcrLeaderStateManager extends CdcrStateManager {
   }
 
   private void checkIfIAmLeader() throws KeeperException, InterruptedException {
-    SolrZkClient zkClient = core.getCoreDescriptor().getCoreContainer().getZkController().getZkClient();
+    SolrZkClient zkClient = core.getCoreContainer().getZkController().getZkClient();
     ZkNodeProps props = ZkNodeProps.load(zkClient.getData(CdcrLeaderStateManager.this.getZnodePath(), null, null, true));
     if (props != null) {
       CdcrLeaderStateManager.this.setAmILeader(props.get("core").equals(core.getName()));
@@ -144,8 +144,8 @@ class CdcrLeaderStateManager extends CdcrStateManager {
 
       try {
         log.info("Received new leader state @ {}:{}", collectionName, shard);
-        SolrZkClient zkClient = core.getCoreDescriptor().getCoreContainer().getZkController().getZkClient();
-        ClusterState clusterState = core.getCoreDescriptor().getCoreContainer().getZkController().getClusterState();
+        SolrZkClient zkClient = core.getCoreContainer().getZkController().getZkClient();
+        ClusterState clusterState = core.getCoreContainer().getZkController().getClusterState();
         if (CdcrLeaderStateManager.this.isLeaderRegistered(zkClient, clusterState)) {
           CdcrLeaderStateManager.this.checkIfIAmLeader();
         }

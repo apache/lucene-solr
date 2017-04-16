@@ -35,10 +35,10 @@ public class InstrumentedPoolingHttpClientConnectionManager extends PoolingHttpC
 
   @Override
   public void initializeMetrics(SolrMetricManager manager, String registry, String scope) {
-    manager.registerGauge(registry, () -> getTotalStats().getAvailable(), true, SolrMetricManager.mkName("availableConnections", scope));
+    manager.registerGauge(null, registry, () -> getTotalStats().getAvailable(), true, SolrMetricManager.mkName("availableConnections", scope));
     // this acquires a lock on the connection pool; remove if contention sucks
-    manager.registerGauge(registry, () -> getTotalStats().getLeased(), true, SolrMetricManager.mkName("leasedConnections", scope));
-    manager.registerGauge(registry, () -> getTotalStats().getMax(), true, SolrMetricManager.mkName("maxConnections", scope));
-    manager.registerGauge(registry, () -> getTotalStats().getPending(), true, SolrMetricManager.mkName("pendingConnections", scope));
+    manager.registerGauge(null, registry, () -> getTotalStats().getLeased(), true, SolrMetricManager.mkName("leasedConnections", scope));
+    manager.registerGauge(null, registry, () -> getTotalStats().getMax(), true, SolrMetricManager.mkName("maxConnections", scope));
+    manager.registerGauge(null, registry, () -> getTotalStats().getPending(), true, SolrMetricManager.mkName("pendingConnections", scope));
   }
 }

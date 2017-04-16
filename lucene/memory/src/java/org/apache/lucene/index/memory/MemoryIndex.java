@@ -1217,7 +1217,7 @@ public class MemoryIndex {
     @Override
     public PointValues getPointValues(String fieldName) {
       Info info = fields.get(fieldName);
-      if (info.pointValues == null) {
+      if (info == null || info.pointValues == null) {
         return null;
       }
       return new MemoryIndexPointValues(info);
@@ -1529,6 +1529,7 @@ public class MemoryIndex {
 
       MemoryIndexPointValues(Info info) {
         this.info = Objects.requireNonNull(info);
+        Objects.requireNonNull(info.pointValues, "Field does not have points");
       }
 
       @Override
@@ -1548,12 +1549,7 @@ public class MemoryIndex {
 
       @Override
       public byte[] getMinPackedValue() throws IOException {
-        BytesRef[] values = info.pointValues;
-        if (values != null) {
-          return info.minPackedValue;
-        } else {
-          return null;
-        }
+        return info.minPackedValue;
       }
 
       @Override

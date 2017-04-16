@@ -17,8 +17,8 @@
 package org.apache.solr.schema;
 
 import java.io.IOException;
+import java.text.SimpleDateFormat;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.Date;
 import java.util.HashSet;
 import java.util.LinkedHashSet;
@@ -47,8 +47,10 @@ import org.apache.lucene.search.PointRangeQuery;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrInputDocument;
+import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.schema.IndexSchema.DynamicField;
 import org.apache.solr.search.SolrIndexSearcher;
+import org.apache.solr.search.SolrQueryParser;
 import org.apache.solr.util.DateMathParser;
 import org.apache.solr.util.RefCounted;
 import org.junit.After;
@@ -57,7 +59,6 @@ import org.junit.Test;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
-import com.ibm.icu.text.SimpleDateFormat;
 
 /**
  * Tests for PointField functionality
@@ -218,9 +219,9 @@ public class TestPointFields extends SolrTestCaseJ4 {
   
   @Test
   public void testIntPointSetQuery() throws Exception {
-    doTestSetQueries("number_p_i", getRandomStringArrayWithInts(10, false), false);
-    doTestSetQueries("number_p_i_mv", getRandomStringArrayWithInts(10, false), true);
-    doTestSetQueries("number_p_i_ni_dv", getRandomStringArrayWithInts(10, false), false);
+    doTestSetQueries("number_p_i", getRandomStringArrayWithInts(20, false), false);
+    doTestSetQueries("number_p_i_mv", getRandomStringArrayWithInts(20, false), true);
+    doTestSetQueries("number_p_i_ni_dv", getRandomStringArrayWithInts(20, false), false);
   }
   
   // DoublePointField
@@ -408,9 +409,9 @@ public class TestPointFields extends SolrTestCaseJ4 {
   
   @Test
   public void testDoublePointSetQuery() throws Exception {
-    doTestSetQueries("number_p_d", getRandomStringArrayWithDoubles(10, false), false);
-    doTestSetQueries("number_p_d_mv", getRandomStringArrayWithDoubles(10, false), true);
-    doTestSetQueries("number_p_d_ni_dv", getRandomStringArrayWithDoubles(10, false), false);
+    doTestSetQueries("number_p_d", getRandomStringArrayWithDoubles(20, false), false);
+    doTestSetQueries("number_p_d_mv", getRandomStringArrayWithDoubles(20, false), true);
+    doTestSetQueries("number_p_d_ni_dv", getRandomStringArrayWithDoubles(20, false), false);
   }
   
   // Float
@@ -557,9 +558,9 @@ public class TestPointFields extends SolrTestCaseJ4 {
 
   @Test
   public void testFloatPointSetQuery() throws Exception {
-    doTestSetQueries("number_p_f", getRandomStringArrayWithFloats(10, false), false);
-    doTestSetQueries("number_p_f_mv", getRandomStringArrayWithFloats(10, false), true);
-    doTestSetQueries("number_p_f_ni_dv", getRandomStringArrayWithFloats(10, false), false);
+    doTestSetQueries("number_p_f", getRandomStringArrayWithFloats(20, false), false);
+    doTestSetQueries("number_p_f_mv", getRandomStringArrayWithFloats(20, false), true);
+    doTestSetQueries("number_p_f_ni_dv", getRandomStringArrayWithFloats(20, false), false);
   }
   
   @Test
@@ -705,9 +706,9 @@ public class TestPointFields extends SolrTestCaseJ4 {
   
   @Test
   public void testLongPointSetQuery() throws Exception {
-    doTestSetQueries("number_p_l", getRandomStringArrayWithLongs(10, false), false);
-    doTestSetQueries("number_p_l_mv", getRandomStringArrayWithLongs(10, false), true);
-    doTestSetQueries("number_p_l_ni_dv", getRandomStringArrayWithLongs(10, false), false);
+    doTestSetQueries("number_p_l", getRandomStringArrayWithLongs(20, false), false);
+    doTestSetQueries("number_p_l_mv", getRandomStringArrayWithLongs(20, false), true);
+    doTestSetQueries("number_p_l_ni_dv", getRandomStringArrayWithLongs(20, false), false);
   }
   
   @Test
@@ -850,9 +851,9 @@ public class TestPointFields extends SolrTestCaseJ4 {
 
   @Test
   public void testDatePointSetQuery() throws Exception {
-    doTestSetQueries("number_p_dt", getRandomStringArrayWithDates(10, false), false);
-    doTestSetQueries("number_p_dt_mv", getRandomStringArrayWithDates(10, false), true);
-    doTestSetQueries("number_p_dt_ni_dv", getRandomStringArrayWithDates(10, false), false);
+    doTestSetQueries("number_p_dt", getRandomStringArrayWithDates(20, false), false);
+    doTestSetQueries("number_p_dt_mv", getRandomStringArrayWithDates(20, false), true);
+    doTestSetQueries("number_p_dt_ni_dv", getRandomStringArrayWithDates(20, false), false);
   }
   
   
@@ -885,7 +886,7 @@ public class TestPointFields extends SolrTestCaseJ4 {
   
   public void testInternals() throws IOException {
     String[] types = new String[]{"i", "l", "f", "d"};
-    String[] suffixes = new String[]{"", "_dv", "_mv", "_mv_dv", "_ni", "_ni_dv", "_ni_dv_ns", "_ni_mv", "_ni_mv_dv", "_ni_ns", "_ni_ns_mv", "_dv_ns", "_ni_ns_dv", "_dv_ns_mv"};
+    String[] suffixes = new String[]{"", "_dv", "_mv", "_mv_dv", "_ni", "_ni_dv", "_ni_dv_ns", "_ni_dv_ns_mv", "_ni_mv", "_ni_mv_dv", "_ni_ns", "_ni_ns_mv", "_dv_ns", "_ni_ns_dv", "_dv_ns_mv"};
     Set<String> typesTested = new HashSet<>();
     for (String type:types) {
       for (String suffix:suffixes) {
@@ -1139,8 +1140,8 @@ public class TestPointFields extends SolrTestCaseJ4 {
     assertU(commit());
     String[] expected = new String[values.length + 1];
     expected[0] = "//*[@numFound='" + values.length + "']"; 
-    for (int i = 1; i <= values.length; i++) {
-      expected[i] = "//result/doc[" + i + "]/" + type + "[@name='" + field + "'][.='" + values[i-1] + "']";
+    for (int i = 0; i < values.length; i++) {
+      expected[i + 1] = "//result/doc[str[@name='id']='" + i + "']/" + type + "[@name='" + field + "'][.='" + values[i] + "']";
     }
     assertQ(req("q", "*:*", "fl", "id, " + field, "rows", String.valueOf(values.length)), expected);
 
@@ -2087,7 +2088,8 @@ public class TestPointFields extends SolrTestCaseJ4 {
       assertU(adoc("id", String.valueOf(i), fieldName, values[i]));
     }
     assertU(commit());
-    assertTrue(h.getCore().getLatestSchema().getField(fieldName).getType() instanceof PointField);
+    SchemaField sf = h.getCore().getLatestSchema().getField(fieldName); 
+    assertTrue(sf.getType() instanceof PointField);
     
     for (int i = 0; i < values.length; i++) {
       assertQ(req("q", "{!term f='" + fieldName + "'}" + values[i], "fl", "id," + fieldName), 
@@ -2099,6 +2101,27 @@ public class TestPointFields extends SolrTestCaseJ4 {
           "//*[@numFound='2']");
     }
     
+    assertTrue(values.length > SolrQueryParser.TERMS_QUERY_THRESHOLD);
+    int numTerms = SolrQueryParser.TERMS_QUERY_THRESHOLD + 1;
+    StringBuilder builder = new StringBuilder(fieldName + ":(");
+    for (int i = 0; i < numTerms; i++) {
+      if (sf.getType().getNumberType() == NumberType.DATE) {
+        builder.append(String.valueOf(values[i]).replace(":", "\\:") + ' ');
+      } else {
+        builder.append(String.valueOf(values[i]).replace("-", "\\-") + ' ');
+      }
+    }
+    builder.append(')');
+    if (sf.indexed()) { // SolrQueryParser should also be generating a PointInSetQuery if indexed
+      assertQ(req(CommonParams.DEBUG, CommonParams.QUERY, "q", "*:*", "fq", builder.toString(), "fl", "id," + fieldName), 
+          "//*[@numFound='" + numTerms + "']",
+          "//*[@name='parsed_filter_queries']/str[.='(" + getSetQueryToString(fieldName, values, numTerms) + ")']");
+    } else {
+      // Won't use PointInSetQuery if the fiels is not indexed, but should match the same docs
+      assertQ(req(CommonParams.DEBUG, CommonParams.QUERY, "q", "*:*", "fq", builder.toString(), "fl", "id," + fieldName), 
+          "//*[@numFound='" + numTerms + "']");
+    }
+
     if (multiValued) {
       clearIndex();
       assertU(commit());
@@ -2118,6 +2141,11 @@ public class TestPointFields extends SolrTestCaseJ4 {
     }
   }
   
+  private String getSetQueryToString(String fieldName, String[] values, int numTerms) {
+    SchemaField sf = h.getCore().getLatestSchema().getField(fieldName);
+    return sf.getType().getSetQuery(null, sf, Arrays.asList(Arrays.copyOf(values, numTerms))).toString();
+  }
+
   private void doTestDoublePointFieldMultiValuedRangeFacet(String docValuesField, String nonDocValuesField) throws Exception {
     for (int i = 0; i < 10; i++) {
       assertU(adoc("id", String.valueOf(i), docValuesField, String.valueOf(i), docValuesField, String.valueOf(i + 10), 
@@ -2681,9 +2709,9 @@ public class TestPointFields extends SolrTestCaseJ4 {
       for (LeafReaderContext leave:ir.leaves()) {
         LeafReader reader = leave.reader();
         for (int i = 0; i < reader.numDocs(); i++) {
-          Document doc = reader.document(i, Collections.singleton(field));
+          Document doc = reader.document(i);
           if (sf.stored()) {
-            assertNotNull(doc.get(field));
+            assertNotNull("Field " + field + " not found. Doc: " + doc, doc.get(field));
           } else {
             assertNull(doc.get(field));
           }
@@ -2692,42 +2720,42 @@ public class TestPointFields extends SolrTestCaseJ4 {
     } finally {
       ref.decref();
     }
+    clearIndex();
+    assertU(commit());
   }
 
   public void testNonReturnable() throws Exception {
     
-    doTestNonReturnable("foo_p_i_ni_ns", "42");
-    doTestNonReturnable("foo_p_i_ni_ns_mv", "42", "666");
+    doTestReturnNonStored("foo_p_i_ni_ns", false, "42");
+    doTestReturnNonStored("foo_p_i_ni_dv_ns", true, "42");
+    doTestReturnNonStored("foo_p_i_ni_ns_mv", false, "42", "666");
+    doTestReturnNonStored("foo_p_i_ni_dv_ns_mv", true, "42", "666");
 
-    doTestNonReturnable("foo_p_l_ni_ns", "3333333333");
-    doTestNonReturnable("foo_p_l_ni_ns_mv", "3333333333", "-4444444444");
+    doTestReturnNonStored("foo_p_l_ni_ns", false, "3333333333");
+    doTestReturnNonStored("foo_p_l_ni_dv_ns", true, "3333333333");
+    doTestReturnNonStored("foo_p_l_ni_ns_mv", false, "3333333333", "-4444444444");
+    doTestReturnNonStored("foo_p_l_ni_dv_ns_mv", true, "3333333333", "-4444444444");
 
-    doTestNonReturnable("foo_p_f_ni_ns", "42.3");
-    doTestNonReturnable("foo_p_f_ni_ns_mv", "42.3", "-66.6");
+    doTestReturnNonStored("foo_p_f_ni_ns", false, "42.3");
+    doTestReturnNonStored("foo_p_f_ni_dv_ns", true, "42.3");
+    doTestReturnNonStored("foo_p_f_ni_ns_mv", false, "42.3", "-66.6");
+    doTestReturnNonStored("foo_p_f_ni_dv_ns_mv", true, "42.3", "-66.6");
     
-    doTestNonReturnable("foo_p_d_ni_ns", "42.3");
-    doTestNonReturnable("foo_p_d_ni_ns_mv", "42.3", "-66.6");
+    doTestReturnNonStored("foo_p_d_ni_ns", false, "42.3");
+    doTestReturnNonStored("foo_p_d_ni_dv_ns", true, "42.3");
+    doTestReturnNonStored("foo_p_d_ni_ns_mv", false, "42.3", "-66.6");
+    doTestReturnNonStored("foo_p_d_ni_dv_ns_mv", true, "42.3", "-66.6");
 
-    doTestNonReturnable("foo_p_dt_ni_ns", "1995-12-31T23:59:59Z");
-    doTestNonReturnable("foo_p_dt_ni_ns_mv", "1995-12-31T23:59:59Z", "2000-12-31T23:59:59Z+3DAYS");
-
+    doTestReturnNonStored("foo_p_dt_ni_ns", false, "1995-12-31T23:59:59Z");
+    doTestReturnNonStored("foo_p_dt_ni_dv_ns", true, "1995-12-31T23:59:59Z");
+    doTestReturnNonStored("foo_p_dt_ni_ns_mv", false, "1995-12-31T23:59:59Z", "2000-12-31T23:59:59Z+3DAYS");
+    doTestReturnNonStored("foo_p_dt_ni_dv_ns_mv", true, "1995-12-31T23:59:59Z", "2000-12-31T23:59:59Z+3DAYS");
   }
 
-  @AwaitsFix(bugUrl="https://issues.apache.org/jira/browse/SOLR-10437")
-  public void testNonReturnableDocValues() throws Exception {
-    // TODO: once SOLR-10437 is resolved, this test method can be folded into testNonReturnable()
-    
-    // these fields are stored=false, docValues=true, useDocValuesAsStored=false and yet they are
-    // still returned and failing this test.
-    
-    doTestNonReturnable("foo_p_i_ni_dv_ns", "42");
-    doTestNonReturnable("foo_p_l_ni_dv_ns", "3333333333");
-    doTestNonReturnable("foo_p_f_ni_dv_ns", "42.3");
-    doTestNonReturnable("foo_p_d_ni_dv_ns", "42.3");
-    doTestNonReturnable("foo_p_dt_ni_dv_ns", "1995-12-31T23:59:59Z");
-  }
-
-  public void doTestNonReturnable(final String fieldName, final String... values) throws Exception {
+  public void doTestReturnNonStored(final String fieldName, boolean shouldReturnFieldIfRequested, final String... values) throws Exception {
+    final String RETURN_FIELD = "count(//doc/*[@name='" + fieldName + "'])=10";
+    final String DONT_RETURN_FIELD = "count(//doc/*[@name='" + fieldName + "'])=0";
+    assertFalse(h.getCore().getLatestSchema().getField(fieldName).stored());
     for (int i=0; i < 10; i++) {
       SolrInputDocument doc = sdoc("id", String.valueOf(i));
       for (String value : values) {
@@ -2739,17 +2767,24 @@ public class TestPointFields extends SolrTestCaseJ4 {
     assertQ(req("q", "*:*", "rows", "100", "fl", "id," + fieldName), 
             "//*[@numFound='10']",
             "count(//doc)=10", // exactly 10 docs in response
-            "count(//doc/*)=10", // exactly 10 fields across all docs
-            "count(//doc/*[@name!='id'])=0"); // no field in any doc other then 'id'
+            (shouldReturnFieldIfRequested?RETURN_FIELD:DONT_RETURN_FIELD)); // no field in any doc other then 'id'
+
+    assertQ(req("q", "*:*", "rows", "100", "fl", "*"), 
+        "//*[@numFound='10']",
+        "count(//doc)=10", // exactly 10 docs in response
+        DONT_RETURN_FIELD); // no field in any doc other then 'id'
+
+    assertQ(req("q", "*:*", "rows", "100"), 
+        "//*[@numFound='10']",
+        "count(//doc)=10", // exactly 10 docs in response
+        DONT_RETURN_FIELD); // no field in any doc other then 'id'
     clearIndex();
     assertU(commit());
   }
 
   public void testWhiteboxCreateFields() throws Exception {
-    // TODO: we should have a "coverage" assert that we're looping over all the dynamic (point) fields in the schema
-    
     String[] typeNames = new String[]{"i", "l", "f", "d", "dt"};
-    String[] suffixes = new String[]{"", "_dv", "_mv", "_mv_dv", "_ni", "_ni_dv", "_ni_dv_ns", "_ni_mv", "_ni_mv_dv", "_ni_ns", "_ni_ns_mv", "_dv_ns", "_ni_ns_dv", "_dv_ns_mv"};
+    String[] suffixes = new String[]{"", "_dv", "_mv", "_mv_dv", "_ni", "_ni_dv", "_ni_dv_ns", "_ni_dv_ns_mv", "_ni_mv", "_ni_mv_dv", "_ni_ns", "_ni_ns_mv", "_dv_ns", "_ni_ns_dv", "_dv_ns_mv"};
     Class<?>[] expectedClasses = new Class[]{IntPoint.class, LongPoint.class, FloatPoint.class, DoublePoint.class, LongPoint.class};
     
     Date dateToTest = new Date();

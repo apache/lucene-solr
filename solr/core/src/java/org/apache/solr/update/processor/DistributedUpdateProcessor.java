@@ -73,7 +73,7 @@ import org.apache.solr.common.params.UpdateParams;
 import org.apache.solr.common.util.Hash;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.Utils;
-import org.apache.solr.core.CoreDescriptor;
+import org.apache.solr.core.CoreContainer;
 import org.apache.solr.handler.component.RealTimeGetComponent;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
@@ -311,17 +311,16 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
     // this should always be used - see filterParams
     DistributedUpdateProcessorFactory.addParamToDistributedRequestWhitelist
       (this.req, UpdateParams.UPDATE_CHAIN, TEST_DISTRIB_SKIP_SERVERS, CommonParams.VERSION_FIELD);
-    
-    CoreDescriptor coreDesc = req.getCore().getCoreDescriptor();
-    
-    this.zkEnabled  = coreDesc.getCoreContainer().isZooKeeperAware();
-    zkController = req.getCore().getCoreDescriptor().getCoreContainer().getZkController();
+
+    CoreContainer cc = req.getCore().getCoreContainer();
+
+    this.zkEnabled  = cc.isZooKeeperAware();
+    zkController = cc.getZkController();
     if (zkEnabled) {
-      cmdDistrib = new SolrCmdDistributor(coreDesc.getCoreContainer().getUpdateShardHandler());
+      cmdDistrib = new SolrCmdDistributor(cc.getUpdateShardHandler());
     }
     //this.rsp = reqInfo != null ? reqInfo.getRsp() : null;
-
-    cloudDesc = coreDesc.getCloudDescriptor();
+    cloudDesc = req.getCore().getCoreDescriptor().getCloudDescriptor();
     
     if (cloudDesc != null) {
       collection = cloudDesc.getCollectionName();
@@ -597,7 +596,7 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
                           ZkStateReader.COLLECTION_PROP, collection,
                           ZkStateReader.SHARD_ID_PROP, myShardId,
                           "routeKey", routeKey + "!");
-                      SolrZkClient zkClient = req.getCore().getCoreDescriptor().getCoreContainer().getZkController().getZkClient();
+                      SolrZkClient zkClient = req.getCore().getCoreContainer().getZkController().getZkClient();
                       DistributedQueue queue = Overseer.getStateUpdateQueue(zkClient);
                       queue.offer(Utils.toJSON(map));
                     } catch (KeeperException e) {
@@ -948,7 +947,7 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
             Throwable rootCause = SolrException.getRootCause(error.e);
             log.error("Setting up to try to start recovery on replica {}", replicaUrl, rootCause);
             zkController.ensureReplicaInLeaderInitiatedRecovery(
-                req.getCore().getCoreDescriptor().getCoreContainer(),
+                req.getCore().getCoreContainer(),
                 collection,
                 shardId,
                 stdNode.getNodeProps(),
@@ -1302,7 +1301,7 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
    */
   private UpdateCommand fetchFullUpdateFromLeader(AddUpdateCommand inplaceAdd, long versionOnUpdate) throws IOException {
     String id = inplaceAdd.getPrintableId();
-    UpdateShardHandler updateShardHandler = inplaceAdd.getReq().getCore().getCoreDescriptor().getCoreContainer().getUpdateShardHandler();
+    UpdateShardHandler updateShardHandler = inplaceAdd.getReq().getCore().getCoreContainer().getUpdateShardHandler();
     ModifiableSolrParams params = new ModifiableSolrParams();
     params.set(DISTRIB, false);
     params.set("getInputDocument", id);
@@ -1742,7 +1741,7 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
     // Streaming updates can delay shutdown and cause big update reorderings (new streams can't be
     // initiated, but existing streams carry on).  This is why we check if the CC is shutdown.
     // See SOLR-8203 and loop HdfsChaosMonkeyNothingIsSafeTest (and check for inconsistent shards) to test.
-    if (req.getCore().getCoreDescriptor().getCoreContainer().isShutDown()) {
+    if (req.getCore().getCoreContainer().isShutDown()) {
       throw new SolrException(ErrorCode.SERVICE_UNAVAILABLE, "CoreContainer is shutting down.");
     }
 
@@ -1960,7 +1959,7 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
 
   
   private List<Node> getCollectionUrls(SolrQueryRequest req, String collection) {
-    ClusterState clusterState = req.getCore().getCoreDescriptor()
+    ClusterState clusterState = req.getCore()
         .getCoreContainer().getZkController().getClusterState();
     Map<String,Slice> slices = clusterState.getSlicesMap(collection);
     if (slices == null) {

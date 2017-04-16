@@ -15,6 +15,8 @@
  * limitations under the License.
  */
 package org.apache.solr.spelling;
+import static org.apache.solr.common.params.CommonParams.ID;
+
 import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -40,8 +42,6 @@ import org.apache.solr.search.EarlyTerminatingCollectorException;
 import org.apache.solr.search.SolrIndexSearcher;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import static org.apache.solr.common.params.CommonParams.ID;
 
 public class SpellCheckCollator {
   private static final Logger LOG = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
@@ -132,6 +132,19 @@ public class SpellCheckCollator {
         params.remove(DisMaxParams.BF);
         // Collate testing does not support Grouping (see SOLR-2577)
         params.remove(GroupParams.GROUP);
+        
+        // Collate testing does not support the Collapse QParser (See SOLR-8807)
+        params.remove("expand");
+        String[] filters = params.getParams(CommonParams.FQ);
+        if (filters != null) {
+          List<String> filtersToApply = new ArrayList<>(filters.length);
+          for (String fq : filters) {
+            if (!fq.startsWith("{!collapse")) {
+              filtersToApply.add(fq);
+            }
+          }
+          params.set("fq", filtersToApply.toArray(new String[filtersToApply.size()]));
+        }      
 
         // creating a request here... make sure to close it!
         ResponseBuilder checkResponse = new ResponseBuilder(

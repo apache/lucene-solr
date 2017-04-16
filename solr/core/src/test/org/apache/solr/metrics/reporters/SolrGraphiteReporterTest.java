@@ -35,6 +35,7 @@ import org.apache.solr.core.SolrResourceLoader;
 import org.apache.solr.core.SolrXmlConfig;
 import org.apache.solr.metrics.SolrMetricManager;
 import org.apache.solr.metrics.SolrMetricReporter;
+import org.apache.solr.util.JmxUtil;
 import org.apache.solr.util.TestHarness;
 import org.junit.Test;
 
@@ -45,6 +46,7 @@ public class SolrGraphiteReporterTest extends SolrTestCaseJ4 {
 
   @Test
   public void testReporter() throws Exception {
+    int jmxReporter = JmxUtil.findFirstMBeanServer() != null ? 1: 0;
     Path home = Paths.get(TEST_HOME());
     // define these properties, they are used in solrconfig.xml
     System.setProperty("solr.test.sys.prop1", "propone");
@@ -63,7 +65,7 @@ public class SolrGraphiteReporterTest extends SolrTestCaseJ4 {
       h.coreName = DEFAULT_TEST_CORENAME;
       SolrMetricManager metricManager = cc.getMetricManager();
       Map<String, SolrMetricReporter> reporters = metricManager.getReporters("solr.node");
-      assertEquals(1, reporters.size());
+      assertEquals(1 + jmxReporter, reporters.size());
       SolrMetricReporter reporter = reporters.get("test");
       assertNotNull(reporter);
       assertTrue(reporter instanceof SolrGraphiteReporter);

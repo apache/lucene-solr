@@ -319,12 +319,6 @@ public class FacetModule extends SearchComponent {
   public Category getCategory() {
     return Category.QUERY;
   }
-
-  @Override
-  public String getSource() {
-    return null;
-  }
-
 }
 
 

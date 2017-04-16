@@ -52,6 +52,19 @@ Upgrading from Solr 6.x
 
 * Deprecated method getNumericType() has been removed from FieldType. Use getNumberType() instead
 
+* MBean names and attributes now follow hierarchical names used in metrics. This is reflected also in
+  /admin/mbeans and /admin/plugins output, and can be observed in the UI Plugins tab, because now all these
+  APIs get their data from the metrics API. The old (mostly flat) JMX view has been removed.
+
+* <jmx> element in solrconfig.xml is no longer supported. Equivalent functionality can be configured in
+  solr.xml using <metrics><reporter ...> element and SolrJmxReporter implementation. Limited back-compatibility
+  is offered by automatically adding a default instance of SolrJmxReporter if it's missing, AND when a local
+  MBean server is found (which can be activated either via ENABLE_REMOTE_JMX_OPTS in solr.in.sh or via system
+  properties, eg. -Dcom.sun.management.jmxremote). This default instance exports all Solr metrics from all
+  registries as hierarchical MBeans. This behavior can be also disabled by specifying a SolrJmxReporter
+  configuration with a boolean init arg "enabled" set to "false". For a more fine-grained control users
+  should explicitly specify at least one SolrJmxReporter configuration.
+
 New Features
 ----------------------
 * SOLR-9857, SOLR-9858: Collect aggregated metrics from nodes and shard leaders in overseer. (ab)
@@ -96,6 +109,10 @@ Other Changes
 * SOLR-10347: Removed index level boost support from "documents" section of the admin UI (Amrit Sarkar via
   Tomás Fernández Löbbe)
 
+* SOLR-9959: SolrInfoMBean category and hierarchy cleanup. Per-component statistics are now obtained from
+  the metrics API, legacy JMX support has been replaced with SolrJmxReporter functionality. Several reporter
+  improvements (support for multiple prefix filters, "enabled" flag, reuse of service clients). (ab)
+
 ----------------------
 
 ==================  6.6.0 ==================
@@ -139,6 +156,8 @@ New Features
 
 * SOLR-10239: MOVEREPLICA API (Cao Manh Dat, Noble Paul, shalin)
 
+* SOLR-9936: Allow configuration for recoveryExecutor thread pool size. (Tim Owen via Mark Miller)
+
 Optimizations
 ----------------------
 
@@ -165,6 +184,14 @@ Bug Fixes
 
 * SOLR-10264: Fixes multi-term synonym parsing in ManagedSynonymFilterFactory.
   (Jörg Rathlev, Steve Rowe, Christine Poerschke)
+  
+* SOLR-8807: fix Spellcheck "collateMaxCollectDocs" parameter to work with queries that have the 
+  CollpasingQParserPlugin applied.  (James Dyer)
+
+* SOLR-10474: TestPointFields.testPointFieldReturn() depends on order of unsorted hits. (Steve Rowe)
+
+* SOLR-10473: Correct LBHttpSolrClient's confusing SolrServerException message when timeAllowed is exceeded.
+  (Christine Poerschke)
 
 Other Changes
 ----------------------
@@ -206,6 +233,12 @@ Other Changes
 
 * SOLR-10440: LBHttpSolrClient.doRequest is now always wrapped in a Mapped Diagnostic Context (MDC).
   (Christine Poerschke)
+
+* SOLR-10429: UpdateRequest#getRoutes()should copy the response parser (noble)
+
+* SOLR-10007: Clean up references to CoreContainer and CoreDescriptors (Erick Erickson)
+
+* SOLR-10151: Use monotonically incrementing counter for doc ids in TestRecovery. (Peter Szantai-Kis, Mano Kovacs via Mark Miller)
 
 ==================  6.5.1 ==================
 
