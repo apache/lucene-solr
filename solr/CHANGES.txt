@@ -158,6 +158,15 @@ New Features
 
 * SOLR-9936: Allow configuration for recoveryExecutor thread pool size. (Tim Owen via Mark Miller)
 
+* SOLR-10447: Collections API now supports a LISTALIASES command to return a list of all collection aliases.
+  (Ishan Chattopadhyaya)
+
+* SOLR-10446: CloudSolrClient can now be initialized using the base URL of a Solr instance instead of
+  ZooKeeper hosts. This is possible through the use of newly introduced HttpClusterStateProvider.
+  To fetch a list of collection aliases, this depends on LISTALIASES command, and hence this way of
+  initializing CloudSolrClient would not work with older versions of Solr that doesn't support LISTALIASES.
+  (Ishan Chattopadhyaya, Noble Paul)
+
 Optimizations
 ----------------------
 
