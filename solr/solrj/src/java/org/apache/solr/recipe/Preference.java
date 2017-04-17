@@ -17,17 +17,24 @@
 
 package org.apache.solr.recipe;
 
+import java.io.IOException;
 import java.util.List;
 import java.util.Map;
+import java.util.function.BiConsumer;
 
-class Preference {
+import org.apache.solr.common.MapWriter;
+import org.apache.solr.common.util.Utils;
+
+class Preference implements MapWriter {
   final Policy.SortParam name;
   Integer precision;
   final Policy.Sort sort;
   Preference next;
   public int idx;
+  private final Map original;
 
   Preference(Map<String, Object> m) {
+    this.original = Utils.getDeepCopy(m,3);
     sort = Policy.Sort.get(m);
     name = Policy.SortParam.get(m.get(sort.name()).toString());
     Object p = m.getOrDefault("precision", 0);
@@ -57,6 +64,14 @@ class Preference {
           prevVal == null || Math.abs(((Number) prevVal).longValue() - ((Number) row.cells[idx].val).longValue()) > precision ?
               row.cells[idx].val :
               prevVal;
+    }
+  }
+
+  @Override
+  public void writeMap(EntryWriter ew) throws IOException {
+    for (Object o : original.entrySet()) {
+      Map.Entry e = (Map.Entry) o;
+      ew.put(String.valueOf(e.getKey()), e.getValue());
     }
   }
 }

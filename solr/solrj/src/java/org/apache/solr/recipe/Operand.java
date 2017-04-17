@@ -20,12 +20,13 @@ package org.apache.solr.recipe;
 import java.util.Objects;
 
 import org.apache.solr.recipe.Clause.TestStatus;
+
 import static org.apache.solr.recipe.Clause.TestStatus.*;
 import static org.apache.solr.recipe.Policy.ANY;
 
 
 public enum Operand {
-  WILDCARD(ANY){
+  WILDCARD(ANY, Integer.MAX_VALUE) {
     @Override
     public TestStatus match(Object ruleVal, Object testVal) {
       return testVal == null ? NOT_APPLICABLE : PASS;
@@ -33,18 +34,18 @@ public enum Operand {
 
     @Override
     public Object parse(String val) {
-      if(val == null) return ANY;
+      if (val == null) return ANY;
       return ANY.equals(val) || Policy.EACH.equals(val) ? val : null;
     }
   },
-  EQUAL(""),
-  NOT_EQUAL("!") {
+  EQUAL("", 0),
+  NOT_EQUAL("!", 2) {
     @Override
     public TestStatus match(Object ruleVal, Object testVal) {
       return super.match(ruleVal, testVal) == PASS ? FAIL : PASS;
     }
   },
-  GREATER_THAN(">") {
+  GREATER_THAN(">", 1) {
     @Override
     public Object parse(String val) {
       return checkNumeric(super.parse(val));
@@ -58,8 +59,7 @@ public enum Operand {
     }
 
   },
-  LESS_THAN("<") {
-
+  LESS_THAN("<", 2) {
     @Override
     public TestStatus match(Object ruleVal, Object testVal) {
       if (testVal == null) return NOT_APPLICABLE;
@@ -72,9 +72,11 @@ public enum Operand {
     }
   };
   public final String operand;
+  final int priority;
 
-  Operand(String val) {
+  Operand(String val, int priority) {
     this.operand = val;
+    this.priority = priority;
   }
 
   public String toStr(Object expectedVal) {
@@ -99,10 +101,6 @@ public enum Operand {
     return Objects.equals(String.valueOf(ruleVal), String.valueOf(testVal)) ? PASS : FAIL;
   }
 
-
-  public int compare(Object n1Val, Object n2Val) {
-    return 0;
-  }
 
   public int compareNum(Object n1Val, Object n2Val) {
     Integer n1 = (Integer) parseObj(n1Val, Integer.class);

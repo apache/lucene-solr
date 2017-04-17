@@ -20,7 +20,6 @@ package org.apache.solr.recipe;
 
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
@@ -63,6 +62,7 @@ public class TestPolicy extends SolrTestCaseJ4 {
   }
 
   public void testMerge() {
+
     Map map = (Map) Utils.fromJSONString("{" +
         "  'policies': {" +
         "    'default': {" +
@@ -81,23 +81,43 @@ public class TestPolicy extends SolrTestCaseJ4 {
         "        { 'replica': '<2', 'shard':'#EACH', 'rack': 'rack1' }" +
         "      ], preferences: [{maximize:freedisk, precision:75}]} } }");
     map = (Map) map.get("policies");
-    map = Policy.mergePolicies("mycoll", (Map<String,Object>)map.get("policy1"),(Map<String,Object>)map.get("default"));
-    assertEquals(((List)map.get("conditions")).size(), 4 );
+    map = Policy.mergePolicies("mycoll", (Map<String, Object>) map.get("policy1"), (Map<String, Object>) map.get("default"));
+    assertEquals(((List) map.get("conditions")).size(), 4);
     assertEquals(((List) map.get("preferences")).size(), 2);
-    assertEquals(String.valueOf(getObjectByPath(map, true, "conditions[0]/replica")),"1");
-    assertEquals(String.valueOf(getObjectByPath(map, true, "conditions[1]/replica")),"<2");
-    assertEquals(String.valueOf(getObjectByPath(map, true, "conditions[1]/shard")),"#ANY");
-    assertEquals(String.valueOf(getObjectByPath(map, true, "conditions[2]/rack")),"rack1");
-    assertEquals(String.valueOf(getObjectByPath(map, true, "conditions[3]/nodeRole")),"!overseer");
+    assertEquals(String.valueOf(getObjectByPath(map, true, "conditions[0]/replica")), "1");
+    assertEquals(String.valueOf(getObjectByPath(map, true, "conditions[1]/replica")), "<2");
+    assertEquals(String.valueOf(getObjectByPath(map, true, "conditions[1]/shard")), "#ANY");
+    assertEquals(String.valueOf(getObjectByPath(map, true, "conditions[2]/rack")), "rack1");
+    assertEquals(String.valueOf(getObjectByPath(map, true, "conditions[3]/nodeRole")), "!overseer");
 
-    assertEquals(String.valueOf(getObjectByPath(map, true, "preferences[0]/maximize")),"freedisk");
-    assertEquals(String.valueOf(getObjectByPath(map, true, "preferences[0]/precision")),"75");
-    assertEquals(String.valueOf(getObjectByPath(map, true, "preferences[1]/precision")),"50");
+    assertEquals(String.valueOf(getObjectByPath(map, true, "preferences[0]/maximize")), "freedisk");
+    assertEquals(String.valueOf(getObjectByPath(map, true, "preferences[0]/precision")), "75");
+    assertEquals(String.valueOf(getObjectByPath(map, true, "preferences[1]/precision")), "50");
   }
 
+
+  public void testConditionsSort(){
+    String rules = "{" +
+        "conditions:[" +
+        "{nodeRole:'!overseer', strict:false}," +
+        "{replica:'<1',node:node3, shard: '#EACH'}," +
+        "{replica:'<2',node:'#ANY', shard:'#EACH'}," +
+        "{replica:1, rack:rack1}]," +
+        " preferences:[" +
+        "{minimize:cores , precision:2}," +
+        "{maximize:freedisk, precision:50}, " +
+        "{minimize:heap, precision:1000}]}";
+
+    Policy policy = new Policy((Map<String, Object>) Utils.fromJSONString(rules));
+    assertEquals("rack", policy.clauses.get(0).tag.name);
+
+
+  }
   public void testRules() throws IOException {
     String rules = "{" +
-        "conditions:[{nodeRole:'!overseer', strict:false},{replica:'<1',node:node3}," +
+        "conditions:[" +
+        "{nodeRole:'!overseer', strict:false}," +
+        "{replica:'<1',node:node3}," +
         "{replica:'<2',node:'#ANY', shard:'#EACH'}]," +
         " preferences:[" +
         "{minimize:cores , precision:2}," +
@@ -112,34 +132,9 @@ public class TestPolicy extends SolrTestCaseJ4 {
         "node4:{cores:8, freedisk: 375, heap:16900, nodeRole:overseer}" +
         "}");
 
-
-    ValidatingJsonMap m = ValidatingJsonMap
-        .getDeepCopy((Map) Utils.fromJSONString(clusterState), 6, true);
-
-
     Policy policy = new Policy((Map<String, Object>) Utils.fromJSONString(rules));
     Policy.Session session;
-    ClusterDataProvider snitch = new ClusterDataProvider() {
-      @Override
-      public Map<String, Object> getNodeValues(String node, Collection<String> keys) {
-        Map<String, Object> result = new LinkedHashMap<>();
-        keys.stream().forEach(s -> result.put(s, nodeValues.get(node).get(s)));
-        return result;
-      }
-
-      @Override
-      public Collection<String> getNodes() {
-        return Arrays.asList("node1", "node2", "node3", "node4");
-      }
-
-      @Override
-      public Map<String, Map<String, List<Policy.ReplicaInfo>>> getReplicaInfo(String node, Collection<String> keys) {
-        return getReplicaDetails(node, m);
-      }
-
-    };
-
-    session = policy.createSession(snitch);
+    session = policy.createSession(getClusterDataProvider(nodeValues, clusterState));
 
     session.applyRules();
     List<Row> l = session.getSorted();
@@ -172,7 +167,106 @@ public class TestPolicy extends SolrTestCaseJ4 {
     System.out.println(Utils.toJSONString(operation));
 
 
+
   }
+
+/*  public void testOtherTag(){
+    String rules = "{" +
+        "conditions:[" +
+        "{nodeRole:'!overseer', strict:false}," +
+        "{replica:'<1',node:node3}," +
+        "{replica:'<2',node:'#ANY', shard:'#EACH'}," +
+        "{replica:<3,shard:'#EACH', rack:'#ANY' }" +
+        "]," +
+        " preferences:[" +
+        "{minimize:cores , precision:2}," +
+        "{maximize:freedisk, precision:50}, " +
+        "{minimize:heap, precision:1000}]}";
+
+
+    Map<String, Map> nodeValues = (Map<String, Map>) Utils.fromJSONString("{" +
+        "node1:{cores:12, freedisk: 334, heap:10480, rack: rack4}," +
+        "node2:{cores:4, freedisk: 749, heap:6873, rack: rack3}," +
+        "node3:{cores:7, freedisk: 262, heap:7834, rack: rack2}," +
+        "node4:{cores:8, freedisk: 375, heap:16900, nodeRole:overseer, rack: rack1}" +
+        "}");
+    Policy policy = new Policy((Map<String, Object>) Utils.fromJSONString(rules));
+    Policy.Session session = policy.createSession(getClusterDataProvider(nodeValues, clusterState));
+
+  }*/
+
+  private ClusterDataProvider getClusterDataProvider(final Map<String, Map> nodeValues, String  clusterState) {
+    return new ClusterDataProvider() {
+        @Override
+        public Map<String, Object> getNodeValues(String node, Collection<String> keys) {
+          Map<String, Object> result = new LinkedHashMap<>();
+          keys.stream().forEach(s -> result.put(s, nodeValues.get(node).get(s)));
+          return result;
+        }
+
+        @Override
+        public Collection<String> getNodes() {
+          return nodeValues.keySet();
+        }
+
+        @Override
+        public Map<String, Map<String, List<Policy.ReplicaInfo>>> getReplicaInfo(String node, Collection<String> keys) {
+          return getReplicaDetails(node, clusterState);
+        }
+
+      };
+  }
+
+  /*public void testMultiReplicaPlacement() {
+    String autoScaleJson ="{" +
+        "  'policies': {" +
+        "    'default': {" +
+        "      'conditions': [" +
+        "        { 'nodeRole': '!overseer'}," +
+        "        { 'replica': '<2', 'shard': '#EACH', node:'#ANY'}" +
+        "      ]," +
+        "      'preferences':[" +
+        "      {'minimize': 'freedisk', 'precision':50}]" +
+        "    }," +
+        "    'policy1': {" +
+        "      'conditions': [" +
+        "        { replica: '<2', shard: '#ANY', node:'#ANY'}," +
+        "        { replica: '<2', shard:'#EACH', rack: rack1}," +
+        "        { replica: '1', sysprop.fs: ssd, shard: '#EACH'}" +
+        "      ], preferences : [ {maximize: freedisk, precision:50}]" +
+        "}}}";
+
+    Map<String,Map> nodeValues = (Map<String, Map>) Utils.fromJSONString( "{" +
+        "node1:{cores:12, freedisk: 334, heap:10480, rack:rack3}," +
+        "node2:{cores:4, freedisk: 749, heap:6873, sysprop.fs : ssd, rack:rack1}," +
+        "node3:{cores:7, freedisk: 262, heap:7834, rack:rack4}," +
+        "node4:{cores:8, freedisk: 375, heap:16900, nodeRole:overseer, rack:rack2}" +
+        "}");
+
+    ClusterDataProvider dataProvider = new ClusterDataProvider() {
+      @Override
+      public Map<String, Object> getNodeValues(String node, Collection<String> keys) {
+        Map<String, Object> result = new LinkedHashMap<>();
+        keys.stream().forEach(s -> result.put(s, nodeValues.get(node).get(s)));
+        return result;
+      }
+
+      @Override
+      public Map<String, Map<String, List<Policy.ReplicaInfo>>> getReplicaInfo(String node, Collection<String> keys) {
+        return getReplicaDetails(node, clusterState);
+      }
+
+      @Override
+      public Collection<String> getNodes() {
+        return Arrays.asList("node1", "node2", "node3", "node4");
+      }
+    };
+    Map<String, List<String>> locations = Policy.getReplicaLocations("newColl", (Map<String, Object>) Utils.fromJSONString(autoScaleJson),
+        "policy1", dataProvider, Arrays.asList("shard1", "shard2"), 3);
+    System.out.println(Utils.toJSONString(locations));
+
+
+  }*/
 
   public static String clusterState = "{'gettingstarted':{" +
       "    'router':{'name':'compositeId'}," +
@@ -216,7 +310,9 @@ public class TestPolicy extends SolrTestCaseJ4 {
       "            'node_name':'node1'," +
       "            'state':'active'}}}}}}";
 
-  public static Map<String, Map<String, List<Policy.ReplicaInfo>>> getReplicaDetails(String node, ValidatingJsonMap m) {
+  public static Map<String, Map<String, List<Policy.ReplicaInfo>>> getReplicaDetails(String node, String s) {
+    ValidatingJsonMap m = ValidatingJsonMap
+        .getDeepCopy((Map) Utils.fromJSONString(s), 6, true);
     Map<String, Map<String, List<Policy.ReplicaInfo>>> result = new LinkedHashMap<>();
 
     m.forEach((collName, o) -> {

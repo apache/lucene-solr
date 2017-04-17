@@ -19,6 +19,7 @@ package org.apache.solr.recipe;
 
 import java.io.IOException;
 import java.util.Arrays;
+import java.util.Comparator;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -26,6 +27,7 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicReference;
 
+import com.sun.istack.internal.NotNull;
 import org.apache.solr.common.MapWriter;
 import org.apache.solr.common.util.Utils;
 import org.apache.solr.recipe.Policy.ReplicaInfo;
@@ -46,7 +48,7 @@ import static org.apache.solr.recipe.Policy.ANY;
 import static org.apache.solr.recipe.Policy.EACH;
 
 // a set of conditions in a policy
-public class Clause implements MapWriter {
+public class Clause implements MapWriter, Comparable<Clause> {
   Map<String, Object> original;
   Condition collection, shard, replica, tag;
   boolean strict = true;
@@ -68,6 +70,13 @@ public class Clause implements MapWriter {
       throw new IllegalArgumentException("Only one tag other than collection, shard, replica is possible");
     }
     tag = parse(s, singletonMap(s, o));
+  }
+
+  @Override
+  public int compareTo(Clause that) {
+    int v = Integer.compare(this.tag.op.priority, that.tag.op.priority);
+    if (v != 0) return v;
+    return Integer.compare(this.replica.op.priority, that.replica.op.priority);
   }
 
   static class Condition {
@@ -135,7 +144,8 @@ public class Clause implements MapWriter {
     AtomicReference<TestStatus> result = new AtomicReference<>(NOT_APPLICABLE);
 
     for (Map.Entry<String, Map<String, List<ReplicaInfo>>> colls : row.replicaInfo.entrySet()) {
-      if (!collection.isPass(colls.getKey()) || result.get() == FAIL) break;
+      if (result.get() == FAIL) break;
+      if (!collection.isPass(colls.getKey())) continue;
       int count = 0;
       for (Map.Entry<String, List<ReplicaInfo>> shards : colls.getValue().entrySet()) {
         if (!shard.isPass(shards.getKey()) || result.get() == FAIL) break;

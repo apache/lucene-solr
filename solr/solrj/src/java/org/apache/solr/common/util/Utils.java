@@ -86,6 +86,13 @@ public class Utils {
   public static byte[] toJSON(Object o) {
     if(o == null) return new byte[0];
     CharArr out = new CharArr();
+    if (!(o instanceof List) && !(o instanceof Map)) {
+      if (o instanceof MapWriter)  {
+        o = ((MapWriter)o).toMap(new LinkedHashMap<>());
+      } else if(o instanceof IteratorWriter){
+        o = ((IteratorWriter)o).toList(new ArrayList<>());
+      }
+    }
     new JSONWriter(out, 2).write(o); // indentation by default
     return toUTF8(out);
   }

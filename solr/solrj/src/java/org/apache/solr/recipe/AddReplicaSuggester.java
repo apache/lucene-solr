@@ -37,15 +37,15 @@ class AddReplicaSuggester extends Suggester {
 
   Map tryEachNode(boolean strict) {
     //iterate through elements and identify the least loaded
-    for (int i = matrix.size() - 1; i >= 0; i--) {
-      Row row = matrix.get(i);
+    for (int i = getMatrix().size() - 1; i >= 0; i--) {
+      Row row = getMatrix().get(i);
       row = row.addReplica(coll, shard);
       row.violations.clear();
       for (Clause clause : session.getPolicy().clauses) {
         if (strict || clause.strict) clause.test(row);
       }
       if (row.violations.isEmpty()) {// there are no rule violations
-        matrix.set(i, matrix.get(i).addReplica(coll, shard));
+        getMatrix().set(i, getMatrix().get(i).addReplica(coll, shard));
         return Utils.makeMap("operation", ADDREPLICA.toLower(),
             COLLECTION_PROP, coll,
             SHARD_ID_PROP, shard,

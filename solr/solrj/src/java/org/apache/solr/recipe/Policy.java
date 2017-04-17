@@ -27,12 +27,11 @@ import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 import java.util.Set;
-import java.util.function.Consumer;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
+import org.apache.solr.common.IteratorWriter;
 import org.apache.solr.common.MapWriter;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.CollectionParams.CollectionAction;
@@ -45,17 +44,20 @@ import static java.util.stream.Collectors.toList;
 import static org.apache.solr.common.params.CollectionParams.CollectionAction.ADDREPLICA;
 import static org.apache.solr.common.util.Utils.getDeepCopy;
 
-public class Policy {
+public class Policy implements MapWriter {
   public static final String EACH = "#EACH";
   public static final String ANY = "#ANY";
   List<Clause> clauses = new ArrayList<>();
   List<Preference> preferences = new ArrayList<>();
-  List<String> params= new ArrayList<>();
+  List<String> params = new ArrayList<>();
 
 
   public Policy(Map<String, Object> jsonMap) {
     List<Map<String, Object>> l = getListOfMap("conditions", jsonMap);
-    clauses = l.stream().map(Clause::new).collect(toList());
+    clauses = l.stream()
+        .map(Clause::new)
+        .sorted()
+        .collect(toList());
     l = getListOfMap("preferences", jsonMap);
     preferences = l.stream().map(Preference::new).collect(toList());
     for (int i = 0; i < preferences.size() - 1; i++) {
@@ -73,29 +75,43 @@ public class Policy {
     }
   }
 
+  @Override
+  public void writeMap(EntryWriter ew) throws IOException {
+    if (!clauses.isEmpty()) {
+      ew.put("conditions", (IteratorWriter) iw -> {
+        for (Clause clause : clauses) iw.add(clause);
+      });
+    }
+    if (!preferences.isEmpty()) {
+      ew.put("preferences", (IteratorWriter) iw -> {
+        for (Preference p : preferences) iw.add(p);
+      });
+    }
+
+  }
 
   public class Session implements MapWriter {
     final List<String> nodes;
-    final ClusterDataProvider snitch;
+    final ClusterDataProvider dataProvider;
     final List<Row> matrix;
     Set<String> collections = new HashSet<>();
 
-    Session(List<String> nodes, ClusterDataProvider snitch, List<Row> matrix) {
+    Session(List<String> nodes, ClusterDataProvider dataProvider, List<Row> matrix) {
       this.nodes = nodes;
-      this.snitch = snitch;
+      this.dataProvider = dataProvider;
       this.matrix = matrix;
     }
 
-    Session(ClusterDataProvider snitch) {
-      this.nodes = new ArrayList<>(snitch.getNodes());
-      this.snitch = snitch;
+    Session(ClusterDataProvider dataProvider) {
+      this.nodes = new ArrayList<>(dataProvider.getNodes());
+      this.dataProvider = dataProvider;
       matrix = new ArrayList<>(nodes.size());
-      for (String node : nodes) matrix.add(new Row(node, params, snitch));
+      for (String node : nodes) matrix.add(new Row(node, params, dataProvider));
       for (Row row : matrix) row.replicaInfo.forEach((s, e) -> collections.add(s));
     }
 
     Session copy() {
-      return new Session(nodes, snitch, getMatrixCopy());
+      return new Session(nodes, dataProvider, getMatrixCopy());
     }
 
     List<Row> getMatrixCopy() {
@@ -109,7 +125,8 @@ public class Policy {
 
     }
 
-    /**Apply the preferences and conditions
+    /**
+     * Apply the preferences and conditions
      */
     public void applyRules() {
       if (!preferences.isEmpty()) {
@@ -157,7 +174,8 @@ public class Policy {
     public String toString() {
       return Utils.toJSONString(toMap(new LinkedHashMap<>()));
     }
-    public List<Row> getSorted(){
+
+    public List<Row> getSorted() {
       return Collections.unmodifiableList(matrix);
     }
   }
@@ -184,7 +202,7 @@ public class Policy {
 
     static SortParam get(String m) {
       for (SortParam p : values()) if (p.name().equals(m)) return p;
-      throw new RuntimeException( "Invalid sort "+ m+  " Sort must be on one of these " + Arrays.asList(values()));
+      throw new RuntimeException("Invalid sort " + m + " Sort must be on one of these " + Arrays.asList(values()));
     }
 
   }
@@ -228,7 +246,6 @@ public class Policy {
     String coll;
     String shard;
     Policy.Session session;
-    List<Row> matrix;
 
     Map operation;
 
@@ -236,7 +253,6 @@ public class Policy {
       this.coll = coll;
       this.shard = shard;
       this.session = session.copy();
-      matrix = session.getMatrixCopy();
       this.operation = init();
       return this;
     }
@@ -251,6 +267,13 @@ public class Policy {
     public Session getSession() {
       return session;
     }
+
+    List<Row> getMatrix() {
+      return session.matrix;
+
+    }
+
+
   }
 
   public static Map<String, List<String>> getReplicaLocations(String collName, Map<String, Object> autoScalingJson,
@@ -265,14 +288,16 @@ public class Policy {
     }
     Map defaultPolicy = (Map) Utils.getObjectByPath(autoScalingJson, false, asList("policies", "default"));
 
-    Policy policy = new Policy(Policy.mergePolicies(collName, policyJson, defaultPolicy));
+    Map<String, Object> merged = Policy.mergePolicies(collName, policyJson, defaultPolicy);
+    System.out.println(Utils.toJSONString(merged));
+    Policy policy = new Policy(merged);
     Policy.Session session = policy.createSession(cdp);
     for (String shardName : shardNames) {
       for (int i = 0; i < repFactor; i++) {
         Policy.Suggester suggester = session.getSuggester(ADDREPLICA, collName, shardName);
         Map op = suggester.getOperation();
         if (op == null) {
-          throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "No node can satisfy the rules");
+          throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "No node can satisfy the rules "+ Utils.toJSONString(policy));
         }
         session = suggester.getSession();
         positionMapping.get(shardName).add((String) op.get(CoreAdminParams.NODE));
@@ -292,26 +317,26 @@ public class Policy {
     List<Preference> parsedPreferences = preferences.stream().map(Preference::new).collect(toList());
     if (defaultPolicy != null) {
       Collection<Map<String, Object>> defaultConditions = getDeepCopy(getListOfMap("conditions", defaultPolicy), 4, true);
-      insertColl(coll,defaultConditions);
+      insertColl(coll, defaultConditions);
       defaultConditions.forEach(e -> {
         Clause clause = new Clause(e);
         for (Clause c : parsedConditions) {
           if (c.collection.equals(clause.collection) &&
-              c.tag.name.equals(clause.tag.name) ) return;
+              c.tag.name.equals(clause.tag.name)) return;
         }
         conditions.add(e);
       });
-      Collection<Map<String,Object>> defaultPreferences = getDeepCopy(getListOfMap("preferences", defaultPolicy), 4, true);
+      Collection<Map<String, Object>> defaultPreferences = getDeepCopy(getListOfMap("preferences", defaultPolicy), 4, true);
       defaultPreferences.forEach(e -> {
         Preference preference = new Preference(e);
         for (Preference p : parsedPreferences) {
-          if(p.name == preference.name) return;
+          if (p.name == preference.name) return;
         }
         preferences.add(e);
 
       });
-  }
-    return Utils.makeMap("conditions", conditions, "preferences", preferences );
+    }
+    return Utils.makeMap("conditions", conditions, "preferences", preferences);
 
   }
 
@@ -328,7 +353,6 @@ public class Policy {
     ops.put(CollectionAction.ADDREPLICA, () -> new AddReplicaSuggester());
     ops.put(CollectionAction.MOVEREPLICA, () -> new MoveReplicaSuggester());
   }
-
 
 
 }

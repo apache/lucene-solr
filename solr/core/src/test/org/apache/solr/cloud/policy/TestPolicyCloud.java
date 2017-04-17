@@ -66,39 +66,4 @@ public class TestPolicyCloud extends SolrCloudTestCase {
     assertTrue("freedisk value is "+((Number) val.get("freedisk")).intValue() , ((Number) val.get("freedisk")).intValue() > 0);
     System.out.println(Utils.toJSONString(val));
   }
-
-  /*public void testMultiReplicaPlacement() {
-    String autoScaleJson ="";
-
-
-    Map<String,Map> nodeValues = (Map<String, Map>) Utils.fromJSONString( "{" +
-        "node1:{cores:12, freedisk: 334, heap:10480}," +
-        "node2:{cores:4, freedisk: 749, heap:6873}," +
-        "node3:{cores:7, freedisk: 262, heap:7834}," +
-        "node4:{cores:8, freedisk: 375, heap:16900, nodeRole:overseer}" +
-        "}");
-
-    ClusterDataProvider dataProvider = new ClusterDataProvider() {
-      @Override
-      public Map<String, Object> getNodeValues(String node, Collection<String> keys) {
-        return null;
-      }
-
-      @Override
-      public Map<String, Map<String, List<Policy.ReplicaInfo>>> getReplicaInfo(String node, Collection<String> keys) {
-        return null;
-      }
-
-      @Override
-      public Collection<String> getNodes() {
-        return null;
-      }
-    };
-    Map<String, List<String>> locations = Policy.getReplicaLocations("newColl", (Map<String, Object>) Utils.fromJSONString(autoScaleJson),
-        "policy1", dataProvider, Arrays.asList("shard1", "shard2"), 3);
-
-
-  }*/
-
-
 }

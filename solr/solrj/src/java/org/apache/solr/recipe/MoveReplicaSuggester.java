@@ -39,8 +39,8 @@ public class MoveReplicaSuggester extends Suggester {
 
   Map tryEachNode(boolean strict) {
     //iterate through elements and identify the least loaded
-    for (int i = 0; i < matrix.size(); i++) {
-      Row fromRow = matrix.get(i);
+    for (int i = 0; i < getMatrix().size(); i++) {
+      Row fromRow = getMatrix().get(i);
       Pair<Row, Policy.ReplicaInfo> pair = fromRow.removeReplica(coll, shard);
       fromRow = pair.first();
       if(fromRow == null){
@@ -52,16 +52,16 @@ public class MoveReplicaSuggester extends Suggester {
         if (strict || clause.strict) clause.test(fromRow);
       }
       if (fromRow.violations.isEmpty()) {
-        for (int j = matrix.size() - 1; j > i; i--) {
-          Row targetRow = matrix.get(i);
+        for (int j = getMatrix().size() - 1; j > i; i--) {
+          Row targetRow = getMatrix().get(i);
           targetRow = targetRow.addReplica(coll, shard);
           targetRow.violations.clear();
           for (Clause clause : session.getPolicy().clauses) {
             if (strict || clause.strict) clause.test(targetRow);
           }
           if (targetRow.violations.isEmpty()) {
-            matrix.set(i, matrix.get(i).removeReplica(coll, shard).first());
-            matrix.set(j, matrix.get(j).addReplica(coll, shard));
+            getMatrix().set(i, getMatrix().get(i).removeReplica(coll, shard).first());
+            getMatrix().set(j, getMatrix().get(j).addReplica(coll, shard));
                 return Utils.makeMap("operation", MOVEREPLICA.toLower(),
                     COLLECTION_PROP, coll,
                     SHARD_ID_PROP, shard,
