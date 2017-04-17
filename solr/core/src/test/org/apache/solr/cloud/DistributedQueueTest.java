@@ -120,13 +120,15 @@ public class DistributedQueueTest extends SolrTestCaseJ4 {
 
     // After draining the queue, a watcher should be set.
     assertNull(dq.peek(100));
-    assertTrue(dq.hasWatcher());
+    assertFalse(dq.isDirty());
+    assertEquals(1, dq.watcherCount());
 
     forceSessionExpire();
 
     // Session expiry should have fired the watcher.
     Thread.sleep(100);
-    assertFalse(dq.hasWatcher());
+    assertTrue(dq.isDirty());
+    assertEquals(0, dq.watcherCount());
 
     // Rerun the earlier test make sure updates are still seen, post reconnection.
     future = executor.submit(new Callable<String>() {
@@ -148,6 +150,50 @@ public class DistributedQueueTest extends SolrTestCaseJ4 {
     assertNotNull(dq.poll());
     assertNull(dq.poll());
   }
+
+  @Test
+  public void testLeakChildWatcher() throws Exception {
+    String dqZNode = "/distqueue/test";
+    DistributedQueue dq = makeDistributedQueue(dqZNode);
+    assertTrue(dq.peekElements(1, 1, Predicates.<String>alwaysTrue()).isEmpty());
+    assertEquals(1, dq.watcherCount());
+    assertFalse(dq.isDirty());
+    assertTrue(dq.peekElements(1, 1, Predicates.<String>alwaysTrue()).isEmpty());
+    assertEquals(1, dq.watcherCount());
+    assertFalse(dq.isDirty());
+    assertNull(dq.peek());
+    assertEquals(1, dq.watcherCount());
+    assertFalse(dq.isDirty());
+    assertNull(dq.peek(10));
+    assertEquals(1, dq.watcherCount());
+    assertFalse(dq.isDirty());
+
+    dq.offer("hello world".getBytes(UTF8));
+    assertNotNull(dq.peek()); // synchronously available
+    // dirty and watcher state indeterminate here, race with watcher
+    Thread.sleep(100); // watcher should have fired now
+    assertNotNull(dq.peek());
+    assertEquals(1, dq.watcherCount());
+    assertFalse(dq.isDirty());
+    assertFalse(dq.peekElements(1, 1, Predicates.<String>alwaysTrue()).isEmpty());
+    assertEquals(1, dq.watcherCount());
+    assertFalse(dq.isDirty());
+  }
+
+  @Test
+  public void testLocallyOffer() throws Exception {
+    String dqZNode = "/distqueue/test";
+    DistributedQueue dq = makeDistributedQueue(dqZNode);
+    dq.peekElements(1, 1, Predicates.<String>alwaysTrue());
+    for (int i = 0; i < 100; i++) {
+      byte[] data = String.valueOf(i).getBytes(UTF8);
+      dq.offer(data);
+      assertNotNull(dq.peek());
+      dq.poll();
+      dq.peekElements(1, 1, Predicates.<String>alwaysTrue());
+    }
+  }
+
 
   @Test
   public void testPeekElements() throws Exception {

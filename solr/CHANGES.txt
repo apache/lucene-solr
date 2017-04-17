@@ -22,6 +22,8 @@ New Features
 Bug Fixes
 ----------------------
 
+* SOLR-10420: Solr 6.x leaking one SolrZkClient instance per second (Scott Blum, Cao Manh Dat, Markus Jelsma, Steve Rowe)
+
 Other Changes
 ----------------------
 
