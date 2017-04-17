@@ -4847,7 +4847,6 @@ public class StreamExpressionTest extends SolrCloudTestCase {
       assertTrue(t.getString("test_t").equals("c"));
       assertTrue(t.getString("id").equals("1"));
 
-
       //Try with single param
       expr = "cartesianProduct(search("+COLLECTIONORALIAS+", q=\"*:*\", fl=\"id, test_t\", sort=\"id desc\"), analyze(test_t) as test_t)";
       paramsLoc = new ModifiableSolrParams();
@@ -4882,7 +4881,6 @@ public class StreamExpressionTest extends SolrCloudTestCase {
       t = tuples.get(4);
       assertTrue(t.getString("test_t").equals("c"));
       assertTrue(t.getString("id").equals("1"));
-
 
       //Try with null in the test_t field
       expr = "cartesianProduct(search("+COLLECTIONORALIAS+", q=\"*:*\", fl=\"id\", sort=\"id desc\"), analyze(test_t, test_t) as test_t)";
@@ -4920,6 +4918,73 @@ public class StreamExpressionTest extends SolrCloudTestCase {
     }
   }
 
+  @Test
+  public void testConvertEvaluator() throws Exception {
+
+    UpdateRequest updateRequest = new UpdateRequest();
+    updateRequest.add(id, "1", "miles_i", "50");
+    updateRequest.add(id, "2", "miles_i", "70");
+
+    updateRequest.commit(cluster.getSolrClient(), COLLECTIONORALIAS);
+
+    //Test annotating tuple
+    String expr = "select(eval(), convert(miles, kilometers, 10) as kilometers)";
+    ModifiableSolrParams paramsLoc = new ModifiableSolrParams();
+    paramsLoc.set("expr", expr);
+    paramsLoc.set("qt", "/stream");
+
+    String url = cluster.getJettySolrRunners().get(0).getBaseUrl().toString()+"/"+COLLECTIONORALIAS;
+    TupleStream solrStream = new SolrStream(url, paramsLoc);
+
+    StreamContext context = new StreamContext();
+    solrStream.setStreamContext(context);
+    List<Tuple> tuples = getTuples(solrStream);
+    assertTrue(tuples.size() == 1);
+    double d = (double)tuples.get(0).get("kilometers");
+    assertTrue(d == (double)(10*1.61));
+
+
+    expr = "select(search("+COLLECTIONORALIAS+", q=\"*:*\", sort=\"miles_i asc\", fl=\"miles_i\"), convert(miles, kilometers, miles_i) as kilometers)";
+    paramsLoc = new ModifiableSolrParams();
+    paramsLoc.set("expr", expr);
+    paramsLoc.set("qt", "/stream");
+
+    solrStream = new SolrStream(url, paramsLoc);
+    context = new StreamContext();
+    solrStream.setStreamContext(context);
+    tuples = getTuples(solrStream);
+    assertTrue(tuples.size() == 2);
+    d = (double)tuples.get(0).get("kilometers");
+    assertTrue(d == (double)(50*1.61));
+    d = (double)tuples.get(1).get("kilometers");
+    assertTrue(d == (double)(70*1.61));
+
+    expr = "parallel("+COLLECTIONORALIAS+", workers=2, sort=\"miles_i asc\", select(search("+COLLECTIONORALIAS+", q=\"*:*\", partitionKeys=miles_i, sort=\"miles_i asc\", fl=\"miles_i\"), convert(miles, kilometers, miles_i) as kilometers))";
+    paramsLoc = new ModifiableSolrParams();
+    paramsLoc.set("expr", expr);
+    paramsLoc.set("qt", "/stream");
+    solrStream = new SolrStream(url, paramsLoc);
+    context = new StreamContext();
+    solrStream.setStreamContext(context);
+    tuples = getTuples(solrStream);
+    assertTrue(tuples.size() == 2);
+    d = (double)tuples.get(0).get("kilometers");
+    assertTrue(d == (double)(50*1.61));
+    d = (double)tuples.get(1).get("kilometers");
+    assertTrue(d == (double)(70*1.61));
+
+    expr = "select(stats("+COLLECTIONORALIAS+", q=\"*:*\", sum(miles_i)), convert(miles, kilometers, sum(miles_i)) as kilometers)";
+    paramsLoc = new ModifiableSolrParams();
+    paramsLoc.set("expr", expr);
+    paramsLoc.set("qt", "/stream");
+    solrStream = new SolrStream(url, paramsLoc);
+    context = new StreamContext();
+    solrStream.setStreamContext(context);
+    tuples = getTuples(solrStream);
+    assertTrue(tuples.size() == 1);
+    d = (double)tuples.get(0).get("kilometers");
+    assertTrue(d == (double)(120*1.61));
+  }
 
   @Test
   public void testExecutorStream() throws Exception {

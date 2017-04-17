@@ -33,41 +33,7 @@ import org.apache.solr.client.solrj.io.ModelCache;
 import org.apache.solr.client.solrj.io.SolrClientCache;
 import org.apache.solr.client.solrj.io.Tuple;
 import org.apache.solr.client.solrj.io.comp.StreamComparator;
-import org.apache.solr.client.solrj.io.eval.AbsoluteValueEvaluator;
-import org.apache.solr.client.solrj.io.eval.AddEvaluator;
-import org.apache.solr.client.solrj.io.eval.AndEvaluator;
-import org.apache.solr.client.solrj.io.eval.ArcCosineEvaluator;
-import org.apache.solr.client.solrj.io.eval.ArcSineEvaluator;
-import org.apache.solr.client.solrj.io.eval.ArcTangentEvaluator;
-import org.apache.solr.client.solrj.io.eval.CeilingEvaluator;
-import org.apache.solr.client.solrj.io.eval.CoalesceEvaluator;
-import org.apache.solr.client.solrj.io.eval.CosineEvaluator;
-import org.apache.solr.client.solrj.io.eval.CubedRootEvaluator;
-import org.apache.solr.client.solrj.io.eval.DivideEvaluator;
-import org.apache.solr.client.solrj.io.eval.EqualsEvaluator;
-import org.apache.solr.client.solrj.io.eval.ExclusiveOrEvaluator;
-import org.apache.solr.client.solrj.io.eval.FloorEvaluator;
-import org.apache.solr.client.solrj.io.eval.GreaterThanEqualToEvaluator;
-import org.apache.solr.client.solrj.io.eval.GreaterThanEvaluator;
-import org.apache.solr.client.solrj.io.eval.HyperbolicCosineEvaluator;
-import org.apache.solr.client.solrj.io.eval.HyperbolicSineEvaluator;
-import org.apache.solr.client.solrj.io.eval.HyperbolicTangentEvaluator;
-import org.apache.solr.client.solrj.io.eval.IfThenElseEvaluator;
-import org.apache.solr.client.solrj.io.eval.LessThanEqualToEvaluator;
-import org.apache.solr.client.solrj.io.eval.LessThanEvaluator;
-import org.apache.solr.client.solrj.io.eval.ModuloEvaluator;
-import org.apache.solr.client.solrj.io.eval.MultiplyEvaluator;
-import org.apache.solr.client.solrj.io.eval.NaturalLogEvaluator;
-import org.apache.solr.client.solrj.io.eval.NotEvaluator;
-import org.apache.solr.client.solrj.io.eval.OrEvaluator;
-import org.apache.solr.client.solrj.io.eval.PowerEvaluator;
-import org.apache.solr.client.solrj.io.eval.RawValueEvaluator;
-import org.apache.solr.client.solrj.io.eval.RoundEvaluator;
-import org.apache.solr.client.solrj.io.eval.SineEvaluator;
-import org.apache.solr.client.solrj.io.eval.SquareRootEvaluator;
-import org.apache.solr.client.solrj.io.eval.SubtractEvaluator;
-import org.apache.solr.client.solrj.io.eval.TangentEvaluator;
-import org.apache.solr.client.solrj.io.eval.UuidEvaluator;
+import org.apache.solr.client.solrj.io.eval.*;
 import org.apache.solr.client.solrj.io.graph.GatherNodesStream;
 import org.apache.solr.client.solrj.io.graph.ShortestPathStream;
 import org.apache.solr.client.solrj.io.ops.ConcatOperation;
@@ -85,17 +51,6 @@ import org.apache.solr.client.solrj.io.stream.metrics.MaxMetric;
 import org.apache.solr.client.solrj.io.stream.metrics.MeanMetric;
 import org.apache.solr.client.solrj.io.stream.metrics.MinMetric;
 import org.apache.solr.client.solrj.io.stream.metrics.SumMetric;
-import org.apache.solr.client.solrj.io.eval.TemporalEvaluatorDay;
-import org.apache.solr.client.solrj.io.eval.TemporalEvaluatorDayOfQuarter;
-import org.apache.solr.client.solrj.io.eval.TemporalEvaluatorDayOfYear;
-import org.apache.solr.client.solrj.io.eval.TemporalEvaluatorEpoch;
-import org.apache.solr.client.solrj.io.eval.TemporalEvaluatorHour;
-import org.apache.solr.client.solrj.io.eval.TemporalEvaluatorMinute;
-import org.apache.solr.client.solrj.io.eval.TemporalEvaluatorMonth;
-import org.apache.solr.client.solrj.io.eval.TemporalEvaluatorQuarter;
-import org.apache.solr.client.solrj.io.eval.TemporalEvaluatorSecond;
-import org.apache.solr.client.solrj.io.eval.TemporalEvaluatorWeek;
-import org.apache.solr.client.solrj.io.eval.TemporalEvaluatorYear;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
@@ -278,6 +233,7 @@ public class StreamHandler extends RequestHandlerBase implements SolrCoreAware, 
       // Conditional Stream Evaluators
          .withFunctionName("if", IfThenElseEvaluator.class)
          .withFunctionName("analyze", AnalyzeEvaluator.class)
+         .withFunctionName("convert", ConversionEvaluator.class)
       ;
 
      // This pulls all the overrides and additions from the config
