@@ -202,6 +202,9 @@ Bug Fixes
 * SOLR-10473: Correct LBHttpSolrClient's confusing SolrServerException message when timeAllowed is exceeded.
   (Christine Poerschke)
 
+* SOLR-10047: Mismatched Docvalues segments cause exception in Sorting/Faceting. Solr now uninverts per segment
+  to avoid such exceptions. (Keith Laban via shalin)
+
 Other Changes
 ----------------------
 
