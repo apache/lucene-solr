@@ -18,44 +18,19 @@
 package org.apache.solr.client.solrj.io.stream.eval;
 
 import java.io.IOException;
-import java.time.Instant;
-import java.time.LocalDateTime;
-import java.time.MonthDay;
-import java.time.YearMonth;
-import java.time.ZoneOffset;
-import java.util.Calendar;
-import java.util.Date;
-import java.util.GregorianCalendar;
 import java.util.HashMap;
-import java.util.Locale;
 import java.util.Map;
-import java.util.TimeZone;
 
 import org.apache.commons.collections.map.HashedMap;
 import org.apache.solr.client.solrj.io.Tuple;
 import org.apache.solr.client.solrj.io.eval.ConversionEvaluator;
 import org.apache.solr.client.solrj.io.eval.RawValueEvaluator;
-import org.apache.solr.client.solrj.io.eval.TemporalEvaluatorDay;
-import org.apache.solr.client.solrj.io.eval.TemporalEvaluatorDayOfQuarter;
-import org.apache.solr.client.solrj.io.eval.TemporalEvaluatorDayOfYear;
-import org.apache.solr.client.solrj.io.eval.TemporalEvaluatorEpoch;
-import org.apache.solr.client.solrj.io.eval.TemporalEvaluatorHour;
-import org.apache.solr.client.solrj.io.eval.TemporalEvaluatorMinute;
-import org.apache.solr.client.solrj.io.eval.TemporalEvaluatorMonth;
 import org.apache.solr.client.solrj.io.eval.StreamEvaluator;
-import org.apache.solr.client.solrj.io.eval.TemporalEvaluatorQuarter;
-import org.apache.solr.client.solrj.io.eval.TemporalEvaluatorSecond;
-import org.apache.solr.client.solrj.io.eval.TemporalEvaluatorWeek;
-import org.apache.solr.client.solrj.io.eval.TemporalEvaluatorYear;
 import org.apache.solr.client.solrj.io.stream.StreamContext;
-import org.apache.solr.client.solrj.io.stream.expr.Explanation;
-import org.apache.solr.client.solrj.io.stream.expr.StreamExpression;
-import org.apache.solr.client.solrj.io.stream.expr.StreamExpressionParser;
 import org.apache.solr.client.solrj.io.stream.expr.StreamFactory;
 import org.junit.Test;
 
 import static junit.framework.Assert.assertEquals;
-import static junit.framework.Assert.assertNull;
 import static junit.framework.Assert.assertTrue;
 
 /**
