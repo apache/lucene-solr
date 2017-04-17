@@ -34,7 +34,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 
-public class ZkClientClusterStateProvider implements CloudSolrClient.ClusterStateProvider {
+public class ZkClientClusterStateProvider implements ClusterStateProvider {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
 
@@ -63,9 +63,9 @@ public class ZkClientClusterStateProvider implements CloudSolrClient.ClusterStat
 
 
   @Override
-  public String getAlias(String collection) {
+  public String getAlias(String alias) {
     Aliases aliases = zkStateReader.getAliases();
-    return aliases.getCollectionAlias(collection);
+    return aliases.getCollectionAlias(alias);
   }
 
   @Override

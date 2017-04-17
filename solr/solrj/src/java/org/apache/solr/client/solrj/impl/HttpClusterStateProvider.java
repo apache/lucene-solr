@@ -40,7 +40,7 @@ import org.apache.solr.common.util.SimpleOrderedMap;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class HttpClusterStateProvider implements CloudSolrClient.ClusterStateProvider {
+public class HttpClusterStateProvider implements ClusterStateProvider {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   private String urlScheme;
@@ -72,8 +72,8 @@ public class HttpClusterStateProvider implements CloudSolrClient.ClusterStatePro
       throw new RuntimeException("Tried fetching live_nodes using Solr URLs provided, i.e. " + solrUrls + ". However, "
           + "succeeded in obtaining the cluster state from none of them."
           + "If you think your Solr cluster is up and is accessible,"
-          + " you could try re-creating a new CloudSolrClient using a working"
-          + " solrUrl or zkUrl.");
+          + " you could try re-creating a new CloudSolrClient using working"
+          + " solrUrl(s) or zkHost(s).");
     }
   }
 
@@ -106,8 +106,8 @@ public class HttpClusterStateProvider implements CloudSolrClient.ClusterStatePro
     throw new RuntimeException("Tried fetching cluster state using the node names we knew of, i.e. " + liveNodes +". However, "
         + "succeeded in obtaining the cluster state from none of them."
         + "If you think your Solr cluster is up and is accessible,"
-        + " you could try re-creating a new CloudSolrClient using a working"
-        + " solrUrl or zkUrl.");
+        + " you could try re-creating a new CloudSolrClient using working"
+        + " solrUrl(s) or zkHost(s).");
   }
 
   @SuppressWarnings({"rawtypes", "unchecked"})
@@ -118,7 +118,8 @@ public class HttpClusterStateProvider implements CloudSolrClient.ClusterStatePro
     QueryRequest request = new QueryRequest(params);
     request.setPath("/admin/collections");
     NamedList cluster = (SimpleOrderedMap) client.request(request).get("cluster");
-    Map<String, Object> collectionsMap = ((NamedList) cluster.get("collections")).asShallowMap();
+    Map<String, Object> collectionsMap = Collections.singletonMap(collection,
+        ((NamedList) cluster.get("collections")).get(collection));
     int znodeVersion = (int)((Map<String, Object>)(collectionsMap).get(collection)).get("znodeVersion");
     Set<String> liveNodes = new HashSet((List<String>)(cluster.get("live_nodes")));
     this.liveNodes = liveNodes;
@@ -133,8 +134,8 @@ public class HttpClusterStateProvider implements CloudSolrClient.ClusterStatePro
       throw new RuntimeException("We don't know of any live_nodes to fetch the"
           + " latest live_nodes information from. "
           + "If you think your Solr cluster is up and is accessible,"
-          + " you could try re-creating a new CloudSolrClient using a working"
-          + " solrUrl or zkUrl.");
+          + " you could try re-creating a new CloudSolrClient using working"
+          + " solrUrl(s) or zkHost(s).");
     }
     if (TimeUnit.SECONDS.convert((System.nanoTime() - liveNodesTimestamp), TimeUnit.NANOSECONDS) > getCacheTimeout()) {
       for (String nodeName: liveNodes) {
@@ -153,8 +154,8 @@ public class HttpClusterStateProvider implements CloudSolrClient.ClusterStatePro
       throw new RuntimeException("Tried fetching live_nodes using all the node names we knew of, i.e. " + liveNodes +". However, "
           + "succeeded in obtaining the cluster state from none of them."
           + "If you think your Solr cluster is up and is accessible,"
-          + " you could try re-creating a new CloudSolrClient using a working"
-          + " solrUrl or zkUrl.");
+          + " you could try re-creating a new CloudSolrClient using working"
+          + " solrUrl(s) or zkHost(s).");
     } else {
       return liveNodes; // cached copy is fresh enough
     }
@@ -171,9 +172,9 @@ public class HttpClusterStateProvider implements CloudSolrClient.ClusterStatePro
   }
 
   @Override
-  public String getAlias(String collection) {
+  public String getAlias(String alias) {
     Map<String, String> aliases = getAliases(false);
-    return aliases.get(collection);
+    return aliases.get(alias);
   }
 
   private Map<String, String> getAliases(boolean forceFetch) {
@@ -181,8 +182,8 @@ public class HttpClusterStateProvider implements CloudSolrClient.ClusterStatePro
       throw new RuntimeException("We don't know of any live_nodes to fetch the"
           + " latest aliases information from. "
           + "If you think your Solr cluster is up and is accessible,"
-          + " you could try re-creating a new CloudSolrClient using a working"
-          + " solrUrl or zkUrl.");
+          + " you could try re-creating a new CloudSolrClient using working"
+          + " solrUrl(s) or zkHost(s).");
     }
 
     if (forceFetch || this.aliases == null ||
@@ -197,6 +198,14 @@ public class HttpClusterStateProvider implements CloudSolrClient.ClusterStatePro
           this.aliasesTimestamp = System.nanoTime();
           return Collections.unmodifiableMap(aliases);
         } catch (SolrServerException | RemoteSolrException | IOException e) {
+          // Situation where we're hitting an older Solr which doesn't have LISTALIASES
+          if (e instanceof RemoteSolrException && ((RemoteSolrException)e).code()==400) {
+            log.warn("LISTALIASES not found, possibly using older Solr server. Aliases won't work"
+                + " unless you re-create the CloudSolrClient using zkHost(s) or upgrade Solr server", e);
+            this.aliases = Collections.emptyMap();
+            this.aliasesTimestamp = System.nanoTime();
+            return aliases;
+          }
           log.warn("Attempt to fetch cluster state from " +
               ZkStateReader.getBaseUrlForNodeName(nodeName, urlScheme) + " failed.", e);
         }
@@ -206,7 +215,7 @@ public class HttpClusterStateProvider implements CloudSolrClient.ClusterStatePro
           + "succeeded in obtaining the cluster state from none of them."
           + "If you think your Solr cluster is up and is accessible,"
           + " you could try re-creating a new CloudSolrClient using a working"
-          + " solrUrl or zkUrl.");
+          + " solrUrl or zkHost.");
     } else {
       return Collections.unmodifiableMap(this.aliases); // cached copy is fresh enough
     }

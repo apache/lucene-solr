@@ -117,9 +117,9 @@ public class CloudSolrClientCacheTest extends SolrTestCaseJ4 {
     return mockLbclient;
   }
 
-  private CloudSolrClient.ClusterStateProvider getStateProvider(Set<String> livenodes,
+  private ClusterStateProvider getStateProvider(Set<String> livenodes,
                                                                 Map<String, ClusterState.CollectionRef> colls) {
-    return new CloudSolrClient.ClusterStateProvider() {
+    return new ClusterStateProvider() {
       @Override
       public ClusterState.CollectionRef getState(String collection) {
         return colls.get(collection);
