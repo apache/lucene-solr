@@ -34,9 +34,9 @@ public class ApacheMirrorsUpdateRepositoryTest {
 
   @Before
   public void setUp() throws Exception {
-    mirrorExist = new ApacheMirrorsUpdateRepository("apache", "lucene/solr/6.5.0", "modules.json");
-    repoRedir = new ApacheMirrorsUpdateRepository("apache", "lucene/solr/5.5.0", "modules.json");
-    nonexist = new ApacheMirrorsUpdateRepository("apache", "lucene/solr/nonExist", "modules.json");
+    mirrorExist = new ApacheMirrorsUpdateRepository("apache", "lucene/solr/6.5.0");
+    repoRedir = new ApacheMirrorsUpdateRepository("apache", "lucene/solr/5.5.0");
+    nonexist = new ApacheMirrorsUpdateRepository("apache", "lucene/solr/nonExist");
   }
 
   @Test

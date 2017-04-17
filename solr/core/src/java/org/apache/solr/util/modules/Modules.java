@@ -56,7 +56,7 @@ public class Modules {
     systemVersion = Version.valueOf(org.apache.lucene.util.Version.LATEST.toString());
     ApacheMirrorsUpdateRepository apacheRepo = new ApacheMirrorsUpdateRepository("apache", "lucene/solr/" + systemVersion.toString() + "/");
     updateManager = new ModuleUpdateManager(pluginManager,
-        Arrays.asList(new DefaultUpdateRepository("people","http://people.apache.org/~janhoy/dist/plugins/")));
+        Arrays.asList(new DefaultUpdateRepository("janhoy","http://people.apache.org/~janhoy/dist/")));
     pluginManager.setSystemVersion(systemVersion);
   }
 

@@ -45,48 +45,21 @@ import ro.fortsoft.pf4j.update.UpdateRepository;
 /**
  * Update Repository that resolves Apache Mirros
  */
-public class ApacheMirrorsUpdateRepository implements UpdateRepository {
+public class ApacheMirrorsUpdateRepository extends SolrUpdateRepository {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   private static final String APACHE_DIST_URL = "https://www.apache.org/dist/";
   private static final String APACHE_ARCHIVE_URL = "https://archive.apache.org/dist/";
   private static final String CLOSER_URL = "https://www.apache.org/dyn/closer.lua?action=download&filename=";
-  private final String id;
-  private final String modulesPath;
-  private final String modulesJson;
-  private Map<String, PluginInfo> plugins;
-  private String modulesUrl;
-  private boolean modulesUrlResolved = false;
-
-  public ApacheMirrorsUpdateRepository(String id, String modulesPath, String modulesJson) {
-    this.id = id;
-    this.modulesPath = modulesPath;
-    this.modulesJson = modulesJson;
-  }
+  private String modulesPath;
 
   public ApacheMirrorsUpdateRepository(String id, String modulesPath) {
-    this(id, modulesPath, "modules.json");
+    super(id);
+    this.modulesPath = modulesPath;
   }
 
   @Override
-  public String getId() {
-    return id;
-  }
-
-  @Override
-  public String getLocation() {
-    return getModulesUrl() != null ? getModulesUrl() : null;
-  }
-
-  public String getModulesUrl() {
-    if (modulesUrl == null && !modulesUrlResolved) {
-      modulesUrl = resolveModulesUrl();
-      modulesUrlResolved = true;
-    }
-    return modulesUrl;
-  }
-
-  private String resolveModulesUrl() {
+  protected String resolveModulesUrl() {
     String mirrorUrl = CLOSER_URL + modulesPath;
     try {
       mirrorUrl = getFinalURL(mirrorUrl);
@@ -136,36 +109,7 @@ public class ApacheMirrorsUpdateRepository implements UpdateRepository {
   public FileDownloader getFileDownloader() {
     return new ApacheChecksumVerifyingDownloader();
   }
-
-  private void initPlugins() {
-    Reader pluginsJsonReader;
-    URL pluginsUrl = null;
-    try {
-        pluginsUrl = new URL(new URL(getModulesUrl()), modulesJson);
-        log.debug("Read plugins of '{}' repository from '{}'", id, pluginsUrl);
-        pluginsJsonReader = new InputStreamReader(pluginsUrl.openStream());
-    } catch (Exception e) {
-        log.error("Failed to find {}", pluginsUrl);
-        plugins = Collections.emptyMap();
-        return;
-    }
-
-    Gson gson = new GsonBuilder().create();
-    PluginInfo[] items = gson.fromJson(pluginsJsonReader, PluginInfo[].class);
-    plugins = new HashMap<>(items.length);
-    for (PluginInfo p : items) {
-        for (PluginInfo.PluginRelease r : p.releases) {
-            try {
-                r.url = new URL(new URL(getModulesUrl()), r.url).toString();
-            } catch (MalformedURLException e) {
-                log.warn("Skipping release {} of plugin {} due to failure to build valid absolute URL. Url was {}{}", r.version, p.id, getLocation(), r.url);
-            }
-        }
-        plugins.put(p.id, p);
-    }
-    log.debug("Found {} plugins in repository '{}'", plugins.size(), id);
-  }
-
+  
   public static String getFinalURL(String url) throws IOException {
       HttpURLConnection con = (HttpURLConnection) new URL(url).openConnection();
       con.setInstanceFollowRedirects(false);
