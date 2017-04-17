@@ -57,6 +57,10 @@ public class AliasIntegrationTest extends SolrCloudTestCase {
 
     CollectionAdminRequest.createAlias("testalias", "collection1").process(cluster.getSolrClient());
 
+    // ensure that the alias has been registered
+    assertEquals("collection1",
+        new CollectionAdminRequest.ListAliases().process(cluster.getSolrClient()).getAliases().get("testalias"));
+
     // search for alias
     QueryResponse res = cluster.getSolrClient().query("testalias", new SolrQuery("*:*"));
     assertEquals(3, res.getResults().getNumFound());

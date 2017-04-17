@@ -131,11 +131,6 @@ public class CloudSolrClientCacheTest extends SolrTestCaseJ4 {
       }
 
       @Override
-      public Map<String, Object> getClusterProperties() {
-        return Collections.EMPTY_MAP;
-      }
-
-      @Override
       public String getAlias(String collection) {
         return collection;
       }
@@ -151,6 +146,16 @@ public class CloudSolrClientCacheTest extends SolrTestCaseJ4 {
       @Override
       public void close() throws IOException {
 
+      }
+
+      @Override
+      public Object getClusterProperty(String propertyName) {
+        return null;
+      }
+
+      @Override
+      public Object getClusterProperty(String propertyName, String def) {
+        return def;
       }
     };
 

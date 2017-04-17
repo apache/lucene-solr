@@ -2240,6 +2240,20 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse> 
 
   }
 
+  // LISTALIASES request
+  public static class ListAliases extends CollectionAdminRequest<CollectionAdminResponse> {
+
+    public ListAliases() {
+      super(CollectionAction.LISTALIASES);
+    }
+
+    @Override
+    protected CollectionAdminResponse createResponse(SolrClient client) {
+      return new CollectionAdminResponse();
+    }
+
+  }
+
   /**
    * Returns a SolrRequest to get a list of collections in the cluster
    */

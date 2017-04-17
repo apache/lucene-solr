@@ -1,0 +1,12 @@
+{
+  "documentation": "https://cwiki.apache.org/confluence/display/solr/Collections+API",
+  "description": "Provides list of collection alises.",
+  "methods": [
+    "GET"
+  ],
+  "url": {
+    "paths": [
+      "/cluster/aliases"
+    ]
+  }
+}
