@@ -15,20 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.solr.cloud.autoscaling;
-
-import java.io.Closeable;
-
-import org.apache.solr.util.plugin.MapInitializedPlugin;
-
 /**
- * Interface for actions performed in response to a trigger being activated
+ * Package for classes related to autoscaling
  */
-public interface TriggerAction extends MapInitializedPlugin, Closeable {
-  // todo nocommit
-  public String getName();
-
-  public String getClassName();
-
-  public void process(AutoScaling.TriggerEvent event);
-}
+package org.apache.solr.cloud.autoscaling;

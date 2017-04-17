@@ -17,8 +17,13 @@
 
 package org.apache.solr.cloud.autoscaling;
 
-import java.util.Date;
+import java.io.Closeable;
+import java.io.IOException;
+import java.util.List;
 import java.util.Map;
+
+import org.apache.lucene.store.AlreadyClosedException;
+import org.apache.solr.core.CoreContainer;
 
 public class AutoScaling {
 
@@ -33,6 +38,7 @@ public class AutoScaling {
   }
 
   public enum TriggerStage {
+    WAITING,
     STARTED,
     ABORTED,
     SUCCEEDED,
@@ -41,18 +47,43 @@ public class AutoScaling {
     AFTER_ACTION
   }
 
-  public static interface TriggerListener {
-    public void triggerFired(Trigger trigger, Event event);
+  public static interface TriggerEvent<T extends Trigger> {
+    public T getSource();
+
+    public long getEventNanoTime();
+
+    public void setContext(Map<String, Object> context);
+
+    public Map<String, Object> getContext();
+  }
+
+  public static interface TriggerListener<E extends TriggerEvent<? extends Trigger>> {
+    public void triggerFired(E event);
   }
 
   public static class HttpCallbackListener implements TriggerListener {
     @Override
-    public void triggerFired(Trigger trigger, Event event) {
+    public void triggerFired(TriggerEvent event) {
 
     }
   }
 
-  public static interface Trigger {
+  /**
+   * Interface for a Solr trigger. Each trigger implements Runnable and Closeable interface. A trigger
+   * is scheduled using a {@link java.util.concurrent.ScheduledExecutorService} so it is executed as
+   * per a configured schedule to check whether the trigger is ready to fire. The {@link #setListener(TriggerListener)}
+   * method should be used to set a callback listener which is fired by implementation of this class whenever
+   * ready.
+   * <p>
+   * As per the guarantees made by the {@link java.util.concurrent.ScheduledExecutorService} a trigger
+   * implementation is only ever called sequentially and therefore need not be thread safe. However, it
+   * is encouraged that implementations be immutable with the exception of the associated listener
+   * which can be get/set by a different thread than the one executing the trigger. Therefore, implementations
+   * should use appropriate synchronization around the listener.
+   *
+   * @param <E> the {@link TriggerEvent} which is handled by this Trigger
+   */
+  public static interface Trigger<E extends TriggerEvent<? extends Trigger>> extends Closeable, Runnable {
     public String getName();
 
     public EventType getEventType();
@@ -60,14 +91,45 @@ public class AutoScaling {
     public boolean isEnabled();
 
     public Map<String, Object> getProperties();
+
+    public int getWaitForSecond();
+
+    public List<TriggerAction> getActions();
+
+    public void setListener(TriggerListener<E> listener);
+
+    public TriggerListener<E> getListener();
+
+    public boolean isClosed();
   }
 
-  public static interface Event {
-    public String getSource();
+  public static class TriggerFactory implements Closeable {
 
-    public Date getTime();
+    private final CoreContainer coreContainer;
 
-    public EventType getType();
+    private boolean isClosed = false;
+
+    public TriggerFactory(CoreContainer coreContainer) {
+      this.coreContainer = coreContainer;
+    }
+
+    public synchronized Trigger create(EventType type, String name, Map<String, Object> props) {
+      if (isClosed) {
+        throw new AlreadyClosedException("TriggerFactory has already been closed, cannot create new triggers");
+      }
+      switch (type) {
+        case NODEADDED:
+          return new NodeAddedTrigger(name, props, coreContainer);
+        default:
+          throw new IllegalArgumentException("Unknown event type: " + type + " in trigger: " + name);
+      }
+    }
+
+    @Override
+    public void close() throws IOException {
+      synchronized (this) {
+        isClosed = true;
+      }
+    }
   }
-
 }

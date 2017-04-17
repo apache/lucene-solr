@@ -71,6 +71,8 @@ New Features
 
 * SOLR-10393: Adds UUID Streaming Evaluator (Dennis Gove)
 
+* SOLR-10376: Implement autoscaling trigger for nodeAdded event. (shalin)
+
 Bug Fixes
 ----------------------
 * SOLR-9262: Connection and read timeouts are being ignored by UpdateShardHandler after SOLR-4509.
