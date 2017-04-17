@@ -164,8 +164,8 @@ New Features
 * SOLR-10446: CloudSolrClient can now be initialized using the base URL of a Solr instance instead of
   ZooKeeper hosts. This is possible through the use of newly introduced HttpClusterStateProvider.
   To fetch a list of collection aliases, this depends on LISTALIASES command, and hence this way of
-  initializing CloudSolrClient would not work with older versions of Solr that doesn't support LISTALIASES.
-  (Ishan Chattopadhyaya, Noble Paul)
+  initializing CloudSolrClient would not work if you have collection aliases on older versions of Solr
+  server that doesn't support LISTALIASES. (Ishan Chattopadhyaya, Noble Paul)
 
 Optimizations
 ----------------------
