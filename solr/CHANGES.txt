@@ -8,6 +8,24 @@ caching, replication, and a web administration interface.
 
 See http://lucene.apache.org/solr for more information.
 
+======================= 5.5.5 =======================
+
+Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release.
+
+Versions of Major Components
+---------------------
+Apache Tika 1.7
+Carrot2 3.10.4
+Velocity 1.7 and Velocity Tools 2.0
+Apache UIMA 2.3.1
+Apache ZooKeeper 3.4.6
+Jetty 9.2.13.v20150730
+
+Bug Fixes
+----------------------
+
+* SOLR-10420: Solr 6.x leaking one SolrZkClient instance per second (Scott Blum, Cao Manh Dat, Markus Jelsma, Steve Rowe)
+
 ======================= 5.5.4 =======================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release.

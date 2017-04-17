@@ -86,10 +86,9 @@ public class DistributedQueue {
    */
   private final Condition changed = updateLock.newCondition();
 
-  /**
-   * If non-null, the last watcher to listen for child changes.  If null, the in-memory contents are dirty.
-   */
-  private ChildWatcher lastWatcher = null;
+  private boolean isDirty = true;
+
+  private int watcherCount = 0;
 
   public DistributedQueue(SolrZkClient zookeeper, String dir) {
     this(zookeeper, dir, new Overseer.Stats());
@@ -238,10 +237,10 @@ public class DistributedQueue {
     try {
       while (true) {
         try {
-          // We don't need to explicitly set isDirty here; if there is a watcher, it will
-          // see the update and set the bit itself; if there is no watcher we can defer
-          // the update anyway.
+          // Explicitly set isDirty here so that synchronous same-thread calls behave as expected.
+          // This will get set again when the watcher actually fires, but that's ok.
           zookeeper.create(dir + "/" + PREFIX, data, CreateMode.PERSISTENT_SEQUENTIAL, true);
+          isDirty = true;
           return;
         } catch (KeeperException.NoNodeException e) {
           try {
@@ -269,15 +268,25 @@ public class DistributedQueue {
   private String firstChild(boolean remove) throws KeeperException, InterruptedException {
     updateLock.lockInterruptibly();
     try {
-      // If we're not in a dirty state, and we have in-memory children, return from in-memory.
-      if (lastWatcher != null && !knownChildren.isEmpty()) {
-        return remove ? knownChildren.pollFirst() : knownChildren.first();
+      if (!isDirty) {
+        // If we're not in a dirty state...
+        if (!knownChildren.isEmpty()) {
+          // and we have in-memory children, return from in-memory.
+          return remove ? knownChildren.pollFirst() : knownChildren.first();
+        } else {
+          // otherwise there's nothing to return
+          return null;
+        }
       }
 
-      // Try to fetch an updated list of children from ZK.
-      ChildWatcher newWatcher = new ChildWatcher();
+      // Dirty, try to fetch an updated list of children from ZK.
+      // Only set a new watcher if there isn't already a watcher.
+      ChildWatcher newWatcher = (watcherCount == 0) ? new ChildWatcher() : null;
       knownChildren = fetchZkChildren(newWatcher);
-      lastWatcher = newWatcher; // only set after fetchZkChildren returns successfully
+      if (newWatcher != null) {
+        watcherCount++; // watcher was successfully set
+      }
+      isDirty = false;
       if (knownChildren.isEmpty()) {
         return null;
       }
@@ -422,16 +431,25 @@ public class DistributedQueue {
     }
   }
 
-  @VisibleForTesting boolean hasWatcher() throws InterruptedException {
+  @VisibleForTesting int watcherCount() throws InterruptedException {
     updateLock.lockInterruptibly();
     try {
-      return lastWatcher != null;
+      return watcherCount;
     } finally {
       updateLock.unlock();
     }
   }
 
-  private class ChildWatcher implements Watcher {
+  @VisibleForTesting boolean isDirty() throws InterruptedException {
+    updateLock.lockInterruptibly();
+    try {
+      return isDirty;
+    } finally {
+      updateLock.unlock();
+    }
+  }
+
+  @VisibleForTesting class ChildWatcher implements Watcher {
 
     @Override
     public void process(WatchedEvent event) {
@@ -441,10 +459,8 @@ public class DistributedQueue {
       }
       updateLock.lock();
       try {
-        // this watcher is automatically cleared when fired
-        if (lastWatcher == this) {
-          lastWatcher = null;
-        }
+        isDirty = true;
+        watcherCount--;
         // optimistically signal any waiters that the queue may not be empty now, so they can wake up and retry
         changed.signalAll();
       } finally {
