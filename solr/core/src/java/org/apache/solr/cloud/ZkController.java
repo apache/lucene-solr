@@ -1818,7 +1818,7 @@ public class ZkController {
     }
   }
 
-  CoreContainer getCoreContainer() {
+  public CoreContainer getCoreContainer() {
     return cc;
   }
 

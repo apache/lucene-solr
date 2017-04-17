@@ -33,4 +33,19 @@ public class LogPlanAction implements TriggerAction {
   public void init(Map<String, String> args) {
 
   }
+
+  @Override
+  public String getName() {
+    return null;
+  }
+
+  @Override
+  public String getClassName() {
+    return null;
+  }
+
+  @Override
+  public void process(AutoScaling.TriggerEvent event) {
+
+  }
 }
