@@ -19,6 +19,7 @@ package org.apache.solr.uninverting;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Map;
+import java.util.function.Function;
 
 import org.apache.lucene.document.BinaryDocValuesField; // javadocs
 import org.apache.lucene.document.NumericDocValuesField; // javadocs
@@ -202,30 +203,39 @@ public class UninvertingReader extends FilterLeafReader {
   }
   
   /**
+   * 
    * Wraps a provided DirectoryReader. Note that for convenience, the returned reader
    * can be used normally (e.g. passed to {@link DirectoryReader#openIfChanged(DirectoryReader)})
    * and so on. 
+   * 
+   * @param in input directory reader
+   * @param perSegmentMapper function to map a segment reader to a mapping of fields to their uninversion type
+   * @return a wrapped directory reader
    */
+  public static DirectoryReader wrap(DirectoryReader in, final Function<LeafReader, Map<String,Type>> perSegmentMapper) throws IOException {
+    return new UninvertingDirectoryReader(in, perSegmentMapper);
+  }
+  
   public static DirectoryReader wrap(DirectoryReader in, final Map<String,Type> mapping) throws IOException {
-    return new UninvertingDirectoryReader(in, mapping);
+    return UninvertingReader.wrap(in, (r) -> mapping);
   }
   
   static class UninvertingDirectoryReader extends FilterDirectoryReader {
-    final Map<String,Type> mapping;
+    final Function<LeafReader, Map<String,Type>> mapper;
     
-    public UninvertingDirectoryReader(DirectoryReader in, final Map<String,Type> mapping) throws IOException {
+    public UninvertingDirectoryReader(DirectoryReader in, final Function<LeafReader, Map<String,Type>> mapper) throws IOException {
       super(in, new FilterDirectoryReader.SubReaderWrapper() {
         @Override
         public LeafReader wrap(LeafReader reader) {
-          return new UninvertingReader(reader, mapping);
+          return new UninvertingReader(reader, mapper.apply(reader));
         }
       });
-      this.mapping = mapping;
+      this.mapper = mapper;
     }
 
     @Override
     protected DirectoryReader doWrapDirectoryReader(DirectoryReader in) throws IOException {
-      return new UninvertingDirectoryReader(in, mapping);
+      return new UninvertingDirectoryReader(in, mapper);
     }
 
     // NOTE: delegating the cache helpers is wrong since this wrapper alters the
@@ -244,7 +254,7 @@ public class UninvertingReader extends FilterLeafReader {
   /** 
    * Create a new UninvertingReader with the specified mapping 
    * <p>
-   * Expert: This should almost never be used. Use {@link #wrap(DirectoryReader, Map)}
+   * Expert: This should almost never be used. Use {@link #wrap(DirectoryReader, Function)}
    * instead.
    *  
    * @lucene.internal

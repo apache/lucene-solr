@@ -69,8 +69,18 @@ public class ZkClientClusterStateProvider implements CloudSolrClient.ClusterStat
   }
 
   @Override
-  public Map<String, Object> getClusterProperties() {
-    return zkStateReader.getClusterProperties();
+  public Object getClusterProperty(String propertyName) {
+    Map<String, Object> props = zkStateReader.getClusterProperties();
+    return props.get(propertyName);
+  }
+
+  @Override
+  public Object getClusterProperty(String propertyName, String def) {
+    Map<String, Object> props = zkStateReader.getClusterProperties();
+    if (props.containsKey(propertyName)) {
+      return props.get(propertyName);
+    }
+    return def;
   }
 
   @Override

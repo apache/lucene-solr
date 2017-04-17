@@ -26,6 +26,7 @@ import java.util.Set;
 
 import org.apache.solr.client.solrj.io.Tuple;
 import org.apache.solr.client.solrj.io.comp.StreamComparator;
+import org.apache.solr.client.solrj.io.eval.EvaluatorException;
 import org.apache.solr.client.solrj.io.eval.StreamEvaluator;
 import org.apache.solr.client.solrj.io.ops.StreamOperation;
 import org.apache.solr.client.solrj.io.stream.expr.Explanation;
@@ -125,8 +126,17 @@ public class SelectStream extends TupleStream implements Expressible {
               selectedEvaluators.put(factory.constructEvaluator(asValueExpression), asName);
               handled = true;
             }
-          }
-          catch(Throwable e){
+          } catch(Throwable e) {
+            Throwable t = e;
+            while(true) {
+              if(t instanceof EvaluatorException) {
+                throw new IOException(t);
+              }
+              t = t.getCause();
+              if(t == null) {
+                break;
+              }
+            }
             // it was not handled, so treat as a non-evaluator
           }
         }

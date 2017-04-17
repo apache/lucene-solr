@@ -65,6 +65,7 @@ public class CollectionHandlerApi extends BaseHandlerApiSupport {
     GET_CLUSTER_STATUS_CMD(EndPoint.CLUSTER_CMD_STATUS, GET, REQUESTSTATUS_OP),
     DELETE_CLUSTER_STATUS(EndPoint.CLUSTER_CMD_STATUS_DELETE, DELETE, DELETESTATUS_OP),
     GET_A_COLLECTION(EndPoint.COLLECTION_STATE, GET, CLUSTERSTATUS_OP),
+    LIST_ALIASES(EndPoint.CLUSTER_ALIASES, GET, LISTALIASES_OP),
     CREATE_COLLECTION(EndPoint.COLLECTIONS_COMMANDS,
         POST,
         CREATE_OP,
@@ -290,6 +291,7 @@ public class CollectionHandlerApi extends BaseHandlerApiSupport {
 
   enum EndPoint implements V2EndPoint {
     CLUSTER("cluster"),
+    CLUSTER_ALIASES("cluster.aliases"),
     CLUSTER_CMD("cluster.Commands"),
     CLUSTER_NODES("cluster.nodes"),
     CLUSTER_CMD_STATUS("cluster.commandstatus"),

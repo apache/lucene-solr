@@ -68,6 +68,7 @@ public interface CollectionParams {
     SYNCSHARD(true, LockLevel.SHARD),
     CREATEALIAS(true, LockLevel.COLLECTION),
     DELETEALIAS(true, LockLevel.COLLECTION),
+    LISTALIASES(false, LockLevel.NONE),
     SPLITSHARD(true, LockLevel.SHARD),
     DELETESHARD(true, LockLevel.SHARD),
     CREATESHARD(true, LockLevel.COLLECTION),

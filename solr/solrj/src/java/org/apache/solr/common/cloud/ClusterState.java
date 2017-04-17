@@ -322,6 +322,10 @@ public class ClusterState implements JSONWriter.Writable {
       return new ClusterState(version, liveNodes, Collections.<String, DocCollection>emptyMap());
     }
     Map<String, Object> stateMap = (Map<String, Object>) Utils.fromJSON(bytes);
+    return load(version, stateMap, liveNodes, znode);
+  }
+
+  public static ClusterState load(Integer version, Map<String, Object> stateMap, Set<String> liveNodes, String znode) {
     Map<String,CollectionRef> collections = new LinkedHashMap<>(stateMap.size());
     for (Entry<String, Object> entry : stateMap.entrySet()) {
       String collectionName = entry.getKey();
@@ -331,7 +335,6 @@ public class ClusterState implements JSONWriter.Writable {
 
     return new ClusterState( liveNodes, collections,version);
   }
-
 
   public static Aliases load(byte[] bytes) {
     if (bytes == null || bytes.length == 0) {
