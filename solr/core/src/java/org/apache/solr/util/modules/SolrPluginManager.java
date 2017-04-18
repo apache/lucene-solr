@@ -32,6 +32,7 @@ import ro.fortsoft.pf4j.PluginDescriptor;
 import ro.fortsoft.pf4j.PluginDescriptorFinder;
 import ro.fortsoft.pf4j.PluginException;
 import ro.fortsoft.pf4j.PluginFactory;
+import ro.fortsoft.pf4j.PluginLoader;
 import ro.fortsoft.pf4j.PluginWrapper;
 import ro.fortsoft.pf4j.PropertiesPluginDescriptorFinder;
 import ro.fortsoft.pf4j.util.StringUtils;
@@ -69,6 +70,11 @@ public class SolrPluginManager extends DefaultPluginManager {
   @Override
   protected PluginFactory createPluginFactory() {
       return new SolrPluginFactory();
+  }
+
+  @Override
+  protected PluginLoader createPluginLoader() {
+    return new SolrPluginLoader(this, pluginClasspath, getClass().getClassLoader());
   }
 
   public Map<String, ClassLoader> getPluginClassLoaders() {
