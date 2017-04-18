@@ -19,9 +19,11 @@ package org.apache.solr.cloud.autoscaling;
 
 import java.util.Objects;
 
-import org.apache.solr.autoscaling.Clause.TestStatus;
+import org.apache.solr.cloud.autoscaling.Clause.TestStatus;
 
-import static org.apache.solr.autoscaling.Clause.TestStatus.*;
+import static org.apache.solr.cloud.autoscaling.Clause.TestStatus.FAIL;
+import static org.apache.solr.cloud.autoscaling.Clause.TestStatus.NOT_APPLICABLE;
+import static org.apache.solr.cloud.autoscaling.Clause.TestStatus.PASS;
 import static org.apache.solr.cloud.autoscaling.Policy.ANY;
 
 
