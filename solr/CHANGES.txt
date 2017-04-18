@@ -113,6 +113,10 @@ Other Changes
   the metrics API, legacy JMX support has been replaced with SolrJmxReporter functionality. Several reporter
   improvements (support for multiple prefix filters, "enabled" flag, reuse of service clients). (ab)
 
+* SOLR-10418: Expose safe system properties via metrics API as 'system.properties' in 'solr.jvm' group.
+  Add support for selecting specific properties from any compound metric using 'property' parameter to
+  /admin/metrics handler. (ab)
+
 ----------------------
 
 ==================  6.6.0 ==================
@@ -159,13 +163,17 @@ New Features
 * SOLR-9936: Allow configuration for recoveryExecutor thread pool size. (Tim Owen via Mark Miller)
 
 * SOLR-10447: Collections API now supports a LISTALIASES command to return a list of all collection aliases.
-  (Ishan Chattopadhyaya)
+  (Yago Riveiro, Ishan Chattopadhyaya, Mark Miller, Steve Molloy, Shawn Heisey, Mike Drob, janhoy)
 
 * SOLR-10446: CloudSolrClient can now be initialized using the base URL of a Solr instance instead of
   ZooKeeper hosts. This is possible through the use of newly introduced HttpClusterStateProvider.
   To fetch a list of collection aliases, this depends on LISTALIASES command, and hence this way of
-  initializing CloudSolrClient would not work with older versions of Solr that doesn't support LISTALIASES.
-  (Ishan Chattopadhyaya, Noble Paul)
+  initializing CloudSolrClient would not work if you have collection aliases on older versions of Solr
+  server that doesn't support LISTALIASES. (Ishan Chattopadhyaya, Noble Paul)
+
+* SOLR-10082: Variance and Standard Deviation aggregators for the JSON Facet API.
+  Example: json.facet={x:"stddev(field1)", y:"variance(field2)"}
+  (Rustam Hashimov, yonik)
 
 Optimizations
 ----------------------

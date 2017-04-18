@@ -40,6 +40,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Locale;
 import java.util.Properties;
+import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.regex.Matcher;
@@ -67,6 +68,7 @@ import org.apache.solr.core.SolrInfoBean;
 import org.apache.solr.core.SolrResourceLoader;
 import org.apache.solr.core.SolrXmlConfig;
 import org.apache.solr.metrics.AltBufferPoolMetricSet;
+import org.apache.solr.metrics.MetricsMap;
 import org.apache.solr.metrics.OperatingSystemMetricSet;
 import org.apache.solr.metrics.SolrMetricManager;
 import org.apache.solr.request.SolrRequestInfo;
@@ -184,6 +186,7 @@ public class SolrDispatchFilter extends BaseSolrFilter {
 
   private void setupJvmMetrics()  {
     SolrMetricManager metricManager = cores.getMetricManager();
+    final Set<String> hiddenSysProps = cores.getConfig().getHiddenSysProps();
     try {
       String registry = SolrMetricManager.getRegistryName(SolrInfoBean.Group.jvm);
       metricManager.registerAll(registry, new AltBufferPoolMetricSet(), true, "buffers");
@@ -192,6 +195,14 @@ public class SolrDispatchFilter extends BaseSolrFilter {
       metricManager.registerAll(registry, new GarbageCollectorMetricSet(), true, "gc");
       metricManager.registerAll(registry, new MemoryUsageGaugeSet(), true, "memory");
       metricManager.registerAll(registry, new ThreadStatesGaugeSet(), true, "threads"); // todo should we use CachedThreadStatesGaugeSet instead?
+      MetricsMap sysprops = new MetricsMap((detailed, map) -> {
+        System.getProperties().forEach((k, v) -> {
+          if (!hiddenSysProps.contains(k)) {
+            map.put(String.valueOf(k), v);
+          }
+        });
+      });
+      metricManager.registerGauge(null, registry, sysprops, true, "properties", "system");
     } catch (Exception e) {
       log.warn("Error registering JVM metrics", e);
     }

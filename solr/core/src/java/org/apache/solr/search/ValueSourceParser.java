@@ -58,9 +58,11 @@ import org.apache.solr.search.facet.HLLAgg;
 import org.apache.solr.search.facet.MaxAgg;
 import org.apache.solr.search.facet.MinAgg;
 import org.apache.solr.search.facet.PercentileAgg;
+import org.apache.solr.search.facet.StddevAgg;
 import org.apache.solr.search.facet.SumAgg;
 import org.apache.solr.search.facet.SumsqAgg;
 import org.apache.solr.search.facet.UniqueAgg;
+import org.apache.solr.search.facet.VarianceAgg;
 import org.apache.solr.search.function.CollapseScoreFunction;
 import org.apache.solr.search.function.OrdFieldSource;
 import org.apache.solr.search.function.ReverseOrdFieldSource;
@@ -931,14 +933,21 @@ public abstract class ValueSourceParser implements NamedListInitializedPlugin {
       }
     });
 
-    /***
-     addParser("agg_stdev", new ValueSourceParser() {
-    @Override
-    public ValueSource parse(FunctionQParser fp) throws SyntaxError {
-    return null;
-    }
+    addParser("agg_variance", new ValueSourceParser() {
+      @Override
+      public ValueSource parse(FunctionQParser fp) throws SyntaxError {
+        return new VarianceAgg(fp.parseValueSource());
+      }
     });
-
+    
+    addParser("agg_stddev", new ValueSourceParser() {
+      @Override
+      public ValueSource parse(FunctionQParser fp) throws SyntaxError {
+        return new StddevAgg(fp.parseValueSource());
+      }
+    });
+    
+    /***
      addParser("agg_multistat", new ValueSourceParser() {
     @Override
     public ValueSource parse(FunctionQParser fp) throws SyntaxError {

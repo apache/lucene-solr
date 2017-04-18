@@ -104,6 +104,7 @@ public class SolrXmlConfig {
       configBuilder.setCloudConfig(cloudConfig);
     configBuilder.setBackupRepositoryPlugins(getBackupRepositoryPluginInfos(config));
     configBuilder.setMetricReporterPlugins(getMetricReporterPluginInfos(config));
+    configBuilder.setHiddenSysProps(getHiddenSysProps(config));
     return fillSolrSection(configBuilder, entries);
   }
 
@@ -487,6 +488,26 @@ public class SolrXmlConfig {
     }
     return configs.toArray(new PluginInfo[configs.size()]);
   }
+
+  private static Set<String> getHiddenSysProps(Config config) {
+    NodeList nodes = (NodeList) config.evaluate("solr/metrics/hiddenSysProps/str", XPathConstants.NODESET);
+    if (nodes == null || nodes.getLength() == 0) {
+      return NodeConfig.NodeConfigBuilder.DEFAULT_HIDDEN_SYS_PROPS;
+    }
+    Set<String> props = new HashSet<>();
+    for (int i = 0; i < nodes.getLength(); i++) {
+      String prop = DOMUtil.getText(nodes.item(i));
+      if (prop != null && !prop.trim().isEmpty()) {
+        props.add(prop.trim());
+      }
+    }
+    if (props.isEmpty()) {
+      return NodeConfig.NodeConfigBuilder.DEFAULT_HIDDEN_SYS_PROPS;
+    } else {
+      return props;
+    }
+  }
+
   private static PluginInfo getTransientCoreCacheFactoryPluginInfo(Config config) {
     Node node = config.getNode("solr/transientCoreCacheFactory", false);
     return (node == null) ? null : new PluginInfo(node, "transientCoreCacheFactory", false, true);

@@ -1099,7 +1099,8 @@ public class QueryEqualityTest extends SolrTestCaseJ4 {
     assertFuncEquals("agg_hll(foo_i)", "agg_hll(foo_i)");
     assertFuncEquals("agg_sumsq(foo_i)", "agg_sumsq(foo_i)");
     assertFuncEquals("agg_percentile(foo_i,50)", "agg_percentile(foo_i,50)");
-    // assertFuncEquals("agg_stdev(foo_i)", "agg_stdev(foo_i)");
+    assertFuncEquals("agg_variance(foo_i)", "agg_variance(foo_i)");
+    assertFuncEquals("agg_stddev(foo_i)", "agg_stddev(foo_i)");
     // assertFuncEquals("agg_multistat(foo_i)", "agg_multistat(foo_i)");
   }
 

@@ -159,6 +159,7 @@ public class StreamHandler extends RequestHandlerBase implements SolrCoreAware, 
       .withFunctionName("cartesianProduct", CartesianProductStream.class)
          .withFunctionName("shuffle", ShuffleStream.class)
          .withFunctionName("eval", CalculatorStream.class)
+      .withFunctionName("echo", EchoStream.class)
 
              // metrics
          .withFunctionName("min", MinMetric.class)

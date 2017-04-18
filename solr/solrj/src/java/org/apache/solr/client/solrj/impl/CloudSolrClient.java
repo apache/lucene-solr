@@ -16,7 +16,6 @@
  */
 package org.apache.solr.client.solrj.impl;
 
-import java.io.Closeable;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.net.ConnectException;
@@ -1782,35 +1781,5 @@ public class CloudSolrClient extends SolrClient {
       return new CloudSolrClient(zkHosts, zkChroot, solrUrls, httpClient, loadBalancedSolrClient, lbClientBuilder,
           shardLeadersOnly, directUpdatesToLeadersOnly, stateProvider);
     }
-  }
-
-  interface ClusterStateProvider extends Closeable {
-
-    /**
-     * Obtain the state of the collection (cluster status).
-     * @return the collection state, or null is collection doesn't exist
-     */
-    ClusterState.CollectionRef getState(String collection);
-
-    /**
-     * Obtain set of live_nodes for the cluster.
-     */
-    Set<String> liveNodes();
-
-    String getAlias(String collection);
-
-    String getCollectionName(String name);
-
-    /**
-     * Obtain a cluster property, or null if it doesn't exist.
-     */
-    Object getClusterProperty(String propertyName);
-
-    /**
-     * Obtain a cluster property, or the default value if it doesn't exist.
-     */
-    Object getClusterProperty(String propertyName, String def);
-
-    void connect();
   }
 }
