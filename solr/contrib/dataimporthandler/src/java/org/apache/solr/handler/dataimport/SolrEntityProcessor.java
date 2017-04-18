@@ -29,11 +29,11 @@ import java.util.Iterator;
 import java.util.Map;
 
 import org.apache.http.client.HttpClient;
+import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.impl.HttpClientUtil;
-import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.impl.HttpSolrClient.Builder;
 import org.apache.solr.client.solrj.impl.XMLResponseParser;
 import org.apache.solr.client.solrj.response.QueryResponse;
@@ -42,14 +42,14 @@ import org.apache.solr.common.SolrDocumentList;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.CursorMarkParams;
+import org.apache.solr.common.params.ModifiableSolrParams;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
  * <p>
  * An implementation of {@link EntityProcessor} which fetches values from a
- * separate Solr implementation using the SolrJ client library. Yield a row per
- * Solr document.
+ * separate Solr implementation. Yield a row per Solr document.
  * </p>
  * <p>
  * Limitations: 
@@ -63,6 +63,7 @@ public class SolrEntityProcessor extends EntityProcessorBase {
   
   public static final String SOLR_SERVER = "url";
   public static final String QUERY = "query";
+  @Deprecated
   public static final String TIMEOUT = "timeout"; // kept for backward compatibility
   public static final String CONNECTION_TIMEOUT = "connectionTimeout";
   public static final String READ_TIMEOUT = "readTimeout";
@@ -74,6 +75,7 @@ public class SolrEntityProcessor extends EntityProcessorBase {
   public static final int ROWS_DEFAULT = 50;
   
   private SolrClient solrClient = null;
+  private CloseableHttpClient httpClient = null;
   private String queryString;
   private int rows = ROWS_DEFAULT;
   private String[] filterQueries;
@@ -86,11 +88,14 @@ public class SolrEntityProcessor extends EntityProcessorBase {
   @Override
   public void destroy() {
     try {
+      /*
+       * Although the parent SolrClient close method claims it can throw
+       * IOException, the HttpSolrClient implementation that this class uses
+       * should never do this.
+       */
       solrClient.close();
+      httpClient.close();
     } catch (IOException e) {
-
-    } finally {
-      HttpClientUtil.close(((HttpSolrClient) solrClient).getHttpClient());
     }
   }
 
@@ -101,8 +106,11 @@ public class SolrEntityProcessor extends EntityProcessorBase {
    *
    * @return a {@link HttpClient} instance used for interfacing with a source Solr service
    */
-  protected HttpClient getHttpClient() {
-    return HttpClientUtil.createClient(null);
+  protected CloseableHttpClient getHttpClient() {
+    ModifiableSolrParams params = new ModifiableSolrParams();
+    params.add(HttpClientUtil.PROP_SO_TIMEOUT, Integer.toString(readTimeout * 1000));
+    params.add(HttpClientUtil.PROP_CONNECTION_TIMEOUT, Integer.toString(connectionTimeout * 1000));
+    return HttpClientUtil.createClient(params);
   }
 
   @Override
@@ -124,26 +132,23 @@ public class SolrEntityProcessor extends EntityProcessorBase {
         this.readTimeout = Integer.parseInt(readTimeoutAsString);
       }
 
-      HttpClient client = getHttpClient();
+      httpClient = getHttpClient();
       URL url = new URL(serverPath);
       // (wt="javabin|xml") default is javabin
       if ("xml".equals(context.getResolvedEntityAttribute(CommonParams.WT))) {
         // TODO: it doesn't matter for this impl when passing a client currently, but we should close this!
         solrClient = new Builder(url.toExternalForm())
-            .withHttpClient(client)
+            .withHttpClient(httpClient)
             .withResponseParser(new XMLResponseParser())
             .build();
         LOG.info("using XMLResponseParser");
       } else {
         // TODO: it doesn't matter for this impl when passing a client currently, but we should close this!
         solrClient = new Builder(url.toExternalForm())
-            .withHttpClient(client)
+            .withHttpClient(httpClient)
             .build();
         LOG.info("using BinaryResponseParser");
       }
-      // TODO: Set these values when SolrClient is built
-      ((HttpSolrClient)solrClient).setConnectionTimeout(connectionTimeout * 1000);
-      ((HttpSolrClient)solrClient).setSoTimeout(readTimeout * 1000);
     } catch (MalformedURLException e) {
       throw new DataImportHandlerException(DataImportHandlerException.SEVERE, e);
     }
@@ -190,7 +195,8 @@ public class SolrEntityProcessor extends EntityProcessorBase {
     @Override
     protected void passNextPage(SolrQuery solrQuery) {
       String timeoutAsString = context.getResolvedEntityAttribute(TIMEOUT);
-      if (timeoutAsString != null) {
+      String queryTimeoutAsString = context.getResolvedEntityAttribute(QUERY_TIMEOUT);
+      if (timeoutAsString != null || queryTimeoutAsString != null) {
         throw new DataImportHandlerException(SEVERE,"cursorMark can't be used with timeout");
       }
       
@@ -294,7 +300,10 @@ public class SolrEntityProcessor extends EntityProcessorBase {
       if (timeoutAsString != null) {
         SolrEntityProcessor.this.queryTimeout = Integer.parseInt(timeoutAsString);
       }
-      
+      String queryTimeoutAsString = context.getResolvedEntityAttribute(QUERY_TIMEOUT);
+      if (queryTimeoutAsString != null) {
+        SolrEntityProcessor.this.queryTimeout = Integer.parseInt(queryTimeoutAsString);
+      }
       solrQuery.setTimeAllowed(queryTimeout * 1000);
       
       solrQuery.setStart(getStart() + getSize());
