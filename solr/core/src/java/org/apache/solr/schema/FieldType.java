@@ -453,7 +453,7 @@ public abstract class FieldType extends FieldProperties {
   }
   
   /**
-   * DocValues is not enabled for a field, but it's indexed, docvalues can be constructed 
+   * If DocValues is not enabled for a field, but it's indexed, docvalues can be constructed 
    * on the fly (uninverted, aka fieldcache) on the first request to sort, facet, etc. 
    * This specifies the structure to use.
    * 
