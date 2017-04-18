@@ -290,6 +290,8 @@ Bug Fixes
 
 * SOLR-10444: SQL interface does not use client cache. (Joel Bernstein)
 
+* SOLR-10420: Solr 6.x leaking one SolrZkClient instance per second (Scott Blum, Cao Manh Dat, Markus Jelsma, Steve Rowe)
+
 ==================  6.5.0 ==================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release.
