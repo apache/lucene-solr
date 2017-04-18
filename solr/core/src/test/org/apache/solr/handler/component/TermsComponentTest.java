@@ -351,4 +351,31 @@ public class TermsComponentTest extends SolrTestCaseJ4 {
         "//lst[@name='standardfilt']/lst[@name='snake']/long[@name='totalTermFreq'][.='3']");
   }
 
+  @Test
+  public void testDocFreqAndTotalTermFreqForMultipleFields() throws Exception {
+    SolrQueryRequest req = req(
+        "indent","true",
+        "qt", "/terms",
+        "terms", "true",
+        "terms.fl", "lowerfilt",
+        "terms.fl", "standardfilt",
+        "terms.ttf", "true",
+        "terms.list", "a,aa,aaa");
+    assertQ(req,
+        "count(//lst[@name='lowerfilt']/*)=3",
+        "count(//lst[@name='standardfilt']/*)=3",
+        "//lst[@name='lowerfilt']/lst[@name='a']/long[@name='docFreq'][.='2']",
+        "//lst[@name='lowerfilt']/lst[@name='a']/long[@name='totalTermFreq'][.='2']",
+        "//lst[@name='lowerfilt']/lst[@name='aa']/long[@name='docFreq'][.='1']",
+        "//lst[@name='lowerfilt']/lst[@name='aa']/long[@name='totalTermFreq'][.='1']",
+        "//lst[@name='lowerfilt']/lst[@name='aaa']/long[@name='docFreq'][.='1']",
+        "//lst[@name='lowerfilt']/lst[@name='aaa']/long[@name='totalTermFreq'][.='1']",
+        "//lst[@name='standardfilt']/lst[@name='a']/long[@name='docFreq'][.='1']",
+        "//lst[@name='standardfilt']/lst[@name='a']/long[@name='totalTermFreq'][.='1']",
+        "//lst[@name='standardfilt']/lst[@name='aa']/long[@name='docFreq'][.='1']",
+        "//lst[@name='standardfilt']/lst[@name='aa']/long[@name='totalTermFreq'][.='1']",
+        "//lst[@name='standardfilt']/lst[@name='aaa']/long[@name='docFreq'][.='1']",
+        "//lst[@name='standardfilt']/lst[@name='aaa']/long[@name='totalTermFreq'][.='1']");
+  }
+
 }

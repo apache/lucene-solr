@@ -101,8 +101,8 @@ public class TermsComponent extends SearchComponent {
 
     boolean termStats = params.getBool(TermsParams.TERMS_STATS, false);
 
-    if(termStats) {
-      NamedList<Number> stats = new SimpleOrderedMap();
+    if (termStats) {
+      NamedList<Number> stats = new SimpleOrderedMap<>();
       rb.rsp.add("indexstats", stats);
       collectStats(rb.req.getSearcher(), stats);
     }
@@ -335,7 +335,7 @@ public class TermsComponent extends SearchComponent {
     rb._termsHelper = null;
   }
 
-  private ShardRequest createShardQuery(SolrParams params) {
+  private static ShardRequest createShardQuery(SolrParams params) {
     ShardRequest sreq = new ShardRequest();
     sreq.purpose = ShardRequest.PURPOSE_GET_TERMS;
 
@@ -410,7 +410,7 @@ public class TermsComponent extends SearchComponent {
       }
     }
 
-    public NamedList buildResponse() {
+    public NamedList<Object> buildResponse() {
       NamedList<Object> response = new SimpleOrderedMap<>();
 
       // determine if we are going index or count sort
@@ -480,7 +480,7 @@ public class TermsComponent extends SearchComponent {
     }
 
     // use <int> tags for smaller facet counts (better back compatibility)
-    private Number num(long val) {
+    private static Number num(long val) {
       if (val < Integer.MAX_VALUE) return (int) val;
       else return val;
     }
@@ -515,53 +515,51 @@ public class TermsComponent extends SearchComponent {
     }
   }
 
-  private void fetchTerms(SolrIndexSearcher indexSearcher,
-                          String[] fields,
-                          String termList,
-                          boolean includeTotalTermFreq,
-                          NamedList result) throws IOException {
-
-    String field = fields[0];
-    FieldType fieldType = indexSearcher.getSchema().getField(field).getType();
+  private static void fetchTerms(SolrIndexSearcher indexSearcher, String[] fields, String termList, 
+      boolean includeTotalTermFreq, NamedList<Object> result) throws IOException {
     String[] splitTerms = termList.split(",");
-
-    for(int i=0; i<splitTerms.length; i++) {
+    for (int i = 0; i < splitTerms.length; i++) {
       splitTerms[i] = splitTerms[i].trim();
     }
-
-    Term[] terms = new Term[splitTerms.length];
-    for(int i=0; i<splitTerms.length; i++) {
-      terms[i] = new Term(field, fieldType.readableToIndexed(splitTerms[i]));
-    }
-
-    Arrays.sort(terms);
+    // Sort the terms once
+    Arrays.sort(splitTerms);
 
     IndexReaderContext topReaderContext = indexSearcher.getTopReaderContext();
-    TermContext[] termContexts = new TermContext[terms.length];
-    collectTermContext(topReaderContext, termContexts, terms);
+    for (String field : fields) {
+      FieldType fieldType = indexSearcher.getSchema().getField(field).getType();
 
-    NamedList termsMap = new SimpleOrderedMap();
-    for (int i = 0; i < terms.length; i++) {
-      if (termContexts[i] != null) {
-        String outTerm = fieldType.indexedToReadable(terms[i].bytes().utf8ToString());
-        int docFreq = termContexts[i].docFreq();
-        if (!includeTotalTermFreq) {
-          termsMap.add(outTerm, docFreq);
-        } else {
-          long totalTermFreq = termContexts[i].totalTermFreq();
-          NamedList<Long> termStats = new SimpleOrderedMap<>();
-          termStats.add("docFreq", (long) docFreq);
-          termStats.add("totalTermFreq", totalTermFreq);
-          termsMap.add(outTerm, termStats);
+      // Since splitTerms is already sorted, this array will also be sorted
+      Term[] terms = new Term[splitTerms.length];
+      for (int i = 0; i < splitTerms.length; i++) {
+        terms[i] = new Term(field, fieldType.readableToIndexed(splitTerms[i]));
+      }
+
+      TermContext[] termContexts = new TermContext[terms.length];
+      collectTermContext(topReaderContext, termContexts, terms);
+
+      NamedList<Object> termsMap = new SimpleOrderedMap<>();
+      for (int i = 0; i < terms.length; i++) {
+        if (termContexts[i] != null) {
+          String outTerm = fieldType.indexedToReadable(terms[i].bytes().utf8ToString());
+          int docFreq = termContexts[i].docFreq();
+          if (!includeTotalTermFreq) {
+            termsMap.add(outTerm, docFreq);
+          } else {
+            long totalTermFreq = termContexts[i].totalTermFreq();
+            NamedList<Long> termStats = new SimpleOrderedMap<>();
+            termStats.add("docFreq", (long) docFreq);
+            termStats.add("totalTermFreq", totalTermFreq);
+            termsMap.add(outTerm, termStats);
+          }
         }
       }
-    }
 
-    result.add(field, termsMap);
+      result.add(field, termsMap);
+    }
   }
 
-  private void collectTermContext(IndexReaderContext topReaderContext, TermContext[] contextArray, Term[] queryTerms)
-      throws IOException {
+  private static void collectTermContext(IndexReaderContext topReaderContext, TermContext[] contextArray,
+      Term[] queryTerms) throws IOException {
     TermsEnum termsEnum = null;
     for (LeafReaderContext context : topReaderContext.leaves()) {
       final Fields fields = context.reader().fields();
@@ -589,7 +587,7 @@ public class TermsComponent extends SearchComponent {
     }
   }
 
-  private void collectStats(SolrIndexSearcher searcher, NamedList<Number> stats) {
+  private static void collectStats(SolrIndexSearcher searcher, NamedList<Number> stats) {
     int numDocs = searcher.getTopReaderContext().reader().numDocs();
     stats.add("numDocs", Long.valueOf(numDocs));
   }
