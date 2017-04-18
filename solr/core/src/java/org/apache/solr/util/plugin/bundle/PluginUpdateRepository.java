@@ -15,14 +15,13 @@
  * limitations under the License.
  */
 
-package org.apache.solr.util.modules;
+package org.apache.solr.util.plugin.bundle;
 
 import java.io.InputStreamReader;
 import java.io.Reader;
 import java.lang.invoke.MethodHandles;
 import java.net.MalformedURLException;
 import java.net.URL;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -34,57 +33,69 @@ import ro.fortsoft.pf4j.update.DefaultUpdateRepository;
 import ro.fortsoft.pf4j.update.PluginInfo;
 
 /**
- * Change file name
+ * An update repo that defers URL location resolving to runtime
  */
-public class SolrUpdateRepository extends DefaultUpdateRepository {
+public class PluginUpdateRepository extends DefaultUpdateRepository {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
-  private String modulesUrl;
-  private boolean modulesUrlResolved = false;
-  protected String modulesJson;
-  protected Map<String, PluginInfo> plugins;
+  private String url;
+  private boolean locationResolved = false;
+  private String pluginsJson;
+  private Map<String, PluginInfo> plugins;
 
-  public SolrUpdateRepository(String id) {
+  public PluginUpdateRepository(String id) {
     this(id, "");
   }
 
-  public SolrUpdateRepository(String id, String location) {
-    this(id, location, "modules.json");
+  public PluginUpdateRepository(String id, String location) {
+    this(id, location, "plugins.json");
   }
 
-  public SolrUpdateRepository(String id, String location, String modulesJson) {
+  public PluginUpdateRepository(String id, String location, String pluginsJson) {
     super(id, location);
-    this.modulesJson = modulesJson;
+    this.pluginsJson = pluginsJson;
+  }
+
+  @Override
+  public String getUrl() {
+    if (url == null && !locationResolved) {
+      url = resolveUrl();
+      locationResolved = true;
+    }
+    return url;
+  }
+
+  /**
+   * Resolves location of repo at load time. Override this to dynamically resolve real repo location
+   * @return URL of the repository location
+   */
+  protected String resolveUrl() {
+    return super.getUrl();
+  }
+
+  @Override
+  public void refresh() {
+    plugins = null;
   }
 
   @Override
   public Map<String, PluginInfo> getPlugins() {
-    return super.getPlugins();
-  }
-
-  @Override
-  public String getLocation() {
-    if (modulesUrl == null && !modulesUrlResolved) {
-      modulesUrl = resolveModulesUrl();
-      modulesUrlResolved = true;
+    if (plugins == null) {
+      initPlugins();
     }
-    return modulesUrl;
-  }
-
-  protected String resolveModulesUrl() {
-    return getLocation();
+    return plugins;
   }
 
   protected void initPlugins() {
     Reader pluginsJsonReader;
+    plugins = new HashMap<>();
     URL pluginsUrl = null;
     try {
-        pluginsUrl = new URL(new URL(getLocation()), modulesJson);
+        pluginsUrl = new URL(new URL(getUrl()), pluginsJson);
         log.debug("Read plugins of '{}' repository from '{}'", getId(), pluginsUrl);
         pluginsJsonReader = new InputStreamReader(pluginsUrl.openStream());
     } catch (Exception e) {
         log.error("Failed to find {}", pluginsUrl);
-        plugins = Collections.emptyMap();
         return;
     }
 
@@ -92,16 +103,17 @@ public class SolrUpdateRepository extends DefaultUpdateRepository {
     PluginInfo[] items = gson.fromJson(pluginsJsonReader, PluginInfo[].class);
     plugins = new HashMap<>(items.length);
     for (PluginInfo p : items) {
-        for (PluginInfo.PluginRelease r : p.releases) {
-            try {
-                r.url = new URL(new URL(getLocation()), r.url).toString();
-            } catch (MalformedURLException e) {
-                log.warn("Skipping release {} of plugin {} due to failure to build valid absolute URL. Url was {}{}", r.version, p.id, getLocation(), r.url);
-            }
+      for (PluginInfo.PluginRelease r : p.releases) {
+        try {
+          r.url = new URL(new URL(getUrl()), r.url).toString();
+        } catch (MalformedURLException e) {
+          log.warn("Skipping release {} of plugin {} due to failure to build valid absolute URL. Url was {}{}", r.version, p.id, getUrl(), r.url);
         }
-        plugins.put(p.id, p);
+      }
+      plugins.put(p.id, p);
     }
     log.debug("Found {} plugins in repository '{}'", plugins.size(), getId());
   }
+
 
 }

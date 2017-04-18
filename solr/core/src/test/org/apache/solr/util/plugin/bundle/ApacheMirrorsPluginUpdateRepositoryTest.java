@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.solr.util.modules;
+package org.apache.solr.util.plugin.bundle;
 
 import org.junit.Before;
 import org.junit.Test;
@@ -25,7 +25,7 @@ import static org.junit.Assert.assertEquals;
 /**
  * Test apache mirror download
  */
-public class ApacheMirrorsUpdateRepositoryTest {
+public class ApacheMirrorsPluginUpdateRepositoryTest {
   private ApacheMirrorsUpdateRepository mirrorExist;
   private ApacheMirrorsUpdateRepository repoRedir;
   private ApacheMirrorsUpdateRepository nonexist;
@@ -41,17 +41,17 @@ public class ApacheMirrorsUpdateRepositoryTest {
 
   @Test
   public void mirrorExist() throws Exception {
-    assertEquals("http://apache.uib.no/lucene/solr/6.5.0/", mirrorExist.getLocation());
+    assertEquals("http://apache.uib.no/lucene/solr/6.5.0/", mirrorExist.getUrl());
   }
 
   @Test
   public void successfulRedirect() throws Exception {
-    assertEquals("https://archive.apache.org/dist/lucene/solr/5.5.0/", repoRedir.getLocation());
+    assertEquals("https://archive.apache.org/dist/lucene/solr/5.5.0/", repoRedir.getUrl());
   }
 
   @Test
   public void nonExistingRedir() throws Exception {
-    assertEquals(null, nonexist.getLocation());
+    assertEquals(null, nonexist.getUrl());
   }
 
   @Test
@@ -62,7 +62,7 @@ public class ApacheMirrorsUpdateRepositoryTest {
   @Test
   public void testMd5() throws Exception {
     // TODO: Mock
-//    Path file = mirrorExist.getFileDownloader().downloadFile(new URL(mirrorExist.getLocation() + "file"));
+//    Path file = mirrorExist.getFileDownloader().downloadFile(new URL(mirrorExist.getUrl() + "file"));
 //    assertTrue(Files.exists(file));
   }
 }

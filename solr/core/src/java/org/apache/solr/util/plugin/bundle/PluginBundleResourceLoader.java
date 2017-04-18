@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.solr.util.modules;
+package org.apache.solr.util.plugin.bundle;
 
 import java.io.Closeable;
 import java.io.File;
@@ -28,12 +28,12 @@ import org.apache.solr.core.SolrResourceNotFoundException;
 /**
  * Resource loader that also knows about plugins
  */
-public class ModulesResourceLoader implements ResourceLoader, Closeable {
+public class PluginBundleResourceLoader implements ResourceLoader, Closeable {
 
-  private Modules.ModulesClassLoader modulesClassLoader;
+  private PluginBundles.PluginBundleClassLoader pluginBundleClassLoader;
 
-  public ModulesResourceLoader(Modules.ModulesClassLoader modulesClassLoader) {
-    this.modulesClassLoader = modulesClassLoader;
+  public PluginBundleResourceLoader(PluginBundles.PluginBundleClassLoader pluginBundleClassLoader) {
+    this.pluginBundleClassLoader = pluginBundleClassLoader;
   }
 
   /**
@@ -43,9 +43,9 @@ public class ModulesResourceLoader implements ResourceLoader, Closeable {
    */
   @Override
   public InputStream openResource(String resource) throws IOException {
-    InputStream is = modulesClassLoader.getResourceAsStream(resource.replace(File.separatorChar, '/'));
+    InputStream is = pluginBundleClassLoader.getResourceAsStream(resource.replace(File.separatorChar, '/'));
     if (is == null) {
-      throw new SolrResourceNotFoundException("Can't find resource '" + resource + "' in any module");
+      throw new SolrResourceNotFoundException("Can't find resource '" + resource + "' in any plugin bundle");
     }
     return is;
   }

@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.solr.util.modules;
+package org.apache.solr.util.plugin.bundle;
 
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
@@ -25,7 +25,6 @@ import java.net.URL;
 import java.net.URLClassLoader;
 import java.nio.file.Path;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.Enumeration;
 import java.util.List;
@@ -61,7 +60,7 @@ import ro.fortsoft.pf4j.util.StringUtils;
 /**
  * Discovers and loads plugins from plugin folder using PF4J
  */
-public class Modules {
+public class PluginBundles {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   private final SolrPluginManager pluginManager;
@@ -70,13 +69,15 @@ public class Modules {
   private final Path pluginsRoot;
   private ClassLoader uberLoader;
 
-  public Modules(Path pluginsRoot) {
+  public PluginBundles(Path pluginsRoot) {
     this.pluginsRoot = pluginsRoot;
     pluginManager = new SolrPluginManager(pluginsRoot);
     systemVersion = Version.valueOf(org.apache.lucene.util.Version.LATEST.toString());
     ApacheMirrorsUpdateRepository apacheRepo = new ApacheMirrorsUpdateRepository("apache", "lucene/solr/" + systemVersion.toString() + "/");
-    updateManager = new UpdateManager(pluginManager,
-        Arrays.asList(new DefaultUpdateRepository("janhoy","http://people.apache.org/~janhoy/dist/")));
+    UpdateRepository janRepo = new DefaultUpdateRepository("janhoy","http://people.apache.org/~janhoy/dist/");
+    List<UpdateRepository> list = new ArrayList<>();
+    list.add(janRepo);
+    updateManager = new UpdateManager(pluginManager, list);
     pluginManager.setSystemVersion(systemVersion);
   }
 
@@ -131,10 +132,10 @@ public class Modules {
         .filter(p -> id.equals(p.id) && p.getLastRelease(systemVersion) != null).findFirst();
     if (info.isPresent()) {
       String version = info.get().getLastRelease(systemVersion).version;
-      log.debug("Installing module id {} version @{}", id, version);
+      log.debug("Installing plugin id {} version @{}", id, version);
       return updateManager.installPlugin(id, version);
     } else {
-      log.debug("Failed to find module with id {}", id);
+      log.debug("Failed to find plugin with id {}", id);
       return false;
     }
   }
@@ -145,7 +146,7 @@ public class Modules {
 
   public ClassLoader getUberClassLoader(ClassLoader parent) {
     if (uberLoader == null) {
-      uberLoader = new ModulesClassLoader(parent, pluginManager, null);
+      uberLoader = new PluginBundleClassLoader(parent, pluginManager, null);
     }
     return uberLoader;
   }
@@ -172,7 +173,7 @@ public class Modules {
     if (getPluginManager().getPlugin(id) != null) {
       return updateManager.uninstallPlugin(id);
     } else {
-      log.info("Cannot uninstall module {}, since it is not installed", id);
+      log.info("Cannot uninstall plugin {}, since it is not installed", id);
       return false;
     }     
   }
@@ -184,11 +185,11 @@ public class Modules {
   /**
    * A class loader that loads classes from all plugins in manager
    */
-  public static class ModulesClassLoader extends URLClassLoader {
+  public static class PluginBundleClassLoader extends URLClassLoader {
     private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
     private final SolrPluginManager manager;
 
-    public ModulesClassLoader(ClassLoader parent, SolrPluginManager manager, URL[] urls) {
+    public PluginBundleClassLoader(ClassLoader parent, SolrPluginManager manager, URL[] urls) {
       super(urls == null ? new URL[] {} : urls, parent);
       this.manager = manager;
     }
@@ -203,7 +204,7 @@ public class Modules {
         } catch (ClassNotFoundException e) {}
       }
 
-      throw new ClassNotFoundException("Class " + name + " not found in any module. Tried: " + manager.getPluginClassLoaders().keySet());
+      throw new ClassNotFoundException("Class " + name + " not found in any plugin. Tried: " + manager.getPluginClassLoaders().keySet());
     }
 
     @Override

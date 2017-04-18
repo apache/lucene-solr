@@ -90,7 +90,7 @@ import org.apache.solr.security.SecurityPluginHolder;
 import org.apache.solr.update.SolrCoreState;
 import org.apache.solr.update.UpdateShardHandler;
 import org.apache.solr.util.DefaultSolrThreadFactory;
-import org.apache.solr.util.modules.Modules;
+import org.apache.solr.util.plugin.bundle.PluginBundles;
 import org.apache.solr.util.stats.MetricUtils;
 import org.apache.zookeeper.KeeperException;
 import org.slf4j.Logger;
@@ -118,8 +118,8 @@ public class CoreContainer {
 
   final SolrCores solrCores = new SolrCores(this);
   // Holds the module system entry point
-  private Modules modules;
-  private boolean useModules;
+  private PluginBundles pluginBundles;
+  private boolean usePlugins;
 
   public static class CoreLoadFailure {
 
@@ -463,8 +463,8 @@ public class CoreContainer {
    * Gets the Modules manager, from where you can install, stop, start modules (plugins)
    * @return the plugins start point
    */
-  public Modules getModules() {
-    return modules;
+  public PluginBundles getPluginBundles() {
+    return pluginBundles;
   }
 
   //-------------------------------------------------------------------
@@ -491,12 +491,12 @@ public class CoreContainer {
       }
     }
 
-    // Initialize the module system and load modules
-    useModules = !"false".equals(System.getProperty("solr.useModuleSystem"));
-    if (useModules()) {
-      modules = new Modules(Paths.get(getSolrHome(), "modules"));
-      modules.load();
-//      loader.setModulesClassLoader(modules.getUberClassLoader(null));
+    // Initialize the module system and load plugins
+    usePlugins = !"false".equals(System.getProperty("solr.plugins.active"));
+    if (usePlugins()) {
+      pluginBundles = new PluginBundles(Paths.get(getSolrHome()).resolve(System.getProperty("solr.plugins.dir", "plugins")));
+      pluginBundles.load();
+//      TODO  loader.setModulesClassLoader(modules.getUberClassLoader(null));
     } else {
 //      loader
     }
@@ -546,9 +546,9 @@ public class CoreContainer {
     containerHandlers.put(AUTHC_PATH, securityConfHandler);
     if(pkiAuthenticationPlugin != null)
       containerHandlers.put(PKIAuthenticationPlugin.PATH, pkiAuthenticationPlugin.getRequestHandler());
-    if (useModules()) {
+    if (usePlugins()) {
       modulesHandler = createHandler(MODULES_PATH, ModulesHandler.class.getName(), ModulesHandler.class);
-      modulesHandler.initializeModules(getModules());
+      modulesHandler.initializeModules(getPluginBundles());
     }
 
     metricManager.loadReporters(cfg.getMetricReporterPlugins(), loader, null, SolrInfoMBean.Group.node);
@@ -659,11 +659,11 @@ public class CoreContainer {
   }
 
   /**
-   * Check if the module system is active
-   * @return true if modules are loaded
+   * Check if the plugin bundle system is active
+   * @return true if plugin bundles are loaded
    */
-  public boolean useModules() {
-    return useModules;
+  public boolean usePlugins() {
+    return usePlugins;
   }
 
   public void securityNodeChanged() {

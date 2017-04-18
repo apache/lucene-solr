@@ -15,52 +15,44 @@
  * limitations under the License.
  */
 
-package org.apache.solr.util.modules;
+package org.apache.solr.util.plugin.bundle;
 
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
-import java.io.Reader;
 import java.lang.invoke.MethodHandles;
 import java.net.HttpURLConnection;
-import java.net.MalformedURLException;
 import java.net.URL;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.Map;
 
-import com.google.gson.Gson;
-import com.google.gson.GsonBuilder;
 import org.apache.commons.codec.digest.DigestUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import ro.fortsoft.pf4j.PluginException;
 import ro.fortsoft.pf4j.update.FileDownloader;
-import ro.fortsoft.pf4j.update.PluginInfo;
 import ro.fortsoft.pf4j.update.SimpleFileDownloader;
-import ro.fortsoft.pf4j.update.UpdateRepository;
 
 /**
  * Update Repository that resolves Apache Mirros
  */
-public class ApacheMirrorsUpdateRepository extends SolrUpdateRepository {
+public class ApacheMirrorsUpdateRepository extends PluginUpdateRepository {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   private static final String APACHE_DIST_URL = "https://www.apache.org/dist/";
   private static final String APACHE_ARCHIVE_URL = "https://archive.apache.org/dist/";
   private static final String CLOSER_URL = "https://www.apache.org/dyn/closer.lua?action=download&filename=";
-  private String modulesPath;
+  private String path;
+  private FileDownloader downloader;
 
-  public ApacheMirrorsUpdateRepository(String id, String modulesPath) {
+  public ApacheMirrorsUpdateRepository(String id, String path) {
     super(id);
-    this.modulesPath = modulesPath;
+    this.path = path;
   }
 
   @Override
-  protected String resolveModulesUrl() {
-    String mirrorUrl = CLOSER_URL + modulesPath;
+  protected String resolveUrl() {
+    String mirrorUrl = CLOSER_URL + path;
     try {
       mirrorUrl = getFinalURL(mirrorUrl);
       return mirrorUrl;
@@ -68,14 +60,14 @@ public class ApacheMirrorsUpdateRepository extends SolrUpdateRepository {
       log.debug("Url {} not found in mirrors, response={}",
           mirrorUrl, e.getMessage());
       try {
-        mirrorUrl = getFinalURL(APACHE_DIST_URL + modulesPath);
+        mirrorUrl = getFinalURL(APACHE_DIST_URL + path);
         log.debug("Resolved URL: {}", mirrorUrl);
         return mirrorUrl;
       } catch (IOException e1) {
         log.debug("Url {} not found in main repo, response={}",
             mirrorUrl, e1.getMessage());
         try {
-          mirrorUrl = getFinalURL(APACHE_ARCHIVE_URL + modulesPath);
+          mirrorUrl = getFinalURL(APACHE_ARCHIVE_URL + path);
           log.debug("Resolved URL: {}", mirrorUrl);
           return mirrorUrl;
         } catch (IOException e2) {
@@ -88,28 +80,19 @@ public class ApacheMirrorsUpdateRepository extends SolrUpdateRepository {
   }
 
   @Override
-  public Map<String, PluginInfo> getPlugins() {
-    if (plugins == null) {
-      initPlugins();
-    }
-    return plugins;
-  }
-
-  @Override
-  public PluginInfo getPlugin(String id) {
-    return getPlugins().get(id);
-  }
-
-  @Override
-  public void refresh() {
-    plugins = null;
-  }
-
-  @Override
   public FileDownloader getFileDownloader() {
-    return new ApacheChecksumVerifyingDownloader();
+    if (downloader == null) {
+      downloader = new ApacheChecksumVerifyingDownloader();
+    }
+    return downloader;
   }
-  
+
+  /**
+   * Static method that resolves final Apache mirrors URL, resolving redirects
+   * @param url original URL
+   * @return new URL which could be the same as the original or a new after redirects
+   * @throws IOException if problems opening URL
+   */
   public static String getFinalURL(String url) throws IOException {
       HttpURLConnection con = (HttpURLConnection) new URL(url).openConnection();
       con.setInstanceFollowRedirects(false);
@@ -124,6 +107,10 @@ public class ApacheMirrorsUpdateRepository extends SolrUpdateRepository {
       return url;
   }
 
+  /**
+   * FileDownloader that fails if the MD5 sum of the downloaded file does not match the one downloaded
+   * from Apache archives
+   */
   private class ApacheChecksumVerifyingDownloader extends SimpleFileDownloader {
     @Override
     public Path downloadFile(URL url) throws PluginException, IOException {
@@ -140,7 +127,7 @@ public class ApacheMirrorsUpdateRepository extends SolrUpdateRepository {
     }
 
     private String getMD5FileUrl(String url) {
-      return APACHE_ARCHIVE_URL + url.substring(url.indexOf(modulesPath)) + ".md5";
+      return APACHE_ARCHIVE_URL + url.substring(url.indexOf(path)) + ".md5";
     }
 
     private String getAndParseMd5File(String url) {
