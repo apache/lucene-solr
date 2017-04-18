@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.solr.recipe;
+package org.apache.solr.cloud.autoscaling;
 
 
 import java.util.ArrayList;
@@ -29,8 +29,8 @@ import org.apache.solr.common.util.Utils;
 
 import static java.util.Arrays.asList;
 import static org.apache.solr.common.params.CollectionParams.CollectionAction.ADDREPLICA;
-import static org.apache.solr.recipe.Policy.Suggester.Hint.COLL;
-import static org.apache.solr.recipe.Policy.Suggester.Hint.SHARD;
+import static org.apache.solr.autoscaling.Policy.Suggester.Hint.COLL;
+import static org.apache.solr.autoscaling.Policy.Suggester.Hint.SHARD;
 
 public class PolicyHelper {
   public static Map<String, List<String>> getReplicaLocations(String collName, Map<String, Object> autoScalingJson,

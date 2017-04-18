@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.solr.recipe;
+package org.apache.solr.cloud.autoscaling;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -29,7 +29,7 @@ import org.apache.solr.common.IteratorWriter;
 import org.apache.solr.common.MapWriter;
 import org.apache.solr.common.util.Pair;
 import org.apache.solr.common.util.Utils;
-import org.apache.solr.recipe.Policy.ReplicaInfo;
+import org.apache.solr.autoscaling.Policy.ReplicaInfo;
 
 import static org.apache.solr.common.params.CoreAdminParams.NODE;
 

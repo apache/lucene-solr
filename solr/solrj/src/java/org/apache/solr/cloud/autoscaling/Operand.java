@@ -15,14 +15,14 @@
  * limitations under the License.
  */
 
-package org.apache.solr.recipe;
+package org.apache.solr.cloud.autoscaling;
 
 import java.util.Objects;
 
-import org.apache.solr.recipe.Clause.TestStatus;
+import org.apache.solr.autoscaling.Clause.TestStatus;
 
-import static org.apache.solr.recipe.Clause.TestStatus.*;
-import static org.apache.solr.recipe.Policy.ANY;
+import static org.apache.solr.autoscaling.Clause.TestStatus.*;
+import static org.apache.solr.cloud.autoscaling.Policy.ANY;
 
 
 public enum Operand {

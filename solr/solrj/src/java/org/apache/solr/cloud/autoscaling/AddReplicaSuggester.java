@@ -15,12 +15,12 @@
  * limitations under the License.
  */
 
-package org.apache.solr.recipe;
+package org.apache.solr.cloud.autoscaling;
 
 import java.util.Map;
 
 import org.apache.solr.common.util.Utils;
-import org.apache.solr.recipe.Policy.Suggester;
+import org.apache.solr.cloud.autoscaling.Policy.Suggester;
 
 import static org.apache.solr.common.cloud.ZkStateReader.COLLECTION_PROP;
 import static org.apache.solr.common.cloud.ZkStateReader.SHARD_ID_PROP;

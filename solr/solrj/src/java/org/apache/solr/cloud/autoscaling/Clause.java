@@ -15,11 +15,10 @@
  * limitations under the License.
  */
 
-package org.apache.solr.recipe;
+package org.apache.solr.cloud.autoscaling;
 
 import java.io.IOException;
 import java.util.Arrays;
-import java.util.Comparator;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -27,25 +26,24 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicReference;
 
-import com.sun.istack.internal.NotNull;
 import org.apache.solr.common.MapWriter;
 import org.apache.solr.common.util.Utils;
-import org.apache.solr.recipe.Policy.ReplicaInfo;
+import org.apache.solr.cloud.autoscaling.Policy.ReplicaInfo;
 
 import static java.util.Collections.singletonMap;
 import static org.apache.solr.common.params.CoreAdminParams.COLLECTION;
 import static org.apache.solr.common.params.CoreAdminParams.REPLICA;
 import static org.apache.solr.common.params.CoreAdminParams.SHARD;
-import static org.apache.solr.recipe.Clause.TestStatus.FAIL;
-import static org.apache.solr.recipe.Clause.TestStatus.NOT_APPLICABLE;
-import static org.apache.solr.recipe.Clause.TestStatus.PASS;
-import static org.apache.solr.recipe.Operand.EQUAL;
-import static org.apache.solr.recipe.Operand.GREATER_THAN;
-import static org.apache.solr.recipe.Operand.LESS_THAN;
-import static org.apache.solr.recipe.Operand.NOT_EQUAL;
-import static org.apache.solr.recipe.Operand.WILDCARD;
-import static org.apache.solr.recipe.Policy.ANY;
-import static org.apache.solr.recipe.Policy.EACH;
+import static org.apache.solr.autoscaling.Clause.TestStatus.FAIL;
+import static org.apache.solr.autoscaling.Clause.TestStatus.NOT_APPLICABLE;
+import static org.apache.solr.autoscaling.Clause.TestStatus.PASS;
+import static org.apache.solr.cloud.autoscaling.Operand.EQUAL;
+import static org.apache.solr.cloud.autoscaling.Operand.GREATER_THAN;
+import static org.apache.solr.cloud.autoscaling.Operand.LESS_THAN;
+import static org.apache.solr.cloud.autoscaling.Operand.NOT_EQUAL;
+import static org.apache.solr.cloud.autoscaling.Operand.WILDCARD;
+import static org.apache.solr.cloud.autoscaling.Policy.ANY;
+import static org.apache.solr.cloud.autoscaling.Policy.EACH;
 
 // a set of conditions in a policy
 public class Clause implements MapWriter, Comparable<Clause> {

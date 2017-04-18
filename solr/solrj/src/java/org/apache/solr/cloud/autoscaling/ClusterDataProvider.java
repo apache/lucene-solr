@@ -15,8 +15,29 @@
  * limitations under the License.
  */
 
-/**
- * Common classes for recipe parsing filtering nodes and sorting
- */
+package org.apache.solr.cloud.autoscaling;
 
-package org.apache.solr.recipe;
+import java.io.Closeable;
+import java.io.IOException;
+import java.util.Collection;
+import java.util.List;
+import java.util.Map;
+
+
+public interface ClusterDataProvider extends Closeable {
+  Map<String, Object> getNodeValues(String node, Collection<String> keys);
+
+  /**
+   * Get the details of each replica in a node. It attempts to fetch as much details about
+   * the replica as mentioned in the keys list. It is not necessary to give al details
+   * <p>
+   * the format is {collection:shard :[{replicadetails}]}
+   */
+  Map<String, Map<String, List<Policy.ReplicaInfo>>> getReplicaInfo(String node, Collection<String> keys);
+
+  Collection<String> getNodes();
+
+  @Override
+  default void close() throws IOException {
+  }
+}

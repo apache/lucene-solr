@@ -15,12 +15,11 @@
  * limitations under the License.
  */
 
-package org.apache.solr.recipe;
+package org.apache.solr.cloud.autoscaling;
 
 import java.io.IOException;
 import java.util.List;
 import java.util.Map;
-import java.util.function.BiConsumer;
 
 import org.apache.solr.common.MapWriter;
 import org.apache.solr.common.util.Utils;

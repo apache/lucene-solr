@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.solr.recipe;
+package org.apache.solr.cloud.autoscaling;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -34,18 +34,12 @@ import java.util.stream.Collectors;
 
 import org.apache.solr.common.IteratorWriter;
 import org.apache.solr.common.MapWriter;
-import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.CollectionParams.CollectionAction;
-import org.apache.solr.common.params.CoreAdminParams;
 import org.apache.solr.common.util.Utils;
 
-import static java.util.Arrays.asList;
 import static java.util.Collections.singletonList;
 import static java.util.stream.Collectors.toList;
-import static org.apache.solr.common.params.CollectionParams.CollectionAction.ADDREPLICA;
 import static org.apache.solr.common.util.Utils.getDeepCopy;
-import static org.apache.solr.recipe.Policy.Suggester.Hint.COLL;
-import static org.apache.solr.recipe.Policy.Suggester.Hint.SHARD;
 
 public class Policy implements MapWriter {
   public static final String EACH = "#EACH";
