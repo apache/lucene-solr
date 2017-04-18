@@ -22,6 +22,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.EnumMap;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
@@ -43,6 +44,8 @@ import static java.util.Collections.singletonList;
 import static java.util.stream.Collectors.toList;
 import static org.apache.solr.common.params.CollectionParams.CollectionAction.ADDREPLICA;
 import static org.apache.solr.common.util.Utils.getDeepCopy;
+import static org.apache.solr.recipe.Policy.Suggester.Hint.COLL;
+import static org.apache.solr.recipe.Policy.Suggester.Hint.SHARD;
 
 public class Policy implements MapWriter {
   public static final String EACH = "#EACH";
@@ -156,10 +159,11 @@ public class Policy implements MapWriter {
           .collect(Collectors.toMap(r -> r.node, r -> r.violations));
     }
 
-    public Suggester getSuggester(CollectionAction action, String collection, String shard) {
+    public Suggester getSuggester(CollectionAction action) {
       Suggester op = ops.get(action).get();
       if (op == null) throw new UnsupportedOperationException(action.toString() + "is not supported");
-      return op.init(collection, shard, this);
+      op._init(this);
+      return op;
     }
 
     @Override
@@ -243,17 +247,17 @@ public class Policy implements MapWriter {
 
 
   public static abstract class Suggester {
-    String coll;
-    String shard;
+    protected final EnumMap<Hint, String> hints = new EnumMap<>(Hint.class);
     Policy.Session session;
-
     Map operation;
+    private boolean isInitialized = false;
 
-    Suggester init(String coll, String shard, Policy.Session session) {
-      this.coll = coll;
-      this.shard = shard;
+    private void _init(Session session) {
       this.session = session.copy();
-      this.operation = init();
+    }
+
+    public Suggester hint(Hint hint, String value) {
+      hints.put(hint, value);
       return this;
     }
 
@@ -261,6 +265,10 @@ public class Policy implements MapWriter {
 
 
     public Map getOperation() {
+      if (!isInitialized) {
+        this.operation = init();
+        isInitialized = true;
+      }
       return operation;
     }
 
@@ -271,6 +279,10 @@ public class Policy implements MapWriter {
     List<Row> getMatrix() {
       return session.matrix;
 
+    }
+
+    enum Hint {
+      COLL, SHARD, SRC_NODE, TARGET_NODE
     }
 
 
@@ -289,12 +301,13 @@ public class Policy implements MapWriter {
     Map defaultPolicy = (Map) Utils.getObjectByPath(autoScalingJson, false, asList("policies", "default"));
 
     Map<String, Object> merged = Policy.mergePolicies(collName, policyJson, defaultPolicy);
-    System.out.println(Utils.toJSONString(merged));
     Policy policy = new Policy(merged);
     Policy.Session session = policy.createSession(cdp);
     for (String shardName : shardNames) {
       for (int i = 0; i < repFactor; i++) {
-        Policy.Suggester suggester = session.getSuggester(ADDREPLICA, collName, shardName);
+        Policy.Suggester suggester = session.getSuggester(ADDREPLICA)
+            .hint(COLL, collName)
+            .hint(SHARD, shardName);
         Map op = suggester.getOperation();
         if (op == null) {
           throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "No node can satisfy the rules "+ Utils.toJSONString(policy));

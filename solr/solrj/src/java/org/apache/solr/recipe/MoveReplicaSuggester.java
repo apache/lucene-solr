@@ -30,6 +30,7 @@ import static org.apache.solr.common.params.CoreAdminParams.NODE;
 import static org.apache.solr.common.params.CoreAdminParams.REPLICA;
 
 public class MoveReplicaSuggester extends Suggester {
+
   @Override
   Map init() {
     Map operation = tryEachNode(true);
@@ -39,6 +40,8 @@ public class MoveReplicaSuggester extends Suggester {
 
   Map tryEachNode(boolean strict) {
     //iterate through elements and identify the least loaded
+    String coll = hints.get(Hint.COLL);
+    String shard = hints.get(Hint.SHARD);
     for (int i = 0; i < getMatrix().size(); i++) {
       Row fromRow = getMatrix().get(i);
       Pair<Row, Policy.ReplicaInfo> pair = fromRow.removeReplica(coll, shard);

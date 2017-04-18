@@ -63,7 +63,7 @@ public class TestPolicyCloud extends SolrCloudTestCase {
 
     Map<String, Object> val = provider.getNodeValues(rulesCollection.getReplicas().get(0).getNodeName(), Arrays.asList("freedisk", "cores"));
     assertTrue(((Number) val.get("cores")).intValue() > 0);
-    assertTrue("freedisk value is "+((Number) val.get("freedisk")).intValue() , ((Number) val.get("freedisk")).intValue() > 0);
+    assertTrue("freedisk value is "+((Number) val.get("freedisk")).longValue() , ((Number) val.get("freedisk")).longValue() > 0);
     System.out.println(Utils.toJSONString(val));
   }
 }

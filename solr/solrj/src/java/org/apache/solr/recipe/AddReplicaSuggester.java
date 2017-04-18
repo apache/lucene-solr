@@ -39,6 +39,8 @@ class AddReplicaSuggester extends Suggester {
     //iterate through elements and identify the least loaded
     for (int i = getMatrix().size() - 1; i >= 0; i--) {
       Row row = getMatrix().get(i);
+      String coll = hints.get(Hint.COLL);
+      String shard = hints.get(Hint.SHARD);
       row = row.addReplica(coll, shard);
       row.violations.clear();
       for (Clause clause : session.getPolicy().clauses) {
