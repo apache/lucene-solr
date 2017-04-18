@@ -17,7 +17,6 @@
 
 package org.apache.solr.handler.admin;
 
-import java.lang.management.ManagementFactory;
 import java.util.Map;
 
 import org.apache.solr.SolrTestCaseJ4;
