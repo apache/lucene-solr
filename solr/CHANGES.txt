@@ -167,6 +167,10 @@ New Features
   initializing CloudSolrClient would not work if you have collection aliases on older versions of Solr
   server that doesn't support LISTALIASES. (Ishan Chattopadhyaya, Noble Paul)
 
+* SOLR-10082: Variance and Standard Deviation aggregators for the JSON Facet API.
+  Example: json.facet={x:"stddev(field1)", y:"variance(field2)"}
+  (Rustam Hashimov, yonik)
+
 Optimizations
 ----------------------
 
