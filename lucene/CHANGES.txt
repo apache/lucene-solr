@@ -131,6 +131,9 @@ Bug Fixes
 * LUCENE-7749: Made LRUQueryCache delegate the scoreSupplier method.
   (Martin Amirault via Adrien Grand)
 
+* LUCENE-7769: The UnifiedHighligter wasn't highlighting portions of the query
+  wrapped in BoostQuery or SpanBoostQuery. (David Smiley, Dmitry Malinin)
+
 Other
 
 * LUCENE-7763: Remove outdated comment in IndexWriterConfig.setIndexSort javadocs.
