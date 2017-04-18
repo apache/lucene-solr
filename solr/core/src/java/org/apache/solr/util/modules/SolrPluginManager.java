@@ -26,8 +26,10 @@ import org.apache.solr.common.SolrException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import ro.fortsoft.pf4j.DefaultPluginFactory;
+import ro.fortsoft.pf4j.DefaultPluginLoader;
 import ro.fortsoft.pf4j.DefaultPluginManager;
 import ro.fortsoft.pf4j.Plugin;
+import ro.fortsoft.pf4j.PluginClassLoader;
 import ro.fortsoft.pf4j.PluginDescriptor;
 import ro.fortsoft.pf4j.PluginDescriptorFinder;
 import ro.fortsoft.pf4j.PluginException;
@@ -74,7 +76,12 @@ public class SolrPluginManager extends DefaultPluginManager {
 
   @Override
   protected PluginLoader createPluginLoader() {
-    return new SolrPluginLoader(this, pluginClasspath, getClass().getClassLoader());
+    return new DefaultPluginLoader(this, pluginClasspath) {
+      @Override
+      protected PluginClassLoader createPluginClassLoader(Path pluginPath, PluginDescriptor pluginDescriptor) {
+        return new PluginClassLoader(pluginManager, pluginDescriptor, getClass().getClassLoader());
+      }
+    };
   }
 
   public Map<String, ClassLoader> getPluginClassLoaders() {
@@ -115,7 +122,7 @@ public class SolrPluginManager extends DefaultPluginManager {
           }
         } else {
           log.debug("Plugin " + pluginWrapper.getPluginId() + " has no PluginClass, creating NOP placeholder");
-          return new SolrNopPlugin(pluginWrapper);
+          return new Plugin(pluginWrapper) { /* NOP PLUGIN */ };
         }
     }
 

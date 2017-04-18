@@ -17,11 +17,17 @@
 
 package org.apache.solr.util.modules;
 
+import java.io.IOException;
 import java.lang.invoke.MethodHandles;
+import java.net.URL;
+import java.net.URLClassLoader;
 import java.nio.file.Path;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.Enumeration;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
@@ -29,7 +35,6 @@ import java.util.stream.Collectors;
 import com.github.zafarkhaja.semver.Version;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import ro.fortsoft.pf4j.PluginDescriptor;
 import ro.fortsoft.pf4j.PluginManager;
 import ro.fortsoft.pf4j.PluginWrapper;
 import ro.fortsoft.pf4j.update.DefaultUpdateRepository;
@@ -45,17 +50,17 @@ public class Modules {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   private final SolrPluginManager pluginManager;
-  private final ModuleUpdateManager updateManager;
+  private final UpdateManager updateManager;
   private final Version systemVersion;
   private final Path pluginsRoot;
-  private ModulesClassLoader uberLoader;
+  private ClassLoader uberLoader;
 
   public Modules(Path pluginsRoot) {
     this.pluginsRoot = pluginsRoot;
     pluginManager = new SolrPluginManager(pluginsRoot);
     systemVersion = Version.valueOf(org.apache.lucene.util.Version.LATEST.toString());
     ApacheMirrorsUpdateRepository apacheRepo = new ApacheMirrorsUpdateRepository("apache", "lucene/solr/" + systemVersion.toString() + "/");
-    updateManager = new ModuleUpdateManager(pluginManager,
+    updateManager = new UpdateManager(pluginManager,
         Arrays.asList(new DefaultUpdateRepository("janhoy","http://people.apache.org/~janhoy/dist/")));
     pluginManager.setSystemVersion(systemVersion);
   }
@@ -112,7 +117,7 @@ public class Modules {
     if (info.isPresent()) {
       String version = info.get().getLastRelease(systemVersion).version;
       log.debug("Installing module id {} version @{}", id, version);
-      return updateManager.installModule(id, version);
+      return updateManager.installPlugin(id, version);
     } else {
       log.debug("Failed to find module with id {}", id);
       return false;
@@ -125,7 +130,7 @@ public class Modules {
 
   public ClassLoader getUberClassLoader(ClassLoader parent) {
     if (uberLoader == null) {
-      uberLoader = new ModulesClassLoader(parent, pluginManager.getPluginClassLoaders(), null);
+      uberLoader = new ModulesClassLoader(parent, pluginManager, null);
     }
     return uberLoader;
   }
@@ -159,5 +164,54 @@ public class Modules {
 
   public Path getPluginsRoot() {
     return pluginsRoot;
+  }
+
+  /**
+   * A class loader that loads classes from all plugins in manager
+   */
+  public static class ModulesClassLoader extends URLClassLoader {
+    private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
+    private final SolrPluginManager manager;
+
+    public ModulesClassLoader(ClassLoader parent, SolrPluginManager manager, URL[] urls) {
+      super(urls == null ? new URL[] {} : urls, parent);
+      this.manager = manager;
+    }
+
+    @Override
+    public Class<?> findClass(String name) throws ClassNotFoundException {
+      // First try Solr URLs
+      Class<?> clazz = super.findClass(name);
+      for (ClassLoader loader : manager.getPluginClassLoaders().values()) {
+        try {
+          return loader.loadClass(name);
+        } catch (ClassNotFoundException e) {}
+      }
+
+      throw new ClassNotFoundException("Class " + name + " not found in any module. Tried: " + manager.getPluginClassLoaders().keySet());
+    }
+
+    @Override
+    public URL findResource(String name) {
+      for (ClassLoader loader : manager.getPluginClassLoaders().values()) {
+        URL url = loader.getResource(name);
+        if (url != null) {
+          return url;
+        }
+      }
+
+      return null;
+    }
+
+    @Override
+    public Enumeration<URL> findResources(String name) throws IOException {
+      List<URL> resources = new ArrayList<URL>();
+      for (ClassLoader loader : manager.getPluginClassLoaders().values()) {
+        resources.addAll(Collections.list(loader.getResources(name)));
+      }
+
+      return Collections.enumeration(resources);
+    }
+
   }
 }

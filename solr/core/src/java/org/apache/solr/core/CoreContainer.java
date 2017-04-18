@@ -492,7 +492,7 @@ public class CoreContainer {
     }
 
     // Initialize the module system and load modules
-    useModules = cfg.getModulesConfig() == null ? true : cfg.getModulesConfig().isActive();
+    useModules = !"false".equals(System.getProperty("solr.useModuleSystem"));
     if (useModules()) {
       modules = new Modules(Paths.get(getSolrHome(), "modules"));
       modules.load();

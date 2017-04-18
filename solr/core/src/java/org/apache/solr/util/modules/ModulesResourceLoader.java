@@ -21,10 +21,8 @@ import java.io.Closeable;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
-import java.net.URL;
 
 import org.apache.lucene.analysis.util.ResourceLoader;
-import org.apache.solr.core.SolrResourceLoader;
 import org.apache.solr.core.SolrResourceNotFoundException;
 
 /**
@@ -32,9 +30,9 @@ import org.apache.solr.core.SolrResourceNotFoundException;
  */
 public class ModulesResourceLoader implements ResourceLoader, Closeable {
 
-  private ModulesClassLoader modulesClassLoader;
+  private Modules.ModulesClassLoader modulesClassLoader;
 
-  public ModulesResourceLoader(ModulesClassLoader modulesClassLoader) {
+  public ModulesResourceLoader(Modules.ModulesClassLoader modulesClassLoader) {
     this.modulesClassLoader = modulesClassLoader;
   }
 
