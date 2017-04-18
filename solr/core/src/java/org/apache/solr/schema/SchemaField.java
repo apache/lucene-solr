@@ -336,6 +336,7 @@ public final class SchemaField extends FieldProperties implements IndexableField
       properties.add(getPropertyName(OMIT_POSITIONS), omitPositions());
       properties.add(getPropertyName(STORE_OFFSETS), storeOffsetsWithPositions());
       properties.add(getPropertyName(MULTIVALUED), multiValued());
+      properties.add(getPropertyName(LARGE_FIELD), isLarge());
       if (sortMissingFirst()) {
         properties.add(getPropertyName(SORT_MISSING_FIRST), sortMissingFirst());
       } else if (sortMissingLast()) {

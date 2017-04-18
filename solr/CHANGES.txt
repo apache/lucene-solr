@@ -294,6 +294,8 @@ Bug Fixes
 
 * SOLR-10420: Solr 6.x leaking one SolrZkClient instance per second (Scott Blum, Cao Manh Dat, Markus Jelsma, Steve Rowe)
 
+* SOLR-10439: The new 'large' attribute had been forgotten in /schema/fields?showDefaults=true
+
 ==================  6.5.0 ==================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release.
