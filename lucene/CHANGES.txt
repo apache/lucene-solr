@@ -102,6 +102,11 @@ Improvements
 * LUCENE-7782: OfflineSorter now passes the total number of items it
   will write to getWriter (Mike McCandless)
 
+Optimizations
+
+* LUCENE-7787: spatial-extras HeatmapFacetCounter will now short-circuit it's
+  work when Bits.MatchNoBits is passed. (David Smiley)
+
 Other
 
 * LUCENE-7754: Inner classes should be static whenever possible.
