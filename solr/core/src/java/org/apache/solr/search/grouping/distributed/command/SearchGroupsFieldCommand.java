@@ -70,9 +70,9 @@ public class SearchGroupsFieldCommand implements Command<SearchGroupsFieldComman
     }
 
     public SearchGroupsFieldCommand build() {
-        if (field == null || groupSortSpec == null || groupSortSpec.getSort() == null || topNGroups == null) {
-            throw new IllegalStateException("All fields must be set");
-        }
+      if (field == null || groupSortSpec == null || groupSortSpec.getSort() == null || topNGroups == null) {
+        throw new IllegalStateException("All fields must be set");
+      }
 
       return new SearchGroupsFieldCommand(field, groupSortSpec, topNGroups, includeGroupCount);
     }
@@ -152,7 +152,7 @@ public class SearchGroupsFieldCommand implements Command<SearchGroupsFieldComman
 
   @Override
   public Sort getGroupSort() {
-      return groupSortSpec.getSort();
+    return groupSortSpec.getSort();
   }
 
 
@@ -163,7 +163,7 @@ public class SearchGroupsFieldCommand implements Command<SearchGroupsFieldComman
 
   @Override
   public SortSpec getWithinGroupSortSpec() {
-      return null;
+    return null;
   }
 
   @Override
