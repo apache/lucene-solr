@@ -46,7 +46,6 @@ import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.DelegatingAnalyzerWrapper;
 import org.apache.lucene.index.DocValuesType;
 import org.apache.lucene.index.FieldInfo;
-import org.apache.lucene.index.IndexOptions;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexableField;
 import org.apache.lucene.index.MultiFields;
@@ -375,12 +374,14 @@ public class IndexSchema {
   }
   
   public Map<String,UninvertingReader.Type> getUninversionMap(IndexReader reader) {
-    Map<String,UninvertingReader.Type> map = new HashMap<>();
+    final Map<String,UninvertingReader.Type> map = new HashMap<>();
     for (FieldInfo f : MultiFields.getMergedFieldInfos(reader)) {
-      if (f.getDocValuesType() == DocValuesType.NONE && f.getIndexOptions() != IndexOptions.NONE) {
-        SchemaField sf = getFieldOrNull(f.name);
-        if (sf != null) {
-          UninvertingReader.Type type = sf.getType().getUninversionType(sf);
+      if (f.getDocValuesType() == DocValuesType.NONE) {
+        // we have a field (of some kind) in the reader w/o DocValues
+        // if we have an equivilent indexed=true field in the schema, trust it's uninversion type (if any)
+        final SchemaField sf = getFieldOrNull(f.name);
+        if (sf != null && sf.indexed()) {
+          final UninvertingReader.Type type = sf.getType().getUninversionType(sf);
           if (type != null) {
             map.put(f.name, type);
           }

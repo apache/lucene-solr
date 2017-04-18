@@ -154,7 +154,7 @@ public class IntPointField extends PointField implements IntValueFieldType {
   @Override
   public Type getUninversionType(SchemaField sf) {
     if (sf.multiValued()) {
-      return Type.SORTED_INTEGER;
+      return null; 
     } else {
       return Type.INTEGER_POINT;
     }
