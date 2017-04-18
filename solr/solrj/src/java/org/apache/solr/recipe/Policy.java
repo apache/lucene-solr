@@ -281,43 +281,11 @@ public class Policy implements MapWriter {
 
     }
 
-    enum Hint {
+    public enum Hint {
       COLL, SHARD, SRC_NODE, TARGET_NODE
     }
 
 
-  }
-
-  public static Map<String, List<String>> getReplicaLocations(String collName, Map<String, Object> autoScalingJson,
-                                                              String policyName, ClusterDataProvider cdp,
-                                                              List<String> shardNames,
-                                                              int repFactor) {
-    Map<String, List<String>> positionMapping = new HashMap<>();
-    for (String shardName : shardNames) positionMapping.put(shardName, new ArrayList<>(repFactor));
-    Map policyJson = (Map) Utils.getObjectByPath(autoScalingJson, false, asList("policies", policyName));
-    if (policyJson == null) {
-      throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "no such policy exists " + policyName);
-    }
-    Map defaultPolicy = (Map) Utils.getObjectByPath(autoScalingJson, false, asList("policies", "default"));
-
-    Map<String, Object> merged = Policy.mergePolicies(collName, policyJson, defaultPolicy);
-    Policy policy = new Policy(merged);
-    Policy.Session session = policy.createSession(cdp);
-    for (String shardName : shardNames) {
-      for (int i = 0; i < repFactor; i++) {
-        Policy.Suggester suggester = session.getSuggester(ADDREPLICA)
-            .hint(COLL, collName)
-            .hint(SHARD, shardName);
-        Map op = suggester.getOperation();
-        if (op == null) {
-          throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "No node can satisfy the rules "+ Utils.toJSONString(policy));
-        }
-        session = suggester.getSession();
-        positionMapping.get(shardName).add((String) op.get(CoreAdminParams.NODE));
-      }
-    }
-
-    return positionMapping;
   }
 
   public static Map<String, Object> mergePolicies(String coll,

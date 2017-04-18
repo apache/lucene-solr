@@ -49,7 +49,6 @@ import org.apache.solr.cloud.overseer.OverseerAction;
 import org.apache.solr.cloud.rule.ReplicaAssigner;
 import org.apache.solr.cloud.rule.ReplicaAssigner.Position;
 import org.apache.solr.common.params.CommonParams;
-import org.apache.solr.recipe.Policy;
 import org.apache.solr.cloud.rule.Rule;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
@@ -77,6 +76,7 @@ import org.apache.solr.handler.component.ShardHandler;
 import org.apache.solr.handler.component.ShardHandlerFactory;
 import org.apache.solr.handler.component.ShardRequest;
 import org.apache.solr.handler.component.ShardResponse;
+import org.apache.solr.recipe.PolicyHelper;
 import org.apache.solr.util.DefaultSolrThreadFactory;
 import org.apache.solr.util.RTimer;
 import org.apache.solr.util.TimeOut;
@@ -727,7 +727,7 @@ public class OverseerCollectionMessageHandler implements OverseerMessageHandler 
           .withClusterStateProvider(new ZkClientClusterStateProvider(zkStateReader))
           .build()) {
         ClientDataProvider clientDataProvider = new ClientDataProvider(csc);
-        Map<String, List<String>> locations = Policy.getReplicaLocations(collName,
+        Map<String, List<String>> locations = PolicyHelper.getReplicaLocations(collName,
             zkStateReader.getZkClient().getJson(SOLR_AUTOSCALING_CONF_PATH, true),
             policyName, clientDataProvider, shardNames, repFactor);
         Map<Position, String> result = new HashMap<>();

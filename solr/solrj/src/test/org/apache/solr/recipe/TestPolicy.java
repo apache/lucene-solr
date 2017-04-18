@@ -171,19 +171,18 @@ public class TestPolicy extends SolrTestCaseJ4 {
 
   }
 
-/*  public void testOtherTag(){
+  public void testOtherTag(){
     String rules = "{" +
         "conditions:[" +
         "{nodeRole:'!overseer', strict:false}," +
         "{replica:'<1',node:node3}," +
         "{replica:'<2',node:'#ANY', shard:'#EACH'}," +
-        "{replica:<3,shard:'#EACH', rack:'#ANY' }" +
+        "{replica:'<3',shard:'#EACH', rack:'#ANY' }" +
         "]," +
         " preferences:[" +
         "{minimize:cores , precision:2}," +
         "{maximize:freedisk, precision:50}, " +
         "{minimize:heap, precision:1000}]}";
-
 
     Map<String, Map> nodeValues = (Map<String, Map>) Utils.fromJSONString("{" +
         "node1:{cores:12, freedisk: 334, heap:10480, rack: rack4}," +
@@ -194,7 +193,13 @@ public class TestPolicy extends SolrTestCaseJ4 {
     Policy policy = new Policy((Map<String, Object>) Utils.fromJSONString(rules));
     Policy.Session session = policy.createSession(getClusterDataProvider(nodeValues, clusterState));
 
-  }*/
+    Map op = session
+        .getSuggester(ADDREPLICA)
+        .hint(Hint.COLL, "newColl")
+        .hint(Hint.SHARD, "s1").getOperation();
+    assertNotNull(op);
+  }
+
 
   private ClusterDataProvider getClusterDataProvider(final Map<String, Map> nodeValues, String  clusterState) {
     return new ClusterDataProvider() {
