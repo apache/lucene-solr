@@ -112,18 +112,28 @@ public class ApacheMirrorsUpdateRepository extends PluginUpdateRepository {
    * from Apache archives
    */
   private class ApacheChecksumVerifyingDownloader extends SimpleFileDownloader {
+    /**
+     * Succeeds if downloaded file exists and has same checksum as md5 file downloaded from Apache archive
+     *
+     * @param originalUrl    the source from which the file was downloaded
+     * @param downloadedFile the path to the downloaded file
+     * @throws PluginException if the validation failed
+     */
     @Override
-    public Path downloadFile(URL url) throws PluginException, IOException {
-      String md5FileUrl = getMD5FileUrl(url.toString());
-      String md5 = getAndParseMd5File(md5FileUrl);
-      if (md5 == null) {
-        throw new PluginException("Failed to fetch md5 of " + url + ", aborting");
+    protected void validateDownload(URL originalUrl, Path downloadedFile) throws PluginException {
+      super.validateDownload(originalUrl, downloadedFile);
+      try {
+        String md5FileUrl = getMD5FileUrl(originalUrl.toString());
+        String md5 = getAndParseMd5File(md5FileUrl);
+        if (md5 == null) {
+          throw new PluginException("Failed to fetch md5 of " + originalUrl + ", aborting");
+        }
+        if (!DigestUtils.md5Hex(Files.newInputStream(downloadedFile)).equalsIgnoreCase(md5)) {
+          throw new PluginException("MD5 checksum of file " + originalUrl + " does not match the one from " + md5FileUrl + ", aborting");
+        }
+      } catch (IOException e) {
+        throw new PluginException("Validation failed, could not read downloaded file " + downloadedFile, e);
       }
-      Path downloadFile = super.downloadFile(url);
-      if (!DigestUtils.md5Hex(Files.newInputStream(downloadFile)).equalsIgnoreCase(md5)) {
-        throw new PluginException("MD5 checksum of file " + url + " does not match the one from " + md5FileUrl + ", aborting");
-      }
-      return downloadFile;
     }
 
     private String getMD5FileUrl(String url) {
