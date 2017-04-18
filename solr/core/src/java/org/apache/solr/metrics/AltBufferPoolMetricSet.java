@@ -16,31 +16,32 @@
  */
 package org.apache.solr.metrics;
 
+import java.lang.management.BufferPoolMXBean;
 import java.lang.management.ManagementFactory;
-import java.lang.management.OperatingSystemMXBean;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
+import com.codahale.metrics.Gauge;
 import com.codahale.metrics.Metric;
 import com.codahale.metrics.MetricSet;
-import org.apache.solr.util.stats.MetricUtils;
 
 /**
- * This is an extended replacement for {@link com.codahale.metrics.jvm.FileDescriptorRatioGauge}
- * - that class uses reflection and doesn't work under Java 9. This implementation tries to retrieve
- * bean properties from known implementations of {@link java.lang.management.OperatingSystemMXBean}.
+ * This is an alternative implementation of {@link com.codahale.metrics.jvm.BufferPoolMetricSet} that
+ * doesn't need an MBean server.
  */
-public class OperatingSystemMetricSet implements MetricSet {
+public class AltBufferPoolMetricSet implements MetricSet {
 
   @Override
   public Map<String, Metric> getMetrics() {
     final Map<String, Metric> metrics = new HashMap<>();
-    OperatingSystemMXBean os = ManagementFactory.getOperatingSystemMXBean();
-    MetricUtils.addMXBeanMetrics(os, MetricUtils.OS_MXBEAN_CLASSES, null, (k, v) -> {
-      if (!metrics.containsKey(k)) {
-        metrics.put(k, v);
-      }
-    });
+    List<BufferPoolMXBean> pools = ManagementFactory.getPlatformMXBeans(BufferPoolMXBean.class);
+    for (final BufferPoolMXBean pool : pools) {
+      String name = pool.getName();
+      metrics.put(name + ".Count", (Gauge<Long>)() -> pool.getCount());
+      metrics.put(name + ".MemoryUsed", (Gauge<Long>)() -> pool.getMemoryUsed());
+      metrics.put(name + ".TotalCapacity", (Gauge<Long>)() -> pool.getTotalCapacity());
+    }
     return metrics;
   }
 }

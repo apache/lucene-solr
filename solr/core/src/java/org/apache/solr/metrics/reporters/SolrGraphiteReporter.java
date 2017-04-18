@@ -18,6 +18,8 @@ package org.apache.solr.metrics.reporters;
 
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.concurrent.TimeUnit;
 
 import com.codahale.metrics.MetricFilter;
@@ -41,8 +43,10 @@ public class SolrGraphiteReporter extends SolrMetricReporter {
   private int period = 60;
   private boolean pickled = false;
   private String instancePrefix = null;
-  private String filterPrefix = null;
+  private List<String> filters = new ArrayList<>();
   private GraphiteReporter reporter = null;
+
+  private static final ReporterClientCache<GraphiteSender> serviceRegistry = new ReporterClientCache<>();
 
   /**
    * Create a Graphite reporter for metrics managed in a named registry.
@@ -67,9 +71,24 @@ public class SolrGraphiteReporter extends SolrMetricReporter {
     this.instancePrefix = prefix;
   }
 
-  public void setFilter(String filter) {
-    this.filterPrefix = filter;
+  /**
+   * Report only metrics with names matching any of the prefix filters.
+   * @param filters list of 0 or more prefixes. If the list is empty then
+   *                all names will match.
+   */
+  public void setFilter(List<String> filters) {
+    if (filters == null || filters.isEmpty()) {
+      return;
+    }
+    this.filters.addAll(filters);
   }
+
+  public void setFilter(String filter) {
+    if (filter != null && !filter.isEmpty()) {
+      this.filters.add(filter);
+    }
+  }
+
 
   public void setPickled(boolean pickled) {
     this.pickled = pickled;
@@ -81,6 +100,10 @@ public class SolrGraphiteReporter extends SolrMetricReporter {
 
   @Override
   protected void validate() throws IllegalStateException {
+    if (!enabled) {
+      log.info("Reporter disabled for registry " + registryName);
+      return;
+    }
     if (host == null) {
       throw new IllegalStateException("Init argument 'host' must be set to a valid Graphite server name.");
     }
@@ -93,12 +116,15 @@ public class SolrGraphiteReporter extends SolrMetricReporter {
     if (period < 1) {
       throw new IllegalStateException("Init argument 'period' is in time unit 'seconds' and must be at least 1.");
     }
-    final GraphiteSender graphite;
-    if (pickled) {
-      graphite = new PickledGraphite(host, port);
-    } else {
-      graphite = new Graphite(host, port);
-    }
+    GraphiteSender graphite;
+    String id = host + ":" + port + ":" + pickled;
+    graphite = serviceRegistry.getOrCreate(id, () -> {
+      if (pickled) {
+        return new PickledGraphite(host, port);
+      } else {
+        return new Graphite(host, port);
+      }
+    });
     if (instancePrefix == null) {
       instancePrefix = registryName;
     } else {
@@ -110,8 +136,8 @@ public class SolrGraphiteReporter extends SolrMetricReporter {
         .convertRatesTo(TimeUnit.SECONDS)
         .convertDurationsTo(TimeUnit.MILLISECONDS);
     MetricFilter filter;
-    if (filterPrefix != null) {
-      filter = new SolrMetricManager.PrefixFilter(filterPrefix);
+    if (!filters.isEmpty()) {
+      filter = new SolrMetricManager.PrefixFilter(filters);
     } else {
       filter = MetricFilter.ALL;
     }

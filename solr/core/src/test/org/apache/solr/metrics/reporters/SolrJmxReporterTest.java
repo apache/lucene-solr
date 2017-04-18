@@ -20,6 +20,7 @@ import javax.management.MBeanServer;
 import javax.management.ObjectInstance;
 import javax.management.ObjectName;
 
+import java.rmi.registry.LocateRegistry;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Random;
@@ -40,11 +41,14 @@ import org.apache.solr.metrics.SolrMetricTestUtils;
 import org.apache.solr.schema.FieldType;
 import org.junit.After;
 import org.junit.Before;
+import org.junit.BeforeClass;
 import org.junit.Test;
 
 public class SolrJmxReporterTest extends SolrTestCaseJ4 {
 
   private static final int MAX_ITERATIONS = 20;
+
+  private static int jmxPort;
 
   private String domain;
 
@@ -53,6 +57,14 @@ public class SolrJmxReporterTest extends SolrTestCaseJ4 {
   private SolrJmxReporter reporter;
   private MBeanServer mBeanServer;
   private String reporterName;
+  private String rootName;
+
+  @BeforeClass
+  public static void init() throws Exception {
+    jmxPort = getNextAvailablePort();
+    assertFalse(jmxPort == -1);
+    LocateRegistry.createRegistry(jmxPort);
+  }
 
   @Before
   public void beforeTest() throws Exception {
@@ -60,11 +72,13 @@ public class SolrJmxReporterTest extends SolrTestCaseJ4 {
 
     final SolrCore core = h.getCore();
     domain = core.getName();
+    rootName = TestUtil.randomSimpleString(random(), 1, 10);
 
     coreMetricManager = core.getCoreMetricManager();
     metricManager = core.getCoreContainer().getMetricManager();
-    PluginInfo pluginInfo = createReporterPluginInfo();
-    metricManager.loadReporter(coreMetricManager.getRegistryName(), coreMetricManager.getCore().getResourceLoader(), pluginInfo);
+    PluginInfo pluginInfo = createReporterPluginInfo(rootName, true);
+    metricManager.loadReporter(coreMetricManager.getRegistryName(), coreMetricManager.getCore().getResourceLoader(),
+        pluginInfo);
 
     Map<String, SolrMetricReporter> reporters = metricManager.getReporters(coreMetricManager.getRegistryName());
     assertTrue("reporters.size should be > 0, but was + " + reporters.size(), reporters.size() > 0);
@@ -77,7 +91,7 @@ public class SolrJmxReporterTest extends SolrTestCaseJ4 {
     assertNotNull("MBean server not found.", mBeanServer);
   }
 
-  private PluginInfo createReporterPluginInfo() {
+  private PluginInfo createReporterPluginInfo(String rootName, boolean enabled) {
     Random random = random();
     String className = SolrJmxReporter.class.getName();
     String reporterName = TestUtil.randomSimpleString(random, 1, 10);
@@ -85,6 +99,9 @@ public class SolrJmxReporterTest extends SolrTestCaseJ4 {
     Map<String, Object> attrs = new HashMap<>();
     attrs.put(FieldType.CLASS_NAME, className);
     attrs.put(CoreAdminParams.NAME, reporterName);
+    attrs.put("rootName", rootName);
+    attrs.put("enabled", enabled);
+    attrs.put("serviceUrl", "service:jmx:rmi:///jndi/rmi://localhost:" + jmxPort + "/solrjmx");
 
     boolean shouldOverrideDomain = random.nextBoolean();
     if (shouldOverrideDomain) {
@@ -143,8 +160,9 @@ public class SolrJmxReporterTest extends SolrTestCaseJ4 {
             reporterName.equals(o.getObjectName().getKeyProperty("reporter"))).count());
 
     h.getCoreContainer().reload(h.getCore().getName());
-    PluginInfo pluginInfo = createReporterPluginInfo();
-    metricManager.loadReporter(coreMetricManager.getRegistryName(), coreMetricManager.getCore().getResourceLoader(), pluginInfo);
+    PluginInfo pluginInfo = createReporterPluginInfo(rootName, true);
+    metricManager.loadReporter(coreMetricManager.getRegistryName(), coreMetricManager.getCore().getResourceLoader(),
+        pluginInfo);
     coreMetricManager.registerMetricProducer(scope, producer);
 
     objects = mBeanServer.queryMBeans(null, null);
@@ -153,4 +171,34 @@ public class SolrJmxReporterTest extends SolrTestCaseJ4 {
             pluginInfo.name.equals(o.getObjectName().getKeyProperty("reporter"))).count());
   }
 
+  @Test
+  public void testEnabled() throws Exception {
+    String root1 = TestUtil.randomSimpleString(random(), 1, 10);
+    PluginInfo pluginInfo1 = createReporterPluginInfo(root1, true);
+    metricManager.loadReporter(coreMetricManager.getRegistryName(), coreMetricManager.getCore().getResourceLoader(),
+        pluginInfo1);
+
+    String root2 = TestUtil.randomSimpleString(random(), 1, 10);
+    assertFalse(root2.equals(root1));
+    PluginInfo pluginInfo2 = createReporterPluginInfo(root2, false);
+    metricManager.loadReporter(coreMetricManager.getRegistryName(), coreMetricManager.getCore().getResourceLoader(),
+        pluginInfo2);
+
+    Map<String, SolrMetricReporter> reporters = metricManager.getReporters(coreMetricManager.getRegistryName());
+    assertTrue(reporters.containsKey(pluginInfo1.name));
+    assertTrue(reporters.containsKey(pluginInfo2.name));
+
+    String scope = SolrMetricTestUtils.getRandomScope(random(), true);
+    SolrInfoMBean.Category category = SolrMetricTestUtils.getRandomCategory(random(), true);
+    Map<String, Counter> metrics = SolrMetricTestUtils.getRandomMetrics(random(), true);
+    SolrMetricProducer producer = SolrMetricTestUtils.getProducerOf(metricManager, category, scope, metrics);
+    coreMetricManager.registerMetricProducer(scope, producer);
+    Set<ObjectInstance> objects = mBeanServer.queryMBeans(null, null);
+    assertEquals(metrics.size(), objects.stream().
+        filter(o -> scope.equals(o.getObjectName().getKeyProperty("scope")) &&
+            root1.equals(o.getObjectName().getDomain())).count());
+    assertEquals(0, objects.stream().
+        filter(o -> scope.equals(o.getObjectName().getKeyProperty("scope")) &&
+            root2.equals(o.getObjectName().getDomain())).count());
+  }
 }

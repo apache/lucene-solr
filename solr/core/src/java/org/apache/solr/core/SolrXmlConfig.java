@@ -25,7 +25,9 @@ import java.lang.invoke.MethodHandles;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.ArrayList;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Properties;
 import java.util.Set;
@@ -470,13 +472,15 @@ public class SolrXmlConfig {
 
   private static PluginInfo[] getMetricReporterPluginInfos(Config config) {
     NodeList nodes = (NodeList) config.evaluate("solr/metrics/reporter", XPathConstants.NODESET);
-    if (nodes == null || nodes.getLength() == 0)
-      return new PluginInfo[0];
-    PluginInfo[] configs = new PluginInfo[nodes.getLength()];
-    for (int i = 0; i < nodes.getLength(); i++) {
-      configs[i] = new PluginInfo(nodes.item(i), "SolrMetricReporter", true, true);
+    List<PluginInfo> configs = new ArrayList<>();
+    if (nodes != null && nodes.getLength() > 0) {
+      for (int i = 0; i < nodes.getLength(); i++) {
+        // we don't require class in order to support predefined replica and node reporter classes
+        PluginInfo info = new PluginInfo(nodes.item(i), "SolrMetricReporter", true, false);
+        configs.add(info);
+      }
     }
-    return configs;
+    return configs.toArray(new PluginInfo[configs.size()]);
   }
   private static PluginInfo getTransientCoreCacheFactoryPluginInfo(Config config) {
     Node node = config.getNode("solr/transientCoreCacheFactory", false);

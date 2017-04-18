@@ -16,7 +16,14 @@
  */
 package org.apache.solr.util.stats;
 
+import java.beans.BeanInfo;
+import java.beans.IntrospectionException;
+import java.beans.Introspector;
+import java.beans.PropertyDescriptor;
 import java.lang.invoke.MethodHandles;
+import java.lang.management.OperatingSystemMXBean;
+import java.lang.management.PlatformManagedObject;
+import java.lang.reflect.InvocationTargetException;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -247,5 +254,80 @@ public class MetricUtils {
    */
   public static ExecutorService instrumentedExecutorService(ExecutorService delegate, MetricRegistry metricRegistry, String scope)  {
     return new InstrumentedExecutorService(delegate, metricRegistry, scope);
+  }
+
+  /**
+   * Creates a set of metrics (gauges) that correspond to available bean properties for the provided MXBean.
+   * @param obj an instance of MXBean
+   * @param intf MXBean interface, one of {@link PlatformManagedObject}-s
+   * @param consumer consumer for created names and metrics
+   * @param <T> formal type
+   */
+  public static <T extends PlatformManagedObject> void addMXBeanMetrics(T obj, Class<? extends T> intf,
+      String prefix, BiConsumer<String, Metric> consumer) {
+    if (intf.isInstance(obj)) {
+      BeanInfo beanInfo;
+      try {
+        beanInfo = Introspector.getBeanInfo(intf, intf.getSuperclass(), Introspector.IGNORE_ALL_BEANINFO);
+      } catch (IntrospectionException e) {
+        LOG.warn("Unable to fetch properties of MXBean " + obj.getClass().getName());
+        return;
+      }
+      for (final PropertyDescriptor desc : beanInfo.getPropertyDescriptors()) {
+        final String name = desc.getName();
+        // test if it works at all
+        try {
+          desc.getReadMethod().invoke(obj);
+          // worked - consume it
+          final Gauge<?> gauge = () -> {
+            try {
+              return desc.getReadMethod().invoke(obj);
+            } catch (InvocationTargetException ite) {
+              // ignore (some properties throw UOE)
+              return null;
+            } catch (IllegalAccessException e) {
+              return null;
+            }
+          };
+          String metricName = MetricRegistry.name(prefix, name);
+          consumer.accept(metricName, gauge);
+        } catch (Exception e) {
+          // didn't work, skip it...
+        }
+      }
+    }
+  }
+
+  /**
+   * These are well-known implementations of {@link java.lang.management.OperatingSystemMXBean}.
+   * Some of them provide additional useful properties beyond those declared by the interface.
+   */
+  public static String[] OS_MXBEAN_CLASSES = new String[] {
+      OperatingSystemMXBean.class.getName(),
+      "com.sun.management.OperatingSystemMXBean",
+      "com.sun.management.UnixOperatingSystemMXBean",
+      "com.ibm.lang.management.OperatingSystemMXBean"
+  };
+
+  /**
+   * Creates a set of metrics (gauges) that correspond to available bean properties for the provided MXBean.
+   * @param obj an instance of MXBean
+   * @param interfaces interfaces that it may implement. Each interface will be tried in turn, and only
+   *                   if it exists and if it contains unique properties then they will be added as metrics.
+   * @param prefix optional prefix for metric names
+   * @param consumer consumer for created names and metrics
+   * @param <T> formal type
+   */
+  public static <T extends PlatformManagedObject> void addMXBeanMetrics(T obj, String[] interfaces,
+      String prefix, BiConsumer<String, Metric> consumer) {
+    for (String clazz : interfaces) {
+      try {
+        final Class<? extends PlatformManagedObject> intf = Class.forName(clazz)
+            .asSubclass(PlatformManagedObject.class);
+        MetricUtils.addMXBeanMetrics(obj, intf, null, consumer);
+      } catch (ClassNotFoundException e) {
+        // ignore
+      }
+    }
   }
 }

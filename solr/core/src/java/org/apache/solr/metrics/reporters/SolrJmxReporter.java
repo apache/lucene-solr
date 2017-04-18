@@ -18,12 +18,14 @@ package org.apache.solr.metrics.reporters;
 
 import javax.management.MBeanServer;
 
-import java.io.IOException;
 import java.lang.invoke.MethodHandles;
-import java.lang.management.ManagementFactory;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Locale;
 
 import com.codahale.metrics.JmxReporter;
+import com.codahale.metrics.MetricFilter;
+import com.codahale.metrics.MetricRegistry;
 import org.apache.solr.core.PluginInfo;
 import org.apache.solr.metrics.SolrMetricManager;
 import org.apache.solr.metrics.SolrMetricReporter;
@@ -34,16 +36,23 @@ import org.slf4j.LoggerFactory;
 /**
  * A {@link SolrMetricReporter} that finds (or creates) a MBeanServer from
  * the given configuration and registers metrics to it with JMX.
+ * <p>NOTE: {@link JmxReporter} that this class uses exports only newly added metrics (it doesn't
+ * process already existing metrics in a registry)</p>
  */
 public class SolrJmxReporter extends SolrMetricReporter {
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
+  private static final ReporterClientCache<MBeanServer> serviceRegistry = new ReporterClientCache<>();
+
   private String domain;
   private String agentId;
   private String serviceUrl;
+  private String rootName;
+  private List<String> filters = new ArrayList<>();
 
   private JmxReporter reporter;
+  private MetricRegistry registry;
   private MBeanServer mBeanServer;
 
   /**
@@ -57,7 +66,7 @@ public class SolrJmxReporter extends SolrMetricReporter {
   }
 
   /**
-   * Initializes the reporter by finding (or creating) a MBeanServer
+   * Initializes the reporter by finding an MBeanServer
    * and registering the metricManager's metric registry.
    *
    * @param pluginInfo the configuration for the reporter
@@ -65,44 +74,56 @@ public class SolrJmxReporter extends SolrMetricReporter {
   @Override
   public synchronized void init(PluginInfo pluginInfo) {
     super.init(pluginInfo);
-
+    if (!enabled) {
+      log.info("Reporter disabled for registry " + registryName);
+      return;
+    }
+    log.debug("Initializing for registry " + registryName);
     if (serviceUrl != null && agentId != null) {
-      ManagementFactory.getPlatformMBeanServer(); // Ensure at least one MBeanServer is available.
       mBeanServer = JmxUtil.findFirstMBeanServer();
-      log.warn("No more than one of serviceUrl(%s) and agentId(%s) should be configured, using first MBeanServer instead of configuration.",
+      log.warn("No more than one of serviceUrl({}) and agentId({}) should be configured, using first MBeanServer instead of configuration.",
           serviceUrl, agentId, mBeanServer);
-    }
-    else if (serviceUrl != null) {
-      try {
-        mBeanServer = JmxUtil.findMBeanServerForServiceUrl(serviceUrl);
-      } catch (IOException e) {
-        log.warn("findMBeanServerForServiceUrl(%s) exception: %s", serviceUrl, e);
-        mBeanServer = null;
-      }
-    }
-    else if (agentId != null) {
+    } else if (serviceUrl != null) {
+      // reuse existing services
+      mBeanServer = serviceRegistry.getOrCreate(serviceUrl, () -> JmxUtil.findMBeanServerForServiceUrl(serviceUrl));
+    } else if (agentId != null) {
       mBeanServer = JmxUtil.findMBeanServerForAgentId(agentId);
     } else {
-      ManagementFactory.getPlatformMBeanServer(); // Ensure at least one MBeanServer is available.
       mBeanServer = JmxUtil.findFirstMBeanServer();
-      log.warn("No serviceUrl or agentId was configured, using first MBeanServer.", mBeanServer);
+      log.debug("No serviceUrl or agentId was configured, using first MBeanServer: " + mBeanServer);
     }
 
     if (mBeanServer == null) {
-      log.warn("No JMX server found. Not exposing Solr metrics.");
+      log.warn("No JMX server found. Not exposing Solr metrics via JMX.");
       return;
     }
 
-    JmxObjectNameFactory jmxObjectNameFactory = new JmxObjectNameFactory(pluginInfo.name, domain);
+    if (domain == null || domain.isEmpty()) {
+      domain = registryName;
+    }
+    String fullDomain = domain;
+    if (rootName != null && !rootName.isEmpty()) {
+      fullDomain = rootName + "." + domain;
+    }
+    JmxObjectNameFactory jmxObjectNameFactory = new JmxObjectNameFactory(pluginInfo.name, fullDomain);
+    registry = metricManager.registry(registryName);
+    MetricFilter filter;
+    if (filters.isEmpty()) {
+      filter = MetricFilter.ALL;
+    } else {
+      // apply also prefix filters
+      filter = new SolrMetricManager.PrefixFilter(filters);
+    }
 
-    reporter = JmxReporter.forRegistry(metricManager.registry(registryName))
+    reporter = JmxReporter.forRegistry(registry)
                           .registerWith(mBeanServer)
-                          .inDomain(domain)
+                          .inDomain(fullDomain)
+                          .filter(filter)
                           .createsObjectNamesWith(jmxObjectNameFactory)
                           .build();
     reporter.start();
 
-    log.info("JMX monitoring enabled at server: " + mBeanServer);
+    log.info("JMX monitoring for '" + fullDomain + "' (registry '" + registryName + "') enabled at server: " + mBeanServer);
   }
 
   /**
@@ -127,9 +148,19 @@ public class SolrJmxReporter extends SolrMetricReporter {
     // Nothing to validate
   }
 
+
+  /**
+   * Set root name of the JMX hierarchy for this reporter. Default (null or empty) is none, ie.
+   * the hierarchy will start from the domain name.
+   * @param rootName root name of the JMX name hierarchy, or null or empty for default.
+   */
+  public void setRootName(String rootName) {
+    this.rootName = rootName;
+  }
+
   /**
    * Sets the domain with which MBeans are published. If none is set,
-   * the domain defaults to the name of the core.
+   * the domain defaults to the name of the registry.
    *
    * @param domain the domain
    */
@@ -162,7 +193,46 @@ public class SolrJmxReporter extends SolrMetricReporter {
   }
 
   /**
-   * Retrieves the reporter's MBeanServer.
+   * Return configured agentId or null.
+   */
+  public String getAgentId() {
+    return agentId;
+  }
+
+  /**
+   * Return configured serviceUrl or null.
+   */
+  public String getServiceUrl() {
+    return serviceUrl;
+  }
+
+  /**
+   * Return configured domain or null.
+   */
+  public String getDomain() {
+    return domain;
+  }
+
+  /**
+   * Report only metrics with names matching any of the prefix filters.
+   * @param filters list of 0 or more prefixes. If the list is empty then
+   *                all names will match.
+   */
+  public void setFilter(List<String> filters) {
+    if (filters == null || filters.isEmpty()) {
+      return;
+    }
+    this.filters.addAll(filters);
+  }
+
+  public void setFilter(String filter) {
+    if (filter != null && !filter.isEmpty()) {
+      this.filters.add(filter);
+    }
+  }
+
+  /**
+   * Return the reporter's MBeanServer.
    *
    * @return the reporter's MBeanServer
    */
@@ -170,10 +240,18 @@ public class SolrJmxReporter extends SolrMetricReporter {
     return mBeanServer;
   }
 
+  /**
+   * For unit tests.
+   * @return true if this reporter is actively reporting metrics to JMX.
+   */
+  public boolean isActive() {
+    return reporter != null;
+  }
+
   @Override
   public String toString() {
-    return String.format(Locale.ENGLISH, "[%s@%s: domain = %s, service url = %s, agent id = %s]",
-        getClass().getName(), Integer.toHexString(hashCode()), domain, serviceUrl, agentId);
+    return String.format(Locale.ENGLISH, "[%s@%s: rootName = %s, domain = %s, service url = %s, agent id = %s]",
+        getClass().getName(), Integer.toHexString(hashCode()), rootName, domain, serviceUrl, agentId);
   }
 
 }

@@ -161,6 +161,10 @@ Other Changes
 
 * SOLR-10151: Use monotonically incrementing counter for doc ids in TestRecovery. (Peter Szantai-Kis, Mano Kovacs via Mark Miller)
 
+* SOLR-10477: Improvements to metric reporters and API: support for "regex" parameter in /admin/metrics,
+  "enabled" flag in reporter configurations, correct handling of "serviceUrl" in SolrJmxReporter, better handling
+  of service clients for JMX, Ganglia and Graphite reporters. (ab)
+
 ==================  6.5.1 ==================
 
 Bug Fixes

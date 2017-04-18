@@ -17,6 +17,9 @@
 package org.apache.solr.metrics.reporters;
 
 import java.io.IOException;
+import java.lang.invoke.MethodHandles;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.concurrent.TimeUnit;
 
 import com.codahale.metrics.MetricFilter;
@@ -24,20 +27,25 @@ import com.codahale.metrics.ganglia.GangliaReporter;
 import info.ganglia.gmetric4j.gmetric.GMetric;
 import org.apache.solr.metrics.SolrMetricManager;
 import org.apache.solr.metrics.SolrMetricReporter;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  *
  */
 public class SolrGangliaReporter extends SolrMetricReporter {
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   private String host = null;
   private int port = -1;
   private boolean multicast;
   private int period = 60;
   private String instancePrefix = null;
-  private String filterPrefix = null;
+  private List<String> filters = new ArrayList<>();
   private boolean testing;
   private GangliaReporter reporter;
+
+  private static final ReporterClientCache<GMetric> serviceRegistry = new ReporterClientCache<>();
 
   // for unit tests
   GMetric ganglia = null;
@@ -65,10 +73,24 @@ public class SolrGangliaReporter extends SolrMetricReporter {
     this.instancePrefix = prefix;
   }
 
-  public void setFilter(String filter) {
-    this.filterPrefix = filter;
+  /**
+   * Report only metrics with names matching any of the prefix filters.
+   * @param filters list of 0 or more prefixes. If the list is empty then
+   *                all names will match.
+   */
+  public void setFilter(List<String> filters) {
+    if (filters == null || filters.isEmpty()) {
+      return;
+    }
+    this.filters.addAll(filters);
   }
 
+  // due to vagaries of SolrPluginUtils.invokeSetters we need this too
+  public void setFilter(String filter) {
+    if (filter != null && !filter.isEmpty()) {
+      this.filters.add(filter);
+    }
+  }
 
   public void setPeriod(int period) {
     this.period = period;
@@ -89,6 +111,10 @@ public class SolrGangliaReporter extends SolrMetricReporter {
 
   @Override
   protected void validate() throws IllegalStateException {
+    if (!enabled) {
+      log.info("Reporter disabled for registry " + registryName);
+      return;
+    }
     if (host == null) {
       throw new IllegalStateException("Init argument 'host' must be set to a valid Ganglia server name.");
     }
@@ -106,12 +132,12 @@ public class SolrGangliaReporter extends SolrMetricReporter {
   //this is a separate method for unit tests
   void start() {
     if (!testing) {
-      try {
-        ganglia = new GMetric(host, port,
-            multicast ? GMetric.UDPAddressingMode.MULTICAST : GMetric.UDPAddressingMode.UNICAST,
-            1);
-      } catch (IOException ioe) {
-        throw new IllegalStateException("Exception connecting to Ganglia", ioe);
+      String id = host + ":" + port + ":" + multicast;
+      ganglia = serviceRegistry.getOrCreate(id, () -> new GMetric(host, port,
+          multicast ? GMetric.UDPAddressingMode.MULTICAST : GMetric.UDPAddressingMode.UNICAST,
+          1));
+      if (ganglia == null) {
+        return;
       }
     }
     if (instancePrefix == null) {
@@ -125,8 +151,8 @@ public class SolrGangliaReporter extends SolrMetricReporter {
         .convertDurationsTo(TimeUnit.MILLISECONDS)
         .prefixedWith(instancePrefix);
     MetricFilter filter;
-    if (filterPrefix != null) {
-      filter = new SolrMetricManager.PrefixFilter(filterPrefix);
+    if (!filters.isEmpty()) {
+      filter = new SolrMetricManager.PrefixFilter(filters);
     } else {
       filter = MetricFilter.ALL;
     }

@@ -18,9 +18,13 @@ package org.apache.solr.metrics;
 
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
@@ -29,6 +33,9 @@ import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
+import java.util.regex.Pattern;
+import java.util.regex.PatternSyntaxException;
+import java.util.stream.Collectors;
 
 import com.codahale.metrics.Counter;
 import com.codahale.metrics.Gauge;
@@ -92,10 +99,10 @@ public class SolrMetricManager {
 
   /**
    * An implementation of {@link MetricFilter} that selects metrics
-   * with names that start with a prefix.
+   * with names that start with one of prefixes.
    */
   public static class PrefixFilter implements MetricFilter {
-    private final String[] prefixes;
+    private final Set<String> prefixes = new HashSet<>();
     private final Set<String> matched = new HashSet<>();
     private boolean allMatch = false;
 
@@ -107,8 +114,18 @@ public class SolrMetricManager {
      */
     public PrefixFilter(String... prefixes) {
       Objects.requireNonNull(prefixes);
-      this.prefixes = prefixes;
-      if (prefixes.length == 0) {
+      if (prefixes.length > 0) {
+        this.prefixes.addAll(Arrays.asList(prefixes));
+      }
+      if (this.prefixes.isEmpty()) {
+        allMatch = true;
+      }
+    }
+
+    public PrefixFilter(Collection<String> prefixes) {
+      Objects.requireNonNull(prefixes);
+      this.prefixes.addAll(prefixes);
+      if (this.prefixes.isEmpty()) {
         allMatch = true;
       }
     }
@@ -142,6 +159,145 @@ public class SolrMetricManager {
     public void reset() {
       matched.clear();
     }
+
+    @Override
+    public String toString() {
+      return "PrefixFilter{" +
+          "prefixes=" + prefixes +
+          '}';
+    }
+  }
+
+  /**
+   * An implementation of {@link MetricFilter} that selects metrics
+   * with names that match regular expression patterns.
+   */
+  public static class RegexFilter implements MetricFilter {
+    private final Set<Pattern> compiledPatterns = new HashSet<>();
+    private final Set<String> matched = new HashSet<>();
+    private boolean allMatch = false;
+
+    /**
+     * Create a filter that uses the provided prefix.
+     * @param patterns regex patterns to use, must not be null. If empty then any
+     *               name will match, if not empty then match on any pattern will
+     *                 succeed (logical OR).
+     */
+    public RegexFilter(String... patterns) throws PatternSyntaxException {
+      this(patterns != null ? Arrays.asList(patterns) : Collections.emptyList());
+    }
+
+    public RegexFilter(Collection<String> patterns) throws PatternSyntaxException {
+      Objects.requireNonNull(patterns);
+      if (patterns.isEmpty()) {
+        allMatch = true;
+        return;
+      }
+      patterns.forEach(p -> {
+        Pattern pattern = Pattern.compile(p);
+        compiledPatterns.add(pattern);
+      });
+      if (patterns.isEmpty()) {
+        allMatch = true;
+      }
+    }
+
+    @Override
+    public boolean matches(String name, Metric metric) {
+      if (allMatch) {
+        matched.add(name);
+        return true;
+      }
+      for (Pattern p : compiledPatterns) {
+        if (p.matcher(name).matches()) {
+          matched.add(name);
+          return true;
+        }
+      }
+      return false;
+    }
+
+    /**
+     * Return the set of names that matched this filter.
+     * @return matching names
+     */
+    public Set<String> getMatched() {
+      return Collections.unmodifiableSet(matched);
+    }
+
+    /**
+     * Clear the set of names that matched.
+     */
+    public void reset() {
+      matched.clear();
+    }
+
+    @Override
+    public String toString() {
+      return "RegexFilter{" +
+          "compiledPatterns=" + compiledPatterns +
+          '}';
+    }
+  }
+
+  public static class OrFilter implements MetricFilter {
+    List<MetricFilter> filters = new ArrayList<>();
+
+    public OrFilter(Collection<MetricFilter> filters) {
+      if (filters != null) {
+        this.filters.addAll(filters);
+      }
+    }
+
+    public OrFilter(MetricFilter... filters) {
+      if (filters != null) {
+        for (MetricFilter filter : filters) {
+          if (filter != null) {
+            this.filters.add(filter);
+          }
+        }
+      }
+    }
+
+    @Override
+    public boolean matches(String s, Metric metric) {
+      for (MetricFilter filter : filters) {
+        if (filter.matches(s, metric)) {
+          return true;
+        }
+      }
+      return false;
+    }
+  }
+
+  public static class AndFilter implements MetricFilter {
+    List<MetricFilter> filters = new ArrayList<>();
+
+    public AndFilter(Collection<MetricFilter> filters) {
+      if (filters != null) {
+        this.filters.addAll(filters);
+      }
+    }
+
+    public AndFilter(MetricFilter... filters) {
+      if (filters != null) {
+        for (MetricFilter filter : filters) {
+          if (filter != null) {
+            this.filters.add(filter);
+          }
+        }
+      }
+    }
+
+    @Override
+    public boolean matches(String s, Metric metric) {
+      for (MetricFilter filter : filters) {
+        if (!filter.matches(s, metric)) {
+          return false;
+        }
+      }
+      return true;
+    }
   }
 
   /**
@@ -151,7 +307,40 @@ public class SolrMetricManager {
     Set<String> set = new HashSet<>();
     set.addAll(registries.keySet());
     set.addAll(SharedMetricRegistries.names());
-    return Collections.unmodifiableSet(set);
+    return set;
+  }
+
+  /**
+   * Return set of existing registry names that match a regex pattern
+   * @param patterns regex patterns. NOTE: users need to make sure that patterns that
+   *                 don't start with a wildcard use the full registry name starting with
+   *                 {@link #REGISTRY_NAME_PREFIX}
+   * @return set of existing registry names where at least one pattern matched.
+   */
+  public Set<String> registryNames(String... patterns) throws PatternSyntaxException {
+    if (patterns == null || patterns.length == 0) {
+      return registryNames();
+    }
+    List<Pattern> compiled = new ArrayList<>();
+    for (String pattern : patterns) {
+      compiled.add(Pattern.compile(pattern));
+    }
+    return registryNames((Pattern[])compiled.toArray(new Pattern[compiled.size()]));
+  }
+
+  public Set<String> registryNames(Pattern... patterns) {
+    Set<String> allNames = registryNames();
+    if (patterns == null || patterns.length == 0) {
+      return allNames;
+    }
+    return allNames.stream().filter(s -> {
+      for (Pattern p : patterns) {
+        if (p.matcher(s).matches()) {
+          return true;
+        }
+      }
+      return false;
+    }).collect(Collectors.toSet());
   }
 
   /**
