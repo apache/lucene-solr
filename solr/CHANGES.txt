@@ -175,6 +175,8 @@ New Features
   Example: json.facet={x:"stddev(field1)", y:"variance(field2)"}
   (Rustam Hashimov, yonik)
 
+* SOLR-10505: Add multi-field support to TermsComponent when requesting terms' statistics. (Shai Erera)
+
 Optimizations
 ----------------------
 
