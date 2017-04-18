@@ -28,12 +28,14 @@ import org.apache.lucene.index.Term;
 import org.apache.lucene.search.AutomatonQuery;
 import org.apache.lucene.search.BooleanClause;
 import org.apache.lucene.search.BooleanQuery;
+import org.apache.lucene.search.BoostQuery;
 import org.apache.lucene.search.ConstantScoreQuery;
 import org.apache.lucene.search.DisjunctionMaxQuery;
 import org.apache.lucene.search.FuzzyQuery;
 import org.apache.lucene.search.PrefixQuery;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.TermRangeQuery;
+import org.apache.lucene.search.spans.SpanBoostQuery;
 import org.apache.lucene.search.spans.SpanMultiTermQueryWrapper;
 import org.apache.lucene.search.spans.SpanNearQuery;
 import org.apache.lucene.search.spans.SpanNotQuery;
@@ -64,6 +66,8 @@ class MultiTermHighlighting {
                                                         Predicate<String> fieldMatcher,
                                                         boolean lookInSpan,
                                                         Function<Query, Collection<Query>> preRewriteFunc) {
+    // TODO Lucene needs a Query visitor API!  LUCENE-3041
+
     List<CharacterRunAutomaton> list = new ArrayList<>();
     Collection<Query> customSubQueries = preRewriteFunc.apply(query);
     if (customSubQueries != null) {
@@ -78,6 +82,9 @@ class MultiTermHighlighting {
       }
     } else if (query instanceof ConstantScoreQuery) {
       list.addAll(Arrays.asList(extractAutomata(((ConstantScoreQuery) query).getQuery(), fieldMatcher, lookInSpan,
+          preRewriteFunc)));
+    } else if (query instanceof BoostQuery) {
+      list.addAll(Arrays.asList(extractAutomata(((BoostQuery)query).getQuery(), fieldMatcher, lookInSpan,
           preRewriteFunc)));
     } else if (query instanceof DisjunctionMaxQuery) {
       for (Query sub : ((DisjunctionMaxQuery) query).getDisjuncts()) {
@@ -96,6 +103,9 @@ class MultiTermHighlighting {
           preRewriteFunc)));
     } else if (lookInSpan && query instanceof SpanPositionCheckQuery) {
       list.addAll(Arrays.asList(extractAutomata(((SpanPositionCheckQuery) query).getMatch(), fieldMatcher, lookInSpan,
+          preRewriteFunc)));
+    } else if (lookInSpan && query instanceof SpanBoostQuery) {
+      list.addAll(Arrays.asList(extractAutomata(((SpanBoostQuery) query).getQuery(), fieldMatcher, lookInSpan,
           preRewriteFunc)));
     } else if (lookInSpan && query instanceof SpanMultiTermQueryWrapper) {
       list.addAll(Arrays.asList(extractAutomata(((SpanMultiTermQueryWrapper<?>) query).getWrappedQuery(),
