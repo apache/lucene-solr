@@ -47,7 +47,7 @@ public class MetricUtilsTest extends SolrTestCaseJ4 {
     }
     // obtain timer metrics
     Map<String,Object> map = new HashMap<>();
-    MetricUtils.convertTimer("", timer, false, false, (k, v) -> {
+    MetricUtils.convertTimer("", timer, MetricUtils.PropertyFilter.ALL, false, false, (k, v) -> {
       map.putAll((Map<String,Object>)v);
     });
     NamedList lst = new NamedList(map);
@@ -89,7 +89,7 @@ public class MetricUtilsTest extends SolrTestCaseJ4 {
     Gauge<Long> error = () -> {throw new InternalError("Memory Pool not found error");};
     registry.register("memory.expected.error", error);
     MetricUtils.toMaps(registry, Collections.singletonList(MetricFilter.ALL), MetricFilter.ALL,
-        false, false, false, false, (k, o) -> {
+        MetricUtils.PropertyFilter.ALL, false, false, false, false, (k, o) -> {
       Map v = (Map)o;
       if (k.startsWith("counter")) {
         assertEquals(1L, v.get("count"));
@@ -119,7 +119,7 @@ public class MetricUtilsTest extends SolrTestCaseJ4 {
     });
     // test compact format
     MetricUtils.toMaps(registry, Collections.singletonList(MetricFilter.ALL), MetricFilter.ALL,
-        false, false, true, false, (k, o) -> {
+        MetricUtils.PropertyFilter.ALL, false, false, true, false, (k, o) -> {
           if (k.startsWith("counter")) {
             assertTrue(o instanceof Long);
             assertEquals(1L, o);

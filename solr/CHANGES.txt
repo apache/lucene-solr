@@ -113,6 +113,10 @@ Other Changes
   the metrics API, legacy JMX support has been replaced with SolrJmxReporter functionality. Several reporter
   improvements (support for multiple prefix filters, "enabled" flag, reuse of service clients). (ab)
 
+* SOLR-10418: Expose safe system properties via metrics API as 'system.properties' in 'solr.jvm' group.
+  Add support for selecting specific properties from any compound metric using 'property' parameter to
+  /admin/metrics handler. (ab)
+
 ----------------------
 
 ==================  6.6.0 ==================

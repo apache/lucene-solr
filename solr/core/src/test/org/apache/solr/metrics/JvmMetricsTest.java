@@ -16,11 +16,29 @@
  */
 package org.apache.solr.metrics;
 
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.util.Arrays;
 import java.util.Map;
 
 import com.codahale.metrics.Gauge;
 import com.codahale.metrics.Metric;
+import org.apache.commons.io.FileUtils;
 import org.apache.solr.SolrJettyTestBase;
+import org.apache.solr.client.solrj.SolrClient;
+import org.apache.solr.client.solrj.SolrQuery;
+import org.apache.solr.client.solrj.SolrRequest;
+import org.apache.solr.client.solrj.impl.HttpSolrClient;
+import org.apache.solr.client.solrj.request.GenericSolrRequest;
+import org.apache.solr.client.solrj.response.QueryResponse;
+import org.apache.solr.common.params.CommonParams;
+import org.apache.solr.common.util.NamedList;
+import org.apache.solr.core.NodeConfig;
+import org.apache.solr.core.SolrResourceLoader;
+import org.apache.solr.core.SolrXmlConfig;
+import org.apache.solr.handler.admin.MetricsHandler;
+import org.apache.solr.request.SolrQueryRequest;
+import org.apache.solr.response.SolrQueryResponse;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
@@ -89,6 +107,46 @@ public class JvmMetricsTest extends SolrJettyTestBase {
   }
 
   @Test
+  public void testSystemProperties() throws Exception {
+    if (System.getProperty("basicauth") == null) {
+      // make sure it's set
+      System.setProperty("basicauth", "foo:bar");
+    }
+    SolrMetricManager metricManager = jetty.getCoreContainer().getMetricManager();
+    Map<String,Metric> metrics = metricManager.registry("solr.jvm").getMetrics();
+    MetricsMap map = (MetricsMap)metrics.get("system.properties");
+    assertNotNull(map);
+    Map<String,Object> values = map.getValue();
+    System.getProperties().forEach((k, v) -> {
+      if (NodeConfig.NodeConfigBuilder.DEFAULT_HIDDEN_SYS_PROPS.contains(k)) {
+        assertNull("hidden property " + k + " present!", values.get(k));
+      } else {
+        assertEquals(v, values.get(String.valueOf(k)));
+      }
+    });
+  }
+
+  @Test
+  public void testHiddenSysProps() throws Exception {
+    Path home = Paths.get(TEST_HOME());
+    SolrResourceLoader loader = new SolrResourceLoader(home);
+
+    // default config
+    String solrXml = FileUtils.readFileToString(Paths.get(home.toString(), "solr.xml").toFile(), "UTF-8");
+    NodeConfig config = SolrXmlConfig.fromString(loader, solrXml);
+    NodeConfig.NodeConfigBuilder.DEFAULT_HIDDEN_SYS_PROPS.forEach(s -> {
+      assertTrue(s, config.getHiddenSysProps().contains(s));
+    });
+
+    // custom config
+    solrXml = FileUtils.readFileToString(Paths.get(home.toString(), "solr-hiddensysprops.xml").toFile(), "UTF-8");
+    NodeConfig config2 = SolrXmlConfig.fromString(loader, solrXml);
+    Arrays.asList("foo", "bar", "baz").forEach(s -> {
+      assertTrue(s, config2.getHiddenSysProps().contains(s));
+    });
+  }
+
+  @Test
   public void testSetupJvmMetrics() throws Exception {
     SolrMetricManager metricManager = jetty.getCoreContainer().getMetricManager();
     Map<String,Metric> metrics = metricManager.registry("solr.jvm").getMetrics();
@@ -99,5 +157,6 @@ public class JvmMetricsTest extends SolrJettyTestBase {
     assertTrue(metrics.toString(), metrics.entrySet().stream().filter(e -> e.getKey().startsWith("gc.")).count() > 0);
     assertTrue(metrics.toString(), metrics.entrySet().stream().filter(e -> e.getKey().startsWith("memory.")).count() > 0);
     assertTrue(metrics.toString(), metrics.entrySet().stream().filter(e -> e.getKey().startsWith("threads.")).count() > 0);
+    assertTrue(metrics.toString(), metrics.entrySet().stream().filter(e -> e.getKey().startsWith("system.")).count() > 0);
   }
 }
