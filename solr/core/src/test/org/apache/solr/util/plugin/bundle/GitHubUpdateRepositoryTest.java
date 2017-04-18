@@ -17,26 +17,25 @@
 
 package org.apache.solr.util.plugin.bundle;
 
+import org.junit.Before;
+import org.junit.Test;
+
+import static org.junit.Assert.*;
+
 /**
- * Loads plugins from a GitHub repo given its URL or simpply "user/repo"
+ * Test the GitHub repo
  */
-public class GitHubUpdateRepository extends PluginUpdateRepository {
-  private static final String GITHUB_RAW_ROOT = "https://raw.githubusercontent.com/{user}/{repo}/master/";
-  private final String githubUser;
-  private final String repo;
+public class GitHubUpdateRepositoryTest {
+  private GitHubUpdateRepository repo;
 
-  public GitHubUpdateRepository(String id, String gitHubUser, String repo) {
-    super(id, "");
-    this.githubUser = gitHubUser;
-    this.repo = repo;
+  @Before
+  public void init() {
+    repo = new GitHubUpdateRepository("github","myUser", "myRepo");
   }
 
-  /**
-   * Returns the GitHub RAW url
-   * @return Url of the repository location
-   */
-  @Override
-  protected String resolveUrl() {
-    return GITHUB_RAW_ROOT.replaceFirst("\\{user\\}", githubUser).replaceFirst("\\{repo\\}", repo);
+  @Test
+  public void resolveUrl() throws Exception {
+    assertEquals("https://raw.githubusercontent.com/myUser/myRepo/master/", repo.resolveUrl());
   }
+
 }
