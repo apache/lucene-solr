@@ -26,11 +26,10 @@ import java.util.Map;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.CoreAdminParams;
 import org.apache.solr.common.util.Utils;
+import org.apache.solr.cloud.autoscaling.Policy.Suggester.Hint;
 
 import static java.util.Arrays.asList;
 import static org.apache.solr.common.params.CollectionParams.CollectionAction.ADDREPLICA;
-import static org.apache.solr.autoscaling.Policy.Suggester.Hint.COLL;
-import static org.apache.solr.autoscaling.Policy.Suggester.Hint.SHARD;
 
 public class PolicyHelper {
   public static Map<String, List<String>> getReplicaLocations(String collName, Map<String, Object> autoScalingJson,
@@ -51,8 +50,8 @@ public class PolicyHelper {
     for (String shardName : shardNames) {
       for (int i = 0; i < repFactor; i++) {
         Policy.Suggester suggester = session.getSuggester(ADDREPLICA)
-            .hint(COLL, collName)
-            .hint(SHARD, shardName);
+            .hint(Hint.COLL, collName)
+            .hint(Hint.SHARD, shardName);
         Map op = suggester.getOperation();
         if (op == null) {
           throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "No node can satisfy the rules "+ Utils.toJSONString(policy));
@@ -66,6 +65,7 @@ public class PolicyHelper {
   }
 
   public List<Map> addNode(Map<String, Object> autoScalingJson, String node,  ClusterDataProvider cdp){
+    //todo
     return null;
 
   }
