@@ -226,6 +226,7 @@ public class Policy implements MapWriter {
 
   public static class ReplicaInfo implements MapWriter {
     final String name;
+    String core,collection,shard;
     Map<String, Object> variables;
 
     public ReplicaInfo(String name, Map<String, Object> vals) {
@@ -236,6 +237,16 @@ public class Policy implements MapWriter {
     @Override
     public void writeMap(EntryWriter ew) throws IOException {
       ew.put(name, variables);
+    }
+    public String getCore(){
+      return core;
+    }
+    public String getCollection(){
+      return collection;
+    }
+
+    public String getShard(){
+      return shard;
     }
   }
 

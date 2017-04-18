@@ -15,12 +15,13 @@
  * limitations under the License.
  */
 
-package org.apache.solr.autoscaling;
+package org.apache.solr.cloud.autoscaling;
 
 
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -29,7 +30,7 @@ import java.util.Map;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.util.Utils;
 import org.apache.solr.common.util.ValidatingJsonMap;
-import org.apache.solr.autoscaling.Policy.Suggester.Hint;
+import org.apache.solr.cloud.autoscaling.Policy.Suggester.Hint;
 
 import static org.apache.solr.common.params.CollectionParams.CollectionAction.ADDREPLICA;
 import static org.apache.solr.common.util.Utils.getObjectByPath;

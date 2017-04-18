@@ -64,7 +64,7 @@ public class PolicyHelper {
     return positionMapping;
   }
 
-  public List<Map> addNode(Map<String, Object> autoScalingJson, String node,  ClusterDataProvider cdp){
+  public List<Map> addNode(Map<String, Object> autoScalingJson, String node, ClusterDataProvider cdp) {
     //todo
     return null;
 
