@@ -4919,6 +4919,98 @@ public class StreamExpressionTest extends SolrCloudTestCase {
   }
 
   @Test
+  public void testEchoStream() throws Exception {
+    String expr = "echo(hello world)";
+    ModifiableSolrParams paramsLoc = new ModifiableSolrParams();
+    paramsLoc.set("expr", expr);
+    paramsLoc.set("qt", "/stream");
+
+    String url = cluster.getJettySolrRunners().get(0).getBaseUrl().toString()+"/"+COLLECTIONORALIAS;
+    TupleStream solrStream = new SolrStream(url, paramsLoc);
+
+    StreamContext context = new StreamContext();
+    solrStream.setStreamContext(context);
+    List<Tuple> tuples = getTuples(solrStream);
+    assertTrue(tuples.size() == 1);
+    String s = (String)tuples.get(0).get("echo");
+    assertTrue(s.equals("hello world"));
+
+    expr = "echo(\"hello world\")";
+    paramsLoc = new ModifiableSolrParams();
+    paramsLoc.set("expr", expr);
+    paramsLoc.set("qt", "/stream");
+
+    solrStream = new SolrStream(url, paramsLoc);
+
+    solrStream.setStreamContext(context);
+    tuples = getTuples(solrStream);
+    assertTrue(tuples.size() == 1);
+    s = (String)tuples.get(0).get("echo");
+    assertTrue(s.equals("hello world"));
+
+    expr = "echo(\"hello, world\")";
+    paramsLoc = new ModifiableSolrParams();
+    paramsLoc.set("expr", expr);
+    paramsLoc.set("qt", "/stream");
+
+    solrStream = new SolrStream(url, paramsLoc);
+
+    solrStream.setStreamContext(context);
+    tuples = getTuples(solrStream);
+    assertTrue(tuples.size() == 1);
+    s = (String)tuples.get(0).get("echo");
+    assertTrue(s.equals("hello, world"));
+
+    expr = "echo(\"hello, \\\"t\\\" world\")";
+    paramsLoc = new ModifiableSolrParams();
+    paramsLoc.set("expr", expr);
+    paramsLoc.set("qt", "/stream");
+
+    solrStream = new SolrStream(url, paramsLoc);
+
+    solrStream.setStreamContext(context);
+    tuples = getTuples(solrStream);
+    assertTrue(tuples.size() == 1);
+    s = (String)tuples.get(0).get("echo");
+
+    assertTrue(s.equals("hello, \"t\" world"));
+
+    expr = "parallel("+COLLECTIONORALIAS+", workers=2, sort=\"echo asc\", echo(\"hello, \\\"t\\\" world\"))";
+    paramsLoc = new ModifiableSolrParams();
+    paramsLoc.set("expr", expr);
+    paramsLoc.set("qt", "/stream");
+
+    solrStream = new SolrStream(url, paramsLoc);
+
+    solrStream.setStreamContext(context);
+    tuples = getTuples(solrStream);
+    assertTrue(tuples.size() == 2);
+    s = (String)tuples.get(0).get("echo");
+    assertTrue(s.equals("hello, \"t\" world"));
+    s = (String)tuples.get(1).get("echo");
+    assertTrue(s.equals("hello, \"t\" world"));
+
+    expr = "echo(\"tuytuy iuyiuyi iuyiuyiu iuyiuyiuyiu iuyi iuyiyiuy iuyiuyiu iyiuyiu iyiuyiuyyiyiu yiuyiuyi" +
+        " yiuyiuyi yiuyiuuyiu yiyiuyiyiu iyiuyiuyiuiuyiu yiuyiuyi yiuyiy yiuiyiuiuy\")";
+    paramsLoc = new ModifiableSolrParams();
+    paramsLoc.set("expr", expr);
+    paramsLoc.set("qt", "/stream");
+
+    solrStream = new SolrStream(url, paramsLoc);
+
+    solrStream.setStreamContext(context);
+    tuples = getTuples(solrStream);
+    assertTrue(tuples.size() == 1);
+    s = (String)tuples.get(0).get("echo");
+
+    assertTrue(s.equals("tuytuy iuyiuyi iuyiuyiu iuyiuyiuyiu iuyi iuyiyiuy iuyiuyiu iyiuyiu iyiuyiuyyiyiu yiuyiuyi yiuyiuyi " +
+        "yiuyiuuyiu yiyiuyiyiu iyiuyiuyiuiuyiu yiuyiuyi yiuyiy yiuiyiuiuy"));
+
+
+
+  }
+
+  @Test
   public void testConvertEvaluator() throws Exception {
 
     UpdateRequest updateRequest = new UpdateRequest();
