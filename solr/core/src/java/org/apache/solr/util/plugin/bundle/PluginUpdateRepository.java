@@ -18,12 +18,11 @@
 package org.apache.solr.util.plugin.bundle;
 
 import java.lang.invoke.MethodHandles;
-import java.util.Map;
+import java.net.URL;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import ro.fortsoft.pf4j.update.DefaultUpdateRepository;
-import ro.fortsoft.pf4j.update.PluginInfo;
 
 /**
  * An update repo that defers URL location resolving to runtime
@@ -31,24 +30,23 @@ import ro.fortsoft.pf4j.update.PluginInfo;
 public class PluginUpdateRepository extends DefaultUpdateRepository {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
-  private String resolvedUrl;
+  private URL resolvedUrl;
   private boolean locationResolved = false;
-  private Map<String, PluginInfo> plugins;
 
   public PluginUpdateRepository(String id) {
-    this(id, "");
+    this(id, null);
   }
 
-  public PluginUpdateRepository(String id, String location) {
-    super(id, location);
+  public PluginUpdateRepository(String id, URL url) {
+    super(id, url);
   }
 
-  public PluginUpdateRepository(String id, String location, String pluginsJson) {
-    super(id, location, pluginsJson);
+  public PluginUpdateRepository(String id, URL url, String pluginsJson) {
+    super(id, url, pluginsJson);
   }
 
   @Override
-  public String getUrl() {
+  public URL getUrl() {
     if (resolvedUrl == null && !locationResolved) {
       resolvedUrl = resolveUrl();
       locationResolved = true;
@@ -60,7 +58,7 @@ public class PluginUpdateRepository extends DefaultUpdateRepository {
    * Resolves location of repo at load time. Override this to dynamically resolve real repo location
    * @return URL of the repository location
    */
-  protected String resolveUrl() {
+  protected URL resolveUrl() {
     return super.getUrl();
   }
 }

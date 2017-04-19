@@ -17,6 +17,11 @@
 
 package org.apache.solr.util.plugin.bundle;
 
+import java.net.MalformedURLException;
+import java.net.URL;
+
+import org.apache.solr.common.SolrException;
+
 /**
  * Loads plugins from a GitHub repo given its URL or simpply "user/repo"
  */
@@ -26,7 +31,7 @@ public class GitHubUpdateRepository extends PluginUpdateRepository {
   private final String repo;
 
   public GitHubUpdateRepository(String id, String gitHubUser, String repo) {
-    super(id, "");
+    super(id, null);
     this.githubUser = gitHubUser;
     this.repo = repo;
   }
@@ -36,7 +41,11 @@ public class GitHubUpdateRepository extends PluginUpdateRepository {
    * @return Url of the repository location
    */
   @Override
-  protected String resolveUrl() {
-    return GITHUB_RAW_ROOT.replaceFirst("\\{user\\}", githubUser).replaceFirst("\\{repo\\}", repo);
+  protected URL resolveUrl() {
+    try {
+      return new URL(GITHUB_RAW_ROOT.replaceFirst("\\{user\\}", githubUser).replaceFirst("\\{repo\\}", repo));
+    } catch (MalformedURLException e) {
+      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
+    }
   }
 }

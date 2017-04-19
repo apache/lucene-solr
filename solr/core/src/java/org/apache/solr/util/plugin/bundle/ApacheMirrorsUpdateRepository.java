@@ -22,11 +22,13 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.lang.invoke.MethodHandles;
 import java.net.HttpURLConnection;
+import java.net.MalformedURLException;
 import java.net.URL;
 import java.nio.file.Files;
 import java.nio.file.Path;
 
 import org.apache.commons.codec.digest.DigestUtils;
+import org.apache.solr.common.SolrException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import ro.fortsoft.pf4j.PluginException;
@@ -44,15 +46,20 @@ public class ApacheMirrorsUpdateRepository extends PluginUpdateRepository {
   private static final String CLOSER_URL = "https://www.apache.org/dyn/closer.lua?action=download&filename=";
   private String path;
   private FileDownloader downloader;
+  private URL mirrorUrl;
 
   public ApacheMirrorsUpdateRepository(String id, String path) {
     super(id);
     this.path = path;
+    try {
+      this.mirrorUrl = new URL(CLOSER_URL + path);
+    } catch (MalformedURLException e) {
+      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
+    }
   }
 
   @Override
-  protected String resolveUrl() {
-    String mirrorUrl = CLOSER_URL + path;
+  protected URL resolveUrl() {
     try {
       mirrorUrl = getFinalURL(mirrorUrl);
       return mirrorUrl;
@@ -60,14 +67,14 @@ public class ApacheMirrorsUpdateRepository extends PluginUpdateRepository {
       log.debug("Url {} not found in mirrors, response={}",
           mirrorUrl, e.getMessage());
       try {
-        mirrorUrl = getFinalURL(APACHE_DIST_URL + path);
+        mirrorUrl = getFinalURL(new URL(APACHE_DIST_URL + path));
         log.debug("Resolved URL: {}", mirrorUrl);
         return mirrorUrl;
       } catch (IOException e1) {
         log.debug("Url {} not found in main repo, response={}",
             mirrorUrl, e1.getMessage());
         try {
-          mirrorUrl = getFinalURL(APACHE_ARCHIVE_URL + path);
+          mirrorUrl = getFinalURL(new URL(APACHE_ARCHIVE_URL + path));
           log.debug("Resolved URL: {}", mirrorUrl);
           return mirrorUrl;
         } catch (IOException e2) {
@@ -93,15 +100,15 @@ public class ApacheMirrorsUpdateRepository extends PluginUpdateRepository {
    * @return new URL which could be the same as the original or a new after redirects
    * @throws IOException if problems opening URL
    */
-  public static String getFinalURL(String url) throws IOException {
-      HttpURLConnection con = (HttpURLConnection) new URL(url).openConnection();
+  public static URL getFinalURL(URL url) throws IOException {
+      HttpURLConnection con = (HttpURLConnection) url.openConnection();
       con.setInstanceFollowRedirects(false);
       con.setRequestMethod("GET");
       con.connect();
       con.getInputStream();
 
       if (con.getResponseCode() == HttpURLConnection.HTTP_MOVED_PERM || con.getResponseCode() == HttpURLConnection.HTTP_MOVED_TEMP) {
-          String redirectUrl = con.getHeaderField("Location");
+          URL redirectUrl = new URL(con.getHeaderField("Location"));
           return getFinalURL(redirectUrl);
       }
       return url;

@@ -35,7 +35,7 @@ public class GitHubUpdateRepositoryTest {
 
   @Test
   public void resolveUrl() throws Exception {
-    assertEquals("https://raw.githubusercontent.com/myUser/myRepo/master/", repo.resolveUrl());
+    assertEquals("https://raw.githubusercontent.com/myUser/myRepo/master/", repo.resolveUrl().toString());
   }
 
 }

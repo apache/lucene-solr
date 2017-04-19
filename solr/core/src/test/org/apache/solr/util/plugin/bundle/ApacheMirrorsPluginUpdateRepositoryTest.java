@@ -41,12 +41,12 @@ public class ApacheMirrorsPluginUpdateRepositoryTest {
 
   @Test
   public void mirrorExist() throws Exception {
-    assertEquals("http://apache.uib.no/lucene/solr/6.5.0/", mirrorExist.getUrl());
+    assertEquals("http://apache.uib.no/lucene/solr/6.5.0/", mirrorExist.getUrl().toString());
   }
 
   @Test
   public void successfulRedirect() throws Exception {
-    assertEquals("https://archive.apache.org/dist/lucene/solr/5.5.0/", repoRedir.getUrl());
+    assertEquals("https://archive.apache.org/dist/lucene/solr/5.5.0/", repoRedir.getUrl().toString());
   }
 
   @Test

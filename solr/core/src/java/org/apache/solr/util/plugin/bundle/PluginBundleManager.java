@@ -21,6 +21,7 @@ import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Modifier;
+import java.net.MalformedURLException;
 import java.net.URL;
 import java.net.URLClassLoader;
 import java.nio.file.Path;
@@ -50,7 +51,6 @@ import ro.fortsoft.pf4j.PluginLoader;
 import ro.fortsoft.pf4j.PluginManager;
 import ro.fortsoft.pf4j.PluginWrapper;
 import ro.fortsoft.pf4j.PropertiesPluginDescriptorFinder;
-import ro.fortsoft.pf4j.update.DefaultUpdateRepository;
 import ro.fortsoft.pf4j.update.PluginInfo;
 import ro.fortsoft.pf4j.update.PluginInfo.PluginRelease;
 import ro.fortsoft.pf4j.update.UpdateManager;
@@ -70,15 +70,19 @@ public class PluginBundleManager {
   private ClassLoader uberLoader;
 
   public PluginBundleManager(Path pluginsRoot) {
-    this.pluginsRoot = pluginsRoot;
-    pluginManager = new SolrPluginManager(pluginsRoot);
-    systemVersion = Version.valueOf(org.apache.lucene.util.Version.LATEST.toString());
-    ApacheMirrorsUpdateRepository apacheRepo = new ApacheMirrorsUpdateRepository("apache", "lucene/solr/" + systemVersion.toString() + "/");
-    List<UpdateRepository> repos = new ArrayList<>();
-    repos.add(new PluginUpdateRepository("janhoy","http://people.apache.org/~janhoy/dist/plugins/"));
-    repos.add(new GitHubUpdateRepository("github","cominvent", "solr-plugins"));
-    updateManager = new UpdateManager(pluginManager, repos);
-    pluginManager.setSystemVersion(systemVersion);
+    try {
+      this.pluginsRoot = pluginsRoot;
+      pluginManager = new SolrPluginManager(pluginsRoot);
+      systemVersion = Version.valueOf(org.apache.lucene.util.Version.LATEST.toString());
+      ApacheMirrorsUpdateRepository apacheRepo = new ApacheMirrorsUpdateRepository("apache", "lucene/solr/" + systemVersion.toString() + "/");
+      List<UpdateRepository> repos = new ArrayList<>();
+      repos.add(new PluginUpdateRepository("janhoy", new URL("http://people.apache.org/~janhoy/dist/plugins/")));
+      repos.add(new GitHubUpdateRepository("github","cominvent", "solr-plugins"));
+      updateManager = new UpdateManager(pluginManager, repos);
+      pluginManager.setSystemVersion(systemVersion);
+    } catch (MalformedURLException e) {
+      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
+    }
   }
 
   public void load() {
@@ -122,7 +126,11 @@ public class PluginBundleManager {
         String installedVersion = pluginManager.getPlugin(plugin.id).getDescriptor().getVersion().toString();
         // TODO: Inspect whether we can use the plugin or not
         log.info("Updating plugin with id " + plugin.id);
-        updateManager.updatePlugin(plugin.id, lastRelease.url);
+        try {
+          updateManager.updatePlugin(plugin.id, new URL(lastRelease.url));
+        } catch (MalformedURLException e) {
+          log.warn("Failed updating plugin {}", plugin.id, e);
+        }
       }
     }
   }
@@ -151,7 +159,7 @@ public class PluginBundleManager {
     return uberLoader;
   }
   
-  public void addUpdateRepository(String id, String url) {
+  public void addUpdateRepository(String id, URL url) {
     updateManager.addRepository(id, url);
   }
 

@@ -17,6 +17,7 @@
 
 package org.apache.solr.util.plugin.bundle;
 
+import java.net.URL;
 import java.util.List;
 
 import org.junit.Before;
@@ -28,7 +29,6 @@ import ro.fortsoft.pf4j.update.PluginInfo;
 import static junit.framework.Assert.assertEquals;
 import static junit.framework.TestCase.assertFalse;
 import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
 
 /**
  * Test the PF4J integration
@@ -41,9 +41,9 @@ public class PluginBundleManagerTest {
   public TemporaryFolder testFolder = new TemporaryFolder();
 
   @Before
-  public void before() {
+  public void before() throws Exception {
     pluginBundleManager = new PluginBundleManager(testFolder.getRoot().toPath());
-    pluginBundleManager.addUpdateRepository("folder", "file:/Users/janhoy/solr-repo/");
+    pluginBundleManager.addUpdateRepository("folder", new URL("file:/Users/janhoy/solr-repo/"));
 //    pluginBundleManager.listInstalled().forEach(info -> pluginBundleManager.uninstall(info.getPluginId()));
   }
 
