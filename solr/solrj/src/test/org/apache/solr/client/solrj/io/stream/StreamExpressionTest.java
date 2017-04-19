@@ -4787,7 +4787,7 @@ public class StreamExpressionTest extends SolrCloudTestCase {
 
   @Test
   public void testCalculatorStream() throws Exception {
-    String expr = "select(eval(), add(1, 1) as result)";
+    String expr = "select(calc(), add(1, 1) as result)";
     ModifiableSolrParams paramsLoc = new ModifiableSolrParams();
     paramsLoc.set("expr", expr);
     paramsLoc.set("qt", "/stream");
@@ -5010,6 +5010,30 @@ public class StreamExpressionTest extends SolrCloudTestCase {
 
   }
 
+
+  @Test
+  public void testEvalStream() throws Exception {
+    UpdateRequest updateRequest = new UpdateRequest();
+    updateRequest.add(id, "hello", "test_t", "l b c d c");
+    updateRequest.commit(cluster.getSolrClient(), COLLECTIONORALIAS);
+
+    String expr = "eval(select(echo(\"search("+COLLECTIONORALIAS+", q=\\\"*:*\\\", fl=id, sort=\\\"id desc\\\")\"), echo as expr_s))";
+    ModifiableSolrParams paramsLoc = new ModifiableSolrParams();
+    paramsLoc.set("expr", expr);
+    paramsLoc.set("qt", "/stream");
+
+    String url = cluster.getJettySolrRunners().get(0).getBaseUrl().toString()+"/"+COLLECTIONORALIAS;
+    TupleStream solrStream = new SolrStream(url, paramsLoc);
+
+    StreamContext context = new StreamContext();
+    solrStream.setStreamContext(context);
+    List<Tuple> tuples = getTuples(solrStream);
+    assertTrue(tuples.size() == 1);
+    String s = (String)tuples.get(0).get("id");
+    assertTrue(s.equals("hello"));
+
+  }
+
   @Test
   public void testConvertEvaluator() throws Exception {
 
@@ -5020,7 +5044,7 @@ public class StreamExpressionTest extends SolrCloudTestCase {
     updateRequest.commit(cluster.getSolrClient(), COLLECTIONORALIAS);
 
     //Test annotating tuple
-    String expr = "select(eval(), convert(miles, kilometers, 10) as kilometers)";
+    String expr = "select(calc(), convert(miles, kilometers, 10) as kilometers)";
     ModifiableSolrParams paramsLoc = new ModifiableSolrParams();
     paramsLoc.set("expr", expr);
     paramsLoc.set("qt", "/stream");
