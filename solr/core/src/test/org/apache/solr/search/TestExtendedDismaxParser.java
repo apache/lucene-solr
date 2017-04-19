@@ -21,6 +21,7 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.Random;
 import java.util.Set;
+import java.util.stream.Stream;
 
 import org.apache.lucene.search.BooleanClause;
 import org.apache.lucene.search.BooleanQuery;
@@ -1766,8 +1767,29 @@ public class TestExtendedDismaxParser extends SolrTestCaseJ4 {
         , "/response/numFound==1"
     );
   }
-  
-  
+
+  public void testSowFalseWithBoost() throws Exception {
+    try (SolrQueryRequest req = req("sow", "false", "qf", "text_np title")) {
+      QParser qParser = QParser.getParser("one two", "edismax", req);
+      Query q = qParser.getQuery();
+      assertEquals("+((text_np:on | title:one) (text_np:two | title:two))", q.toString());
+    }
+    try (SolrQueryRequest req = req("sow", "false", "qf", "text_np title^5")) {
+      QParser qParser = QParser.getParser("one two", "edismax", req);
+      Query q = qParser.getQuery();
+      assertEquals("+((text_np:on | (title:one)^5.0) (text_np:two | (title:two)^5.0))", q.toString());
+    }
+    try (SolrQueryRequest req = req("sow", "false", "qf", "text_np^3 title")) {
+      QParser qParser = QParser.getParser("one two", "edismax", req);
+      Query q = qParser.getQuery();
+      assertEquals("+(((text_np:on)^3.0 | title:one) ((text_np:two)^3.0 | title:two))", q.toString());
+    }
+    try (SolrQueryRequest req = req("sow", "false", "qf", "text_np^10 title^20")) {
+      QParser qParser = QParser.getParser("one two", "edismax", req);
+      Query q = qParser.getQuery();
+      assertEquals("+(((text_np:on)^10.0 | (title:one)^20.0) ((text_np:two)^10.0 | (title:two)^20.0))", q.toString());
+    }
+  }
 
   private boolean containsClause(Query query, String field, String value,
       int boost, boolean fuzzy) {
@@ -1831,7 +1853,7 @@ public class TestExtendedDismaxParser extends SolrTestCaseJ4 {
     return false;
   }
 
-  class MultilanguageQueryParser extends ExtendedDismaxQParser {
+  static class MultilanguageQueryParser extends ExtendedDismaxQParser {
 
     public MultilanguageQueryParser(String qstr, SolrParams localParams,
         SolrParams params, SolrQueryRequest req) {
@@ -1858,10 +1880,10 @@ public class TestExtendedDismaxParser extends SolrTestCaseJ4 {
     }
     
   }
-  
-  
-  
-  class FuzzyDismaxQParser extends ExtendedDismaxQParser {
+
+
+
+  static class FuzzyDismaxQParser extends ExtendedDismaxQParser {
 
     public FuzzyDismaxQParser(String qstr, SolrParams localParams,
         SolrParams params, SolrQueryRequest req) {
