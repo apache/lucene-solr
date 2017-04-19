@@ -102,6 +102,9 @@ Improvements
 * LUCENE-7782: OfflineSorter now passes the total number of items it
   will write to getWriter (Mike McCandless)
 
+* LUCENE-7785: Move dictionary for Ukrainian analyzer to external dependency.
+  (Andriy Rysin via Steve Rowe, Dawid Weiss)
+
 Optimizations
 
 * LUCENE-7787: spatial-extras HeatmapFacetCounter will now short-circuit it's
