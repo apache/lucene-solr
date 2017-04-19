@@ -760,7 +760,7 @@ public class RealTimeGetComponent extends SearchComponent
           out.add(f);
         }
       } else {
-        log.debug("Don't know how to handle field " + f);
+        log.debug("Don't know how to handle field {}", f);
       }
     }
 
