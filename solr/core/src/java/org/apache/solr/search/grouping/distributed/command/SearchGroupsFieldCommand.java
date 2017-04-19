@@ -151,6 +151,11 @@ public class SearchGroupsFieldCommand implements Command<SearchGroupsFieldComman
   }
 
   @Override
+  public SortSpec getWithinGroupSortSpec() {
+    return null;
+  }
+
+  @Override
   public Sort getGroupSort() {
     return groupSortSpec.getSort();
   }
@@ -159,11 +164,6 @@ public class SearchGroupsFieldCommand implements Command<SearchGroupsFieldComman
   @Override
   public SortSpec getGroupSortSpec() {
     return groupSortSpec;
-  }
-
-  @Override
-  public SortSpec getWithinGroupSortSpec() {
-    return null;
   }
 
   @Override

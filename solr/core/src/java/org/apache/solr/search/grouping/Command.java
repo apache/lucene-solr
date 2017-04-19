@@ -59,16 +59,14 @@ public interface Command<T> {
   Sort getGroupSort();
 
   /**
-   * @return The sort inside a group
-   */
-  Sort getWithinGroupSort();
-
-
-  /**
    * @return The group SortSpec (overall sort)
    */
   SortSpec getGroupSortSpec();
 
+  /**
+   * @return The sort inside a group
+   */
+  Sort getWithinGroupSort();
 
   /**
    * @return The SortSpec inside a group

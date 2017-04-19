@@ -150,12 +150,12 @@ public class QueryCommand implements Command<QueryCommandResult> {
   }
 
   @Override
-  public Sort getWithinGroupSort() {
+  public SortSpec getGroupSortSpec() {
     return null;
   }
 
   @Override
-  public SortSpec getGroupSortSpec() {
+  public Sort getWithinGroupSort() {
     return null;
   }
 

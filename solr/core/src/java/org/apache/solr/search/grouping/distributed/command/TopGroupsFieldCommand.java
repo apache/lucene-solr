@@ -177,13 +177,13 @@ public class TopGroupsFieldCommand implements Command<TopGroups<BytesRef>> {
   }
 
   @Override
-  public Sort getWithinGroupSort() {
-    return withinGroupSortSpec.getSort();
+  public SortSpec getGroupSortSpec() {
+    return groupSortSpec;
   }
 
   @Override
-  public SortSpec getGroupSortSpec() {
-    return groupSortSpec;
+  public Sort getWithinGroupSort() {
+    return withinGroupSortSpec.getSort();
   }
 
   @Override
