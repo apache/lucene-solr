@@ -19,8 +19,6 @@ package org.apache.solr.util.plugin.bundle;
 
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
-import java.lang.reflect.Constructor;
-import java.lang.reflect.Modifier;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.net.URLClassLoader;
@@ -299,6 +297,35 @@ public class PluginBundleManager {
       return super.getPluginClassLoaders();
     }
 
+    static class JarPluginDescriptorFinder extends ManifestPluginDescriptorFinder {
+
+        @Override
+        public Manifest readManifest(Path pluginPath) throws PluginException {
+            try {
+                return new JarFile(pluginPath.toFile()).getManifest();
+            } catch (IOException e) {
+                throw new PluginException(e);
+            }
+        }
+
+    }
+
+    static class JarPluginLoader extends DefaultPluginLoader {
+
+        public JarPluginLoader(PluginManager pluginManager, PluginClasspath pluginClasspath) {
+            super(pluginManager, pluginClasspath);
+        }
+
+        @Override
+        public ClassLoader loadPlugin(Path pluginPath, PluginDescriptor pluginDescriptor) {
+            PluginClassLoader pluginClassLoader = new PluginClassLoader(pluginManager, pluginDescriptor, getClass().getClassLoader());
+            pluginClassLoader.addFile(pluginPath.toFile());
+
+            return pluginClassLoader;
+        }
+
+    }
+
     /**
      * Descriptor finder that determines what to look for based on the given path
      */
@@ -353,32 +380,4 @@ public class PluginBundleManager {
     }
   }
 
-  static class JarPluginDescriptorFinder extends ManifestPluginDescriptorFinder {
-
-      @Override
-      public Manifest readManifest(Path pluginPath) throws PluginException {
-          try {
-              return new JarFile(pluginPath.toFile()).getManifest();
-          } catch (IOException e) {
-              throw new PluginException(e);
-          }
-      }
-
-  }
-
-  static class JarPluginLoader extends DefaultPluginLoader {
-
-      public JarPluginLoader(PluginManager pluginManager, PluginClasspath pluginClasspath) {
-          super(pluginManager, pluginClasspath);
-      }
-
-      @Override
-      public ClassLoader loadPlugin(Path pluginPath, PluginDescriptor pluginDescriptor) {
-          PluginClassLoader pluginClassLoader = new PluginClassLoader(pluginManager, pluginDescriptor, getClass().getClassLoader());
-          pluginClassLoader.addFile(pluginPath.toFile());
-
-          return pluginClassLoader;
-      }
-
-  }
 }
