@@ -60,13 +60,13 @@ public class TopGroupsFieldCommand implements Command<TopGroups<BytesRef>> {
     }
 
     public Builder setGroupSortSpec(SortSpec groupSortSpec) {
-        this.groupSortSpec = groupSortSpec;
-        return this;
+      this.groupSortSpec = groupSortSpec;
+      return this;
     }
 
     public Builder setWithinGroupSortSpec(SortSpec withinGroupSortSpec) {
-        this.withinGroupSortSpec = withinGroupSortSpec;
-        return this;
+      this.withinGroupSortSpec = withinGroupSortSpec;
+      return this;
     }
 
     public Builder setFirstPhaseGroups(Collection<SearchGroup<BytesRef>> firstPhaseGroups) {
@@ -90,7 +90,7 @@ public class TopGroupsFieldCommand implements Command<TopGroups<BytesRef>> {
     }
 
     public TopGroupsFieldCommand build() {
-        if (field == null || groupSortSpec == null || groupSortSpec.getSort() == null || withinGroupSortSpec == null ||  withinGroupSortSpec.getSort() == null || firstPhaseGroups == null ||
+      if (field == null || groupSortSpec == null || groupSortSpec.getSort() == null || withinGroupSortSpec == null ||  withinGroupSortSpec.getSort() == null || firstPhaseGroups == null ||
           maxDocPerGroup == null) {
         throw new IllegalStateException("All required fields must be set");
       }
@@ -173,12 +173,7 @@ public class TopGroupsFieldCommand implements Command<TopGroups<BytesRef>> {
 
   @Override
   public Sort getGroupSort() {
-      return groupSortSpec.getSort();
-  }
-
-  @Override
-  public Sort getWithinGroupSort() {
-      return withinGroupSortSpec.getSort();
+    return groupSortSpec.getSort();
   }
 
   @Override
@@ -187,8 +182,13 @@ public class TopGroupsFieldCommand implements Command<TopGroups<BytesRef>> {
   }
 
   @Override
+  public Sort getWithinGroupSort() {
+    return withinGroupSortSpec.getSort();
+  }
+
+  @Override
   public SortSpec getWithinGroupSortSpec() {
-      return withinGroupSortSpec;
+    return withinGroupSortSpec;
   }
 
 }

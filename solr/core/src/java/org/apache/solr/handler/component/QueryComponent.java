@@ -262,24 +262,19 @@ public class QueryComponent extends SearchComponent
     String withinGroupSortStr = params.get(GroupParams.GROUP_SORT);
     //TODO: move weighting of sort
     final SortSpec withinGroupSortSpec;
-
-    int withinGroupOffset = params.getInt(GroupParams.GROUP_OFFSET, 0);
-    int withinGroupCount = params.getInt(GroupParams.GROUP_LIMIT, 1);
-
     if (withinGroupSortStr != null) {
       SortSpec parsedWithinGroupSortSpec = SortSpecParsing.parseSortSpec(withinGroupSortStr, req);
       withinGroupSortSpec = searcher.weightSortSpec(parsedWithinGroupSortSpec, Sort.RELEVANCE);
-
-      withinGroupSortSpec.setOffset(withinGroupOffset);
-      withinGroupSortSpec.setCount(withinGroupCount);
-
     } else {
       withinGroupSortSpec = new SortSpec(
           groupSortSpec.getSort(),
           groupSortSpec.getSchemaFields(),
-          withinGroupCount,
-          withinGroupOffset);
+          groupSortSpec.getCount(),
+          groupSortSpec.getOffset());
     }
+    withinGroupSortSpec.setOffset(params.getInt(GroupParams.GROUP_OFFSET, 0));
+    withinGroupSortSpec.setCount(params.getInt(GroupParams.GROUP_LIMIT, 1));
+
     groupingSpec.setWithinGroupSortSpec(withinGroupSortSpec);
     groupingSpec.setGroupSortSpec(groupSortSpec);
 

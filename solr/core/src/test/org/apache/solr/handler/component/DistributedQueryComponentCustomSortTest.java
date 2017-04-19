@@ -46,9 +46,10 @@ public class DistributedQueryComponentCustomSortTest extends BaseDistributedSear
 
   @Test
   @ShardsFixed(num = 3)
-  public void test() throws Exception {    del("*:*");
+  public void test() throws Exception {
+    del("*:*");
 
-      index(id, "1", "text", "a", "val", "25", "payload", ByteBuffer.wrap(new byte[] { 0x12, 0x62, 0x15 }),                     //  2 
+    index(id, "1", "text", "a", "val", "25", "payload", ByteBuffer.wrap(new byte[] { 0x12, 0x62, 0x15 }),                     //  2 
           // quick check to prove "*" dynamicField hasn't been broken by somebody mucking with schema
           "asdfasdf_field_should_match_catchall_dynamic_field_adsfasdf", "value");
     index(id, "2", "text", "b", "val", "10", "payload", ByteBuffer.wrap(new byte[] { 0x25, 0x21, 0x16 }));                    //  5 
@@ -123,73 +124,35 @@ public class DistributedQueryComponentCustomSortTest extends BaseDistributedSear
     rsp = query("q", "*:*", "fl", "id", "sort", "payload desc, id asc", "rows", "20");
     assertFieldValues(rsp.getResults(), id, 11, 13, 8, 9, 5, 3, 12,   10,16,17,18,   2,   4,14,15,   6, 1, 7);
 
-
-//    non-function sorting
+    // SOLR-6203
     {
-        rsp = query("q", "id:[1 TO 10]", "fl", "id", "rows", "20",
-                    "sort", "payload desc, id asc", "group", "true", "group.field", "val", "group.sort", "id asc");
+      final String sort;
+      final int[] expectedIds;
+      if (random().nextBoolean()) {
+        // non-function sorting
+        sort = "payload desc, id asc";
+        expectedIds = new int[]{ 6, 1, 2 };
+      } else {
+        // function sorting
+        sort = "abs(sub(5,id)) asc, id desc";
+        expectedIds = new int[]{ 1, 6, 2 };
+      }
+      rsp = query("q", "id:[1 TO 10]", "fl", "id", "rows", "20",
+          "sort", sort, "group", "true", "group.field", "val", "group.sort", "id asc");
 
-        NamedList grouped = (NamedList)rsp.getResponse().get("grouped");
+      NamedList grouped = (NamedList)rsp.getResponse().get("grouped");
+      assertNotNull(grouped);
+      NamedList valFieldList = (NamedList)grouped.get("val");
+      assertEquals(10, valFieldList.get("matches"));
 
-        assertNotNull(grouped);
-
-        NamedList valFieldList = (NamedList)grouped.get("val");
-        assertEquals(10, valFieldList.get("matches"));
-
-        List<NamedList> groupLists = (List)valFieldList.get("groups");
-        assertEquals(3, groupLists.size());
-
-        NamedList groupList0 = (NamedList)groupLists.get(0);
-        assertNotNull(groupList0);
-
-        assertFieldValues((SolrDocumentList)groupList0.get("doclist"), id, 6);
-
-        NamedList groupList1 = (NamedList)groupLists.get(1);
-        assertNotNull(groupList1);
-
-        assertFieldValues((SolrDocumentList)groupList1.get("doclist"), id, 1);
-
-
-        NamedList groupList2 = (NamedList)groupLists.get(2);
-        assertNotNull(groupList2);
-
-        assertFieldValues((SolrDocumentList)groupList2.get("doclist"), id, 2);
+      List<NamedList> groupLists = (List)valFieldList.get("groups");
+      assertEquals(expectedIds.length, groupLists.size());
+      for (int ii=0; ii<expectedIds.length; ++ii) {
+        NamedList groupList = (NamedList)groupLists.get(ii);
+        assertNotNull(groupList);
+        assertFieldValues((SolrDocumentList)groupList.get("doclist"), id, expectedIds[ii]);
+      }
     }
-
-
-
-
-    // function sorting
-    {
-        rsp = query("q", "id:[1 TO 10]", "fl", "id", "rows", "20",
-                    "sort", "abs(sub(5,id)) asc, id desc", "group", "true", "group.field", "val", "group.sort", "id asc");
-        NamedList grouped = (NamedList)rsp.getResponse().get("grouped");
-
-        assertNotNull(grouped);
-
-        NamedList valFieldList = (NamedList)grouped.get("val");
-        assertEquals(10, valFieldList.get("matches"));
-
-        List<NamedList> groupLists = (List)valFieldList.get("groups");
-        assertEquals(3, groupLists.size());
-
-        NamedList groupList0 = (NamedList)groupLists.get(0);
-        assertNotNull(groupList0);
-
-        assertFieldValues((SolrDocumentList)groupList0.get("doclist"), id, 1);
-
-        NamedList groupList1 = (NamedList)groupLists.get(1);
-        assertNotNull(groupList1);
-
-        assertFieldValues((SolrDocumentList)groupList1.get("doclist"), id, 6);
-
-
-        NamedList groupList2 = (NamedList)groupLists.get(2);
-        assertNotNull(groupList2);
-
-        assertFieldValues((SolrDocumentList)groupList2.get("doclist"), id, 2);
-    }
-
 
     // function sorting, limit 1
     {
