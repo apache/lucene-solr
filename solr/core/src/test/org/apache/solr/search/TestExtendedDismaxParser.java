@@ -1820,6 +1820,29 @@ public class TestExtendedDismaxParser extends SolrTestCaseJ4 {
       }
     }
   }
+  
+  public void testSowFalseWithBoost() throws Exception {
+    try (SolrQueryRequest req = req("sow", "false", "qf", "subject title")) {
+      QParser qParser = QParser.getParser("one two", "edismax", req);
+      Query q = qParser.getQuery();
+      assertEquals("+((title:one | subject:on) (title:two | subject:two))", q.toString());
+    }
+    try (SolrQueryRequest req = req("sow", "false", "qf", "subject title^5")) {
+      QParser qParser = QParser.getParser("one two", "edismax", req);
+      Query q = qParser.getQuery();
+      assertEquals("+(((title:one)^5.0 | subject:on) ((title:two)^5.0 | subject:two))", q.toString());
+    }
+    try (SolrQueryRequest req = req("sow", "false", "qf", "subject^3 title")) {
+      QParser qParser = QParser.getParser("one two", "edismax", req);
+      Query q = qParser.getQuery();
+      assertEquals("+((title:one | (subject:on)^3.0) (title:two | (subject:two)^3.0))", q.toString());
+    }
+    try (SolrQueryRequest req = req("sow", "false", "qf", "subject^10 title^20")) {
+      QParser qParser = QParser.getParser("one two", "edismax", req);
+      Query q = qParser.getQuery();
+      assertEquals("+(((title:one)^20.0 | (subject:on)^10.0) ((title:two)^20.0 | (subject:two)^10.0))", q.toString());
+    }
+  }
 
 
   private boolean containsClause(Query query, String field, String value,

@@ -1063,7 +1063,7 @@ public class ExtendedDismaxQParser extends QParser {
       this.val = null;
       this.vals = queryTerms;
       this.slop = getPhraseSlop();
-      return getAliasedMultiTermQuery(queryTerms);
+      return getAliasedMultiTermQuery();
     }
 
     @Override
@@ -1188,11 +1188,11 @@ public class ExtendedDismaxQParser extends QParser {
      * DisjunctionMaxQuery.  (so yes: aliases which point at other
      * aliases should work)
      */
-    protected Query getAliasedMultiTermQuery(List<String> queryTerms) throws SyntaxError {
+    protected Query getAliasedMultiTermQuery() throws SyntaxError {
       Alias a = aliases.get(field);
       this.validateCyclicAliasing(field);
       if (a != null) {
-        List<Query> lst = getQueries(a);
+        List<Query> lst = getMultiTermQueries(a);
         if (lst == null || lst.size() == 0) {
           return getQuery();
         }
@@ -1203,14 +1203,25 @@ public class ExtendedDismaxQParser extends QParser {
         // DisMaxQuery.rewrite() removes itself if there is just a single clause anyway.
         // if (lst.size()==1) return lst.get(0);
         if (makeDismax) {
-          if (lst.get(0) instanceof BooleanQuery && allSameQueryStructure(lst)) {
+          Query firstQuery = lst.get(0);
+          if ((firstQuery instanceof BooleanQuery
+              || (firstQuery instanceof BoostQuery && ((BoostQuery)firstQuery).getQuery() instanceof BooleanQuery))
+              && allSameQueryStructure(lst)) {
             BooleanQuery.Builder q = new BooleanQuery.Builder();
             List<Query> subs = new ArrayList<>(lst.size());
-            for (int c = 0 ; c < ((BooleanQuery)lst.get(0)).clauses().size() ; ++c) {
+            BooleanQuery firstBooleanQuery = firstQuery instanceof BoostQuery
+                ? (BooleanQuery)((BoostQuery)firstQuery).getQuery() : (BooleanQuery)firstQuery;
+            for (int c = 0 ; c < firstBooleanQuery.clauses().size() ; ++c) {
               subs.clear();
               // Make a dismax query for each clause position in the boolean per-field queries.
               for (int n = 0 ; n < lst.size() ; ++n) {
-                subs.add(((BooleanQuery)lst.get(n)).clauses().get(c).getQuery());
+                if (lst.get(n) instanceof BoostQuery) {
+                  BoostQuery boostQuery = (BoostQuery)lst.get(n);
+                  BooleanQuery booleanQuery = (BooleanQuery)boostQuery.getQuery();
+                  subs.add(new BoostQuery(booleanQuery.clauses().get(c).getQuery(), boostQuery.getBoost()));
+                } else {
+                  subs.add(((BooleanQuery)lst.get(n)).clauses().get(c).getQuery());
+                }
               }
               q.add(newBooleanClause(new DisjunctionMaxQuery(subs, a.tie), BooleanClause.Occur.SHOULD));
             }
@@ -1239,12 +1250,21 @@ public class ExtendedDismaxQParser extends QParser {
       }
     }
 
-    /** Recursively examines the given query list for identical structure in all queries. */
+    /**
+     * Recursively examines the given query list for identical structure in all queries.
+     * Boosts on BoostQuery-s are ignored, and the contained queries are instead used as the basis for comparison.
+     **/
     private boolean allSameQueryStructure(List<Query> lst) {
       boolean allSame = true;
       Query firstQuery = lst.get(0);
+      if (firstQuery instanceof BoostQuery) {
+        firstQuery = ((BoostQuery)firstQuery).getQuery(); // ignore boost; compare contained query
+      }
       for (int n = 1 ; n < lst.size(); ++n) {
         Query nthQuery = lst.get(n);
+        if (nthQuery instanceof BoostQuery) {
+          nthQuery = ((BoostQuery)nthQuery).getQuery();
+        }
         if (nthQuery.getClass() != firstQuery.getClass()) {
           allSame = false;
           break;
@@ -1350,7 +1370,26 @@ public class ExtendedDismaxQParser extends QParser {
       }
       return lst;
     }
-    
+
+    protected List<Query> getMultiTermQueries(Alias a) throws SyntaxError {
+      if (a == null) return null;
+      if (a.fields.size()==0) return null;
+      List<Query> lst= new ArrayList<>(4);
+
+      for (String f : a.fields.keySet()) {
+        this.field = f;
+        Query sub = getAliasedMultiTermQuery();
+        if (sub != null) {
+          Float boost = a.fields.get(f);
+          if (boost != null && boost.floatValue() != 1f) {
+            sub = new BoostQuery(sub, boost);
+          }
+          lst.add(sub);
+        }
+      }
+      return lst;
+    }
+
     private Query getQuery() {
       try {
         
