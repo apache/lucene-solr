@@ -47,7 +47,7 @@ public class TopGroupsFieldCommand implements Command<TopGroups<BytesRef>> {
 
     private SchemaField field;
     private Sort groupSort;
-    private Sort sortWithinGroup;
+    private Sort withinGroupSort;
     private Collection<SearchGroup<BytesRef>> firstPhaseGroups;
     private Integer maxDocPerGroup;
     private boolean needScores = false;
@@ -63,8 +63,8 @@ public class TopGroupsFieldCommand implements Command<TopGroups<BytesRef>> {
       return this;
     }
 
-    public Builder setSortWithinGroup(Sort sortWithinGroup) {
-      this.sortWithinGroup = sortWithinGroup;
+    public Builder setSortWithinGroup(Sort withinGroupSort) {
+      this.withinGroupSort = withinGroupSort;
       return this;
     }
 
@@ -89,19 +89,19 @@ public class TopGroupsFieldCommand implements Command<TopGroups<BytesRef>> {
     }
 
     public TopGroupsFieldCommand build() {
-      if (field == null || groupSort == null ||  sortWithinGroup == null || firstPhaseGroups == null ||
+      if (field == null || groupSort == null ||  withinGroupSort == null || firstPhaseGroups == null ||
           maxDocPerGroup == null) {
         throw new IllegalStateException("All required fields must be set");
       }
 
-      return new TopGroupsFieldCommand(field, groupSort, sortWithinGroup, firstPhaseGroups, maxDocPerGroup, needScores, needMaxScore);
+      return new TopGroupsFieldCommand(field, groupSort, withinGroupSort, firstPhaseGroups, maxDocPerGroup, needScores, needMaxScore);
     }
 
   }
 
   private final SchemaField field;
   private final Sort groupSort;
-  private final Sort sortWithinGroup;
+  private final Sort withinGroupSort;
   private final Collection<SearchGroup<BytesRef>> firstPhaseGroups;
   private final int maxDocPerGroup;
   private final boolean needScores;
@@ -110,14 +110,14 @@ public class TopGroupsFieldCommand implements Command<TopGroups<BytesRef>> {
 
   private TopGroupsFieldCommand(SchemaField field,
                                 Sort groupSort,
-                                Sort sortWithinGroup,
+                                Sort withinGroupSort,
                                 Collection<SearchGroup<BytesRef>> firstPhaseGroups,
                                 int maxDocPerGroup,
                                 boolean needScores,
                                 boolean needMaxScore) {
     this.field = field;
     this.groupSort = groupSort;
-    this.sortWithinGroup = sortWithinGroup;
+    this.withinGroupSort = withinGroupSort;
     this.firstPhaseGroups = firstPhaseGroups;
     this.maxDocPerGroup = maxDocPerGroup;
     this.needScores = needScores;
@@ -136,11 +136,11 @@ public class TopGroupsFieldCommand implements Command<TopGroups<BytesRef>> {
       ValueSource vs = fieldType.getValueSource(field, null);
       Collection<SearchGroup<MutableValue>> v = GroupConverter.toMutable(field, firstPhaseGroups);
       secondPassCollector = new TopGroupsCollector<>(new ValueSourceGroupSelector(vs, new HashMap<>()),
-          v, groupSort, sortWithinGroup, maxDocPerGroup, needScores, needMaxScore, true
+          v, groupSort, withinGroupSort, maxDocPerGroup, needScores, needMaxScore, true
       );
     } else {
       secondPassCollector = new TopGroupsCollector<>(new TermGroupSelector(field.getName()),
-          firstPhaseGroups, groupSort, sortWithinGroup, maxDocPerGroup, needScores, needMaxScore, true
+          firstPhaseGroups, groupSort, withinGroupSort, maxDocPerGroup, needScores, needMaxScore, true
       );
     }
     collectors.add(secondPassCollector);
@@ -151,7 +151,7 @@ public class TopGroupsFieldCommand implements Command<TopGroups<BytesRef>> {
   @SuppressWarnings("unchecked")
   public TopGroups<BytesRef> result() {
     if (firstPhaseGroups.isEmpty()) {
-      return new TopGroups<>(groupSort.getSort(), sortWithinGroup.getSort(), 0, 0, new GroupDocs[0], Float.NaN);
+      return new TopGroups<>(groupSort.getSort(), withinGroupSort.getSort(), 0, 0, new GroupDocs[0], Float.NaN);
     }
 
     FieldType fieldType = field.getType();
@@ -174,6 +174,6 @@ public class TopGroupsFieldCommand implements Command<TopGroups<BytesRef>> {
 
   @Override
   public Sort getWithinGroupSort() {
-    return sortWithinGroup;
+    return withinGroupSort;
   }
 }
