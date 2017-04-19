@@ -147,7 +147,7 @@ public class StreamHandler extends RequestHandlerBase implements SolrCoreAware, 
       .withFunctionName("select", SelectStream.class)
       .withFunctionName("shortestPath", ShortestPathStream.class)
       .withFunctionName("gatherNodes", GatherNodesStream.class)
-         .withFunctionName("nodes", GatherNodesStream.class)
+      .withFunctionName("nodes", GatherNodesStream.class)
       .withFunctionName("scoreNodes", ScoreNodesStream.class)
       .withFunctionName("model", ModelStream.class)
       .withFunctionName("classify", ClassifyStream.class)
@@ -158,7 +158,8 @@ public class StreamHandler extends RequestHandlerBase implements SolrCoreAware, 
          .withFunctionName("significantTerms", SignificantTermsStream.class)
       .withFunctionName("cartesianProduct", CartesianProductStream.class)
          .withFunctionName("shuffle", ShuffleStream.class)
-         .withFunctionName("eval", CalculatorStream.class)
+         .withFunctionName("calc", CalculatorStream.class)
+      .withFunctionName("eval",EvalStream.class)
       .withFunctionName("echo", EchoStream.class)
 
              // metrics
