@@ -16,7 +16,7 @@
  */
 package org.apache.solr.search.grouping.distributed.shardresultserializer;
 
-import org.apache.lucene.search.Sort;
+import org.apache.lucene.search.SortField;
 import org.apache.lucene.search.grouping.SearchGroup;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.BytesRefBuilder;
@@ -24,6 +24,7 @@ import org.apache.lucene.util.CharsRefBuilder;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.schema.SchemaField;
 import org.apache.solr.search.SolrIndexSearcher;
+import org.apache.solr.search.SortSpec;
 import org.apache.solr.search.grouping.Command;
 import org.apache.solr.search.grouping.distributed.command.SearchGroupsFieldCommand;
 import org.apache.solr.search.grouping.distributed.command.SearchGroupsFieldCommandResult;
@@ -77,8 +78,14 @@ public class SearchGroupsResultTransformer implements ShardResultTransformer<Lis
    * {@inheritDoc}
    */
   @Override
-  public Map<String, SearchGroupsFieldCommandResult> transformToNative(NamedList<NamedList> shardResponse, Sort groupSort, Sort sortWithinGroup, String shard) {
+  public Map<String, SearchGroupsFieldCommandResult> transformToNative(NamedList<NamedList> shardResponse, SortSpec groupSortSpec, SortSpec withinGroupSortSpec, String shard) {
     final Map<String, SearchGroupsFieldCommandResult> result = new HashMap<>(shardResponse.size());
+
+    final List<SchemaField> groupSchemaFields = groupSortSpec.getSchemaFields();
+    final SortField[] groupSortFields = groupSortSpec.getSort().getSort();
+
+    assert (groupSchemaFields.size() == groupSortFields.length);
+
     for (Map.Entry<String, NamedList> command : shardResponse) {
       List<SearchGroup<BytesRef>> searchGroups = new ArrayList<>();
       NamedList topGroupsAndGroupCount = command.getValue();
@@ -100,8 +107,7 @@ public class SearchGroupsResultTransformer implements ShardResultTransformer<Lis
           }
           searchGroup.sortValues = rawSearchGroup.getValue().toArray(new Comparable[rawSearchGroup.getValue().size()]);
           for (int i = 0; i < searchGroup.sortValues.length; i++) {
-            SchemaField field = groupSort.getSort()[i].getField() != null ? searcher.getSchema().getFieldOrNull(groupSort.getSort()[i].getField()) : null;
-            searchGroup.sortValues[i] = ShardResultTransformerUtils.unmarshalSortValue(searchGroup.sortValues[i], field);
+            searchGroup.sortValues[i] = ShardResultTransformerUtils.unmarshalSortValue(searchGroup.sortValues[i], groupSchemaFields.get(i));
           }
           searchGroups.add(searchGroup);
         }
@@ -115,14 +121,16 @@ public class SearchGroupsResultTransformer implements ShardResultTransformer<Lis
 
   private NamedList serializeSearchGroup(Collection<SearchGroup<BytesRef>> data, SearchGroupsFieldCommand command) {
     final NamedList<Object[]> result = new NamedList<>(data.size());
+    final SortSpec groupSortSpec = command.getGroupSortSpec();
+    final List<SchemaField> groupSchemaFields = groupSortSpec.getSchemaFields();
+    final SortField[] groupSortFields = groupSortSpec.getSort().getSort();
+
+    assert (groupSchemaFields.size() == groupSortFields.length);
 
     for (SearchGroup<BytesRef> searchGroup : data) {
       Object[] convertedSortValues = new Object[searchGroup.sortValues.length];
       for (int i = 0; i < searchGroup.sortValues.length; i++) {
-        Object sortValue = searchGroup.sortValues[i];
-        SchemaField field = command.getGroupSort().getSort()[i].getField() != null ?
-            searcher.getSchema().getFieldOrNull(command.getGroupSort().getSort()[i].getField()) : null;
-        convertedSortValues[i] = ShardResultTransformerUtils.marshalSortValue(sortValue, field);
+        convertedSortValues[i] = ShardResultTransformerUtils.marshalSortValue(searchGroup.sortValues[i], groupSchemaFields.get(i));
       }
       SchemaField field = searcher.getSchema().getFieldOrNull(command.getKey());
       String groupValue = searchGroup.groupValue != null ? field.getType().indexedToReadable(searchGroup.groupValue, new CharsRefBuilder()).toString() : null;

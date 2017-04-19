@@ -27,6 +27,7 @@
   </fieldType>
   <fieldType class="org.apache.solr.schema.SortableBinaryField" name="sortable_binary"/>
   <field name="id" type="int" indexed="true" stored="true" multiValued="false" required="false"/>
+  <field name="val" type="int" indexed="true" stored="true" multiValued="false" docValues="true" required="false"/>
   <field name="_version_" type="long" indexed="true" stored="true" multiValued="false"/>
   <field name="signatureField" type="string" indexed="true" stored="false"/>
   <field name="text" type="text" indexed="true" stored="false"/>

@@ -643,26 +643,22 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
   public SortSpec weightSortSpec(SortSpec originalSortSpec, Sort nullEquivalent) throws IOException {
     return implWeightSortSpec(
         originalSortSpec.getSort(),
+        originalSortSpec.getSchemaFields(),
         originalSortSpec.getCount(),
         originalSortSpec.getOffset(),
         nullEquivalent);
   }
 
   /** Returns a weighted sort spec according to this searcher */
-  private SortSpec implWeightSortSpec(Sort originalSort, int num, int offset, Sort nullEquivalent) throws IOException {
+  private SortSpec implWeightSortSpec(Sort originalSort, List<SchemaField> originalSchemaFields, int num, int offset, Sort nullEquivalent) throws IOException {
     Sort rewrittenSort = weightSort(originalSort);
     if (rewrittenSort == null) {
       rewrittenSort = nullEquivalent;
+      final SchemaField[] rewrittenSchemaFields = new SchemaField[1];
+      return new SortSpec(rewrittenSort, rewrittenSchemaFields, num, offset);
     }
 
-    final SortField[] rewrittenSortFields = rewrittenSort.getSort();
-    final SchemaField[] rewrittenSchemaFields = new SchemaField[rewrittenSortFields.length];
-    for (int ii = 0; ii < rewrittenSortFields.length; ++ii) {
-      final String fieldName = rewrittenSortFields[ii].getField();
-      rewrittenSchemaFields[ii] = (fieldName == null ? null : schema.getFieldOrNull(fieldName));
-    }
-
-    return new SortSpec(rewrittenSort, rewrittenSchemaFields, num, offset);
+    return new SortSpec(rewrittenSort, originalSchemaFields, num, offset);
   }
 
   /**

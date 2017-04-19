@@ -18,6 +18,7 @@ package org.apache.solr.search.grouping;
 
 import org.apache.lucene.search.Collector;
 import org.apache.lucene.search.Sort;
+import org.apache.solr.search.SortSpec;
 import java.io.IOException;
 import java.util.List;
 
@@ -61,5 +62,17 @@ public interface Command<T> {
    * @return The sort inside a group
    */
   Sort getWithinGroupSort();
+
+
+  /**
+   * @return The group SortSpec (overall sort)
+   */
+  SortSpec getGroupSortSpec();
+
+
+  /**
+   * @return The SortSpec inside a group
+   */
+  SortSpec getWithinGroupSortSpec();
 
 }

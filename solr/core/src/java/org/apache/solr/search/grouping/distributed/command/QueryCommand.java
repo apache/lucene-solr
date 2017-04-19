@@ -21,6 +21,7 @@ import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.search.DocSet;
 import org.apache.solr.search.QParser;
 import org.apache.solr.search.SolrIndexSearcher;
+import org.apache.solr.search.SortSpec;
 import org.apache.solr.search.SyntaxError;
 import org.apache.solr.search.grouping.Command;
 import org.apache.solr.search.grouping.collector.FilterCollector;
@@ -152,4 +153,15 @@ public class QueryCommand implements Command<QueryCommandResult> {
   public Sort getWithinGroupSort() {
     return null;
   }
+
+  @Override
+  public SortSpec getGroupSortSpec() {
+      return null;
+  }
+
+  @Override
+  public SortSpec getWithinGroupSortSpec() {
+      return null;
+  }
+
 }

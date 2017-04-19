@@ -155,6 +155,7 @@ public class TestDistributedGrouping extends BaseDistributedSearchTestCase {
     // The second sort = id asc . The sorting behaviour is different in dist mode. See TopDocs#merge
     // The shard the result came from matters in the order if both document sortvalues are equal
     query("q", "*:*", "rows", 100, "fl", "id," + i1, "group", "true", "group.field", i1, "group.limit", -1, "sort", i1 + " asc, id asc");
+    query("q", "*:*", "rows", 100, "fl", "id," + i1, "group", "true", "group.field", i1, "group.limit", 10, "sort", i1 + " asc, id asc");
     query("q", "*:*", "rows", 100, "fl", "id," + i1, "group", "true", "group.field", i1, "group.limit", 0, "sort", i1 + " asc, id asc");
     query("q", "*:*", "rows", 100, "fl", "id," + i1, "group", "true", "group.field", i1, "group.limit", -1, "sort", "id asc, _docid_ asc");
     query("q", "*:*", "rows", 100, "fl", "id," + i1, "group", "true", "group.field", i1, "group.limit", -1, "sort", "{!func}add(" + i1 + ",5) asc, id asc");
@@ -162,6 +163,8 @@ public class TestDistributedGrouping extends BaseDistributedSearchTestCase {
     query("q", "*:*", "rows", 100, "fl", "id," + i1, "group", "true", "group.field", i1, "group.limit", -1, "sort", i1 + " asc, id asc", "stats", "true", "stats.field", tlong);
     query("q", "kings", "rows", 100, "fl", "id," + i1, "group", "true", "group.field", i1, "group.limit", -1, "sort", i1 + " asc, id asc", "spellcheck", "true", "spellcheck.build", "true", "qt", "spellCheckCompRH");
     query("q", "*:*", "rows", 100, "fl", "id," + i1, "group", "true", "group.field", i1, "group.limit", -1, "sort", i1 + " asc, id asc", "facet", "true", "hl","true","hl.fl",t1);
+
+    query("q", "*:*", "rows", 10, "fl", "id," + i1, "group", "true", "group.field", i1, "group.limit", 2, "sort", i1 + " asc, id asc", "group.sort", "score desc,id desc");
     query("q", "*:*", "rows", 100, "fl", "id," + i1, "group", "true", "group.field", i1, "group.limit", -1, "sort", i1 + " asc, id asc", "group.sort", "id desc");
 
     query("q", "*:*", "rows", 100, "fl", "id," + i1, "group", "true", "group.field", i1, "group.offset", 5, "group.limit", -1, "sort", i1 + " asc, id asc");
@@ -280,6 +283,7 @@ public class TestDistributedGrouping extends BaseDistributedSearchTestCase {
           "group.field", i1, "group.limit", -1,
           "sort", tlong+" asc, id desc",
           "group.sort", "id asc");
+
     rsp = query("q", "{!func}id", "fq", oddField+":[* TO *]",
                 "rows", 100, "fl", tlong + ",id," + i1, "group", "true",
                 "group.field", i1, "group.limit", -1,
@@ -296,13 +300,20 @@ public class TestDistributedGrouping extends BaseDistributedSearchTestCase {
     assertEquals(docs.toString(), 22, docs.get(0).getFirstValue("id"));
     assertEquals(docs.toString(), 21, docs.get(4).getFirstValue("id"));
 
-    
-
     // Can't validate the response, but can check if no errors occur.
     simpleQuery("q", "*:*", "rows", 100, "fl", "id," + i1, "group", "true", "group.query", t1 + ":kings OR " + t1 + ":eggs", "group.limit", 10, "sort", i1 + " asc, id asc", CommonParams.TIME_ALLOWED, 1);
     
     //Debug
     simpleQuery("q", "*:*", "rows", 10, "fl", "id," + i1, "group", "true", "group.field", i1, "debug", "true");
+
+    // sorting on user-defined field
+    query("q", "*:*", "rows", 100, "fl", "id," + i1, "group", "true", "group.field", i1, "group.limit", 10, "sort", i1 + " asc, abs(sub(5,id)) asc, id asc", "group.sort", "abs(sub(7,id)) asc,id desc");
+
+
+    // sorting on user-defined field
+    query("q", "*:*", "rows", 100, "fl", "id," + i1, "group", "true", "group.field", i1, "group.limit", 10, "sort", i1 + " asc, abs(sub(5,id)) asc, id asc", "group.sort", "abs(sub(7,id)) desc,score desc, id asc");
+
+
   }
 
   private void simpleQuery(Object... queryParams) throws SolrServerException, IOException {

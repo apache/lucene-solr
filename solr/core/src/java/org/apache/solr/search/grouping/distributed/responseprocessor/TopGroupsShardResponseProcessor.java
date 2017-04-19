@@ -40,6 +40,7 @@ import org.apache.solr.handler.component.ShardRequest;
 import org.apache.solr.handler.component.ShardResponse;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.search.Grouping;
+import org.apache.solr.search.SortSpec;
 import org.apache.solr.search.grouping.distributed.ShardResponseProcessor;
 import org.apache.solr.search.grouping.distributed.command.QueryCommandResult;
 import org.apache.solr.search.grouping.distributed.shardresultserializer.TopGroupsResultTransformer;
@@ -55,11 +56,13 @@ public class TopGroupsShardResponseProcessor implements ShardResponseProcessor {
   @Override
   @SuppressWarnings("unchecked")
   public void process(ResponseBuilder rb, ShardRequest shardRequest) {
-    Sort groupSort = rb.getGroupingSpec().getGroupSort();
+    SortSpec groupSortSpec = rb.getGroupingSpec().getGroupSortSpec();
+    Sort groupSort = groupSortSpec.getSort();
     String[] fields = rb.getGroupingSpec().getFields();
     String[] queries = rb.getGroupingSpec().getQueries();
-    Sort sortWithinGroup = rb.getGroupingSpec().getSortWithinGroup();
-    assert sortWithinGroup != null;
+    SortSpec withinGroupSortSpec = rb.getGroupingSpec().getWithinGroupSortSpec();
+    Sort withinGroupSort = withinGroupSortSpec.getSort();
+    assert withinGroupSortSpec != null;
 
     // If group.format=simple group.offset doesn't make sense
     int groupOffsetDefault;
@@ -122,7 +125,7 @@ public class TopGroupsShardResponseProcessor implements ShardResponseProcessor {
       NamedList<NamedList> secondPhaseResult = (NamedList<NamedList>) srsp.getSolrResponse().getResponse().get("secondPhase");
       if(secondPhaseResult == null)
         continue;
-      Map<String, ?> result = serializer.transformToNative(secondPhaseResult, groupSort, sortWithinGroup, srsp.getShard());
+      Map<String, ?> result = serializer.transformToNative(secondPhaseResult, groupSortSpec, withinGroupSortSpec, srsp.getShard());
       int numFound = 0;
       float maxScore = Float.NaN;
       for (String field : commandTopGroups.keySet()) {
@@ -164,7 +167,7 @@ public class TopGroupsShardResponseProcessor implements ShardResponseProcessor {
           docsPerGroup += subTopGroups.totalGroupedHitCount;
         }
       }
-      rb.mergedTopGroups.put(groupField, TopGroups.merge(topGroups.toArray(topGroupsArr), groupSort, sortWithinGroup, groupOffsetDefault, docsPerGroup, TopGroups.ScoreMergeMode.None));
+      rb.mergedTopGroups.put(groupField, TopGroups.merge(topGroups.toArray(topGroupsArr), groupSort, withinGroupSort, groupOffsetDefault, docsPerGroup, TopGroups.ScoreMergeMode.None));
     }
 
     for (String query : commandTopDocs.keySet()) {
@@ -178,10 +181,10 @@ public class TopGroupsShardResponseProcessor implements ShardResponseProcessor {
 
       int topN = rb.getGroupingSpec().getOffset() + rb.getGroupingSpec().getLimit();
       final TopDocs mergedTopDocs;
-      if (sortWithinGroup.equals(Sort.RELEVANCE)) {
+      if (withinGroupSort.equals(Sort.RELEVANCE)) {
         mergedTopDocs = TopDocs.merge(topN, topDocs.toArray(new TopDocs[topDocs.size()]));
       } else {
-        mergedTopDocs = TopDocs.merge(sortWithinGroup, topN, topDocs.toArray(new TopFieldDocs[topDocs.size()]));
+        mergedTopDocs = TopDocs.merge(withinGroupSort, topN, topDocs.toArray(new TopFieldDocs[topDocs.size()]));
       }
       rb.mergedQueryCommandResults.put(query, new QueryCommandResult(mergedTopDocs, mergedMatches));
     }

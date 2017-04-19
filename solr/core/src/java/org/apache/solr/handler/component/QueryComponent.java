@@ -257,19 +257,24 @@ public class QueryComponent extends SearchComponent
     String withinGroupSortStr = params.get(GroupParams.GROUP_SORT);
     //TODO: move weighting of sort
     final SortSpec withinGroupSortSpec;
+
+    int withinGroupOffset = params.getInt(GroupParams.GROUP_OFFSET, 0);
+    int withinGroupCount = params.getInt(GroupParams.GROUP_LIMIT, 1);
+
     if (withinGroupSortStr != null) {
       SortSpec parsedWithinGroupSortSpec = SortSpecParsing.parseSortSpec(withinGroupSortStr, req);
       withinGroupSortSpec = searcher.weightSortSpec(parsedWithinGroupSortSpec, Sort.RELEVANCE);
+
+      withinGroupSortSpec.setOffset(withinGroupOffset);
+      withinGroupSortSpec.setCount(withinGroupCount);
+
     } else {
       withinGroupSortSpec = new SortSpec(
           groupSortSpec.getSort(),
           groupSortSpec.getSchemaFields(),
-          groupSortSpec.getCount(),
-          groupSortSpec.getOffset());
+          withinGroupCount,
+          withinGroupOffset);
     }
-    withinGroupSortSpec.setOffset(params.getInt(GroupParams.GROUP_OFFSET, 0));
-    withinGroupSortSpec.setCount(params.getInt(GroupParams.GROUP_LIMIT, 1));
-
     groupingSpec.setWithinGroupSortSpec(withinGroupSortSpec);
     groupingSpec.setGroupSortSpec(groupSortSpec);
 
@@ -406,7 +411,7 @@ public class QueryComponent extends SearchComponent
           for (String field : groupingSpec.getFields()) {
             topsGroupsActionBuilder.addCommandField(new SearchGroupsFieldCommand.Builder()
                 .setField(schema.getField(field))
-                .setGroupSort(groupingSpec.getGroupSort())
+                .setGroupSortSpec(groupingSpec.getGroupSortSpec())
                 .setTopNGroups(cmd.getOffset() + cmd.getLen())
                 .setIncludeGroupCount(groupingSpec.isIncludeGroupCount())
                 .build()
@@ -450,8 +455,8 @@ public class QueryComponent extends SearchComponent
             secondPhaseBuilder.addCommandField(
                 new TopGroupsFieldCommand.Builder()
                     .setField(schemaField)
-                    .setGroupSort(groupingSpec.getGroupSort())
-                    .setSortWithinGroup(groupingSpec.getSortWithinGroup())
+                    .setGroupSortSpec(groupingSpec.getGroupSortSpec())
+                    .setWithinGroupSortSpec(groupingSpec.getWithinGroupSortSpec())
                     .setFirstPhaseGroups(topGroups)
                     .setMaxDocPerGroup(docsToCollect)
                     .setNeedScores(needScores)

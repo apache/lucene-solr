@@ -16,8 +16,8 @@
  */
 package org.apache.solr.search.grouping.distributed.shardresultserializer;
 
-import org.apache.lucene.search.Sort;
 import org.apache.solr.common.util.NamedList;
+import org.apache.solr.search.SortSpec;
 
 import java.io.IOException;
 
@@ -43,11 +43,11 @@ public interface ShardResultTransformer<T, R> {
    * Transforms the specified shard response into native structures.
    *
    * @param shardResponse The shard response containing data in a {@link NamedList} structure
-   * @param groupSort The group sort
-   * @param sortWithinGroup The sort inside a group
+   * @param groupSortSpec The group SortSpec
+   * @param withinGroupSortSpec The SortSpec inside a group
    * @param shard The shard address where the response originated from
    * @return native structure of the data
    */
-  R transformToNative(NamedList<NamedList> shardResponse, Sort groupSort, Sort sortWithinGroup, String shard);
+  R transformToNative(NamedList<NamedList> shardResponse, SortSpec groupSortSpec, SortSpec withinGroupSortSpec, String shard);
 
 }
