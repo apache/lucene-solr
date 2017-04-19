@@ -24,6 +24,7 @@ import java.lang.reflect.Modifier;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.net.URLClassLoader;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -32,17 +33,22 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.function.Predicate;
+import java.util.jar.JarFile;
+import java.util.jar.Manifest;
 import java.util.stream.Collectors;
 
 import com.github.zafarkhaja.semver.Version;
 import org.apache.solr.common.SolrException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import ro.fortsoft.pf4j.DefaultPluginDescriptorFinder;
 import ro.fortsoft.pf4j.DefaultPluginFactory;
 import ro.fortsoft.pf4j.DefaultPluginLoader;
 import ro.fortsoft.pf4j.DefaultPluginManager;
+import ro.fortsoft.pf4j.ManifestPluginDescriptorFinder;
 import ro.fortsoft.pf4j.Plugin;
 import ro.fortsoft.pf4j.PluginClassLoader;
+import ro.fortsoft.pf4j.PluginClasspath;
 import ro.fortsoft.pf4j.PluginDescriptor;
 import ro.fortsoft.pf4j.PluginDescriptorFinder;
 import ro.fortsoft.pf4j.PluginException;
@@ -78,7 +84,8 @@ public class PluginBundleManager {
       List<UpdateRepository> repos = new ArrayList<>();
       repos.add(new PluginUpdateRepository("janhoy", new URL("http://people.apache.org/~janhoy/dist/plugins/")));
       repos.add(new GitHubUpdateRepository("github","cominvent", "solr-plugins"));
-      updateManager = new UpdateManager(pluginManager, repos);
+      updateManager = new UpdateManager(pluginManager, (Path) null);
+      updateManager.setRepositories(repos);
       pluginManager.setSystemVersion(systemVersion);
     } catch (MalformedURLException e) {
       throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
@@ -251,7 +258,7 @@ public class PluginBundleManager {
 
     @Override
     protected PluginDescriptorFinder createPluginDescriptorFinder() {
-      return new PropertiesPluginDescriptorFinder();
+      return new AutoPluginDescriptorFinder();
     }
 
     @Override
@@ -308,12 +315,7 @@ public class PluginBundleManager {
 
     @Override
     protected PluginLoader createPluginLoader() {
-      return new DefaultPluginLoader(this, pluginClasspath) {
-        @Override
-        protected PluginClassLoader createPluginClassLoader(Path pluginPath, PluginDescriptor pluginDescriptor) {
-          return new PluginClassLoader(pluginManager, pluginDescriptor, getClass().getClassLoader());
-        }
-      };
+      return new AutoPluginLoader(this, pluginClasspath);
     }
 
     /*
@@ -323,5 +325,87 @@ public class PluginBundleManager {
     public Map<String, ClassLoader> getPluginClassLoaders() {
       return super.getPluginClassLoaders();
     }
+
+    /**
+     * Descriptor finder that determines what to look for based on the given path
+     */
+    private class AutoPluginDescriptorFinder implements PluginDescriptorFinder {
+      private final DefaultPluginDescriptorFinder manifestFinder;
+      private final PropertiesPluginDescriptorFinder propertiesFinder;
+      private final JarPluginDescriptorFinder jarFinder;
+
+
+      public AutoPluginDescriptorFinder() {
+        manifestFinder = new DefaultPluginDescriptorFinder(pluginClasspath);
+        propertiesFinder = new PropertiesPluginDescriptorFinder();
+        jarFinder = new JarPluginDescriptorFinder();
+      }
+
+      @Override
+      public PluginDescriptor find(Path pluginPath) throws PluginException {
+        if (pluginPath.toString().endsWith(".jar")) {
+          return (jarFinder.find(pluginPath));
+        } else if (Files.isDirectory(pluginPath)) {
+          try {
+            return propertiesFinder.find(pluginPath);
+          } catch (Exception e) {
+            return manifestFinder.find(pluginPath);
+          }
+        } else {
+          return manifestFinder.find(pluginPath);
+        }
+      }
+    }
+
+    private class AutoPluginLoader implements PluginLoader {
+
+      private final SolrPluginManager solrPluginManager;
+      private final PluginClasspath pluginClasspath;
+      private final JarPluginLoader jarLoader;
+
+      public AutoPluginLoader(SolrPluginManager solrPluginManager, PluginClasspath pluginClasspath) {
+        this.solrPluginManager = solrPluginManager;
+        this.pluginClasspath = pluginClasspath;
+        jarLoader = new JarPluginLoader(solrPluginManager, pluginClasspath);
+      }
+
+      @Override
+      public ClassLoader loadPlugin(Path pluginPath, PluginDescriptor pluginDescriptor) {
+        if (pluginPath.toString().endsWith(".jar")) {
+          return jarLoader.loadPlugin(pluginPath, pluginDescriptor);
+        } else {
+          return new PluginClassLoader(solrPluginManager, pluginDescriptor, getClass().getClassLoader());
+        }
+      }
+    }
+  }
+
+  static class JarPluginDescriptorFinder extends ManifestPluginDescriptorFinder {
+
+      @Override
+      public Manifest readManifest(Path pluginPath) throws PluginException {
+          try {
+              return new JarFile(pluginPath.toFile()).getManifest();
+          } catch (IOException e) {
+              throw new PluginException(e);
+          }
+      }
+
+  }
+
+  static class JarPluginLoader extends DefaultPluginLoader {
+
+      public JarPluginLoader(PluginManager pluginManager, PluginClasspath pluginClasspath) {
+          super(pluginManager, pluginClasspath);
+      }
+
+      @Override
+      public ClassLoader loadPlugin(Path pluginPath, PluginDescriptor pluginDescriptor) {
+          PluginClassLoader pluginClassLoader = new PluginClassLoader(pluginManager, pluginDescriptor, getClass().getClassLoader());
+          pluginClassLoader.addFile(pluginPath.toFile());
+
+          return pluginClassLoader;
+      }
+
   }
 }

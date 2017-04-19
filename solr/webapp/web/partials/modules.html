@@ -64,7 +64,7 @@ limitations under the License.
         <tr><th>Id</th><th>Location</th><th width="80"></th></tr>
         <tr ng-repeat="r in modules.repositories">
           <td ng-bind-html="r.id | unsafe"></td>
-          <td>{{r.location}}</td>
+          <td>{{r.url}}</td>
           <td><button>Remove</button></td>
         </tr>
       </table>

@@ -354,8 +354,8 @@ public class SolrCLI {
       return new AssertTool();
     else if ("utils".equals(toolType))
       return new UtilsTool();
-    else if ("module".equals(toolType))
-      return new ModuleTool();
+    else if ("plugin".equals(toolType))
+      return new PluginBundleTool();
 
     // If you add a built-in tool to this class, add it here to avoid
     // classpath scanning
@@ -3720,8 +3720,8 @@ public class SolrCLI {
     }
   } // end UtilsTool class  
 
-  private static class ModuleTool implements Tool {
-    public static Option[] moduleOptions =  new Option[] {
+  private static class PluginBundleTool implements Tool {
+    public static Option[] pluginOptions =  new Option[] {
       OptionBuilder
           .withArgName("solrHome")
           .hasArg(true)
@@ -3740,12 +3740,12 @@ public class SolrCLI {
 
     @Override
     public String getName() {
-      return "module";
+      return "plugin";
     }
     
     @Override
     public Option[] getOptions() {
-      return moduleOptions;
+      return pluginOptions;
     }
 
     @Override
@@ -3760,22 +3760,22 @@ public class SolrCLI {
         System.out.println("Solr Home " + solrHome + " does not exist");
         return 1;
       }
-      pluginBundleManager = new PluginBundleManager(Paths.get(solrHome).toAbsolutePath().resolve("modules"));
+      pluginBundleManager = new PluginBundleManager(Paths.get(solrHome).toAbsolutePath().resolve("plugins"));
       pluginBundleManager.getPluginManager().loadPlugins();
       List<String> args = cli.getArgList();
       String command = args.get(0);
       switch (command) {
         case "install":
           if (args.size() > 1) {
-            String moduleId = args.get(1);
-            if (pluginBundleManager.install(moduleId)) {
-              System.out.println("Installed " + moduleId);
+            String pluginId = args.get(1);
+            if (pluginBundleManager.install(pluginId)) {
+              System.out.println("Installed " + pluginId);
             } else {
-              System.out.println("Module with id " + moduleId + " not found in any repository. Please attempt query");
+              System.out.println("Plugin with id " + pluginId + " not found in any repository. Please attempt query");
               return 1;
             }
           } else {
-            System.out.println("Neeeds name of module to install");
+            System.out.println("Neeeds name of plugin to install");
             printHelp();
             return 1;
           }
@@ -3783,14 +3783,14 @@ public class SolrCLI {
 
         case "uninstall":
           if (args.size() > 1) {
-            String moduleId = args.get(1);
-            if (pluginBundleManager.uninstall(moduleId)) {
-              System.out.println("Uninstalled " + moduleId);
+            String pluginId = args.get(1);
+            if (pluginBundleManager.uninstall(pluginId)) {
+              System.out.println("Uninstalled " + pluginId);
             } else {
-              System.out.println("Module with id " + moduleId + " does not exist");
+              System.out.println("Plugin with id " + pluginId + " does not exist");
             }
           } else {
-            System.out.println("Neeeds name of module to uninstall");
+            System.out.println("Neeeds name of plugin to uninstall");
             printHelp();
             return 1;
           }
@@ -3810,7 +3810,7 @@ public class SolrCLI {
           if (idsOnly) {
             pluginBundleManager.listInstalled().forEach(d -> System.out.println(d.getPluginId()));
           } else {
-            System.out.println("Listing modules from " + pluginBundleManager.getPluginsRoot());
+            System.out.println("Listing plugins from " + pluginBundleManager.getPluginsRoot());
             pluginBundleManager.listInstalled().forEach(d -> System.out.println(d.getPluginId() + "@" + d.getDescriptor().getVersion()));
             System.out.println("Done");
           }
@@ -3821,14 +3821,14 @@ public class SolrCLI {
           break;
 
         default:
-          System.out.println("Unknown module command '" + command + "'");
+          System.out.println("Unknown plugin command '" + command + "'");
           return 1;
       }
       return 0;
     }
 
     private void printHelp() {
-      new HelpFormatter().printHelp("bin/solr module <install|uninstall|list|update|query> [module]", getToolOptions(this));
+      new HelpFormatter().printHelp("bin/solr plugin <install|uninstall|list|update|query> [pluginId]", getToolOptions(this));
     }
 
     private void query(String q) {

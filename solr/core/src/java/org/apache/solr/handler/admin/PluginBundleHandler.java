@@ -73,7 +73,7 @@ public class PluginBundleHandler extends RequestHandlerBase
     for (UpdateRepository r : pluginBundleManager.getUpdateManager().getRepositories()) {
       SimpleOrderedMap<Object> repo = new SimpleOrderedMap<>();
       repo.add("id", r.getId());
-      repo.add("location", r.getUrl());
+      repo.add("url", r.getUrl().toString());
       repositories.add(repo);
     }
 

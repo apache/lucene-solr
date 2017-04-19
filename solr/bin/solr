@@ -767,9 +767,9 @@ if [ "$SCRIPT_CMD" == "assert" ]; then
   exit $?
 fi
 
-# module tool
-if [ "$SCRIPT_CMD" == "module" ]; then
-  run_tool module $*
+# plugin tool
+if [ "$SCRIPT_CMD" == "plugin" ]; then
+  run_tool plugin $*
   exit $?
 fi
 
