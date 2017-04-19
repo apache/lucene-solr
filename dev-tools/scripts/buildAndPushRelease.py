@@ -66,6 +66,9 @@ def load(urlString):
     ctx.verify_mode = ssl.CERT_NONE
     content = urllib.request.urlopen(urlString, context=ctx).read().decode('utf-8')
   except Exception as e:
+    ctx = ssl.create_default_context()
+    ctx.check_hostname = False
+    ctx.verify_mode = ssl.CERT_NONE
     print('Retrying download of url %s after exception: %s' % (urlString, e))
     content = urllib.request.urlopen(urlString).read().decode('utf-8')
   return content
