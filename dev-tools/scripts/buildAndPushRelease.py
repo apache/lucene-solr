@@ -61,7 +61,10 @@ def runAndSendGPGPassword(command, password):
 
 def load(urlString):
   try:
-    content = urllib.request.urlopen(urlString).read().decode('utf-8')
+    ctx = ssl.create_default_context()
+    ctx.check_hostname = False
+    ctx.verify_mode = ssl.CERT_NONE
+    content = urllib.request.urlopen(urlString, context=ctx).read().decode('utf-8')
   except Exception as e:
     print('Retrying download of url %s after exception: %s' % (urlString, e))
     content = urllib.request.urlopen(urlString).read().decode('utf-8')
