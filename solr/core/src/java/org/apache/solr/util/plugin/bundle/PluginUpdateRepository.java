@@ -31,7 +31,7 @@ import ro.fortsoft.pf4j.update.PluginInfo;
 public class PluginUpdateRepository extends DefaultUpdateRepository {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
-  private String url;
+  private String resolvedUrl;
   private boolean locationResolved = false;
   private Map<String, PluginInfo> plugins;
 
@@ -49,11 +49,11 @@ public class PluginUpdateRepository extends DefaultUpdateRepository {
 
   @Override
   public String getUrl() {
-    if (url == null && !locationResolved) {
-      url = resolveUrl();
+    if (resolvedUrl == null && !locationResolved) {
+      resolvedUrl = resolveUrl();
       locationResolved = true;
     }
-    return url;
+    return resolvedUrl;
   }
 
   /**

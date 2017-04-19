@@ -70,7 +70,7 @@ import org.apache.solr.handler.admin.CoreAdminHandler;
 import org.apache.solr.handler.admin.InfoHandler;
 import org.apache.solr.handler.admin.MetricsCollectorHandler;
 import org.apache.solr.handler.admin.MetricsHandler;
-import org.apache.solr.handler.admin.ModulesHandler;
+import org.apache.solr.handler.admin.PluginBundleHandler;
 import org.apache.solr.handler.admin.SecurityConfHandler;
 import org.apache.solr.handler.admin.SecurityConfHandlerLocal;
 import org.apache.solr.handler.admin.SecurityConfHandlerZk;
@@ -90,7 +90,7 @@ import org.apache.solr.security.SecurityPluginHolder;
 import org.apache.solr.update.SolrCoreState;
 import org.apache.solr.update.UpdateShardHandler;
 import org.apache.solr.util.DefaultSolrThreadFactory;
-import org.apache.solr.util.plugin.bundle.PluginBundles;
+import org.apache.solr.util.plugin.bundle.PluginBundleManager;
 import org.apache.solr.util.stats.MetricUtils;
 import org.apache.zookeeper.KeeperException;
 import org.slf4j.Logger;
@@ -118,7 +118,7 @@ public class CoreContainer {
 
   final SolrCores solrCores = new SolrCores(this);
   // Holds the module system entry point
-  private PluginBundles pluginBundles;
+  private PluginBundleManager pluginBundleManager;
   private boolean usePlugins;
 
   public static class CoreLoadFailure {
@@ -138,7 +138,7 @@ public class CoreContainer {
   protected CollectionsHandler collectionsHandler = null;
   private InfoHandler infoHandler;
   protected ConfigSetsHandler configSetsHandler = null;
-  protected ModulesHandler modulesHandler;
+  protected PluginBundleHandler pluginBundleHandler;
 
   private PKIAuthenticationPlugin pkiAuthenticationPlugin;
 
@@ -463,8 +463,8 @@ public class CoreContainer {
    * Gets the Modules manager, from where you can install, stop, start modules (plugins)
    * @return the plugins start point
    */
-  public PluginBundles getPluginBundles() {
-    return pluginBundles;
+  public PluginBundleManager getPluginBundleManager() {
+    return pluginBundleManager;
   }
 
   //-------------------------------------------------------------------
@@ -494,8 +494,8 @@ public class CoreContainer {
     // Initialize the module system and load plugins
     usePlugins = !"false".equals(System.getProperty("solr.plugins.active"));
     if (usePlugins()) {
-      pluginBundles = new PluginBundles(Paths.get(getSolrHome()).resolve(System.getProperty("solr.plugins.dir", "plugins")));
-      pluginBundles.load();
+      pluginBundleManager = new PluginBundleManager(Paths.get(getSolrHome()).resolve(System.getProperty("solr.plugins.dir", "plugins")));
+      pluginBundleManager.load();
 //      TODO  loader.setModulesClassLoader(modules.getUberClassLoader(null));
     } else {
 //      loader
@@ -547,8 +547,8 @@ public class CoreContainer {
     if(pkiAuthenticationPlugin != null)
       containerHandlers.put(PKIAuthenticationPlugin.PATH, pkiAuthenticationPlugin.getRequestHandler());
     if (usePlugins()) {
-      modulesHandler = createHandler(MODULES_PATH, ModulesHandler.class.getName(), ModulesHandler.class);
-      modulesHandler.initializeModules(getPluginBundles());
+      pluginBundleHandler = createHandler(MODULES_PATH, PluginBundleHandler.class.getName(), PluginBundleHandler.class);
+      pluginBundleHandler.initializeModules(getPluginBundleManager());
     }
 
     metricManager.loadReporters(cfg.getMetricReporterPlugins(), loader, null, SolrInfoMBean.Group.node);

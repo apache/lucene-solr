@@ -60,7 +60,7 @@ import ro.fortsoft.pf4j.util.StringUtils;
 /**
  * Discovers and loads plugins from plugin folder using PF4J
  */
-public class PluginBundles {
+public class PluginBundleManager {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   private final SolrPluginManager pluginManager;
@@ -69,15 +69,15 @@ public class PluginBundles {
   private final Path pluginsRoot;
   private ClassLoader uberLoader;
 
-  public PluginBundles(Path pluginsRoot) {
+  public PluginBundleManager(Path pluginsRoot) {
     this.pluginsRoot = pluginsRoot;
     pluginManager = new SolrPluginManager(pluginsRoot);
     systemVersion = Version.valueOf(org.apache.lucene.util.Version.LATEST.toString());
     ApacheMirrorsUpdateRepository apacheRepo = new ApacheMirrorsUpdateRepository("apache", "lucene/solr/" + systemVersion.toString() + "/");
-    UpdateRepository janRepo = new DefaultUpdateRepository("janhoy","http://people.apache.org/~janhoy/dist/");
-    List<UpdateRepository> list = new ArrayList<>();
-    list.add(janRepo);
-    updateManager = new UpdateManager(pluginManager, list);
+    List<UpdateRepository> repos = new ArrayList<>();
+    repos.add(new PluginUpdateRepository("janhoy","http://people.apache.org/~janhoy/dist/plugins/"));
+    repos.add(new GitHubUpdateRepository("github","cominvent", "solr-plugins"));
+    updateManager = new UpdateManager(pluginManager, repos);
     pluginManager.setSystemVersion(systemVersion);
   }
 

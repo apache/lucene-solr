@@ -103,7 +103,7 @@ import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.ContentStreamBase;
 import org.apache.solr.common.util.NamedList;
-import org.apache.solr.util.plugin.bundle.PluginBundles;
+import org.apache.solr.util.plugin.bundle.PluginBundleManager;
 import org.noggit.CharArr;
 import org.noggit.JSONParser;
 import org.noggit.JSONWriter;
@@ -3736,7 +3736,7 @@ public class SolrCLI {
     };
     private static final com.github.zafarkhaja.semver.Version SOLR_VERSION =
         com.github.zafarkhaja.semver.Version.valueOf(Version.LATEST.toString());
-    private PluginBundles pluginBundles;
+    private PluginBundleManager pluginBundleManager;
 
     @Override
     public String getName() {
@@ -3760,15 +3760,15 @@ public class SolrCLI {
         System.out.println("Solr Home " + solrHome + " does not exist");
         return 1;
       }
-      pluginBundles = new PluginBundles(Paths.get(solrHome).toAbsolutePath().resolve("modules"));
-      pluginBundles.getPluginManager().loadPlugins();
+      pluginBundleManager = new PluginBundleManager(Paths.get(solrHome).toAbsolutePath().resolve("modules"));
+      pluginBundleManager.getPluginManager().loadPlugins();
       List<String> args = cli.getArgList();
       String command = args.get(0);
       switch (command) {
         case "install":
           if (args.size() > 1) {
             String moduleId = args.get(1);
-            if (pluginBundles.install(moduleId)) {
+            if (pluginBundleManager.install(moduleId)) {
               System.out.println("Installed " + moduleId);
             } else {
               System.out.println("Module with id " + moduleId + " not found in any repository. Please attempt query");
@@ -3784,7 +3784,7 @@ public class SolrCLI {
         case "uninstall":
           if (args.size() > 1) {
             String moduleId = args.get(1);
-            if (pluginBundles.uninstall(moduleId)) {
+            if (pluginBundleManager.uninstall(moduleId)) {
               System.out.println("Uninstalled " + moduleId);
             } else {
               System.out.println("Module with id " + moduleId + " does not exist");
@@ -3798,7 +3798,7 @@ public class SolrCLI {
 
         case "update":
           if (args.size() == 1) {
-            pluginBundles.updateAll();
+            pluginBundleManager.updateAll();
           } else {
             System.out.println("Update does not take any arguments");
             printHelp();
@@ -3808,10 +3808,10 @@ public class SolrCLI {
 
         case "list":
           if (idsOnly) {
-            pluginBundles.listInstalled().forEach(d -> System.out.println(d.getPluginId()));
+            pluginBundleManager.listInstalled().forEach(d -> System.out.println(d.getPluginId()));
           } else {
-            System.out.println("Listing modules from " + pluginBundles.getPluginsRoot());
-            pluginBundles.listInstalled().forEach(d -> System.out.println(d.getPluginId() + "@" + d.getDescriptor().getVersion()));
+            System.out.println("Listing modules from " + pluginBundleManager.getPluginsRoot());
+            pluginBundleManager.listInstalled().forEach(d -> System.out.println(d.getPluginId() + "@" + d.getDescriptor().getVersion()));
             System.out.println("Done");
           }
           break;
@@ -3832,7 +3832,7 @@ public class SolrCLI {
     }
 
     private void query(String q) {
-      List<PluginInfo> plugins = pluginBundles.query(q);
+      List<PluginInfo> plugins = pluginBundleManager.query(q);
       System.out.println(plugins.stream().map(p -> p.id +
                 "(" + p.getLastRelease(SOLR_VERSION).version + ")").collect(Collectors.toList()));
     }

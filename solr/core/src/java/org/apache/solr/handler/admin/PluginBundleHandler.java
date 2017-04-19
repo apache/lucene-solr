@@ -26,7 +26,7 @@ import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.handler.RequestHandlerBase;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
-import org.apache.solr.util.plugin.bundle.PluginBundles;
+import org.apache.solr.util.plugin.bundle.PluginBundleManager;
 import ro.fortsoft.pf4j.PluginWrapper;
 import ro.fortsoft.pf4j.update.PluginInfo;
 import ro.fortsoft.pf4j.update.UpdateRepository;
@@ -36,29 +36,29 @@ import static org.apache.solr.common.SolrException.ErrorCode.INVALID_STATE;
 /**
  * @since solr 7.0
  */
-public class ModulesHandler extends RequestHandlerBase
+public class PluginBundleHandler extends RequestHandlerBase
 {
-  private PluginBundles pluginBundles;
+  private PluginBundleManager pluginBundleManager;
 
-  public void initializeModules(PluginBundles pluginBundles) {
-    this.pluginBundles = pluginBundles;
+  public void initializeModules(PluginBundleManager pluginBundleManager) {
+    this.pluginBundleManager = pluginBundleManager;
   }
 
   @Override
   public void handleRequestBody(SolrQueryRequest req, SolrQueryResponse rsp) throws Exception
   {
     SolrParams params = req.getParams();
-    if (pluginBundles == null) {
+    if (pluginBundleManager == null) {
       throw new SolrException(INVALID_STATE, "Not initialized");
     }
-    pluginBundles.getUpdateManager().refresh();
-    pluginBundles.getPluginManager().loadPlugins();
-    pluginBundles.getPluginManager().startPlugins();
-    rsp.add( "modules", getModulesInfo(pluginBundles));
+    pluginBundleManager.getUpdateManager().refresh();
+    pluginBundleManager.getPluginManager().loadPlugins();
+    pluginBundleManager.getPluginManager().startPlugins();
+    rsp.add( "modules", getModulesInfo(pluginBundleManager));
     rsp.setHttpCaching(false);
   }
 
-  private SimpleOrderedMap<Object> getModulesInfo(PluginBundles pluginBundles)
+  private SimpleOrderedMap<Object> getModulesInfo(PluginBundleManager pluginBundleManager)
   {
     SimpleOrderedMap<Object> map = new SimpleOrderedMap<>();
     List<Object> repositories = new ArrayList<>();
@@ -70,14 +70,14 @@ public class ModulesHandler extends RequestHandlerBase
     map.add("available", available);
     map.add("updates", updates);
 
-    for (UpdateRepository r : pluginBundles.getUpdateManager().getRepositories()) {
+    for (UpdateRepository r : pluginBundleManager.getUpdateManager().getRepositories()) {
       SimpleOrderedMap<Object> repo = new SimpleOrderedMap<>();
       repo.add("id", r.getId());
       repo.add("location", r.getUrl());
       repositories.add(repo);
     }
 
-    for (PluginWrapper p : pluginBundles.listInstalled()) {
+    for (PluginWrapper p : pluginBundleManager.listInstalled()) {
       SimpleOrderedMap<Object> desc = new SimpleOrderedMap<>();
       desc.add("id", p.getPluginId());
       desc.add("path", p.getPluginPath().toString());
@@ -87,14 +87,14 @@ public class ModulesHandler extends RequestHandlerBase
       installed.add(desc);
     }
 
-    for (PluginInfo p : pluginBundles.query(null)) {
+    for (PluginInfo p : pluginBundleManager.query(null)) {
       available.add(pluginInfoToMap(p));
     }
 
-    for (PluginInfo p : pluginBundles.getUpdateManager().getUpdates()) {
+    for (PluginInfo p : pluginBundleManager.getUpdateManager().getUpdates()) {
       SimpleOrderedMap<Object> pi = pluginInfoToMap(p);
-      if (pluginBundles.getPluginManager().getPlugin(p.id) != null) {
-        pi.add("installedVersion", pluginBundles.getPluginManager().getPlugin(p.id).getDescriptor().getVersion().toString());
+      if (pluginBundleManager.getPluginManager().getPlugin(p.id) != null) {
+        pi.add("installedVersion", pluginBundleManager.getPluginManager().getPlugin(p.id).getDescriptor().getVersion().toString());
       }
       updates.add(pi);
     }
@@ -108,10 +108,10 @@ public class ModulesHandler extends RequestHandlerBase
     info.add("description", p.description);
     info.add("projectUrl", p.projectUrl);
     info.add("provider", p.provider);
-    info.add("version", p.getLastRelease(pluginBundles.getPluginManager().getSystemVersion()).version);
+    info.add("version", p.getLastRelease(pluginBundleManager.getPluginManager().getSystemVersion()).version);
     SimpleDateFormat df = new SimpleDateFormat("yyyy-MM-dd");
-    info.add("date", df.format(p.getLastRelease(pluginBundles.getPluginManager().getSystemVersion()).date));
-    info.add("url", p.getLastRelease(pluginBundles.getPluginManager().getSystemVersion()).url);
+    info.add("date", df.format(p.getLastRelease(pluginBundleManager.getPluginManager().getSystemVersion()).date));
+    info.add("url", p.getLastRelease(pluginBundleManager.getPluginManager().getSystemVersion()).url);
     return info;
   }
 

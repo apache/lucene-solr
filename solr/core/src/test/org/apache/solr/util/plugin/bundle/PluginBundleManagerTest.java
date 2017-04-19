@@ -33,24 +33,24 @@ import static org.junit.Assert.fail;
 /**
  * Test the PF4J integration
  */
-public class PluginBundlesTest {
+public class PluginBundleManagerTest {
 
-  private PluginBundles pluginBundles;
+  private PluginBundleManager pluginBundleManager;
 
   @Rule
   public TemporaryFolder testFolder = new TemporaryFolder();
 
   @Before
   public void before() {
-    pluginBundles = new PluginBundles(testFolder.getRoot().toPath());
-    pluginBundles.addUpdateRepository("folder", "file:/Users/janhoy/solr-repo/");
-    pluginBundles.listInstalled().forEach(info -> pluginBundles.uninstall(info.getPluginId()));
+    pluginBundleManager = new PluginBundleManager(testFolder.getRoot().toPath());
+    pluginBundleManager.addUpdateRepository("folder", "file:/Users/janhoy/solr-repo/");
+//    pluginBundleManager.listInstalled().forEach(info -> pluginBundleManager.uninstall(info.getPluginId()));
   }
 
   @Test
   public void query() throws Exception {
     // NOCOMMIT: Get rid of GSON dependency?
-    List<PluginInfo> res = pluginBundles.query("*");
+    List<PluginInfo> res = pluginBundleManager.query("*");
     assertTrue(res.size()>0);
 //    assertEquals(4, res.size());
 //    assertTrue(res.stream().map(p -> p.id).collect(Collectors.toList()).contains("extraction"));
@@ -65,30 +65,30 @@ public class PluginBundlesTest {
 
   @Test
   public void load() {
-    pluginBundles.load();
+    pluginBundleManager.load();
   }
 
   @Test
   public void install() throws Exception {
-    assertEquals(0, pluginBundles.listInstalled().size());
-    pluginBundles.install("dih");
-    assertEquals(1, pluginBundles.listInstalled().size());
+    assertEquals(0, pluginBundleManager.listInstalled().size());
+    pluginBundleManager.install("dih");
+    assertEquals(1, pluginBundleManager.listInstalled().size());
   }
 
   @Test
   public void uninstall() throws Exception {
-    assertEquals(0, pluginBundles.listInstalled().size());
-    assertTrue(pluginBundles.install("dih"));
-    assertEquals(1, pluginBundles.listInstalled().size());
-    assertFalse(pluginBundles.uninstall("nonexistent"));
-    assertTrue(pluginBundles.uninstall("dih"));
-    assertEquals(0, pluginBundles.listInstalled().size());
+    assertEquals(0, pluginBundleManager.listInstalled().size());
+    assertTrue(pluginBundleManager.install("dih"));
+    assertEquals(1, pluginBundleManager.listInstalled().size());
+    assertFalse(pluginBundleManager.uninstall("nonexistent"));
+    assertTrue(pluginBundleManager.uninstall("dih"));
+    assertEquals(0, pluginBundleManager.listInstalled().size());
   }
 
   @Test
   public void update() throws Exception {
     // TODO: Update plugins
-    pluginBundles.updateAll();
+    pluginBundleManager.updateAll();
   }
 
 /*

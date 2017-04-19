@@ -30,9 +30,9 @@ import org.apache.solr.core.SolrResourceNotFoundException;
  */
 public class PluginBundleResourceLoader implements ResourceLoader, Closeable {
 
-  private PluginBundles.PluginBundleClassLoader pluginBundleClassLoader;
+  private PluginBundleManager.PluginBundleClassLoader pluginBundleClassLoader;
 
-  public PluginBundleResourceLoader(PluginBundles.PluginBundleClassLoader pluginBundleClassLoader) {
+  public PluginBundleResourceLoader(PluginBundleManager.PluginBundleClassLoader pluginBundleClassLoader) {
     this.pluginBundleClassLoader = pluginBundleClassLoader;
   }
 
