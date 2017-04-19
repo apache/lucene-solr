@@ -273,44 +273,17 @@ public class PluginBundleManager {
 
     @Override
     protected PluginFactory createPluginFactory() {
-        return new DefaultPluginFactory() {
-          @Override
-          public Plugin create(final PluginWrapper pluginWrapper) {
-              String pluginClassName = pluginWrapper.getDescriptor().getPluginClass();
-              if (pluginClassName != null) {
-                log.debug("Create instance for plugin '{}'", pluginClassName);
-
-                Class<?> pluginClass;
-                try {
-                  pluginClass = pluginWrapper.getPluginClassLoader().loadClass(pluginClassName);
-                } catch (ClassNotFoundException e) {
-                  log.error(e.getMessage(), e);
-                  return null;
-                }
-
-                // once we have the class, we can do some checks on it to ensure
-                // that it is a valid implementation of a plugin.
-                int modifiers = pluginClass.getModifiers();
-                if (Modifier.isAbstract(modifiers) || Modifier.isInterface(modifiers)
-                    || (!Plugin.class.isAssignableFrom(pluginClass))) {
-                  log.error("The plugin class '{}' is not valid", pluginClassName);
-                  return null;
-                }
-
-                // create the plugin instance
-                try {
-                  Constructor<?> constructor = pluginClass.getConstructor(PluginWrapper.class);
-                  return (Plugin) constructor.newInstance(pluginWrapper);
-                } catch (Exception e) {
-                  log.error(e.getMessage(), e);
-                  throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Failed to create plugin", e);
-                }
-              } else {
-                log.debug("Plugin " + pluginWrapper.getPluginId() + " has no PluginClass, creating NOP placeholder");
-                return new Plugin(pluginWrapper) { /* NOP PLUGIN */ };
-              }
+      return new DefaultPluginFactory() {
+        @Override
+        public Plugin create(final PluginWrapper pluginWrapper) {
+          if (pluginWrapper.getDescriptor().getPluginClass() == null) {
+            log.debug("Plugin " + pluginWrapper.getPluginId() + " has no PluginClass, creating NOP placeholder");
+            return new Plugin(pluginWrapper) { /* NOP PLUGIN */ };
+          } else {
+            return super.create(pluginWrapper);
           }
-        };
+        }
+      };
     }
 
     @Override
