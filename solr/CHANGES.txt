@@ -73,6 +73,8 @@ New Features
 
 * SOLR-10376: Implement autoscaling trigger for nodeAdded event. (shalin)
 
+* SOLR-10396: Implement trigger support for nodeLost event type (Cao Manh Dat, shalin)
+
 Bug Fixes
 ----------------------
 * SOLR-9262: Connection and read timeouts are being ignored by UpdateShardHandler after SOLR-4509.

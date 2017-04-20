@@ -120,6 +120,8 @@ public class AutoScaling {
       switch (type) {
         case NODEADDED:
           return new NodeAddedTrigger(name, props, coreContainer);
+        case NODELOST:
+          return new NodeLostTrigger(name, props, coreContainer);
         default:
           throw new IllegalArgumentException("Unknown event type: " + type + " in trigger: " + name);
       }
