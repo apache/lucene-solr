@@ -108,7 +108,9 @@ class NumericDocValuesWriter extends DocValuesWriter {
 
   @Override
   Sorter.DocComparator getDocComparator(int numDoc, SortField sortField) throws IOException {
-    return getDocComparator(sortField, sortField.getType(), (docID) -> docsWithField.get(docID), (docID) -> finalValues.get(docID));
+    return getDocComparator(sortField, sortField.getType(),
+        (docID) -> docID < docsWithField.length() ? docsWithField.get(docID) : false,
+        (docID) -> finalValues.get(docID));
   }
 
   static Sorter.DocComparator getDocComparator(SortField sortField, SortField.Type sortType, IntPredicate docsWithField, IntToLongFunction docValueFunction) {
@@ -252,13 +254,9 @@ class NumericDocValuesWriter extends DocValuesWriter {
         throw new NoSuchElementException();
       }
       Long value;
-      if (upto < size) {
-        int old = sortMap.newToOld(upto);
-        if (docsWithField.get(old)) {
-          value = values.get(old);
-        } else {
-          value = null;
-        }
+      int old = sortMap.newToOld(upto);
+      if (old < size && docsWithField.get(old)) {
+        value = values.get(old);
       } else {
         value = null;
       }

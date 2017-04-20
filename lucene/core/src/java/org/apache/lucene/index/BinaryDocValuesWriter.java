@@ -227,15 +227,15 @@ class BinaryDocValuesWriter extends DocValuesWriter {
         throw new NoSuchElementException();
       }
       final BytesRef v;
-      if (upto < size) {
-        int oldID = sortMap.newToOld(upto);
+      int oldID = sortMap.newToOld(upto);
+      if (oldID < values.size()) {
         int length = (int) values.get(oldID);
         long pos = starts[oldID];
         bytesIterator.setPosition(pos);
         value.grow(length);
         value.setLength(length);
         bytesIterator.readBytes(value.bytes(), 0, value.length());
-        if (docsWithField.get(upto)) {
+        if (docsWithField.get(oldID)) {
           v = value.get();
         } else {
           v = null;
