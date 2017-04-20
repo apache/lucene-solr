@@ -172,6 +172,8 @@ Other Changes
   "enabled" flag in reporter configurations, correct handling of "serviceUrl" in SolrJmxReporter, better handling
   of service clients for JMX, Ganglia and Graphite reporters. (ab)
 
+* SOLR-10514: Upgrade Metrics library to 3.2.2. (ab)
+
 ==================  6.5.1 ==================
 
 Bug Fixes
