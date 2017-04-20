@@ -320,7 +320,7 @@ public final class WordDelimiterFilter extends TokenFilter {
       
       // word surrounded by delimiters: always output
       if (iterator.isSingleWord()) {
-        generatePart(true);
+        generatePart();
         iterator.next();
         first = false;
         return true;
@@ -353,7 +353,7 @@ public final class WordDelimiterFilter extends TokenFilter {
       
       // if we should output the word or number part
       if (shouldGenerateParts(wordType)) {
-        generatePart(false);
+        generatePart();
         buffer();
       }
         
@@ -495,9 +495,8 @@ public final class WordDelimiterFilter extends TokenFilter {
   /**
    * Generates a word/number part, updating the appropriate attributes
    *
-   * @param isSingleWord {@code true} if the generation is occurring from a single word, {@code false} otherwise
    */
-  private void generatePart(boolean isSingleWord) {
+  private void generatePart() {
     clearAttributes();
     termAttribute.copyBuffer(savedBuffer, iterator.current, iterator.end - iterator.current);
     int startOffset = savedStartOffset + iterator.current;
