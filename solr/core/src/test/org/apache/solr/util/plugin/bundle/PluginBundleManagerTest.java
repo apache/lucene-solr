@@ -18,13 +18,17 @@
 package org.apache.solr.util.plugin.bundle;
 
 import java.net.URL;
+import java.nio.file.Files;
 import java.util.List;
 
+import org.apache.solr.common.SolrException;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
+import ro.fortsoft.pf4j.PluginException;
 import ro.fortsoft.pf4j.update.PluginInfo;
+import ro.fortsoft.pf4j.util.FileUtils;
 
 import static junit.framework.Assert.assertEquals;
 import static junit.framework.TestCase.assertFalse;
@@ -44,7 +48,6 @@ public class PluginBundleManagerTest {
   public void before() throws Exception {
     pluginBundleManager = new PluginBundleManager(testFolder.getRoot().toPath());
     pluginBundleManager.addUpdateRepository("folder", new URL("file:/Users/janhoy/solr-repo/"));
-//    pluginBundleManager.listInstalled().forEach(info -> pluginBundleManager.uninstall(info.getPluginId()));
   }
 
   @Test
@@ -85,10 +88,32 @@ public class PluginBundleManagerTest {
     assertEquals(0, pluginBundleManager.listInstalled().size());
   }
 
+  @Test(expected = SolrException.class)
+  public void installTwice() throws Exception {
+    assertEquals(0, pluginBundleManager.listInstalled().size());
+    assertTrue(pluginBundleManager.install("dih"));
+    assertEquals(1, pluginBundleManager.listInstalled().size());
+    pluginBundleManager.install("dih");
+  }
+
+  @Test(expected = SolrException.class)
+  public void installNonExisting() throws Exception {
+    assertEquals(0, pluginBundleManager.listInstalled().size());
+    assertTrue(pluginBundleManager.install("nonexistent"));
+  }
+
   @Test
   public void update() throws Exception {
     // TODO: Update plugins
+    assertTrue(pluginBundleManager.install("dih"));
+    assertFalse(pluginBundleManager.update("dih"));
     pluginBundleManager.updateAll();
+  }
+
+  @Test(expected = SolrException.class)
+  public void updateNonInstalled() throws Exception {
+    assertEquals(0, pluginBundleManager.listInstalled().size());
+    assertTrue(pluginBundleManager.update("dih"));
   }
 
 /*

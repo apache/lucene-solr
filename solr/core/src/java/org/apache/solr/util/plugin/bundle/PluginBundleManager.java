@@ -126,30 +126,21 @@ public class PluginBundleManager {
     if (updateManager.hasUpdates()) {
       List<PluginInfo> updates = updateManager.getUpdates();
       for (PluginInfo plugin : updates) {
-        PluginRelease lastRelease = plugin.getLastRelease(systemVersion);
-        String lastVersion = lastRelease.version;
-        String installedVersion = pluginManager.getPlugin(plugin.id).getDescriptor().getVersion().toString();
-        // TODO: Inspect whether we can use the plugin or not
-        log.info("Updating plugin with id " + plugin.id);
         try {
-          updateManager.updatePlugin(plugin.id, new URL(lastRelease.url));
-        } catch (MalformedURLException e) {
-          log.warn("Failed updating plugin {}", plugin.id, e);
+          updateManager.updatePlugin(plugin.id, null);
+          log.info("Updatied plugin with id " + plugin.id);
+        } catch (PluginException e) {
+          log.warn("Failed to update plugin {}", plugin.id, e);
         }
       }
     }
   }
 
   public boolean install(String id) {
-    Optional<PluginInfo> info = updateManager.getPlugins().stream()
-        .filter(p -> id.equals(p.id) && p.getLastRelease(systemVersion) != null).findFirst();
-    if (info.isPresent()) {
-      String version = info.get().getLastRelease(systemVersion).version;
-      log.debug("Installing plugin id {} version @{}", id, version);
-      return updateManager.installPlugin(id, version);
-    } else {
-      log.debug("Failed to find plugin with id {}", id);
-      return false;
+    try {
+      return updateManager.installPlugin(id, null);
+    } catch (PluginException e) {
+      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Install of plugin " + id + " failed", e);
     }
   }
 
@@ -193,6 +184,14 @@ public class PluginBundleManager {
 
   public Path getPluginsRoot() {
     return pluginsRoot;
+  }
+
+  public boolean update(String id) {
+    try {
+      return updateManager.updatePlugin(id, null);
+    } catch (PluginException e) {
+      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Failed to update plugin with id " + id, e);
+    }
   }
 
   /**

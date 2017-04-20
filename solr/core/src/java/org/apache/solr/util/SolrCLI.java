@@ -3818,6 +3818,7 @@ public class SolrCLI {
 
         case "query":
           query(args.size() >1 ? args.get(1) : null);
+          // https://github.com/JakeWharton/flip-tables
           break;
 
         default:
