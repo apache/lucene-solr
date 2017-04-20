@@ -193,10 +193,10 @@ limitations under the License.
         <dl>
 
           <dt class="status">Status:</dt>
-          <dd class="status value ico ico-1" ng-show="healthcheckStatus">
+          <dd class="status value ico ico-1" ng-show="healthcheckStatus" ng-click="toggleHealthcheck()">
             <button class="healthcheck-status enabled">Healthcheck Status</button>
           </dd>
-          <dd class="status value ico ico-0" ng-show="!healthcheckStatus">
+          <dd class="status value ico ico-0" ng-show="!healthcheckStatus" ng-click="toggleHealthcheck()">
             <button class="healthcheck-status">enable ping</button>
           </dd>
         </dl>

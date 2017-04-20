@@ -180,6 +180,8 @@ solrAdminServices.factory('System',
   ['$resource', function($resource) {
     return $resource(':core/admin/ping', {wt:'json', core: '@core', ts:Date.now(), _:Date.now()}, {
      "ping": {},
+     "enable": {params:{action:"enable"}, headers: {doNotIntercept: "true"}},
+     "disable": {params:{action:"disable"}, headers: {doNotIntercept: "true"}},
      "status": {params:{action:"status"}, headers: {doNotIntercept: "true"}
     }});
   }])
