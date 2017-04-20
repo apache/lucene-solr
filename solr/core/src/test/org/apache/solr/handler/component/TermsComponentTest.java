@@ -326,14 +326,14 @@ public class TermsComponentTest extends SolrTestCaseJ4 {
         "terms.list", "snake,spider,shark,ddddd");
     assertQ(req,
         "count(//lst[@name='standardfilt']/*)=4",
-        "//lst[@name='standardfilt']/lst[@name='ddddd']/long[@name='docFreq'][.='4']",
-        "//lst[@name='standardfilt']/lst[@name='ddddd']/long[@name='totalTermFreq'][.='4']",
-        "//lst[@name='standardfilt']/lst[@name='shark']/long[@name='docFreq'][.='2']",
-        "//lst[@name='standardfilt']/lst[@name='shark']/long[@name='totalTermFreq'][.='2']",
-        "//lst[@name='standardfilt']/lst[@name='snake']/long[@name='docFreq'][.='3']",
-        "//lst[@name='standardfilt']/lst[@name='snake']/long[@name='totalTermFreq'][.='3']",
-        "//lst[@name='standardfilt']/lst[@name='spider']/long[@name='docFreq'][.='1']",
-        "//lst[@name='standardfilt']/lst[@name='spider']/long[@name='totalTermFreq'][.='1']");
+        "//lst[@name='standardfilt']/lst[@name='ddddd']/long[@name='df'][.='4']",
+        "//lst[@name='standardfilt']/lst[@name='ddddd']/long[@name='ttf'][.='4']",
+        "//lst[@name='standardfilt']/lst[@name='shark']/long[@name='df'][.='2']",
+        "//lst[@name='standardfilt']/lst[@name='shark']/long[@name='ttf'][.='2']",
+        "//lst[@name='standardfilt']/lst[@name='snake']/long[@name='df'][.='3']",
+        "//lst[@name='standardfilt']/lst[@name='snake']/long[@name='ttf'][.='3']",
+        "//lst[@name='standardfilt']/lst[@name='spider']/long[@name='df'][.='1']",
+        "//lst[@name='standardfilt']/lst[@name='spider']/long[@name='ttf'][.='1']");
   }
 
   @Test
@@ -347,8 +347,8 @@ public class TermsComponentTest extends SolrTestCaseJ4 {
         "terms.list", "boo,snake");
     assertQ(req,
         "count(//lst[@name='standardfilt']/*)=1",
-        "//lst[@name='standardfilt']/lst[@name='snake']/long[@name='docFreq'][.='3']",
-        "//lst[@name='standardfilt']/lst[@name='snake']/long[@name='totalTermFreq'][.='3']");
+        "//lst[@name='standardfilt']/lst[@name='snake']/long[@name='df'][.='3']",
+        "//lst[@name='standardfilt']/lst[@name='snake']/long[@name='ttf'][.='3']");
   }
 
   @Test
@@ -364,18 +364,18 @@ public class TermsComponentTest extends SolrTestCaseJ4 {
     assertQ(req,
         "count(//lst[@name='lowerfilt']/*)=3",
         "count(//lst[@name='standardfilt']/*)=3",
-        "//lst[@name='lowerfilt']/lst[@name='a']/long[@name='docFreq'][.='2']",
-        "//lst[@name='lowerfilt']/lst[@name='a']/long[@name='totalTermFreq'][.='2']",
-        "//lst[@name='lowerfilt']/lst[@name='aa']/long[@name='docFreq'][.='1']",
-        "//lst[@name='lowerfilt']/lst[@name='aa']/long[@name='totalTermFreq'][.='1']",
-        "//lst[@name='lowerfilt']/lst[@name='aaa']/long[@name='docFreq'][.='1']",
-        "//lst[@name='lowerfilt']/lst[@name='aaa']/long[@name='totalTermFreq'][.='1']",
-        "//lst[@name='standardfilt']/lst[@name='a']/long[@name='docFreq'][.='1']",
-        "//lst[@name='standardfilt']/lst[@name='a']/long[@name='totalTermFreq'][.='1']",
-        "//lst[@name='standardfilt']/lst[@name='aa']/long[@name='docFreq'][.='1']",
-        "//lst[@name='standardfilt']/lst[@name='aa']/long[@name='totalTermFreq'][.='1']",
-        "//lst[@name='standardfilt']/lst[@name='aaa']/long[@name='docFreq'][.='1']",
-        "//lst[@name='standardfilt']/lst[@name='aaa']/long[@name='totalTermFreq'][.='1']");
+        "//lst[@name='lowerfilt']/lst[@name='a']/long[@name='df'][.='2']",
+        "//lst[@name='lowerfilt']/lst[@name='a']/long[@name='ttf'][.='2']",
+        "//lst[@name='lowerfilt']/lst[@name='aa']/long[@name='df'][.='1']",
+        "//lst[@name='lowerfilt']/lst[@name='aa']/long[@name='ttf'][.='1']",
+        "//lst[@name='lowerfilt']/lst[@name='aaa']/long[@name='df'][.='1']",
+        "//lst[@name='lowerfilt']/lst[@name='aaa']/long[@name='ttf'][.='1']",
+        "//lst[@name='standardfilt']/lst[@name='a']/long[@name='df'][.='1']",
+        "//lst[@name='standardfilt']/lst[@name='a']/long[@name='ttf'][.='1']",
+        "//lst[@name='standardfilt']/lst[@name='aa']/long[@name='df'][.='1']",
+        "//lst[@name='standardfilt']/lst[@name='aa']/long[@name='ttf'][.='1']",
+        "//lst[@name='standardfilt']/lst[@name='aaa']/long[@name='df'][.='1']",
+        "//lst[@name='standardfilt']/lst[@name='aaa']/long[@name='ttf'][.='1']");
   }
 
 }

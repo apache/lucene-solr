@@ -41,10 +41,10 @@ import java.util.regex.Pattern;
 
 /**
  * Return TermEnum information, useful for things like auto suggest.
- * 
+ *
  * <pre class="prettyprint">
  * &lt;searchComponent name="termsComponent" class="solr.TermsComponent"/&gt;
- * 
+ *
  * &lt;requestHandler name="/terms" class="solr.SearchHandler"&gt;
  *   &lt;lst name="defaults"&gt;
  *     &lt;bool name="terms"&gt;true&lt;/bool&gt;
@@ -248,7 +248,7 @@ public class TermsComponent extends SearchComponent {
       if (sort) {
         for (CountPair<BytesRef, Integer> item : queue) {
           if (i >= limit) break;
-          ft.indexedToReadable(item.key, external);          
+          ft.indexedToReadable(item.key, external);
           fieldTerms.add(external.toString(), item.val);
           i++;
         }
@@ -384,11 +384,11 @@ public class TermsComponent extends SearchComponent {
       }
 
       TermsResponse termsResponse = new TermsResponse(terms);
-      
+
       // loop though each field and add each term+freq to map
       for (String key : fieldmap.keySet()) {
         HashMap<String, TermsResponse.Term> termmap = fieldmap.get(key);
-        List<TermsResponse.Term> termlist = termsResponse.getTerms(key); 
+        List<TermsResponse.Term> termlist = termsResponse.getTerms(key);
 
         // skip this field if there are no terms
         if (termlist == null) {
@@ -459,8 +459,8 @@ public class TermsComponent extends SearchComponent {
           if (tc.getFrequency() >= freqmin && tc.getFrequency() <= freqmax) {
             if (includeTotalTermFreq) {
               NamedList<Number> termStats = new SimpleOrderedMap<>();
-              termStats.add("docFreq", tc.getFrequency());
-              termStats.add("totalTermFreq", tc.getTotalTermFreq());
+              termStats.add("df", tc.getFrequency());
+              termStats.add("ttf", tc.getTotalTermFreq());
               fieldterms.add(tc.getTerm(), termStats);
             } else {
               fieldterms.add(tc.getTerm(), num(tc.getFrequency()));
@@ -515,7 +515,7 @@ public class TermsComponent extends SearchComponent {
     }
   }
 
-  private static void fetchTerms(SolrIndexSearcher indexSearcher, String[] fields, String termList, 
+  private static void fetchTerms(SolrIndexSearcher indexSearcher, String[] fields, String termList,
       boolean includeTotalTermFreq, NamedList<Object> result) throws IOException {
     String[] splitTerms = termList.split(",");
     for (int i = 0; i < splitTerms.length; i++) {
@@ -547,8 +547,8 @@ public class TermsComponent extends SearchComponent {
           } else {
             long totalTermFreq = termContexts[i].totalTermFreq();
             NamedList<Long> termStats = new SimpleOrderedMap<>();
-            termStats.add("docFreq", (long) docFreq);
-            termStats.add("totalTermFreq", totalTermFreq);
+            termStats.add("df", (long) docFreq);
+            termStats.add("ttf", totalTermFreq);
             termsMap.add(outTerm, termStats);
           }
         }

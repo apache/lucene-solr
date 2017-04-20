@@ -15,6 +15,7 @@
  * limitations under the License.
  */
 package org.apache.solr.client.solrj.response;
+
 import org.apache.solr.common.util.NamedList;
 
 import java.util.ArrayList;
@@ -41,7 +42,7 @@ public class TermsResponse {
         if (val instanceof NamedList) {
           @SuppressWarnings("unchecked")
           NamedList<Number> termStats = (NamedList<Number>) val;
-          t = new Term(term, termStats.get("docFreq").longValue(), termStats.get("totalTermFreq").longValue());
+          t = new Term(term, termStats.get("df").longValue(), termStats.get("ttf").longValue());
         } else {
           t = new Term(term, ((Number) val).longValue());
         }
