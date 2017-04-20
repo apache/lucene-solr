@@ -2332,4 +2332,80 @@ public class TestIndexSorting extends LuceneTestCase {
     }
     IOUtils.close(r, w, dir);
   }
+
+  public void testIndexSortWithSparseField() throws Exception {
+    Directory dir = newDirectory();
+    IndexWriterConfig iwc = new IndexWriterConfig(new MockAnalyzer(random()));
+    SortField sortField = new SortField("dense_int", SortField.Type.INT, true);
+    Sort indexSort = new Sort(sortField);
+    iwc.setIndexSort(indexSort);
+    IndexWriter w = new IndexWriter(dir, iwc);
+    for (int i = 0; i < 128; i++) {
+      Document doc = new Document();
+      doc.add(new NumericDocValuesField("dense_int", i));
+      if (i < 64) {
+        doc.add(new NumericDocValuesField("sparse_int", i));
+        doc.add(new BinaryDocValuesField("sparse_binary", new BytesRef(Integer.toString(i))));
+      }
+      w.addDocument(doc);
+    }
+    w.commit();
+    w.forceMerge(1);
+    DirectoryReader r = DirectoryReader.open(w);
+    assertEquals(1, r.leaves().size());
+    LeafReader leafReader = r.leaves().get(0).reader();
+    NumericDocValues denseValues = leafReader.getNumericDocValues("dense_int");
+    NumericDocValues sparseValues = leafReader.getNumericDocValues("sparse_int");
+    BinaryDocValues sparseBinaryValues = leafReader.getBinaryDocValues("sparse_binary");
+
+    Bits docsWithField = r.leaves().get(0).reader().getDocsWithField("sparse_int");
+    Bits docsWithBinaryField = r.leaves().get(0).reader().getDocsWithField("sparse_binary");
+    for(int docID = 0; docID < 128; docID++) {
+      assertEquals(127-docID, denseValues.get(docID));
+      if (docID >= 64) {
+        assertTrue(docsWithField.get(docID));
+        assertTrue(docsWithBinaryField.get(docID));
+        assertEquals(127-docID, sparseValues.get(docID));
+        assertEquals(new BytesRef(Integer.toString(127-docID)), sparseBinaryValues.get(docID));
+      } else {
+        assertFalse(docsWithField.get(docID));
+        assertFalse(docsWithBinaryField.get(docID));
+      }
+    }
+    IOUtils.close(r, w, dir);
+  }
+
+  public void testIndexSortOnSparseField() throws Exception {
+    Directory dir = newDirectory();
+    IndexWriterConfig iwc = new IndexWriterConfig(new MockAnalyzer(random()));
+    SortField sortField = new SortField("sparse", SortField.Type.INT, false);
+    sortField.setMissingValue(Integer.MIN_VALUE);
+    Sort indexSort = new Sort(sortField);
+    iwc.setIndexSort(indexSort);
+    IndexWriter w = new IndexWriter(dir, iwc);
+    for (int i = 0; i < 128; i++) {
+      Document doc = new Document();
+      if (i < 64) {
+        doc.add(new NumericDocValuesField("sparse", i));
+      }
+      w.addDocument(doc);
+    }
+    w.commit();
+    w.forceMerge(1);
+    DirectoryReader r = DirectoryReader.open(w);
+    assertEquals(1, r.leaves().size());
+    LeafReader leafReader = r.leaves().get(0).reader();
+    NumericDocValues sparseValues = leafReader.getNumericDocValues("sparse");
+    Bits docsWithField = r.leaves().get(0).reader().getDocsWithField("sparse");
+    for(int docID = 0; docID < 128; docID++) {
+      if (docID >= 64) {
+        assertTrue(docsWithField.get(docID));
+        assertEquals(docID-64, sparseValues.get(docID));
+      } else {
+        assertFalse(docsWithField.get(docID));
+      }
+    }
+    IOUtils.close(r, w, dir);
+  }
+
 }
