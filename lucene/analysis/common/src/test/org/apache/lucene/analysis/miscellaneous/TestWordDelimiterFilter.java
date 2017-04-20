@@ -95,7 +95,7 @@ public class TestWordDelimiterFilter extends BaseTokenStreamTestCase {
     
     assertTokenStreamContents(wdf,
         new String[] { "übelkeit" },
-        new int[] { 8 },
+        new int[] { 7 },
         new int[] { 17 });
   }
   
