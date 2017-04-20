@@ -184,6 +184,9 @@ Optimizations
   instance if it already is modifiable, otherwise creates a new ModifiableSolrParams instance.
   (Jörg Rathlev via Koji)
 
+* SOLR-10499: facet.heatmap is now significantly faster when the docset (base query) matches everything and there are no
+  deleted docs.  It's also faster when the docset matches a small fraction of the index or none. (David Smiley)
+
 Bug Fixes
 ----------------------
 * SOLR-10281: ADMIN_PATHS is duplicated in two places and inconsistent. This can cause automatic
