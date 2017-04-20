@@ -179,6 +179,19 @@ public class TestUnifiedSolrHighlighter extends SolrTestCaseJ4 {
         "//lst[@name='highlighting']/lst[@name='102']/arr[@name='text3']/str='crappier <em>document</em>'");
   }
 
+  // SOLR-5127
+  public void testMultipleFieldsViaWildcard() {
+    assertQ("highlighting text and text3*",
+        req("q", (random().nextBoolean() ? "text:document text3:document" : "text3:document text:document"),
+            "sort", "id asc", "hl", "true",
+            "hl.fl", (random().nextBoolean() ? "text,text3*" : "text3*,text")),
+        "count(//lst[@name='highlighting']/*)=2",
+        "//lst[@name='highlighting']/lst[@name='101']/arr[@name='text']/str='<em>document</em> one'",
+        "//lst[@name='highlighting']/lst[@name='101']/arr[@name='text3']/str='crappy <em>document</em>'",
+        "//lst[@name='highlighting']/lst[@name='102']/arr[@name='text']/str='second <em>document</em>'",
+        "//lst[@name='highlighting']/lst[@name='102']/arr[@name='text3']/str='crappier <em>document</em>'");
+  }
+
   public void testTags() {
     assertQ("different pre/post tags", 
         req("q", "text:document", "sort", "id asc", "hl", "true", "hl.tag.pre", "[", "hl.tag.post", "]"),

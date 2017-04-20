@@ -83,7 +83,6 @@ public class SearchGroupsResultTransformer implements ShardResultTransformer<Lis
 
     final List<SchemaField> groupSchemaFields = groupSortSpec.getSchemaFields();
     final SortField[] groupSortFields = groupSortSpec.getSort().getSort();
-
     assert (groupSchemaFields.size() == groupSortFields.length);
 
     for (Map.Entry<String, NamedList> command : shardResponse) {

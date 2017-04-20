@@ -185,11 +185,6 @@ public class QueryComponent extends SearchComponent
       }
 
       rb.setSortSpec( parser.getSortSpec(true) );
-      for (SchemaField sf:rb.getSortSpec().getSchemaFields()) {
-        if (sf != null && sf.getType().isPointField() && !sf.hasDocValues()) {
-          throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,"Can't sort on a point field without docValues");
-        }
-      }
       rb.setQparser(parser);
 
       final String cursorStr = rb.req.getParams().get(CursorMarkParams.CURSOR_MARK_PARAM);

@@ -206,7 +206,7 @@ public class DatePointField extends PointField implements DateValueFieldType {
   @Override
   public UninvertingReader.Type getUninversionType(SchemaField sf) {
     if (sf.multiValued()) {
-      return UninvertingReader.Type.SORTED_LONG;
+      return null;
     } else {
       return UninvertingReader.Type.LONG_POINT;
     }

@@ -212,6 +212,14 @@ Bug Fixes
 
 * SOLR-10047: Mismatched Docvalues segments cause exception in Sorting/Faceting. Solr now uninverts per segment
   to avoid such exceptions. (Keith Laban via shalin)
+  
+* SOLR-10527: edismax with sow=false fails to create dismax-per-term queries when any field is boosted.
+  (Steve Rowe)
+
+* SOLR-10472: Fixed uninversion (aka: FieldCache) bugs with the numeric PointField classes, and CurrencyField (hossman)
+
+* SOLR-5127: Multiple highlight fields and wildcards are now supported e.g. hl.fl=title,text_*
+  (Sven-S. Porst, Daniel Debray, Simon Endele, Christine Poerschke)
 
 Other Changes
 ----------------------
@@ -289,6 +297,10 @@ Bug Fixes
 * SOLR-10341: SQL AVG function mis-interprets field type. (Joel Bernstein)
 
 * SOLR-10444: SQL interface does not use client cache. (Joel Bernstein)
+
+* SOLR-10420: Solr 6.x leaking one SolrZkClient instance per second (Scott Blum, Cao Manh Dat, Markus Jelsma, Steve Rowe)
+
+* SOLR-10439: The new 'large' attribute had been forgotten in /schema/fields?showDefaults=true
 
 ==================  6.5.0 ==================
 

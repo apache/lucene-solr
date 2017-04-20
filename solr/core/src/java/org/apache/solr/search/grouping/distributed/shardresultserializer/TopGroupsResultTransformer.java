@@ -237,8 +237,7 @@ public class TopGroupsResultTransformer implements ShardResultTransformer<List<C
         }
 
         FieldDoc fieldDoc = (FieldDoc) searchGroup.scoreDocs[i];
-
-        assert (withinGroupSchemaFields.size() == fieldDoc.fields.length);  // JTODO (?)
+        assert (withinGroupSchemaFields.size() == fieldDoc.fields.length);
 
         Object[] convertedSortValues  = new Object[fieldDoc.fields.length];
         for (int j = 0; j < fieldDoc.fields.length; j++) {

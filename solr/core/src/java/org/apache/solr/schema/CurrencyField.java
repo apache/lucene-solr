@@ -272,7 +272,8 @@ public class CurrencyField extends FieldType implements SchemaAware, ResourceLoa
    */
   public RawCurrencyValueSource getValueSource(SchemaField field, 
                                                QParser parser) {
-    field.checkFieldCacheSource();
+    getAmountField(field).checkFieldCacheSource();
+    getCurrencyField(field).checkFieldCacheSource();
     return new RawCurrencyValueSource(field, defaultCurrency, parser);
   }
 
@@ -488,8 +489,8 @@ public class CurrencyField extends FieldType implements SchemaAware, ResourceLoa
         throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Currency code not supported by this JVM: " + targetCurrencyCode);
       }
 
-      SchemaField amountField = schema.getField(sf.getName() + POLY_FIELD_SEPARATOR + FIELD_SUFFIX_AMOUNT_RAW);
-      SchemaField currencyField = schema.getField(sf.getName() + POLY_FIELD_SEPARATOR + FIELD_SUFFIX_CURRENCY);
+      SchemaField amountField = getAmountField(sf);
+      SchemaField currencyField = getCurrencyField(sf);
 
       currencyValues = currencyField.getType().getValueSource(currencyField, parser);
       amountValues = amountField.getType().getValueSource(amountField, parser);

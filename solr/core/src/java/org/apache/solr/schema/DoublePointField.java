@@ -151,7 +151,7 @@ public class DoublePointField extends PointField implements DoubleValueFieldType
   @Override
   public Type getUninversionType(SchemaField sf) {
     if (sf.multiValued()) {
-      return Type.SORTED_DOUBLE;
+      return null;
     } else {
       return Type.DOUBLE_POINT;
     }

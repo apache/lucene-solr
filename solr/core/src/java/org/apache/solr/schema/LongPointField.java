@@ -147,7 +147,7 @@ public class LongPointField extends PointField implements LongValueFieldType {
   @Override
   public Type getUninversionType(SchemaField sf) {
     if (sf.multiValued()) {
-      return Type.SORTED_LONG;
+      return null;
     } else {
       return Type.LONG_POINT;
     }
