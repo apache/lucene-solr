@@ -73,7 +73,7 @@ public class TestIndexReaderClose extends LuceneTestCase {
             reader.getReaderCacheHelper().addClosedListener(new FaultyListener());
           } else {
             count.incrementAndGet();
-            reader.getReaderCacheHelper().addClosedListener(new CountListener(count));
+            reader.getReaderCacheHelper().addClosedListener(new CountListener(count, reader.getReaderCacheHelper().getKey()));
           }
       }
       if (!faultySet && !throwOnClose) {
@@ -123,7 +123,7 @@ public class TestIndexReaderClose extends LuceneTestCase {
     AtomicInteger counter = new AtomicInteger(numListeners);
 
     for (int i = 0; i < numListeners; ++i) {
-      CountCoreListener listener = new CountCoreListener(counter, leafReader.getCoreCacheHelper().getKey());
+      CountListener listener = new CountListener(counter, leafReader.getCoreCacheHelper().getKey());
       listeners.add(listener);
       leafReader.getCoreCacheHelper().addClosedListener(listener);
     }
@@ -141,12 +141,12 @@ public class TestIndexReaderClose extends LuceneTestCase {
     w.w.getDirectory().close();
   }
 
-  private static final class CountCoreListener implements IndexReader.ClosedListener {
+  private static final class CountListener implements IndexReader.ClosedListener {
 
     private final AtomicInteger count;
     private final Object coreCacheKey;
 
-    public CountCoreListener(AtomicInteger count, Object coreCacheKey) {
+    public CountListener(AtomicInteger count, Object coreCacheKey) {
       this.count = count;
       this.coreCacheKey = coreCacheKey;
     }
@@ -159,25 +159,33 @@ public class TestIndexReaderClose extends LuceneTestCase {
 
   }
 
-  private static final class CountListener implements IndexReader.ClosedListener  {
-    private final AtomicInteger count;
-
-    public CountListener(AtomicInteger count) {
-      this.count = count;
-    }
-
-    @Override
-    public void onClose(IndexReader.CacheKey cacheKey) {
-      count.decrementAndGet();
-    }
-  }
-
   private static final class FaultyListener implements IndexReader.ClosedListener {
 
     @Override
     public void onClose(IndexReader.CacheKey cacheKey) {
       throw new IllegalStateException("GRRRRRRRRRRRR!");
     }
+  }
+
+  public void testRegisterListenerOnClosedReader() throws IOException {
+    Directory dir = newDirectory();
+    IndexWriter w = new IndexWriter(dir, newIndexWriterConfig());
+    w.addDocument(new Document());
+    DirectoryReader r = DirectoryReader.open(w);
+    w.close();
+
+    // The reader is open, everything should work
+    r.getReaderCacheHelper().addClosedListener(key -> {});
+    r.leaves().get(0).reader().getReaderCacheHelper().addClosedListener(key -> {});
+    r.leaves().get(0).reader().getCoreCacheHelper().addClosedListener(key -> {});
+
+    // But now we close
+    r.close();
+    expectThrows(AlreadyClosedException.class, () -> r.getReaderCacheHelper().addClosedListener(key -> {}));
+    expectThrows(AlreadyClosedException.class, () -> r.leaves().get(0).reader().getReaderCacheHelper().addClosedListener(key -> {}));
+    expectThrows(AlreadyClosedException.class, () -> r.leaves().get(0).reader().getCoreCacheHelper().addClosedListener(key -> {}));
+
+    dir.close();
   }
 
 }

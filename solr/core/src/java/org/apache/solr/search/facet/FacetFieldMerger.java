@@ -177,9 +177,11 @@ public class FacetFieldMerger extends FacetRequestSortedMerger<FacetField> {
       if (freq.missing) {
         refinement = getRefinementSpecial(mcontext, refinement, tagsWithPartial, missingBucket, "missing");
       }
+      /** allBuckets does not execute sub-facets because we don't change the domain.  We may need refinement info in the future though for stats.
       if (freq.allBuckets) {
         refinement = getRefinementSpecial(mcontext, refinement, tagsWithPartial, allBuckets, "allBuckets");
       }
+       **/
     }
     return refinement;
   }

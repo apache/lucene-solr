@@ -52,8 +52,9 @@ import org.apache.lucene.search.FilterCollector;
 import org.apache.lucene.search.LeafCollector;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.grouping.AllGroupHeadsCollector;
-import org.apache.lucene.search.grouping.term.TermAllGroupsCollector;
-import org.apache.lucene.search.grouping.term.TermGroupFacetCollector;
+import org.apache.lucene.search.grouping.AllGroupsCollector;
+import org.apache.lucene.search.grouping.TermGroupFacetCollector;
+import org.apache.lucene.search.grouping.TermGroupSelector;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.CharsRefBuilder;
 import org.apache.lucene.util.StringHelper;
@@ -330,7 +331,7 @@ public class SimpleFacets {
       );
     }
 
-    TermAllGroupsCollector collector = new TermAllGroupsCollector(groupField);
+    AllGroupsCollector collector = new AllGroupsCollector<>(new TermGroupSelector(groupField));
     Filter mainQueryFilter = docSet.getTopFilter(); // This returns a filter that only matches documents matching with q param and fq params
     Query filteredFacetQuery = new BooleanQuery.Builder()
         .add(facetQuery, Occur.MUST)

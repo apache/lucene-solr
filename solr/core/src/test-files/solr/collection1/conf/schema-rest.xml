@@ -494,7 +494,7 @@
   <fieldType name="location" class="solr.LatLonType" subFieldSuffix="_coordinate"/>
 
   <!-- Field type where english stopwords are managed by the REST API -->
-  <fieldType name="managed_en" class="solr.TextField">
+  <fieldType name="managed_en" class="solr.TextField" autoGeneratePhraseQueries="false">
     <analyzer>
       <tokenizer class="solr.StandardTokenizerFactory"/>
       <filter class="solr.ManagedStopFilterFactory" managed="english"/>

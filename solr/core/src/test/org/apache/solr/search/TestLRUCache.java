@@ -17,20 +17,24 @@
 package org.apache.solr.search;
 
 import java.io.IOException;
-import java.io.Serializable;
 import java.util.HashMap;
 import java.util.Map;
 
 import org.apache.lucene.util.Accountable;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.RamUsageEstimator;
+import org.apache.lucene.util.TestUtil;
 import org.apache.solr.common.SolrException;
-import org.apache.solr.common.util.NamedList;
+import org.apache.solr.metrics.SolrMetricManager;
 
 /**
  * Test for <code>org.apache.solr.search.LRUCache</code>
  */
 public class TestLRUCache extends LuceneTestCase {
+
+  SolrMetricManager metricManager = new SolrMetricManager();
+  String registry = TestUtil.randomSimpleString(random(), 2, 10);
+  String scope = TestUtil.randomSimpleString(random(), 2, 10);
 
   public void testFullAutowarm() throws IOException {
     LRUCache<Object, Object> lruCache = new LRUCache<>();
@@ -97,6 +101,7 @@ public class TestLRUCache extends LuceneTestCase {
   @SuppressWarnings("unchecked")
   public void testNoAutowarm() throws IOException {
     LRUCache<Object, Object> lruCache = new LRUCache<>();
+    lruCache.initializeMetrics(metricManager, registry, scope);
     Map<String, String> params = new HashMap<>();
     params.put("size", "100");
     params.put("initialSize", "10");
@@ -108,7 +113,7 @@ public class TestLRUCache extends LuceneTestCase {
     }
     assertEquals("25", lruCache.get(25));
     assertEquals(null, lruCache.get(110));
-    NamedList<Serializable> nl = lruCache.getStatistics();
+    Map<String,Object> nl = lruCache.getMetricsMap().getValue();
     assertEquals(2L, nl.get("lookups"));
     assertEquals(1L, nl.get("hits"));
     assertEquals(101L, nl.get("inserts"));
@@ -126,6 +131,7 @@ public class TestLRUCache extends LuceneTestCase {
 
   public void testMaxRamSize() throws Exception {
     LRUCache<String, Accountable> accountableLRUCache = new LRUCache<>();
+    accountableLRUCache.initializeMetrics(metricManager, registry, scope);
     Map<String, String> params = new HashMap<>();
     params.put("size", "5");
     params.put("maxRamMB", "1");
@@ -149,7 +155,7 @@ public class TestLRUCache extends LuceneTestCase {
     });
     assertEquals(1, accountableLRUCache.size());
     assertEquals(baseSize + 512 * 1024 + LRUCache.LINKED_HASHTABLE_RAM_BYTES_PER_ENTRY + LRUCache.DEFAULT_RAM_BYTES_USED, accountableLRUCache.ramBytesUsed());
-    NamedList<Serializable> nl = accountableLRUCache.getStatistics();
+    Map<String,Object> nl = accountableLRUCache.getMetricsMap().getValue();
     assertEquals(1L, nl.get("evictions"));
     assertEquals(1L, nl.get("evictionsRamUsage"));
     accountableLRUCache.put("3", new Accountable() {
@@ -158,7 +164,7 @@ public class TestLRUCache extends LuceneTestCase {
         return 1024;
       }
     });
-    nl = accountableLRUCache.getStatistics();
+    nl = accountableLRUCache.getMetricsMap().getValue();
     assertEquals(1L, nl.get("evictions"));
     assertEquals(1L, nl.get("evictionsRamUsage"));
     assertEquals(2L, accountableLRUCache.size());

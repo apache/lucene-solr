@@ -40,6 +40,7 @@ public class TestMinMaxNormalizer {
     final MinMaxNormalizer mmn = (MinMaxNormalizer)n;
     assertEquals(mmn.getMin(), expectedMin, 0.0);
     assertEquals(mmn.getMax(), expectedMax, 0.0);
+    assertEquals("{min=\""+expectedMin+"\", max=\""+expectedMax+"\"}", mmn.paramsToMap().toString());
     return n;
   }
 

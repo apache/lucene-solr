@@ -16,21 +16,27 @@
  */
 package org.apache.solr.highlight;
 
-import java.net.URL;
+import java.util.HashSet;
+import java.util.Set;
 
+import com.codahale.metrics.Counter;
+import com.codahale.metrics.MetricRegistry;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;
-import org.apache.solr.common.util.SimpleOrderedMap;
-import org.apache.solr.core.SolrInfoMBean;
+import org.apache.solr.core.SolrInfoBean;
+import org.apache.solr.metrics.SolrMetricManager;
+import org.apache.solr.metrics.SolrMetricProducer;
 
 /**
  * 
  * @since solr 1.3
  */
-public abstract class HighlightingPluginBase implements SolrInfoMBean
+public abstract class HighlightingPluginBase implements SolrInfoBean, SolrMetricProducer
 {
-  protected long numRequests;
+  protected Counter numRequests;
   protected SolrParams defaults;
+  protected Set<String> metricNames = new HashSet<>(1);
+  protected MetricRegistry registry;
 
   public void init(NamedList args) {
     if( args != null ) {
@@ -50,14 +56,7 @@ public abstract class HighlightingPluginBase implements SolrInfoMBean
 
   @Override
   public abstract String getDescription();
-  @Override
-  public String getSource() { return null; }
-  
-  @Override
-  public String getVersion() {
-    return getClass().getPackage().getSpecificationVersion();
-  }
-  
+
   @Override
   public Category getCategory()
   {
@@ -65,15 +64,19 @@ public abstract class HighlightingPluginBase implements SolrInfoMBean
   }
 
   @Override
-  public URL[] getDocs() {
-    return null;  // this can be overridden, but not required
+  public Set<String> getMetricNames() {
+    return metricNames;
   }
 
   @Override
-  public NamedList getStatistics() {
-    NamedList<Long> lst = new SimpleOrderedMap<>();
-    lst.add("requests", numRequests);
-    return lst;
+  public MetricRegistry getMetricRegistry() {
+    return registry;
+  }
+
+  @Override
+  public void initializeMetrics(SolrMetricManager manager, String registryName, String scope) {
+    registry = manager.registry(registryName);
+    numRequests = manager.counter(this, registryName, "requests", getCategory().toString(), scope);
   }
 }
 

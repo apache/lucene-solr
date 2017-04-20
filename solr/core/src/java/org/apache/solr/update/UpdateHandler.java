@@ -19,14 +19,17 @@ package org.apache.solr.update;
 
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
+import java.util.HashSet;
+import java.util.Set;
 import java.util.Vector;
 
+import com.codahale.metrics.MetricRegistry;
 import org.apache.solr.core.DirectoryFactory;
 import org.apache.solr.core.HdfsDirectoryFactory;
 import org.apache.solr.core.PluginInfo;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.core.SolrEventListener;
-import org.apache.solr.core.SolrInfoMBean;
+import org.apache.solr.core.SolrInfoBean;
 import org.apache.solr.schema.FieldType;
 import org.apache.solr.schema.SchemaField;
 import org.apache.solr.util.plugin.SolrCoreAware;
@@ -41,7 +44,7 @@ import org.slf4j.LoggerFactory;
  * @since solr 0.9
  */
 
-public abstract class UpdateHandler implements SolrInfoMBean {
+public abstract class UpdateHandler implements SolrInfoBean {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   protected final SolrCore core;
@@ -54,6 +57,9 @@ public abstract class UpdateHandler implements SolrInfoMBean {
   protected Vector<SolrEventListener> optimizeCallbacks = new Vector<>();
 
   protected final UpdateLog ulog;
+
+  protected Set<String> metricNames = new HashSet<>();
+  protected MetricRegistry registry;
 
   private void parseEventListeners() {
     final Class<SolrEventListener> clazz = SolrEventListener.class;
@@ -220,5 +226,13 @@ public abstract class UpdateHandler implements SolrInfoMBean {
   @Override
   public Category getCategory() {
     return Category.UPDATE;
+  }
+  @Override
+  public Set<String> getMetricNames() {
+    return metricNames;
+  }
+  @Override
+  public MetricRegistry getMetricRegistry() {
+    return registry;
   }
 }

@@ -52,6 +52,19 @@ Upgrading from Solr 6.x
 
 * Deprecated method getNumericType() has been removed from FieldType. Use getNumberType() instead
 
+* MBean names and attributes now follow hierarchical names used in metrics. This is reflected also in
+  /admin/mbeans and /admin/plugins output, and can be observed in the UI Plugins tab, because now all these
+  APIs get their data from the metrics API. The old (mostly flat) JMX view has been removed.
+
+* <jmx> element in solrconfig.xml is no longer supported. Equivalent functionality can be configured in
+  solr.xml using <metrics><reporter ...> element and SolrJmxReporter implementation. Limited back-compatibility
+  is offered by automatically adding a default instance of SolrJmxReporter if it's missing, AND when a local
+  MBean server is found (which can be activated either via ENABLE_REMOTE_JMX_OPTS in solr.in.sh or via system
+  properties, eg. -Dcom.sun.management.jmxremote). This default instance exports all Solr metrics from all
+  registries as hierarchical MBeans. This behavior can be also disabled by specifying a SolrJmxReporter
+  configuration with a boolean init arg "enabled" set to "false". For a more fine-grained control users
+  should explicitly specify at least one SolrJmxReporter configuration.
+
 New Features
 ----------------------
 * SOLR-9857, SOLR-9858: Collect aggregated metrics from nodes and shard leaders in overseer. (ab)
@@ -62,11 +75,11 @@ New Features
   tuples, one for each value in the multi-valued field. (Dennis Gove)
 
 * SOLR-10339: New set-trigger and remove-trigger APIs for autoscaling. (shalin)
-
+ 
 * SOLR-10340: New set-listener and remove-listener API for autoscaling. (shalin)
-
+ 
 * SOLR-10358: New suspend-trigger and resume-trigger APIs for autoscaling. (shalin)
-
+ 
 * SOLR-10356: Adds basic math Streaming Evaluators (Dennis Gove)
 
 * SOLR-10393: Adds UUID Streaming Evaluator (Dennis Gove)
@@ -102,6 +115,17 @@ Optimizations
 
 Other Changes
 * SOLR-10236: Removed FieldType.getNumericType(). Use getNumberType() instead. (Tomás Fernández Löbbe)
+
+* SOLR-10347: Removed index level boost support from "documents" section of the admin UI (Amrit Sarkar via
+  Tomás Fernández Löbbe)
+
+* SOLR-9959: SolrInfoMBean category and hierarchy cleanup. Per-component statistics are now obtained from
+  the metrics API, legacy JMX support has been replaced with SolrJmxReporter functionality. Several reporter
+  improvements (support for multiple prefix filters, "enabled" flag, reuse of service clients). (ab)
+
+* SOLR-10418: Expose safe system properties via metrics API as 'system.properties' in 'solr.jvm' group.
+  Add support for selecting specific properties from any compound metric using 'property' parameter to
+  /admin/metrics handler. (ab)
 
 ----------------------
 
@@ -144,6 +168,23 @@ New Features
 
 * SOLR-9993: Add support for ExpandComponent with PointFields. (Cao Manh Dat)
 
+* SOLR-10239: MOVEREPLICA API (Cao Manh Dat, Noble Paul, shalin)
+
+* SOLR-9936: Allow configuration for recoveryExecutor thread pool size. (Tim Owen via Mark Miller)
+
+* SOLR-10447: Collections API now supports a LISTALIASES command to return a list of all collection aliases.
+  (Yago Riveiro, Ishan Chattopadhyaya, Mark Miller, Steve Molloy, Shawn Heisey, Mike Drob, janhoy)
+
+* SOLR-10446: CloudSolrClient can now be initialized using the base URL of a Solr instance instead of
+  ZooKeeper hosts. This is possible through the use of newly introduced HttpClusterStateProvider.
+  To fetch a list of collection aliases, this depends on LISTALIASES command, and hence this way of
+  initializing CloudSolrClient would not work if you have collection aliases on older versions of Solr
+  server that doesn't support LISTALIASES. (Ishan Chattopadhyaya, Noble Paul)
+
+* SOLR-10082: Variance and Standard Deviation aggregators for the JSON Facet API.
+  Example: json.facet={x:"stddev(field1)", y:"variance(field2)"}
+  (Rustam Hashimov, yonik)
+
 Optimizations
 ----------------------
 
@@ -164,6 +205,28 @@ Bug Fixes
 
 * SOLR-10387: zkTransfer normalizes destination path incorrectly if source is a windows directory 
   (gopikannan venugopalsamy, Erick Erickson)
+
+* SOLR-10323: fix to SpellingQueryConverter to properly strip out colons in field-specific queries.
+  (Amrit Sarkar via James Dyer)
+
+* SOLR-10264: Fixes multi-term synonym parsing in ManagedSynonymFilterFactory.
+  (Jörg Rathlev, Steve Rowe, Christine Poerschke)
+  
+* SOLR-8807: fix Spellcheck "collateMaxCollectDocs" parameter to work with queries that have the 
+  CollpasingQParserPlugin applied.  (James Dyer)
+
+* SOLR-10474: TestPointFields.testPointFieldReturn() depends on order of unsorted hits. (Steve Rowe)
+
+* SOLR-10473: Correct LBHttpSolrClient's confusing SolrServerException message when timeAllowed is exceeded.
+  (Christine Poerschke)
+
+* SOLR-10047: Mismatched Docvalues segments cause exception in Sorting/Faceting. Solr now uninverts per segment
+  to avoid such exceptions. (Keith Laban via shalin)
+
+* SOLR-10472: Fixed uninversion (aka: FieldCache) bugs with the numeric PointField classes, and CurrencyField (hossman)
+
+* SOLR-5127: Multiple highlight fields and wildcards are now supported e.g. hl.fl=title,text_*
+  (Sven-S. Porst, Daniel Debray, Simon Endele, Christine Poerschke)
 
 Other Changes
 ----------------------
@@ -200,6 +263,18 @@ Other Changes
 
 * SOLR-9745: print errors from solr.cmd (Gopikannan Venugopalsamy via Mikhail Khludnev)
 
+* SOLR-10394: Rename getSortWithinGroup to getWithinGroupSort in search.grouping.Command class.
+  (Judith Silverman, Christine Poerschke)
+
+* SOLR-10440: LBHttpSolrClient.doRequest is now always wrapped in a Mapped Diagnostic Context (MDC).
+  (Christine Poerschke)
+
+* SOLR-10429: UpdateRequest#getRoutes()should copy the response parser (noble)
+
+* SOLR-10007: Clean up references to CoreContainer and CoreDescriptors (Erick Erickson)
+
+* SOLR-10151: Use monotonically incrementing counter for doc ids in TestRecovery. (Peter Szantai-Kis, Mano Kovacs via Mark Miller)
+
 ==================  6.5.1 ==================
 
 Bug Fixes
@@ -210,6 +285,29 @@ Bug Fixes
 
 * SOLR-10416: The JSON output of /admin/metrics is fixed to write the container as a
   map (SimpleOrderedMap) instead of an array (NamedList). (shalin)
+
+* SOLR-10277: On 'downnode', lots of wasteful mutations are done to ZK.
+  (Joshua Humphries, Scott Blum, Varun Thacker, shalin)
+
+* SOLR-10421: Fix params persistence for solr/contrib/ltr (MinMax|Standard)Normalizer classes.
+  (Jianxiong Dong, Christine Poerschke)
+
+* SOLR-10404: The fetch() streaming expression wouldn't work if a value included query syntax chars (like :+-).
+  Fixed, and enhanced the generated query to not pollute the queryCache. (David Smiley)
+  
+* SOLR-10423: Disable graph query production via schema configuration <fieldtype ... enableGraphQueries="false">.
+  This fixes broken queries for ShingleFilter-containing query-time analyzers when request param sow=false.
+  (Steve Rowe)
+
+* SOLR-10425: Fix indexed="false" on numeric PointFields (Tomás Fernández Löbbe, hossman)
+
+* SOLR-10341: SQL AVG function mis-interprets field type. (Joel Bernstein)
+
+* SOLR-10444: SQL interface does not use client cache. (Joel Bernstein)
+
+* SOLR-10420: Solr 6.x leaking one SolrZkClient instance per second (Scott Blum, Cao Manh Dat, Markus Jelsma, Steve Rowe)
+
+* SOLR-10439: The new 'large' attribute had been forgotten in /schema/fields?showDefaults=true
 
 ==================  6.5.0 ==================
 

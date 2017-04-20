@@ -52,6 +52,7 @@ import org.apache.solr.cloud.rule.ReplicaAssigner;
 import org.apache.solr.cloud.rule.Rule;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
+import org.apache.solr.common.cloud.Aliases;
 import org.apache.solr.common.cloud.ClusterProperties;
 import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.DocCollection;
@@ -460,6 +461,19 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
       return req.getParams().required().getAll(null, NAME, "collections");
     }),
     DELETEALIAS_OP(DELETEALIAS, (req, rsp, h) -> req.getParams().required().getAll(null, NAME)),
+
+    /**
+     * Handle cluster status request.
+     * Can return status per specific collection/shard or per all collections.
+     */
+    LISTALIASES_OP(LISTALIASES, (req, rsp, h) -> {
+      ZkStateReader zkStateReader = h.coreContainer.getZkController().getZkStateReader();
+      Aliases aliases = zkStateReader.getAliases();
+      if (aliases != null) {
+        rsp.getValues().add("aliases", aliases.getCollectionAliasMap());
+      }
+      return null;
+    }),
     SPLITSHARD_OP(SPLITSHARD, DEFAULT_COLLECTION_OP_TIMEOUT * 5, true, (req, rsp, h) -> {
       String name = req.getParams().required().get(COLLECTION_PROP);
       // TODO : add support for multiple shards
@@ -859,6 +873,16 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
       return null;
     }),
     REPLACENODE_OP(REPLACENODE, (req, rsp, h) -> req.getParams().required().getAll(req.getParams().getAll(null, "parallel"), "source", "target")),
+    MOVEREPLICA_OP(MOVEREPLICA, (req, rsp, h) -> {
+      Map<String, Object> map = req.getParams().required().getAll(null,
+          COLLECTION_PROP);
+
+      return req.getParams().getAll(map,
+          "fromNode",
+          "targetNode",
+          "replica",
+          "shard");
+    }),
     DELETENODE_OP(DELETENODE, (req, rsp, h) -> req.getParams().required().getAll(null, "node"));
     public final CollectionOp fun;
     CollectionAction action;
@@ -881,7 +905,7 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
       for (CollectionOperation op : values()) {
         if (op.action == action) return op;
       }
-      throw new SolrException(ErrorCode.SERVER_ERROR, "No such action" + action);
+      throw new SolrException(ErrorCode.SERVER_ERROR, "No such action " + action);
     }
 
     @Override

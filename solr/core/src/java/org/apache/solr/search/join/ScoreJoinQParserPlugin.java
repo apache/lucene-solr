@@ -89,7 +89,7 @@ public class ScoreJoinQParserPlugin extends QParserPlugin {
     public Query rewrite(IndexReader reader) throws IOException {
       SolrRequestInfo info = SolrRequestInfo.getRequestInfo();
 
-      CoreContainer container = info.getReq().getCore().getCoreDescriptor().getCoreContainer();
+      CoreContainer container = info.getReq().getCore().getCoreContainer();
 
       final SolrCore fromCore = container.getCore(fromIndex);
 
@@ -222,7 +222,7 @@ public class ScoreJoinQParserPlugin extends QParserPlugin {
         final String myCore = req.getCore().getCoreDescriptor().getName();
 
         if (fromIndex != null && (!fromIndex.equals(myCore) || byPassShortCircutCheck)) {
-          CoreContainer container = req.getCore().getCoreDescriptor().getCoreContainer();
+          CoreContainer container = req.getCore().getCoreContainer();
 
           final String coreName = getCoreName(fromIndex, container);
           final SolrCore fromCore = container.getCore(coreName);

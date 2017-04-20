@@ -47,6 +47,9 @@ API Changes
 * LUCENE-7734: FieldType's copy constructor was widened to accept any IndexableFieldType.
   (David Smiley)
 
+* LUCENE-7701: Grouping collectors have been refactored, such that groups are
+  now defined by a GroupSelector implementation. (Alan Woodward)
+
 Bug Fixes
 
 * LUCENE-7626: IndexWriter will no longer accept broken token offsets
@@ -88,6 +91,25 @@ Other
 
 ======================= Lucene 6.6.0 =======================
 
+Bug Fixes
+
+* LUCENE-7777: ByteBlockPool.readBytes sometimes throws
+  ArrayIndexOutOfBoundsException when byte blocks larger than 32 KB
+  were added (Mike McCandless)
+
+Improvements
+
+* LUCENE-7782: OfflineSorter now passes the total number of items it
+  will write to getWriter (Mike McCandless)
+
+* LUCENE-7785: Move dictionary for Ukrainian analyzer to external dependency.
+  (Andriy Rysin via Steve Rowe, Dawid Weiss)
+
+Optimizations
+
+* LUCENE-7787: spatial-extras HeatmapFacetCounter will now short-circuit it's
+  work when Bits.MatchNoBits is passed. (David Smiley)
+
 Other
 
 * LUCENE-7754: Inner classes should be static whenever possible.
@@ -111,6 +133,9 @@ Bug Fixes
 
 * LUCENE-7749: Made LRUQueryCache delegate the scoreSupplier method.
   (Martin Amirault via Adrien Grand)
+
+* LUCENE-7769: The UnifiedHighligter wasn't highlighting portions of the query
+  wrapped in BoostQuery or SpanBoostQuery. (David Smiley, Dmitry Malinin)
 
 Other
 

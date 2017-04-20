@@ -58,8 +58,8 @@ public class TopGroupsShardResponseProcessor implements ShardResponseProcessor {
     Sort groupSort = rb.getGroupingSpec().getGroupSort();
     String[] fields = rb.getGroupingSpec().getFields();
     String[] queries = rb.getGroupingSpec().getQueries();
-    Sort sortWithinGroup = rb.getGroupingSpec().getSortWithinGroup();
-    assert sortWithinGroup != null;
+    Sort withinGroupSort = rb.getGroupingSpec().getSortWithinGroup();
+    assert withinGroupSort != null;
 
     // If group.format=simple group.offset doesn't make sense
     int groupOffsetDefault;
@@ -122,7 +122,7 @@ public class TopGroupsShardResponseProcessor implements ShardResponseProcessor {
       NamedList<NamedList> secondPhaseResult = (NamedList<NamedList>) srsp.getSolrResponse().getResponse().get("secondPhase");
       if(secondPhaseResult == null)
         continue;
-      Map<String, ?> result = serializer.transformToNative(secondPhaseResult, groupSort, sortWithinGroup, srsp.getShard());
+      Map<String, ?> result = serializer.transformToNative(secondPhaseResult, groupSort, withinGroupSort, srsp.getShard());
       int numFound = 0;
       float maxScore = Float.NaN;
       for (String field : commandTopGroups.keySet()) {
@@ -164,7 +164,7 @@ public class TopGroupsShardResponseProcessor implements ShardResponseProcessor {
           docsPerGroup += subTopGroups.totalGroupedHitCount;
         }
       }
-      rb.mergedTopGroups.put(groupField, TopGroups.merge(topGroups.toArray(topGroupsArr), groupSort, sortWithinGroup, groupOffsetDefault, docsPerGroup, TopGroups.ScoreMergeMode.None));
+      rb.mergedTopGroups.put(groupField, TopGroups.merge(topGroups.toArray(topGroupsArr), groupSort, withinGroupSort, groupOffsetDefault, docsPerGroup, TopGroups.ScoreMergeMode.None));
     }
 
     for (String query : commandTopDocs.keySet()) {
@@ -178,10 +178,10 @@ public class TopGroupsShardResponseProcessor implements ShardResponseProcessor {
 
       int topN = rb.getGroupingSpec().getOffset() + rb.getGroupingSpec().getLimit();
       final TopDocs mergedTopDocs;
-      if (sortWithinGroup.equals(Sort.RELEVANCE)) {
+      if (withinGroupSort.equals(Sort.RELEVANCE)) {
         mergedTopDocs = TopDocs.merge(topN, topDocs.toArray(new TopDocs[topDocs.size()]));
       } else {
-        mergedTopDocs = TopDocs.merge(sortWithinGroup, topN, topDocs.toArray(new TopFieldDocs[topDocs.size()]));
+        mergedTopDocs = TopDocs.merge(withinGroupSort, topN, topDocs.toArray(new TopFieldDocs[topDocs.size()]));
       }
       rb.mergedQueryCommandResults.put(query, new QueryCommandResult(mergedTopDocs, mergedMatches));
     }

@@ -134,7 +134,7 @@ public class MetricsCollectorHandler extends RequestHandlerBase {
 
   @Override
   public String getDescription() {
-    return "Handler for collecting and aggregating metric reports.";
+    return "Handler for collecting and aggregating SolrCloud metric reports.";
   }
 
   private static class MetricUpdateProcessor extends UpdateRequestProcessor {

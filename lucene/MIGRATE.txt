@@ -61,3 +61,16 @@ do not take deleted docs and doc values updates into account.
 Index-time boosts are not supported anymore. As a replacement, index-time
 scoring factors should be indexed in a doc value field and combined with the
 score at query time using FunctionScoreQuery for instance.
+
+## Grouping collector refactoring (LUCENE-7701)
+
+Groups are now defined by GroupSelector classes, making it easier to define new
+types of groups.  Rather than having term or function specific collection
+classes, FirstPassGroupingCollector, AllGroupsCollector and
+AllGroupHeadsCollector are now concrete classes taking a GroupSelector.
+
+SecondPassGroupingCollector is no longer specifically aimed at
+collecting TopDocs for each group, but instead takes a GroupReducer that will
+perform any type of reduction on the top groups collected on a first-pass.  To
+reproduce the old behaviour of SecondPassGroupingCollector, you should instead
+use TopGroupsCollector.

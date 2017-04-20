@@ -484,7 +484,8 @@ public final class StandardDirectoryReader extends DirectoryReader {
 
     @Override
     public void addClosedListener(ClosedListener listener) {
-        readerClosedListeners.add(listener);
+      ensureOpen();
+      readerClosedListeners.add(listener);
     }
 
   };

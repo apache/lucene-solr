@@ -17,7 +17,10 @@
 package org.apache.solr.core;
 
 import java.nio.file.Path;
+import java.util.Arrays;
+import java.util.HashSet;
 import java.util.Properties;
+import java.util.Set;
 
 import org.apache.solr.common.SolrException;
 import org.apache.solr.logging.LogWatcherConfig;
@@ -64,6 +67,8 @@ public class NodeConfig {
 
   private final PluginInfo[] metricReporterPlugins;
 
+  private final Set<String> hiddenSysProps;
+
   private final PluginInfo transientCacheConfig;
 
   private NodeConfig(String nodeName, Path coreRootDirectory, Path configSetBaseDirectory, String sharedLibDirectory,
@@ -73,7 +78,7 @@ public class NodeConfig {
                      LogWatcherConfig logWatcherConfig, CloudConfig cloudConfig, Integer coreLoadThreads,
                      int transientCacheSize, boolean useSchemaCache, String managementPath, SolrResourceLoader loader,
                      Properties solrProperties, PluginInfo[] backupRepositoryPlugins,
-                     PluginInfo[] metricReporterPlugins, PluginInfo transientCacheConfig) {
+                     PluginInfo[] metricReporterPlugins, Set<String> hiddenSysProps, PluginInfo transientCacheConfig) {
     this.nodeName = nodeName;
     this.coreRootDirectory = coreRootDirectory;
     this.configSetBaseDirectory = configSetBaseDirectory;
@@ -94,6 +99,7 @@ public class NodeConfig {
     this.solrProperties = solrProperties;
     this.backupRepositoryPlugins = backupRepositoryPlugins;
     this.metricReporterPlugins = metricReporterPlugins;
+    this.hiddenSysProps = hiddenSysProps;
     this.transientCacheConfig = transientCacheConfig;
 
     if (this.cloudConfig != null && this.getCoreLoadThreadCount(false) < 2) {
@@ -187,6 +193,10 @@ public class NodeConfig {
     return metricReporterPlugins;
   }
 
+  public Set<String> getHiddenSysProps() {
+    return hiddenSysProps;
+  }
+
   public PluginInfo getTransientCachePluginInfo() { return transientCacheConfig; }
 
   public static class NodeConfigBuilder {
@@ -211,6 +221,7 @@ public class NodeConfig {
     private Properties solrProperties = new Properties();
     private PluginInfo[] backupRepositoryPlugins;
     private PluginInfo[] metricReporterPlugins;
+    private Set<String> hiddenSysProps = new HashSet<>(DEFAULT_HIDDEN_SYS_PROPS);
     private PluginInfo transientCacheConfig;
 
     private final SolrResourceLoader loader;
@@ -226,6 +237,14 @@ public class NodeConfig {
     private static final String DEFAULT_INFOHANDLERCLASS = "org.apache.solr.handler.admin.InfoHandler";
     private static final String DEFAULT_COLLECTIONSHANDLERCLASS = "org.apache.solr.handler.admin.CollectionsHandler";
     private static final String DEFAULT_CONFIGSETSHANDLERCLASS = "org.apache.solr.handler.admin.ConfigSetsHandler";
+
+    public static final Set<String> DEFAULT_HIDDEN_SYS_PROPS = new HashSet<>(Arrays.asList(
+        "javax.net.ssl.keyStorePassword",
+        "javax.net.ssl.trustStorePassword",
+        "basicauth",
+        "zkDigestPassword",
+        "zkDigestReadonlyPassword"
+    ));
 
     public NodeConfigBuilder(String nodeName, SolrResourceLoader loader) {
       this.nodeName = nodeName;
@@ -331,11 +350,16 @@ public class NodeConfig {
       return this;
     }
 
+    public NodeConfigBuilder setHiddenSysProps(Set<String> hiddenSysProps) {
+      this.hiddenSysProps = hiddenSysProps;
+      return this;
+    }
+
     public NodeConfig build() {
       return new NodeConfig(nodeName, coreRootDirectory, configSetBaseDirectory, sharedLibDirectory, shardHandlerFactoryConfig,
                             updateShardHandlerConfig, coreAdminHandlerClass, collectionsAdminHandlerClass, infoHandlerClass, configSetsHandlerClass,
                             logWatcherConfig, cloudConfig, coreLoadThreads, transientCacheSize, useSchemaCache, managementPath, loader, solrProperties,
-                            backupRepositoryPlugins, metricReporterPlugins, transientCacheConfig);
+                            backupRepositoryPlugins, metricReporterPlugins, hiddenSysProps, transientCacheConfig);
     }
   }
 }

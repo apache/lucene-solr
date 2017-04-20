@@ -105,7 +105,7 @@ public class TestUAX29URLEmailTokenizer extends BaseTokenStreamTestCase {
       @Override
       protected TokenStreamComponents createComponents(String fieldName) {
         UAX29URLEmailTokenizer tokenizer = new UAX29URLEmailTokenizer(newAttributeFactory());
-        tokenizer.setMaxTokenLength(Integer.MAX_VALUE);  // Tokenize arbitrary length URLs
+        tokenizer.setMaxTokenLength(UAX29URLEmailTokenizer.MAX_TOKEN_LENGTH_LIMIT);  // Tokenize arbitrary length URLs
         TokenFilter filter = new URLFilter(tokenizer);
         return new TokenStreamComponents(tokenizer, filter);
       }

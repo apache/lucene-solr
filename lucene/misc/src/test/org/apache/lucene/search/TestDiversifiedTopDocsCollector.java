@@ -154,7 +154,7 @@ public class TestDiversifiedTopDocsCollector extends LuceneTestCase {
         }
         
         @Override
-        public long longValue() {
+        public long longValue() throws IOException {
           // Keys are always expressed as a long so we obtain the
           // ordinal for our String-based artist name here
           return sdv.ordValue();

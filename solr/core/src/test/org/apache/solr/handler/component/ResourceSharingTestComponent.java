@@ -63,11 +63,6 @@ public class ResourceSharingTestComponent extends SearchComponent implements Sol
     return "ResourceSharingTestComponent";
   }
 
-  @Override
-  public String getSource() {
-    return null;
-  }
-
   @SuppressWarnings("unchecked")
   TestObject getTestObj() {
     return this.blob.get();

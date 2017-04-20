@@ -453,7 +453,7 @@ public abstract class FieldType extends FieldProperties {
   }
   
   /**
-   * DocValues is not enabled for a field, but it's indexed, docvalues can be constructed 
+   * If DocValues is not enabled for a field, but it's indexed, docvalues can be constructed 
    * on the fly (uninverted, aka fieldcache) on the first request to sort, facet, etc. 
    * This specifies the structure to use.
    * 
@@ -833,7 +833,8 @@ public abstract class FieldType extends FieldProperties {
 
   private static final String POSTINGS_FORMAT = "postingsFormat";
   private static final String DOC_VALUES_FORMAT = "docValuesFormat";
-  private static final String AUTO_GENERATE_PHRASE_QUERIES = "autoGeneratePhraseQueries";
+  protected static final String AUTO_GENERATE_PHRASE_QUERIES = "autoGeneratePhraseQueries";
+  protected static final String ENABLE_GRAPH_QUERIES = "enableGraphQueries";
   private static final String ARGS = "args";
   private static final String POSITION_INCREMENT_GAP = "positionIncrementGap";
 
@@ -856,6 +857,7 @@ public abstract class FieldType extends FieldProperties {
       }
       if (this instanceof TextField) {
         namedPropertyValues.add(AUTO_GENERATE_PHRASE_QUERIES, ((TextField) this).getAutoGeneratePhraseQueries());
+        namedPropertyValues.add(ENABLE_GRAPH_QUERIES, ((TextField) this).getEnableGraphQueries());
       }
       namedPropertyValues.add(getPropertyName(INDEXED), hasProperty(INDEXED));
       namedPropertyValues.add(getPropertyName(STORED), hasProperty(STORED));

@@ -33,15 +33,16 @@ import org.apache.lucene.search.SortField;
 
 /** FirstPassGroupingCollector is the first of two passes necessary
  *  to collect grouped hits.  This pass gathers the top N sorted
- *  groups. Concrete subclasses define what a group is and how it
- *  is internally collected.
+ *  groups. Groups are defined by a {@link GroupSelector}
  *
  *  <p>See {@link org.apache.lucene.search.grouping} for more
  *  details including a full code example.</p>
  *
  * @lucene.experimental
  */
-abstract public class FirstPassGroupingCollector<T> extends SimpleCollector {
+public class FirstPassGroupingCollector<T> extends SimpleCollector {
+
+  private final GroupSelector<T> groupSelector;
 
   private final FieldComparator<?>[] comparators;
   private final LeafFieldComparator[] leafComparators;
@@ -60,16 +61,18 @@ abstract public class FirstPassGroupingCollector<T> extends SimpleCollector {
   /**
    * Create the first pass collector.
    *
-   *  @param groupSort The {@link Sort} used to sort the
+   * @param groupSelector a GroupSelector used to defined groups
+   * @param groupSort The {@link Sort} used to sort the
    *    groups.  The top sorted document within each group
    *    according to groupSort, determines how that group
    *    sorts against other groups.  This must be non-null,
    *    ie, if you want to groupSort by relevance use
    *    Sort.RELEVANCE.
-   *  @param topNGroups How many top groups to keep.
+   * @param topNGroups How many top groups to keep.
    */
   @SuppressWarnings({"unchecked", "rawtypes"})
-  public FirstPassGroupingCollector(Sort groupSort, int topNGroups) {
+  public FirstPassGroupingCollector(GroupSelector<T> groupSelector, Sort groupSort, int topNGroups) {
+    this.groupSelector = groupSelector;
     if (topNGroups < 1) {
       throw new IllegalArgumentException("topNGroups must be >= 1 (got " + topNGroups + ")");
     }
@@ -133,7 +136,7 @@ abstract public class FirstPassGroupingCollector<T> extends SimpleCollector {
       if (upto++ < groupOffset) {
         continue;
       }
-      //System.out.println("  group=" + (group.groupValue == null ? "null" : group.groupValue.utf8ToString()));
+      // System.out.println("  group=" + (group.groupValue == null ? "null" : group.groupValue.toString()));
       SearchGroup<T> searchGroup = new SearchGroup<>();
       searchGroup.groupValue = group.groupValue;
       if (fillFields) {
@@ -155,14 +158,11 @@ abstract public class FirstPassGroupingCollector<T> extends SimpleCollector {
     }
   }
 
-  @Override
-  public void collect(int doc) throws IOException {
-    //System.out.println("FP.collect doc=" + doc);
-
+  private boolean isCompetitive(int doc) throws IOException {
     // If orderedGroups != null we already have collected N groups and
     // can short circuit by comparing this document to the bottom group,
     // without having to find what group this document belongs to.
-    
+
     // Even if this document belongs to a group in the top N, we'll know that
     // we don't have to update that group.
 
@@ -173,7 +173,7 @@ abstract public class FirstPassGroupingCollector<T> extends SimpleCollector {
         final int c = reversed[compIDX] * leafComparators[compIDX].compareBottom(doc);
         if (c < 0) {
           // Definitely not competitive. So don't even bother to continue
-          return;
+          return false;
         } else if (c > 0) {
           // Definitely competitive.
           break;
@@ -181,15 +181,24 @@ abstract public class FirstPassGroupingCollector<T> extends SimpleCollector {
           // Here c=0. If we're at the last comparator, this doc is not
           // competitive, since docs are visited in doc Id order, which means
           // this doc cannot compete with any other document in the queue.
-          return;
+          return false;
         }
       }
     }
+    return true;
+  }
+
+  @Override
+  public void collect(int doc) throws IOException {
+
+    if (isCompetitive(doc) == false)
+      return;
 
     // TODO: should we add option to mean "ignore docs that
     // don't have the group field" (instead of stuffing them
     // under null group)?
-    final T groupValue = getDocGroupValue(doc);
+    groupSelector.advanceTo(doc);
+    T groupValue = groupSelector.currentValue();
 
     final CollectedSearchGroup<T> group = groupMap.get(groupValue);
 
@@ -207,7 +216,7 @@ abstract public class FirstPassGroupingCollector<T> extends SimpleCollector {
 
         // Add a new CollectedSearchGroup:
         CollectedSearchGroup<T> sg = new CollectedSearchGroup<>();
-        sg.groupValue = copyDocGroupValue(groupValue, null);
+        sg.groupValue = groupSelector.copyValue();
         sg.comparatorSlot = groupMap.size();
         sg.topDoc = docBase + doc;
         for (LeafFieldComparator fc : leafComparators) {
@@ -233,7 +242,7 @@ abstract public class FirstPassGroupingCollector<T> extends SimpleCollector {
       groupMap.remove(bottomGroup.groupValue);
 
       // reuse the removed CollectedSearchGroup
-      bottomGroup.groupValue = copyDocGroupValue(groupValue, bottomGroup.groupValue);
+      bottomGroup.groupValue = groupSelector.copyValue();
       bottomGroup.topDoc = docBase + doc;
 
       for (LeafFieldComparator fc : leafComparators) {
@@ -338,25 +347,15 @@ abstract public class FirstPassGroupingCollector<T> extends SimpleCollector {
     for (int i=0; i<comparators.length; i++) {
       leafComparators[i] = comparators[i].getLeafComparator(readerContext);
     }
+    groupSelector.setNextReader(readerContext);
   }
 
   /**
-   * Returns the group value for the specified doc.
-   *
-   * @param doc The specified doc
-   * @return the group value for the specified doc
+   * @return the GroupSelector used for this Collector
    */
-  protected abstract T getDocGroupValue(int doc) throws IOException;
-
-  /**
-   * Returns a copy of the specified group value by creating a new instance and copying the value from the specified
-   * groupValue in the new instance. Or optionally the reuse argument can be used to copy the group value in.
-   *
-   * @param groupValue The group value to copy
-   * @param reuse Optionally a reuse instance to prevent a new instance creation
-   * @return a copy of the specified group value
-   */
-  protected abstract T copyDocGroupValue(T groupValue, T reuse);
+  public GroupSelector<T> getGroupSelector() {
+    return groupSelector;
+  }
 
 }
 

@@ -33,84 +33,14 @@ import org.apache.solr.client.solrj.io.ModelCache;
 import org.apache.solr.client.solrj.io.SolrClientCache;
 import org.apache.solr.client.solrj.io.Tuple;
 import org.apache.solr.client.solrj.io.comp.StreamComparator;
-import org.apache.solr.client.solrj.io.eval.AbsoluteValueEvaluator;
-import org.apache.solr.client.solrj.io.eval.AddEvaluator;
-import org.apache.solr.client.solrj.io.eval.AndEvaluator;
-import org.apache.solr.client.solrj.io.eval.ArcCosineEvaluator;
-import org.apache.solr.client.solrj.io.eval.ArcSineEvaluator;
-import org.apache.solr.client.solrj.io.eval.ArcTangentEvaluator;
-import org.apache.solr.client.solrj.io.eval.CeilingEvaluator;
-import org.apache.solr.client.solrj.io.eval.CoalesceEvaluator;
-import org.apache.solr.client.solrj.io.eval.CosineEvaluator;
-import org.apache.solr.client.solrj.io.eval.CubedRootEvaluator;
-import org.apache.solr.client.solrj.io.eval.DivideEvaluator;
-import org.apache.solr.client.solrj.io.eval.EqualsEvaluator;
-import org.apache.solr.client.solrj.io.eval.ExclusiveOrEvaluator;
-import org.apache.solr.client.solrj.io.eval.FloorEvaluator;
-import org.apache.solr.client.solrj.io.eval.GreaterThanEqualToEvaluator;
-import org.apache.solr.client.solrj.io.eval.GreaterThanEvaluator;
-import org.apache.solr.client.solrj.io.eval.HyperbolicCosineEvaluator;
-import org.apache.solr.client.solrj.io.eval.HyperbolicSineEvaluator;
-import org.apache.solr.client.solrj.io.eval.HyperbolicTangentEvaluator;
-import org.apache.solr.client.solrj.io.eval.IfThenElseEvaluator;
-import org.apache.solr.client.solrj.io.eval.LessThanEqualToEvaluator;
-import org.apache.solr.client.solrj.io.eval.LessThanEvaluator;
-import org.apache.solr.client.solrj.io.eval.ModuloEvaluator;
-import org.apache.solr.client.solrj.io.eval.MultiplyEvaluator;
-import org.apache.solr.client.solrj.io.eval.NaturalLogEvaluator;
-import org.apache.solr.client.solrj.io.eval.NotEvaluator;
-import org.apache.solr.client.solrj.io.eval.OrEvaluator;
-import org.apache.solr.client.solrj.io.eval.PowerEvaluator;
-import org.apache.solr.client.solrj.io.eval.RawValueEvaluator;
-import org.apache.solr.client.solrj.io.eval.RoundEvaluator;
-import org.apache.solr.client.solrj.io.eval.SineEvaluator;
-import org.apache.solr.client.solrj.io.eval.SquareRootEvaluator;
-import org.apache.solr.client.solrj.io.eval.SubtractEvaluator;
-import org.apache.solr.client.solrj.io.eval.TangentEvaluator;
-import org.apache.solr.client.solrj.io.eval.UuidEvaluator;
+import org.apache.solr.client.solrj.io.eval.*;
 import org.apache.solr.client.solrj.io.graph.GatherNodesStream;
 import org.apache.solr.client.solrj.io.graph.ShortestPathStream;
 import org.apache.solr.client.solrj.io.ops.ConcatOperation;
 import org.apache.solr.client.solrj.io.ops.DistinctOperation;
 import org.apache.solr.client.solrj.io.ops.GroupOperation;
 import org.apache.solr.client.solrj.io.ops.ReplaceOperation;
-import org.apache.solr.client.solrj.io.stream.CartesianProductStream;
-import org.apache.solr.client.solrj.io.stream.CloudSolrStream;
-import org.apache.solr.client.solrj.io.stream.CommitStream;
-import org.apache.solr.client.solrj.io.stream.ComplementStream;
-import org.apache.solr.client.solrj.io.stream.DaemonStream;
-import org.apache.solr.client.solrj.io.stream.ExceptionStream;
-import org.apache.solr.client.solrj.io.stream.ExecutorStream;
-import org.apache.solr.client.solrj.io.stream.FacetStream;
-import org.apache.solr.client.solrj.io.stream.FeaturesSelectionStream;
-import org.apache.solr.client.solrj.io.stream.FetchStream;
-import org.apache.solr.client.solrj.io.stream.HashJoinStream;
-import org.apache.solr.client.solrj.io.stream.HavingStream;
-import org.apache.solr.client.solrj.io.stream.InnerJoinStream;
-import org.apache.solr.client.solrj.io.stream.IntersectStream;
-import org.apache.solr.client.solrj.io.stream.JDBCStream;
-import org.apache.solr.client.solrj.io.stream.LeftOuterJoinStream;
-import org.apache.solr.client.solrj.io.stream.MergeStream;
-import org.apache.solr.client.solrj.io.stream.ModelStream;
-import org.apache.solr.client.solrj.io.stream.NullStream;
-import org.apache.solr.client.solrj.io.stream.OuterHashJoinStream;
-import org.apache.solr.client.solrj.io.stream.ParallelStream;
-import org.apache.solr.client.solrj.io.stream.PriorityStream;
-import org.apache.solr.client.solrj.io.stream.RandomStream;
-import org.apache.solr.client.solrj.io.stream.RankStream;
-import org.apache.solr.client.solrj.io.stream.ReducerStream;
-import org.apache.solr.client.solrj.io.stream.RollupStream;
-import org.apache.solr.client.solrj.io.stream.ScoreNodesStream;
-import org.apache.solr.client.solrj.io.stream.SelectStream;
-import org.apache.solr.client.solrj.io.stream.SignificantTermsStream;
-import org.apache.solr.client.solrj.io.stream.SortStream;
-import org.apache.solr.client.solrj.io.stream.StatsStream;
-import org.apache.solr.client.solrj.io.stream.StreamContext;
-import org.apache.solr.client.solrj.io.stream.TextLogitStream;
-import org.apache.solr.client.solrj.io.stream.TopicStream;
-import org.apache.solr.client.solrj.io.stream.TupleStream;
-import org.apache.solr.client.solrj.io.stream.UniqueStream;
-import org.apache.solr.client.solrj.io.stream.UpdateStream;
+import org.apache.solr.client.solrj.io.stream.*;
 import org.apache.solr.client.solrj.io.stream.expr.Explanation;
 import org.apache.solr.client.solrj.io.stream.expr.Explanation.ExpressionType;
 import org.apache.solr.client.solrj.io.stream.expr.Expressible;
@@ -151,6 +81,10 @@ public class StreamHandler extends RequestHandlerBase implements SolrCoreAware, 
     return PermissionNameProvider.Name.READ_PERM;
   }
 
+  public static SolrClientCache getClientCache() {
+    return clientCache;
+  }
+
   public void inform(SolrCore core) {
     
     /* The stream factory will always contain the zkUrl for the given collection
@@ -165,12 +99,12 @@ public class StreamHandler extends RequestHandlerBase implements SolrCoreAware, 
 
     String defaultCollection;
     String defaultZkhost;
-    CoreContainer coreContainer = core.getCoreDescriptor().getCoreContainer();
+    CoreContainer coreContainer = core.getCoreContainer();
     this.coreName = core.getName();
 
     if(coreContainer.isZooKeeperAware()) {
       defaultCollection = core.getCoreDescriptor().getCollectionName();
-      defaultZkhost = core.getCoreDescriptor().getCoreContainer().getZkController().getZkServerAddress();
+      defaultZkhost = core.getCoreContainer().getZkController().getZkServerAddress();
       streamFactory.withCollectionZkHost(defaultCollection, defaultZkhost);
       streamFactory.withDefaultZkHost(defaultZkhost);
       modelCache = new ModelCache(250,
@@ -221,30 +155,34 @@ public class StreamHandler extends RequestHandlerBase implements SolrCoreAware, 
       .withFunctionName("executor", ExecutorStream.class)
       .withFunctionName("null", NullStream.class)
       .withFunctionName("priority", PriorityStream.class)
-      .withFunctionName("significantTerms", SignificantTermsStream.class)
+         .withFunctionName("significantTerms", SignificantTermsStream.class)
       .withFunctionName("cartesianProduct", CartesianProductStream.class)
-      
-      // metrics
-      .withFunctionName("min", MinMetric.class)
+         .withFunctionName("shuffle", ShuffleStream.class)
+         .withFunctionName("calc", CalculatorStream.class)
+      .withFunctionName("eval",EvalStream.class)
+      .withFunctionName("echo", EchoStream.class)
+
+             // metrics
+         .withFunctionName("min", MinMetric.class)
       .withFunctionName("max", MaxMetric.class)
       .withFunctionName("avg", MeanMetric.class)
       .withFunctionName("sum", SumMetric.class)
       .withFunctionName("count", CountMetric.class)
       
       // tuple manipulation operations
-      .withFunctionName("replace", ReplaceOperation.class)
+         .withFunctionName("replace", ReplaceOperation.class)
       .withFunctionName("concat", ConcatOperation.class)
       
       // stream reduction operations
-      .withFunctionName("group", GroupOperation.class)
+         .withFunctionName("group", GroupOperation.class)
       .withFunctionName("distinct", DistinctOperation.class)
       .withFunctionName("having", HavingStream.class)
       
       // Stream Evaluators
-      .withFunctionName("val", RawValueEvaluator.class)
+         .withFunctionName("val", RawValueEvaluator.class)
       
       // Boolean Stream Evaluators
-      .withFunctionName("and", AndEvaluator.class)
+         .withFunctionName("and", AndEvaluator.class)
       .withFunctionName("eor", ExclusiveOrEvaluator.class)
       .withFunctionName("eq", EqualsEvaluator.class)
       .withFunctionName("gt", GreaterThanEvaluator.class)
@@ -252,10 +190,23 @@ public class StreamHandler extends RequestHandlerBase implements SolrCoreAware, 
       .withFunctionName("lt", LessThanEvaluator.class)
       .withFunctionName("lteq", LessThanEqualToEvaluator.class)
       .withFunctionName("not", NotEvaluator.class)
-      .withFunctionName("or", OrEvaluator.class)
-      
+         .withFunctionName("or", OrEvaluator.class)
+
+      // Date Time Evaluators
+         .withFunctionName(TemporalEvaluatorYear.FUNCTION_NAME, TemporalEvaluatorYear.class)
+      .withFunctionName(TemporalEvaluatorMonth.FUNCTION_NAME, TemporalEvaluatorMonth.class)
+      .withFunctionName(TemporalEvaluatorDay.FUNCTION_NAME, TemporalEvaluatorDay.class)
+      .withFunctionName(TemporalEvaluatorDayOfYear.FUNCTION_NAME, TemporalEvaluatorDayOfYear.class)
+         .withFunctionName(TemporalEvaluatorHour.FUNCTION_NAME, TemporalEvaluatorHour.class)
+      .withFunctionName(TemporalEvaluatorMinute.FUNCTION_NAME, TemporalEvaluatorMinute.class)
+         .withFunctionName(TemporalEvaluatorSecond.FUNCTION_NAME, TemporalEvaluatorSecond.class)
+      .withFunctionName(TemporalEvaluatorEpoch.FUNCTION_NAME, TemporalEvaluatorEpoch.class)
+      .withFunctionName(TemporalEvaluatorWeek.FUNCTION_NAME, TemporalEvaluatorWeek.class)
+         .withFunctionName(TemporalEvaluatorQuarter.FUNCTION_NAME, TemporalEvaluatorQuarter.class)
+         .withFunctionName(TemporalEvaluatorDayOfQuarter.FUNCTION_NAME, TemporalEvaluatorDayOfQuarter.class)
+
       // Number Stream Evaluators
-      .withFunctionName("abs", AbsoluteValueEvaluator.class)
+         .withFunctionName("abs", AbsoluteValueEvaluator.class)
       .withFunctionName("add", AddEvaluator.class)
       .withFunctionName("div", DivideEvaluator.class)
       .withFunctionName("mult", MultiplyEvaluator.class)
@@ -263,7 +214,7 @@ public class StreamHandler extends RequestHandlerBase implements SolrCoreAware, 
       .withFunctionName("log", NaturalLogEvaluator.class)
       .withFunctionName("pow", PowerEvaluator.class)
       .withFunctionName("mod", ModuloEvaluator.class)
-      .withFunctionName("ceil", CeilingEvaluator.class)
+         .withFunctionName("ceil", CeilingEvaluator.class)
       .withFunctionName("floor", FloorEvaluator.class)
       .withFunctionName("sin", SineEvaluator.class)
       .withFunctionName("asin", ArcSineEvaluator.class)
@@ -274,15 +225,17 @@ public class StreamHandler extends RequestHandlerBase implements SolrCoreAware, 
       .withFunctionName("tan", TangentEvaluator.class)
       .withFunctionName("atan", ArcTangentEvaluator.class)
       .withFunctionName("tanh", HyperbolicTangentEvaluator.class)
-      .withFunctionName("round", RoundEvaluator.class)
+         .withFunctionName("round", RoundEvaluator.class)
       .withFunctionName("sqrt", SquareRootEvaluator.class)
       .withFunctionName("cbrt", CubedRootEvaluator.class)
       .withFunctionName("coalesce", CoalesceEvaluator.class)
       .withFunctionName("uuid", UuidEvaluator.class)
 
+
       // Conditional Stream Evaluators
-      .withFunctionName("if", IfThenElseEvaluator.class)
-      .withFunctionName("analyze", AnalyzeEvaluator.class)
+         .withFunctionName("if", IfThenElseEvaluator.class)
+         .withFunctionName("analyze", AnalyzeEvaluator.class)
+         .withFunctionName("convert", ConversionEvaluator.class)
       ;
 
      // This pulls all the overrides and additions from the config

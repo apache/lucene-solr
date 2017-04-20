@@ -106,6 +106,9 @@ public class FloatPointField extends PointField implements FloatValueFieldType {
   @Override
   public Query getSetQuery(QParser parser, SchemaField field, Collection<String> externalVal) {
     assert externalVal.size() > 0;
+    if (!field.indexed()) {
+      return super.getSetQuery(parser, field, externalVal);
+    }
     float[] values = new float[externalVal.size()];
     int i = 0;
     for (String val:externalVal) {
@@ -148,7 +151,7 @@ public class FloatPointField extends PointField implements FloatValueFieldType {
   @Override
   public Type getUninversionType(SchemaField sf) {
     if (sf.multiValued()) {
-      return Type.SORTED_FLOAT;
+      return null;
     } else {
       return Type.FLOAT_POINT;
     }
@@ -167,8 +170,6 @@ public class FloatPointField extends PointField implements FloatValueFieldType {
 
   @Override
   public IndexableField createField(SchemaField field, Object value) {
-    if (!isFieldUsed(field)) return null;
-
     float floatValue = (value instanceof Number) ? ((Number) value).floatValue() : Float.parseFloat(value.toString());
     return new FloatPoint(field.getName(), floatValue);
   }

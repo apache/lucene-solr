@@ -456,7 +456,7 @@ class BufferedUpdatesStream implements Accountable {
       try {
         segStates[j].finish(pool);
       } catch (Throwable th) {
-        if (firstExc != null) {
+        if (firstExc == null) {
           firstExc = th;
         }
       }

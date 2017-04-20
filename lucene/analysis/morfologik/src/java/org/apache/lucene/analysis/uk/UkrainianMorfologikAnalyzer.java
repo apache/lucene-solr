@@ -107,11 +107,17 @@ public final class UkrainianMorfologikAnalyzer extends StopwordAnalyzerBase {
   @Override
   protected Reader initReader(String fieldName, Reader reader) {
     NormalizeCharMap.Builder builder = new NormalizeCharMap.Builder();
+    // different apostrophes
     builder.add("\u2019", "'");
+    builder.add("\u2018", "'");
     builder.add("\u02BC", "'");
+    builder.add("`", "'");
+    builder.add("´", "'");
+    // ignored characters
     builder.add("\u0301", "");
-    NormalizeCharMap normMap = builder.build();
+    builder.add("\u00AD", "");
 
+    NormalizeCharMap normMap = builder.build();
     reader = new MappingCharFilter(normMap, reader);
     return reader;
   }
@@ -145,7 +151,7 @@ public final class UkrainianMorfologikAnalyzer extends StopwordAnalyzerBase {
 
   private static Dictionary getDictionary() {
     try {
-      return Dictionary.read(UkrainianMorfologikAnalyzer.class.getResource("ukrainian.dict"));
+      return Dictionary.read(UkrainianMorfologikAnalyzer.class.getClassLoader().getResource("ua/net/nlp/ukrainian.dict"));
     } catch (IOException e) {
       throw new RuntimeException(e);
     }

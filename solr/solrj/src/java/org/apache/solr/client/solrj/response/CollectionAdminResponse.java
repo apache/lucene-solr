@@ -16,6 +16,7 @@
  */
 package org.apache.solr.client.solrj.response;
 
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -58,6 +59,16 @@ public class CollectionAdminResponse extends SolrResponseBase
     }
 
     return res;
+  }
+
+  @SuppressWarnings("unchecked")
+  public Map<String, String> getAliases()
+  {
+    NamedList<Object> response = getResponse();
+    if (response.get("aliases") != null) {
+      return ((Map<String, String>)response.get("aliases"));
+    }
+    return Collections.emptyMap();
   }
 
   @SuppressWarnings("unchecked")

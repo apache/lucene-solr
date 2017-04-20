@@ -36,7 +36,7 @@ import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.common.util.URLUtil;
 import org.apache.solr.core.CoreDescriptor;
 import org.apache.solr.core.PluginInfo;
-import org.apache.solr.core.SolrInfoMBean;
+import org.apache.solr.core.SolrInfoBean;
 import org.apache.solr.metrics.SolrMetricManager;
 import org.apache.solr.metrics.SolrMetricProducer;
 import org.apache.solr.update.UpdateShardHandlerConfig;
@@ -124,10 +124,6 @@ public class HttpShardHandlerFactory extends ShardHandlerFactory implements org.
 
   // Configure if the threadpool favours fairness over throughput
   static final String INIT_FAIRNESS_POLICY = "fairnessPolicy";
-  
-  // Turn on retries for certain IOExceptions, many of which can happen
-  // due to connection pooling limitations / races
-  static final String USE_RETRIES = "useRetries";
 
   /**
    * Get {@link ShardHandler} that uses the default http client.
@@ -324,7 +320,7 @@ public class HttpShardHandlerFactory extends ShardHandlerFactory implements org.
 
     if (params.getBool(CommonParams.PREFER_LOCAL_SHARDS, false)) {
       final CoreDescriptor coreDescriptor = req.getCore().getCoreDescriptor();
-      final ZkController zkController = coreDescriptor.getCoreContainer().getZkController();
+      final ZkController zkController = req.getCore().getCoreContainer().getZkController();
       final String preferredHostAddress = (zkController != null) ? zkController.getBaseUrl() : null;
       if (preferredHostAddress == null) {
         log.warn("Couldn't determine current host address to prefer local shards");
@@ -377,10 +373,10 @@ public class HttpShardHandlerFactory extends ShardHandlerFactory implements org.
 
   @Override
   public void initializeMetrics(SolrMetricManager manager, String registry, String scope) {
-    String expandedScope = SolrMetricManager.mkName(scope, SolrInfoMBean.Category.QUERY.name());
+    String expandedScope = SolrMetricManager.mkName(scope, SolrInfoBean.Category.QUERY.name());
     clientConnectionManager.initializeMetrics(manager, registry, expandedScope);
     httpRequestExecutor.initializeMetrics(manager, registry, expandedScope);
-    commExecutor = MetricUtils.instrumentedExecutorService(commExecutor,
+    commExecutor = MetricUtils.instrumentedExecutorService(commExecutor, null,
         manager.registry(registry),
         SolrMetricManager.mkName("httpShardExecutor", expandedScope, "threadPool"));
   }

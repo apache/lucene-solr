@@ -57,7 +57,7 @@ import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.common.util.IOUtils;
 import org.apache.solr.core.PluginInfo;
 import org.apache.solr.core.SolrCore;
-import org.apache.solr.core.SolrInfoMBean;
+import org.apache.solr.core.SolrInfoBean;
 import org.apache.solr.metrics.SolrMetricManager;
 import org.apache.solr.metrics.SolrMetricProducer;
 import org.apache.solr.request.LocalSolrQueryRequest;
@@ -403,7 +403,7 @@ public static final int VERSION_IDX = 1;
       }
 
     }
-    core.getCoreMetricManager().registerMetricProducer(SolrInfoMBean.Category.TLOG.toString(), this);
+    core.getCoreMetricManager().registerMetricProducer(SolrInfoBean.Category.TLOG.toString(), this);
   }
 
   @Override
@@ -422,12 +422,12 @@ public static final int VERSION_IDX = 1;
       }
     };
 
-    manager.registerGauge(registry, bufferedOpsGauge, true, "ops", scope, "buffered");
-    manager.registerGauge(registry, () -> logs.size(), true, "logs", scope, "replay", "remaining");
-    manager.registerGauge(registry, () -> getTotalLogsSize(), true, "bytes", scope, "replay", "remaining");
-    applyingBufferedOpsMeter = manager.meter(registry, "ops", scope, "applyingBuffered");
-    replayOpsMeter = manager.meter(registry, "ops", scope, "replay");
-    manager.registerGauge(registry, () -> state.getValue(), true, "state", scope);
+    manager.registerGauge(null, registry, bufferedOpsGauge, true, "ops", scope, "buffered");
+    manager.registerGauge(null, registry, () -> logs.size(), true, "logs", scope, "replay", "remaining");
+    manager.registerGauge(null, registry, () -> getTotalLogsSize(), true, "bytes", scope, "replay", "remaining");
+    applyingBufferedOpsMeter = manager.meter(null, registry, "ops", scope, "applyingBuffered");
+    replayOpsMeter = manager.meter(null, registry, "ops", scope, "replay");
+    manager.registerGauge(null, registry, () -> state.getValue(), true, "state", scope);
   }
 
   /**

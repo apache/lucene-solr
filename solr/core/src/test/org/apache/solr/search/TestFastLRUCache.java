@@ -17,12 +17,13 @@
 package org.apache.solr.search;
 
 import org.apache.lucene.util.LuceneTestCase;
-import org.apache.solr.common.util.NamedList;
+import org.apache.lucene.util.TestUtil;
+import org.apache.solr.metrics.MetricsMap;
+import org.apache.solr.metrics.SolrMetricManager;
 import org.apache.solr.util.ConcurrentLRUCache;
 import org.apache.solr.util.RTimer;
 
 import java.io.IOException;
-import java.io.Serializable;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Random;
@@ -37,9 +38,14 @@ import java.util.concurrent.atomic.AtomicInteger;
  * @since solr 1.4
  */
 public class TestFastLRUCache extends LuceneTestCase {
-  
+  SolrMetricManager metricManager = new SolrMetricManager();
+  String registry = TestUtil.randomSimpleString(random(), 2, 10);
+  String scope = TestUtil.randomSimpleString(random(), 2, 10);
+
   public void testPercentageAutowarm() throws IOException {
     FastLRUCache<Object, Object> fastCache = new FastLRUCache<>();
+    fastCache.initializeMetrics(metricManager, registry, scope);
+    MetricsMap metrics = fastCache.getMetricsMap();
     Map<String, String> params = new HashMap<>();
     params.put("size", "100");
     params.put("initialSize", "10");
@@ -52,12 +58,14 @@ public class TestFastLRUCache extends LuceneTestCase {
     }
     assertEquals("25", fastCache.get(25));
     assertEquals(null, fastCache.get(110));
-    NamedList<Serializable> nl = fastCache.getStatistics();
+    Map<String,Object> nl = metrics.getValue();
     assertEquals(2L, nl.get("lookups"));
     assertEquals(1L, nl.get("hits"));
     assertEquals(101L, nl.get("inserts"));
     assertEquals(null, fastCache.get(1));  // first item put in should be the first out
     FastLRUCache<Object, Object> fastCacheNew = new FastLRUCache<>();
+    fastCacheNew.initializeMetrics(metricManager, registry, scope);
+    metrics = fastCacheNew.getMetricsMap();
     fastCacheNew.init(params, o, cr);
     fastCacheNew.warm(null, fastCache);
     fastCacheNew.setState(SolrCache.State.LIVE);
@@ -65,7 +73,7 @@ public class TestFastLRUCache extends LuceneTestCase {
     fastCacheNew.put(103, "103");
     assertEquals("90", fastCacheNew.get(90));
     assertEquals("50", fastCacheNew.get(50));
-    nl = fastCacheNew.getStatistics();
+    nl = metrics.getValue();
     assertEquals(2L, nl.get("lookups"));
     assertEquals(2L, nl.get("hits"));
     assertEquals(1L, nl.get("inserts"));
@@ -86,6 +94,7 @@ public class TestFastLRUCache extends LuceneTestCase {
   
   private void doTestPercentageAutowarm(int limit, int percentage, int[] hits, int[]misses) {
     FastLRUCache<Object, Object> fastCache = new FastLRUCache<>();
+    fastCache.initializeMetrics(metricManager, registry, scope);
     Map<String, String> params = new HashMap<>();
     params.put("size", String.valueOf(limit));
     params.put("initialSize", "10");
@@ -98,6 +107,7 @@ public class TestFastLRUCache extends LuceneTestCase {
     }
 
     FastLRUCache<Object, Object> fastCacheNew = new FastLRUCache<>();
+    fastCacheNew.initializeMetrics(metricManager, registry, scope);
     fastCacheNew.init(params, o, cr);
     fastCacheNew.warm(null, fastCache);
     fastCacheNew.setState(SolrCache.State.LIVE);
@@ -110,7 +120,7 @@ public class TestFastLRUCache extends LuceneTestCase {
     for(int miss:misses) {
       assertEquals("The value " + miss + " should NOT be on new cache", null, fastCacheNew.get(miss));
     }
-    NamedList<Serializable> nl = fastCacheNew.getStatistics();
+    Map<String,Object> nl = fastCacheNew.getMetricsMap().getValue();
     assertEquals(Long.valueOf(hits.length + misses.length), nl.get("lookups"));
     assertEquals(Long.valueOf(hits.length), nl.get("hits"));
     fastCacheNew.close();
@@ -118,6 +128,7 @@ public class TestFastLRUCache extends LuceneTestCase {
   
   public void testNoAutowarm() throws IOException {
     FastLRUCache<Object, Object> fastCache = new FastLRUCache<>();
+    fastCache.initializeMetrics(metricManager, registry, scope);
     Map<String, String> params = new HashMap<>();
     params.put("size", "100");
     params.put("initialSize", "10");
@@ -129,7 +140,7 @@ public class TestFastLRUCache extends LuceneTestCase {
     }
     assertEquals("25", fastCache.get(25));
     assertEquals(null, fastCache.get(110));
-    NamedList<Serializable> nl = fastCache.getStatistics();
+    Map<String,Object> nl = fastCache.getMetricsMap().getValue();
     assertEquals(2L, nl.get("lookups"));
     assertEquals(1L, nl.get("hits"));
     assertEquals(101L, nl.get("inserts"));
@@ -177,6 +188,7 @@ public class TestFastLRUCache extends LuceneTestCase {
   
   public void testSimple() throws IOException {
     FastLRUCache sc = new FastLRUCache();
+    sc.initializeMetrics(metricManager, registry, scope);
     Map l = new HashMap();
     l.put("size", "100");
     l.put("initialSize", "10");
@@ -189,7 +201,8 @@ public class TestFastLRUCache extends LuceneTestCase {
     }
     assertEquals("25", sc.get(25));
     assertEquals(null, sc.get(110));
-    NamedList nl = sc.getStatistics();
+    MetricsMap metrics = sc.getMetricsMap();
+    Map<String,Object> nl = metrics.getValue();
     assertEquals(2L, nl.get("lookups"));
     assertEquals(1L, nl.get("hits"));
     assertEquals(101L, nl.get("inserts"));
@@ -198,6 +211,7 @@ public class TestFastLRUCache extends LuceneTestCase {
 
 
     FastLRUCache scNew = new FastLRUCache();
+    scNew.initializeMetrics(metricManager, registry, scope);
     scNew.init(l, o, cr);
     scNew.warm(null, sc);
     scNew.setState(SolrCache.State.LIVE);
@@ -205,7 +219,7 @@ public class TestFastLRUCache extends LuceneTestCase {
     scNew.put(103, "103");
     assertEquals("90", scNew.get(90));
     assertEquals(null, scNew.get(50));
-    nl = scNew.getStatistics();
+    nl = scNew.getMetricsMap().getValue();
     assertEquals(2L, nl.get("lookups"));
     assertEquals(1L, nl.get("hits"));
     assertEquals(1L, nl.get("inserts"));

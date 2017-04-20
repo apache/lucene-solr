@@ -107,12 +107,13 @@ public class TestUseDocValuesAsStored extends AbstractBadConfigTestBase {
   }
 
   @After
-  private void afterClass() throws Exception {
+  private void afterTest() throws Exception {
+    clearIndex();
+    commit();
     deleteCore();
     System.clearProperty("managed.schema.mutable");
     System.clearProperty("enable.update.log");
   }
-
 
   public String getCoreName() {
     return "basic";
@@ -225,7 +226,6 @@ public class TestUseDocValuesAsStored extends AbstractBadConfigTestBase {
 
   @Test
   public void testMultipleSearchResults() throws Exception {
-
     // Three documents with different numbers of values for a field
     assertU(adoc("id", "myid1", "test_is_dvo", "101", "test_is_dvo", "102", "test_is_dvo", "103"));
     assertU(adoc("id", "myid2", "test_is_dvo", "201", "test_is_dvo", "202"));
@@ -248,6 +248,34 @@ public class TestUseDocValuesAsStored extends AbstractBadConfigTestBase {
             + "{'id':'myid4','test_s_dvo':'hello','test_is_dvo':[401,402]},"
             + "{'id':'myid5'},"
             + "{'id':'myid6','test_s_dvo':'hello'}"
+            + "]");
+  }
+  
+  @Test
+  public void testUseDocValuesAsStoredFalse() throws Exception {
+    SchemaField sf = h.getCore().getLatestSchema().getField("nonstored_dv_str");
+    assertNotNull(sf);
+    assertTrue(sf.hasDocValues());
+    assertFalse(sf.useDocValuesAsStored());
+    assertFalse(sf.stored());
+    assertU(adoc("id", "myid", "nonstored_dv_str", "dont see me"));
+    assertU(commit());
+    
+    assertJQ(req("q", "id:myid"),
+        "/response/docs==["
+            + "{'id':'myid'}"
+            + "]");
+    assertJQ(req("q", "id:myid", "fl", "*"),
+        "/response/docs==["
+            + "{'id':'myid'}"
+            + "]");
+    assertJQ(req("q", "id:myid", "fl", "id,nonstored_dv_*"),
+        "/response/docs==["
+            + "{'id':'myid'}"
+            + "]");
+    assertJQ(req("q", "id:myid", "fl", "id,nonstored_dv_str"),
+        "/response/docs==["
+            + "{'id':'myid','nonstored_dv_str':'dont see me'}"
             + "]");
   }
 

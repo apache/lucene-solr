@@ -888,7 +888,7 @@ public class BKDWriter implements Closeable {
 
           /** We write/read fixed-byte-width file that {@link OfflinePointReader} can read. */
           @Override
-          protected ByteSequencesWriter getWriter(IndexOutput out) {
+          protected ByteSequencesWriter getWriter(IndexOutput out, long count) {
             return new ByteSequencesWriter(out) {
               @Override
               public void write(byte[] bytes, int off, int len) throws IOException {

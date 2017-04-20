@@ -27,6 +27,7 @@ import java.util.List;
 import java.util.Locale;
 
 import org.apache.lucene.util.LuceneTestCase;
+import org.apache.solr.client.solrj.io.SolrClientCache;
 import org.apache.solr.client.solrj.io.Tuple;
 import org.apache.solr.client.solrj.io.comp.ComparatorOrder;
 import org.apache.solr.client.solrj.io.comp.FieldComparator;
@@ -205,6 +206,10 @@ public class JDBCStreamTest extends SolrCloudTestCase {
       statement.executeUpdate("insert into COUNTRIES (CODE,COUNTRY_NAME) values ('NO', 'Norway')");
       statement.executeUpdate("insert into COUNTRIES (CODE,COUNTRY_NAME) values ('AL', 'Algeria')");
     }
+
+    StreamContext streamContext = new StreamContext();
+    SolrClientCache solrClientCache = new SolrClientCache();
+    streamContext.setSolrClientCache(solrClientCache);
     
     // Load Solr
     new UpdateRequest()
@@ -217,18 +222,25 @@ public class JDBCStreamTest extends SolrCloudTestCase {
       .withFunctionName("search", CloudSolrStream.class);
     
     List<Tuple> tuples;
-    
-    // Simple 1
-    TupleStream jdbcStream = new JDBCStream("jdbc:hsqldb:mem:.", "select CODE,COUNTRY_NAME from COUNTRIES order by CODE", new FieldComparator("CODE", ComparatorOrder.ASCENDING));
-    TupleStream selectStream = new SelectStream(jdbcStream, new HashMap<String, String>(){{ put("CODE", "code_s"); put("COUNTRY_NAME", "name_s"); }});
-    TupleStream searchStream = factory.constructStream("search(" + COLLECTIONORALIAS + ", fl=\"code_s,name_s\",q=\"*:*\",sort=\"code_s asc\")");
-    TupleStream mergeStream = new MergeStream(new FieldComparator("code_s", ComparatorOrder.ASCENDING), new TupleStream[]{selectStream,searchStream});
-    
-    tuples = getTuples(mergeStream);
-    
-    assertEquals(7, tuples.size());
-    assertOrderOf(tuples, "code_s", "AL","CA","GB","NL","NO","NP","US");
-    assertOrderOf(tuples, "name_s", "Algeria", "Canada", "Great Britian", "Netherlands", "Norway", "Nepal", "United States");
+
+    try {
+      // Simple 1
+      TupleStream jdbcStream = new JDBCStream("jdbc:hsqldb:mem:.", "select CODE,COUNTRY_NAME from COUNTRIES order by CODE", new FieldComparator("CODE", ComparatorOrder.ASCENDING));
+      TupleStream selectStream = new SelectStream(jdbcStream, new HashMap<String, String>() {{
+        put("CODE", "code_s");
+        put("COUNTRY_NAME", "name_s");
+      }});
+      TupleStream searchStream = factory.constructStream("search(" + COLLECTIONORALIAS + ", fl=\"code_s,name_s\",q=\"*:*\",sort=\"code_s asc\")");
+      TupleStream mergeStream = new MergeStream(new FieldComparator("code_s", ComparatorOrder.ASCENDING), new TupleStream[]{selectStream, searchStream});
+      mergeStream.setStreamContext(streamContext);
+      tuples = getTuples(mergeStream);
+
+      assertEquals(7, tuples.size());
+      assertOrderOf(tuples, "code_s", "AL", "CA", "GB", "NL", "NO", "NP", "US");
+      assertOrderOf(tuples, "name_s", "Algeria", "Canada", "Great Britian", "Netherlands", "Norway", "Nepal", "United States");
+    } finally {
+      solrClientCache.close();
+    }
   }
 
   @Test
@@ -277,32 +289,41 @@ public class JDBCStreamTest extends SolrCloudTestCase {
     String expression;
     TupleStream stream;
     List<Tuple> tuples;
-    
-    // Basic test
-    expression =   
-              "innerJoin("
-            + "  select("
-            + "    search(" + COLLECTIONORALIAS + ", fl=\"personId_i,rating_f\", q=\"rating_f:*\", sort=\"personId_i asc\"),"
-            + "    personId_i as personId,"
-            + "    rating_f as rating"
-            + "  ),"
-            + "  select("
-            + "    jdbc(connection=\"jdbc:hsqldb:mem:.\", sql=\"select PEOPLE.ID, PEOPLE.NAME, COUNTRIES.COUNTRY_NAME from PEOPLE inner join COUNTRIES on PEOPLE.COUNTRY_CODE = COUNTRIES.CODE order by PEOPLE.ID\", sort=\"ID asc\"),"
-            + "    ID as personId,"
-            + "    NAME as personName,"
-            + "    COUNTRY_NAME as country"
-            + "  ),"
-            + "  on=\"personId\""
-            + ")";
+    StreamContext streamContext = new StreamContext();
+    SolrClientCache solrClientCache = new SolrClientCache();
+    streamContext.setSolrClientCache(solrClientCache);
 
-    stream = factory.constructStream(expression);
-    tuples = getTuples(stream);
-    
-    assertEquals(10, tuples.size());
-    assertOrderOf(tuples, "personId", 11,12,13,14,15,16,17,18,19,20);
-    assertOrderOf(tuples, "rating", 3.5d,5d,2.2d,4.3d,3.5d,3d,3d,4d,4.1d,4.8d);
-    assertOrderOf(tuples, "personName", "Emma","Grace","Hailey","Isabella","Lily","Madison","Mia","Natalie","Olivia","Samantha");
-    assertOrderOf(tuples, "country", "Netherlands","United States","Netherlands","Netherlands","Netherlands","United States","United States","Netherlands","Netherlands","United States");
+    try {
+      // Basic test
+      expression =
+          "innerJoin("
+              + "  select("
+              + "    search(" + COLLECTIONORALIAS + ", fl=\"personId_i,rating_f\", q=\"rating_f:*\", sort=\"personId_i asc\"),"
+              + "    personId_i as personId,"
+              + "    rating_f as rating"
+              + "  ),"
+              + "  select("
+              + "    jdbc(connection=\"jdbc:hsqldb:mem:.\", sql=\"select PEOPLE.ID, PEOPLE.NAME, COUNTRIES.COUNTRY_NAME from PEOPLE inner join COUNTRIES on PEOPLE.COUNTRY_CODE = COUNTRIES.CODE order by PEOPLE.ID\", sort=\"ID asc\"),"
+              + "    ID as personId,"
+              + "    NAME as personName,"
+              + "    COUNTRY_NAME as country"
+              + "  ),"
+              + "  on=\"personId\""
+              + ")";
+
+
+      stream = factory.constructStream(expression);
+      stream.setStreamContext(streamContext);
+      tuples = getTuples(stream);
+
+      assertEquals(10, tuples.size());
+      assertOrderOf(tuples, "personId", 11, 12, 13, 14, 15, 16, 17, 18, 19, 20);
+      assertOrderOf(tuples, "rating", 3.5d, 5d, 2.2d, 4.3d, 3.5d, 3d, 3d, 4d, 4.1d, 4.8d);
+      assertOrderOf(tuples, "personName", "Emma", "Grace", "Hailey", "Isabella", "Lily", "Madison", "Mia", "Natalie", "Olivia", "Samantha");
+      assertOrderOf(tuples, "country", "Netherlands", "United States", "Netherlands", "Netherlands", "Netherlands", "United States", "United States", "Netherlands", "Netherlands", "United States");
+    } finally {
+      solrClientCache.close();
+    }
   }
 
   @Test
@@ -351,58 +372,67 @@ public class JDBCStreamTest extends SolrCloudTestCase {
     String expression;
     TupleStream stream;
     List<Tuple> tuples;
-    
-    // Basic test for no alias
-    expression =
-              "innerJoin("
-            + "  select("
-            + "    search(" + COLLECTIONORALIAS + ", fl=\"personId_i,rating_f\", q=\"rating_f:*\", sort=\"personId_i asc\"),"
-            + "    personId_i as personId,"
-            + "    rating_f as rating"
-            + "  ),"
-            + "  select("
-            + "    jdbc(connection=\"jdbc:hsqldb:mem:.\", sql=\"select PEOPLE.ID, PEOPLE.NAME, COUNTRIES.COUNTRY_NAME from PEOPLE inner join COUNTRIES on PEOPLE.COUNTRY_CODE = COUNTRIES.CODE order by PEOPLE.ID\", sort=\"ID asc\"),"
-            + "    ID as personId,"
-            + "    NAME as personName,"
-            + "    COUNTRY_NAME as country"
-            + "  ),"
-            + "  on=\"personId\""
-            + ")";
+    StreamContext streamContext = new StreamContext();
+    SolrClientCache solrClientCache = new SolrClientCache();
+    streamContext.setSolrClientCache(solrClientCache);
 
-    stream = factory.constructStream(expression);
-    tuples = getTuples(stream);
-    
-    assertEquals(10, tuples.size());
-    assertOrderOf(tuples, "personId", 11,12,13,14,15,16,17,18,19,20);
-    assertOrderOf(tuples, "rating", 3.5d,5d,2.2d,4.3d,3.5d,3d,3d,4d,4.1d,4.8d);
-    assertOrderOf(tuples, "personName", "Emma","Grace","Hailey","Isabella","Lily","Madison","Mia","Natalie","Olivia","Samantha");
-    assertOrderOf(tuples, "country", "Netherlands","United States","Netherlands","Netherlands","Netherlands","United States","United States","Netherlands","Netherlands","United States");
-    
-    // Basic test for alias
-    expression =   
-              "innerJoin("
-            + "  select("
-            + "    search(" + COLLECTIONORALIAS + ", fl=\"personId_i,rating_f\", q=\"rating_f:*\", sort=\"personId_i asc\"),"
-            + "    personId_i as personId,"
-            + "    rating_f as rating"
-            + "  ),"
-            + "  select("
-            + "    jdbc(connection=\"jdbc:hsqldb:mem:.\", sql=\"select PEOPLE.ID as PERSONID, PEOPLE.NAME, COUNTRIES.COUNTRY_NAME from PEOPLE inner join COUNTRIES on PEOPLE.COUNTRY_CODE = COUNTRIES.CODE order by PEOPLE.ID\", sort=\"PERSONID asc\"),"
-            + "    PERSONID as personId,"
-            + "    NAME as personName,"
-            + "    COUNTRY_NAME as country"
-            + "  ),"
-            + "  on=\"personId\""
-            + ")";
+    try {
+      // Basic test for no alias
+      expression =
+          "innerJoin("
+              + "  select("
+              + "    search(" + COLLECTIONORALIAS + ", fl=\"personId_i,rating_f\", q=\"rating_f:*\", sort=\"personId_i asc\"),"
+              + "    personId_i as personId,"
+              + "    rating_f as rating"
+              + "  ),"
+              + "  select("
+              + "    jdbc(connection=\"jdbc:hsqldb:mem:.\", sql=\"select PEOPLE.ID, PEOPLE.NAME, COUNTRIES.COUNTRY_NAME from PEOPLE inner join COUNTRIES on PEOPLE.COUNTRY_CODE = COUNTRIES.CODE order by PEOPLE.ID\", sort=\"ID asc\"),"
+              + "    ID as personId,"
+              + "    NAME as personName,"
+              + "    COUNTRY_NAME as country"
+              + "  ),"
+              + "  on=\"personId\""
+              + ")";
 
-    stream = factory.constructStream(expression);
-    tuples = getTuples(stream);
-    
-    assertEquals(10, tuples.size());
-    assertOrderOf(tuples, "personId", 11,12,13,14,15,16,17,18,19,20);
-    assertOrderOf(tuples, "rating", 3.5d,5d,2.2d,4.3d,3.5d,3d,3d,4d,4.1d,4.8d);
-    assertOrderOf(tuples, "personName", "Emma","Grace","Hailey","Isabella","Lily","Madison","Mia","Natalie","Olivia","Samantha");
-    assertOrderOf(tuples, "country", "Netherlands","United States","Netherlands","Netherlands","Netherlands","United States","United States","Netherlands","Netherlands","United States");
+      stream = factory.constructStream(expression);
+      stream.setStreamContext(streamContext);
+      tuples = getTuples(stream);
+
+      assertEquals(10, tuples.size());
+      assertOrderOf(tuples, "personId", 11, 12, 13, 14, 15, 16, 17, 18, 19, 20);
+      assertOrderOf(tuples, "rating", 3.5d, 5d, 2.2d, 4.3d, 3.5d, 3d, 3d, 4d, 4.1d, 4.8d);
+      assertOrderOf(tuples, "personName", "Emma", "Grace", "Hailey", "Isabella", "Lily", "Madison", "Mia", "Natalie", "Olivia", "Samantha");
+      assertOrderOf(tuples, "country", "Netherlands", "United States", "Netherlands", "Netherlands", "Netherlands", "United States", "United States", "Netherlands", "Netherlands", "United States");
+
+      // Basic test for alias
+      expression =
+          "innerJoin("
+              + "  select("
+              + "    search(" + COLLECTIONORALIAS + ", fl=\"personId_i,rating_f\", q=\"rating_f:*\", sort=\"personId_i asc\"),"
+              + "    personId_i as personId,"
+              + "    rating_f as rating"
+              + "  ),"
+              + "  select("
+              + "    jdbc(connection=\"jdbc:hsqldb:mem:.\", sql=\"select PEOPLE.ID as PERSONID, PEOPLE.NAME, COUNTRIES.COUNTRY_NAME from PEOPLE inner join COUNTRIES on PEOPLE.COUNTRY_CODE = COUNTRIES.CODE order by PEOPLE.ID\", sort=\"PERSONID asc\"),"
+              + "    PERSONID as personId,"
+              + "    NAME as personName,"
+              + "    COUNTRY_NAME as country"
+              + "  ),"
+              + "  on=\"personId\""
+              + ")";
+
+      stream = factory.constructStream(expression);
+      stream.setStreamContext(streamContext);
+      tuples = getTuples(stream);
+
+      assertEquals(10, tuples.size());
+      assertOrderOf(tuples, "personId", 11, 12, 13, 14, 15, 16, 17, 18, 19, 20);
+      assertOrderOf(tuples, "rating", 3.5d, 5d, 2.2d, 4.3d, 3.5d, 3d, 3d, 4d, 4.1d, 4.8d);
+      assertOrderOf(tuples, "personName", "Emma", "Grace", "Hailey", "Isabella", "Lily", "Madison", "Mia", "Natalie", "Olivia", "Samantha");
+      assertOrderOf(tuples, "country", "Netherlands", "United States", "Netherlands", "Netherlands", "Netherlands", "United States", "United States", "Netherlands", "Netherlands", "United States");
+    } finally {
+      solrClientCache.close();
+    }
   }
 
   @Test
@@ -439,7 +469,7 @@ public class JDBCStreamTest extends SolrCloudTestCase {
       statement.executeUpdate("insert into PEOPLE (ID, NAME, COUNTRY_CODE) values (19,'Olivia','NL')");
       statement.executeUpdate("insert into PEOPLE (ID, NAME, COUNTRY_CODE) values (20,'Samantha','US')");
     }
-    
+
     // Load solr data
     new UpdateRequest()
         .add(id, "1", "rating_f", "3.5", "personId_i", "11")
@@ -457,50 +487,58 @@ public class JDBCStreamTest extends SolrCloudTestCase {
     String expression;
     TupleStream stream;
     List<Tuple> tuples;
-    
-    // Basic test
-    expression =   
-              "rollup("
-            + "  hashJoin("
-            + "    hashed=select("
-            + "      search(" + COLLECTIONORALIAS + ", fl=\"personId_i,rating_f\", q=\"rating_f:*\", sort=\"personId_i asc\"),"
-            + "      personId_i as personId,"
-            + "      rating_f as rating"
-            + "    ),"
-            + "    select("
-            + "      jdbc(connection=\"jdbc:hsqldb:mem:.\", sql=\"select PEOPLE.ID, PEOPLE.NAME, COUNTRIES.COUNTRY_NAME from PEOPLE inner join COUNTRIES on PEOPLE.COUNTRY_CODE = COUNTRIES.CODE order by COUNTRIES.COUNTRY_NAME\", sort=\"COUNTRIES.COUNTRY_NAME asc\"),"
-            + "      ID as personId,"
-            + "      NAME as personName,"
-            + "      COUNTRY_NAME as country"
-            + "    ),"
-            + "    on=\"personId\""
-            + "  ),"
-            + "  over=\"country\","
-            + "  max(rating),"
-            + "  min(rating),"
-            + "  avg(rating),"
-            + "  count(*)"
-            + ")";
 
-    stream = factory.constructStream(expression);
-    tuples = getTuples(stream);
-    
-    assertEquals(2, tuples.size());
-    
-    Tuple tuple = tuples.get(0);
-    assertEquals("Netherlands",tuple.getString("country"));
-    assertTrue(4.3D == tuple.getDouble("max(rating)"));
-    assertTrue(2.2D == tuple.getDouble("min(rating)"));
-    assertTrue(3.6D == tuple.getDouble("avg(rating)"));
-    assertTrue(6D == tuple.getDouble("count(*)"));
-    
-    tuple = tuples.get(1);
-    assertEquals("United States",tuple.getString("country"));
-    assertTrue(5D == tuple.getDouble("max(rating)"));
-    assertTrue(3D == tuple.getDouble("min(rating)"));
-    assertTrue(3.95D == tuple.getDouble("avg(rating)"));
-    assertTrue(4D == tuple.getDouble("count(*)"));
-    
+    StreamContext streamContext = new StreamContext();
+    SolrClientCache solrClientCache = new SolrClientCache();
+    streamContext.setSolrClientCache(solrClientCache);
+
+    try {
+      // Basic test
+      expression =
+          "rollup("
+              + "  hashJoin("
+              + "    hashed=select("
+              + "      search(" + COLLECTIONORALIAS + ", fl=\"personId_i,rating_f\", q=\"rating_f:*\", sort=\"personId_i asc\"),"
+              + "      personId_i as personId,"
+              + "      rating_f as rating"
+              + "    ),"
+              + "    select("
+              + "      jdbc(connection=\"jdbc:hsqldb:mem:.\", sql=\"select PEOPLE.ID, PEOPLE.NAME, COUNTRIES.COUNTRY_NAME from PEOPLE inner join COUNTRIES on PEOPLE.COUNTRY_CODE = COUNTRIES.CODE order by COUNTRIES.COUNTRY_NAME\", sort=\"COUNTRIES.COUNTRY_NAME asc\"),"
+              + "      ID as personId,"
+              + "      NAME as personName,"
+              + "      COUNTRY_NAME as country"
+              + "    ),"
+              + "    on=\"personId\""
+              + "  ),"
+              + "  over=\"country\","
+              + "  max(rating),"
+              + "  min(rating),"
+              + "  avg(rating),"
+              + "  count(*)"
+              + ")";
+
+      stream = factory.constructStream(expression);
+      stream.setStreamContext(streamContext);
+      tuples = getTuples(stream);
+
+      assertEquals(2, tuples.size());
+
+      Tuple tuple = tuples.get(0);
+      assertEquals("Netherlands", tuple.getString("country"));
+      assertTrue(4.3D == tuple.getDouble("max(rating)"));
+      assertTrue(2.2D == tuple.getDouble("min(rating)"));
+      assertTrue(3.6D == tuple.getDouble("avg(rating)"));
+      assertTrue(6D == tuple.getDouble("count(*)"));
+
+      tuple = tuples.get(1);
+      assertEquals("United States", tuple.getString("country"));
+      assertTrue(5D == tuple.getDouble("max(rating)"));
+      assertTrue(3D == tuple.getDouble("min(rating)"));
+      assertTrue(3.95D == tuple.getDouble("avg(rating)"));
+      assertTrue(4D == tuple.getDouble("count(*)"));
+    } finally {
+      solrClientCache.close();
+    }
   }
   
   @Test(expected=IOException.class)

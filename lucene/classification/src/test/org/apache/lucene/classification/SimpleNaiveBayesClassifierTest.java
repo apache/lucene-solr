@@ -59,8 +59,10 @@ public class SimpleNaiveBayesClassifierTest extends ClassificationTestBase<Bytes
     try {
       MockAnalyzer analyzer = new MockAnalyzer(random());
       leafReader = getSampleIndex(analyzer);
-      TermQuery query = new TermQuery(new Term(textFieldName, "it"));
-      checkCorrectClassification(new SimpleNaiveBayesClassifier(leafReader, analyzer, query, categoryFieldName, textFieldName), TECHNOLOGY_INPUT, TECHNOLOGY_RESULT);
+      TermQuery query = new TermQuery(new Term(textFieldName, "a"));
+      SimpleNaiveBayesClassifier classifier = new SimpleNaiveBayesClassifier(leafReader, analyzer, query, categoryFieldName, textFieldName);
+      checkCorrectClassification(classifier, TECHNOLOGY_INPUT, TECHNOLOGY_RESULT);
+      checkCorrectClassification(classifier, POLITICS_INPUT, POLITICS_RESULT);
     } finally {
       if (leafReader != null) {
         leafReader.close();
@@ -112,6 +114,11 @@ public class SimpleNaiveBayesClassifierTest extends ClassificationTestBase<Bytes
       assertTrue("evaluation took more than 2m: " + evaluationTime / 1000 + "s", evaluationTime < 120000);
       double avgClassificationTime = confusionMatrix.getAvgClassificationTime();
       assertTrue("avg classification time: " + avgClassificationTime, 5000 > avgClassificationTime);
+
+      double f1 = confusionMatrix.getF1Measure();
+      assertTrue(f1 >= 0d);
+      assertTrue(f1 <= 1d);
+
       double accuracy = confusionMatrix.getAccuracy();
       assertTrue(accuracy >= 0d);
       assertTrue(accuracy <= 1d);

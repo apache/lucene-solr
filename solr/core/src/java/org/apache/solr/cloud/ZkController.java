@@ -1169,7 +1169,7 @@ public class ZkController {
         MDCLoggingContext.setCore(core);
       }
     } else {
-      MDCLoggingContext.setCoreDescriptor(cd);
+      MDCLoggingContext.setCoreDescriptor(cc, cd);
     }
     try {
       String collection = cd.getCloudDescriptor().getCollectionName();

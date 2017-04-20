@@ -236,7 +236,7 @@ class CdcrReplicatorManager implements CdcrStateManager.CdcrStateObserver {
       this.ulog = (CdcrUpdateLog) core.getUpdateHandler().getUpdateLog();
       this.state = state;
       this.targetCollection = state.getTargetCollection();
-      String baseUrl = core.getCoreDescriptor().getCoreContainer().getZkController().getBaseUrl();
+      String baseUrl = core.getCoreContainer().getZkController().getBaseUrl();
       this.myCoreUrl = ZkCoreNodeProps.getCoreUrl(baseUrl, core.getName());
     }
 
