@@ -75,11 +75,11 @@ New Features
   tuples, one for each value in the multi-valued field. (Dennis Gove)
 
 * SOLR-10339: New set-trigger and remove-trigger APIs for autoscaling. (shalin)
- 
+
 * SOLR-10340: New set-listener and remove-listener API for autoscaling. (shalin)
- 
+
 * SOLR-10358: New suspend-trigger and resume-trigger APIs for autoscaling. (shalin)
- 
+
 * SOLR-10356: Adds basic math Streaming Evaluators (Dennis Gove)
 
 * SOLR-10393: Adds UUID Streaming Evaluator (Dennis Gove)
