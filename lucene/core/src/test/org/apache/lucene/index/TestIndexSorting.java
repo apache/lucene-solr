@@ -2411,12 +2411,15 @@ public class TestIndexSorting extends LuceneTestCase {
     Sort indexSort = new Sort(sortField);
     iwc.setIndexSort(indexSort);
     IndexWriter w = new IndexWriter(dir, iwc);
+    Field textField = newTextField("sparse_text", "", Field.Store.NO);
     for (int i = 0; i < 128; i++) {
       Document doc = new Document();
       doc.add(new NumericDocValuesField("dense_int", i));
       if (i < 64) {
         doc.add(new NumericDocValuesField("sparse_int", i));
         doc.add(new BinaryDocValuesField("sparse_binary", new BytesRef(Integer.toString(i))));
+        textField.setStringValue("foo");
+        doc.add(textField);
       }
       w.addDocument(doc);
     }
@@ -2429,6 +2432,7 @@ public class TestIndexSorting extends LuceneTestCase {
     NumericDocValues denseValues = leafReader.getNumericDocValues("dense_int");
     NumericDocValues sparseValues = leafReader.getNumericDocValues("sparse_int");
     BinaryDocValues sparseBinaryValues = leafReader.getBinaryDocValues("sparse_binary");
+    NumericDocValues normsValues = leafReader.getNormValues("sparse_text");
     for(int docID = 0; docID < 128; docID++) {
       assertTrue(denseValues.advanceExact(docID));
       assertEquals(127-docID, (int) denseValues.longValue());
@@ -2436,12 +2440,14 @@ public class TestIndexSorting extends LuceneTestCase {
         assertTrue(denseValues.advanceExact(docID));
         assertTrue(sparseValues.advanceExact(docID));
         assertTrue(sparseBinaryValues.advanceExact(docID));
-        assertEquals(docID, sparseValues.docID());
+        assertTrue(normsValues.advanceExact(docID));
+        assertEquals(124, normsValues.longValue());
         assertEquals(127-docID, (int) sparseValues.longValue());
         assertEquals(new BytesRef(Integer.toString(127-docID)), sparseBinaryValues.binaryValue());
       } else {
         assertFalse(sparseBinaryValues.advanceExact(docID));
         assertFalse(sparseValues.advanceExact(docID));
+        assertFalse(normsValues.advanceExact(docID));
       }
     }
     IOUtils.close(r, w, dir);
