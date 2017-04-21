@@ -18,7 +18,7 @@ limitations under the License.
       <div ng-show="modules.updates.length">
         <h3>Available updates</h3>
         <table class="table">
-          <tr><th width="10%">Id</th><th width="20%">Name</th><th width="*">Description</th><th width="10%">Version</th><th width="80">Date</th><th width="10%">Provider</th><th width="100"><button>Update all</button></th></tr>
+          <tr><th width="10%">Id</th><th width="20%">Name</th><th width="*">Description</th><th width="10%">Version</th><th width="80">Date</th><th width="10%">Provider</th><th width="10%">Repo</th><th width="100"><button>Update all</button></th></tr>
           <tr ng-repeat="p in modules.updates">
             <td ng-bind-html="p.id | unsafe"></td>
             <td ng-bind-html="p.name | unsafe"></td>
@@ -26,6 +26,7 @@ limitations under the License.
             <td ng-bind-html="p.version | unsafe"></td>
             <td ng-bind-html="p.date | unsafe"></td>
             <td><a href="{{p.projectUrl}}">{{p.provider}}</a></td>
+            <td ng-bind-html="p.repositoryId | unsafe"></td>
             <td><button>Update</button></td>
           </tr>
         </table>
@@ -47,7 +48,7 @@ limitations under the License.
 
       <h3>Available in repositories</h3>
       <table class="table">
-        <tr><th width="10%">Id</th><th width="20%">Name</th><th width="*">Description</th><th width="10%">Version</th><th width="80">Date</th><th width="10%">Provider</th><th width="80"></th></tr>
+        <tr><th width="10%">Id</th><th width="20%">Name</th><th width="*">Description</th><th width="10%">Version</th><th width="80">Date</th><th width="10%">Provider</th><th width="10%">Repo</th><th width="80"></th></tr>
         <tr ng-repeat="p in modules.available">
           <td ng-bind-html="p.id | unsafe"></td>
           <td ng-bind-html="p.name | unsafe"></td>
@@ -55,6 +56,7 @@ limitations under the License.
           <td ng-bind-html="p.version | unsafe"></td>
           <td ng-bind-html="p.date | unsafe"></td>
           <td><a href="{{p.projectUrl}}">{{p.provider}}</a></td>
+          <td ng-bind-html="p.repositoryId | unsafe"></td>
           <td><button>Install</button></td>
         </tr>
       </table>

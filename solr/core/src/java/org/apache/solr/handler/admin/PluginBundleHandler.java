@@ -20,6 +20,7 @@ import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.List;
 
+import com.github.zafarkhaja.semver.Version;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.SimpleOrderedMap;
@@ -102,16 +103,18 @@ public class PluginBundleHandler extends RequestHandlerBase
   }
 
   private SimpleOrderedMap<Object> pluginInfoToMap(PluginInfo p) {
+    Version systemVersion = pluginBundleManager.getPluginManager().getSystemVersion();
     SimpleOrderedMap<Object> info = new SimpleOrderedMap<>();
     info.add("id", p.id);
     info.add("name", p.name);
     info.add("description", p.description);
     info.add("projectUrl", p.projectUrl);
     info.add("provider", p.provider);
-    info.add("version", p.getLastRelease(pluginBundleManager.getPluginManager().getSystemVersion()).version);
+    info.add("repositoryId", p.getRepositoryId());
+    info.add("version", p.getLastRelease(systemVersion).version);
     SimpleDateFormat df = new SimpleDateFormat("yyyy-MM-dd");
-    info.add("date", df.format(p.getLastRelease(pluginBundleManager.getPluginManager().getSystemVersion()).date));
-    info.add("url", p.getLastRelease(pluginBundleManager.getPluginManager().getSystemVersion()).url);
+    info.add("date", df.format(p.getLastRelease(systemVersion).date));
+    info.add("url", p.getLastRelease(systemVersion).url);
     return info;
   }
 
@@ -127,5 +130,10 @@ public class PluginBundleHandler extends RequestHandlerBase
   public Category getCategory() {
     return Category.ADMIN;
   }
+
+//  @Override
+//  public Collection<Api> getApis() {
+//    return new Api(SpecProvider)
+//  }
 
 }

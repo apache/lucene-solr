@@ -18,7 +18,6 @@
 package org.apache.solr.util.plugin.bundle;
 
 import java.net.URL;
-import java.nio.file.Files;
 import java.util.List;
 
 import org.apache.solr.common.SolrException;
@@ -26,11 +25,10 @@ import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
-import ro.fortsoft.pf4j.PluginException;
 import ro.fortsoft.pf4j.update.PluginInfo;
-import ro.fortsoft.pf4j.util.FileUtils;
 
 import static junit.framework.Assert.assertEquals;
+import static junit.framework.Assert.assertNotNull;
 import static junit.framework.TestCase.assertFalse;
 import static org.junit.Assert.assertTrue;
 
@@ -55,6 +53,7 @@ public class PluginBundleManagerTest {
     // NOCOMMIT: Get rid of GSON dependency?
     List<PluginInfo> res = pluginBundleManager.query("*");
     assertTrue(res.size()>0);
+    assertNotNull(res.get(0).getRepositoryId());
 //    assertEquals(4, res.size());
 //    assertTrue(res.stream().map(p -> p.id).collect(Collectors.toList()).contains("extraction"));
 //
