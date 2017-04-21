@@ -2340,12 +2340,16 @@ public class TestIndexSorting extends LuceneTestCase {
     Sort indexSort = new Sort(sortField);
     iwc.setIndexSort(indexSort);
     IndexWriter w = new IndexWriter(dir, iwc);
+    Field textField = newTextField("sparse_text", "", Field.Store.NO);
+
     for (int i = 0; i < 128; i++) {
       Document doc = new Document();
       doc.add(new NumericDocValuesField("dense_int", i));
       if (i < 64) {
         doc.add(new NumericDocValuesField("sparse_int", i));
         doc.add(new BinaryDocValuesField("sparse_binary", new BytesRef(Integer.toString(i))));
+        textField.setStringValue("foo");
+        doc.add(textField);
       }
       w.addDocument(doc);
     }
@@ -2357,9 +2361,10 @@ public class TestIndexSorting extends LuceneTestCase {
     NumericDocValues denseValues = leafReader.getNumericDocValues("dense_int");
     NumericDocValues sparseValues = leafReader.getNumericDocValues("sparse_int");
     BinaryDocValues sparseBinaryValues = leafReader.getBinaryDocValues("sparse_binary");
+    NumericDocValues normsValues = leafReader.getNormValues("sparse_text");
 
-    Bits docsWithField = r.leaves().get(0).reader().getDocsWithField("sparse_int");
-    Bits docsWithBinaryField = r.leaves().get(0).reader().getDocsWithField("sparse_binary");
+    Bits docsWithField = leafReader.getDocsWithField("sparse_int");
+    Bits docsWithBinaryField = leafReader.getDocsWithField("sparse_binary");
     for(int docID = 0; docID < 128; docID++) {
       assertEquals(127-docID, denseValues.get(docID));
       if (docID >= 64) {
@@ -2367,9 +2372,11 @@ public class TestIndexSorting extends LuceneTestCase {
         assertTrue(docsWithBinaryField.get(docID));
         assertEquals(127-docID, sparseValues.get(docID));
         assertEquals(new BytesRef(Integer.toString(127-docID)), sparseBinaryValues.get(docID));
+        assertEquals(124, normsValues.get(docID));
       } else {
         assertFalse(docsWithField.get(docID));
         assertFalse(docsWithBinaryField.get(docID));
+        assertEquals(0, normsValues.get(docID));
       }
     }
     IOUtils.close(r, w, dir);

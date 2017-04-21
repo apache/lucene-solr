@@ -147,8 +147,8 @@ class NormValuesWriter {
         throw new NoSuchElementException();
       }
       Long value;
-      if (upto < size) {
-        int oldUpto = sortMap.newToOld(upto);
+      int oldUpto = sortMap.newToOld(upto);
+      if (oldUpto < size) {
         value = values.get(oldUpto);
       } else {
         value = MISSING;
