@@ -5041,10 +5041,16 @@ public class StreamExpressionTest extends SolrCloudTestCase {
   public void testListStream() throws Exception {
     UpdateRequest updateRequest = new UpdateRequest();
     updateRequest.add(id, "hello", "test_t", "l b c d c");
+    updateRequest.add(id, "hello1", "test_t", "l b c d c");
+    updateRequest.add(id, "hello2", "test_t", "l b c d c");
+
     updateRequest.commit(cluster.getSolrClient(), COLLECTIONORALIAS);
 
-    String expr = "search("+COLLECTIONORALIAS+", q=\"*:*\", fl=id, sort=\"id desc\")";
-    String cat = "list("+expr+","+expr+")";
+    String expr1 = "search("+COLLECTIONORALIAS+", q=\"id:hello\",  fl=id, sort=\"id desc\")";
+    String expr2 = "search("+COLLECTIONORALIAS+", q=\"id:hello1\", fl=id, sort=\"id desc\")";
+    String expr3 = "search("+COLLECTIONORALIAS+", q=\"id:hello2\", fl=id, sort=\"id desc\")";
+
+    String cat = "list("+expr1+","+expr2+","+expr3+")";
     ModifiableSolrParams paramsLoc = new ModifiableSolrParams();
     paramsLoc.set("expr", cat);
     paramsLoc.set("qt", "/stream");
@@ -5055,23 +5061,24 @@ public class StreamExpressionTest extends SolrCloudTestCase {
     StreamContext context = new StreamContext();
     solrStream.setStreamContext(context);
     List<Tuple> tuples = getTuples(solrStream);
-    assertTrue(tuples.size() == 2);
+    assertTrue(tuples.size() == 3);
     String s = (String)tuples.get(0).get("id");
     assertTrue(s.equals("hello"));
     s = (String)tuples.get(1).get("id");
-    assertTrue(s.equals("hello"));
-
+    assertTrue(s.equals("hello1"));
+    s = (String)tuples.get(2).get("id");
+    assertTrue(s.equals("hello2"));
   }
 
   @Test
   public void testCellStream() throws Exception {
     UpdateRequest updateRequest = new UpdateRequest();
-    updateRequest.add(id, "hello", "test_t", "l b c d c");
+    updateRequest.add(id, "hello", "test_t", "l b c d c e");
     updateRequest.add(id, "hello1", "test_t", "l b c d c");
 
     updateRequest.commit(cluster.getSolrClient(), COLLECTIONORALIAS);
 
-    String expr = "search("+COLLECTIONORALIAS+", q=\"*:*\", fl=id, sort=\"id desc\")";
+    String expr = "search("+COLLECTIONORALIAS+", q=\"*:*\", fl=\"id,test_t\", sort=\"id desc\")";
     String cat = "cell(results,"+expr+")";
     ModifiableSolrParams paramsLoc = new ModifiableSolrParams();
     paramsLoc.set("expr", cat);
@@ -5086,7 +5093,10 @@ public class StreamExpressionTest extends SolrCloudTestCase {
     assertTrue(tuples.size() == 1);
     List<Map> results  = (List<Map>)tuples.get(0).get("results");
     assertTrue(results.get(0).get("id").equals("hello1"));
+    assertTrue(results.get(0).get("test_t").equals("l b c d c"));
     assertTrue(results.get(1).get("id").equals("hello"));
+    assertTrue(results.get(1).get("test_t").equals("l b c d c e"));
+
   }
 
   @Test

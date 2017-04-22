@@ -69,6 +69,7 @@ public class CellStream extends TupleStream implements Expressible {
   private StreamExpression toExpression(StreamFactory factory, boolean includeStreams) throws IOException {
     // function name
     StreamExpression expression = new StreamExpression(factory.getFunctionName(this.getClass()));
+    expression.addParameter(name);
     if(includeStreams) {
       expression.addParameter(((Expressible)stream).toExpression(factory));
     }
