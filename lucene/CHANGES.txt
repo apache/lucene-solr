@@ -97,6 +97,9 @@ Bug Fixes
   ArrayIndexOutOfBoundsException when byte blocks larger than 32 KB
   were added (Mike McCandless)
 
+* LUCENE-7797: The static FSDirectory.listAll(Path) method was always
+  returning an empty array.  (Atkins Chang via Mike McCandless)
+
 Improvements
 
 * LUCENE-7782: OfflineSorter now passes the total number of items it
