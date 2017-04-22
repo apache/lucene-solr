@@ -23,9 +23,9 @@ import java.util.Objects;
 import org.apache.lucene.document.FieldType;
 import org.apache.lucene.document.FieldType.LegacyNumericType;
 import org.apache.lucene.index.DocValuesType;
-import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
+import org.apache.lucene.search.Weight;
 import org.apache.lucene.search.join.JoinUtil;
 import org.apache.lucene.search.join.ScoreMode;
 import org.apache.solr.cloud.ZkController;
@@ -90,7 +90,7 @@ public class ScoreJoinQParserPlugin extends QParserPlugin {
     }
 
     @Override
-    public Query rewrite(IndexReader reader) throws IOException {
+    public Weight createWeight(IndexSearcher searcher, boolean needsScores) throws IOException {
       SolrRequestInfo info = SolrRequestInfo.getRequestInfo();
 
       CoreContainer container = info.getReq().getCore().getCoreContainer();
@@ -104,17 +104,17 @@ public class ScoreJoinQParserPlugin extends QParserPlugin {
       fromHolder = fromCore.getRegisteredSearcher();
       final Query joinQuery;
       try {
-        SolrIndexSearcher searcher = fromHolder.get();
+        SolrIndexSearcher fromSearcher = fromHolder.get();
         
-        FieldType.LegacyNumericType fromNumericType = getNumericType(searcher.getSchema(),
+        FieldType.LegacyNumericType fromNumericType = getNumericType(fromSearcher.getSchema(),
                 info.getReq().getSchema());
         
-        joinQuery = createJoinQuery(searcher, fromNumericType);
+        joinQuery = createJoinQuery(fromSearcher, fromNumericType);
       } finally {
         fromCore.close();
         fromHolder.decref();
       }
-      return joinQuery.rewrite(reader);
+      return joinQuery.rewrite(searcher.getIndexReader()).createWeight(searcher, needsScores);
     }
 
     @Override
@@ -164,11 +164,11 @@ public class ScoreJoinQParserPlugin extends QParserPlugin {
     }
 
     @Override
-    public Query rewrite(IndexReader reader) throws IOException {
+    public Weight createWeight(IndexSearcher searcher, boolean needsScores) throws IOException {
       SolrRequestInfo info = SolrRequestInfo.getRequestInfo();
       IndexSchema schema = info.getReq().getSchema();
-      final Query jq = createJoinQuery(info.getReq().getSearcher(), getNumericType(schema, schema));
-      return jq.rewrite(reader);
+      final Query jq = createJoinQuery(searcher, getNumericType(schema, schema));
+      return jq.rewrite(searcher.getIndexReader()).createWeight(searcher, needsScores);
     }
 
     protected Query createJoinQuery(IndexSearcher searcher, LegacyNumericType numericType) throws IOException {
