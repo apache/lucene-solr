@@ -22,7 +22,9 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 import org.apache.lucene.util.LuceneTestCase;
 
@@ -136,6 +138,17 @@ public class TestDirectory extends LuceneTestCase {
     } finally {
       fsDir.close();
     }
+  }
+
+  public void testListAll() throws Throwable {
+    Path dir = createTempDir("testdir");
+    Path file1 = Files.createFile(dir.resolve("tempfile1"));
+    Path file2 = Files.createFile(dir.resolve("tempfile2"));
+    Set<String> files = new HashSet<>(Arrays.asList(FSDirectory.listAll(dir)));
+
+    assertTrue(files.size() == 2);
+    assertTrue(files.contains(file1.getFileName().toString()));
+    assertTrue(files.contains(file2.getFileName().toString()));
   }
 }
 
