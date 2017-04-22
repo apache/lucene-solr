@@ -161,8 +161,10 @@ public class StreamHandler extends RequestHandlerBase implements SolrCoreAware, 
          .withFunctionName("calc", CalculatorStream.class)
       .withFunctionName("eval",EvalStream.class)
       .withFunctionName("echo", EchoStream.class)
+      .withFunctionName("cell", CellStream.class)
+      .withFunctionName("list", ListStream.class)
 
-             // metrics
+      // metrics
          .withFunctionName("min", MinMetric.class)
       .withFunctionName("max", MaxMetric.class)
       .withFunctionName("avg", MeanMetric.class)
