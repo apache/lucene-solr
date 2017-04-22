@@ -170,10 +170,9 @@ public class TestScoreJoinQPNoScore extends SolrTestCaseJ4 {
       {
         final Query query = QParser.getParser(req.getParams().get("q"), req).getQuery();
         final Query rewrittenQuery = query.rewrite(req.getSearcher().getIndexReader());
-        assertTrue(
-            rewrittenQuery+" should be Lucene's",
-            rewrittenQuery.getClass().getPackage().getName()
-            .startsWith("org.apache.lucene"));
+        assertEquals(rewrittenQuery+" is expected to be from Solr",
+            ScoreJoinQParserPlugin.class.getPackage().getName(), 
+            rewrittenQuery.getClass().getPackage().getName());
       }
       {
         final Query query = QParser.getParser(
