@@ -242,6 +242,9 @@ public class StreamExpressionTest extends SolrCloudTestCase {
     }
   }
 
+
+
+
   @Test
   public void testCloudSolrStreamWithZkHost() throws Exception {
 
@@ -5032,6 +5035,58 @@ public class StreamExpressionTest extends SolrCloudTestCase {
     String s = (String)tuples.get(0).get("id");
     assertTrue(s.equals("hello"));
 
+  }
+
+  @Test
+  public void testListStream() throws Exception {
+    UpdateRequest updateRequest = new UpdateRequest();
+    updateRequest.add(id, "hello", "test_t", "l b c d c");
+    updateRequest.commit(cluster.getSolrClient(), COLLECTIONORALIAS);
+
+    String expr = "search("+COLLECTIONORALIAS+", q=\"*:*\", fl=id, sort=\"id desc\")";
+    String cat = "list("+expr+","+expr+")";
+    ModifiableSolrParams paramsLoc = new ModifiableSolrParams();
+    paramsLoc.set("expr", cat);
+    paramsLoc.set("qt", "/stream");
+
+    String url = cluster.getJettySolrRunners().get(0).getBaseUrl().toString()+"/"+COLLECTIONORALIAS;
+    TupleStream solrStream = new SolrStream(url, paramsLoc);
+
+    StreamContext context = new StreamContext();
+    solrStream.setStreamContext(context);
+    List<Tuple> tuples = getTuples(solrStream);
+    assertTrue(tuples.size() == 2);
+    String s = (String)tuples.get(0).get("id");
+    assertTrue(s.equals("hello"));
+    s = (String)tuples.get(1).get("id");
+    assertTrue(s.equals("hello"));
+
+  }
+
+  @Test
+  public void testCellStream() throws Exception {
+    UpdateRequest updateRequest = new UpdateRequest();
+    updateRequest.add(id, "hello", "test_t", "l b c d c");
+    updateRequest.add(id, "hello1", "test_t", "l b c d c");
+
+    updateRequest.commit(cluster.getSolrClient(), COLLECTIONORALIAS);
+
+    String expr = "search("+COLLECTIONORALIAS+", q=\"*:*\", fl=id, sort=\"id desc\")";
+    String cat = "cell(results,"+expr+")";
+    ModifiableSolrParams paramsLoc = new ModifiableSolrParams();
+    paramsLoc.set("expr", cat);
+    paramsLoc.set("qt", "/stream");
+
+    String url = cluster.getJettySolrRunners().get(0).getBaseUrl().toString()+"/"+COLLECTIONORALIAS;
+    TupleStream solrStream = new SolrStream(url, paramsLoc);
+
+    StreamContext context = new StreamContext();
+    solrStream.setStreamContext(context);
+    List<Tuple> tuples = getTuples(solrStream);
+    assertTrue(tuples.size() == 1);
+    List<Map> results  = (List<Map>)tuples.get(0).get("results");
+    assertTrue(results.get(0).get("id").equals("hello1"));
+    assertTrue(results.get(1).get("id").equals("hello"));
   }
 
   @Test
