@@ -1122,4 +1122,13 @@ public class QueryEqualityTest extends SolrTestCaseJ4 {
     assertFalse(equals);
   }
 
+  public void testChildField() throws Exception {
+    final SolrQueryRequest req = req("q", "{!parent which=type_s1:parent}whatever_s1:foo");
+    try {
+      assertFuncEquals(req,
+          "childfield(name_s1,$q)", "childfield(name_s1,$q)");
+    } finally {
+      req.close();
+    }
+  }
 }
