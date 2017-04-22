@@ -193,6 +193,7 @@ New Features
 
 * SOLR-10507: Core Admin status command to emit collection details of each core (noble)
 
+* SOLR-10521: introducing sort=childfield(field) asc for searching by {!parent} (Mikhail Khludnev) 
 
 Optimizations
 ----------------------

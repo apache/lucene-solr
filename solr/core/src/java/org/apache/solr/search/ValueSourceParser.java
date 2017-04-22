@@ -74,6 +74,7 @@ import org.apache.solr.search.function.distance.HaversineFunction;
 import org.apache.solr.search.function.distance.SquaredEuclideanFunction;
 import org.apache.solr.search.function.distance.StringDistanceFunction;
 import org.apache.solr.search.function.distance.VectorDistanceFunction;
+import org.apache.solr.search.join.ChildFieldValueSourceParser;
 import org.apache.solr.util.DateMathParser;
 import org.apache.solr.util.plugin.NamedListInitializedPlugin;
 import org.locationtech.spatial4j.distance.DistanceUtils;
@@ -971,7 +972,8 @@ public abstract class ValueSourceParser implements NamedListInitializedPlugin {
     });
 
     addParser("agg_percentile", new PercentileAgg.Parser());
-
+    
+    addParser("childfield", new ChildFieldValueSourceParser());
   }
 
   ///////////////////////////////////////////////////////////////////////////////
