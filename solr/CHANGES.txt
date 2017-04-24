@@ -226,6 +226,8 @@ Bug Fixes
 * SOLR-5127: Multiple highlight fields and wildcards are now supported e.g. hl.fl=title,text_*
   (Sven-S. Porst, Daniel Debray, Simon Endele, Christine Poerschke)
 
+* SOLR-10493: Investigate SolrCloudExampleTest failures. (Erick Erickson)
+
 Other Changes
 ----------------------
 

@@ -104,6 +104,7 @@ import static org.apache.solr.common.params.CommonParams.CORES_HANDLER_PATH;
 import static org.apache.solr.common.params.CommonParams.INFO_HANDLER_PATH;
 import static org.apache.solr.common.params.CommonParams.METRICS_PATH;
 import static org.apache.solr.common.params.CommonParams.ZK_PATH;
+import static org.apache.solr.core.CorePropertiesLocator.PROPERTIES_FILENAME;
 import static org.apache.solr.security.AuthenticationPlugin.AUTHENTICATION_PLUGIN_PROP;
 
 /**
@@ -1130,7 +1131,37 @@ public class CoreContainer {
   }
 
 
-  // ---------------- Core name related methods --------------- 
+  // ---------------- Core name related methods ---------------
+
+  private CoreDescriptor reloadCoreDescriptor(CoreDescriptor oldDesc) {
+    if (oldDesc == null) {
+      return null;
+    }
+
+    CorePropertiesLocator cpl = new CorePropertiesLocator(null);
+    CoreDescriptor ret = cpl.buildCoreDescriptor(oldDesc.getInstanceDir().resolve(PROPERTIES_FILENAME), this);
+
+    // Ok, this little jewel is all because we still create core descriptors on the fly from lists of properties
+    // in tests particularly. Theoretically, there should be _no_ way to create a CoreDescriptor in the new world
+    // of core discovery without writing the core.properties file out first.
+    //
+    // TODO: remove core.properties from the conf directory in test files, it's in a bad place there anyway.
+    if (ret == null) {
+      oldDesc.loadExtraProperties(); // there may be changes to extra properties that we need to pick up.
+      return oldDesc;
+      
+    }
+    // The CloudDescriptor bit here is created in a very convoluted way, requiring access to private methods
+    // in ZkController. When reloading, this behavior is identical to what used to happen where a copy of the old
+    // CoreDescriptor was just re-used.
+    
+    if (ret.getCloudDescriptor() != null) {
+      ret.getCloudDescriptor().reload(oldDesc.getCloudDescriptor());
+    }
+
+    return ret;
+  }
+
   /**
    * Recreates a SolrCore.
    * While the new core is loading, requests will continue to be dispatched to
@@ -1141,11 +1172,10 @@ public class CoreContainer {
   public void reload(String name) {
     SolrCore core = solrCores.getCoreFromAnyList(name, false);
     if (core != null) {
+      
       // The underlying core properties files may have changed, we don't really know. So we have a (perhaps) stale
-      // CoreDescriptor we need to reload it if it's out there. 
-      CorePropertiesLocator cpl = new CorePropertiesLocator(null);
-      CoreDescriptor cd = cpl.reload(this, core.getCoreDescriptor());
-      if (cd == null) cd = core.getCoreDescriptor();
+      // CoreDescriptor and we need to reload it from the disk files
+      CoreDescriptor cd = reloadCoreDescriptor(core.getCoreDescriptor());
       solrCores.addCoreDescriptor(cd);
       try {
         solrCores.waitAddPendingCoreOps(cd.getName());
