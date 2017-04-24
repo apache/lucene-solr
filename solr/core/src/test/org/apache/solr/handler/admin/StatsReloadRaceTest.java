@@ -67,13 +67,14 @@ public class StatsReloadRaceTest extends SolrTestCaseJ4 {
       boolean isCompleted;
       do {
         if (random.nextBoolean()) {
-          requestMetrics();
+          requestMetrics(true);
         } else {
           requestCoreStatus();
         }
 
         isCompleted = checkReloadComlpetion(asyncId);
       } while (!isCompleted);
+      requestMetrics(false);
     }
   }
 
@@ -105,7 +106,7 @@ public class StatsReloadRaceTest extends SolrTestCaseJ4 {
     return isCompleted;
   }
 
-  private void requestMetrics() throws Exception {
+  private void requestMetrics(boolean softFail) throws Exception {
     SolrQueryResponse rsp = new SolrQueryResponse();
     String registry = "solr.core." + h.coreName;
     String key = "SEARCHER.searcher.indexVersion";
@@ -126,8 +127,11 @@ public class StatsReloadRaceTest extends SolrTestCaseJ4 {
         assertTrue(metrics.get(key) instanceof Long);
         break;
       } else {
-        Thread.sleep(1000);
+        Thread.sleep(500);
       }
+    }
+    if (softFail && !found) {
+      return;
     }
     assertTrue("Key " + key + " not found in registry " + registry, found);
   }
