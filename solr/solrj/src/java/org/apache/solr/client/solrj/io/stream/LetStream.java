@@ -18,7 +18,6 @@ package org.apache.solr.client.solrj.io.stream;
 
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -32,37 +31,46 @@ import org.apache.solr.client.solrj.io.stream.expr.StreamExplanation;
 import org.apache.solr.client.solrj.io.stream.expr.StreamExpression;
 import org.apache.solr.client.solrj.io.stream.expr.StreamFactory;
 
-public class CellStream extends TupleStream implements Expressible {
+public class LetStream extends TupleStream implements Expressible {
 
   private static final long serialVersionUID = 1;
   private TupleStream stream;
-  private String name;
-  private Tuple tuple;
-  private Tuple EOFTuple;
+  private List<CellStream> cellStreams;
+  private StreamContext streamContext;
 
-  public CellStream(String name, TupleStream stream) throws IOException {
-    init(name, stream);
+  public LetStream(TupleStream stream, List<CellStream> cellStreams) throws IOException {
+    init(stream, cellStreams);
   }
 
-  public CellStream(StreamExpression expression, StreamFactory factory) throws IOException {
-    String name = factory.getValueOperand(expression, 0);
+  public LetStream(StreamExpression expression, StreamFactory factory) throws IOException {
     List<StreamExpression> streamExpressions = factory.getExpressionOperandsRepresentingTypes(expression, Expressible.class, TupleStream.class);
 
-    if(streamExpressions.size() != 1){
-      throw new IOException(String.format(Locale.ROOT,"Invalid expression %s - expecting 1 stream but found %d",expression, streamExpressions.size()));
+    if(streamExpressions.size() < 2){
+      throw new IOException(String.format(Locale.ROOT,"Invalid expression %s - expecting atleast 2 streams but found %d",expression, streamExpressions.size()));
     }
 
-    TupleStream tupleStream = factory.constructStream(streamExpressions.get(0));
-    init(name, tupleStream);
+    TupleStream stream = null;
+    List<CellStream> cellStreams = new ArrayList();
+
+    for(StreamExpression streamExpression : streamExpressions) {
+      TupleStream s = factory.constructStream(streamExpression);
+      if(s instanceof CellStream) {
+        cellStreams.add((CellStream)s);
+      } else {
+        if(stream == null) {
+          stream = s;
+        } else {
+          throw new IOException("Found more then one stream that was not a CellStream");
+        }
+      }
+    }
+
+    init(stream, cellStreams);
   }
 
-  public String getName() {
-    return this.name;
-  }
-
-  private void init(String name, TupleStream tupleStream) {
-    this.name = name;
-    this.stream = tupleStream;
+  private void init(TupleStream _stream, List<CellStream> _cellStreams) {
+    this.stream = _stream;
+    this.cellStreams = _cellStreams;
   }
 
   @Override
@@ -73,10 +81,11 @@ public class CellStream extends TupleStream implements Expressible {
   private StreamExpression toExpression(StreamFactory factory, boolean includeStreams) throws IOException {
     // function name
     StreamExpression expression = new StreamExpression(factory.getFunctionName(this.getClass()));
-    expression.addParameter(name);
-    if(includeStreams) {
-      expression.addParameter(((Expressible)stream).toExpression(factory));
+    expression.addParameter(((Expressible) stream).toExpression(factory));
+    for(CellStream cellStream : cellStreams) {
+      expression.addParameter(((Expressible)cellStream).toExpression(factory));
     }
+
     return expression;
   }
 
@@ -94,6 +103,7 @@ public class CellStream extends TupleStream implements Expressible {
   }
 
   public void setStreamContext(StreamContext context) {
+    this.streamContext = context;
     this.stream.setStreamContext(context);
   }
 
@@ -105,38 +115,28 @@ public class CellStream extends TupleStream implements Expressible {
   }
 
   public Tuple read() throws IOException {
-    if(tuple.EOF) {
-      return tuple;
-    } else {
-      Tuple t = tuple;
-      tuple = EOFTuple;
-      return t;
-    }
+    return stream.read();
   }
 
   public void close() throws IOException {
+    stream.close();
   }
 
   public void open() throws IOException {
-    try {
-      stream.open();
-      List<Tuple> list = new ArrayList();
-      while(true) {
-        Tuple tuple = stream.read();
-        if(tuple.EOF) {
-          EOFTuple = tuple;
-          break;
-        } else {
-          list.add(tuple);
-        }
+    Map<String, List<Tuple>> lets = streamContext.getLets();
+    for(CellStream cellStream : cellStreams) {
+      try {
+        cellStream.setStreamContext(streamContext);
+        cellStream.open();
+        Tuple tup = cellStream.read();
+        String name = cellStream.getName();
+        List<Tuple> tuples = (List<Tuple>)tup.get(name);
+        lets.put(name, tuples);
+      } finally {
+        cellStream.close();
       }
-
-      Map map = new HashMap();
-      map.put(name, list);
-      tuple = new Tuple(map);
-    } finally {
-      stream.close();
     }
+    stream.open();
   }
 
   /** Return the stream sort - ie, the order in which records are returned */
