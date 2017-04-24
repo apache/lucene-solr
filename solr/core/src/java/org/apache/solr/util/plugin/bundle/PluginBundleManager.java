@@ -19,7 +19,6 @@ package org.apache.solr.util.plugin.bundle;
 
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
-import java.net.MalformedURLException;
 import java.net.URL;
 import java.net.URLClassLoader;
 import java.nio.file.Files;
@@ -29,7 +28,6 @@ import java.util.Collections;
 import java.util.Enumeration;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 import java.util.function.Predicate;
 import java.util.jar.JarFile;
 import java.util.jar.Manifest;
@@ -43,6 +41,7 @@ import ro.fortsoft.pf4j.DefaultPluginDescriptorFinder;
 import ro.fortsoft.pf4j.DefaultPluginFactory;
 import ro.fortsoft.pf4j.DefaultPluginLoader;
 import ro.fortsoft.pf4j.DefaultPluginManager;
+import ro.fortsoft.pf4j.DefaultPluginRepository;
 import ro.fortsoft.pf4j.ManifestPluginDescriptorFinder;
 import ro.fortsoft.pf4j.Plugin;
 import ro.fortsoft.pf4j.PluginClassLoader;
@@ -53,12 +52,16 @@ import ro.fortsoft.pf4j.PluginException;
 import ro.fortsoft.pf4j.PluginFactory;
 import ro.fortsoft.pf4j.PluginLoader;
 import ro.fortsoft.pf4j.PluginManager;
+import ro.fortsoft.pf4j.PluginRepository;
 import ro.fortsoft.pf4j.PluginWrapper;
 import ro.fortsoft.pf4j.PropertiesPluginDescriptorFinder;
 import ro.fortsoft.pf4j.update.PluginInfo;
-import ro.fortsoft.pf4j.update.PluginInfo.PluginRelease;
 import ro.fortsoft.pf4j.update.UpdateManager;
 import ro.fortsoft.pf4j.update.UpdateRepository;
+import ro.fortsoft.pf4j.util.AndFileFilter;
+import ro.fortsoft.pf4j.util.DirectoryFileFilter;
+import ro.fortsoft.pf4j.util.JarFileFilter;
+import ro.fortsoft.pf4j.util.NotFileFilter;
 import ro.fortsoft.pf4j.util.StringUtils;
 
 /**
@@ -78,14 +81,14 @@ public class PluginBundleManager {
       this.pluginsRoot = pluginsRoot;
       pluginManager = new SolrPluginManager(pluginsRoot);
       systemVersion = Version.valueOf(org.apache.lucene.util.Version.LATEST.toString());
-      ApacheMirrorsUpdateRepository apacheRepo = new ApacheMirrorsUpdateRepository("apache", "lucene/solr/" + systemVersion.toString() + "/");
+//      ApacheMirrorsUpdateRepository apacheRepo = new ApacheMirrorsUpdateRepository("apache", "lucene/solr/" + systemVersion.toString() + "/");
       List<UpdateRepository> repos = new ArrayList<>();
-      repos.add(new PluginUpdateRepository("janhoy", new URL("http://people.apache.org/~janhoy/dist/plugins/")));
-      repos.add(new GitHubUpdateRepository("github","cominvent", "solr-plugins"));
+      repos.add(new PluginUpdateRepository("apache", new URL("http://people.apache.org/~janhoy/dist/plugins/")));
+      repos.add(new GitHubUpdateRepository("community","cominvent", "solr-plugins"));
       updateManager = new UpdateManager(pluginManager, (Path) null);
       updateManager.setRepositories(repos);
       pluginManager.setSystemVersion(systemVersion);
-    } catch (MalformedURLException e) {
+    } catch (Exception e) {
       throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
     }
   }
@@ -93,6 +96,8 @@ public class PluginBundleManager {
   public void load() {
     pluginManager.loadPlugins();
     pluginManager.startPlugins();
+    log.info("Loaded {} plugins: {}", listInstalled().size(),
+        listInstalled().stream().map(PluginWrapper::getPluginId).collect(Collectors.toList()));
   }
 
   private static Predicate<PluginInfo> filterPredicate(String q) {
@@ -138,7 +143,11 @@ public class PluginBundleManager {
 
   public boolean install(String id) {
     try {
-      return updateManager.installPlugin(id, null);
+      boolean wasInstalled = updateManager.installPlugin(id, null);
+      if (wasInstalled) {
+        log.info("Installed plugin {}", id);
+      }
+      return wasInstalled;
     } catch (PluginException e) {
       throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Install of plugin " + id + " failed", e);
     }
@@ -259,6 +268,11 @@ public class PluginBundleManager {
     }
 
     @Override
+    protected PluginRepository createPluginRepository() {
+      return new AutoPluginRepository(getPluginsRoot(), isDevelopment());
+    }
+
+    @Override
     protected void validatePluginDescriptor(PluginDescriptor descriptor) throws PluginException {
       if (StringUtils.isEmpty(descriptor.getPluginId())) {
         throw new PluginException("id cannot be empty");
@@ -356,8 +370,10 @@ public class PluginBundleManager {
       }
     }
 
+    /**
+     * Plugin loader that can load both jar and zip plugins
+     */
     private class AutoPluginLoader implements PluginLoader {
-
       private final SolrPluginManager solrPluginManager;
       private final PluginClasspath pluginClasspath;
       private final JarPluginLoader jarLoader;
@@ -375,6 +391,19 @@ public class PluginBundleManager {
         } else {
           return new PluginClassLoader(solrPluginManager, pluginDescriptor, getClass().getClassLoader());
         }
+      }
+    }
+
+    /**
+     * Repository that loads both zip files, unpacked zip files and jar plugins
+     */
+    private class AutoPluginRepository extends DefaultPluginRepository {
+      public AutoPluginRepository(Path pluginsRoot, boolean development) {
+        super(pluginsRoot, development);
+        AndFileFilter pluginsFilter = new AndFileFilter(new DirectoryFileFilter());
+        pluginsFilter.addFileFilter(new NotFileFilter(createHiddenPluginFilter(isDevelopment())));
+        pluginsFilter.addFileFilter(new JarFileFilter());
+        setFilter(pluginsFilter);
       }
     }
   }

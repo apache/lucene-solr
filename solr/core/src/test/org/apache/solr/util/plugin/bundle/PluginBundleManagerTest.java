@@ -45,7 +45,6 @@ public class PluginBundleManagerTest {
   @Before
   public void before() throws Exception {
     pluginBundleManager = new PluginBundleManager(testFolder.getRoot().toPath());
-    pluginBundleManager.addUpdateRepository("folder", new URL("file:/Users/janhoy/solr-repo/"));
   }
 
   @Test
@@ -73,26 +72,26 @@ public class PluginBundleManagerTest {
   @Test
   public void install() throws Exception {
     assertEquals(0, pluginBundleManager.listInstalled().size());
-    pluginBundleManager.install("dih");
+    pluginBundleManager.install("dataimport");
     assertEquals(1, pluginBundleManager.listInstalled().size());
   }
 
   @Test
   public void uninstall() throws Exception {
     assertEquals(0, pluginBundleManager.listInstalled().size());
-    assertTrue(pluginBundleManager.install("dih"));
+    assertTrue(pluginBundleManager.install("dataimport"));
     assertEquals(1, pluginBundleManager.listInstalled().size());
     assertFalse(pluginBundleManager.uninstall("nonexistent"));
-    assertTrue(pluginBundleManager.uninstall("dih"));
+    assertTrue(pluginBundleManager.uninstall("dataimport"));
     assertEquals(0, pluginBundleManager.listInstalled().size());
   }
 
   @Test(expected = SolrException.class)
   public void installTwice() throws Exception {
     assertEquals(0, pluginBundleManager.listInstalled().size());
-    assertTrue(pluginBundleManager.install("dih"));
+    assertTrue(pluginBundleManager.install("dataimport"));
     assertEquals(1, pluginBundleManager.listInstalled().size());
-    pluginBundleManager.install("dih");
+    pluginBundleManager.install("dataimport");
   }
 
   @Test(expected = SolrException.class)
@@ -104,28 +103,34 @@ public class PluginBundleManagerTest {
   @Test
   public void update() throws Exception {
     // TODO: Update plugins
-    assertTrue(pluginBundleManager.install("dih"));
-    assertFalse(pluginBundleManager.update("dih"));
+    assertTrue(pluginBundleManager.install("dataimport"));
+    assertFalse(pluginBundleManager.update("dataimport"));
     pluginBundleManager.updateAll();
   }
 
   @Test(expected = SolrException.class)
   public void updateNonInstalled() throws Exception {
     assertEquals(0, pluginBundleManager.listInstalled().size());
-    assertTrue(pluginBundleManager.update("dih"));
+    assertTrue(pluginBundleManager.update("dataimport"));
+  }
+
+  @Test
+  public void jarPlugin() throws Exception {
+    assertTrue(pluginBundleManager.install("request-sanitizer"));
+    assertEquals(1, pluginBundleManager.listInstalled().size());
   }
 
 /*
   @Test
   public void installAndCheckClassloading() throws Exception {
-    assertTrue(pluginBundles.install("dih"));
+    assertTrue(pluginBundles.install("dataimport"));
     assertEquals(1, pluginBundles.listInstalled().size());
     try {
       this.getClass().getClassLoader().loadClass("org.apache.solr.handler.dataimport.DataImportHandler");
       fail();
     } catch (Exception ignored) {}
-    ClassLoader loader = pluginBundles.getPluginManager().getPluginClassLoader("dih");
-    assertEquals("DataImportHandler",
+    ClassLoader loader = pluginBundles.getPluginManager().getPluginClassLoader("dataimport");
+    assertEquals("dataimport",
         loader.loadClass("org.apache.solr.handler.dataimport.DataImportHandler").getSimpleName());
     pluginBundles.install("request-sanitizer");
     ClassLoader uberLoader = pluginBundles.getUberClassLoader(getClass().getClassLoader());
