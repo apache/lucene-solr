@@ -217,6 +217,7 @@ public class SolrClusterReporter extends SolrMetricReporter {
         .convertDurationsTo(TimeUnit.MILLISECONDS)
         .withHandler(handler)
         .withReporterId(reporterId)
+        .setCompact(true)
         .cloudClient(false) // we want to send reports specifically to a selected leader instance
         .skipAggregateValues(true) // we don't want to transport details of aggregates
         .skipHistograms(true) // we don't want to transport histograms

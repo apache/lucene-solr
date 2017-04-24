@@ -126,6 +126,7 @@ public class SolrReporter extends ScheduledReporter {
     private boolean skipHistograms;
     private boolean skipAggregateValues;
     private boolean cloudClient;
+    private boolean compact;
     private SolrParams params;
 
     /**
@@ -146,6 +147,7 @@ public class SolrReporter extends ScheduledReporter {
       this.skipHistograms = false;
       this.skipAggregateValues = false;
       this.cloudClient = false;
+      this.compact = true;
       this.params = null;
     }
 
@@ -166,6 +168,16 @@ public class SolrReporter extends ScheduledReporter {
      */
     public Builder cloudClient(boolean cloudClient) {
       this.cloudClient = cloudClient;
+      return this;
+    }
+
+    /**
+     * If true then use "compact" data representation.
+     * @param compact compact representation.
+     * @return {@code this}
+     */
+    public Builder setCompact(boolean compact) {
+      this.compact = compact;
       return this;
     }
 
@@ -244,7 +256,7 @@ public class SolrReporter extends ScheduledReporter {
      */
     public SolrReporter build(HttpClient client, Supplier<String> urlProvider) {
       return new SolrReporter(client, urlProvider, metricManager, reports, handler, reporterId, rateUnit, durationUnit,
-          params, skipHistograms, skipAggregateValues, cloudClient);
+          params, skipHistograms, skipAggregateValues, cloudClient, compact);
     }
 
   }
@@ -258,6 +270,7 @@ public class SolrReporter extends ScheduledReporter {
   private boolean skipHistograms;
   private boolean skipAggregateValues;
   private boolean cloudClient;
+  private boolean compact;
   private ModifiableSolrParams params;
   private Map<String, Object> metadata;
 
@@ -288,7 +301,8 @@ public class SolrReporter extends ScheduledReporter {
   public SolrReporter(HttpClient httpClient, Supplier<String> urlProvider, SolrMetricManager metricManager,
                       List<Report> metrics, String handler,
                       String reporterId, TimeUnit rateUnit, TimeUnit durationUnit,
-                      SolrParams params, boolean skipHistograms, boolean skipAggregateValues, boolean cloudClient) {
+                      SolrParams params, boolean skipHistograms, boolean skipAggregateValues,
+                      boolean cloudClient, boolean compact) {
     super(null, "solr-reporter", MetricFilter.ALL, rateUnit, durationUnit);
     this.metricManager = metricManager;
     this.urlProvider = urlProvider;
@@ -311,6 +325,7 @@ public class SolrReporter extends ScheduledReporter {
     this.skipHistograms = skipHistograms;
     this.skipAggregateValues = skipAggregateValues;
     this.cloudClient = cloudClient;
+    this.compact = compact;
     this.params = new ModifiableSolrParams();
     this.params.set(REPORTER_ID, reporterId);
     // allow overrides to take precedence
@@ -361,7 +376,7 @@ public class SolrReporter extends ScheduledReporter {
         }
         final String effectiveGroup = group;
         MetricUtils.toSolrInputDocuments(metricManager.registry(registryName), Collections.singletonList(report.filter), MetricFilter.ALL,
-            MetricUtils.PropertyFilter.ALL, skipHistograms, skipAggregateValues, false, metadata, doc -> {
+            MetricUtils.PropertyFilter.ALL, skipHistograms, skipAggregateValues, compact, metadata, doc -> {
               doc.setField(REGISTRY_ID, registryName);
               doc.setField(GROUP_ID, effectiveGroup);
               if (effectiveLabel != null) {

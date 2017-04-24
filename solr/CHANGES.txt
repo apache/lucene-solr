@@ -117,6 +117,8 @@ Other Changes
   Add support for selecting specific properties from any compound metric using 'property' parameter to
   /admin/metrics handler. (ab)
 
+* SOLR-10557: Make "compact" format default for /admin/metrics. (ab)
+
 ----------------------
 
 ==================  6.6.0 ==================
