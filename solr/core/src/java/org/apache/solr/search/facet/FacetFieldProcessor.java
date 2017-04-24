@@ -210,10 +210,6 @@ abstract class FacetFieldProcessor extends FacetProcessor<FacetField> {
                                         IntFunction<Comparable> bucketValFromSlotNumFunc,
                                         Function<Comparable, String> fieldQueryValFunc) throws IOException {
     int numBuckets = 0;
-    List<Object> bucketVals = null;
-    if (freq.numBuckets && fcontext.isShard()) {
-      bucketVals = new ArrayList<>(100);
-    }
 
     final int off = fcontext.isShard() ? 0 : (int) freq.offset;
 
@@ -257,16 +253,18 @@ abstract class FacetFieldProcessor extends FacetProcessor<FacetField> {
     Slot bottom = null;
     Slot scratchSlot = new Slot();
     for (int slotNum = 0; slotNum < numSlots; slotNum++) {
-      // screen out buckets not matching mincount immediately (i.e. don't even increment numBuckets)
-      if (effectiveMincount > 0 && countAcc.getCount(slotNum) < effectiveMincount) {
-        continue;
+
+      // screen out buckets not matching mincount
+      if (effectiveMincount > 0) {
+        int count = countAcc.getCount(slotNum);
+        if (count  < effectiveMincount) {
+          if (count > 0)
+            numBuckets++;  // Still increment numBuckets as long as we have some count.  This is for consistency between distrib and non-distrib mode.
+          continue;
+        }
       }
 
       numBuckets++;
-      if (bucketVals != null && bucketVals.size()<100) {
-        Object val = bucketValFromSlotNumFunc.apply(slotNum);
-        bucketVals.add(val);
-      }
 
       if (bottom != null) {
         scratchSlot.slot = slotNum; // scratchSlot is only used to hold this slotNum for the following line
@@ -292,10 +290,17 @@ abstract class FacetFieldProcessor extends FacetProcessor<FacetField> {
       if (!fcontext.isShard()) {
         res.add("numBuckets", numBuckets);
       } else {
-        SimpleOrderedMap<Object> map = new SimpleOrderedMap<>(2);
-        map.add("numBuckets", numBuckets);
-        map.add("vals", bucketVals);
-        res.add("numBuckets", map);
+        DocSet domain = fcontext.base;
+        if (freq.prefix != null) {
+          Query prefixFilter = sf.getType().getPrefixQuery(null, sf, freq.prefix);
+          domain = fcontext.searcher.getDocSet(prefixFilter, domain);
+        }
+
+        HLLAgg agg = new HLLAgg(freq.field);
+        SlotAcc acc = agg.createSlotAcc(fcontext, domain.size(), 1);
+        acc.collect(domain, 0);
+        acc.key = "numBuckets";
+        acc.setValues(res, 0);
       }
     }
 
@@ -522,7 +527,6 @@ abstract class FacetFieldProcessor extends FacetProcessor<FacetField> {
      "all",
      {"cat3":{"_l":["A"]}}]]},
    "cat1":{"_l":["A"]}}}
-
    */
 
   static <T> List<T> asList(Object list) {

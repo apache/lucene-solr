@@ -139,6 +139,10 @@ Upgrade Notes
 
 * Solr contribs map-reduce, morphlines-core and morphlines-cell have been removed.
 
+* JSON Facet API now uses hyper-log-log for numBuckets cardinality calculation and
+  calculates cardinality before filtering buckets by any mincount greater than 1.
+
+
 Detailed Change List
 ----------------------
 
@@ -192,6 +196,9 @@ Optimizations
 * SOLR-9217: Reduced heap consumption for filter({!join ... score=...}) 
   (Andrey Kudryavtsev, Gopikannan Venugopalsamy via Mikhail Khludnev)
 
+* SOLR-10548: JSON Facet API now uses hyper-log-log++ for determining the number of buckets
+  when merging requests from a multi-shard distributed request. (yonik)
+
 Bug Fixes
 ----------------------
 * SOLR-10281: ADMIN_PATHS is duplicated in two places and inconsistent. This can cause automatic
@@ -229,6 +236,11 @@ Bug Fixes
   (Sven-S. Porst, Daniel Debray, Simon Endele, Christine Poerschke)
 
 * SOLR-10493: Investigate SolrCloudExampleTest failures. (Erick Erickson)
+
+* SOLR-10552: JSON Facet API numBuckets was not consistent between distributed and non-distributed requests
+  when there was a mincount > 1.  This has been corrected by changing numBuckets cardinality processing to
+  ignore mincount > 1 for non-distributed requests. (yonik)
+
 
 Other Changes
 ----------------------

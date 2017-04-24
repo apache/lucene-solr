@@ -82,7 +82,7 @@ public class FacetFieldMerger extends FacetRequestSortedMerger<FacetField> {
       Object nb = facetResult.get("numBuckets");
       if (nb != null) {
         if (numBuckets == null) {
-          numBuckets = new FacetNumBucketsMerger();
+          numBuckets = new HLLAgg("hll_merger").createFacetMerger(nb);
         }
         numBuckets.merge(nb , mcontext);
       }
@@ -98,17 +98,7 @@ public class FacetFieldMerger extends FacetRequestSortedMerger<FacetField> {
     SimpleOrderedMap result = new SimpleOrderedMap();
 
     if (numBuckets != null) {
-      int removed = 0;
-      if (freq.mincount > 1) {
-        for (FacetBucket bucket : buckets.values()) {
-          if (bucket.count < freq.mincount) removed++;
-        }
-      }
-      result.add("numBuckets", ((Number)numBuckets.getMergedResult()).longValue() - removed);
-
-      // TODO: we can further increase this estimate.
-      // If not sorting by count, use a simple ratio to scale
-      // If sorting by count desc, then add up the highest_possible_missing_count from each shard
+      result.add("numBuckets", ((Number)numBuckets.getMergedResult()).longValue());
     }
 
     sortBuckets();
