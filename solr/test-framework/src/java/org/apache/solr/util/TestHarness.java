@@ -231,10 +231,6 @@ public class TestHarness extends BaseTestHarness {
           CoreDescriptor.CORE_SHARD, System.getProperty("shard", "shard1")));
     }
 
-    @Override
-    public CoreDescriptor reload(CoreContainer cc, CoreDescriptor cd) {
-      return cd;
-    }
   }
   
   public CoreContainer getCoreContainer() {
