@@ -174,7 +174,7 @@ public class DirectSolrSpellChecker extends SolrSpellChecker {
   @Override
   public SpellingResult getSuggestions(SpellingOptions options)
       throws IOException {
-    LOG.debug("getSuggestions: " + options.tokens);
+    LOG.debug("getSuggestions: {}", options.tokens);
         
     SpellingResult result = new SpellingResult();
     float accuracy = (options.accuracy == Float.MIN_VALUE) ? checker.getAccuracy() : options.accuracy;

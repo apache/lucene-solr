@@ -117,7 +117,7 @@ public final class UpdateRequestProcessorChain implements PluginInfoInitialized
       (null != info.name ? info.name : "") + "\"" + 
       (info.isDefault() ? " (default)" : "");
 
-    log.debug("creating " + infomsg);
+    log.debug("creating {}", infomsg);
 
     // wrap in an ArrayList so we know we know we can do fast index lookups 
     // and that add(int,Object) is supported
@@ -154,7 +154,7 @@ public final class UpdateRequestProcessorChain implements PluginInfoInitialized
       distrib.init(new NamedList());
       list.add(runIndex, distrib);
 
-      log.debug("inserting DistributedUpdateProcessorFactory into " + infomsg);
+      log.debug("inserting DistributedUpdateProcessorFactory into {}", infomsg);
     }
 
     chain = list;
@@ -237,7 +237,7 @@ public final class UpdateRequestProcessorChain implements PluginInfoInitialized
     //port-processor is tried to be inserted before RunUpdateProcessor
     insertBefore(urps, post, RunUpdateProcessorFactory.class, urps.size() - 1);
     UpdateRequestProcessorChain result = new UpdateRequestProcessorChain(urps, core);
-    if (log.isInfoEnabled()) {
+    if (log.isDebugEnabled()) {
       ArrayList<String> names = new ArrayList<>(urps.size());
       for (UpdateRequestProcessorFactory urp : urps) names.add(urp.getClass().getSimpleName());
       log.debug("New dynamic chain constructed : " + StrUtils.join(names, '>'));

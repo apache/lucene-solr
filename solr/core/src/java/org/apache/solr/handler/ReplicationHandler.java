@@ -701,7 +701,7 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
 
     if (confFileNameAlias.size() < 1 || core.getCoreContainer().isZooKeeperAware())
       return;
-    LOG.debug("Adding config files to list: " + includeConfFiles);
+    LOG.debug("Adding config files to list: {}", includeConfFiles);
     //if configuration files need to be included get their details
     rsp.add(CONF_FILES, getConfFileInfoFromCache(confFileNameAlias, confFileInfoCache));
   }

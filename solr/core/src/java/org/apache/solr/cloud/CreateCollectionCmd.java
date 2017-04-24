@@ -65,7 +65,6 @@ import static org.apache.solr.common.cloud.ZkStateReader.REPLICATION_FACTOR;
 import static org.apache.solr.common.params.CollectionParams.CollectionAction.ADDREPLICA;
 import static org.apache.solr.common.params.CommonAdminParams.ASYNC;
 import static org.apache.solr.common.params.CommonParams.NAME;
-import static org.apache.solr.common.util.StrUtils.formatString;
 
 public class CreateCollectionCmd implements Cmd {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
@@ -200,15 +199,15 @@ public class CreateCollectionCmd implements Cmd {
       Map<String, String> requestMap = new HashMap<>();
 
 
-      log.debug(formatString("Creating SolrCores for new collection {0}, shardNames {1} , replicationFactor : {2}",
-          collectionName, shardNames, repFactor));
+      log.debug("Creating SolrCores for new collection {}, shardNames {} , replicationFactor : {}",
+          collectionName, shardNames, repFactor);
       Map<String,ShardRequest> coresToCreate = new LinkedHashMap<>();
       for (Map.Entry<ReplicaAssigner.Position, String> e : positionVsNodes.entrySet()) {
         ReplicaAssigner.Position position = e.getKey();
         String nodeName = e.getValue();
         String coreName = collectionName + "_" + position.shard + "_replica" + (position.index + 1);
-        log.debug(formatString("Creating core {0} as part of shard {1} of collection {2} on {3}"
-            , coreName, position.shard, collectionName, nodeName));
+        log.debug("Creating core {} as part of shard {} of collection {} on {}"
+            , coreName, position.shard, collectionName, nodeName);
 
 
         String baseUrl = zkStateReader.getBaseUrlForNodeName(nodeName);
@@ -307,12 +306,12 @@ public class CreateCollectionCmd implements Cmd {
   }
   
   public static void createCollectionZkNode(SolrZkClient zkClient, String collection, Map<String,String> params) {
-    log.debug("Check for collection zkNode:" + collection);
+    log.debug("Check for collection zkNode: {}", collection);
     String collectionPath = ZkStateReader.COLLECTIONS_ZKNODE + "/" + collection;
 
     try {
       if (!zkClient.exists(collectionPath, true)) {
-        log.debug("Creating collection in ZooKeeper:" + collection);
+        log.debug("Creating collection in ZooKeeper: {}", collection);
 
         try {
           Map<String,Object> collectionProps = new HashMap<>();

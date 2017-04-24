@@ -265,7 +265,7 @@ public class Config {
         if (errIfMissing) {
           throw new RuntimeException(name + " missing "+path);
         } else {
-          log.debug(name + " missing optional " + path);
+          log.debug("{} missing optional {}", name, path);
           return null;
         }
       }
@@ -274,7 +274,7 @@ public class Config {
                                  name + " contains more than one value for config path: " + path);
       }
       Node nd = nodes.item(0);
-      log.trace(name + ":" + path + "=" + nd);
+      log.trace("{}:{}={}", name, path, nd);
       return nd;
 
     } catch (XPathExpressionException e) {
@@ -299,12 +299,12 @@ public class Config {
         if (errIfMissing) {
           throw new RuntimeException(name + " missing "+path);
         } else {
-          log.debug(name + " missing optional " + path);
+          log.debug("{} missing optional {}", name, path);
           return null;
         }
       }
 
-      log.trace(name + ":" + path + "=" + nodeList);
+      log.trace("{}:{}={}", name, path, nodeList);
       return nodeList;
 
     } catch (XPathExpressionException e) {
@@ -385,8 +385,7 @@ public class Config {
     if (nd==null) return null;
 
     String txt = DOMUtil.getText(nd);
-
-    log.debug(name + ' '+path+'='+txt);
+    log.debug("{} {}={}", name, path, txt);
     return txt;
 
     /******

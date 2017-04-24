@@ -41,7 +41,7 @@ public class NodeMutator {
     List<ZkWriteCommand> zkWriteCommands = new ArrayList<>();
     String nodeName = message.getStr(ZkStateReader.NODE_NAME_PROP);
 
-    log.debug("DownNode state invoked for node: " + nodeName);
+    log.debug("DownNode state invoked for node: {}", nodeName);
 
     Map<String, DocCollection> collections = clusterState.getCollectionsMap();
     for (Map.Entry<String, DocCollection> entry : collections.entrySet()) {
@@ -59,7 +59,7 @@ public class NodeMutator {
         for (Replica replica : replicas) {
           String rNodeName = replica.getNodeName();
           if (rNodeName.equals(nodeName)) {
-            log.debug("Update replica state for " + replica + " to " + Replica.State.DOWN.toString());
+            log.debug("Update replica state for {} to {}", replica, Replica.State.DOWN);
             Map<String, Object> props = replica.shallowCopy();
             props.put(ZkStateReader.STATE_PROP, Replica.State.DOWN.toString());
             Replica newReplica = new Replica(replica.getName(), props);

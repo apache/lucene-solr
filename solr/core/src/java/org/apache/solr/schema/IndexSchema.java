@@ -649,7 +649,7 @@ public class IndexSchema {
       NamedNodeMap attrs = node.getAttributes();
 
       String name = DOMUtil.getAttr(attrs, NAME, "field definition");
-      log.trace("reading field def "+name);
+      log.trace("reading field def {}", name);
       String type = DOMUtil.getAttr(attrs, TYPE, "field " + name);
 
       FieldType ft = fieldTypes.get(type);
@@ -672,13 +672,13 @@ public class IndexSchema {
             + f.getName() + "' [[["+old.toString()+"]]] and [[["+f.toString()+"]]]";
           throw new SolrException(ErrorCode.SERVER_ERROR, msg );
         }
-        log.debug("field defined: " + f);
+        log.debug("field defined: {}", f);
         if( f.getDefaultValue() != null ) {
-          log.debug(name+" contains default value: " + f.getDefaultValue());
+          log.debug("{} contains default value: {}", name, f.getDefaultValue());
           fieldsWithDefaultValue.add( f );
         }
         if (f.isRequired()) {
-          log.debug(name+" is required in this schema");
+          log.debug("{} is required in this schema", name);
           requiredFields.add(f);
         }
       } else if (node.getNodeName().equals(DYNAMIC_FIELD)) {
@@ -711,7 +711,9 @@ public class IndexSchema {
     DynamicField[] dFields = dynamicFieldList.toArray(new DynamicField[dynamicFieldList.size()]);
     Arrays.sort(dFields);
 
-    log.trace("Dynamic Field Ordering:" + Arrays.toString(dFields));
+    if (log.isTraceEnabled()) {
+      log.trace("Dynamic Field Ordering:" + Arrays.toString(dFields));
+    }
 
     return dFields; 
   }
@@ -812,9 +814,9 @@ public class IndexSchema {
     List<DynamicField> dynFields = new ArrayList<>(asList(dynamicFields));
     for (SchemaField field : fields) {
       if (isDuplicateDynField(dynFields, field)) {
-        log.debug("dynamic field already exists: dynamic field: [" + field.getName() + "]");
+        log.debug("dynamic field already exists: dynamic field: [{}]", field.getName());
       } else {
-        log.debug("dynamic field creation for schema field: " + field.getName());
+        log.debug("dynamic field creation for schema field: {}", field.getName());
         addDynamicFieldNoDupCheck(dynFields, field);
       }
     }
@@ -823,7 +825,7 @@ public class IndexSchema {
 
   private void addDynamicFieldNoDupCheck(List<DynamicField> dFields, SchemaField f) {
     dFields.add(new DynamicField(f));
-    log.debug("dynamic field defined: " + f);
+    log.debug("dynamic field defined: {}", f);
   }
 
   protected boolean isDuplicateDynField(List<DynamicField> dFields, SchemaField f) {
@@ -847,8 +849,10 @@ public class IndexSchema {
    * @see SolrCoreAware
    */
   public void registerCopyField(String source, String dest, int maxChars) {
-    log.debug(COPY_FIELD + " " + SOURCE + "='" + source + "' " + DESTINATION + "='" + dest
-              + "' " + MAX_CHARS + "=" + maxChars);
+    if (log.isDebugEnabled()) {
+      log.debug(COPY_FIELD + " " + SOURCE + "='" + source + "' " + DESTINATION + "='" + dest
+          + "' " + MAX_CHARS + "=" + maxChars);
+    }
 
     DynamicField destDynamicField = null;
     SchemaField destSchemaField = fields.get(dest);
@@ -976,7 +980,7 @@ public class IndexSchema {
       temp[temp.length -1] = dcopy;
       dynamicCopyFields = temp;
     }
-    log.trace("Dynamic Copy Field:" + dcopy);
+    log.trace("Dynamic Copy Field:{}", dcopy);
   }
 
   static SimilarityFactory readSimilarity(SolrResourceLoader loader, Node node) {

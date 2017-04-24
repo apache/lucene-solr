@@ -182,7 +182,7 @@ public class SolrCLI {
     protected void runImpl(CommandLine cli) throws Exception {
       String zkHost = cli.getOptionValue("zkHost", ZK_HOST);
       
-      log.debug("Connecting to Solr cluster: " + zkHost);
+      log.debug("Connecting to Solr cluster: {}", zkHost);
       try (CloudSolrClient cloudSolrClient = new CloudSolrClient.Builder().withZkHost(zkHost).build()) {
 
         String collection = cli.getOptionValue("collection");
@@ -489,7 +489,7 @@ public class SolrCLI {
       }
     } catch (Exception e) {
       // safe to squelch this as it's just looking for tools to run
-      log.debug("Failed to find Tool impl classes in "+packageName+" due to: "+e);
+      log.debug("Failed to find Tool impl classes in {} due to: {}", packageName, e);
     }
     return toolClasses;
   }
@@ -1137,7 +1137,7 @@ public class SolrCLI {
       if (collection == null)
         throw new IllegalArgumentException("Must provide a collection to run a healthcheck against!");
       
-      log.debug("Running healthcheck for "+collection);
+      log.debug("Running healthcheck for {}", collection);
       
       ZkStateReader zkStateReader = cloudSolrClient.getZkStateReader();
 

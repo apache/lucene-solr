@@ -138,7 +138,7 @@ public abstract class AbstractPluginLoader<T>
   {
     List<PluginInitInfo> info = new ArrayList<>();
     T defaultPlugin = null;
-    
+    final boolean logDebug = log.isDebugEnabled();
     if (nodes !=null ) {
       for (int i=0; i<nodes.getLength(); i++) {
         Node node = nodes.item(i);
@@ -150,7 +150,9 @@ public abstract class AbstractPluginLoader<T>
           String defaultStr = DOMUtil.getAttr(node,"default", null );
             
           T plugin = create(loader, name, className, node );
-          log.debug("created " + ((name != null) ? name : "") + ": " + plugin.getClass().getName());
+          if (logDebug) {
+            log.debug("created " + ((name != null) ? name : "") + ": " + plugin.getClass().getName());
+          }
           
           // Either initialize now or wait till everything has been registered
           if( preRegister ) {
@@ -226,7 +228,7 @@ public abstract class AbstractPluginLoader<T>
       String name = DOMUtil.getAttr(node, NAME, requireName ? type : null);
       String className = DOMUtil.getAttr(node, "class", type);
       plugin = create(loader, name, className, node);
-      log.debug("created " + name + ": " + plugin.getClass().getName());
+      log.debug("created {}: {}", name, plugin.getClass().getName());
 
       // Either initialize now or wait till everything has been registered
       if (preRegister) {

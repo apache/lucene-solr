@@ -343,9 +343,7 @@ public class DocBasedVersionConstraintsProcessorFactory extends UpdateRequestPro
           return true;
         }
         if (ignoreOldUpdates) {
-          if (log.isDebugEnabled()) {
-            log.debug("Dropping update since user version is not high enough: " + newUserVersion + "; old user version=" + oldUserVersion);
-          }
+          log.debug("Dropping update since user version is not high enough: {}; old user version={}", newUserVersion, oldUserVersion);
           // log.info("VERSION returning false (dropping update)" );
           return false;
         } else {

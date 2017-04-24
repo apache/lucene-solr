@@ -67,8 +67,9 @@ public class OverseerTaskQueue extends DistributedQueue {
           if (data != null) {
             ZkNodeProps message = ZkNodeProps.load(data);
             if (message.containsKey(requestIdKey)) {
-              LOG.debug(">>>> {}", message.get(requestIdKey));
-              if(message.get(requestIdKey).equals(requestId)) return true;
+              Object requestIdInMessage = message.get(requestIdKey);
+              LOG.debug(">>>> {}", requestIdInMessage);
+              if(requestIdInMessage.equals(requestId)) return true;
             }
           }
         } catch (KeeperException.NoNodeException e) {

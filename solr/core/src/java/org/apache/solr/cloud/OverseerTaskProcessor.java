@@ -271,7 +271,7 @@ public class OverseerTaskProcessor implements Runnable, Closeable {
             String operation = message.getStr(Overseer.QUEUE_OPERATION);
             OverseerMessageHandler.Lock lock = messageHandler.lockTask(message, taskBatch);
             if (lock == null) {
-              log.debug("Exclusivity check failed for [{}]", message.toString());
+              log.debug("Exclusivity check failed for [{}]", message);
               //we may end crossing the size of the MAX_BLOCKED_TASKS. They are fine
               if (blockedTasks.size() < MAX_BLOCKED_TASKS)
                 blockedTasks.put(head.getId(), head);
@@ -291,7 +291,7 @@ public class OverseerTaskProcessor implements Runnable, Closeable {
               Thread.currentThread().interrupt();
               continue;
             }
-            log.debug(messageHandler.getName() + ": Get the message id:" + head.getId() + " message:" + message.toString());
+            log.debug("{}: Get the message id:{} message:{}", messageHandler.getName(), head.getId(), message);
             Runner runner = new Runner(messageHandler, message,
                 operation, head, lock);
             tpe.execute(runner);
@@ -566,14 +566,14 @@ public class OverseerTaskProcessor implements Runnable, Closeable {
   private void printTrackingMaps() {
     if (log.isDebugEnabled()) {
       synchronized (runningTasks) {
-        log.debug("RunningTasks: {}", runningTasks.toString());
+        log.debug("RunningTasks: " + runningTasks);
       }
-      log.debug("BlockedTasks: {}", blockedTasks.keySet().toString());
+      log.debug("BlockedTasks: " + blockedTasks.keySet());
       synchronized (completedTasks) {
-        log.debug("CompletedTasks: {}", completedTasks.keySet().toString());
+        log.debug("CompletedTasks: " + completedTasks.keySet());
       }
       synchronized (runningZKTasks) {
-        log.debug("RunningZKTasks: {}", runningZKTasks.toString());
+        log.debug("RunningZKTasks: " + runningZKTasks);
       }
     }
   }

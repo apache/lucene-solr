@@ -914,8 +914,8 @@ public static final int VERSION_IDX = 1;
             // This can happen when trying to deserialize the entry at position lookupPointer,
             // but from a different tlog than the one containing the desired entry.
             // Just ignore the exception, so as to proceed to the next tlog.
-            log.debug("Exception reading the log (this is expected, don't worry)=" + lookupLog + ", for version=" + lookupVersion +
-                ". This can be ignored.");
+            log.debug("Exception reading the log (this is expected, don't worry)={}, for version={}. " +
+                    "This can be ignored.", lookupLog, lookupVersion);
           }
 
           if (obj != null && obj instanceof List) {
@@ -2031,7 +2031,7 @@ public static final int VERSION_IDX = 1;
     }
 
     log.debug("Took {}ms to seed version buckets with highest version {}",
-        timer.getTime(), String.valueOf(highestVersion));
+        timer.getTime(), highestVersion);
 
     return highestVersion;
   }

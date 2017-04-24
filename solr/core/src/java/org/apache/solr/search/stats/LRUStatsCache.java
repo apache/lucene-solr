@@ -136,7 +136,7 @@ public class LRUStatsCache extends ExactStatsCache {
         throws IOException {
       TermStats termStats = termStatsCache.get(term.toString());
       if (termStats == null) {
-        LOG.debug("## Missing global termStats info: {}, using local", term.toString());
+        LOG.debug("## Missing global termStats info: {}, using local", term);
         return localSearcher.localTermStatistics(term, context);
       } else {
         return termStats.toTermStatistics();

@@ -109,7 +109,7 @@ public class SolrIndexWriter extends IndexWriter {
     this.infoStream = conf.getInfoStream();
     this.directory = d;
     numOpens.incrementAndGet();
-    log.debug("Opened Writer " + name);
+    log.debug("Opened Writer {}", name);
     // no metrics
     mergeTotals = false;
     mergeDetails = false;
@@ -121,7 +121,7 @@ public class SolrIndexWriter extends IndexWriter {
           setOpenMode(create ? IndexWriterConfig.OpenMode.CREATE : IndexWriterConfig.OpenMode.APPEND).
           setIndexDeletionPolicy(delPolicy).setCodec(codec)
           );
-    log.debug("Opened Writer " + name);
+    log.debug("Opened Writer {}", name);
     this.name = name;
     infoStream = getConfig().getInfoStream();
     this.directory = directory;
@@ -275,7 +275,7 @@ public class SolrIndexWriter extends IndexWriter {
 
   @Override
   public void close() throws IOException {
-    log.debug("Closing Writer " + name);
+    log.debug("Closing Writer {}", name);
     try {
       super.close();
     } catch (Throwable t) {
@@ -290,7 +290,7 @@ public class SolrIndexWriter extends IndexWriter {
 
   @Override
   public void rollback() throws IOException {
-    log.debug("Rollback Writer " + name);
+    log.debug("Rollback Writer {}", name);
     try {
       super.rollback();
     } catch (Throwable t) {

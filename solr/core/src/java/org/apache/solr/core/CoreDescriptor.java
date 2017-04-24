@@ -228,7 +228,7 @@ public class CoreDescriptor {
       cloudDesc = null;
     }
 
-    log.debug("Created CoreDescriptor: " + coreProperties);
+    log.debug("Created CoreDescriptor: {}", coreProperties);
   }
 
   /**

@@ -150,7 +150,7 @@ public abstract class LogWatcher<E> {
 
     try {
       slf4jImpl = StaticLoggerBinder.getSingleton().getLoggerFactoryClassStr();
-      log.debug("SLF4J impl is " + slf4jImpl);
+      log.debug("SLF4J impl is {}", slf4jImpl);
       if (fname == null) {
         if ("org.slf4j.impl.Log4jLoggerFactory".equals(slf4jImpl)) {
           fname = "Log4j";

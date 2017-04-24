@@ -221,7 +221,7 @@ public class KerberosPlugin extends AuthenticationPlugin implements HttpClientBu
   @Override
   public boolean doAuthenticate(ServletRequest req, ServletResponse rsp,
       FilterChain chain) throws Exception {
-    log.debug("Request to authenticate using kerberos: "+req);
+    log.debug("Request to authenticate using kerberos: {}", req);
 
     final HttpServletResponse frsp = (HttpServletResponse)rsp;
 

@@ -135,7 +135,9 @@ public class SolrDispatchFilter extends BaseSolrFilter {
   @Override
   public void init(FilterConfig config) throws ServletException
   {
-    log.trace("SolrDispatchFilter.init(): {}", this.getClass().getClassLoader());
+    if (log.isTraceEnabled()) {
+      log.trace("SolrDispatchFilter.init(): " + this.getClass().getClassLoader());
+    }
 
     SolrRequestParsers.fileCleaningTracker = new SolrFileCleaningTracker();
 
@@ -170,7 +172,7 @@ public class SolrDispatchFilter extends BaseSolrFilter {
                                        extraProperties);
       this.httpClient = cores.getUpdateShardHandler().getHttpClient();
       setupJvmMetrics();
-      log.debug("user.dir=" + System.getProperty("user.dir"));
+      log.debug("user.dir={}", System.getProperty("user.dir"));
     }
     catch( Throwable t ) {
       // catch this so our filter still works

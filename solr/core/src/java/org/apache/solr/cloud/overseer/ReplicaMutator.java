@@ -237,7 +237,7 @@ public class ReplicaMutator {
       coreNodeName = ClusterStateMutator.getAssignedCoreNodeName(collection,
           message.getStr(ZkStateReader.NODE_NAME_PROP), message.getStr(ZkStateReader.CORE_NAME_PROP));
       if (coreNodeName != null) {
-        log.debug("node=" + coreNodeName + " is already registered");
+        log.debug("node={} is already registered", coreNodeName);
       } else {
         // if coreNodeName is null, auto assign one
         coreNodeName = Assign.assignNode(collection);
@@ -251,7 +251,7 @@ public class ReplicaMutator {
       //get shardId from ClusterState
       sliceName = ClusterStateMutator.getAssignedId(collection, coreNodeName);
       if (sliceName != null) {
-        log.debug("shard=" + sliceName + " is already registered");
+        log.debug("shard={} is already registered", sliceName);
       }
     }
     if (sliceName == null) {
@@ -259,7 +259,7 @@ public class ReplicaMutator {
       if (collectionExists) {
         // use existing numShards
         numShards = collection.getSlices().size();
-        log.debug("Collection already exists with " + ZkStateReader.NUM_SHARDS_PROP + "=" + numShards);
+        log.debug("Collection already exists with {}={}", ZkStateReader.NUM_SHARDS_PROP, numShards);
       }
       sliceName = Assign.assignShard(collection, numShards);
       log.info("Assigning new node to shard shard=" + sliceName);

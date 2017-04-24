@@ -215,7 +215,9 @@ public class CoreContainer {
   }
 
   {
-    log.debug("New CoreContainer " + System.identityHashCode(this));
+    if (log.isDebugEnabled()) {
+      log.debug("New CoreContainer " + System.identityHashCode(this));
+    }
   }
 
   /**
@@ -322,11 +324,11 @@ public class CoreContainer {
     }
 
     if (pluginClassName != null) {
-      log.debug("Authentication plugin class obtained from security.json: "+pluginClassName);
+      log.debug("Authentication plugin class obtained from security.json: {}", pluginClassName);
     } else if (System.getProperty(AUTHENTICATION_PLUGIN_PROP) != null) {
       pluginClassName = System.getProperty(AUTHENTICATION_PLUGIN_PROP);
-      log.debug("Authentication plugin class obtained from system property '" +
-          AUTHENTICATION_PLUGIN_PROP + "': " + pluginClassName);
+      log.debug("Authentication plugin class obtained from system property'{}': {}",
+          AUTHENTICATION_PLUGIN_PROP, pluginClassName);
     } else {
       log.debug("No authentication plugin used.");
     }
@@ -730,9 +732,7 @@ public class CoreContainer {
           }
         } catch (InterruptedException e) {
           Thread.currentThread().interrupt();
-          if (log.isDebugEnabled()) {
-            log.debug("backgroundCloser thread was interrupted before finishing");
-          }
+          log.debug("backgroundCloser thread was interrupted before finishing");
         }
       }
       // Now clear all the cores that are being operated upon.
@@ -817,7 +817,7 @@ public class CoreContainer {
     if( core == null ) {
       throw new RuntimeException( "Can not register a null core." );
     }
-    
+
     if (isShutDown) {
       core.close();
       throw new IllegalStateException("This CoreContainer has been closed");
@@ -834,14 +834,14 @@ public class CoreContainer {
     coreInitFailures.remove(cd.getName());
 
     if( old == null || old == core) {
-      log.debug( "registering core: " + cd.getName() );
+      log.debug( "registering core: {}", cd.getName() );
       if (registerInZk) {
         zkSys.registerInZk(core, false, skipRecovery);
       }
       return null;
     }
     else {
-      log.debug( "replacing core: " + cd.getName() );
+      log.debug( "replacing core: {}", cd.getName() );
       old.close();
       if (registerInZk) {
         zkSys.registerInZk(core, false, skipRecovery);
@@ -1142,7 +1142,7 @@ public class CoreContainer {
     SolrCore core = solrCores.getCoreFromAnyList(name, false);
     if (core != null) {
       // The underlying core properties files may have changed, we don't really know. So we have a (perhaps) stale
-      // CoreDescriptor we need to reload it if it's out there. 
+      // CoreDescriptor we need to reload it if it's out there.
       CorePropertiesLocator cpl = new CorePropertiesLocator(null);
       CoreDescriptor cd = cpl.reload(this, core.getCoreDescriptor());
       if (cd == null) cd = core.getCoreDescriptor();
@@ -1331,10 +1331,10 @@ public class CoreContainer {
     // This is a bit of awkwardness where SolrCloud and transient cores don't play nice together. For transient cores,
     // we have to allow them to be created at any time there hasn't been a core load failure (use reload to cure that).
     // But for TestConfigSetsAPI.testUploadWithScriptUpdateProcessor, this needs to _not_ try to load the core if
-    // the core is null and there was an error. If you change this, be sure to run both TestConfiSetsAPI and 
+    // the core is null and there was an error. If you change this, be sure to run both TestConfiSetsAPI and
     // TestLazyCores
     if (desc == null || zkSys.getZkController() != null) return null;
-    
+
     // This will put an entry in pending core ops if the core isn't loaded
     core = solrCores.waitAddPendingCoreOps(name);
 

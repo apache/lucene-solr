@@ -393,7 +393,7 @@ public final class SolrCore implements SolrInfoBean, SolrMetricProducer, Closeab
       }
     }
     if (!result.equals(lastNewIndexDir)) {
-      log.debug("New index directory detected: old="+lastNewIndexDir + " new=" + result);
+      log.debug("New index directory detected: old={} new={}", lastNewIndexDir, result);
     }
     lastNewIndexDir = result;
     return result;
@@ -746,8 +746,10 @@ public final class SolrCore implements SolrInfoBean, SolrMetricProducer, Closeab
 
     // Create the index if it doesn't exist.
     if(!indexExists) {
-      log.debug(logid + "Solr index directory '" + new File(indexDir) + "' doesn't exist."
-          + " Creating new index...");
+      if (log.isDebugEnabled()) {
+        log.debug(logid + "Solr index directory '" + new File(indexDir) + "' doesn't exist."
+            + " Creating new index...");
+      }
 
       SolrIndexWriter writer = SolrIndexWriter.create(this, "SolrCore.initIndex", indexDir, getDirectoryFactory(), true,
                                                       getLatestSchema(), solrConfig.indexConfig, solrDelPolicy, codec);
@@ -1050,7 +1052,7 @@ public final class SolrCore implements SolrInfoBean, SolrMetricProducer, Closeab
 
   /** Set UpdateLog to buffer updates if the slice is in construction. */
   private void bufferUpdatesIfConstructing(CoreDescriptor coreDescriptor) {
-    
+
     if (coreContainer != null && coreContainer.isZooKeeperAware()) {
       if (reqHandlers.get("/get") == null) {
         log.warn("WARNING: RealTimeGetHandler is not registered at /get. " +
@@ -1381,9 +1383,9 @@ public final class SolrCore implements SolrInfoBean, SolrMetricProducer, Closeab
     if (pluginInfo != null && pluginInfo.className != null && pluginInfo.className.length() > 0) {
       cache = createInitInstance(pluginInfo, StatsCache.class, null,
           LocalStatsCache.class.getName());
-      log.debug("Using statsCache impl: " + cache.getClass().getName());
+      log.debug("Using statsCache impl: {}", cache.getClass().getName());
     } else {
-      log.debug("Using default statsCache cache: " + LocalStatsCache.class.getName());
+      log.debug("Using default statsCache cache: {}", LocalStatsCache.class.getName());
       cache = new LocalStatsCache();
     }
     return cache;
@@ -1842,9 +1844,12 @@ public final class SolrCore implements SolrInfoBean, SolrMetricProducer, Closeab
    */
   public IndexFingerprint getIndexFingerprint(SolrIndexSearcher searcher, LeafReaderContext ctx, long maxVersion)
       throws IOException {
+    final boolean isDebug = log.isDebugEnabled();
     IndexReader.CacheHelper cacheHelper = ctx.reader().getReaderCacheHelper();
     if (cacheHelper == null) {
-      log.debug("Cannot cache IndexFingerprint as reader does not support caching. searcher:{} reader:{} readerHash:{} maxVersion:{}", searcher, ctx.reader(), ctx.reader().hashCode(), maxVersion);
+      if (isDebug) {
+        log.debug("Cannot cache IndexFingerprint as reader does not support caching. searcher:{} reader:{} readerHash:{} maxVersion:{}", searcher, ctx.reader(), ctx.reader().hashCode(), maxVersion);
+      }
       return IndexFingerprint.getFingerprint(searcher, ctx, maxVersion);
     }
     
@@ -1855,7 +1860,9 @@ public final class SolrCore implements SolrInfoBean, SolrMetricProducer, Closeab
     // documents were deleted from segment for which fingerprint was cached
     //
     if (f == null || (f.getMaxInHash() > maxVersion) || (f.getNumDocs() != ctx.reader().numDocs())) {
-      log.debug("IndexFingerprint cache miss for searcher:{} reader:{} readerHash:{} maxVersion:{}", searcher, ctx.reader(), ctx.reader().hashCode(), maxVersion);
+      if (isDebug) {
+        log.debug("IndexFingerprint cache miss for searcher:{} reader:{} readerHash:{} maxVersion:{}", searcher, ctx.reader(), ctx.reader().hashCode(), maxVersion);
+      }
       f = IndexFingerprint.getFingerprint(searcher, ctx, maxVersion);
       // cache fingerprint for the segment only if all the versions in the segment are included in the fingerprint
       if (f.getMaxVersionEncountered() == f.getMaxInHash()) {
@@ -1863,10 +1870,12 @@ public final class SolrCore implements SolrInfoBean, SolrMetricProducer, Closeab
         perSegmentFingerprintCache.put(cacheHelper.getKey(), f);
       }
 
-    } else {
+    } else if (isDebug) {
       log.debug("IndexFingerprint cache hit for searcher:{} reader:{} readerHash:{} maxVersion:{}", searcher, ctx.reader(), ctx.reader().hashCode(), maxVersion);
     }
-    log.debug("Cache Size: {}, Segments Size:{}", perSegmentFingerprintCache.size(), searcher.getTopReaderContext().leaves().size());
+    if (isDebug) {
+      log.debug("Cache Size: {}, Segments Size:{}", perSegmentFingerprintCache.size(), searcher.getTopReaderContext().leaves().size());
+    }
     return f;
   }
 
@@ -2010,7 +2019,7 @@ public final class SolrCore implements SolrInfoBean, SolrMetricProducer, Closeab
             // but log a message about it to minimize confusion
 
             newestSearcher.incref();
-            log.debug("SolrIndexSearcher has not changed - not re-opening: " + newestSearcher.get().getName());
+            log.debug("SolrIndexSearcher has not changed - not re-opening: {}", newestSearcher.get().getName());
             return newestSearcher;
 
           } // ELSE: open a new searcher against the old reader...
@@ -2448,7 +2457,7 @@ public final class SolrCore implements SolrInfoBean, SolrMetricProducer, Closeab
 
 
   public void closeSearcher() {
-    log.debug(logid+"Closing main searcher on request.");
+    log.debug("{}Closing main searcher on request.",logid);
     synchronized (searcherLock) {
       if (realtimeSearcher != null) {
         realtimeSearcher.decref();
@@ -2985,7 +2994,7 @@ public final class SolrCore implements SolrInfoBean, SolrMetricProducer, Closeab
         return false;
       }
       if (stat.getVersion() >  currentVersion) {
-        log.debug(zkPath+" is stale will need an update from {} to {}", currentVersion,stat.getVersion());
+        log.debug("{} is stale will need an update from {} to {}", zkPath, currentVersion, stat.getVersion());
         return true;
       }
       return false;

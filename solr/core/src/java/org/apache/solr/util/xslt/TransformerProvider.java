@@ -73,9 +73,7 @@ public class TransformerProvider {
     // It'd be better to check the file modification time to reload only if needed.
     if(lastTemplates!=null && filename.equals(lastFilename) &&
         cacheExpiresTimeout != null && ! cacheExpiresTimeout.hasTimedOut()) {
-      if(log.isDebugEnabled()) {
-        log.debug("Using cached Templates:" + filename);
-      }
+      log.debug("Using cached Templates:{}", filename);
     } else {
       lastTemplates = getTemplates(solrConfig.getResourceLoader(), filename,cacheLifetimeSeconds);
     }
@@ -98,9 +96,7 @@ public class TransformerProvider {
     Templates result = null;
     lastFilename = null;
     try {
-      if(log.isDebugEnabled()) {
-        log.debug("compiling XSLT templates:" + filename);
-      }
+      log.debug("compiling XSLT templates:{}", filename);
       final String fn = "xslt/" + filename;
       final TransformerFactory tFactory = TransformerFactory.newInstance();
       tFactory.setURIResolver(new SystemIdResolver(loader).asURIResolver());

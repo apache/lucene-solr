@@ -150,7 +150,7 @@ public class SolrDeletionPolicy extends IndexDeletionPolicy implements NamedList
     synchronized (this) {
       long maxCommitAgeTimeStamp = -1L;
       IndexCommit newest = commits.get(commits.size() - 1);
-      log.debug("newest commit generation = " + newest.getGeneration());
+      log.debug("newest commit generation = {}", newest.getGeneration());
       int singleSegKept = (newest.getSegmentCount() == 1) ? 1 : 0;
       int totalKept = 1;
 
