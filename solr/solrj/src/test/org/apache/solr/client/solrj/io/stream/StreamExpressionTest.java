@@ -5100,6 +5100,82 @@ public class StreamExpressionTest extends SolrCloudTestCase {
   }
 
   @Test
+  public void testLetGetStream() throws Exception {
+    UpdateRequest updateRequest = new UpdateRequest();
+    updateRequest.add(id, "hello", "test_t", "l b c d c e");
+    updateRequest.add(id, "hello1", "test_t", "l b c d c");
+
+    updateRequest.commit(cluster.getSolrClient(), COLLECTIONORALIAS);
+
+    String expr = "search("+COLLECTIONORALIAS+", q=\"*:*\", fl=\"id,test_t\", sort=\"id desc\")";
+    String cat = "let(cell(results,"+expr+"), get(results))";
+    ModifiableSolrParams paramsLoc = new ModifiableSolrParams();
+    paramsLoc.set("expr", cat);
+    paramsLoc.set("qt", "/stream");
+
+    String url = cluster.getJettySolrRunners().get(0).getBaseUrl().toString()+"/"+COLLECTIONORALIAS;
+    TupleStream solrStream = new SolrStream(url, paramsLoc);
+
+    StreamContext context = new StreamContext();
+    solrStream.setStreamContext(context);
+    List<Tuple> tuples = getTuples(solrStream);
+    assertTrue(tuples.size() == 2);
+    assertTrue(tuples.get(0).get("id").equals("hello1"));
+    assertTrue(tuples.get(0).get("test_t").equals("l b c d c"));
+    assertTrue(tuples.get(1).get("id").equals("hello"));
+    assertTrue(tuples.get(1).get("test_t").equals("l b c d c e"));
+
+
+    //Test there are no side effects when transforming tuples.
+    expr = "search("+COLLECTIONORALIAS+", q=\"*:*\", fl=\"id,test_t\", sort=\"id desc\")";
+    cat = "let(cell(results,"+expr+"), list(select(get(results), id as newid, test_t), get(results)))";
+    paramsLoc = new ModifiableSolrParams();
+    paramsLoc.set("expr", cat);
+    paramsLoc.set("qt", "/stream");
+
+    solrStream = new SolrStream(url, paramsLoc);
+
+    context = new StreamContext();
+    solrStream.setStreamContext(context);
+    tuples = getTuples(solrStream);
+    assertTrue(tuples.size() == 4);
+    assertTrue(tuples.get(0).get("newid").equals("hello1"));
+    assertTrue(tuples.get(0).get("test_t").equals("l b c d c"));
+    assertTrue(tuples.get(1).get("newid").equals("hello"));
+    assertTrue(tuples.get(1).get("test_t").equals("l b c d c e"));
+    assertTrue(tuples.get(2).get("id").equals("hello1"));
+    assertTrue(tuples.get(2).get("test_t").equals("l b c d c"));
+    assertTrue(tuples.get(3).get("id").equals("hello"));
+    assertTrue(tuples.get(3).get("test_t").equals("l b c d c e"));
+
+    //Test multiple lets
+
+    //Test there are no side effects when transforming tuples.
+    expr = "search("+COLLECTIONORALIAS+", q=\"*:*\", fl=\"id,test_t\", sort=\"id desc\")";
+    String expr1 = "search("+COLLECTIONORALIAS+", q=\"*:*\", fl=\"id,test_t\", sort=\"id asc\")";
+
+    cat = "let(cell(results,"+expr+"), cell(results1,"+expr1+"), list(select(get(results), id as newid, test_t), get(results1)))";
+    paramsLoc = new ModifiableSolrParams();
+    paramsLoc.set("expr", cat);
+    paramsLoc.set("qt", "/stream");
+
+    solrStream = new SolrStream(url, paramsLoc);
+
+    context = new StreamContext();
+    solrStream.setStreamContext(context);
+    tuples = getTuples(solrStream);
+    assertTrue(tuples.size() == 4);
+    assertTrue(tuples.get(0).get("newid").equals("hello1"));
+    assertTrue(tuples.get(0).get("test_t").equals("l b c d c"));
+    assertTrue(tuples.get(1).get("newid").equals("hello"));
+    assertTrue(tuples.get(1).get("test_t").equals("l b c d c e"));
+    assertTrue(tuples.get(2).get("id").equals("hello"));
+    assertTrue(tuples.get(2).get("test_t").equals("l b c d c e"));
+    assertTrue(tuples.get(3).get("id").equals("hello1"));
+    assertTrue(tuples.get(3).get("test_t").equals("l b c d c"));
+  }
+
+  @Test
   public void testConvertEvaluator() throws Exception {
 
     UpdateRequest updateRequest = new UpdateRequest();

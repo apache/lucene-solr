@@ -19,8 +19,8 @@ package org.apache.solr.client.solrj.io.stream;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.List;
-import java.util.Locale;
 import java.util.Map;
 
 import org.apache.solr.client.solrj.io.Tuple;
@@ -32,37 +32,25 @@ import org.apache.solr.client.solrj.io.stream.expr.StreamExplanation;
 import org.apache.solr.client.solrj.io.stream.expr.StreamExpression;
 import org.apache.solr.client.solrj.io.stream.expr.StreamFactory;
 
-public class CellStream extends TupleStream implements Expressible {
+public class GetStream extends TupleStream implements Expressible {
 
   private static final long serialVersionUID = 1;
-  private TupleStream stream;
+
+  private StreamContext streamContext;
   private String name;
-  private Tuple tuple;
-  private Tuple EOFTuple;
+  private Iterator<Tuple> tupleIterator;
 
-  public CellStream(String name, TupleStream stream) throws IOException {
-    init(name, stream);
+  public GetStream(String name) throws IOException {
+    init(name);
   }
 
-  public CellStream(StreamExpression expression, StreamFactory factory) throws IOException {
+  public GetStream(StreamExpression expression, StreamFactory factory) throws IOException {
     String name = factory.getValueOperand(expression, 0);
-    List<StreamExpression> streamExpressions = factory.getExpressionOperandsRepresentingTypes(expression, Expressible.class, TupleStream.class);
-
-    if(streamExpressions.size() != 1){
-      throw new IOException(String.format(Locale.ROOT,"Invalid expression %s - expecting 1 stream but found %d",expression, streamExpressions.size()));
-    }
-
-    TupleStream tupleStream = factory.constructStream(streamExpressions.get(0));
-    init(name, tupleStream);
+    init(name);
   }
 
-  public String getName() {
-    return this.name;
-  }
-
-  private void init(String name, TupleStream tupleStream) {
+  private void init(String name) {
     this.name = name;
-    this.stream = tupleStream;
   }
 
   @Override
@@ -74,9 +62,6 @@ public class CellStream extends TupleStream implements Expressible {
     // function name
     StreamExpression expression = new StreamExpression(factory.getFunctionName(this.getClass()));
     expression.addParameter(name);
-    if(includeStreams) {
-      expression.addParameter(((Expressible)stream).toExpression(factory));
-    }
     return expression;
   }
 
@@ -86,31 +71,29 @@ public class CellStream extends TupleStream implements Expressible {
     StreamExplanation explanation = new StreamExplanation(getStreamNodeId().toString());
     explanation.setFunctionName(factory.getFunctionName(this.getClass()));
     explanation.setImplementingClass(this.getClass().getName());
-    explanation.setExpressionType(ExpressionType.STREAM_DECORATOR);
+    explanation.setExpressionType(ExpressionType.STREAM_SOURCE);
     explanation.setExpression(toExpression(factory, false).toString());
-    explanation.addChild(stream.toExplanation(factory));
-
     return explanation;
   }
 
   public void setStreamContext(StreamContext context) {
-    this.stream.setStreamContext(context);
+    this.streamContext = context;
   }
 
   public List<TupleStream> children() {
-    List<TupleStream> l =  new ArrayList<TupleStream>();
-    l.add(stream);
-
+    List<TupleStream> l =  new ArrayList();
     return l;
   }
 
   public Tuple read() throws IOException {
-    if(tuple.EOF) {
-      return tuple;
+    Map map = new HashMap();
+    if(tupleIterator.hasNext()) {
+      Tuple t = tupleIterator.next();
+      map.putAll(t.fields);
+      return new Tuple(map);
     } else {
-      Tuple t = tuple;
-      tuple = EOFTuple;
-      return t;
+      map.put("EOF", true);
+      return new Tuple(map);
     }
   }
 
@@ -118,25 +101,9 @@ public class CellStream extends TupleStream implements Expressible {
   }
 
   public void open() throws IOException {
-    try {
-      stream.open();
-      List<Tuple> list = new ArrayList();
-      while(true) {
-        Tuple tuple = stream.read();
-        if(tuple.EOF) {
-          EOFTuple = tuple;
-          break;
-        } else {
-          list.add(tuple);
-        }
-      }
-
-      Map map = new HashMap();
-      map.put(name, list);
-      tuple = new Tuple(map);
-    } finally {
-      stream.close();
-    }
+    Map<String, List<Tuple>> lets = streamContext.getLets();
+    List<Tuple> tuples = lets.get(name);
+    tupleIterator = tuples.iterator();
   }
 
   /** Return the stream sort - ie, the order in which records are returned */
@@ -147,6 +114,4 @@ public class CellStream extends TupleStream implements Expressible {
   public int getCost() {
     return 0;
   }
-
-
 }
