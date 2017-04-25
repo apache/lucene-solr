@@ -244,22 +244,23 @@ public class TestJsonFacetRefinement extends SolrTestCaseHS {
 
     client.deleteByQuery("*:*", null);
 
-    ModifiableSolrParams p = params("cat_s", "cat_s", "xy_s", "xy_s", "num_d", "num_d", "qw_s", "qw_s");
+    ModifiableSolrParams p = params("cat_s", "cat_s", "xy_s", "xy_s", "num_d", "num_d", "qw_s", "qw_s", "er_s","er_s");
     String cat_s = p.get("cat_s");
     String xy_s = p.get("xy_s");
     String qw_s = p.get("qw_s");
+    String er_s = p.get("er_s");  // this field is designed to test numBuckets refinement... the first phase will only have a single bucket returned for the top count bucket of cat_s
     String num_d = p.get("num_d");
 
-    clients.get(0).add( sdoc("id", "01", "all_s","all", cat_s, "A", xy_s, "X" ,num_d, -1,  qw_s, "Q") ); // A wins count tie
-    clients.get(0).add( sdoc("id", "02", "all_s","all", cat_s, "B", xy_s, "Y", num_d, 3             ) );
+    clients.get(0).add( sdoc("id", "01", "all_s","all", cat_s, "A", xy_s, "X" ,num_d, -1,  qw_s, "Q", er_s,"E") ); // A wins count tie
+    clients.get(0).add( sdoc("id", "02", "all_s","all", cat_s, "B", xy_s, "Y", num_d, 3                       ) );
 
-    clients.get(1).add( sdoc("id", "11", "all_s","all", cat_s, "B", xy_s, "X", num_d, -5            ) ); // B highest count
-    clients.get(1).add( sdoc("id", "12", "all_s","all", cat_s, "B", xy_s, "Y", num_d, -11, qw_s, "W") );
-    clients.get(1).add( sdoc("id", "13", "all_s","all", cat_s, "A", xy_s, "X", num_d, 7             ) );
+    clients.get(1).add( sdoc("id", "11", "all_s","all", cat_s, "B", xy_s, "X", num_d, -5            , er_s,"E") ); // B highest count
+    clients.get(1).add( sdoc("id", "12", "all_s","all", cat_s, "B", xy_s, "Y", num_d, -11, qw_s, "W"          ) );
+    clients.get(1).add( sdoc("id", "13", "all_s","all", cat_s, "A", xy_s, "X", num_d, 7             , er_s,"R") );       // "R" will only be picked up via refinement when parent facet is cat_s
 
-    clients.get(2).add( sdoc("id", "21", "all_s","all", cat_s, "A", xy_s, "X", num_d, 17,  qw_s, "W") ); // A highest count
-    clients.get(2).add( sdoc("id", "22", "all_s","all", cat_s, "A", xy_s, "Y", num_d, -19           ) );
-    clients.get(2).add( sdoc("id", "23", "all_s","all", cat_s, "B", xy_s, "X", num_d, 11            ) );
+    clients.get(2).add( sdoc("id", "21", "all_s","all", cat_s, "A", xy_s, "X", num_d, 17,  qw_s, "W", er_s,"E") ); // A highest count
+    clients.get(2).add( sdoc("id", "22", "all_s","all", cat_s, "A", xy_s, "Y", num_d, -19                     ) );
+    clients.get(2).add( sdoc("id", "23", "all_s","all", cat_s, "B", xy_s, "X", num_d, 11                      ) );
 
     client.commit();
 
@@ -388,7 +389,6 @@ public class TestJsonFacetRefinement extends SolrTestCaseHS {
     );
 
     // test filling in missing "allBuckets"
-    // test filling in "missing" bucket for partially refined facets
     client.testJQ(params(p, "q", "*:*",
         "json.facet", "{" +
             "  cat :{type:terms, field:${cat_s}, limit:1, overrequest:0, refine:false, allBuckets:true, facet:{  xy:{type:terms, field:${xy_s}, limit:1, overrequest:0, allBuckets:true, refine:false}  }  }" +
@@ -402,6 +402,21 @@ public class TestJsonFacetRefinement extends SolrTestCaseHS {
             ",cat3:{ allBuckets:{count:8}, buckets:[  {val:A, count:4, xy:{buckets:[{count:3, val:X, f:23.0}], allBuckets:{count:4, f:4.0}}}]  }" +
             "}"
     );
+
+    // test filling in missing numBuckets
+    client.testJQ(params(p, "q", "*:*",
+        "json.facet", "{" +
+            "  cat :{type:terms, field:${cat_s}, limit:1, overrequest:0, refine:false, numBuckets:true, facet:{  er:{type:terms, field:${er_s}, limit:1, overrequest:0, numBuckets:true, refine:false}  }  }" +
+            ", cat2:{type:terms, field:${cat_s}, limit:1, overrequest:0, refine:true , numBuckets:true, facet:{  er:{type:terms, field:${er_s}, limit:1, overrequest:0, numBuckets:true, refine:true }  }  }" +
+            "}"
+        )
+        , "facets=={ count:8" +
+            ", cat:{ numBuckets:2, buckets:[  {val:A, count:3, er:{numBuckets:1,buckets:[{count:2, val:E}]  }}]  }" +  // the "R" bucket will not be seen w/o refinement
+            ",cat2:{ numBuckets:2, buckets:[  {val:A, count:4, er:{numBuckets:2,buckets:[{count:2, val:E}]  }}]  }" +
+            "}"
+    );
+
+
   }
 
 
