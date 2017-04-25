@@ -241,6 +241,7 @@ Bug Fixes
   when there was a mincount > 1.  This has been corrected by changing numBuckets cardinality processing to
   ignore mincount > 1 for non-distributed requests. (yonik)
 
+* SOLR-10520: child.facet.field doubled counts at least when rows>0. (Dr. Oleg Savrasov via Mikhail Khludnev) 
 
 Other Changes
 ----------------------
