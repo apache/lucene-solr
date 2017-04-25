@@ -79,17 +79,16 @@ public class ShardSplitTest extends BasicDistributedZkTest {
   public ShardSplitTest() {
     schemaString = "schema15.xml";      // we need a string id
   }
+  
+  @Override
+  protected boolean useAppendReplicas() {
+    return false;
+  }
 
   @Override
   public void distribSetUp() throws Exception {
     super.distribSetUp();
     useFactory(null);
-  }
-
-  //TODO for now, onlyLeaderIndexes do not work with ShardSplitTest
-  @Override
-  protected int getRealtimeReplicas() {
-    return -1;
   }
 
   @Test

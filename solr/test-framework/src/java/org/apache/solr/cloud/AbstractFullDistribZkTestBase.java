@@ -272,8 +272,8 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
         shardToJetty, shardToLeaderJetty);
   }
 
-  protected int getRealtimeReplicas() {
-    return -1;
+  protected boolean useAppendReplicas() {
+    return false;
   }
   
   protected CloudSolrClient createCloudClient(String defaultCollection) {
@@ -387,7 +387,7 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
               CollectionParams.CollectionAction.CREATE.toLower(), "name",
               DEFAULT_COLLECTION, "numShards", String.valueOf(sliceCount),
               DocCollection.STATE_FORMAT, getStateFormat(),
-              ZkStateReader.REALTIME_REPLICAS, getRealtimeReplicas())));
+              ZkStateReader.REALTIME_REPLICAS, useAppendReplicas())));
       zkClient.close();
     }
 
@@ -1570,11 +1570,24 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
       String shardNames = (String) collectionProps.get(SHARDS_PROP);
       numShards = StrUtils.splitSmart(shardNames,',').size();
     }
-    Integer replicationFactor = (Integer) collectionProps.get(ZkStateReader.REPLICATION_FACTOR);
-    if(replicationFactor==null){
-      replicationFactor = (Integer) OverseerCollectionMessageHandler.COLL_PROPS.get(ZkStateReader.REPLICATION_FACTOR);
+    Integer numRealtimeReplicas = (Integer) collectionProps.get(ZkStateReader.REALTIME_REPLICAS);
+    if (numRealtimeReplicas == null) {
+      numRealtimeReplicas = (Integer) collectionProps.get(ZkStateReader.REPLICATION_FACTOR);
     }
-
+    if(numRealtimeReplicas == null){
+      numRealtimeReplicas = (Integer) OverseerCollectionMessageHandler.COLL_PROPS.get(ZkStateReader.REPLICATION_FACTOR);
+    }
+    if (numRealtimeReplicas == null) {
+      numRealtimeReplicas = Integer.valueOf(0);
+    }
+    Integer numAppendReplicas = (Integer) collectionProps.get(ZkStateReader.APPEND_REPLICAS);
+    if (numAppendReplicas == null) {
+      numAppendReplicas = Integer.valueOf(0);
+    }
+    Integer numPassiveReplicas = (Integer) collectionProps.get(ZkStateReader.PASSIVE_REPLICAS);
+    if (numPassiveReplicas == null) {
+      numPassiveReplicas = Integer.valueOf(0);
+    }
     if (confSetName != null) {
       params.set("collection.configName", confSetName);
     }
@@ -1582,7 +1595,7 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
     int clientIndex = random().nextInt(2);
     List<Integer> list = new ArrayList<>();
     list.add(numShards);
-    list.add(replicationFactor);
+    list.add(numRealtimeReplicas + numAppendReplicas + numPassiveReplicas);
     if (collectionInfos != null) {
       collectionInfos.put(collectionName, list);
     }
@@ -1610,26 +1623,30 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
   protected CollectionAdminResponse createCollection(Map<String,List<Integer>> collectionInfos,
       String collectionName, int numShards, int replicationFactor, int maxShardsPerNode, SolrClient client, String createNodeSetStr) throws SolrServerException, IOException {
 
+    int numRealtimeReplicas = useAppendReplicas()?0:replicationFactor;
+    int numAppendReplicas = useAppendReplicas()?replicationFactor:0;
     return createCollection(collectionInfos, collectionName,
         Utils.makeMap(
         NUM_SLICES, numShards,
-        ZkStateReader.REPLICATION_FACTOR, replicationFactor,
+        ZkStateReader.REALTIME_REPLICAS, numRealtimeReplicas,
+        ZkStateReader.APPEND_REPLICAS, numAppendReplicas,
         CREATE_NODE_SET, createNodeSetStr,
-        ZkStateReader.MAX_SHARDS_PER_NODE, maxShardsPerNode,
-        ZkStateReader.REALTIME_REPLICAS, getRealtimeReplicas()),
+        ZkStateReader.MAX_SHARDS_PER_NODE, maxShardsPerNode),
         client);
   }
 
   protected CollectionAdminResponse createCollection(Map<String, List<Integer>> collectionInfos,
                                                      String collectionName, int numShards, int replicationFactor, int maxShardsPerNode, SolrClient client, String createNodeSetStr, String configName) throws SolrServerException, IOException {
 
+    int numRealtimeReplicas = useAppendReplicas()?0:replicationFactor;
+    int numAppendReplicas = useAppendReplicas()?replicationFactor:0;
     return createCollection(collectionInfos, collectionName,
         Utils.makeMap(
         NUM_SLICES, numShards,
-        ZkStateReader.REPLICATION_FACTOR, replicationFactor,
+        ZkStateReader.REALTIME_REPLICAS, numRealtimeReplicas,
+        ZkStateReader.APPEND_REPLICAS, numAppendReplicas,
         CREATE_NODE_SET, createNodeSetStr,
-        ZkStateReader.MAX_SHARDS_PER_NODE, maxShardsPerNode,
-        ZkStateReader.REALTIME_REPLICAS, getRealtimeReplicas()),
+        ZkStateReader.MAX_SHARDS_PER_NODE, maxShardsPerNode),
         client, configName);
   }
 
@@ -1808,11 +1825,12 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
                                   int numShards ) throws Exception {
     int maxShardsPerNode = ((((numShards+1) * replicationFactor) / getCommonCloudSolrClient()
         .getZkStateReader().getClusterState().getLiveNodes().size())) + 1;
-
+    int numRealtimeReplicas = useAppendReplicas()?0:replicationFactor;
+    int numAppendReplicas = useAppendReplicas()?replicationFactor:0;
     Map<String, Object> props = makeMap(
-        ZkStateReader.REPLICATION_FACTOR, replicationFactor,
         ZkStateReader.MAX_SHARDS_PER_NODE, maxShardsPerNode,
-        ZkStateReader.REALTIME_REPLICAS, getRealtimeReplicas(),
+        ZkStateReader.REALTIME_REPLICAS, numRealtimeReplicas,
+        ZkStateReader.APPEND_REPLICAS, numAppendReplicas,
         NUM_SLICES, numShards);
     Map<String,List<Integer>> collectionInfos = new HashMap<>();
     createCollection(collectionInfos, collName, props, client);

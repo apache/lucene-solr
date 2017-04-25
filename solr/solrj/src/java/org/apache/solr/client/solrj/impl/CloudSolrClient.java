@@ -25,6 +25,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -896,7 +897,7 @@ public class CloudSolrClient extends SolrClient {
       String url = zkProps.getCoreUrl();
       urls.add(url);
       if (!directUpdatesToLeadersOnly) {
-        for (Replica replica : slice.getReplicas()) {
+        for (Replica replica : slice.getReplicas(EnumSet.of(Replica.Type.APPEND, Replica.Type.REALTIME))) {
           if (!replica.getNodeName().equals(leader.getNodeName()) &&
               !replica.getName().equals(leader.getName())) {
             ZkCoreNodeProps zkProps1 = new ZkCoreNodeProps(replica);

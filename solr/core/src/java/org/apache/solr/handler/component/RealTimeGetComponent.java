@@ -106,6 +106,11 @@ public class RealTimeGetComponent extends SearchComponent
     SolrQueryResponse rsp = rb.rsp;
     SolrParams params = req.getParams();
 
+    if (req.getCore().getCoreDescriptor().getCloudDescriptor() != null 
+        && !req.getCore().getCoreDescriptor().getCloudDescriptor().requiresTransactionLog()) {
+      return;
+    }
+    
     if (!params.getBool(COMPONENT_NAME, true)) {
       return;
     }

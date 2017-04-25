@@ -268,6 +268,7 @@ public class ZkStateWriter {
       }
     }
 
+    log.debug("New Cluster State is: " + clusterState);
     return clusterState;
   }
 

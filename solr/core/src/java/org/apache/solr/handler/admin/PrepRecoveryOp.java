@@ -18,6 +18,7 @@
 package org.apache.solr.handler.admin;
 
 import java.lang.invoke.MethodHandles;
+import java.util.Objects;
 
 import org.apache.lucene.search.MatchAllDocsQuery;
 import org.apache.solr.cloud.CloudDescriptor;
@@ -175,7 +176,7 @@ class PrepRecoveryOp implements CoreAdminHandler.CoreAdminOp {
               "I was asked to wait on state " + waitForState + " for "
                   + shardId + " in " + collection + " on " + nodeName
                   + " but I still do not see the requested state. I see state: "
-                  + state.toString() + " live:" + live + " leader from ZK: " + leaderInfo
+                  + Objects.toString(state) + " live:" + live + " leader from ZK: " + leaderInfo
           );
         }
 

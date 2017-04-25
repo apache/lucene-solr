@@ -16,6 +16,8 @@
  */
 package org.apache.solr.client.solrj.request;
 
+import static org.apache.solr.common.params.CollectionAdminParams.COUNT_PROP;
+
 import java.io.IOException;
 import java.util.Collection;
 import java.util.Map;
@@ -34,6 +36,7 @@ import org.apache.solr.client.solrj.util.SolrIdentifierValidator;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.ImplicitDocRouter;
+import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.CollectionAdminParams;
 import org.apache.solr.common.params.CollectionParams.CollectionAction;
@@ -44,8 +47,6 @@ import org.apache.solr.common.params.ShardParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.ContentStream;
 import org.apache.solr.common.util.NamedList;
-
-import static org.apache.solr.common.params.CollectionAdminParams.COUNT_PROP;
 
 /**
  * This class is experimental and subject to change.
@@ -321,10 +322,23 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse> 
    * @param collection the collection name
    * @param config     the collection config
    * @param numShards  the number of shards in the collection
+   * @param numRealtimeReplicas the number of {@link org.apache.solr.common.cloud.Replica.Type#REALTIME} replicas
+   * @param numAppendReplicas the number of {@link org.apache.solr.common.cloud.Replica.Type#APPEND} replicas
+   * @param numPassiveReplicas the number of {@link org.apache.solr.common.cloud.Replica.Type#PASSIVE} replicas
+   */
+  public static Create createCollection(String collection, String config, int numShards, int numRealtimeReplicas, int numAppendReplicas, int numPassiveReplicas) {
+    return new Create(collection, config, numShards, numRealtimeReplicas, numAppendReplicas, numPassiveReplicas);
+  }
+  
+  /**
+   * Returns a SolrRequest for creating a collection
+   * @param collection the collection name
+   * @param config     the collection config
+   * @param numShards  the number of shards in the collection
    * @param numReplicas the replication factor of the collection
    */
   public static Create createCollection(String collection, String config, int numShards, int numReplicas) {
-    return new Create(collection, config, numShards, numReplicas);
+    return new Create(collection, config, numShards, numReplicas, 0, 0);
   }
 
   /**
@@ -338,7 +352,7 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse> 
    * @param numReplicas the replication factor of the collection
    */
   public static Create createCollection(String collection, int numShards, int numReplicas) {
-    return new Create(collection, numShards, numReplicas);
+    return new Create(collection, null, numShards, numReplicas, 0, 0);
   }
 
   /**
@@ -362,39 +376,36 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse> 
     protected String routerField;
     protected Integer numShards;
     protected Integer maxShardsPerNode;
-    protected Integer replicationFactor;
+    protected Integer realtimeReplicas;
+    protected Integer passiveReplicas;
+    protected Integer appendReplicas;
 
     private Properties properties;
     protected Boolean autoAddReplicas;
-    protected Integer realtimeReplicas;
     protected Integer stateFormat;
     private String[] rule , snitch;
 
     /**
-     * @deprecated Use {@link #createCollection(String, String, int, int)}
+     * @deprecated Use {@link #createCollection(String, String, int, int, int, int)}
      */
     @Deprecated
     public Create() {
       super(CollectionAction.CREATE, null);
     }
-
-    private Create(String collection, String config, int numShards, int numReplicas) {
+    
+    private Create(String collection, String config, int numShards, int numRealtimeReplicas, int numAppendReplicas, int numPassiveReplicas) { // TODO: maybe add other constructors
       super(CollectionAction.CREATE, SolrIdentifierValidator.validateCollectionName(collection));
       this.configName = config;
       this.numShards = numShards;
-      this.replicationFactor = numReplicas;
+      this.realtimeReplicas = numRealtimeReplicas;
+      this.passiveReplicas = numPassiveReplicas;
+      this.appendReplicas = numAppendReplicas;
     }
 
-    private Create(String collection, int numShards, int numReplicas) {
-      super(CollectionAction.CREATE, SolrIdentifierValidator.validateCollectionName(collection));
-      this.numShards = numShards;
-      this.replicationFactor = numReplicas;
-    }
-
-    private Create(String collection, String config, String shards, int numReplicas) {
+    private Create(String collection, String config, String shards, int numRealtimeReplicas) {
       super(CollectionAction.CREATE, SolrIdentifierValidator.validateCollectionName(collection));
       this.configName = config;
-      this.replicationFactor = numReplicas;
+      this.realtimeReplicas = numRealtimeReplicas;
       this.shards = shards;
       this.routerName = ImplicitDocRouter.NAME;
     }
@@ -409,8 +420,10 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse> 
     public Create setMaxShardsPerNode(Integer numShards) { this.maxShardsPerNode = numShards; return this; }
     public Create setAutoAddReplicas(boolean autoAddReplicas) { this.autoAddReplicas = autoAddReplicas; return this; }
     public Create setRealtimeReplicas(Integer realtimeReplicas) { this.realtimeReplicas = realtimeReplicas; return this;}
+    public Create setAppendReplicas(Integer appendReplicas) { this.appendReplicas = appendReplicas; return this;}
+
     @Deprecated
-    public Create setReplicationFactor(Integer repl) { this.replicationFactor = repl; return this; }
+    public Create setReplicationFactor(Integer repl) { this.realtimeReplicas = repl; return this; }
     public Create setStateFormat(Integer stateFormat) { this.stateFormat = stateFormat; return this; }
     public Create setRule(String... s){ this.rule = s; return this; }
     public Create setSnitch(String... s){ this.snitch = s; return this; }
@@ -421,9 +434,17 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse> 
     public String getShards() { return  shards; }
     public Integer getNumShards() { return numShards; }
     public Integer getMaxShardsPerNode() { return maxShardsPerNode; }
-    public Integer getReplicationFactor() { return replicationFactor; }
+    /**
+     * 
+     * @deprecated Use {@link #getNumRealtimeReplicas()}
+     */
+    @Deprecated
+    public Integer getReplicationFactor() { return getNumRealtimeReplicas(); }
+    public Integer getNumRealtimeReplicas() { return realtimeReplicas; }
     public Boolean getAutoAddReplicas() { return autoAddReplicas; }
     public Integer getRealtimeReplicas() { return realtimeReplicas; }
+    public Integer getAppendReplicas() {return appendReplicas;}
+
     public Integer getStateFormat() { return stateFormat; }
     
     /**
@@ -504,20 +525,24 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse> 
       if (routerField != null) {
         params.set("router.field", routerField);
       }
-      if (replicationFactor != null) {
-        params.set( "replicationFactor", replicationFactor);
+      if (realtimeReplicas != null) {
+        params.set( "replicationFactor", realtimeReplicas);// Keep both for compatibility?
+        params.set( ZkStateReader.REALTIME_REPLICAS, realtimeReplicas);
       }
       if (autoAddReplicas != null) {
         params.set(ZkStateReader.AUTO_ADD_REPLICAS, autoAddReplicas);
-      }
-      if (realtimeReplicas != null) {
-        params.set(ZkStateReader.REALTIME_REPLICAS, realtimeReplicas);
       }
       if(properties != null) {
         addProperties(params, properties);
       }
       if (stateFormat != null) {
         params.set(DocCollection.STATE_FORMAT, stateFormat);
+      }
+      if (passiveReplicas != null) {
+        params.set(ZkStateReader.PASSIVE_REPLICAS, passiveReplicas);
+      }
+      if (appendReplicas != null) {
+        params.set(ZkStateReader.APPEND_REPLICAS, appendReplicas);
       }
       if(rule != null) params.set("rule", rule);
       if(snitch != null) params.set("snitch", snitch);
@@ -1615,19 +1640,26 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse> 
 
 
   }
-
+  
   /**
    * Returns a SolrRequest to add a replica to a shard in a collection
    */
   public static AddReplica addReplicaToShard(String collection, String shard) {
-    return new AddReplica(collection, shard, null);
+    return addReplicaToShard(collection, shard, Replica.Type.REALTIME);
+  }
+
+  /**
+   * Returns a SolrRequest to add a replica of the specified type to a shard in a collection
+   */
+  public static AddReplica addReplicaToShard(String collection, String shard, Replica.Type replicaType) {
+    return new AddReplica(collection, shard, null, replicaType);
   }
 
   /**
    * Returns a SolrRequest to add a replica to a collection using a route key
    */
   public static AddReplica addReplicaByRouteKey(String collection, String routeKey) {
-    return new AddReplica(collection, null, routeKey);
+    return new AddReplica(collection, null, routeKey, Replica.Type.REALTIME);
   }
 
   // ADDREPLICA request
@@ -1640,6 +1672,7 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse> 
     protected String instanceDir;
     protected String dataDir;
     protected Properties properties;
+    protected Replica.Type type;
 
     /**
      * @deprecated Use {@link #addReplicaByRouteKey(String, String)} or {@link #addReplicaToShard(String, String)}
@@ -1649,11 +1682,12 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse> 
       super(CollectionAction.ADDREPLICA);
     }
 
-    private AddReplica(String collection, String shard, String routeKey) {
+    private AddReplica(String collection, String shard, String routeKey, Replica.Type type) {
       super(CollectionAction.ADDREPLICA);
       this.collection = collection;
       this.shard = shard;
       this.routeKey = routeKey;
+      this.type = type;
     }
 
     public Properties getProperties() {
@@ -1727,6 +1761,11 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse> 
       this.asyncId = id;
       return this;
     }
+    
+    public AddReplica setType(Replica.Type type) {
+      this.type = type;
+      return this;
+    }
 
     @Override
     public SolrParams getParams() {
@@ -1751,6 +1790,9 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse> 
       }
       if (dataDir != null)  {
         params.add("dataDir", dataDir);
+      }
+      if (type != null) {
+        params.add(ZkStateReader.REPLICA_TYPE, type.name());
       }
       if (properties != null) {
         addProperties(params, properties);

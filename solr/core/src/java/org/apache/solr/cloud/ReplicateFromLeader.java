@@ -49,7 +49,12 @@ public class ReplicateFromLeader {
     this.coreName = coreName;
   }
 
-  public void startReplication() throws InterruptedException {
+  /**
+   * Start a replication handler thread that will periodically pull indices from the shard leader
+   * @param switchTransactionLog if true, ReplicationHandler will rotate the transaction log once
+   * the replication is done
+   */
+  public void startReplication(boolean switchTransactionLog) throws InterruptedException {
     try (SolrCore core = cc.getCore(coreName)) {
       if (core == null) {
         if (cc.isShutDown()) {
@@ -78,20 +83,22 @@ public class ReplicateFromLeader {
       }
 
       replicationProcess = new ReplicationHandler();
-      replicationProcess.setPollListener((solrCore, pollSuccess) -> {
-        if (pollSuccess) {
-          String commitVersion = getCommitVersion(core);
-          if (commitVersion == null) return;
-          if (Long.parseLong(commitVersion) == lastVersion) return;
-          UpdateLog updateLog = solrCore.getUpdateHandler().getUpdateLog();
-          SolrQueryRequest req = new LocalSolrQueryRequest(core,
-              new ModifiableSolrParams());
-          CommitUpdateCommand cuc = new CommitUpdateCommand(req, false);
-          cuc.setVersion(Long.parseLong(commitVersion));
-          updateLog.copyOverOldUpdates(cuc);
-          lastVersion = Long.parseLong(commitVersion);
-        }
-      });
+      if (switchTransactionLog) {
+        replicationProcess.setPollListener((solrCore, pollSuccess) -> {
+          if (pollSuccess) {
+            String commitVersion = getCommitVersion(core);
+            if (commitVersion == null) return;
+            if (Long.parseLong(commitVersion) == lastVersion) return;
+            UpdateLog updateLog = solrCore.getUpdateHandler().getUpdateLog();
+            SolrQueryRequest req = new LocalSolrQueryRequest(core,
+                new ModifiableSolrParams());
+            CommitUpdateCommand cuc = new CommitUpdateCommand(req, false);
+            cuc.setVersion(Long.parseLong(commitVersion));
+            updateLog.copyOverOldUpdates(cuc);
+            lastVersion = Long.parseLong(commitVersion);
+          }
+        });
+      }
       replicationProcess.init(replicationConfig);
       replicationProcess.inform(core);
     }

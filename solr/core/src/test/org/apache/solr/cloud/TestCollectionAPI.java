@@ -61,7 +61,6 @@ public class TestCollectionAPI extends ReplicaPropertiesBase {
   public void test() throws Exception {
     try (CloudSolrClient client = createCloudClient(null)) {
       CollectionAdminRequest.Create req = CollectionAdminRequest.createCollection(COLLECTION_NAME, "conf1",2,2);
-      req.setRealtimeReplicas(1);
       req.setMaxShardsPerNode(2);
       client.request(req);
       createCollection(null, COLLECTION_NAME1, 1, 1, 1, client, null, "conf1");
@@ -173,7 +172,7 @@ public class TestCollectionAPI extends ReplicaPropertiesBase {
       Map<String, Object> collection = (Map<String, Object>) collections.get(COLLECTION_NAME);
       assertNotNull(collection);
       assertEquals("conf1", collection.get("configName"));
-      assertEquals("1", collection.get("realtimeReplicas"));
+//      assertEquals("1", collection.get("realtimeReplicas"));
     }
   }
 

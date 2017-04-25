@@ -16,6 +16,7 @@
  */
 package org.apache.solr.update;
 
+import java.io.Closeable;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.util.concurrent.ExecutionException;
@@ -32,8 +33,8 @@ import org.apache.lucene.index.MergePolicy;
 import org.apache.lucene.search.Sort;
 import org.apache.solr.cloud.ActionThrottle;
 import org.apache.solr.cloud.RecoveryStrategy;
-import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.SolrException;
+import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.CoreDescriptor;
 import org.apache.solr.core.DirectoryFactory;
@@ -65,7 +66,8 @@ public final class DefaultSolrCoreState extends SolrCoreState implements Recover
   private DirectoryFactory directoryFactory;
   private final RecoveryStrategy.Builder recoveryStrategyBuilder;
 
-  private volatile RecoveryStrategy recoveryStrat;
+  private volatile RecoveryStrategy recoveryStrat; //nocommit: Make interface
+//  private volatile Thread recoveryStrat;
 
   private volatile boolean lastReplicationSuccess = true;
 
@@ -365,8 +367,10 @@ public final class DefaultSolrCoreState extends SolrCoreState implements Recover
   public void cancelRecovery() {
     if (recoveryStrat != null) {
       try {
-        recoveryStrat.close();
+        ((Closeable)recoveryStrat).close();
       } catch (NullPointerException e) {
+        // okay
+      } catch (IOException e) {
         // okay
       }
     }

@@ -1210,7 +1210,7 @@ public class OverseerTest extends SolrTestCaseJ4 {
           ZkStateReader.STATE_PROP, Replica.State.RECOVERING.toString());
 
       q.offer(Utils.toJSON(m));
-
+      
 
       m = new ZkNodeProps(Overseer.QUEUE_OPERATION, OverseerAction.STATE.toLower(),
           ZkStateReader.BASE_URL_PROP, "http://127.0.0.1/solr",
@@ -1221,7 +1221,7 @@ public class OverseerTest extends SolrTestCaseJ4 {
           ZkStateReader.STATE_PROP, Replica.State.ACTIVE.toString());
 
       q.offer(Utils.toJSON(m));
-
+      
       Stat stat = new Stat();
       byte[] data = zkClient.getData("/clusterstate.json", null, stat, true);
       // Simulate an external modification

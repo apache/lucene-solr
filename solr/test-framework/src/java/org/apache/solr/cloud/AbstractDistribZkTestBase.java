@@ -258,6 +258,7 @@ public abstract class AbstractDistribZkTestBase extends BaseDistributedSearchTes
     int maxIterations = 100;
     Replica.State coreState = null;
     while(maxIterations-->0) {
+      System.out.println("ClusterState" + reader.getClusterState());
       Slice slice = reader.getClusterState().getSlice(collection, shard);
       if(slice!=null) {
         Replica replica = slice.getReplicasMap().get(coreNodeName);
@@ -266,6 +267,8 @@ public abstract class AbstractDistribZkTestBase extends BaseDistributedSearchTes
           if(coreState == expectedState) {
             return;
           }
+        } else {
+          System.out.println(slice.getReplicasMap());
         }
       }
       Thread.sleep(50);

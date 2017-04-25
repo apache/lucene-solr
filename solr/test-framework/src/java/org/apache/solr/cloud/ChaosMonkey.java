@@ -187,7 +187,7 @@ public class ChaosMonkey {
   
   private static void stopJettySolrRunner(JettySolrRunner jetty) throws Exception {
     assert(jetty != null);
-    monkeyLog("stop shard! " + jetty.getLocalPort());
+    monkeyLog("stop jetty! " + jetty.getLocalPort());
     SolrDispatchFilter sdf = jetty.getSolrDispatchFilter();
     if (sdf != null) {
       try {
@@ -231,7 +231,7 @@ public class ChaosMonkey {
 
     IpTables.blockPort(jetty.getLocalPort());
     
-    monkeyLog("kill shard! " + jetty.getLocalPort());
+    monkeyLog("kill jetty! " + jetty.getLocalPort());
     
     jetty.stop();
     

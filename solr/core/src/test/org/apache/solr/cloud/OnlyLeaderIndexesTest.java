@@ -19,6 +19,7 @@ package org.apache.solr.cloud;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.EnumSet;
 import java.util.List;
 import java.util.concurrent.Semaphore;
 
@@ -30,9 +31,11 @@ import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.UpdateRequest;
+import org.apache.solr.client.solrj.response.CollectionAdminResponse;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.SolrInputDocument;
+import org.apache.solr.common.cloud.CollectionStatePredicate;
 import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.Slice;
@@ -44,6 +47,7 @@ import org.apache.solr.update.SolrIndexWriter;
 import org.apache.solr.update.UpdateHandler;
 import org.apache.solr.update.UpdateLog;
 import org.apache.solr.util.RefCounted;
+import org.apache.zookeeper.KeeperException;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
@@ -59,10 +63,13 @@ public class OnlyLeaderIndexesTest extends SolrCloudTestCase {
         .addConfig("config", TEST_PATH().resolve("configsets")
         .resolve("cloud-minimal-inplace-updates").resolve("conf"))
         .configure();
+    
+    CollectionAdminRequest.ClusterProp clusterPropRequest = CollectionAdminRequest.setClusterProperty(ZkStateReader.LEGACY_CLOUD, "false");
+    CollectionAdminResponse response = clusterPropRequest.process(cluster.getSolrClient());
+    assertEquals(0, response.getStatus());
 
     CollectionAdminRequest
-        .createCollection(COLLECTION, "config", 1, 3)
-        .setRealtimeReplicas(1)
+        .createCollection(COLLECTION, "config", 1, 0, 3, 0)
         .setMaxShardsPerNode(1)
         .process(cluster.getSolrClient());
     AbstractDistribZkTestBase.waitForRecoveriesToFinish(COLLECTION, cluster.getSolrClient().getZkStateReader(),
@@ -71,6 +78,7 @@ public class OnlyLeaderIndexesTest extends SolrCloudTestCase {
 
   @Test
   public void test() throws Exception {
+    assertNumberOfReplicas(0, 3, 0, false, true);
     basicTest();
     recoveryTest();
     dbiTest();
@@ -252,6 +260,7 @@ public class OnlyLeaderIndexesTest extends SolrCloudTestCase {
         .add(sdoc("id", "4"))
         .process(cloudClient, COLLECTION);
     ChaosMonkey.start(oldLeaderJetty);
+    waitForState("Replica not removed", "collection1", activeReplicaCount(0, 3, 0));
     AbstractDistribZkTestBase.waitForRecoveriesToFinish(COLLECTION, cluster.getSolrClient().getZkStateReader(),
         false, true, 60);
     checkRTG(1,4, cluster.getJettySolrRunners());
@@ -347,7 +356,7 @@ public class OnlyLeaderIndexesTest extends SolrCloudTestCase {
   }
 
   private void checkShardConsistency(int expected, int numTry) throws Exception{
-
+    String replicaNotInSync = null;
     for (int i = 0; i < numTry; i++) {
       boolean inSync = true;
       for (JettySolrRunner solrRunner: cluster.getJettySolrRunners()) {
@@ -357,15 +366,16 @@ public class OnlyLeaderIndexesTest extends SolrCloudTestCase {
           long results = client.query(COLLECTION, query).getResults().getNumFound();
           if (expected != results) {
             inSync = false;
-            Thread.sleep(500);
+            replicaNotInSync = solrRunner.getNodeName();
             break;
           }
         }
       }
       if (inSync) return;
+      Thread.sleep(500);
     }
 
-    fail("Some replicas are not in sync with leader");
+    fail("Some replicas are not in sync with leader: " + replicaNotInSync);
   }
 
   private void waitForReplicasCatchUp(int numTry) throws IOException, InterruptedException {
@@ -430,6 +440,49 @@ public class OnlyLeaderIndexesTest extends SolrCloudTestCase {
       }
     }
     return rs;
+  }
+  
+  // TODO: This is copy/paste from TestPassiveReplica, refactor
+  private DocCollection assertNumberOfReplicas(int numWriter, int numActive, int numPassive, boolean updateCollection, boolean activeOnly) throws KeeperException, InterruptedException {
+    if (updateCollection) {
+      cluster.getSolrClient().getZkStateReader().forceUpdateCollection("collection1");
+    }
+    DocCollection docCollection = getCollectionState("collection1");
+    assertNotNull(docCollection);
+    assertEquals("Unexpected number of writer replicas: " + docCollection, numWriter, 
+        docCollection.getReplicas(EnumSet.of(Replica.Type.REALTIME)).stream().filter(r->!activeOnly || r.getState() == Replica.State.ACTIVE).count());
+    assertEquals("Unexpected number of passive replicas: " + docCollection, numPassive, 
+        docCollection.getReplicas(EnumSet.of(Replica.Type.PASSIVE)).stream().filter(r->!activeOnly || r.getState() == Replica.State.ACTIVE).count());
+    assertEquals("Unexpected number of active replicas: " + docCollection, numActive, 
+        docCollection.getReplicas(EnumSet.of(Replica.Type.APPEND)).stream().filter(r->!activeOnly || r.getState() == Replica.State.ACTIVE).count());
+    return docCollection;
+  }
+  
+  private CollectionStatePredicate activeReplicaCount(int numWriter, int numActive, int numPassive) {
+    return (liveNodes, collectionState) -> {
+      int writersFound = 0, activesFound = 0, passivesFound = 0;
+      if (collectionState == null)
+        return false;
+      for (Slice slice : collectionState) {
+        for (Replica replica : slice) {
+          if (replica.isActive(liveNodes))
+            switch (replica.getType()) {
+              case APPEND:
+                activesFound++;
+                break;
+              case PASSIVE:
+                passivesFound++;
+                break;
+              case REALTIME:
+                writersFound++;
+                break;
+              default:
+                throw new AssertionError("Unexpected replica type");
+            }
+        }
+      }
+      return numWriter == writersFound && numActive == activesFound && numPassive == passivesFound;
+    };
   }
 
 }
