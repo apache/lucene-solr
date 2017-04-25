@@ -290,17 +290,7 @@ abstract class FacetFieldProcessor extends FacetProcessor<FacetField> {
       if (!fcontext.isShard()) {
         res.add("numBuckets", numBuckets);
       } else {
-        DocSet domain = fcontext.base;
-        if (freq.prefix != null) {
-          Query prefixFilter = sf.getType().getPrefixQuery(null, sf, freq.prefix);
-          domain = fcontext.searcher.getDocSet(prefixFilter, domain);
-        }
-
-        HLLAgg agg = new HLLAgg(freq.field);
-        SlotAcc acc = agg.createSlotAcc(fcontext, domain.size(), 1);
-        acc.collect(domain, 0);
-        acc.key = "numBuckets";
-        acc.setValues(res, 0);
+        calculateNumBuckets(res);
       }
     }
 
@@ -349,6 +339,20 @@ abstract class FacetFieldProcessor extends FacetProcessor<FacetField> {
     }
 
     return res;
+  }
+
+  private void calculateNumBuckets(SimpleOrderedMap<Object> target) throws IOException {
+    DocSet domain = fcontext.base;
+    if (freq.prefix != null) {
+      Query prefixFilter = sf.getType().getPrefixQuery(null, sf, freq.prefix);
+      domain = fcontext.searcher.getDocSet(prefixFilter, domain);
+    }
+
+    HLLAgg agg = new HLLAgg(freq.field);
+    SlotAcc acc = agg.createSlotAcc(fcontext, domain.size(), 1);
+    acc.collect(domain, 0);
+    acc.key = "numBuckets";
+    acc.setValues(target, 0);
   }
 
   private static class Slot {
@@ -580,6 +584,10 @@ abstract class FacetFieldProcessor extends FacetProcessor<FacetField> {
         fillBucket(missingBucket, getFieldMissingQuery(fcontext.searcher, freq.field), null, skipThisFacet, bucketFacetInfo);
         res.add("missing", missingBucket);
       }
+    }
+
+    if (freq.numBuckets && !skipThisFacet) {
+      calculateNumBuckets(res);
     }
 
     // If there are just a couple of leaves, and if the domain is large, then
