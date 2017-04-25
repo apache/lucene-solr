@@ -64,6 +64,11 @@ Upgrading from Solr 6.x
   registries as hierarchical MBeans. This behavior can be also disabled by specifying a SolrJmxReporter
   configuration with a boolean init arg "enabled" set to "false". For a more fine-grained control users
   should explicitly specify at least one SolrJmxReporter configuration.
+  
+* The sow (split-on-whitespace) request param now defaults to false (true in previous versions).
+  This affects the edismax and standard/"lucene" query parsers: if the sow param is not specified,
+  query text will not be split on whitespace before analysis. See
+  https://lucidworks.com/2017/04/18/multi-word-synonyms-solr-adds-query-time-support/ .
 
 New Features
 ----------------------
@@ -119,7 +124,8 @@ Other Changes
 
 * SOLR-10557: Make "compact" format default for /admin/metrics. (ab)
 
-----------------------
+* SOLR-10310: By default, stop splitting on whitespace prior to analysis
+  in edismax and standard/"lucene" query parsers. (Steve Rowe)
 
 ==================  6.6.0 ==================
 

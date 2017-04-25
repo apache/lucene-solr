@@ -21,7 +21,7 @@ public class QueryParser extends SolrQueryParserBase implements QueryParserConst
   static public enum Operator { OR, AND }
 
   /** default split on whitespace behavior */
-  public static final boolean DEFAULT_SPLIT_ON_WHITESPACE = true;
+  public static final boolean DEFAULT_SPLIT_ON_WHITESPACE = false;
 
    public QueryParser(String defaultField, QParser parser) {
     this(new FastCharStream(new StringReader("")));
