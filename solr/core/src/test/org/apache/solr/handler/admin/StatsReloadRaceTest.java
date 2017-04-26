@@ -117,11 +117,18 @@ public class StatsReloadRaceTest extends SolrTestCaseJ4 {
           req("prefix", "SEARCHER", "registry", registry, "compact", "true"), rsp);
 
       NamedList values = rsp.getValues();
-      NamedList metrics = (NamedList)values.get("metrics");
-      metrics = (NamedList)metrics.get(registry);
       // this is not guaranteed to exist right away after core reload - there's a
       // small window between core load and before searcher metrics are registered
-      // so we may have to check a few times
+      // so we may have to check a few times, and then fail softly if reload is not complete yet
+      NamedList metrics = (NamedList)values.get("metrics");
+      if (metrics == null) {
+        if (softFail) {
+          return;
+        } else {
+          fail("missing 'metrics' element in handler's output: " + values.asMap(5).toString());
+        }
+      }
+      metrics = (NamedList)metrics.get(registry);
       if (metrics.get(key) != null) {
         found = true;
         assertTrue(metrics.get(key) instanceof Long);
