@@ -37,15 +37,15 @@ public class QueryCommand implements Command<QueryCommandResult> {
 
   public static class Builder {
 
-    private Sort sort;
+    private SortSpec sortSpec;
     private String queryString;
     private Query query;
     private DocSet docSet;
     private Integer docsToCollect;
     private boolean needScores;
 
-    public Builder setSort(Sort sort) {
-      this.sort = sort;
+    public Builder setSortSpec(SortSpec sortSpec) {
+      this.sortSpec = sortSpec;
       return this;
     }
 
@@ -95,16 +95,16 @@ public class QueryCommand implements Command<QueryCommandResult> {
     }
 
     public QueryCommand build() {
-      if (sort == null || query == null || docSet == null || docsToCollect == null) {
+      if (sortSpec == null || sortSpec.getSort() == null || query == null || docSet == null || docsToCollect == null) {
         throw new IllegalStateException("All fields must be set");
       }
 
-      return new QueryCommand(sort, query, docsToCollect, needScores, docSet, queryString);
+      return new QueryCommand(sortSpec, query, docsToCollect, needScores, docSet, queryString);
     }
 
   }
 
-  private final Sort sort;
+  private final SortSpec sortSpec;
   private final Query query;
   private final DocSet docSet;
   private final int docsToCollect;
@@ -114,8 +114,8 @@ public class QueryCommand implements Command<QueryCommandResult> {
   private TopDocsCollector collector;
   private FilterCollector filterCollector;
 
-  private QueryCommand(Sort sort, Query query, int docsToCollect, boolean needScores, DocSet docSet, String queryString) {
-    this.sort = sort;
+  private QueryCommand(SortSpec sortSpec, Query query, int docsToCollect, boolean needScores, DocSet docSet, String queryString) {
+    this.sortSpec = sortSpec;
     this.query = query;
     this.docsToCollect = docsToCollect;
     this.needScores = needScores;
@@ -125,6 +125,7 @@ public class QueryCommand implements Command<QueryCommandResult> {
 
   @Override
   public List<Collector> create() throws IOException {
+    final Sort sort = (sortSpec == null ? null : sortSpec.getSort());
     if (sort == null || sort.equals(Sort.RELEVANCE)) {
       collector = TopScoreDocCollector.create(docsToCollect);
     } else {
@@ -146,12 +147,12 @@ public class QueryCommand implements Command<QueryCommandResult> {
 
   @Override
   public Sort getGroupSort() {
-    return sort;
+    return sortSpec.getSort();
   }
 
   @Override
   public SortSpec getGroupSortSpec() {
-    return null;
+    return sortSpec;
   }
 
   @Override
