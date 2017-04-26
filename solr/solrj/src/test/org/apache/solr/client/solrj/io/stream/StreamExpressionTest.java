@@ -3850,7 +3850,7 @@ public class StreamExpressionTest extends SolrCloudTestCase {
         false, true, TIMEOUT);
 
     new UpdateRequest()
-        .add(id, "0", "a_s", "hello0", "a_i", "0", "a_f", "0", "s_multi", "aaaa",  "s_multi", "bbbb",  "i_multi", "4", "i_multi", "7")
+        .add(id, "0", "a_s", "hello0", "a_i", "0", "a_f", "0", "s_multi", "aaaa", "s_multi", "bbbb", "i_multi", "4", "i_multi", "7")
         .add(id, "2", "a_s", "hello2", "a_i", "2", "a_f", "0", "s_multi", "aaaa1", "s_multi", "bbbb1", "i_multi", "44", "i_multi", "77")
         .add(id, "3", "a_s", "hello3", "a_i", "3", "a_f", "3", "s_multi", "aaaa2", "s_multi", "bbbb2", "i_multi", "444", "i_multi", "777")
         .add(id, "4", "a_s", "hello4", "a_i", "4", "a_f", "4", "s_multi", "aaaa3", "s_multi", "bbbb3", "i_multi", "4444", "i_multi", "7777")
@@ -5036,6 +5036,80 @@ public class StreamExpressionTest extends SolrCloudTestCase {
     assertTrue(s.equals("hello"));
 
   }
+
+  private String getDateString(String year, String month, String day) {
+    return year+"-"+month+"-"+day+"T00:00:00Z";
+
+  }
+
+  @Test
+  public void testTimeSeriesStream() throws Exception {
+    UpdateRequest updateRequest = new UpdateRequest();
+
+    int i=0;
+    while(i<50) {
+      updateRequest.add(id, "id_"+(++i),"test_dt", getDateString("2016", "5", "1"), "price_f", "400.00");
+    }
+
+    while(i<100) {
+      updateRequest.add(id, "id_"+(++i),"test_dt", getDateString("2015", "5", "1"), "price_f", "300.0");
+    }
+
+    while(i<150) {
+      updateRequest.add(id, "id_"+(++i),"test_dt", getDateString("2014", "5", "1"), "price_f", "500.0");
+    }
+
+    while(i<250) {
+      updateRequest.add(id, "id_"+(++i),"test_dt", getDateString("2013", "5", "1"), "price_f", "100.00");
+    }
+
+    updateRequest.commit(cluster.getSolrClient(), COLLECTIONORALIAS);
+
+    String expr = "timeseries("+COLLECTIONORALIAS+", q=\"*:*\", start=\"2013-01-01T01:00:00.000Z\", " +
+        "end=\"2016-12-01T01:00:00.000Z\", " +
+        "gap=\"+1YEAR\", " +
+        "field=\"test_dt\", " +
+        "count(*), sum(price_f), max(price_f), min(price_f))";
+    ModifiableSolrParams paramsLoc = new ModifiableSolrParams();
+    paramsLoc.set("expr", expr);
+    paramsLoc.set("qt", "/stream");
+
+    String url = cluster.getJettySolrRunners().get(0).getBaseUrl().toString()+"/"+COLLECTIONORALIAS;
+    TupleStream solrStream = new SolrStream(url, paramsLoc);
+
+    StreamContext context = new StreamContext();
+    solrStream.setStreamContext(context);
+    List<Tuple> tuples = getTuples(solrStream);
+    assertTrue(tuples.size() == 4);
+
+    assertTrue(tuples.get(0).get("test_dt").equals("2013-01-01T01:00:00Z"));
+    assertTrue(tuples.get(0).getLong("count(*)").equals(100L));
+    assertTrue(tuples.get(0).getDouble("sum(price_f)").equals(10000D));
+    assertTrue(tuples.get(0).getDouble("max(price_f)").equals(100D));
+    assertTrue(tuples.get(0).getDouble("min(price_f)").equals(100D));
+
+    assertTrue(tuples.get(1).get("test_dt").equals("2014-01-01T01:00:00Z"));
+    assertTrue(tuples.get(1).getLong("count(*)").equals(50L));
+    assertTrue(tuples.get(1).getDouble("sum(price_f)").equals(25000D));
+    assertTrue(tuples.get(1).getDouble("max(price_f)").equals(500D));
+    assertTrue(tuples.get(1).getDouble("min(price_f)").equals(500D));
+
+    assertTrue(tuples.get(2).get("test_dt").equals("2015-01-01T01:00:00Z"));
+    assertTrue(tuples.get(2).getLong("count(*)").equals(50L));
+    assertTrue(tuples.get(2).getDouble("sum(price_f)").equals(15000D));
+    assertTrue(tuples.get(2).getDouble("max(price_f)").equals(300D));
+    assertTrue(tuples.get(2).getDouble("min(price_f)").equals(300D));
+
+    assertTrue(tuples.get(3).get("test_dt").equals("2016-01-01T01:00:00Z"));
+    assertTrue(tuples.get(3).getLong("count(*)").equals(50L));
+    assertTrue(tuples.get(3).getDouble("sum(price_f)").equals(20000D));
+    assertTrue(tuples.get(3).getDouble("max(price_f)").equals(400D));
+    assertTrue(tuples.get(3).getDouble("min(price_f)").equals(400D));
+
+  }
+
+
+
 
   @Test
   public void testListStream() throws Exception {
