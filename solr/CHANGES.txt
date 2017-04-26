@@ -83,6 +83,8 @@ New Features
 
 * SOLR-10393: Adds UUID Streaming Evaluator (Dennis Gove)
 
+* SOLR-10046: Add UninvertDocValuesMergePolicyFactory class. (Keith Laban, Christine Poerschke)
+
 Bug Fixes
 ----------------------
 * SOLR-9262: Connection and read timeouts are being ignored by UpdateShardHandler after SOLR-4509.
@@ -156,8 +158,6 @@ New Features
 ----------------------
 
 * SOLR-9992: Add support for grouping with PointFIelds. (Cao Manh Dat)
-
-* SOLR-10046: Add UninvertDocValuesMergePolicyFactory class. (Keith Laban, Christine Poerschke)
 
 * SOLR-9994: Add support for CollapseQParser with PointFields. (Varun Thacker, Cao Manh Dat)
 
