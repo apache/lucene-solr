@@ -209,8 +209,6 @@ public class CreateCollectionCmd implements Cmd {
       for (Map.Entry<ReplicaAssigner.Position, String> e : positionVsNodes.entrySet()) {
         ReplicaAssigner.Position position = e.getKey();
         String nodeName = e.getValue();
-        // TODO: Adding the suffix is great for debugging, but may be an issue if at some point we want to support a way to change replica type
-//        String coreName = collectionName + "_" + position.shard + "_replica" + position.suffix + (position.index + 1);
         String coreName = Assign.buildCoreName(collectionName, position.shard, position.type, position.index + 1);
         log.debug(formatString("Creating core {0} as part of shard {1} of collection {2} on {3}"
             , coreName, position.shard, collectionName, nodeName));

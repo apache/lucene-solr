@@ -379,17 +379,22 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
     StringBuilder sb = new StringBuilder();
 
     if ("2".equals(getStateFormat())) {
-      log.info("Creating collection1 with stateFormat=2");
+      log.info("Creating " + DEFAULT_COLLECTION + " with stateFormat=2");
       SolrZkClient zkClient = new SolrZkClient(zkServer.getZkAddress(),
           AbstractZkTestCase.TIMEOUT, AbstractZkTestCase.TIMEOUT);
       Overseer.getStateUpdateQueue(zkClient).offer(
           Utils.toJSON(Utils.makeMap(Overseer.QUEUE_OPERATION,
-              CollectionParams.CollectionAction.CREATE.toLower(), "name",
-              DEFAULT_COLLECTION, "numShards", String.valueOf(sliceCount),
+              CollectionParams.CollectionAction.CREATE.toLower(), 
+              "name", DEFAULT_COLLECTION, 
+              "numShards", String.valueOf(sliceCount),
               DocCollection.STATE_FORMAT, getStateFormat(),
-              ZkStateReader.REALTIME_REPLICAS, useAppendReplicas())));
+              ZkStateReader.REALTIME_REPLICAS, useAppendReplicas()?"0":"1",
+              ZkStateReader.APPEND_REPLICAS, useAppendReplicas()?"1":"0",
+              ZkStateReader.PASSIVE_REPLICAS, String.valueOf(getPassiveReplicaCount()))));
       zkClient.close();
     }
+    
+    int numPassiveReplicas = getPassiveReplicaCount() * sliceCount;
 
     for (int i = 1; i <= numJettys; i++) {
       if (sb.length() > 0) sb.append(',');
@@ -399,9 +404,22 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
 
       jettyDir.mkdirs();
       setupJettySolrHome(jettyDir);
-      log.info("create jetty {} in directory {}", i, jettyDir);
-      JettySolrRunner j = createJetty(jettyDir, useJettyDataDir ? getDataDir(testDir + "/jetty"
-          + cnt) : null, null, "solrconfig.xml", null);
+      JettySolrRunner j;
+      
+      if (numPassiveReplicas > 0) {
+        numPassiveReplicas--;
+        log.info("create jetty {} in directory {} of type {}", i, jettyDir, Replica.Type.PASSIVE);
+        j = createJetty(jettyDir, useJettyDataDir ? getDataDir(testDir + "/jetty"
+            + cnt) : null, null, "solrconfig.xml", null, Replica.Type.PASSIVE);
+      } else if (useAppendReplicas()) {
+        log.info("create jetty {} in directory {} of type {}", i, jettyDir, Replica.Type.APPEND);
+        j = createJetty(jettyDir, useJettyDataDir ? getDataDir(testDir + "/jetty"
+            + cnt) : null, null, "solrconfig.xml", null, Replica.Type.APPEND);
+      } else {
+        log.info("create jetty {} in directory {} of type {}", i, jettyDir, Replica.Type.REALTIME);
+        j = createJetty(jettyDir, useJettyDataDir ? getDataDir(testDir + "/jetty"
+            + cnt) : null, null, "solrconfig.xml", null, null);
+      }
       jettys.add(j);
       SolrClient client = createNewSolrClient(j.getLocalPort());
       clients.add(client);
@@ -410,17 +428,18 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
     this.jettys.addAll(jettys);
     this.clients.addAll(clients);
 
-    int numShards = getTotalReplicas(DEFAULT_COLLECTION);
+    int numReplicas = getTotalReplicas(DEFAULT_COLLECTION);
+    int expectedNumReplicas = numJettys;
 
     // now wait until we see that the number of shards in the cluster state
     // matches what we expect
     int retries = 0;
-    while (numShards != getShardCount()) {
-      numShards = getTotalReplicas(DEFAULT_COLLECTION);
-      if (numShards == getShardCount()) break;
+    while (numReplicas != expectedNumReplicas) {
+      numReplicas = getTotalReplicas(DEFAULT_COLLECTION);
+      if (numReplicas == expectedNumReplicas) break;
       if (retries++ == 60) {
         printLayoutOnTearDown = true;
-        fail("Shards in the state does not match what we set:" + numShards + " vs " + getShardCount());
+        fail("Number of replicas in the state does not match what we set:" + numReplicas + " vs " + expectedNumReplicas);
       }
       Thread.sleep(500);
     }
@@ -431,7 +450,7 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
       zkStateReader.getLeaderRetry(DEFAULT_COLLECTION, "shard" + i, 10000);
     }
 
-    if (numShards > 0) {
+    if (numReplicas > 0) {
       updateMappingsFromZk(this.jettys, this.clients);
     }
 
@@ -448,6 +467,10 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
     return jettys;
   }
 
+
+  protected int getPassiveReplicaCount() {
+    return 0;
+  }
 
   /* Total number of replicas (number of cores serving an index to the collection) shown by the cluster state */
   protected int getTotalReplicas(String collection) {
@@ -484,8 +507,12 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
 
     return jetty;
   }
-
+  
   public JettySolrRunner createJetty(File solrHome, String dataDir, String shardList, String solrConfigOverride, String schemaOverride) throws Exception {
+    return createJetty(solrHome, dataDir, shardList, solrConfigOverride, schemaOverride, null);
+  }
+
+  public JettySolrRunner createJetty(File solrHome, String dataDir, String shardList, String solrConfigOverride, String schemaOverride, Replica.Type replicaType) throws Exception {
     // randomly test a relative solr.home path
     if (random().nextBoolean()) {
       solrHome = getRelativeSolrHomePath(solrHome);
@@ -508,6 +535,11 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
       props.setProperty("shards", shardList);
     if (dataDir != null)
       props.setProperty("solr.data.dir", getDataDir(dataDir));
+    if (replicaType != null) {
+      props.setProperty("replicaType", replicaType.toString());
+    } else { // TODO: include the case with no replicaTYpe defined: if (random().nextBoolean()) {
+      props.setProperty("replicaType", Replica.Type.REALTIME.toString());
+    }
     props.setProperty("coreRootDirectory", solrHome.toPath().resolve("cores").toAbsolutePath().toString());
     
     JettySolrRunner jetty = new JettySolrRunner(solrHome.getPath(), props, jettyconfig);
@@ -1630,6 +1662,7 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
         NUM_SLICES, numShards,
         ZkStateReader.REALTIME_REPLICAS, numRealtimeReplicas,
         ZkStateReader.APPEND_REPLICAS, numAppendReplicas,
+        ZkStateReader.PASSIVE_REPLICAS, getPassiveReplicaCount(),
         CREATE_NODE_SET, createNodeSetStr,
         ZkStateReader.MAX_SHARDS_PER_NODE, maxShardsPerNode),
         client);
@@ -1645,6 +1678,7 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
         NUM_SLICES, numShards,
         ZkStateReader.REALTIME_REPLICAS, numRealtimeReplicas,
         ZkStateReader.APPEND_REPLICAS, numAppendReplicas,
+        ZkStateReader.PASSIVE_REPLICAS, getPassiveReplicaCount(),
         CREATE_NODE_SET, createNodeSetStr,
         ZkStateReader.MAX_SHARDS_PER_NODE, maxShardsPerNode),
         client, configName);
@@ -1831,6 +1865,7 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
         ZkStateReader.MAX_SHARDS_PER_NODE, maxShardsPerNode,
         ZkStateReader.REALTIME_REPLICAS, numRealtimeReplicas,
         ZkStateReader.APPEND_REPLICAS, numAppendReplicas,
+        ZkStateReader.PASSIVE_REPLICAS, getPassiveReplicaCount(),
         NUM_SLICES, numShards);
     Map<String,List<Integer>> collectionInfos = new HashMap<>();
     createCollection(collectionInfos, collName, props, client);

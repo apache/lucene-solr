@@ -103,8 +103,6 @@ public class TestPassiveReplicaErrorHandling extends SolrCloudTestCase {
   
   @AfterClass
   public static void tearDownCluster() throws Exception {
-//    cluster.shutdown();
-//    cluster = null;
     for (SocketProxy proxy:proxies.values()) {
       proxy.close();
     }

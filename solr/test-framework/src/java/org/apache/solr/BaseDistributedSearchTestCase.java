@@ -1123,6 +1123,7 @@ public abstract class BaseDistributedSearchTestCase extends SolrTestCaseJ4 {
     coreProperties.setProperty("config", "${solrconfig:solrconfig.xml}");
     coreProperties.setProperty("schema", "${schema:schema.xml}");
     coreProperties.setProperty("coreNodeName", "${coreNodeName:}");
+    coreProperties.setProperty("replicaType", "${replicaType:}");
 
     writeCoreProperties(jettyHome.toPath().resolve("cores").resolve("collection1"), coreProperties, "collection1");
 
