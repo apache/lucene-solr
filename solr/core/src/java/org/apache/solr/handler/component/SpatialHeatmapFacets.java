@@ -38,10 +38,9 @@ import org.apache.lucene.spatial.query.SpatialArgs;
 import org.apache.lucene.spatial.query.SpatialOperation;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.FixedBitSet;
-import org.apache.solr.client.solrj.util.ClientUtils;
 import org.apache.solr.common.SolrException;
-import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.FacetParams;
+import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SimpleOrderedMap;
@@ -291,38 +290,20 @@ public class SpatialHeatmapFacets {
    * {@link org.apache.solr.handler.component.SearchComponent#modifyRequest(ResponseBuilder, SearchComponent, ShardRequest)}. */
   public static void distribModifyRequest(ShardRequest sreq, LinkedHashMap<String, HeatmapFacet> heatmapFacets) {
     // Set the format to PNG because it's compressed and it's the only format we have code to read at the moment.
-    //  Changing a param is sadly tricky because field-specific params can show up as local-params (highest precedence)
-    //  or as f.key.facet.heatmap.whatever. Ugh. So we re-write the facet.heatmap list with the local-params
-    //  moved out to the "f.key." prefix, but we need to keep the key local-param because that's the only way to
-    //  set an output key. This approach means we only need to know about the parameter we're changing, not of
-    //  all possible heatmap params.
+    // We re-write the facet.heatmap list with PNG format in local-params where it has highest precedence.
 
     //Remove existing heatmap field param vals; we will rewrite
     sreq.params.remove(FacetParams.FACET_HEATMAP);
-    for (Map.Entry<String, HeatmapFacet> entry : heatmapFacets.entrySet()) {
-      final String key = entry.getKey();
-      final HeatmapFacet facet = entry.getValue();
+    for (HeatmapFacet facet : heatmapFacets.values()) {
       //add heatmap field param
-      if (!key.equals(facet.facetOn)) {
-        sreq.params.add(FacetParams.FACET_HEATMAP,
-            "{!" + CommonParams.OUTPUT_KEY + "=" + ClientUtils.encodeLocalParamVal(key) + "}" + facet.facetOn);
-      } else {
-        sreq.params.add(FacetParams.FACET_HEATMAP, facet.facetOn);
-      }
-      // Turn local-params into top-level f.key.param=value style params
+      ModifiableSolrParams newLocalParams = new ModifiableSolrParams();
       if (facet.localParams != null) {
-        final Iterator<String> localNameIter = facet.localParams.getParameterNamesIterator();
-        while (localNameIter.hasNext()) {
-          String pname = localNameIter.next();
-          if (!pname.startsWith(FacetParams.FACET_HEATMAP)) {
-            continue; // could be 'key', or 'v' even
-          }
-          String pval = facet.localParams.get(pname);
-          sreq.params.set("f." + key + "." + pname, pval);
-        }
+        newLocalParams.add(facet.localParams);
       }
       // Set format to PNG; it's the only one we parse
-      sreq.params.set("f." + key + "." + FacetParams.FACET_HEATMAP_FORMAT, FORMAT_PNG);
+      newLocalParams.set(FacetParams.FACET_HEATMAP_FORMAT, FORMAT_PNG);
+      sreq.params.add(FacetParams.FACET_HEATMAP,
+          newLocalParams.toLocalParamsString() + facet.facetOn);
     }
   }
 
