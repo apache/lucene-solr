@@ -249,6 +249,8 @@ Bug Fixes
 
 * SOLR-10520: child.facet.field doubled counts at least when rows>0. (Dr. Oleg Savrasov via Mikhail Khludnev) 
 
+* SOLR-10480: Full pagination in JSON Facet API using offset does not work. (yonik)
+
 Other Changes
 ----------------------
 

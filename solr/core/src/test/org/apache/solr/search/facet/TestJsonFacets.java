@@ -22,6 +22,7 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Random;
 
@@ -1314,6 +1315,10 @@ public class TestJsonFacets extends SolrTestCaseHS {
     doBigger( client, p );
   }
 
+  private String getId(int id) {
+    return String.format(Locale.US, "%05d", id);
+  }
+
   public void doBigger(Client client, ModifiableSolrParams p) throws Exception {
     MacroExpander m = new MacroExpander(p.getMap());
 
@@ -1332,7 +1337,7 @@ public class TestJsonFacets extends SolrTestCaseHS {
     for (int i=0; i<ndocs; i++) {
       Integer cat = r.nextInt(numCat);
       Integer where = r.nextInt(numWhere);
-      client.add( sdoc("id", i, cat_s,cat, where_s, where) , null );
+      client.add( sdoc("id", getId(i), cat_s,cat, where_s, where) , null );
       Map<Integer,List<Integer>> sub = model.get(cat);
       if (sub == null) {
         sub = new HashMap<>();
@@ -1371,6 +1376,23 @@ public class TestJsonFacets extends SolrTestCaseHS {
       );
     }
 
+    client.testJQ(params(p, "q", "*:*"
+        , "json.facet", "{f1:{type:terms, field:id, limit:1, offset:990}}"
+        )
+        , "facets=={ 'count':" + ndocs + "," +
+            "'f1':{buckets:[{val:'00990',count:1}]}} "
+    );
+
+
+    for (int i=0; i<20; i++) {
+      int off = random().nextInt(ndocs);
+      client.testJQ(params(p, "q", "*:*", "off",Integer.toString(off)
+          , "json.facet", "{f1:{type:terms, field:id, limit:1, offset:${off}}}"
+          )
+          , "facets=={ 'count':" + ndocs + "," +
+              "'f1':{buckets:[{val:'"  + getId(off)  + "',count:1}]}} "
+      );
+    }
   }
 
   public void testTolerant() throws Exception {
