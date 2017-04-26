@@ -253,6 +253,8 @@ Bug Fixes
 
 * SOLR-10480: Full pagination in JSON Facet API using offset does not work. (yonik)
 
+* SOLR-10526: facet.heatmap didn't honor facet exclusions ('ex') for distributed search. (David Smiley)
+
 Other Changes
 ----------------------
 
