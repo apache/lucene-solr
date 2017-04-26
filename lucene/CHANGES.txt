@@ -108,6 +108,10 @@ Improvements
 * LUCENE-7785: Move dictionary for Ukrainian analyzer to external dependency.
   (Andriy Rysin via Steve Rowe, Dawid Weiss)
 
+* LUCENE-7801: SortedSetDocValuesReaderState now implements
+  Accountable so you can see how much RAM it's using (Robert Muir,
+  Mike McCandless)
+
 Optimizations
 
 * LUCENE-7787: spatial-extras HeatmapFacetCounter will now short-circuit it's

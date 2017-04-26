@@ -18,6 +18,7 @@ package org.apache.lucene.facet.sortedset;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -39,6 +40,7 @@ import org.apache.lucene.search.MatchAllDocsQuery;
 import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.search.TopDocs;
 import org.apache.lucene.store.Directory;
+import org.apache.lucene.util.Accountable;
 import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.TestUtil;
 
@@ -177,6 +179,17 @@ public class TestSortedSetDocValuesFacets extends FacetTestCase {
     assertEquals("dim=a path=[] value=3 childCount=3\n  foo1 (1)\n  foo2 (1)\n  foo3 (1)\n", results.get(0).toString());
     assertEquals("dim=b path=[] value=2 childCount=2\n  bar1 (1)\n  bar2 (1)\n", results.get(1).toString());
     assertEquals("dim=c path=[] value=1 childCount=1\n  baz1 (1)\n", results.get(2).toString());
+
+    Collection<Accountable> resources = state.getChildResources();
+    assertTrue(state.toString().contains(FacetsConfig.DEFAULT_INDEX_FIELD_NAME));
+    if (searcher.getIndexReader().leaves().size() > 1) {
+      assertTrue(state.ramBytesUsed() > 0);
+      assertFalse(resources.isEmpty());
+      assertTrue(resources.toString().contains(FacetsConfig.DEFAULT_INDEX_FIELD_NAME));
+    } else {
+      assertEquals(0, state.ramBytesUsed());
+      assertTrue(resources.isEmpty());
+    }
 
     searcher.getIndexReader().close();
     dir.close();
