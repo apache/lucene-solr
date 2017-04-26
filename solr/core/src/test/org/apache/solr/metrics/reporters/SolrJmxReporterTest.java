@@ -72,7 +72,7 @@ public class SolrJmxReporterTest extends SolrTestCaseJ4 {
 
     final SolrCore core = h.getCore();
     domain = core.getName();
-    rootName = TestUtil.randomSimpleString(random(), 1, 10);
+    rootName = TestUtil.randomSimpleString(random(), 5, 10);
 
     coreMetricManager = core.getCoreMetricManager();
     metricManager = core.getCoreContainer().getMetricManager();
@@ -95,7 +95,7 @@ public class SolrJmxReporterTest extends SolrTestCaseJ4 {
   private PluginInfo createReporterPluginInfo(String rootName, boolean enabled) {
     Random random = random();
     String className = SolrJmxReporter.class.getName();
-    String reporterName = TestUtil.randomSimpleString(random, 1, 10);
+    String reporterName = TestUtil.randomSimpleString(random, 5, 10);
 
     Map<String, Object> attrs = new HashMap<>();
     attrs.put(FieldType.CLASS_NAME, className);
@@ -174,12 +174,12 @@ public class SolrJmxReporterTest extends SolrTestCaseJ4 {
 
   @Test
   public void testEnabled() throws Exception {
-    String root1 = TestUtil.randomSimpleString(random(), 1, 10);
+    String root1 = TestUtil.randomSimpleString(random(), 5, 10);
     PluginInfo pluginInfo1 = createReporterPluginInfo(root1, true);
     metricManager.loadReporter(coreMetricManager.getRegistryName(), coreMetricManager.getCore().getResourceLoader(),
         pluginInfo1, coreMetricManager.getTag());
 
-    String root2 = TestUtil.randomSimpleString(random(), 1, 10);
+    String root2 = TestUtil.randomSimpleString(random(), 5, 10);
     assertFalse(root2.equals(root1));
     PluginInfo pluginInfo2 = createReporterPluginInfo(root2, false);
     metricManager.loadReporter(coreMetricManager.getRegistryName(), coreMetricManager.getCore().getResourceLoader(),
