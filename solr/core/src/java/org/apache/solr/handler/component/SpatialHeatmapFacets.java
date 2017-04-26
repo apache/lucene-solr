@@ -32,16 +32,13 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
-import org.apache.lucene.util.FixedBitSet;
-import org.apache.solr.search.DocIterator;
-import org.apache.solr.search.SolrIndexSearcher;
-import org.locationtech.spatial4j.context.SpatialContext;
-import org.locationtech.spatial4j.shape.Shape;
 import org.apache.lucene.spatial.prefix.HeatmapFacetCounter;
 import org.apache.lucene.spatial.prefix.PrefixTreeStrategy;
 import org.apache.lucene.spatial.query.SpatialArgs;
 import org.apache.lucene.spatial.query.SpatialOperation;
 import org.apache.lucene.util.Bits;
+import org.apache.lucene.util.FixedBitSet;
+import org.apache.solr.client.solrj.util.ClientUtils;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.FacetParams;
@@ -54,10 +51,13 @@ import org.apache.solr.schema.RptWithGeometrySpatialField;
 import org.apache.solr.schema.SchemaField;
 import org.apache.solr.schema.SpatialRecursivePrefixTreeFieldType;
 import org.apache.solr.search.BitDocSet;
+import org.apache.solr.search.DocIterator;
 import org.apache.solr.search.DocSet;
-import org.apache.solr.search.QueryParsing;
+import org.apache.solr.search.SolrIndexSearcher;
 import org.apache.solr.util.DistanceUnits;
 import org.apache.solr.util.SpatialUtils;
+import org.locationtech.spatial4j.context.SpatialContext;
+import org.locationtech.spatial4j.shape.Shape;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -305,7 +305,7 @@ public class SpatialHeatmapFacets {
       //add heatmap field param
       if (!key.equals(facet.facetOn)) {
         sreq.params.add(FacetParams.FACET_HEATMAP,
-            "{!" + CommonParams.OUTPUT_KEY + "=" + QueryParsing.encodeLocalParamVal(key) + "}" + facet.facetOn);
+            "{!" + CommonParams.OUTPUT_KEY + "=" + ClientUtils.encodeLocalParamVal(key) + "}" + facet.facetOn);
       } else {
         sreq.params.add(FacetParams.FACET_HEATMAP, facet.facetOn);
       }

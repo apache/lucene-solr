@@ -189,6 +189,8 @@ New Features
 
 * SOLR-10505: Add multi-field support to TermsComponent when requesting terms' statistics. (Shai Erera)
 
+* SOLR-10537: SolrJ: Added SolrParams.toLocalParamsString() and ClientUtils.encodeLocalParamVal. (David Smiley)
+
 Optimizations
 ----------------------
 

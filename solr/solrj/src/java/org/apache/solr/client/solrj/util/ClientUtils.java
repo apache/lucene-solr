@@ -159,6 +159,35 @@ public class ClientUtils
     return sb.toString();
   }
 
+  /**
+   * Returns the value encoded properly so it can be appended after a <pre>name=</pre> local-param.
+   */
+  public static String encodeLocalParamVal(String val) {
+    int len = val.length();
+    int i = 0;
+    if (len > 0 && val.charAt(0) != '$') {
+      for (;i<len; i++) {
+        char ch = val.charAt(i);
+        if (Character.isWhitespace(ch) || ch=='}') break;
+      }
+    }
+
+    if (i>=len) return val;
+
+    // We need to enclose in quotes... but now we need to escape
+    StringBuilder sb = new StringBuilder(val.length() + 4);
+    sb.append('\'');
+    for (i=0; i<len; i++) {
+      char ch = val.charAt(i);
+      if (ch=='\'') {
+        sb.append('\\');
+      }
+      sb.append(ch);
+    }
+    sb.append('\'');
+    return sb.toString();
+  }
+
   /** Constructs a slices map from a collection of slices and handles disambiguation if multiple collections are being queried simultaneously */
   public static void addSlices(Map<String,Slice> target, String collectionName, Collection<Slice> slices, boolean multiCollection) {
     for (Slice slice : slices) {
