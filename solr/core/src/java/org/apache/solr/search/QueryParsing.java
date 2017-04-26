@@ -171,33 +171,6 @@ public class QueryParsing {
   }
 
 
-  public static String encodeLocalParamVal(String val) {
-    int len = val.length();
-    int i = 0;
-    if (len > 0 && val.charAt(0) != '$') {
-      for (;i<len; i++) {
-        char ch = val.charAt(i);
-        if (Character.isWhitespace(ch) || ch=='}') break;
-      }
-    }
-
-    if (i>=len) return val;
-
-    // We need to enclose in quotes... but now we need to escape
-    StringBuilder sb = new StringBuilder(val.length() + 4);
-    sb.append('\'');
-    for (i=0; i<len; i++) {
-      char ch = val.charAt(i);
-      if (ch=='\'') {
-        sb.append('\\');
-      }
-      sb.append(ch);
-    }
-    sb.append('\'');
-    return sb.toString();
-  }
-  
-
   /**
    * "foo" returns null
    * "{!prefix f=myfield}yes" returns type="prefix",f="myfield",v="yes"

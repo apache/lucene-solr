@@ -14,16 +14,19 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.lucene.store;
 
+package org.apache.lucene.store;
 
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
+import org.apache.lucene.mockfile.ExtrasFS;
 import org.apache.lucene.util.LuceneTestCase;
 
 public class TestDirectory extends LuceneTestCase {
@@ -136,6 +139,18 @@ public class TestDirectory extends LuceneTestCase {
     } finally {
       fsDir.close();
     }
+  }
+
+  public void testListAll() throws Throwable {
+    Path dir = createTempDir("testdir");
+    assumeFalse("this test does not expect extra files", dir.getFileSystem().provider() instanceof ExtrasFS);
+    Path file1 = Files.createFile(dir.resolve("tempfile1"));
+    Path file2 = Files.createFile(dir.resolve("tempfile2"));
+    Set<String> files = new HashSet<>(Arrays.asList(FSDirectory.listAll(dir)));
+
+    assertTrue(files.size() == 2);
+    assertTrue(files.contains(file1.getFileName().toString()));
+    assertTrue(files.contains(file2.getFileName().toString()));
   }
 }
 

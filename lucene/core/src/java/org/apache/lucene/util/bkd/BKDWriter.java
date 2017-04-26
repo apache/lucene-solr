@@ -884,7 +884,7 @@ public class BKDWriter implements Closeable {
         };
       }
 
-      OfflineSorter sorter = new OfflineSorter(tempDir, tempFileNamePrefix + "_bkd" + dim, cmp, offlineSorterBufferMB, offlineSorterMaxTempFiles, bytesPerDoc) {
+      OfflineSorter sorter = new OfflineSorter(tempDir, tempFileNamePrefix + "_bkd" + dim, cmp, offlineSorterBufferMB, offlineSorterMaxTempFiles, bytesPerDoc, null, 0) {
 
           /** We write/read fixed-byte-width file that {@link OfflinePointReader} can read. */
           @Override

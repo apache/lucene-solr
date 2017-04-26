@@ -22,6 +22,7 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Random;
 
@@ -770,12 +771,12 @@ public class TestJsonFacets extends SolrTestCaseHS {
             "'f1':{ numBuckets:1, buckets:[{val:B, count:3}]} } "
     );
 
-    // mincount should lower numBuckets
+    // mincount should not lower numBuckets (since SOLR-10552)
     client.testJQ(params(p, "q", "*:*", "rows", "0", "facet", "true"
             , "json.facet", "{f1:{terms:{${terms} field:${cat_s}, numBuckets:true, mincount:3}}}"
         )
         , "facets=={ 'count':6, " +
-            "'f1':{ numBuckets:1, buckets:[{val:B, count:3}]} } "
+            "'f1':{ numBuckets:2, buckets:[{val:B, count:3}]} } "
     );
 
     // basic range facet
@@ -1136,7 +1137,7 @@ public class TestJsonFacets extends SolrTestCaseHS {
                 ",f3:{${terms}  type:field, field:${num_i}, sort:'index asc' }" +
                 ",f4:{${terms}  type:field, field:${num_i}, sort:'index desc' }" +
                 ",f5:{${terms}  type:field, field:${num_i}, sort:'index desc', limit:1, missing:true, allBuckets:true, numBuckets:true }" +
-                ",f6:{${terms}  type:field, field:${num_i}, sort:'index desc', mincount:2, numBuckets:true }" +   // mincount should lower numbuckets
+                ",f6:{${terms}  type:field, field:${num_i}, sort:'index desc', mincount:2, numBuckets:true }" +   // mincount should not lower numbuckets (since SOLR-10552)
                 ",f7:{${terms}  type:field, field:${num_i}, sort:'index desc', offset:2, numBuckets:true }" +     // test offset
                 ",f8:{${terms}  type:field, field:${num_i}, sort:'index desc', offset:100, numBuckets:true }" +   // test high offset
                 ",f9:{${terms}  type:field, field:${num_i}, sort:'x desc', facet:{x:'avg(${num_d})'}, missing:true, allBuckets:true, numBuckets:true }" +            // test stats
@@ -1150,7 +1151,7 @@ public class TestJsonFacets extends SolrTestCaseHS {
             ",f3:{ buckets:[{val:-5,count:2},{val:2,count:1},{val:3,count:1},{val:7,count:1} ] } " +
             ",f4:{ buckets:[{val:7,count:1},{val:3,count:1},{val:2,count:1},{val:-5,count:2} ] } " +
             ",f5:{ buckets:[{val:7,count:1}]   , numBuckets:4, allBuckets:{count:5}, missing:{count:1}  } " +
-            ",f6:{ buckets:[{val:-5,count:2}]  , numBuckets:1  } " +
+            ",f6:{ buckets:[{val:-5,count:2}]  , numBuckets:4  } " +
             ",f7:{ buckets:[{val:2,count:1},{val:-5,count:2}] , numBuckets:4 } " +
             ",f8:{ buckets:[] , numBuckets:4 } " +
             ",f9:{ buckets:[{val:7,count:1,x:11.0},{val:2,count:1,x:4.0},{val:3,count:1,x:2.0},{val:-5,count:2,x:-7.0} ],  numBuckets:4, allBuckets:{count:5,x:0.6},missing:{count:1,x:0.0} } " +  // TODO: should missing exclude "x" because no values were collected?
@@ -1314,6 +1315,10 @@ public class TestJsonFacets extends SolrTestCaseHS {
     doBigger( client, p );
   }
 
+  private String getId(int id) {
+    return String.format(Locale.US, "%05d", id);
+  }
+
   public void doBigger(Client client, ModifiableSolrParams p) throws Exception {
     MacroExpander m = new MacroExpander(p.getMap());
 
@@ -1332,7 +1337,7 @@ public class TestJsonFacets extends SolrTestCaseHS {
     for (int i=0; i<ndocs; i++) {
       Integer cat = r.nextInt(numCat);
       Integer where = r.nextInt(numWhere);
-      client.add( sdoc("id", i, cat_s,cat, where_s, where) , null );
+      client.add( sdoc("id", getId(i), cat_s,cat, where_s, where) , null );
       Map<Integer,List<Integer>> sub = model.get(cat);
       if (sub == null) {
         sub = new HashMap<>();
@@ -1371,6 +1376,23 @@ public class TestJsonFacets extends SolrTestCaseHS {
       );
     }
 
+    client.testJQ(params(p, "q", "*:*"
+        , "json.facet", "{f1:{type:terms, field:id, limit:1, offset:990}}"
+        )
+        , "facets=={ 'count':" + ndocs + "," +
+            "'f1':{buckets:[{val:'00990',count:1}]}} "
+    );
+
+
+    for (int i=0; i<20; i++) {
+      int off = random().nextInt(ndocs);
+      client.testJQ(params(p, "q", "*:*", "off",Integer.toString(off)
+          , "json.facet", "{f1:{type:terms, field:id, limit:1, offset:${off}}}"
+          )
+          , "facets=={ 'count':" + ndocs + "," +
+              "'f1':{buckets:[{val:'"  + getId(off)  + "',count:1}]}} "
+      );
+    }
   }
 
   public void testTolerant() throws Exception {

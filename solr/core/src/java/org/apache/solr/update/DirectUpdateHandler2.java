@@ -158,41 +158,42 @@ public class DirectUpdateHandler2 extends UpdateHandler implements SolrCoreState
   }
 
   @Override
-  public void initializeMetrics(SolrMetricManager manager, String registry, String scope) {
-    commitCommands = manager.meter(this, registry, "commits", getCategory().toString(), scope);
-    manager.registerGauge(this, registry, () -> commitTracker.getCommitCount(), true, "autoCommits", getCategory().toString(), scope);
-    manager.registerGauge(this, registry, () -> softCommitTracker.getCommitCount(), true, "softAutoCommits", getCategory().toString(), scope);
+  public void initializeMetrics(SolrMetricManager manager, String registryName, String scope) {
+    this.registry = manager.registry(registryName);
+    commitCommands = manager.meter(this, registryName, "commits", getCategory().toString(), scope);
+    manager.registerGauge(this, registryName, () -> commitTracker.getCommitCount(), true, "autoCommits", getCategory().toString(), scope);
+    manager.registerGauge(this, registryName, () -> softCommitTracker.getCommitCount(), true, "softAutoCommits", getCategory().toString(), scope);
     if (commitTracker.getDocsUpperBound() > 0) {
-      manager.registerGauge(this, registry, () -> commitTracker.getDocsUpperBound(), true, "autoCommitMaxDocs",
+      manager.registerGauge(this, registryName, () -> commitTracker.getDocsUpperBound(), true, "autoCommitMaxDocs",
           getCategory().toString(), scope);
     }
     if (commitTracker.getTimeUpperBound() > 0) {
-      manager.registerGauge(this, registry, () -> "" + commitTracker.getTimeUpperBound() + "ms", true, "autoCommitMaxTime",
+      manager.registerGauge(this, registryName, () -> "" + commitTracker.getTimeUpperBound() + "ms", true, "autoCommitMaxTime",
           getCategory().toString(), scope);
     }
     if (softCommitTracker.getDocsUpperBound() > 0) {
-      manager.registerGauge(this, registry, () -> softCommitTracker.getDocsUpperBound(), true, "softAutoCommitMaxDocs",
+      manager.registerGauge(this, registryName, () -> softCommitTracker.getDocsUpperBound(), true, "softAutoCommitMaxDocs",
           getCategory().toString(), scope);
     }
     if (softCommitTracker.getTimeUpperBound() > 0) {
-      manager.registerGauge(this, registry, () -> "" + softCommitTracker.getTimeUpperBound() + "ms", true, "softAutoCommitMaxTime",
+      manager.registerGauge(this, registryName, () -> "" + softCommitTracker.getTimeUpperBound() + "ms", true, "softAutoCommitMaxTime",
           getCategory().toString(), scope);
     }
-    optimizeCommands = manager.meter(this, registry, "optimizes", getCategory().toString(), scope);
-    rollbackCommands = manager.meter(this, registry, "rollbacks", getCategory().toString(), scope);
-    splitCommands = manager.meter(this, registry, "splits", getCategory().toString(), scope);
-    mergeIndexesCommands = manager.meter(this, registry, "merges", getCategory().toString(), scope);
-    expungeDeleteCommands = manager.meter(this, registry, "expungeDeletes", getCategory().toString(), scope);
-    manager.registerGauge(this, registry, () -> numDocsPending.longValue(), true, "docsPending", getCategory().toString(), scope);
-    manager.registerGauge(this, registry, () -> addCommands.longValue(), true, "adds", getCategory().toString(), scope);
-    manager.registerGauge(this, registry, () -> deleteByIdCommands.longValue(), true, "deletesById", getCategory().toString(), scope);
-    manager.registerGauge(this, registry, () -> deleteByQueryCommands.longValue(), true, "deletesByQuery", getCategory().toString(), scope);
-    manager.registerGauge(this, registry, () -> numErrors.longValue(), true, "errors", getCategory().toString(), scope);
+    optimizeCommands = manager.meter(this, registryName, "optimizes", getCategory().toString(), scope);
+    rollbackCommands = manager.meter(this, registryName, "rollbacks", getCategory().toString(), scope);
+    splitCommands = manager.meter(this, registryName, "splits", getCategory().toString(), scope);
+    mergeIndexesCommands = manager.meter(this, registryName, "merges", getCategory().toString(), scope);
+    expungeDeleteCommands = manager.meter(this, registryName, "expungeDeletes", getCategory().toString(), scope);
+    manager.registerGauge(this, registryName, () -> numDocsPending.longValue(), true, "docsPending", getCategory().toString(), scope);
+    manager.registerGauge(this, registryName, () -> addCommands.longValue(), true, "adds", getCategory().toString(), scope);
+    manager.registerGauge(this, registryName, () -> deleteByIdCommands.longValue(), true, "deletesById", getCategory().toString(), scope);
+    manager.registerGauge(this, registryName, () -> deleteByQueryCommands.longValue(), true, "deletesByQuery", getCategory().toString(), scope);
+    manager.registerGauge(this, registryName, () -> numErrors.longValue(), true, "errors", getCategory().toString(), scope);
 
-    addCommandsCumulative = manager.meter(this, registry, "cumulativeAdds", getCategory().toString(), scope);
-    deleteByIdCommandsCumulative = manager.meter(this, registry, "cumulativeDeletesById", getCategory().toString(), scope);
-    deleteByQueryCommandsCumulative = manager.meter(this, registry, "cumulativeDeletesByQuery", getCategory().toString(), scope);
-    numErrorsCumulative = manager.meter(this, registry, "cumulativeErrors", getCategory().toString(), scope);
+    addCommandsCumulative = manager.meter(this, registryName, "cumulativeAdds", getCategory().toString(), scope);
+    deleteByIdCommandsCumulative = manager.meter(this, registryName, "cumulativeDeletesById", getCategory().toString(), scope);
+    deleteByQueryCommandsCumulative = manager.meter(this, registryName, "cumulativeDeletesByQuery", getCategory().toString(), scope);
+    numErrorsCumulative = manager.meter(this, registryName, "cumulativeErrors", getCategory().toString(), scope);
   }
 
   private void deleteAll() throws IOException {

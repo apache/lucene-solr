@@ -18,6 +18,7 @@ package org.apache.lucene.facet.sortedset;
 
 import java.io.IOException;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -33,6 +34,8 @@ import org.apache.lucene.index.MultiDocValues.MultiSortedSetDocValues;
 import org.apache.lucene.index.MultiDocValues.OrdinalMap;
 import org.apache.lucene.index.MultiDocValues;
 import org.apache.lucene.index.SortedSetDocValues;
+import org.apache.lucene.util.Accountable;
+import org.apache.lucene.util.Accountables;
 import org.apache.lucene.util.BytesRef;
 
 /**
@@ -104,11 +107,46 @@ public class DefaultSortedSetDocValuesReaderState extends SortedSetDocValuesRead
     }
   }
 
+  /**
+   * Return the memory usage of this object in bytes. Negative values are illegal.
+   */
+  @Override
+  public long ramBytesUsed() {
+    synchronized (cachedOrdMaps) {
+      long bytes = 0;
+      for (OrdinalMap map : cachedOrdMaps.values()) {
+        bytes += map.ramBytesUsed();
+      }
+
+      return bytes;
+    }
+  }
+
+  /**
+   * Returns nested resources of this class. 
+   * The result should be a point-in-time snapshot (to avoid race conditions).
+   * @see Accountables
+   */
+  @Override
+  public Collection<Accountable> getChildResources() {
+    synchronized (cachedOrdMaps) {
+      return Accountables.namedAccountables("DefaultSortedSetDocValuesReaderState", cachedOrdMaps);
+    }
+  }
+
+  @Override
+  public String toString() {
+    return "DefaultSortedSetDocValuesReaderState(field=" + field + " origReader=" + origReader + ")";
+  }
+  
   /** Return top-level doc values. */
   @Override
   public SortedSetDocValues getDocValues() throws IOException {
     // TODO: this is dup'd from slow composite reader wrapper ... can we factor it out to share?
     OrdinalMap map = null;
+    // TODO: why are we lazy about this?  It's better if ctor pays the cost, not first query?  Oh, but we
+    // call this method from ctor, ok.  Also, we only ever store one entry in the map (for key=field) so
+    // why are we using a map?
     synchronized (cachedOrdMaps) {
       map = cachedOrdMaps.get(field);
       if (map == null) {

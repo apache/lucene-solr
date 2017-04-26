@@ -97,6 +97,9 @@ Bug Fixes
   ArrayIndexOutOfBoundsException when byte blocks larger than 32 KB
   were added (Mike McCandless)
 
+* LUCENE-7797: The static FSDirectory.listAll(Path) method was always
+  returning an empty array.  (Atkins Chang via Mike McCandless)
+
 Improvements
 
 * LUCENE-7782: OfflineSorter now passes the total number of items it
@@ -104,6 +107,13 @@ Improvements
 
 * LUCENE-7785: Move dictionary for Ukrainian analyzer to external dependency.
   (Andriy Rysin via Steve Rowe, Dawid Weiss)
+
+* LUCENE-7801: SortedSetDocValuesReaderState now implements
+  Accountable so you can see how much RAM it's using (Robert Muir,
+  Mike McCandless)
+
+* LUCENE-7792: OfflineSorter can now run concurrently if you pass it
+  an optional ExecutorService (Dawid Weiss, Mike McCandless)
 
 Optimizations
 

@@ -45,7 +45,7 @@ public class MetricsHandlerTest extends SolrTestCaseJ4 {
     MetricsHandler handler = new MetricsHandler(h.getCoreContainer());
 
     SolrQueryResponse resp = new SolrQueryResponse();
-    handler.handleRequestBody(req(CommonParams.QT, "/admin/metrics", CommonParams.WT, "json"), resp);
+    handler.handleRequestBody(req(CommonParams.QT, "/admin/metrics", MetricsHandler.COMPACT_PARAM, "false", CommonParams.WT, "json"), resp);
     NamedList values = resp.getValues();
     assertNotNull(values.get("metrics"));
     values = (NamedList) values.get("metrics");
@@ -64,7 +64,7 @@ public class MetricsHandlerTest extends SolrTestCaseJ4 {
     assertEquals(5, ((Map) nl.get("ADMIN./admin/authorization.clientErrors")).size());
 
     resp = new SolrQueryResponse();
-    handler.handleRequestBody(req(CommonParams.QT, "/admin/metrics", CommonParams.WT, "json", "group", "jvm,jetty"), resp);
+    handler.handleRequestBody(req(CommonParams.QT, "/admin/metrics", MetricsHandler.COMPACT_PARAM, "false", CommonParams.WT, "json", "group", "jvm,jetty"), resp);
     values = resp.getValues();
     assertNotNull(values.get("metrics"));
     values = (NamedList) values.get("metrics");
@@ -74,7 +74,7 @@ public class MetricsHandlerTest extends SolrTestCaseJ4 {
 
     resp = new SolrQueryResponse();
     // "collection" works too, because it's a prefix for "collection1"
-    handler.handleRequestBody(req(CommonParams.QT, "/admin/metrics", CommonParams.WT, "json", "registry", "solr.core.collection,solr.jvm"), resp);
+    handler.handleRequestBody(req(CommonParams.QT, "/admin/metrics", MetricsHandler.COMPACT_PARAM, "false", CommonParams.WT, "json", "registry", "solr.core.collection,solr.jvm"), resp);
     values = resp.getValues();
     assertNotNull(values.get("metrics"));
     values = (NamedList) values.get("metrics");
@@ -84,7 +84,7 @@ public class MetricsHandlerTest extends SolrTestCaseJ4 {
 
     resp = new SolrQueryResponse();
     // "collection" works too, because it's a prefix for "collection1"
-    handler.handleRequestBody(req(CommonParams.QT, "/admin/metrics", CommonParams.WT, "json", "registry", "solr.core.collection", "registry", "solr.jvm"), resp);
+    handler.handleRequestBody(req(CommonParams.QT, "/admin/metrics", MetricsHandler.COMPACT_PARAM, "false", CommonParams.WT, "json", "registry", "solr.core.collection", "registry", "solr.jvm"), resp);
     values = resp.getValues();
     assertNotNull(values.get("metrics"));
     values = (NamedList) values.get("metrics");
@@ -93,7 +93,7 @@ public class MetricsHandlerTest extends SolrTestCaseJ4 {
     assertNotNull(values.get("solr.jvm"));
 
     resp = new SolrQueryResponse();
-    handler.handleRequestBody(req(CommonParams.QT, "/admin/metrics", CommonParams.WT, "json", "group", "jvm,jetty"), resp);
+    handler.handleRequestBody(req(CommonParams.QT, "/admin/metrics", MetricsHandler.COMPACT_PARAM, "false", CommonParams.WT, "json", "group", "jvm,jetty"), resp);
     values = resp.getValues();
     assertNotNull(values.get("metrics"));
     values = (NamedList) values.get("metrics");
@@ -102,7 +102,7 @@ public class MetricsHandlerTest extends SolrTestCaseJ4 {
     assertNotNull(values.get("solr.jvm"));
 
     resp = new SolrQueryResponse();
-    handler.handleRequestBody(req(CommonParams.QT, "/admin/metrics", CommonParams.WT, "json", "group", "jvm", "group", "jetty"), resp);
+    handler.handleRequestBody(req(CommonParams.QT, "/admin/metrics", MetricsHandler.COMPACT_PARAM, "false", CommonParams.WT, "json", "group", "jvm", "group", "jetty"), resp);
     values = resp.getValues();
     assertNotNull(values.get("metrics"));
     values = (NamedList) values.get("metrics");
@@ -111,7 +111,7 @@ public class MetricsHandlerTest extends SolrTestCaseJ4 {
     assertNotNull(values.get("solr.jvm"));
 
     resp = new SolrQueryResponse();
-    handler.handleRequestBody(req(CommonParams.QT, "/admin/metrics", CommonParams.WT, "json", "group", "node", "type", "counter"), resp);
+    handler.handleRequestBody(req(CommonParams.QT, "/admin/metrics", MetricsHandler.COMPACT_PARAM, "false", CommonParams.WT, "json", "group", "node", "type", "counter"), resp);
     values = resp.getValues();
     assertNotNull(values.get("metrics"));
     values = (NamedList) values.get("metrics");
@@ -121,7 +121,7 @@ public class MetricsHandlerTest extends SolrTestCaseJ4 {
     assertNull(values.get("ADMIN./admin/authorization.errors")); // this is a timer node
 
     resp = new SolrQueryResponse();
-    handler.handleRequestBody(req(CommonParams.QT, "/admin/metrics", CommonParams.WT, "json", "prefix", "CONTAINER.cores,CONTAINER.threadPool"), resp);
+    handler.handleRequestBody(req(CommonParams.QT, "/admin/metrics", MetricsHandler.COMPACT_PARAM, "false", CommonParams.WT, "json", "prefix", "CONTAINER.cores,CONTAINER.threadPool"), resp);
     values = resp.getValues();
     assertNotNull(values.get("metrics"));
     values = (NamedList) values.get("metrics");
@@ -134,7 +134,7 @@ public class MetricsHandlerTest extends SolrTestCaseJ4 {
     assertNotNull(values.get("CONTAINER.threadPool.coreLoadExecutor.completed"));
 
     resp = new SolrQueryResponse();
-    handler.handleRequestBody(req(CommonParams.QT, "/admin/metrics", CommonParams.WT, "json", "prefix", "CONTAINER.cores", "regex", "C.*thread.*completed"), resp);
+    handler.handleRequestBody(req(CommonParams.QT, "/admin/metrics", MetricsHandler.COMPACT_PARAM, "false", CommonParams.WT, "json", "prefix", "CONTAINER.cores", "regex", "C.*thread.*completed"), resp);
     values = resp.getValues();
     assertNotNull(values.get("metrics"));
     values = (NamedList) values.get("metrics");
@@ -145,7 +145,7 @@ public class MetricsHandlerTest extends SolrTestCaseJ4 {
     assertNotNull(values.get("CONTAINER.threadPool.coreLoadExecutor.completed"));
 
     resp = new SolrQueryResponse();
-    handler.handleRequestBody(req(CommonParams.QT, "/admin/metrics", CommonParams.WT, "json", "prefix", "CACHE.core.fieldCache", "property", "entries_count", "compact", "true"), resp);
+    handler.handleRequestBody(req(CommonParams.QT, "/admin/metrics", CommonParams.WT, "json", "prefix", "CACHE.core.fieldCache", "property", "entries_count", MetricsHandler.COMPACT_PARAM, "true"), resp);
     values = resp.getValues();
     assertNotNull(values.get("metrics"));
     values = (NamedList) values.get("metrics");
@@ -157,14 +157,14 @@ public class MetricsHandlerTest extends SolrTestCaseJ4 {
     assertNotNull(m.get("entries_count"));
 
     resp = new SolrQueryResponse();
-    handler.handleRequestBody(req(CommonParams.QT, "/admin/metrics", CommonParams.WT, "json", "group", "jvm", "prefix", "CONTAINER.cores"), resp);
+    handler.handleRequestBody(req(CommonParams.QT, "/admin/metrics", MetricsHandler.COMPACT_PARAM, "false", CommonParams.WT, "json", "group", "jvm", "prefix", "CONTAINER.cores"), resp);
     values = resp.getValues();
     assertNotNull(values.get("metrics"));
     values = (NamedList) values.get("metrics");
     assertEquals(0, values.size());
 
     resp = new SolrQueryResponse();
-    handler.handleRequestBody(req(CommonParams.QT, "/admin/metrics", CommonParams.WT, "json", "group", "node", "type", "timer", "prefix", "CONTAINER.cores"), resp);
+    handler.handleRequestBody(req(CommonParams.QT, "/admin/metrics", MetricsHandler.COMPACT_PARAM, "false", CommonParams.WT, "json", "group", "node", "type", "timer", "prefix", "CONTAINER.cores"), resp);
     values = resp.getValues();
     assertNotNull(values.get("metrics"));
     SimpleOrderedMap map = (SimpleOrderedMap) values.get("metrics");

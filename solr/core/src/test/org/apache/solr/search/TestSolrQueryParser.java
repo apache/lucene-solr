@@ -75,10 +75,23 @@ public class TestSolrQueryParser extends SolrTestCaseJ4 {
 
   @Test
   public void testPhrase() {
+    // "text" field's type has WordDelimiterGraphFilter (WDGFF) and autoGeneratePhraseQueries=true
     // should generate a phrase of "now cow" and match only one doc
-    assertQ(req("q", "text:now-cow", "indent", "true")
+    assertQ(req("q", "text:now-cow", "indent", "true", "sow","true")
         , "//*[@numFound='1']"
     );
+    // When sow=false, autoGeneratePhraseQueries=true only works when a graph is produced
+    // (i.e. overlapping terms, e.g. if WDGFF's preserveOriginal=1 or concatenateWords=1).
+    // The WDGFF config on the "text" field doesn't produce a graph, so the generated query
+    // is not a phrase query.  As a result, docs can match that don't match phrase query "now cow"
+    assertQ(req("q", "text:now-cow", "indent", "true", "sow","false")
+        , "//*[@numFound='2']"
+    );
+    assertQ(req("q", "text:now-cow", "indent", "true") // default sow=false
+        , "//*[@numFound='2']"
+    );
+    
+    // "text_np" field's type has WDGFF and (default) autoGeneratePhraseQueries=false
     // should generate a query of (now OR cow) and match both docs
     assertQ(req("q", "text_np:now-cow", "indent", "true")
         , "//*[@numFound='2']"
@@ -593,8 +606,9 @@ public class TestSolrQueryParser extends SolrTestCaseJ4 {
     assertJQ(req("df", "syn", "q", "wi fi", "sow", "true")
         , "/response/numFound==0"
     );
-    assertJQ(req("df", "syn", "q", "wi fi") // default sow=true
-        , "/response/numFound==0"
+    assertJQ(req("df", "syn", "q", "wi fi") // default sow=false
+        , "/response/numFound==1"
+        , "/response/docs/[0]/id=='20'"
     );
 
     assertJQ(req("df", "syn", "q", "{!lucene sow=false}wi fi")
@@ -605,8 +619,9 @@ public class TestSolrQueryParser extends SolrTestCaseJ4 {
         , "/response/numFound==0"
     );
 
-    assertJQ(req("df", "syn", "q", "{!lucene}wi fi") // default sow=true
-        , "/response/numFound==0"
+    assertJQ(req("df", "syn", "q", "{!lucene}wi fi") // default sow=false
+        , "/response/numFound==1"
+        , "/response/docs/[0]/id=='20'"
     );
   }
 
@@ -654,20 +669,25 @@ public class TestSolrQueryParser extends SolrTestCaseJ4 {
         , "/response/numFound==0"
     );
 
-    assertJQ(req("df", "syn", "q", "wi fi") // default sow=true
-        , "/response/numFound==0"
+    assertJQ(req("df", "syn", "q", "wi fi") // default sow=false
+        , "/response/numFound==1"
+        , "/response/docs/[0]/id=='20'"
     );
-    assertJQ(req("df", "syn", "q", "wi /* foo */ fi") // default sow=true
-        , "/response/numFound==0"
+    assertJQ(req("df", "syn", "q", "wi /* foo */ fi") // default sow=false
+        , "/response/numFound==1"
+        , "/response/docs/[0]/id=='20'"
     );
-    assertJQ(req("df", "syn", "q", "wi /* foo */ /* bar */ fi") // default sow=true
-        , "/response/numFound==0"
+    assertJQ(req("df", "syn", "q", "wi /* foo */ /* bar */ fi") // default sow=false
+        , "/response/numFound==1"
+        , "/response/docs/[0]/id=='20'"
     );
-    assertJQ(req("df", "syn", "q", "/* foo */ wi fi /* bar */") // default sow=true
-        , "/response/numFound==0"
+    assertJQ(req("df", "syn", "q", " /* foo */ wi fi /* bar */") // default sow=false
+        , "/response/numFound==1"
+        , "/response/docs/[0]/id=='20'"
     );
-    assertJQ(req("df", "syn", "q", "/* foo */ wi /* bar */ fi /* baz */") // default sow=true
-        , "/response/numFound==0"
+    assertJQ(req("df", "syn", "q", " /* foo */ wi /* bar */ fi /* baz */") // default sow=false
+        , "/response/numFound==1"
+        , "/response/docs/[0]/id=='20'"
     );
 
 
@@ -708,20 +728,25 @@ public class TestSolrQueryParser extends SolrTestCaseJ4 {
         , "/response/numFound==0"
     );
 
-    assertJQ(req("df", "syn", "q", "{!lucene}wi fi") // default sow=true
-        , "/response/numFound==0"
+    assertJQ(req("df", "syn", "q", "{!lucene}wi fi") // default sow=false
+        , "/response/numFound==1"
+        , "/response/docs/[0]/id=='20'"
     );
-    assertJQ(req("df", "syn", "q", "{!lucene}wi /* foo */ fi") // default sow=true
-        , "/response/numFound==0"
+    assertJQ(req("df", "syn", "q", "{!lucene}wi /* foo */ fi") // default sow=false
+        , "/response/numFound==1"
+        , "/response/docs/[0]/id=='20'"
     );
-    assertJQ(req("df", "syn", "q", "{!lucene}wi /* foo */ /* bar */ fi") // default sow=true
-        , "/response/numFound==0"
+    assertJQ(req("df", "syn", "q", "{!lucene}wi /* foo */ /* bar */ fi") // default sow=false
+        , "/response/numFound==1"
+        , "/response/docs/[0]/id=='20'"
     );
-    assertJQ(req("df", "syn", "q", "{!lucene}/* foo */ wi fi /* bar */") // default sow=true
-        , "/response/numFound==0"
+    assertJQ(req("df", "syn", "q", "{!lucene}/* foo */ wi fi /* bar */") // default sow=false
+        , "/response/numFound==1"
+        , "/response/docs/[0]/id=='20'"
     );
-    assertJQ(req("df", "syn", "q", "{!lucene}/* foo */ wi /* bar */ fi /* baz */") // default sow=true
-        , "/response/numFound==0"
+    assertJQ(req("df", "syn", "q", "{!lucene}/* foo */ wi /* bar */ fi /* baz */") // default sow=false
+        , "/response/numFound==1"
+        , "/response/docs/[0]/id=='20'"
     );
   }
 
@@ -977,17 +1002,17 @@ public class TestSolrQueryParser extends SolrTestCaseJ4 {
     //
     try (SolrQueryRequest req = req()) {
 
-      QParser qParser = QParser.getParser("text:grackle", req); // "text" has autoGeneratePhraseQueries="true"
-      qParser.setParams(sowFalseParams);
-      Query q = qParser.getQuery();
-      assertEquals("text:\"crow blackbird\" text:grackl", q.toString());
-
-      for (SolrParams params : Arrays.asList(noSowParams, sowTrueParams)) {
-        qParser = QParser.getParser("text:grackle", req);
-        qParser.setParams(params);
-        q = qParser.getQuery();
-        assertEquals("spanOr([spanNear([text:crow, text:blackbird], 0, true), text:grackl])", q.toString());
+      for (SolrParams params : Arrays.asList(noSowParams, sowFalseParams)) {
+        QParser qParser = QParser.getParser("text:grackle", req); // "text" has autoGeneratePhraseQueries="true"
+        qParser.setParams(sowFalseParams);
+        Query q = qParser.getQuery();
+        assertEquals("text:\"crow blackbird\" text:grackl", q.toString());
       }
+
+      QParser qParser = QParser.getParser("text:grackle", req);
+      qParser.setParams(sowTrueParams);
+      Query q = qParser.getQuery();
+      assertEquals("spanOr([spanNear([text:crow, text:blackbird], 0, true), text:grackl])", q.toString());
 
       for (SolrParams params : Arrays.asList(noSowParams, sowTrueParams, sowFalseParams)) {
         qParser = QParser.getParser("text_sw:grackle", req); // "text_sw" doesn't specify autoGeneratePhraseQueries => default false

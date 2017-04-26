@@ -64,6 +64,11 @@ Upgrading from Solr 6.x
   registries as hierarchical MBeans. This behavior can be also disabled by specifying a SolrJmxReporter
   configuration with a boolean init arg "enabled" set to "false". For a more fine-grained control users
   should explicitly specify at least one SolrJmxReporter configuration.
+  
+* The sow (split-on-whitespace) request param now defaults to false (true in previous versions).
+  This affects the edismax and standard/"lucene" query parsers: if the sow param is not specified,
+  query text will not be split on whitespace before analysis. See
+  https://lucidworks.com/2017/04/18/multi-word-synonyms-solr-adds-query-time-support/ .
 
 New Features
 ----------------------
@@ -77,6 +82,8 @@ New Features
 * SOLR-10356: Adds basic math Streaming Evaluators (Dennis Gove)
 
 * SOLR-10393: Adds UUID Streaming Evaluator (Dennis Gove)
+
+* SOLR-10046: Add UninvertDocValuesMergePolicyFactory class. (Keith Laban, Christine Poerschke)
 
 Bug Fixes
 ----------------------
@@ -117,7 +124,10 @@ Other Changes
   Add support for selecting specific properties from any compound metric using 'property' parameter to
   /admin/metrics handler. (ab)
 
-----------------------
+* SOLR-10557: Make "compact" format default for /admin/metrics. (ab)
+
+* SOLR-10310: By default, stop splitting on whitespace prior to analysis
+  in edismax and standard/"lucene" query parsers. (Steve Rowe)
 
 ==================  6.6.0 ==================
 
@@ -137,6 +147,10 @@ Upgrade Notes
 
 * Solr contribs map-reduce, morphlines-core and morphlines-cell have been removed.
 
+* JSON Facet API now uses hyper-log-log for numBuckets cardinality calculation and
+  calculates cardinality before filtering buckets by any mincount greater than 1.
+
+
 Detailed Change List
 ----------------------
 
@@ -144,8 +158,6 @@ New Features
 ----------------------
 
 * SOLR-9992: Add support for grouping with PointFIelds. (Cao Manh Dat)
-
-* SOLR-10046: Add UninvertDocValuesMergePolicyFactory class. (Keith Laban, Christine Poerschke)
 
 * SOLR-9994: Add support for CollapseQParser with PointFields. (Varun Thacker, Cao Manh Dat)
 
@@ -177,6 +189,8 @@ New Features
 
 * SOLR-10505: Add multi-field support to TermsComponent when requesting terms' statistics. (Shai Erera)
 
+* SOLR-10537: SolrJ: Added SolrParams.toLocalParamsString() and ClientUtils.encodeLocalParamVal. (David Smiley)
+
 Optimizations
 ----------------------
 
@@ -186,6 +200,12 @@ Optimizations
 
 * SOLR-10499: facet.heatmap is now significantly faster when the docset (base query) matches everything and there are no
   deleted docs.  It's also faster when the docset matches a small fraction of the index or none. (David Smiley)
+
+* SOLR-9217: Reduced heap consumption for filter({!join ... score=...}) 
+  (Andrey Kudryavtsev, Gopikannan Venugopalsamy via Mikhail Khludnev)
+
+* SOLR-10548: JSON Facet API now uses hyper-log-log++ for determining the number of buckets
+  when merging requests from a multi-shard distributed request. (yonik)
 
 Bug Fixes
 ----------------------
@@ -222,6 +242,18 @@ Bug Fixes
 
 * SOLR-5127: Multiple highlight fields and wildcards are now supported e.g. hl.fl=title,text_*
   (Sven-S. Porst, Daniel Debray, Simon Endele, Christine Poerschke)
+
+* SOLR-10493: Investigate SolrCloudExampleTest failures. (Erick Erickson)
+
+* SOLR-10552: JSON Facet API numBuckets was not consistent between distributed and non-distributed requests
+  when there was a mincount > 1.  This has been corrected by changing numBuckets cardinality processing to
+  ignore mincount > 1 for non-distributed requests. (yonik)
+
+* SOLR-10520: child.facet.field doubled counts at least when rows>0. (Dr. Oleg Savrasov via Mikhail Khludnev) 
+
+* SOLR-10480: Full pagination in JSON Facet API using offset does not work. (yonik)
+
+* SOLR-10526: facet.heatmap didn't honor facet exclusions ('ex') for distributed search. (David Smiley)
 
 Other Changes
 ----------------------
