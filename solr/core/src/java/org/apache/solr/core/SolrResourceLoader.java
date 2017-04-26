@@ -548,23 +548,35 @@ public class SolrResourceLoader implements ResourceLoader,Closeable
       try {
         return clazz = Class.forName(cname, true, classLoader).asSubclass(expectedType);
       } catch (ClassNotFoundException e) {
-        String newName=cname;
+        if (modulesClassLoader != null) {
+          log.debug("Attempting load class {} from modules class loader", cname);
+          try {
+            return clazz = Class.forName(cname, true, modulesClassLoader).asSubclass(expectedType);
+          } catch (ClassNotFoundException e1) {}
+        }
+        String newName = cname;
         if (newName.startsWith(project)) {
-          newName = cname.substring(project.length()+1);
+          newName = cname.substring(project.length() + 1);
         }
         for (String subpackage : subpackages) {
+          String name = base + '.' + subpackage + newName;
+          log.trace("Trying class name " + name);
           try {
-            String name = base + '.' + subpackage + newName;
-            log.trace("Trying class name " + name);
-            return clazz = Class.forName(name,true,classLoader).asSubclass(expectedType);
-          } catch (ClassNotFoundException e1) {
-            // ignore... assume first exception is best.
+            return clazz = Class.forName(name, true, classLoader).asSubclass(expectedType);
+          } catch (ClassNotFoundException e2) {
+            if (modulesClassLoader != null) {
+              log.debug("Attempting load class {} from modules class loader", name);
+              try {
+                return clazz = Class.forName(name, true, modulesClassLoader).asSubclass(expectedType);
+              } catch (ClassNotFoundException e3) {
+                // Fall-through
+              }
+            }
           }
         }
-    
-        throw new SolrException( SolrException.ErrorCode.SERVER_ERROR, "Error loading class '" + cname + "'", e);
+        throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Error loading class '" + cname + "'", e);
       }
-      
+
     } finally {
       if (clazz != null) {
         //cache the shortname vs FQN if it is loaded by the webapp classloader  and it is loaded

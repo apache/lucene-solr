@@ -218,13 +218,14 @@ public class PluginBundleManager {
     @Override
     public Class<?> findClass(String name) throws ClassNotFoundException {
       // First try Solr URLs
-      Class<?> clazz = super.findClass(name);
+//      try {
+//        return super.findClass(name);
+//      } catch (ClassNotFoundException ignored) {}
       for (ClassLoader loader : manager.getPluginClassLoaders().values()) {
         try {
           return loader.loadClass(name);
-        } catch (ClassNotFoundException e) {}
+        } catch (ClassNotFoundException ignore) {}
       }
-
       throw new ClassNotFoundException("Class " + name + " not found in any plugin. Tried: " + manager.getPluginClassLoaders().keySet());
     }
 
@@ -377,11 +378,13 @@ public class PluginBundleManager {
       private final SolrPluginManager solrPluginManager;
       private final PluginClasspath pluginClasspath;
       private final JarPluginLoader jarLoader;
+      private final DefaultPluginLoader defaultLoader;
 
       public AutoPluginLoader(SolrPluginManager solrPluginManager, PluginClasspath pluginClasspath) {
         this.solrPluginManager = solrPluginManager;
         this.pluginClasspath = pluginClasspath;
         jarLoader = new JarPluginLoader(solrPluginManager, pluginClasspath);
+        defaultLoader = new DefaultPluginLoader(solrPluginManager, pluginClasspath);
       }
 
       @Override
@@ -389,7 +392,7 @@ public class PluginBundleManager {
         if (pluginPath.toString().endsWith(".jar")) {
           return jarLoader.loadPlugin(pluginPath, pluginDescriptor);
         } else {
-          return new PluginClassLoader(solrPluginManager, pluginDescriptor, getClass().getClassLoader());
+          return defaultLoader.loadPlugin(pluginPath, pluginDescriptor);
         }
       }
     }

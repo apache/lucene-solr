@@ -17,25 +17,23 @@
 
 package org.apache.solr.util.plugin.bundle;
 
-import java.net.URL;
 import java.util.List;
 
+import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.SolrException;
+import org.apache.solr.core.SolrResourceLoader;
+import org.apache.solr.handler.RequestHandlerBase;
+import org.apache.solr.handler.component.SearchComponent;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 import ro.fortsoft.pf4j.update.PluginInfo;
 
-import static junit.framework.Assert.assertEquals;
-import static junit.framework.Assert.assertNotNull;
-import static junit.framework.TestCase.assertFalse;
-import static org.junit.Assert.assertTrue;
-
 /**
  * Test the PF4J integration
  */
-public class PluginBundleManagerTest {
+public class PluginBundleManagerTest extends SolrTestCaseJ4 {
 
   private PluginBundleManager pluginBundleManager;
 
@@ -120,23 +118,37 @@ public class PluginBundleManagerTest {
     assertEquals(1, pluginBundleManager.listInstalled().size());
   }
 
-/*
   @Test
   public void installAndCheckClassloading() throws Exception {
-    assertTrue(pluginBundles.install("dataimport"));
-    assertEquals(1, pluginBundles.listInstalled().size());
+    assertTrue(pluginBundleManager.install("dataimport"));
+    assertEquals(1, pluginBundleManager.listInstalled().size());
     try {
       this.getClass().getClassLoader().loadClass("org.apache.solr.handler.dataimport.DataImportHandler");
       fail();
     } catch (Exception ignored) {}
-    ClassLoader loader = pluginBundles.getPluginManager().getPluginClassLoader("dataimport");
-    assertEquals("dataimport",
-        loader.loadClass("org.apache.solr.handler.dataimport.DataImportHandler").getSimpleName());
-    pluginBundles.install("request-sanitizer");
-    ClassLoader uberLoader = pluginBundles.getUberClassLoader(getClass().getClassLoader());
-    uberLoader.loadClass("com.cominvent.solr.RequestSanitizerComponent");
-    uberLoader.loadClass("org.apache.solr.handler.dataimport.DataImportHandler");
-  }
-*/
 
+    // PluginLoader
+    ClassLoader pluginClassLoader = pluginBundleManager.getPluginManager().getPluginClassLoader("dataimport");
+    assertEquals("DataImportHandler", pluginClassLoader.loadClass("org.apache.solr.handler.dataimport.DataImportHandler").getSimpleName());
+
+    // Load another class through uber loader
+    pluginBundleManager.install("request-sanitizer");
+    ClassLoader uberClassLoader = pluginBundleManager.getUberClassLoader(getClass().getClassLoader());
+    uberClassLoader.loadClass("com.cominvent.solr.RequestSanitizerComponent");
+    uberClassLoader.loadClass("org.apache.solr.handler.dataimport.DataImportHandler");
+  }
+
+  @Test
+  public void testResourceLoading() throws Exception {
+    initCore("solrconfig.xml","schema.xml");
+
+    assertTrue(pluginBundleManager.install("extraction"));
+    assertTrue(pluginBundleManager.install("request-sanitizer"));
+    assertEquals(2, pluginBundleManager.listInstalled().size());
+    SolrResourceLoader l = h.getCoreContainer().getResourceLoader();
+    assertNotNull(l.findClass("org.apache.solr.handler.extraction.ExtractingRequestHandler", RequestHandlerBase.class));
+
+    assertNotNull(l.getClassLoader().getResource("org.apache.pdfbox.multipdf.PDFMergerUtility.class"));
+    assertNotNull(l.findClass("com.cominvent.solr.RequestSanitizerComponent", SearchComponent.class));
+  }
 }

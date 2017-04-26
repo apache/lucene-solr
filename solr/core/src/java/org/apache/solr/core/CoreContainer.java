@@ -496,9 +496,7 @@ public class CoreContainer {
     if (usePlugins()) {
       pluginBundleManager = new PluginBundleManager(Paths.get(getSolrHome()).resolve(System.getProperty("solr.plugins.dir", "plugins")));
       pluginBundleManager.load();
-//      TODO  loader.setModulesClassLoader(modules.getUberClassLoader(null));
-    } else {
-//      loader
+      loader.setModulesClassLoader(pluginBundleManager.getUberClassLoader(null));
     }
 
     metricManager = new SolrMetricManager();
