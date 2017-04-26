@@ -192,7 +192,6 @@ public class OverseerTriggerThread implements Runnable, Closeable {
       // Restore the interrupted status
       Thread.currentThread().interrupt();
       log.error("OverseerTriggerThread interrupted", e);
-      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
     }
   }
 
