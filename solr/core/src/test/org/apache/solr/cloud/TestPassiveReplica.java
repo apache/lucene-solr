@@ -77,7 +77,9 @@ public class TestPassiveReplica extends SolrCloudTestCase {
     configureCluster(2) // 2 + random().nextInt(3) 
         .addConfig("conf", configset("cloud-minimal"))
         .configure();
-    CollectionAdminRequest.ClusterProp clusterPropRequest = CollectionAdminRequest.setClusterProperty(ZkStateReader.LEGACY_CLOUD, "false");
+    Boolean useLegacyCloud = rarely();
+    LOG.info("Using legacyCloud?: {}", useLegacyCloud);
+    CollectionAdminRequest.ClusterProp clusterPropRequest = CollectionAdminRequest.setClusterProperty(ZkStateReader.LEGACY_CLOUD, String.valueOf(useLegacyCloud));
     CollectionAdminResponse response = clusterPropRequest.process(cluster.getSolrClient());
     assertEquals(0, response.getStatus());
   }
@@ -285,10 +287,6 @@ public class TestPassiveReplica extends SolrCloudTestCase {
     assertEquals("Expecting DOWN->RECOVERING->ACTIVE but saw: " + Arrays.toString(statesSeen.toArray()), Replica.State.DOWN, statesSeen.get(0));
     assertEquals("Expecting DOWN->RECOVERING->ACTIVE but saw: " + Arrays.toString(statesSeen.toArray()), Replica.State.RECOVERING, statesSeen.get(0));
     assertEquals("Expecting DOWN->RECOVERING->ACTIVE but saw: " + Arrays.toString(statesSeen.toArray()), Replica.State.ACTIVE, statesSeen.get(0));
-  }
-  
-  public void testPassiveReplicaCantConnectToZooKeeper() {
-    
   }
   
   public void testRealTimeGet() {
