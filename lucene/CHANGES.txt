@@ -112,6 +112,9 @@ Improvements
   Accountable so you can see how much RAM it's using (Robert Muir,
   Mike McCandless)
 
+* LUCENE-7792: OfflineSorter can now run concurrently if you pass it
+  an optional ExecutorService (Dawid Weiss, Mike McCandless)
+
 Optimizations
 
 * LUCENE-7787: spatial-extras HeatmapFacetCounter will now short-circuit it's
