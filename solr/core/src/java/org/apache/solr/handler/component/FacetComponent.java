@@ -35,6 +35,7 @@ import org.apache.commons.lang.ArrayUtils;
 import org.apache.commons.lang.StringUtils;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.FixedBitSet;
+import org.apache.solr.client.solrj.util.ClientUtils;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.params.CommonParams;
@@ -375,7 +376,7 @@ public class FacetComponent extends SearchComponent {
         // add terms into the original facet.field command
         // do it via parameter reference to avoid another layer of encoding.
 
-        String termsKeyEncoded = QueryParsing.encodeLocalParamVal(termsKey);
+        String termsKeyEncoded = ClientUtils.encodeLocalParamVal(termsKey);
         if (dff.localParams != null) {
           facetCommand = commandPrefix + termsKeyEncoded + " "
               + dff.facetStr.substring(2);
