@@ -50,6 +50,7 @@ import org.apache.solr.common.params.CollectionParams;
 import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.common.util.Utils;
 import org.apache.solr.core.CloudConfig;
+import org.apache.solr.core.CoreContainer;
 import org.apache.solr.handler.component.HttpShardHandlerFactory;
 import org.apache.solr.update.UpdateShardHandler;
 import org.apache.solr.update.UpdateShardHandlerConfig;
@@ -64,11 +65,14 @@ import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Ignore;
 import org.junit.Test;
+import org.mockito.Mockito;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.xml.sax.SAXException;
 
 import static org.apache.solr.cloud.AbstractDistribZkTestBase.verifyReplicaStatus;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 @Slow
 public class OverseerTest extends SolrTestCaseJ4 {
@@ -715,7 +719,8 @@ public class OverseerTest extends SolrTestCaseJ4 {
       updateShardHandlers.add(updateShardHandler);
       HttpShardHandlerFactory httpShardHandlerFactory = new HttpShardHandlerFactory();
       httpShardHandlerFactorys.add(httpShardHandlerFactory);
-      Overseer overseer = new Overseer(httpShardHandlerFactory.getShardHandler(), updateShardHandler, "/admin/cores", reader, null,
+      MockZkController mockZkController = createMockZkController(zkClient, reader);
+      Overseer overseer = new Overseer(httpShardHandlerFactory.getShardHandler(), updateShardHandler, "/admin/cores", reader, mockZkController,
           new CloudConfig.CloudConfigBuilder("127.0.0.1", 8983, "").build());
       overseers.add(overseer);
       ElectionContext ec = new OverseerElectionContext(zkClient, overseer,
@@ -1299,7 +1304,10 @@ public class OverseerTest extends SolrTestCaseJ4 {
     updateShardHandlers.add(updateShardHandler);
     HttpShardHandlerFactory httpShardHandlerFactory = new HttpShardHandlerFactory();
     httpShardHandlerFactorys.add(httpShardHandlerFactory);
-    Overseer overseer = new Overseer(httpShardHandlerFactory.getShardHandler(), updateShardHandler, "/admin/cores", reader, null,
+
+    MockZkController zkController = createMockZkController(zkClient, reader);
+
+    Overseer overseer = new Overseer(httpShardHandlerFactory.getShardHandler(), updateShardHandler, "/admin/cores", reader, zkController,
         new CloudConfig.CloudConfigBuilder("127.0.0.1", 8983, "").build());
     overseers.add(overseer);
     ElectionContext ec = new OverseerElectionContext(zkClient, overseer,
@@ -1308,7 +1316,19 @@ public class OverseerTest extends SolrTestCaseJ4 {
     overseerElector.joinElection(ec, false);
     return zkClient;
   }
-  
+
+  private MockZkController createMockZkController(SolrZkClient zkClient, ZkStateReader reader) {
+    CoreContainer mockAlwaysUpCoreContainer = mock(CoreContainer.class,
+        Mockito.withSettings().defaultAnswer(Mockito.CALLS_REAL_METHODS));
+    when(mockAlwaysUpCoreContainer.isShutDown()).thenReturn(Boolean.FALSE);  // Allow retry on session expiry
+    MockZkController zkController = mock(MockZkController.class,
+        Mockito.withSettings().defaultAnswer(Mockito.CALLS_REAL_METHODS));
+    when(zkController.getCoreContainer()).thenReturn(mockAlwaysUpCoreContainer);
+    when(zkController.getZkClient()).thenReturn(zkClient);
+    when(zkController.getZkStateReader()).thenReturn(reader);
+    return zkController;
+  }
+
   @Test
   public void testRemovalOfLastReplica() throws Exception {
 
