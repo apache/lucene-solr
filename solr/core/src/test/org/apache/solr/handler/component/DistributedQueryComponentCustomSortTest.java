@@ -225,7 +225,8 @@ public class DistributedQueryComponentCustomSortTest extends BaseDistributedSear
             NamedList groupList = (NamedList)groupLists.get(j);
             assertNotNull(groupList);
 
-            assertFieldValues((SolrDocumentList)groupList.get("doclist"), id, currOutcome.expectedIds[j]);
+            final Object[] expectedValues = currOutcome.expectedIds[j];
+            assertFieldValues((SolrDocumentList)groupList.get("doclist"), id, expectedValues);
         }
       }
     }
