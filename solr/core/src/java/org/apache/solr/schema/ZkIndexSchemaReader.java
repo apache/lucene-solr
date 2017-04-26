@@ -44,7 +44,7 @@ public class ZkIndexSchemaReader implements OnReconnect {
   private SolrZkClient zkClient;
   private String managedSchemaPath;
   private final String uniqueCoreId; // used in equals impl to uniquely identify the core that we're dependent on
-  private final SchemaWatcher schemaWatcher;
+  private SchemaWatcher schemaWatcher;
 
   public ZkIndexSchemaReader(ManagedIndexSchemaFactory managedIndexSchemaFactory, SolrCore solrCore) {
     this.managedIndexSchemaFactory = managedIndexSchemaFactory;
@@ -60,9 +60,7 @@ public class ZkIndexSchemaReader implements OnReconnect {
         CoreContainer cc = core.getCoreDescriptor().getCoreContainer();
         if (cc.isZooKeeperAware()) {
           log.debug("Removing ZkIndexSchemaReader OnReconnect listener as core "+core.getName()+" is shutting down.");
-          if (schemaWatcher != null) {
-            schemaWatcher.stopWatching();
-          }
+          schemaWatcher.stopWatching();
           cc.getZkController().removeOnReconnectListener(ZkIndexSchemaReader.this);
         }
       }
@@ -190,8 +188,10 @@ public class ZkIndexSchemaReader implements OnReconnect {
   @Override
   public void command() {
     try {
+      // stop watching on the old watcher
+      this.schemaWatcher.stopWatching();
       // setup a new watcher to get notified when the managed schema changes
-      createSchemaWatcher();
+      this.schemaWatcher = createSchemaWatcher();
       // force update now as the schema may have changed while our zk session was expired
       updateSchema(null, -1);
     } catch (Exception exc) {
