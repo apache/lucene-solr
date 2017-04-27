@@ -497,7 +497,7 @@ public abstract class ReplicaNode extends Node {
 
     if (version < curVersion) {
       // This can happen, if two syncs happen close together, and due to thread scheduling, the incoming older version runs after the newer version
-      message("top: new NRT point (version=" + version + ") is older than current (version=" + version + "); skipping");
+      message("top: new NRT point (version=" + version + ") is older than current (version=" + curVersion + "); skipping");
       return null;
     }
 
