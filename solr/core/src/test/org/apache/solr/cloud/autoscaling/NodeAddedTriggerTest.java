@@ -99,7 +99,7 @@ public class NodeAddedTriggerTest extends SolrCloudTestCase {
     // add a new node but remove it before the waitFor period expires
     // and assert that the trigger doesn't fire at all
     try (NodeAddedTrigger trigger = new NodeAddedTrigger("node_added_trigger", props, container)) {
-      final int waitTime = 2;
+      final long waitTime = 2;
       props.put("waitFor", waitTime);
       trigger.setListener(event -> fail("Did not expect the listener to fire on first run!"));
       trigger.run();
