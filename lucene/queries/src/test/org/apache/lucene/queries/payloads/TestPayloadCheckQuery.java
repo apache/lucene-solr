@@ -34,6 +34,8 @@ import org.apache.lucene.index.Term;
 import org.apache.lucene.search.CheckHits;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
+import org.apache.lucene.search.WildcardQuery;
+import org.apache.lucene.search.spans.SpanMultiTermQueryWrapper;
 import org.apache.lucene.search.spans.SpanNearQuery;
 import org.apache.lucene.search.spans.SpanPositionRangeQuery;
 import org.apache.lucene.search.spans.SpanQuery;
@@ -186,7 +188,6 @@ public class TestPayloadCheckQuery extends LuceneTestCase {
     payloads.add(pay4);
     query = new SpanPayloadCheckQuery(oneThousHunThree, payloads);
     checkHits(query, new int[]{1103, 1203,1303,1403,1503,1603,1703,1803,1903});
-
   }
 
   public void testEquality() {
@@ -207,5 +208,25 @@ public class TestPayloadCheckQuery extends LuceneTestCase {
     assertFalse(query2.equals(query3));
     assertFalse(query2.equals(query4));
     assertFalse(query3.equals(query4));
+  }
+
+  public void testRewrite() throws IOException {
+    SpanMultiTermQueryWrapper fiv = new SpanMultiTermQueryWrapper(new WildcardQuery(new Term("field", "fiv*")));
+    SpanMultiTermQueryWrapper hund = new SpanMultiTermQueryWrapper(new WildcardQuery(new Term("field", "hund*")));
+    SpanMultiTermQueryWrapper twent = new SpanMultiTermQueryWrapper(new WildcardQuery(new Term("field", "twent*")));
+    SpanMultiTermQueryWrapper nin = new SpanMultiTermQueryWrapper(new WildcardQuery(new Term("field", "nin*")));
+
+    SpanNearQuery sq = new SpanNearQuery(new SpanQuery[] {fiv, hund, twent, nin}, 0, true);
+
+    List<BytesRef> payloads = new ArrayList<>();
+    payloads.add(new BytesRef("pos: 0"));
+    payloads.add(new BytesRef("pos: 1"));
+    payloads.add(new BytesRef("pos: 2"));
+    payloads.add(new BytesRef("pos: 3"));
+
+    SpanPayloadCheckQuery query = new SpanPayloadCheckQuery(sq, payloads);
+
+    // if query wasn't rewritten properly, the query would have failed with "Rewrite first!"
+    checkHits(query, new int[]{529});
   }
 }
