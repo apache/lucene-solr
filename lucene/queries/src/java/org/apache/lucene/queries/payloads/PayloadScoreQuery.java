@@ -82,7 +82,7 @@ public class PayloadScoreQuery extends SpanQuery {
 
   @Override
   public String toString(String field) {
-    return "PayloadSpanQuery[" + wrappedQuery.toString(field) + "; " + function.toString() + "]";
+    return "PayloadScoreQuery[" + wrappedQuery.toString(field) + "; " + function.getClass().getSimpleName() + "; " + includeSpanScore + "]";
   }
 
   @Override
@@ -101,7 +101,7 @@ public class PayloadScoreQuery extends SpanQuery {
   
   private boolean equalsTo(PayloadScoreQuery other) {
     return wrappedQuery.equals(other.wrappedQuery) && 
-           function.equals(other.function);
+           function.equals(other.function) && (includeSpanScore == other.includeSpanScore);
   }
 
   @Override
@@ -109,6 +109,7 @@ public class PayloadScoreQuery extends SpanQuery {
     int result = classHash();
     result = 31 * result + Objects.hashCode(wrappedQuery);
     result = 31 * result + Objects.hashCode(function);
+    result = 31 * result + Objects.hashCode(includeSpanScore);
     return result;
   }
 
@@ -132,7 +133,7 @@ public class PayloadScoreQuery extends SpanQuery {
     }
 
     @Override
-    public PayloadSpanScorer scorer(LeafReaderContext context) throws IOException {
+    public SpanScorer scorer(LeafReaderContext context) throws IOException {
       Spans spans = getSpans(context, Postings.PAYLOADS);
       if (spans == null)
         return null;
@@ -148,7 +149,7 @@ public class PayloadScoreQuery extends SpanQuery {
 
     @Override
     public Explanation explain(LeafReaderContext context, int doc) throws IOException {
-      PayloadSpanScorer scorer = scorer(context);
+      PayloadSpanScorer scorer = (PayloadSpanScorer)scorer(context);
       if (scorer == null || scorer.iterator().advance(doc) != doc)
         return Explanation.noMatch("No match");
 

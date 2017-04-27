@@ -172,10 +172,31 @@ public class TestPayloadScoreQuery extends LuceneTestCase {
 
   }
 
+  @Test
+  public void testEquality() {
+    SpanQuery sq1 = new SpanTermQuery(new Term("field", "one"));
+    SpanQuery sq2 = new SpanTermQuery(new Term("field", "two"));
+    PayloadFunction minFunc = new MinPayloadFunction();
+    PayloadFunction maxFunc = new MaxPayloadFunction();
+    PayloadScoreQuery query1 = new PayloadScoreQuery(sq1, minFunc, true);
+    PayloadScoreQuery query2 = new PayloadScoreQuery(sq2, minFunc, true);
+    PayloadScoreQuery query3 = new PayloadScoreQuery(sq2, maxFunc, true);
+    PayloadScoreQuery query4 = new PayloadScoreQuery(sq2, maxFunc, false);
+    PayloadScoreQuery query5 = new PayloadScoreQuery(sq1, minFunc);
+
+    assertEquals(query1, query5);
+    assertFalse(query1.equals(query2));
+    assertFalse(query1.equals(query3));
+    assertFalse(query1.equals(query4));
+    assertFalse(query2.equals(query3));
+    assertFalse(query2.equals(query4));
+    assertFalse(query3.equals(query4));
+  }
+
   private static IndexSearcher searcher;
   private static IndexReader reader;
   private static Directory directory;
-  private static BoostingSimilarity similarity = new BoostingSimilarity();
+  private static JustScorePayloadSimilarity similarity = new JustScorePayloadSimilarity();
   private static byte[] payload2 = new byte[]{2};
   private static byte[] payload4 = new byte[]{4};
 
@@ -260,7 +281,7 @@ public class TestPayloadScoreQuery extends LuceneTestCase {
 
   }
 
-  static class BoostingSimilarity extends MultiplyingSimilarity {
+  static class JustScorePayloadSimilarity extends MultiplyingSimilarity {
 
     //!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     //Make everything else 1 so we see the effect of the payload

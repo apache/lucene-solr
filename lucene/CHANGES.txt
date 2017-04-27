@@ -100,6 +100,9 @@ Bug Fixes
 * LUCENE-7797: The static FSDirectory.listAll(Path) method was always
   returning an empty array.  (Atkins Chang via Mike McCandless)
 
+* LUCENE-7808: Fix PayloadScoreQuery and SpanPayloadCheckQuery
+  .equals and .hashCode methods.  (Erik Hatcher)
+
 Improvements
 
 * LUCENE-7782: OfflineSorter now passes the total number of items it
