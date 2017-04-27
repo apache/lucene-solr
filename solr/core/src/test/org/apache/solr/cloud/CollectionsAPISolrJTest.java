@@ -20,15 +20,19 @@ import java.io.IOException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.Map;
 
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.TestUtil;
 import org.apache.solr.client.solrj.SolrServerException;
+import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
+import org.apache.solr.client.solrj.request.CoreAdminRequest;
 import org.apache.solr.client.solrj.request.CoreStatus;
 import org.apache.solr.client.solrj.response.CollectionAdminResponse;
+import org.apache.solr.client.solrj.response.CoreAdminResponse;
 import org.apache.solr.common.cloud.ClusterProperties;
 import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.Replica;
@@ -36,6 +40,7 @@ import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.CoreAdminParams;
 import org.apache.solr.common.util.NamedList;
+import org.apache.solr.common.util.Utils;
 import org.apache.zookeeper.KeeperException;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -87,6 +92,27 @@ public class CollectionsAPISolrJTest extends SolrCloudTestCase {
 
     waitForState("Expected " + collectionName + " to appear in cluster state", collectionName, (n, c) -> c != null);
 
+  }
+
+  @Test
+  public void testCloudInfoInCoreStatus() throws IOException, SolrServerException {
+    String collectionName = "corestatus_test";
+    CollectionAdminResponse response = CollectionAdminRequest.createCollection(collectionName, "conf", 2, 2)
+        .setStateFormat(1)
+        .process(cluster.getSolrClient());
+
+    assertEquals(0, response.getStatus());
+    assertTrue(response.isSuccess());
+    String nodeName = ((NamedList) response.getResponse().get("success")).getName(0);
+    String corename = (String) ((NamedList) ((NamedList) response.getResponse().get("success")).getVal(0)).get("core");
+
+    try (HttpSolrClient coreclient = getHttpSolrClient(cluster.getSolrClient().getZkStateReader().getBaseUrlForNodeName(nodeName))) {
+      CoreAdminResponse status = CoreAdminRequest.getStatus(corename, coreclient);
+      Map m = status.getResponse().asMap(5);
+      assertEquals(collectionName, Utils.getObjectByPath(m, true, Arrays.asList("status", corename, "cloud", "collection")));
+      assertNotNull(Utils.getObjectByPath(m, true, Arrays.asList("status", corename, "cloud", "shard")));
+      assertNotNull(Utils.getObjectByPath(m, true, Arrays.asList("status", corename, "cloud", "replica")));
+    }
   }
 
   @Test
@@ -160,7 +186,7 @@ public class CollectionsAPISolrJTest extends SolrCloudTestCase {
       }
       return true;
     });
-    
+
     // Test splitting using split.key
     response = CollectionAdminRequest.splitShard(collectionName)
         .setSplitKey("b!")
@@ -170,14 +196,14 @@ public class CollectionsAPISolrJTest extends SolrCloudTestCase {
     assertTrue(response.isSuccess());
 
     waitForState("Expected 5 slices to be active", collectionName, (n, c) -> c.getActiveSlices().size() == 5);
-    
+
   }
 
   @Test
   public void testCreateCollectionWithPropertyParam() throws Exception {
 
     String collectionName = "solrj_test_core_props";
-    
+
     Path tmpDir = createTempDir("testPropertyParamsForCreate");
     Path dataDir = tmpDir.resolve("dataDir-" + TestUtil.randomSimpleString(random(), 1, 5));
     Path ulogDir = tmpDir.resolve("ulogDir-" + TestUtil.randomSimpleString(random(), 1, 5));
@@ -225,7 +251,7 @@ public class CollectionsAPISolrJTest extends SolrCloudTestCase {
       Replica r = c.getSlice("shard1").getReplica(newReplicaName);
       return r != null && r.getNodeName().equals(node);
     });
-    
+
     // Test DELETEREPLICA
     response = CollectionAdminRequest.deleteReplica(collectionName, "shard1", newReplicaName)
         .process(cluster.getSolrClient());
@@ -246,7 +272,7 @@ public class CollectionsAPISolrJTest extends SolrCloudTestCase {
 
     ClusterProperties props = new ClusterProperties(zkClient());
     assertEquals("Cluster property was not set", props.getClusterProperty(ZkStateReader.LEGACY_CLOUD, "true"), "false");
-    
+
     // Unset ClusterProp that we set.
     CollectionAdminRequest.setClusterProperty(ZkStateReader.LEGACY_CLOUD, null).process(cluster.getSolrClient());
     assertEquals("Cluster property was not unset", props.getClusterProperty(ZkStateReader.LEGACY_CLOUD, "true"), "true");
@@ -289,7 +315,7 @@ public class CollectionsAPISolrJTest extends SolrCloudTestCase {
 
     waitForState("Expecting property 'preferredleader' to be removed from replica " + replica.getName(), collection,
         (n, c) -> c.getReplica(replica.getName()).getStr("property.preferredleader") == null);
-    
+
   }
 
   @Test
