@@ -19,10 +19,8 @@ package org.apache.solr.client.solrj.io.stream;
 import java.io.Serializable;
 import java.util.Map;
 import java.util.HashMap;
-import java.util.List;
 
 import org.apache.solr.client.solrj.io.ModelCache;
-import org.apache.solr.client.solrj.io.Tuple;
 import org.apache.solr.client.solrj.io.SolrClientCache;
 import org.apache.solr.client.solrj.io.stream.expr.StreamFactory;
 
