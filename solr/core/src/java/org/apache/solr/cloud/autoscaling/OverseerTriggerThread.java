@@ -151,24 +151,7 @@ public class OverseerTriggerThread implements Runnable, Closeable {
           }
 
           try {
-            final Stat stat = new Stat();
-            final byte[] data = zkClient.getData(ZkStateReader.SOLR_AUTOSCALING_CONF_PATH, this, stat, true);
-            if (znodeVersion >= stat.getVersion()) {
-              // protect against reordered watcher fires by ensuring that we only move forward
-              return;
-            }
-            znodeVersion = stat.getVersion();
-            Map<String, AutoScaling.Trigger> triggerMap = loadTriggers(triggerFactory, data);
-            for (Map.Entry<String, AutoScaling.Trigger> entry : triggerMap.entrySet()) {
-              String triggerName = entry.getKey();
-              AutoScaling.Trigger trigger = entry.getValue();
-              if (trigger.isEnabled()) {
-                activeTriggers.put(triggerName, trigger);
-              } else {
-                activeTriggers.remove(triggerName);
-              }
-            }
-            updated.signalAll();
+            refreshAndWatch();
           } catch (KeeperException.ConnectionLossException | KeeperException.SessionExpiredException e) {
             log.warn("ZooKeeper watch triggered for autoscaling conf, but Solr cannot talk to ZK: [{}]", e.getMessage());
           } catch (KeeperException e) {
@@ -183,6 +166,27 @@ public class OverseerTriggerThread implements Runnable, Closeable {
           } finally {
             updateLock.unlock();
           }
+        }
+
+        private void refreshAndWatch() throws KeeperException, InterruptedException {
+          final Stat stat = new Stat();
+          final byte[] data = zkClient.getData(ZkStateReader.SOLR_AUTOSCALING_CONF_PATH, this, stat, true);
+          if (znodeVersion >= stat.getVersion()) {
+            // protect against reordered watcher fires by ensuring that we only move forward
+            return;
+          }
+          znodeVersion = stat.getVersion();
+          Map<String, AutoScaling.Trigger> triggerMap = loadTriggers(triggerFactory, data);
+          for (Map.Entry<String, AutoScaling.Trigger> entry : triggerMap.entrySet()) {
+            String triggerName = entry.getKey();
+            AutoScaling.Trigger trigger = entry.getValue();
+            if (trigger.isEnabled()) {
+              activeTriggers.put(triggerName, trigger);
+            } else {
+              activeTriggers.remove(triggerName);
+            }
+          }
+          updated.signalAll();
         }
       }, true);
     } catch (KeeperException e) {
