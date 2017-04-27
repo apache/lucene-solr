@@ -1885,6 +1885,11 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
       
       nodes = getCollectionUrls(req, req.getCore().getCoreDescriptor()
           .getCloudDescriptor().getCollectionName(), EnumSet.of(Replica.Type.APPEND,Replica.Type.REALTIME));
+      if (nodes == null) {
+        // This could happen if there are only passive replicas
+        throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, 
+            "Unable to distribute commit operation. No replicas available of types " + Replica.Type.APPEND + " or " + Replica.Type.REALTIME);
+      }
       if (isLeader && nodes.size() == 1) {
         singleLeader = true;
       }

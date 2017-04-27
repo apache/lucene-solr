@@ -42,11 +42,19 @@ public class ChaosMonkeySafeLeaderWithPassiveReplicasTest extends AbstractFullDi
   
   private static final Integer RUN_LENGTH = Integer.parseInt(System.getProperty("solr.tests.cloud.cm.runlength", "-1"));
   
+  private final boolean useAppendReplicas = random().nextBoolean();
+  
   private final int numPassiveReplicas;
   private final int numRealtimeOrAppendReplicas;
   
+  @Override
   protected int getPassiveReplicaCount() {
     return numPassiveReplicas;
+  }
+  
+  @Override
+  protected boolean useAppendReplicas() {
+    return useAppendReplicas;
   }
 
   @BeforeClass

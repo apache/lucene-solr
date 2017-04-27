@@ -29,7 +29,9 @@ import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.cloud.AbstractFullDistribZkTestBase.CloudJettyRunner;
+import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.Replica;
+import org.apache.solr.common.cloud.Replica.Type;
 import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.cloud.ZkNodeProps;
@@ -369,16 +371,32 @@ public class ChaosMonkey {
       return null;
     }
     
+    boolean canKillIndexer = canKillIndexer(slice);
+    
+    if (!canKillIndexer) {
+      monkeyLog("Number of indexer nodes (realtime or append) is not enough to kill one of them, Will only choose a passive replica to kill");
+    }
+    
     int chance = chaosRandom.nextInt(10);
-    CloudJettyRunner cjetty;
-    if (chance <= 5 && aggressivelyKillLeaders) {
+    CloudJettyRunner cjetty = null;
+    if (chance <= 5 && aggressivelyKillLeaders && canKillIndexer) {
       // if killLeader, really aggressively go after leaders
       cjetty = shardToLeaderJetty.get(slice);
     } else {
-      // get random shard
       List<CloudJettyRunner> jetties = shardToJetty.get(slice);
-      int index = chaosRandom.nextInt(jetties.size());
-      cjetty = jetties.get(index);
+      // get random node
+      int attempt = 0;
+      while (true) {
+        attempt++;
+        int index = chaosRandom.nextInt(jetties.size());
+        cjetty = jetties.get(index);
+        if (canKillIndexer || getTypeForJetty(slice, cjetty) == Replica.Type.PASSIVE) {
+          break;
+        } else if (attempt > 20) {
+          monkeyLog("Can't kill indexer nodes (realtime or append) and couldn't find a random passive node after 20 attempts - monkey cannot kill :(");
+          return null;
+        }
+      }
       
       ZkNodeProps leader = null;
       try {
@@ -403,7 +421,7 @@ public class ChaosMonkey {
         return null;
       }
 
-      boolean isLeader = leader.getStr(ZkStateReader.NODE_NAME_PROP).equals(jetties.get(index).nodeName)
+      boolean isLeader = leader.getStr(ZkStateReader.NODE_NAME_PROP).equals(cjetty.nodeName)
           || rtIsLeader;
       if (!aggressivelyKillLeaders && isLeader) {
         // we don't kill leaders...
@@ -424,18 +442,61 @@ public class ChaosMonkey {
     return cjetty;
   }
 
-  private int checkIfKillIsLegal(String slice, int numActive) throws KeeperException, InterruptedException {
-    for (CloudJettyRunner cloudJetty : shardToJetty.get(slice)) {
+  private Type getTypeForJetty(String sliceName, CloudJettyRunner cjetty) {
+    DocCollection docCollection = zkStateReader.getClusterState().getCollection(collection);
+    
+    Slice slice = docCollection.getSlice(sliceName);
+    
+    ZkNodeProps props = slice.getReplicasMap().get(cjetty.coreNodeName);
+    if (props == null) {
+      throw new RuntimeException("shard name " + cjetty.coreNodeName + " not found in " + slice.getReplicasMap().keySet());
+    }
+    return Replica.Type.valueOf(props.getStr(ZkStateReader.REPLICA_TYPE));
+  }
+
+  private boolean canKillIndexer(String sliceName) throws KeeperException, InterruptedException {
+    int numIndexersFoundInShard = 0;
+    for (CloudJettyRunner cloudJetty : shardToJetty.get(sliceName)) {
       
       // get latest cloud state
       zkStateReader.forceUpdateCollection(collection);
       
-      Slice theShards = zkStateReader.getClusterState().getSlicesMap(collection)
-          .get(slice);
+      DocCollection docCollection = zkStateReader.getClusterState().getCollection(collection);
       
-      ZkNodeProps props = theShards.getReplicasMap().get(cloudJetty.coreNodeName);
+      Slice slice = docCollection.getSlice(sliceName);
+      
+      ZkNodeProps props = slice.getReplicasMap().get(cloudJetty.coreNodeName);
       if (props == null) {
-        throw new RuntimeException("shard name " + cloudJetty.coreNodeName + " not found in " + theShards.getReplicasMap().keySet());
+        throw new RuntimeException("shard name " + cloudJetty.coreNodeName + " not found in " + slice.getReplicasMap().keySet());
+      }
+      
+      final Replica.State state = Replica.State.getState(props.getStr(ZkStateReader.STATE_PROP));
+      final Replica.Type replicaType = Replica.Type.valueOf(props.getStr(ZkStateReader.REPLICA_TYPE));
+      final String nodeName = props.getStr(ZkStateReader.NODE_NAME_PROP);
+      
+      if (cloudJetty.jetty.isRunning()
+          && state == Replica.State.ACTIVE
+          && (replicaType == Replica.Type.APPEND || replicaType == Replica.Type.REALTIME) 
+          && zkStateReader.getClusterState().liveNodesContain(nodeName)) {
+        numIndexersFoundInShard++;
+      }
+    }
+    return numIndexersFoundInShard > 1;
+  }
+
+  private int checkIfKillIsLegal(String sliceName, int numActive) throws KeeperException, InterruptedException {
+    for (CloudJettyRunner cloudJetty : shardToJetty.get(sliceName)) {
+      
+      // get latest cloud state
+      zkStateReader.forceUpdateCollection(collection);
+      
+      DocCollection docCollection = zkStateReader.getClusterState().getCollection(collection);
+      
+      Slice slice = docCollection.getSlice(sliceName);
+      
+      ZkNodeProps props = slice.getReplicasMap().get(cloudJetty.coreNodeName);
+      if (props == null) {
+        throw new RuntimeException("shard name " + cloudJetty.coreNodeName + " not found in " + slice.getReplicasMap().keySet());
       }
       
       final Replica.State state = Replica.State.getState(props.getStr(ZkStateReader.STATE_PROP));
