@@ -191,6 +191,9 @@ New Features
 
 * SOLR-10537: SolrJ: Added SolrParams.toLocalParamsString() and ClientUtils.encodeLocalParamVal. (David Smiley)
 
+* SOLR-10507: Core Admin status command to emit collection details of each core (noble)
+
+
 Optimizations
 ----------------------
 

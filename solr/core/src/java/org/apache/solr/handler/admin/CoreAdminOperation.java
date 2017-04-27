@@ -51,7 +51,10 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import static org.apache.solr.common.params.CommonParams.NAME;
+import static org.apache.solr.common.params.CoreAdminParams.COLLECTION;
 import static org.apache.solr.common.params.CoreAdminParams.CoreAdminAction.*;
+import static org.apache.solr.common.params.CoreAdminParams.REPLICA;
+import static org.apache.solr.common.params.CoreAdminParams.SHARD;
 import static org.apache.solr.handler.admin.CoreAdminHandler.COMPLETED;
 import static org.apache.solr.handler.admin.CoreAdminHandler.CallInfo;
 import static org.apache.solr.handler.admin.CoreAdminHandler.FAILED;
@@ -328,6 +331,11 @@ enum CoreAdminOperation implements CoreAdminOp {
           if (cores.isZooKeeperAware()) {
             info.add("lastPublished", core.getCoreDescriptor().getCloudDescriptor().getLastPublished().toString().toLowerCase(Locale.ROOT));
             info.add("configVersion", core.getSolrConfig().getZnodeVersion());
+            SimpleOrderedMap cloudInfo = new SimpleOrderedMap<>();
+            cloudInfo.add(COLLECTION, core.getCoreDescriptor().getCloudDescriptor().getCollectionName());
+            cloudInfo.add(SHARD, core.getCoreDescriptor().getCloudDescriptor().getShardId());
+            cloudInfo.add(REPLICA, core.getCoreDescriptor().getCloudDescriptor().getCoreNodeName());
+            info.add("cloud", cloudInfo);
           }
           if (isIndexInfoNeeded) {
             RefCounted<SolrIndexSearcher> searcher = core.getSearcher();
