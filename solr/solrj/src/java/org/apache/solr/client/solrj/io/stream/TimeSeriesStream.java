@@ -168,6 +168,9 @@ public class TimeSeriesStream extends TupleStream implements Expressible  {
     this.collection = collection;
     this.start = start;
     this.gap = gap;
+    if(!gap.startsWith("+")) {
+      this.gap = "+"+gap;
+    }
     this.metrics = metrics;
     this.field = field;
     this.params = params;
