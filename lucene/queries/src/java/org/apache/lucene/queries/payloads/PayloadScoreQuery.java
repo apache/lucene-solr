@@ -21,12 +21,14 @@ import java.util.Map;
 import java.util.Set;
 import java.util.Objects;
 
+import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.PostingsEnum;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.index.TermContext;
 import org.apache.lucene.search.Explanation;
 import org.apache.lucene.search.IndexSearcher;
+import org.apache.lucene.search.Query;
 import org.apache.lucene.search.similarities.ClassicSimilarity;
 import org.apache.lucene.search.similarities.Similarity;
 import org.apache.lucene.search.similarities.Similarity.SimScorer;
@@ -79,6 +81,16 @@ public class PayloadScoreQuery extends SpanQuery {
   public String getField() {
     return wrappedQuery.getField();
   }
+
+  @Override
+  public Query rewrite(IndexReader reader) throws IOException {
+    Query matchRewritten = wrappedQuery.rewrite(reader);
+    if (wrappedQuery != matchRewritten && matchRewritten instanceof SpanQuery) {
+      return new PayloadScoreQuery((SpanQuery)matchRewritten, function, includeSpanScore);
+    }
+    return super.rewrite(reader);
+  }
+
 
   @Override
   public String toString(String field) {

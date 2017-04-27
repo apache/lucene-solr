@@ -17,6 +17,8 @@
 package org.apache.lucene.queries.payloads;
 
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
 
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.MockTokenizer;
@@ -37,8 +39,10 @@ import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.QueryUtils;
 import org.apache.lucene.search.TermStatistics;
 import org.apache.lucene.search.TopDocs;
+import org.apache.lucene.search.WildcardQuery;
 import org.apache.lucene.search.similarities.ClassicSimilarity;
 import org.apache.lucene.search.spans.SpanContainingQuery;
+import org.apache.lucene.search.spans.SpanMultiTermQueryWrapper;
 import org.apache.lucene.search.spans.SpanNearQuery;
 import org.apache.lucene.search.spans.SpanOrQuery;
 import org.apache.lucene.search.spans.SpanQuery;
@@ -192,6 +196,15 @@ public class TestPayloadScoreQuery extends LuceneTestCase {
     assertFalse(query2.equals(query4));
     assertFalse(query3.equals(query4));
   }
+
+  public void testRewrite() throws IOException {
+    SpanMultiTermQueryWrapper xyz = new SpanMultiTermQueryWrapper(new WildcardQuery(new Term("field", "xyz*")));
+    PayloadScoreQuery psq = new PayloadScoreQuery(xyz, new AveragePayloadFunction(), false);
+
+    // if query wasn't rewritten properly, the query would have failed with "Rewrite first!"
+    searcher.search(psq, 1);
+  }
+
 
   private static IndexSearcher searcher;
   private static IndexReader reader;
