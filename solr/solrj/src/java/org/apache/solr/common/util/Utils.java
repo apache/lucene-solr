@@ -132,7 +132,7 @@ public class Utils {
     Map<String, Object> propMap = new LinkedHashMap<>(keyVals.length >> 1);
     for (int i = 0; i < keyVals.length; i += 2) {
       Object keyVal = keyVals[i + 1];
-      if(keyVal == null) continue;
+      if (skipNulls && keyVal == null) continue;
       propMap.put(keyVals[i].toString(), keyVal);
     }
     return propMap;
