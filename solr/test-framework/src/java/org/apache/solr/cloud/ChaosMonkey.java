@@ -63,8 +63,8 @@ public class ChaosMonkey {
   private Map<String,List<CloudJettyRunner>> shardToJetty;
   
   private static final Boolean MONKEY_ENABLED = Boolean.valueOf(System.getProperty("solr.tests.cloud.cm.enabled", "true"));
-  private static final Boolean CONN_LOSS = Boolean.valueOf(System.getProperty("solr.tests.cloud.cm.connloss", null));
-  private static final Boolean EXP = Boolean.valueOf(System.getProperty("solr.tests.cloud.cm.exp", null));
+  private static final String CONN_LOSS = System.getProperty("solr.tests.cloud.cm.connloss");
+  private static final String EXP = System.getProperty("solr.tests.cloud.cm.exp");
   
   private ZkTestServer zkServer;
   private ZkStateReader zkStateReader;
@@ -108,12 +108,12 @@ public class ChaosMonkey {
     }
     
     if (EXP != null) {
-      expireSessions = EXP; 
+      expireSessions = Boolean.parseBoolean(EXP); 
     } else {
       expireSessions = chaosRandom.nextBoolean();
     }
     if (CONN_LOSS != null) {
-      causeConnectionLoss = CONN_LOSS;
+      causeConnectionLoss = Boolean.parseBoolean(CONN_LOSS);
     } else {
       causeConnectionLoss = chaosRandom.nextBoolean();
     }
