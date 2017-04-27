@@ -50,6 +50,19 @@ public abstract class NumberEvaluator extends ComplexEvaluator {
       }
       else if(result instanceof Number){
         results.add(new BigDecimal(result.toString()));
+      } else if(result instanceof List) {
+        List l = (List) result;
+        for(Object o : l) {
+          if(o instanceof Number) {
+            results.add(new BigDecimal(o.toString()));
+          } else {
+            String message = String.format(Locale.ROOT,"Failed to evaluate to a numeric value - evaluator '%s' resulted in type '%s' and value '%s'",
+                                           subEvaluator.toExpression(constructingFactory),
+                                           o.getClass().getName(),
+                                           o.toString());
+            throw new IOException(message);
+          }
+        }
       }
       else{
         String message = String.format(Locale.ROOT,"Failed to evaluate to a numeric value - evaluator '%s' resulted in type '%s' and value '%s'", 

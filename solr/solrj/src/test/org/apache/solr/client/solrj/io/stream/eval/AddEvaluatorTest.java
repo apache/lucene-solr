@@ -68,11 +68,6 @@ public class AddEvaluatorTest extends LuceneTestCase {
     Assert.assertTrue(result instanceof Double);
     Assert.assertEquals(3.2D, result);
   }
-
-  @Test(expected = IOException.class)
-  public void addOneField() throws Exception{
-    factory.constructEvaluator("add(a)");
-  }
   
   @Test
   public void addTwoFieldWithNulls() throws Exception{
