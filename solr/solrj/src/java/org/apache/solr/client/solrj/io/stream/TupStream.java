@@ -34,39 +34,37 @@ import org.apache.solr.client.solrj.io.stream.expr.StreamExplanation;
 import org.apache.solr.client.solrj.io.stream.expr.StreamExpression;
 import org.apache.solr.client.solrj.io.stream.expr.StreamExpressionNamedParameter;
 import org.apache.solr.client.solrj.io.stream.expr.StreamExpressionParameter;
+import org.apache.solr.client.solrj.io.stream.expr.StreamExpressionValue;
 import org.apache.solr.client.solrj.io.stream.expr.StreamFactory;
 
-public class LetStream extends TupleStream implements Expressible {
+public class TupStream extends TupleStream implements Expressible {
 
   private static final long serialVersionUID = 1;
-  private TupleStream stream;
   private StreamContext streamContext;
-  private Map letParams = new HashMap();
+  private Map tupleParams = new HashMap();
+  private boolean finished;
 
-  public LetStream(StreamExpression expression, StreamFactory factory) throws IOException {
-    List<StreamExpression> streamExpressions = factory.getExpressionOperandsRepresentingTypes(expression, Expressible.class, TupleStream.class);
+  public TupStream(StreamExpression expression, StreamFactory factory) throws IOException {
 
     List<StreamExpressionNamedParameter> namedParams = factory.getNamedOperands(expression);
     //Get all the named params
     for(StreamExpressionParameter np : namedParams) {
       String name = ((StreamExpressionNamedParameter)np).getName();
       StreamExpressionParameter param = ((StreamExpressionNamedParameter)np).getParameter();
-      if(factory.isEvaluator((StreamExpression)param)) {
-        StreamEvaluator evaluator = factory.constructEvaluator((StreamExpression) param);
-        letParams.put(name, evaluator);
+
+      if(param instanceof StreamExpressionValue) {
+        tupleParams.put(name, ((StreamExpressionValue)param).getValue());
       } else {
-        TupleStream tupleStream = factory.constructStream((StreamExpression) param);
-        letParams.put(name, tupleStream);
+        if (factory.isEvaluator((StreamExpression) param)) {
+          StreamEvaluator evaluator = factory.constructEvaluator((StreamExpression) param);
+          tupleParams.put(name, evaluator);
+        } else {
+          TupleStream tupleStream = factory.constructStream((StreamExpression) param);
+          tupleParams.put(name, tupleStream);
+        }
       }
     }
-
-    if(streamExpressions.size() != 1){
-      throw new IOException(String.format(Locale.ROOT,"Invalid expression %s - expecting 1 stream but found %d",expression, streamExpressions.size()));
-    }
-
-    stream = factory.constructStream(streamExpressions.get(0));
   }
-
 
   @Override
   public StreamExpression toExpression(StreamFactory factory) throws IOException{
@@ -76,7 +74,6 @@ public class LetStream extends TupleStream implements Expressible {
   private StreamExpression toExpression(StreamFactory factory, boolean includeStreams) throws IOException {
     // function name
     StreamExpression expression = new StreamExpression(factory.getFunctionName(this.getClass()));
-    expression.addParameter(((Expressible) stream).toExpression(factory));
 
     return expression;
   }
@@ -89,69 +86,70 @@ public class LetStream extends TupleStream implements Expressible {
     explanation.setImplementingClass(this.getClass().getName());
     explanation.setExpressionType(ExpressionType.STREAM_DECORATOR);
     explanation.setExpression(toExpression(factory, false).toString());
-    explanation.addChild(stream.toExplanation(factory));
 
     return explanation;
   }
 
   public void setStreamContext(StreamContext context) {
     this.streamContext = context;
-    this.stream.setStreamContext(context);
   }
 
   public List<TupleStream> children() {
     List<TupleStream> l =  new ArrayList<TupleStream>();
-    l.add(stream);
-
     return l;
   }
 
   public Tuple read() throws IOException {
-    return stream.read();
+
+    if(finished) {
+      Map m = new HashMap();
+      m.put("EOF", true);
+      return new Tuple(m);
+    } else {
+      finished = true;
+      Map<String, Object> map = new HashMap();
+      Set<Map.Entry<String, Object>> entries = tupleParams.entrySet();
+
+      for (Map.Entry<String, Object> entry : entries) {
+        String name = entry.getKey();
+        Object o = entry.getValue();
+        if (o instanceof TupleStream) {
+          List<Tuple> tuples = new ArrayList();
+          TupleStream tStream = (TupleStream) o;
+          tStream.setStreamContext(streamContext);
+          try {
+            tStream.open();
+            TUPLES:
+            while (true) {
+              Tuple tuple = tStream.read();
+              if (tuple.EOF) {
+                break TUPLES;
+              } else {
+                tuples.add(tuple);
+              }
+            }
+            map.put(name, tuples);
+          } finally {
+            tStream.close();
+          }
+        } else if ((o instanceof StreamEvaluator))  {
+          Tuple eTuple = new Tuple(streamContext.getLets());
+          StreamEvaluator evaluator = (StreamEvaluator) o;
+          Object eo = evaluator.evaluate(eTuple);
+          map.put(name, eo);
+        } else {
+          map.put(name, streamContext.getLets().get(o.toString()));
+        }
+      }
+      return new Tuple(map);
+    }
   }
 
   public void close() throws IOException {
-    stream.close();
   }
 
   public void open() throws IOException {
-    Map<String, Object> lets = streamContext.getLets();
-    Set<Map.Entry<String, Object>> entries = letParams.entrySet();
 
-    //Load up the StreamContext with the data created by the letParams.
-    for(Map.Entry<String, Object> entry : entries) {
-      String name = entry.getKey();
-      Object o = entry.getValue();
-      if(o instanceof TupleStream) {
-        List<Tuple> tuples = new ArrayList();
-        TupleStream tStream = (TupleStream)o;
-        tStream.setStreamContext(streamContext);
-        try {
-          tStream.open();
-          TUPLES:
-          while(true) {
-            Tuple tuple = tStream.read();
-            if (tuple.EOF) {
-              break TUPLES;
-            } else {
-              tuples.add(tuple);
-            }
-          }
-          lets.put(name, tuples);
-        } finally {
-          tStream.close();
-        }
-      } else {
-        //Add the data from the StreamContext to a tuple.
-        //Let the evaluator work from this tuple.
-        //This will allow columns to be created from tuples already in the StreamContext.
-        Tuple eTuple = new Tuple(lets);
-        StreamEvaluator evaluator = (StreamEvaluator)o;
-        Object eo = evaluator.evaluate(eTuple);
-        lets.put(name, eo);
-      }
-    }
-    stream.open();
   }
 
   /** Return the stream sort - ie, the order in which records are returned */

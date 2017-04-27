@@ -5111,6 +5111,8 @@ public class StreamExpressionTest extends SolrCloudTestCase {
 
 
 
+
+
   @Test
   public void testListStream() throws Exception {
     UpdateRequest updateRequest = new UpdateRequest();
@@ -5174,15 +5176,16 @@ public class StreamExpressionTest extends SolrCloudTestCase {
   }
 
   @Test
-  public void testLetGetStream() throws Exception {
+  public void testTupleStream() throws Exception {
     UpdateRequest updateRequest = new UpdateRequest();
     updateRequest.add(id, "hello", "test_t", "l b c d c e");
     updateRequest.add(id, "hello1", "test_t", "l b c d c");
-
     updateRequest.commit(cluster.getSolrClient(), COLLECTIONORALIAS);
 
     String expr = "search("+COLLECTIONORALIAS+", q=\"*:*\", fl=\"id,test_t\", sort=\"id desc\")";
-    String cat = "let(cell(results,"+expr+"), get(results))";
+
+    //Add a Stream and an Evaluator to the Tuple.
+    String cat = "tuple(results="+expr+", sum=add(1,1))";
     ModifiableSolrParams paramsLoc = new ModifiableSolrParams();
     paramsLoc.set("expr", cat);
     paramsLoc.set("qt", "/stream");
@@ -5193,60 +5196,51 @@ public class StreamExpressionTest extends SolrCloudTestCase {
     StreamContext context = new StreamContext();
     solrStream.setStreamContext(context);
     List<Tuple> tuples = getTuples(solrStream);
-    assertTrue(tuples.size() == 2);
-    assertTrue(tuples.get(0).get("id").equals("hello1"));
-    assertTrue(tuples.get(0).get("test_t").equals("l b c d c"));
-    assertTrue(tuples.get(1).get("id").equals("hello"));
-    assertTrue(tuples.get(1).get("test_t").equals("l b c d c e"));
+    assertTrue(tuples.size() == 1);
+    List<Map> results  = (List<Map>)tuples.get(0).get("results");
+    assertTrue(results.get(0).get("id").equals("hello1"));
+    assertTrue(results.get(0).get("test_t").equals("l b c d c"));
+    assertTrue(results.get(1).get("id").equals("hello"));
+    assertTrue(results.get(1).get("test_t").equals("l b c d c e"));
 
+    assertTrue(tuples.get(0).getLong("sum").equals(2L));
 
-    //Test there are no side effects when transforming tuples.
-    expr = "search("+COLLECTIONORALIAS+", q=\"*:*\", fl=\"id,test_t\", sort=\"id desc\")";
-    cat = "let(cell(results,"+expr+"), list(select(get(results), id as newid, test_t), get(results)))";
-    paramsLoc = new ModifiableSolrParams();
+  }
+
+  @Test
+  public void testLetStream() throws Exception {
+    UpdateRequest updateRequest = new UpdateRequest();
+    updateRequest.add(id, "hello", "test_t", "l b c d c e", "test_i", "5");
+    updateRequest.add(id, "hello1", "test_t", "l b c d c", "test_i", "4");
+
+    updateRequest.commit(cluster.getSolrClient(), COLLECTIONORALIAS);
+
+    String expr = "search("+COLLECTIONORALIAS+", q=\"*:*\", fl=\"id,test_t, test_i\", sort=\"id desc\")";
+    String cat = "let(a="+expr+", b=add(1,3), c=col(a, test_i), tuple(test=add(1,1), test1=b, results=a, test2=add(c)))";
+    ModifiableSolrParams paramsLoc = new ModifiableSolrParams();
     paramsLoc.set("expr", cat);
     paramsLoc.set("qt", "/stream");
 
-    solrStream = new SolrStream(url, paramsLoc);
+    String url = cluster.getJettySolrRunners().get(0).getBaseUrl().toString()+"/"+COLLECTIONORALIAS;
+    TupleStream solrStream = new SolrStream(url, paramsLoc);
 
-    context = new StreamContext();
+    StreamContext context = new StreamContext();
     solrStream.setStreamContext(context);
-    tuples = getTuples(solrStream);
-    assertTrue(tuples.size() == 4);
-    assertTrue(tuples.get(0).get("newid").equals("hello1"));
-    assertTrue(tuples.get(0).get("test_t").equals("l b c d c"));
-    assertTrue(tuples.get(1).get("newid").equals("hello"));
-    assertTrue(tuples.get(1).get("test_t").equals("l b c d c e"));
-    assertTrue(tuples.get(2).get("id").equals("hello1"));
-    assertTrue(tuples.get(2).get("test_t").equals("l b c d c"));
-    assertTrue(tuples.get(3).get("id").equals("hello"));
-    assertTrue(tuples.get(3).get("test_t").equals("l b c d c e"));
+    List<Tuple> tuples = getTuples(solrStream);
+    assertTrue(tuples.size() == 1);
+    Tuple tuple1 = tuples.get(0);
+    List<Map> results = (List<Map>)tuple1.get("results");
+    assertTrue(results.size() == 2);
+    assertTrue(results.get(0).get("id").equals("hello1"));
+    assertTrue(results.get(0).get("test_t").equals("l b c d c"));
+    assertTrue(results.get(1).get("id").equals("hello"));
+    assertTrue(results.get(1).get("test_t").equals("l b c d c e"));
 
-    //Test multiple lets
+    assertTrue(tuple1.getLong("test").equals(2L));
+    assertTrue(tuple1.getLong("test1").equals(4L));
+    assertTrue(tuple1.getLong("test2").equals(9L));
 
-    //Test there are no side effects when transforming tuples.
-    expr = "search("+COLLECTIONORALIAS+", q=\"*:*\", fl=\"id,test_t\", sort=\"id desc\")";
-    String expr1 = "search("+COLLECTIONORALIAS+", q=\"*:*\", fl=\"id,test_t\", sort=\"id asc\")";
 
-    cat = "let(cell(results,"+expr+"), cell(results1,"+expr1+"), list(select(get(results), id as newid, test_t), get(results1)))";
-    paramsLoc = new ModifiableSolrParams();
-    paramsLoc.set("expr", cat);
-    paramsLoc.set("qt", "/stream");
-
-    solrStream = new SolrStream(url, paramsLoc);
-
-    context = new StreamContext();
-    solrStream.setStreamContext(context);
-    tuples = getTuples(solrStream);
-    assertTrue(tuples.size() == 4);
-    assertTrue(tuples.get(0).get("newid").equals("hello1"));
-    assertTrue(tuples.get(0).get("test_t").equals("l b c d c"));
-    assertTrue(tuples.get(1).get("newid").equals("hello"));
-    assertTrue(tuples.get(1).get("test_t").equals("l b c d c e"));
-    assertTrue(tuples.get(2).get("id").equals("hello"));
-    assertTrue(tuples.get(2).get("test_t").equals("l b c d c e"));
-    assertTrue(tuples.get(3).get("id").equals("hello1"));
-    assertTrue(tuples.get(3).get("test_t").equals("l b c d c"));
   }
 
   @Test
