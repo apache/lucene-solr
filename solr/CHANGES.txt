@@ -258,6 +258,9 @@ Bug Fixes
 
 * SOLR-10526: facet.heatmap didn't honor facet exclusions ('ex') for distributed search. (David Smiley)
 
+* SOLR-10500: nested child docs are adopted by neighbour when several parents come in update/json/docs 
+  (Alexey Suprun,noble via Mikhail Khludnev)
+
 Other Changes
 ----------------------
 
