@@ -188,4 +188,24 @@ public class TestPayloadCheckQuery extends LuceneTestCase {
     checkHits(query, new int[]{1103, 1203,1303,1403,1503,1603,1703,1803,1903});
 
   }
+
+  public void testEquality() {
+    SpanQuery sq1 = new SpanTermQuery(new Term("field", "one"));
+    SpanQuery sq2 = new SpanTermQuery(new Term("field", "two"));
+    BytesRef payload1 = new BytesRef("pay1");
+    BytesRef payload2 = new BytesRef("pay2");
+    SpanQuery query1 = new SpanPayloadCheckQuery(sq1, Collections.singletonList(payload1));
+    SpanQuery query2 = new SpanPayloadCheckQuery(sq2, Collections.singletonList(payload1));
+    SpanQuery query3 = new SpanPayloadCheckQuery(sq1, Collections.singletonList(payload2));
+    SpanQuery query4 = new SpanPayloadCheckQuery(sq2, Collections.singletonList(payload2));
+    SpanQuery query5 = new SpanPayloadCheckQuery(sq1, Collections.singletonList(payload1));
+
+    assertEquals(query1, query5);
+    assertFalse(query1.equals(query2));
+    assertFalse(query1.equals(query3));
+    assertFalse(query1.equals(query4));
+    assertFalse(query2.equals(query3));
+    assertFalse(query2.equals(query4));
+    assertFalse(query3.equals(query4));
+  }
 }
