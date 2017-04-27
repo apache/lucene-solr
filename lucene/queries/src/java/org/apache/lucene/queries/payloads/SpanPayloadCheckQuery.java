@@ -69,6 +69,10 @@ public class SpanPayloadCheckQuery extends SpanQuery {
 
   @Override
   public Query rewrite(IndexReader reader) throws IOException {
+    Query matchRewritten = match.rewrite(reader);
+    if (match != matchRewritten && matchRewritten instanceof SpanQuery) {
+      return new SpanPayloadCheckQuery((SpanQuery)matchRewritten, payloadToMatch);
+    }
     return super.rewrite(reader);
   }
 
