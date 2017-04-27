@@ -101,9 +101,17 @@ public class GetStream extends TupleStream implements Expressible {
   }
 
   public void open() throws IOException {
-    Map<String, List<Tuple>> lets = streamContext.getLets();
-    List<Tuple> tuples = lets.get(name);
-    tupleIterator = tuples.iterator();
+    Map<String, Object> lets = streamContext.getLets();
+    Object o = lets.get(name);
+    List l = null;
+    if(o instanceof List) {
+        l = (List)o;
+      if(l.get(0) instanceof Tuple) {
+        tupleIterator = l.iterator();
+      } else {
+        throw new IOException("Get was not passed a list of tuples:"+o.getClass());
+      }
+    }
   }
 
   /** Return the stream sort - ie, the order in which records are returned */
