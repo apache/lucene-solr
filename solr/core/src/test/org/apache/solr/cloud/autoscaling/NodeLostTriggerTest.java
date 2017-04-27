@@ -102,7 +102,7 @@ public class NodeLostTriggerTest extends SolrCloudTestCase {
     // remove a node but add it back before the waitFor period expires
     // and assert that the trigger doesn't fire at all
     try (NodeLostTrigger trigger = new NodeLostTrigger("node_lost_trigger", props, container)) {
-      final int waitTime = 2;
+      final long waitTime = 2;
       props.put("waitFor", waitTime);
       trigger.setListener(event -> fail("Did not expect the listener to fire on first run!"));
       trigger.run();
