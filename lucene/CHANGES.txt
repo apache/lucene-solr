@@ -100,7 +100,10 @@ Bug Fixes
 * LUCENE-7797: The static FSDirectory.listAll(Path) method was always
   returning an empty array.  (Atkins Chang via Mike McCandless)
 
-* LUCENE-7808: Fix PayloadScoreQuery and SpanPayloadCheckQuery
+* LUCENE-7481: Fixed missing rewrite methods for SpanPayloadCheckQuery
+  and PayloadScoreQuery. (Erik Hatcher)
+
+* LUCENE-7808: Fixed PayloadScoreQuery and SpanPayloadCheckQuery
   .equals and .hashCode methods.  (Erik Hatcher)
 
 Improvements
