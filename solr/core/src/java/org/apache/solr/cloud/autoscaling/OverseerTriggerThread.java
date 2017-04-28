@@ -100,25 +100,34 @@ public class OverseerTriggerThread implements Runnable, Closeable {
     while (true) {
       Map<String, AutoScaling.Trigger> copy = null;
       try {
+        // this can throw InterruptedException and we don't want to unlock if it did, so we keep this outside
+        // of the try/finally block
         updateLock.lockInterruptibly();
-        if (znodeVersion == lastZnodeVersion) {
-          updated.await();
+        try {
+          if (znodeVersion == lastZnodeVersion) {
+            updated.await();
 
-          // are we closed?
-          if (isClosed) break;
+            // are we closed?
+            if (isClosed) break;
 
-          // spurious wakeup?
-          if (znodeVersion == lastZnodeVersion) continue;
-          lastZnodeVersion = znodeVersion;
+            // spurious wakeup?
+            if (znodeVersion == lastZnodeVersion) continue;
+            lastZnodeVersion = znodeVersion;
+          }
+          copy = new HashMap<>(activeTriggers);
+        } catch (InterruptedException e) {
+          // Restore the interrupted status
+          Thread.currentThread().interrupt();
+          log.warn("Interrupted", e);
+          break;
+        } finally {
+          updateLock.unlock();
         }
-        copy = new HashMap<>(activeTriggers);
       } catch (InterruptedException e) {
         // Restore the interrupted status
         Thread.currentThread().interrupt();
         log.warn("Interrupted", e);
         break;
-      } finally {
-        updateLock.unlock();
       }
 
       Set<String> managedTriggerNames = scheduledTriggers.getScheduledTriggerNames();
