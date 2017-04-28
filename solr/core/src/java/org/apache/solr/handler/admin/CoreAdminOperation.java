@@ -303,50 +303,56 @@ enum CoreAdminOperation implements CoreAdminOp {
   static NamedList<Object> getCoreStatus(CoreContainer cores, String cname, boolean isIndexInfoNeeded) throws IOException {
     NamedList<Object> info = new SimpleOrderedMap<>();
 
-    if (!cores.isLoaded(cname)) { // Lazily-loaded core, fill in what we can.
-      // It would be a real mistake to load the cores just to get the status
-      CoreDescriptor desc = cores.getUnloadedCoreDescriptor(cname);
-      if (desc != null) {
-        info.add(NAME, desc.getName());
-        info.add("instanceDir", desc.getInstanceDir());
-        // None of the following are guaranteed to be present in a not-yet-loaded core.
-        String tmp = desc.getDataDir();
-        if (StringUtils.isNotBlank(tmp)) info.add("dataDir", tmp);
-        tmp = desc.getConfigName();
-        if (StringUtils.isNotBlank(tmp)) info.add("config", tmp);
-        tmp = desc.getSchemaName();
-        if (StringUtils.isNotBlank(tmp)) info.add("schema", tmp);
-        info.add("isLoaded", "false");
-      }
+    if (cores.isCoreLoading(cname)) {
+      info.add(NAME, cname);
+      info.add("isLoaded", "false");
+      info.add("isLoading", "true");
     } else {
-      try (SolrCore core = cores.getCore(cname)) {
-        if (core != null) {
-          info.add(NAME, core.getName());
-          info.add("instanceDir", core.getResourceLoader().getInstancePath().toString());
-          info.add("dataDir", normalizePath(core.getDataDir()));
-          info.add("config", core.getConfigResource());
-          info.add("schema", core.getSchemaResource());
-          info.add("startTime", core.getStartTimeStamp());
-          info.add("uptime", core.getUptimeMs());
-          if (cores.isZooKeeperAware()) {
-            info.add("lastPublished", core.getCoreDescriptor().getCloudDescriptor().getLastPublished().toString().toLowerCase(Locale.ROOT));
-            info.add("configVersion", core.getSolrConfig().getZnodeVersion());
-            SimpleOrderedMap cloudInfo = new SimpleOrderedMap<>();
-            cloudInfo.add(COLLECTION, core.getCoreDescriptor().getCloudDescriptor().getCollectionName());
-            cloudInfo.add(SHARD, core.getCoreDescriptor().getCloudDescriptor().getShardId());
-            cloudInfo.add(REPLICA, core.getCoreDescriptor().getCloudDescriptor().getCoreNodeName());
-            info.add("cloud", cloudInfo);
-          }
-          if (isIndexInfoNeeded) {
-            RefCounted<SolrIndexSearcher> searcher = core.getSearcher();
-            try {
-              SimpleOrderedMap<Object> indexInfo = LukeRequestHandler.getIndexInfo(searcher.get().getIndexReader());
-              long size = getIndexSize(core);
-              indexInfo.add("sizeInBytes", size);
-              indexInfo.add("size", NumberUtils.readableSize(size));
-              info.add("index", indexInfo);
-            } finally {
-              searcher.decref();
+      if (!cores.isLoaded(cname)) { // Lazily-loaded core, fill in what we can.
+        // It would be a real mistake to load the cores just to get the status
+        CoreDescriptor desc = cores.getUnloadedCoreDescriptor(cname);
+        if (desc != null) {
+          info.add(NAME, desc.getName());
+          info.add("instanceDir", desc.getInstanceDir());
+          // None of the following are guaranteed to be present in a not-yet-loaded core.
+          String tmp = desc.getDataDir();
+          if (StringUtils.isNotBlank(tmp)) info.add("dataDir", tmp);
+          tmp = desc.getConfigName();
+          if (StringUtils.isNotBlank(tmp)) info.add("config", tmp);
+          tmp = desc.getSchemaName();
+          if (StringUtils.isNotBlank(tmp)) info.add("schema", tmp);
+          info.add("isLoaded", "false");
+        }
+      } else {
+        try (SolrCore core = cores.getCore(cname)) {
+          if (core != null) {
+            info.add(NAME, core.getName());
+            info.add("instanceDir", core.getResourceLoader().getInstancePath().toString());
+            info.add("dataDir", normalizePath(core.getDataDir()));
+            info.add("config", core.getConfigResource());
+            info.add("schema", core.getSchemaResource());
+            info.add("startTime", core.getStartTimeStamp());
+            info.add("uptime", core.getUptimeMs());
+            if (cores.isZooKeeperAware()) {
+              info.add("lastPublished", core.getCoreDescriptor().getCloudDescriptor().getLastPublished().toString().toLowerCase(Locale.ROOT));
+              info.add("configVersion", core.getSolrConfig().getZnodeVersion());
+              SimpleOrderedMap cloudInfo = new SimpleOrderedMap<>();
+              cloudInfo.add(COLLECTION, core.getCoreDescriptor().getCloudDescriptor().getCollectionName());
+              cloudInfo.add(SHARD, core.getCoreDescriptor().getCloudDescriptor().getShardId());
+              cloudInfo.add(REPLICA, core.getCoreDescriptor().getCloudDescriptor().getCoreNodeName());
+              info.add("cloud", cloudInfo);
+            }
+            if (isIndexInfoNeeded) {
+              RefCounted<SolrIndexSearcher> searcher = core.getSearcher();
+              try {
+                SimpleOrderedMap<Object> indexInfo = LukeRequestHandler.getIndexInfo(searcher.get().getIndexReader());
+                long size = getIndexSize(core);
+                indexInfo.add("sizeInBytes", size);
+                indexInfo.add("size", NumberUtils.readableSize(size));
+                info.add("index", indexInfo);
+              } finally {
+                searcher.decref();
+              }
             }
           }
         }
