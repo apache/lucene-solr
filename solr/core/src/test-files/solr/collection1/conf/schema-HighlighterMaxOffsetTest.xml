@@ -38,7 +38,6 @@ Test for HighlighterMaxOffsetTest which requires the use of ReversedWildcardFilt
 
   <uniqueKey>id</uniqueKey>
   <defaultSearchField>content</defaultSearchField>
-  <solrQueryParser defaultOperator="AND"/>
 
 
   <fieldType name="string" class="solr.StrField" sortMissingLast="true"/>

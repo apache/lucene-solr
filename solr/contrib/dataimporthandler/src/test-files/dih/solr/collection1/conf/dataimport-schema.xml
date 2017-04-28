@@ -68,5 +68,4 @@
 
   <uniqueKey>id</uniqueKey>
   <defaultSearchField>desc</defaultSearchField>
-  <solrQueryParser defaultOperator="OR"/>
 </schema>

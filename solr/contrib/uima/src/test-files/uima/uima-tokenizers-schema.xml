@@ -582,9 +582,6 @@
   -->
   <defaultSearchField>text</defaultSearchField>
 
-  <!-- SolrQueryParser configuration: defaultOperator="AND|OR" -->
-  <solrQueryParser defaultOperator="OR"/>
-
   <!--
     copyField commands copy one field to another at the time a document
     is added to the index. It's used either to index the same field

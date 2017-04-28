@@ -661,7 +661,4 @@
   <uniqueKey>id</uniqueKey>
 
   <copyField source="*" dest="text"/>
-
-  <solrQueryParser defaultOperator="OR"/>
-
 </schema>

@@ -29,9 +29,6 @@ public class TestSchemaResource extends SolrRestletTestBase {
             "count(/response/lst[@name='schema']/float[@name='version']) = 1",
             "/response/lst[@name='schema']/float[@name='version'][.='1.6']",
 
-            "count(/response/lst[@name='schema']/lst[@name='solrQueryParser']/str[@name='defaultOperator']) = 1",
-            "/response/lst[@name='schema']/lst[@name='solrQueryParser']/str[@name='defaultOperator'][.='OR']",
-
             "count(/response/lst[@name='schema']/str[@name='uniqueKey']) = 1",
             "/response/lst[@name='schema']/str[@name='uniqueKey'][.='id']",
         
@@ -113,7 +110,6 @@ public class TestSchemaResource extends SolrRestletTestBase {
 
              "/schema/name=='test-rest'",
              "/schema/version==1.6",
-             "/schema/solrQueryParser/defaultOperator=='OR'",
              "/schema/uniqueKey=='id'",
              "/schema/defaultSearchField=='text'",
         
@@ -154,7 +150,6 @@ public class TestSchemaResource extends SolrRestletTestBase {
 
             "/schema/@name = 'test-rest'",
             "/schema/@version = '1.6'",
-            "/schema/solrQueryParser/@defaultOperator = 'OR'",
             "/schema/uniqueKey = 'id'",
             "/schema/defaultSearchField = 'text'",
 

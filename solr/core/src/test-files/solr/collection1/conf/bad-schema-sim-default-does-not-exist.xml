@@ -38,6 +38,4 @@
 
   <field name="sim1text" type="ft-overrides-default-sim" indexed="true" stored="true"/>
 
- <defaultSearchField>sim1text</defaultSearchField>
-
 </schema>
