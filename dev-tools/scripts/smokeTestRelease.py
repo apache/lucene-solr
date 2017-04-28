@@ -699,8 +699,10 @@ def verifyUnpacked(java, project, artifact, unpackPath, gitRevision, version, te
         print('      %s' % line.strip())
       raise RuntimeError('source release has WARs...')
 
-    print('    run "ant validate"')
-    java.run_java7('ant validate', '%s/validate.log' % unpackPath)
+    # Can't run documentation-lint in lucene src, because dev-tools is missing
+    validateCmd = 'ant validate' if project == 'lucene' else 'ant validate documentation-lint';
+    print('    run "%s"' % validateCmd)
+    java.run_java7(validateCmd, '%s/validate.log' % unpackPath)
 
     if project == 'lucene':
       print("    run tests w/ Java 7 and testArgs='%s'..." % testArgs)
