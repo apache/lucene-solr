@@ -156,10 +156,12 @@ public class OverseerCollectionMessageHandler implements OverseerMessageHandler 
 
   static final String SKIP_CREATE_REPLICA_IN_CLUSTER_STATE = "skipCreateReplicaInClusterState";
 
-  //nocommit: review
   public static final Map<String, Object> COLL_PROPS = Collections.unmodifiableMap(makeMap(
       ROUTER, DocRouter.DEFAULT_NAME,
       ZkStateReader.REPLICATION_FACTOR, "1",
+      ZkStateReader.REALTIME_REPLICAS, "1",
+      ZkStateReader.APPEND_REPLICAS, "0",
+      ZkStateReader.PASSIVE_REPLICAS, "0",
       ZkStateReader.MAX_SHARDS_PER_NODE, "1",
       ZkStateReader.AUTO_ADD_REPLICAS, "false",
       DocCollection.RULE, null,

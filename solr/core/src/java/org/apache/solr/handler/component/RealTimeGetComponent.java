@@ -108,6 +108,7 @@ public class RealTimeGetComponent extends SearchComponent
 
     if (req.getCore().getCoreDescriptor().getCloudDescriptor() != null 
         && !req.getCore().getCoreDescriptor().getCloudDescriptor().requiresTransactionLog()) {
+      //nocommit: forward request to leader
       return;
     }
     

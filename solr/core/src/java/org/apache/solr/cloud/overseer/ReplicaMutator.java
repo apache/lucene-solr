@@ -313,7 +313,7 @@ public class ReplicaMutator {
 
     Replica replica = new Replica(coreNodeName, replicaProps);
     
-    log.debug("Will update state for replica: " + replica);
+    log.debug("Will update state for replica: {}", replica);
 
     Map<String, Object> sliceProps = null;
     Map<String, Replica> replicas;
@@ -335,7 +335,7 @@ public class ReplicaMutator {
     slice = new Slice(sliceName, replicas, sliceProps);
 
     DocCollection newCollection = CollectionMutator.updateSlice(collectionName, collection, slice);
-    log.debug("Collection is now: " + newCollection);
+    log.debug("Collection is now: {}", newCollection);
     return new ZkWriteCommand(collectionName, newCollection);
   }
 

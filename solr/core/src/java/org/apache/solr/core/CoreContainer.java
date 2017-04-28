@@ -1280,7 +1280,8 @@ public class CoreContainer {
     if (zkSys.getZkController() != null) {
       // cancel recovery in cloud mode
       core.getSolrCoreState().cancelRecovery();
-      if (core.getCoreDescriptor().getCloudDescriptor().getReplicaType() == Replica.Type.PASSIVE) { // TODO: Also for Replica.Type.ACTIVE? 
+      if (core.getCoreDescriptor().getCloudDescriptor().getReplicaType() == Replica.Type.PASSIVE
+          || core.getCoreDescriptor().getCloudDescriptor().getReplicaType() == Replica.Type.APPEND) { 
         // Stop replication if this is part of a passive replica before closing the code
         zkSys.getZkController().stopReplicationFromLeader(name);
       }

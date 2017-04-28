@@ -136,20 +136,19 @@ public class CreateCollectionCmd implements Cmd {
 
         positionVsNodes = new HashMap<>();
       } else {
-        if (numRealtimeReplicas > nodeList.size()) {
-          log.warn("Specified "
-              + REALTIME_REPLICAS
-              + " of "
-              + numRealtimeReplicas
+        int totalNumReplicas = numRealtimeReplicas + numAppendReplicas + numPassiveReplicas;
+        if (totalNumReplicas > nodeList.size()) {
+          log.warn("Specified number of replicas of "
+              + totalNumReplicas
               + " on collection "
               + collectionName
-              + " is higher than or equal to the number of Solr instances currently live or live and part of your " + CREATE_NODE_SET + "("
+              + " is higher than the number of Solr instances currently live or live and part of your " + CREATE_NODE_SET + "("
               + nodeList.size()
               + "). It's unusual to run two replica of the same slice on the same Solr-instance.");
         }
 
         int maxShardsAllowedToCreate = maxShardsPerNode * nodeList.size();
-        int requestedShardsToCreate = numSlices * (numRealtimeReplicas + numPassiveReplicas + numAppendReplicas);
+        int requestedShardsToCreate = numSlices * totalNumReplicas;
         if (maxShardsAllowedToCreate < requestedShardsToCreate) {
           throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Cannot create collection " + collectionName + ". Value of "
               + MAX_SHARDS_PER_NODE + " is " + maxShardsPerNode
@@ -239,7 +238,6 @@ public class CreateCollectionCmd implements Cmd {
         params.set(CoreAdminParams.SHARD, position.shard);
         params.set(ZkStateReader.NUM_SHARDS_PROP, numSlices);
         params.set(CoreAdminParams.NEW_COLLECTION, "true");
-        // This is used to tell the CoreAdminHandler that the new core doesn't need a tlog in case of passive replicas
         params.set(CoreAdminParams.REPLICA_TYPE, position.type.name());
 
         if (async != null) {

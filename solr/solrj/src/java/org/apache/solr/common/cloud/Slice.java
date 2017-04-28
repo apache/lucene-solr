@@ -205,7 +205,7 @@ public class Slice extends ZkNodeProps implements Iterable<Replica> {
   private Replica findLeader() {
     for (Replica replica : replicas.values()) {
       if (replica.getStr(LEADER) != null) {
-        assert replica.getType() == Type.APPEND || replica.getType() == Type.REALTIME;
+        assert replica.getType() == Type.APPEND || replica.getType() == Type.REALTIME: "Passive replica should not become leader!";
         return replica;
       }
     }

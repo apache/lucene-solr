@@ -892,7 +892,7 @@ public class ZkController {
         if (replica == null || replica.getType() != Type.PASSIVE) {
           joinElection(desc, afterExpiration, joinAtHead);
         } else if (replica.getType() == Type.PASSIVE) {
-          log.debug("Replica {} skipping election because replica is passive", coreZkNodeName);
+          log.debug("Replica {} skipping election because it's type is {}", coreZkNodeName, Type.PASSIVE);
           startReplicationFromLeader(coreName, false);
         }
       } catch (InterruptedException e) {
@@ -923,15 +923,15 @@ public class ZkController {
         // leader election perhaps?
         
         UpdateLog ulog = core.getUpdateHandler().getUpdateLog();
-        boolean isReplicaInOnlyLeaderIndexes = replicaType == Replica.Type.APPEND && !isLeader;
-        if (isReplicaInOnlyLeaderIndexes) {
+        boolean isAppendAndNotLeader = replicaType == Replica.Type.APPEND && !isLeader;
+        if (isAppendAndNotLeader) {
           String commitVersion = ReplicateFromLeader.getCommitVersion(core);
           if (commitVersion != null) {
             ulog.copyOverOldUpdates(Long.parseLong(commitVersion));
           }
         }
         // we will call register again after zk expiration and on reload
-        if (!afterExpiration && !core.isReloaded() && ulog != null && !isReplicaInOnlyLeaderIndexes) {
+        if (!afterExpiration && !core.isReloaded() && ulog != null && !isAppendAndNotLeader) {
           // disable recovery in case shard is in construction state (for shard splits)
           Slice slice = getClusterState().getSlice(collection, shardId);
           if (slice.getState() != Slice.State.CONSTRUCTION || !isLeader) {
@@ -950,7 +950,7 @@ public class ZkController {
         boolean didRecovery
             = checkRecovery(recoverReloadedCores, isLeader, skipRecovery, collection, coreZkNodeName, core, cc, afterExpiration);
         if (!didRecovery) {
-          if (isReplicaInOnlyLeaderIndexes) {
+          if (isAppendAndNotLeader) {
             startReplicationFromLeader(coreName, true);
           }
           publish(desc, Replica.State.ACTIVE);
@@ -969,7 +969,7 @@ public class ZkController {
   }
 
   public void startReplicationFromLeader(String coreName, boolean switchTransactionLog) throws InterruptedException {
-    log.info(coreName + " starting replication from leader");
+    log.info("{} starting replication from leader", coreName);
     ReplicateFromLeader replicateFromLeader = new ReplicateFromLeader(cc, coreName);
     if (replicateFromLeaders.putIfAbsent(coreName, replicateFromLeader) == null) {
       replicateFromLeader.startReplication(switchTransactionLog);
@@ -979,7 +979,7 @@ public class ZkController {
   }
 
   public void stopReplicationFromLeader(String coreName) {
-    log.info(coreName + " stopping replication from leader");
+    log.info("{} stopping replication from leader", coreName);
     ReplicateFromLeader replicateFromLeader = replicateFromLeaders.remove(coreName);
     if (replicateFromLeader != null) {
       replicateFromLeader.stopReplication();
@@ -1203,7 +1203,7 @@ public class ZkController {
       if (state != Replica.State.DOWN) {
         final Replica.State lirState = getLeaderInitiatedRecoveryState(collection, shardId, coreNodeName);
         if (lirState != null) {
-          assert cd.getCloudDescriptor().getReplicaType() != Replica.Type.PASSIVE;
+          assert cd.getCloudDescriptor().getReplicaType() != Replica.Type.PASSIVE: "LIR should not happen for passive replicas!";
           if (state == Replica.State.ACTIVE) {
             // trying to become active, so leader-initiated state must be recovering
             if (lirState == Replica.State.RECOVERING) {
@@ -1378,7 +1378,6 @@ public class ZkController {
       final String shardId = zkStateReader.getClusterState().getShardId(cd.getCollectionName(), getNodeName(), cd.getName());
       if (shardId != null) {
         cd.getCloudDescriptor().setShardId(shardId);
-        log.debug("Shard ID is {} for core {} ", shardId, cd.getName());
         return;
       }
       try {

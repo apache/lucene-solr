@@ -1979,7 +1979,6 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
       
       for (Entry<String,Replica> entry : shardMap.entrySet()) {
         if (!types.contains(entry.getValue().getType())) {
-          log.info("getCollectionUrls: Skipping replica " + entry.getValue().getName());//nocommit: too verbose
           continue;
         }
         ZkCoreNodeProps nodeProps = new ZkCoreNodeProps(entry.getValue());

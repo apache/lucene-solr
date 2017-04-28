@@ -205,7 +205,7 @@ public class SplitShardCmd implements Cmd {
       for (int i = 0; i < subRanges.size(); i++) {
         String subSlice = slice + "_" + i;
         subSlices.add(subSlice);
-        String subShardName = collectionName + "_" + subSlice + "_replica1";
+        String subShardName = Assign.buildCoreName(collectionName, subSlice, Replica.Type.REALTIME, 1);
         subShardNames.add(subShardName);
       }
 

@@ -67,8 +67,6 @@ public class SliceMutator {
       return ZkStateWriter.NO_OP;
     }
     String coreNodeName = Assign.assignNode(collection);
-//    Replica replica = new Replica(coreNodeName,
-    // coreNodeName overlaps?
     Replica replica = new Replica(coreNodeName,
         makeMap(
             ZkStateReader.CORE_NAME_PROP, message.getStr(ZkStateReader.CORE_NAME_PROP),
@@ -257,8 +255,8 @@ public class SliceMutator {
       replicasCopy.put(replica.getName(), replica);
     }
     Slice newSlice = new Slice(slice.getName(), replicasCopy, slice.getProperties());
-    log.info("Old Slice: " + slice);
-    log.info("New Slice: " + newSlice);
+    log.debug("Old Slice: {}", slice);
+    log.debug("New Slice: {}", newSlice);
     return CollectionMutator.updateSlice(collection.getName(), collection, newSlice);
   }
 }

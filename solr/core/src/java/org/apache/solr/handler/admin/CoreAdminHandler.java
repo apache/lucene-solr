@@ -171,9 +171,7 @@ public class CoreAdminHandler extends RequestHandlerBase implements PermissionNa
 
       final CallInfo callInfo = new CallInfo(this, req, rsp, op);
       if (taskId == null) {
-        log.info("Starting Operation: " + req);
         callInfo.call();
-        log.info("Done with Operation: " + req);
       } else {
         try {
           MDC.put("CoreAdminHandler.asyncId", taskId);
