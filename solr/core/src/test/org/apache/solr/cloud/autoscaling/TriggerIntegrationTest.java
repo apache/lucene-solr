@@ -78,7 +78,7 @@ public class TriggerIntegrationTest extends SolrCloudTestCase {
         "'name' : 'node_added_trigger'," +
         "'event' : 'nodeAdded'," +
         "'waitFor' : '" + waitForSeconds + "s'," +
-        "'enabled' : 'true'," +
+        "'enabled' : true," +
         "'actions' : [{'name':'test','class':'" + TestTriggerAction.class.getName() + "'}]" +
         "}}";
     SolrRequest req = new AutoScalingHandlerTest.AutoScalingRequest(SolrRequest.METHOD.POST, path, setTriggerCommand);
@@ -110,7 +110,7 @@ public class TriggerIntegrationTest extends SolrCloudTestCase {
         "'name' : 'node_lost_trigger'," +
         "'event' : 'nodeLost'," +
         "'waitFor' : '" + waitForSeconds + "s'," +
-        "'enabled' : 'true'," +
+        "'enabled' : true," +
         "'actions' : [{'name':'test','class':'" + TestTriggerAction.class.getName() + "'}]" +
         "}}";
     NamedList<Object> overSeerStatus = cluster.getSolrClient().request(CollectionAdminRequest.getOverseerStatus());
