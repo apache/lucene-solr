@@ -128,6 +128,12 @@ Optimizations
 
 Other
 
+* LUCENE-7796: Make IOUtils.reThrow idiom declare Error return type so 
+  callers may use it in a way that compiler knows subsequent code is 
+  unreachable. reThrow is now deprecated in favor of IOUtils.rethrowAlways
+  with a slightly different semantics (see javadoc). (Hossman, Robert Muir, 
+  Dawid Weiss)
+
 * LUCENE-7754: Inner classes should be static whenever possible.
   (Daniel Jelinski via Adrien Grand)
 

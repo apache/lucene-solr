@@ -312,7 +312,7 @@ public abstract class ReplicaNode extends Node {
       } else {
         dir.close();
       }
-      IOUtils.reThrow(t);
+      throw IOUtils.rethrowAlways(t);
     }
   }
   
