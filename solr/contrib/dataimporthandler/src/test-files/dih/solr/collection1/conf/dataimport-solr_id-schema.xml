@@ -313,8 +313,4 @@
 
   <!-- field for the QueryParser to use when an explicit fieldname is absent -->
   <defaultSearchField>desc</defaultSearchField>
-
-  <!-- SolrQueryParser configuration: defaultOperator="AND|OR" -->
-  <solrQueryParser defaultOperator="OR"/>
-
 </schema>

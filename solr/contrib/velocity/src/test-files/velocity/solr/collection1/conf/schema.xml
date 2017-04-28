@@ -25,7 +25,4 @@
   <uniqueKey>id</uniqueKey>
 
   <defaultSearchField>id</defaultSearchField>
-
-  <solrQueryParser defaultOperator="OR"/>
-
 </schema>

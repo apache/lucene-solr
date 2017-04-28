@@ -31,6 +31,4 @@
   <field name="sim1text" type="sim1" indexed="true" stored="true"/>
   <dynamicField name="*" type="sim1"/>
 
-  <defaultSearchField>sim1text</defaultSearchField>
-
 </schema>

@@ -33,8 +33,5 @@
 
  <!-- field for the QueryParser to use when an explicit fieldname is absent -->
  <defaultSearchField>name</defaultSearchField>
-
- <!-- SolrQueryParser configuration: defaultOperator="AND|OR" -->
- <solrQueryParser defaultOperator="OR"/>
 </schema>
 
