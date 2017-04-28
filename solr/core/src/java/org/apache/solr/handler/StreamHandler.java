@@ -236,6 +236,7 @@ public class StreamHandler extends RequestHandlerBase implements SolrCoreAware, 
       .withFunctionName("cbrt", CubedRootEvaluator.class)
       .withFunctionName("coalesce", CoalesceEvaluator.class)
       .withFunctionName("uuid", UuidEvaluator.class)
+      .withFunctionName("corr", CorrelationEvaluator.class)
 
 
       // Conditional Stream Evaluators
