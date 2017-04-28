@@ -200,6 +200,8 @@ public class OverseerTriggerThread implements Runnable, Closeable {
           }
         }
       }, true);
+    } catch (KeeperException.ConnectionLossException | KeeperException.SessionExpiredException e) {
+      log.error("OverseerTriggerThread could not talk to ZooKeeper", e);
     } catch (KeeperException e) {
       log.error("Exception in OverseerTriggerThread", e);
       throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
