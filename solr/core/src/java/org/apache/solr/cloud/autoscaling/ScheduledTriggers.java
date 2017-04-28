@@ -22,6 +22,7 @@ import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -135,7 +136,7 @@ public class ScheduledTriggers implements Closeable {
    * @return an unmodifiable set of names of all triggers being managed by this class
    */
   public synchronized Set<String> getScheduledTriggerNames() {
-    return Collections.unmodifiableSet(scheduledTriggers.keySet());
+    return Collections.unmodifiableSet(new HashSet<>(scheduledTriggers.keySet())); // shallow copy
   }
 
   @Override
