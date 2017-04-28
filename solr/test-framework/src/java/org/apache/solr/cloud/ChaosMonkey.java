@@ -21,10 +21,13 @@ import java.lang.invoke.MethodHandles;
 import java.net.InetSocketAddress;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Random;
 import java.util.Set;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.regex.Pattern;
 
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
@@ -41,6 +44,7 @@ import org.apache.solr.core.SolrCore;
 import org.apache.solr.servlet.SolrDispatchFilter;
 import org.apache.solr.update.DirectUpdateHandler2;
 import org.apache.solr.util.RTimer;
+import org.apache.solr.util.TimeOut;
 import org.apache.zookeeper.KeeperException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -562,6 +566,10 @@ public class ChaosMonkey {
     log.info("monkey: " + msg);
   }
   
+  public static void monkeyLog(String msg, Object...logParams) {
+    log.info("monkey: " + msg, logParams);
+  }
+  
   public void stopTheMonkey() {
     stop = true;
     try {
@@ -678,6 +686,44 @@ public class ChaosMonkey {
     }
 
     return true;
+  }
+
+  public static void wait(long runLength, String collectionName, ZkStateReader zkStateReader) throws InterruptedException {
+    TimeOut t = new TimeOut(runLength, TimeUnit.MILLISECONDS);
+    while (!t.hasTimedOut()) {
+      Thread.sleep(Math.min(1000, runLength));
+      logCollectionStateSummary(collectionName, zkStateReader);
+    }
+  }
+
+  private static void logCollectionStateSummary(String collectionName, ZkStateReader zkStateReader) {
+    Pattern portPattern = Pattern.compile(".*:([0-9]*).*");
+    DocCollection docCollection = zkStateReader.getClusterState().getCollection(collectionName);
+    if (docCollection == null) {
+      monkeyLog("Could not find collection {}", collectionName);
+    }
+    StringBuilder builder = new StringBuilder();
+    builder.append("Collection status: {");
+    for (Slice slice:docCollection.getSlices()) {
+      builder.append(slice.getName() + ": {");
+      for (Replica replica:slice.getReplicas()) {
+        log.info(replica.toString());
+        java.util.regex.Matcher m = portPattern.matcher(replica.getBaseUrl());
+        m.find();
+        String jettyPort = m.group(1);
+        builder.append(String.format(Locale.ROOT, "%s(%s): {state: %s, type: %s, leader: %s, Live: %s}, ", 
+            replica.getName(), jettyPort, replica.getState(), replica.getType(), (replica.get("leader")!= null), zkStateReader.getClusterState().liveNodesContain(replica.getNodeName())));
+      }
+      if (slice.getReplicas().size() > 0) {
+        builder.setLength(builder.length() - 2);
+      }
+      builder.append("}, ");
+    }
+    if (docCollection.getSlices().size() > 0) {
+      builder.setLength(builder.length() - 2);
+    }
+    builder.append("}");
+    monkeyLog(builder.toString());
   }
 
 }

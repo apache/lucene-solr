@@ -156,7 +156,7 @@ public class ChaosMonkeySafeLeaderWithPassiveReplicasTest extends AbstractFullDi
         runLength = runTimes[random().nextInt(runTimes.length - 1)];
       }
       
-      Thread.sleep(runLength);
+      ChaosMonkey.wait(runLength, DEFAULT_COLLECTION, cloudClient.getZkStateReader());
     } finally {
       chaosMonkey.stopTheMonkey();
     }

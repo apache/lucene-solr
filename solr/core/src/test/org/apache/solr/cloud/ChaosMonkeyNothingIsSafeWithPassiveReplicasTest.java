@@ -197,8 +197,7 @@ public class ChaosMonkeyNothingIsSafeWithPassiveReplicasTest extends AbstractFul
           }
           runLength = runTimes[random().nextInt(runTimes.length - 1)];
         }
-        
-        Thread.sleep(runLength);
+        ChaosMonkey.wait(runLength, DEFAULT_COLLECTION, zkStateReader);
       } finally {
         chaosMonkey.stopTheMonkey();
       }
@@ -289,6 +288,10 @@ public class ChaosMonkeyNothingIsSafeWithPassiveReplicasTest extends AbstractFul
         printLayout();
       }
     }
+  }
+
+  private void logCollectionStateSummary(String defaultCollection) {
+    
   }
 
   private Set<String> getAddFails(List<StoppableIndexingThread> threads) {
