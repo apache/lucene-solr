@@ -96,7 +96,9 @@ public final class IOUtils {
       }
     }
 
-    reThrow(th);
+    if (th != null) {
+      throw rethrowAlways(th);
+    }
   }
 
   /**
@@ -229,7 +231,9 @@ public final class IOUtils {
       }
     }
 
-    reThrow(th);
+    if (th != null) {
+      throw rethrowAlways(th);
+    }
   }
 
   public static void deleteFiles(Directory dir, String... files) throws IOException {
@@ -300,7 +304,9 @@ public final class IOUtils {
       }
     }
 
-    reThrow(th);
+    if (th != null) {
+      throw rethrowAlways(th);
+    }
   }
   
   /**
@@ -376,37 +382,83 @@ public final class IOUtils {
   }
 
   /**
-   * Simple utility method that takes a previously caught
-   * {@code Throwable} and rethrows either {@code
-   * IOException} or an unchecked exception.  If the
-   * argument is null then this method does nothing.
+   * This utility method takes a previously caught (non-null)
+   * {@code Throwable} and rethrows either the original argument
+   * if it was a subclass of the {@code IOException} or an 
+   * {@code RuntimeException} with the cause set to the argument.
+   * 
+   * <p>This method <strong>never returns any value</strong>, even though it declares
+   * a return value of type {@link Error}. The return value declaration
+   * is very useful to let the compiler know that the code path following
+   * the invocation of this method is unreachable. So in most cases the
+   * invocation of this method will be guarded by an {@code if} and
+   * used together with a {@code throw} statement, as in:
+   * </p>
+   * <pre>{@code
+   *   if (t != null) throw IOUtils.rethrowAlways(t)
+   * }
+   * </pre>
+   * 
+   * @param th The throwable to rethrow, <strong>must not be null</strong>.
+   * @return This method always results in an exception, it never returns any value. 
+   *         See method documentation for detailsa and usage example.
+   * @throws IOException if the argument was an instance of IOException
+   * @throws RuntimeException with the {@link RuntimeException#getCause()} set
+   *         to the argument, if it was not an instance of IOException. 
    */
-  public static void reThrow(Throwable th) throws IOException {
-    if (th != null) {
-      if (th instanceof IOException) {
-        throw (IOException) th;
-      }
-      reThrowUnchecked(th);
+  public static Error rethrowAlways(Throwable th) throws IOException, RuntimeException {
+    if (th == null) {
+      throw new AssertionError("rethrow argument must not be null.");
     }
+
+    if (th instanceof IOException) {
+      throw (IOException) th;
+    }
+
+    if (th instanceof RuntimeException) {
+      throw (RuntimeException) th;
+    }
+
+    if (th instanceof Error) {
+      throw (Error) th;
+    }
+
+    throw new RuntimeException(th);
   }
 
   /**
-   * Simple utility method that takes a previously caught
-   * {@code Throwable} and rethrows it as an unchecked exception.
-   * If the argument is null then this method does nothing.
+   * Rethrows the argument as {@code IOException} or {@code RuntimeException} 
+   * if it's not null.
+   * 
+   * @deprecated This method is deprecated in favor of {@link #rethrowAlways}. Code should
+   * be updated to {@link #rethrowAlways} and guarded with an additional null-argument check
+   * (because {@link #rethrowAlways} is not accepting null arguments). 
    */
+  @Deprecated
+  public static void reThrow(Throwable th) throws IOException {
+    if (th != null) {
+      throw rethrowAlways(th);
+    }
+  }
+  
+  /**
+   * @deprecated This method is deprecated in favor of {@link #rethrowAlways}. Code should
+   * be updated to {@link #rethrowAlways} and guarded with an additional null-argument check
+   * (because {@link #rethrowAlways} is not accepting null arguments). 
+   */
+  @Deprecated
   public static void reThrowUnchecked(Throwable th) {
     if (th != null) {
-      if (th instanceof RuntimeException) {
-        throw (RuntimeException) th;
-      }
       if (th instanceof Error) {
         throw (Error) th;
       }
+      if (th instanceof RuntimeException) {
+        throw (RuntimeException) th;
+      }
       throw new RuntimeException(th);
-    }
+    }    
   }
-
+  
   /**
    * Ensure that any writes to the given file is written to the storage device that contains it.
    * @param fileToSync the file to fsync

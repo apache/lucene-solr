@@ -149,7 +149,9 @@ public abstract class IndexReader implements Closeable {
           }
         }
       }
-      IOUtils.reThrow(th);
+      if (th != null) {
+        throw IOUtils.rethrowAlways(th);
+      }
     }
   }
 

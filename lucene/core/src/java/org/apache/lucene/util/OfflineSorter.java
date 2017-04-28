@@ -633,9 +633,9 @@ public class OfflineSorter {
     } catch (InterruptedException ie) {
       throw new ThreadInterruptedException(ie);
     } catch (ExecutionException ee) {
-      IOUtils.reThrow(ee.getCause());
-      // oh so soon to go away:
-      return null;
+      // Theoretically cause can be null; guard against that.
+      Throwable cause = ee.getCause();
+      throw IOUtils.rethrowAlways(cause != null ? cause : ee);
     }
   }
 

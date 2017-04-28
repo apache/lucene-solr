@@ -389,7 +389,9 @@ public final class StandardDirectoryReader extends DirectoryReader {
     }
 
     // throw the first exception
-    IOUtils.reThrow(firstExc);
+    if (firstExc != null) {
+      throw IOUtils.rethrowAlways(firstExc);
+    }
   }
 
   @Override

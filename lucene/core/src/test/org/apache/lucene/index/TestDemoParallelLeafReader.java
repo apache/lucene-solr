@@ -233,8 +233,11 @@ public class TestDemoParallelLeafReader extends LuceneTestCase {
             firstExc = t;
           }
         }
+        
         // throw the first exception
-        IOUtils.reThrow(firstExc);
+        if (firstExc != null) {
+          throw IOUtils.rethrowAlways(firstExc);
+        }
       }
     }
 
@@ -540,10 +543,11 @@ public class TestDemoParallelLeafReader extends LuceneTestCase {
             }
           }
 
-          // If any error occured, throw it.
-          IOUtils.reThrow(th);
+          if (th != null) {
+            throw IOUtils.rethrowAlways(th);
+          }
         }
-    
+
         @Override
         public void setMergeInfo(SegmentCommitInfo info) {
           // Record that this merged segment is current as of this schemaGen:

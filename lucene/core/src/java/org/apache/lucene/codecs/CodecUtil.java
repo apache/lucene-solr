@@ -467,7 +467,7 @@ public final class CodecUtil {
         // catch-all for things that shouldn't go wrong (e.g. OOM during readInt) but could...
         priorException.addSuppressed(new CorruptIndexException("checksum status indeterminate: unexpected exception", in, t));
       }
-      IOUtils.reThrow(priorException);
+      throw IOUtils.rethrowAlways(priorException);
     }
   }
   

@@ -527,7 +527,7 @@ public final class CheckIndex implements Closeable {
       sis = SegmentInfos.readCommit(dir, lastSegmentsFile);
     } catch (Throwable t) {
       if (failFast) {
-        IOUtils.reThrow(t);
+        throw IOUtils.rethrowAlways(t);
       }
       msg(infoStream, "ERROR: could not read any segments file in directory");
       result.missingSegments = true;
@@ -563,11 +563,12 @@ public final class CheckIndex implements Closeable {
       input = dir.openInput(segmentsFileName, IOContext.READONCE);
     } catch (Throwable t) {
       if (failFast) {
-        IOUtils.reThrow(t);
+        throw IOUtils.rethrowAlways(t);
       }
       msg(infoStream, "ERROR: could not open segments file in directory");
-      if (infoStream != null)
+      if (infoStream != null) {
         t.printStackTrace(infoStream);
+      }
       result.cantOpenSegments = true;
       return result;
     }
@@ -575,11 +576,12 @@ public final class CheckIndex implements Closeable {
       /*int format =*/ input.readInt();
     } catch (Throwable t) {
       if (failFast) {
-        IOUtils.reThrow(t);
+        throw IOUtils.rethrowAlways(t);
       }
       msg(infoStream, "ERROR: could not read segment file version in directory");
-      if (infoStream != null)
+      if (infoStream != null) {
         t.printStackTrace(infoStream);
+      }
       result.missingSegmentVersion = true;
       return result;
     } finally {
@@ -787,7 +789,7 @@ public final class CheckIndex implements Closeable {
 
       } catch (Throwable t) {
         if (failFast) {
-          IOUtils.reThrow(t);
+          throw IOUtils.rethrowAlways(t);
         }
         msg(infoStream, "FAILED");
         String comment;
@@ -881,7 +883,7 @@ public final class CheckIndex implements Closeable {
         msg(infoStream, String.format(Locale.ROOT, "OK [took %.3f sec]", nsToSec(System.nanoTime()-startNS)));
       } catch (Throwable e) {
         if (failFast) {
-          IOUtils.reThrow(e);
+          throw IOUtils.rethrowAlways(e);
         }
         msg(infoStream, "ERROR [" + String.valueOf(e.getMessage()) + "]");
         status.error = e;
@@ -939,7 +941,7 @@ public final class CheckIndex implements Closeable {
       
     } catch (Throwable e) {
       if (failFast) {
-        IOUtils.reThrow(e);
+        throw IOUtils.rethrowAlways(e);
       }
       msg(infoStream, "ERROR [" + String.valueOf(e.getMessage()) + "]");
       status.error = e;
@@ -972,7 +974,7 @@ public final class CheckIndex implements Closeable {
       status.totFields = fieldInfos.size();
     } catch (Throwable e) {
       if (failFast) {
-        IOUtils.reThrow(e);
+        throw IOUtils.rethrowAlways(e);
       }
       msg(infoStream, "ERROR [" + String.valueOf(e.getMessage()) + "]");
       status.error = e;
@@ -1011,7 +1013,7 @@ public final class CheckIndex implements Closeable {
       msg(infoStream, String.format(Locale.ROOT, "OK [%d fields] [took %.3f sec]", status.totFields, nsToSec(System.nanoTime()-startNS)));
     } catch (Throwable e) {
       if (failFast) {
-        IOUtils.reThrow(e);
+        throw IOUtils.rethrowAlways(e);
       }
       msg(infoStream, "ERROR [" + String.valueOf(e.getMessage()) + "]");
       status.error = e;
@@ -1768,7 +1770,7 @@ public final class CheckIndex implements Closeable {
       status = checkFields(fields, reader.getLiveDocs(), maxDoc, fieldInfos, true, false, infoStream, verbose);
     } catch (Throwable e) {
       if (failFast) {
-        IOUtils.reThrow(e);
+        throw IOUtils.rethrowAlways(e);
       }
       msg(infoStream, "ERROR: " + e);
       status = new Status.TermIndexStatus();
@@ -1840,7 +1842,7 @@ public final class CheckIndex implements Closeable {
 
     } catch (Throwable e) {
       if (failFast) {
-        IOUtils.reThrow(e);
+        throw IOUtils.rethrowAlways(e);
       }
       msg(infoStream, "ERROR: " + e);
       status.error = e;
@@ -2074,7 +2076,7 @@ public final class CheckIndex implements Closeable {
                                     nsToSec(System.nanoTime() - startNS)));
     } catch (Throwable e) {
       if (failFast) {
-        IOUtils.reThrow(e);
+        throw IOUtils.rethrowAlways(e);
       }
       msg(infoStream, "ERROR [" + String.valueOf(e.getMessage()) + "]");
       status.error = e;
@@ -2121,7 +2123,7 @@ public final class CheckIndex implements Closeable {
                                     nsToSec(System.nanoTime()-startNS)));
     } catch (Throwable e) {
       if (failFast) {
-        IOUtils.reThrow(e);
+        throw IOUtils.rethrowAlways(e);
       }
       msg(infoStream, "ERROR [" + String.valueOf(e.getMessage()) + "]");
       status.error = e;
@@ -2514,7 +2516,7 @@ public final class CheckIndex implements Closeable {
                                     status.totVectors, vectorAvg, nsToSec(System.nanoTime() - startNS)));
     } catch (Throwable e) {
       if (failFast) {
-        IOUtils.reThrow(e);
+        throw IOUtils.rethrowAlways(e);
       }
       msg(infoStream, "ERROR [" + String.valueOf(e.getMessage()) + "]");
       status.error = e;

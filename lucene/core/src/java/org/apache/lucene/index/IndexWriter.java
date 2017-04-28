@@ -611,7 +611,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
           }
         } catch (Throwable t) {
           if (doSave) {
-            IOUtils.reThrow(t);
+            throw IOUtils.rethrowAlways(t);
           } else if (priorE == null) {
             priorE = t;
           }
@@ -631,14 +631,16 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
           rld.dropReaders();
         } catch (Throwable t) {
           if (doSave) {
-            IOUtils.reThrow(t);
+            throw IOUtils.rethrowAlways(t);
           } else if (priorE == null) {
             priorE = t;
           }
         }
       }
       assert readerMap.size() == 0;
-      IOUtils.reThrow(priorE);
+      if (priorE != null) {
+        throw IOUtils.rethrowAlways(priorE);
+      }
     }
 
     /**
@@ -3328,7 +3330,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
       if (commitCompleted) {
         tragicEvent(t, "finishCommit");
       } else {
-        IOUtils.reThrow(t);
+        throw IOUtils.rethrowAlways(t);
       }
     }
 
@@ -3896,7 +3898,8 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
         throw (MergePolicy.MergeAbortedException) t;
       }
     } else {
-      IOUtils.reThrow(t);
+      assert t != null;
+      throw IOUtils.rethrowAlways(t);
     }
   }
 
@@ -4235,8 +4238,8 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
     }
     
     // If any error occurred, throw it.
-    if (!suppressExceptions) {
-      IOUtils.reThrow(th);
+    if (!suppressExceptions && th != null) {
+      throw IOUtils.rethrowAlways(th);
     }
   }
 
@@ -4828,7 +4831,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
       // It's possible you could have a really bad day
       if (this.tragedy != null) {
         // Another thread is already dealing / has dealt with the tragedy:
-        IOUtils.reThrow(tragedy);
+        throw IOUtils.rethrowAlways(tragedy);
       }
 
       this.tragedy = tragedy;
@@ -4839,7 +4842,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
       rollbackInternal();
     }
 
-    IOUtils.reThrow(tragedy);
+    throw IOUtils.rethrowAlways(tragedy);
   }
 
   /** If this {@code IndexWriter} was closed as a side-effect of a tragic exception,
