@@ -22,12 +22,9 @@ import org.apache.zookeeper.server.ZooKeeperServerMain;
 import org.apache.zookeeper.server.quorum.QuorumPeer;
 import org.apache.zookeeper.server.quorum.QuorumPeerConfig;
 import org.apache.zookeeper.server.quorum.QuorumPeerMain;
-import org.apache.zookeeper.server.quorum.flexible.QuorumHierarchical;
-import org.apache.zookeeper.server.quorum.flexible.QuorumMaj;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
@@ -38,8 +35,8 @@ import java.net.InetSocketAddress;
 import java.net.UnknownHostException;
 import java.nio.charset.StandardCharsets;
 import java.util.Map;
-import java.util.Map.Entry;
 import java.util.Properties;
+import java.util.regex.Pattern;
 
 
 public class SolrZkServer {
@@ -154,6 +151,7 @@ public class SolrZkServer {
 // zoo.cfg (which validates that there is a dataDir)
 class SolrZkServerProps extends QuorumPeerConfig {
   private static final Logger LOG = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
+  private static final Pattern MISSING_MYID_FILE_PATTERN = Pattern.compile(".*myid file is missing$");
 
   String solrPort; // port that Solr is listening on
   String zkRun;
@@ -312,8 +310,6 @@ class SolrZkServerProps extends QuorumPeerConfig {
     }
   }
 
-
-  // NOTE: copied from ZooKeeper 3.2
   /**
    * Parse config from a Properties.
    * @param zkProp Properties to parse from.
@@ -321,157 +317,18 @@ class SolrZkServerProps extends QuorumPeerConfig {
   @Override
   public void parseProperties(Properties zkProp)
       throws IOException, ConfigException {
-    for (Entry<Object, Object> entry : zkProp.entrySet()) {
-      String key = entry.getKey().toString().trim();
-      String value = entry.getValue().toString().trim();
-      if (key.equals("dataDir")) {
-        dataDir = value;
-      } else if (key.equals("dataLogDir")) {
-        dataLogDir = value;
-      } else if (key.equals("clientPort")) {
-        setClientPort(Integer.parseInt(value));
-      } else if (key.equals("tickTime")) {
-        tickTime = Integer.parseInt(value);
-      } else if (key.equals("initLimit")) {
-        initLimit = Integer.parseInt(value);
-      } else if (key.equals("syncLimit")) {
-        syncLimit = Integer.parseInt(value);
-      } else if (key.equals("electionAlg")) {
-        electionAlg = Integer.parseInt(value);
-      } else if (key.equals("maxClientCnxns")) {
-        maxClientCnxns = Integer.parseInt(value);
-      } else if (key.startsWith("server.")) {
-        int dot = key.indexOf('.');
-        long sid = Long.parseLong(key.substring(dot + 1));
-        String parts[] = value.split(":");
-        if ((parts.length != 2) && (parts.length != 3)) {
-          LOG.error(value
-              + " does not have the form host:port or host:port:port");
-        }
-        InetSocketAddress addr = new InetSocketAddress(parts[0],
-            Integer.parseInt(parts[1]));
-        if (parts.length == 2) {
-          servers.put(Long.valueOf(sid), new QuorumPeer.QuorumServer(sid, addr));
-        } else if (parts.length == 3) {
-          InetSocketAddress electionAddr = new InetSocketAddress(
-              parts[0], Integer.parseInt(parts[2]));
-          servers.put(Long.valueOf(sid), new QuorumPeer.QuorumServer(sid, addr,
-              electionAddr));
-        }
-      } else if (key.startsWith("group")) {
-        int dot = key.indexOf('.');
-        long gid = Long.parseLong(key.substring(dot + 1));
-
-        numGroups++;
-
-        String parts[] = value.split(":");
-        for(String s : parts){
-          long sid = Long.parseLong(s);
-          if(serverGroup.containsKey(sid))
-            throw new ConfigException("Server " + sid + "is in multiple groups");
-          else
-            serverGroup.put(sid, gid);
-        }
-
-      } else if(key.startsWith("weight")) {
-        int dot = key.indexOf('.');
-        long sid = Long.parseLong(key.substring(dot + 1));
-        serverWeight.put(sid, Long.parseLong(value));
-      } else {
-        System.setProperty("zookeeper." + key, value);
-      }
-    }
-    if (dataDir == null) {
-      throw new IllegalArgumentException("dataDir is not set");
-    }
-    if (dataLogDir == null) {
-      dataLogDir = dataDir;
-    } else {
-      if (!new File(dataLogDir).isDirectory()) {
-        throw new IllegalArgumentException("dataLogDir " + dataLogDir
-            + " is missing.");
-      }
-    }
-
-    if (tickTime == 0) {
-      throw new IllegalArgumentException("tickTime is not set");
-    }
-    if (servers.size() > 1) {
-      if (initLimit == 0) {
-        throw new IllegalArgumentException("initLimit is not set");
-      }
-      if (syncLimit == 0) {
-        throw new IllegalArgumentException("syncLimit is not set");
-      }
-      /*
-      * If using FLE, then every server requires a separate election
-      * port.
-      */
-      if (electionAlg != 0) {
-        for (QuorumPeer.QuorumServer s : servers.values()) {
-          if (s.electionAddr == null)
-            throw new IllegalArgumentException(
-                "Missing election port for server: " + s.id);
-        }
-      }
-
-      /*
-      * Default of quorum config is majority
-      */
-      if(serverGroup.size() > 0){
-        if(servers.size() != serverGroup.size())
-          throw new ConfigException("Every server must be in exactly one group");
-        /*
-         * The deafult weight of a server is 1
-         */
-        for(QuorumPeer.QuorumServer s : servers.values()){
-          if(!serverWeight.containsKey(s.id))
-            serverWeight.put(s.id, (long) 1);
-        }
-
-        /*
-                      * Set the quorumVerifier to be QuorumHierarchical
-                      */
-        quorumVerifier = new QuorumHierarchical(numGroups,
-            serverWeight, serverGroup);
-      } else {
-        /*
-                      * The default QuorumVerifier is QuorumMaj
-                      */
-
-        LOG.info("Defaulting to majority quorums");
-        quorumVerifier = new QuorumMaj(servers.size());
-      }
-
-      File myIdFile = new File(dataDir, "myid");
-      if (!myIdFile.exists()) {
-        ///////////////// ADDED FOR SOLR //////
+    try {
+      super.parseProperties(zkProp);
+    } catch (IllegalArgumentException e) {
+      if (MISSING_MYID_FILE_PATTERN.matcher(e.getMessage()).matches()) {
         Long myid = getMyServerId();
         if (myid != null) {
           serverId = myid;
           return;
         }
         if (zkRun == null) return;
-        //////////////// END ADDED FOR SOLR //////
-        throw new IllegalArgumentException(myIdFile.toString()
-            + " file is missing");
       }
-
-      BufferedReader br = new BufferedReader(new InputStreamReader(new FileInputStream(myIdFile), StandardCharsets.UTF_8));
-      String myIdString;
-      try {
-        myIdString = br.readLine();
-      } finally {
-        br.close();
-      }
-      try {
-        serverId = Long.parseLong(myIdString);
-      } catch (NumberFormatException e) {
-        throw new IllegalArgumentException("serverid " + myIdString
-            + " is not a number");
-      }
+      throw e;
     }
   }
-
-
 }

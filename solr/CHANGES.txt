@@ -139,7 +139,7 @@ Apache Tika 1.13
 Carrot2 3.15.0
 Velocity 1.7 and Velocity Tools 2.0
 Apache UIMA 2.3.1
-Apache ZooKeeper 3.4.6
+Apache ZooKeeper 3.4.10
 Jetty 9.3.14.v20161028
 
 Upgrade Notes
@@ -150,6 +150,7 @@ Upgrade Notes
 * JSON Facet API now uses hyper-log-log for numBuckets cardinality calculation and
   calculates cardinality before filtering buckets by any mincount greater than 1.
 
+* ZooKeeper dependency has been upgraded from 3.4.6 to 3.4.10.
 
 Detailed Change List
 ----------------------
@@ -310,6 +311,8 @@ Other Changes
 * SOLR-10151: Use monotonically incrementing counter for doc ids in TestRecovery. (Peter Szantai-Kis, Mano Kovacs via Mark Miller)
 
 * SOLR-10514: Upgrade Metrics library to 3.2.2. (ab)
+
+* SOLR-9386: Upgrade Zookeeper to 3.4.10. (Shawn Heisey, Steve Rowe)
 
 ==================  6.5.1 ==================
 
