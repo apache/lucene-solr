@@ -48,6 +48,9 @@ public class NodeLostTrigger implements AutoScaling.Trigger<NodeLostTrigger.Node
   private final CoreContainer container;
   private final List<TriggerAction> actions;
   private final AtomicReference<AutoScaling.TriggerListener<NodeLostEvent>> listenerRef;
+  private final boolean enabled;
+  private final int waitForSecond;
+  private final AutoScaling.EventType eventType;
 
   private boolean isClosed = false;
 
@@ -74,6 +77,9 @@ public class NodeLostTrigger implements AutoScaling.Trigger<NodeLostTrigger.Node
     }
     lastLiveNodes = container.getZkController().getZkStateReader().getClusterState().getLiveNodes();
     log.info("Initial livenodes: " + lastLiveNodes);
+    this.enabled = (boolean) properties.getOrDefault("enabled", true);
+    this.waitForSecond = ((Long) properties.getOrDefault("waitFor", -1L)).intValue();
+    this.eventType = AutoScaling.EventType.valueOf(properties.get("event").toString().toUpperCase(Locale.ROOT));
   }
 
   @Override
@@ -93,17 +99,17 @@ public class NodeLostTrigger implements AutoScaling.Trigger<NodeLostTrigger.Node
 
   @Override
   public AutoScaling.EventType getEventType() {
-    return AutoScaling.EventType.valueOf(properties.get("event").toString().toUpperCase(Locale.ROOT));
+    return eventType;
   }
 
   @Override
   public boolean isEnabled() {
-    return Boolean.parseBoolean((String) properties.getOrDefault("enabled", "true"));
+    return enabled;
   }
 
   @Override
   public int getWaitForSecond() {
-    return ((Long) properties.getOrDefault("waitFor", -1L)).intValue();
+    return waitForSecond;
   }
 
   @Override

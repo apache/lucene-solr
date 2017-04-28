@@ -49,7 +49,7 @@ public class NodeAddedTriggerTest extends SolrCloudTestCase {
     props.put("event", "nodeLost");
     long waitForSeconds = 1 + random().nextInt(5);
     props.put("waitFor", waitForSeconds);
-    props.put("enabled", "true");
+    props.put("enabled", true);
     List<Map<String, String>> actions = new ArrayList<>(3);
     Map<String, String> map = new HashMap<>(2);
     map.put("name", "compute_plan");

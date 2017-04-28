@@ -72,7 +72,7 @@ public class AutoScalingHandlerTest extends SolrCloudTestCase {
         "'name' : 'node_lost_trigger'," +
         "'event' : 'nodeLost'," +
         "'waitFor' : '10m'," +
-        "'enabled' : 'true'}}";
+        "'enabled' : true}}";
     SolrRequest req = new AutoScalingRequest(SolrRequest.METHOD.POST, path, setTriggerCommand);
     NamedList<Object> response = solrClient.request(req);
     assertEquals(response.get("result").toString(), "success");
@@ -82,7 +82,7 @@ public class AutoScalingHandlerTest extends SolrCloudTestCase {
         "'name' : 'node_added_trigger'," +
         "'event' : 'nodeAdded'," +
         "'waitFor' : '10m'," +
-        "'enabled' : 'true'" +
+        "'enabled' : true" +
         "}" +
         "}";
     req = new AutoScalingRequest(SolrRequest.METHOD.POST, path, setTriggerCommand);
@@ -203,7 +203,7 @@ public class AutoScalingHandlerTest extends SolrCloudTestCase {
         "'name' : 'node_lost_trigger'," +
         "'event' : 'nodeLost'," +
         "'waitFor' : '10m'," +
-        "'enabled' : 'true'," +
+        "'enabled' : true," +
         "'actions' : [" +
         "{" +
         "'name' : 'compute_plan'," +
@@ -237,7 +237,7 @@ public class AutoScalingHandlerTest extends SolrCloudTestCase {
         "'name' : 'node_lost_trigger'," +
         "'event' : 'nodeLost'," +
         "'waitFor' : '20m'," +
-        "'enabled' : 'false'" +
+        "'enabled' : false" +
         "}}";
     req = new AutoScalingRequest(SolrRequest.METHOD.POST, path, setTriggerCommand);
     response = solrClient.request(req);
@@ -331,7 +331,7 @@ public class AutoScalingHandlerTest extends SolrCloudTestCase {
         "'url' : 'http://xyz.com/on_node_lost?node={$LOST_NODE_NAME}'" +
         "}" +
         "}";
-    req = new AutoScalingRequest(SolrRequest.METHOD.POST, path, removeListenerCommand);
+    req = new AutoScalingRequest(SolrRequest.METHOD.POST, path, setListenerCommand);
     try {
       response = solrClient.request(req);
       fail("Adding a listener on a non-existent trigger should have failed");
@@ -339,7 +339,7 @@ public class AutoScalingHandlerTest extends SolrCloudTestCase {
       // expected
     }
 
-    // add multiple poilicies
+    // add multiple policies
     String setPolicyCommand =  "{" +
         "'set-policy': {" +
         "'name' : 'default'," +
