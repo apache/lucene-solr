@@ -196,6 +196,9 @@ New Features
 
 * SOLR-10521: introducing sort=childfield(field) asc for searching by {!parent} (Mikhail Khludnev) 
 
+* SOLR-9596: Add Solr support for SimpleTextCodec, via <codecFactory class="solr.SimpleTextCodecFactory"/>
+  in solrconfig.xml (per-field specification in the schema is not possible). (Steve Rowe)
+
 Optimizations
 ----------------------
 
