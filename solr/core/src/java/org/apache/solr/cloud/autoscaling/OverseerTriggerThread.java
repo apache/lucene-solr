@@ -20,6 +20,7 @@ package org.apache.solr.cloud.autoscaling;
 import java.io.Closeable;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Locale;
 import java.util.Map;
@@ -212,6 +213,10 @@ public class OverseerTriggerThread implements Runnable, Closeable {
   private static Map<String, AutoScaling.Trigger> loadTriggers(AutoScaling.TriggerFactory triggerFactory, byte[] data) {
     ZkNodeProps loaded = ZkNodeProps.load(data);
     Map<String, Object> triggers = (Map<String, Object>) loaded.get("triggers");
+
+    if (triggers == null) {
+      return Collections.emptyMap();
+    }
 
     Map<String, AutoScaling.Trigger> triggerMap = new HashMap<>(triggers.size());
 
