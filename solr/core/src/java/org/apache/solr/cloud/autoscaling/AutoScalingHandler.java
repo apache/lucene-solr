@@ -411,7 +411,7 @@ public class AutoScalingHandler extends RequestHandlerBase implements Permission
       }
     } else if (!activeListeners.isEmpty()) {
       throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,
-          "No listeners should exist for trigger: " + triggerName + ". Found listeners: " + activeListeners);
+          "Cannot remove trigger: " + triggerName + " because it has active listeners: " + activeListeners);
     }
 
     zkSetTrigger(container.getZkController().getZkStateReader(), triggerName, null);
