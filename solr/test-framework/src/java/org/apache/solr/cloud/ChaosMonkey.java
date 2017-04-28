@@ -129,10 +129,9 @@ public class ChaosMonkey {
   
   // TODO: expire all clients at once?
   public void expireSession(final JettySolrRunner jetty) {
-    monkeyLog("expire session for " + jetty.getLocalPort() + " !");
-
     CoreContainer cores = jetty.getCoreContainer();
     if (cores != null) {
+      monkeyLog("expire session for " + jetty.getLocalPort() + " !");
       causeConnectionLoss(jetty);
       long sessionId = cores.getZkController().getZkClient()
           .getSolrZooKeeper().getSessionId();
@@ -152,7 +151,7 @@ public class ChaosMonkey {
   }
   
   public void randomConnectionLoss() throws KeeperException, InterruptedException {
-    monkeyLog("cause connection loss!");
+    monkeyLog("Will cause connection loss!");
     
     String sliceName = getRandomSlice();
     CloudJettyRunner jetty = getRandomJetty(sliceName, aggressivelyKillLeaders);
@@ -165,6 +164,7 @@ public class ChaosMonkey {
   public static void causeConnectionLoss(JettySolrRunner jetty) {
     CoreContainer cores = jetty.getCoreContainer();
     if (cores != null) {
+      monkeyLog("Will cause connection loss on " + jetty.getLocalPort());
       SolrZkClient zkClient = cores.getZkController().getZkClient();
       zkClient.getSolrZooKeeper().closeCnxn();
     }
@@ -648,7 +648,7 @@ public class ChaosMonkey {
   }
   
   public static boolean start(JettySolrRunner jetty) throws Exception {
-
+    monkeyLog("starting jetty! " + jetty.getLocalPort());
     IpTables.unblockPort(jetty.getLocalPort());
     try {
       jetty.start();

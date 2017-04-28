@@ -16,13 +16,16 @@
  */
 package org.apache.solr.cloud;
 
+import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.net.ConnectException;
 import java.util.ArrayList;
 import java.util.EnumSet;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Locale;
 import java.util.Set;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.apache.http.client.HttpClient;
@@ -32,25 +35,34 @@ import org.apache.solr.SolrTestCaseJ4.SuppressObjectReleaseTracker;
 import org.apache.solr.SolrTestCaseJ4.SuppressSSL;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrQuery;
+import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.impl.ConcurrentUpdateSolrClient;
 import org.apache.solr.client.solrj.impl.HttpClientUtil;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
+import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.cloud.ZkStateReader;
+import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.IOUtils;
+import org.apache.solr.common.util.NamedList;
+import org.apache.solr.handler.ReplicationHandler;
+import org.apache.solr.util.TimeOut;
+import org.apache.zookeeper.KeeperException;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.carrotsearch.randomizedtesting.annotations.ThreadLeakLingering;
+
 @Slow
 @SuppressSSL(bugUrl = "https://issues.apache.org/jira/browse/SOLR-5776")
-//@ThreadLeakLingering(linger = 60000)
+@ThreadLeakLingering(linger = 60000)
 @SuppressObjectReleaseTracker(bugUrl="Testing purposes")
 public class ChaosMonkeyNothingIsSafeWithPassiveReplicasTest extends AbstractFullDistribZkTestBase {
   private static final int FAIL_TOLERANCE = 100;
@@ -245,6 +257,7 @@ public class ChaosMonkeyNothingIsSafeWithPassiveReplicasTest extends AbstractFul
         }
       }
       
+      waitForReplicationFromPassiveReplicas(DEFAULT_COLLECTION, zkStateReader, new TimeOut(30, TimeUnit.SECONDS));
       
       Set<String> addFails = getAddFails(indexTreads);
       Set<String> deleteFails = getDeleteFails(indexTreads);
@@ -290,8 +303,50 @@ public class ChaosMonkeyNothingIsSafeWithPassiveReplicasTest extends AbstractFul
     }
   }
 
-  private void logCollectionStateSummary(String defaultCollection) {
-    
+  private void waitForReplicationFromPassiveReplicas(String collectionName, ZkStateReader zkStateReader, TimeOut timeout) throws KeeperException, InterruptedException, IOException {
+    zkStateReader.forceUpdateCollection(collectionName);
+    DocCollection collection = zkStateReader.getClusterState().getCollection(collectionName);
+    for(Slice s:collection.getSlices()) {
+      Replica leader = s.getLeader();
+      long leaderIndexVersion = -1;
+      while (leaderIndexVersion == -1 && !timeout.hasTimedOut()) {
+        leaderIndexVersion = getIndexVersion(leader);
+        Thread.sleep(1000);
+      }
+      for (Replica passiveReplica:s.getReplicas(EnumSet.of(Replica.Type.PASSIVE))) {
+        if (!zkStateReader.getClusterState().liveNodesContain(passiveReplica.getNodeName())) {
+          continue;
+        }
+        while (true) {
+          long replicaIndexVersion = getIndexVersion(passiveReplica);
+          if (leaderIndexVersion > replicaIndexVersion) {
+            if (timeout.hasTimedOut()) {
+              fail(String.format(Locale.ROOT, "Timed out waiting for replica %s (%d) to replicate from leader %s (%d)", passiveReplica.getName(), replicaIndexVersion, leader.getName(), leaderIndexVersion));
+            }
+            log.debug("{} version is {} and leader's is {}, will wait for replication", passiveReplica.getName(), replicaIndexVersion, leaderIndexVersion);
+            Thread.sleep(1000);
+          } else {
+            break;
+          }
+        }
+      }
+    }
+  }
+
+  @SuppressWarnings("unchecked")
+  private long getIndexVersion(Replica replica) throws IOException {
+    try (HttpSolrClient client = new HttpSolrClient.Builder(replica.getCoreUrl()).build()) {
+      ModifiableSolrParams params = new ModifiableSolrParams();
+      params.set("qt", "/replication");
+      params.set(ReplicationHandler.COMMAND, ReplicationHandler.CMD_SHOW_COMMITS);
+      try {
+        QueryResponse response = client.query(params);
+        return (Long)((List<NamedList<Object>>)response.getResponse().get(ReplicationHandler.CMD_SHOW_COMMITS)).get(0).get("indexVersion");
+      } catch (SolrServerException e) {
+        log.warn("Exception getting version from {}, will return an invalid version to retry.", replica.getName(), e);
+        return -1;
+      }
+    }
   }
 
   private Set<String> getAddFails(List<StoppableIndexingThread> threads) {
