@@ -46,7 +46,6 @@ public class TestNestedDocsSort extends SolrTestCaseJ4 {
       parseAssertNe("childfield(name_s1,$q) asc", "childfield(surname_s1,$q2) desc");
     }
     
-    @AwaitsFix(bugUrl="https://issues.apache.org/jira/browse/LUCENE-7798")
     public void testEqualityUpToBlockJoin(){
       parseAssertNe("childfield(name_s1,$q) asc","childfield(name_s1,$q2) asc");
     }

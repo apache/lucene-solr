@@ -39,6 +39,8 @@ import org.apache.solr.common.cloud.ZkStateReader;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
+import com.carrotsearch.randomizedtesting.annotations.Repeat;
+
 public class TestCloudNestedDocsSort extends SolrCloudTestCase {
 
   private static ArrayList<String> vals = new ArrayList<>();
@@ -113,7 +115,7 @@ public class TestCloudNestedDocsSort extends SolrCloudTestCase {
     }
   }
 
-  @Test
+  @Test @Repeat(iterations=2)
   public void test() throws SolrServerException, IOException {
     final boolean asc = random().nextBoolean();
     final String dir = asc ? "asc": "desc";

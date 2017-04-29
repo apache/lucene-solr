@@ -106,6 +106,9 @@ Bug Fixes
 * LUCENE-7808: Fixed PayloadScoreQuery and SpanPayloadCheckQuery
   .equals and .hashCode methods.  (Erik Hatcher)
 
+* LUCENE-7798: Add .equals and .hashCode to ToParentBlockJoinSortField 
+  (Mikhail Khludnev)
+
 Improvements
 
 * LUCENE-7782: OfflineSorter now passes the total number of items it
