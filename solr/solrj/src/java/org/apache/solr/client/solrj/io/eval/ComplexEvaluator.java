@@ -101,5 +101,12 @@ public abstract class ComplexEvaluator implements StreamEvaluator {
   
   public void setStreamContext(StreamContext context) {
     this.streamContext = context;
+    
+    for(StreamEvaluator subEvaluator : subEvaluators){
+      subEvaluator.setStreamContext(context);
+    }
+  }
+  public StreamContext getStreamContext(){
+    return streamContext;
   }
 }

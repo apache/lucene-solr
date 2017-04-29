@@ -23,7 +23,9 @@ import java.util.Map;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.solr.client.solrj.io.Tuple;
 import org.apache.solr.client.solrj.io.eval.AbsoluteValueEvaluator;
+import org.apache.solr.client.solrj.io.eval.AddEvaluator;
 import org.apache.solr.client.solrj.io.eval.StreamEvaluator;
+import org.apache.solr.client.solrj.io.stream.StreamContext;
 import org.apache.solr.client.solrj.io.stream.expr.StreamFactory;
 import org.junit.Test;
 
@@ -38,7 +40,8 @@ public class AbsoluteValueEvaluatorTest extends LuceneTestCase {
     super();
     
     factory = new StreamFactory()
-      .withFunctionName("abs", AbsoluteValueEvaluator.class);
+      .withFunctionName("abs", AbsoluteValueEvaluator.class)
+      .withFunctionName("add", AddEvaluator.class);
     values = new HashMap<String,Object>();
   }
     
@@ -64,6 +67,34 @@ public class AbsoluteValueEvaluatorTest extends LuceneTestCase {
     result = evaluator.evaluate(new Tuple(values));
     Assert.assertTrue(result instanceof Double);
     Assert.assertEquals(1.1D, result);
+  }
+  
+  @Test
+  public void absoluteValueFromContext() throws Exception{
+    StreamEvaluator evaluator = factory.constructEvaluator("abs(a)");
+    StreamContext context = new StreamContext();
+    evaluator.setStreamContext(context);
+    Object result;
+    
+    context.getLets().put("a", 1);
+    result = evaluator.evaluate(new Tuple());
+    Assert.assertTrue(result instanceof Long);
+    Assert.assertEquals(1L, result);
+    
+    context.getLets().put("a", 1.1);
+    result = evaluator.evaluate(new Tuple());
+    Assert.assertTrue(result instanceof Double);
+    Assert.assertEquals(1.1D, result);
+    
+    context.getLets().put("a", -1.1);
+    result = evaluator.evaluate(new Tuple());
+    Assert.assertTrue(result instanceof Double);
+    Assert.assertEquals(1.1D, result);
+    
+    context.getLets().put("a", factory.constructEvaluator("add(4,-6,34,-56)"));
+    result = evaluator.evaluate(new Tuple());
+    Assert.assertTrue(result instanceof Long);
+    Assert.assertEquals(24L, result);
   }
 
   @Test(expected = IOException.class)
