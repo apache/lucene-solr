@@ -273,6 +273,8 @@ Bug Fixes
 
 * SOLR-10316: Unloading a core can remove a ZK SolrCore registration entry for the wrong SolrCore. (Mark Miller)
 
+* SOLR-10588: Prevent redundant core reload on config update (Mikhail Khludnev)
+
 Other Changes
 ----------------------
 

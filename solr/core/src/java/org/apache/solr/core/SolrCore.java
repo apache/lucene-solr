@@ -100,6 +100,7 @@ import org.apache.solr.core.snapshots.SolrSnapshotMetaDataManager.SnapshotMetaDa
 import org.apache.solr.handler.IndexFetcher;
 import org.apache.solr.handler.ReplicationHandler;
 import org.apache.solr.handler.RequestHandlerBase;
+import org.apache.solr.handler.SolrConfigHandler;
 import org.apache.solr.handler.component.HighlightComponent;
 import org.apache.solr.handler.component.SearchComponent;
 import org.apache.solr.logging.MDCLoggingContext;
@@ -2945,10 +2946,19 @@ public final class SolrCore implements SolrInfoBean, SolrMetricProducer, Closeab
           checkStale(zkClient, solrConfigPath, overlayVersion) ||
           checkStale(zkClient, managedSchmaResourcePath, managedSchemaVersion)) {
         log.info("core reload {}", coreName);
-        try {
-          cc.reload(coreName);
-        } catch (SolrCoreState.CoreIsClosedException e) {
-          /*no problem this core is already closed*/
+        SolrConfigHandler configHandler = ((SolrConfigHandler)core.getRequestHandler("/config"));
+        if (configHandler.getReloadLock().tryLock()){
+          
+          try {
+            cc.reload(coreName);
+          } catch (SolrCoreState.CoreIsClosedException e) {
+            /*no problem this core is already closed*/
+          } finally {
+            configHandler.getReloadLock().unlock();
+          }
+        
+        } else {
+          log.info("Another reload is in progress. Not doing anything.");
         }
         return;
       }
