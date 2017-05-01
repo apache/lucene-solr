@@ -49,7 +49,10 @@ import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexableField;
 import org.apache.lucene.index.MultiFields;
+import org.apache.lucene.search.Collector;
+import org.apache.lucene.search.TopDocsCollector;
 import org.apache.lucene.search.similarities.Similarity;
+import org.apache.solr.search.sorting.TBGAwareCollector;
 import org.apache.solr.uninverting.UninvertingReader;
 import org.apache.lucene.util.Version;
 import org.apache.solr.common.SolrException;
@@ -99,6 +102,7 @@ public class IndexSchema {
   public static final String DEFAULT_SEARCH_FIELD = "defaultSearchField";
   public static final String DESTINATION = "dest";
   public static final String DYNAMIC_FIELD = "dynamicField";
+  public static final String DYNAMIC_VALUE_SORT = "dynamicValueSort";
   public static final String DYNAMIC_FIELDS = DYNAMIC_FIELD + "s";
   public static final String FIELD = "field";
   public static final String FIELDS = FIELD + "s";
@@ -157,6 +161,9 @@ public class IndexSchema {
   
   protected DynamicCopy[] dynamicCopyFields;
   public DynamicCopy[] getDynamicCopyFields() { return dynamicCopyFields; }
+
+  protected Map<String, TBGAwareCollector> secondarySortCollectorMap;
+  public Map<String, TBGAwareCollector> getSecondarySortCollectorMap() { return secondarySortCollectorMap; }
 
   /**
    * keys are all fields copied to, count is num of copyField
@@ -494,6 +501,8 @@ public class IndexSchema {
       // load the fields
       Map<String,Boolean> explicitRequiredProp = loadFields(document, xpath);
 
+      secondarySortCollectorMap = createSecondarySortCollectorMap(document, xpath);
+
       expression = stepsToPath(SCHEMA, SIMILARITY); //   /schema/similarity
       Node node = (Node) xpath.evaluate(expression, document, XPathConstants.NODE);
       similarityFactory = readSimilarity(loader, node);
@@ -699,6 +708,28 @@ public class IndexSchema {
     dynamicFields = dynamicFieldListToSortedArray(dFields);
                                                                    
     return explicitRequiredProp;
+  }
+
+  protected Map<String, TBGAwareCollector> createSecondarySortCollectorMap(Document document, XPath xpath) throws XPathExpressionException {
+    Map<String, TBGAwareCollector> collectorMap = new HashMap<>();
+    String expression = stepsToPath(SCHEMA, DYNAMIC_VALUE_SORT);
+    NodeList nodes = (NodeList) xpath.evaluate(expression, document, XPathConstants.NODESET);
+
+    for (int i=0; i<nodes.getLength(); i++) {
+
+      NamedNodeMap attrs = nodes.item(i).getAttributes();
+
+      final String name = DOMUtil.getAttr(attrs, NAME, "field definition");
+      final String collector = DOMUtil.getAttr(attrs, "collector", "field definition");
+      final Object obj = loader.newInstance(collector, Object.class);
+      if(!(obj instanceof TBGAwareCollector)) {
+        String msg = "Dynamic sorting value: " + name + "must have a TBGAwareCollector";
+        throw new SolrException(ErrorCode.BAD_REQUEST, msg);
+      } else {
+        collectorMap.put(name, (TBGAwareCollector)obj);
+      }
+    }
+    return collectorMap;
   }
   
   /**
