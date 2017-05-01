@@ -277,7 +277,9 @@ public class ChaosMonkeySafeLeaderWithPassiveReplicasTest extends AbstractFullDi
       params.set(ReplicationHandler.COMMAND, ReplicationHandler.CMD_SHOW_COMMITS);
       try {
         QueryResponse response = client.query(params);
-        return (Long)((List<NamedList<Object>>)response.getResponse().get(ReplicationHandler.CMD_SHOW_COMMITS)).get(0).get("indexVersion");
+        List<NamedList<Object>> commits = (List<NamedList<Object>>)response.getResponse().get(ReplicationHandler.CMD_SHOW_COMMITS);
+        System.out.println(commits); //TODO: How to get the correct indexVersion from slave?
+        return (Long)commits.get(0).get("indexVersion");
       } catch (SolrServerException e) {
         log.warn("Exception getting version from {}, will return an invalid version to retry.", replica.getName(), e);
         return -1;

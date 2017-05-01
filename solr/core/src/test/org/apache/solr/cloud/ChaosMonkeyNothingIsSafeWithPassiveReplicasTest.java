@@ -257,13 +257,13 @@ public class ChaosMonkeyNothingIsSafeWithPassiveReplicasTest extends AbstractFul
         }
       }
       
-      waitForReplicationFromPassiveReplicas(DEFAULT_COLLECTION, zkStateReader, new TimeOut(30, TimeUnit.SECONDS));
+      waitForReplicationFromReplicas(DEFAULT_COLLECTION, zkStateReader, new TimeOut(30, TimeUnit.SECONDS));
       
       Set<String> addFails = getAddFails(indexTreads);
       Set<String> deleteFails = getDeleteFails(indexTreads);
       // full throttle thread can
-      // have request fails 
-      checkShardConsistency(!runFullThrottle, true, addFails, deleteFails);
+      // have request fails
+      checkShardConsistency(!runFullThrottle, true, addFails, deleteFails);      
       
       long ctrlDocs = controlClient.query(new SolrQuery("*:*")).getResults()
       .getNumFound(); 
@@ -286,9 +286,9 @@ public class ChaosMonkeyNothingIsSafeWithPassiveReplicasTest extends AbstractFul
       }
 
       try (CloudSolrClient client = createCloudClient("collection1")) {
-          createCollection(null, "testcollection",
-              1, 1, 1, client, null, "conf1");
-
+        // We don't really know how many live nodes we have at this point, so "maxShardsPerNode" needs to be > 1
+        createCollection(null, "testcollection",
+              1, 1, 10, client, null, "conf1"); 
       }
       List<Integer> numShardsNumReplicas = new ArrayList<>(2);
       numShardsNumReplicas.add(1);
@@ -298,12 +298,32 @@ public class ChaosMonkeyNothingIsSafeWithPassiveReplicasTest extends AbstractFul
       testSuccessful = true;
     } finally {
       if (!testSuccessful) {
+        logReplicaTypesReplicationInfo(DEFAULT_COLLECTION, cloudClient.getZkStateReader());
         printLayout();
       }
     }
   }
 
-  private void waitForReplicationFromPassiveReplicas(String collectionName, ZkStateReader zkStateReader, TimeOut timeout) throws KeeperException, InterruptedException, IOException {
+  private void logReplicaTypesReplicationInfo(String collectionName, ZkStateReader zkStateReader) throws KeeperException, InterruptedException, IOException {
+    log.info("## Extra Replica.Type information of the cluster");
+    zkStateReader.forceUpdateCollection(collectionName);
+    DocCollection collection = zkStateReader.getClusterState().getCollection(collectionName);
+    for(Slice s:collection.getSlices()) {
+      Replica leader = s.getLeader();
+      for (Replica r:s.getReplicas()) {
+        if (!zkStateReader.getClusterState().liveNodesContain(r.getNodeName())) {
+          log.info("Replica {} not in liveNodes", r.getName());
+          continue;
+        }
+        if (r.equals(leader)) {
+          log.info("Replica {} is leader", r.getName());
+        }
+        logReplicationDetails(r);
+      }
+    }
+  }
+
+  private void waitForReplicationFromReplicas(String collectionName, ZkStateReader zkStateReader, TimeOut timeout) throws KeeperException, InterruptedException, IOException {
     zkStateReader.forceUpdateCollection(collectionName);
     DocCollection collection = zkStateReader.getClusterState().getCollection(collectionName);
     for(Slice s:collection.getSlices()) {
@@ -311,29 +331,36 @@ public class ChaosMonkeyNothingIsSafeWithPassiveReplicasTest extends AbstractFul
       long leaderIndexVersion = -1;
       while (leaderIndexVersion == -1 && !timeout.hasTimedOut()) {
         leaderIndexVersion = getIndexVersion(leader);
-        Thread.sleep(1000);
+        if (leaderIndexVersion < 0) {
+          Thread.sleep(1000);
+        }
       }
-      for (Replica passiveReplica:s.getReplicas(EnumSet.of(Replica.Type.PASSIVE))) {
+      for (Replica passiveReplica:s.getReplicas(EnumSet.of(Replica.Type.PASSIVE,Replica.Type.APPEND))) {
         if (!zkStateReader.getClusterState().liveNodesContain(passiveReplica.getNodeName())) {
           continue;
         }
         while (true) {
           long replicaIndexVersion = getIndexVersion(passiveReplica);
-          if (leaderIndexVersion > replicaIndexVersion) {
+          if (leaderIndexVersion == replicaIndexVersion) {
+            log.debug("Leader replica's version ({}) in sync with replica({}): {} == {}", leader.getName(), passiveReplica.getName(), leaderIndexVersion, replicaIndexVersion);
+            break;
+          } else {
             if (timeout.hasTimedOut()) {
+              logReplicaTypesReplicationInfo(collectionName, zkStateReader);
               fail(String.format(Locale.ROOT, "Timed out waiting for replica %s (%d) to replicate from leader %s (%d)", passiveReplica.getName(), replicaIndexVersion, leader.getName(), leaderIndexVersion));
             }
-            log.debug("{} version is {} and leader's is {}, will wait for replication", passiveReplica.getName(), replicaIndexVersion, leaderIndexVersion);
+            if (leaderIndexVersion > replicaIndexVersion) {
+              log.debug("{} version is {} and leader's is {}, will wait for replication", passiveReplica.getName(), replicaIndexVersion, leaderIndexVersion);
+            } else {
+              log.debug("Leader replica's version ({}) is lower than passive replica({}): {} < {}", leader.getName(), passiveReplica.getName(), leaderIndexVersion, replicaIndexVersion);
+            }
             Thread.sleep(1000);
-          } else {
-            break;
           }
         }
       }
     }
   }
 
-  @SuppressWarnings("unchecked")
   private long getIndexVersion(Replica replica) throws IOException {
     try (HttpSolrClient client = new HttpSolrClient.Builder(replica.getCoreUrl()).build()) {
       ModifiableSolrParams params = new ModifiableSolrParams();
@@ -341,10 +368,26 @@ public class ChaosMonkeyNothingIsSafeWithPassiveReplicasTest extends AbstractFul
       params.set(ReplicationHandler.COMMAND, ReplicationHandler.CMD_SHOW_COMMITS);
       try {
         QueryResponse response = client.query(params);
-        return (Long)((List<NamedList<Object>>)response.getResponse().get(ReplicationHandler.CMD_SHOW_COMMITS)).get(0).get("indexVersion");
+        @SuppressWarnings("unchecked")
+        List<NamedList<Object>> commits = (List<NamedList<Object>>)response.getResponse().get(ReplicationHandler.CMD_SHOW_COMMITS);
+        return (Long)commits.get(commits.size() - 1).get("indexVersion");
       } catch (SolrServerException e) {
         log.warn("Exception getting version from {}, will return an invalid version to retry.", replica.getName(), e);
         return -1;
+      }
+    }
+  }
+  
+  private void logReplicationDetails(Replica replica) throws IOException {
+    try (HttpSolrClient client = new HttpSolrClient.Builder(replica.getCoreUrl()).build()) {
+      ModifiableSolrParams params = new ModifiableSolrParams();
+      params.set("qt", "/replication");
+      params.set(ReplicationHandler.COMMAND, ReplicationHandler.CMD_DETAILS);
+      try {
+        QueryResponse response = client.query(params);
+        log.info("{}: {}", replica.getName(), response.getResponse());
+      } catch (SolrServerException e) {
+        log.warn("Unable to ger replication details for replica {}", replica.getName(), e);
       }
     }
   }
