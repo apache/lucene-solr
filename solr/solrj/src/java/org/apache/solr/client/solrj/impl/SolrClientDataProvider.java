@@ -51,14 +51,17 @@ import org.apache.zookeeper.data.Stat;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class ClientDataProvider implements ClusterDataProvider {
+/**Class that implements {@link ClusterStateProvider} accepting a SolrClient
+ *
+ */
+public class SolrClientDataProvider implements ClusterDataProvider {
 
   private final CloudSolrClient solrClient;
   private Set<String> liveNodes;
   private Map<String,Object> snitchSession = new HashMap<>();
   private final Map<String, Map<String, Map<String, List<ReplicaInfo>>>> data = new HashMap<>();
 
-  public ClientDataProvider(CloudSolrClient solrClient) {
+  public SolrClientDataProvider(CloudSolrClient solrClient) {
     this.solrClient = solrClient;
     ZkStateReader zkStateReader = solrClient.getZkStateReader();
     ClusterState clusterState = zkStateReader.getClusterState();
@@ -80,10 +83,16 @@ public class ClientDataProvider implements ClusterDataProvider {
   }
 
   @Override
-  public Map<String, Object> getNodeValues(String node, Collection<String> keys) {
+  public String getPolicy(String coll) {
+    ClusterState.CollectionRef state = solrClient.getClusterStateProvider().getState(coll);
+    return state == null || state.get() == null ? null : (String) state.get().getProperties().get("policy");
+  }
+
+  @Override
+  public Map<String, Object> getNodeValues(String node, Collection<String> tags) {
     AutoScalingSnitch  snitch = new AutoScalingSnitch();
     ClientSnitchCtx ctx = new ClientSnitchCtx(null, node, snitchSession, solrClient);
-    snitch.getRemoteInfo(node, new HashSet<>(keys), ctx);
+    snitch.getRemoteInfo(node, new HashSet<>(tags), ctx);
     return ctx.getTags();
   }
 

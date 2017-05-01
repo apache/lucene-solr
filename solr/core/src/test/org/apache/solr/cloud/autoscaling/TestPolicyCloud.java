@@ -23,7 +23,7 @@ import java.util.Map;
 
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.solr.client.solrj.SolrServerException;
-import org.apache.solr.client.solrj.impl.ClientDataProvider;
+import org.apache.solr.client.solrj.impl.SolrClientDataProvider;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.cloud.SolrCloudTestCase;
 import org.apache.solr.common.cloud.DocCollection;
@@ -59,11 +59,10 @@ public class TestPolicyCloud extends SolrCloudTestCase {
     CollectionAdminRequest.createCollectionWithImplicitRouter("policiesTest", "conf", "shard1", 2)
         .process(cluster.getSolrClient());
     DocCollection rulesCollection = getCollectionState("policiesTest");
-    ClientDataProvider provider = new ClientDataProvider(cluster.getSolrClient());
+    SolrClientDataProvider provider = new SolrClientDataProvider(cluster.getSolrClient());
 
     Map<String, Object> val = provider.getNodeValues(rulesCollection.getReplicas().get(0).getNodeName(), Arrays.asList("freedisk", "cores"));
     assertTrue(((Number) val.get("cores")).intValue() > 0);
     assertTrue("freedisk value is "+((Number) val.get("freedisk")).longValue() , ((Number) val.get("freedisk")).longValue() > 0);
-    System.out.println(Utils.toJSONString(val));
   }
 }

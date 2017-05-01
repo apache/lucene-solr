@@ -33,19 +33,15 @@ import static org.apache.solr.common.params.CollectionParams.CollectionAction.AD
 
 public class PolicyHelper {
   public static Map<String, List<String>> getReplicaLocations(String collName, Map<String, Object> autoScalingJson,
-                                                              String policyName, ClusterDataProvider cdp,
+                                                              ClusterDataProvider cdp,
                                                               List<String> shardNames,
                                                               int repFactor) {
     Map<String, List<String>> positionMapping = new HashMap<>();
     for (String shardName : shardNames) positionMapping.put(shardName, new ArrayList<>(repFactor));
-    Map policyJson = (Map) Utils.getObjectByPath(autoScalingJson, false, asList("policies", policyName));
-    if (policyJson == null) {
-      throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "no such policy exists " + policyName);
-    }
-    Map defaultPolicy = (Map) Utils.getObjectByPath(autoScalingJson, false, asList("policies", "default"));
 
-    Map<String, Object> merged = Policy.mergePolicies(collName, policyJson, defaultPolicy);
-    Policy policy = new Policy(merged);
+
+//    Map<String, Object> merged = Policy.mergePolicies(collName, policyJson, defaultPolicy);
+    Policy policy = new Policy(autoScalingJson);
     Policy.Session session = policy.createSession(cdp);
     for (String shardName : shardNames) {
       for (int i = 0; i < repFactor; i++) {

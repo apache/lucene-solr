@@ -35,35 +35,55 @@ import java.util.stream.Collectors;
 import org.apache.solr.common.IteratorWriter;
 import org.apache.solr.common.MapWriter;
 import org.apache.solr.common.params.CollectionParams.CollectionAction;
+import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.common.util.Utils;
 
-import static java.util.Collections.singletonList;
+import static java.util.Collections.emptyList;
+import static java.util.Collections.emptyMap;
 import static java.util.stream.Collectors.toList;
-import static org.apache.solr.common.util.Utils.getDeepCopy;
 
 public class Policy implements MapWriter {
   public static final String EACH = "#EACH";
   public static final String ANY = "#ANY";
-  List<Clause> clauses = new ArrayList<>();
-  List<Preference> preferences = new ArrayList<>();
+  public static final String CLUSTER_POLICY = "cluster-policy";
+  public static final String CLUSTER_PREFERENCE = "cluster-preferences";
+  public static final Set<String> GLOBAL_ONLY_TAGS = Collections.unmodifiableSet(new HashSet<>(Arrays.asList("cores")));
+  Map<String, List<Clause>> policies = new HashMap<>();
+  List<Clause> clusterPolicy;
+  List<Preference> clusterPreferences;
   List<String> params = new ArrayList<>();
 
 
   public Policy(Map<String, Object> jsonMap) {
-    List<Map<String, Object>> l = getListOfMap("conditions", jsonMap);
-    clauses = l.stream()
-        .map(Clause::new)
-        .sorted()
-        .collect(toList());
-    l = getListOfMap("preferences", jsonMap);
-    preferences = l.stream().map(Preference::new).collect(toList());
-    for (int i = 0; i < preferences.size() - 1; i++) {
-      Preference preference = preferences.get(i);
-      preference.next = preferences.get(i + 1);
-    }
 
-    for (Clause c : clauses) params.add(c.tag.name);
-    for (Preference preference : preferences) {
+    clusterPreferences = ((List<Map<String, Object>>) jsonMap.getOrDefault(CLUSTER_PREFERENCE, emptyList())).stream()
+        .map(Preference::new)
+        .collect(toList());
+    for (int i = 0; i < clusterPreferences.size() - 1; i++) {
+      Preference preference = clusterPreferences.get(i);
+      preference.next = clusterPreferences.get(i + 1);
+    }
+    if (clusterPreferences.isEmpty()) {
+      clusterPreferences.add(new Preference((Map<String, Object>) Utils.fromJSONString("{minimize : cores, precision:1}")));
+    }
+    clusterPolicy = ((List<Map<String, Object>>) jsonMap.getOrDefault(CLUSTER_POLICY, emptyList())).stream()
+        .map(Clause::new)
+        .collect(Collectors.toList());
+
+    ((Map<String, List<Map<String, Object>>>) jsonMap.getOrDefault("policies", emptyMap())).forEach((s, l1) ->
+        this.policies.put(s, l1.stream()
+            .map(Clause::new)
+            .sorted()
+            .collect(toList())));
+
+    this.policies.forEach((s, c) -> {
+      for (Clause clause : c) {
+        if (!clause.isPerCollectiontag())
+          throw new RuntimeException(clause.globalTag.name + " is only allowed in 'cluster-policy'");
+      }
+    });
+
+    for (Preference preference : clusterPreferences) {
       if (params.contains(preference.name.name())) {
         throw new RuntimeException(preference.name + " is repeated");
       }
@@ -72,16 +92,22 @@ public class Policy implements MapWriter {
     }
   }
 
+  public List<Clause> getClusterPolicy() {
+    return clusterPolicy;
+  }
+
   @Override
   public void writeMap(EntryWriter ew) throws IOException {
-    if (!clauses.isEmpty()) {
-      ew.put("conditions", (IteratorWriter) iw -> {
-        for (Clause clause : clauses) iw.add(clause);
+    if (!policies.isEmpty()) {
+      ew.put("policies", (MapWriter) ew1 -> {
+        for (Map.Entry<String, List<Clause>> e : policies.entrySet()) {
+          ew1.put(e.getKey(), e.getValue());
+        }
       });
     }
-    if (!preferences.isEmpty()) {
+    if (!clusterPreferences.isEmpty()) {
       ew.put("preferences", (IteratorWriter) iw -> {
-        for (Preference p : preferences) iw.add(p);
+        for (Preference p : clusterPreferences) iw.add(p);
       });
     }
 
@@ -92,23 +118,52 @@ public class Policy implements MapWriter {
     final ClusterDataProvider dataProvider;
     final List<Row> matrix;
     Set<String> collections = new HashSet<>();
+    List<Clause> expandedClauses;
+    private List<String> paramsOfInterest;
 
-    Session(List<String> nodes, ClusterDataProvider dataProvider, List<Row> matrix) {
+    private Session(List<String> nodes, ClusterDataProvider dataProvider,
+                    List<Row> matrix, List<Clause> expandedClauses,
+                    List<String> paramsOfInterest) {
       this.nodes = nodes;
       this.dataProvider = dataProvider;
       this.matrix = matrix;
+      this.expandedClauses = expandedClauses;
+      this.paramsOfInterest = paramsOfInterest;
     }
 
     Session(ClusterDataProvider dataProvider) {
       this.nodes = new ArrayList<>(dataProvider.getNodes());
       this.dataProvider = dataProvider;
+      for (String node : nodes) {
+        collections.addAll(dataProvider.getReplicaInfo(node, Collections.emptyList()).keySet());
+      }
+
+      expandedClauses = clusterPolicy.stream()
+          .filter(clause -> !clause.isPerCollectiontag())
+          .collect(Collectors.toList());
+
+      for (String c : collections) {
+        String p = dataProvider.getPolicy(c);
+        if (p != null) {
+          List<Clause> perCollPolicy = policies.get(p);
+          if (perCollPolicy == null)
+            throw new RuntimeException(StrUtils.formatString("Policy for collection {0} is {1} . It does not exist", c, p));
+        }
+        expandedClauses.addAll(mergePolicies(c, policies.getOrDefault(p, emptyList()), clusterPolicy));
+      }
+
+      Collections.sort(expandedClauses);
+      List<String> p = new ArrayList<>(params);
+      p.addAll(expandedClauses.stream().map(clause -> clause.tag.name).distinct().collect(Collectors.toList()));
+      paramsOfInterest = new ArrayList<>(p);
       matrix = new ArrayList<>(nodes.size());
-      for (String node : nodes) matrix.add(new Row(node, params, dataProvider));
+      for (String node : nodes) matrix.add(new Row(node, paramsOfInterest, dataProvider));
       for (Row row : matrix) row.replicaInfo.forEach((s, e) -> collections.add(s));
+      applyRules();
     }
 
     Session copy() {
-      return new Session(nodes, dataProvider, getMatrixCopy());
+      return new Session(nodes, dataProvider, getMatrixCopy(), expandedClauses, paramsOfInterest);
     }
 
     List<Row> getMatrixCopy() {
@@ -125,26 +180,23 @@ public class Policy implements MapWriter {
     /**
      * Apply the preferences and conditions
      */
-    public void applyRules() {
-      if (!preferences.isEmpty()) {
+    private void applyRules() {
+      if (!clusterPreferences.isEmpty()) {
         //this is to set the approximate value according to the precision
         ArrayList<Row> tmpMatrix = new ArrayList<>(matrix);
-        for (Preference p : preferences) {
+        for (Preference p : clusterPreferences) {
           Collections.sort(tmpMatrix, (r1, r2) -> p.compare(r1, r2, false));
           p.setApproxVal(tmpMatrix);
         }
         //approximate values are set now. Let's do recursive sorting
-        Collections.sort(matrix, (r1, r2) -> preferences.get(0).compare(r1, r2, true));
+        Collections.sort(matrix, (r1, r2) -> clusterPreferences.get(0).compare(r1, r2, true));
       }
 
-      if (!clauses.isEmpty()) {
-        for (Clause clause : clauses) {
+      for (Clause clause : expandedClauses) {
           for (Row row : matrix) {
             clause.test(row);
           }
         }
-      }
-
     }
 
     public Map<String, List<Clause>> getViolations() {
@@ -183,26 +235,13 @@ public class Policy implements MapWriter {
     return new Session(snitch);
   }
 
-
-  static List<Map<String, Object>> getListOfMap(String key, Map<String, Object> jsonMap) {
-    Object o = jsonMap.get(key);
-    if (o != null) {
-      if (!(o instanceof List)) o = singletonList(o);
-      return (List) o;
-    } else {
-      return Collections.emptyList();
-    }
-  }
-
-
   enum SortParam {
-    replica, freedisk, cores, heap, cpu;
+    freedisk, cores, heap, cpu;
 
     static SortParam get(String m) {
       for (SortParam p : values()) if (p.name().equals(m)) return p;
-      throw new RuntimeException("Invalid sort " + m + " Sort must be on one of these " + Arrays.asList(values()));
+      throw new RuntimeException(StrUtils.formatString("Invalid sort {0} Sort must be on one of these {1}", m, Arrays.asList(values())));
     }
-
   }
 
   enum Sort {
@@ -293,44 +332,32 @@ public class Policy implements MapWriter {
 
   }
 
-  public static Map<String, Object> mergePolicies(String coll,
-                                                  Map<String, Object> collPolicy,
-                                                  Map<String, Object> defaultPolicy) {
-    Collection<Map<String, Object>> conditions = getDeepCopy(getListOfMap("conditions", collPolicy), 4, true);
-    insertColl(coll, conditions);
-    List<Clause> parsedConditions = conditions.stream().map(Clause::new).collect(toList());
-    Collection<Map<String, Object>> preferences = getDeepCopy(getListOfMap("preferences", collPolicy), 4, true);
-    List<Preference> parsedPreferences = preferences.stream().map(Preference::new).collect(toList());
-    if (defaultPolicy != null) {
-      Collection<Map<String, Object>> defaultConditions = getDeepCopy(getListOfMap("conditions", defaultPolicy), 4, true);
-      insertColl(coll, defaultConditions);
-      defaultConditions.forEach(e -> {
-        Clause clause = new Clause(e);
-        for (Clause c : parsedConditions) {
-          if (c.collection.equals(clause.collection) &&
-              c.tag.name.equals(clause.tag.name)) return;
-        }
-        conditions.add(e);
-      });
-      Collection<Map<String, Object>> defaultPreferences = getDeepCopy(getListOfMap("preferences", defaultPolicy), 4, true);
-      defaultPreferences.forEach(e -> {
-        Preference preference = new Preference(e);
-        for (Preference p : parsedPreferences) {
-          if (p.name == preference.name) return;
-        }
-        preferences.add(e);
+  static List<Clause> mergePolicies(String coll,
+                                    List<Clause> collPolicy,
+                                    List<Clause> globalPolicy) {
 
-      });
-    }
-    return Utils.makeMap("conditions", conditions, "preferences", preferences);
-
+    List<Clause> merged = insertColl(coll, collPolicy);
+    List<Clause> global = insertColl(coll, globalPolicy);
+    merged.addAll(global.stream()
+        .filter(clusterPolicyClause -> merged.stream().noneMatch(perCollPolicy -> perCollPolicy.doesOverride(clusterPolicyClause)))
+        .collect(Collectors.toList()));
+    return merged;
   }
 
-  private static Collection<Map<String, Object>> insertColl(String coll, Collection<Map<String, Object>> conditions) {
-    conditions.forEach(e -> {
-      if (!e.containsKey("collection")) e.put("collection", coll);
-    });
-    return conditions;
+  /**
+   * Insert the collection name into the clauses where collection is not specified
+   */
+  static List<Clause> insertColl(String coll, Collection<Clause> conditions) {
+    return conditions.stream()
+        .filter(Clause::isPerCollectiontag)
+        .map(clause -> {
+          Map<String, Object> copy = new LinkedHashMap<>(clause.original);
+          if (!copy.containsKey("collection")) copy.put("collection", coll);
+          return new Clause(copy);
+        })
+        .filter(it -> (it.collection.isPass(coll)))
+        .collect(Collectors.toList());
+
   }
 
   private static final Map<CollectionAction, Supplier<Suggester>> ops = new HashMap<>();

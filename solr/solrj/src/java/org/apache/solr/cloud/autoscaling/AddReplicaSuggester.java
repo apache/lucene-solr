@@ -43,7 +43,7 @@ class AddReplicaSuggester extends Suggester {
       String shard = hints.get(Hint.SHARD);
       row = row.addReplica(coll, shard);
       row.violations.clear();
-      for (Clause clause : session.getPolicy().clauses) {
+      for (Clause clause : session.expandedClauses) {
         if (strict || clause.strict) clause.test(row);
       }
       if (row.violations.isEmpty()) {// there are no rule violations

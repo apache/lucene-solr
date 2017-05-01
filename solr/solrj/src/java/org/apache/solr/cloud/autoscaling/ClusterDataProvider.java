@@ -28,7 +28,13 @@ import org.apache.solr.client.solrj.SolrServerException;
 
 
 public interface ClusterDataProvider extends Closeable {
-  Map<String, Object> getNodeValues(String node, Collection<String> keys);
+  /**Get the value of each tag for a given node
+   *
+   * @param node node name
+   * @param tags tag names
+   * @return a map of tag vs value
+   */
+  Map<String, Object> getNodeValues(String node, Collection<String> tags);
 
   /**
    * Get the details of each replica in a node. It attempts to fetch as much details about
@@ -39,6 +45,8 @@ public interface ClusterDataProvider extends Closeable {
   Map<String, Map<String, List<Policy.ReplicaInfo>>> getReplicaInfo(String node, Collection<String> keys);
 
   Collection<String> getNodes();
+
+  String getPolicy(String coll);
 
   @Override
   default void close() throws IOException {

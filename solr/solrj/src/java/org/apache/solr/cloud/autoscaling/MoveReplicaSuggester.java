@@ -51,7 +51,7 @@ public class MoveReplicaSuggester extends Suggester {
         continue;
       }
 
-      for (Clause clause : session.getPolicy().clauses) {
+      for (Clause clause : session.expandedClauses) {
         if (strict || clause.strict) clause.test(fromRow);
       }
       if (fromRow.violations.isEmpty()) {
@@ -59,7 +59,7 @@ public class MoveReplicaSuggester extends Suggester {
           Row targetRow = getMatrix().get(i);
           targetRow = targetRow.addReplica(coll, shard);
           targetRow.violations.clear();
-          for (Clause clause : session.getPolicy().clauses) {
+          for (Clause clause : session.expandedClauses) {
             if (strict || clause.strict) clause.test(targetRow);
           }
           if (targetRow.violations.isEmpty()) {

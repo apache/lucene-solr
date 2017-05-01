@@ -28,12 +28,11 @@ import java.util.List;
 import java.util.Map;
 
 import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.cloud.autoscaling.Policy.Suggester.Hint;
 import org.apache.solr.common.util.Utils;
 import org.apache.solr.common.util.ValidatingJsonMap;
-import org.apache.solr.cloud.autoscaling.Policy.Suggester.Hint;
 
 import static org.apache.solr.common.params.CollectionParams.CollectionAction.ADDREPLICA;
-import static org.apache.solr.common.util.Utils.getObjectByPath;
 
 public class TestPolicy extends SolrTestCaseJ4 {
 
@@ -66,66 +65,99 @@ public class TestPolicy extends SolrTestCaseJ4 {
   public void testMerge() {
 
     Map map = (Map) Utils.fromJSONString("{" +
+        "  'cluster-preferences': [" +
+        "    { 'maximize': 'freedisk', 'precision': 50}," +
+        "    { 'minimize': 'cores', 'precision': 50}" +
+        "  ]," +
+        "  'cluster-policy': [" +
+        "    { 'replica': '#ANY', 'nodeRole': '!overseer'}," +
+        "    { 'replica': '<2', 'shard': '#EACH', 'node': '#ANY'}" +
+        "  ]," +
         "  'policies': {" +
-        "    'default': {" +
-        "      'conditions': [" +
-        "        {  replica:'#ANY' , 'nodeRole': '!overseer'}," +
-        "        { 'replica': '<2', 'shard': '#EACH', node:'#ANY'}" +
-        "      ]," +
-        "      'preferences':[" +
-        "        {'maximize': 'freedisk', 'precision':50}," +
-        "      {'minimize': 'replica', 'precision':50}]" +
-        "    }," +
-        "    'policy1': {" +
-        "      'conditions': [" +
-        "        { 'replica': '1', 'sysprop.fs': 'ssd', 'shard': '#EACH'}," +
-        "        { 'replica': '<2', 'shard': '#ANY' , node: '#ANY'}," +
-        "        { 'replica': '<2', 'shard':'#EACH', 'rack': 'rack1' }" +
-        "      ], preferences: [{maximize:freedisk, precision:75}]} } }");
-    map = (Map) map.get("policies");
-    map = Policy.mergePolicies("mycoll", (Map<String, Object>) map.get("policy1"), (Map<String, Object>) map.get("default"));
-    assertEquals(((List) map.get("conditions")).size(), 4);
-    assertEquals(((List) map.get("preferences")).size(), 2);
-    assertEquals(String.valueOf(getObjectByPath(map, true, "conditions[0]/replica")), "1");
-    assertEquals(String.valueOf(getObjectByPath(map, true, "conditions[1]/replica")), "<2");
-    assertEquals(String.valueOf(getObjectByPath(map, true, "conditions[1]/shard")), "#ANY");
-    assertEquals(String.valueOf(getObjectByPath(map, true, "conditions[2]/rack")), "rack1");
-    assertEquals(String.valueOf(getObjectByPath(map, true, "conditions[3]/nodeRole")), "!overseer");
-
-    assertEquals(String.valueOf(getObjectByPath(map, true, "preferences[0]/maximize")), "freedisk");
-    assertEquals(String.valueOf(getObjectByPath(map, true, "preferences[0]/precision")), "75");
-    assertEquals(String.valueOf(getObjectByPath(map, true, "preferences[1]/precision")), "50");
+        "    'policy1': [" +
+        "      { 'replica': '1', 'sysprop.fs': 'ssd', 'shard': '#EACH'}," +
+        "      { 'replica': '<2', 'shard': '#ANY', 'node': '#ANY'}," +
+        "      { 'replica': '<2', 'shard': '#EACH', 'rack': 'rack1'}" +
+        "    ]" +
+        "  }" +
+        "}");
+    Policy policy = new Policy(map);
+    List<Clause> clauses = Policy.mergePolicies("mycoll", policy.policies.get("policy1"), policy.clusterPolicy);
+    Collections.sort(clauses);
+    assertEquals(clauses.size(), 4);
+    assertEquals("1", String.valueOf(clauses.get(0).original.get("replica")));
+    assertEquals("<2", String.valueOf(clauses.get(1).original.get("replica")));
+    assertEquals("#ANY", clauses.get(3).original.get("shard"));
+    assertEquals("rack1",clauses.get(1).original.get("rack"));
+    assertEquals("!overseer", clauses.get(2).original.get("nodeRole"));
   }
 
 
   public void testConditionsSort(){
     String rules = "{" +
-        "conditions:[" +
-        "{nodeRole:'!overseer', strict:false}," +
-        "{replica:'<1',node:node3, shard: '#EACH'}," +
-        "{replica:'<2',node:'#ANY', shard:'#EACH'}," +
-        "{replica:1, rack:rack1}]," +
-        " preferences:[" +
-        "{minimize:cores , precision:2}," +
-        "{maximize:freedisk, precision:50}, " +
-        "{minimize:heap, precision:1000}]}";
-
-    Policy policy = new Policy((Map<String, Object>) Utils.fromJSONString(rules));
-    assertEquals("rack", policy.clauses.get(0).tag.name);
-
-
+        "    'cluster-policy':[" +
+        "      { 'nodeRole':'!overseer', 'strict':false}," +
+        "      { 'replica':'<1', 'node':'node3', 'shard':'#EACH'}," +
+        "      { 'replica':'<2', 'node':'#ANY', 'shard':'#EACH'}," +
+        "      { 'replica':1, 'rack':'rack1'}]" +
+        "  }";
+    Policy p = new Policy((Map<String, Object>) Utils.fromJSONString(rules));
+    List<Clause> clauses = new ArrayList<>(p.getClusterPolicy());
+    Collections.sort(clauses);
+    assertEquals("rack", clauses.get(0).tag.name);
   }
+  public static String clusterState = "{'gettingstarted':{" +
+      "    'router':{'name':'compositeId'}," +
+      "    'shards':{" +
+      "      'shard1':{" +
+      "        'range':'80000000-ffffffff'," +
+      "        'replicas':{" +
+      "          'r1':{" +
+      "            'core':r1," +
+      "            'base_url':'http://10.0.0.4:8983/solr'," +
+      "            'node_name':'node1'," +
+      "            'state':'active'," +
+      "            'leader':'true'}," +
+      "          'r2':{" +
+      "            'core':r2," +
+      "            'base_url':'http://10.0.0.4:7574/solr'," +
+      "            'node_name':'node2'," +
+      "            'state':'active'}}}," +
+      "      'shard2':{" +
+      "        'range':'0-7fffffff'," +
+      "        'replicas':{" +
+      "          'r3':{" +
+      "            'core':r3," +
+      "            'base_url':'http://10.0.0.4:8983/solr'," +
+      "            'node_name':'node1'," +
+      "            'state':'active'," +
+      "            'leader':'true'}," +
+      "          'r4':{" +
+      "            'core':r4," +
+      "            'base_url':'http://10.0.0.4:8987/solr'," +
+      "            'node_name':'node4'," +
+      "            'state':'active'}," +
+      "          'r6':{" +
+      "            'core':r6," +
+      "            'base_url':'http://10.0.0.4:8989/solr'," +
+      "            'node_name':'node3'," +
+      "            'state':'active'}," +
+      "          'r5':{" +
+      "            'core':r5," +
+      "            'base_url':'http://10.0.0.4:7574/solr'," +
+      "            'node_name':'node1'," +
+      "            'state':'active'}}}}}}";
+
   public void testRules() throws IOException {
     String rules = "{" +
-        "conditions:[" +
+        "cluster-policy:[" +
         "{nodeRole:'!overseer', strict:false}," +
         "{replica:'<1',node:node3}," +
         "{replica:'<2',node:'#ANY', shard:'#EACH'}]," +
-        " preferences:[" +
+        " cluster-preferences:[" +
         "{minimize:cores , precision:2}," +
         "{maximize:freedisk, precision:50}, " +
         "{minimize:heap, precision:1000}]}";
-
 
     Map<String, Map> nodeValues = (Map<String, Map>) Utils.fromJSONString("{" +
         "node1:{cores:12, freedisk: 334, heap:10480}," +
@@ -138,7 +170,6 @@ public class TestPolicy extends SolrTestCaseJ4 {
     Policy.Session session;
     session = policy.createSession(getClusterDataProvider(nodeValues, clusterState));
 
-    session.applyRules();
     List<Row> l = session.getSorted();
     assertEquals("node1", l.get(0).node);
     assertEquals("node3", l.get(1).node);
@@ -146,7 +177,6 @@ public class TestPolicy extends SolrTestCaseJ4 {
     assertEquals("node2", l.get(3).node);
 
 
-    System.out.printf(Utils.toJSONString(Utils.getDeepCopy(session.toMap(new LinkedHashMap<>()), 8)));
     Map<String, List<Clause>> violations = session.getViolations();
     System.out.println(Utils.getDeepCopy(violations, 6));
     assertEquals(3, violations.size());
@@ -172,7 +202,7 @@ public class TestPolicy extends SolrTestCaseJ4 {
 
   }
 
-  public void testOtherTag(){
+ /* public void testOtherTag(){
     String rules = "{" +
         "conditions:[" +
         "{nodeRole:'!overseer', strict:false}," +
@@ -199,15 +229,15 @@ public class TestPolicy extends SolrTestCaseJ4 {
         .hint(Hint.COLL, "newColl")
         .hint(Hint.SHARD, "s1").getOperation();
     assertNotNull(op);
-  }
+  }*/
 
 
   private ClusterDataProvider getClusterDataProvider(final Map<String, Map> nodeValues, String  clusterState) {
     return new ClusterDataProvider() {
         @Override
-        public Map<String, Object> getNodeValues(String node, Collection<String> keys) {
+        public Map<String, Object> getNodeValues(String node, Collection<String> tags) {
           Map<String, Object> result = new LinkedHashMap<>();
-          keys.stream().forEach(s -> result.put(s, nodeValues.get(node).get(s)));
+          tags.stream().forEach(s -> result.put(s, nodeValues.get(node).get(s)));
           return result;
         }
 
@@ -216,7 +246,12 @@ public class TestPolicy extends SolrTestCaseJ4 {
           return nodeValues.keySet();
         }
 
-        @Override
+      @Override
+      public String getPolicy(String coll) {
+        return null;
+      }
+
+      @Override
         public Map<String, Map<String, List<Policy.ReplicaInfo>>> getReplicaInfo(String node, Collection<String> keys) {
           return getReplicaDetails(node, clusterState);
         }
@@ -274,48 +309,6 @@ public class TestPolicy extends SolrTestCaseJ4 {
 
 
   }*/
-
-  public static String clusterState = "{'gettingstarted':{" +
-      "    'router':{'name':'compositeId'}," +
-      "    'shards':{" +
-      "      'shard1':{" +
-      "        'range':'80000000-ffffffff'," +
-      "        'replicas':{" +
-      "          'r1':{" +
-      "            'core':r1," +
-      "            'base_url':'http://10.0.0.4:8983/solr'," +
-      "            'node_name':'node1'," +
-      "            'state':'active'," +
-      "            'leader':'true'}," +
-      "          'r2':{" +
-      "            'core':r2," +
-      "            'base_url':'http://10.0.0.4:7574/solr'," +
-      "            'node_name':'node2'," +
-      "            'state':'active'}}}," +
-      "      'shard2':{" +
-      "        'range':'0-7fffffff'," +
-      "        'replicas':{" +
-      "          'r3':{" +
-      "            'core':r3," +
-      "            'base_url':'http://10.0.0.4:8983/solr'," +
-      "            'node_name':'node1'," +
-      "            'state':'active'," +
-      "            'leader':'true'}," +
-      "          'r4':{" +
-      "            'core':r4," +
-      "            'base_url':'http://10.0.0.4:8987/solr'," +
-      "            'node_name':'node4'," +
-      "            'state':'active'}," +
-      "          'r6':{" +
-      "            'core':r6," +
-      "            'base_url':'http://10.0.0.4:8989/solr'," +
-      "            'node_name':'node3'," +
-      "            'state':'active'}," +
-      "          'r5':{" +
-      "            'core':r5," +
-      "            'base_url':'http://10.0.0.4:7574/solr'," +
-      "            'node_name':'node1'," +
-      "            'state':'active'}}}}}}";
 
   public static Map<String, Map<String, List<Policy.ReplicaInfo>>> getReplicaDetails(String node, String s) {
     ValidatingJsonMap m = ValidatingJsonMap

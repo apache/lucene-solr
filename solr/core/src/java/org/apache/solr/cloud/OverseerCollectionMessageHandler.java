@@ -37,7 +37,7 @@ import com.google.common.collect.ImmutableMap;
 import org.apache.commons.lang.StringUtils;
 import org.apache.solr.client.solrj.SolrResponse;
 import org.apache.solr.client.solrj.SolrServerException;
-import org.apache.solr.client.solrj.impl.ClientDataProvider;
+import org.apache.solr.client.solrj.impl.SolrClientDataProvider;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.impl.HttpSolrClient.RemoteSolrException;
@@ -727,10 +727,10 @@ public class OverseerCollectionMessageHandler implements OverseerMessageHandler 
       try(CloudSolrClient csc = new CloudSolrClient.Builder()
           .withClusterStateProvider(new ZkClientClusterStateProvider(zkStateReader))
           .build()) {
-        ClientDataProvider clientDataProvider = new ClientDataProvider(csc);
+        SolrClientDataProvider clientDataProvider = new SolrClientDataProvider(csc);
         Map<String, List<String>> locations = PolicyHelper.getReplicaLocations(collName,
             zkStateReader.getZkClient().getJson(SOLR_AUTOSCALING_CONF_PATH, true),
-            policyName, clientDataProvider, shardNames, repFactor);
+            clientDataProvider, shardNames, repFactor);
         Map<Position, String> result = new HashMap<>();
         for (Map.Entry<String, List<String>> e : locations.entrySet()) {
           List<String> value = e.getValue();
