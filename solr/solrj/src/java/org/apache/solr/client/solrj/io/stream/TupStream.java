@@ -46,6 +46,8 @@ public class TupStream extends TupleStream implements Expressible {
   private Map<String,String> stringParams = new HashMap<>();
   private Map<String,StreamEvaluator> evaluatorParams = new HashMap<>();
   private Map<String,TupleStream> streamParams = new HashMap<>();
+  private List<String> fieldNames = new ArrayList();
+  private Map<String, String> fieldLabels = new HashMap();
   
   private boolean finished;
 
@@ -55,6 +57,8 @@ public class TupStream extends TupleStream implements Expressible {
     //Get all the named params
     for(StreamExpressionNamedParameter np : namedParams) {
       String name = np.getName();
+      fieldNames.add(name);
+      fieldLabels.put(name, name);
       StreamExpressionParameter param = np.getParameter();
 
       // we're going to split these up here so we only make the choice once
@@ -186,7 +190,10 @@ public class TupStream extends TupleStream implements Expressible {
         }        
       }
 
-      return new Tuple(values);
+      Tuple tup = new Tuple(values);
+      tup.fieldNames = fieldNames;
+      tup.fieldLabels = fieldLabels;
+      return tup;
     }
   }
 
