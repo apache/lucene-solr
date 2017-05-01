@@ -91,17 +91,17 @@ public class TimeSeriesStream extends TupleStream implements Expressible  {
     }
 
     String end = null;
-    if(startExpression != null) {
+    if(endExpression != null) {
       end = ((StreamExpressionValue)endExpression.getParameter()).getValue();
     }
 
     String gap = null;
-    if(startExpression != null) {
+    if(gapExpression != null) {
       gap = ((StreamExpressionValue)gapExpression.getParameter()).getValue();
     }
 
     String field = null;
-    if(startExpression != null) {
+    if(fieldExpression != null) {
       field = ((StreamExpressionValue)fieldExpression.getParameter()).getValue();
     }
 
