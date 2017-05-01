@@ -85,10 +85,10 @@ public class SolrZkServer {
     try {
       props = SolrZkServerProps.getProperties(confHome + '/' + "zoo.cfg");
       SolrZkServerProps.injectServers(props, zkRun, zkHost);
-      zkProps.parseProperties(props);
-      if (zkProps.getClientPortAddress() == null) {
-        zkProps.setClientPort(solrPort + 1000);
+      if (props.getProperty("clientPort") == null) {
+        props.setProperty("clientPort", Integer.toString(solrPort + 1000));
       }
+      zkProps.parseProperties(props);
     } catch (QuorumPeerConfig.ConfigException | IOException e) {
       if (zkRun != null)
         throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
