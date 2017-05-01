@@ -1,0 +1,498 @@
+From a170ea81606d16a8d028a7249fac1a9ee26a543e Mon Sep 17 00:00:00 2001
+From: Yuchuan Zhou <Yuchuan_Zhou@cable.comcast.com>
+Date: Thu, 23 Mar 2017 10:07:28 -0400
+Subject: [PATCH] SOLR-10320: Perform secondary sort using both values in and
+ outside Solr index
+
+---
+ lucene/core/ivy.xml                                |   4 +
+ .../java/org/apache/lucene/search/HitQueue.java    |   2 +-
+ .../java/org/apache/solr/schema/IndexSchema.java   |  31 ++++
+ .../java/org/apache/solr/search/QParserPlugin.java |   1 +
+ .../solr/search/SecondarySortQParserPlugin.java    |  97 +++++++++++
+ .../search/sorting/SecondarySortCollector.java     | 178 +++++++++++++++++++++
+ .../solr/search/sorting/TBGAwareCollector.java     |  32 ++++
+ .../solr/search/sorting/TieBreakerGroup.java       |  34 ++++
+ 8 files changed, 378 insertions(+), 1 deletion(-)
+ create mode 100644 solr/core/src/java/org/apache/solr/search/SecondarySortQParserPlugin.java
+ create mode 100644 solr/core/src/java/org/apache/solr/search/sorting/SecondarySortCollector.java
+ create mode 100644 solr/core/src/java/org/apache/solr/search/sorting/TBGAwareCollector.java
+ create mode 100644 solr/core/src/java/org/apache/solr/search/sorting/TieBreakerGroup.java
+
+diff --git a/lucene/core/ivy.xml b/lucene/core/ivy.xml
+index bbca9f9..99049ed 100644
+--- a/lucene/core/ivy.xml
++++ b/lucene/core/ivy.xml
+@@ -18,4 +18,8 @@
+ -->
+ <ivy-module version="2.0">
+   <info organisation="org.apache.lucene" module="core"/>
++  <dependencies>
++    <dependency org="com.google.guava" name="guava" rev="21.0"/>
++  </dependencies>
++
+ </ivy-module>
+diff --git a/lucene/core/src/java/org/apache/lucene/search/HitQueue.java b/lucene/core/src/java/org/apache/lucene/search/HitQueue.java
+index 8868c2b..b2a86ab 100644
+--- a/lucene/core/src/java/org/apache/lucene/search/HitQueue.java
++++ b/lucene/core/src/java/org/apache/lucene/search/HitQueue.java
+@@ -60,7 +60,7 @@ final class HitQueue extends PriorityQueue<ScoreDoc> {
+    *          specifies whether to pre-populate the queue with sentinel values.
+    * @see #getSentinelObject()
+    */
+-  HitQueue(int size, boolean prePopulate) {
++  public HitQueue(int size, boolean prePopulate) {
+     super(size, prePopulate);
+   }
+ 
+diff --git a/solr/core/src/java/org/apache/solr/schema/IndexSchema.java b/solr/core/src/java/org/apache/solr/schema/IndexSchema.java
+index 3de59ee..e065468 100644
+--- a/solr/core/src/java/org/apache/solr/schema/IndexSchema.java
++++ b/solr/core/src/java/org/apache/solr/schema/IndexSchema.java
+@@ -50,7 +50,10 @@ import org.apache.lucene.index.IndexOptions;
+ import org.apache.lucene.index.IndexReader;
+ import org.apache.lucene.index.IndexableField;
+ import org.apache.lucene.index.MultiFields;
++import org.apache.lucene.search.Collector;
++import org.apache.lucene.search.TopDocsCollector;
+ import org.apache.lucene.search.similarities.Similarity;
++import org.apache.solr.search.sorting.TBGAwareCollector;
+ import org.apache.solr.uninverting.UninvertingReader;
+ import org.apache.lucene.util.Version;
+ import org.apache.solr.common.SolrException;
+@@ -100,6 +103,7 @@ public class IndexSchema {
+   public static final String DEFAULT_SEARCH_FIELD = "defaultSearchField";
+   public static final String DESTINATION = "dest";
+   public static final String DYNAMIC_FIELD = "dynamicField";
++  public static final String DYNAMIC_VALUE_SORT = "dynamicValueSort";
+   public static final String DYNAMIC_FIELDS = DYNAMIC_FIELD + "s";
+   public static final String FIELD = "field";
+   public static final String FIELDS = FIELD + "s";
+@@ -159,6 +163,9 @@ public class IndexSchema {
+   protected DynamicCopy[] dynamicCopyFields;
+   public DynamicCopy[] getDynamicCopyFields() { return dynamicCopyFields; }
+ 
++  protected Map<String, TBGAwareCollector> secondarySortCollectorMap;
++  public Map<String, TBGAwareCollector> getSecondarySortCollectorMap() { return secondarySortCollectorMap; }
++
+   /**
+    * keys are all fields copied to, count is num of copyField
+    * directives that target them.
+@@ -493,6 +500,8 @@ public class IndexSchema {
+       // load the fields
+       Map<String,Boolean> explicitRequiredProp = loadFields(document, xpath);
+ 
++      secondarySortCollectorMap = createSecondarySortCollectorMap(document, xpath);
++
+       expression = stepsToPath(SCHEMA, SIMILARITY); //   /schema/similarity
+       Node node = (Node) xpath.evaluate(expression, document, XPathConstants.NODE);
+       similarityFactory = readSimilarity(loader, node);
+@@ -699,6 +708,28 @@ public class IndexSchema {
+                                                                    
+     return explicitRequiredProp;
+   }
++
++  protected Map<String, TBGAwareCollector> createSecondarySortCollectorMap(Document document, XPath xpath) throws XPathExpressionException {
++    Map<String, TBGAwareCollector> collectorMap = new HashMap<>();
++    String expression = stepsToPath(SCHEMA, DYNAMIC_VALUE_SORT);
++    NodeList nodes = (NodeList) xpath.evaluate(expression, document, XPathConstants.NODESET);
++
++    for (int i=0; i<nodes.getLength(); i++) {
++
++      NamedNodeMap attrs = nodes.item(i).getAttributes();
++
++      final String name = DOMUtil.getAttr(attrs, NAME, "field definition");
++      final String collector = DOMUtil.getAttr(attrs, "collector", "field definition");
++      final Object obj = loader.newInstance(collector, Object.class);
++      if(!(obj instanceof TBGAwareCollector)) {
++        String msg = "Dynamic sorting value: " + name + "must have a TBGAwareCollector";
++        throw new SolrException(ErrorCode.BAD_REQUEST, msg);
++      } else {
++        collectorMap.put(name, (TBGAwareCollector)obj);
++      }
++    }
++    return collectorMap;
++  }
+   
+   /**
+    * Sort the dynamic fields and stuff them in a normal array for faster access.
+diff --git a/solr/core/src/java/org/apache/solr/search/QParserPlugin.java b/solr/core/src/java/org/apache/solr/search/QParserPlugin.java
+index 34089d2..6dba631 100644
+--- a/solr/core/src/java/org/apache/solr/search/QParserPlugin.java
++++ b/solr/core/src/java/org/apache/solr/search/QParserPlugin.java
+@@ -80,6 +80,7 @@ public abstract class QParserPlugin implements NamedListInitializedPlugin, SolrI
+     map.put(IGainTermsQParserPlugin.NAME, IGainTermsQParserPlugin.class);
+     map.put(TextLogisticRegressionQParserPlugin.NAME, TextLogisticRegressionQParserPlugin.class);
+     map.put(SignificantTermsQParserPlugin.NAME, SignificantTermsQParserPlugin.class);
++    map.put(SecondarySortQParserPlugin.NAME, SecondarySortQParserPlugin.class);
+ 
+     standardPlugins = Collections.unmodifiableMap(map);
+   }
+diff --git a/solr/core/src/java/org/apache/solr/search/SecondarySortQParserPlugin.java b/solr/core/src/java/org/apache/solr/search/SecondarySortQParserPlugin.java
+new file mode 100644
+index 0000000..c4bcdc0
+--- /dev/null
++++ b/solr/core/src/java/org/apache/solr/search/SecondarySortQParserPlugin.java
+@@ -0,0 +1,97 @@
++package org.apache.solr.search;
++
++import org.apache.lucene.search.*;
++import org.apache.solr.common.SolrException;
++import org.apache.solr.common.params.CommonParams;
++import org.apache.solr.common.params.SolrParams;
++import org.apache.solr.common.util.NamedList;
++import org.apache.solr.core.SolrCore;
++import org.apache.solr.handler.component.MergeStrategy;
++import org.apache.solr.request.SolrQueryRequest;
++import org.apache.solr.search.sorting.SecondarySortCollector;
++import org.apache.solr.search.sorting.TBGAwareCollector;
++
++import java.io.IOException;
++import java.util.ArrayList;
++import java.util.List;
++import java.util.Map;
++
++public class SecondarySortQParserPlugin extends QParserPlugin {
++    public static final String NAME = "sesort";
++
++    @Override
++    public QParser createParser(String qstr, SolrParams localParams, SolrParams params, SolrQueryRequest req) {
++        return new SecondarySortQParser(qstr, localParams, params, req);
++    }
++
++    private class SecondarySortQParser extends QParser {
++
++        String qstr;
++        SolrParams localParams;
++        SolrParams params;
++        SolrQueryRequest req;
++
++        private SecondarySortQParser(String qstr, SolrParams localParams, SolrParams params, SolrQueryRequest req) {
++            super(qstr, localParams, params, req);
++            this.qstr = qstr;
++            this.localParams = localParams;
++            this.params = params;
++            this.req = req;
++        }
++
++        @Override
++        public Query parse() {
++
++            String sortStr = localParams.get(CommonParams.SORT);
++            String[] sortAlgs;
++            if(sortStr == null) {
++                throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Need to provide sort algorithms to perform secondary sort.");
++            } else {
++                sortAlgs = sortStr.split(",");
++                if(sortAlgs.length == 0) {
++                    throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Need to provide valid sort algorithms to perform secondary sort.");
++                }
++            }
++
++            SolrCore core = req.getCore();
++            Map<String, TBGAwareCollector> secondaySortCollectorMap = core.getLatestSchema().getSecondarySortCollectorMap();
++            List<TBGAwareCollector> collectors = new ArrayList<>();
++
++            for(String sortAlg : sortAlgs) {
++                if(secondaySortCollectorMap.containsKey(sortAlg)) {
++                    collectors.add(secondaySortCollectorMap.get(sortAlg));
++                }
++            }
++
++            return new RankQuery() {
++                Query mainQuery;
++
++                @Override
++                public TopDocsCollector getTopDocsCollector(int len, QueryCommand cmd, IndexSearcher searcher) throws IOException {
++                    return SecondarySortCollector.create(len, collectors, null ,false, false, false);
++                }
++
++                @Override
++                public MergeStrategy getMergeStrategy() {
++                    return null;
++                }
++
++                @Override
++                public RankQuery wrap(Query mainQuery) {
++                    this.mainQuery = mainQuery;
++                    return this;
++                }
++
++                @Override
++                public boolean equals(Object o) {
++                    return false;
++                }
++
++                @Override
++                public int hashCode() {
++                    return 0;
++                }
++            };
++        }
++    }
++}
+diff --git a/solr/core/src/java/org/apache/solr/search/sorting/SecondarySortCollector.java b/solr/core/src/java/org/apache/solr/search/sorting/SecondarySortCollector.java
+new file mode 100644
+index 0000000..6826406
+--- /dev/null
++++ b/solr/core/src/java/org/apache/solr/search/sorting/SecondarySortCollector.java
+@@ -0,0 +1,178 @@
++package org.apache.solr.search.sorting;
++
++
++import org.apache.lucene.index.LeafReaderContext;
++import org.apache.lucene.search.*;
++import org.apache.lucene.util.PriorityQueue;
++
++import java.io.IOException;
++import java.util.ArrayList;
++import java.util.Arrays;
++import java.util.List;
++import java.util.ListIterator;
++
++import com.google.common.collect.RangeMap;
++import com.google.common.collect.Range;
++import com.google.common.collect.BoundType;
++import com.google.common.collect.ImmutableRangeMap;
++
++/**
++ * This collector will be used to chain together a dynamic list of collectors,
++ * to perform sorting and ranking on the result set. The collectors passed in are
++ * expected to implement the TieBreakerGroupAware interface, which requires the collector
++ * to return any
++ */
++public class SecondarySortCollector extends TopDocsCollector {
++
++    private boolean fillFields;
++    private boolean trackDocScores;
++    private boolean trackMaxScore;
++    private int numHits;
++    private FieldDoc after;
++    private TBGAwareCollector initCollector;
++    private ListIterator<TBGAwareCollector> collectorsIterator;
++    private LeafReaderContext singleLeafReaderContext;
++    private RangeMap<Integer, LeafReaderContext> contextRangeMap;
++
++    public SecondarySortCollector(PriorityQueue<?> priorityQueue,
++                                  List<TBGAwareCollector> collectors,
++                                  int numHits, FieldDoc after,
++                                  boolean fillFields,
++                                  boolean trackDocScores,
++                                  boolean trackMaxScore) {
++        super(priorityQueue);
++        this.collectorsIterator = collectors.listIterator();
++        this.fillFields = fillFields;
++        this.trackDocScores = trackMaxScore;
++        this.trackMaxScore = trackMaxScore;
++        this.numHits = numHits;
++        this.after = after;
++        this.initCollector = this.collectorsIterator.next();
++    }
++
++    public static TopDocsCollector<?> create(int numHits, List<TBGAwareCollector> collectors, FieldDoc after, boolean fillFields, boolean trackDocScores, boolean trackMaxScore) {
++        return new SecondarySortCollector(null, collectors, numHits, after, fillFields, trackDocScores, trackMaxScore);
++    }
++
++
++    public TopDocs topDocs(int start, int howMany) {
++        TopDocs topDocs = this.initCollector.topDocs(start, howMany);
++        return rankDocs(topDocs, start, howMany, 1, this.initCollector);
++    }
++
++    protected TopDocs rankDocs(TopDocs topDocs, int start, int pageSize, int factoryCount, TBGAwareCollector currentCollector) {
++
++        List<TieBreakerGroup> tbGroups = currentCollector.getTieBreakerGroups();
++
++        if (null == tbGroups || tbGroups.isEmpty()) {
++            return topDocs;
++        }
++
++        for (TieBreakerGroup tbGroup : tbGroups) {
++            ScoreDoc[] scoreDocs = rankScoreDocs(tbGroup.getDocs(), start, pageSize, factoryCount, currentCollector);
++            // set the correctly sorted docs back on the tieBreakerGroup object
++            tbGroup.setDocs(Arrays.asList(scoreDocs));
++        }
++
++        // After the groups have been sorted, add them back to the original
++        // TopDocs in sorted order
++        mergeRankedTieBreakerGroups(topDocs, tbGroups);
++        return topDocs;
++    }
++
++    public ScoreDoc[] rankScoreDocs(List<ScoreDoc> scoreDocs, int start, int pageSize, int factoryCount, TBGAwareCollector currentCollector) {
++        // if there are tie breaker groups, set currentCollector to the next
++        // collector that can be created from the list of collectors
++        // and used that collector to break the ties
++        currentCollector = getNextCollector();
++
++        if (currentCollector == null) {
++            return scoreDocs.toArray(new ScoreDoc[]{});
++        }
++
++        for (ScoreDoc scoreDoc : scoreDocs) {
++            // use currCollector to collect the docs in the tieBreakerGroup
++            int doc = scoreDoc.doc;
++            try {
++                LeafCollector currLeafCollector = currentCollector.getLeafCollector((this.singleLeafReaderContext != null) ? this.singleLeafReaderContext : this.contextRangeMap.get(doc));
++                currLeafCollector.collect(doc);
++            } catch (IOException e) {
++            }
++        }
++
++        TopDocs tbTopDocs = currentCollector.topDocs(start, pageSize);
++        TopDocs sortedDocs = rankDocs(tbTopDocs, start, pageSize, factoryCount + 1, currentCollector);
++        return sortedDocs.scoreDocs;
++    }
++
++    /**
++     * This method loops through each tieBreakerGroup and adds the hits in the
++     * group back to the scoreDocs in the initial {@link TopDocs} in the
++     * correctly sorted order. Sometimes the tieBreakerGroup may be larger than
++     * the size of the documents that need to be replaced in the scoreDocs. This
++     * will occur if a collector produced a TieBreakerGroup that falls at the
++     * top or at the bottom of that page, and multiple documents outside the
++     * paging had the same score. In this case a secondary sort was needed to
++     * determine what actually falls within the page and the postion or start
++     * valued in {@link TieBreakerGroup} is used to determine which documents
++     * should be added back to the original topDocs.
++     */
++    protected void mergeRankedTieBreakerGroups(TopDocs topDocs, List<TieBreakerGroup> tbGroups) {
++        ScoreDoc[] scoreDocs = topDocs.scoreDocs;
++        int start = 0;
++        int end = scoreDocs.length - 1;
++
++        for (TieBreakerGroup group : tbGroups) {
++            int tbStart = group.getStart();
++            int tbEnd = group.getDocs().size();
++            int grpCounter = 0;
++
++            // Make sure if start position is negative skip negative indexes and
++            // increment the counter until you reach zero,
++            // and, if the tieBreakerGroup size is larger the the size of the
++            // scoreDocs, only add the values that will fit in the scoreDocs
++            // appropriately
++            while ((tbStart <= end) && (grpCounter < tbEnd)) {
++                if ((tbStart >= start) && (tbStart <= end)) {
++                    scoreDocs[tbStart] = group.getDocs().get(grpCounter);
++                }
++                grpCounter++;
++                tbStart++;
++            }
++        }
++    }
++
++    @Override
++    public LeafCollector getLeafCollector(LeafReaderContext context) throws IOException {
++        if (this.singleLeafReaderContext != null && this.contextRangeMap == null) {
++            if (context.reader().leaves().size() == 1 && this.singleLeafReaderContext == null) {
++                this.singleLeafReaderContext = context;
++            } else if (context.reader().leaves().size() > 1) {
++                ImmutableRangeMap.Builder<Integer, LeafReaderContext> builder = ImmutableRangeMap.builder();
++                for (LeafReaderContext ctx : context.reader().leaves()) {
++                    int lowerBound = ctx.docBase;
++                    int upperBound = ctx.docBase + ctx.reader().maxDoc();
++                    Range<Integer> range = Range.range(lowerBound, BoundType.CLOSED, upperBound, BoundType.OPEN);
++                    builder.put(range, ctx);
++                }
++                this.contextRangeMap = builder.build();
++            }
++        }
++        return initCollector.getLeafCollector(context);
++    }
++
++    @Override
++    public boolean needsScores() {
++        return false;
++    }
++
++    private TBGAwareCollector getNextCollector() {
++        if (!collectorsIterator.hasNext()) {
++            return null;
++        }
++
++        TBGAwareCollector nextCollector = collectorsIterator.next();
++        return nextCollector.create(this.numHits, this.fillFields, this.trackDocScores, this.trackMaxScore);
++    }
++}
++
+diff --git a/solr/core/src/java/org/apache/solr/search/sorting/TBGAwareCollector.java b/solr/core/src/java/org/apache/solr/search/sorting/TBGAwareCollector.java
+new file mode 100644
+index 0000000..65614dd
+--- /dev/null
++++ b/solr/core/src/java/org/apache/solr/search/sorting/TBGAwareCollector.java
+@@ -0,0 +1,32 @@
++package org.apache.solr.search.sorting;
++
++import org.apache.lucene.search.*;
++
++import java.io.IOException;
++import java.util.List;
++
++/**
++ * Interface to be implemented by Solr collectors in order to identify those collectors that are aware that some of the docs that they collect are
++ * equivalent to each other and thus need additional tie breaking ranking associated with them. Docs that are considered equivalent when ranking, are
++ * grouped together and are exposed via the {@link #getTieBreakerGroups()} method.
++ */
++public interface TBGAwareCollector extends Collector {
++    TBGAwareCollector create(int numHits, boolean fillFields, boolean trackDocScores, boolean trackMaxScore);
++    /**
++     * Returns the list of TieBreakerGroups found within the page of results after collection completes. Each group is complete - it contains
++     * all of the docs that have been collected that are considered equal for ranking purposes regardless if pagination would truncate the list.
++     * This method must be called AFTER top docs have been generated.
++     *
++     * @return the list of TieBreakerGroups found within the page of results after collection completes
++     */
++    List<TieBreakerGroup> getTieBreakerGroups();
++
++    TopDocs topDocs(int start);
++
++    TopDocs topDocs(int start, int howMany);
++    
++    public boolean isSort();
++
++    
++    
++}
+diff --git a/solr/core/src/java/org/apache/solr/search/sorting/TieBreakerGroup.java b/solr/core/src/java/org/apache/solr/search/sorting/TieBreakerGroup.java
+new file mode 100644
+index 0000000..3a2ec37
+--- /dev/null
++++ b/solr/core/src/java/org/apache/solr/search/sorting/TieBreakerGroup.java
+@@ -0,0 +1,34 @@
++package org.apache.solr.search.sorting;
++
++import org.apache.lucene.search.ScoreDoc;
++
++import java.util.List;
++
++/**
++ * Created by bkinla201 on 3/21/17.
++ */
++public class TieBreakerGroup {
++    int start;
++    List<ScoreDoc> docs;
++
++    public TieBreakerGroup(int start, List<ScoreDoc> docs) {
++        this.start = start;
++        this.docs = docs;
++    }
++
++    public int getStart() {
++        return start;
++    }
++
++    public int getEnd() {
++        return start + docs.size() - 1;
++    }
++
++    public List<ScoreDoc> getDocs() {
++        return docs;
++    }
++
++    public void setDocs(List<ScoreDoc> docs) {
++        this.docs = docs;
++    }
++}
+-- 
+2.6.2
+
