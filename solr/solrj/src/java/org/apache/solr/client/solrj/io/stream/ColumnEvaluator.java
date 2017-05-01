@@ -50,7 +50,6 @@ public class ColumnEvaluator extends SimpleEvaluator implements Expressible {
     List<Tuple> tuples = (List<Tuple>)tuple.get(name);
     List<Number> column = new ArrayList(tuples.size());
     for(Tuple t : tuples) {
-      System.out.println("###### Field:"+fieldName);
       Object o = t.get(fieldName);
       if(o instanceof Number) {
         column.add((Number)o);
