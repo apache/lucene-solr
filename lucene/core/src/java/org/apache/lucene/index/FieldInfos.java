@@ -17,15 +17,20 @@
 package org.apache.lucene.index;
 
 
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.SortedMap;
 import java.util.TreeMap;
 
+import org.apache.lucene.document.FieldType;
+import org.apache.lucene.document.SerializableSortedDocValuesComparator;
 import org.apache.lucene.util.ArrayUtil;
+import org.apache.lucene.util.BytesRef;
 
 /** 
  * Collection of {@link FieldInfo}s (accessible by number or by name).
@@ -187,7 +192,24 @@ public class FieldInfos implements Iterable<FieldInfo> {
       return byNumberMap.get(fieldNumber);
     }
   }
-  
+
+  @Override
+  public String toString() {
+    return "FieldInfos{" +
+        "hasFreq=" + hasFreq +
+        ", hasProx=" + hasProx +
+        ", hasPayloads=" + hasPayloads +
+        ", hasOffsets=" + hasOffsets +
+        ", hasVectors=" + hasVectors +
+        ", hasNorms=" + hasNorms +
+        ", hasDocValues=" + hasDocValues +
+        ", byNumberTable=" + Arrays.toString(byNumberTable) +
+        ", byNumberMap=" + byNumberMap +
+        ", byName=" + byName +
+        ", values=" + values +
+        '}';
+  }
+
   static final class FieldNumbers {
     
     private final Map<Integer,String> numberToName;
@@ -281,6 +303,9 @@ public class FieldInfos implements Iterable<FieldInfo> {
       verifyConsistent(number, name, dvType);
       docValuesType.put(name, dvType);
     }
+
+
+
   }
   
   static final class Builder {
@@ -315,7 +340,7 @@ public class FieldInfos implements Iterable<FieldInfo> {
         // before then we'll get the same name and number,
         // else we'll allocate a new one:
         final int fieldNumber = globalFieldNumbers.addOrGet(name, -1, DocValuesType.NONE);
-        fi = new FieldInfo(name, fieldNumber, false, false, false, IndexOptions.NONE, DocValuesType.NONE, -1, new HashMap<String,String>());
+        fi = new FieldInfo(name, fieldNumber, false, false, false, IndexOptions.NONE, DocValuesType.NONE, -1, new HashMap<String,String>(),null);
         assert !byName.containsKey(fi.name);
         globalFieldNumbers.verifyConsistent(Integer.valueOf(fi.number), fi.name, DocValuesType.NONE);
         byName.put(fi.name, fi);
@@ -326,7 +351,7 @@ public class FieldInfos implements Iterable<FieldInfo> {
    
     private FieldInfo addOrUpdateInternal(String name, int preferredFieldNumber,
         boolean storeTermVector,
-        boolean omitNorms, boolean storePayloads, IndexOptions indexOptions, DocValuesType docValues) {
+        boolean omitNorms, boolean storePayloads, IndexOptions indexOptions, DocValuesType docValues, SerializableSortedDocValuesComparator docValuesComparator) {
       if (docValues == null) {
         throw new NullPointerException("DocValuesType cannot be null");
       }
@@ -338,7 +363,7 @@ public class FieldInfos implements Iterable<FieldInfo> {
         // before then we'll get the same name and number,
         // else we'll allocate a new one:
         final int fieldNumber = globalFieldNumbers.addOrGet(name, preferredFieldNumber, docValues);
-        fi = new FieldInfo(name, fieldNumber, storeTermVector, omitNorms, storePayloads, indexOptions, docValues, -1, new HashMap<String,String>());
+        fi = new FieldInfo(name, fieldNumber, storeTermVector, omitNorms, storePayloads, indexOptions, docValues, -1, new HashMap<String,String>(),docValuesComparator);
         assert !byName.containsKey(fi.name);
         globalFieldNumbers.verifyConsistent(Integer.valueOf(fi.number), fi.name, fi.getDocValuesType());
         byName.put(fi.name, fi);
@@ -365,7 +390,7 @@ public class FieldInfos implements Iterable<FieldInfo> {
       // IMPORTANT - reuse the field number if possible for consistent field numbers across segments
       return addOrUpdateInternal(fi.name, fi.number, fi.hasVectors(),
                  fi.omitsNorms(), fi.hasPayloads(),
-                 fi.getIndexOptions(), fi.getDocValuesType());
+                 fi.getIndexOptions(), fi.getDocValuesType(),fi.docValuesComparator());
     }
     
     public FieldInfo fieldInfo(String fieldName) {
@@ -375,5 +400,7 @@ public class FieldInfos implements Iterable<FieldInfo> {
     FieldInfos finish() {
       return new FieldInfos(byName.values().toArray(new FieldInfo[byName.size()]));
     }
+
+
   }
 }

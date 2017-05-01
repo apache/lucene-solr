@@ -20,7 +20,7 @@ package org.apache.lucene.util;
 import java.util.Arrays;
 import java.util.Comparator;
 import java.util.concurrent.atomic.AtomicLong;
-
+import java.util.Comparator;
 import org.apache.lucene.util.ByteBlockPool.DirectAllocator;
 
 import static org.apache.lucene.util.ByteBlockPool.BYTE_BLOCK_MASK;
@@ -61,6 +61,8 @@ public final class BytesRefHash {
   private int[] ids;
   private final BytesStartArray bytesStartArray;
   private Counter bytesUsed;
+
+
 
   /**
    * Creates a new {@link BytesRefHash} with a {@link ByteBlockPool} using a
@@ -160,8 +162,16 @@ public final class BytesRefHash {
    * @param comp
    *          the {@link Comparator} used for sorting
    */
+
   public int[] sort(final Comparator<BytesRef> comp) {
+
     final int[] compact = compact();
+    final Comparator<BytesRef> comparator;
+    if (comp==null) {
+      comparator=BytesRef.getUTF8SortedAsUnicodeComparator();
+    } else {
+      comparator=comp;
+    }
     new IntroSorter() {
       @Override
       protected void swap(int i, int j) {
@@ -169,14 +179,14 @@ public final class BytesRefHash {
         compact[i] = compact[j];
         compact[j] = o;
       }
-      
+
       @Override
       protected int compare(int i, int j) {
         final int id1 = compact[i], id2 = compact[j];
         assert bytesStart.length > id1 && bytesStart.length > id2;
         pool.setBytesRef(scratch1, bytesStart[id1]);
         pool.setBytesRef(scratch2, bytesStart[id2]);
-        return comp.compare(scratch1, scratch2);
+        return comparator.compare(scratch1, scratch2);
       }
 
       @Override
@@ -185,21 +195,19 @@ public final class BytesRefHash {
         assert bytesStart.length > id;
         pool.setBytesRef(pivot, bytesStart[id]);
       }
-  
+
       @Override
       protected int comparePivot(int j) {
         final int id = compact[j];
         assert bytesStart.length > id;
         pool.setBytesRef(scratch2, bytesStart[id]);
-        return comp.compare(pivot, scratch2);
+        return comparator.compare(pivot, scratch2);
       }
-      
-      private final BytesRef pivot = new BytesRef(),
-        scratch1 = new BytesRef(), scratch2 = new BytesRef();
+
+      private final BytesRef pivot = new BytesRef(), scratch1 = new BytesRef(), scratch2 = new BytesRef();
     }.sort(0, count);
     return compact;
   }
-
   private boolean equals(int id, BytesRef b) {
     pool.setBytesRef(scratch1, bytesStart[id]);
     return scratch1.bytesEquals(b);

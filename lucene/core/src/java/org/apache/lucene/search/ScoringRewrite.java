@@ -19,7 +19,9 @@ package org.apache.lucene.search;
 
 import java.io.IOException;
 
+import org.apache.lucene.document.FieldType;
 import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.index.IndexableFieldType;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.index.TermContext;
 import org.apache.lucene.index.TermState;
@@ -109,7 +111,10 @@ public abstract class ScoringRewrite<B> extends TermCollectingRewrite<B> {
     
     final int size = col.terms.size();
     if (size > 0) {
-      final int sort[] = col.terms.sort(BytesRef.getUTF8SortedAsUnicodeComparator());
+      IndexableFieldType field = reader.document(0).getField(query.getField()).fieldType();
+      final int sort[] = col.terms.sort(field.docValuesComparator());
+
+
       final float[] boost = col.array.boost;
       final TermContext[] termStates = col.array.termState;
       for (int i = 0; i < size; i++) {

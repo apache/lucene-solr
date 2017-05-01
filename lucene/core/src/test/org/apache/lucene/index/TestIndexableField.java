@@ -21,12 +21,14 @@ import java.io.Reader;
 import java.io.StringReader;
 import java.util.Collections;
 import java.util.Iterator;
+import java.util.Comparator;
 
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.FieldType;
+import org.apache.lucene.document.SerializableSortedDocValuesComparator;
 import org.apache.lucene.document.StoredField;
 import org.apache.lucene.search.BooleanClause;
 import org.apache.lucene.search.BooleanQuery;
@@ -89,6 +91,13 @@ public class TestIndexableField extends LuceneTestCase {
       public DocValuesType docValuesType() {
         return DocValuesType.NONE;
       }
+
+      @Override
+      public SerializableSortedDocValuesComparator docValuesComparator() {
+        return null;
+      }
+
+
     };
 
     public MyField(int counter) {

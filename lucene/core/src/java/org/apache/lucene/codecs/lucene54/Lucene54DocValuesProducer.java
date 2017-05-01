@@ -101,7 +101,7 @@ final class Lucene54DocValuesProducer extends DocValuesProducer implements Close
   }
 
   /** expert: instantiates a new reader */
-  Lucene54DocValuesProducer(SegmentReadState state, String dataCodec, String dataExtension, String metaCodec, String metaExtension) throws IOException {
+    Lucene54DocValuesProducer(SegmentReadState state, String dataCodec, String dataExtension, String metaCodec, String metaExtension) throws IOException {
     String metaName = IndexFileNames.segmentFileName(state.segmentInfo.name, state.segmentSuffix, metaExtension);
     this.maxDoc = state.segmentInfo.maxDoc();
     merging = false;
@@ -793,7 +793,7 @@ final class Lucene54DocValuesProducer extends DocValuesProducer implements Close
     final BinaryDocValues binary = getBinary(field);
     NumericEntry entry = ords.get(field.name);
     final LongValues ordinals = getNumeric(entry);
-    return new SortedDocValues() {
+    SortedDocValues sdv= new SortedDocValues() {
 
       @Override
       public int getOrd(int docID) {
@@ -828,6 +828,8 @@ final class Lucene54DocValuesProducer extends DocValuesProducer implements Close
         }
       }
     };
+
+    return sdv;
   }
 
   /** returns an address instance for sortedset ordinal lists */

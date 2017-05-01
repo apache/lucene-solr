@@ -469,6 +469,8 @@ final class Lucene54DocValuesConsumer extends DocValuesConsumer implements Close
       minLength = Math.min(minLength, v.length);
       maxLength = Math.max(maxLength, v.length);
       numValues++;
+
+      //System.out.println("writing docValue to file: "+v.toString());
     }
     if (minLength == maxLength) {
       // no index needed: direct addressing by mult

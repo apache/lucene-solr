@@ -791,6 +791,10 @@ public final class BlockTreeTermsWriter extends FieldsConsumer {
     private PendingBlock writeBlock(int prefixLength, boolean isFloor, int floorLeadLabel, int start, int end,
                                     boolean hasTerms, boolean hasPrefixTerms, boolean hasSubBlocks) throws IOException {
 
+      /*System.out.println("called writeBñlocks with prefixLEnght: "+Integer.toString(prefixLength)+
+          " isFloor: "+(isFloor?"true":"false")+" floorLeadLabel: "+Integer.toString(floorLeadLabel)+
+          " start: "+Integer.toString(start)+" end: "+Integer.toString(end)+" hasTerms: "+(hasTerms?"true":"false")+
+          " hasPrefixTerms: "+(hasPrefixTerms?"true":"false")+" hasSubBlocks: "+(hasSubBlocks?"true":"false"));*/
       assert end > start;
 
       long startFP = termsOut.getFilePointer();
@@ -854,6 +858,8 @@ public final class BlockTreeTermsWriter extends FieldsConsumer {
           // For leaf block we write suffix straight
           suffixWriter.writeVInt(suffix);
           suffixWriter.writeBytes(term.termBytes, prefixLength, suffix);
+
+          //System.out.println("Blockss tree floorLeadLabel: "+Integer.toString(floorLeadLabel)+ " 2º cond: "+(((term.termBytes[prefixLength] & 0xff) >= floorLeadLabel)?"true":"false"));
           assert floorLeadLabel == -1 || (term.termBytes[prefixLength] & 0xff) >= floorLeadLabel;
 
           // Write term stats, to separate byte[] blob:

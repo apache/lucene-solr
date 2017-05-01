@@ -57,6 +57,7 @@ class SegmentDocValuesProducer extends DocValuesProducer {
    * @param segDocValues producer map
    */
   SegmentDocValuesProducer(SegmentCommitInfo si, Directory dir, FieldInfos coreInfos, FieldInfos allInfos, SegmentDocValues segDocValues) throws IOException {
+
     boolean success = false;
     try {
       Version ver = si.info.getVersion();
@@ -147,6 +148,8 @@ class SegmentDocValuesProducer extends DocValuesProducer {
 
   @Override
   public SortedDocValues getSorted(FieldInfo field) throws IOException {
+
+
     DocValuesProducer dvProducer = dvProducersByField.get(field.name);
     assert dvProducer != null;
     return dvProducer.getSorted(field);

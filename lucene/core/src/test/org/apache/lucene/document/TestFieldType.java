@@ -18,12 +18,15 @@ package org.apache.lucene.document;
 
 
 import java.lang.reflect.Method;
-import java.lang.reflect.Modifier;
 
+import java.lang.reflect.Modifier;
 import org.apache.lucene.document.FieldType.NumericType;
+import java.util.Comparator;
+
 import org.apache.lucene.index.DocValuesType;
 import org.apache.lucene.index.IndexOptions;
 import org.apache.lucene.util.LuceneTestCase;
+import org.apache.lucene.util.BytesRef;
 
 import com.carrotsearch.randomizedtesting.generators.RandomPicks;
 
@@ -84,13 +87,26 @@ public class TestFieldType extends LuceneTestCase {
   }
 
   private static FieldType randomFieldType() throws Exception {
+    Method setDocValuesComparatorMethod = FieldType.class.getMethod("setDocValuesComparator", Comparator.class);
+
     FieldType ft = new FieldType();
     for (Method method : FieldType.class.getMethods()) {
       if ((method.getModifiers() & Modifier.PUBLIC) != 0 && method.getName().startsWith("set")) {
         final Class<?>[] parameterTypes = method.getParameterTypes();
         final Object[] args = new Object[parameterTypes.length];
-        for (int i = 0; i < args.length; ++i) {
-          args[i] = randomValue(parameterTypes[i]);
+
+        if (method.equals(setDocValuesComparatorMethod)) {
+          args[0] = new Comparator<BytesRef>() {
+            @Override
+            public int compare(BytesRef val1, BytesRef val2) {
+              return val1.compareTo(val2);
+            }
+          };
+        } else {
+          for (int i = 0; i < args.length; ++i) {
+            args[i] = randomValue(parameterTypes[i]);
+          }
+
         }
         method.invoke(ft, args);
       }

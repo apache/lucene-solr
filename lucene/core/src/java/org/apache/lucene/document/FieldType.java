@@ -17,12 +17,13 @@
 package org.apache.lucene.document;
 
 
-import org.apache.lucene.analysis.Analyzer; // javadocs
+import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.index.DocValuesType;
 import org.apache.lucene.index.IndexOptions;
 import org.apache.lucene.index.IndexableFieldType;
-import org.apache.lucene.search.NumericRangeQuery; // javadocs
+import org.apache.lucene.search.NumericRangeQuery;
 import org.apache.lucene.util.NumericUtils;
+
 
 /**
  * Describes the properties of a field.
@@ -55,6 +56,8 @@ public class FieldType implements IndexableFieldType {
   private boolean frozen;
   private int numericPrecisionStep = NumericUtils.PRECISION_STEP_DEFAULT;
   private DocValuesType docValuesType = DocValuesType.NONE;
+  private SerializableSortedDocValuesComparator docValuesComparator=null;
+
 
   /**
    * Create a new mutable FieldType with all of the properties from <code>ref</code>
@@ -71,6 +74,7 @@ public class FieldType implements IndexableFieldType {
     this.numericType = ref.numericType();
     this.numericPrecisionStep = ref.numericPrecisionStep();
     this.docValuesType = ref.docValuesType();
+    this.docValuesComparator= ref.docValuesComparator();
     // Do not copy frozen!
   }
   
@@ -419,6 +423,28 @@ public class FieldType implements IndexableFieldType {
     docValuesType = type;
   }
 
+  /**
+   * {@inheritDoc}
+   * <p>
+   * The default is <code>null</code> (no docValues)
+   * @see #setDocValuesComparator(SerializableSortedDocValuesComparator)
+   */
+  public SerializableSortedDocValuesComparator docValuesComparator() {
+    return docValuesComparator;
+  }
+
+  /**
+   * Sets the field's DocValuesComparator
+   * @param comparator as the  way SORTED Docvalues are ordered
+   * @throws IllegalStateException if this FieldType is frozen against
+   *         future modifications.
+   * @see #docValuesComparator()
+   */
+  public void setDocValuesComparator(SerializableSortedDocValuesComparator comparator) {
+    checkIfFrozen();
+    docValuesComparator = comparator;
+  }
+
   @Override
   public int hashCode() {
     final int prime = 31;
@@ -454,6 +480,7 @@ public class FieldType implements IndexableFieldType {
     if (storeTermVectors != other.storeTermVectors) return false;
     if (stored != other.stored) return false;
     if (tokenized != other.tokenized) return false;
+    if (docValuesComparator != other.docValuesComparator) return false;
     return true;
   }
 }
