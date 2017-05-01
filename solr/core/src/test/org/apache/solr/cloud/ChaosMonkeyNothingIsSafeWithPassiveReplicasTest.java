@@ -16,53 +16,34 @@
  */
 package org.apache.solr.cloud;
 
-import java.io.IOException;
 import java.lang.invoke.MethodHandles;
-import java.net.ConnectException;
 import java.util.ArrayList;
 import java.util.EnumSet;
 import java.util.HashSet;
 import java.util.List;
-import java.util.Locale;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicInteger;
 
-import org.apache.http.client.HttpClient;
-import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.lucene.util.LuceneTestCase.Slow;
 import org.apache.solr.SolrTestCaseJ4.SuppressObjectReleaseTracker;
 import org.apache.solr.SolrTestCaseJ4.SuppressSSL;
-import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrQuery;
-import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
-import org.apache.solr.client.solrj.impl.ConcurrentUpdateSolrClient;
-import org.apache.solr.client.solrj.impl.HttpClientUtil;
-import org.apache.solr.client.solrj.impl.HttpSolrClient;
-import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.cloud.ZkStateReader;
-import org.apache.solr.common.params.ModifiableSolrParams;
-import org.apache.solr.common.util.IOUtils;
-import org.apache.solr.common.util.NamedList;
-import org.apache.solr.handler.ReplicationHandler;
 import org.apache.solr.util.TimeOut;
-import org.apache.zookeeper.KeeperException;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.carrotsearch.randomizedtesting.annotations.ThreadLeakLingering;
-
 @Slow
 @SuppressSSL(bugUrl = "https://issues.apache.org/jira/browse/SOLR-5776")
-@ThreadLeakLingering(linger = 60000)
+//@ThreadLeakLingering(linger = 60000)
 @SuppressObjectReleaseTracker(bugUrl="Testing purposes")
 public class ChaosMonkeyNothingIsSafeWithPassiveReplicasTest extends AbstractFullDistribZkTestBase {
   private static final int FAIL_TOLERANCE = 100;
@@ -188,8 +169,8 @@ public class ChaosMonkeyNothingIsSafeWithPassiveReplicasTest extends AbstractFul
       // it's currently hard to know what requests failed when using ConcurrentSolrUpdateServer
       boolean runFullThrottle = random().nextBoolean();
       if (runFullThrottle) {
-        FullThrottleStoppableIndexingThread ftIndexThread = new FullThrottleStoppableIndexingThread(
-            clients, "ft1", true);
+        FullThrottleStoppableIndexingThread ftIndexThread = 
+            new FullThrottleStoppableIndexingThread(controlClient, cloudClient, clients, "ft1", true, this.clientSoTimeout);
         threads.add(ftIndexThread);
         ftIndexThread.start();
       }
@@ -304,94 +285,6 @@ public class ChaosMonkeyNothingIsSafeWithPassiveReplicasTest extends AbstractFul
     }
   }
 
-  private void logReplicaTypesReplicationInfo(String collectionName, ZkStateReader zkStateReader) throws KeeperException, InterruptedException, IOException {
-    log.info("## Extra Replica.Type information of the cluster");
-    zkStateReader.forceUpdateCollection(collectionName);
-    DocCollection collection = zkStateReader.getClusterState().getCollection(collectionName);
-    for(Slice s:collection.getSlices()) {
-      Replica leader = s.getLeader();
-      for (Replica r:s.getReplicas()) {
-        if (!zkStateReader.getClusterState().liveNodesContain(r.getNodeName())) {
-          log.info("Replica {} not in liveNodes", r.getName());
-          continue;
-        }
-        if (r.equals(leader)) {
-          log.info("Replica {} is leader", r.getName());
-        }
-        logReplicationDetails(r);
-      }
-    }
-  }
-
-  private void waitForReplicationFromReplicas(String collectionName, ZkStateReader zkStateReader, TimeOut timeout) throws KeeperException, InterruptedException, IOException {
-    zkStateReader.forceUpdateCollection(collectionName);
-    DocCollection collection = zkStateReader.getClusterState().getCollection(collectionName);
-    for(Slice s:collection.getSlices()) {
-      Replica leader = s.getLeader();
-      long leaderIndexVersion = -1;
-      while (leaderIndexVersion == -1 && !timeout.hasTimedOut()) {
-        leaderIndexVersion = getIndexVersion(leader);
-        if (leaderIndexVersion < 0) {
-          Thread.sleep(1000);
-        }
-      }
-      for (Replica passiveReplica:s.getReplicas(EnumSet.of(Replica.Type.PASSIVE,Replica.Type.APPEND))) {
-        if (!zkStateReader.getClusterState().liveNodesContain(passiveReplica.getNodeName())) {
-          continue;
-        }
-        while (true) {
-          long replicaIndexVersion = getIndexVersion(passiveReplica);
-          if (leaderIndexVersion == replicaIndexVersion) {
-            log.debug("Leader replica's version ({}) in sync with replica({}): {} == {}", leader.getName(), passiveReplica.getName(), leaderIndexVersion, replicaIndexVersion);
-            break;
-          } else {
-            if (timeout.hasTimedOut()) {
-              logReplicaTypesReplicationInfo(collectionName, zkStateReader);
-              fail(String.format(Locale.ROOT, "Timed out waiting for replica %s (%d) to replicate from leader %s (%d)", passiveReplica.getName(), replicaIndexVersion, leader.getName(), leaderIndexVersion));
-            }
-            if (leaderIndexVersion > replicaIndexVersion) {
-              log.debug("{} version is {} and leader's is {}, will wait for replication", passiveReplica.getName(), replicaIndexVersion, leaderIndexVersion);
-            } else {
-              log.debug("Leader replica's version ({}) is lower than passive replica({}): {} < {}", leader.getName(), passiveReplica.getName(), leaderIndexVersion, replicaIndexVersion);
-            }
-            Thread.sleep(1000);
-          }
-        }
-      }
-    }
-  }
-
-  private long getIndexVersion(Replica replica) throws IOException {
-    try (HttpSolrClient client = new HttpSolrClient.Builder(replica.getCoreUrl()).build()) {
-      ModifiableSolrParams params = new ModifiableSolrParams();
-      params.set("qt", "/replication");
-      params.set(ReplicationHandler.COMMAND, ReplicationHandler.CMD_SHOW_COMMITS);
-      try {
-        QueryResponse response = client.query(params);
-        @SuppressWarnings("unchecked")
-        List<NamedList<Object>> commits = (List<NamedList<Object>>)response.getResponse().get(ReplicationHandler.CMD_SHOW_COMMITS);
-        return (Long)commits.get(commits.size() - 1).get("indexVersion");
-      } catch (SolrServerException e) {
-        log.warn("Exception getting version from {}, will return an invalid version to retry.", replica.getName(), e);
-        return -1;
-      }
-    }
-  }
-  
-  private void logReplicationDetails(Replica replica) throws IOException {
-    try (HttpSolrClient client = new HttpSolrClient.Builder(replica.getCoreUrl()).build()) {
-      ModifiableSolrParams params = new ModifiableSolrParams();
-      params.set("qt", "/replication");
-      params.set(ReplicationHandler.COMMAND, ReplicationHandler.CMD_DETAILS);
-      try {
-        QueryResponse response = client.query(params);
-        log.info("{}: {}", replica.getName(), response.getResponse());
-      } catch (SolrServerException e) {
-        log.warn("Unable to ger replication details for replica {}", replica.getName(), e);
-      }
-    }
-  }
-
   private Set<String> getAddFails(List<StoppableIndexingThread> threads) {
     Set<String> addFails = new HashSet<String>();
     for (StoppableIndexingThread thread : threads)   {
@@ -408,111 +301,6 @@ public class ChaosMonkeyNothingIsSafeWithPassiveReplicasTest extends AbstractFul
     return deleteFails;
   }
 
-  class FullThrottleStoppableIndexingThread extends StoppableIndexingThread {
-    private CloseableHttpClient httpClient = HttpClientUtil.createClient(null);
-    private volatile boolean stop = false;
-    int clientIndex = 0;
-    private ConcurrentUpdateSolrClient cusc;
-    private List<SolrClient> clients;
-    private AtomicInteger fails = new AtomicInteger();
-    
-    public FullThrottleStoppableIndexingThread(List<SolrClient> clients,
-                                               String id, boolean doDeletes) {
-      super(controlClient, cloudClient, id, doDeletes);
-      setName("FullThrottleStopableIndexingThread");
-      setDaemon(true);
-      this.clients = clients;
-
-      cusc = new ErrorLoggingConcurrentUpdateSolrClient(((HttpSolrClient) clients.get(0)).getBaseURL(), httpClient, 8, 2);
-      cusc.setConnectionTimeout(10000);
-      cusc.setSoTimeout(clientSoTimeout);
-    }
-    
-    @Override
-    public void run() {
-      int i = 0;
-      int numDeletes = 0;
-      int numAdds = 0;
-
-      while (true && !stop) {
-        String id = this.id + "-" + i;
-        ++i;
-        
-        if (doDeletes && random().nextBoolean() && deletes.size() > 0) {
-          String delete = deletes.remove(0);
-          try {
-            numDeletes++;
-            cusc.deleteById(delete);
-          } catch (Exception e) {
-            changeUrlOnError(e);
-            fails.incrementAndGet();
-          }
-        }
-        
-        try {
-          numAdds++;
-          if (numAdds > (TEST_NIGHTLY ? 4002 : 197))
-            continue;
-          SolrInputDocument doc = getDoc(
-              "id",
-              id,
-              i1,
-              50,
-              t1,
-              "Saxon heptarchies that used to rip around so in old times and raise Cain.  My, you ought to seen old Henry the Eight when he was in bloom.  He WAS a blossom.  He used to marry a new wife every day, and chop off her head next morning.  And he would do it just as indifferent as if ");
-          cusc.add(doc);
-        } catch (Exception e) {
-          changeUrlOnError(e);
-          fails.incrementAndGet();
-        }
-        
-        if (doDeletes && random().nextBoolean()) {
-          deletes.add(id);
-        }
-        
-      }
-
-      log.info("FT added docs:" + numAdds + " with " + fails + " fails" + " deletes:" + numDeletes);
-    }
-
-    private void changeUrlOnError(Exception e) {
-      if (e instanceof ConnectException) {
-        clientIndex++;
-        if (clientIndex > clients.size() - 1) {
-          clientIndex = 0;
-        }
-        cusc.shutdownNow();
-        cusc = new ErrorLoggingConcurrentUpdateSolrClient(((HttpSolrClient) clients.get(clientIndex)).getBaseURL(),
-            httpClient, 30, 3);
-      }
-    }
-    
-    @Override
-    public void safeStop() {
-      stop = true;
-      cusc.blockUntilFinished();
-      cusc.shutdownNow();
-      IOUtils.closeQuietly(httpClient);
-    }
-
-    @Override
-    public int getFailCount() {
-      return fails.get();
-    }
-    
-    @Override
-    public Set<String> getAddFails() {
-      throw new UnsupportedOperationException();
-    }
-    
-    @Override
-    public Set<String> getDeleteFails() {
-      throw new UnsupportedOperationException();
-    }
-    
-  };
-  
-  
   // skip the randoms - they can deadlock...
   @Override
   protected void indexr(Object... fields) throws Exception {
@@ -520,13 +308,4 @@ public class ChaosMonkeyNothingIsSafeWithPassiveReplicasTest extends AbstractFul
     indexDoc(doc);
   }
 
-  static class ErrorLoggingConcurrentUpdateSolrClient extends ConcurrentUpdateSolrClient {
-    public ErrorLoggingConcurrentUpdateSolrClient(String serverUrl, HttpClient httpClient, int queueSize, int threadCount) {
-      super(serverUrl, httpClient, queueSize, threadCount, null, false);
-    }
-    @Override
-    public void handleError(Throwable ex) {
-      log.warn("cusc error", ex);
-    }
-  }
 }

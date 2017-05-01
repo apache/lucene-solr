@@ -688,6 +688,13 @@ public class ChaosMonkey {
     return true;
   }
 
+  /**
+   * You can call this method to wait while the ChaosMonkey is running, it waits approximately the specified time, and periodically
+   * logs the status of the collection
+   * @param runLength The time in ms to wait
+   * @param collectionName The main collection being used for the ChaosMonkey
+   * @param zkStateReader current state reader
+   */
   public static void wait(long runLength, String collectionName, ZkStateReader zkStateReader) throws InterruptedException {
     TimeOut t = new TimeOut(runLength, TimeUnit.MILLISECONDS);
     while (!t.hasTimedOut()) {

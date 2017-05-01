@@ -451,7 +451,7 @@ public abstract class BaseDistributedSearchTestCase extends SolrTestCaseJ4 {
     return buildUrl(port, context);
   }
 
-  protected void addFields(SolrInputDocument doc, Object... fields) {
+  protected static void addFields(SolrInputDocument doc, Object... fields) {
     for (int i = 0; i < fields.length; i += 2) {
       doc.addField((String) (fields[i]), fields[i + 1]);
     }

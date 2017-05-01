@@ -25,9 +25,11 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Properties;
@@ -74,11 +76,13 @@ import org.apache.solr.common.util.Utils;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.Diagnostics;
 import org.apache.solr.core.SolrCore;
+import org.apache.solr.handler.ReplicationHandler;
 import org.apache.solr.update.DirectUpdateHandler2;
 import org.apache.solr.update.SolrCmdDistributor;
 import org.apache.solr.util.RTimer;
 import org.apache.solr.util.TimeOut;
 import org.apache.zookeeper.CreateMode;
+import org.apache.zookeeper.KeeperException;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.noggit.CharArr;
@@ -1717,7 +1721,7 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
             - DEFAULT_COLLECTION.length() - 1);
   }
 
-  protected SolrInputDocument getDoc(Object... fields) throws Exception {
+  public static SolrInputDocument getDoc(Object... fields) throws Exception {
     SolrInputDocument doc = new SolrInputDocument();
     addFields(doc, fields);
     return doc;
@@ -2023,6 +2027,97 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
       }
     }
     return reloadedOk;
+  }
+  
+
+  protected void logReplicaTypesReplicationInfo(String collectionName, ZkStateReader zkStateReader) throws KeeperException, InterruptedException, IOException {
+    log.info("## Collecting extra Replica.Type information of the cluster");
+    StringBuilder builder = new StringBuilder();
+    zkStateReader.forceUpdateCollection(collectionName);
+    DocCollection collection = zkStateReader.getClusterState().getCollection(collectionName);
+    for(Slice s:collection.getSlices()) {
+      Replica leader = s.getLeader();
+      for (Replica r:s.getReplicas()) {
+        if (!r.isActive(zkStateReader.getClusterState().getLiveNodes())) {
+          builder.append(String.format(Locale.ROOT, "Replica %s not in liveNodes or is not active%s", r.getName(), System.lineSeparator()));
+          continue;
+        }
+        if (r.equals(leader)) {
+          builder.append(String.format(Locale.ROOT, "Replica %s is leader%s", r.getName(), System.lineSeparator()));
+        }
+        logReplicationDetails(r, builder);
+      }
+    }
+    log.info("Summary of the cluster: " + builder.toString());
+  }
+
+  protected void waitForReplicationFromReplicas(String collectionName, ZkStateReader zkStateReader, TimeOut timeout) throws KeeperException, InterruptedException, IOException {
+    zkStateReader.forceUpdateCollection(collectionName);
+    DocCollection collection = zkStateReader.getClusterState().getCollection(collectionName);
+    for(Slice s:collection.getSlices()) {
+      Replica leader = s.getLeader();
+      long leaderIndexVersion = -1;
+      while (leaderIndexVersion == -1 && !timeout.hasTimedOut()) {
+        leaderIndexVersion = getIndexVersion(leader);
+        if (leaderIndexVersion < 0) {
+          Thread.sleep(1000);
+        }
+      }
+      for (Replica passiveReplica:s.getReplicas(EnumSet.of(Replica.Type.PASSIVE,Replica.Type.APPEND))) {
+        if (!zkStateReader.getClusterState().liveNodesContain(passiveReplica.getNodeName())) {
+          continue;
+        }
+        while (true) {
+          long replicaIndexVersion = getIndexVersion(passiveReplica);
+          if (leaderIndexVersion == replicaIndexVersion) {
+            log.debug("Leader replica's version ({}) in sync with replica({}): {} == {}", leader.getName(), passiveReplica.getName(), leaderIndexVersion, replicaIndexVersion);
+            break;
+          } else {
+            if (timeout.hasTimedOut()) {
+              logReplicaTypesReplicationInfo(collectionName, zkStateReader);
+              fail(String.format(Locale.ROOT, "Timed out waiting for replica %s (%d) to replicate from leader %s (%d)", passiveReplica.getName(), replicaIndexVersion, leader.getName(), leaderIndexVersion));
+            }
+            if (leaderIndexVersion > replicaIndexVersion) {
+              log.debug("{} version is {} and leader's is {}, will wait for replication", passiveReplica.getName(), replicaIndexVersion, leaderIndexVersion);
+            } else {
+              log.debug("Leader replica's version ({}) is lower than passive replica({}): {} < {}", leader.getName(), passiveReplica.getName(), leaderIndexVersion, replicaIndexVersion);
+            }
+            Thread.sleep(1000);
+          }
+        }
+      }
+    }
+  }
+
+  protected long getIndexVersion(Replica replica) throws IOException {
+    try (HttpSolrClient client = new HttpSolrClient.Builder(replica.getCoreUrl()).build()) {
+      ModifiableSolrParams params = new ModifiableSolrParams();
+      params.set("qt", "/replication");
+      params.set(ReplicationHandler.COMMAND, ReplicationHandler.CMD_SHOW_COMMITS);
+      try {
+        QueryResponse response = client.query(params);
+        @SuppressWarnings("unchecked")
+        List<NamedList<Object>> commits = (List<NamedList<Object>>)response.getResponse().get(ReplicationHandler.CMD_SHOW_COMMITS);
+        return (Long)commits.get(commits.size() - 1).get("indexVersion");
+      } catch (SolrServerException e) {
+        log.warn("Exception getting version from {}, will return an invalid version to retry.", replica.getName(), e);
+        return -1;
+      }
+    }
+  }
+  
+  protected void logReplicationDetails(Replica replica, StringBuilder builder) throws IOException {
+    try (HttpSolrClient client = new HttpSolrClient.Builder(replica.getCoreUrl()).build()) {
+      ModifiableSolrParams params = new ModifiableSolrParams();
+      params.set("qt", "/replication");
+      params.set(ReplicationHandler.COMMAND, ReplicationHandler.CMD_DETAILS);
+      try {
+        QueryResponse response = client.query(params);
+        builder.append(String.format(Locale.ROOT, "%s: %s%s", replica.getName(), response.getResponse(), System.lineSeparator()));
+      } catch (SolrServerException e) {
+        log.warn("Unable to ger replication details for replica {}", replica.getName(), e);
+      }
+    }
   }
 
   static RequestStatusState getRequestStateAfterCompletion(String requestId, int waitForSeconds, SolrClient client)
