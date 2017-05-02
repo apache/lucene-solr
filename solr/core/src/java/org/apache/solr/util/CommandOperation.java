@@ -24,6 +24,7 @@ import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import org.apache.lucene.util.IOUtils;
 import org.apache.solr.common.SolrException;
@@ -218,11 +219,17 @@ public class CommandOperation {
     return errors;
   }
 
+  public static List<CommandOperation> parse(Reader rdr) throws IOException {
+    return parse(rdr, Collections.emptySet());
 
+  }
   /**
    * Parse the command operations into command objects
+   * @param rdr The payload
+   * @param singletonCommands  commands that cannot be repeated
+   * @return parsed list of commands
    */
-  public static List<CommandOperation> parse(Reader rdr) throws IOException {
+  public static List<CommandOperation> parse(Reader rdr, Set<String> singletonCommands) throws IOException {
     JSONParser parser = new JSONParser(rdr);
 
     ObjectBuilder ob = new ObjectBuilder(parser);
@@ -237,7 +244,7 @@ public class CommandOperation {
       Object key = ob.getKey();
       ev = parser.nextEvent();
       Object val = ob.getVal();
-      if (val instanceof List) {
+      if (val instanceof List && !singletonCommands.contains(key)) {
         List list = (List) val;
         for (Object o : list) {
           if (!(o instanceof Map)) {
@@ -280,7 +287,18 @@ public class CommandOperation {
     }
   }
 
-  public static List<CommandOperation> readCommands(Iterable<ContentStream> streams, SolrQueryResponse resp)
+  public static List<CommandOperation> readCommands(Iterable<ContentStream> streams, SolrQueryResponse resp) throws IOException {
+    return readCommands(streams, resp, Collections.emptySet());
+  }
+
+  /**Read commands from request streams
+   * @param streams the streams
+   * @param resp solr query response
+   * @param singletonCommands , commands that cannot be repeated
+   * @return parsed list of commands
+   * @throws IOException
+   */
+  public static List<CommandOperation> readCommands(Iterable<ContentStream> streams, SolrQueryResponse resp, Set<String> singletonCommands)
       throws IOException {
     if (streams == null) {
       throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "missing content stream");
@@ -288,7 +306,7 @@ public class CommandOperation {
     ArrayList<CommandOperation> ops = new ArrayList<>();
 
     for (ContentStream stream : streams)
-      ops.addAll(parse(stream.getReader()));
+      ops.addAll(parse(stream.getReader(), singletonCommands));
     List<Map> errList = CommandOperation.captureErrors(ops);
     if (!errList.isEmpty()) {
       resp.add(CommandOperation.ERR_MSGS, errList);

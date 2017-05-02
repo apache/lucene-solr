@@ -340,16 +340,16 @@ public class AutoScalingHandlerTest extends SolrCloudTestCase {
     }
 
     // add multiple policies
-    String setPolicyCommand =  "{" +
-        "'set-policy': {" +
-        "'name' : 'default'," +
-        "'preferences': [" +
-        "{'minimize': 'replicas','precision': 3}," +
-        "{'maximize': 'freedisk','precision': 100}]" +
-        "}, " +
-        "'set-policy': {" +
-        "'name' : 'policy1'," +
-        "'preferences': [{'minimize': 'cpu','precision': 10}]}}";
+    String setPolicyCommand =  "{'set-policy': {" +
+        "    'xyz':[" +
+        "      {'replica':'<2', 'shard': '#EACH', 'node': '#ANY'}," +
+        "      {'nodeRole':'!overseer', 'replica':'#ANY'}" +
+        "    ]," +
+        "    'policy1':[" +
+        "      {'cores':'<2', 'node':'#ANY'}," +
+        "      {'replica':'<2', 'shard': '#EACH', 'node': '#ANY'}" +
+        "    ]" +
+        "}}";
     req = new AutoScalingRequest(SolrRequest.METHOD.POST, path, setPolicyCommand);
     response = solrClient.request(req);
     assertEquals(response.get("result").toString(), "success");
@@ -357,41 +357,25 @@ public class AutoScalingHandlerTest extends SolrCloudTestCase {
     loaded = ZkNodeProps.load(data);
     Map<String, Object> policies = (Map<String, Object>) loaded.get("policies");
     assertNotNull(policies);
-    assertNotNull(policies.get("default"));
+    assertNotNull(policies.get("xyz"));
     assertNotNull(policies.get("policy1"));
 
     // update default policy
-    setPolicyCommand = "{" +
-        "'set-policy': {" +
-        "'name' : 'default'," +
-        "'preferences': [" +
-        "{" +
-        "'minimize': 'replicas'," +
-        "'precision': 3" +
-        "}]}}";
+    setPolicyCommand = "{'set-policy': {" +
+        "    'xyz':[" +
+        "      {'replica':'<2', 'shard': '#EACH', 'node': '#ANY'}" +
+        "    ]" +
+        "}}";
     req = new AutoScalingRequest(SolrRequest.METHOD.POST, path, setPolicyCommand);
     response = solrClient.request(req);
     assertEquals(response.get("result").toString(), "success");
     data = zkClient().getData(SOLR_AUTOSCALING_CONF_PATH, null, null, true);
     loaded = ZkNodeProps.load(data);
     policies = (Map<String, Object>) loaded.get("policies");
-    Map<String,Object> properties = (Map<String, Object>) policies.get("default");
-    List preferences = (List) properties.get("preferences");
-    assertEquals(1, preferences.size());
+    List conditions = (List) policies.get("xyz");
+    assertEquals(1, conditions.size());
 
-    // policy is not valid
-    setPolicyCommand = "{" +
-        "'set-policy': {" +
-        "'name' : 'default'" +
-        "}}";
-    req = new AutoScalingRequest(SolrRequest.METHOD.POST, path, setPolicyCommand);
-    try {
-      response = solrClient.request(req);
-      fail("Adding a policy without conditions or preferences should have failed");
-    } catch (HttpSolrClient.RemoteSolrException e) {
-      // expected
-    }
-
+    // remove policy
     String removePolicyCommand = "{remove-policy : policy1}";
     req = new AutoScalingRequest(SolrRequest.METHOD.POST, path, removePolicyCommand);
     response = solrClient.request(req);
@@ -400,6 +384,50 @@ public class AutoScalingHandlerTest extends SolrCloudTestCase {
     loaded = ZkNodeProps.load(data);
     policies = (Map<String, Object>) loaded.get("policies");
     assertNull(policies.get("policy1"));
+
+    // set preferences
+    String setPreferencesCommand = "{" +
+        " 'set-cluster-preferences': [" +
+        "        {'minimize': 'replicas', 'precision': 3}," +
+        "        {'maximize': 'freedisk','precision': 100}," +
+        "        {'minimize': 'cpu','precision': 10}]" +
+        "}";
+    req = new AutoScalingRequest(SolrRequest.METHOD.POST, path, setPreferencesCommand);
+    response = solrClient.request(req);
+    assertEquals(response.get("result").toString(), "success");
+    data = zkClient().getData(SOLR_AUTOSCALING_CONF_PATH, null, null, true);
+    loaded = ZkNodeProps.load(data);
+    List preferences = (List) loaded.get("cluster-preferences");
+    assertEquals(3, preferences.size());
+
+    // set preferences
+    setPreferencesCommand = "{" +
+        " 'set-cluster-preferences': [" +
+        "        {'minimize': 'cpu','precision': 10}]" +
+        "}";
+    req = new AutoScalingRequest(SolrRequest.METHOD.POST, path, setPreferencesCommand);
+    response = solrClient.request(req);
+    assertEquals(response.get("result").toString(), "success");
+    data = zkClient().getData(SOLR_AUTOSCALING_CONF_PATH, null, null, true);
+    loaded = ZkNodeProps.load(data);
+    preferences = (List) loaded.get("cluster-preferences");
+    assertEquals(1, preferences.size());
+
+    String setClusterPolicyCommand = "{" +
+        " 'set-cluster-policy': [" +
+        "      {'cores':'<10', 'node':'#ANY'}," +
+        "      {'replica':'<2', 'shard': '#EACH', 'node': '#ANY'}," +
+        "      {'nodeRole':'!overseer', 'replica':'#ANY'}" +
+        "    ]" +
+        "}";
+    req = new AutoScalingRequest(SolrRequest.METHOD.POST, path, setClusterPolicyCommand);
+    response = solrClient.request(req);
+    assertEquals(response.get("result").toString(), "success");
+    data = zkClient().getData(SOLR_AUTOSCALING_CONF_PATH, null, null, true);
+    loaded = ZkNodeProps.load(data);
+    List clusterPolicy = (List) loaded.get("cluster-policy");
+    assertNotNull(clusterPolicy);
+    assertEquals(3, clusterPolicy.size());
   }
 
   static class AutoScalingRequest extends SolrRequest {

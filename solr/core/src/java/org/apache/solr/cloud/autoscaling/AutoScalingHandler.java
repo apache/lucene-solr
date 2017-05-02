@@ -30,6 +30,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
+import com.google.common.collect.ImmutableSet;
 import org.apache.solr.api.Api;
 import org.apache.solr.api.ApiBag;
 import org.apache.solr.common.SolrException;
@@ -59,6 +60,8 @@ public class AutoScalingHandler extends RequestHandlerBase implements Permission
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   protected final CoreContainer container;
   private final List<Map<String, String>> DEFAULT_ACTIONS = new ArrayList<>(3);
+  private static ImmutableSet<String> singletonCommands = ImmutableSet.of("set-cluster-preferences", "set-cluster-policy");
+
 
   public AutoScalingHandler(CoreContainer container) {
     this.container = container;
@@ -81,7 +84,7 @@ public class AutoScalingHandler extends RequestHandlerBase implements Permission
     if (req.getContentStreams() == null) {
       throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "No contentStream");
     }
-    List<CommandOperation> ops = CommandOperation.readCommands(req.getContentStreams(), rsp);
+    List<CommandOperation> ops = CommandOperation.readCommands(req.getContentStreams(), rsp, singletonCommands);
     if (ops == null) {
       // errors have already been added to the response so there's nothing left to do
       return;
@@ -111,8 +114,35 @@ public class AutoScalingHandler extends RequestHandlerBase implements Permission
           break;
         case "remove-policy":
           handleRemovePolicy(req, rsp, op);
+          break;
+        case "set-cluster-preferences":
+          handleSetClusterPreferences(req, rsp, op);
+          break;
+        case "set-cluster-policy":
+          handleSetClusterPolicy(req, rsp, op);
+          break;
+        default:
+          throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Unknown command: " + op.name);
       }
     }
+  }
+
+  private void handleSetClusterPolicy(SolrQueryRequest req, SolrQueryResponse rsp, CommandOperation op) throws KeeperException, InterruptedException {
+    List clusterPolicy = (List) op.getCommandData();
+    if (clusterPolicy == null || !(clusterPolicy instanceof List)) {
+      throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "A list of cluster policies was not found");
+    }
+    zkSetClusterPolicy(container.getZkController().getZkStateReader(), clusterPolicy);
+    rsp.getValues().add("result", "success");
+  }
+
+  private void handleSetClusterPreferences(SolrQueryRequest req, SolrQueryResponse rsp, CommandOperation op) throws KeeperException, InterruptedException {
+    List preferences = (List) op.getCommandData();
+    if (preferences == null || !(preferences instanceof List)) {
+      throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "A list of cluster preferences not found");
+    }
+    zkSetPreferences(container.getZkController().getZkStateReader(), preferences);
+    rsp.getValues().add("result", "success");
   }
 
   private void handleRemovePolicy(SolrQueryRequest req, SolrQueryResponse rsp, CommandOperation op) throws KeeperException, InterruptedException {
@@ -132,27 +162,16 @@ public class AutoScalingHandler extends RequestHandlerBase implements Permission
   }
 
   private void handleSetPolicies(SolrQueryRequest req, SolrQueryResponse rsp, CommandOperation op) throws KeeperException, InterruptedException {
-    String policyName = op.getStr("name");
-
-    if (policyName == null || policyName.trim().length() == 0) {
-      throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "The policy name cannot be null or empty");
-    }
-
-    Set<String> keys = op.getDataMap().keySet();
-    boolean isValid = false;
-    for (String key : keys) {
-      if (key.equals("conditions") || key.equals("preferences")) isValid = true;
-      else if(!key.equals("name")){
-        isValid = false;
-        break;
+    Map<String, Object> policies = op.getDataMap();
+    for (Map.Entry<String, Object> policy: policies.entrySet()) {
+      String policyName = policy.getKey();
+      if (policyName == null || policyName.trim().length() == 0) {
+        throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "The policy name cannot be null or empty");
       }
     }
-    if (!isValid) {
-      throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,
-          "No conditions or peferences are specified for the policy " + policyName);
-    }
 
-    zkSetPolicies(container.getZkController().getZkStateReader(), policyName, op.getValuesExcluding("name"));
+    zkSetPolicies(container.getZkController().getZkStateReader(), null, policies);
+
     rsp.getValues().add("result", "success");
   }
 
@@ -442,7 +461,7 @@ public class AutoScalingHandler extends RequestHandlerBase implements Permission
     }
   }
 
-  private void zkSetPolicies(ZkStateReader reader, String policyName, Map<String, Object> policyProperties) throws KeeperException, InterruptedException {
+  private void zkSetPolicies(ZkStateReader reader, String policyBeRemoved, Map<String, Object> newPolicies) throws KeeperException, InterruptedException {
     while (true) {
       Stat stat = new Stat();
       ZkNodeProps loaded = null;
@@ -450,12 +469,46 @@ public class AutoScalingHandler extends RequestHandlerBase implements Permission
       loaded = ZkNodeProps.load(data);
       Map<String, Object> policies = (Map<String, Object>) loaded.get("policies");
       if (policies == null) policies = new HashMap<>(1);
-      if (policyProperties != null) {
-        policies.put(policyName, policyProperties);
+      if (newPolicies != null) {
+        policies.putAll(newPolicies);
       } else {
-        policies.remove(policyName);
+        policies.remove(policyBeRemoved);
       }
       loaded = loaded.plus("policies", policies);
+      try {
+        reader.getZkClient().setData(SOLR_AUTOSCALING_CONF_PATH, Utils.toJSON(loaded), stat.getVersion(), true);
+      } catch (KeeperException.BadVersionException bve) {
+        // somebody else has changed the configuration so we must retry
+        continue;
+      }
+      break;
+    }
+  }
+
+  private void zkSetPreferences(ZkStateReader reader, List preferences) throws KeeperException, InterruptedException {
+    while (true) {
+      Stat stat = new Stat();
+      ZkNodeProps loaded = null;
+      byte[] data = reader.getZkClient().getData(SOLR_AUTOSCALING_CONF_PATH, null, stat, true);
+      loaded = ZkNodeProps.load(data);
+      loaded = loaded.plus("cluster-preferences", preferences);
+      try {
+        reader.getZkClient().setData(SOLR_AUTOSCALING_CONF_PATH, Utils.toJSON(loaded), stat.getVersion(), true);
+      } catch (KeeperException.BadVersionException bve) {
+        // somebody else has changed the configuration so we must retry
+        continue;
+      }
+      break;
+    }
+  }
+
+  private void zkSetClusterPolicy(ZkStateReader reader, List clusterPolicy) throws KeeperException, InterruptedException {
+    while (true) {
+      Stat stat = new Stat();
+      ZkNodeProps loaded = null;
+      byte[] data = reader.getZkClient().getData(SOLR_AUTOSCALING_CONF_PATH, null, stat, true);
+      loaded = ZkNodeProps.load(data);
+      loaded = loaded.plus("cluster-policy", clusterPolicy);
       try {
         reader.getZkClient().setData(SOLR_AUTOSCALING_CONF_PATH, Utils.toJSON(loaded), stat.getVersion(), true);
       } catch (KeeperException.BadVersionException bve) {

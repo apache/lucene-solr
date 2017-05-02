@@ -182,33 +182,34 @@
     },
     "set-policy" : {
       "type":"object",
-      "description": "The set-policy command allows you to add and update policies",
+      "description": "The set-policy command allows you to add and update policies that apply to collections",
+      "patternProperties": {
+        "^.+$": {
+          "type": "array"
+        }
+      },
+      "additionalProperties": false
+    },
+    "set-cluster-policy" : {
+      "type" : "array",
+      "description" : "The set-cluster-policy command allows you to add and update cluster-level policy that acts as the base for all collection level policies, if any"
+    },
+    "set-cluster-preferences" : {
+      "type" : "array",
+      "description" : "The set-cluster-preferences command allows you to add and update cluster-level preferences that are used to sort nodes for selection in cluster operations"
+    },
+    "remove-policy": {
+      "description": "Remove a policy",
+      "type": "object",
       "properties": {
         "name": {
           "type": "string",
-          "description": "The name of the policy"
-        },
-        "conditions" : {
-          "type": "array",
-          "description": "Conditions of the policy"
-        },
-        "preferences": {
-          "type": "array",
-          "description": "Preferences of the policy"
+          "description": "The name of the policy to be removed"
         }
       },
-      "oneOf": [{
-        "required": ["name", "preferences"]
-      },{
-        "required": ["name", "conditions"]
-      },{
-        "required": ["name", "preferences", "conditions"]
-      }],
-      "additionalProperties": false
-    },
-    "remove-policy": {
-      "description": "The remove-policy command allows you to remove a policy",
-      "type": "string"
+      "required": [
+        "name"
+      ]
     }
   }
 }
