@@ -388,7 +388,7 @@ public class AutoScalingHandlerTest extends SolrCloudTestCase {
     // set preferences
     String setPreferencesCommand = "{" +
         " 'set-cluster-preferences': [" +
-        "        {'minimize': 'replicas', 'precision': 3}," +
+        "        {'minimize': 'cores', 'precision': 3}," +
         "        {'maximize': 'freedisk','precision': 100}," +
         "        {'minimize': 'cpu','precision': 10}]" +
         "}";
