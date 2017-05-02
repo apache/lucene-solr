@@ -459,11 +459,33 @@ valued. -->
         unknown fields indexed and/or stored by default --> 
    <!--dynamicField name="*" type="ignored" /-->
    
+  <!-- For testing payload function -->
+  <dynamicField name="*_dpf" type="delimited_payloads_float" indexed="true"  stored="true"/>
+  <dynamicField name="*_dpi" type="delimited_payloads_int" indexed="true"  stored="true"/>
+  <dynamicField name="*_dps" type="delimited_payloads_string" indexed="true"  stored="true"/>
+  <fieldType name="delimited_payloads_float" class="solr.TextField" positionIncrementGap="100">
+    <analyzer>
+      <tokenizer class="solr.MockTokenizerFactory"/>
+      <filter class="solr.DelimitedPayloadTokenFilterFactory" encoder="float"/>
+    </analyzer>
+  </fieldType>
+  <fieldType name="delimited_payloads_int" class="solr.TextField" positionIncrementGap="100">
+    <analyzer>
+      <tokenizer class="solr.MockTokenizerFactory"/>
+      <filter class="solr.DelimitedPayloadTokenFilterFactory" encoder="integer"/>
+    </analyzer>
+  </fieldType>
+  <fieldType name="delimited_payloads_string" class="solr.TextField" positionIncrementGap="100">
+    <analyzer>
+      <tokenizer class="solr.MockTokenizerFactory"/>
+      <filter class="solr.DelimitedPayloadTokenFilterFactory" encoder="identity"/>
+    </analyzer>
+  </fieldType>
 
- <!-- Field to use to determine and enforce document uniqueness. 
-      Unless this field is marked with required="false", it will be a required field
-   -->
- <uniqueKey>id</uniqueKey>
+  <!-- Field to use to determine and enforce document uniqueness.
+       Unless this field is marked with required="false", it will be a required field
+    -->
+  <uniqueKey>id</uniqueKey>
 
  <!-- field for the QueryParser to use when an explicit fieldname is absent -->
  <defaultSearchField>text</defaultSearchField>

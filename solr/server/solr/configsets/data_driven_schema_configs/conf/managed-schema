@@ -177,6 +177,11 @@
     <dynamicField name="*_tdt" type="tdate"  indexed="true"  stored="true"/>
     <dynamicField name="*_tdts" type="tdates"  indexed="true"  stored="true"/>
 
+    <!-- payloaded dynamic fields -->
+    <dynamicField name="*_dpf" type="delimited_payloads_float" indexed="true"  stored="true"/>
+    <dynamicField name="*_dpi" type="delimited_payloads_int" indexed="true"  stored="true"/>
+    <dynamicField name="*_dps" type="delimited_payloads_string" indexed="true"  stored="true"/>
+
     <dynamicField name="*_c"   type="currency" indexed="true"  stored="true"/>
 
     <dynamicField name="ignored_*" type="ignored" multiValued="true"/>
@@ -599,6 +604,26 @@
     -->
     <fieldType name="location_rpt" class="solr.SpatialRecursivePrefixTreeFieldType"
                geo="true" distErrPct="0.025" maxDistErr="0.001" distanceUnits="kilometers" />
+
+    <!-- Payloaded field types -->
+    <fieldType name="delimited_payloads_float" stored="false" indexed="true" class="solr.TextField">
+      <analyzer>
+        <tokenizer class="solr.WhitespaceTokenizerFactory"/>
+        <filter class="solr.DelimitedPayloadTokenFilterFactory" encoder="float"/>
+      </analyzer>
+    </fieldType>
+    <fieldType name="delimited_payloads_int" stored="false" indexed="true" class="solr.TextField">
+      <analyzer>
+        <tokenizer class="solr.WhitespaceTokenizerFactory"/>
+        <filter class="solr.DelimitedPayloadTokenFilterFactory" encoder="integer"/>
+      </analyzer>
+    </fieldType>
+    <fieldType name="delimited_payloads_string" stored="false" indexed="true" class="solr.TextField">
+      <analyzer>
+        <tokenizer class="solr.WhitespaceTokenizerFactory"/>
+        <filter class="solr.DelimitedPayloadTokenFilterFactory" encoder="identity"/>
+      </analyzer>
+    </fieldType>
 
     <!-- Money/currency field type. See http://wiki.apache.org/solr/MoneyFieldType
         Parameters:

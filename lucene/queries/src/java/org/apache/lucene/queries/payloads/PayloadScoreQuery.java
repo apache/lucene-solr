@@ -41,8 +41,7 @@ import org.apache.lucene.search.spans.Spans;
 import org.apache.lucene.util.BytesRef;
 
 /**
- * A Query class that uses a {@link PayloadFunction} to modify the score of a
- * wrapped SpanQuery
+ * A Query class that uses a {@link PayloadFunction} to modify the score of a wrapped SpanQuery
  *
  * NOTE: In order to take advantage of this with the default scoring implementation
  * ({@link ClassicSimilarity}), you must override {@link ClassicSimilarity#scorePayload(int, int, int, BytesRef)},
@@ -94,7 +93,15 @@ public class PayloadScoreQuery extends SpanQuery {
 
   @Override
   public String toString(String field) {
-    return "PayloadScoreQuery[" + wrappedQuery.toString(field) + "; " + function.getClass().getSimpleName() + "; " + includeSpanScore + "]";
+    StringBuilder buffer = new StringBuilder();
+    buffer.append("PayloadScoreQuery(");
+    buffer.append(wrappedQuery.toString(field));
+    buffer.append(", function: ");
+    buffer.append(function.getClass().getSimpleName());
+    buffer.append(", includeSpanScore: ");
+    buffer.append(includeSpanScore);
+    buffer.append(")");
+    return buffer.toString();
   }
 
   @Override
