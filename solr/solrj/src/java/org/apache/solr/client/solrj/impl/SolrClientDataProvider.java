@@ -210,7 +210,7 @@ public class SolrClientDataProvider implements ClusterDataProvider, MapWriter {
   public void writeMap(EntryWriter ew) throws IOException {
     ew.put("liveNodes", liveNodes);
     ew.put("replicaInfo", Utils.getDeepCopy(data, 5));
-    ew.put("ndeValues", nodeVsTags);
+    ew.put("nodeValues", nodeVsTags);
 
   }
 }
