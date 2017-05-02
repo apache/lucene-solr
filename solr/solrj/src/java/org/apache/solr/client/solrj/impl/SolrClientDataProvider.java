@@ -22,6 +22,7 @@ import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -98,7 +99,7 @@ public class SolrClientDataProvider implements ClusterDataProvider {
 
   @Override
   public Map<String, Map<String, List<ReplicaInfo>>> getReplicaInfo(String node, Collection<String> keys) {
-    return data.get(node);//todo fill other details
+    return data.getOrDefault(node, Collections.emptyMap());//todo fill other details
   }
 
   @Override
