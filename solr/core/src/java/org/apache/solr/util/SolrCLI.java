@@ -747,7 +747,11 @@ public class SolrCLI {
   }
   
   /**
-   * Helper function for reading an Object of unknown type from a JSON Object tree. 
+   * Helper function for reading an Object of unknown type from a JSON Object tree.
+   * 
+   * To find a path to a child that starts with a slash (e.g. queryHandler named /query)
+   * you must escape the slash. For instance /config/requestHandler/\/query/defaults/echoParams
+   * would get the echoParams value for the "/query" request handler.
    */
   @SuppressWarnings({"rawtypes", "unchecked"})
   public static Object atPath(String jsonPath, Map<String,Object> json) {
@@ -760,9 +764,15 @@ public class SolrCLI {
     
     Map<String,Object> parent = json;      
     Object result = null;
-    String[] path = jsonPath.split("/");
+    String[] path = jsonPath.split("(?<![\\\\])/"); // Break on all slashes _not_ preceeded by a backslash
     for (int p=1; p < path.length; p++) {
-      Object child = parent.get(path[p]);      
+      String part = path[p];
+      
+      if (part.startsWith("\\")) {
+        part = part.substring(1);
+      }
+
+      Object child = parent.get(part);      
       if (child == null)
         break;
       
