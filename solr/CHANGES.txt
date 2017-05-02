@@ -271,6 +271,8 @@ Bug Fixes
 * SOLR-10500: nested child docs are adopted by neighbour when several parents come in update/json/docs 
   (Alexey Suprun,noble via Mikhail Khludnev)
 
+* SOLR-10316: Unloading a core can remove a ZK SolrCore registration entry for the wrong SolrCore. (Mark Miller)
+
 Other Changes
 ----------------------
 

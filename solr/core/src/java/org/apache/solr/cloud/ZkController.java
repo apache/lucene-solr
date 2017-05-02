@@ -1286,6 +1286,7 @@ public class ZkController {
         OverseerAction.DELETECORE.toLower(), ZkStateReader.CORE_NAME_PROP, coreName,
         ZkStateReader.NODE_NAME_PROP, getNodeName(),
         ZkStateReader.COLLECTION_PROP, cloudDescriptor.getCollectionName(),
+        ZkStateReader.BASE_URL_PROP, getBaseUrl(),
         ZkStateReader.CORE_NODE_NAME_PROP, coreNodeName);
     overseerJobQueue.offer(Utils.toJSON(m));
   }
