@@ -25,6 +25,7 @@ import javax.xml.transform.stream.StreamSource;
 import java.io.Closeable;
 import java.io.File;
 import java.io.IOException;
+import java.io.PrintStream;
 import java.io.StringReader;
 import java.io.StringWriter;
 import java.lang.invoke.MethodHandles;
@@ -642,9 +643,13 @@ public class SolrZkClient implements Closeable {
    */
   public void printLayoutToStdOut() throws KeeperException,
       InterruptedException {
+    printLayoutToStream(System.out);
+  }
+  public void printLayoutToStream(PrintStream out) throws KeeperException,
+      InterruptedException {
     StringBuilder sb = new StringBuilder();
     printLayout("/", 0, sb);
-    System.out.println(sb.toString());
+    out.println(sb.toString());
   }
 
   public static String prettyPrint(String input, int indent) {

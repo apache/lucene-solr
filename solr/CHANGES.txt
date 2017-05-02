@@ -202,6 +202,8 @@ New Features
 * SOLR-1485: Add payload support with payload() value source and {!payload_score} and {!payload_check}
   query parsers.  (Erik Hatcher)
 
+* SOLR-10430: Add ls command to ZkCLI for listing only sub-directories. (Peter Szantai-Kis via Mark Miller)
+
 Optimizations
 ----------------------
 
