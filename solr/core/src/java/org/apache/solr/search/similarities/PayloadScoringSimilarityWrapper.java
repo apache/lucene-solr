@@ -46,13 +46,13 @@ public class PayloadScoringSimilarityWrapper extends Similarity {
   }
 
   @Override
-  public long computeNorm(FieldInvertState state) {
-    return delegate.computeNorm(state);
+  public SimWeight computeWeight(CollectionStatistics collectionStats, TermStatistics... termStats) {
+    return delegate.computeWeight(collectionStats, termStats);
   }
 
   @Override
-  public SimWeight computeWeight(float boost, CollectionStatistics collectionStats, TermStatistics... termStats) {
-    return delegate.computeWeight(boost, collectionStats, termStats);
+  public long computeNorm(FieldInvertState state) {
+    return delegate.computeNorm(state);
   }
 
   @Override
@@ -60,7 +60,7 @@ public class PayloadScoringSimilarityWrapper extends Similarity {
     final SimScorer simScorer = delegate.simScorer(weight,context);
     SimScorer payloadSimScorer = new SimScorer() {
       @Override
-      public float score(int doc, float freq) throws IOException {
+      public float score(int doc, float freq) {
         return simScorer.score(doc,freq);
       }
 
