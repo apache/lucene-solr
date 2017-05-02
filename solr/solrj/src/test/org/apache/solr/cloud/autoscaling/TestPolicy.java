@@ -271,7 +271,10 @@ public class TestPolicy extends SolrTestCaseJ4 {
         .hint(Policy.Suggester.Hint.TARGET_NODE, "127.0.0.1:60099_solr");
     Map op = suggester.getOperation();
     assertNotNull(op);
-
+    session = suggester.getSession();
+    suggester = session.getSuggester(MOVEREPLICA).hint(Hint.TARGET_NODE, "127.0.0.1:60099_solr");
+    op = suggester.getOperation();
+    assertNotNull(op);
   }
 
  /* public void testOtherTag(){
