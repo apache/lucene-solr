@@ -173,7 +173,7 @@ public class SpanPayloadCheckQuery extends SpanQuery {
   @Override
   public String toString(String field) {
     StringBuilder buffer = new StringBuilder();
-    buffer.append("spanPayCheck(");
+    buffer.append("SpanPayloadCheckQuery(");
     buffer.append(match.toString(field));
     buffer.append(", payloadRef: ");
     for (BytesRef bytes : payloadToMatch) {
