@@ -96,9 +96,17 @@ public class Clause implements MapWriter, Comparable<Clause> {
 
   @Override
   public int compareTo(Clause that) {
-    int v = Integer.compare(this.tag.op.priority, that.tag.op.priority);
-    if (v != 0) return v;
-    return Integer.compare(this.replica.op.priority, that.replica.op.priority);
+    try {
+      int v = Integer.compare(this.tag.op.priority, that.tag.op.priority);
+      if (v != 0) return v;
+      return this.isPerCollectiontag() && that.isPerCollectiontag() ?
+          Integer.compare(this.replica.op.priority, that.replica.op.priority) :
+          0;
+    } catch (NullPointerException e) {
+      System.out.println("this: " + Utils.toJSONString(this));
+      System.out.println("thAt: " + Utils.toJSONString(that));
+      throw e;
+    }
   }
 
   static class Condition {
@@ -164,18 +172,22 @@ public class Clause implements MapWriter, Comparable<Clause> {
 
   TestStatus test(Row row) {
     AtomicReference<TestStatus> result = new AtomicReference<>(NOT_APPLICABLE);
+    if (isPerCollectiontag()) {
 
-    for (Map.Entry<String, Map<String, List<ReplicaInfo>>> colls : row.replicaInfo.entrySet()) {
-      if (result.get() == FAIL) break;
-      if (!collection.isPass(colls.getKey())) continue;
-      int count = 0;
-      for (Map.Entry<String, List<ReplicaInfo>> shards : colls.getValue().entrySet()) {
-        if (!shard.isPass(shards.getKey()) || result.get() == FAIL) break;
-        count += shards.getValue().size();
-        if (shard.val.equals(EACH)) testReplicaCount(row, result, count);
-        if (EACH.equals(shard.val)) count = 0;
+      for (Map.Entry<String, Map<String, List<ReplicaInfo>>> colls : row.replicaInfo.entrySet()) {
+        if (result.get() == FAIL) break;
+        if (!collection.isPass(colls.getKey())) continue;
+        int count = 0;
+        for (Map.Entry<String, List<ReplicaInfo>> shards : colls.getValue().entrySet()) {
+          if (!shard.isPass(shards.getKey()) || result.get() == FAIL) break;
+          count += shards.getValue().size();
+          if (shard.val.equals(EACH)) testReplicaCount(row, result, count);
+          if (EACH.equals(shard.val)) count = 0;
+        }
+        if (shard.val.equals(ANY)) testReplicaCount(row, result, count);
       }
-      if (shard.val.equals(ANY)) testReplicaCount(row, result, count);
+    } else {
+      if (!tag.isPass(row)) result.set(TestStatus.FAIL);
     }
     if (result.get() == FAIL) row.violations.add(this);
     return result.get();
@@ -183,7 +195,7 @@ public class Clause implements MapWriter, Comparable<Clause> {
   }
 
   private void testReplicaCount(Row row, AtomicReference<TestStatus> result, int count) {
-    if("node".equals(tag.name)) if(!tag.isPass(row.node)) return;
+    if ("node".equals(tag.name)) if (!tag.isPass(row.node)) return;
     boolean checkCount = replica.op.match(replica.val, 0) != PASS || count > 0;
     if (replica.op == WILDCARD && count > 0 && !tag.isPass(row)) {//nodeRole:'!overseer', strict:false
       result.set(FAIL);
