@@ -17,7 +17,6 @@
 
 package org.apache.solr.util;
 
-import org.apache.lucene.search.similarities.Similarity;
 import org.apache.lucene.util.BytesRef;
 
 /**
