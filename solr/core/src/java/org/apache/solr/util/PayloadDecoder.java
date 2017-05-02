@@ -24,5 +24,5 @@ import org.apache.lucene.util.BytesRef;
  * Mirrors SimScorer#computePayloadFactor's signature
  */
 public interface PayloadDecoder {
-  float decode(Similarity.SimScorer simScorer, int doc, int start, int end, BytesRef payload);
+  float decode(int doc, int start, int end, BytesRef payload);
 }

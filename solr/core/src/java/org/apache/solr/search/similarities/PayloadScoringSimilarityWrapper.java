@@ -71,7 +71,7 @@ public class PayloadScoringSimilarityWrapper extends Similarity {
 
       @Override
       public float computePayloadFactor(int doc, int start, int end, BytesRef payload) {
-        return decoder.decode(simScorer, doc, start, end, payload);
+        return decoder.decode(doc, start, end, payload);
       }
     };
 

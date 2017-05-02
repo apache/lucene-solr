@@ -33,7 +33,6 @@ import org.apache.lucene.queries.payloads.AveragePayloadFunction;
 import org.apache.lucene.queries.payloads.MaxPayloadFunction;
 import org.apache.lucene.queries.payloads.MinPayloadFunction;
 import org.apache.lucene.queries.payloads.PayloadFunction;
-import org.apache.lucene.search.similarities.Similarity;
 import org.apache.lucene.search.spans.SpanNearQuery;
 import org.apache.lucene.search.spans.SpanQuery;
 import org.apache.lucene.search.spans.SpanTermQuery;
@@ -69,15 +68,15 @@ public class PayloadUtils {
   }
 
   public static PayloadDecoder getPayloadDecoder(FieldType fieldType) {
-    PayloadDecoder decoder = Similarity.SimScorer::computePayloadFactor;  // default to SimScorer's
+    PayloadDecoder decoder = null;
 
     String encoder = getPayloadEncoder(fieldType);
 
     if ("integer".equals(encoder)) {
-      decoder = (Similarity.SimScorer simScorer, int doc, int start, int end, BytesRef payload) -> PayloadHelper.decodeInt(payload.bytes, payload.offset);
+      decoder = (int doc, int start, int end, BytesRef payload) -> PayloadHelper.decodeInt(payload.bytes, payload.offset);
     }
     if ("float".equals(encoder)) {
-      decoder = (Similarity.SimScorer simScorer, int doc, int start, int end, BytesRef payload) -> PayloadHelper.decodeFloat(payload.bytes, payload.offset);
+      decoder = (int doc, int start, int end, BytesRef payload) -> PayloadHelper.decodeFloat(payload.bytes, payload.offset);
     }
     // encoder could be "identity" at this point, in the case of DelimitedTokenFilterFactory encoder="identity"
 
