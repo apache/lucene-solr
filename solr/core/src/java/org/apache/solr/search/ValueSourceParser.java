@@ -739,6 +739,11 @@ public abstract class ValueSourceParser implements NamedListInitializedPlugin {
 
         FieldType fieldType = fp.getReq().getCore().getLatestSchema().getFieldTypeNoEx(tinfo.field);
         PayloadDecoder decoder = PayloadUtils.getPayloadDecoder(fieldType);
+
+        if (decoder==null) {
+          throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "No payload decoder found for field: " + tinfo.field);
+        }
+
         return new FloatPayloadValueSource(
             tinfo.field,
             tinfo.val,

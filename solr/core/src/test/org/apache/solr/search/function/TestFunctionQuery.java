@@ -465,28 +465,29 @@ public class TestFunctionQuery extends SolrTestCaseJ4 {
   public void testPayloadFunction() {
     clearIndex();
 
-    assertU(adoc("id","1", "vals_dp","A|1.0 B|2.0 C|3.0 mult|50 mult|100 x|22 x|37 x|19", "default_f", "42.0"));
+    assertU(adoc("id","1", "vals_dpf","A|1.0 B|2.0 C|3.0 mult|50 mult|100 x|22 x|37 x|19", "default_f", "42.0"));
     assertU(commit());
-    assertQ(req("fl","*,score","q", "{!func}payload(vals_dp,A)"), "//float[@name='score']='1.0'");
-    assertQ(req("fl","*,score","q", "{!func}payload(vals_dp,B)"), "//float[@name='score']='2.0'");
-    assertQ(req("fl","*,score","q", "{!func}payload(vals_dp,C,0)"), "//float[@name='score']='3.0'");
+
+    assertQ(req("fl","*,score","q", "{!func}payload(vals_dpf,A)"), "//float[@name='score']='1.0'");
+    assertQ(req("fl","*,score","q", "{!func}payload(vals_dpf,B)"), "//float[@name='score']='2.0'");
+    assertQ(req("fl","*,score","q", "{!func}payload(vals_dpf,C,0)"), "//float[@name='score']='3.0'");
 
     // Test defaults, constant, field, and function value sources
-    assertQ(req("fl","*,score","q", "{!func}payload(vals_dp,D,37.0)"), "//float[@name='score']='37.0'");
-    assertQ(req("fl","*,score","q", "{!func}payload(vals_dp,E,default_f)"), "//float[@name='score']='42.0'");
-    assertQ(req("fl","*,score","q", "{!func}payload(vals_dp,E,mul(2,default_f))"), "//float[@name='score']='84.0'");
+    assertQ(req("fl","*,score","q", "{!func}payload(vals_dpf,D,37.0)"), "//float[@name='score']='37.0'");
+    assertQ(req("fl","*,score","q", "{!func}payload(vals_dpf,E,default_f)"), "//float[@name='score']='42.0'");
+    assertQ(req("fl","*,score","q", "{!func}payload(vals_dpf,E,mul(2,default_f))"), "//float[@name='score']='84.0'");
 
     // Test PayloadFunction's for multiple terms, average being the default
-    assertQ(req("fl","*,score","q", "{!func}payload(vals_dp,mult,0.0,min)"), "//float[@name='score']='50.0'");
-    assertQ(req("fl","*,score","q", "{!func}payload(vals_dp,mult,0.0,max)"), "//float[@name='score']='100.0'");
-    assertQ(req("fl","*,score","q", "{!func}payload(vals_dp,mult,0.0,average)"), "//float[@name='score']='75.0'");
-    assertQ(req("fl","*,score","q", "{!func}payload(vals_dp,mult)"), "//float[@name='score']='75.0'");
+    assertQ(req("fl","*,score","q", "{!func}payload(vals_dpf,mult,0.0,min)"), "//float[@name='score']='50.0'");
+    assertQ(req("fl","*,score","q", "{!func}payload(vals_dpf,mult,0.0,max)"), "//float[@name='score']='100.0'");
+    assertQ(req("fl","*,score","q", "{!func}payload(vals_dpf,mult,0.0,average)"), "//float[@name='score']='75.0'");
+    assertQ(req("fl","*,score","q", "{!func}payload(vals_dpf,mult)"), "//float[@name='score']='75.0'");
 
     // Test special "first" function, by checking the other functions with same term too
-    assertQ(req("fl","*,score","q", "{!func}payload(vals_dp,x,0.0,min)"), "//float[@name='score']='19.0'");
-    assertQ(req("fl","*,score","q", "{!func}payload(vals_dp,x,0.0,max)"), "//float[@name='score']='37.0'");
-    assertQ(req("fl","*,score","q", "{!func}payload(vals_dp,x,0.0,average)"), "//float[@name='score']='26.0'");
-    assertQ(req("fl","*,score","q", "{!func}payload(vals_dp,x,0.0,first)"), "//float[@name='score']='22.0'");
+    assertQ(req("fl","*,score","q", "{!func}payload(vals_dpf,x,0.0,min)"), "//float[@name='score']='19.0'");
+    assertQ(req("fl","*,score","q", "{!func}payload(vals_dpf,x,0.0,max)"), "//float[@name='score']='37.0'");
+    assertQ(req("fl","*,score","q", "{!func}payload(vals_dpf,x,0.0,average)"), "//float[@name='score']='26.0'");
+    assertQ(req("fl","*,score","q", "{!func}payload(vals_dpf,x,0.0,first)"), "//float[@name='score']='22.0'");
   }
 
   @Test

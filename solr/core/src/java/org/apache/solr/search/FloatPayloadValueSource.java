@@ -163,7 +163,7 @@ public class FloatPayloadValueSource extends ValueSource {
             docs.nextPosition();
             BytesRef payload = docs.getPayload();
             if (payload != null) {
-              float payloadVal = decoder.decode(null, atDoc, docs.startOffset(), docs.endOffset(), payload);
+              float payloadVal = decoder.decode(atDoc, docs.startOffset(), docs.endOffset(), payload);
 
               // payloadFunction = null represents "first"
               if (payloadFunction == null) return payloadVal;
