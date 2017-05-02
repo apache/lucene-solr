@@ -17,6 +17,8 @@
 
 package org.apache.solr.search;
 
+import java.io.IOException;
+
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.queries.payloads.PayloadFunction;
 import org.apache.lucene.queries.payloads.PayloadScoreQuery;
@@ -61,7 +63,12 @@ public class PayloadScoreQParserPlugin extends QParserPlugin {
 
         FieldType ft = req.getCore().getLatestSchema().getFieldType(field);
         Analyzer analyzer = ft.getQueryAnalyzer();
-        SpanQuery query = PayloadUtils.createSpanQuery(field, value, analyzer);
+        SpanQuery query = null;
+        try {
+          query = PayloadUtils.createSpanQuery(field, value, analyzer);
+        } catch (IOException e) {
+          throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,e);
+        }
 
         if (query == null) {
           throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "SpanQuery is null");

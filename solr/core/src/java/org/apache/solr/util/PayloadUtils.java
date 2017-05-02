@@ -38,7 +38,6 @@ import org.apache.lucene.search.spans.SpanQuery;
 import org.apache.lucene.search.spans.SpanTermQuery;
 import org.apache.lucene.util.BytesRef;
 import org.apache.solr.analysis.TokenizerChain;
-import org.apache.solr.common.SolrException;
 import org.apache.solr.schema.FieldType;
 
 public class PayloadUtils {
@@ -100,34 +99,31 @@ public class PayloadUtils {
     return payloadFunction;
   }
 
-  public static SpanQuery createSpanQuery(String field, String value, Analyzer analyzer) {
-    SpanQuery query;
-    try {
-      // adapted this from QueryBuilder.createSpanQuery (which isn't currently public) and added reset(), end(), and close() calls
-      TokenStream in = analyzer.tokenStream(field, value);
+  /**
+   * The generated SpanQuery will be either a SpanTermQuery or an ordered, zero slop SpanNearQuery, depending
+   * on how many tokens are emitted.
+   */
+  public static SpanQuery createSpanQuery(String field, String value, Analyzer analyzer) throws IOException {
+    // adapted this from QueryBuilder.createSpanQuery (which isn't currently public) and added reset(), end(), and close() calls
+    List<SpanTermQuery> terms = new ArrayList<>();
+    try (TokenStream in = analyzer.tokenStream(field, value)) {
       in.reset();
 
       TermToBytesRefAttribute termAtt = in.getAttribute(TermToBytesRefAttribute.class);
-
-      List<SpanTermQuery> terms = new ArrayList<>();
       while (in.incrementToken()) {
         terms.add(new SpanTermQuery(new Term(field, termAtt.getBytesRef())));
       }
       in.end();
-      in.close();
+    }
 
-      if (terms.isEmpty()) {
-        query = null;
-      } else if (terms.size() == 1) {
-        query = terms.get(0);
-      } else {
-        query = new SpanNearQuery(terms.toArray(new SpanTermQuery[terms.size()]), 0, true);
-      }
-    } catch (IOException e) {
-      throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, e);
+    SpanQuery query;
+    if (terms.isEmpty()) {
+      query = null;
+    } else if (terms.size() == 1) {
+      query = terms.get(0);
+    } else {
+      query = new SpanNearQuery(terms.toArray(new SpanTermQuery[terms.size()]), 0, true);
     }
     return query;
   }
-
-
 }
