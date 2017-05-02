@@ -77,7 +77,7 @@ public class SolrClientDataProvider implements ClusterDataProvider {
         if (collData == null) nodeData.put(collName, collData = new HashMap<>());
         List<ReplicaInfo> replicas = collData.get(shard);
         if (replicas == null) collData.put(shard, replicas = new ArrayList<>());
-        replicas.add(new ReplicaInfo(replica.getName(), new HashMap<>()));
+        replicas.add(new ReplicaInfo(replica.getName(), collName , shard, new HashMap<>()));
       });
     });
   }

@@ -19,6 +19,7 @@ package org.apache.solr.cloud.autoscaling;
 
 import java.util.Map;
 
+import org.apache.solr.common.util.Pair;
 import org.apache.solr.common.util.Utils;
 import org.apache.solr.cloud.autoscaling.Policy.Suggester;
 
@@ -36,11 +37,14 @@ class AddReplicaSuggester extends Suggester {
   }
 
   Map tryEachNode(boolean strict) {
+    String coll = (String) hints.get(Hint.COLL);
+    String shard = (String) hints.get(Hint.SHARD);
+    if (coll == null || shard == null)
+      throw new RuntimeException("add-replica requires 'collection' and 'shard'");
     //iterate through elements and identify the least loaded
     for (int i = getMatrix().size() - 1; i >= 0; i--) {
       Row row = getMatrix().get(i);
-      String coll = hints.get(Hint.COLL);
-      String shard = hints.get(Hint.SHARD);
+      if (!isAllowed(row.node, Hint.TARGET_NODE)) continue;
       row = row.addReplica(coll, shard);
       row.violations.clear();
       for (Clause clause : session.expandedClauses) {

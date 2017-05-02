@@ -33,6 +33,7 @@ import org.apache.solr.common.util.Utils;
 import org.apache.solr.common.util.ValidatingJsonMap;
 
 import static org.apache.solr.common.params.CollectionParams.CollectionAction.ADDREPLICA;
+import static org.apache.solr.common.params.CollectionParams.CollectionAction.MOVEREPLICA;
 
 public class TestPolicy extends SolrTestCaseJ4 {
 
@@ -198,6 +199,16 @@ public class TestPolicy extends SolrTestCaseJ4 {
     Map operation = suggester.getOperation();
     assertEquals("node2", operation.get("node"));
 
+    nodeValues = (Map<String, Map>) Utils.fromJSONString("{" +
+        "node1:{cores:12, freedisk: 334, heap:10480}," +
+        "node2:{cores:4, freedisk: 749, heap:6873}," +
+        "node3:{cores:7, freedisk: 262, heap:7834}," +
+        "node5:{cores:0, freedisk: 895, heap:17834}," +
+        "node4:{cores:8, freedisk: 375, heap:16900, nodeRole:overseer}" +
+        "}");
+    session = policy.createSession(getClusterDataProvider(nodeValues, clusterState));
+    operation = session.getSuggester(MOVEREPLICA).hint(Hint.TARGET_NODE, "node5").getOperation();
+    assertEquals("node5", operation.get("targetNode"));
 
 
   }
@@ -327,7 +338,7 @@ public class TestPolicy extends SolrTestCaseJ4 {
           if (shardVsReplicaStats == null) result.put(collName, shardVsReplicaStats = new HashMap<>());
           List<Policy.ReplicaInfo> replicaInfos = shardVsReplicaStats.get(shard);
           if (replicaInfos == null) shardVsReplicaStats.put(shard, replicaInfos = new ArrayList<>());
-          replicaInfos.add(new Policy.ReplicaInfo(replicaName, new HashMap<>()));
+          replicaInfos.add(new Policy.ReplicaInfo(replicaName,collName, shard, new HashMap<>()));
         });
       });
     });

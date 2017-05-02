@@ -28,6 +28,7 @@ import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
@@ -35,6 +36,7 @@ import java.util.stream.Collectors;
 import org.apache.solr.common.IteratorWriter;
 import org.apache.solr.common.MapWriter;
 import org.apache.solr.common.params.CollectionParams.CollectionAction;
+import org.apache.solr.common.util.Pair;
 import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.common.util.Utils;
 
@@ -158,7 +160,6 @@ public class Policy implements MapWriter {
       paramsOfInterest = new ArrayList<>(p);
       matrix = new ArrayList<>(nodes.size());
       for (String node : nodes) matrix.add(new Row(node, paramsOfInterest, dataProvider));
-      for (Row row : matrix) row.replicaInfo.forEach((s, e) -> collections.add(s));
       applyRules();
     }
 
@@ -268,9 +269,11 @@ public class Policy implements MapWriter {
     String core,collection,shard;
     Map<String, Object> variables;
 
-    public ReplicaInfo(String name, Map<String, Object> vals) {
+    public ReplicaInfo(String name, String coll, String shard, Map<String, Object> vals) {
       this.name = name;
       this.variables = vals;
+      this.collection = coll;
+      this.shard = shard;
     }
 
     @Override
@@ -291,7 +294,7 @@ public class Policy implements MapWriter {
 
 
   public static abstract class Suggester {
-    protected final EnumMap<Hint, String> hints = new EnumMap<>(Hint.class);
+    protected final EnumMap<Hint, Object> hints = new EnumMap<>(Hint.class);
     Policy.Session session;
     Map operation;
     private boolean isInitialized = false;
@@ -300,7 +303,7 @@ public class Policy implements MapWriter {
       this.session = session.copy();
     }
 
-    public Suggester hint(Hint hint, String value) {
+    public Suggester hint(Hint hint, Object value) {
       hints.put(hint, value);
       return this;
     }
@@ -323,6 +326,35 @@ public class Policy implements MapWriter {
     List<Row> getMatrix() {
       return session.matrix;
 
+    }
+
+    List<Pair<ReplicaInfo, Row>> getValidReplicas(boolean sortDesc, boolean isSource, int until) {
+      List<Pair<Policy.ReplicaInfo, Row>> allPossibleReplicas = new ArrayList<>();
+
+      if (sortDesc) {
+        if(until == -1) until = getMatrix().size();
+        for (int i = 0; i < until; i++) addReplicaToList(getMatrix().get(i), isSource, allPossibleReplicas);
+      } else {
+        if(until == -1) until = 0;
+        for (int i = getMatrix().size() - 1; i >= until; i--) addReplicaToList(getMatrix().get(i), isSource, allPossibleReplicas);
+      }
+      return allPossibleReplicas;
+    }
+
+    void addReplicaToList(Row r, boolean isSource, List<Pair<Policy.ReplicaInfo, Row>> replicaList) {
+      if (!isAllowed(r.node, isSource ? Hint.SRC_NODE : Hint.TARGET_NODE)) return;
+      for (Map.Entry<String, Map<String, List<Policy.ReplicaInfo>>> e : r.replicaInfo.entrySet()) {
+        if (!isAllowed(e.getKey(), Hint.COLL)) continue;
+        for (Map.Entry<String, List<Policy.ReplicaInfo>> shard : e.getValue().entrySet()) {
+          if (!isAllowed(e.getKey(), Hint.SHARD)) continue;
+          replicaList.add(new Pair<>(shard.getValue().get(0), r));
+        }
+      }
+    }
+
+    protected boolean isAllowed(Object v, Hint hint) {
+      Object hintVal = hints.get(hint);
+      return hintVal == null || Objects.equals(v, hintVal);
     }
 
     public enum Hint {

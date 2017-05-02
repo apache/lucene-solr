@@ -43,7 +43,7 @@ class Row implements MapWriter {
 
   Row(String node, List<String> params, ClusterDataProvider snitch) {
     replicaInfo = snitch.getReplicaInfo(node, params);
-    if (replicaInfo == null) replicaInfo = Collections.emptyMap();
+    if (replicaInfo == null) replicaInfo = new HashMap<>();
     this.node = node;
     cells = new Cell[params.size()];
     Map<String, Object> vals = snitch.getNodeValues(node, params);
@@ -95,9 +95,8 @@ class Row implements MapWriter {
     if (c == null) row.replicaInfo.put(coll, c = new HashMap<>());
     List<ReplicaInfo> s = c.get(shard);
     if (s == null) c.put(shard, s = new ArrayList<>());
-    s.add(new ReplicaInfo(""+new Random().nextInt(10000)+10000 , new HashMap<>()));
+    s.add(new ReplicaInfo(coll,shard,""+new Random().nextInt(1000)+1000 , new HashMap<>()));
     return row;
-
 
   }
 

@@ -19,9 +19,9 @@ package org.apache.solr.cloud.autoscaling;
 
 import java.util.Map;
 
+import org.apache.solr.cloud.autoscaling.Policy.Suggester;
 import org.apache.solr.common.util.Pair;
 import org.apache.solr.common.util.Utils;
-import org.apache.solr.cloud.autoscaling.Policy.Suggester;
 
 import static org.apache.solr.common.cloud.ZkStateReader.COLLECTION_PROP;
 import static org.apache.solr.common.cloud.ZkStateReader.SHARD_ID_PROP;
@@ -40,23 +40,24 @@ public class MoveReplicaSuggester extends Suggester {
 
   Map tryEachNode(boolean strict) {
     //iterate through elements and identify the least loaded
-    String coll = hints.get(Hint.COLL);
-    String shard = hints.get(Hint.SHARD);
-    for (int i = 0; i < getMatrix().size(); i++) {
-      Row fromRow = getMatrix().get(i);
-      Pair<Row, Policy.ReplicaInfo> pair = fromRow.removeReplica(coll, shard);
-      fromRow = pair.first();
-      if(fromRow == null){
+    for (Pair<Policy.ReplicaInfo, Row> fromReplica : getValidReplicas(true, true, -1)) {
+      Row fromRow = fromReplica.second();
+      String coll = fromReplica.first().collection;
+      String shard = fromReplica.first().shard;
+      Pair<Row, Policy.ReplicaInfo> tmpRow = fromRow.removeReplica(coll, shard);
+      if (tmpRow.first() == null) {
         //no such replica available
         continue;
       }
 
       for (Clause clause : session.expandedClauses) {
-        if (strict || clause.strict) clause.test(fromRow);
+        if (strict || clause.strict) clause.test(tmpRow.first());
       }
-      if (fromRow.violations.isEmpty()) {
+      int i = getMatrix().indexOf(fromRow);
+      if (tmpRow.first().violations.isEmpty()) {
         for (int j = getMatrix().size() - 1; j > i; i--) {
-          Row targetRow = getMatrix().get(i);
+          Row targetRow = getMatrix().get(j);
+          if (!isAllowed(targetRow.node, Hint.TARGET_NODE)) continue;
           targetRow = targetRow.addReplica(coll, shard);
           targetRow.violations.clear();
           for (Clause clause : session.expandedClauses) {
@@ -65,12 +66,12 @@ public class MoveReplicaSuggester extends Suggester {
           if (targetRow.violations.isEmpty()) {
             getMatrix().set(i, getMatrix().get(i).removeReplica(coll, shard).first());
             getMatrix().set(j, getMatrix().get(j).addReplica(coll, shard));
-                return Utils.makeMap("operation", MOVEREPLICA.toLower(),
-                    COLLECTION_PROP, coll,
-                    SHARD_ID_PROP, shard,
-                    NODE, fromRow.node,
-                    REPLICA, pair.second().name,
-                    "target", targetRow.node);
+            return Utils.makeMap("operation", MOVEREPLICA.toLower(),
+                COLLECTION_PROP, coll,
+                SHARD_ID_PROP, shard,
+                NODE, fromRow.node,
+                REPLICA, tmpRow.second().name,
+                "targetNode", targetRow.node);
           }
         }
       }
