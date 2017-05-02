@@ -17,6 +17,7 @@
 
 package org.apache.solr.search;
 
+import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
 import java.util.List;
@@ -67,7 +68,12 @@ public class PayloadCheckQParserPlugin extends QParserPlugin {
 
         FieldType ft = req.getCore().getLatestSchema().getFieldType(field);
         Analyzer analyzer = ft.getQueryAnalyzer();
-        SpanQuery query = PayloadUtils.createSpanQuery(field, value, analyzer);
+        SpanQuery query = null;
+        try {
+          query = PayloadUtils.createSpanQuery(field, value, analyzer);
+        } catch (IOException e) {
+          throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, e);
+        }
 
         if (query == null) {
           throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "SpanQuery is null");
