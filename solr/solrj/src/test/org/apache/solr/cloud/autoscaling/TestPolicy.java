@@ -20,6 +20,7 @@ package org.apache.solr.cloud.autoscaling;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
@@ -29,6 +30,7 @@ import java.util.Map;
 
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.cloud.autoscaling.Policy.Suggester.Hint;
+import org.apache.solr.common.params.CollectionParams;
 import org.apache.solr.common.util.Utils;
 import org.apache.solr.common.util.ValidatingJsonMap;
 
@@ -210,6 +212,65 @@ public class TestPolicy extends SolrTestCaseJ4 {
     operation = session.getSuggester(MOVEREPLICA).hint(Hint.TARGET_NODE, "node5").getOperation();
     assertEquals("node5", operation.get("targetNode"));
 
+
+  }
+  
+  public void testMoveReplica(){
+    String autoscaleJson = "{" +
+        "      'cluster-policy':[" +
+        "      {'cores':'<10','node':'#ANY'}," +
+        "      {'replica':'<2','shard':'#EACH','node':'#ANY'}," +
+        "      {'nodeRole':'!overseer','replica':'#ANY'}]," +
+        "      'cluster-preferences':[" +
+        "      {'minimize':'cores', 'precision':3}," +
+        "      {'maximize':'freedisk','precision':100}]}";
+
+
+    Map replicaInfoMap = (Map) Utils.fromJSONString("{ '127.0.0.1:60099_solr':{}," +
+        " '127.0.0.1:60089_solr':{'compute_plan_action_test':{'shard1':[" +
+        "      {'core_node1':{}}," +
+        "      {'core_node2':{}}]}}}");
+    Map m = (Map) Utils.getObjectByPath(replicaInfoMap, false, "127.0.0.1:60089_solr/compute_plan_action_test");
+    m.put("shard1", Arrays.asList(
+         new Policy.ReplicaInfo("core_node1", "compute_plan_action_test", "shard1", Collections.emptyMap()),
+         new Policy.ReplicaInfo("core_node2", "compute_plan_action_test", "shard1", Collections.emptyMap())
+     ));
+
+    Map<String, Map<String,Object>> tagsMap = (Map) Utils.fromJSONString( "{" +
+          "      '127.0.0.1:60099_solr':{" +
+          "        'cores':0," +
+          "            'freedisk':918005641216}," +
+          "      '127.0.0.1:60089_solr':{" +
+          "        'cores':2," +
+          "            'freedisk':918005641216}}}");
+
+    Policy policy = new Policy((Map<String, Object>) Utils.fromJSONString(autoscaleJson));
+    Policy.Session session = policy.createSession(new ClusterDataProvider() {
+      @Override
+      public Map<String, Object> getNodeValues(String node, Collection<String> tags) {
+        return tagsMap.get(node);
+      }
+
+      @Override
+      public Map<String, Map<String, List<Policy.ReplicaInfo>>> getReplicaInfo(String node, Collection<String> keys) {
+        return (Map<String, Map<String, List<Policy.ReplicaInfo>>>) replicaInfoMap.get(node);
+      }
+
+      @Override
+      public Collection<String> getNodes() {
+        return replicaInfoMap.keySet();
+      }
+
+      @Override
+      public String getPolicy(String coll) {
+        return null;
+      }
+    });
+
+    Policy.Suggester suggester = session.getSuggester(CollectionParams.CollectionAction.MOVEREPLICA)
+        .hint(Policy.Suggester.Hint.TARGET_NODE, "127.0.0.1:60099_solr");
+    Map op = suggester.getOperation();
+    assertNotNull(op);
 
   }
 

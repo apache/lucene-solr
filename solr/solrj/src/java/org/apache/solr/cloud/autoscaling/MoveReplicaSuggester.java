@@ -44,17 +44,20 @@ public class MoveReplicaSuggester extends Suggester {
       Row fromRow = fromReplica.second();
       String coll = fromReplica.first().collection;
       String shard = fromReplica.first().shard;
-      Pair<Row, Policy.ReplicaInfo> tmpRow = fromRow.removeReplica(coll, shard);
-      if (tmpRow.first() == null) {
+      Pair<Row, Policy.ReplicaInfo> pair = fromRow.removeReplica(coll, shard);
+      Row tmpRow = pair.first();
+      if (tmpRow == null) {
         //no such replica available
         continue;
       }
-
+      tmpRow.violations.clear();
       for (Clause clause : session.expandedClauses) {
-        if (strict || clause.strict) clause.test(tmpRow.first());
+        if (strict || clause.strict) {
+          clause.test(tmpRow);
+        }
       }
       int i = getMatrix().indexOf(fromRow);
-      if (tmpRow.first().violations.isEmpty()) {
+      if (tmpRow.violations.isEmpty()) {
         for (int j = getMatrix().size() - 1; j > i; i--) {
           Row targetRow = getMatrix().get(j);
           if (!isAllowed(targetRow.node, Hint.TARGET_NODE)) continue;
@@ -70,7 +73,7 @@ public class MoveReplicaSuggester extends Suggester {
                 COLLECTION_PROP, coll,
                 SHARD_ID_PROP, shard,
                 NODE, fromRow.node,
-                REPLICA, tmpRow.second().name,
+                REPLICA, pair.second().name,
                 "targetNode", targetRow.node);
           }
         }

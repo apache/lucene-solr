@@ -44,15 +44,15 @@ class Preference implements MapWriter {
   // there are 2 modes of compare.
   // recursive, it uses the precision to tie & when there is a tie use the next preference to compare
   // in non-recursive mode, precision is not taken into consideration and sort is done on actual value
-  int compare(Row r1, Row r2, boolean recursive) {
-    Object o1 = recursive ? r1.cells[idx].val_ : r1.cells[idx].val;
-    Object o2 = recursive ? r2.cells[idx].val_ : r2.cells[idx].val;
+  int compare(Row r1, Row r2, boolean useApprox) {
+    Object o1 = useApprox ? r1.cells[idx].val_ : r1.cells[idx].val;
+    Object o2 = useApprox ? r2.cells[idx].val_ : r2.cells[idx].val;
     int result = 0;
     if (o1 instanceof Integer && o2 instanceof Integer) result = ((Integer) o1).compareTo((Integer) o2);
     if (o1 instanceof Long && o2 instanceof Long) result = ((Long) o1).compareTo((Long) o2);
     if (o1 instanceof Float && o2 instanceof Float) result = ((Float) o1).compareTo((Float) o2);
     if (o1 instanceof Double && o2 instanceof Double) result = ((Double) o1).compareTo((Double) o2);
-    return result == 0 ? next == null ? 0 : next.compare(r1, r2, recursive) : sort.sortval * result;
+    return result == 0 ? next == null ? 0 : next.compare(r1, r2, useApprox) : sort.sortval * result;
   }
 
   //sets the new value according to precision in val_

@@ -35,6 +35,7 @@ import org.apache.solr.client.solrj.request.GenericSolrRequest;
 import org.apache.solr.client.solrj.response.SimpleSolrResponse;
 import org.apache.solr.cloud.autoscaling.ClusterDataProvider;
 import org.apache.solr.cloud.autoscaling.Policy.ReplicaInfo;
+import org.apache.solr.common.MapWriter;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.DocCollection;
@@ -55,12 +56,13 @@ import org.slf4j.LoggerFactory;
 /**Class that implements {@link ClusterStateProvider} accepting a SolrClient
  *
  */
-public class SolrClientDataProvider implements ClusterDataProvider {
+public class SolrClientDataProvider implements ClusterDataProvider, MapWriter {
 
   private final CloudSolrClient solrClient;
   private Set<String> liveNodes;
   private Map<String,Object> snitchSession = new HashMap<>();
   private final Map<String, Map<String, Map<String, List<ReplicaInfo>>>> data = new HashMap<>();
+  private Map<String,Map> nodeVsTags = new HashMap<>();
 
   public SolrClientDataProvider(CloudSolrClient solrClient) {
     this.solrClient = solrClient;
@@ -94,6 +96,7 @@ public class SolrClientDataProvider implements ClusterDataProvider {
     AutoScalingSnitch  snitch = new AutoScalingSnitch();
     ClientSnitchCtx ctx = new ClientSnitchCtx(null, node, snitchSession, solrClient);
     snitch.getRemoteInfo(node, new HashSet<>(tags), ctx);
+    nodeVsTags.put(node, ctx.getTags());
     return ctx.getTags();
   }
 
@@ -201,5 +204,13 @@ public class SolrClientDataProvider implements ClusterDataProvider {
       }
 
     }
+  }
+
+  @Override
+  public void writeMap(EntryWriter ew) throws IOException {
+    ew.put("liveNodes", liveNodes);
+    ew.put("replicaInfo", Utils.getDeepCopy(data, 5));
+    ew.put("ndeValues", nodeVsTags);
+
   }
 }

@@ -190,7 +190,11 @@ public class Policy implements MapWriter {
           p.setApproxVal(tmpMatrix);
         }
         //approximate values are set now. Let's do recursive sorting
-        Collections.sort(matrix, (r1, r2) -> clusterPreferences.get(0).compare(r1, r2, true));
+        Collections.sort(matrix, (r1, r2) -> {
+          int result = clusterPreferences.get(0).compare(r1, r2, true);
+          if(result == 0) result = clusterPreferences.get(0).compare(r1, r2, false);
+          return result;
+        });
       }
 
       for (Clause clause : expandedClauses) {
@@ -232,8 +236,8 @@ public class Policy implements MapWriter {
   }
 
 
-  public Session createSession(ClusterDataProvider snitch) {
-    return new Session(snitch);
+  public Session createSession(ClusterDataProvider dataProvider) {
+    return new Session(dataProvider);
   }
 
   enum SortParam {

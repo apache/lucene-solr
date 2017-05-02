@@ -189,7 +189,8 @@ public class Clause implements MapWriter, Comparable<Clause> {
     } else {
       if (!tag.isPass(row)) result.set(TestStatus.FAIL);
     }
-    if (result.get() == FAIL) row.violations.add(this);
+    if (result.get() == FAIL)
+      row.violations.add(this);
     return result.get();
 
   }
