@@ -20,6 +20,7 @@ import java.io.IOException;
 
 import org.apache.lucene.index.IndexableField;
 import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.client.solrj.SolrResponse;
 import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.params.SolrParams;
@@ -67,6 +68,43 @@ public class TestCustomDocTransformer extends SolrTestCaseJ4 {
         "//str[.='xx#title_1#']",
         "//str[.='xx#title_2#']",
         "//str[.='xx#title_3#']");
+  }
+
+  @Test
+  public void testFinishCallInCustomFinishTransformer() throws Exception {
+    // Build a simple index
+    int max = 10;
+    for(int i=0; i<max; i++) {
+      SolrInputDocument sdoc = new SolrInputDocument();
+      sdoc.addField("id", i);
+      sdoc.addField("subject", "xx");
+      sdoc.addField("title", "title_"+i);
+      updateJ(jsonAdd(sdoc), null);
+    }
+    assertU(commit());
+    assertQ(req("q", "*:*"), "//*[@numFound='" + max + "']");
+
+    assertQ( req(
+        "q", "*:*",
+        "fl", "id,[customFinish]",
+        "rows", String.valueOf(max)
+        ),
+        // Check that the concatenated fields make it in the results
+        "//*[@numFound='" + max + "']");
+
+    // finish() will double the number of documents
+    assertEquals(max*2, CustomFinishTransformerFactory.finishTrasformer.counter);
+    CustomFinishTransformerFactory.finishTrasformer.counter = 0;
+    // test binary writer
+    h.query(req(
+        "q", "*:*",
+        "fl", "id,[customFinish]",
+        "rows", String.valueOf(max),
+        "wt", "javabin"
+    ));
+    assertEquals(max*2, CustomFinishTransformerFactory.finishTrasformer.counter);
+
+
   }
   
   public static class CustomTransformerFactory extends TransformerFactory {
@@ -124,5 +162,43 @@ public class TestCustomDocTransformer extends SolrTestCaseJ4 {
       return v.toString();
     }
     return null;
+  }
+
+
+  public static class CustomFinishTransformerFactory extends TransformerFactory {
+
+    static CustomFinishTransformer finishTrasformer = new CustomFinishTransformer();
+
+    @Override
+    public DocTransformer create(String field, SolrParams params, SolrQueryRequest req) {
+      return finishTrasformer;
+    }
+  }
+
+
+  public static class CustomFinishTransformer extends DocTransformer {
+    int counter;
+
+    public CustomFinishTransformer() {
+    }
+
+    public void prepare(ResultContext context){
+      super.prepare(context);
+      counter = 0;
+    }
+
+    @Override
+    public String getName() {
+      return "customFinish";
+    }
+
+    @Override
+    public void transform(SolrDocument doc, int docid, float score) throws IOException {
+      counter++;
+    }
+
+    public void finish(){
+      counter*=2;
+    }
   }
 }

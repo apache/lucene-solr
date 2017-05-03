@@ -187,8 +187,8 @@ public class LTRFeatureLoggerTransformerFactory extends TransformerFactory {
     }
 
     @Override
-    public void setContext(ResultContext context) {
-      super.setContext(context);
+    public void prepare(ResultContext context) {
+      super.prepare(context);
       if (context == null) {
         return;
       }

@@ -142,6 +142,11 @@ public class DocsStreamer implements Iterator<SolrDocument> {
     return docIterator.hasNext();
   }
 
+  // called at the end of the stream
+  public void finish(){
+    if (transformer != null) transformer.finish();
+  }
+
   public SolrDocument next() {
     int id = docIterator.nextDoc();
     idx++;

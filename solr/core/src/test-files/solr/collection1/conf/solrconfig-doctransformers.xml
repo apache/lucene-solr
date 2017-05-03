@@ -36,6 +36,7 @@
   </updateHandler>
 
   <transformer name="custom" class="org.apache.solr.response.TestCustomDocTransformer$CustomTransformerFactory" />
+  <transformer name="customFinish" class="org.apache.solr.response.TestCustomDocTransformer$CustomFinishTransformerFactory" />
 
   <requestHandler name="/select" class="solr.StandardRequestHandler"/>
 

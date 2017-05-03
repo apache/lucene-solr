@@ -41,12 +41,26 @@ public abstract class DocTransformer {
    */
   public abstract String getName();
 
+
   /**
    * This is called before {@link #transform} to provide context for any subsequent transformations.
    *
    * @param context The {@link ResultContext} stores information about how the documents were produced.
    * @see #needsSolrIndexSearcher
    */
+  public void prepare( ResultContext context ) {
+    this.context = context;
+
+  }
+
+
+  /**
+   * This is called before {@link #transform} to provide context for any subsequent transformations.
+   *
+   * @param context The {@link ResultContext} stores information about how the documents were produced.
+   * @see #needsSolrIndexSearcher
+   */
+  @Deprecated
   public void setContext( ResultContext context ) {
     this.context = context;
 
@@ -55,7 +69,7 @@ public abstract class DocTransformer {
   /**
    * Indicates if this transformer requires access to the underlying index to perform it's functions.
    *
-   * In some situations (notably RealTimeGet) this method <i>may</i> be called before {@link #setContext} 
+   * In some situations (notably RealTimeGet) this method <i>may</i> be called before {@link #prepare}
    * to determine if the transformer must be given a "full" ResultContext and accurate docIds 
    * that can be looked up using {@link ResultContext#getSearcher}, or if optimizations can be taken 
    * advantage of such that {@link ResultContext#getSearcher} <i>may</i> return null, and docIds passed to 
@@ -92,6 +106,12 @@ public abstract class DocTransformer {
    */
   public String[] getExtraRequestFields() {
     return null;
+  }
+
+  /**
+   * This is called after a transformer has been applied to all the documents in the results set
+   */
+  public void finish(){
   }
   
   @Override

@@ -63,10 +63,11 @@ public class DocTransformers extends DocTransformer
     return children.get( idx );
   }
 
+
   @Override
-  public void setContext( ResultContext context ) {
+  public void prepare( ResultContext context ) {
     for( DocTransformer a : children ) {
-      a.setContext( context );
+      a.prepare( context );
     }
   }
 
@@ -86,6 +87,13 @@ public class DocTransformers extends DocTransformer
       }
     }
     return false;
+  }
+
+  @Override
+  public void finish() {
+    for( DocTransformer a : children ) {
+      a.finish();
+    }
   }
 
 }
