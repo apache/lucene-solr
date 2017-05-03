@@ -161,6 +161,8 @@ public abstract class FacetProcessor<FacetRequestT extends FacetRequest>  {
     // We still calculate them first because we can use it in a parent->child domain change.
     evalFilters();
 
+    handleJoinField();
+    
     boolean appliedFilters = handleBlockJoin();
 
     if (this.filter != null && !appliedFilters) {
@@ -229,6 +231,14 @@ public abstract class FacetProcessor<FacetRequestT extends FacetRequest>  {
     fcontext.base = fcontext.searcher.getDocSet(qlist);
   }
 
+  /** modifies the context base if there is a join field domain change */
+  private void handleJoinField() throws IOException {
+    if (null == freq.domain.joinField) return;
+
+    final Query domainQuery = freq.domain.joinField.createDomainQuery(fcontext);
+    fcontext.base = fcontext.searcher.getDocSet(domainQuery);
+  }
+    
   // returns "true" if filters were applied to fcontext.base already
   private boolean handleBlockJoin() throws IOException {
     boolean appliedFilters = false;

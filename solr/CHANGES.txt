@@ -204,6 +204,8 @@ New Features
 
 * SOLR-10430: Add ls command to ZkCLI for listing only sub-directories. (Peter Szantai-Kis via Mark Miller)
 
+* SOLR-10583: JSON Faceting now supports a query time 'join' domain change option (hossman)
+
 Optimizations
 ----------------------
 
