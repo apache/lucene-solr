@@ -969,7 +969,7 @@ public class ZkController {
   }
 
   public void startReplicationFromLeader(String coreName, boolean switchTransactionLog) throws InterruptedException {
-    log.info("{} starting replication from leader", coreName);
+    log.info("{} starting background replication from leader", coreName);
     ReplicateFromLeader replicateFromLeader = new ReplicateFromLeader(cc, coreName);
     if (replicateFromLeaders.putIfAbsent(coreName, replicateFromLeader) == null) {
       replicateFromLeader.startReplication(switchTransactionLog);
@@ -979,7 +979,7 @@ public class ZkController {
   }
 
   public void stopReplicationFromLeader(String coreName) {
-    log.info("{} stopping replication from leader", coreName);
+    log.info("{} stopping background replication from leader", coreName);
     ReplicateFromLeader replicateFromLeader = replicateFromLeaders.remove(coreName);
     if (replicateFromLeader != null) {
       replicateFromLeader.stopReplication();

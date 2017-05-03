@@ -70,6 +70,7 @@ public class ReplicateFromLeader {
       } else if (uinfo.autoSoftCommmitMaxTime != -1) {
         pollIntervalStr = toPollIntervalStr(uinfo.autoSoftCommmitMaxTime/2);
       }
+      LOG.info("Will start replication from leader with poll interval: {}", pollIntervalStr );
 
       NamedList slaveConfig = new NamedList();
       slaveConfig.add("fetchFromLeader", true);
