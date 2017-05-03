@@ -31,6 +31,7 @@ import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 
+import org.apache.lucene.util.IOUtils;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.core.CoreContainer;
 import org.apache.zookeeper.KeeperException;
@@ -141,6 +142,7 @@ public class NodeLostTrigger implements AutoScaling.Trigger<NodeLostTrigger.Node
   public void close() throws IOException {
     synchronized (this) {
       isClosed = true;
+      IOUtils.closeWhileHandlingException(actions);
     }
   }
 
