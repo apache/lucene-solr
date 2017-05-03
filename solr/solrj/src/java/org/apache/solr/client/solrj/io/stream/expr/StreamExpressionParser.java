@@ -147,7 +147,7 @@ public class StreamExpressionParser {
     int firstOpenEquals = findNextClear(clause, 0, '=');
     if(firstOpenEquals <= 0 || firstOpenEquals == clause.length() - 1){ return false; }
     String name = clause.substring(0, firstOpenEquals);
-    if(!wordToken(name)){ return false; }
+    if(!wordToken(name.trim())){ return false; }
     
     return true;
   }
