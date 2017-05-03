@@ -2423,22 +2423,25 @@ public abstract class SolrTestCaseJ4 extends LuceneTestCase {
     }
     return result;
   }
-
-  protected void waitForWarming() throws InterruptedException {
-    RefCounted<SolrIndexSearcher> registeredSearcher = h.getCore().getRegisteredSearcher();
-    RefCounted<SolrIndexSearcher> newestSearcher = h.getCore().getNewestSearcher(false);
-    ;
+  
+  protected static void waitForWarming(SolrCore core) throws InterruptedException {
+    RefCounted<SolrIndexSearcher> registeredSearcher = core.getRegisteredSearcher();
+    RefCounted<SolrIndexSearcher> newestSearcher = core.getNewestSearcher(false);
     while (registeredSearcher == null || registeredSearcher.get() != newestSearcher.get()) {
       if (registeredSearcher != null) {
         registeredSearcher.decref();
       }
       newestSearcher.decref();
       Thread.sleep(50);
-      registeredSearcher = h.getCore().getRegisteredSearcher();
-      newestSearcher = h.getCore().getNewestSearcher(false);
+      registeredSearcher = core.getRegisteredSearcher();
+      newestSearcher = core.getNewestSearcher(false);
     }
     registeredSearcher.decref();
     newestSearcher.decref();
+  }
+
+  protected void waitForWarming() throws InterruptedException {
+    waitForWarming(h.getCore());
   }
 
   @BeforeClass

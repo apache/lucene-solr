@@ -28,12 +28,14 @@ import org.apache.lucene.util.LuceneTestCase.Slow;
 import org.apache.solr.SolrTestCaseJ4.SuppressObjectReleaseTracker;
 import org.apache.solr.SolrTestCaseJ4.SuppressSSL;
 import org.apache.solr.client.solrj.SolrQuery;
+import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.cloud.ZkStateReader;
+import org.apache.solr.core.SolrCore;
 import org.apache.solr.util.TimeOut;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
@@ -97,8 +99,8 @@ public class ChaosMonkeyNothingIsSafeWithPassiveReplicasTest extends AbstractFul
   
   public ChaosMonkeyNothingIsSafeWithPassiveReplicasTest() {
     super();
-    numPassiveReplicas = random().nextInt(TEST_NIGHTLY ? 3 : 2) + 1;;
-    numRealtimeOrAppendReplicas = random().nextInt(TEST_NIGHTLY ? 3 : 2) + 1;;
+    numPassiveReplicas = random().nextInt(TEST_NIGHTLY ? 2 : 1) + 1;
+    numRealtimeOrAppendReplicas = random().nextInt(TEST_NIGHTLY ? 4 : 3) + 1;
     sliceCount = Integer.parseInt(System.getProperty("solr.tests.cloud.cm.slicecount", "-1"));
     if (sliceCount == -1) {
       sliceCount = random().nextInt(TEST_NIGHTLY ? 3 : 2) + 1;
@@ -211,7 +213,7 @@ public class ChaosMonkeyNothingIsSafeWithPassiveReplicasTest extends AbstractFul
       
       // try and wait for any replications and what not to finish...
       
-      Thread.sleep(2000);
+      ChaosMonkey.wait(2000, DEFAULT_COLLECTION, zkStateReader);
       
       // wait until there are no recoveries...
       waitForThingsToLevelOut(Integer.MAX_VALUE);//Math.round((runLength / 1000.0f / 3.0f)));
@@ -239,6 +241,7 @@ public class ChaosMonkeyNothingIsSafeWithPassiveReplicasTest extends AbstractFul
       }
       
       waitForReplicationFromReplicas(DEFAULT_COLLECTION, zkStateReader, new TimeOut(30, TimeUnit.SECONDS));
+      waitForAllWarmingSearchers();
       
       Set<String> addFails = getAddFails(indexTreads);
       Set<String> deleteFails = getDeleteFails(indexTreads);
@@ -285,10 +288,22 @@ public class ChaosMonkeyNothingIsSafeWithPassiveReplicasTest extends AbstractFul
     }
   }
 
+  private void waitForAllWarmingSearchers() throws InterruptedException {
+    for (JettySolrRunner jetty:jettys) {
+      if (!jetty.isRunning()) {
+        continue;
+      }
+      for (SolrCore core:jetty.getCoreContainer().getCores()) {
+        waitForWarming(core);
+      }
+    }
+  }
+
   private Set<String> getAddFails(List<StoppableIndexingThread> threads) {
     Set<String> addFails = new HashSet<String>();
     for (StoppableIndexingThread thread : threads)   {
       addFails.addAll(thread.getAddFails());
+//      addFails.addAll(thread.getAddFailsMinRf());
     }
     return addFails;
   }
@@ -297,6 +312,7 @@ public class ChaosMonkeyNothingIsSafeWithPassiveReplicasTest extends AbstractFul
     Set<String> deleteFails = new HashSet<String>();
     for (StoppableIndexingThread thread : threads)   {
       deleteFails.addAll(thread.getDeleteFails());
+//      deleteFails.addAll(thread.getDeleteFailsMinRf());
     }
     return deleteFails;
   }

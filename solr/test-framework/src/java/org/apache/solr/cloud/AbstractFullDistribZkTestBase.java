@@ -2032,6 +2032,7 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
 
   protected void logReplicaTypesReplicationInfo(String collectionName, ZkStateReader zkStateReader) throws KeeperException, InterruptedException, IOException {
     log.info("## Collecting extra Replica.Type information of the cluster");
+    zkStateReader.updateLiveNodes();
     StringBuilder builder = new StringBuilder();
     zkStateReader.forceUpdateCollection(collectionName);
     DocCollection collection = zkStateReader.getClusterState().getCollection(collectionName);
@@ -2057,18 +2058,22 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
     for(Slice s:collection.getSlices()) {
       Replica leader = s.getLeader();
       long leaderIndexVersion = -1;
-      while (leaderIndexVersion == -1 && !timeout.hasTimedOut()) {
+      while (!timeout.hasTimedOut()) {
         leaderIndexVersion = getIndexVersion(leader);
-        if (leaderIndexVersion < 0) {
-          Thread.sleep(1000);
+        if (leaderIndexVersion >= 0) {
+          break;
         }
+        Thread.sleep(1000);
+      }
+      if (timeout.hasTimedOut()) {
+        fail("Unable to get leader indexVersion");
       }
       for (Replica passiveReplica:s.getReplicas(EnumSet.of(Replica.Type.PASSIVE,Replica.Type.APPEND))) {
         if (!zkStateReader.getClusterState().liveNodesContain(passiveReplica.getNodeName())) {
           continue;
         }
         while (true) {
-          long replicaIndexVersion = getIndexVersion(passiveReplica);
+          long replicaIndexVersion = getIndexVersion(passiveReplica); 
           if (leaderIndexVersion == replicaIndexVersion) {
             log.debug("Leader replica's version ({}) in sync with replica({}): {} == {}", leader.getName(), passiveReplica.getName(), leaderIndexVersion, replicaIndexVersion);
             break;
@@ -2098,7 +2103,8 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
         QueryResponse response = client.query(params);
         @SuppressWarnings("unchecked")
         List<NamedList<Object>> commits = (List<NamedList<Object>>)response.getResponse().get(ReplicationHandler.CMD_SHOW_COMMITS);
-        return (Long)commits.get(commits.size() - 1).get("indexVersion");
+        Collections.max(commits, (a,b)->((Long)a.get("indexVersion")).compareTo((Long)b.get("indexVersion")));
+        return (long) Collections.max(commits, (a,b)->((Long)a.get("indexVersion")).compareTo((Long)b.get("indexVersion"))).get("indexVersion");
       } catch (SolrServerException e) {
         log.warn("Exception getting version from {}, will return an invalid version to retry.", replica.getName(), e);
         return -1;

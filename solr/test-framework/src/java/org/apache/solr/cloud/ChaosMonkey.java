@@ -698,7 +698,7 @@ public class ChaosMonkey {
   public static void wait(long runLength, String collectionName, ZkStateReader zkStateReader) throws InterruptedException {
     TimeOut t = new TimeOut(runLength, TimeUnit.MILLISECONDS);
     while (!t.hasTimedOut()) {
-      Thread.sleep(Math.min(1000, runLength));
+      Thread.sleep(Math.min(1000, t.timeLeft(TimeUnit.MILLISECONDS)));
       logCollectionStateSummary(collectionName, zkStateReader);
     }
   }

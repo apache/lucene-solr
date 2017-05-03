@@ -24,7 +24,9 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import org.apache.http.client.HttpClient;
 import org.apache.http.impl.client.CloseableHttpClient;
+import org.apache.lucene.util.LuceneTestCase;
 import org.apache.solr.client.solrj.SolrClient;
+import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.impl.ConcurrentUpdateSolrClient;
 import org.apache.solr.client.solrj.impl.HttpClientUtil;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
@@ -46,7 +48,7 @@ class FullThrottleStoppableIndexingThread extends StoppableIndexingThread {
   private List<SolrClient> clients;
   private AtomicInteger fails = new AtomicInteger();
   
-  public FullThrottleStoppableIndexingThread(SolrClient controlClient, SolrClient cloudClient, List<SolrClient> clients,
+  public FullThrottleStoppableIndexingThread(SolrClient controlClient, CloudSolrClient cloudClient, List<SolrClient> clients,
                                              String id, boolean doDeletes, int clientSoTimeout) {
     super(controlClient, cloudClient, id, doDeletes);
     setName("FullThrottleStopableIndexingThread");
@@ -68,7 +70,7 @@ class FullThrottleStoppableIndexingThread extends StoppableIndexingThread {
       String id = this.id + "-" + i;
       ++i;
       
-      if (doDeletes && ChaosMonkeyNothingIsSafeWithPassiveReplicasTest.random().nextBoolean() && deletes.size() > 0) {
+      if (doDeletes && LuceneTestCase.random().nextBoolean() && deletes.size() > 0) {
         String delete = deletes.remove(0);
         try {
           numDeletes++;
@@ -81,7 +83,7 @@ class FullThrottleStoppableIndexingThread extends StoppableIndexingThread {
       
       try {
         numAdds++;
-        if (numAdds > (ChaosMonkeyNothingIsSafeWithPassiveReplicasTest.TEST_NIGHTLY ? 4002 : 197))
+        if (numAdds > (LuceneTestCase.TEST_NIGHTLY ? 4002 : 197))
           continue;
         SolrInputDocument doc = AbstractFullDistribZkTestBase.getDoc(
             "id",
@@ -96,13 +98,13 @@ class FullThrottleStoppableIndexingThread extends StoppableIndexingThread {
         fails.incrementAndGet();
       }
       
-      if (doDeletes && ChaosMonkeyNothingIsSafeWithPassiveReplicasTest.random().nextBoolean()) {
+      if (doDeletes && LuceneTestCase.random().nextBoolean()) {
         deletes.add(id);
       }
       
     }
 
-    ChaosMonkeyNothingIsSafeWithPassiveReplicasTest.log.info("FT added docs:" + numAdds + " with " + fails + " fails" + " deletes:" + numDeletes);
+    log.info("FT added docs:" + numAdds + " with " + fails + " fails" + " deletes:" + numDeletes);
   }
 
   private void changeUrlOnError(Exception e) {
