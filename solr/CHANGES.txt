@@ -275,6 +275,8 @@ Bug Fixes
 
 * SOLR-10588: Prevent redundant core reload on config update (Mikhail Khludnev)
 
+* SOLR-10549: The new 'large' attribute had been forgotten in /schema/fieldstypes?showDefaults=true (David Smiley)
+
 Other Changes
 ----------------------
 
@@ -360,7 +362,7 @@ Bug Fixes
 
 * SOLR-10420: Solr 6.x leaking one SolrZkClient instance per second (Scott Blum, Cao Manh Dat, Markus Jelsma, Steve Rowe)
 
-* SOLR-10439: The new 'large' attribute had been forgotten in /schema/fields?showDefaults=true
+* SOLR-10439: The new 'large' attribute had been forgotten in /schema/fields?showDefaults=true (David Smiley)
 
 * SOLR-10527: edismax with sow=false fails to create dismax-per-term queries when any field is boosted.
   (Steve Rowe)
