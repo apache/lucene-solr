@@ -416,8 +416,54 @@ public class TestJsonFacetRefinement extends SolrTestCaseHS {
             "}"
     );
 
+    final String sort_limit_over = "sort:'count desc', limit:1, overrequest:0, ";
+    // simplistic join domain testing: no refinement == low count
+    client.testJQ(params(p, "q", "${xy_s}:Y", // query only matches one doc per shard
+                         "json.facet", "{"+
+                         "  cat0:{type:terms, field:${cat_s}, "+sort_limit_over+" refine:false,"+
+                         // self join on all_s ensures every doc on every shard included in facets
+                         "        domain: { join: { from:all_s, to:all_s } } }" +
+                         "}"
+                         )
+                  ,
+                  "/response/numFound==3",
+                  "facets=={ count:3, " +
+                  // w/o overrequest and refinement, count for 'A' is lower than it should be
+                  // (we don't see the A from the middle shard)
+                  "          cat0:{ buckets:[ {val:A,count:3} ] } }");
+    // simplistic join domain testing: refinement == correct count
+    client.testJQ(params(p, "q", "${xy_s}:Y", // query only matches one doc per shard
+                         "json.facet", "{" +
+                         "  cat0:{type:terms, field:${cat_s}, "+sort_limit_over+" refine:true,"+
+                         // self join on all_s ensures every doc on every shard included in facets
+                         "        domain: { join: { from:all_s, to:all_s } } }" +
+                         "}"
+                         )
+                  ,
+                  "/response/numFound==3",
+                  "facets=={ count:3," +
+                  // w/o overrequest, we need refining to get the correct count for 'A'.
+                  "          cat0:{ buckets:[ {val:A,count:4} ] } }");
+
+    // contrived join domain + refinement (at second level) + testing
+    client.testJQ(params(p, "q", "${xy_s}:Y", // query only matches one doc per shard
+                         "json.facet", "{" +
+                         // top level facet has a single term
+                         "  all:{type:terms, field:all_s, "+sort_limit_over+" refine:true, " +
+                         "       facet:{  "+
+                         // subfacet will facet on cat after joining on all (so all docs should be included in subfacet)
+                         "         cat0:{type:terms, field:${cat_s}, "+sort_limit_over+" refine:true,"+
+                         "               domain: { join: { from:all_s, to:all_s } } } } }" +
+                         "}"
+                         )
+                  ,
+                  "/response/numFound==3",
+                  "facets=={ count:3," +
+                  // all 3 docs matching base query have same 'all' value in top facet
+                  "          all:{ buckets:[ { val:all, count:3, " +
+                  // sub facet has refinement, so count for 'A' should be correct
+                  "                            cat0:{ buckets: [{val:A,count:4}] } } ] } }");
 
   }
-
-
+  
 }
