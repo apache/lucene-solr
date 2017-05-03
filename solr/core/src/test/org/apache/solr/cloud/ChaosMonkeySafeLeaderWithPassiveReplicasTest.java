@@ -31,6 +31,7 @@ import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.Slice;
+import org.apache.solr.util.TestInjection;
 import org.apache.solr.util.TimeOut;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
@@ -64,6 +65,7 @@ public class ChaosMonkeySafeLeaderWithPassiveReplicasTest extends AbstractFullDi
   public static void beforeSuperClass() {
     schemaString = "schema15.xml";      // we need a string id
     System.setProperty("solr.autoCommit.maxTime", "15000");
+    TestInjection.waitForReplicasInSync = null;
     setErrorHook();
   }
   
@@ -122,7 +124,7 @@ public class ChaosMonkeySafeLeaderWithPassiveReplicasTest extends AbstractFullDi
 
     tryDelete();
     
-    List<StoppableIndexingThread> threads = new ArrayList<>();
+    List<StoppableThread> threads = new ArrayList<>();
     int threadCount = 2;
     int batchSize = 1;
     if (random().nextBoolean()) {
@@ -142,6 +144,10 @@ public class ChaosMonkeySafeLeaderWithPassiveReplicasTest extends AbstractFullDi
       threads.add(indexThread);
       indexThread.start();
     }
+    
+    StoppableCommitThread commitThread = new StoppableCommitThread(cloudClient, 1000, false);
+    threads.add(commitThread);
+    commitThread.start();
     
     chaosMonkey.startTheMonkey(false, 500);
     try {
@@ -164,17 +170,19 @@ public class ChaosMonkeySafeLeaderWithPassiveReplicasTest extends AbstractFullDi
       chaosMonkey.stopTheMonkey();
     }
     
-    for (StoppableIndexingThread indexThread : threads) {
-      indexThread.safeStop();
+    for (StoppableThread thread : threads) {
+      thread.safeStop();
     }
     
     // wait for stop...
-    for (StoppableIndexingThread thread : threads) {
+    for (StoppableThread thread : threads) {
       thread.join();
     }
     
-    for (StoppableIndexingThread indexThread : threads) {
-      assertEquals(0, indexThread.getFailCount());
+    for (StoppableThread thread : threads) {
+      if (thread instanceof StoppableIndexingThread) {
+        assertEquals(0, ((StoppableIndexingThread)thread).getFailCount());
+      }
     }
     
     // try and wait for any replications and what not to finish...

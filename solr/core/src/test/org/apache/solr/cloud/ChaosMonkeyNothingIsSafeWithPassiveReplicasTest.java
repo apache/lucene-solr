@@ -36,6 +36,7 @@ import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.core.SolrCore;
+import org.apache.solr.util.TestInjection;
 import org.apache.solr.util.TimeOut;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
@@ -43,9 +44,11 @@ import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.carrotsearch.randomizedtesting.annotations.ThreadLeakLingering;
+
 @Slow
 @SuppressSSL(bugUrl = "https://issues.apache.org/jira/browse/SOLR-5776")
-//@ThreadLeakLingering(linger = 60000)
+@ThreadLeakLingering(linger = 60000)
 @SuppressObjectReleaseTracker(bugUrl="Testing purposes")
 public class ChaosMonkeyNothingIsSafeWithPassiveReplicasTest extends AbstractFullDistribZkTestBase {
   private static final int FAIL_TOLERANCE = 100;
@@ -73,6 +76,7 @@ public class ChaosMonkeyNothingIsSafeWithPassiveReplicasTest extends AbstractFul
   @AfterClass
   public static void afterSuperClass() {
     System.clearProperty("solr.autoCommit.maxTime");
+    TestInjection.waitForReplicasInSync = null;
     clearErrorHook();
   }
   
@@ -166,6 +170,10 @@ public class ChaosMonkeyNothingIsSafeWithPassiveReplicasTest extends AbstractFul
         threads.add(searchThread);
         searchThread.start();
       }
+      
+      StoppableCommitThread commitThread = new StoppableCommitThread(cloudClient, 1000, false);
+      threads.add(commitThread);
+      commitThread.start();
       
       // TODO: we only do this sometimes so that we can sometimes compare against control,
       // it's currently hard to know what requests failed when using ConcurrentSolrUpdateServer
