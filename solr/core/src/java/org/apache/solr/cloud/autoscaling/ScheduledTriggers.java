@@ -62,7 +62,7 @@ public class ScheduledTriggers implements Closeable {
 
   public ScheduledTriggers() {
     // todo make the core pool size configurable
-    // it is important to use more than one because a taking time trigger can starve other scheduled triggers
+    // it is important to use more than one because a time taking trigger can starve other scheduled triggers
     // ideally we should have as many core threads as the number of triggers but firstly, we don't know beforehand
     // how many triggers we have and secondly, that many threads will always be instantiated and kept around idle
     // so it is wasteful as well. Hopefully 4 is a good compromise.
