@@ -109,6 +109,9 @@ Bug Fixes
 * LUCENE-7798: Add .equals and .hashCode to ToParentBlockJoinSortField 
   (Mikhail Khludnev)
 
+* LUCENE-7814: DateRangePrefixTree (in spatial-extras ) had edge-case bugs for
+  years >= 292,000,000. (David Smiley)
+
 Improvements
 
 * LUCENE-7782: OfflineSorter now passes the total number of items it

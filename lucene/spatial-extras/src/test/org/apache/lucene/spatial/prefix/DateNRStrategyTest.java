@@ -103,6 +103,15 @@ public class DateNRStrategyTest extends RandomSpatialOpStrategyTestCase {
         tree.parseShape("[2014-04 TO 2014-04-01T02]"), true);
   }
 
+  @Test
+  public void testLastMillionYearPeriod() throws Exception {
+    testOperation(
+        tree.parseShape("+292220922-05-17T18:01:57.572"), // a year in the last million year period (>=292M)
+        SpatialOperation.Intersects,
+        tree.parseShape("[1970 TO *]"), true
+    );
+  }
+
   @Override
   protected Shape randomIndexedShape() {
     Calendar cal1 = randomCalendar();
