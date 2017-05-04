@@ -43,15 +43,15 @@ public class UniqueAgg extends StrAggValueSource {
     SchemaField sf = fcontext.qcontext.searcher().getSchema().getField(getArg());
     if (sf.multiValued() || sf.getType().multiValuedFieldCache()) {
       if (sf.hasDocValues()) {
-        return new UniqueMultiDvSlotAcc(fcontext, getArg(), numSlots, null);
+        return new UniqueMultiDvSlotAcc(fcontext, sf, numSlots, null);
       } else {
-        return new UniqueMultivaluedSlotAcc(fcontext, getArg(), numSlots, null);
+        return new UniqueMultivaluedSlotAcc(fcontext, sf, numSlots, null);
       }
     } else {
       if (sf.getType().getNumberType() != null) {
         return new NumericAcc(fcontext, getArg(), numSlots);
       } else {
-        return new UniqueSinglevaluedSlotAcc(fcontext, getArg(), numSlots, null);
+        return new UniqueSinglevaluedSlotAcc(fcontext, sf, numSlots, null);
       }
     }
   }

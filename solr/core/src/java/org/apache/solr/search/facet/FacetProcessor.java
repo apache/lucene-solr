@@ -312,7 +312,7 @@ public abstract class FacetProcessor<FacetRequestT extends FacetRequest>  {
   }
 
   // note: only called by enum/stream prior to collect
-  void resetStats() {
+  void resetStats() throws IOException {
     countAcc.reset();
     for (SlotAcc acc : accs) {
       acc.reset();
