@@ -101,6 +101,8 @@ public class AutoScaling {
     public TriggerListener<E> getListener();
 
     public boolean isClosed();
+
+    public void restoreState(Trigger<E> old);
   }
 
   public static class TriggerFactory implements Closeable {

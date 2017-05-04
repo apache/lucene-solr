@@ -45,6 +45,7 @@ import org.slf4j.LoggerFactory;
  */
 public class ScheduledTriggers implements Closeable {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
+  static final int SCHEDULED_TRIGGER_DELAY_SECONDS = 1;
 
   private final Map<String, ScheduledTrigger> scheduledTriggers = new HashMap<>();
 
@@ -67,7 +68,7 @@ public class ScheduledTriggers implements Closeable {
     // how many triggers we have and secondly, that many threads will always be instantiated and kept around idle
     // so it is wasteful as well. Hopefully 4 is a good compromise.
     scheduledThreadPoolExecutor = (ScheduledThreadPoolExecutor) Executors.newScheduledThreadPool(4,
-        new DefaultSolrThreadFactory("ScheduledTrigger-"));
+        new DefaultSolrThreadFactory("ScheduledTrigger"));
     scheduledThreadPoolExecutor.setRemoveOnCancelPolicy(true);
     scheduledThreadPoolExecutor.setExecuteExistingDelayedTasksAfterShutdownPolicy(false);
     actionExecutor = ExecutorUtil.newMDCAwareSingleThreadExecutor(new DefaultSolrThreadFactory("AutoscalingActionExecutor"));
@@ -93,6 +94,7 @@ public class ScheduledTriggers implements Closeable {
         return;
       }
       IOUtils.closeQuietly(old);
+      newTrigger.restoreState(old.trigger);
       scheduledTriggers.replace(newTrigger.getName(), scheduledTrigger);
     }
     newTrigger.setListener(event -> {
@@ -115,7 +117,7 @@ public class ScheduledTriggers implements Closeable {
         });
       }
     });
-    scheduledTrigger.scheduledFuture = scheduledThreadPoolExecutor.scheduleWithFixedDelay(newTrigger, 0, 1, TimeUnit.SECONDS);
+    scheduledTrigger.scheduledFuture = scheduledThreadPoolExecutor.scheduleWithFixedDelay(newTrigger, 0, SCHEDULED_TRIGGER_DELAY_SECONDS, TimeUnit.SECONDS);
   }
 
   /**

@@ -32,6 +32,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 
 import org.apache.lucene.util.IOUtils;
+import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.core.CoreContainer;
 import org.slf4j.Logger;
@@ -78,6 +79,7 @@ public class NodeAddedTrigger implements AutoScaling.Trigger<NodeAddedTrigger.No
     this.enabled = (boolean) properties.getOrDefault("enabled", true);
     this.waitForSecond = ((Long) properties.getOrDefault("waitFor", -1L)).intValue();
     this.eventType = AutoScaling.EventType.valueOf(properties.get("event").toString().toUpperCase(Locale.ROOT));
+    log.debug("NodeAddedTrigger {} instantiated with properties: {}", name, properties);
   }
 
   @Override
@@ -144,6 +146,20 @@ public class NodeAddedTrigger implements AutoScaling.Trigger<NodeAddedTrigger.No
   }
 
   @Override
+  public void restoreState(AutoScaling.Trigger<NodeAddedEvent> old) {
+    assert old.isClosed();
+    if (old instanceof NodeAddedTrigger) {
+      NodeAddedTrigger that = (NodeAddedTrigger) old;
+      assert this.name.equals(that.name);
+      this.lastLiveNodes = new HashSet<>(that.lastLiveNodes);
+      this.nodeNameVsTimeAdded = new HashMap<>(that.nodeNameVsTimeAdded);
+    } else  {
+      throw new SolrException(SolrException.ErrorCode.INVALID_STATE,
+          "Unable to restore state from an unknown type of trigger");
+    }
+  }
+
+  @Override
   public void run() {
     try {
       synchronized (this) {
@@ -152,7 +168,7 @@ public class NodeAddedTrigger implements AutoScaling.Trigger<NodeAddedTrigger.No
           throw new RuntimeException("Trigger has been closed");
         }
       }
-      log.debug("Running NodeAddedTrigger");
+      log.debug("Running NodeAddedTrigger {}", name);
 
       ZkStateReader reader = container.getZkController().getZkStateReader();
       Set<String> newLiveNodes = reader.getClusterState().getLiveNodes();
@@ -171,19 +187,21 @@ public class NodeAddedTrigger implements AutoScaling.Trigger<NodeAddedTrigger.No
       Set<String> copyOfNew = new HashSet<>(newLiveNodes);
       copyOfNew.removeAll(lastLiveNodes);
       copyOfNew.forEach(n -> {
-        log.info("Tracking new node: {}", n);
-        nodeNameVsTimeAdded.put(n, System.nanoTime());
+        long nanoTime = System.nanoTime();
+        nodeNameVsTimeAdded.put(n, nanoTime);
+        log.info("Tracking new node: {} at {} nanotime", n, nanoTime);
       });
 
       // has enough time expired to trigger events for a node?
       for (Map.Entry<String, Long> entry : nodeNameVsTimeAdded.entrySet()) {
         String nodeName = entry.getKey();
         Long timeAdded = entry.getValue();
-        if (TimeUnit.SECONDS.convert(System.nanoTime() - timeAdded, TimeUnit.NANOSECONDS) >= getWaitForSecond()) {
+        long now = System.nanoTime();
+        if (TimeUnit.SECONDS.convert(now - timeAdded, TimeUnit.NANOSECONDS) >= getWaitForSecond()) {
           // fire!
           AutoScaling.TriggerListener<NodeAddedEvent> listener = listenerRef.get();
           if (listener != null) {
-            log.info("NodeAddedTrigger firing registered listener");
+            log.info("NodeAddedTrigger {} firing registered listener for node: {} added at {} nanotime, now: {} nanotime", name, nodeName, timeAdded, now);
             listener.triggerFired(new NodeAddedEvent(this, timeAdded, nodeName));
           }
           trackingKeySet.remove(nodeName);

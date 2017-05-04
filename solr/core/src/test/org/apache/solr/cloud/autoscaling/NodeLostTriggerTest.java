@@ -44,27 +44,10 @@ public class NodeLostTriggerTest extends SolrCloudTestCase {
   }
 
   @Test
-  public void test() throws Exception {
+  public void testTrigger() throws Exception {
     CoreContainer container = cluster.getJettySolrRunners().get(0).getCoreContainer();
-    Map<String, Object> props = new HashMap<>();
-    props.put("event", "nodeLost");
     long waitForSeconds = 1 + random().nextInt(5);
-    props.put("waitFor", waitForSeconds);
-    props.put("enabled", true);
-    List<Map<String, String>> actions = new ArrayList<>(3);
-    Map<String, String> map = new HashMap<>(2);
-    map.put("name", "compute_plan");
-    map.put("class", "solr.ComputePlanAction");
-    actions.add(map);
-    map = new HashMap<>(2);
-    map.put("name", "execute_plan");
-    map.put("class", "solr.ExecutePlanAction");
-    actions.add(map);
-    map = new HashMap<>(2);
-    map.put("name", "log_plan");
-    map.put("class", "solr.LogPlanAction");
-    actions.add(map);
-    props.put("actions", actions);
+    Map<String, Object> props = createTriggerProps(waitForSeconds);
 
     try (NodeLostTrigger trigger = new NodeLostTrigger("node_lost_trigger", props, container)) {
       trigger.setListener(event -> fail("Did not expect the listener to fire on first run!"));
@@ -119,7 +102,7 @@ public class NodeLostTriggerTest extends SolrCloudTestCase {
           fail("NodeLostListener was fired more than once!");
         }
       });
-      trigger.run(); // first run should detect the new node
+      trigger.run(); // first run should detect the lost node
       int counter = 0;
       do {
         if (container.getZkController().getZkStateReader().getClusterState().getLiveNodes().size() == 3) {
@@ -143,5 +126,84 @@ public class NodeLostTriggerTest extends SolrCloudTestCase {
       // ensure the event was not fired
       assertFalse(fired.get());
     }
+  }
+
+  @Test
+  public void testRestoreState() throws Exception {
+    CoreContainer container = cluster.getJettySolrRunners().get(0).getCoreContainer();
+    long waitForSeconds = 1 + random().nextInt(5);
+    Map<String, Object> props = createTriggerProps(waitForSeconds);
+
+    JettySolrRunner newNode = cluster.startJettySolrRunner();
+    String lostNodeName = newNode.getNodeName();
+
+    // remove a node but update the trigger before the waitFor period expires
+    // and assert that the new trigger still fires
+
+    NodeLostTrigger trigger = new NodeLostTrigger("node_lost_trigger", props, container);
+    trigger.setListener(event -> fail("Did not expect the listener to fire on first run!"));
+    trigger.run();
+    newNode.stop();
+    trigger.run(); // this run should detect the lost node
+    trigger.close(); // close the old trigger
+
+    try (NodeLostTrigger newTrigger = new NodeLostTrigger("some_different_name", props, container))  {
+      try {
+        newTrigger.restoreState(trigger);
+        fail("Trigger should only be able to restore state from an old trigger of the same name");
+      } catch (AssertionError e) {
+        // expected
+      }
+    }
+
+    try (NodeLostTrigger newTrigger = new NodeLostTrigger("node_lost_trigger", props, container)) {
+      AtomicBoolean fired = new AtomicBoolean(false);
+      AtomicReference<NodeLostTrigger.NodeLostEvent> eventRef = new AtomicReference<>();
+      newTrigger.setListener(event -> {
+        if (fired.compareAndSet(false, true)) {
+          eventRef.set(event);
+          if (System.nanoTime() - event.getEventNanoTime() <= TimeUnit.NANOSECONDS.convert(waitForSeconds, TimeUnit.SECONDS)) {
+            fail("NodeLostListener was fired before the configured waitFor period");
+          }
+        } else {
+          fail("NodeLostListener was fired more than once!");
+        }
+      });
+      newTrigger.restoreState(trigger); // restore state from the old trigger
+      int counter = 0;
+      do {
+        newTrigger.run();
+        Thread.sleep(1000);
+        if (counter++ > 10) {
+          fail("Lost node was not discovered by trigger even after 10 seconds");
+        }
+      } while (!fired.get());
+
+      NodeLostTrigger.NodeLostEvent nodeLostEvent = eventRef.get();
+      assertNotNull(nodeLostEvent);
+      assertEquals("", lostNodeName, nodeLostEvent.getNodeName());
+    }
+  }
+
+  private Map<String, Object> createTriggerProps(long waitForSeconds) {
+    Map<String, Object> props = new HashMap<>();
+    props.put("event", "nodeLost");
+    props.put("waitFor", waitForSeconds);
+    props.put("enabled", true);
+    List<Map<String, String>> actions = new ArrayList<>(3);
+    Map<String, String> map = new HashMap<>(2);
+    map.put("name", "compute_plan");
+    map.put("class", "solr.ComputePlanAction");
+    actions.add(map);
+    map = new HashMap<>(2);
+    map.put("name", "execute_plan");
+    map.put("class", "solr.ExecutePlanAction");
+    actions.add(map);
+    map = new HashMap<>(2);
+    map.put("name", "log_plan");
+    map.put("class", "solr.LogPlanAction");
+    actions.add(map);
+    props.put("actions", actions);
+    return props;
   }
 }

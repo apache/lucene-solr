@@ -43,27 +43,10 @@ public class NodeAddedTriggerTest extends SolrCloudTestCase {
   }
 
   @Test
-  public void test() throws Exception {
+  public void testTrigger() throws Exception {
     CoreContainer container = cluster.getJettySolrRunners().get(0).getCoreContainer();
-    Map<String, Object> props = new HashMap<>();
-    props.put("event", "nodeLost");
     long waitForSeconds = 1 + random().nextInt(5);
-    props.put("waitFor", waitForSeconds);
-    props.put("enabled", true);
-    List<Map<String, String>> actions = new ArrayList<>(3);
-    Map<String, String> map = new HashMap<>(2);
-    map.put("name", "compute_plan");
-    map.put("class", "solr.ComputePlanAction");
-    actions.add(map);
-    map = new HashMap<>(2);
-    map.put("name", "execute_plan");
-    map.put("class", "solr.ExecutePlanAction");
-    actions.add(map);
-    map = new HashMap<>(2);
-    map.put("name", "log_plan");
-    map.put("class", "solr.LogPlanAction");
-    actions.add(map);
-    props.put("actions", actions);
+    Map<String, Object> props = createTriggerProps(waitForSeconds);
 
     try (NodeAddedTrigger trigger = new NodeAddedTrigger("node_added_trigger", props, container)) {
       trigger.setListener(event -> fail("Did not expect the listener to fire on first run!"));
@@ -129,5 +112,85 @@ public class NodeAddedTriggerTest extends SolrCloudTestCase {
       // ensure the event was not fired
       assertFalse(fired.get());
     }
+  }
+
+  @Test
+  public void testRestoreState() throws Exception {
+    CoreContainer container = cluster.getJettySolrRunners().get(0).getCoreContainer();
+    long waitForSeconds = 1 + random().nextInt(5);
+    Map<String, Object> props = createTriggerProps(waitForSeconds);
+
+    // add a new node but update the trigger before the waitFor period expires
+    // and assert that the new trigger still fires
+    NodeAddedTrigger trigger = new NodeAddedTrigger("node_added_trigger", props, container);
+    final long waitTime = 2;
+    props.put("waitFor", waitTime);
+    trigger.setListener(event -> fail("Did not expect the listener to fire on first run!"));
+    trigger.run();
+
+    JettySolrRunner newNode = cluster.startJettySolrRunner();
+    trigger.run(); // this run should detect the new node
+    trigger.close(); // close the old trigger
+
+    try (NodeAddedTrigger newTrigger = new NodeAddedTrigger("some_different_name", props, container))  {
+      try {
+        newTrigger.restoreState(trigger);
+        fail("Trigger should only be able to restore state from an old trigger of the same name");
+      } catch (AssertionError e) {
+        // expected
+      }
+    }
+
+    try (NodeAddedTrigger newTrigger = new NodeAddedTrigger("node_added_trigger", props, container))  {
+      AtomicBoolean fired = new AtomicBoolean(false);
+      AtomicReference<NodeAddedTrigger.NodeAddedEvent> eventRef = new AtomicReference<>();
+      newTrigger.setListener(event -> {
+        if (fired.compareAndSet(false, true)) {
+          eventRef.set(event);
+          if (System.nanoTime() - event.getEventNanoTime() <= TimeUnit.NANOSECONDS.convert(waitTime, TimeUnit.SECONDS)) {
+            fail("NodeAddedListener was fired before the configured waitFor period");
+          }
+        } else {
+          fail("NodeAddedTrigger was fired more than once!");
+        }
+      });
+      newTrigger.restoreState(trigger); // restore state from the old trigger
+      int counter = 0;
+      do {
+        newTrigger.run();
+        Thread.sleep(1000);
+        if (counter++ > 10) {
+          fail("Newly added node was not discovered by trigger even after 10 seconds");
+        }
+      } while (!fired.get());
+
+      // ensure the event was fired
+      assertTrue(fired.get());
+      NodeAddedTrigger.NodeAddedEvent nodeAddedEvent = eventRef.get();
+      assertNotNull(nodeAddedEvent);
+      assertEquals("", newNode.getNodeName(), nodeAddedEvent.getNodeName());
+    }
+  }
+
+  private Map<String, Object> createTriggerProps(long waitForSeconds) {
+    Map<String, Object> props = new HashMap<>();
+    props.put("event", "nodeLost");
+    props.put("waitFor", waitForSeconds);
+    props.put("enabled", true);
+    List<Map<String, String>> actions = new ArrayList<>(3);
+    Map<String, String> map = new HashMap<>(2);
+    map.put("name", "compute_plan");
+    map.put("class", "solr.ComputePlanAction");
+    actions.add(map);
+    map = new HashMap<>(2);
+    map.put("name", "execute_plan");
+    map.put("class", "solr.ExecutePlanAction");
+    actions.add(map);
+    map = new HashMap<>(2);
+    map.put("name", "log_plan");
+    map.put("class", "solr.LogPlanAction");
+    actions.add(map);
+    props.put("actions", actions);
+    return props;
   }
 }

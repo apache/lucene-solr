@@ -96,6 +96,8 @@ Bug Fixes
 * SOLR-9837: Fix 55% performance regression of FieldCache uninvert time of
   numeric fields.  (yonik)
 
+* SOLR-10602: Triggers should be able to restore state from old instances when taking over. (shalin)
+
 Optimizations
 ----------------------
 

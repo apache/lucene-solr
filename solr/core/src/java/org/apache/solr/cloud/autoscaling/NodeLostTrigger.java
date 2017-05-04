@@ -32,9 +32,9 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 
 import org.apache.lucene.util.IOUtils;
+import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.core.CoreContainer;
-import org.apache.zookeeper.KeeperException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -147,6 +147,20 @@ public class NodeLostTrigger implements AutoScaling.Trigger<NodeLostTrigger.Node
   }
 
   @Override
+  public void restoreState(AutoScaling.Trigger<NodeLostEvent> old) {
+    assert old.isClosed();
+    if (old instanceof NodeLostTrigger) {
+      NodeLostTrigger that = (NodeLostTrigger) old;
+      assert this.name.equals(that.name);
+      this.lastLiveNodes = new HashSet<>(that.lastLiveNodes);
+      this.nodeNameVsTimeRemoved = new HashMap<>(that.nodeNameVsTimeRemoved);
+    } else  {
+      throw new SolrException(SolrException.ErrorCode.INVALID_STATE,
+          "Unable to restore state from an unknown type of trigger");
+    }
+  }
+
+  @Override
   public void run() {
     try {
       synchronized (this) {
@@ -155,7 +169,7 @@ public class NodeLostTrigger implements AutoScaling.Trigger<NodeLostTrigger.Node
           throw new RuntimeException("Trigger has been closed");
         }
       }
-      log.debug("Running NodeLostTrigger");
+      log.debug("Running NodeLostTrigger: {}", name);
 
       ZkStateReader reader = container.getZkController().getZkStateReader();
       Set<String> newLiveNodes = reader.getClusterState().getLiveNodes();

@@ -179,12 +179,19 @@ public class OverseerTriggerThread implements Runnable, Closeable {
             }
             final Stat stat = new Stat();
             final byte[] data = zkClient.getData(ZkStateReader.SOLR_AUTOSCALING_CONF_PATH, this, stat, true);
+            log.debug("{} watcher fired with znode version {}", ZkStateReader.SOLR_AUTOSCALING_CONF_PATH, stat.getVersion());
             if (znodeVersion >= stat.getVersion()) {
               // protect against reordered watcher fires by ensuring that we only move forward
               return;
             }
             znodeVersion = stat.getVersion();
             Map<String, AutoScaling.Trigger> triggerMap = loadTriggers(triggerFactory, data);
+
+            // remove all active triggers that have been removed from ZK
+            Set<String> trackingKeySet = activeTriggers.keySet();
+            trackingKeySet.retainAll(triggerMap.keySet());
+
+            // now lets add or remove triggers which have been enabled or disabled respectively
             for (Map.Entry<String, AutoScaling.Trigger> entry : triggerMap.entrySet()) {
               String triggerName = entry.getKey();
               AutoScaling.Trigger trigger = entry.getValue();
