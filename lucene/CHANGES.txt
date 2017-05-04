@@ -5,6 +5,11 @@ http://s.apache.org/luceneversions
 
 ======================= Lucene 6.6.0 =======================
 
+New Features
+
+* LUCENE-7811: Add a concurrent SortedSet facets implementation.
+  (Mike McCandless)
+
 Bug Fixes
 
 * LUCENE-7777: ByteBlockPool.readBytes sometimes throws
@@ -40,6 +45,9 @@ Improvements
 
 * LUCENE-7792: OfflineSorter can now run concurrently if you pass it
   an optional ExecutorService (Dawid Weiss, Mike McCandless)
+
+* LUCENE-7811: Sorted set facets now use sparse storage when
+  collecting hits, when appropriate.  (Mike McCandless)
 
 Optimizations
 

@@ -49,8 +49,8 @@ public class CopyOneFile implements Closeable {
     out = dest.createTempOutput(name, "copy", IOContext.DEFAULT);
     tmpName = out.getName();
 
-    // last 8 bytes are checksum:
-    bytesToCopy = metaData.length - 8;
+    // last 8 bytes are checksum, which we write ourselves after copying all bytes and confirming checksum:
+    bytesToCopy = metaData.length - Long.BYTES;
 
     if (Node.VERBOSE_FILES) {
       dest.message("file " + name + ": start copying to tmp file " + tmpName + " length=" + (8+bytesToCopy));
@@ -101,6 +101,7 @@ public class CopyOneFile implements Closeable {
           throw new IOException("file " + name + ": checksum mismatch after file copy");
         }
         out.writeLong(checksum);
+        bytesCopied += Long.BYTES;
         close();
 
         if (Node.VERBOSE_FILES) {

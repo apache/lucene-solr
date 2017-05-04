@@ -22,8 +22,10 @@ import java.util.concurrent.AbstractExecutorService;
 import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.TimeUnit;
 
-/** An {@code ExecutorService} that executes tasks immediately in the calling thread during submit. */
-class SameThreadExecutorService extends AbstractExecutorService {
+/** An {@code ExecutorService} that executes tasks immediately in the calling thread during submit.
+ *
+ *  @lucene.internal */
+public final class SameThreadExecutorService extends AbstractExecutorService {
   private volatile boolean shutdown;
 
   @Override
