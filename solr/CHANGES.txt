@@ -333,7 +333,7 @@ Other Changes
 * SOLR-10519: SolrCLI.atPath cannot handle children that begin with a slash. (Erick Erickson)
 
 * SOLR-9867: Adding isLoading=true as core status. Fixing start after stop scenario in bin/solr
-  (Mikhail Khludnev)
+  (Andrey Kudryavtsev, Mikhail Khludnev)
 
 ==================  6.5.1 ==================
 

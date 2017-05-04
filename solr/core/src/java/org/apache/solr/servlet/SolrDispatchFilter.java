@@ -247,9 +247,9 @@ public class SolrDispatchFilter extends BaseSolrFilter {
    */
   protected CoreContainer createCoreContainer(Path solrHome, Properties extraProperties) {
     NodeConfig nodeConfig = loadNodeConfig(solrHome, extraProperties);
-    cores = new CoreContainer(nodeConfig, extraProperties, true);
-    cores.load();
-    return cores;
+    CoreContainer coreContainer = new CoreContainer(nodeConfig, extraProperties, true);
+    coreContainer.load();
+    return coreContainer;
   }
 
   /**
