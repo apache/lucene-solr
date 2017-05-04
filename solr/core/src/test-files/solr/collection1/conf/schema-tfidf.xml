@@ -40,6 +40,5 @@
 
   <field name="id" type="int" indexed="true" stored="true" multiValued="false" required="false"/>
   <fieldType name="int" class="solr.TrieIntField" precisionStep="0" omitNorms="true" positionIncrementGap="0"/>
-  <defaultSearchField>text</defaultSearchField>
   <uniqueKey>id</uniqueKey>
 </schema>

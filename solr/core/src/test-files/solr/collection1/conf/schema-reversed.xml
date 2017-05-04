@@ -77,7 +77,6 @@
   <dynamicField name="*_sS" type="string" indexed="false" stored="true"/>
 
 
-  <defaultSearchField>one</defaultSearchField>
   <uniqueKey>id</uniqueKey>
 
 

@@ -616,7 +616,6 @@
   <dynamicField name="*_sim3" type="sim3" indexed="true" stored="true"/>
   -->
 
-  <defaultSearchField>text</defaultSearchField>
   <uniqueKey>id</uniqueKey>
 
   <!-- copyField commands copy one field to another at the time a document

@@ -36,6 +36,5 @@
   <dynamicField name="*_f_multi" type="float" indexed="true" stored="true" docValues="true" multiValued="true"/>
 
 
-  <defaultSearchField>name</defaultSearchField>
   <uniqueKey>id</uniqueKey>
 </schema>

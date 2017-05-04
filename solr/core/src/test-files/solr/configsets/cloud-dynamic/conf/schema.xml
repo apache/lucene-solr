@@ -283,7 +283,6 @@
   <dynamicField name="random_*" type="random"/>
 
 
-  <defaultSearchField>text</defaultSearchField>
   <uniqueKey>id</uniqueKey>
 
   <!-- example of a custom similarity -->

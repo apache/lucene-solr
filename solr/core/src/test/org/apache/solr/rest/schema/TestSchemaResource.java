@@ -32,9 +32,6 @@ public class TestSchemaResource extends SolrRestletTestBase {
             "count(/response/lst[@name='schema']/str[@name='uniqueKey']) = 1",
             "/response/lst[@name='schema']/str[@name='uniqueKey'][.='id']",
         
-            "count(/response/lst[@name='schema']/str[@name='defaultSearchField']) = 1",
-            "/response/lst[@name='schema']/str[@name='defaultSearchField'][.='text']",
-
             "(/response/lst[@name='schema']/arr[@name='fieldTypes']/lst/str[@name='name'])[1] = 'HTMLstandardtok'",
             "(/response/lst[@name='schema']/arr[@name='fieldTypes']/lst/str[@name='name'])[2] = 'HTMLwhitetok'",
             "(/response/lst[@name='schema']/arr[@name='fieldTypes']/lst/str[@name='name'])[3] = 'boolean'",
@@ -111,8 +108,7 @@ public class TestSchemaResource extends SolrRestletTestBase {
              "/schema/name=='test-rest'",
              "/schema/version==1.6",
              "/schema/uniqueKey=='id'",
-             "/schema/defaultSearchField=='text'",
-        
+
              "/schema/fieldTypes/[0]/name=='HTMLstandardtok'",
              "/schema/fieldTypes/[1]/name=='HTMLwhitetok'",
              "/schema/fieldTypes/[2]/name=='boolean'",
@@ -151,7 +147,6 @@ public class TestSchemaResource extends SolrRestletTestBase {
             "/schema/@name = 'test-rest'",
             "/schema/@version = '1.6'",
             "/schema/uniqueKey = 'id'",
-            "/schema/defaultSearchField = 'text'",
 
             "(/schema/fieldType)[1]/@name = 'HTMLstandardtok'",
             "(/schema/fieldType)[2]/@name = 'HTMLwhitetok'",

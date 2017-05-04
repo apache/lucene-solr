@@ -101,7 +101,8 @@ public class HighlighterMaxOffsetTest extends SolrTestCaseJ4 {
 
   private static void assertHighlighting(String field) throws Exception {
     assertQ(req("q", "id:DOC1", 
-                "hl.q", "JPEG", 
+                "df", "content",
+                "hl.q", "JPEG",
                 "indent", "true", 
                 "hl", "true", 
                 "hl.fl", field, 

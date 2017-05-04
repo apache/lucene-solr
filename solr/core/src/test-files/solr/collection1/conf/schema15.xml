@@ -627,7 +627,6 @@
   </fieldType>
 
 
-  <defaultSearchField>text</defaultSearchField>
   <uniqueKey>id</uniqueKey>
 
   <copyField source="title" dest="title_stemmed"/>

@@ -46,7 +46,6 @@
   <field name="text" type="text" indexed="true" stored="false"/>
   <field name="text_params" type="text_params" indexed="true" stored="false"/>
 
-  <defaultSearchField>text</defaultSearchField>
   <uniqueKey>id</uniqueKey>
 
 </schema>

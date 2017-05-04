@@ -64,7 +64,6 @@
   <field name="text_baseline" type="text_baseline"/>
   <field name="text_hyperbolic" type="text_hyperbolic"/>
 
-  <defaultSearchField>text</defaultSearchField>
   <uniqueKey>id</uniqueKey>
 
 </schema>

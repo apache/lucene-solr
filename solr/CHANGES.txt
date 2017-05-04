@@ -335,6 +335,8 @@ Other Changes
 * SOLR-9867: Adding isLoading=true as core status. Fixing start after stop scenario in bin/solr
   (Andrey Kudryavtsev, Mikhail Khludnev)
 
+* SOLR-7041: Cutover tests to using 'q.op' and 'df' instead of schema 'defaultOperator' and 'defaultSearchField' (janhoy)
+
 ==================  6.5.1 ==================
 
 Bug Fixes

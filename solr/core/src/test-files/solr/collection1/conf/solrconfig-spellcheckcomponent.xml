@@ -189,5 +189,10 @@
       <str>spellcheck</str>
     </arr>
   </requestHandler>
+  <initParams path="spellCheckCompRH,spellCheckCompRH1,spellCheckWithWordbreak">
+    <lst name="defaults">
+      <str name="df">text</str>
+    </lst>
+  </initParams>
 
 </config>

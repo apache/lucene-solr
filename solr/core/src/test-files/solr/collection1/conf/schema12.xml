@@ -641,7 +641,6 @@
   <dynamicField name="*core" type="ignored" multiValued="true"/>
 
 
-  <defaultSearchField>text</defaultSearchField>
   <uniqueKey>id</uniqueKey>
 
   <copyField source="title" dest="title_stemmed"/>

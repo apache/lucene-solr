@@ -478,7 +478,6 @@
   <dynamicField name="ignored_*" type="text" indexed="false" stored="false"/>
 
 
-  <defaultSearchField>text</defaultSearchField>
   <uniqueKey>id</uniqueKey>
 
   <!-- copyField commands copy one field to another at the time a document

@@ -35,6 +35,7 @@ import org.apache.lucene.search.TermQuery;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.search.QParser;
+import org.apache.solr.search.QueryParsing;
 import org.apache.solr.util.SolrPluginUtils.DisjunctionMaxQueryParser;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -126,11 +127,11 @@ public class SolrPluginUtilsTest extends SolrTestCaseJ4 {
     Query out;
     String t;
 
-    SolrQueryRequest req = req();
+    SolrQueryRequest req = req("df", "text");
     QParser qparser = QParser.getParser("hi", "dismax", req);
 
     DisjunctionMaxQueryParser qp =
-      new SolrPluginUtils.DisjunctionMaxQueryParser(qparser, req.getSchema().getDefaultSearchFieldName());
+      new SolrPluginUtils.DisjunctionMaxQueryParser(qparser, QueryParsing.getDefaultField(req.getSchema(), req.getParams().get("df")));
 
     qp.addAlias("hoss", 0.01f, SolrPluginUtils.parseFieldBoosts
                 ("title^2.0 title_stemmed name^1.2 subject^0.5"));
@@ -147,7 +148,7 @@ public class SolrPluginUtilsTest extends SolrTestCaseJ4 {
     assertTrue(t+" sanity test isn't TermQuery: " + out.getClass(),
                out instanceof TermQuery);
     assertEquals(t+" sanity test is wrong field",
-                 h.getCore().getLatestSchema().getDefaultSearchFieldName(),
+                 qp.getDefaultField(),
                  ((TermQuery)out).getTerm().field());
 
     t = "subject:XXXXXXXX";
