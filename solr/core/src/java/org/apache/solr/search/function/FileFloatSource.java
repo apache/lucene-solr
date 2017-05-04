@@ -126,6 +126,14 @@ public class FileFloatSource extends ValueSource {
   }
 
   /**
+   * Remove all cached entries associated with the given index reader.  
+   * Values are lazily loaded next time getValues() is called.
+   */
+  public static void resetCacheFor(IndexReader reader){
+    floatCache.resetCacheFor(reader);
+  }
+
+  /**
    * Refresh the cache for an IndexReader.  The new values are loaded in the background
    * and then swapped in, so queries against the cache should not block while the reload
    * is happening.
@@ -207,8 +215,22 @@ public class FileFloatSource extends ValueSource {
         readerCache.clear();
       }
     }
-  }
 
+    /**
+     * Removes and clears the inner cache for the given index reader
+     */
+    public void resetCacheFor(IndexReader reader){
+      synchronized(readerCache){
+        Map innerCache = (Map) readerCache.remove(reader);
+        if (innerCache != null) {
+          // Map.clear() is optional and can throw UnsupportedOperationException,
+          // but readerCache is WeakHashMap and it supports clear().
+          innerCache.clear();
+        }
+      }
+    }
+  }
+  
   static Object onlyForTesting; // set to the last value
 
   static final class CreationPlaceholder {

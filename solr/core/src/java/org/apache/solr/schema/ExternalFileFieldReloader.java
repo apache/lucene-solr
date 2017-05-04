@@ -19,9 +19,11 @@ package org.apache.solr.schema;
 import org.apache.lucene.index.IndexReader;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.core.AbstractSolrEventListener;
+import org.apache.solr.core.CloseHook;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.search.SolrIndexSearcher;
 import org.apache.solr.search.function.FileFloatSource;
+import org.apache.solr.util.RefCounted;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -58,6 +60,26 @@ public class ExternalFileFieldReloader extends AbstractSolrEventListener {
   public ExternalFileFieldReloader(SolrCore core) {
     super(core);
     datadir = core.getDataDir();
+    
+    core.addCloseHook(new CloseHook() {
+      
+      @Override
+      public void preClose(SolrCore core) {
+        RefCounted<SolrIndexSearcher> searcher = core.getSearcher();
+        try {
+          FileFloatSource.resetCacheFor(searcher.get().getIndexReader());
+          FileFloatSource.resetCacheFor(searcher.get().getRawReader());
+          fieldSources.clear();
+        } finally {
+          searcher.decref();
+        }
+      }
+      
+      @Override
+      public void postClose(SolrCore core) {
+        // noop
+      }
+    });
   }
 
   @Override
@@ -74,6 +96,11 @@ public class ExternalFileFieldReloader extends AbstractSolrEventListener {
     IndexReader reader = newSearcher.getIndexReader();
     for (FileFloatSource fieldSource : fieldSources) {
       fieldSource.refreshCache(reader);
+    }
+    
+    if (currentSearcher != null) {
+      FileFloatSource.resetCacheFor(currentSearcher.getIndexReader());
+      FileFloatSource.resetCacheFor(currentSearcher.getRawReader());
     }
   }
 
