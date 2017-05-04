@@ -572,5 +572,11 @@
     <str name="storageIO">org.apache.solr.rest.ManagedResourceStorage$InMemoryStorageIO</str>
   </restManager>
 
+  <initParams path="standard,dismax,defaults,lazy,spellCheckCompRH,spellCheckWithWordbreak,spellCheckCompRH_Direct,spellCheckCompRH1,mltrh,tvrh,/search-facet-def,/search-facet-invariants,/terms">
+    <lst name="defaults">
+      <str name="df">text</str>
+    </lst>
+  </initParams>
+
 </config>
 

@@ -42,6 +42,7 @@
   <requestHandler name="crazy_custom_qt" class="solr.StandardRequestHandler">
     <lst name="defaults">
       <str name="fl">implicit</str>
+      <str name="df">subject</str>
     </lst>
   </requestHandler>
   
@@ -53,5 +54,11 @@
     <defaultQuery>solr</defaultQuery>
     <gettableFiles>solrconfig.xml schema.xml</gettableFiles>
   </admin>
+
+  <initParams path="standard,crazy_custom_qt">
+    <lst name="defaults">
+      <str name="df">subject</str>
+    </lst>
+  </initParams>
 
 </config>

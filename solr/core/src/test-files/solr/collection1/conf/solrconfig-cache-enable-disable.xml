@@ -73,7 +73,13 @@
     <boolTofilterOptimizer enabled="false" cacheSize="32" threshold=".05"/>
 
   </query>
-  
+
+  <initParams path="standard">
+    <lst name="defaults">
+      <str name="df">text</str>
+    </lst>
+  </initParams>
+
 </config>
 
 

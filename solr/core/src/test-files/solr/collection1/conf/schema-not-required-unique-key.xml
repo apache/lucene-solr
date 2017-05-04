@@ -36,6 +36,5 @@
   <field name="signatureField" type="string" indexed="true" stored="false"/>
   <dynamicField name="*_sS" type="string" indexed="false" stored="true"/>
 
-  <defaultSearchField>subject</defaultSearchField>
   <uniqueKey>id</uniqueKey>
 </schema>

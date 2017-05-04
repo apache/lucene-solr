@@ -1011,7 +1011,7 @@ public class QueryEqualityTest extends SolrTestCaseJ4 {
    */
   protected void assertQueryEquals(final String defType,
                                    final String... inputs) throws Exception {
-    SolrQueryRequest req = req();
+    SolrQueryRequest req = req(new String[] {"df", "text"});
     try {
       assertQueryEquals(defType, req, inputs);
     } finally {
@@ -1172,5 +1172,10 @@ public class QueryEqualityTest extends SolrTestCaseJ4 {
     } finally {
       req.close();
     }
+  }
+
+  // Override req to add df param
+  public static SolrQueryRequest req(String... q) {
+    return SolrTestCaseJ4.req(q, "df", "text");
   }
 }

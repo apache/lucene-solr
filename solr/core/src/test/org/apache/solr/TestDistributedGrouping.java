@@ -62,7 +62,7 @@ public class TestDistributedGrouping extends BaseDistributedSearchTestCase {
     query("q", "*:*", "rows", 100, "fl", "id," + i1, "group", "true", "group.field", i1, "group.limit", -1, "sort", i1 + " asc, id asc", "hl","true","hl.fl",t1);
     query("q", "*:*", "rows", 100, "fl", "id," + i1, "group", "true", "group.field", i1, "group.limit", -1, "sort", i1 + " asc, id asc", "facet", "true", "facet.field", t1);
     query("q", "*:*", "rows", 100, "fl", "id," + i1, "group", "true", "group.field", i1, "group.limit", -1, "sort", i1 + " asc, id asc", "stats", "true", "stats.field", i1);
-    query("q", "kings", "rows", 100, "fl", "id," + i1, "group", "true", "group.field", i1, "group.limit", -1, "sort", i1 + " asc, id asc", "spellcheck", "true", "spellcheck.build", "true", "qt", "spellCheckCompRH");
+    query("q", "kings", "rows", 100, "fl", "id," + i1, "group", "true", "group.field", i1, "group.limit", -1, "sort", i1 + " asc, id asc", "spellcheck", "true", "spellcheck.build", "true", "qt", "spellCheckCompRH", "df", "subject");
     query("q", "*:*", "fq", s1 + ":a", "rows", 100, "fl", "id," + i1, "group", "true", "group.field", i1, "group.limit", -1, "sort", i1 + " asc, id asc", "group.truncate", "true", "facet", "true", "facet.field", t1);
 
     indexr(id,1, i1, 100, tlong, 100, i1dv, 100, t1,"now is the time for all good men",
@@ -160,7 +160,7 @@ public class TestDistributedGrouping extends BaseDistributedSearchTestCase {
     query("q", "*:*", "rows", 100, "fl", "id," + i1, "group", "true", "group.field", i1, "group.limit", -1, "sort", "{!func}add(" + i1 + ",5) asc, id asc");
     query("q", "*:*", "rows", 100, "fl", "id," + i1, "group", "true", "group.field", i1, "group.limit", -1, "sort", i1 + " asc, id asc", "facet", "true", "facet.field", t1);
     query("q", "*:*", "rows", 100, "fl", "id," + i1, "group", "true", "group.field", i1, "group.limit", -1, "sort", i1 + " asc, id asc", "stats", "true", "stats.field", tlong);
-    query("q", "kings", "rows", 100, "fl", "id," + i1, "group", "true", "group.field", i1, "group.limit", -1, "sort", i1 + " asc, id asc", "spellcheck", "true", "spellcheck.build", "true", "qt", "spellCheckCompRH");
+    query("q", "kings", "rows", 100, "fl", "id," + i1, "group", "true", "group.field", i1, "group.limit", -1, "sort", i1 + " asc, id asc", "spellcheck", "true", "spellcheck.build", "true", "qt", "spellCheckCompRH", "df", "subject");
     query("q", "*:*", "rows", 100, "fl", "id," + i1, "group", "true", "group.field", i1, "group.limit", -1, "sort", i1 + " asc, id asc", "facet", "true", "hl","true","hl.fl",t1);
     query("q", "*:*", "rows", 100, "fl", "id," + i1, "group", "true", "group.field", i1, "group.limit", -1, "sort", i1 + " asc, id asc", "group.sort", "id desc");
 

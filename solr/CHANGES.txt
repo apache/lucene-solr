@@ -50,7 +50,7 @@ New Features
 
 * SOLR-9992: Add support for grouping with PointFields. (Cao Manh Dat)
 
-* SOLR-10292: Adds CartesianProductStream which turns a single tuple with a multi-valued field into N 
+* SOLR-10292: Adds CartesianProductStream which turns a single tuple with a multi-valued field into N
   tuples, one for each value in the multi-valued field. (Dennis Gove)
 
 * SOLR-9994: Add support for CollapseQParser with PointFields. (Varun Thacker, Cao Manh Dat)
@@ -242,6 +242,8 @@ Other Changes
 
 * SOLR-10586: Ban defaultOperator in schema for luceneMatchVersion =>6.6.0
   Method IndexSchema.getQueryParserDefaultOperator is deprecated and will go away in 7.0 (janhoy)
+
+* SOLR-7041: Cutover tests to using 'q.op' and 'df' instead of schema 'defaultOperator' and 'defaultSearchField' (janhoy)
 
 ==================  6.5.1 ==================
 

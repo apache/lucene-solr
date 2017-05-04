@@ -256,7 +256,6 @@
   <dynamicField name="*_fr" type="text_fr" indexed="true" stored="true"/>
 
 
-  <defaultSearchField>content</defaultSearchField>
   <uniqueKey>id</uniqueKey>
 
 </schema>

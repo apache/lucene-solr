@@ -27,6 +27,7 @@
   <requestHandler name="standard" class="solr.StandardRequestHandler">
     <lst name="defaults">
       <bool name="hl.defaultSummary">false</bool>
+      <str name="df">text</str>
     </lst>
   </requestHandler>
   <searchComponent class="solr.HighlightComponent" name="highlight">

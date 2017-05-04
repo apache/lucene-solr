@@ -23,6 +23,4 @@
   <dynamicField name="*_s" type="string" indexed="true" stored="true"/>
 
   <uniqueKey>id</uniqueKey>
-
-  <defaultSearchField>id</defaultSearchField>
 </schema>

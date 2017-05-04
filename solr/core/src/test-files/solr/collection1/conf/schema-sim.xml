@@ -56,7 +56,6 @@
   <dynamicField name="*_sim2" type="sim2" indexed="true" stored="true"/>
   <dynamicField name="*_sim3" type="sim3" indexed="true" stored="true"/>
 
-  <defaultSearchField>sim1text</defaultSearchField>
   <uniqueKey>id</uniqueKey>
 
   <!-- Global similarity, defers to the fieldType.

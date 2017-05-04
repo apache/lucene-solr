@@ -59,7 +59,6 @@
   <field name="text_params" type="text_params" indexed="true" stored="false"/>
   <field name="text_paramc" type="text_paramc" indexed="true" stored="false"/>
 
-  <defaultSearchField>text</defaultSearchField>
   <uniqueKey>id</uniqueKey>
 
 </schema>
