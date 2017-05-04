@@ -314,7 +314,9 @@ public class IndexSchema {
 
   /**
    * default operator ("AND" or "OR") for QueryParser
+   * @deprecated this will go away in Solr 7.0
    */
+  @Deprecated
   public String getQueryParserDefaultOperator() {
     return queryParserDefaultOperator;
   }
@@ -542,13 +544,20 @@ public class IndexSchema {
       //                      /schema/solrQueryParser/@defaultOperator
       expression = stepsToPath(SCHEMA, SOLR_QUERY_PARSER, AT + DEFAULT_OPERATOR);
       node = (Node) xpath.evaluate(expression, document, XPathConstants.NODE);
-      if (node==null) {
-        log.debug("Default query parser operator not set in Schema");
+      if (node != null) {
+        // Fail fast for new >=6.6 configs. Will always fail from 7.0.0
+        if (getDefaultLuceneMatchVersion().onOrAfter(Version.LUCENE_6_6_0)) {
+          throw new SolrException(ErrorCode.SERVER_ERROR,
+              "Setting default operator in schema (solrQueryParser/@defaultOperator) not supported");
+        } else {
+          isExplicitQueryParserDefaultOperator = true;
+          queryParserDefaultOperator=node.getNodeValue().trim();
+          log.warn("[{}] query parser default operator is {}. WARNING: Deprecated, please use 'q.op' on request instead. "
+              + "Will not work from Solr 7",
+              coreName, queryParserDefaultOperator);
+        }
       } else {
-        isExplicitQueryParserDefaultOperator = true;
-        queryParserDefaultOperator=node.getNodeValue().trim();
-        log.warn("[{}] query parser default operator is {}. WARNING: Deprecated, please use 'q.op' on request instead.",
-            coreName, queryParserDefaultOperator);
+        log.debug("Default query parser operator not set in Schema");
       }
 
       //                      /schema/uniqueKey/text()

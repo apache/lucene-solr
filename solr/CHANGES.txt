@@ -39,6 +39,10 @@ Upgrade Notes
 
 * ZooKeeper dependency has been upgraded from 3.4.6 to 3.4.10.
 
+* Setting <solrQueryParser defaultOperator="..."/> in schema is no longer allowed and will cause an exception,
+  but older configs with luceneMatchVersion < 6.6 will still work as before.
+  Please use "q.op" parameter on the request instead. For more details, see SOLR-10586.
+
 Detailed Change List
 ----------------------
 New Features
@@ -231,6 +235,9 @@ Other Changes
 
 * SOLR-9867: Adding isLoading=true as core status. Fixing start after stop scenario in bin/solr
   (Andrey Kudryavtsev, Mikhail Khludnev)
+
+* SOLR-10586: Ban defaultOperator in schema for luceneMatchVersion =>6.6.0
+  Method IndexSchema.getQueryParserDefaultOperator is deprecated and will go away in 7.0 (janhoy)
 
 ==================  6.5.1 ==================
 

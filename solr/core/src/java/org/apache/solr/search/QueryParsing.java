@@ -65,7 +65,9 @@ public class QueryParsing {
    *
    * @see IndexSchema#getQueryParserDefaultOperator()
    * @see #OP
+   * @deprecated this will probably be removed in 8.x. Keeping in 7.x for code back compat
    */
+  @Deprecated
   public static QueryParser.Operator getQueryParserDefaultOperator(final IndexSchema sch,
                                                        final String override) {
     String val = override;
