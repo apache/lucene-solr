@@ -94,7 +94,7 @@ public abstract class SlotAcc implements Closeable {
     }
   }
 
-  public abstract void reset();
+  public abstract void reset() throws IOException;
 
   public abstract void resize(Resizer resizer);
 

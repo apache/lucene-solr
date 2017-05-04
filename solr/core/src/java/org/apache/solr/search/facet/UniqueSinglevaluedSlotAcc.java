@@ -25,19 +25,26 @@ import org.apache.lucene.index.SortedDocValues;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.FixedBitSet;
 import org.apache.lucene.util.LongValues;
+import org.apache.solr.schema.SchemaField;
 import org.apache.solr.search.SolrIndexSearcher;
 
 class UniqueSinglevaluedSlotAcc extends UniqueSlotAcc {
-  final SortedDocValues topLevel;
-  final SortedDocValues[] subDvs;
-  final MultiDocValues.OrdinalMap ordMap;
+  SortedDocValues topLevel;
+  SortedDocValues[] subDvs;
+  MultiDocValues.OrdinalMap ordMap;
   LongValues toGlobal;
   SortedDocValues subDv;
 
-  public UniqueSinglevaluedSlotAcc(FacetContext fcontext, String field, int numSlots, HLLAgg.HLLFactory factory) throws IOException {
+  public UniqueSinglevaluedSlotAcc(FacetContext fcontext, SchemaField field, int numSlots, HLLAgg.HLLFactory factory) throws IOException {
     super(fcontext, field, numSlots, factory);
+    // let setNextReader lazily call reset(), that way an extra call to reset() after creation won't matter
+  }
+
+  @Override
+  public void reset() throws IOException {
+    super.reset();
     SolrIndexSearcher searcher = fcontext.qcontext.searcher();
-    topLevel = FieldUtil.getSortedDocValues(fcontext.qcontext, searcher.getSchema().getField(field), null);
+    topLevel = FieldUtil.getSortedDocValues(fcontext.qcontext, field, null);
     nTerms = topLevel.getValueCount();
     if (topLevel instanceof MultiDocValues.MultiSortedDocValues) {
       ordMap = ((MultiDocValues.MultiSortedDocValues)topLevel).mapping;
@@ -55,6 +62,9 @@ class UniqueSinglevaluedSlotAcc extends UniqueSlotAcc {
 
   @Override
   public void setNextReader(LeafReaderContext readerContext) throws IOException {
+    if (topLevel == null) {
+      reset();
+    }
     super.setNextReader(readerContext);
     if (subDvs != null) {
       subDv = subDvs[readerContext.ord];
