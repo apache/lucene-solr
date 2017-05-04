@@ -50,6 +50,7 @@ import org.apache.solr.common.SolrInputDocument;
 import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -297,7 +298,7 @@ public class TestSolrCLIRunExample extends SolrTestCaseJ4 {
     }
   }
 
-  @Test
+  @Test @Ignore
   public void testTechproductsExample() throws Exception {
     testExample("techproducts");
   }
