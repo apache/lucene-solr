@@ -146,20 +146,9 @@ public class SearchGroupsFieldCommand implements Command<SearchGroupsFieldComman
   }
 
   @Override
-  public Sort getWithinGroupSort() {
-    return null;
-  }
-
-  @Override
   public SortSpec getWithinGroupSortSpec() {
     return null;
   }
-
-  @Override
-  public Sort getGroupSort() {
-    return groupSortSpec.getSort();
-  }
-
 
   @Override
   public SortSpec getGroupSortSpec() {

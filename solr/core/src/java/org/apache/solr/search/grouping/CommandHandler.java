@@ -29,6 +29,7 @@ import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.Collector;
 import org.apache.lucene.search.MultiCollector;
 import org.apache.lucene.search.Query;
+import org.apache.lucene.search.Sort;
 import org.apache.lucene.search.TimeLimitingCollector;
 import org.apache.lucene.search.TotalHitCountCollector;
 import org.apache.lucene.search.grouping.AllGroupHeadsCollector;
@@ -172,13 +173,14 @@ public class CommandHandler {
     FieldType fieldType = sf.getType();
     
     final AllGroupHeadsCollector allGroupHeadsCollector;
+    final Sort sort = firstCommand.getWithinGroupSortSpec().getSort();
     if (fieldType.getNumberType() != null) {
       ValueSource vs = fieldType.getValueSource(sf, null);
       allGroupHeadsCollector = AllGroupHeadsCollector.newCollector(new ValueSourceGroupSelector(vs, new HashMap<>()),
-          firstCommand.getWithinGroupSort());
+          sort);
     } else {
       allGroupHeadsCollector
-          = AllGroupHeadsCollector.newCollector(new TermGroupSelector(firstCommand.getKey()), firstCommand.getWithinGroupSort());
+          = AllGroupHeadsCollector.newCollector(new TermGroupSelector(firstCommand.getKey()), sort);
     }
     if (collectors.isEmpty()) {
       searchWithTimeLimiter(query, filter, allGroupHeadsCollector);

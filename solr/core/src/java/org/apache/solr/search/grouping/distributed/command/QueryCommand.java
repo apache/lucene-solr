@@ -146,18 +146,8 @@ public class QueryCommand implements Command<QueryCommandResult> {
   }
 
   @Override
-  public Sort getGroupSort() {
-    return sortSpec.getSort();
-  }
-
-  @Override
   public SortSpec getGroupSortSpec() {
     return sortSpec;
-  }
-
-  @Override
-  public Sort getWithinGroupSort() {
-    return null;
   }
 
   @Override
