@@ -172,7 +172,7 @@ public class SolrDispatchFilter extends BaseSolrFilter {
       coresInit = createCoreContainer(solrHome == null ? SolrResourceLoader.locateSolrHome() : Paths.get(solrHome),
                                        extraProperties);
       this.httpClient = coresInit.getUpdateShardHandler().getHttpClient();
-      setupJvmMetrics();
+      setupJvmMetrics(coresInit);
       log.debug("user.dir=" + System.getProperty("user.dir"));
     }
     catch( Throwable t ) {
@@ -190,9 +190,9 @@ public class SolrDispatchFilter extends BaseSolrFilter {
     }
   }
 
-  private void setupJvmMetrics()  {
-    SolrMetricManager metricManager = cores.getMetricManager();
-    final Set<String> hiddenSysProps = cores.getConfig().getHiddenSysProps();
+  private void setupJvmMetrics(CoreContainer coresInit)  {
+    SolrMetricManager metricManager = coresInit.getMetricManager();
+    final Set<String> hiddenSysProps = coresInit.getConfig().getHiddenSysProps();
     try {
       String registry = SolrMetricManager.getRegistryName(SolrInfoBean.Group.jvm);
       metricManager.registerAll(registry, new AltBufferPoolMetricSet(), true, "buffers");
@@ -247,9 +247,9 @@ public class SolrDispatchFilter extends BaseSolrFilter {
    */
   protected CoreContainer createCoreContainer(Path solrHome, Properties extraProperties) {
     NodeConfig nodeConfig = loadNodeConfig(solrHome, extraProperties);
-    cores = new CoreContainer(nodeConfig, extraProperties, true);
-    cores.load();
-    return cores;
+    final CoreContainer coreContainer = new CoreContainer(nodeConfig, extraProperties, true);
+    coreContainer.load();
+    return coreContainer;
   }
 
   /**
