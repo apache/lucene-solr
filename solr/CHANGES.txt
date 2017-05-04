@@ -129,6 +129,8 @@ Other Changes
 * SOLR-10310: By default, stop splitting on whitespace prior to analysis
   in edismax and standard/"lucene" query parsers. (Steve Rowe)
 
+* SOLR-10572: Removed three "no longer supported in solrconfig.xml" asserts. (Christine Poerschke)
+
 ==================  6.6.0 ==================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release.
