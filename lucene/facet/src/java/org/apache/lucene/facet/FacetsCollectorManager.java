@@ -23,12 +23,14 @@ import java.util.Collection;
 import java.util.List;
 
 /**
- * A {@link CollectorManager} implementation which produce FacetsCollector and product a merged FacetsCollector.
+ * A {@link CollectorManager} implementation which produces FacetsCollector and produces a merged FacetsCollector.
  * This is used for concurrent FacetsCollection.
  */
-class FacetsCollectorManager implements CollectorManager<FacetsCollector, FacetsCollector> {
+public class FacetsCollectorManager implements CollectorManager<FacetsCollector, FacetsCollector> {
 
-  public final static FacetsCollector EMPTY = new FacetsCollector();
+  /** Sole constructor. */
+  public FacetsCollectorManager() {
+  }
 
   @Override
   public FacetsCollector newCollector() throws IOException {
@@ -37,10 +39,11 @@ class FacetsCollectorManager implements CollectorManager<FacetsCollector, Facets
 
   @Override
   public FacetsCollector reduce(Collection<FacetsCollector> collectors) throws IOException {
-    if (collectors == null || collectors.size() == 0)
-      return EMPTY;
-    if (collectors.size() == 1)
+    if (collectors == null || collectors.size() == 0) {
+      return new FacetsCollector();
+    } if (collectors.size() == 1) {
       return collectors.iterator().next();
+    }
     return new ReducedFacetsCollector(collectors);
   }
 
@@ -51,5 +54,4 @@ class FacetsCollectorManager implements CollectorManager<FacetsCollector, Facets
       facetsCollectors.forEach(facetsCollector -> matchingDocs.addAll(facetsCollector.getMatchingDocs()));
     }
   }
-
 }

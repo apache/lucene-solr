@@ -72,9 +72,9 @@ public abstract class SortedSetDocValuesReaderState implements Accountable {
   
   /** Returns mapping from prefix to {@link OrdRange}. */
   public abstract Map<String,OrdRange> getPrefixToOrdRange();
-  
+
   /** Returns top-level index reader. */
-  public abstract IndexReader getOrigReader();
+  public abstract IndexReader getReader();
   
   /** Number of unique labels. */
   public abstract int getSize();

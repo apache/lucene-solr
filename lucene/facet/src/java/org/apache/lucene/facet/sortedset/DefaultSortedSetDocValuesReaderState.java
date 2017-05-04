@@ -48,7 +48,7 @@ public class DefaultSortedSetDocValuesReaderState extends SortedSetDocValuesRead
   private final int valueCount;
 
   /** {@link IndexReader} passed to the constructor. */
-  public final IndexReader origReader;
+  public final IndexReader reader;
 
   private final Map<String,OrdinalMap> cachedOrdMaps = new HashMap<>();
 
@@ -64,7 +64,7 @@ public class DefaultSortedSetDocValuesReaderState extends SortedSetDocValuesRead
    *  field. */
   public DefaultSortedSetDocValuesReaderState(IndexReader reader, String field) throws IOException {
     this.field = field;
-    this.origReader = reader;
+    this.reader = reader;
 
     // We need this to create thread-safe MultiSortedSetDV
     // per collector:
@@ -136,7 +136,7 @@ public class DefaultSortedSetDocValuesReaderState extends SortedSetDocValuesRead
 
   @Override
   public String toString() {
-    return "DefaultSortedSetDocValuesReaderState(field=" + field + " origReader=" + origReader + ")";
+    return "DefaultSortedSetDocValuesReaderState(field=" + field + " reader=" + reader + ")";
   }
   
   /** Return top-level doc values. */
@@ -151,10 +151,10 @@ public class DefaultSortedSetDocValuesReaderState extends SortedSetDocValuesRead
       map = cachedOrdMaps.get(field);
       if (map == null) {
         // uncached, or not a multi dv
-        SortedSetDocValues dv = MultiDocValues.getSortedSetValues(origReader, field);
+        SortedSetDocValues dv = MultiDocValues.getSortedSetValues(reader, field);
         if (dv instanceof MultiDocValues.MultiSortedSetDocValues) {
           map = ((MultiDocValues.MultiSortedSetDocValues)dv).mapping;
-          IndexReader.CacheHelper cacheHelper = origReader.getReaderCacheHelper();
+          IndexReader.CacheHelper cacheHelper = reader.getReaderCacheHelper();
           if (cacheHelper != null && map.owner == cacheHelper.getKey()) {
             cachedOrdMaps.put(field, map);
           }
@@ -164,12 +164,12 @@ public class DefaultSortedSetDocValuesReaderState extends SortedSetDocValuesRead
     }
    
     assert map != null;
-    int size = origReader.leaves().size();
+    int size = reader.leaves().size();
     final SortedSetDocValues[] values = new SortedSetDocValues[size];
     final int[] starts = new int[size+1];
     long cost = 0;
     for (int i = 0; i < size; i++) {
-      LeafReaderContext context = origReader.leaves().get(i);
+      LeafReaderContext context = reader.leaves().get(i);
       final LeafReader reader = context.reader();
       final FieldInfo fieldInfo = reader.getFieldInfos().fieldInfo(field);
       if (fieldInfo != null && fieldInfo.getDocValuesType() != DocValuesType.SORTED_SET) {
@@ -183,7 +183,7 @@ public class DefaultSortedSetDocValuesReaderState extends SortedSetDocValuesRead
       starts[i] = context.docBase;
       cost += v.cost();
     }
-    starts[size] = origReader.maxDoc();
+    starts[size] = reader.maxDoc();
     return new MultiSortedSetDocValues(values, starts, map, cost);
   }
 
@@ -206,8 +206,8 @@ public class DefaultSortedSetDocValuesReaderState extends SortedSetDocValuesRead
   }
   
   @Override
-  public IndexReader getOrigReader() {
-    return origReader;
+  public IndexReader getReader() {
+    return reader;
   }
 
   /** Number of unique labels. */

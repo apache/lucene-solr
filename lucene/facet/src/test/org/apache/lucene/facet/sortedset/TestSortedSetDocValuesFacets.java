@@ -22,6 +22,10 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.ThreadPoolExecutor;
+import java.util.concurrent.TimeUnit;
 
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
@@ -42,6 +46,7 @@ import org.apache.lucene.search.TopDocs;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.Accountable;
 import org.apache.lucene.util.IOUtils;
+import org.apache.lucene.util.NamedThreadFactory;
 import org.apache.lucene.util.TestUtil;
 
 public class TestSortedSetDocValuesFacets extends FacetTestCase {
@@ -76,7 +81,8 @@ public class TestSortedSetDocValuesFacets extends FacetTestCase {
     // Per-top-reader state:
     SortedSetDocValuesReaderState state = new DefaultSortedSetDocValuesReaderState(searcher.getIndexReader());
 
-    SortedSetDocValuesFacetCounts facets = getAllFacets(searcher, state);
+    ExecutorService exec = randomExecutorServiceOrNull();
+    Facets facets = getAllFacets(searcher, state, exec);
 
     assertEquals("dim=a path=[] value=4 childCount=3\n  foo (2)\n  bar (1)\n  zoo (1)\n", facets.getTopChildren(10, "a").toString());
     assertEquals("dim=b path=[] value=1 childCount=1\n  baz (1)\n", facets.getTopChildren(10, "b").toString());
@@ -88,6 +94,9 @@ public class TestSortedSetDocValuesFacets extends FacetTestCase {
     TopDocs hits = searcher.search(q, 1);
     assertEquals(1, hits.totalHits);
 
+    if (exec != null) {
+      exec.shutdownNow();
+    }
     writer.close();
     IOUtils.close(searcher.getIndexReader(), dir);
   }
@@ -170,7 +179,8 @@ public class TestSortedSetDocValuesFacets extends FacetTestCase {
     // Per-top-reader state:
     SortedSetDocValuesReaderState state = new DefaultSortedSetDocValuesReaderState(searcher.getIndexReader());
 
-    SortedSetDocValuesFacetCounts facets = getAllFacets(searcher, state);
+    ExecutorService exec = randomExecutorServiceOrNull();
+    Facets facets = getAllFacets(searcher, state, exec);
 
     // Ask for top 10 labels for any dims that have counts:
     List<FacetResult> results = facets.getAllDims(10);
@@ -191,6 +201,9 @@ public class TestSortedSetDocValuesFacets extends FacetTestCase {
       assertTrue(resources.isEmpty());
     }
 
+    if (exec != null) {
+      exec.shutdownNow();
+    }
     searcher.getIndexReader().close();
     dir.close();
   }
@@ -223,11 +236,15 @@ public class TestSortedSetDocValuesFacets extends FacetTestCase {
     // Per-top-reader state:
     SortedSetDocValuesReaderState state = new DefaultSortedSetDocValuesReaderState(searcher.getIndexReader());
 
-    SortedSetDocValuesFacetCounts facets = getAllFacets(searcher, state);
+    ExecutorService exec = randomExecutorServiceOrNull();
+    Facets facets = getAllFacets(searcher, state, exec);
 
     // Ask for top 10 labels for any dims that have counts:
     assertEquals("dim=a path=[] value=2 childCount=2\n  foo1 (1)\n  foo2 (1)\n", facets.getTopChildren(10, "a").toString());
 
+    if (exec != null) {
+      exec.shutdownNow();
+    }
     searcher.getIndexReader().close();
     dir.close();
   }
@@ -258,6 +275,7 @@ public class TestSortedSetDocValuesFacets extends FacetTestCase {
     
     // Per-top-reader state:
     SortedSetDocValuesReaderState state = new DefaultSortedSetDocValuesReaderState(searcher.getIndexReader());
+    ExecutorService exec = randomExecutorServiceOrNull();
 
     int iters = atLeast(100);
     for(int iter=0;iter<iters;iter++) {
@@ -267,7 +285,12 @@ public class TestSortedSetDocValuesFacets extends FacetTestCase {
       }
       FacetsCollector fc = new FacetsCollector();
       FacetsCollector.search(searcher, new TermQuery(new Term("content", searchToken)), 10, fc);
-      Facets facets = new SortedSetDocValuesFacetCounts(state, fc);
+      Facets facets;
+      if (exec != null) {
+        facets = new ConcurrentSortedSetDocValuesFacetCounts(state, fc, exec);
+      } else {
+        facets = new SortedSetDocValuesFacetCounts(state, fc);
+      }
 
       // Slow, yet hopefully bug-free, faceting:
       @SuppressWarnings({"rawtypes","unchecked"}) Map<String,Integer>[] expectedCounts = new HashMap[numDims];
@@ -315,17 +338,37 @@ public class TestSortedSetDocValuesFacets extends FacetTestCase {
       assertEquals(expected, actual);
     }
 
+    if (exec != null) {
+      exec.shutdownNow();
+    }
     w.close();
     IOUtils.close(searcher.getIndexReader(), indexDir, taxoDir);
   }
 
-  private static SortedSetDocValuesFacetCounts getAllFacets(IndexSearcher searcher, SortedSetDocValuesReaderState state) throws IOException {
+  private static Facets getAllFacets(IndexSearcher searcher, SortedSetDocValuesReaderState state,
+                                     ExecutorService exec) throws IOException, InterruptedException {
     if (random().nextBoolean()) {
       FacetsCollector c = new FacetsCollector();
-      searcher.search(new MatchAllDocsQuery(), c);    
-      return new SortedSetDocValuesFacetCounts(state, c);
+      searcher.search(new MatchAllDocsQuery(), c);
+      if (exec != null) {
+        return new ConcurrentSortedSetDocValuesFacetCounts(state, c, exec);
+      } else {
+        return new SortedSetDocValuesFacetCounts(state, c);
+      }
+    } else if (exec != null) {
+      return new ConcurrentSortedSetDocValuesFacetCounts(state, exec);
     } else {
       return new SortedSetDocValuesFacetCounts(state);
+    }
+  }
+
+  private ExecutorService randomExecutorServiceOrNull() {
+    if (random().nextBoolean()) {
+      return null;
+    } else {
+      return new ThreadPoolExecutor(1, TestUtil.nextInt(random(), 2, 6), Long.MAX_VALUE, TimeUnit.MILLISECONDS,
+                                    new LinkedBlockingQueue<Runnable>(),
+                                    new NamedThreadFactory("TestIndexSearcher"));
     }
   }
 }
