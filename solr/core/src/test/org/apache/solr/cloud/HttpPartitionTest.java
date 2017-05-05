@@ -110,10 +110,10 @@ public class HttpPartitionTest extends AbstractFullDistribZkTestBase {
    */
   @Override
   public JettySolrRunner createJetty(File solrHome, String dataDir,
-      String shardList, String solrConfigOverride, String schemaOverride)
+      String shardList, String solrConfigOverride, String schemaOverride, Replica.Type replicaType)
       throws Exception
   {
-    return createProxiedJetty(solrHome, dataDir, shardList, solrConfigOverride, schemaOverride);
+    return createProxiedJetty(solrHome, dataDir, shardList, solrConfigOverride, schemaOverride, replicaType);
   }
 
   @Test

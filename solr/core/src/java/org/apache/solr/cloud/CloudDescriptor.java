@@ -20,11 +20,12 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Properties;
 
-import com.google.common.base.Strings;
 import org.apache.solr.common.StringUtils;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.core.CoreDescriptor;
 import org.apache.solr.util.PropertiesUtil;
+
+import com.google.common.base.Strings;
 
 public class CloudDescriptor {
 
@@ -64,7 +65,12 @@ public class CloudDescriptor {
     if (Strings.isNullOrEmpty(nodeName))
       this.nodeName = null;
     this.numShards = PropertiesUtil.toInteger(props.getProperty(CloudDescriptor.NUM_SHARDS), null);
-    this.replicaType = Replica.Type.valueOf(props.getProperty(CloudDescriptor.REPLICA_TYPE, Replica.Type.REALTIME.toString()));
+    String replicaTypeStr = props.getProperty(CloudDescriptor.REPLICA_TYPE);
+    if (Strings.isNullOrEmpty(replicaTypeStr)) {
+      this.replicaType = Replica.Type.REALTIME;
+    } else {
+      this.replicaType = Replica.Type.valueOf(replicaTypeStr);
+    }
     for (String propName : props.stringPropertyNames()) {
       if (propName.startsWith(ZkController.COLLECTION_PARAM_PREFIX)) {
         collectionParams.put(propName.substring(ZkController.COLLECTION_PARAM_PREFIX.length()), props.getProperty(propName));

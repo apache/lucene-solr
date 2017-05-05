@@ -70,13 +70,13 @@ public class ChaosMonkeyNothingIsSafeWithPassiveReplicasTest extends AbstractFul
   public static void beforeSuperClass() {
     schemaString = "schema15.xml";      // we need a string id
     System.setProperty("solr.autoCommit.maxTime", "15000");
+    TestInjection.waitForReplicasInSync = null;
     setErrorHook();
   }
   
   @AfterClass
   public static void afterSuperClass() {
     System.clearProperty("solr.autoCommit.maxTime");
-    TestInjection.waitForReplicasInSync = null;
     clearErrorHook();
   }
   
@@ -171,9 +171,11 @@ public class ChaosMonkeyNothingIsSafeWithPassiveReplicasTest extends AbstractFul
         searchThread.start();
       }
       
-      StoppableCommitThread commitThread = new StoppableCommitThread(cloudClient, 1000, false);
-      threads.add(commitThread);
-      commitThread.start();
+      if (usually()) {
+        StoppableCommitThread commitThread = new StoppableCommitThread(cloudClient, 1000, false);
+        threads.add(commitThread);
+        commitThread.start();
+      }
       
       // TODO: we only do this sometimes so that we can sometimes compare against control,
       // it's currently hard to know what requests failed when using ConcurrentSolrUpdateServer

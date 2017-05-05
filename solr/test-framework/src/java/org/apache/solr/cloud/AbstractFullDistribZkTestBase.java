@@ -236,6 +236,11 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
             CreateMode.PERSISTENT, true);
       }
     }
+    if (useAppendReplicas()) {
+      log.info("Will use {} replicas unless explicitly asked otherwise", Replica.Type.APPEND);
+    } else {
+      log.info("Will use {} replicas unless explicitly asked otherwise", Replica.Type.REALTIME);
+    }
   }
 
   @BeforeClass
@@ -512,7 +517,7 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
     return jetty;
   }
   
-  public JettySolrRunner createJetty(File solrHome, String dataDir, String shardList, String solrConfigOverride, String schemaOverride) throws Exception {
+  public final JettySolrRunner createJetty(File solrHome, String dataDir, String shardList, String solrConfigOverride, String schemaOverride) throws Exception {
     return createJetty(solrHome, dataDir, shardList, solrConfigOverride, schemaOverride, null);
   }
 
@@ -541,7 +546,7 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
       props.setProperty("solr.data.dir", getDataDir(dataDir));
     if (replicaType != null) {
       props.setProperty("replicaType", replicaType.toString());
-    } else { // TODO: include the case with no replicaTYpe defined: if (random().nextBoolean()) {
+    } else if (random().nextBoolean()) {
       props.setProperty("replicaType", Replica.Type.REALTIME.toString());
     }
     props.setProperty("coreRootDirectory", solrHome.toPath().resolve("cores").toAbsolutePath().toString());
@@ -558,7 +563,7 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
    * with IPTables.
    */
   public JettySolrRunner createProxiedJetty(File solrHome, String dataDir,
-                                     String shardList, String solrConfigOverride, String schemaOverride)
+                                     String shardList, String solrConfigOverride, String schemaOverride, Replica.Type replicaType)
       throws Exception {
 
     JettyConfig jettyconfig = JettyConfig.builder()
@@ -578,6 +583,11 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
       props.setProperty("shards", shardList);
     if (dataDir != null)
       props.setProperty("solr.data.dir", getDataDir(dataDir));
+    if (replicaType != null) {
+      props.setProperty("replicaType", replicaType.toString());
+    } else if (random().nextBoolean()) {
+      props.setProperty("replicaType", Replica.Type.REALTIME.toString());
+    }
     props.setProperty("coreRootDirectory", solrHome.toPath().resolve("cores").toAbsolutePath().toString());
 
     JettySolrRunner jetty = new JettySolrRunner(solrHome.getPath(), props, jettyconfig);
