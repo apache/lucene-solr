@@ -209,6 +209,8 @@ New Features
 * SOLR-9530: An Update Processor to convert normal update operation to an atomic operations such as
   add, set,inc, remove ,set, removeregex (Amrit Sarkar, noble)
 
+* SOLR-10303: Add date/time Stream Evaluators (Gethin James, Dennis Gove, Joel Bernstein)
+
 
 Optimizations
 ----------------------
