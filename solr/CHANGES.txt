@@ -215,6 +215,8 @@ New Features
 
 * SOLR-10426: Add shuffle Streaming Expression (Joel Bernstein)
 
+* SOLR-10274: The search Streaming Expression should work in non-SolrCloud mode (Joel Bernstein)
+
 Optimizations
 ----------------------
 
