@@ -29,6 +29,7 @@ import java.util.Arrays;
 import java.util.Locale;
 import java.util.Properties;
 import java.util.Set;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.regex.Matcher;
@@ -41,6 +42,7 @@ import javax.servlet.ServletInputStream;
 import javax.servlet.ServletOutputStream;
 import javax.servlet.ServletRequest;
 import javax.servlet.ServletResponse;
+import javax.servlet.UnavailableException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletRequestWrapper;
 import javax.servlet.http.HttpServletResponse;
@@ -88,6 +90,7 @@ public class SolrDispatchFilter extends BaseSolrFilter {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   protected volatile CoreContainer cores;
+  protected final CountDownLatch init = new CountDownLatch(1);
 
   protected String abortErrorMessage = null;
   protected HttpClient httpClient;
@@ -187,6 +190,7 @@ public class SolrDispatchFilter extends BaseSolrFilter {
     }finally{
       log.trace("SolrDispatchFilter.init() done");
       this.cores = coresInit; // crucially final assignment 
+      init.countDown();
     }
   }
 
@@ -318,9 +322,15 @@ public class SolrDispatchFilter extends BaseSolrFilter {
     try {
 
       if (cores == null || cores.isShutDown()) {
-        log.error("Error processing the request. CoreContainer is either not initialized or shutting down.");
-        throw new SolrException(ErrorCode.SERVICE_UNAVAILABLE,
-            "Error processing the request. CoreContainer is either not initialized or shutting down.");
+        try {
+          init.await();
+        } catch (InterruptedException e) { //well, no wait then
+        }
+        final String msg = "Error processing the request. CoreContainer is either not initialized or shutting down.";
+        if (cores == null || cores.isShutDown()) {
+          log.error(msg);
+          throw new UnavailableException(msg);
+        }
       }
 
       AtomicReference<ServletRequest> wrappedRequest = new AtomicReference<>();

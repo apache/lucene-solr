@@ -302,6 +302,10 @@ Bug Fixes
 
 * SOLR-10549: The new 'large' attribute had been forgotten in /schema/fieldtypes?showDefaults=true (David Smiley)
 
+* SOLR-10615: requests are suspended until SolrDispatchFilter initialization is completed. 
+  After core container shutdown or severe initialization problem Solr responds with 
+  http stauts 404 Not Found instead of 500 as it was before (Mikhail Khludnev) 
+
 Other Changes
 ----------------------
 
