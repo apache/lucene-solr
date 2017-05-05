@@ -217,6 +217,8 @@ New Features
 
 * SOLR-10274: The search Streaming Expression should work in non-SolrCloud mode (Joel Bernstein)
 
+* SOLR-10504: Add echo Streaming Expression (Joel Bernstein)
+
 Optimizations
 ----------------------
 
