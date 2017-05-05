@@ -28,6 +28,8 @@ import org.apache.solr.common.params.MapSolrParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.StrUtils;
+import org.apache.solr.common.util.Utils;
+import org.apache.solr.core.PluginBag;
 import org.apache.solr.core.PluginInfo;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.request.SolrQueryRequest;
@@ -271,9 +273,13 @@ public final class UpdateRequestProcessorChain implements PluginInfoInitialized
       UpdateRequestProcessorFactory p = core.getUpdateProcessors().get(s);
       if (p == null) {
         try {
-          p = core.createInstance(s + "UpdateProcessorFactory", UpdateRequestProcessorFactory.class,
-              "updateProcessor", null, core.getMemClassLoader());
-          core.getUpdateProcessors().put(s, p);
+          PluginInfo pluginInfo = new PluginInfo("updateProcessor",
+              Utils.makeMap("name", s,
+                  "class", s + "UpdateProcessorFactory",
+                  "runtimeLib", "true"));
+
+          PluginBag.PluginHolder<UpdateRequestProcessorFactory> pluginHolder = core.getUpdateProcessors().createPlugin(pluginInfo);
+          core.getUpdateProcessors().put(s, p = pluginHolder.get());
         } catch (SolrException e) {
         }
         if (p == null)

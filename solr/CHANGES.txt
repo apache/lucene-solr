@@ -206,6 +206,10 @@ New Features
 
 * SOLR-10583: JSON Faceting now supports a query time 'join' domain change option (hossman)
 
+* SOLR-9530: An Update Processor to convert normal update operation to an atomic operations such as
+  add, set,inc, remove ,set, removeregex (Amrit Sarkar, noble)
+
+
 Optimizations
 ----------------------
 
