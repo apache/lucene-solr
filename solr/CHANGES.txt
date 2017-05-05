@@ -227,6 +227,8 @@ New Features
 
 * SOLR-10559: Add let, get and tuple Streaming Expressions (Dennis Gove, Joel Bernstein)
 
+* SOLR-10582: Add Correlation Stream Evaluator (Joel Bernstein)
+
 Optimizations
 ----------------------
 
