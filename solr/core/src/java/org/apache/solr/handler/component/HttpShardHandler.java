@@ -349,9 +349,12 @@ public class HttpShardHandler extends ShardHandler {
       // and make it a non-distributed request.
       String ourSlice = cloudDescriptor.getShardId();
       String ourCollection = cloudDescriptor.getCollectionName();
+      // Some requests may only be fulfilled by replicas of type Replica.Type.REALTIME
+      boolean onlyRealtimeReplicas = Boolean.TRUE == req.getContext().get("distribOnlyRealtime");
       if (rb.slices.length == 1 && rb.slices[0] != null
           && ( rb.slices[0].equals(ourSlice) || rb.slices[0].equals(ourCollection + "_" + ourSlice) )  // handle the <collection>_<slice> format
-          && cloudDescriptor.getLastPublished() == Replica.State.ACTIVE) {
+          && cloudDescriptor.getLastPublished() == Replica.State.ACTIVE
+          && (!onlyRealtimeReplicas || cloudDescriptor.getReplicaType() == Replica.Type.REALTIME)) {
         boolean shortCircuit = params.getBool("shortCircuit", true);       // currently just a debugging parameter to check distrib search on a single node
 
         String targetHandler = params.get(ShardParams.SHARDS_QT);
@@ -387,13 +390,35 @@ public class HttpShardHandler extends ShardHandler {
             continue;
             // throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "no such shard: " + sliceName);
           }
+          Replica shardLeader = null;
 
           final Collection<Replica> allSliceReplicas = slice.getReplicasMap().values();
           final List<Replica> eligibleSliceReplicas = new ArrayList<>(allSliceReplicas.size());
           for (Replica replica : allSliceReplicas) {
             if (!clusterState.liveNodesContain(replica.getNodeName())
-                || replica.getState() != Replica.State.ACTIVE) {
+                || replica.getState() != Replica.State.ACTIVE
+                || (onlyRealtimeReplicas && replica.getType() == Replica.Type.PASSIVE)) {
               continue;
+            }
+            
+            if (onlyRealtimeReplicas && replica.getType() == Replica.Type.APPEND) {
+              if (shardLeader == null) {
+                try {
+                  shardLeader = zkController.getZkStateReader().getLeaderRetry(cloudDescriptor.getCollectionName(), slice.getName());
+                } catch (InterruptedException e) {
+                  throw new SolrException(SolrException.ErrorCode.SERVICE_UNAVAILABLE, "Exception finding leader for shard " + slice.getName() + " in collection " 
+                      + cloudDescriptor.getCollectionName(), e);
+                } catch (SolrException e) {
+                  if (log.isDebugEnabled()) {
+                    log.debug("Exception finding leader for shard {} in collection {}. Collection State: {}", 
+                        slice.getName(), cloudDescriptor.getCollectionName(), zkController.getZkStateReader().getClusterState().getCollectionOrNull(cloudDescriptor.getCollectionName()));
+                  }
+                  throw e;
+                }
+              }
+              if (!replica.getName().equals(shardLeader.getName())) {
+                continue;
+              }
             }
             eligibleSliceReplicas.add(replica);
           }

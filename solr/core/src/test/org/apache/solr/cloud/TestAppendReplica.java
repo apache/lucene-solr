@@ -28,6 +28,7 @@ import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
+import org.apache.http.client.HttpClient;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.util.LuceneTestCase.Slow;
 import org.apache.solr.client.solrj.SolrClient;
@@ -41,6 +42,7 @@ import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.client.solrj.response.CollectionAdminResponse;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.common.SolrDocument;
+import org.apache.solr.common.SolrDocumentList;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.cloud.CollectionStatePredicate;
@@ -255,16 +257,48 @@ public class TestAppendReplica extends SolrCloudTestCase {
     doReplaceLeader(false);
   }
   
-  public void testPassiveReplicaStates() {
-    // Validate that passive replicas go through the correct states when starting, stopping, reconnecting
-  }
-  
-  public void testPassiveReplicaCantConnectToZooKeeper() {
-    
-  }
-  
-  public void testRealTimeGet() {
-    // should be redirected to writers or error
+  public void testRealTimeGet() throws SolrServerException, IOException, KeeperException, InterruptedException {
+    // should be redirected to Replica.Type.REALTIME
+    int numReplicas = random().nextBoolean()?1:2;
+    int numRealtimeReplicas = random().nextBoolean()?0:2;
+    CollectionAdminRequest.createCollection(collectionName, "conf", 1, numRealtimeReplicas, numReplicas, 0)
+      .setMaxShardsPerNode(100)
+      .process(cluster.getSolrClient());
+    waitForState("Unexpected replica count", collectionName, activeReplicaCount(numRealtimeReplicas, numReplicas, 0));
+    DocCollection docCollection = assertNumberOfReplicas(numRealtimeReplicas, numReplicas, 0, false, true);
+    HttpClient httpClient = cluster.getSolrClient().getHttpClient();
+    int id = 0;
+    Slice slice = docCollection.getSlice("shard1");
+    List<String> ids = new ArrayList<>(slice.getReplicas().size());
+    for (Replica rAdd:slice.getReplicas()) {
+      try (HttpSolrClient client = getHttpSolrClient(rAdd.getCoreUrl(), httpClient)) {
+        client.add(new SolrInputDocument("id", String.valueOf(id), "foo_s", "bar"));
+      }
+      SolrDocument docCloudClient = cluster.getSolrClient().getById(collectionName, String.valueOf(id));
+      assertEquals("bar", docCloudClient.getFieldValue("foo_s"));
+      for (Replica rGet:slice.getReplicas()) {
+        try (HttpSolrClient client = getHttpSolrClient(rGet.getCoreUrl(), httpClient)) {
+          SolrDocument doc = client.getById(String.valueOf(id));
+          assertEquals("bar", doc.getFieldValue("foo_s"));
+        }
+      }
+      ids.add(String.valueOf(id));
+      id++;
+    }
+    SolrDocumentList previousAllIdsResult = null;
+    for (Replica rAdd:slice.getReplicas()) {
+      try (HttpSolrClient client = getHttpSolrClient(rAdd.getCoreUrl(), httpClient)) {
+        SolrDocumentList allIdsResult = client.getById(ids);
+        if (previousAllIdsResult != null) {
+          assertTrue(compareSolrDocumentList(previousAllIdsResult, allIdsResult));
+        } else {
+          // set the first response here
+          previousAllIdsResult = allIdsResult;
+          assertEquals("Unexpected number of documents", ids.size(), allIdsResult.getNumFound());
+        }
+      }
+      id++;
+    }
   }
   
   /*
