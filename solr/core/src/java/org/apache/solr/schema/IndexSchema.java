@@ -528,6 +528,7 @@ public class IndexSchema {
       if (node==null) {
         log.debug("no default search field specified in schema.");
       } else {
+        checkVersionCompatibilityForDefaultSearchField();
         defaultSearchFieldName=node.getNodeValue().trim();
         // throw exception if specified, but not found or not indexed
         if (defaultSearchFieldName!=null) {
@@ -537,8 +538,7 @@ public class IndexSchema {
             throw new SolrException(ErrorCode.SERVER_ERROR, msg);
           }
         }
-        log.warn("[{}] default search field in schema is {}. WARNING: Deprecated, please use 'df' on request instead.",
-            coreName, defaultSearchFieldName);
+        log.info("[{}] default search field in schema is {}.", coreName, defaultSearchFieldName);
       }
 
       //                      /schema/solrQueryParser/@defaultOperator
@@ -616,6 +616,16 @@ public class IndexSchema {
     refreshAnalyzers();
 
     log.info("Loaded schema {}/{} with uniqueid field {}", name, version, uniqueKeyFieldName);
+  }
+  
+  private void checkVersionCompatibilityForDefaultSearchField() {
+    log.warn("'defaultSearchField' is deprecated, please use 'df' on request instead.");
+    if (getDefaultLuceneMatchVersion().onOrAfter(Version.LUCENE_6_6_0)) {
+      final String msg = "defaultSearchField has been deprecated and is incompatible with " +
+          "configs with luceneMatchVersion >= 6.6.0.  Use 'df' on requests instead.";
+      log.error(msg);
+      throw new SolrException(ErrorCode.SERVER_ERROR, msg);
+    }
   }
 
   private String getCoreName(String defaultVal) {

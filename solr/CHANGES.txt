@@ -43,6 +43,10 @@ Upgrade Notes
   but older configs with luceneMatchVersion < 6.6 will still work as before.
   Please use "q.op" parameter on the request instead. For more details, see SOLR-10586.
 
+* Setting <defaultSearchField> in schema is no longer allowed and will cause an exception,
+  but older configs with luceneMatchVersion < 6.6 will still work as before.
+  Please use "df" parameter on the request instead. For more details, see SOLR-10587.
+
 Detailed Change List
 ----------------------
 New Features
@@ -244,6 +248,8 @@ Other Changes
   Method IndexSchema.getQueryParserDefaultOperator is deprecated and will go away in 7.0 (janhoy)
 
 * SOLR-7041: Cutover tests to using 'q.op' and 'df' instead of schema 'defaultOperator' and 'defaultSearchField' (janhoy)
+
+* SOLR-10587: Ban defaultSearchField in schema for luceneMatchVersion =>6.6.0 (Jason Gerlowski, janhoy)
 
 ==================  6.5.1 ==================
 
