@@ -40,6 +40,7 @@ public class UpdateRequestProcessorFactoryTest extends AbstractSolrTestCase {
 
   @BeforeClass
   public static void beforeClass() throws Exception {
+    System.setProperty("enable.runtime.lib", "true");
     initCore("solrconfig-transformers.xml", "schema.xml");
   }
 
