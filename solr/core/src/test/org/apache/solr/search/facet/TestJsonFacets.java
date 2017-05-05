@@ -1360,13 +1360,16 @@ public class TestJsonFacets extends SolrTestCaseHS {
             "}"
     );
 
+
     // test acc reuse (i.e. reset() method).  This is normally used for stats that are not calculated in the first phase,
     // currently non-sorting stats.
     client.testJQ(params(p, "q", "*:*"
-        , "json.facet", "{f1:{type:terms, field:'${cat_s}', facet:{h:'hll(${where_s})'}   }}"
+        , "json.facet", "{f1:{type:terms, field:'${cat_s}', facet:{h:'hll(${where_s})' , u:'unique(${where_s})', mind:'min(${num_d})', maxd:'max(${num_d})', sumd:'sum(${num_d})', avgd:'avg(${num_d})', variance:'variance(${num_d})', stddev:'stddev(${num_d})'         }   }}"
         )
         , "facets=={ 'count':6, " +
-            "'f1':{  buckets:[{val:B, count:3, h:2},{val:A, count:2, h:2}] } } "
+            "'f1':{  buckets:[{val:B, count:3, h:2, u:2, mind:-9.0, maxd:11.0, sumd:-3.0, avgd:-1.0, variance:74.66666666666667, stddev:8.640987597877148}," +
+            "                 {val:A, count:2, h:2, u:2, mind:2.0, maxd:4.0, sumd:6.0, avgd:3.0, variance:1.0, stddev:1.0}] } } "
+
     );
 
   }
