@@ -225,6 +225,8 @@ New Features
 
 * SOLR-10566: Add timeseries Streaming Expression (Joel Bernstein)
 
+* SOLR-10559: Add let, get and tuple Streaming Expressions (Dennis Gove, Joel Bernstein)
+
 Optimizations
 ----------------------
 
