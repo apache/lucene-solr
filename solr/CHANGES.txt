@@ -213,6 +213,8 @@ New Features
 
 * SOLR-10351: Add analyze Stream Evaluator to support streaming NLP (Joel Bernstein)
 
+* SOLR-10426: Add shuffle Streaming Expression (Joel Bernstein)
+
 Optimizations
 ----------------------
 
