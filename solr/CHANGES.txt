@@ -223,6 +223,8 @@ New Features
 
 * SOLR-10516: Add eval Streaming Expression (Joel Bernstein)
 
+* SOLR-10566: Add timeseries Streaming Expression (Joel Bernstein)
+
 Optimizations
 ----------------------
 
