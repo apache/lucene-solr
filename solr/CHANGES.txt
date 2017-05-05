@@ -211,6 +211,7 @@ New Features
 
 * SOLR-10303: Add date/time Stream Evaluators (Gethin James, Dennis Gove, Joel Bernstein)
 
+* SOLR-10351: Add analyze Stream Evaluator to support streaming NLP (Joel Bernstein)
 
 Optimizations
 ----------------------
