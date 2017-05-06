@@ -16,12 +16,6 @@
  */
 package org.apache.solr.util;
 
-import org.apache.solr.SolrTestCaseJ4;
-import org.apache.solr.util.SimplePostTool.PageFetcher;
-import org.apache.solr.util.SimplePostTool.PageFetcherResult;
-import org.junit.Before;
-import org.junit.Test;
-
 import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.io.IOException;
@@ -34,6 +28,12 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Set;
 
+import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.util.SimplePostTool.PageFetcher;
+import org.apache.solr.util.SimplePostTool.PageFetcherResult;
+import org.junit.Before;
+import org.junit.Test;
+
 /**
  * NOTE: do *not* use real hostnames, not even "example.com", in this test.
  *
@@ -42,6 +42,7 @@ import java.util.Set;
  * the hostnames.
  */ 
 public class SimplePostToolTest extends SolrTestCaseJ4 {
+
   SimplePostTool t_file, t_file_auto, t_file_rec, t_web, t_test;
   PageFetcher pf;
   
@@ -70,8 +71,10 @@ public class SimplePostToolTest extends SolrTestCaseJ4 {
     t_test = SimplePostTool.parseArgsAndInit(args);
 
     pf = new MockPageFetcher();
-    SimplePostTool.pageFetcher = pf;
-    SimplePostTool.mockMode = true;
+    for (SimplePostTool mockable : new SimplePostTool[]{t_web, t_file_auto}) {
+      mockable.pageFetcher = pf;
+      mockable.mockMode = true;
+    }
   }
   
   @Test
@@ -170,7 +173,7 @@ public class SimplePostToolTest extends SolrTestCaseJ4 {
     assertEquals(3, num);
     
     // Without respecting robots.txt
-    SimplePostTool.pageFetcher.robotsCache.clear();
+    t_web.pageFetcher.robotsCache.clear();
     t_web.recursive = 5;
     num = t_web.postWebPages(new String[] {"http://[ff01::114]/#removeme"}, 0, null);
     assertEquals(6, num);
@@ -178,9 +181,9 @@ public class SimplePostToolTest extends SolrTestCaseJ4 {
   
   @Test
   public void testRobotsExclusion() throws MalformedURLException {
-    assertFalse(SimplePostTool.pageFetcher.isDisallowedByRobots(new URL("http://[ff01::114]/")));
-    assertTrue(SimplePostTool.pageFetcher.isDisallowedByRobots(new URL("http://[ff01::114]/disallowed")));
-    assertTrue("There should be two entries parsed from robots.txt", SimplePostTool.pageFetcher.robotsCache.get("[ff01::114]").size() == 2);
+    assertFalse(t_web.pageFetcher.isDisallowedByRobots(new URL("http://[ff01::114]/")));
+    assertTrue(t_web.pageFetcher.isDisallowedByRobots(new URL("http://[ff01::114]/disallowed")));
+    assertTrue("There should be two entries parsed from robots.txt", t_web.pageFetcher.robotsCache.get("[ff01::114]").size() == 2);
   }
 
   static class MockPageFetcher extends PageFetcher {
@@ -219,7 +222,7 @@ public class SimplePostToolTest extends SolrTestCaseJ4 {
       sb.append("Disallow:  # This is void\n");
       sb.append("Disallow: /disallow # Disallow this path\n");
       sb.append("Disallow: /nonexistingpath # Disallow this path\n");
-      this.robotsCache.put("[ff01::114]", SimplePostTool.pageFetcher.
+      this.robotsCache.put("[ff01::114]", super.
           parseRobotsTxt(new ByteArrayInputStream(sb.toString().getBytes(StandardCharsets.UTF_8))));
     }
     

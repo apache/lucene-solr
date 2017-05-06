@@ -125,8 +125,8 @@ public class SimplePostTool {
       "Usage: java [SystemProperties] -jar post.jar [-h|-] [<file|folder|url|arg> [<file|folder|url|arg>...]]";
 
   // Used in tests to avoid doing actual network traffic
-  static boolean mockMode = false;
-  static PageFetcher pageFetcher;
+  boolean mockMode = false;
+  PageFetcher pageFetcher;
 
   static {
     DATA_MODES.add(DATA_MODE_FILES);
@@ -810,7 +810,7 @@ public class SimplePostTool {
       } else {
         if(type == null) type = DEFAULT_CONTENT_TYPE;
       }
-      info("POSTing file " + file.getName() + (auto?" ("+type+")":"") + " to [base]" + suffix);
+      info("POSTing file " + file.getName() + (auto?" ("+type+")":"") + " to [base]" + suffix + (mockMode ? " MOCK!":""));
       is = new FileInputStream(file);
       postData(is, file.length(), output, type, url);
     } catch (IOException e) {
@@ -851,7 +851,7 @@ public class SimplePostTool {
   /**
    * Performs a simple get on the given URL
    */
-  public static void doGet(String url) {
+  public void doGet(String url) {
     try {
       doGet(new URL(url));
     } catch (MalformedURLException e) {
@@ -862,7 +862,7 @@ public class SimplePostTool {
   /**
    * Performs a simple get on the given URL
    */
-  public static void doGet(URL url) {
+  public void doGet(URL url) {
     try {
       if(mockMode) return;
       HttpURLConnection urlc = (HttpURLConnection) url.openConnection();

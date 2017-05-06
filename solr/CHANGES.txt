@@ -274,6 +274,9 @@ Other Changes
 
 * SOLR-10587: Ban defaultSearchField in schema for luceneMatchVersion =>6.6.0 (Jason Gerlowski, janhoy)
 
+* SOLR-10614: Static fields have turned to instance's field in SimplePostTool. 
+  Enabled TestSolrCLIRunExample.testTechproductsExample(). (Andrey Kudryavtsev, Mikhail Khludnev)
+
 ==================  6.5.1 ==================
 
 Bug Fixes
