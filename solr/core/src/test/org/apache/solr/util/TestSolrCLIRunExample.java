@@ -50,7 +50,6 @@ import org.apache.solr.common.SolrInputDocument;
 import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
-import org.junit.Ignore;
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -298,7 +297,7 @@ public class TestSolrCLIRunExample extends SolrTestCaseJ4 {
     }
   }
 
-  @Test @Ignore
+  @Test 
   public void testTechproductsExample() throws Exception {
     testExample("techproducts");
   }
@@ -317,75 +316,74 @@ public class TestSolrCLIRunExample extends SolrTestCaseJ4 {
     File solrExampleDir = tmpDir.toFile();
     File solrServerDir = solrHomeDir.getParentFile();
 
-    for (int i =0; i<2; i++){
-    // need a port to start the example server on
-    int bindPort = -1;
-    try (ServerSocket socket = new ServerSocket(0)) {
-      bindPort = socket.getLocalPort();
-    }
-
-    log.info("Selected port "+bindPort+" to start "+exampleName+" example Solr instance on ...");
-
-    String[] toolArgs = new String[] {
-        "-e", exampleName,
-        "-serverDir", solrServerDir.getAbsolutePath(),
-        "-exampleDir", solrExampleDir.getAbsolutePath(),
-        "-p", String.valueOf(bindPort)
-    };
-
-    // capture tool output to stdout
-    ByteArrayOutputStream baos = new ByteArrayOutputStream();
-    PrintStream stdoutSim = new PrintStream(baos, true, StandardCharsets.UTF_8.name());
-
-    RunExampleExecutor executor = new RunExampleExecutor(stdoutSim);
-    closeables.add(executor);
-
-    SolrCLI.RunExampleTool tool = new SolrCLI.RunExampleTool(executor, System.in, stdoutSim);
-    try {
-      final int status = tool.runTool(SolrCLI.processCommandLineArgs(SolrCLI.joinCommonAndToolOptions(tool.getOptions()), toolArgs));
-      assertEquals("it should be ok "+tool+" "+Arrays.toString(toolArgs),0, status);
-    } catch (Exception e) {
-      log.error("RunExampleTool failed due to: " + e +
-          "; stdout from tool prior to failure: " + baos.toString(StandardCharsets.UTF_8.name()));
-      throw e;
-    }
-
-    String toolOutput = baos.toString(StandardCharsets.UTF_8.name());
-
-    // dump all the output written by the SolrCLI commands to stdout
-    //System.out.println("\n\n"+toolOutput+"\n\n");
-
-    File exampleSolrHomeDir = new File(solrExampleDir, exampleName+"/solr");
-    assertTrue(exampleSolrHomeDir.getAbsolutePath() + " not found! run " +
-            exampleName + " example failed; output: " + toolOutput,
-        exampleSolrHomeDir.isDirectory());
-
-    if ("techproducts".equals(exampleName)) {
-      HttpSolrClient solrClient = getHttpSolrClient("http://localhost:" + bindPort + "/solr/" + exampleName);
-      try{
-        SolrQuery query = new SolrQuery("*:*");
-        QueryResponse qr = solrClient.query(query);
-        long numFound = qr.getResults().getNumFound();
-        if (numFound == 0) {
-          // brief wait in case of timing issue in getting the new docs committed
-          log.warn("Going to wait for 1 second before re-trying query for techproduct example docs ...");
-          try {
-            Thread.sleep(1000);
-          } catch (InterruptedException ignore) {
-            Thread.interrupted();
-          }
-          numFound = solrClient.query(query).getResults().getNumFound();
-        }
-        assertTrue("expected 32 docs in the " + exampleName + " example but found " + numFound + ", output: " + toolOutput,
-            numFound == 32);
-      }finally{
-        
-        solrClient.close();
+    for (int pass = 0; pass<2; pass++){
+      // need a port to start the example server on
+      int bindPort = -1;
+      try (ServerSocket socket = new ServerSocket(0)) {
+        bindPort = socket.getLocalPort();
       }
-    }
-
-    // stop the test instance
-    executor.execute(org.apache.commons.exec.CommandLine.parse("bin/solr stop -p " + bindPort));
+  
+      log.info("Selected port "+bindPort+" to start "+exampleName+" example Solr instance on ...");
+  
+      String[] toolArgs = new String[] {
+          "-e", exampleName,
+          "-serverDir", solrServerDir.getAbsolutePath(),
+          "-exampleDir", solrExampleDir.getAbsolutePath(),
+          "-p", String.valueOf(bindPort)
+      };
+  
+      // capture tool output to stdout
+      ByteArrayOutputStream baos = new ByteArrayOutputStream();
+      PrintStream stdoutSim = new PrintStream(baos, true, StandardCharsets.UTF_8.name());
+  
+      RunExampleExecutor executor = new RunExampleExecutor(stdoutSim);
+      closeables.add(executor);
+  
+      SolrCLI.RunExampleTool tool = new SolrCLI.RunExampleTool(executor, System.in, stdoutSim);
+      try {
+        final int status = tool.runTool(SolrCLI.processCommandLineArgs(SolrCLI.joinCommonAndToolOptions(tool.getOptions()), toolArgs));
+        assertEquals("it should be ok "+tool+" "+Arrays.toString(toolArgs),0, status);
+      } catch (Exception e) {
+        log.error("RunExampleTool failed due to: " + e +
+            "; stdout from tool prior to failure: " + baos.toString(StandardCharsets.UTF_8.name()));
+        throw e;
+      }
+  
+      String toolOutput = baos.toString(StandardCharsets.UTF_8.name());
+  
+      // dump all the output written by the SolrCLI commands to stdout
+      //System.out.println("\n\n"+toolOutput+"\n\n");
+  
+      File exampleSolrHomeDir = new File(solrExampleDir, exampleName+"/solr");
+      assertTrue(exampleSolrHomeDir.getAbsolutePath() + " not found! run " +
+              exampleName + " example failed; output: " + toolOutput,
+          exampleSolrHomeDir.isDirectory());
+  
+      if ("techproducts".equals(exampleName)) {
+        HttpSolrClient solrClient = getHttpSolrClient("http://localhost:" + bindPort + "/solr/" + exampleName);
+        try{
+          SolrQuery query = new SolrQuery("*:*");
+          QueryResponse qr = solrClient.query(query);
+          long numFound = qr.getResults().getNumFound();
+          if (numFound == 0) {
+            // brief wait in case of timing issue in getting the new docs committed
+            log.warn("Going to wait for 1 second before re-trying query for techproduct example docs ...");
+            try {
+              Thread.sleep(1000);
+            } catch (InterruptedException ignore) {
+              Thread.interrupted();
+            }
+            numFound = solrClient.query(query).getResults().getNumFound();
+          }
+          assertTrue("expected 32 docs in the " + exampleName + " example but found " + numFound + ", output: " + toolOutput,
+              numFound == 32);
+        }finally{
+          solrClient.close();
+        }
+      }
+  
+      // stop the test instance
+      executor.execute(org.apache.commons.exec.CommandLine.parse("bin/solr stop -p " + bindPort));
     }
   }
 

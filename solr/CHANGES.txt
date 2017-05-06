@@ -371,6 +371,9 @@ Other Changes
 
 * SOLR-10601: StreamExpressionParser should handle white space around = in named parameters (Joel Bernstein)
 
+* SOLR-10614: Static fields have turned to instance's field in SimplePostTool. 
+  Enabled TestSolrCLIRunExample.testTechproductsExample(). (Andrey Kudryavtsev, Mikhail Khludnev)
+
 ==================  6.5.1 ==================
 
 Bug Fixes
