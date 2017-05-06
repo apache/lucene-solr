@@ -232,6 +232,8 @@ New Features
 
 * SOLR-10582: Add Correlation Stream Evaluator (Joel Bernstein)
 
+* SOLR-10536: stats Streaming Expression should work in non-SolrCloud mode (Joel Bernstein)
+
 Optimizations
 ----------------------
 
