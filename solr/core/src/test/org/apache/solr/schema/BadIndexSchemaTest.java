@@ -135,6 +135,7 @@ public class BadIndexSchemaTest extends AbstractBadConfigTestBase {
 
   public void testDefaultOperatorNotBannedForPre66() throws Exception {
     initCore("solrconfig-minimal-version6.xml", "bad-schema-default-operator.xml");
+    deleteCore();
   }
 
   public void testSchemaWithDefaultSearchField() throws Exception {
@@ -143,5 +144,6 @@ public class BadIndexSchemaTest extends AbstractBadConfigTestBase {
 
   public void testDefaultSearchFieldNotBannedForPre66() throws Exception {
     initCore("solrconfig-minimal-version6.xml", "bad-schema-defaultsearchfield.xml");
+    deleteCore();
   }
 }
