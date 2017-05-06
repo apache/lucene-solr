@@ -369,6 +369,8 @@ Other Changes
 
 * SOLR-7041: Cutover tests to using 'q.op' and 'df' instead of schema 'defaultOperator' and 'defaultSearchField' (janhoy)
 
+* SOLR-10601: StreamExpressionParser should handle white space around = in named parameters (Joel Bernstein)
+
 ==================  6.5.1 ==================
 
 Bug Fixes
