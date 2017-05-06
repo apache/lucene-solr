@@ -85,6 +85,9 @@ New Features
 
 * SOLR-10046: Add UninvertDocValuesMergePolicyFactory class. (Keith Laban, Christine Poerschke)
 
+* SOLR-10547: JSON Facet API: Implement support for single-valued string fields for min/max aggregations.
+  (yonik)
+
 Bug Fixes
 ----------------------
 * SOLR-9262: Connection and read timeouts are being ignored by UpdateShardHandler after SOLR-4509.

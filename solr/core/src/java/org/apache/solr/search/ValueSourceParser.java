@@ -56,8 +56,7 @@ import org.apache.solr.search.facet.AggValueSource;
 import org.apache.solr.search.facet.AvgAgg;
 import org.apache.solr.search.facet.CountAgg;
 import org.apache.solr.search.facet.HLLAgg;
-import org.apache.solr.search.facet.MaxAgg;
-import org.apache.solr.search.facet.MinAgg;
+import org.apache.solr.search.facet.MinMaxAgg;
 import org.apache.solr.search.facet.PercentileAgg;
 import org.apache.solr.search.facet.StddevAgg;
 import org.apache.solr.search.facet.SumAgg;
@@ -1009,14 +1008,14 @@ public abstract class ValueSourceParser implements NamedListInitializedPlugin {
     addParser("agg_min", new ValueSourceParser() {
       @Override
       public ValueSource parse(FunctionQParser fp) throws SyntaxError {
-        return new MinAgg(fp.parseValueSource());
+        return new MinMaxAgg("min", fp.parseValueSource());
       }
     });
 
     addParser("agg_max", new ValueSourceParser() {
       @Override
       public ValueSource parse(FunctionQParser fp) throws SyntaxError {
-        return new MaxAgg(fp.parseValueSource());
+        return new MinMaxAgg("max", fp.parseValueSource());
       }
     });
 
