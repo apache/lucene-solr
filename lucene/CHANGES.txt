@@ -114,8 +114,12 @@ Bug Fixes
 * LUCENE-7798: Add .equals and .hashCode to ToParentBlockJoinSortField 
   (Mikhail Khludnev)
 
-* LUCENE-7814: DateRangePrefixTree (in spatial-extras ) had edge-case bugs for
+* LUCENE-7814: DateRangePrefixTree (in spatial-extras) had edge-case bugs for
   years >= 292,000,000. (David Smiley)
+
+* LUCENE-5365, LUCENE-7818: Fix incorrect condition in queryparser's
+  QueryNodeOperation#logicalAnd().  (Olivier Binda, Amrit Sarkar,
+  AppChecker via Uwe Schindler)
 
 Improvements
 
