@@ -234,6 +234,8 @@ New Features
 
 * SOLR-10536: stats Streaming Expression should work in non-SolrCloud mode (Joel Bernstein)
 
+* SOLR-10622: Add regress and predict Stream Evaluators (Joel Bernstein)
+
 Optimizations
 ----------------------
 
