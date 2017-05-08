@@ -315,6 +315,8 @@ Bug Fixes
   After core container shutdown or severe initialization problem Solr responds with 
   http stauts 404 Not Found instead of 500 as it was before (Mikhail Khludnev) 
 
+* SOLR-8149: Admin UI - Plugins / Stats - active item is now highlighted (Labuzov Dmitriy via janhoy)
+
 Other Changes
 ----------------------
 
