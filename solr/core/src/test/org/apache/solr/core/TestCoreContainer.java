@@ -38,6 +38,8 @@ import org.apache.solr.handler.admin.CollectionsHandler;
 import org.apache.solr.handler.admin.ConfigSetsHandler;
 import org.apache.solr.handler.admin.CoreAdminHandler;
 import org.apache.solr.handler.admin.InfoHandler;
+import org.apache.solr.metrics.SolrMetricReporter;
+import org.apache.solr.metrics.reporters.MockMetricReporter;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -200,6 +202,50 @@ public class TestCoreContainer extends SolrTestCaseJ4 {
     }
     finally {
       cc.shutdown();
+    }
+  }
+
+  @Test
+  public void testReportersShutdown() throws Exception {
+    CoreContainer cc = init("<solr><metrics>"
+        + "<reporter name=\"global\" class=\"" + MockMetricReporter.class.getName()
+        + "\"><str name=\"configurable\">foo</str></reporter></metrics></solr>");
+    try {
+      Map<String, SolrMetricReporter> nodeReporters = cc.getMetricManager().getReporters(SolrInfoMBean.Group.node.toString());
+      Map<String, SolrMetricReporter> jettyReporters = cc.getMetricManager().getReporters(SolrInfoMBean.Group.jetty.toString());
+      Map<String, SolrMetricReporter> jvmReporters = cc.getMetricManager().getReporters(SolrInfoMBean.Group.jvm.toString());
+      assertTrue(nodeReporters.size() > 0);
+      assertTrue(jettyReporters.size() > 0);
+      assertTrue(jvmReporters.size() > 0);
+      nodeReporters.forEach((name, reporter) -> {
+        assertTrue(reporter instanceof MockMetricReporter);
+        assertTrue(((MockMetricReporter)reporter).didInit);
+        assertFalse(((MockMetricReporter)reporter).didClose);
+      });
+      jettyReporters.forEach((name, reporter) -> {
+        assertTrue(reporter instanceof MockMetricReporter);
+        assertTrue(((MockMetricReporter)reporter).didInit);
+        assertFalse(((MockMetricReporter)reporter).didClose);
+      });
+      jvmReporters.forEach((name, reporter) -> {
+        assertTrue(reporter instanceof MockMetricReporter);
+        assertTrue(((MockMetricReporter)reporter).didInit);
+        assertFalse(((MockMetricReporter)reporter).didClose);
+      });
+      cc.shutdown();
+      nodeReporters.forEach((name, reporter) -> {
+        assertTrue(((MockMetricReporter)reporter).didClose);
+      });
+      jettyReporters.forEach((name, reporter) -> {
+        assertTrue(((MockMetricReporter)reporter).didClose);
+      });
+      jvmReporters.forEach((name, reporter) -> {
+        assertTrue(((MockMetricReporter)reporter).didClose);
+      });
+    } finally {
+      if (!cc.isShutDown()) {
+        cc.shutdown();
+      }
     }
   }
 

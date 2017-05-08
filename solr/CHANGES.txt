@@ -216,6 +216,8 @@ Bug Fixes
 * SOLR-10630: HttpSolrCall.getAuthCtx().new AuthorizationContext() {...}.getParams()
   sometimes throws java.lang.NullPointerException (hu xiaodong via shalin)
 
+* SOLR-10631: Metric reporters leak on 6x. (ab)
+
 Other Changes
 ----------------------
 

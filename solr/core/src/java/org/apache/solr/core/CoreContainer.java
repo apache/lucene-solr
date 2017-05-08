@@ -653,10 +653,15 @@ public class CoreContainer {
     isShutDown = true;
 
     ExecutorUtil.shutdownAndAwaitTermination(coreContainerWorkExecutor);
+    if (metricManager != null) {
+      metricManager.closeReporters(SolrMetricManager.getRegistryName(SolrInfoMBean.Group.node));
+      metricManager.closeReporters(SolrMetricManager.getRegistryName(SolrInfoMBean.Group.jvm));
+      metricManager.closeReporters(SolrMetricManager.getRegistryName(SolrInfoMBean.Group.jetty));
+    }
 
     if (isZooKeeperAware()) {
       cancelCoreRecoveries();
-      zkSys.zkController.publishNodeAsDown(zkSys.zkController.getNodeName()); 
+      zkSys.zkController.publishNodeAsDown(zkSys.zkController.getNodeName());
     }
 
     try {
@@ -713,10 +718,6 @@ public class CoreContainer {
           zkSys.close();
         }
       }
-    }
-
-    if (metricManager != null) {
-      metricManager.closeReporters(SolrMetricManager.getRegistryName(SolrInfoMBean.Group.node));
     }
 
     // It should be safe to close the authorization plugin at this point.
