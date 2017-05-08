@@ -386,6 +386,10 @@ Other Changes
 
 * SOLR-10614: Static fields have turned to instance's field in SimplePostTool. 
   Enabled TestSolrCLIRunExample.testTechproductsExample(). (Andrey Kudryavtsev, Mikhail Khludnev)
+  
+* SOLR-10522: Revert SpellCheckComponent response format change from SOLR-9972 (rel. 6.5.0).  While this
+  was an improvement for the json "arrntv" format, it caused problems for the default json format.
+  (James Dyer, reported by Nikita Pchelintsev)
 
 ==================  6.5.1 ==================
 
