@@ -82,62 +82,77 @@ public class SpellCheckComponentTest extends SolrTestCaseJ4 {
   public void testMaximumResultsForSuggest() throws Exception {
    assertJQ(req("qt",rh, SpellCheckComponent.COMPONENT_NAME, "true", SpellingParams.SPELLCHECK_BUILD, "true", "q","lowerfilt:(this OR brwn)",
         SpellingParams.SPELLCHECK_COUNT,"5", SpellingParams.SPELLCHECK_EXTENDED_RESULTS,"false", SpellingParams.SPELLCHECK_MAX_RESULTS_FOR_SUGGEST, "7")
-        ,"/spellcheck/suggestions/brwn/numFound==1"
+        ,"/spellcheck/suggestions/[0]=='brwn'"
+        ,"/spellcheck/suggestions/[1]/numFound==1"
      );
-
-   assertJQ(req("qt",rh, SpellCheckComponent.COMPONENT_NAME, "true", SpellingParams.SPELLCHECK_BUILD, "true", "q","lowerfilt:(this OR brwn)",
-       SpellingParams.SPELLCHECK_COUNT,"5", SpellingParams.SPELLCHECK_EXTENDED_RESULTS,"false", SpellingParams.SPELLCHECK_MAX_RESULTS_FOR_SUGGEST, "6")
-       ,"/spellcheck/suggestions=={}");
-   // there should have been no suggestions (6<7)
-
+    try {
+      assertJQ(req("qt",rh, SpellCheckComponent.COMPONENT_NAME, "true", SpellingParams.SPELLCHECK_BUILD, "true", "q","lowerfilt:(this OR brwn)",
+          SpellingParams.SPELLCHECK_COUNT,"5", SpellingParams.SPELLCHECK_EXTENDED_RESULTS,"false", SpellingParams.SPELLCHECK_MAX_RESULTS_FOR_SUGGEST, "6")
+          ,"/spellcheck/suggestions/[1]/numFound==1"
+       );
+      fail("there should have been no suggestions (6<7)");
+    } catch(Exception e) {
+      //correctly threw exception
+    }
     assertJQ(req("qt",rh, SpellCheckComponent.COMPONENT_NAME, "true", SpellingParams.SPELLCHECK_BUILD, "true", "q","lowerfilt:(this OR brwn)",
         "fq", "id:[0 TO 9]", /*returns 10, less selective */ "fq", "lowerfilt:th*", /* returns 8, most selective */
         SpellingParams.SPELLCHECK_COUNT,"5", SpellingParams.SPELLCHECK_EXTENDED_RESULTS,"false", SpellingParams.SPELLCHECK_MAX_RESULTS_FOR_SUGGEST, ".90")
-        ,"/spellcheck/suggestions/brwn/numFound==1"
+        ,"/spellcheck/suggestions/[0]=='brwn'"
+        ,"/spellcheck/suggestions/[1]/numFound==1"
      );
-
-    assertJQ(req("qt",rh, SpellCheckComponent.COMPONENT_NAME, "true", SpellingParams.SPELLCHECK_BUILD, "true", "q","lowerfilt:(this OR brwn)",
-        "fq", "id:[0 TO 9]", /*returns 10, less selective */ "fq", "lowerfilt:th*", /* returns 8, most selective */
-        SpellingParams.SPELLCHECK_COUNT,"5", SpellingParams.SPELLCHECK_EXTENDED_RESULTS,"false", SpellingParams.SPELLCHECK_MAX_RESULTS_FOR_SUGGEST, ".80")
-        ,"/spellcheck/suggestions=={}");
-    // there should have been no suggestions ((.8 * 8)<7)
+    try {
+      assertJQ(req("qt",rh, SpellCheckComponent.COMPONENT_NAME, "true", SpellingParams.SPELLCHECK_BUILD, "true", "q","lowerfilt:(this OR brwn)",
+          "fq", "id:[0 TO 9]", /*returns 10, less selective */ "fq", "lowerfilt:th*", /* returns 8, most selective */
+          SpellingParams.SPELLCHECK_COUNT,"5", SpellingParams.SPELLCHECK_EXTENDED_RESULTS,"false", SpellingParams.SPELLCHECK_MAX_RESULTS_FOR_SUGGEST, ".80")
+          ,"/spellcheck/suggestions/[1]/numFound==1"
+       );
+      fail("there should have been no suggestions ((.8 * 8)<7)");
+    } catch(Exception e) {
+      //correctly threw exception
+    }
     
     
     assertJQ(req("qt",rh, SpellCheckComponent.COMPONENT_NAME, "true", SpellingParams.SPELLCHECK_BUILD, "true", "q","lowerfilt:(this OR brwn)",
         "fq", "id:[0 TO 9]", SpellingParams.SPELLCHECK_MAX_RESULTS_FOR_SUGGEST_FQ, "id:[0 TO 9]", 
         SpellingParams.SPELLCHECK_COUNT,"5", SpellingParams.SPELLCHECK_EXTENDED_RESULTS,"false", SpellingParams.SPELLCHECK_MAX_RESULTS_FOR_SUGGEST, ".70")
-        ,"/spellcheck/suggestions/brwn/numFound==1"
+        ,"/spellcheck/suggestions/[0]=='brwn'"
+        ,"/spellcheck/suggestions/[1]/numFound==1"
      );
-
-    assertJQ(req("qt",rh, SpellCheckComponent.COMPONENT_NAME, "true", SpellingParams.SPELLCHECK_BUILD, "true", "q","lowerfilt:(this OR brwn)",
-        "fq", "id:[0 TO 9]", SpellingParams.SPELLCHECK_MAX_RESULTS_FOR_SUGGEST_FQ, "lowerfilt:th*", 
-        SpellingParams.SPELLCHECK_COUNT,"5", SpellingParams.SPELLCHECK_EXTENDED_RESULTS,"false", SpellingParams.SPELLCHECK_MAX_RESULTS_FOR_SUGGEST, ".64")
-        ,"/spellcheck/suggestions=={}");
-    // there should have been no suggestions ((.64 * 10)<7)
+    try {
+      assertJQ(req("qt",rh, SpellCheckComponent.COMPONENT_NAME, "true", SpellingParams.SPELLCHECK_BUILD, "true", "q","lowerfilt:(this OR brwn)",
+          "fq", "id:[0 TO 9]", SpellingParams.SPELLCHECK_MAX_RESULTS_FOR_SUGGEST_FQ, "lowerfilt:th*", 
+          SpellingParams.SPELLCHECK_COUNT,"5", SpellingParams.SPELLCHECK_EXTENDED_RESULTS,"false", SpellingParams.SPELLCHECK_MAX_RESULTS_FOR_SUGGEST, ".64")
+          ,"/spellcheck/suggestions/[1]/numFound==1"
+       );
+      fail("there should have been no suggestions ((.64 * 10)<7)");
+    } catch(Exception e) {
+      //correctly threw exception
+    }
   } 
   
   @Test
   public void testExtendedResultsCount() throws Exception {
     assertJQ(req("qt",rh, SpellCheckComponent.COMPONENT_NAME, "true", SpellingParams.SPELLCHECK_BUILD, "true", "q","bluo", SpellingParams.SPELLCHECK_COUNT,"5", SpellingParams.SPELLCHECK_EXTENDED_RESULTS,"false")
-       ,"/spellcheck/suggestions/bluo/numFound==5"
+       ,"/spellcheck/suggestions/[0]=='bluo'"
+       ,"/spellcheck/suggestions/[1]/numFound==5"
     );
 
     assertJQ(req("qt",rh, SpellCheckComponent.COMPONENT_NAME, "true", "q","bluo", SpellingParams.SPELLCHECK_COUNT,"3", SpellingParams.SPELLCHECK_EXTENDED_RESULTS,"true")
-       ,"/spellcheck/suggestions/bluo/suggestion==[{'word':'blud','freq':1}, {'word':'blue','freq':1}, {'word':'blee','freq':1}]"
+       ,"/spellcheck/suggestions/[1]/suggestion==[{'word':'blud','freq':1}, {'word':'blue','freq':1}, {'word':'blee','freq':1}]"
     );
   }
 
   @Test
   public void test() throws Exception {
     assertJQ(req("qt",rh, SpellCheckComponent.COMPONENT_NAME, "true", "q","documemt")
-       ,"/spellcheck=={'suggestions':{'documemt':{'numFound':1,'startOffset':0,'endOffset':8,'suggestion':['document']}}}"
+       ,"/spellcheck=={'suggestions':['documemt',{'numFound':1,'startOffset':0,'endOffset':8,'suggestion':['document']}]}"
     );
   }
   
   @Test
   public void testNumericQuery() throws Exception {
     assertJQ(req("qt",rh, SpellCheckComponent.COMPONENT_NAME, "true", "q","12346")
-       ,"/spellcheck=={'suggestions':{'12346':{'numFound':1,'startOffset':0,'endOffset':5,'suggestion':['12345']}}}"
+       ,"/spellcheck=={'suggestions':['12346',{'numFound':1,'startOffset':0,'endOffset':5,'suggestion':['12345']}]}"
     );
   }
 
@@ -171,21 +186,13 @@ public class SpellCheckComponentTest extends SolrTestCaseJ4 {
   @Test
   public void testCollateExtendedResultsWithJsonNl() throws Exception {
     final String q = "documemtsss broens";
-    final String jsonNl = (random().nextBoolean() ? "map" : "arrntv");
+    final String jsonNl = "map";
     final boolean collateExtendedResults = random().nextBoolean();
     final List<String> testsList = new ArrayList<String>();
     if (collateExtendedResults) {
       testsList.add("/spellcheck/collations/collation/collationQuery=='document brown'");
       testsList.add("/spellcheck/collations/collation/hits==0");
       switch (jsonNl) {
-        case "arrntv":
-          testsList.add("/spellcheck/collations/collation/misspellingsAndCorrections/[0]/name=='documemtsss'");
-          testsList.add("/spellcheck/collations/collation/misspellingsAndCorrections/[0]/type=='str'");
-          testsList.add("/spellcheck/collations/collation/misspellingsAndCorrections/[0]/value=='document'");
-          testsList.add("/spellcheck/collations/collation/misspellingsAndCorrections/[1]/name=='broens'");
-          testsList.add("/spellcheck/collations/collation/misspellingsAndCorrections/[1]/type=='str'");
-          testsList.add("/spellcheck/collations/collation/misspellingsAndCorrections/[1]/value=='brown'");
-          break;
         case "map":
           testsList.add("/spellcheck/collations/collation/misspellingsAndCorrections/documemtsss=='document'");
           testsList.add("/spellcheck/collations/collation/misspellingsAndCorrections/broens=='brown'");
@@ -304,11 +311,11 @@ public class SpellCheckComponentTest extends SolrTestCaseJ4 {
         //while "document" is present.
 
         assertJQ(req("qt",rh, SpellCheckComponent.COMPONENT_NAME, "true", "q","documenq", SpellingParams.SPELLCHECK_DICT, "threshold", SpellingParams.SPELLCHECK_COUNT,"5", SpellingParams.SPELLCHECK_EXTENDED_RESULTS,"true")
-            ,"/spellcheck/suggestions/documenq/suggestion==[{'word':'document','freq':2}]"
+            ,"/spellcheck/suggestions/[1]/suggestion==[{'word':'document','freq':2}]"
         );
 
         assertJQ(req("qt",rh, SpellCheckComponent.COMPONENT_NAME, "true", "q","documenq", SpellingParams.SPELLCHECK_DICT, "threshold_direct", SpellingParams.SPELLCHECK_COUNT,"5", SpellingParams.SPELLCHECK_EXTENDED_RESULTS,"true")
-            ,"/spellcheck/suggestions/documenq/suggestion==[{'word':'document','freq':2}]"
+            ,"/spellcheck/suggestions/[1]/suggestion==[{'word':'document','freq':2}]"
         );
 
         //TODO:  how do we make this into a 1-liner using "assertQ()" ???
