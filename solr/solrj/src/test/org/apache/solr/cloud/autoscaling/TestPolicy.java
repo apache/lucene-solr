@@ -219,7 +219,7 @@ public class TestPolicy extends SolrTestCaseJ4 {
     String autoscaleJson = "{" +
         "      'cluster-policy':[" +
         "      {'cores':'<10','node':'#ANY'}," +
-        "      {'replica':'<2','shard':'#EACH','node':'#ANY'}," +
+        "      {'replica':'<3','shard':'#EACH','node':'#ANY'}," +
         "      {'nodeRole':'!overseer','replica':'#ANY'}]," +
         "      'cluster-preferences':[" +
         "      {'minimize':'cores', 'precision':3}," +
@@ -277,18 +277,27 @@ public class TestPolicy extends SolrTestCaseJ4 {
     assertNotNull(op);
   }
 
- /* public void testOtherTag(){
+  public void testOtherTag(){
     String rules = "{" +
-        "conditions:[" +
-        "{nodeRole:'!overseer', strict:false}," +
-        "{replica:'<1',node:node3}," +
-        "{replica:'<2',node:'#ANY', shard:'#EACH'}," +
-        "{replica:'<3',shard:'#EACH', rack:'#ANY' }" +
+        "'cluster-preferences':[" +
+        "{'minimize':'cores','precision':2}," +
+        "{'maximize':'freedisk','precision':50}," +
+        "{'minimize':'heap','precision':1000}" +
         "]," +
-        " preferences:[" +
-        "{minimize:cores , precision:2}," +
-        "{maximize:freedisk, precision:50}, " +
-        "{minimize:heap, precision:1000}]}";
+        "'cluster-policy':[" +
+        "{'nodeRole':'!overseer','strict':false}," +
+        "{'replica':'<1','node':'node3'}," +
+        "{'replica':'<2','node':'#ANY','shard':'#EACH'}" +
+        "]," +
+        "'policies':{" +
+        "'p1':[" +
+        "{'nodeRole':'!overseer','strict':false}," +
+        "{'replica':'<1','node':'node3'}," +
+        "{'replica':'<2','node':'#ANY','shard':'#EACH'}," +
+        "{'replica':'<3','shard':'#EACH','rack':'#ANY'}" +
+        "]" +
+        "}" +
+        "}";
 
     Map<String, Map> nodeValues = (Map<String, Map>) Utils.fromJSONString("{" +
         "node1:{cores:12, freedisk: 334, heap:10480, rack: rack4}," +
@@ -297,14 +306,37 @@ public class TestPolicy extends SolrTestCaseJ4 {
         "node4:{cores:8, freedisk: 375, heap:16900, nodeRole:overseer, rack: rack1}" +
         "}");
     Policy policy = new Policy((Map<String, Object>) Utils.fromJSONString(rules));
-    Policy.Session session = policy.createSession(getClusterDataProvider(nodeValues, clusterState));
+    ClusterDataProvider clusterDataProvider = getClusterDataProvider(nodeValues, clusterState);
+    ClusterDataProvider cdp = new ClusterDataProvider() {
+      @Override
+      public Map<String, Object> getNodeValues(String node, Collection<String> tags) {
+        return clusterDataProvider.getNodeValues(node, tags);
+      }
+
+      @Override
+      public Map<String, Map<String, List<Policy.ReplicaInfo>>> getReplicaInfo(String node, Collection<String> keys) {
+        return clusterDataProvider.getReplicaInfo(node, keys);
+      }
+
+      @Override
+      public Collection<String> getNodes() {
+        return clusterDataProvider.getNodes();
+      }
+
+      @Override
+      public String getPolicy(String coll) {
+        return "p1";
+      }
+    };
+    Policy.Session session =  policy.createSession(cdp);
 
     Map op = session
         .getSuggester(ADDREPLICA)
         .hint(Hint.COLL, "newColl")
         .hint(Hint.SHARD, "s1").getOperation();
     assertNotNull(op);
-  }*/
+    assertEquals("node2", op.get("node"));
+  }
 
 
   private ClusterDataProvider getClusterDataProvider(final Map<String, Map> nodeValues, String  clusterState) {

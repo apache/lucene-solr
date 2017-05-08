@@ -56,9 +56,9 @@ public class MoveReplicaSuggester extends Suggester {
           clause.test(tmpRow);
         }
       }
-      int i = getMatrix().indexOf(fromRow);
+      final int i = getMatrix().indexOf(fromRow);
       if (tmpRow.violations.isEmpty()) {
-        for (int j = getMatrix().size() - 1; j > i; i--) {
+        for (int j = getMatrix().size() - 1; j > i; j--) {
           Row targetRow = getMatrix().get(j);
           if (!isAllowed(targetRow.node, Hint.TARGET_NODE)) continue;
           targetRow = targetRow.addReplica(coll, shard);

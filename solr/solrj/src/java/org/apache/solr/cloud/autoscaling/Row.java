@@ -95,7 +95,7 @@ class Row implements MapWriter {
     if (c == null) row.replicaInfo.put(coll, c = new HashMap<>());
     List<ReplicaInfo> s = c.get(shard);
     if (s == null) c.put(shard, s = new ArrayList<>());
-    s.add(new ReplicaInfo(coll,shard,""+new Random().nextInt(1000)+1000 , new HashMap<>()));
+    s.add(new ReplicaInfo(""+new Random().nextInt(1000)+1000,coll,shard, new HashMap<>()));
     return row;
 
   }
