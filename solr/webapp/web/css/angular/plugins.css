@@ -166,6 +166,12 @@ limitations under the License.
   background-color:#F0F3FF;
 }
 
+#content #plugins .active a
+{
+  background-color: #d0d0d0;
+  border-color: #d0d0d0;
+}
+
 #recording #blockUI
 {
     position: absolute;

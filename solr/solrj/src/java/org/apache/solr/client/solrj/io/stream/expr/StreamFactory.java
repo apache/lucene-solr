@@ -90,7 +90,7 @@ public class StreamFactory implements Serializable {
   }
   
   public List<String> getValueOperands(StreamExpression expression){
-    return getOperandsOfType(expression, StreamExpressionValue.class).stream().map(item -> ((StreamExpressionValue)item).getValue()).collect(Collectors.toList());
+    return getOperandsOfType(expression, StreamExpressionValue.class).stream().map(item -> ((StreamExpressionValue) item).getValue()).collect(Collectors.toList());
   }
   
   /** Given an expression, will return the value parameter at the given index, or null if doesn't exist */
@@ -377,6 +377,29 @@ public class StreamFactory implements Serializable {
     throw new IOException(String.format(Locale.ROOT,"Invalid evaluator expression %s - function '%s' is unknown (not mapped to a valid StreamEvaluator)", expression, expression.getFunctionName()));
   }
 
+  public boolean isStream(StreamExpression expression) throws IOException{
+    String function = expression.getFunctionName();
+    if(functionNames.containsKey(function)){
+      Class<? extends Expressible> clazz = functionNames.get(function);
+      if(Expressible.class.isAssignableFrom(clazz) && TupleStream.class.isAssignableFrom(clazz)){
+        return true;
+      }
+    }
+
+    return false;
+  }
+  
+  public boolean isEvaluator(StreamExpression expression) throws IOException{
+    String function = expression.getFunctionName();
+    if(functionNames.containsKey(function)){
+      Class<? extends Expressible> clazz = functionNames.get(function);
+      if(Expressible.class.isAssignableFrom(clazz) && StreamEvaluator.class.isAssignableFrom(clazz)){
+        return true;
+      }
+    }
+
+    return false;
+  }
 
   public <T> T createInstance(Class<T> clazz, Class<?>[] paramTypes, Object[] params) throws IOException{
     Constructor<T> ctor;

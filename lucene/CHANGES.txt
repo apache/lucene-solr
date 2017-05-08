@@ -91,6 +91,11 @@ Other
 
 ======================= Lucene 6.6.0 =======================
 
+New Features
+
+* LUCENE-7811: Add a concurrent SortedSet facets implementation.
+  (Mike McCandless)
+
 Bug Fixes
 
 * LUCENE-7777: ByteBlockPool.readBytes sometimes throws
@@ -100,6 +105,22 @@ Bug Fixes
 * LUCENE-7797: The static FSDirectory.listAll(Path) method was always
   returning an empty array.  (Atkins Chang via Mike McCandless)
 
+* LUCENE-7481: Fixed missing rewrite methods for SpanPayloadCheckQuery
+  and PayloadScoreQuery. (Erik Hatcher)
+
+* LUCENE-7808: Fixed PayloadScoreQuery and SpanPayloadCheckQuery
+  .equals and .hashCode methods.  (Erik Hatcher)
+
+* LUCENE-7798: Add .equals and .hashCode to ToParentBlockJoinSortField 
+  (Mikhail Khludnev)
+
+* LUCENE-7814: DateRangePrefixTree (in spatial-extras) had edge-case bugs for
+  years >= 292,000,000. (David Smiley)
+
+* LUCENE-5365, LUCENE-7818: Fix incorrect condition in queryparser's
+  QueryNodeOperation#logicalAnd().  (Olivier Binda, Amrit Sarkar,
+  AppChecker via Uwe Schindler)
+
 Improvements
 
 * LUCENE-7782: OfflineSorter now passes the total number of items it
@@ -108,12 +129,28 @@ Improvements
 * LUCENE-7785: Move dictionary for Ukrainian analyzer to external dependency.
   (Andriy Rysin via Steve Rowe, Dawid Weiss)
 
+* LUCENE-7801: SortedSetDocValuesReaderState now implements
+  Accountable so you can see how much RAM it's using (Robert Muir,
+  Mike McCandless)
+
+* LUCENE-7792: OfflineSorter can now run concurrently if you pass it
+  an optional ExecutorService (Dawid Weiss, Mike McCandless)
+
+* LUCENE-7811: Sorted set facets now use sparse storage when
+  collecting hits, when appropriate.  (Mike McCandless)
+
 Optimizations
 
 * LUCENE-7787: spatial-extras HeatmapFacetCounter will now short-circuit it's
   work when Bits.MatchNoBits is passed. (David Smiley)
 
 Other
+
+* LUCENE-7796: Make IOUtils.reThrow idiom declare Error return type so 
+  callers may use it in a way that compiler knows subsequent code is 
+  unreachable. reThrow is now deprecated in favor of IOUtils.rethrowAlways
+  with a slightly different semantics (see javadoc). (Hossman, Robert Muir, 
+  Dawid Weiss)
 
 * LUCENE-7754: Inner classes should be static whenever possible.
   (Daniel Jelinski via Adrien Grand)

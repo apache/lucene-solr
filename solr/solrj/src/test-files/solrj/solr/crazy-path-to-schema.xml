@@ -46,6 +46,5 @@ that just finds leaf <fieldType> and <field> nodes and there's no reason to brea
    <field name="subject" type="text" indexed="true" stored="true"/>
  </fields>
 
- <defaultSearchField>subject</defaultSearchField>
  <uniqueKey>id</uniqueKey>
 </schema>

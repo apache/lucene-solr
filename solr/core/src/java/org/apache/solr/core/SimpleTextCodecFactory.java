@@ -14,15 +14,25 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.solr.rest.schema;
-import org.apache.solr.rest.SolrRestletTestBase;
-import org.junit.Test;
 
-public class TestDefaultSearchFieldResource  extends SolrRestletTestBase {
-  @Test
-  public void testGetDefaultSearchField() throws Exception {
-    assertQ("/schema/defaultsearchfield?indent=on&wt=xml",
-            "count(/response/str[@name='defaultSearchField']) = 1",
-            "/response/str[@name='defaultSearchField'][.='text']");
+package org.apache.solr.core;
+
+import org.apache.lucene.codecs.Codec;
+import org.apache.lucene.codecs.simpletext.SimpleTextCodec;
+import org.apache.solr.common.util.NamedList;
+
+public class SimpleTextCodecFactory extends CodecFactory {
+  private Codec codec;
+
+  @Override
+  public void init(NamedList args) {
+    super.init(args);
+    assert codec == null;
+    codec = new SimpleTextCodec();
+  }
+
+  @Override
+  public Codec getCodec() {
+    return codec;
   }
 }

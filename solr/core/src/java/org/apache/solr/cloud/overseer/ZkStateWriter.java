@@ -166,17 +166,7 @@ public class ZkStateWriter {
    * @return true if a flush is required, false otherwise
    */
   protected boolean maybeFlushBefore(ZkWriteCommand cmd) {
-    if (lastUpdatedTime == 0) {
-      // first update, make sure we go through
-      return false;
-    }
-    if (cmd.collection == null) {
-      return false;
-    }
-    if (cmd.collection.getStateFormat() != lastStateFormat) {
-      return true;
-    }
-    return cmd.collection.getStateFormat() > 1 && !cmd.name.equals(lastCollectionName);
+    return cmd.collection.getStateFormat() != lastStateFormat;
   }
 
   /**
@@ -190,7 +180,7 @@ public class ZkStateWriter {
       return false;
     lastCollectionName = cmd.name;
     lastStateFormat = cmd.collection.getStateFormat();
-    return System.nanoTime() - lastUpdatedTime > MAX_FLUSH_INTERVAL;
+    return System.nanoTime() - lastUpdatedTime > MAX_FLUSH_INTERVAL || updates.size() > Overseer.STATE_UPDATE_BATCH_SIZE;
   }
 
   public boolean hasPendingUpdates() {

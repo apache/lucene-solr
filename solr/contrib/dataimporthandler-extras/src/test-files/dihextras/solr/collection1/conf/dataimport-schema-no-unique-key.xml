@@ -202,11 +202,4 @@
   <field name="text" type="text" indexed="true" stored="true"/>
   <field name="foo_i" type="int" indexed="true" stored="false"/>
   <field name="home" type="latLon" indexed="true" stored="true"/>
-
-  <!-- field for the QueryParser to use when an explicit fieldname is absent -->
-  <defaultSearchField>text</defaultSearchField>
-
-  <!-- SolrQueryParser configuration: defaultOperator="AND|OR" -->
-  <solrQueryParser defaultOperator="OR"/>
-
 </schema>

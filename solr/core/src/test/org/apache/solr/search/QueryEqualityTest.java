@@ -20,6 +20,7 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 
+import junit.framework.AssertionFailedError;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.QueryUtils;
 import org.apache.solr.SolrTestCaseJ4;
@@ -1010,7 +1011,7 @@ public class QueryEqualityTest extends SolrTestCaseJ4 {
    */
   protected void assertQueryEquals(final String defType,
                                    final String... inputs) throws Exception {
-    SolrQueryRequest req = req();
+    SolrQueryRequest req = req(new String[] {"df", "text"});
     try {
       assertQueryEquals(defType, req, inputs);
     } finally {
@@ -1122,4 +1123,59 @@ public class QueryEqualityTest extends SolrTestCaseJ4 {
     assertFalse(equals);
   }
 
+  public void testChildField() throws Exception {
+    final SolrQueryRequest req = req("q", "{!parent which=type_s1:parent}whatever_s1:foo");
+    try {
+      assertFuncEquals(req,
+          "childfield(name_s1,$q)", "childfield(name_s1,$q)");
+    } finally {
+      req.close();
+    }
+  }
+
+  public void testPayloadScoreQuery() throws Exception {
+    // I don't see a precedent to test query inequality in here, so doing a `try`
+    // There was a bug with PayloadScoreQuery's .equals() method that said two queries were equal with different includeSpanScore settings
+
+    try {
+      assertQueryEquals
+          ("payload_score"
+              , "{!payload_score f=foo_dpf v=query func=min includeSpanScore=false}"
+              , "{!payload_score f=foo_dpf v=query func=min includeSpanScore=true}"
+          );
+      fail("queries should not have been equal");
+    } catch(AssertionFailedError e) {
+      assertTrue("queries were not equal, as expected", true);
+    }
+  }
+
+  public void testPayloadCheckQuery() throws Exception {
+    try {
+      assertQueryEquals
+          ("payload_check"
+              , "{!payload_check f=foo_dpf payloads=2}one"
+              , "{!payload_check f=foo_dpf payloads=2}two"
+          );
+      fail("queries should not have been equal");
+    } catch(AssertionFailedError e) {
+      assertTrue("queries were not equal, as expected", true);
+    }
+  }
+
+  public void testPayloadFunction() throws Exception {
+    SolrQueryRequest req = req("myField","bar_f");
+
+    try {
+      assertFuncEquals(req,
+          "payload(foo_dpf,some_term)",
+          "payload(foo_dpf,some_term)");
+    } finally {
+      req.close();
+    }
+  }
+
+  // Override req to add df param
+  public static SolrQueryRequest req(String... q) {
+    return SolrTestCaseJ4.req(q, "df", "text");
+  }
 }

@@ -448,5 +448,10 @@ based HashBitset. -->
     <processor class="solr.RunUpdateProcessorFactory" />
   </updateRequestProcessorChain>
 
+  <initParams path="/elevate,standard">
+    <lst name="defaults">
+      <str name="df">text</str>
+    </lst>
+  </initParams>
 </config>
 

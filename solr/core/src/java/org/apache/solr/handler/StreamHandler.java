@@ -165,6 +165,14 @@ public class StreamHandler extends RequestHandlerBase implements SolrCoreAware, 
       .withFunctionName("list", ListStream.class)
       .withFunctionName("let", LetStream.class)
       .withFunctionName("get", GetStream.class)
+      .withFunctionName("timeseries", TimeSeriesStream.class)
+      .withFunctionName("tuple", TupStream.class)
+      .withFunctionName("col", ColumnEvaluator.class)
+      .withFunctionName("predict", PredictEvaluator.class)
+      .withFunctionName("regress", RegressionEvaluator.class)
+      .withFunctionName("cov", CovarianceEvaluator.class)
+      .withFunctionName("conv", ConvolutionEvaluator.class)
+
       // metrics
          .withFunctionName("min", MinMetric.class)
       .withFunctionName("max", MaxMetric.class)
@@ -233,6 +241,7 @@ public class StreamHandler extends RequestHandlerBase implements SolrCoreAware, 
       .withFunctionName("cbrt", CubedRootEvaluator.class)
       .withFunctionName("coalesce", CoalesceEvaluator.class)
       .withFunctionName("uuid", UuidEvaluator.class)
+      .withFunctionName("corr", CorrelationEvaluator.class)
 
 
       // Conditional Stream Evaluators

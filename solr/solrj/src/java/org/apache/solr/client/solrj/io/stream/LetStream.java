@@ -18,60 +18,55 @@ package org.apache.solr.client.solrj.io.stream;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Set;
 
 import org.apache.solr.client.solrj.io.Tuple;
 import org.apache.solr.client.solrj.io.comp.StreamComparator;
+import org.apache.solr.client.solrj.io.eval.StreamEvaluator;
 import org.apache.solr.client.solrj.io.stream.expr.Explanation;
 import org.apache.solr.client.solrj.io.stream.expr.Explanation.ExpressionType;
 import org.apache.solr.client.solrj.io.stream.expr.Expressible;
 import org.apache.solr.client.solrj.io.stream.expr.StreamExplanation;
 import org.apache.solr.client.solrj.io.stream.expr.StreamExpression;
+import org.apache.solr.client.solrj.io.stream.expr.StreamExpressionNamedParameter;
+import org.apache.solr.client.solrj.io.stream.expr.StreamExpressionParameter;
 import org.apache.solr.client.solrj.io.stream.expr.StreamFactory;
 
 public class LetStream extends TupleStream implements Expressible {
 
   private static final long serialVersionUID = 1;
   private TupleStream stream;
-  private List<CellStream> cellStreams;
   private StreamContext streamContext;
-
-  public LetStream(TupleStream stream, List<CellStream> cellStreams) throws IOException {
-    init(stream, cellStreams);
-  }
+  private Map letParams = new HashMap();
 
   public LetStream(StreamExpression expression, StreamFactory factory) throws IOException {
     List<StreamExpression> streamExpressions = factory.getExpressionOperandsRepresentingTypes(expression, Expressible.class, TupleStream.class);
 
-    if(streamExpressions.size() < 2){
-      throw new IOException(String.format(Locale.ROOT,"Invalid expression %s - expecting atleast 2 streams but found %d",expression, streamExpressions.size()));
-    }
-
-    TupleStream stream = null;
-    List<CellStream> cellStreams = new ArrayList();
-
-    for(StreamExpression streamExpression : streamExpressions) {
-      TupleStream s = factory.constructStream(streamExpression);
-      if(s instanceof CellStream) {
-        cellStreams.add((CellStream)s);
+    List<StreamExpressionNamedParameter> namedParams = factory.getNamedOperands(expression);
+    //Get all the named params
+    for(StreamExpressionParameter np : namedParams) {
+      String name = ((StreamExpressionNamedParameter)np).getName();
+      StreamExpressionParameter param = ((StreamExpressionNamedParameter)np).getParameter();
+      if(factory.isEvaluator((StreamExpression)param)) {
+        StreamEvaluator evaluator = factory.constructEvaluator((StreamExpression) param);
+        letParams.put(name, evaluator);
       } else {
-        if(stream == null) {
-          stream = s;
-        } else {
-          throw new IOException("Found more then one stream that was not a CellStream");
-        }
+        TupleStream tupleStream = factory.constructStream((StreamExpression) param);
+        letParams.put(name, tupleStream);
       }
     }
 
-    init(stream, cellStreams);
+    if(streamExpressions.size() != 1){
+      throw new IOException(String.format(Locale.ROOT,"Invalid expression %s - expecting 1 stream but found %d",expression, streamExpressions.size()));
+    }
+
+    stream = factory.constructStream(streamExpressions.get(0));
   }
 
-  private void init(TupleStream _stream, List<CellStream> _cellStreams) {
-    this.stream = _stream;
-    this.cellStreams = _cellStreams;
-  }
 
   @Override
   public StreamExpression toExpression(StreamFactory factory) throws IOException{
@@ -82,9 +77,6 @@ public class LetStream extends TupleStream implements Expressible {
     // function name
     StreamExpression expression = new StreamExpression(factory.getFunctionName(this.getClass()));
     expression.addParameter(((Expressible) stream).toExpression(factory));
-    for(CellStream cellStream : cellStreams) {
-      expression.addParameter(((Expressible)cellStream).toExpression(factory));
-    }
 
     return expression;
   }
@@ -123,17 +115,40 @@ public class LetStream extends TupleStream implements Expressible {
   }
 
   public void open() throws IOException {
-    Map<String, List<Tuple>> lets = streamContext.getLets();
-    for(CellStream cellStream : cellStreams) {
-      try {
-        cellStream.setStreamContext(streamContext);
-        cellStream.open();
-        Tuple tup = cellStream.read();
-        String name = cellStream.getName();
-        List<Tuple> tuples = (List<Tuple>)tup.get(name);
-        lets.put(name, tuples);
-      } finally {
-        cellStream.close();
+    Map<String, Object> lets = streamContext.getLets();
+    Set<Map.Entry<String, Object>> entries = letParams.entrySet();
+
+    //Load up the StreamContext with the data created by the letParams.
+    for(Map.Entry<String, Object> entry : entries) {
+      String name = entry.getKey();
+      Object o = entry.getValue();
+      if(o instanceof TupleStream) {
+        List<Tuple> tuples = new ArrayList();
+        TupleStream tStream = (TupleStream)o;
+        tStream.setStreamContext(streamContext);
+        try {
+          tStream.open();
+          TUPLES:
+          while(true) {
+            Tuple tuple = tStream.read();
+            if (tuple.EOF) {
+              break TUPLES;
+            } else {
+              tuples.add(tuple);
+            }
+          }
+          lets.put(name, tuples);
+        } finally {
+          tStream.close();
+        }
+      } else {
+        //Add the data from the StreamContext to a tuple.
+        //Let the evaluator work from this tuple.
+        //This will allow columns to be created from tuples already in the StreamContext.
+        Tuple eTuple = new Tuple(lets);
+        StreamEvaluator evaluator = (StreamEvaluator)o;
+        Object eo = evaluator.evaluate(eTuple);
+        lets.put(name, eo);
       }
     }
     stream.open();

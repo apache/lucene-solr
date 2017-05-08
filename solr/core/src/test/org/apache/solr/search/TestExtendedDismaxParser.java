@@ -1771,10 +1771,13 @@ public class TestExtendedDismaxParser extends SolrTestCaseJ4 {
 
   public void testAutoGeneratePhraseQueries() throws Exception {
     ModifiableSolrParams noSowParams = new ModifiableSolrParams();
+    noSowParams.add("df", "text");
     ModifiableSolrParams sowFalseParams = new ModifiableSolrParams();
     sowFalseParams.add("sow", "false");
+    sowFalseParams.add("df", "text");
     ModifiableSolrParams sowTrueParams = new ModifiableSolrParams();
     sowTrueParams.add("sow", "true");
+    sowTrueParams.add("df", "text");
 
     // From synonyms.txt:
     //

@@ -95,6 +95,7 @@ class SolrCores implements Observer {
   // We are shutting down. You can't hold the lock on the various lists of cores while they shut down, so we need to
   // make a temporary copy of the names and shut them down outside the lock.
   protected void close() {
+    waitForLoadingCoresToFinish(30*1000);
     Collection<SolrCore> coreList = new ArrayList<>();
 
     

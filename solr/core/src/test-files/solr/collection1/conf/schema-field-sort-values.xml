@@ -32,6 +32,5 @@
   <field name="payload" type="wrapped_int" indexed="false"
          stored="true" multiValued="false" docValues="true" required="true"/>
 
-  <defaultSearchField>text</defaultSearchField>
   <uniqueKey>id</uniqueKey>
 </schema>

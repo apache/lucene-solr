@@ -463,8 +463,9 @@ class BufferedUpdatesStream implements Accountable {
     }
 
     if (success) {
-      // Does nothing if firstExc is null:
-      IOUtils.reThrow(firstExc);
+      if (firstExc != null) {
+        throw IOUtils.rethrowAlways(firstExc);
+      }
     }
 
     if (infoStream.isEnabled("BD")) {

@@ -1,4 +1,4 @@
-<?xml version="1.0" ?>
+<?xml version="1.0" encoding="UTF-8" ?>
 <!--
  Licensed to the Apache Software Foundation (ASF) under one or more
  contributor license agreements.  See the NOTICE file distributed with
@@ -15,22 +15,18 @@
  See the License for the specific language governing permissions and
  limitations under the License.
 -->
-<schema name="test" version="1.2">
+<schema name="SimpleTextCodec" version="1.6">
+  <fieldType name="string" class="solr.StrField"/>
 
-  <fieldType name="int" class="solr.TrieIntField" precisionStep="0" omitNorms="true" positionIncrementGap="0"/>
-
-  <fieldType name="nametext" class="solr.TextField">
-    <analyzer class="org.apache.lucene.analysis.standard.StandardAnalyzer"/>
+  <fieldType name="text_general" class="solr.TextField" positionIncrementGap="100">
+    <analyzer>
+      <tokenizer class="solr.StandardTokenizerFactory"/>
+      <filter class="solr.LowerCaseFilterFactory"/>
+    </analyzer>
   </fieldType>
 
-  <field name="id" type="int" indexed="true" stored="true" multiValued="false" required="true"/>
-  <field name="name" type="nametext" indexed="true" stored="true"/>
-  <field name="title" type="nametext" indexed="true" stored="true"/>
-  <field name="text" type="nametext" indexed="true" stored="true"/>
+  <field name="id" type="string" indexed="true" stored="true" docValues="true" required="true"/>
+  <field name="text" type="text_general" indexed="true" stored="true"/>
 
-  <defaultSearchField>text</defaultSearchField>
-  <solrQueryParser defaultOperator="AND"/>
   <uniqueKey>id</uniqueKey>
-
 </schema>
-

@@ -657,7 +657,6 @@
   <dynamicField name="random_*" type="random"/>
 
 
-  <defaultSearchField>text</defaultSearchField>
   <uniqueKey>id</uniqueKey>
 
   <copyField source="title" dest="title_stemmed" maxChars="200"/>
@@ -692,7 +691,4 @@
   <copyField source="title_*" dest="*_s"/>
   <copyField source="title_*" dest="*_dest_sub_s"/>
   <copyField source="title_*" dest="dest_sub_no_ast_s"/>
-
-  <solrQueryParser defaultOperator="OR"/>
-
 </schema>

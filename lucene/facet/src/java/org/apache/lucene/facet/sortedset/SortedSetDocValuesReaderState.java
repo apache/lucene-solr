@@ -21,6 +21,7 @@ import java.util.Map;
 
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.SortedSetDocValues;
+import org.apache.lucene.util.Accountable;
 
 /** Wraps a {@link IndexReader} and resolves ords
  *  using existing {@link SortedSetDocValues} APIs without a
@@ -38,7 +39,7 @@ import org.apache.lucene.index.SortedSetDocValues;
  *  so you should create it once and re-use that one instance
  *  for a given {@link IndexReader}. */
 
-public abstract class SortedSetDocValuesReaderState {
+public abstract class SortedSetDocValuesReaderState implements Accountable {
 
   /** Holds start/end range of ords, which maps to one
    *  dimension (someday we may generalize it to map to
@@ -71,9 +72,9 @@ public abstract class SortedSetDocValuesReaderState {
   
   /** Returns mapping from prefix to {@link OrdRange}. */
   public abstract Map<String,OrdRange> getPrefixToOrdRange();
-  
+
   /** Returns top-level index reader. */
-  public abstract IndexReader getOrigReader();
+  public abstract IndexReader getReader();
   
   /** Number of unique labels. */
   public abstract int getSize();

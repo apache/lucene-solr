@@ -144,7 +144,9 @@ public abstract class IndexReader implements Closeable {
   // overridden by StandardDirectoryReader and SegmentReader
   void notifyReaderClosedListeners(Throwable th) throws IOException {
     // nothing to notify in the base impl, just rethrow
-    IOUtils.reThrow(th);
+    if (th != null) {
+      throw IOUtils.rethrowAlways(th);
+    }
   }
 
   private void reportCloseToParentReaders() {

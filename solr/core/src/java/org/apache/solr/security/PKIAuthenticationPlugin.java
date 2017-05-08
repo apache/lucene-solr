@@ -193,6 +193,7 @@ public class PKIAuthenticationPlugin extends AuthenticationPlugin implements Htt
   }
 
   PublicKey getRemotePublicKey(String nodename) {
+    if (!cores.getZkController().getZkStateReader().getClusterState().getLiveNodes().contains(nodename)) return null;
     String url = cores.getZkController().getZkStateReader().getBaseUrlForNodeName(nodename);
     try {
       String uri = url + PATH + "?wt=json&omitHeader=true";

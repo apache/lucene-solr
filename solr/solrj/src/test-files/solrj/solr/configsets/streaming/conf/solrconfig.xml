@@ -40,12 +40,18 @@
     <requestParsers enableRemoteStreaming="false" multipartUploadLimitInKB="2048" />
   </requestDispatcher>
 
-  <requestHandler name="standard" class="solr.StandardRequestHandler" default="true" />
+  <requestHandler name="standard" class="solr.StandardRequestHandler" default="true"/>
 
   <!-- config for the admin interface -->
   <admin>
     <defaultQuery>solr</defaultQuery>
   </admin>
+
+  <initParams path="standard">
+    <lst name="defaults">
+      <str name="df">text</str>
+    </lst>
+  </initParams>
 
 </config>
 

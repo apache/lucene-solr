@@ -52,16 +52,16 @@ public class HLLAgg extends StrAggValueSource {
     SchemaField sf = fcontext.qcontext.searcher().getSchema().getField(getArg());
     if (sf.multiValued() || sf.getType().multiValuedFieldCache()) {
       if (sf.hasDocValues()) {
-        return new UniqueMultiDvSlotAcc(fcontext, getArg(), numSlots, fcontext.isShard() ? factory : null);
+        return new UniqueMultiDvSlotAcc(fcontext, sf, numSlots, fcontext.isShard() ? factory : null);
       } else {
-        return new UniqueMultivaluedSlotAcc(fcontext, getArg(), numSlots, fcontext.isShard() ? factory : null);
+        return new UniqueMultivaluedSlotAcc(fcontext, sf, numSlots, fcontext.isShard() ? factory : null);
       }
     } else {
       if (sf.getType().getNumberType() != null) {
         // always use hll here since we don't know how many values there are?
         return new NumericAcc(fcontext, getArg(), numSlots);
       } else {
-        return new UniqueSinglevaluedSlotAcc(fcontext, getArg(), numSlots, fcontext.isShard() ? factory : null);
+        return new UniqueSinglevaluedSlotAcc(fcontext, sf, numSlots, fcontext.isShard() ? factory : null);
       }
     }
   }

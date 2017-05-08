@@ -227,6 +227,14 @@ public class SolrCloudExampleTest extends AbstractFullDistribZkTestBase {
     assertNotNull(maxTimeFromConfig);
     assertEquals(maxTime, maxTimeFromConfig);
 
+    // Just check that we can access paths with slashes in them both through an intermediate method and explicitly
+    // using atPath.
+    assertEquals("Should have been able to get a value from the /query request handler",
+        "explicit", SolrCLI.asString("/config/requestHandler/\\/query/defaults/echoParams", configJson));
+
+    assertEquals("Should have been able to get a value from the /query request handler",
+        "explicit", SolrCLI.atPath("/config/requestHandler/\\/query/defaults/echoParams", configJson));
+
     log.info("live_nodes_count :  " + cloudClient.getZkStateReader().getClusterState().getLiveNodes());
 
     // Since it takes some time for this command to complete we need to make sure all the reloads for

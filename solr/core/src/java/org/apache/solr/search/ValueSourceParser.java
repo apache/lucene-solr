@@ -34,6 +34,7 @@ import org.apache.lucene.queries.function.docvalues.BoolDocValues;
 import org.apache.lucene.queries.function.docvalues.DoubleDocValues;
 import org.apache.lucene.queries.function.docvalues.LongDocValues;
 import org.apache.lucene.queries.function.valuesource.*;
+import org.apache.lucene.queries.payloads.PayloadFunction;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.SortField;
@@ -55,8 +56,7 @@ import org.apache.solr.search.facet.AggValueSource;
 import org.apache.solr.search.facet.AvgAgg;
 import org.apache.solr.search.facet.CountAgg;
 import org.apache.solr.search.facet.HLLAgg;
-import org.apache.solr.search.facet.MaxAgg;
-import org.apache.solr.search.facet.MinAgg;
+import org.apache.solr.search.facet.MinMaxAgg;
 import org.apache.solr.search.facet.PercentileAgg;
 import org.apache.solr.search.facet.StddevAgg;
 import org.apache.solr.search.facet.SumAgg;
@@ -74,7 +74,10 @@ import org.apache.solr.search.function.distance.HaversineFunction;
 import org.apache.solr.search.function.distance.SquaredEuclideanFunction;
 import org.apache.solr.search.function.distance.StringDistanceFunction;
 import org.apache.solr.search.function.distance.VectorDistanceFunction;
+import org.apache.solr.search.join.ChildFieldValueSourceParser;
 import org.apache.solr.util.DateMathParser;
+import org.apache.solr.util.PayloadDecoder;
+import org.apache.solr.util.PayloadUtils;
 import org.apache.solr.util.plugin.NamedListInitializedPlugin;
 import org.locationtech.spatial4j.distance.DistanceUtils;
 
@@ -705,6 +708,52 @@ public abstract class ValueSourceParser implements NamedListInitializedPlugin {
       }
     });
 
+    addParser("payload", new ValueSourceParser() {
+      @Override
+      public ValueSource parse(FunctionQParser fp) throws SyntaxError {
+        // payload(field,value[,default, ['min|max|average|first']])
+        //   defaults to "average" and 0.0 default value
+
+        TInfo tinfo = parseTerm(fp); // would have made this parser a new separate class and registered it, but this handy method is private :/
+
+        ValueSource defaultValueSource;
+        if (fp.hasMoreArguments()) {
+          defaultValueSource = fp.parseValueSource();
+        } else {
+          defaultValueSource = new ConstValueSource(0.0f);
+        }
+
+        PayloadFunction payloadFunction = null;
+        String func = "average";
+        if (fp.hasMoreArguments()) {
+          func = fp.parseArg();
+        }
+        payloadFunction = PayloadUtils.getPayloadFunction(func);
+
+        // Support func="first" by payloadFunction=null
+        if(payloadFunction == null && !"first".equals(func)) {
+          // not "first" (or average, min, or max)
+          throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Invalid payload function: " + func);
+        }
+
+        FieldType fieldType = fp.getReq().getCore().getLatestSchema().getFieldTypeNoEx(tinfo.field);
+        PayloadDecoder decoder = PayloadUtils.getPayloadDecoder(fieldType);
+
+        if (decoder==null) {
+          throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "No payload decoder found for field: " + tinfo.field);
+        }
+
+        return new FloatPayloadValueSource(
+            tinfo.field,
+            tinfo.val,
+            tinfo.indexedField,
+            tinfo.indexedBytes.get(),
+            decoder,
+            payloadFunction,
+            defaultValueSource);
+      }
+    });
+
     addParser("true", new ValueSourceParser() {
       @Override
       public ValueSource parse(FunctionQParser fp) {
@@ -959,19 +1008,20 @@ public abstract class ValueSourceParser implements NamedListInitializedPlugin {
     addParser("agg_min", new ValueSourceParser() {
       @Override
       public ValueSource parse(FunctionQParser fp) throws SyntaxError {
-        return new MinAgg(fp.parseValueSource());
+        return new MinMaxAgg("min", fp.parseValueSource());
       }
     });
 
     addParser("agg_max", new ValueSourceParser() {
       @Override
       public ValueSource parse(FunctionQParser fp) throws SyntaxError {
-        return new MaxAgg(fp.parseValueSource());
+        return new MinMaxAgg("max", fp.parseValueSource());
       }
     });
 
     addParser("agg_percentile", new PercentileAgg.Parser());
-
+    
+    addParser("childfield", new ChildFieldValueSourceParser());
   }
 
   ///////////////////////////////////////////////////////////////////////////////
@@ -1346,7 +1396,7 @@ abstract class Double2Parser extends NamedParser {
       final FunctionValues aVals =  a.getValues(context, readerContext);
       final FunctionValues bVals =  b.getValues(context, readerContext);
       return new DoubleDocValues(this) {
-         @Override
+        @Override
         public double doubleVal(int doc) throws IOException {
           return func(doc, aVals, bVals);
         }
@@ -1417,7 +1467,7 @@ class BoolConstValueSource extends ConstNumberSource {
     return this.constant == other.constant;
   }
 
-    @Override
+  @Override
   public int getInt() {
     return constant ? 1 : 0;
   }

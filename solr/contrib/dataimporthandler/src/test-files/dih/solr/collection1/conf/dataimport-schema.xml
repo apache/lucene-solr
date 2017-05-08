@@ -67,6 +67,4 @@
   <dynamicField name="*_dt" type="date" indexed="true" stored="true"/>
 
   <uniqueKey>id</uniqueKey>
-  <defaultSearchField>desc</defaultSearchField>
-  <solrQueryParser defaultOperator="OR"/>
 </schema>

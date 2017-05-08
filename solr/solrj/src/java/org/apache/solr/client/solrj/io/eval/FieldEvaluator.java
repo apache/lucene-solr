@@ -44,8 +44,23 @@ public class FieldEvaluator extends SimpleEvaluator {
   }
   
   @Override
-  public Object evaluate(Tuple tuple) {
+  public Object evaluate(Tuple tuple) throws IOException {
     Object value = tuple.get(fieldName);
+    
+    // This is somewhat radical.
+    // Here, we allow for the use of the context to provide alternative values
+    // when they are not available in the provided tuple. This means that all
+    // evaluators can evaluate over both a stream's tuple and the context, and
+    // can even evaluate over fields from both of them in the same evaluation
+    if(null == value && null != getStreamContext()){
+      value = getStreamContext().getLets().get(fieldName);
+      
+      // If what's contained in the context is itself an evaluator then
+      // we need to evaluate it
+      if(value instanceof StreamEvaluator){
+        value = ((StreamEvaluator)value).evaluate(tuple);
+      }
+    }
     
     // if we have an array then convert to an ArrayList
     // if we have an iterable that is not a list then convert to ArrayList

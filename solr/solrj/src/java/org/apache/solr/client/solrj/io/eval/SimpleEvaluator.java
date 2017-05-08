@@ -32,5 +32,8 @@ public abstract class SimpleEvaluator implements StreamEvaluator {
   public void setStreamContext(StreamContext streamContext) {
     this.streamContext = streamContext;
   }
+  public StreamContext getStreamContext(){
+    return streamContext;
+  }
 
 }

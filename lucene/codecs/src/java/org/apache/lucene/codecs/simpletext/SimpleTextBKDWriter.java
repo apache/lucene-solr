@@ -877,7 +877,7 @@ final class SimpleTextBKDWriter implements Closeable {
         };
       }
 
-      OfflineSorter sorter = new OfflineSorter(tempDir, tempFileNamePrefix + "_bkd" + dim, cmp, offlineSorterBufferMB, offlineSorterMaxTempFiles, bytesPerDoc) {
+      OfflineSorter sorter = new OfflineSorter(tempDir, tempFileNamePrefix + "_bkd" + dim, cmp, offlineSorterBufferMB, offlineSorterMaxTempFiles, bytesPerDoc, null, 0) {
 
           /** We write/read fixed-byte-width file that {@link OfflinePointReader} can read. */
           @Override
@@ -1170,7 +1170,8 @@ final class SimpleTextBKDWriter implements Closeable {
 
   /** Called on exception, to check whether the checksum is also corrupt in this source, and add that
    *  information (checksum matched or didn't) as a suppressed exception. */
-  private void verifyChecksum(Throwable priorException, PointWriter writer) throws IOException {
+  private Error verifyChecksum(Throwable priorException, PointWriter writer) throws IOException {
+    assert priorException != null;
     // TODO: we could improve this, to always validate checksum as we recurse, if we shared left and
     // right reader after recursing to children, and possibly within recursed children,
     // since all together they make a single pass through the file.  But this is a sizable re-org,
@@ -1181,10 +1182,10 @@ final class SimpleTextBKDWriter implements Closeable {
       try (ChecksumIndexInput in = tempDir.openChecksumInput(tempFileName, IOContext.READONCE)) {
         CodecUtil.checkFooter(in, priorException);
       }
-    } else {
-      // We are reading from heap; nothing to add:
-      IOUtils.reThrow(priorException);
     }
+
+    // We are reading from heap; nothing to add:
+    throw IOUtils.rethrowAlways(priorException);
   }
 
   /** Marks bits for the ords (points) that belong in the right sub tree (those docs that have values >= the splitValue). */
@@ -1206,7 +1207,7 @@ final class SimpleTextBKDWriter implements Closeable {
         reader.markOrds(rightCount-1, ordBitSet);
       }
     } catch (Throwable t) {
-      verifyChecksum(t, source.writer);
+      throw verifyChecksum(t, source.writer);
     }
 
     return scratch1;
@@ -1255,10 +1256,7 @@ final class SimpleTextBKDWriter implements Closeable {
       }
       return new PathSlice(writer, 0, count);
     } catch (Throwable t) {
-      verifyChecksum(t, source.writer);
-
-      // Dead code but javac disagrees:
-      return null;
+      throw verifyChecksum(t, source.writer);
     }
   }
 
@@ -1564,7 +1562,7 @@ final class SimpleTextBKDWriter implements Closeable {
           leftSlices[dim] = new PathSlice(leftPointWriter, 0, leftCount);
           rightSlices[dim] = new PathSlice(rightPointWriter, 0, rightCount);
         } catch (Throwable t) {
-          verifyChecksum(t, slices[dim].writer);
+          throw verifyChecksum(t, slices[dim].writer);
         }
       }
 

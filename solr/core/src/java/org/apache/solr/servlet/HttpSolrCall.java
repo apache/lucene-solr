@@ -1028,7 +1028,7 @@ public class HttpSolrCall {
     return new AuthorizationContext() {
       @Override
       public SolrParams getParams() {
-        return solrReq.getParams();
+        return null == solrReq ? null : solrReq.getParams();
       }
 
       @Override
@@ -1081,7 +1081,7 @@ public class HttpSolrCall {
           response.delete(response.length() - 1, response.length());
         
         response.append("], Path: [").append(resource).append("]");
-        response.append(" path : ").append(path).append(" params :").append(solrReq.getParams());
+        response.append(" path : ").append(path).append(" params :").append(getParams());
         return response.toString();
       }
 

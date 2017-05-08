@@ -80,6 +80,7 @@ public class SliceMutator {
   public ZkWriteCommand removeReplica(ClusterState clusterState, ZkNodeProps message) {
     final String cnn = message.getStr(ZkStateReader.CORE_NODE_NAME_PROP);
     final String collection = message.getStr(ZkStateReader.COLLECTION_PROP);
+    final String baseUrl = message.getStr(ZkStateReader.BASE_URL_PROP);
     if (!checkCollectionKeyExistence(message)) return ZkStateWriter.NO_OP;
 
     DocCollection coll = clusterState.getCollectionOrNull(collection);
@@ -92,7 +93,7 @@ public class SliceMutator {
 
     for (Slice slice : coll.getSlices()) {
       Replica replica = slice.getReplica(cnn);
-      if (replica != null) {
+      if (replica != null && (baseUrl == null || baseUrl.equals(replica.getBaseUrl()))) {
         Map<String, Replica> newReplicas = slice.getReplicasCopy();
         newReplicas.remove(cnn);
         slice = new Slice(slice.getName(), newReplicas, slice.getProperties());

@@ -158,4 +158,10 @@
 
   </query>
 
+  <initParams path="standard">
+    <lst name="defaults">
+      <str name="df">text</str>
+    </lst>
+  </initParams>
+
 </config>

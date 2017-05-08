@@ -48,6 +48,10 @@ public class Tuple implements Cloneable, MapWriter {
   public List<String> fieldNames;
   public Map<String, String> fieldLabels;
 
+  public Tuple(){
+    // just an empty tuple
+  }
+  
   public Tuple(Map fields) {
     if(fields.containsKey("EOF")) {
       EOF = true;

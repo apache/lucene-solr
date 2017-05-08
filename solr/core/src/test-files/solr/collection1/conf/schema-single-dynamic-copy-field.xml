@@ -657,11 +657,7 @@
   <dynamicField name="random_*" type="random"/>
 
 
-  <defaultSearchField>text</defaultSearchField>
   <uniqueKey>id</uniqueKey>
 
   <copyField source="*" dest="text"/>
-
-  <solrQueryParser defaultOperator="OR"/>
-
 </schema>

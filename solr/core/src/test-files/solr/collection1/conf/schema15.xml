@@ -618,8 +618,15 @@
 
   <dynamicField name="random_*" type="random"/>
 
+  <dynamicField name="*_dpf" type="delimited_payloads_float" indexed="true"  stored="true"/>
+  <fieldType name="delimited_payloads_float" class="solr.TextField" positionIncrementGap="100">
+    <analyzer>
+      <tokenizer class="solr.MockTokenizerFactory"/>
+      <filter class="solr.DelimitedPayloadTokenFilterFactory" encoder="float"/>
+    </analyzer>
+  </fieldType>
 
-  <defaultSearchField>text</defaultSearchField>
+
   <uniqueKey>id</uniqueKey>
 
   <copyField source="title" dest="title_stemmed"/>

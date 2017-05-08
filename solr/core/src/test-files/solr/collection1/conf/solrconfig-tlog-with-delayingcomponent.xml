@@ -115,5 +115,10 @@
       <str>delayingSearchComponent</str>
     </arr>
   </requestHandler>
+  <initParams path="standard,/select">
+    <lst name="defaults">
+      <str name="df">text</str>
+    </lst>
+  </initParams>
 
 </config>

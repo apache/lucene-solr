@@ -94,7 +94,7 @@ public abstract class SlotAcc implements Closeable {
     }
   }
 
-  public abstract void reset();
+  public abstract void reset() throws IOException;
 
   public abstract void resize(Resizer resizer);
 
@@ -280,40 +280,6 @@ class SumsqSlotAcc extends DoubleFuncSlotAcc {
   }
 }
 
-class MinSlotAcc extends DoubleFuncSlotAcc {
-  public MinSlotAcc(ValueSource values, FacetContext fcontext, int numSlots) {
-    super(values, fcontext, numSlots, Double.NaN);
-  }
-
-  @Override
-  public void collect(int doc, int slotNum) throws IOException {
-    double val = values.doubleVal(doc);
-    if (val == 0 && !values.exists(doc)) return; // depend on fact that non existing values return 0 for func query
-
-    double currMin = result[slotNum];
-    if (!(val >= currMin)) { // val>=currMin will be false for staring value: val>=NaN
-      result[slotNum] = val;
-    }
-  }
-}
-
-class MaxSlotAcc extends DoubleFuncSlotAcc {
-  public MaxSlotAcc(ValueSource values, FacetContext fcontext, int numSlots) {
-    super(values, fcontext, numSlots, Double.NaN);
-  }
-
-  @Override
-  public void collect(int doc, int slotNum) throws IOException {
-    double val = values.doubleVal(doc);
-    if (val == 0 && !values.exists(doc)) return; // depend on fact that non existing values return 0 for func query
-
-    double currMax = result[slotNum];
-    if (!(val <= currMax)) { // reversed order to handle NaN
-      result[slotNum] = val;
-    }
-  }
-
-}
 
 class AvgSlotAcc extends DoubleFuncSlotAcc {
   int[] counts;

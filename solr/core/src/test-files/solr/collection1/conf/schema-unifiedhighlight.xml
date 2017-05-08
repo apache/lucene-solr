@@ -41,6 +41,5 @@
   <field name="text2" type="text" indexed="true" stored="true"/>
   <field name="text3" type="text_offsets" indexed="true" stored="true"         large="true"/>
 
-  <defaultSearchField>text</defaultSearchField>
   <uniqueKey>id</uniqueKey>
 </schema>

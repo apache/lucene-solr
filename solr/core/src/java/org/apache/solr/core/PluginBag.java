@@ -122,7 +122,7 @@ public class PluginBag<T> implements AutoCloseable {
     return result;
   }
 
-  PluginHolder<T> createPlugin(PluginInfo info) {
+  public PluginHolder<T> createPlugin(PluginInfo info) {
     if ("true".equals(String.valueOf(info.attributes.get("runtimeLib")))) {
       log.debug(" {} : '{}'  created with runtimeLib=true ", meta.getCleanTag(), info.name);
       return new LazyPluginHolder<>(meta, info, core, core.getMemClassLoader());

@@ -26,7 +26,7 @@ import java.util.Map.Entry;
 import java.util.stream.Collectors;
 
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
-import org.apache.solr.client.solrj.impl.CloudSolrClient.Builder;
+import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.io.SolrClientCache;
 import org.apache.solr.client.solrj.io.Tuple;
 import org.apache.solr.client.solrj.io.comp.StreamComparator;
@@ -61,6 +61,7 @@ public class StatsStream extends TupleStream implements Expressible  {
   private Map<String, Metric> metricMap;
   protected transient SolrClientCache cache;
   protected transient CloudSolrClient cloudSolrClient;
+  protected StreamContext streamContext;
 
   // Use StatsStream(String, String, SolrParams, Metric[]
   @Deprecated
@@ -129,9 +130,12 @@ public class StatsStream extends TupleStream implements Expressible  {
     else if(zkHostExpression.getParameter() instanceof StreamExpressionValue){
       zkHost = ((StreamExpressionValue)zkHostExpression.getParameter()).getValue();
     }
+
+    /*
     if(null == zkHost){
       throw new IOException(String.format(Locale.ROOT,"invalid expression %s - zkHost not found for collection '%s'",expression,collectionName));
     }
+    */
     
     // metrics, optional - if not provided then why are you using this?
     Metric[] metrics = new Metric[metricExpressions.size()];
@@ -195,6 +199,7 @@ public class StatsStream extends TupleStream implements Expressible  {
   }
 
   public void setStreamContext(StreamContext context) {
+    streamContext = context;
     cache = context.getSolrClientCache();
   }
 
@@ -203,32 +208,56 @@ public class StatsStream extends TupleStream implements Expressible  {
   }
 
   public void open() throws IOException {
-    if(cache != null) {
-      cloudSolrClient = cache.getCloudSolrClient(zkHost);
-    } else {
-      cloudSolrClient = new Builder()
-          .withZkHost(zkHost)
-          .build();
-    }
-
     ModifiableSolrParams paramsLoc = new ModifiableSolrParams(this.params);
     addStats(paramsLoc, metrics);
     paramsLoc.set("stats", "true");
     paramsLoc.set("rows", "0");
 
-    QueryRequest request = new QueryRequest(paramsLoc);
-    try {
-      NamedList response = cloudSolrClient.request(request, collection);
-      this.tuple = getTuple(response);
-    } catch (Exception e) {
-      throw new IOException(e);
+    Map<String, List<String>> shardsMap = (Map<String, List<String>>)streamContext.get("shards");
+    if(shardsMap == null) {
+      QueryRequest request = new QueryRequest(paramsLoc);
+      CloudSolrClient cloudSolrClient = cache.getCloudSolrClient(zkHost);
+      try {
+        NamedList response = cloudSolrClient.request(request, collection);
+        this.tuple = getTuple(response);
+      } catch (Exception e) {
+        throw new IOException(e);
+      }
+    } else {
+      List<String> shards = shardsMap.get(collection);
+      HttpSolrClient client = cache.getHttpSolrClient(shards.get(0));
+
+      if(shards.size() > 1) {
+        String shardsParam = getShardString(shards);
+        paramsLoc.add("shards", shardsParam);
+        paramsLoc.add("distrib", "true");
+      }
+
+      QueryRequest request = new QueryRequest(paramsLoc);
+      try {
+        NamedList response = client.request(request);
+        this.tuple = getTuple(response);
+      } catch (Exception e) {
+        throw new IOException(e);
+      }
     }
   }
 
-  public void close() throws IOException {
-    if(cache == null) {
-      cloudSolrClient.close();
+  private String getShardString(List<String> shards) {
+    StringBuilder builder = new StringBuilder();
+    for(String shard : shards) {
+      if(builder.length() > 0) {
+        builder.append(",");
+      }
+      builder.append(shard);
     }
+    return builder.toString();
+  }
+
+
+
+  public void close() throws IOException {
+
   }
 
   public Tuple read() throws IOException {

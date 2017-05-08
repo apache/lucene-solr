@@ -39,5 +39,10 @@
   <valueSourceParser name="nvl" class="org.apache.solr.search.function.NvlValueSourceParser">
     <float name="nvlFloatValue">0.0</float>
   </valueSourceParser>
+  <initParams path="standard">
+    <lst name="defaults">
+      <str name="df">text</str>
+    </lst>
+  </initParams>
 
 </config>

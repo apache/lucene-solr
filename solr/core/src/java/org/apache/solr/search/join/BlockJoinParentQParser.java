@@ -41,7 +41,7 @@ import org.apache.solr.search.SyntaxError;
 
 public class BlockJoinParentQParser extends QParser {
   /** implementation detail subject to change */
-  public String CACHE_NAME="perSegFilter";
+  public static final String CACHE_NAME="perSegFilter";
 
   protected String getParentFilterLocalParamName() {
     return "which";
@@ -51,6 +51,7 @@ public class BlockJoinParentQParser extends QParser {
     super(qstr, localParams, params, req);
   }
 
+  
   @Override
   public Query parse() throws SyntaxError {
     String filter = localParams.get(getParentFilterLocalParamName());
@@ -75,7 +76,11 @@ public class BlockJoinParentQParser extends QParser {
   }
 
   BitDocIdSetFilterWrapper getFilter(Query parentList) {
-    SolrCache parentCache = req.getSearcher().getCache(CACHE_NAME);
+    return getCachedFilter(req, parentList);
+  }
+
+  static BitDocIdSetFilterWrapper getCachedFilter(final SolrQueryRequest request, Query parentList) {
+    SolrCache parentCache = request.getSearcher().getCache(CACHE_NAME);
     // lazily retrieve from solr cache
     Filter filter = null;
     if (parentCache != null) {
@@ -93,7 +98,7 @@ public class BlockJoinParentQParser extends QParser {
     return result;
   }
 
-  private BitSetProducer createParentFilter(Query parentQ) {
+  private static BitSetProducer createParentFilter(Query parentQ) {
     return new QueryBitSetProducer(parentQ);
   }
 

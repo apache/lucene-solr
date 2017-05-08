@@ -34,8 +34,8 @@ public class AddEvaluator extends NumberEvaluator {
   public AddEvaluator(StreamExpression expression, StreamFactory factory) throws IOException{
     super(expression, factory);
     
-    if(subEvaluators.size() < 2){
-      throw new IOException(String.format(Locale.ROOT,"Invalid expression %s - expecting at least two values but found %d",expression,subEvaluators.size()));
+    if(subEvaluators.size() < 1){
+      throw new IOException(String.format(Locale.ROOT,"Invalid expression %s - expecting at least 1 value but found %d",expression,subEvaluators.size()));
     }
   }
 

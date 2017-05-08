@@ -41,6 +41,5 @@
    <field name="subject" type="text" indexed="true" stored="true"/>
  </fields>
 
- <defaultSearchField>subject</defaultSearchField>
  <uniqueKey>id</uniqueKey>
 </schema>

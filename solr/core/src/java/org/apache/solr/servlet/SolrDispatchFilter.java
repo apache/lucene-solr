@@ -16,18 +16,6 @@
  */
 package org.apache.solr.servlet;
 
-import javax.servlet.FilterChain;
-import javax.servlet.FilterConfig;
-import javax.servlet.ServletException;
-import javax.servlet.ServletInputStream;
-import javax.servlet.ServletOutputStream;
-import javax.servlet.ServletRequest;
-import javax.servlet.ServletResponse;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletRequestWrapper;
-import javax.servlet.http.HttpServletResponse;
-import javax.servlet.http.HttpServletResponseWrapper;
-
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
@@ -41,15 +29,25 @@ import java.util.Arrays;
 import java.util.Locale;
 import java.util.Properties;
 import java.util.Set;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import com.codahale.metrics.jvm.ClassLoadingGaugeSet;
-import com.codahale.metrics.jvm.GarbageCollectorMetricSet;
-import com.codahale.metrics.jvm.MemoryUsageGaugeSet;
-import com.codahale.metrics.jvm.ThreadStatesGaugeSet;
+import javax.servlet.FilterChain;
+import javax.servlet.FilterConfig;
+import javax.servlet.ServletException;
+import javax.servlet.ServletInputStream;
+import javax.servlet.ServletOutputStream;
+import javax.servlet.ServletRequest;
+import javax.servlet.ServletResponse;
+import javax.servlet.UnavailableException;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletRequestWrapper;
+import javax.servlet.http.HttpServletResponse;
+import javax.servlet.http.HttpServletResponseWrapper;
+
 import org.apache.commons.io.FileCleaningTracker;
 import org.apache.commons.io.input.CloseShieldInputStream;
 import org.apache.commons.io.output.CloseShieldOutputStream;
@@ -78,6 +76,11 @@ import org.apache.solr.util.SolrFileCleaningTracker;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.codahale.metrics.jvm.ClassLoadingGaugeSet;
+import com.codahale.metrics.jvm.GarbageCollectorMetricSet;
+import com.codahale.metrics.jvm.MemoryUsageGaugeSet;
+import com.codahale.metrics.jvm.ThreadStatesGaugeSet;
+
 /**
  * This filter looks at the incoming URL maps them to handlers defined in solrconfig.xml
  *
@@ -87,6 +90,7 @@ public class SolrDispatchFilter extends BaseSolrFilter {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   protected volatile CoreContainer cores;
+  protected final CountDownLatch init = new CountDownLatch(1);
 
   protected String abortErrorMessage = null;
   protected HttpClient httpClient;
@@ -136,6 +140,8 @@ public class SolrDispatchFilter extends BaseSolrFilter {
   public void init(FilterConfig config) throws ServletException
   {
     log.trace("SolrDispatchFilter.init(): {}", this.getClass().getClassLoader());
+    CoreContainer coresInit = null;
+    try{
 
     SolrRequestParsers.fileCleaningTracker = new SolrFileCleaningTracker();
 
@@ -166,10 +172,10 @@ public class SolrDispatchFilter extends BaseSolrFilter {
       String solrHome = (String) config.getServletContext().getAttribute(SOLRHOME_ATTRIBUTE);
       ExecutorUtil.addThreadLocalProvider(SolrRequestInfo.getInheritableThreadLocalProvider());
 
-      this.cores = createCoreContainer(solrHome == null ? SolrResourceLoader.locateSolrHome() : Paths.get(solrHome),
+      coresInit = createCoreContainer(solrHome == null ? SolrResourceLoader.locateSolrHome() : Paths.get(solrHome),
                                        extraProperties);
-      this.httpClient = cores.getUpdateShardHandler().getHttpClient();
-      setupJvmMetrics();
+      this.httpClient = coresInit.getUpdateShardHandler().getHttpClient();
+      setupJvmMetrics(coresInit);
       log.debug("user.dir=" + System.getProperty("user.dir"));
     }
     catch( Throwable t ) {
@@ -181,12 +187,16 @@ public class SolrDispatchFilter extends BaseSolrFilter {
       }
     }
 
-    log.trace("SolrDispatchFilter.init() done");
+    }finally{
+      log.trace("SolrDispatchFilter.init() done");
+      this.cores = coresInit; // crucially final assignment 
+      init.countDown();
+    }
   }
 
-  private void setupJvmMetrics()  {
-    SolrMetricManager metricManager = cores.getMetricManager();
-    final Set<String> hiddenSysProps = cores.getConfig().getHiddenSysProps();
+  private void setupJvmMetrics(CoreContainer coresInit)  {
+    SolrMetricManager metricManager = coresInit.getMetricManager();
+    final Set<String> hiddenSysProps = coresInit.getConfig().getHiddenSysProps();
     try {
       String registry = SolrMetricManager.getRegistryName(SolrInfoBean.Group.jvm);
       metricManager.registerAll(registry, new AltBufferPoolMetricSet(), true, "buffers");
@@ -241,9 +251,9 @@ public class SolrDispatchFilter extends BaseSolrFilter {
    */
   protected CoreContainer createCoreContainer(Path solrHome, Properties extraProperties) {
     NodeConfig nodeConfig = loadNodeConfig(solrHome, extraProperties);
-    cores = new CoreContainer(nodeConfig, extraProperties, true);
-    cores.load();
-    return cores;
+    final CoreContainer coreContainer = new CoreContainer(nodeConfig, extraProperties, true);
+    coreContainer.load();
+    return coreContainer;
   }
 
   /**
@@ -308,12 +318,19 @@ public class SolrDispatchFilter extends BaseSolrFilter {
   
   public void doFilter(ServletRequest request, ServletResponse response, FilterChain chain, boolean retry) throws IOException, ServletException {
     if (!(request instanceof HttpServletRequest)) return;
+    
     try {
 
       if (cores == null || cores.isShutDown()) {
-        log.error("Error processing the request. CoreContainer is either not initialized or shutting down.");
-        throw new SolrException(ErrorCode.SERVICE_UNAVAILABLE,
-            "Error processing the request. CoreContainer is either not initialized or shutting down.");
+        try {
+          init.await();
+        } catch (InterruptedException e) { //well, no wait then
+        }
+        final String msg = "Error processing the request. CoreContainer is either not initialized or shutting down.";
+        if (cores == null || cores.isShutDown()) {
+          log.error(msg);
+          throw new UnavailableException(msg);
+        }
       }
 
       AtomicReference<ServletRequest> wrappedRequest = new AtomicReference<>();

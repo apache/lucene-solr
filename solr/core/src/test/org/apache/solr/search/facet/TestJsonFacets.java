@@ -22,6 +22,7 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Random;
 
@@ -36,6 +37,7 @@ import org.apache.solr.SolrTestCaseHS;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.SolrTestCaseJ4.SuppressPointFields;
 import org.apache.solr.common.params.ModifiableSolrParams;
+import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.request.macro.MacroExpander;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
@@ -204,6 +206,108 @@ public class TestJsonFacets extends SolrTestCaseHS {
     client.commit();
   }
 
+  public void testDomainJoinSelf() throws Exception {
+    Client client = Client.localClient();
+    indexSimple(client);
+
+    // self join domain switch at the second level of faceting
+    assertJQ(req("q", "*:*", "rows", "0",
+                 "json.facet", ""
+                 + "{x: { type: terms, field: 'num_i', "
+                 + "      facet: { y: { domain: { join: { from: 'cat_s', to: 'cat_s' } }, "
+                 + "                    type: terms, field: 'where_s' "
+                 + "                  } } } }")
+             , "facets=={count:6, x:{ buckets:["
+             + "   { val:-5, count:2, "
+             + "     y : { buckets:[{ val:'NJ', count:2 }, { val:'NY', count:1 } ] } }, "
+             + "   { val:2, count:1, "
+             + "     y : { buckets:[{ val:'NJ', count:1 }, { val:'NY', count:1 } ] } }, "
+             + "   { val:3, count:1, "
+             + "     y : { buckets:[{ val:'NJ', count:1 }, { val:'NY', count:1 } ] } }, "
+             + "   { val:7, count:1, "
+             + "     y : { buckets:[{ val:'NJ', count:2 }, { val:'NY', count:1 } ] } } ] } }"
+             );
+  }
+  
+  public void testNestedJoinDomain() throws Exception {
+    Client client = Client.localClient();
+
+    client.deleteByQuery("*:*", null);
+    client.add(sdoc("id", "1", "1_s", "A", "2_s", "A", "3_s", "C", "y_s", "B", "x_t", "x   z", "z_t", "  2 3"), null);
+    client.add(sdoc("id", "2", "1_s", "B", "2_s", "A", "3_s", "B", "y_s", "B", "x_t", "x y  ", "z_t", "1   3"), null);
+    client.add(sdoc("id", "3", "1_s", "C", "2_s", "A", "3_s", "#", "y_s", "A", "x_t", "  y z", "z_t", "1 2  "), null);
+    client.add(sdoc("id", "4", "1_s", "A", "2_s", "B", "3_s", "C", "y_s", "A", "x_t", "    z", "z_t", "    3"), null);
+    client.add(sdoc("id", "5", "1_s", "B", "2_s", "_", "3_s", "B", "y_s", "C", "x_t", "x    ", "z_t", "1   3"), null);
+    client.add(sdoc("id", "6", "1_s", "C", "2_s", "B", "3_s", "A", "y_s", "C", "x_t", "x y z", "z_t", "1    "), null);
+    client.commit();
+
+    assertJQ(req("q", "x_t:x", "rows", "0", // NOTE q - only x=x in base set (1,2,5,6)
+                 "json.facet", ""
+                 + "{x: { type: terms, field: 'x_t', "
+                 + "      domain: { join: { from:'1_s', to:'2_s' } },"
+                 //                y1 & y2 are the same facet, with *similar* child facet z1/z2 ...
+                 + "      facet: { y1: { type: terms, field: 'y_s', "
+                 //                               z1 & z2 are same field, diff join...
+                 + "                     facet: { z1: { type: terms, field: 'z_t', "
+                 + "                                    domain: { join: { from:'2_s', to:'3_s' } } } } },"
+                 + "               y2: { type: terms, field: 'y_s', "
+                 //                               z1 & z2 are same field, diff join...
+                 + "                     facet: { z2: { type: terms, field: 'z_t', "
+                 + "                                    domain: { join: { from:'3_s', to:'1_s' } } } } } } } }")
+             , "facets=={count:4, "
+             + "x:{ buckets:[" // joined 1->2: doc5 drops out, counts: z=4, x=3, y=3 
+             + "   { val:z, count:4, " // x=z (docs 1,3,4,6) y terms: A=2, B=1, C=1
+             + "     y1 : { buckets:[ " // z1 joins 2->3...
+             + "             { val:A, count:2, " // A in docs(3,4), joins (A,B) -> docs(2,5,6)
+             + "               z1: { buckets:[{ val:'1', count:3 }, { val:'3', count:2 }] } }, "
+             + "             { val:B, count:1, " // B in doc1, joins A -> doc6
+             + "               z1: { buckets:[{ val:'1', count:1 }] } }, "
+             + "             { val:C, count:1, " // C in doc6, joins B -> docs(2,5)
+             + "               z1: { buckets:[{ val:'1', count:2 }, { val:'3', count:2 }] } } "
+             + "          ] }, "
+             + "     y2 : { buckets:[ " // z2 joins 3->1...
+             + "             { val:A, count:2, " // A in docs(3,4), joins C -> docs(3,6)
+             + "               z2: { buckets:[{ val:'1', count:2 }, { val:'2', count:1 }] } }, "
+             + "             { val:B, count:1, " // B in doc1, joins C -> docs(3,6)
+             + "               z2: { buckets:[{ val:'1', count:2 }, { val:'2', count:1 }] } }, "
+             + "             { val:C, count:1, " // C in doc6, joins A -> docs(1,4)
+             + "               z2: { buckets:[{ val:'3', count:2 }, { val:'2', count:1 }] } } "
+             + "          ] } }, "
+             + "   { val:x, count:3, " // x=x (docs 1,2,!5,6) y terms: B=2, C=1 
+             + "     y1 : { buckets:[ " // z1 joins 2->3...
+             + "             { val:B, count:2, " // B in docs(1,2), joins A -> doc6
+             + "               z1: { buckets:[{ val:'1', count:1 }] } }, "
+             + "             { val:C, count:1, " // C in doc6, joins B -> docs(2,5)
+             + "               z1: { buckets:[{ val:'1', count:2 }, { val:'3', count:2 }] } } "
+             + "          ] }, "
+             + "     y2 : { buckets:[ " // z2 joins 3->1...
+             + "             { val:B, count:2, " // B in docs(1,2), joins C,B -> docs(2,3,5,6)
+             + "               z2: { buckets:[{ val:'1', count:4 }, { val:'3', count:2 }, { val:'2', count:1 }] } }, "
+             + "             { val:C, count:1, " // C in doc6, joins A -> docs(1,4)
+             + "               z2: { buckets:[{ val:'3', count:2 }, { val:'2', count:1 }] } } "
+             + "          ] } }, "
+             + "   { val:y, count:3, " // x=y (docs 2,3,6) y terms: A=1, B=1, C=1 
+             + "     y1 : { buckets:[ " // z1 joins 2->3...
+             + "             { val:A, count:1, " // A in doc3, joins A -> doc6
+             + "               z1: { buckets:[{ val:'1', count:1 }] } }, "
+             + "             { val:B, count:1, " // B in doc2, joins A -> doc6
+             + "               z1: { buckets:[{ val:'1', count:1 }] } }, "
+             + "             { val:C, count:1, " // C in doc6, joins B -> docs(2,5)
+             + "               z1: { buckets:[{ val:'1', count:2 }, { val:'3', count:2 }] } } "
+             + "          ] }, "
+             + "     y2 : { buckets:[ " // z2 joins 3->1...
+             + "             { val:A, count:1, " // A in doc3, joins # -> empty set
+             + "               z2: { buckets:[ ] } }, "
+             + "             { val:B, count:1, " // B in doc2, joins B -> docs(2,5)
+             + "               z2: { buckets:[{ val:'1', count:2 }, { val:'3', count:2 }] } }, "
+             + "             { val:C, count:1, " // C in doc6, joins A -> docs(1,4)
+             + "               z2: { buckets:[{ val:'3', count:2 }, { val:'2', count:1 }] } } "
+             + "          ]}  }"
+             + "   ]}}"
+             );
+  }
+
+  
   @Test
   public void testMethodStream() throws Exception {
     Client client = Client.localClient();
@@ -1256,6 +1360,42 @@ public class TestJsonFacets extends SolrTestCaseHS {
             "}"
     );
 
+
+    // test acc reuse (i.e. reset() method).  This is normally used for stats that are not calculated in the first phase,
+    // currently non-sorting stats.
+    client.testJQ(params(p, "q", "*:*"
+        , "json.facet", "{f1:{type:terms, field:'${cat_s}', facet:{h:'hll(${where_s})' , u:'unique(${where_s})', mind:'min(${num_d})', maxd:'max(${num_d})', sumd:'sum(${num_d})', avgd:'avg(${num_d})', variance:'variance(${num_d})', stddev:'stddev(${num_d})'         }   }}"
+        )
+        , "facets=={ 'count':6, " +
+            "'f1':{  buckets:[{val:B, count:3, h:2, u:2, mind:-9.0, maxd:11.0, sumd:-3.0, avgd:-1.0, variance:74.66666666666667, stddev:8.640987597877148}," +
+            "                 {val:A, count:2, h:2, u:2, mind:2.0, maxd:4.0, sumd:6.0, avgd:3.0, variance:1.0, stddev:1.0}] } } "
+
+    );
+
+
+    // test min/max of string field
+    if (where_s.equals("where_s") || where_s.equals("where_sd")) {  // supports only single valued currently...
+      client.testJQ(params(p, "q", "*:* -(+${cat_s}:A +${where_s}:NJ)"  // make NY the only value in bucket A
+          , "json.facet", "{" +
+              "  f1:{type:terms, field:'${cat_s}', facet:{min:'min(${where_s})', max:'max(${where_s})'}   }" +
+              ", f2:{type:terms, field:'${cat_s}', facet:{min:'min(${where_s})', max:'max(${where_s})'} , sort:'min desc'}" +
+              ", f3:{type:terms, field:'${cat_s}', facet:{min:'min(${where_s})', max:'max(${where_s})'} , sort:'min asc'}" +
+              ", f4:{type:terms, field:'${cat_s}', facet:{min:'min(${super_s})', max:'max(${super_s})'} , sort:'max asc'}" +
+              ", f5:{type:terms, field:'${cat_s}', facet:{min:'min(${super_s})', max:'max(${super_s})'} , sort:'max desc'}" +
+              "}"
+          )
+          , "facets=={ count:5, " +
+              " f1:{ buckets:[{val:B, count:3, min:NJ, max:NY}, {val:A, count:1, min:NY, max:NY}]}" +
+              ",f2:{ buckets:[{val:A, count:1, min:NY, max:NY}, {val:B, count:3, min:NJ, max:NY}]}" +
+              ",f3:{ buckets:[{val:B, count:3, min:NJ, max:NY}, {val:A, count:1, min:NY, max:NY}]}" +
+              ",f4:{ buckets:[{val:B, count:3, min:batman, max:superman}, {val:A, count:1, min:zodiac, max:zodiac}]}" +
+              ",f5:{ buckets:[{val:A, count:1, min:zodiac, max:zodiac}, {val:B, count:3, min:batman, max:superman}]}" +
+              " } "
+      );
+
+
+    }
+
   }
 
   @Test
@@ -1314,6 +1454,10 @@ public class TestJsonFacets extends SolrTestCaseHS {
     doBigger( client, p );
   }
 
+  private String getId(int id) {
+    return String.format(Locale.US, "%05d", id);
+  }
+
   public void doBigger(Client client, ModifiableSolrParams p) throws Exception {
     MacroExpander m = new MacroExpander(p.getMap());
 
@@ -1332,7 +1476,7 @@ public class TestJsonFacets extends SolrTestCaseHS {
     for (int i=0; i<ndocs; i++) {
       Integer cat = r.nextInt(numCat);
       Integer where = r.nextInt(numWhere);
-      client.add( sdoc("id", i, cat_s,cat, where_s, where) , null );
+      client.add( sdoc("id", getId(i), cat_s,cat, where_s, where) , null );
       Map<Integer,List<Integer>> sub = model.get(cat);
       if (sub == null) {
         sub = new HashMap<>();
@@ -1371,6 +1515,23 @@ public class TestJsonFacets extends SolrTestCaseHS {
       );
     }
 
+    client.testJQ(params(p, "q", "*:*"
+        , "json.facet", "{f1:{type:terms, field:id, limit:1, offset:990}}"
+        )
+        , "facets=={ 'count':" + ndocs + "," +
+            "'f1':{buckets:[{val:'00990',count:1}]}} "
+    );
+
+
+    for (int i=0; i<20; i++) {
+      int off = random().nextInt(ndocs);
+      client.testJQ(params(p, "q", "*:*", "off",Integer.toString(off)
+          , "json.facet", "{f1:{type:terms, field:id, limit:1, offset:${off}}}"
+          )
+          , "facets=={ 'count':" + ndocs + "," +
+              "'f1':{buckets:[{val:'"  + getId(off)  + "',count:1}]}} "
+      );
+    }
   }
 
   public void testTolerant() throws Exception {
@@ -1519,6 +1680,142 @@ public class TestJsonFacets extends SolrTestCaseHS {
             ", pages2:{ buckets:[ {val:y,count:4},{val:z,count:3},{val:x,count:2} ] }" +
             ", books:{ buckets:[ {val:q,count:3},{val:e,count:2},{val:w,count:2} ] }" +
             ", books2:{ buckets:[ {val:q,count:1} ] }" +
+            "}"
+    );
+
+  }
+
+
+  /**
+   * Similar to {@link #testBlockJoin} but uses query time joining.
+   * <p>
+   * (asserts are slightly diff because if a query matches multiple types of documents, blockJoin domain switches
+   * to parent/child domains preserve any existing parent/children from the original domain - eg: when q=*:*)
+   * </p>
+   */
+  public void testQureyJoinBooksAndPages() throws Exception {
+
+    final Client client = Client.localClient();
+
+    final SolrParams p = params("rows","0");
+
+    client.deleteByQuery("*:*", null);
+
+
+    // build up a list of the docs we want to test with
+    List<SolrInputDocument> docsToAdd = new ArrayList<>(10);
+    docsToAdd.add(sdoc("id", "1", "type_s","book", "book_s","A", "v_t","q"));
+    
+    docsToAdd.add( sdoc("id", "2", "type_s","book", "book_s","B", "v_t","q w") );
+    docsToAdd.add( sdoc("book_id_s", "2", "id", "2.1", "type_s","page", "page_s","a", "v_t","x y z") );
+    docsToAdd.add( sdoc("book_id_s", "2", "id", "2.2", "type_s","page", "page_s","b", "v_t","x y  ") );
+    docsToAdd.add( sdoc("book_id_s", "2", "id","2.3", "type_s","page", "page_s","c", "v_t","  y z" ) );
+
+    docsToAdd.add( sdoc("id", "3", "type_s","book", "book_s","C", "v_t","q w e") );
+    docsToAdd.add( sdoc("book_id_s", "3", "id","3.1", "type_s","page", "page_s","d", "v_t","x    ") );
+    docsToAdd.add( sdoc("book_id_s", "3", "id","3.2", "type_s","page", "page_s","e", "v_t","  y  ") );
+    docsToAdd.add( sdoc("book_id_s", "3", "id","3.3", "type_s","page", "page_s","f", "v_t","    z") );
+
+    docsToAdd.add( sdoc("id", "4", "type_s","book", "book_s","D", "v_t","e") );
+    
+    // shuffle the docs since order shouldn't matter
+    Collections.shuffle(docsToAdd, random());
+    for (SolrInputDocument doc : docsToAdd) {
+      client.add(doc, null);
+    }
+    client.commit();
+
+    // the domains we'll be testing, initially setup for block join
+    final String toChildren = "join: { from:'id', to:'book_id_s' }";
+    final String toParents = "join: { from:'book_id_s', to:'id' }";
+    final String toBogusChildren = "join: { from:'id', to:'does_not_exist' }";
+    final String toBogusParents = "join: { from:'book_id_s', to:'does_not_exist' }";
+
+    client.testJQ(params(p, "q", "*:*"
+            , "json.facet", "{ " +
+                "pages:{ type:query, domain:{"+toChildren+"} , facet:{ x:{field:v_t} } }" +
+                ",pages2:{type:terms, field:v_t, domain:{"+toChildren+"} }" +
+                ",books:{ type:query, domain:{"+toParents+"}  , facet:{ x:{field:v_t} } }" +
+                ",books2:{type:terms, field:v_t, domain:{"+toParents+"} }" +
+                ",pageof3:{ type:query, q:'id:3', facet : { x : { type:terms, field:page_s, domain:{"+toChildren+"}}} }" +
+                ",bookof22:{ type:query, q:'id:2.2', facet : { x : { type:terms, field:book_s, domain:{"+toParents+"}}} }" +
+                ",missing_Parents:{ type:query, domain:{"+toBogusParents+"} }" +
+                ",missing_Children:{ type:query, domain:{"+toBogusChildren+"} }" +
+                "}"
+        )
+        , "facets=={ count:10" +
+            ", pages:{count:6 , x:{buckets:[ {val:y,count:4},{val:x,count:3},{val:z,count:3} ]}  }" +
+            ", pages2:{ buckets:[ {val:y,count:4},{val:x,count:3},{val:z,count:3} ] }" +
+            ", books:{count:2 , x:{buckets:[ {val:q,count:2},{val:w,count:2},{val:e,count:1} ]}  }" +
+            ", books2:{ buckets:[ {val:q,count:2},{val:w,count:2},{val:e,count:1} ] }" +
+            ", pageof3:{count:1 , x:{buckets:[ {val:d,count:1},{val:e,count:1},{val:f,count:1} ]}  }" +
+            ", bookof22:{count:1 , x:{buckets:[ {val:B,count:1} ]}  }" +
+            ", missing_Parents:{count:0}" + 
+            ", missing_Children:{count:0}" +
+            "}"
+    );
+
+    // no matches in base query
+    client.testJQ(params("q", "no_match_s:NO_MATCHES"
+            , "json.facet", "{ processEmpty:true," +
+                "pages:{ type:query, domain:{"+toChildren+"} }" +
+                ",books:{ type:query, domain:{"+toParents+"} }" +
+                "}"
+        )
+        , "facets=={ count:0" +
+            ", pages:{count:0}" +
+            ", books:{count:0}" +
+            "}"
+    );
+
+
+    // test facet on children nested under terms facet on parents
+    client.testJQ(params("q", "*:*"
+            , "json.facet", "{" +
+                "books:{ type:terms, field:book_s, facet:{ pages:{type:terms, field:v_t, domain:{"+toChildren+"}} } }" +
+                "}"
+        )
+        , "facets=={ count:10" +
+            ", books:{buckets:[{val:A,count:1,pages:{buckets:[]}}" +
+            "                 ,{val:B,count:1,pages:{buckets:[{val:y,count:3},{val:x,count:2},{val:z,count:2}]}}" +
+            "                 ,{val:C,count:1,pages:{buckets:[{val:x,count:1},{val:y,count:1},{val:z,count:1}]}}" +
+            "                 ,{val:D,count:1,pages:{buckets:[]}}"+
+            "] }" +
+            "}"
+    );
+
+    // test filter after join
+    client.testJQ(params(p, "q", "*:*"
+        , "json.facet", "{ " +
+            "pages1:{type:terms, field:v_t, domain:{"+toChildren+", filter:'*:*'} }" +
+            ",pages2:{type:terms, field:v_t, domain:{"+toChildren+", filter:'-id:3.1'} }" +
+            ",books:{type:terms, field:v_t, domain:{"+toParents+", filter:'*:*'} }" +
+            ",books2:{type:terms, field:v_t, domain:{"+toParents+", filter:'id:2'} }" +
+            "}"
+        )
+        , "facets=={ count:10" +
+            ", pages1:{ buckets:[ {val:y,count:4},{val:x,count:3},{val:z,count:3} ] }" +
+            ", pages2:{ buckets:[ {val:y,count:4},{val:z,count:3},{val:x,count:2} ] }" +
+            ", books:{ buckets:[ {val:q,count:2},{val:w,count:2},{val:e,count:1} ] }" +
+            ", books2:{ buckets:[ {val:q,count:1}, {val:w,count:1} ] }" +
+            "}"
+    );
+
+
+    // test other various ways to get filters
+    client.testJQ(params(p, "q", "*:*", "f1","-id:3.1", "f2","id:2"
+        , "json.facet", "{ " +
+            "pages1:{type:terms, field:v_t, domain:{"+toChildren+", filter:[]} }" +
+            ",pages2:{type:terms, field:v_t, domain:{"+toChildren+", filter:{param:f1} } }" +
+            ",books:{type:terms, field:v_t, domain:{"+toParents+", filter:[{param:q},{param:missing_param}]} }" +
+            ",books2:{type:terms, field:v_t, domain:{"+toParents+", filter:[{param:f2}] } }" +
+            "}"
+        )
+        , "facets=={ count:10" +
+            ", pages1:{ buckets:[ {val:y,count:4},{val:x,count:3},{val:z,count:3} ] }" +
+            ", pages2:{ buckets:[ {val:y,count:4},{val:z,count:3},{val:x,count:2} ] }" +
+            ", books:{ buckets:[ {val:q,count:2},{val:w,count:2},{val:e,count:1} ] }" +
+            ", books2:{ buckets:[ {val:q,count:1}, {val:w,count:1} ] }" +
             "}"
     );
 

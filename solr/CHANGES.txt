@@ -83,6 +83,11 @@ New Features
 
 * SOLR-10393: Adds UUID Streaming Evaluator (Dennis Gove)
 
+* SOLR-10046: Add UninvertDocValuesMergePolicyFactory class. (Keith Laban, Christine Poerschke)
+
+* SOLR-10547: JSON Facet API: Implement support for single-valued string fields for min/max aggregations.
+  (yonik)
+
 Bug Fixes
 ----------------------
 * SOLR-9262: Connection and read timeouts are being ignored by UpdateShardHandler after SOLR-4509.
@@ -127,6 +132,8 @@ Other Changes
 * SOLR-10310: By default, stop splitting on whitespace prior to analysis
   in edismax and standard/"lucene" query parsers. (Steve Rowe)
 
+* SOLR-10572: Removed three "no longer supported in solrconfig.xml" asserts. (Christine Poerschke)
+
 ==================  6.6.0 ==================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release.
@@ -137,7 +144,7 @@ Apache Tika 1.13
 Carrot2 3.15.0
 Velocity 1.7 and Velocity Tools 2.0
 Apache UIMA 2.3.1
-Apache ZooKeeper 3.4.6
+Apache ZooKeeper 3.4.10
 Jetty 9.3.14.v20161028
 
 Upgrade Notes
@@ -148,6 +155,7 @@ Upgrade Notes
 * JSON Facet API now uses hyper-log-log for numBuckets cardinality calculation and
   calculates cardinality before filtering buckets by any mincount greater than 1.
 
+* ZooKeeper dependency has been upgraded from 3.4.6 to 3.4.10.
 
 Detailed Change List
 ----------------------
@@ -156,8 +164,6 @@ New Features
 ----------------------
 
 * SOLR-9992: Add support for grouping with PointFIelds. (Cao Manh Dat)
-
-* SOLR-10046: Add UninvertDocValuesMergePolicyFactory class. (Keith Laban, Christine Poerschke)
 
 * SOLR-9994: Add support for CollapseQParser with PointFields. (Varun Thacker, Cao Manh Dat)
 
@@ -189,6 +195,51 @@ New Features
 
 * SOLR-10505: Add multi-field support to TermsComponent when requesting terms' statistics. (Shai Erera)
 
+* SOLR-10537: SolrJ: Added SolrParams.toLocalParamsString() and ClientUtils.encodeLocalParamVal. (David Smiley)
+
+* SOLR-10507: Core Admin status command to emit collection details of each core (noble)
+
+* SOLR-10521: introducing sort=childfield(field) asc for searching by {!parent} (Mikhail Khludnev) 
+
+* SOLR-9596: Add Solr support for SimpleTextCodec, via <codecFactory class="solr.SimpleTextCodecFactory"/>
+  in solrconfig.xml (per-field specification in the schema is not possible). (Steve Rowe)
+
+* SOLR-1485: Add payload support with payload() value source and {!payload_score} and {!payload_check}
+  query parsers.  (Erik Hatcher)
+
+* SOLR-10430: Add ls command to ZkCLI for listing only sub-directories. (Peter Szantai-Kis via Mark Miller)
+
+* SOLR-10583: JSON Faceting now supports a query time 'join' domain change option (hossman)
+
+* SOLR-9530: An Update Processor to convert normal update operation to an atomic operations such as
+  add, set,inc, remove ,set, removeregex (Amrit Sarkar, noble)
+
+* SOLR-10303: Add date/time Stream Evaluators (Gethin James, Dennis Gove, Joel Bernstein)
+
+* SOLR-10351: Add analyze Stream Evaluator to support streaming NLP (Joel Bernstein)
+
+* SOLR-10426: Add shuffle Streaming Expression (Joel Bernstein)
+
+* SOLR-10274: The search Streaming Expression should work in non-SolrCloud mode (Joel Bernstein)
+
+* SOLR-10504: Add echo Streaming Expression (Joel Bernstein)
+
+* SOLR-10516: Add eval Streaming Expression (Joel Bernstein)
+
+* SOLR-10566: Add timeseries Streaming Expression (Joel Bernstein)
+
+* SOLR-10559: Add let, get and tuple Streaming Expressions (Dennis Gove, Joel Bernstein)
+
+* SOLR-10582: Add Correlation Stream Evaluator (Joel Bernstein)
+
+* SOLR-10536: stats Streaming Expression should work in non-SolrCloud mode (Joel Bernstein)
+
+* SOLR-10622: Add regress and predict Stream Evaluators (Joel Bernstein)
+
+* SOLR-10626: Add covariance Stream Evaluator (Joel Bernstein)
+
+* SOLR-10625: Add convolution Stream Evaluator (Joel Bernstein)
+
 Optimizations
 ----------------------
 
@@ -204,6 +255,8 @@ Optimizations
 
 * SOLR-10548: JSON Facet API now uses hyper-log-log++ for determining the number of buckets
   when merging requests from a multi-shard distributed request. (yonik)
+
+* SOLR-10524: Explore in-memory partitioning for processing Overseer queue messages (Cao Manh Dat, Noble Paul, shalin, Scott Blum)
 
 Bug Fixes
 ----------------------
@@ -248,6 +301,28 @@ Bug Fixes
   ignore mincount > 1 for non-distributed requests. (yonik)
 
 * SOLR-10520: child.facet.field doubled counts at least when rows>0. (Dr. Oleg Savrasov via Mikhail Khludnev) 
+
+* SOLR-10480: Full pagination in JSON Facet API using offset does not work. (yonik)
+
+* SOLR-10526: facet.heatmap didn't honor facet exclusions ('ex') for distributed search. (David Smiley)
+
+* SOLR-10500: nested child docs are adopted by neighbour when several parents come in update/json/docs 
+  (Alexey Suprun,noble via Mikhail Khludnev)
+
+* SOLR-10316: Unloading a core can remove a ZK SolrCore registration entry for the wrong SolrCore. (Mark Miller)
+
+* SOLR-10588: Prevent redundant core reload on config update (Mikhail Khludnev)
+
+* SOLR-10549: The new 'large' attribute had been forgotten in /schema/fieldtypes?showDefaults=true (David Smiley)
+
+* SOLR-10615: requests are suspended until SolrDispatchFilter initialization is completed. 
+  After core container shutdown or severe initialization problem Solr responds with 
+  http stauts 404 Not Found instead of 500 as it was before (Mikhail Khludnev) 
+
+* SOLR-8149: Admin UI - Plugins / Stats - active item is now highlighted (Labuzov Dmitriy via janhoy)
+
+* SOLR-10630: HttpSolrCall.getAuthCtx().new AuthorizationContext() {...}.getParams()
+  sometimes throws java.lang.NullPointerException (hu xiaodong via shalin)
 
 Other Changes
 ----------------------
@@ -298,6 +373,24 @@ Other Changes
 
 * SOLR-10514: Upgrade Metrics library to 3.2.2. (ab)
 
+* SOLR-9386: Upgrade Zookeeper to 3.4.10. (Shawn Heisey, Steve Rowe)
+
+* SOLR-10519: SolrCLI.atPath cannot handle children that begin with a slash. (Erick Erickson)
+
+* SOLR-9867: Adding isLoading=true as core status. Fixing start after stop scenario in bin/solr
+  (Andrey Kudryavtsev, Mikhail Khludnev)
+
+* SOLR-7041: Cutover tests to using 'q.op' and 'df' instead of schema 'defaultOperator' and 'defaultSearchField' (janhoy)
+
+* SOLR-10601: StreamExpressionParser should handle white space around = in named parameters (Joel Bernstein)
+
+* SOLR-10614: Static fields have turned to instance's field in SimplePostTool. 
+  Enabled TestSolrCLIRunExample.testTechproductsExample(). (Andrey Kudryavtsev, Mikhail Khludnev)
+  
+* SOLR-10522: Revert SpellCheckComponent response format change from SOLR-9972 (rel. 6.5.0).  While this
+  was an improvement for the json "arrntv" format, it caused problems for the default json format.
+  (James Dyer, reported by Nikita Pchelintsev)
+
 ==================  6.5.1 ==================
 
 Bug Fixes
@@ -330,7 +423,7 @@ Bug Fixes
 
 * SOLR-10420: Solr 6.x leaking one SolrZkClient instance per second (Scott Blum, Cao Manh Dat, Markus Jelsma, Steve Rowe)
 
-* SOLR-10439: The new 'large' attribute had been forgotten in /schema/fields?showDefaults=true
+* SOLR-10439: The new 'large' attribute had been forgotten in /schema/fields?showDefaults=true (David Smiley)
 
 * SOLR-10527: edismax with sow=false fails to create dismax-per-term queries when any field is boosted.
   (Steve Rowe)

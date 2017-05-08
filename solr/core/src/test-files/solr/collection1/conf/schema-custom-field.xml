@@ -36,6 +36,5 @@
 
   <!-- catchall wildcard to help ensure we aren't breaking function sorting -->
   <dynamicField name="*" type="string" indexed="true" stored="true"/>
-  <defaultSearchField>text</defaultSearchField>
   <uniqueKey>id</uniqueKey>
 </schema>

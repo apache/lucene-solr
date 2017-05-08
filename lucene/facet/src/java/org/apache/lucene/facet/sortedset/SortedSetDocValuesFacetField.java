@@ -28,6 +28,7 @@ public class SortedSetDocValuesFacetField extends Field {
   /** Indexed {@link FieldType}. */
   public static final FieldType TYPE = new FieldType();
   static {
+    // NOTE: we don't actually use these index options, because this field is "processed" by FacetsConfig.build()
     TYPE.setIndexOptions(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS);
     TYPE.freeze();
   }

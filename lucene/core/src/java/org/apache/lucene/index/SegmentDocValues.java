@@ -90,8 +90,9 @@ final class SegmentDocValues {
         }
       }
     }
+
     if (t != null) {
-      IOUtils.reThrow(t);
+      throw IOUtils.rethrowAlways(t);
     }
   }
 }
