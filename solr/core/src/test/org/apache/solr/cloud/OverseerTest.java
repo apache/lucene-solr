@@ -1083,7 +1083,7 @@ public class OverseerTest extends SolrTestCaseJ4 {
   }
 
   private static long nsToMs(double ns) {
-    return TimeUnit.NANOSECONDS.convert((long)ns, TimeUnit.MILLISECONDS);
+    return TimeUnit.MILLISECONDS.convert((long)ns, TimeUnit.NANOSECONDS);
   }
 
   private void close(MockZKController mockController) {
