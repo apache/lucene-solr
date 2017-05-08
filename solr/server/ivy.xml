@@ -40,6 +40,10 @@
     <dependency org="info.ganglia.gmetric4j" name="gmetric4j" rev="${/info.ganglia.gmetric4j/gmetric4j}" conf="metrics" />
     <dependency org="io.dropwizard.metrics" name="metrics-graphite" rev="${/io.dropwizard.metrics/metrics-graphite}" conf="metrics" />
 
+    <dependency org="io.prometheus" name="simpleclient" rev="${/io.prometheus/simpleclient}" conf="metrics" />
+    <dependency org="io.prometheus" name="simpleclient_common" rev="${/io.prometheus/simpleclient_common}" conf="metrics" />
+    <dependency org="io.prometheus" name="simpleclient_dropwizard" rev="${/io.prometheus/simpleclient_dropwizard}" conf="metrics" />
+
     <dependency org="org.eclipse.jetty" name="jetty-continuation" rev="${/org.eclipse.jetty/jetty-continuation}" conf="jetty"/>
     <dependency org="org.eclipse.jetty" name="jetty-deploy" rev="${/org.eclipse.jetty/jetty-deploy}" conf="jetty"/>
     <dependency org="org.eclipse.jetty" name="jetty-http" rev="${/org.eclipse.jetty/jetty-http}" conf="jetty"/>

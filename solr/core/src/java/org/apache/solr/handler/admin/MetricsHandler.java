@@ -25,14 +25,8 @@ import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-import com.codahale.metrics.Counter;
-import com.codahale.metrics.Gauge;
-import com.codahale.metrics.Histogram;
-import com.codahale.metrics.Meter;
-import com.codahale.metrics.MetricFilter;
-import com.codahale.metrics.MetricRegistry;
-import com.codahale.metrics.Timer;
 import org.apache.solr.common.SolrException;
+import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.common.util.StrUtils;
@@ -45,12 +39,25 @@ import org.apache.solr.security.AuthorizationContext;
 import org.apache.solr.security.PermissionNameProvider;
 import org.apache.solr.util.stats.MetricUtils;
 
+import com.codahale.metrics.Counter;
+import com.codahale.metrics.Gauge;
+import com.codahale.metrics.Histogram;
+import com.codahale.metrics.Meter;
+import com.codahale.metrics.MetricFilter;
+import com.codahale.metrics.MetricRegistry;
+import com.codahale.metrics.Timer;
+
+import io.prometheus.client.CollectorRegistry;
+import io.prometheus.client.dropwizard.DropwizardExports;
+
 /**
  * Request handler to return metrics
  */
 public class MetricsHandler extends RequestHandlerBase implements PermissionNameProvider {
   final CoreContainer container;
   final SolrMetricManager metricManager;
+
+  public static final String PROMETHEUS_METRICS_WT = "prometheus";
 
   public static final String COMPACT_PARAM = "compact";
   public static final String PREFIX_PARAM = "prefix";
@@ -83,6 +90,14 @@ public class MetricsHandler extends RequestHandlerBase implements PermissionName
       throw new SolrException(SolrException.ErrorCode.INVALID_STATE, "Core container instance not initialized");
     }
 
+    if(PROMETHEUS_METRICS_WT.equals(req.getParams().get(CommonParams.WT))) {
+      handlePrometheusMetricsRequest(req, rsp);
+    } else {
+      handleMetricsRequest(req, rsp);
+    }
+  }
+
+  private void handleMetricsRequest(SolrQueryRequest req, SolrQueryResponse rsp) {
     boolean compact = req.getParams().getBool(COMPACT_PARAM, true);
     MetricFilter mustMatchFilter = parseMustMatchFilter(req);
     MetricUtils.PropertyFilter propertyFilter = parsePropertyFilter(req);
@@ -102,6 +117,18 @@ public class MetricsHandler extends RequestHandlerBase implements PermissionName
     }
     rsp.getValues().add("metrics", response);
   }
+
+  private void handlePrometheusMetricsRequest(SolrQueryRequest req, SolrQueryResponse rsp) {
+    Set<String> requestedRegistries = parseRegistries(req);
+    CollectorRegistry collector = new CollectorRegistry();
+    for (String registryName : requestedRegistries) {
+      MetricRegistry registry = metricManager.registry(registryName);
+      collector.register(new DropwizardExports(registry));
+    }
+
+    rsp.getValues().add(PROMETHEUS_METRICS_WT, collector);
+  }
+
 
   private MetricFilter parseMustMatchFilter(SolrQueryRequest req) {
     String[] prefixes = req.getParams().getParams(PREFIX_PARAM);

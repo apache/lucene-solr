@@ -17,15 +17,19 @@
 
 package org.apache.solr.handler.admin;
 
+import java.util.Arrays;
 import java.util.Map;
 
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SimpleOrderedMap;
+import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
 import org.junit.BeforeClass;
 import org.junit.Test;
+
+import io.prometheus.client.CollectorRegistry;
 
 /**
  * Test for {@link MetricsHandler}
@@ -185,6 +189,29 @@ public class MetricsHandlerTest extends SolrTestCaseJ4 {
     Object o = nl.get("SEARCHER.new.errors");
     assertNotNull(o); // counter type
     assertTrue(o instanceof Number);
+  }
+  
+  @Test
+  public void testPrometheusOutput() throws Exception {
+    MetricsHandler handler = new MetricsHandler(h.getCoreContainer());
+
+    SolrQueryResponse resp = new SolrQueryResponse();
+    SolrQueryRequest req = req(CommonParams.QT, "/admin/metrics", CommonParams.WT, MetricsHandler.PROMETHEUS_METRICS_WT, "registry", "solr.core.collection1");
+    
+    req.getCore().getRequestHandlers().put("/admin/metrics", handler);
+    
+    handler.handleRequestBody(req, resp);
+    
+    NamedList values = resp.getValues();
+    Object o = values.get(MetricsHandler.PROMETHEUS_METRICS_WT);
+    
+    assertNotNull(o);
+    assertTrue(o instanceof CollectorRegistry);
+    
+    String queryResp = h.query(req);
+    assertFalse(queryResp.isEmpty());
+    
+    assertTrue(Arrays.stream(queryResp.split("[\\r\\n]+")).filter(l -> !l.startsWith("#")).count() > 0);
   }
 
   @Test
