@@ -236,6 +236,8 @@ New Features
 
 * SOLR-10622: Add regress and predict Stream Evaluators (Joel Bernstein)
 
+* SOLR-10626: Add covariance Stream Evaluator (Joel Bernstein)
+
 Optimizations
 ----------------------
 
