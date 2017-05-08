@@ -238,6 +238,8 @@ New Features
 
 * SOLR-10626: Add covariance Stream Evaluator (Joel Bernstein)
 
+* SOLR-10625: Add convolution Stream Evaluator (Joel Bernstein)
+
 Optimizations
 ----------------------
 
