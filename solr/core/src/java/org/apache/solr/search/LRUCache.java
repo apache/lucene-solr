@@ -375,7 +375,7 @@ public class LRUCache<K,V> extends SolrCacheBase implements SolrCache<K,V>, Acco
 
   @Override
   public String toString() {
-    return name() + cacheMap != null ? cacheMap.getValue().toString() : "";
+    return name() + (cacheMap != null ? cacheMap.getValue().toString() : "");
   }
 
   @Override
