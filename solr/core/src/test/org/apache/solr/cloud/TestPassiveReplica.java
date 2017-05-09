@@ -63,7 +63,6 @@ public class TestPassiveReplica extends SolrCloudTestCase {
   
   private static final Logger LOG = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   
-  // TODO: Make sure that FORCELEADER can't be used with Passive
   // TODO: Backup/Snapshot should not work on passive replicas 
   // TODO: ADDSHARD operation
   
@@ -139,22 +138,34 @@ public class TestPassiveReplica extends SolrCloudTestCase {
       CollectionAdminRequest.createCollection(collectionName, "conf", 2, 1, 0, 3)
       .setMaxShardsPerNode(100)
       .process(cluster.getSolrClient());
-      DocCollection docCollection = getCollectionState(collectionName);
-      assertNotNull(docCollection);
-      assertEquals("Expecting 4 relpicas per shard",
-          8, docCollection.getReplicas().size());
-      assertEquals("Expecting 6 passive replicas, 3 per shard",
-          6, docCollection.getReplicas(EnumSet.of(Replica.Type.PASSIVE)).size());
-      assertEquals("Expecting 2 writer replicas, one per shard",
-          2, docCollection.getReplicas(EnumSet.of(Replica.Type.REALTIME)).size());
-      for (Slice s:docCollection.getSlices()) {
-        // read-only replicas can never become leaders
-        assertFalse(s.getLeader().getType() == Replica.Type.PASSIVE);
-        List<String> shardElectionNodes = cluster.getZkClient().getChildren(ZkStateReader.getShardLeadersElectPath(collectionName, s.getName()), null, true);
-        assertEquals("Unexpected election nodes for Shard: " + s.getName() + ": " + Arrays.toString(shardElectionNodes.toArray()), 
-            1, shardElectionNodes.size());
+      boolean reloaded = false;
+      while (true) {
+        DocCollection docCollection = getCollectionState(collectionName);
+        assertNotNull(docCollection);
+        assertEquals("Expecting 4 relpicas per shard",
+            8, docCollection.getReplicas().size());
+        assertEquals("Expecting 6 passive replicas, 3 per shard",
+            6, docCollection.getReplicas(EnumSet.of(Replica.Type.PASSIVE)).size());
+        assertEquals("Expecting 2 writer replicas, one per shard",
+            2, docCollection.getReplicas(EnumSet.of(Replica.Type.REALTIME)).size());
+        for (Slice s:docCollection.getSlices()) {
+          // read-only replicas can never become leaders
+          assertFalse(s.getLeader().getType() == Replica.Type.PASSIVE);
+          List<String> shardElectionNodes = cluster.getZkClient().getChildren(ZkStateReader.getShardLeadersElectPath(collectionName, s.getName()), null, true);
+          assertEquals("Unexpected election nodes for Shard: " + s.getName() + ": " + Arrays.toString(shardElectionNodes.toArray()), 
+              1, shardElectionNodes.size());
+        }
+        assertUlogPresence(docCollection);
+        if (reloaded) {
+          break;
+        } else {
+          // reload
+          CollectionAdminResponse response = CollectionAdminRequest.reloadCollection(collectionName)
+          .process(cluster.getSolrClient());
+          assertEquals(0, response.getStatus());
+          reloaded = true;
+        }
       }
-      assertUlogPresence(docCollection);
     } finally {
       zkClient().printLayoutToStdOut();
     }

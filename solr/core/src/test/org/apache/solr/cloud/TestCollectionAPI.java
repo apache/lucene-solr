@@ -60,7 +60,12 @@ public class TestCollectionAPI extends ReplicaPropertiesBase {
   @ShardsFixed(num = 2)
   public void test() throws Exception {
     try (CloudSolrClient client = createCloudClient(null)) {
-      CollectionAdminRequest.Create req = CollectionAdminRequest.createCollection(COLLECTION_NAME, "conf1",2,2);
+      CollectionAdminRequest.Create req;
+      if (useAppendReplicas()) {
+        req = CollectionAdminRequest.createCollection(COLLECTION_NAME, "conf1",2, 0, 1, 1);
+      } else {
+        req = CollectionAdminRequest.createCollection(COLLECTION_NAME, "conf1",2, 1, 0, 1);
+      }
       req.setMaxShardsPerNode(2);
       client.request(req);
       createCollection(null, COLLECTION_NAME1, 1, 1, 1, client, null, "conf1");
