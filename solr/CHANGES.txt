@@ -240,6 +240,8 @@ New Features
 
 * SOLR-10625: Add convolution Stream Evaluator (Joel Bernstein)
 
+* SOLR-10638: Add normalize Stream Evaluator (Joel Bernstein)
+
 Optimizations
 ----------------------
 
