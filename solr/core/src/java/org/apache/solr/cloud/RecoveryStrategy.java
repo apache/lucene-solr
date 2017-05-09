@@ -330,6 +330,7 @@ public class RecoveryStrategy implements Runnable, Closeable {
         throw new SolrException(ErrorCode.SERVER_ERROR, "Cloud state still says we are leader.");
       }
       if (cloudDesc.isLeader()) {
+        assert cloudDesc.getReplicaType() != Replica.Type.PASSIVE;
         // we are now the leader - no one else must have been suitable
         LOG.warn("We have not yet recovered - but we are now the leader!");
         LOG.info("Finished recovery process.");
@@ -341,11 +342,6 @@ public class RecoveryStrategy implements Runnable, Closeable {
       LOG.info("Publishing state of core [{}] as recovering, leader is [{}] and I am [{}]", core.getName(), leaderUrl,
           ourUrl);
       zkController.publish(core.getCoreDescriptor(), Replica.State.RECOVERING);
-      
-      if (isClosed()) {
-        LOG.info("Recovery for core {} has been closed", core.getName());
-        break;
-      }
       
       if (isClosed()) {
         LOG.info("Recovery for core {} has been closed", core.getName());

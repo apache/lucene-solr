@@ -892,6 +892,9 @@ public class ZkController {
         if (replica == null || replica.getType() != Type.PASSIVE) {
           joinElection(desc, afterExpiration, joinAtHead);
         } else if (replica.getType() == Type.PASSIVE) {
+          if (joinAtHead) {
+            log.warn("Replica {} was designated as preferred leader but it's type is {}, It won't join election", coreZkNodeName, Type.PASSIVE);
+          }
           log.debug("Replica {} skipping election because it's type is {}", coreZkNodeName, Type.PASSIVE);
           startReplicationFromLeader(coreName, false);
         }

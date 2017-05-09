@@ -186,7 +186,7 @@ class PrepRecoveryOp implements CoreAdminHandler.CoreAdminOp {
         }
 
         // solrcloud_debug
-        if (log.isDebugEnabled()) {
+        if (log.isDebugEnabled() && core != null) {
           try {
             LocalSolrQueryRequest r = new LocalSolrQueryRequest(core,
                 new ModifiableSolrParams());
