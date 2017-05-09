@@ -28,6 +28,7 @@ import org.apache.solr.cloud.OverseerCollectionMessageHandler.Cmd;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.DocCollection;
+import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.CoreAdminParams;
@@ -41,7 +42,10 @@ import org.slf4j.LoggerFactory;
 
 import static org.apache.solr.cloud.Assign.getNodesForNewReplicas;
 import static org.apache.solr.cloud.OverseerCollectionMessageHandler.COLL_CONF;
+import static org.apache.solr.common.cloud.ZkStateReader.APPEND_REPLICAS;
 import static org.apache.solr.common.cloud.ZkStateReader.COLLECTION_PROP;
+import static org.apache.solr.common.cloud.ZkStateReader.PASSIVE_REPLICAS;
+import static org.apache.solr.common.cloud.ZkStateReader.REALTIME_REPLICAS;
 import static org.apache.solr.common.cloud.ZkStateReader.REPLICATION_FACTOR;
 import static org.apache.solr.common.cloud.ZkStateReader.SHARD_ID_PROP;
 import static org.apache.solr.common.params.CommonAdminParams.ASYNC;
@@ -67,9 +71,18 @@ public class CreateShardCmd implements Cmd {
 
     ShardHandler shardHandler = ocmh.shardHandlerFactory.getShardHandler();
     DocCollection collection = clusterState.getCollection(collectionName);
-    int repFactor = message.getInt(REPLICATION_FACTOR, collection.getInt(REPLICATION_FACTOR, 1));
+//    int repFactor = message.getInt(REPLICATION_FACTOR, collection.getInt(REPLICATION_FACTOR, 1));
+    int numRealtimeReplicas = message.getInt(REALTIME_REPLICAS, message.getInt(REPLICATION_FACTOR, collection.getInt(REALTIME_REPLICAS, collection.getInt(REPLICATION_FACTOR, 1))));
+    int numPassiveReplicas = message.getInt(PASSIVE_REPLICAS, collection.getInt(PASSIVE_REPLICAS, 0));
+    int numAppendReplicas = message.getInt(APPEND_REPLICAS, collection.getInt(APPEND_REPLICAS, 0));
+    int totalReplicas = numRealtimeReplicas + numPassiveReplicas + numAppendReplicas;
+    
+    if (numRealtimeReplicas + numAppendReplicas <= 0) {
+      throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, REALTIME_REPLICAS + " + " + APPEND_REPLICAS + " must be greater than 0");
+    }
+    
     Object createNodeSetStr = message.get(OverseerCollectionMessageHandler.CREATE_NODE_SET);
-    List<Assign.ReplicaCount> sortedNodeList = getNodesForNewReplicas(clusterState, collectionName, sliceName, repFactor,
+    List<Assign.ReplicaCount> sortedNodeList = getNodesForNewReplicas(clusterState, collectionName, sliceName, totalReplicas,
         createNodeSetStr, ocmh.overseer.getZkController().getCoreContainer());
 
     ZkStateReader zkStateReader = ocmh.zkStateReader;
@@ -90,19 +103,38 @@ public class CreateShardCmd implements Cmd {
     String async = message.getStr(ASYNC);
     Map<String, String> requestMap = null;
     if (async != null) {
-      requestMap = new HashMap<>(repFactor, 1.0f);
+      requestMap = new HashMap<>(totalReplicas, 1.0f);
     }
+    
+    int createdRealtimeReplicas = 0, createdAppendReplicas = 0, createdPassiveReplicas = 0;
 
-    for (int j = 1; j <= repFactor; j++) {
+    for (int j = 1; j <= totalReplicas; j++) {
+      int coreNameNumber;
+      Replica.Type typeToCreate;
+      if (createdRealtimeReplicas < numRealtimeReplicas) {
+        createdRealtimeReplicas++;
+        coreNameNumber = createdRealtimeReplicas;
+        typeToCreate = Replica.Type.REALTIME;
+      } else if (createdAppendReplicas < numAppendReplicas) {
+        createdAppendReplicas++;
+        coreNameNumber = createdAppendReplicas;
+        typeToCreate = Replica.Type.APPEND;
+      } else {
+        createdPassiveReplicas++;
+        coreNameNumber = createdPassiveReplicas;
+        typeToCreate = Replica.Type.PASSIVE;
+      }
       String nodeName = sortedNodeList.get(((j - 1)) % sortedNodeList.size()).nodeName;
-      String shardName = collectionName + "_" + sliceName + "_replica" + j;
-      log.info("Creating shard " + shardName + " as part of slice " + sliceName + " of collection " + collectionName
+      String coreName = Assign.buildCoreName(collectionName, sliceName, typeToCreate, coreNameNumber);
+//      String coreName = collectionName + "_" + sliceName + "_replica" + j;
+      log.info("Creating replica " + coreName + " as part of slice " + sliceName + " of collection " + collectionName
           + " on " + nodeName);
 
       // Need to create new params for each request
       ModifiableSolrParams params = new ModifiableSolrParams();
       params.set(CoreAdminParams.ACTION, CoreAdminParams.CoreAdminAction.CREATE.toString());
-      params.set(CoreAdminParams.NAME, shardName);
+      params.set(CoreAdminParams.NAME, coreName);
+      params.set(CoreAdminParams.REPLICA_TYPE, typeToCreate.name());
       params.set(COLL_CONF, configName);
       params.set(CoreAdminParams.COLLECTION, collectionName);
       params.set(CoreAdminParams.SHARD, sliceName);

@@ -94,10 +94,6 @@ public class ZkStateReader implements Closeable {
   public static final String REJOIN_AT_HEAD_PROP = "rejoinAtHead";
   public static final String SOLR_SECURITY_CONF_PATH = "/security.json";
 
-  /**
-   *@deprecated Use {@link #REALTIME_REPLICAS} 
-   */
-  @Deprecated
   public static final String REPLICATION_FACTOR = "replicationFactor";
   public static final String MAX_SHARDS_PER_NODE = "maxShardsPerNode";
   public static final String AUTO_ADD_REPLICAS = "autoAddReplicas";

@@ -365,6 +365,22 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse> 
   public static Create createCollectionWithImplicitRouter(String collection, String config, String shards, int numReplicas) {
     return new Create(collection, config, shards, numReplicas);
   }
+  
+  /**
+   * Returns a SolrRequest for creating a collection with the implicit router and specific types of replicas
+   * @param collection  the collection name
+   * @param config      the collection config
+   * @param shards      a shard definition string
+   * @param numRealtimeReplicas the number of replicas of type {@link org.apache.solr.common.cloud.Replica.Type#REALTIME}
+   * @param numAppendReplicas the number of replicas of type {@link org.apache.solr.common.cloud.Replica.Type#APPEND}
+   * @param numPassiveReplicas the number of replicas of type {@link org.apache.solr.common.cloud.Replica.Type#PASSIVE}
+   */
+  public static Create createCollectionWithImplicitRouter(String collection, String config, String shards, int numRealtimeReplicas, int numAppendReplicas, int numPassiveReplicas) {
+    Create createRequest = new Create(collection, config, shards, numRealtimeReplicas);
+    createRequest.appendReplicas = numAppendReplicas;
+    createRequest.passiveReplicas = numPassiveReplicas;
+    return createRequest;
+  }
 
   // CREATE request
   public static class Create extends AsyncCollectionSpecificAdminRequest {
@@ -422,7 +438,6 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse> 
     public Create setRealtimeReplicas(Integer realtimeReplicas) { this.realtimeReplicas = realtimeReplicas; return this;}
     public Create setAppendReplicas(Integer appendReplicas) { this.appendReplicas = appendReplicas; return this;}
 
-    @Deprecated
     public Create setReplicationFactor(Integer repl) { this.realtimeReplicas = repl; return this; }
     public Create setStateFormat(Integer stateFormat) { this.stateFormat = stateFormat; return this; }
     public Create setRule(String... s){ this.rule = s; return this; }
@@ -434,11 +449,7 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse> 
     public String getShards() { return  shards; }
     public Integer getNumShards() { return numShards; }
     public Integer getMaxShardsPerNode() { return maxShardsPerNode; }
-    /**
-     * 
-     * @deprecated Use {@link #getNumRealtimeReplicas()}
-     */
-    @Deprecated
+    
     public Integer getReplicationFactor() { return getNumRealtimeReplicas(); }
     public Integer getNumRealtimeReplicas() { return realtimeReplicas; }
     public Boolean getAutoAddReplicas() { return autoAddReplicas; }
