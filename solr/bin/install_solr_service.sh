@@ -331,8 +331,8 @@ SOLR_LOGS_DIR=\"$SOLR_VAR_DIR/logs\"
 SOLR_PORT=\"$SOLR_PORT\"
 " >> "/etc/default/$SOLR_SERVICE.in.sh"
 fi
-chown root: "/etc/default/$SOLR_SERVICE.in.sh"
-chmod 0644 "/etc/default/$SOLR_SERVICE.in.sh"
+chown ${SOLR_USER}: "/etc/default/$SOLR_SERVICE.in.sh"
+chmod 0660 "/etc/default/$SOLR_SERVICE.in.sh"
 
 # install data directories and files
 mkdir -p "$SOLR_VAR_DIR/data"

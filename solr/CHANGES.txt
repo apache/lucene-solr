@@ -398,6 +398,8 @@ Other Changes
   was an improvement for the json "arrntv" format, it caused problems for the default json format.
   (James Dyer, reported by Nikita Pchelintsev)
 
+* SOLR-10644: solr.in.sh installed by install script should be writable by solr user (janhoy)
+
 ==================  6.5.1 ==================
 
 Bug Fixes
