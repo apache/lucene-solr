@@ -49,13 +49,17 @@ public class Sha256AuthenticationProvider implements ConfigEditablePlugin,  Basi
 
   static void putUser(String user, String pwd, Map credentials) {
     if (user == null || pwd == null) return;
+    String val = getSaltedHashedValue(pwd);
+    credentials.put(user, val);
+  }
 
+  public static String getSaltedHashedValue(String pwd) {
     final Random r = new SecureRandom();
     byte[] salt = new byte[32];
     r.nextBytes(salt);
     String saltBase64 = Base64.encodeBase64String(salt);
     String val = sha256(pwd, saltBase64) + " " + saltBase64;
-    credentials.put(user, val);
+    return val;
   }
 
   @Override

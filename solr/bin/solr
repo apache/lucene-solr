@@ -87,6 +87,7 @@ if [ -z "$SOLR_INCLUDE" ]; then
                /etc/default/solr.in.sh \
                /opt/solr/solr.in.sh; do
     if [ -r "$include" ]; then
+        SOLR_INCLUDE="$include"
         . "$include"
         break
     fi
@@ -1184,6 +1185,23 @@ if [[ "$SCRIPT_CMD" == "zk" ]]; then
 
   exit $?
 fi
+
+if [[ "$SCRIPT_CMD" == "auth" ]]; then
+    if [ -z "$AUTH_PORT" ]; then
+      for ID in `ps auxww | grep java | grep start\.jar | awk '{print $2}' | sort -r`
+        do
+          port=`jetty_port "$ID"`
+          if [ "$port" != "" ]; then
+            AUTH_PORT=$port
+            break
+          fi
+        done
+    fi
+    solr_include_file=$SOLR_INCLUDE
+    run_tool auth "$@" -solrUrl "$SOLR_URL_SCHEME://$SOLR_TOOL_HOST:$AUTH_PORT/solr" -solrIncludeFile "$solr_include_file"
+    exit $?
+fi
+
 
 # verify the command given is supported
 if [ "$SCRIPT_CMD" != "stop" ] && [ "$SCRIPT_CMD" != "start" ] && [ "$SCRIPT_CMD" != "restart" ] && [ "$SCRIPT_CMD" != "status" ] && [ "$SCRIPT_CMD" != "assert" ]; then

@@ -242,6 +242,9 @@ New Features
 
 * SOLR-10638: Add normalize Stream Evaluator (Joel Bernstein)
 
+* SOLR-8440: Support for enabling basic authentication using bin/solr|bin/solr.cmd. (Ishan Chattopadhyaya, janhoy,
+  Noble Paul, Hrishikesh Gadre)
+
 Optimizations
 ----------------------
 
