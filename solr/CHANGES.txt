@@ -88,6 +88,8 @@ New Features
 * SOLR-10547: JSON Facet API: Implement support for single-valued string fields for min/max aggregations.
   (yonik)
 
+* SOLR-10262: Add support for configurable metrics implementations. (ab)
+
 Bug Fixes
 ----------------------
 * SOLR-9262: Connection and read timeouts are being ignored by UpdateShardHandler after SOLR-4509.

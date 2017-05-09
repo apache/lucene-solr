@@ -479,7 +479,7 @@ public class CoreContainer {
       }
     }
 
-    metricManager = new SolrMetricManager();
+    metricManager = new SolrMetricManager(loader, cfg.getMetricsConfig());
 
     coreContainerWorkExecutor = MetricUtils.instrumentedExecutorService(
         coreContainerWorkExecutor, null,
@@ -525,9 +525,10 @@ public class CoreContainer {
     if(pkiAuthenticationPlugin != null)
       containerHandlers.put(PKIAuthenticationPlugin.PATH, pkiAuthenticationPlugin.getRequestHandler());
 
-    metricManager.loadReporters(cfg.getMetricReporterPlugins(), loader, null, SolrInfoBean.Group.node);
-    metricManager.loadReporters(cfg.getMetricReporterPlugins(), loader, null, SolrInfoBean.Group.jvm);
-    metricManager.loadReporters(cfg.getMetricReporterPlugins(), loader, null, SolrInfoBean.Group.jetty);
+    PluginInfo[] metricReporters = cfg.getMetricsConfig().getMetricReporters();
+    metricManager.loadReporters(metricReporters, loader, null, SolrInfoBean.Group.node);
+    metricManager.loadReporters(metricReporters, loader, null, SolrInfoBean.Group.jvm);
+    metricManager.loadReporters(metricReporters, loader, null, SolrInfoBean.Group.jetty);
 
     coreConfigService = ConfigSetService.createConfigSetService(cfg, loader, zkSys.zkController);
 
@@ -556,7 +557,7 @@ public class CoreContainer {
     fieldCacheBean.initializeMetrics(metricManager, registryName, null);
 
     if (isZooKeeperAware()) {
-      metricManager.loadClusterReporters(cfg.getMetricReporterPlugins(), this);
+      metricManager.loadClusterReporters(metricReporters, this);
     }
 
     // setup executor to load cores in parallel
