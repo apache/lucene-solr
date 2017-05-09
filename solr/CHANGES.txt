@@ -256,7 +256,7 @@ Optimizations
 * SOLR-10548: JSON Facet API now uses hyper-log-log++ for determining the number of buckets
   when merging requests from a multi-shard distributed request. (yonik)
 
-* SOLR-10524: Explore in-memory partitioning for processing Overseer queue messages (Cao Manh Dat, Noble Paul, shalin, Scott Blum)
+* SOLR-10524: Better ZkStateWriter batching (Cao Manh Dat, Noble Paul, shalin, Scott Blum)
 
 Bug Fixes
 ----------------------
