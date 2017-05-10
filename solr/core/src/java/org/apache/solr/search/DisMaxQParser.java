@@ -98,6 +98,7 @@ public class DisMaxQParser extends QParser {
 
   @Override
   public Query parse() throws SyntaxError {
+    
     parsed = true;
     SolrParams solrParams = SolrParams.wrapDefaults(localParams, params);
 
@@ -265,6 +266,7 @@ public class DisMaxQParser extends QParser {
             IMPOSSIBLE_FIELD_NAME);
     parser.addAlias(IMPOSSIBLE_FIELD_NAME, tiebreaker, fields);
     parser.setPhraseSlop(slop);
+    parser.setSplitOnWhitespace(true);
     return parser;
   }
 

@@ -124,7 +124,7 @@ public class CopyFieldTest extends SolrTestCaseJ4 {
   public void testCopyFieldFunctionality() 
     {
       SolrCore core = h.getCore();
-      assertU(adoc("id", "10", "title", "test copy field", "text_en", "this is a simple test of the copy field functionality"));
+      assertU(adoc("id", "5", "title", "test copy field", "text_en", "this is a simple test of the copy field functionality"));
       assertU(commit());
       
       Map<String,String> args = new HashMap<>();
@@ -134,7 +134,7 @@ public class CopyFieldTest extends SolrTestCaseJ4 {
       
       assertQ("Make sure they got in", req
               ,"//*[@numFound='1']"
-              ,"//result/doc[1]/int[@name='id'][.='10']"
+              ,"//result/doc[1]/int[@name='id'][.='5']"
               );
       
       args = new HashMap<>();
@@ -143,7 +143,7 @@ public class CopyFieldTest extends SolrTestCaseJ4 {
       req = new LocalSolrQueryRequest( core, new MapSolrParams( args) );
       assertQ("dynamic source", req
               ,"//*[@numFound='1']"
-              ,"//result/doc[1]/int[@name='id'][.='10']"
+              ,"//result/doc[1]/int[@name='id'][.='5']"
               ,"//result/doc[1]/arr[@name='highlight']/str[.='this is a simple test of ']"
               );
 

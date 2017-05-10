@@ -23,6 +23,8 @@ import java.util.Random;
 import java.util.Set;
 import java.util.stream.Stream;
 
+import org.apache.lucene.analysis.Analyzer;
+import org.apache.lucene.index.Term;
 import org.apache.lucene.search.BooleanClause;
 import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.BoostQuery;
@@ -364,8 +366,16 @@ public class TestExtendedDismaxParser extends SolrTestCaseJ4 {
     assertQ(req("defType","edismax", "mm","0", "q","Terminator: 100", "qf","movies_t foo_i"),
             twor);
 
-    assertQ(req("defType","edismax", "mm","100%", "q","Terminator: 100", "qf","movies_t foo_i"),
+    assertQ(req("defType","edismax", "mm","100%", "q","Terminator: 100", "qf","movies_t foo_i", "sow","true"),
             nor);
+    // When sow=false, the per-field query structures differ (no "Terminator" query on integer field foo_i),
+    // so a dismax-per-field is constructed.  As a result, mm=100% is applied per-field instead of per-term;
+    // since there is only one term (100) required in the foo_i field's dismax, the query can match docs that
+    // only have the 100 term in the foo_i field, and don't necessarily have "Terminator" in any field.
+    assertQ(req("defType","edismax", "mm","100%", "q","Terminator: 100", "qf","movies_t foo_i", "sow","false"),
+            oner);
+    assertQ(req("defType","edismax", "mm","100%", "q","Terminator: 100", "qf","movies_t foo_i"), // default sow=false
+        oner);
 
     assertQ(req("defType","edismax", "mm","100%", "q","Terminator: 8", "qf","movies_t foo_i"),
             oner);
@@ -1413,19 +1423,21 @@ public class TestExtendedDismaxParser extends SolrTestCaseJ4 {
     assertJQ(req("qf", "text_sw title", "defType","edismax", "q","wi fi", "sow","true")
         , "/response/numFound==0"
     );
-    assertJQ(req("qf","text_sw title", "defType","edismax", "q","wi fi") // default sow=true
-        , "/response/numFound==0"
+    assertJQ(req("qf","text_sw title", "defType","edismax", "q","wi fi") // default sow=false
+        , "/response/numFound==1"
+        , "/response/docs/[0]/id=='72'"
     );
 
     assertJQ(req("qf","text_sw title", "q","{!edismax sow=false}wi fi")
         , "/response/numFound==1"
         , "/response/docs/[0]/id=='72'"
     );
-    assertJQ(req("df", "text_sw title", "q","{!edismax sow=true}wi fi")
+    assertJQ(req("qf", "text_sw title", "q","{!edismax sow=true}wi fi")
         , "/response/numFound==0"
     );
-    assertJQ(req("df", "text_sw title", "q", "{!edismax}wi fi") // default sow=true
-        , "/response/numFound==0"
+    assertJQ(req("qf", "text_sw title", "q", "{!edismax}wi fi") // default sow=false
+        , "/response/numFound==1"
+        , "/response/docs/[0]/id=='72'"
     );
 
     assertQ(req("qf", "name title", 
@@ -1451,7 +1463,7 @@ public class TestExtendedDismaxParser extends SolrTestCaseJ4 {
     assertQ(req("qf", "name title",
         "q", "barking curds of stigma",
         "defType", "edismax",
-        "debugQuery", "true"), // Default sow=true
+        "debugQuery", "true"), // Default sow=false
         "//str[@name='parsedquery'][contains(.,'DisjunctionMaxQuery((name:barking | title:barking))')]",
         "//str[@name='parsedquery'][contains(.,'DisjunctionMaxQuery((name:curds | title:curds))')]",
         "//str[@name='parsedquery'][contains(.,'DisjunctionMaxQuery((name:of | title:of))')]",
@@ -1768,17 +1780,17 @@ public class TestExtendedDismaxParser extends SolrTestCaseJ4 {
     //
     //     crow blackbird, grackle
 
-    try (SolrQueryRequest req = req(sowFalseParams)) {
-      QParser qParser = QParser.getParser("text:grackle", "edismax", req); // "text" has autoGeneratePhraseQueries="true"
-      Query q = qParser.getQuery();
-      assertEquals("+(text:\"crow blackbird\" text:grackl)", q.toString());
-    }
-    for (SolrParams params : Arrays.asList(noSowParams, sowTrueParams)) {
+    for (SolrParams params : Arrays.asList(noSowParams, sowFalseParams)) {
       try (SolrQueryRequest req = req(params)) {
-        QParser qParser = QParser.getParser("text:grackle", "edismax", req);
+        QParser qParser = QParser.getParser("text:grackle", "edismax", req); // "text" has autoGeneratePhraseQueries="true"
         Query q = qParser.getQuery();
-        assertEquals("+spanOr([spanNear([text:crow, text:blackbird], 0, true), text:grackl])", q.toString());
+        assertEquals("+(text:\"crow blackbird\" text:grackl)", q.toString());
       }
+    }
+    try (SolrQueryRequest req = req(sowTrueParams)) {
+      QParser qParser = QParser.getParser("text:grackle", "edismax", req);
+      Query q = qParser.getQuery();
+      assertEquals("+spanOr([spanNear([text:crow, text:blackbird], 0, true), text:grackl])", q.toString());
     }
     for (SolrParams params : Arrays.asList(noSowParams, sowTrueParams, sowFalseParams)) {
       try (SolrQueryRequest req = req(params)) {
@@ -1790,34 +1802,34 @@ public class TestExtendedDismaxParser extends SolrTestCaseJ4 {
 
     Stream.of(noSowParams, sowTrueParams, sowFalseParams).forEach(p->p.add("qf", "text text_sw"));
 
-    try (SolrQueryRequest req = req(sowFalseParams)) {
-      QParser qParser = QParser.getParser("grackle", "edismax", req);
-      Query q = qParser.getQuery();
-      assertEquals("+((text:\"crow blackbird\" text:grackl)"
-              + " | ((+text_sw:crow +text_sw:blackbird) text_sw:grackl))",
-          q.toString());
-
-      qParser = QParser.getParser("grackle wi fi", "edismax", req);
-      q = qParser.getQuery();
-      assertEquals("+(((text:\"crow blackbird\" text:grackl) text:wifi)"
-              + " | (((+text_sw:crow +text_sw:blackbird) text_sw:grackl) text_sw:wifi))",
-          q.toString());
-    }
-    
-    for (SolrParams params : Arrays.asList(noSowParams, sowTrueParams)) {
+    for (SolrParams params : Arrays.asList(noSowParams, sowFalseParams)) {
       try (SolrQueryRequest req = req(params)) {
         QParser qParser = QParser.getParser("grackle", "edismax", req);
         Query q = qParser.getQuery();
-        assertEquals("+(spanOr([spanNear([text:crow, text:blackbird], 0, true), text:grackl])"
+        assertEquals("+((text:\"crow blackbird\" text:grackl)"
                 + " | ((+text_sw:crow +text_sw:blackbird) text_sw:grackl))",
             q.toString());
 
         qParser = QParser.getParser("grackle wi fi", "edismax", req);
         q = qParser.getQuery();
-        assertEquals("+((spanOr([spanNear([text:crow, text:blackbird], 0, true), text:grackl])"
-            + " | ((+text_sw:crow +text_sw:blackbird) text_sw:grackl)) (text:wi | text_sw:wi) (text:fi | text_sw:fi))",
+        assertEquals("+(((text:\"crow blackbird\" text:grackl) text:wifi)"
+                + " | (((+text_sw:crow +text_sw:blackbird) text_sw:grackl) text_sw:wifi))",
             q.toString());
       }
+    }
+    
+    try (SolrQueryRequest req = req(sowTrueParams)) {
+      QParser qParser = QParser.getParser("grackle", "edismax", req);
+      Query q = qParser.getQuery();
+      assertEquals("+(spanOr([spanNear([text:crow, text:blackbird], 0, true), text:grackl])"
+              + " | ((+text_sw:crow +text_sw:blackbird) text_sw:grackl))",
+          q.toString());
+
+      qParser = QParser.getParser("grackle wi fi", "edismax", req);
+      q = qParser.getQuery();
+      assertEquals("+((spanOr([spanNear([text:crow, text:blackbird], 0, true), text:grackl])"
+              + " | ((+text_sw:crow +text_sw:blackbird) text_sw:grackl)) (text:wi | text_sw:wi) (text:fi | text_sw:fi))",
+          q.toString());
     }
   }
   
@@ -1938,6 +1950,8 @@ public class TestExtendedDismaxParser extends SolrTestCaseJ4 {
 
 
   static class FuzzyDismaxQParser extends ExtendedDismaxQParser {
+    
+    private static final float MIN_SIMILARITY = 0.75F;
 
     public FuzzyDismaxQParser(String qstr, SolrParams localParams,
         SolrParams params, SolrQueryRequest req) {
@@ -1958,15 +1972,49 @@ public class TestExtendedDismaxParser extends SolrTestCaseJ4 {
         super(parser, defaultField);
         frequentlyMisspelledWords = new HashSet<>();
         frequentlyMisspelledWords.add("absence");
+        frequentlyMisspelledWords.add("absenc");
       }
       
       @Override
       protected Query getFieldQuery(String field,
           String val, boolean quoted, boolean raw) throws SyntaxError {
         if(frequentlyMisspelledWords.contains(val)) {
-          return getFuzzyQuery(field, val, 0.75F);
+          return getFuzzyQuery(field, val, MIN_SIMILARITY);
         }
         return super.getFieldQuery(field, val, quoted, raw);
+      }
+      
+      /** 
+       * Handle multi-term queries by repacking boolean queries with frequently misspelled term
+       * queries rewritten as fuzzy queries.
+       **/
+      @Override
+      protected Query newFieldQuery(Analyzer analyzer, String field, String queryText,
+                                    boolean quoted, boolean fieldAutoGenPhraseQueries, boolean fieldEnableGraphQueries)
+          throws SyntaxError {
+        Query q = super.newFieldQuery
+            (analyzer, field, queryText, quoted, fieldAutoGenPhraseQueries, fieldEnableGraphQueries);
+        if (q instanceof BooleanQuery) {
+          boolean rewrittenSubQ = false; // dirty flag: rebuild the repacked query?
+          BooleanQuery.Builder builder = newBooleanQuery();
+          for (BooleanClause clause : ((BooleanQuery)q).clauses()) {
+            Query subQ = clause.getQuery();
+            if (subQ instanceof TermQuery) {
+              Term subTerm = ((TermQuery)subQ).getTerm(); 
+              if (frequentlyMisspelledWords.contains(subTerm.text())) {
+                rewrittenSubQ = true;
+                Query fuzzySubQ = newFuzzyQuery(subTerm, MIN_SIMILARITY, getFuzzyPrefixLength());
+                clause = newBooleanClause(fuzzySubQ, clause.getOccur());
+              } 
+            } 
+            builder.add(clause);
+          }
+          if (rewrittenSubQ) {
+            builder.setMinimumNumberShouldMatch(((BooleanQuery)q).getMinimumNumberShouldMatch());
+            q = builder.build();
+          }
+        }
+        return q;
       }
     }
   }

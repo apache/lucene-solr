@@ -54,19 +54,9 @@ public interface Command<T> {
   String getKey();
 
   /**
-   * @return The group sort (overall sort)
-   */
-  Sort getGroupSort();
-
-  /**
    * @return The group SortSpec (overall sort)
    */
   SortSpec getGroupSortSpec();
-
-  /**
-   * @return The sort inside a group
-   */
-  Sort getWithinGroupSort();
 
   /**
    * @return The SortSpec inside a group

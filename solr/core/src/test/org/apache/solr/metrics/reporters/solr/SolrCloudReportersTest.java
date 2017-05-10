@@ -119,20 +119,20 @@ public class SolrCloudReportersTest extends SolrCloudTestCase {
         assertEquals(reporters.toString(), 0, reporters.size());
         // verify specific metrics
         Map<String, Metric> metrics = metricManager.registry(registryName).getMetrics();
-        String key = "QUERY./select.requests.count";
+        String key = "QUERY./select.requests";
         assertTrue(key, metrics.containsKey(key));
         assertTrue(key, metrics.get(key) instanceof AggregateMetric);
-        key = "UPDATE./update/json.requests.count";
+        key = "UPDATE./update/json.requests";
         assertTrue(key, metrics.containsKey(key));
         assertTrue(key, metrics.get(key) instanceof AggregateMetric);
       }
       if (metricManager.registryNames().contains("solr.cluster")) {
         clusterRegistries++;
         Map<String,Metric> metrics = metricManager.registry("solr.cluster").getMetrics();
-        String key = "jvm.memory.heap.init.value";
+        String key = "jvm.memory.heap.init";
         assertTrue(key, metrics.containsKey(key));
         assertTrue(key, metrics.get(key) instanceof AggregateMetric);
-        key = "leader.test_collection.shard1.UPDATE./update/json.requests.count.max";
+        key = "leader.test_collection.shard1.UPDATE./update/json.requests.max";
         assertTrue(key, metrics.containsKey(key));
         assertTrue(key, metrics.get(key) instanceof AggregateMetric);
       }

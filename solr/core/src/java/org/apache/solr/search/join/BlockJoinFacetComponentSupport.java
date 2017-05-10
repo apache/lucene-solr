@@ -124,11 +124,13 @@ abstract class BlockJoinFacetComponentSupport extends SearchComponent {
 
   @Override
   public void handleResponses(ResponseBuilder rb, ShardRequest sreq) {
-    NamedList collectedChildFacetFields = getChildFacetFields(rb.rsp.getValues(), true);
-    List<ShardResponse> responses = sreq.responses;
-    for (ShardResponse shardResponse : responses) {
-      NamedList shardChildFacetFields = getChildFacetFields(shardResponse.getSolrResponse().getResponse(), false);
-      mergeFacets(collectedChildFacetFields, shardChildFacetFields);
+    if ((sreq.purpose & ShardRequest.PURPOSE_GET_TOP_IDS) != 0) {
+      NamedList collectedChildFacetFields = getChildFacetFields(rb.rsp.getValues(), true);
+      List<ShardResponse> responses = sreq.responses;
+      for (ShardResponse shardResponse : responses) {
+        NamedList shardChildFacetFields = getChildFacetFields(shardResponse.getSolrResponse().getResponse(), false);
+        mergeFacets(collectedChildFacetFields, shardChildFacetFields);
+      }
     }
   }
 

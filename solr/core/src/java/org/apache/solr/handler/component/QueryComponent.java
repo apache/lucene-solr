@@ -463,7 +463,7 @@ public class QueryComponent extends SearchComponent
           for (String query : groupingSpec.getQueries()) {
             secondPhaseBuilder.addCommandField(new Builder()
                 .setDocsToCollect(docsToCollect)
-                .setSort(groupingSpec.getGroupSort())
+                .setSortSpec(groupingSpec.getGroupSortSpec())
                 .setQuery(query, rb.req)
                 .setDocSet(searcher)
                 .build()

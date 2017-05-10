@@ -21,6 +21,7 @@ import java.util.Map;
 import java.util.Properties;
 
 import com.google.common.base.Strings;
+import org.apache.solr.common.StringUtils;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.core.CoreDescriptor;
 import org.apache.solr.util.PropertiesUtil;
@@ -134,5 +135,24 @@ public class CloudDescriptor {
     this.nodeName = nodeName;
     if(nodeName==null) cd.getPersistableStandardProperties().remove(CoreDescriptor.CORE_NODE_NAME);
     else cd.getPersistableStandardProperties().setProperty(CoreDescriptor.CORE_NODE_NAME, nodeName);
+  }
+
+  public void reload(CloudDescriptor reloadFrom) {
+    if (reloadFrom == null) return;
+
+    setShardId(StringUtils.isEmpty(reloadFrom.getShardId()) ? getShardId() : reloadFrom.getShardId());
+    setCollectionName(StringUtils.isEmpty(reloadFrom.getCollectionName()) ? getCollectionName() : reloadFrom.getCollectionName());
+    setRoles(StringUtils.isEmpty(reloadFrom.getRoles()) ? getRoles() : reloadFrom.getRoles());
+    if (reloadFrom.getNumShards() != null) {
+      setNumShards(reloadFrom.getNumShards());
+    }
+    setCoreNodeName(StringUtils.isEmpty(reloadFrom.getCoreNodeName()) ? getCoreNodeName() : reloadFrom.getCoreNodeName());
+    setLeader(reloadFrom.isLeader);
+    setHasRegistered(reloadFrom.hasRegistered);
+    setLastPublished(reloadFrom.getLastPublished());
+
+    for (Map.Entry<String, String> ent : reloadFrom.getParams().entrySet()) {
+      collectionParams.put(ent.getKey(), ent.getValue());
+    }
   }
 }
