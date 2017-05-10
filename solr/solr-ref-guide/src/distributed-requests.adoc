@@ -1,0 +1,123 @@
+= Distributed Requests
+:page-shortname: distributed-requests
+:page-permalink: distributed-requests.html
+
+When a Solr node receives a search request, the request is routed behind the scenes to a replica of a shard that is part of the collection being searched.
+
+The chosen replica acts as an aggregator: it creates internal requests to randomly chosen replicas of every shard in the collection, coordinates the responses, issues any subsequent internal requests as needed (for example, to refine facets values, or request additional stored fields), and constructs the final response for the client.
+
+[[DistributedRequests-LimitingWhichShardsareQueried]]
+== Limiting Which Shards are Queried
+
+While one of the advantages of using SolrCloud is the ability to query very large collections distributed among various shards, in some cases <<shards-and-indexing-data-in-solrcloud.adoc#ShardsandIndexingDatainSolrCloud-DocumentRouting,you may know that you are only interested in results from a subset of your shards>>. You have the option of searching over all of your data or just parts of it.
+
+Querying all shards for a collection should look familiar; it's as though SolrCloud didn't even come into play:
+
+[source,text]
+----
+http://localhost:8983/solr/gettingstarted/select?q=*:*
+----
+
+If, on the other hand, you wanted to search just one shard, you can specify that shard by its logical ID, as in:
+
+[source,text]
+----
+http://localhost:8983/solr/gettingstarted/select?q=*:*&shards=shard1
+----
+
+If you want to search a group of shard Ids, you can specify them together:
+
+[source,text]
+----
+http://localhost:8983/solr/gettingstarted/select?q=*:*&shards=shard1,shard2
+----
+
+In both of the above examples, the shard Id(s) will be used to pick a random replica of that shard.
+
+Alternatively, you can specify the explicit replicas you wish to use in place of a shard Ids:
+
+[source,text]
+----
+http://localhost:8983/solr/gettingstarted/select?q=*:*&shards=localhost:7574/solr/gettingstarted,localhost:8983/solr/gettingstarted
+----
+
+Or you can specify a list of replicas to choose from for a single shard (for load balancing purposes) by using the pipe symbol (|):
+
+[source,text]
+----
+http://localhost:8983/solr/gettingstarted/select?q=*:*&shards=localhost:7574/solr/gettingstarted|localhost:7500/solr/gettingstarted
+----
+
+And of course, you can specify a list of shards (seperated by commas) each defined by a list of replicas (seperated by pipes). In this example, 2 shards are queried, the first being a random replica from shard1, the second being a random replica from the explicit pipe delimited list:
+
+[source,text]
+----
+http://localhost:8983/solr/gettingstarted/select?q=*:*&shards=shard1,localhost:7574/solr/gettingstarted|localhost:7500/solr/gettingstarted
+----
+
+[[DistributedRequests-ConfiguringtheShardHandlerFactory]]
+== Configuring the ShardHandlerFactory
+
+You can directly configure aspects of the concurrency and thread-pooling used within distributed search in Solr. This allows for finer grained control and you can tune it to target your own specific requirements. The default configuration favors throughput over latency.
+
+To configure the standard handler, provide a configuration like this in `solrconfig.xml`:
+
+[source,xml]
+----
+<requestHandler name="standard" class="solr.SearchHandler" default="true">
+  <!-- other params go here -->
+  <shardHandler class="HttpShardHandlerFactory">
+    <int name="socketTimeOut">1000</int>
+    <int name="connTimeOut">5000</int>
+  </shardHandler>
+</requestHandler>
+----
+
+The parameters that can be specified are as follows:
+
+// TODO: Change column width to %autowidth.spread when https://github.com/asciidoctor/asciidoctor-pdf/issues/599 is fixed
+
+[cols="20,15,65",options="header"]
+|===
+|Parameter |Default |Explanation
+|`socketTimeout` |0 (use OS default) |The amount of time in ms that a socket is allowed to wait.
+|`connTimeout` |0 (use OS default) |The amount of time in ms that is accepted for binding / connecting a socket
+|`maxConnectionsPerHost` |20 |The maximum number of concurrent connections that is made to each individual shard in a distributed search.
+|`maxConnections` |`10000` |The total maximum number of concurrent connections in distributed searches.
+|`corePoolSize` |0 |The retained lowest limit on the number of threads used in coordinating distributed search.
+|`maximumPoolSize` |Integer.MAX_VALUE |The maximum number of threads used for coordinating distributed search.
+|`maxThreadIdleTime` |5 seconds |The amount of time to wait for before threads are scaled back in response to a reduction in load.
+|`sizeOfQueue` |-1 |If specified, the thread pool will use a backing queue instead of a direct handoff buffer. High throughput systems will want to configure this to be a direct hand off (with -1). Systems that desire better latency will want to configure a reasonable size of queue to handle variations in requests.
+|`fairnessPolicy` |false |Chooses the JVM specifics dealing with fair policy queuing, if enabled distributed searches will be handled in a First in First out fashion at a cost to throughput. If disabled throughput will be favored over latency.
+|===
+
+[[DistributedRequests-ConfiguringstatsCache_DistributedIDF_]]
+== Configuring statsCache (Distributed IDF)
+
+Document and term statistics are needed in order to calculate relevancy. Solr provides four implementations out of the box when it comes to document stats calculation:
+
+* `LocalStatsCache`: This only uses local term and document statistics to compute relevance. In cases with uniform term distribution across shards, this works reasonably well.This option is the default if no `<statsCache>` is configured.
+* `ExactStatsCache`: This implementation uses global values (across the collection) for document frequency.
+* `ExactSharedStatsCache`: This is exactly like the exact stats cache in its functionality but the global stats are reused for subsequent requests with the same terms.
+* `LRUStatsCache`: This implementation uses an LRU cache to hold global stats, which are shared between requests.
+
+The implementation can be selected by setting `<statsCache>` in `solrconfig.xml`. For example, the following line makes Solr use the `ExactStatsCache` implementation:
+
+[source,xml]
+----
+<statsCache class="org.apache.solr.search.stats.ExactStatsCache"/>
+----
+
+[[DistributedRequests-AvoidingDistributedDeadlock]]
+== Avoiding Distributed Deadlock
+
+Each shard serves top-level query requests and then makes sub-requests to all of the other shards. Care should be taken to ensure that the max number of threads serving HTTP requests is greater than the possible number of requests from both top-level clients and other shards. If this is not the case, the configuration may result in a distributed deadlock.
+
+For example, a deadlock might occur in the case of two shards, each with just a single thread to service HTTP requests. Both threads could receive a top-level request concurrently, and make sub-requests to each other. Because there are no more remaining threads to service requests, the incoming requests will be blocked until the other pending requests are finished, but they will not finish since they are waiting for the sub-requests. By ensuring that Solr is configured to handle a sufficient number of threads, you can avoid deadlock situations like this.
+
+[[DistributedRequests-PreferLocalShards]]
+== Prefer Local Shards
+
+Solr allows you to pass an optional boolean parameter named `preferLocalShards` to indicate that a distributed query should prefer local replicas of a shard when available. In other words, if a query includes `preferLocalShards=true`, then the query controller will look for local replicas to service the query instead of selecting replicas at random from across the cluster. This is useful when a query requests many fields or large fields to be returned per document because it avoids moving large amounts of data over the network when it is available locally. In addition, this feature can be useful for minimizing the impact of a problematic replica with degraded performance, as it reduces the likelihood that the degraded replica will be hit by other healthy replicas.
+
+Lastly, it follows that the value of this feature diminishes as the number of shards in a collection increases because the query controller will have to direct the query to non-local replicas for most of the shards. In other words, this feature is mostly useful for optimizing queries directed towards collections with a small number of shards and many replicas. Also, this option should only be used if you are load balancing requests across all nodes that host replicas for the collection you are querying, as Solr's CloudSolrClient will do. If not load-balancing, this feature can introduce a hotspot in the cluster since queries won't be evenly distributed across the cluster.

@@ -1,0 +1,224 @@
+= Running Solr on HDFS
+:page-shortname: running-solr-on-hdfs
+:page-permalink: running-solr-on-hdfs.html
+
+Solr has support for writing and reading its index and transaction log files to the HDFS distributed filesystem.
+
+This does not use Hadoop MapReduce to process Solr data, rather it only uses the HDFS filesystem for index and transaction log file storage. To use Hadoop MapReduce to process Solr data, see the MapReduceIndexerTool in the Solr contrib area.
+
+To use HDFS rather than a local filesystem, you must be using Hadoop 2.x and you will need to instruct Solr to use the `HdfsDirectoryFactory`. There are also several additional parameters to define. These can be set in one of three ways:
+
+* Pass JVM arguments to the `bin/solr` script. These would need to be passed every time you start Solr with `bin/solr`.
+* Modify `solr.in.sh` (or `solr.in.cmd` on Windows) to pass the JVM arguments automatically when using `bin/solr` without having to set them manually.
+* Define the properties in `solrconfig.xml`. These configuration changes would need to be repeated for every collection, so is a good option if you only want some of your collections stored in HDFS.
+
+[[RunningSolronHDFS-StartingSolronHDFS]]
+== Starting Solr on HDFS
+
+[[RunningSolronHDFS-StandaloneSolrInstances]]
+=== Standalone Solr Instances
+
+For standalone Solr instances, there are a few parameters you should be sure to modify before starting Solr. These can be set in `solrconfig.xml`(more on that <<RunningSolronHDFS-HdfsDirectoryFactoryParameters,below>>), or passed to the `bin/solr` script at startup.
+
+* You need to use an `HdfsDirectoryFactory` and a data dir of the form `hdfs://host:port/path`
+* You need to specify an UpdateLog location of the form `hdfs://host:port/path`
+* You should specify a lock factory type of '`hdfs`' or none.
+
+If you do not modify `solrconfig.xml`, you can instead start Solr on HDFS with the following command:
+
+[source,bash]
+----
+bin/solr start -Dsolr.directoryFactory=HdfsDirectoryFactory
+     -Dsolr.lock.type=hdfs
+     -Dsolr.data.dir=hdfs://host:port/path
+     -Dsolr.updatelog=hdfs://host:port/path
+----
+
+This example will start Solr in standalone mode, using the defined JVM properties (explained in more detail <<RunningSolronHDFS-HdfsDirectoryFactoryParameters,below>>).
+
+[[RunningSolronHDFS-SolrCloudInstances]]
+=== SolrCloud Instances
+
+In SolrCloud mode, it's best to leave the data and update log directories as the defaults Solr comes with and simply specify the `solr.hdfs.home`. All dynamically created collections will create the appropriate directories automatically under the `solr.hdfs.home` root directory.
+
+* Set `solr.hdfs.home` in the form `hdfs://host:port/path`
+* You should specify a lock factory type of '`hdfs`' or none.
+
+[source,bash]
+----
+bin/solr start -c -Dsolr.directoryFactory=HdfsDirectoryFactory
+     -Dsolr.lock.type=hdfs
+     -Dsolr.hdfs.home=hdfs://host:port/path
+----
+
+This command starts Solr in SolrCloud mode, using the defined JVM properties.
+
+
+[[RunningSolronHDFS-Modifyingsolr.in.sh_nix_orsolr.in.cmd_Windows_]]
+=== Modifying solr.in.sh (*nix) or solr.in.cmd (Windows)
+
+The examples above assume you will pass JVM arguments as part of the start command every time you use `bin/solr` to start Solr. However, `bin/solr` looks for an include file named `solr.in.sh` (`solr.in.cmd` on Windows) to set environment variables. By default, this file is found in the `bin` directory, and you can modify it to permanently add the `HdfsDirectoryFactory` settings and ensure they are used every time Solr is started.
+
+For example, to set JVM arguments to always use HDFS when running in SolrCloud mode (as shown above), you would add a section such as this:
+
+[source,bash]
+----
+# Set HDFS DirectoryFactory & Settings
+-Dsolr.directoryFactory=HdfsDirectoryFactory \
+-Dsolr.lock.type=hdfs \
+-Dsolr.hdfs.home=hdfs://host:port/path \
+----
+
+[[RunningSolronHDFS-TheBlockCache]]
+== The Block Cache
+
+For performance, the HdfsDirectoryFactory uses a Directory that will cache HDFS blocks. This caching mechanism is meant to replace the standard file system cache that Solr utilizes so much. By default, this cache is allocated off heap. This cache will often need to be quite large and you may need to raise the off heap memory limit for the specific JVM you are running Solr in. For the Oracle/OpenJDK JVMs, the follow is an example command line parameter that you can use to raise the limit when starting Solr:
+
+[source,bash]
+----
+-XX:MaxDirectMemorySize=20g
+----
+
+[[RunningSolronHDFS-HdfsDirectoryFactoryParameters]]
+== HdfsDirectoryFactory Parameters
+
+The `HdfsDirectoryFactory` has a number of settings that are defined as part of the `directoryFactory` configuration.
+
+[[RunningSolronHDFS-SolrHDFSSettings]]
+=== Solr HDFS Settings
+
+// TODO: Change column width to %autowidth.spread when https://github.com/asciidoctor/asciidoctor-pdf/issues/599 is fixed
+
+[cols="20,30,10,40",options="header"]
+|===
+|Parameter |Example Value |Default |Description
+|`solr.hdfs.home` |`hdfs://host:port/path/solr` |N/A |A root location in HDFS for Solr to write collection data to. Rather than specifying an HDFS location for the data directory or update log directory, use this to specify one root location and have everything automatically created within this HDFS location.
+|===
+
+[[RunningSolronHDFS-BlockCacheSettings]]
+=== Block Cache Settings
+
+// TODO: Change column width to %autowidth.spread when https://github.com/asciidoctor/asciidoctor-pdf/issues/599 is fixed
+
+[cols="30,10,60",options="header"]
+|===
+|Parameter |Default |Description
+|`solr.hdfs.blockcache.enabled` |true |Enable the blockcache
+|`solr.hdfs.blockcache.read.enabled` |true |Enable the read cache
+|`solr.hdfs.blockcache.direct.memory.allocation` |true |Enable direct memory allocation. If this is false, heap is used
+|`solr.hdfs.blockcache.slab.count` |1 |Number of memory slabs to allocate. Each slab is 128 MB in size.
+|`solr.hdfs.blockcache.global` |true |Enable/Disable using one global cache for all SolrCores. The settings used will be from the first HdfsDirectoryFactory created.
+|===
+
+[[RunningSolronHDFS-NRTCachingDirectorySettings]]
+=== NRTCachingDirectory Settings
+
+// TODO: Change column width to %autowidth.spread when https://github.com/asciidoctor/asciidoctor-pdf/issues/599 is fixed
+
+[cols="30,10,60",options="header"]
+|===
+|Parameter |Default |Description
+|`solr.hdfs.nrtcachingdirectory.enable` |true |Enable the use of NRTCachingDirectory
+|`solr.hdfs.nrtcachingdirectory.maxmergesizemb` |16 |NRTCachingDirectory max segment size for merges
+|`solr.hdfs.nrtcachingdirectory.maxcachedmb` |192 |NRTCachingDirectory max cache size
+|===
+
+[[RunningSolronHDFS-HDFSClientConfigurationSettings]]
+=== HDFS Client Configuration Settings
+
+solr.hdfs.confdir pass the location of HDFS client configuration files - needed for HDFS HA for example.
+
+// TODO: Change column width to %autowidth.spread when https://github.com/asciidoctor/asciidoctor-pdf/issues/599 is fixed
+
+[cols="30,10,60",options="header"]
+|===
+|Parameter |Default |Description
+|`solr.hdfs.confdir` |N/A |Pass the location of HDFS client configuration files - needed for HDFS HA for example.
+|===
+
+[[RunningSolronHDFS-KerberosAuthenticationSettings]]
+=== Kerberos Authentication Settings
+
+Hadoop can be configured to use the Kerberos protocol to verify user identity when trying to access core services like HDFS. If your HDFS directories are protected using Kerberos, then you need to configure Solr's HdfsDirectoryFactory to authenticate using Kerberos in order to read and write to HDFS. To enable Kerberos authentication from Solr, you need to set the following parameters:
+
+// TODO: Change column width to %autowidth.spread when https://github.com/asciidoctor/asciidoctor-pdf/issues/599 is fixed
+
+[cols="30,10,60",options="header"]
+|===
+|Parameter |Default |Description
+|`solr.hdfs.security.kerberos.enabled` |false |Set to true to enable Kerberos authentication
+|`solr.hdfs.security.kerberos.keytabfile` |N/A a|
+A keytab file contains pairs of Kerberos principals and encrypted keys which allows for password-less authentication when Solr attempts to authenticate with secure Hadoop.
+
+This file will need to be present on all Solr servers at the same path provided in this parameter.
+
+|`solr.hdfs.security.kerberos.principal` |N/A |The Kerberos principal that Solr should use to authenticate to secure Hadoop; the format of a typical Kerberos V5 principal is: `primary/instance@realm`
+|===
+
+[[RunningSolronHDFS-Example]]
+== Example
+
+Here is a sample `solrconfig.xml` configuration for storing Solr indexes on HDFS:
+
+[source,xml]
+----
+<directoryFactory name="DirectoryFactory" class="solr.HdfsDirectoryFactory">
+  <str name="solr.hdfs.home">hdfs://host:port/solr</str>
+  <bool name="solr.hdfs.blockcache.enabled">true</bool>
+  <int name="solr.hdfs.blockcache.slab.count">1</int>
+  <bool name="solr.hdfs.blockcache.direct.memory.allocation">true</bool>
+  <int name="solr.hdfs.blockcache.blocksperbank">16384</int>
+  <bool name="solr.hdfs.blockcache.read.enabled">true</bool>
+  <bool name="solr.hdfs.nrtcachingdirectory.enable">true</bool>
+  <int name="solr.hdfs.nrtcachingdirectory.maxmergesizemb">16</int>
+  <int name="solr.hdfs.nrtcachingdirectory.maxcachedmb">192</int>
+</directoryFactory>
+----
+
+If using Kerberos, you will need to add the three Kerberos related properties to the `<directoryFactory>` element in solrconfig.xml, such as:
+
+[source,xml]
+----
+<directoryFactory name="DirectoryFactory" class="solr.HdfsDirectoryFactory">
+   ...
+  <bool name="solr.hdfs.security.kerberos.enabled">true</bool>
+  <str name="solr.hdfs.security.kerberos.keytabfile">/etc/krb5.keytab</str>
+  <str name="solr.hdfs.security.kerberos.principal">solr/admin@KERBEROS.COM</str>
+</directoryFactory>
+----
+
+[[RunningSolronHDFS-AutomaticallyAddReplicasinSolrCloud]]
+== Automatically Add Replicas in SolrCloud
+
+One benefit to running Solr in HDFS is the ability to automatically add new replicas when the Overseer notices that a shard has gone down. Because the "gone" index shards are stored in HDFS, the a new core will be created and the new core will point to the existing indexes in HDFS.
+
+Collections created using `autoAddReplicas=true` on a shared file system have automatic addition of replicas enabled. The following settings can be used to override the defaults in the `<solrcloud>` section of `solr.xml`.
+
+// TODO: Change column width to %autowidth.spread when https://github.com/asciidoctor/asciidoctor-pdf/issues/599 is fixed
+
+[cols="40,10,50",options="header"]
+|===
+|Param |Default |Description
+|autoReplicaFailoverWorkLoopDelay |10000 |The time (in ms) between clusterstate inspections by the Overseer to detect and possibly act on creation of a replacement replica.
+|autoReplicaFailoverWaitAfterExpiration |30000 |The minimum time (in ms) to wait for initiating replacement of a replica after first noticing it not being live. This is important to prevent false positives while stoping or starting the cluster.
+|autoReplicaFailoverBadNodeExpiration |60000 |The delay (in ms) after which a replica marked as down would be unmarked.
+|===
+
+[[RunningSolronHDFS-TemporarilydisableautoAddReplicasfortheentirecluster]]
+=== Temporarily disable autoAddReplicas for the entire cluster
+
+When doing offline maintenance on the cluster and for various other use cases where an admin would like to temporarily disable auto addition of replicas, the following APIs will disable and re-enable autoAddReplicas for **all collections in the cluster**:
+
+Disable auto addition of replicas cluster wide by setting the cluster property `autoAddReplicas` to `false`:
+
+[source,text]
+----
+http://localhost:8983/solr/admin/collections?action=CLUSTERPROP&name=autoAddReplicas&val=false
+----
+
+Re-enable auto addition of replicas (for those collections created with autoAddReplica=true) by unsetting the `autoAddReplicas` cluster property (when no `val` param is provided, the cluster property is unset):
+
+[source,text]
+----
+http://localhost:8983/solr/admin/collections?action=CLUSTERPROP&name=autoAddReplicas
+----

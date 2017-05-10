@@ -1,0 +1,28 @@
+---
+search: exclude
+layout: none
+---
+
+<?xml version="1.0" encoding="UTF-8"?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+    <channel>
+        <title>{{ site.site_title | xml_escape }}</title>
+        <description>{{ site.description | xml_escape }}</description>
+        <link>{{ site.url }}</link>
+        <atom:link href="{{ "/feed.xml" | prepend: site.url }}" rel="self" type="application/rss+xml"/>
+        <pubDate>{{ site.time | date_to_rfc822 }}</pubDate>
+        <lastBuildDate>{{ site.time | date_to_rfc822 }}</lastBuildDate>
+        <generator>Jekyll v{{ jekyll.version }}</generator>
+        {% for page in site.pages limit:10 %}
+        <item>
+            <title>{{ page.title | xml_escape }}</title>
+            <description>{{ page.content | xml_escape }}</description>
+            <link>{{ page.url | prepend: site.url }}</link>
+            <guid isPermaLink="true">{{ page.url | prepend: site.url }}</guid>
+            {% for tag in page.tags %}
+               <category>{{ tag | xml_escape }}</category>
+            {% endfor %}
+        </item>
+        {% endfor %}
+    </channel>
+</rss>

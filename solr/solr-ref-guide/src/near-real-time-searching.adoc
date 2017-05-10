@@ -1,0 +1,121 @@
+= Near Real Time Searching
+:page-shortname: near-real-time-searching
+:page-permalink: near-real-time-searching.html
+
+Near Real Time (NRT) search means that documents are available for search almost immediately after being indexed.
+
+This allows additions and updates to documents to be seen in 'near' real time. Solr does not block updates while a commit is in progress. Nor does it wait for background merges to complete before opening a new search of indexes and returning.
+
+With NRT, you can modify a `commit` command to be a *soft commit*, which avoids parts of a standard commit that can be costly. You will still want to do standard commits to ensure that documents are in stable storage, but *soft commits* let you see a very near real time view of the index in the meantime.
+
+However, pay special attention to cache and autowarm settings as they can have a significant impact on NRT performance.
+
+[[NearRealTimeSearching-CommitsandOptimizing]]
+== Commits and Optimizing
+
+A commit operation makes index changes visible to new search requests. A *hard commit* uses the transaction log to get the id of the latest document changes, and also calls `fsync` on the index files to ensure they have been flushed to stable storage and no data loss will result from a power failure.
+
+A *soft commit* is much faster since it only makes index changes visible and does not `fsync` index files or write a new index descriptor. If the JVM crashes or there is a loss of power, changes that occurred after the last *hard commit* will be lost. Search collections that have NRT requirements (that want index changes to be quickly visible to searches) will want to soft commit often but hard commit less frequently. A softCommit may be "less expensive" in terms of time, but not free, since it can slow throughput.
+
+An *optimize* is like a *hard commit* except that it forces all of the index segments to be merged into a single segment first. Depending on the use, this operation should be performed infrequently (e.g., nightly), if at all, since it involves reading and re-writing the entire index. Segments are normally merged over time anyway (as determined by the merge policy), and optimize just forces these merges to occur immediately.
+
+Soft commit takes uses two parameters: `maxDocs` and `maxTime`.
+
+// TODO: Change column width to %autowidth.spread when https://github.com/asciidoctor/asciidoctor-pdf/issues/599 is fixed
+
+[cols="30,70",options="header"]
+|===
+|Parameter |Description
+|`maxDocs` |Integer. Defines the number of documents to queue before pushing them to the index. It works in conjunction with the `update_handler_autosoftcommit_max_time` parameter in that if either limit is reached, the documents will be pushed to the index.
+|`maxTime` |The number of milliseconds to wait before pushing documents to the index. It works in conjunction with the `update_handler_autosoftcommit_max_docs` parameter in that if either limit is reached, the documents will be pushed to the index.
+|===
+
+Use `maxDocs` and `maxTime` judiciously to fine-tune your commit strategies.
+
+[[NearRealTimeSearching-AutoCommits]]
+=== AutoCommits
+
+An autocommit also uses the parameters `maxDocs` and `maxTime`. However it's useful in many strategies to use both a hard `autocommit` and `autosoftcommit` to achieve more flexible commits.
+
+A common configuration is to do a hard `autocommit` every 1-10 minutes and a `autosoftcommit` every second. With this configuration, new documents will show up within about a second of being added, and if the power goes out, soft commits are lost unless a hard commit has been done.
+
+For example:
+
+[source,xml]
+----
+<autoSoftCommit>
+  <maxTime>1000</maxTime>
+</autoSoftCommit>
+----
+
+It's better to use `maxTime` rather than `maxDocs` to modify an `autoSoftCommit`, especially when indexing a large number of documents through the commit operation. It's also better to turn off `autoSoftCommit` for bulk indexing.
+
+[[NearRealTimeSearching-OptionalAttributesforcommitandoptimize]]
+=== Optional Attributes for `commit` and `optimize`
+
+// TODO: Change column width to %autowidth.spread when https://github.com/asciidoctor/asciidoctor-pdf/issues/599 is fixed
+
+[cols="20,20,60",options="header"]
+|===
+|Parameter |Valid Attributes |Description
+|`waitSearcher` |true, false |Block until a new searcher is opened and registered as the main query searcher, making the changes visible. Default is true.
+|`softCommit` |true, false |Perform a soft commit. This will refresh the view of the index faster, but without guarantees that the document is stably stored. Default is false.
+|`expungeDeletes` |true, false |Valid for `commit` only. This parameter purges deleted data from segments. The default is false.
+|`maxSegments` |integer |Valid for `optimize` only. Optimize down to at most this number of segments. The default is 1.
+|===
+
+Example of `commit` and `optimize` with optional attributes:
+
+[source,xml]
+----
+<commit waitSearcher="false"/>
+<commit waitSearcher="false" expungeDeletes="true"/>
+<optimize waitSearcher="false"/>
+----
+
+[[NearRealTimeSearching-PassingcommitandcommitWithinparametersaspartoftheURL]]
+=== Passing `commit` and `commitWithin` Parameters as Part of the URL
+
+Update handlers can also get `commit`-related parameters as part of the update URL. This example adds a small test document and causes an explicit commit to happen immediately afterwards:
+
+[source,text]
+----
+http://localhost:8983/solr/my_collection/update?stream.body=<add><doc>
+   <field name="id">testdoc</field></doc></add>&commit=true
+----
+
+Alternately, you may want to use this:
+
+[source,text]
+----
+http://localhost:8983/solr/my_collection/update?stream.body=<optimize/>
+----
+
+This example causes the index to be optimized down to at most 10 segments, but won't wait around until it's done (`waitFlush=false`):
+
+[source,bash]
+----
+curl 'http://localhost:8983/solr/my_collection/update?optimize=true&maxSegments=10&waitFlush=false'
+----
+
+This example adds a small test document with a `commitWithin` instruction that tells Solr to make sure the document is committed no later than 10 seconds later (this method is generally preferred over explicit commits):
+
+[source,bash]
+----
+curl http://localhost:8983/solr/my_collection/update?commitWithin=10000
+  -H "Content-Type: text/xml" --data-binary '<add><doc><field name="id">testdoc</field></doc></add>'
+----
+
+[[NearRealTimeSearching-ChangingdefaultcommitWithinBehavior]]
+=== Changing default `commitWithin` Behavior
+
+The `commitWithin` settings allow forcing document commits to happen in a defined time period. This is used most frequently with <<near-real-time-searching.adoc#near-real-time-searching,Near Real Time Searching>>, and for that reason the default is to perform a soft commit. This does not, however, replicate new documents to slave servers in a master/slave environment. If that's a requirement for your implementation, you can force a hard commit by adding a parameter, as in this example:
+
+[source,xml]
+----
+<commitWithin>
+  <softCommit>false</softCommit>
+</commitWithin>
+----
+
+With this configuration, when you call `commitWithin` as part of your update message, it will automatically perform a hard commit every time.

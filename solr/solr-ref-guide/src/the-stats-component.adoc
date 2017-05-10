@@ -1,0 +1,179 @@
+= The Stats Component
+:page-shortname: the-stats-component
+:page-permalink: the-stats-component.html
+
+The Stats component returns simple statistics for numeric, string, and date fields within the document set.
+
+The sample queries in this section assume you are running the "```techproducts```" example included with Solr:
+
+[source,bash]
+----
+bin/solr -e techproducts
+----
+
+[[TheStatsComponent-StatsComponentParameters]]
+== Stats Component Parameters
+
+The Stats Component accepts the following parameters:
+
+// TODO: Change column width to %autowidth.spread when https://github.com/asciidoctor/asciidoctor-pdf/issues/599 is fixed
+
+[cols="30,70",options="header"]
+|===
+|Parameter |Description
+|stats |If **true**, then invokes the Stats component.
+|stats.field a|
+Specifies a field for which statistics should be generated. This parameter may be invoked multiple times in a query in order to request statistics on multiple fields.
+
+<<local-parameters-in-queries.adoc#local-parameters-in-queries,Local Parameters>> may be used to indicate which subset of the supported statistics should be computed, and/or that statistics should be computed over the results of an arbitrary numeric function (or query) instead of a simple field name. See the examples below.
+
+|stats.facet a|
+Returns sub-results for values within the specified facet.
+
+This legacy parameter is not recommended for new users - instead please consider <<TheStatsComponent-TheStatsComponentandFaceting,combining `stats.field` with `facet.pivot`>>
+
+|stats.calcdistinct a|
+If **true**, the "countDistinct" and "distinctValues" statistics will be computed and included the response. These calculations can be very expensive for fields that do not have a tiny cardinality, so they are disabled by default.
+
+This parameter can be specified using per-filed override (ie: `f.<field>.stats.calcdistinct=true`) but users are encouraged to instead the statistics desired <<TheStatsComponent-LocalParameters,as Local Parameter>> - As a top level request parameter, this option is deprecated.
+
+|===
+
+[[TheStatsComponent-Example]]
+=== Example
+
+The query below demonstrates computing stats against two different fields numeric fields, as well as stats over the results of a `termfreq()` function call using the `text` field:
+
+`\http://localhost:8983/solr/techproducts/select?q=*:*&stats=true&stats.field={!func}termfreq('text','memory')&stats.field=price&stats.field=popularity&rows=0&indent=true`
+
+[source,xml]
+----
+<lst name="stats">
+  <lst name="stats_fields">
+    <lst name="termfreq(text,memory)">
+      <double name="min">0.0</double>
+      <double name="max">3.0</double>
+      <long name="count">32</long>
+      <long name="missing">0</long>
+      <double name="sum">10.0</double>
+      <double name="sumOfSquares">22.0</double>
+      <double name="mean">0.3125</double>
+      <double name="stddev">0.7803018439949604</double>
+      <lst name="facets"/>
+    </lst>
+    <lst name="price">
+      <double name="min">0.0</double>
+      <double name="max">2199.0</double>
+      <long name="count">16</long>
+      <long name="missing">16</long>
+      <double name="sum">5251.270030975342</double>
+      <double name="sumOfSquares">6038619.175900028</double>
+      <double name="mean">328.20437693595886</double>
+      <double name="stddev">536.3536996709846</double>
+      <lst name="facets"/>
+    </lst>
+    <lst name="popularity">
+      <double name="min">0.0</double>
+      <double name="max">10.0</double>
+      <long name="count">15</long>
+      <long name="missing">17</long>
+      <double name="sum">85.0</double>
+      <double name="sumOfSquares">603.0</double>
+      <double name="mean">5.666666666666667</double>
+      <double name="stddev">2.943920288775949</double>
+      <lst name="facets"/>
+    </lst>
+  </lst>
+</lst>
+----
+
+[[TheStatsComponent-StatisticsSupported]]
+== Statistics Supported
+
+The table below explains the statistics supported by the Stats component. Not all statistics are supported for all field types, and not all statistics are computed by default (See <<TheStatsComponent-LocalParameters,Local Parameters>> below for details)
+
+// TODO: Change column width to %autowidth.spread when https://github.com/asciidoctor/asciidoctor-pdf/issues/599 is fixed
+
+[cols="10,10,50,20,10",options="header"]
+|===
+|Local Param |Sample Input |Description |Supported Types |Computed by Default
+|min |true |The minimum value of the field/function in all documents in the set. |All |Yes
+|max |true |The maximum value of the field/function in all documents in the set. |All |Yes
+|sum |true |The sum of all values of the field/function in all documents in the set. |Numeric & Date |Yes
+|count |true |The number of values found in all documents in the set for this field/function. |All |Yes
+|missing |true |The number of documents in the set which do not have a value for this field/function. |All |Yes
+|sumOfSquares |true |Sum of all values squared (a by product of computing stddev) |Numeric & Date |Yes
+|mean |true |The average `(v1 + v2 .... + vN)/N` |Numeric & Date |Yes
+|stddev |true |Standard deviation, measuring how widely spread the values in the data set are. |Numeric & Date |Yes
+|percentiles |"1,99,99.9" |A list of percentile values based on cut-off points specified by the param value. These values are an approximation, using the https://github.com/tdunning/t-digest/blob/master/docs/t-digest-paper/histo.pdf[t-digest algorithm]. |Numeric |No
+|distinctValues |true |The set of all distinct values for the field/function in all of the documents in the set. This calculation can be very expensive for fields that do not have a tiny cardinality. |All |No
+|countDistinct |true |The exact number of distinct values in the field/function in all of the documents in the set. This calculation can be very expensive for fields that do not have a tiny cardinality. |All |No
+|cardinality |"true" or"0.3" |A statistical approximation (currently using the https://en.wikipedia.org/wiki/HyperLogLog[HyperLogLog] algorithm) of the number of distinct values in the field/function in all of the documents in the set. This calculation is much more efficient then using the 'countDistinct' option, but may not be 100% accurate. Input for this option can be floating point number between 0.0 and 1.0 indicating how aggressively the algorithm should try to be accurate: 0.0 means use as little memory as possible; 1.0 means use as much memory as needed to be as accurate as possible. 'true' is supported as an alias for "0.3" |All |No
+|===
+
+[[TheStatsComponent-LocalParameters]]
+== Local Parameters
+
+Similar to the <<faceting.adoc#faceting,Facet Component>>, the `stats.field` parameter supports local parameters for:
+
+* Tagging & Excluding Filters: `stats.field={!ex=filterA}price`
+* Changing the Output Key: `stats.field={!key=my_price_stats}price`
+* Tagging stats for <<TheStatsComponent-TheStatsComponentandFaceting,use with `facet.pivot`>>: `stats.field={!tag=my_pivot_stats}price`
+
+Local parameters can also be used to specify individual statistics by name, overriding the set of statistics computed by default, eg: `stats.field={!min=true max=true percentiles='99,99.9,99.99'}price`
+
+[IMPORTANT]
+====
+If any supported statistics are specified via local parameters, then the entire set of default statistics is overridden and only the requested statistics are computed.
+====
+
+Additional "Expert" local params are supported in some cases for affecting the behavior of some statistics:
+
+* `percentiles`
+** `tdigestCompression` - a positive numeric value defaulting to `100.0` controlling the compression factor of the T-Digest. Larger values means more accuracy, but also uses more memory.
+* `cardinality`
+** `hllPreHashed` - a boolean option indicating that the statistics are being computed over a "long" field that has already been hashed at index time – allowing the HLL computation to skip this step.
+** `hllLog2m` - an integer value specifying an explicit "log2m" value to use, overriding the heuristic value determined by the cardinality local param and the field type – see the https://github.com/aggregateknowledge/java-hll/[java-hll] documentation for more details
+** `hllRegwidth` - an integer value specifying an explicit "regwidth" value to use, overriding the heuristic value determined by the cardinality local param and the field type – see the https://github.com/aggregateknowledge/java-hll/[java-hll] documentation for more details
+* `calcDistinct` - for backwards compatibility, `calcDistinct=true` may be specified as an alias for both `countDistinct=true distinctValues=true`
+
+[[TheStatsComponent-Examples]]
+=== Examples
+
+Here we compute some statistics for the price field. The min, max, mean, 90th, and 99th percentile price values are computed against all products that are in stock (`q=*:*` and `fq=inStock:true`), and independently all of the default statistics are computed against all products regardless of whether they are in stock or not (by excluding that filter).
+
+`\http://localhost:8983/solr/techproducts/select?q=*:*&fq={!tag=stock_check}inStock:true&stats=true&stats.field={!ex=stock_check+key=instock_prices+min=true+max=true+mean=true+percentiles='90,99'}price&stats.field={!key=all_prices}price&rows=0&indent=true`
+
+[source,xml]
+----
+<lst name="stats">
+  <lst name="stats_fields">
+    <lst name="instock_prices">
+      <double name="min">0.0</double>
+      <double name="max">2199.0</double>
+      <double name="mean">328.20437693595886</double>
+      <lst name="percentiles">
+        <double name="90.0">564.9700012207031</double>
+        <double name="99.0">1966.6484985351556</double>
+      </lst>
+    </lst>
+    <lst name="all_prices">
+      <double name="min">0.0</double>
+      <double name="max">2199.0</double>
+      <long name="count">12</long>
+      <long name="missing">5</long>
+      <double name="sum">4089.880027770996</double>
+      <double name="sumOfSquares">5385249.921747174</double>
+      <double name="mean">340.823335647583</double>
+      <double name="stddev">602.3683083752779</double>
+    </lst>
+  </lst>
+</lst>
+----
+
+[[TheStatsComponent-TheStatsComponentandFaceting]]
+== The Stats Component and Faceting
+
+Although the `stats.facet` parameter is no longer recommended, sets of `stats.field` parameters can be referenced by '`tag`' when using Pivot Faceting to compute multiple statistics at every level (i.e.: field) in the tree of pivot constraints.
+
+For more information and a detailed example, please see <<faceting.adoc#Faceting-CombiningStatsComponentWithPivots,Combining Stats Component With Pivots>>.
