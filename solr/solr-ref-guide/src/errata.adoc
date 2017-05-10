@@ -1,0 +1,17 @@
+= Errata
+:page-shortname: errata
+:page-permalink: errata.html
+
+[[Errata-ErrataForThisDocumentation]]
+== Errata For This Documentation
+
+Any mistakes found in this documentation after its release will be listed on the on-line version of this page:
+
+https://lucene.apache.org/solr/guide/{solr-docs-version}/errata.html
+
+[[Errata-ErrataForPastVersionsofThisDocumentation]]
+== Errata For Past Versions of This Documentation
+
+Any known mistakes in past releases of this documentation will be noted below.
+
+**v2 API Blob store api path**: The 6.5 guide listed the Blob store api path as `/v2/blob`, but the correct path is `/v2/c/.system/blob`.

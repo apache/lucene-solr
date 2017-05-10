@@ -1,0 +1,26 @@
+= Config Sets
+:page-shortname: config-sets
+:page-permalink: config-sets.html
+
+On a multicore Solr instance, you may find that you want to share configuration between a number of different cores. You can achieve this using named configsets, which are essentially shared configuration directories stored under a configurable configset base directory.
+
+To create a configset, simply add a new directory under the configset base directory. The configset will be identified by the name of this directory. Then into this copy the config directory you want to share. The structure should look something like this:
+
+[source,bash]
+----
+/<configSetBaseDir>
+    /configset1
+        /conf
+            /managed-schema
+            /solrconfig.xml
+    /configset2
+        /conf
+            /managed-schema
+            /solrconfig.xml
+----
+
+The default base directory is `$SOLR_HOME/configsets`, and it can be configured in `solr.xml`.
+
+To create a new core using a configset, pass `configSet` as one of the core properties. For example, if you do this via the core admin API:
+
+`\http://localhost:8983/admin/cores?action=CREATE&name=mycore&instanceDir=path/to/instance&configSet=configset2`

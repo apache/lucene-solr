@@ -1,0 +1,264 @@
+= Metrics Reporting
+:page-shortname: metrics-reporting
+:page-permalink: metrics-reporting.html
+
+Solr includes a developer API and instrumentation for the collection of detailed performance-oriented metrics throughout the life-cycle of Solr service and its various components.
+
+Internally this feature uses the http://metrics.dropwizard.io[Dropwizard Metrics API], which uses the following classes of meters to measure events:
+
+* *counters* - simply count events. They provide a single long value, e.g., the number of requests.
+* *meters* - additionally compute rates of events. Provide a count (as above) and 1-, 5-, and 15-minute exponentially decaying rates, similar to the Unix system load average.
+* *histograms* - calculate approximate distribution of events according to their values. Provide the following approximate statistics, with a similar exponential decay as above: mean (arithmetic average), median, maximum, minimum, standard deviation, and 75^th^, 95^th^, 98^th^, 99^th^ and 999^th^ percentiles.
+* *timers* - measure the number and duration of events. They provide a count and histogram of timings.
+* *gauges* - offer instantaneous reading of a current value, e.g., current queue depth, current number of active connections, free heap size.
+
+Each group of related metrics with unique names is managed in a *metric registry*. Solr maintains several such registries, each corresponding to a high-level group such as: `jvm`, `jetty`, `http`, `node`, and `core` (see <<Metric Registries>> below).
+
+For each group (and/or for each registry) there can be several *reporters*, which are components responsible for communication of metrics from selected registries to external systems. Currently implemented reporters support emitting metrics via JMX, Ganglia, Graphite and SLF4J.
+
+There is also a dedicated `/admin/metrics` handler that can be queried to report all or a subset of the current metrics from multiple registries.
+
+== Metric Registries
+
+Solr includes multiple metric registries, which group related metrics.
+
+Metrics are maintained and accumulated through all lifecycles of components from the start of the process until its shutdown - e.g., metrics for a particular SolrCore are tracked through possibly several load, unload and/or rename operations, and are deleted only when a core is explicitly deleted. However, metrics are not persisted across process restarts; restarting Solr will discard all collected metrics.
+
+These are the major groups of metrics that are collected:
+
+=== JVM Registry (`solr.jvm`):
+
+* direct and mapped buffer pools
+* class loading / unloading
+* OS memory, CPU time, file descriptors, swap, system load
+* GC count and time
+* heap, non-heap memory and GC pools
+* number of threads, their states and deadlocks
+
+=== Node / CoreContainer Registry (`solr.node`):
+
+* handler requests (count, timing): collections, info, admin, configSets, etc.
+* number of cores (loaded, lazy, unloaded)
+
+=== Core (SolrCore) Registry:
+
+The <<Core Level Metrics,Core (SolrCore) Registry>> includes `solr.core.<collection>`, one for each core.
+
+* all common RequestHandler-s report: request timers / counters, timeouts, errors.
+* <<Index Merge Metrics,index-level events>>: meters for minor / major merges, number of merged docs, number of deleted docs, gauges for currently running merges and their size.
+* shard replication and transaction log replay on replicas (TBD, SOLR-9856)
+* TBD: caches, update handler details, and other relevant SolrInfoMBean-s
+
+=== HTTP Registry (`solr.http`):
+
+* open / available / pending connections for shard handler and update handler
+
+=== Jetty Registry (`solr.jetty`):
+
+* threads and pools,
+* connection and request timers,
+* meters for responses by HTTP class (1xx, 2xx, etc)
+
+In the future, metrics will be added for shard leaders and cluster nodes, including aggregations from per-core metrics.
+
+== Reporters
+
+Reporter configurations are specified in `solr.xml` file in `<metrics><reporter>` sections, for example:
+
+[source,xml]
+----
+<solr>
+ <metrics>
+  <reporter name="graphite" group="node, jvm" class="org.apache.solr.metrics.reporters.SolrGraphiteReporter">
+    <str name="host">graphite-server</str>
+    <int name="port">9999</int>
+    <int name="period">60</int>
+  </reporter>
+  <reporter name="collection1Updates" registry="solr.core.collection1" class="org.apache.solr.metrics.reporters.SolrSlf4jReporter">
+    <int name="period">300</int>
+    <str name="prefix">example</str>
+    <str name="logger">updatesLogger</str>
+    <str name="filter">QUERYHANDLER./update</str>
+  </reporter>
+ </metrics>
+...
+</solr>
+----
+
+=== Reporter Arguments
+
+Reporter plugins use the following arguments:
+
+* *name* - (required) unique name of the reporter plugin
+* *class* - (required) fully-qualified implementation class of the plugin, must extend `SolrMetricReporter`
+* *group* - (optional) one or more of the predefined groups (see above)
+* *registry* - (optional) one or more of valid fully-qualified registry names
+* If both `group` and `registry` attributes are specified only the `group` attribute is considered. If neither attribute is specified then the plugin will be used for all groups and registries. Multiple group or registry names can be specified, separated by comma and/or space.
+
+Additionally, several implementation-specific initialization arguments can be specified in nested elements. There are some arguments that are common to SLF4J, Ganglia and Graphite reporters:
+
+* *period* - (optional int) period in seconds between reports. Default value is 60.
+* *prefix* - (optional str) prefix to be added to metric names, may be helpful in logical grouping of related Solr instances, e.g., machine name or cluster name. Default is empty string, ie. just the registry name and metric name will be used to form a fully-qualified metric name.
+* *filter* - (optional str) if not empty then only metric names that start with this value will be reported. Default is no filtering, ie. all metrics from selected registry will be reported.
+
+Reporters are instantiated for every group and registry that they were configured for, at the time when the respective components are initialized (e.g., on JVM startup or SolrCore load).
+
+When reporters are created their configuration is validated (and e.g., necessary connections are established). Uncaught errors at this initialization stage cause the reporter to be discarded from the running configuration.
+
+Reporters are closed when the corresponding component is being closed (e.g., on SolrCore close, or JVM shutdown) but metrics that they reported are still maintained in respective registries, as explained in the previous section.
+
+The following sections provide information on implementation-specific arguments. All implementation classes provided with Solr can be found under `org.apache.solr.metrics.reporters`.
+
+=== JMX Reporter
+
+The JMX Reporter uses the `org.apache.solr.metrics.reporters.SolrJmxReporter` class.
+
+It takes the following arguments:
+
+* *domain* - (optional str) JMX domain name. If not specified then registry name will be used.
+* *serviceUrl* - (optional str) service URL for a JMX server. If not specified then the default platform MBean server will be used.
+* *agentId* - (optional str) agent ID for a JMX server. Note: either `serviceUrl` or `agentId` can be specified but not both - if both are specified then the default MBean server will be used.
+
+Object names created by this reporter are hierarchical, dot-separated but also properly structured to form corresponding hierarchies in e.g., JConsole. This hierarchy consists of the following elements in the top-down order:
+
+* registry name (e.g., `solr.core.collection1.shard1.replica1`. Dot-separated registry names are also split into ObjectName hierarchy levels, so that metrics for this registry will be shown under `/solr/core/collection1/shard1/replica1` in JConsole, with each domain part being assigned to `dom1, dom2, ... domN` property.
+* reporter name (the value of reporter's `name` attribute)
+* category, scope and name for request handlers
+* or additional `name1, name2, ... nameN` elements for metrics from other components.
+
+=== SLF4J Reporter
+
+The SLF4J Reporter uses the `org.apache.solr.metrics.reporters.SolrSlf4jReporter` class.
+
+It takes the following arguments, in addition to the common arguments <<Reporter Arguments,above>>.
+
+* *logger* - (optional str) name of the logger to use. Default is empty, in which case the group or registry name will be used if specified in the plugin configuration.
+
+Users can specify logger name (and the corresponding logger configuration in e.g., Log4j configuration) to output metrics-related logging to separate file(s), which can then be processed by external applications.
+
+Each log line produced by this reporter consists of configuration-specific fields, and a message that follows this format:
+
+[source,text]
+----
+type=COUNTER, name={}, count={}
+
+type=GAUGE, name={}, value={}
+
+type=TIMER, name={}, count={}, min={}, max={}, mean={}, stddev={}, median={}, p75={}, p95={}, p98={}, p99={}, p999={}, mean_rate={}, m1={}, m5={}, m15={}, rate_unit={}, duration_unit={}
+
+type=METER, name={}, count={}, mean_rate={}, m1={}, m5={}, m15={}, rate_unit={}
+
+type=HISTOGRAM, name={}, count={}, min={}, max={}, mean={}, stddev={}, median={}, p75={}, p95={}, p98={}, p99={}, p999={}
+----
+
+(curly braces added only as placeholders for actual values).
+
+=== Graphite Reporter
+
+The http://graphiteapp.org[Graphite] Reporter uses the `org.apache.solr.metrics.reporters.SolrGraphiteReporter`) class.
+
+It takes the following attributes, in addition to the common attributes <<Reporter Arguments,above>>.
+
+* *host* - (required str) host name where Graphite server is running.
+* *port* - (required int) port number for the server
+* *pickled* - (optional bool) use "pickled" Graphite protocol which may be more efficient. Default is false (use plain-text protocol).
+
+When plain-text protocol is used (`pickled==false`) it's possible to use this reporter to integrate with systems other than Graphite, if they can accept space-separated and line-oriented input over network in the following format:
+
+[source,text]
+----
+dot.separated.metric.name[.and.attribute] value epochTimestamp
+----
+
+For example:
+
+[source,plain]
+----
+example.solr.node.cores.lazy 0 1482932097
+example.solr.node.cores.loaded 1 1482932097
+example.solr.jetty.org.eclipse.jetty.server.handler.DefaultHandler.2xx-responses.count 21 1482932097
+example.solr.jetty.org.eclipse.jetty.server.handler.DefaultHandler.2xx-responses.m1_rate 2.5474287707930614 1482932097
+example.solr.jetty.org.eclipse.jetty.server.handler.DefaultHandler.2xx-responses.m5_rate 3.8003171557510305 1482932097
+example.solr.jetty.org.eclipse.jetty.server.handler.DefaultHandler.2xx-responses.m15_rate 4.0623076220244245 1482932097
+example.solr.jetty.org.eclipse.jetty.server.handler.DefaultHandler.2xx-responses.mean_rate 0.5698031798408144 1482932097
+----
+
+=== Ganglia Reporter
+
+The http://ganglia.info[Ganglia] reporter uses the `org.apache.solr.metrics.reporters.SolrGangliaReporter` class.
+
+It take the following arguments, in addition to the common arguments <<Reporter Arguments,above>>.
+
+* *host* - (required str) host name where Ganglia server is running.
+* *port* - (required int) port number for the server
+* *multicast* - (optional bool) when true use multicast UDP communication, otherwise use UDP unicast. Default is false.
+
+== Core Level Metrics
+
+These metrics are available only on a per-core basis. Metrics that are aggregated across cores are not yet available.
+
+=== Index Merge Metrics
+
+These metrics are collected in respective registries for each core (e.g., `solr.core.collection1....`), under the `INDEX` category.
+
+Basic metrics are always collected - collection of additional metrics can be turned on using boolean parameters in the `/config/indexConfig/metrics` section of `solrconfig.xml`:
+
+[source,xml]
+----
+<config>
+  ...
+  <indexConfig>
+    <metrics>
+      <majorMergeDocs>524288</majorMergeDocs>
+      <bool name="mergeDetails">true</bool>
+      <bool name="directoryDetails">true</bool>
+    </metrics>
+    ...
+  </indexConfig>
+...
+</config>
+----
+
+The following metrics are collected:
+
+* `INDEX.merge.major` - timer for merge operations that include at least "majorMergeDocs" (default value for this parameter is 512k documents).
+* `INDEX.merge.minor` - timer for merge operations that include less than "majorMergeDocs".
+* `INDEX.merge.errors` - counter for merge errors.
+* `INDEX.flush` - meter for index flush operations.
+
+Additionally, the following gauges are reported, which help to monitor the momentary state of index merge operations:
+
+* `INDEX.merge.major.running` - number of running major merge operations (depending on the implementation of `MergeScheduler` that is used there can be several concurrently running merge operations).
+* `INDEX.merge.minor.running` - as above, for minor merge operations.
+* `INDEX.merge.major.running.docs` - total number of documents in the segments being currently merged in major merge operations.
+* `INDEX.merge.minor.running.docs` - as above, for minor merge operations.
+* `INDEX.merge.major.running.segments` - number of segments being currently merged in major merge operations.
+* `INDEX.merge.minor.running.segments` - as above, for minor merge operations.
+
+If the boolean flag `mergeDetails` is true then the following additional metrics are collected:
+
+* `INDEX.merge.major.docs` - meter for the number of documents merged in major merge operations
+* `INDEX.merge.major.deletedDocs` - meter for the number of deleted documents expunged in major merge operations
+
+== Metrics API
+
+The `admin/metrics` endpoint provides access to all the metrics for all metric groups.
+
+A few query parameters are available to limit the request:
+
+* *group*: The metric group to retrieve. The default is `all` to retrieve all metrics for all groups. Other possible values are: `jvm`, `jetty`, `node`, and `core`. More than one group can be specified in a request; multiple group names should be separated by a comma.
+* *type*: The type of metric to retrieve. The default is `all` to retrieve all metric types. Other possible values are `counter`, `gauge`, `histogram`, `meter`, and `timer`. More than one type can be specified in a request; multiple types should be separated by a comma.
+* *prefix*: The first characters of metric name that will filter the metrics returned to those starting with the provided string. It can be combined with group and/or type parameters. More than one prefix can be specified in a request; multiple prefixes should be separated by a comma. Prefix matching is also case-sensitive.
+
+Like other request handlers, the Metrics API can also take the `wt` parameter to define the output format.
+
+[[metrics_examples]]
+=== Examples
+
+Request only "counter" type metrics in the "core" group, returned in JSON:
+
+`\http://localhost:8983/solr/admin/metrics?wt=json&type=counter&group=core`
+
+Request only "core" group metrics that start with "INDEX", returned in JSON:
+
+`\http://localhost:8983/solr/admin/metrics?wt=json&prefix=INDEX&group=core`

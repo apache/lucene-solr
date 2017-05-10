@@ -1,0 +1,9 @@
+= Choosing an Output Format
+:page-shortname: choosing-an-output-format
+:page-permalink: choosing-an-output-format.html
+
+Many programming environments are able to send HTTP requests and retrieve responses. Parsing the responses is a slightly more thorny problem. Fortunately, Solr makes it easy to choose an output format that will be easy to handle on the client side.
+
+Specify a response format using the `wt` parameter in a query. The available response formats are documented in <<response-writers.adoc#response-writers,Response Writers>>.
+
+Most client APIs hide this detail for you, so for many types of client applications, you won't ever have to specify a `wt` parameter. In JavaScript, however, the interface to Solr is a little closer to the metal, so you will need to add this parameter yourself.

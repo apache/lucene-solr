@@ -1,0 +1,145 @@
+= Using SolrJ
+:page-shortname: using-solrj
+:page-permalink: using-solrj.html
+
+{solr-javadocs}/solr-solrj/[SolrJ] is an API that makes it easy for Java applications to talk to Solr. SolrJ hides a lot of the details of connecting to Solr and allows your application to interact with Solr with simple high-level methods.
+
+The center of SolrJ is the `org.apache.solr.client.solrj` package, which contains just five main classes. Begin by creating a {solr-javadocs}/solr-solrj/org/apache/solr/client/solrj/SolrClient.html[`SolrClient`], which represents the Solr instance you want to use. Then send `SolrRequests` or `SolrQuerys` and get back SolrResponses.
+
+`SolrClient` is abstract, so to connect to a remote Solr instance, you'll actually create an instance of either {solr-javadocs}/solr-solrj/org/apache/solr/client/solrj/impl/HttpSolrClient.html[`HttpSolrClient`], or {solr-javadocs}/solr-solrj/org/apache/solr/client/solrj/impl/CloudSolrClient.html[`CloudSolrClient`]. Both communicate with Solr via HTTP, the difference is that `HttpSolrClient` is configured using an explicit Solr URL, while `CloudSolrClient` is configured using the zkHost String for a <<solrcloud.adoc#solrcloud,SolrCloud>> cluster.
+
+
+.Single node Solr client
+[source,java]
+----
+String urlString = "http://localhost:8983/solr/techproducts";
+SolrClient solr = new HttpSolrClient.Builder(urlString).build();
+----
+
+.SolrCloud client
+[source,java]
+----
+String zkHostString = "zkServerA:2181,zkServerB:2181,zkServerC:2181/solr";
+SolrClient solr = new CloudSolrClient.Builder().withZkHost(zkHostString).build();
+----
+
+Once you have a `SolrClient`, you can use it by calling methods like `query()`, `add()`, and `commit()`.
+
+[[UsingSolrJ-BuildingandRunningSolrJApplications]]
+== Building and Running SolrJ Applications
+
+The SolrJ API is included with Solr, so you do not have to download or install anything else. However, in order to build and run applications that use SolrJ, you have to add some libraries to the classpath.
+
+At build time, the examples presented with this section require `solr-solrj-x.y.z.jar` to be in the classpath.
+
+At run time, the examples in this section require the libraries found in the 'dist/solrj-lib' directory.
+
+The Ant script bundled with this sections' examples includes the libraries as appropriate when building and running.
+
+You can sidestep a lot of the messing around with the JAR files by using Maven instead of Ant. All you will need to do to include SolrJ in your application is to put the following dependency in the project's `pom.xml`:
+
+[source,xml]
+----
+<dependency>
+  <groupId>org.apache.solr</groupId>
+  <artifactId>solr-solrj</artifactId>
+  <version>x.y.z</version>
+</dependency>
+----
+
+If you are worried about the SolrJ libraries expanding the size of your client application, you can use a code obfuscator like http://proguard.sourceforge.net/[ProGuard] to remove APIs that you are not using.
+
+[[UsingSolrJ-SettingXMLResponseParser]]
+== Setting XMLResponseParser
+
+SolrJ uses a binary format, rather than XML, as its default response format. If you are trying to mix Solr and SolrJ versions where one is version 1.x and the other is 3.x or later, then you MUST use the XML response parser. The binary format changed in 3.x, and the two javabin versions are entirely incompatible. The following code will make this change:
+
+[source,java]
+----
+solr.setParser(new XMLResponseParser());
+----
+
+[[UsingSolrJ-PerformingQueries]]
+== Performing Queries
+
+Use `query()` to have Solr search for results. You have to pass a `SolrQuery` object that describes the query, and you will get back a QueryResponse (from the `org.apache.solr.client.solrj.response` package).
+
+`SolrQuery` has methods that make it easy to add parameters to choose a request handler and send parameters to it. Here is a very simple example that uses the default request handler and sets the query string:
+
+[source,java]
+----
+SolrQuery query = new SolrQuery();
+query.setQuery(mQueryString);
+----
+
+To choose a different request handler, there is a specific method available in SolrJ version 4.0 and later:
+
+[source,java]
+----
+query.setRequestHandler("/spellCheckCompRH");
+----
+
+You can also set arbitrary parameters on the query object. The first two code lines below are equivalent to each other, and the third shows how to use an arbitrary parameter `q` to set the query string:
+
+[source,java]
+----
+query.set("fl", "category,title,price");
+query.setFields("category", "title", "price");
+query.set("q", "category:books");
+----
+
+Once you have your `SolrQuery` set up, submit it with `query()`:
+
+[source,java]
+----
+QueryResponse response = solr.query(query);
+----
+
+The client makes a network connection and sends the query. Solr processes the query, and the response is sent and parsed into a `QueryResponse`.
+
+The `QueryResponse` is a collection of documents that satisfy the query parameters. You can retrieve the documents directly with `getResults()` and you can call other methods to find out information about highlighting or facets.
+
+[source,java]
+----
+SolrDocumentList list = response.getResults();
+----
+
+[[UsingSolrJ-IndexingDocuments]]
+== Indexing Documents
+
+Other operations are just as simple. To index (add) a document, all you need to do is create a `SolrInputDocument` and pass it along to the `SolrClient`'s `add()` method. This example assumes that the SolrClient object called 'solr' is already created based on the examples shown earlier.
+
+[source,java]
+----
+SolrInputDocument document = new SolrInputDocument();
+document.addField("id", "552199");
+document.addField("name", "Gouda cheese wheel");
+document.addField("price", "49.99");
+UpdateResponse response = solr.add(document);
+
+// Remember to commit your changes!
+
+solr.commit();
+----
+
+[[UsingSolrJ-UploadingContentinXMLorBinaryFormats]]
+=== Uploading Content in XML or Binary Formats
+
+SolrJ lets you upload content in binary format instead of the default XML format. Use the following code to upload using binary format, which is the same format SolrJ uses to fetch results. If you are trying to mix Solr and SolrJ versions where one is version 1.x and the other is 3.x or later, then you MUST stick with the XML request writer. The binary format changed in 3.x, and the two javabin versions are entirely incompatible.
+
+[source,java]
+----
+solr.setRequestWriter(new BinaryRequestWriter());
+----
+
+[[UsingSolrJ-UsingtheConcurrentUpdateSolrClient]]
+=== Using the ConcurrentUpdateSolrClient
+
+When implementing java applications that will be bulk loading a lot of documents at once, {solr-javadocs}/solr-solrj/org/apache/solr/client/solrj/impl/ConcurrentUpdateSolrClient.html[`ConcurrentUpdateSolrClient`] is an alternative to consider instead of using `HttpSolrClient`. The `ConcurrentUpdateSolrClient` buffers all added documents and writes them into open HTTP connections. This class is thread safe. Although any SolrClient request can be made with this implementation, it is only recommended to use the `ConcurrentUpdateSolrClient` for `/update` requests.
+
+[[UsingSolrJ-EmbeddedSolrServer]]
+== EmbeddedSolrServer
+
+The {solr-javadocs}/solr-core/org/apache/solr/client/solrj/embedded/EmbeddedSolrServer.html[`EmbeddedSolrServer`] class provides an implementation of the `SolrClient` client API talking directly to an micro-instance of Solr running directly in your Java application. This embedded approach is not recommended in most cases and fairly limited in the set of features it supports – in particular it can not be used with <<solrcloud.adoc#solrcloud,SolrCloud>> or <<index-replication.adoc#index-replication,Index Replication>>. `EmbeddedSolrServer` exists primarily to help facilitate testing.
+
+For information on how to use `EmbeddedSolrServer` please review the SolrJ JUnit tests in the `org.apache.solr.client.solrj.embedded` package of the Solr source release.

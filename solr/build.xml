@@ -656,6 +656,9 @@
      <ant dir="test-framework" target="resolve" inheritall="false">
          <propertyset refid="uptodate.and.compiled.properties"/>
       </ant>
+     <ant dir="solr-ref-guide" target="resolve" inheritall="false">
+         <propertyset refid="uptodate.and.compiled.properties"/>
+      </ant>
      <contrib-crawl target="resolve"/>
     </sequential>
   </target>
