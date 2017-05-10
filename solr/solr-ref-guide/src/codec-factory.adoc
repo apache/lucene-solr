@@ -1,0 +1,21 @@
+= Codec Factory
+:page-shortname: codec-factory
+:page-permalink: codec-factory.html
+
+A `codecFactory` can be specified in `solrconfig.xml` to determine which Lucene {lucene-javadocs}/core/org/apache/lucene/codecs/Codec.html[`Codec`] is used when writing the index to disk.
+
+If not specified, Lucene's default codec is implicitly used, but a {solr-javadocs}/solr-core/org/apache/solr/core/SchemaCodecFactory.html[`solr.SchemaCodecFactory`] is also available which supports 2 key features:
+
+* Schema based per-fieldtype configuration for `docValuesFormat` and `postingsFormat` - see the <<field-type-definitions-and-properties.adoc#field-type-properties,Field Type Properties>> section for more details.
+* A `compressionMode` option:
+** `BEST_SPEED` (default) is optimized for search speed performance
+** `BEST_COMPRESSION` is optimized for disk space usage
+
+Example:
+
+[source,xml]
+----
+<codecFactory class="solr.SchemaCodecFactory">
+  <str name="compressionMode">BEST_COMPRESSION</str>
+</codecFactory>
+----

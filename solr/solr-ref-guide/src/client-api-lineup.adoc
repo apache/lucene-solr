@@ -1,0 +1,29 @@
+= Client API Lineup
+:page-shortname: client-api-lineup
+:page-permalink: client-api-lineup.html
+
+The Solr Wiki contains a list of client APIs at http://wiki.apache.org/solr/IntegratingSolr.
+
+Here is the list of client APIs, current at this writing (November 2011):
+
+// TODO: Change column width to %autowidth.spread when https://github.com/asciidoctor/asciidoctor-pdf/issues/599 is fixed
+
+[cols="20,20,60",options="header"]
+|===
+|Name |Environment |URL
+|SolRuby |Ruby |https://github.com/rsolr/rsolr
+|DelSolr |Ruby |https://github.com/avvo/delsolr
+|acts_as_solr |Rails |http://acts-as-solr.rubyforge.org/, http://rubyforge.org/projects/background-solr/
+|Flare |Rails |http://wiki.apache.org/solr/Flare
+|SolPHP |PHP |http://wiki.apache.org/solr/SolPHP
+|SolrJ |Java |http://wiki.apache.org/solr/SolJava
+|Python API |Python |http://wiki.apache.org/solr/SolPython
+|PySolr |Python |http://code.google.com/p/pysolr/
+|SolPerl |Perl |http://wiki.apache.org/solr/SolPerl
+|Solr.pm |Perl |http://search.cpan.org/~garafola/Solr-0.03/lib/Solr.pm
+|SolrForrest |Forrest/Cocoon |http://wiki.apache.org/solr/SolrForrest
+|SolrSharp |C# |http://www.codeplex.com/solrsharp
+|SolColdfusion |ColdFusion |http://solcoldfusion.riaforge.org/
+|SolrNet |.NET |https://github.com/mausch/SolrNet
+|AJAX Solr |AJAX |http://github.com/evolvingweb/ajax-solr/wiki
+|===

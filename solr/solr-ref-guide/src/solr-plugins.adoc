@@ -1,0 +1,10 @@
+= Solr Plugins
+:page-shortname: solr-plugins
+:page-permalink: solr-plugins.html
+:page-children: adding-custom-plugins-in-solrcloud-mode
+
+Solr allows you to load custom code to perform a variety of tasks within Solr, from custom Request Handlers to process your searches, to custom Analyzers and Token Filters for your text field. You can even load custom Field Types. These pieces of custom code are called plugins.
+
+Not everyone will need to create plugins for their Solr instances - what's provided is usually enough for most applications. However, if there's something that you need, you may want to review the Solr Wiki documentation on plugins at http://wiki.apache.org/solr/SolrPlugins[SolrPlugins].
+
+If you have a plugin you would like to use, and you are running in SolrCloud mode, you can use the Blob Store API and the Config API to load the jars to Solr. The commands to use are described in the section <<adding-custom-plugins-in-solrcloud-mode.adoc#adding-custom-plugins-in-solrcloud-mode,Adding Custom Plugins in SolrCloud Mode>>.

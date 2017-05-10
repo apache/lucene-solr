@@ -1,0 +1,155 @@
+= ConfigSets API
+:page-shortname: configsets-api
+:page-permalink: configsets-api.html
+
+The ConfigSets API enables you to create, delete, and otherwise manage ConfigSets.
+
+To use a ConfigSet created with this API as the configuration for a collection, use the <<collections-api.adoc#collections-api,Collections API>>.
+
+This API can only be used with Solr running in SolrCloud mode. If you are not running Solr in SolrCloud mode but would still like to use shared configurations, please see the section <<config-sets.adoc#config-sets,Config Sets>>.
+
+[[ConfigSetsAPI-APIEntryPoints]]
+== API Entry Points
+
+The base URL for all API calls is `\http://<hostname>:<port>/solr`.
+
+* `/admin/configs?action=CREATE`: <<ConfigSetsAPI-create,create>> a ConfigSet, based on an existing ConfigSet
+* `/admin/configs?action=DELETE`: <<ConfigSetsAPI-delete,delete>> a ConfigSet
+* `/admin/configs?action=LIST`: <<ConfigSetsAPI-list,list>> all ConfigSets
+
+[[ConfigSetsAPI-createCreateaConfigSet]]
+
+[[ConfigSetsAPI-create]]
+== Create a ConfigSet
+
+`/admin/configs?action=CREATE&name=_name_&baseConfigSet=_baseConfigSet_`
+
+Create a ConfigSet, based on an existing ConfigSet.
+
+[[ConfigSetsAPI-Input]]
+=== Input
+
+// TODO: Change column width to %autowidth.spread when https://github.com/asciidoctor/asciidoctor-pdf/issues/599 is fixed
+
+[cols="20,15,10,15,40",options="header"]
+|===
+|Key |Type |Required |Default |Description
+|name |String |Yes | |ConfigSet to be created
+|baseConfigSet |String |Yes | |ConfigSet to copy as a base
+|configSetProp._name=value_ |String |No | |ConfigSet property from base to override
+|===
+
+[[ConfigSetsAPI-Output]]
+=== Output
+
+*Output Content*
+
+The output will include the status of the request. If the status is anything other than "success", an error message will explain why the request failed.
+
+[[ConfigSetsAPI-Examples]]
+=== Examples
+
+*Input*
+
+Create a ConfigSet named 'myConfigSet' based on a 'predefinedTemplate' ConfigSet, overriding the immutable property to false.
+
+[source,text]
+----
+http://localhost:8983/solr/admin/configs?action=CREATE&name=myConfigSet&baseConfigSet=predefinedTemplate&configSetProp.immutable=false
+----
+
+*Output*
+
+[source,xml]
+----
+<response>
+  <lst name="responseHeader">
+    <int name="status">0</int>
+    <int name="QTime">323</int>
+  </lst>
+</response>
+----
+
+[[ConfigSetsAPI-deleteDeleteaConfigSet]]
+
+[[ConfigSetsAPI-delete]]
+== Delete a ConfigSet
+
+`/admin/configs?action=DELETE&name=_name_`
+
+Delete a ConfigSet
+
+[[ConfigSetsAPI-Input.1]]
+=== Input
+
+*Query Parameters*
+
+// TODO: Change column width to %autowidth.spread when https://github.com/asciidoctor/asciidoctor-pdf/issues/599 is fixed
+
+[cols="20,15,10,15,40",options="header"]
+|===
+|Key |Type |Required |Default |Description
+|name |String |Yes | |ConfigSet to be deleted
+|===
+
+[[ConfigSetsAPI-Output.1]]
+=== Output
+
+*Output Content*
+
+The output will include the status of the request. If the status is anything other than "success", an error message will explain why the request failed.
+
+[[ConfigSetsAPI-Examples.1]]
+=== Examples
+
+*Input*
+
+Delete ConfigSet 'myConfigSet'
+
+[source,text]
+----
+http://localhost:8983/solr/admin/configs?action=DELETE&name=myConfigSet
+----
+
+*Output*
+
+[source,xml]
+----
+<response>
+  <lst name="responseHeader">
+    <int name="status">0</int>
+    <int name="QTime">170</int>
+  </lst>
+</response>
+----
+
+[[ConfigSetsAPI-listListConfigSets]]
+
+[[ConfigSetsAPI-list]]
+== List ConfigSets
+
+`/admin/configs?action=LIST`
+
+Fetch the names of the ConfigSets in the cluster.
+
+[[ConfigSetsAPI-Examples.2]]
+=== Examples
+
+*Input*
+
+[source,text]
+----
+http://localhost:8983/solr/admin/configs?action=LIST&wt=json
+----
+
+*Output*
+
+[source,json]
+----
+{
+  "responseHeader":{
+    "status":0,
+    "QTime":203},
+  "configSets":["myConfigSet1",
+    "myConfig2"]}
+----
