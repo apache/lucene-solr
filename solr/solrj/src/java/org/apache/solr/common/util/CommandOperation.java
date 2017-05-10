@@ -14,23 +14,18 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.solr.util;
+package org.apache.solr.common.util;
 
 import java.io.IOException;
 import java.io.Reader;
-import java.io.UnsupportedEncodingException;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
-import org.apache.lucene.util.IOUtils;
 import org.apache.solr.common.SolrException;
-import org.apache.solr.common.util.ContentStream;
-import org.apache.solr.common.util.StrUtils;
-import org.apache.solr.common.util.Utils;
-import org.apache.solr.response.SolrQueryResponse;
 import org.noggit.JSONParser;
 import org.noggit.ObjectBuilder;
 
@@ -272,15 +267,10 @@ public class CommandOperation {
 
   @Override
   public String toString() {
-    try {
-      return new String(toJSON(singletonMap(name, commandData)), IOUtils.UTF_8);
-    } catch (UnsupportedEncodingException e) {
-      //should not happen
-      return "";
-    }
+    return new String(toJSON(singletonMap(name, commandData)), StandardCharsets.UTF_8);
   }
 
-  public static List<CommandOperation> readCommands(Iterable<ContentStream> streams, SolrQueryResponse resp)
+  public static List<CommandOperation> readCommands(Iterable<ContentStream> streams, NamedList resp)
       throws IOException {
     if (streams == null) {
       throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "missing content stream");

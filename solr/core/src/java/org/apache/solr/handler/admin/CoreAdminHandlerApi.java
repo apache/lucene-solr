@@ -18,23 +18,15 @@
 package org.apache.solr.handler.admin;
 
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.List;
-import java.util.Locale;
-import java.util.Map;
 
-import com.google.common.collect.ImmutableMap;
-import org.apache.solr.client.solrj.SolrRequest;
+import org.apache.solr.client.solrj.request.CollectionApiMapping;
+import org.apache.solr.client.solrj.request.CollectionApiMapping.V2EndPoint;
+import org.apache.solr.client.solrj.request.CoreApiMapping;
+import org.apache.solr.client.solrj.request.CoreApiMapping.Meta;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
 
-import static org.apache.solr.client.solrj.SolrRequest.METHOD.GET;
-import static org.apache.solr.client.solrj.SolrRequest.METHOD.POST;
-import static org.apache.solr.handler.admin.CoreAdminHandlerApi.EndPoint.CORES_COMMANDS;
-import static org.apache.solr.handler.admin.CoreAdminHandlerApi.EndPoint.CORES_STATUS;
-import static org.apache.solr.handler.admin.CoreAdminHandlerApi.EndPoint.NODEAPIS;
-import static org.apache.solr.handler.admin.CoreAdminHandlerApi.EndPoint.NODEINVOKE;
-import static org.apache.solr.handler.admin.CoreAdminHandlerApi.EndPoint.PER_CORE_COMMANDS;
 import static org.apache.solr.handler.admin.CoreAdminOperation.CREATE_OP;
 import static org.apache.solr.handler.admin.CoreAdminOperation.FORCEPREPAREFORLEADERSHIP_OP;
 import static org.apache.solr.handler.admin.CoreAdminOperation.INVOKE_OP;
@@ -62,69 +54,38 @@ public class CoreAdminHandlerApi extends BaseHandlerApiSupport {
   }
 
   enum Cmd implements ApiCommand {
-    CREATE(CORES_COMMANDS, POST, CREATE_OP, null, ImmutableMap.of("config", "configSet")),
-    UNLOAD(PER_CORE_COMMANDS, POST, UNLOAD_OP, null, null),
-    RELOAD(PER_CORE_COMMANDS, POST, RELOAD_OP, null, null),
-    STATUS(CORES_STATUS, GET, STATUS_OP),
-    SWAP(PER_CORE_COMMANDS, POST, SWAP_OP, null, ImmutableMap.of("other", "with")),
-    RENAME(PER_CORE_COMMANDS, POST, RENAME_OP, null, null),
-    MERGEINDEXES(PER_CORE_COMMANDS, POST, MERGEINDEXES_OP, "merge-indexes", null),
-    SPLIT(PER_CORE_COMMANDS, POST, SPLIT_OP, null, ImmutableMap.of("split.key", "splitKey")),
-    PREPRECOVERY(PER_CORE_COMMANDS, POST, PREPRECOVERY_OP, "prep-recovery", null),
-    REQUESTRECOVERY(PER_CORE_COMMANDS, POST, REQUESTRECOVERY_OP, null, null),
-    REQUESTSYNCSHARD(PER_CORE_COMMANDS, POST, REQUESTSYNCSHARD_OP, "request-sync-shard", null),
-    REQUESTBUFFERUPDATES(PER_CORE_COMMANDS, POST, REQUESTBUFFERUPDATES_OP, "request-buffer-updates", null),
-    REQUESTAPPLYUPDATES(PER_CORE_COMMANDS, POST, REQUESTAPPLYUPDATES_OP, "request-apply-updates", null),
-    REQUESTSTATUS(PER_CORE_COMMANDS, POST, REQUESTSTATUS_OP, null, null),
-    OVERSEEROP(NODEAPIS, POST, OVERSEEROP_OP, "overseer-op", null),
-    REJOINLEADERELECTION(NODEAPIS, POST, REJOINLEADERELECTION_OP, "rejoin-leader-election", null),
-    INVOKE(NODEINVOKE, GET, INVOKE_OP, null, null),
-    FORCEPREPAREFORLEADERSHIP(PER_CORE_COMMANDS, POST, FORCEPREPAREFORLEADERSHIP_OP, "force-prepare-for-leadership", null);
+    CREATE(Meta.CREATE, CREATE_OP),
+    UNLOAD(Meta.UNLOAD, UNLOAD_OP),
+    RELOAD(Meta.RELOAD, RELOAD_OP),
+    STATUS(Meta.STATUS, STATUS_OP),
+    SWAP(Meta.SWAP, SWAP_OP),
+    RENAME(Meta.RENAME, RENAME_OP),
+    MERGEINDEXES(Meta.MERGEINDEXES, MERGEINDEXES_OP),
+    SPLIT(Meta.SPLIT, SPLIT_OP),
+    PREPRECOVERY(Meta.PREPRECOVERY, PREPRECOVERY_OP),
+    REQUESTRECOVERY(Meta.REQUESTRECOVERY, REQUESTRECOVERY_OP),
+    REQUESTSYNCSHARD(Meta.REQUESTSYNCSHARD, REQUESTSYNCSHARD_OP),
+    REQUESTBUFFERUPDATES(Meta.REQUESTBUFFERUPDATES, REQUESTBUFFERUPDATES_OP),
+    REQUESTAPPLYUPDATES(Meta.REQUESTAPPLYUPDATES, REQUESTAPPLYUPDATES_OP),
+    REQUESTSTATUS(Meta.REQUESTSTATUS, REQUESTSTATUS_OP),
+    OVERSEEROP(Meta.OVERSEEROP, OVERSEEROP_OP),
+    REJOINLEADERELECTION(Meta.REJOINLEADERELECTION, REJOINLEADERELECTION_OP),
+    INVOKE(Meta.INVOKE, INVOKE_OP),
+    FORCEPREPAREFORLEADERSHIP(Meta.FORCEPREPAREFORLEADERSHIP, FORCEPREPAREFORLEADERSHIP_OP);
 
-    public final String commandName;
-    public final BaseHandlerApiSupport.V2EndPoint endPoint;
-    public final SolrRequest.METHOD method;
-    public final Map<String, String> paramstoAttr;
-    final CoreAdminOperation target;
+    public final Meta meta;
+    public final CoreAdminOperation target;
 
 
-    Cmd(EndPoint endPoint, SolrRequest.METHOD method, CoreAdminOperation target) {
-      this.endPoint = endPoint;
-      this.method = method;
+    Cmd(Meta meta, CoreAdminOperation target) {
+      this.meta = meta;
       this.target = target;
-      commandName = null;
-      paramstoAttr = Collections.EMPTY_MAP;
-
     }
 
-
-    Cmd(EndPoint endPoint, SolrRequest.METHOD method, CoreAdminOperation target, String commandName,
-        Map<String, String> paramstoAttr) {
-      this.commandName = commandName == null ? target.action.toString().toLowerCase(Locale.ROOT) : commandName;
-      this.endPoint = endPoint;
-      this.method = method;
-      this.target = target;
-      this.paramstoAttr = paramstoAttr == null ? Collections.EMPTY_MAP : paramstoAttr;
-    }
 
     @Override
-    public String getName() {
-      return commandName;
-    }
-
-    @Override
-    public SolrRequest.METHOD getHttpMethod() {
-      return method;
-    }
-
-    @Override
-    public V2EndPoint getEndPoint() {
-      return endPoint;
-    }
-
-    @Override
-    public String getParamSubstitute(String param) {
-      return paramstoAttr.containsKey(param) ? paramstoAttr.get(param) : param;
+    public CollectionApiMapping.CommandMeta meta() {
+      return meta;
     }
 
     @Override
@@ -134,29 +95,6 @@ public class CoreAdminHandlerApi extends BaseHandlerApiSupport {
           rsp,
           target));
 
-    }
-
-  }
-
-
-
-  enum EndPoint implements BaseHandlerApiSupport.V2EndPoint {
-    CORES_STATUS("cores.Status"),
-    CORES_COMMANDS("cores.Commands"),
-    PER_CORE_COMMANDS("cores.core.Commands"),
-    NODEINVOKE("node.invoke"),
-    NODEAPIS("node.Commands")
-    ;
-
-    final String specName;
-
-    EndPoint(String specName) {
-      this.specName = specName;
-    }
-
-    @Override
-    public String getSpecName() {
-      return specName;
     }
   }
 
@@ -168,7 +106,7 @@ public class CoreAdminHandlerApi extends BaseHandlerApiSupport {
 
   @Override
   protected List<V2EndPoint> getEndPoints() {
-    return Arrays.asList(EndPoint.values());
+    return Arrays.asList(CoreApiMapping.EndPoint.values());
   }
 
 

@@ -42,7 +42,7 @@ import org.apache.solr.security.AuthorizationContext;
 import org.apache.solr.security.AuthorizationPlugin;
 import org.apache.solr.security.ConfigEditablePlugin;
 import org.apache.solr.security.PermissionNameProvider;
-import org.apache.solr.util.CommandOperation;
+import org.apache.solr.common.util.CommandOperation;
 import org.apache.solr.api.Api;
 import org.apache.solr.api.ApiBag.ReqHandlerToApi;
 import org.apache.solr.api.SpecProvider;
@@ -102,7 +102,7 @@ public abstract class SecurityConfHandler extends RequestHandlerBase implements 
     if (req.getContentStreams() == null) {
       throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "No contentStream");
     }
-    List<CommandOperation> ops = CommandOperation.readCommands(req.getContentStreams(), rsp);
+    List<CommandOperation> ops = CommandOperation.readCommands(req.getContentStreams(), rsp.getValues());
     if (ops == null) {
       throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "No commands");
     }

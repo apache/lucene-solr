@@ -136,6 +136,8 @@ Other Changes
 
 * SOLR-10572: Removed three "no longer supported in solrconfig.xml" asserts. (Christine Poerschke)
 
+* SOLR-10647: Move the V1 <-> V2 API mapping to SolrJ (noble)
+
 ==================  6.6.0 ==================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release.
