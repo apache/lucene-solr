@@ -357,6 +357,7 @@ Other Changes
 
 * SOLR-10357: Enable edismax and standard query parsers to handle the option combination 
   sow=false / autoGeneratePhraseQueries="true" by setting QueryBuilder.autoGenerateMultiTermSynonymsQuery.
+  (Steve Rowe)
 
 * SOLR-10147: Admin UI -> Cloud -> Graph: Impossible to see shard state (Amrit Sarkar, janhoy)
 
