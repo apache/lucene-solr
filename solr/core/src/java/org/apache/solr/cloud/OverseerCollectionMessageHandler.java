@@ -58,6 +58,7 @@ import org.apache.solr.common.cloud.ZkConfigManager;
 import org.apache.solr.common.cloud.ZkCoreNodeProps;
 import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.cloud.ZkStateReader;
+import org.apache.solr.common.params.CollectionAdminParams;
 import org.apache.solr.common.params.CollectionParams.CollectionAction;
 import org.apache.solr.common.params.CoreAdminParams;
 import org.apache.solr.common.params.CoreAdminParams.CoreAdminAction;
@@ -104,9 +105,9 @@ public class OverseerCollectionMessageHandler implements OverseerMessageHandler 
   public static final String NUM_SLICES = "numShards";
 
   static final boolean CREATE_NODE_SET_SHUFFLE_DEFAULT = true;
-  public static final String CREATE_NODE_SET_SHUFFLE = "createNodeSet.shuffle";
+  public static final String CREATE_NODE_SET_SHUFFLE = CollectionAdminParams.CREATE_NODE_SET_SHUFFLE_PARAM;
   public static final String CREATE_NODE_SET_EMPTY = "EMPTY";
-  public static final String CREATE_NODE_SET = "createNodeSet";
+  public static final String CREATE_NODE_SET = CollectionAdminParams.CREATE_NODE_SET_PARAM;
 
   public static final String ROUTER = "router";
 

@@ -335,6 +335,10 @@ Bug Fixes
 * SOLR-10630: HttpSolrCall.getAuthCtx().new AuthorizationContext() {...}.getParams()
   sometimes throws java.lang.NullPointerException (hu xiaodong via shalin)
 
+* SOLR-9527: Improve distribution of replicas when restoring a collection
+  (Hrishikesh Gadre, Stephen Lewis, Rohit, Varun Thacker)
+
+
 Other Changes
 ----------------------
 
