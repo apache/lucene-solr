@@ -108,6 +108,7 @@ public class TestPassiveReplicaErrorHandling extends SolrCloudTestCase {
     }
     proxies = null;
     jettys = null;
+    TestInjection.reset();
   }
   
   @Override

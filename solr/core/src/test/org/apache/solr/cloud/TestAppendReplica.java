@@ -61,8 +61,8 @@ import org.apache.solr.util.RefCounted;
 import org.apache.solr.util.TestInjection;
 import org.apache.solr.util.TimeOut;
 import org.apache.zookeeper.KeeperException;
+import org.junit.AfterClass;
 import org.junit.BeforeClass;
-import org.junit.Ignore;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -91,6 +91,11 @@ public class TestAppendReplica extends SolrCloudTestCase {
     CollectionAdminRequest.ClusterProp clusterPropRequest = CollectionAdminRequest.setClusterProperty(ZkStateReader.LEGACY_CLOUD, String.valueOf(useLegacyCloud));
     CollectionAdminResponse response = clusterPropRequest.process(cluster.getSolrClient());
     assertEquals(0, response.getStatus());
+  }
+  
+  @AfterClass
+  public static void tearDownCluster() {
+    TestInjection.reset();
   }
   
   @Override

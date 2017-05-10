@@ -78,6 +78,7 @@ public class ChaosMonkeyNothingIsSafeWithPassiveReplicasTest extends AbstractFul
   public static void afterSuperClass() {
     System.clearProperty("solr.autoCommit.maxTime");
     clearErrorHook();
+    TestInjection.reset();
   }
   
   protected static final String[] fieldNames = new String[]{"f_i", "f_f", "f_d", "f_l", "f_dt"};
