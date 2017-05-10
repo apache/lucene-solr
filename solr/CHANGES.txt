@@ -309,6 +309,8 @@ Other Changes
 
 * SOLR-10644: solr.in.sh installed by install script should be writable by solr user (janhoy)
 
+* SOLR-10000: Expose cache statistics using metrics API. (ab)
+
 ==================  6.5.1 ==================
 
 Bug Fixes

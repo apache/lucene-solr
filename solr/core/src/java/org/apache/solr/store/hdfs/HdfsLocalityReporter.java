@@ -33,10 +33,13 @@ import org.apache.hadoop.fs.FileSystem;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.core.SolrInfoMBean;
+import org.apache.solr.metrics.MetricsMap;
+import org.apache.solr.metrics.SolrMetricManager;
+import org.apache.solr.metrics.SolrMetricProducer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class HdfsLocalityReporter implements SolrInfoMBean {
+public class HdfsLocalityReporter implements SolrInfoMBean, SolrMetricProducer {
   public static final String LOCALITY_BYTES_TOTAL = "locality.bytes.total";
   public static final String LOCALITY_BYTES_LOCAL = "locality.bytes.local";
   public static final String LOCALITY_BYTES_RATIO = "locality.bytes.ratio";
@@ -131,6 +134,15 @@ public class HdfsLocalityReporter implements SolrInfoMBean {
     }
 
     return createStatistics(totalBytes, localBytes, totalCount, localCount);
+  }
+
+  @Override
+  public void initializeMetrics(SolrMetricManager manager, String registry, String scope) {
+    MetricsMap metrics = new MetricsMap((detailed, map) -> {
+      NamedList nl = getStatistics();
+      map.putAll(nl.asMap(5));
+    });
+    manager.registerGauge(registry, metrics, true, "hdfsLocality", getCategory().toString(), scope);
   }
 
   /**

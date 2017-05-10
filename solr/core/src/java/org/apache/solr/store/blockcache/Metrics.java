@@ -22,6 +22,9 @@ import java.util.concurrent.atomic.AtomicLong;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.core.SolrInfoMBean;
+import org.apache.solr.metrics.MetricsMap;
+import org.apache.solr.metrics.SolrMetricManager;
+import org.apache.solr.metrics.SolrMetricProducer;
 import org.apache.solr.search.SolrCacheBase;
 
 /**
@@ -29,7 +32,7 @@ import org.apache.solr.search.SolrCacheBase;
  *
  * @lucene.experimental
  */
-public class Metrics extends SolrCacheBase implements SolrInfoMBean {
+public class Metrics extends SolrCacheBase implements SolrInfoMBean, SolrMetricProducer {
 
 
   public AtomicLong blockCacheSize = new AtomicLong(0);
@@ -99,6 +102,15 @@ public class Metrics extends SolrCacheBase implements SolrInfoMBean {
     previous = now;
 
     return stats;
+  }
+
+  @Override
+  public void initializeMetrics(SolrMetricManager manager, String registry, String scope) {
+    MetricsMap metrics = new MetricsMap((detailed, map) -> {
+      NamedList nl = getStatistics();
+      map.putAll(nl.asMap(5));
+    });
+    manager.registerGauge(registry, metrics, true, getName(), getCategory().toString(), scope);
   }
 
   private float getPerSecond(long value, double seconds) {

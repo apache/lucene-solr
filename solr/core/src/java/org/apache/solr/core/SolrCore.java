@@ -895,7 +895,11 @@ public final class SolrCore implements SolrInfoMBean, SolrMetricProducer, Closea
 
     // Initialize JMX
     this.infoRegistry = initInfoRegistry(name, config);
-    infoRegistry.put("fieldCache", new SolrFieldCacheMBean());
+    SolrFieldCacheMBean solrFieldCacheMBean = new SolrFieldCacheMBean();
+    // this is registered at the CONTAINER level because it's not core-specific - for now we
+    // also register it here for back-compat
+    solrFieldCacheMBean.initializeMetrics(metricManager, coreMetricManager.getRegistryName(), "core");
+    infoRegistry.put("fieldCache", solrFieldCacheMBean);
 
     initSchema(config, schema);
 
@@ -995,6 +999,11 @@ public final class SolrCore implements SolrInfoMBean, SolrMetricProducer, Closea
       } else {
         infoRegistry.put(bean.getName(), bean);
       }
+    }
+
+    // Allow the directory factory to report metrics
+    if (directoryFactory instanceof SolrMetricProducer) {
+      ((SolrMetricProducer)directoryFactory).initializeMetrics(metricManager, coreMetricManager.getRegistryName(), "directoryFactory");
     }
 
     // seed version buckets with max from index during core initialization ... requires a searcher!
@@ -1128,7 +1137,27 @@ public final class SolrCore implements SolrInfoMBean, SolrMetricProducer, Closea
     manager.registerGauge(registry, () -> getIndexDir(), true, "indexDir", Category.CORE.toString());
     manager.registerGauge(registry, () -> getIndexSize(), true, "sizeInBytes", Category.INDEX.toString());
     manager.registerGauge(registry, () -> NumberUtils.readableSize(getIndexSize()), true, "size", Category.INDEX.toString());
-    manager.registerGauge(registry, () -> coreContainer.getCoreNames(this), true, "aliases", Category.CORE.toString());
+    if (coreContainer != null) {
+      manager.registerGauge(registry, () -> coreContainer.getCoreNames(this), true, "aliases", Category.CORE.toString());
+      final CloudDescriptor cd = getCoreDescriptor().getCloudDescriptor();
+      if (cd != null) {
+        manager.registerGauge(registry, () -> {
+          if (cd.getCollectionName() != null) {
+            return cd.getCollectionName();
+          } else {
+            return "_notset_";
+          }
+        }, true, "collection", Category.CORE.toString());
+
+        manager.registerGauge(registry, () -> {
+          if (cd.getShardId() != null) {
+            return cd.getShardId();
+          } else {
+            return "_auto_";
+          }
+        }, true, "shard", Category.CORE.toString());
+      }
+    }
     // initialize disk total / free metrics
     Path dataDirPath = Paths.get(dataDir);
     File dataDirFile = dataDirPath.toFile();
@@ -2668,6 +2697,9 @@ public final class SolrCore implements SolrInfoMBean, SolrMetricProducer, Closea
     for (PluginInfo info : pluginInfos) {
       T o = createInitInstance(info,type, type.getSimpleName(), defClassName);
       registry.put(info.name, o);
+      if (o instanceof SolrMetricProducer) {
+        coreMetricManager.registerMetricProducer(type.getSimpleName() + "." + info.name, (SolrMetricProducer)o);
+      }
       if(info.isDefault()){
         def = o;
       }

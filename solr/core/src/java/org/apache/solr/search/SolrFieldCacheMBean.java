@@ -22,13 +22,16 @@ import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.core.JmxMonitoredMap.JmxAugmentedSolrInfoMBean;
 import org.apache.solr.core.SolrCore;
+import org.apache.solr.metrics.MetricsMap;
+import org.apache.solr.metrics.SolrMetricManager;
+import org.apache.solr.metrics.SolrMetricProducer;
 import org.apache.solr.uninverting.UninvertingReader;
 
 /**
  * A SolrInfoMBean that provides introspection of the Solr FieldCache
  *
  */
-public class SolrFieldCacheMBean implements JmxAugmentedSolrInfoMBean {
+public class SolrFieldCacheMBean implements JmxAugmentedSolrInfoMBean, SolrMetricProducer {
 
   private boolean disableEntryList = Boolean.getBoolean("disableSolrFieldCacheMBeanEntryList");
   private boolean disableJmxEntryList = Boolean.getBoolean("disableSolrFieldCacheMBeanEntryListJmx");
@@ -75,4 +78,22 @@ public class SolrFieldCacheMBean implements JmxAugmentedSolrInfoMBean {
     return stats;
   }
 
+  @Override
+  public void initializeMetrics(SolrMetricManager manager, String registryName, String scope) {
+    MetricsMap metricsMap = new MetricsMap((detailed, map) -> {
+      if (detailed && !disableEntryList && !disableJmxEntryList) {
+        UninvertingReader.FieldCacheStats fieldCacheStats = UninvertingReader.getUninvertedStats();
+        String[] entries = fieldCacheStats.info;
+        map.put("entries_count", entries.length);
+        map.put("total_size", fieldCacheStats.totalSize);
+        for (int i = 0; i < entries.length; i++) {
+          final String entry = entries[i];
+          map.put("entry#" + i, entry);
+        }
+      } else {
+        map.put("entries_count", UninvertingReader.getUninvertedStatsSize());
+      }
+    });
+    manager.register(registryName, metricsMap, true, "fieldCache", Category.CACHE.toString(), scope);
+  }
 }

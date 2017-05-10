@@ -31,6 +31,8 @@ import org.apache.lucene.util.RamUsageEstimator;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SimpleOrderedMap;
+import org.apache.solr.metrics.MetricsMap;
+import org.apache.solr.metrics.SolrMetricManager;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -55,6 +57,7 @@ public class LRUCache<K,V> extends SolrCacheBase implements SolrCache<K,V>, Acco
   static final long LINKED_HASHTABLE_RAM_BYTES_PER_ENTRY =
       HASHTABLE_RAM_BYTES_PER_ENTRY
           + 2 * RamUsageEstimator.NUM_BYTES_OBJECT_REF; // previous & next references
+
   /// End copied code
 
   /* An instance of this class will be shared across multiple instances
@@ -353,6 +356,15 @@ public class LRUCache<K,V> extends SolrCacheBase implements SolrCache<K,V>, Acco
     }
     
     return lst;
+  }
+
+  @Override
+  public void initializeMetrics(SolrMetricManager manager, String registry, String scope) {
+    MetricsMap metrics = new MetricsMap((detailed, map) -> {
+      NamedList nl = getStatistics();
+      map.putAll(nl.asMap(5));
+    });
+    manager.registerGauge(registry, metrics, true, scope, getCategory().toString());
   }
 
   @Override
