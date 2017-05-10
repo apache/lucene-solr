@@ -46,6 +46,8 @@ import org.apache.solr.common.util.ContentStream;
 import org.apache.solr.common.util.NamedList;
 
 import static org.apache.solr.common.params.CollectionAdminParams.COUNT_PROP;
+import static org.apache.solr.common.params.CollectionAdminParams.CREATE_NODE_SET_PARAM;
+import static org.apache.solr.common.params.CollectionAdminParams.CREATE_NODE_SET_SHUFFLE_PARAM;
 
 /**
  * This class is experimental and subject to change.
@@ -487,7 +489,7 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse> 
       if (configName != null)
         params.set("collection.configName", configName);
       if (createNodeSet != null)
-        params.set("createNodeSet", createNodeSet);
+        params.set(CREATE_NODE_SET_PARAM, createNodeSet);
       if (numShards != null) {
         params.set( ZkStateReader.NUM_SHARDS_PROP, numShards);
       }
@@ -846,6 +848,8 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse> 
     protected Integer maxShardsPerNode;
     protected Integer replicationFactor;
     protected Boolean autoAddReplicas;
+    protected Optional<String> createNodeSet = Optional.empty();
+    protected Optional<Boolean> createNodeSetShuffle = Optional.empty();
     protected Properties properties;
 
     public Restore(String collection, String backupName) {
@@ -883,6 +887,22 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse> 
       return this;
     }
 
+    public void setCreateNodeSet(String createNodeSet) {
+      this.createNodeSet = Optional.of(createNodeSet);
+    }
+
+    public Optional<String> getCreateNodeSet() {
+      return createNodeSet;
+    }
+
+    public Optional<Boolean> getCreateNodeSetShuffle() {
+      return createNodeSetShuffle;
+    }
+
+    public void setCreateNodeSetShuffle(boolean createNodeSetShuffle) {
+      this.createNodeSetShuffle = Optional.of(createNodeSetShuffle);
+    }
+
     // Collection creation params in common:
     public Restore setConfigName(String config) { this.configName = config; return this; }
     public String getConfigName()  { return configName; }
@@ -901,7 +921,7 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse> 
     }
     public Restore setProperties(Properties properties) { this.properties = properties; return this;}
 
-    // TODO support createNodeSet, rule, snitch
+    // TODO support rule, snitch
 
     @Override
     public SolrParams getParams() {
@@ -924,6 +944,12 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse> 
       }
       if (repositoryName.isPresent()) {
         params.set(CoreAdminParams.BACKUP_REPOSITORY, repositoryName.get());
+      }
+      if (createNodeSet.isPresent()) {
+        params.set(CREATE_NODE_SET_PARAM, createNodeSet.get());
+      }
+      if (createNodeSetShuffle.isPresent()) {
+        params.set(CREATE_NODE_SET_SHUFFLE_PARAM, createNodeSetShuffle.get());
       }
 
       return params;
@@ -1105,7 +1131,7 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse> 
     public SolrParams getParams() {
       ModifiableSolrParams params = (ModifiableSolrParams) super.getParams();
       if (nodeSet != null) {
-        params.set("createNodeSet", nodeSet);
+        params.set(CREATE_NODE_SET_PARAM, nodeSet);
       }
       if (properties != null) {
         addProperties(params, properties);
