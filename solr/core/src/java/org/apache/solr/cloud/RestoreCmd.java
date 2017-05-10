@@ -33,6 +33,7 @@ import org.apache.solr.cloud.overseer.OverseerAction;
 import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.ImplicitDocRouter;
+import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.cloud.ZkStateReader;
@@ -56,6 +57,7 @@ import static org.apache.solr.cloud.OverseerCollectionMessageHandler.NUM_SLICES;
 import static org.apache.solr.cloud.OverseerCollectionMessageHandler.SHARDS_PROP;
 import static org.apache.solr.common.cloud.ZkStateReader.COLLECTION_PROP;
 import static org.apache.solr.common.cloud.ZkStateReader.SHARD_ID_PROP;
+import static org.apache.solr.common.cloud.ZkStateReader.REPLICA_TYPE;
 import static org.apache.solr.common.params.CollectionParams.CollectionAction.CREATE;
 import static org.apache.solr.common.params.CollectionParams.CollectionAction.CREATESHARD;
 import static org.apache.solr.common.params.CommonAdminParams.ASYNC;
@@ -178,6 +180,12 @@ public class RestoreCmd implements OverseerCollectionMessageHandler.Cmd {
       propMap.put(Overseer.QUEUE_OPERATION, CREATESHARD);
       propMap.put(COLLECTION_PROP, restoreCollectionName);
       propMap.put(SHARD_ID_PROP, slice.getName());
+      
+      if (restoreCollection.getNumRealtimeReplicas() != null && restoreCollection.getNumRealtimeReplicas() >= 1) {
+        propMap.put(REPLICA_TYPE, Replica.Type.REALTIME.name());
+      } else if (restoreCollection.getNumAppendReplicas() != null && restoreCollection.getNumAppendReplicas() >= 1) {
+        propMap.put(REPLICA_TYPE, Replica.Type.APPEND.name());
+      }
       // add async param
       if (asyncId != null) {
         propMap.put(ASYNC, asyncId);
@@ -216,17 +224,51 @@ public class RestoreCmd implements OverseerCollectionMessageHandler.Cmd {
     //refresh the location copy of collection state
     restoreCollection = zkStateReader.getClusterState().getCollection(restoreCollectionName);
 
-    //Add the remaining replicas for each shard
-    Integer numReplicas = restoreCollection.getReplicationFactor();
-    if (numReplicas != null && numReplicas > 1) {
+    //Add the remaining replicas for each shard, considering it's type
+    int numRealtimeReplicas = restoreCollection.getNumRealtimeReplicas() != null?
+        restoreCollection.getNumRealtimeReplicas():0;
+    if (numRealtimeReplicas == 0) {
+      numRealtimeReplicas = restoreCollection.getReplicationFactor() != null?
+          restoreCollection.getReplicationFactor():0;
+    }
+    int numAppendReplicas = restoreCollection.getNumAppendReplicas() != null?
+        restoreCollection.getNumAppendReplicas():0;
+    int numPassiveReplicas = restoreCollection.getNumPassiveReplicas() != null?
+        restoreCollection.getNumPassiveReplicas():0;
+    
+    int createdRealtimeReplicas = 0, createdAppendReplicas = 0, createdPassiveReplicas = 0;
+    
+    // We already created either a REALTIME or an APPEND replica as leader
+    if (numRealtimeReplicas > 0) {
+      createdRealtimeReplicas++;
+    } else if (createdAppendReplicas > 0) {
+      createdAppendReplicas++;
+    }
+    
+    int totalReplicasPerShard = numRealtimeReplicas + numAppendReplicas + numPassiveReplicas;
+    
+    if (totalReplicasPerShard > 1) {
       log.info("Adding replicas to restored collection={}", restoreCollection);
 
       for (Slice slice : restoreCollection.getSlices()) {
-        for (int i = 1; i < numReplicas; i++) {
-          log.debug("Adding replica for shard={} collection={} ", slice.getName(), restoreCollection);
+        for (int i = 1; i < totalReplicasPerShard; i++) {
+          Replica.Type typeToCreate;
+          if (createdRealtimeReplicas < numRealtimeReplicas) {
+            createdRealtimeReplicas++;
+            typeToCreate = Replica.Type.REALTIME;
+          } else if (createdAppendReplicas < numAppendReplicas) {
+            createdAppendReplicas++;
+            typeToCreate = Replica.Type.APPEND;
+          } else {
+            createdPassiveReplicas++;
+            typeToCreate = Replica.Type.PASSIVE;
+          }
+          
+          log.debug("Adding replica for shard={} collection={} of type {} ", slice.getName(), restoreCollection, typeToCreate);
           HashMap<String, Object> propMap = new HashMap<>();
           propMap.put(COLLECTION_PROP, restoreCollectionName);
           propMap.put(SHARD_ID_PROP, slice.getName());
+          propMap.put(REPLICA_TYPE, typeToCreate.name());
           // add async param
           if (asyncId != null) {
             propMap.put(ASYNC, asyncId);
