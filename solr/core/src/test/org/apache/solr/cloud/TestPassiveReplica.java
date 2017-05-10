@@ -63,9 +63,6 @@ public class TestPassiveReplica extends SolrCloudTestCase {
   
   private static final Logger LOG = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   
-  // TODO: Backup/Snapshot should not work on passive replicas 
-  // TODO: ADDSHARD operation
-  
   private String collectionName = null;
   private final static int REPLICATION_TIMEOUT_SECS = 10;
   
@@ -231,10 +228,8 @@ public class TestPassiveReplica extends SolrCloudTestCase {
             "qt", "/admin/plugins",
             "stats", "true");
         QueryResponse statsResponse = readOnlyReplicaClient.query(req);
-//        assertEquals("Replicas shouldn't process the add document request: " + statsResponse, 
-//            0L, ((NamedList<Object>)statsResponse.getResponse()).findRecursive("plugins", "UPDATE", "updateHandler", "stats", "adds"));
         assertEquals("Replicas shouldn't process the add document request: " + statsResponse, 
-            0L, ((Map<String, Object>)((NamedList<Object>)statsResponse.getResponse()).findRecursive("plugins", "UPDATE", "/update", "stats")).get("UPDATE./update.requests"));
+            0L, ((Map<String, Object>)((NamedList<Object>)statsResponse.getResponse()).findRecursive("plugins", "UPDATE", "updateHandler", "stats")).get("UPDATE.updateHandler.adds"));
       }
     }
     assertUlogPresence(docCollection);

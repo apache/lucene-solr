@@ -24,6 +24,7 @@ import java.util.Collection;
 import java.util.EnumSet;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
@@ -50,6 +51,7 @@ import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.cloud.ZkStateReader;
+import org.apache.solr.common.util.NamedList;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.update.DirectUpdateHandler2;
 import org.apache.solr.update.SolrIndexWriter;
@@ -114,28 +116,6 @@ public class TestAppendReplica extends SolrCloudTestCase {
     super.tearDown();
   }
   
-  // Just to compare test time, nocommit
-  @Ignore
-  public void testCreateDelete2() throws Exception {
-    try {
-      CollectionAdminRequest.createCollection(collectionName, "conf", 1, 8, 0, 0).process(cluster.getSolrClient());
-      DocCollection docCollection = getCollectionState(collectionName);
-      assertNotNull(docCollection);
-//      assertEquals("Expecting 4 relpicas per shard",
-//          8, docCollection.getReplicas().size());
-//      assertEquals("Expecting 6 passive replicas, 3 per shard",
-//          6, docCollection.getReplicas(EnumSet.of(Replica.Type.PASSIVE)).size());
-//      assertEquals("Expecting 2 writer replicas, one per shard",
-//          2, docCollection.getReplicas(EnumSet.of(Replica.Type.WRITER)).size());
-//      for (Slice s:docCollection.getSlices()) {
-//        // read-only replicas can never become leaders
-//        assertFalse(s.getLeader().isReadOnly());
-//      }
-    } finally {
-      zkClient().printLayoutToStdOut();
-    }
-  }
-  
   /**
    * Asserts that Update logs exist for replicas of type {@link org.apache.solr.common.cloud.Replica.Type#REALTIME}, but not
    * for replicas of type {@link org.apache.solr.common.cloud.Replica.Type#PASSIVE}
@@ -186,6 +166,7 @@ public class TestAppendReplica extends SolrCloudTestCase {
     }
   }
   
+  @SuppressWarnings("unchecked")
   public void testAddDocs() throws Exception {
     int numAppendReplicas = 1 + random().nextInt(3);
     DocCollection docCollection = createAndWaitForCollection(1, 0, numAppendReplicas, 0);
@@ -212,9 +193,8 @@ public class TestAppendReplica extends SolrCloudTestCase {
                 "qt", "/admin/plugins",
                 "stats", "true");
             QueryResponse statsResponse = appendReplicaClient.query(req);
-//            TODO: uncomment when SOLR-10569 is fixed
-//            assertEquals("Append replicas should recive all updates. Replica: " + r + ", response: " + statsResponse, 
-//                1L, ((NamedList<Object>)statsResponse.getResponse()).findRecursive("plugins", "UPDATE", "updateHandler", "stats", "cumulative_adds"));
+            assertEquals("Append replicas should recive all updates. Replica: " + r + ", response: " + statsResponse, 
+                1L, ((Map<String, Object>)((NamedList<Object>)statsResponse.getResponse()).findRecursive("plugins", "UPDATE", "updateHandler", "stats")).get("UPDATE.updateHandler.cumulativeAdds.count"));
             break;
           } catch (AssertionError e) {
             if (t.hasTimedOut()) {
