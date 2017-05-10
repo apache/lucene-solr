@@ -111,7 +111,7 @@ public class TestExpressionRescorer extends LuceneTestCase {
 
     // Confirm the explanation breaks out the individual
     // variables:
-    assertTrue(expl.contains("= variable \"popularity\""));
+    assertTrue(expl.contains("= double(popularity)"));
 
     // Confirm the explanation includes first pass details:
     assertTrue(expl.contains("= first pass score"));
