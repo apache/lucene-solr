@@ -15,7 +15,10 @@
  * limitations under the License.
  */
 package org.apache.solr.search;
+
 import org.apache.solr.common.SolrException;
+import org.apache.solr.metrics.MetricsMap;
+import org.apache.solr.metrics.SolrMetricManager;
 import org.apache.solr.util.ConcurrentLRUCache;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -274,9 +277,19 @@ public class FastLRUCache<K, V> extends SolrCacheBase implements SolrCache<K,V> 
   }
 
   @Override
+  public void initializeMetrics(SolrMetricManager manager, String registry, String scope) {
+    MetricsMap metrics = new MetricsMap((detailed, map) -> {
+      NamedList nl = getStatistics();
+      map.putAll(nl.asMap(5));
+    });
+    manager.registerGauge(registry, metrics, true, scope, getCategory().toString());
+  }
+
+  @Override
   public String toString() {
     return name() + getStatistics().toString();
   }
+
 }
 
 

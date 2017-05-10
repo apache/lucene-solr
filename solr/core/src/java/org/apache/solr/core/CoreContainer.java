@@ -75,6 +75,7 @@ import org.apache.solr.metrics.SolrCoreMetricManager;
 import org.apache.solr.metrics.SolrMetricManager;
 import org.apache.solr.metrics.SolrMetricProducer;
 import org.apache.solr.request.SolrRequestHandler;
+import org.apache.solr.search.SolrFieldCacheMBean;
 import org.apache.solr.security.AuthenticationPlugin;
 import org.apache.solr.security.AuthorizationPlugin;
 import org.apache.solr.security.HttpClientInterceptorPlugin;
@@ -520,6 +521,8 @@ public class CoreContainer {
     metricManager.registerGauge(registryName, () -> cfg.getCoreRootDirectory().toFile().getUsableSpace(),
         true, "usableSpace", SolrInfoMBean.Category.CONTAINER.toString(), "fs");
 
+    SolrFieldCacheMBean fieldCacheBean = new SolrFieldCacheMBean();
+    fieldCacheBean.initializeMetrics(metricManager, registryName, null);
     // setup executor to load cores in parallel
     ExecutorService coreLoadExecutor = MetricUtils.instrumentedExecutorService(
         ExecutorUtil.newMDCAwareFixedThreadPool(

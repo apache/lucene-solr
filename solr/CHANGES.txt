@@ -321,6 +321,8 @@ Other Changes
 
 * SOLR-10644: solr.in.sh installed by install script should be writable by solr user (janhoy)
 
+* SOLR-10000: Expose cache statistics using metrics API. (ab)
+
 * SOLR-10729: Deprecated LatLonType, GeoHashField, SpatialPointVectorFieldType, and SpatialTermQueryPrefixTreeFieldType.
   Instead, switch to LatLonPointSpatialField or SpatialRecursivePrefixTreeFieldType or RptWithGeometrySpatialField.
   (David Smiley)

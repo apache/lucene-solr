@@ -67,6 +67,9 @@ import org.apache.solr.core.SolrConfig;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.core.SolrInfoMBean;
 import org.apache.solr.index.SlowCompositeReaderWrapper;
+import org.apache.solr.metrics.MetricsMap;
+import org.apache.solr.metrics.SolrMetricManager;
+import org.apache.solr.metrics.SolrMetricProducer;
 import org.apache.solr.request.LocalSolrQueryRequest;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.request.SolrRequestInfo;
@@ -86,7 +89,7 @@ import org.slf4j.LoggerFactory;
  *
  * @since solr 0.9
  */
-public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrInfoMBean {
+public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrInfoMBean, SolrMetricProducer {
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
@@ -430,6 +433,12 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
       cache.setState(SolrCache.State.LIVE);
       infoRegistry.put(cache.name(), cache);
     }
+    SolrMetricManager manager = core.getCoreContainer().getMetricManager();
+    String registry = core.getCoreMetricManager().getRegistryName();
+    for (SolrCache cache : cacheList) {
+      cache.initializeMetrics(manager, registry, SolrMetricManager.mkName(cache.name(), STATISTICS_KEY));
+    }
+    initializeMetrics(manager, registry, STATISTICS_KEY);
     registerTime = new Date();
   }
 
@@ -2249,6 +2258,14 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
     lst.add("readerDir", reader.directory());
     lst.add("indexVersion", reader.getVersion());
     return lst;
+  }
+
+  @Override
+  public void initializeMetrics(SolrMetricManager manager, String registry, String scope) {
+    MetricsMap metrics = new MetricsMap((detailed, map) -> {
+      map.putAll(getStatistics().asMap(5));
+    });
+    manager.registerGauge(registry, metrics, true, scope, Category.SEARCHER.toString());
   }
 
   private static class FilterImpl extends Filter {
