@@ -19,6 +19,8 @@ package org.apache.solr.cloud;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Properties;
@@ -28,6 +30,7 @@ import java.util.TreeMap;
 import org.apache.lucene.util.TestUtil;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrServerException;
+import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest.ClusterProp;
@@ -236,9 +239,24 @@ public abstract class AbstractCloudBackupRestoreTestCase extends SolrCloudTestCa
         // may need to increase maxShardsPerNode (e.g. if it was shard split, then now we need more)
         restore.setMaxShardsPerNode(origShardToDocCount.size());
       }
+
+      if (rarely()) { // Try with createNodeSet configuration
+        int nodeSetSize = cluster.getJettySolrRunners().size() / 2;
+        List<String> nodeStrs = new ArrayList<>(nodeSetSize);
+        Iterator<JettySolrRunner> iter = cluster.getJettySolrRunners().iterator();
+        for (int i = 0; i < nodeSetSize ; i++) {
+          nodeStrs.add(iter.next().getNodeName());
+        }
+        restore.setCreateNodeSet(String.join(",", nodeStrs));
+        restore.setCreateNodeSetShuffle(usually());
+        // we need to double maxShardsPerNode value since we reduced number of available nodes by half.
+        restore.setMaxShardsPerNode(origShardToDocCount.size() * 2);
+      }
+
       Properties props = new Properties();
       props.setProperty("customKey", "customVal");
       restore.setProperties(props);
+
       if (sameConfig==false) {
         restore.setConfigName("customConfigName");
       }
@@ -267,6 +285,15 @@ public abstract class AbstractCloudBackupRestoreTestCase extends SolrCloudTestCa
         restoreCollection.getActiveSlices().iterator().next().getReplicas().size());
     assertEquals(sameConfig ? "conf1" : "customConfigName",
         cluster.getSolrClient().getZkStateReader().readConfigName(restoreCollectionName));
+
+    Map<String, Integer> numReplicasByNodeName = new HashMap<>();
+    restoreCollection.getReplicas().forEach(x -> {
+      numReplicasByNodeName.put(x.getNodeName(), numReplicasByNodeName.getOrDefault(x.getNodeName(), 0) + 1);
+    });
+    numReplicasByNodeName.forEach((k, v) -> {
+      assertTrue("Node " + k + " has " + v + " replicas. Expected num replicas : " + restoreCollection.getMaxShardsPerNode() ,
+          v <= restoreCollection.getMaxShardsPerNode());
+    });
 
     // assert added core properties:
     // DWS: did via manual inspection.
