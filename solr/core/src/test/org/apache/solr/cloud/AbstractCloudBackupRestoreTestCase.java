@@ -82,13 +82,15 @@ public abstract class AbstractCloudBackupRestoreTestCase extends SolrCloudTestCa
     boolean isImplicit = random().nextBoolean();
     boolean doSplitShardOperation = !isImplicit && random().nextBoolean();
     int replFactor = TestUtil.nextInt(random(), 1, 2);
-    // Split Shard not supported with replica types
     int numAppendReplicas = TestUtil.nextInt(random(), 0, 1);
     int numPassiveReplicas = TestUtil.nextInt(random(), 0, 1);
     CollectionAdminRequest.Create create =
         CollectionAdminRequest.createCollection(getCollectionName(), "conf1", NUM_SHARDS, replFactor, numAppendReplicas, numPassiveReplicas);
     if (NUM_SHARDS * (replFactor + numAppendReplicas + numPassiveReplicas) > cluster.getJettySolrRunners().size() || random().nextBoolean()) {
       create.setMaxShardsPerNode((int)Math.ceil(NUM_SHARDS * (replFactor + numAppendReplicas + numPassiveReplicas) / cluster.getJettySolrRunners().size()));//just to assert it survives the restoration
+      if (doSplitShardOperation) {
+        create.setMaxShardsPerNode(create.getMaxShardsPerNode() * 2);
+      }
     }
     if (random().nextBoolean()) {
       create.setAutoAddReplicas(true);//just to assert it survives the restoration
@@ -235,9 +237,9 @@ public abstract class AbstractCloudBackupRestoreTestCase extends SolrCloudTestCa
       CollectionAdminRequest.Restore restore = CollectionAdminRequest.restoreCollection(restoreCollectionName, backupName)
           .setLocation(backupLocation).setRepositoryName(getBackupRepoName());
 
-      if (origShardToDocCount.size() > cluster.getJettySolrRunners().size()) {
+      if (backupCollection.getReplicas().size() > cluster.getJettySolrRunners().size()) {
         // may need to increase maxShardsPerNode (e.g. if it was shard split, then now we need more)
-        restore.setMaxShardsPerNode(origShardToDocCount.size());
+        restore.setMaxShardsPerNode((int)Math.ceil(backupCollection.getReplicas().size()/cluster.getJettySolrRunners().size()));
       }
       Properties props = new Properties();
       props.setProperty("customKey", "customVal");
