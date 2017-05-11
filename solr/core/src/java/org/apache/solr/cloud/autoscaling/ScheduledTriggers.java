@@ -31,8 +31,10 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.ScheduledThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.apache.lucene.store.AlreadyClosedException;
+import org.apache.solr.cloud.ActionThrottle;
 import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.common.util.IOUtils;
 import org.apache.solr.util.DefaultSolrThreadFactory;
@@ -45,7 +47,8 @@ import org.slf4j.LoggerFactory;
  */
 public class ScheduledTriggers implements Closeable {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
-  static final int SCHEDULED_TRIGGER_DELAY_SECONDS = 1;
+  static final int DEFAULT_SCHEDULED_TRIGGER_DELAY_SECONDS = 1;
+  static final int DEFAULT_MIN_MS_BETWEEN_ACTIONS = 5000;
 
   private final Map<String, ScheduledTrigger> scheduledTriggers = new HashMap<>();
 
@@ -55,11 +58,17 @@ public class ScheduledTriggers implements Closeable {
   private final ScheduledThreadPoolExecutor scheduledThreadPoolExecutor;
 
   /**
-   * Single threaded executor to run the actions upon a trigger event
+   * Single threaded executor to run the actions upon a trigger event. We rely on this being a single
+   * threaded executor to ensure that trigger fires do not step on each other as well as to ensure
+   * that we do not run scheduled trigger threads while an action has been submitted to this executor
    */
   private final ExecutorService actionExecutor;
 
   private boolean isClosed = false;
+
+  private final AtomicBoolean hasPendingActions = new AtomicBoolean(false);
+
+  private final ActionThrottle actionThrottle;
 
   public ScheduledTriggers() {
     // todo make the core pool size configurable
@@ -72,6 +81,8 @@ public class ScheduledTriggers implements Closeable {
     scheduledThreadPoolExecutor.setRemoveOnCancelPolicy(true);
     scheduledThreadPoolExecutor.setExecuteExistingDelayedTasksAfterShutdownPolicy(false);
     actionExecutor = ExecutorUtil.newMDCAwareSingleThreadExecutor(new DefaultSolrThreadFactory("AutoscalingActionExecutor"));
+    // todo make the wait time configurable
+    actionThrottle = new ActionThrottle("action", DEFAULT_MIN_MS_BETWEEN_ACTIONS);
   }
 
   /**
@@ -101,23 +112,36 @@ public class ScheduledTriggers implements Closeable {
       AutoScaling.Trigger source = event.getSource();
       if (source.isClosed()) {
         log.warn("Ignoring autoscaling event because the source trigger: " + source + " has already been closed");
-        return;
+        // we do not want to lose this event just because the trigger were closed, perhaps a replacement will need it
+        return false;
       }
-      List<TriggerAction> actions = source.getActions();
-      if (actions != null) {
-        actionExecutor.submit(() -> {
-          for (TriggerAction action : actions) {
-            try {
-              action.process(event);
-            } catch (Exception e) {
-              log.error("Error executing action: " + action.getName() + " for trigger event: " + event, e);
-              throw e;
+      if (hasPendingActions.compareAndSet(false, true)) {
+        List<TriggerAction> actions = source.getActions();
+        if (actions != null) {
+          actionExecutor.submit(() -> {
+            assert hasPendingActions.get();
+            // let the action executor thread wait instead of the trigger thread so we use the throttle here
+            actionThrottle.minimumWaitBetweenActions();
+            actionThrottle.markAttemptingAction();
+            for (TriggerAction action : actions) {
+              try {
+                action.process(event);
+              } catch (Exception e) {
+                log.error("Error executing action: " + action.getName() + " for trigger event: " + event, e);
+                throw e;
+              } finally {
+                hasPendingActions.set(false);
+              }
             }
-          }
-        });
+          });
+        }
+        return true;
+      } else {
+        // there is an action in the queue and we don't want to enqueue another until it is complete
+        return false;
       }
     });
-    scheduledTrigger.scheduledFuture = scheduledThreadPoolExecutor.scheduleWithFixedDelay(newTrigger, 0, SCHEDULED_TRIGGER_DELAY_SECONDS, TimeUnit.SECONDS);
+    scheduledTrigger.scheduledFuture = scheduledThreadPoolExecutor.scheduleWithFixedDelay(scheduledTrigger, 0, DEFAULT_SCHEDULED_TRIGGER_DELAY_SECONDS, TimeUnit.SECONDS);
   }
 
   /**
@@ -155,12 +179,28 @@ public class ScheduledTriggers implements Closeable {
     ExecutorUtil.shutdownAndAwaitTermination(actionExecutor);
   }
 
-  private static class ScheduledTrigger implements Closeable {
+  private class ScheduledTrigger implements Runnable, Closeable {
     AutoScaling.Trigger trigger;
     ScheduledFuture<?> scheduledFuture;
 
     ScheduledTrigger(AutoScaling.Trigger trigger) {
       this.trigger = trigger;
+    }
+
+    @Override
+    public void run() {
+      // fire a trigger only if an action is not pending
+      // note this is not fool proof e.g. it does not prevent an action being executed while a trigger
+      // is still executing. There is additional protection against that scenario in the event listener.
+      if (!hasPendingActions.get())  {
+        try {
+          trigger.run();
+        } catch (Exception e) {
+          // log but do not propagate exception because an exception thrown from a scheduled operation
+          // will suppress future executions
+          log.error("Unexpected execution from trigger: " + trigger.getName(), e);
+        }
+      }
     }
 
     @Override

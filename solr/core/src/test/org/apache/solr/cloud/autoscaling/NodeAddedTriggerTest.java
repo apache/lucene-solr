@@ -23,6 +23,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
@@ -35,6 +36,12 @@ import org.junit.Test;
  * Test for {@link NodeAddedTrigger}
  */
 public class NodeAddedTriggerTest extends SolrCloudTestCase {
+
+  private AutoScaling.TriggerListener<NodeAddedTrigger.NodeAddedEvent> noFirstRunListener = event -> {
+    fail("Did not expect the listener to fire on first run!");
+    return true;
+  };
+
   @BeforeClass
   public static void setupCluster() throws Exception {
     configureCluster(1)
@@ -49,7 +56,7 @@ public class NodeAddedTriggerTest extends SolrCloudTestCase {
     Map<String, Object> props = createTriggerProps(waitForSeconds);
 
     try (NodeAddedTrigger trigger = new NodeAddedTrigger("node_added_trigger", props, container)) {
-      trigger.setListener(event -> fail("Did not expect the listener to fire on first run!"));
+      trigger.setListener(noFirstRunListener);
       trigger.run();
 
       JettySolrRunner newNode = cluster.startJettySolrRunner();
@@ -64,6 +71,7 @@ public class NodeAddedTriggerTest extends SolrCloudTestCase {
         } else {
           fail("NodeAddedTrigger was fired more than once!");
         }
+        return true;
       });
       int counter = 0;
       do {
@@ -84,7 +92,7 @@ public class NodeAddedTriggerTest extends SolrCloudTestCase {
     try (NodeAddedTrigger trigger = new NodeAddedTrigger("node_added_trigger", props, container)) {
       final long waitTime = 2;
       props.put("waitFor", waitTime);
-      trigger.setListener(event -> fail("Did not expect the listener to fire on first run!"));
+      trigger.setListener(noFirstRunListener);
       trigger.run();
 
       JettySolrRunner newNode = cluster.startJettySolrRunner();
@@ -97,6 +105,7 @@ public class NodeAddedTriggerTest extends SolrCloudTestCase {
         } else {
           fail("NodeAddedTrigger was fired more than once!");
         }
+        return true;
       });
       trigger.run(); // first run should detect the new node
       newNode.stop(); // stop the new jetty
@@ -115,6 +124,38 @@ public class NodeAddedTriggerTest extends SolrCloudTestCase {
   }
 
   @Test
+  public void testListenerAcceptance() throws Exception {
+    CoreContainer container = cluster.getJettySolrRunners().get(0).getCoreContainer();
+    Map<String, Object> props = createTriggerProps(0);
+    try (NodeAddedTrigger trigger = new NodeAddedTrigger("node_added_trigger", props, container)) {
+      trigger.setListener(noFirstRunListener);
+      trigger.run(); // starts tracking live nodes
+
+      JettySolrRunner newNode = cluster.startJettySolrRunner();
+      AtomicInteger callCount = new AtomicInteger(0);
+      AtomicBoolean fired = new AtomicBoolean(false);
+
+      trigger.setListener(event -> {
+        if (callCount.incrementAndGet() < 2) {
+          return false;
+        } else  {
+          fired.compareAndSet(false, true);
+          return true;
+        }
+      });
+
+      trigger.run(); // first run should detect the new node and fire immediately but listener isn't ready
+      assertEquals(1, callCount.get());
+      assertFalse(fired.get());
+      trigger.run(); // second run should again fire
+      assertEquals(2, callCount.get());
+      assertTrue(fired.get());
+      trigger.run(); // should not fire
+      assertEquals(2, callCount.get());
+    }
+  }
+
+  @Test
   public void testRestoreState() throws Exception {
     CoreContainer container = cluster.getJettySolrRunners().get(0).getCoreContainer();
     long waitForSeconds = 1 + random().nextInt(5);
@@ -125,7 +166,7 @@ public class NodeAddedTriggerTest extends SolrCloudTestCase {
     NodeAddedTrigger trigger = new NodeAddedTrigger("node_added_trigger", props, container);
     final long waitTime = 2;
     props.put("waitFor", waitTime);
-    trigger.setListener(event -> fail("Did not expect the listener to fire on first run!"));
+    trigger.setListener(noFirstRunListener);
     trigger.run();
 
     JettySolrRunner newNode = cluster.startJettySolrRunner();
@@ -153,6 +194,7 @@ public class NodeAddedTriggerTest extends SolrCloudTestCase {
         } else {
           fail("NodeAddedTrigger was fired more than once!");
         }
+        return true;
       });
       newTrigger.restoreState(trigger); // restore state from the old trigger
       int counter = 0;

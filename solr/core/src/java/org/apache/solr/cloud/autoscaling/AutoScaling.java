@@ -58,13 +58,19 @@ public class AutoScaling {
   }
 
   public static interface TriggerListener<E extends TriggerEvent<? extends Trigger>> {
-    public void triggerFired(E event);
+    /**
+     * This method is executed when a trigger is ready to fire.
+     *
+     * @param event a subclass of {@link TriggerEvent}
+     * @return true if the listener was ready to perform actions on the event, false otherwise.
+     */
+    public boolean triggerFired(E event);
   }
 
   public static class HttpCallbackListener implements TriggerListener {
     @Override
-    public void triggerFired(TriggerEvent event) {
-
+    public boolean triggerFired(TriggerEvent event) {
+      return true;
     }
   }
 
@@ -80,6 +86,11 @@ public class AutoScaling {
    * is encouraged that implementations be immutable with the exception of the associated listener
    * which can be get/set by a different thread than the one executing the trigger. Therefore, implementations
    * should use appropriate synchronization around the listener.
+   * <p>
+   * When a trigger is ready to fire, it calls the {@link TriggerListener#triggerFired(TriggerEvent)} event
+   * with the proper trigger event object. If that method returns false then it should be interpreted to mean
+   * that Solr is not ready to process this trigger event and therefore we should retain the state and fire
+   * at the next invocation of the run() method.
    *
    * @param <E> the {@link TriggerEvent} which is handled by this Trigger
    */

@@ -197,9 +197,12 @@ public class NodeLostTrigger implements AutoScaling.Trigger<NodeLostTrigger.Node
           AutoScaling.TriggerListener<NodeLostEvent> listener = listenerRef.get();
           if (listener != null) {
             log.info("NodeLostTrigger firing registered listener");
-            listener.triggerFired(new NodeLostEvent(this, timeRemoved, nodeName));
+            if (listener.triggerFired(new NodeLostEvent(this, timeRemoved, nodeName)))  {
+              trackingKeySet.remove(nodeName);
+            }
+          } else  {
+            trackingKeySet.remove(nodeName);
           }
-          trackingKeySet.remove(nodeName);
         }
       }
 

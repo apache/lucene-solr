@@ -129,6 +129,8 @@ Other Changes
   Add support for selecting specific properties from any compound metric using 'property' parameter to
   /admin/metrics handler. (ab)
 
+* SOLR-10643: Throttling strategy for triggers and policy executions. (shalin)
+
 ----------------------
 
 ==================  6.6.0 ==================

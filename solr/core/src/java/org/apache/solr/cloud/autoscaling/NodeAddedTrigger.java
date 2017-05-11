@@ -202,9 +202,13 @@ public class NodeAddedTrigger implements AutoScaling.Trigger<NodeAddedTrigger.No
           AutoScaling.TriggerListener<NodeAddedEvent> listener = listenerRef.get();
           if (listener != null) {
             log.info("NodeAddedTrigger {} firing registered listener for node: {} added at {} nanotime, now: {} nanotime", name, nodeName, timeAdded, now);
-            listener.triggerFired(new NodeAddedEvent(this, timeAdded, nodeName));
+            if (listener.triggerFired(new NodeAddedEvent(this, timeAdded, nodeName))) {
+              // remove from tracking set only if the fire was accepted
+              trackingKeySet.remove(nodeName);
+            }
+          } else  {
+            trackingKeySet.remove(nodeName);
           }
-          trackingKeySet.remove(nodeName);
         }
       }
 
