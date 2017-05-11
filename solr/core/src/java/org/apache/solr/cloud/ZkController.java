@@ -974,10 +974,12 @@ public class ZkController {
   public void startReplicationFromLeader(String coreName, boolean switchTransactionLog) throws InterruptedException {
     log.info("{} starting background replication from leader", coreName);
     ReplicateFromLeader replicateFromLeader = new ReplicateFromLeader(cc, coreName);
-    if (replicateFromLeaders.putIfAbsent(coreName, replicateFromLeader) == null) {
-      replicateFromLeader.startReplication(switchTransactionLog);
-    } else {
-      log.warn("A replicate from leader instance already exists for core {}", coreName);
+    synchronized (replicateFromLeader) { // synchronize to prevent any stop before we finish the start
+      if (replicateFromLeaders.putIfAbsent(coreName, replicateFromLeader) == null) {
+        replicateFromLeader.startReplication(switchTransactionLog);
+      } else {
+        log.warn("A replicate from leader instance already exists for core {}", coreName);
+      }
     }
   }
 
@@ -985,7 +987,9 @@ public class ZkController {
     log.info("{} stopping background replication from leader", coreName);
     ReplicateFromLeader replicateFromLeader = replicateFromLeaders.remove(coreName);
     if (replicateFromLeader != null) {
-      replicateFromLeader.stopReplication();
+      synchronized (replicateFromLeader) {
+        replicateFromLeader.stopReplication();
+      }
     }
   }
 

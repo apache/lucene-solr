@@ -127,6 +127,8 @@ public class ReplicateFromLeader {
   }
 
   public void stopReplication() {
-    replicationProcess.close();
+    if (replicationProcess != null) {
+      replicationProcess.close();
+    }
   }
 }
