@@ -188,9 +188,7 @@ public interface CommonParams {
       CONFIGSETS_HANDLER_PATH,
       AUTHC_PATH,
       AUTHZ_PATH,
-      METRICS_PATH,
-      "/____v2/cluster/security/authentication",
-      "/____v2/cluster/security/authorization"));
+      METRICS_PATH));
 
   /** valid values for: <code>echoParams</code> */
   enum EchoParamStyle {

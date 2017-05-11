@@ -1,0 +1,1889 @@
+= Collections API
+:page-shortname: collections-api
+:page-permalink: collections-api.html
+
+The Collections API is used to enable you to create, remove, or reload collections, but in the context of SolrCloud you can also use it to create collections with a specific number of shards and replicas.
+
+[[CollectionsAPI-create]]
+== CREATE: Create a Collection
+
+`/admin/collections?action=CREATE&name=_name_&numShards=_number_&replicationFactor=_number_&maxShardsPerNode=_number_&createNodeSet=_nodelist_&collection.configName=_configname_`
+
+[[CollectionsAPI-Input]]
+=== Input
+
+*Query Parameters*
+
+// TODO: Change column width to %autowidth.spread when https://github.com/asciidoctor/asciidoctor-pdf/issues/599 is fixed
+
+[cols="20,15,10,15,40",options="header"]
+|===
+|Key |Type |Required |Default |Description
+|name |string |Yes | |The name of the collection to be created.
+|router.name |string |No |compositeId |The router name that will be used. The router defines how documents will be distributed among the shards. Possible values are *implicit* or *compositeId*.
+
+The 'implicit' router does not automatically route documents to different shards. Whichever shard you indicate on the indexing request (or within each document) will be used as the destination for those documents.
+
+The 'compositeId' router hashes the value in the uniqueKey field and looks up that hash in the collection's clusterstate to determine which shard will receive the document, with the additional ability to manually direct the routing.
+
+When using the 'implicit' router, the `shards` parameter is required. When using the 'compositeId' router, the `numShards` parameter is required.
+
+For more information, see also the section <<shards-and-indexing-data-in-solrcloud.adoc#ShardsandIndexingDatainSolrCloud-DocumentRouting,Document Routing>>.
+|numShards |integer |No |empty |The number of shards to be created as part of the collection. This is a required parameter when using the 'compositeId' router.
+|shards |string |No |empty |A comma separated list of shard names, e.g., shard-x,shard-y,shard-z. This is a required parameter when using the 'implicit' router.
+|replicationFactor |integer |No |1 |The number of replicas to be created for each shard.
+|maxShardsPerNode |integer |No |1 |When creating collections, the shards and/or replicas are spread across all available (i.e., live) nodes, and two replicas of the same shard will never be on the same node. If a node is not live when the CREATE operation is called, it will not get any parts of the new collection, which could lead to too many replicas being created on a single live node. Defining `maxShardsPerNode` sets a limit on the number of replicas CREATE will spread to each node. If the entire collection can not be fit into the live nodes, no collection will be created at all.
+|createNodeSet |string |No | |Allows defining the nodes to spread the new collection across. If not provided, the CREATE operation will create shard-replica spread across all live Solr nodes. The format is a comma-separated list of node_names, such as `localhost:8983_solr,` `localhost:8984_solr,` `localhost:8985_solr`. Alternatively, use the special value of `EMPTY` to initially create no shard-replica within the new collection and then later use the <<CollectionsAPI-addreplica,ADDREPLICA>> operation to add shard-replica when and where required.
+|createNodeSet.shuffle |boolean |No |true a|
+Controls wether or not the shard-replicas created for this collection will be assigned to the nodes specified by the createNodeSet in a sequential manner, or if the list of nodes should be shuffled prior to creating individual replicas. A 'false' value makes the results of a collection creation predictible and gives more exact control over the location of the individual shard-replicas, but 'true' can be a better choice for ensuring replicas are distributed evenly across nodes.
+
+Ignored if createNodeSet is not also specified.
+
+|collection.configName |string |No |empty |Defines the name of the configurations (which must already be stored in ZooKeeper) to use for this collection. If not provided, Solr will default to the collection name as the configuration name.
+|router.field |string |No |empty |If this field is specified, the router will look at the value of the field in an input document to compute the hash and identify a shard instead of looking at the `uniqueKey` field. If the field specified is null in the document, the document will be rejected. Please note that <<realtime-get.adoc#realtime-get,RealTime Get>> or retrieval by id would also require the parameter `\_route_` (or `shard.keys`) to avoid a distributed search.
+|property._name_=_value_ |string |No | |Set core property _name_ to _value_. See the section <<defining-core-properties.adoc#defining-core-properties,Defining core.properties>> for details on supported properties and values.
+|autoAddReplicas |boolean |No |false |When set to true, enables auto addition of replicas on shared file systems. See the section <<running-solr-on-hdfs.adoc#RunningSolronHDFS-AutomaticallyAddReplicasinSolrCloud,autoAddReplicas Settings>> for more details on settings and overrides.
+|async |string |No | |Request ID to track this action which will be <<CollectionsAPI-async,processed asynchronously>>.
+|rule |string |No | |Replica placement rules. See the section <<rule-based-replica-placement.adoc#rule-based-replica-placement,Rule-based Replica Placement>> for details.
+|snitch |string |No | |Details of the snitch provider. See the section <<rule-based-replica-placement.adoc#rule-based-replica-placement,Rule-based Replica Placement>> for details.
+|===
+
+[[CollectionsAPI-Output]]
+=== Output
+
+The response will include the status of the request and the new core names. If the status is anything other than "success", an error message will explain why the request failed.
+
+[[CollectionsAPI-Examples]]
+=== Examples
+
+*Input*
+
+[source,text]
+----
+http://localhost:8983/solr/admin/collections?action=CREATE&name=newCollection&numShards=2&replicationFactor=1
+----
+
+*Output*
+
+[source,xml]
+----
+<response>
+  <lst name="responseHeader">
+    <int name="status">0</int>
+    <int name="QTime">3764</int>
+  </lst>
+  <lst name="success">
+    <lst>
+      <lst name="responseHeader">
+        <int name="status">0</int>
+        <int name="QTime">3450</int>
+      </lst>
+      <str name="core">newCollection_shard1_replica1</str>
+    </lst>
+    <lst>
+      <lst name="responseHeader">
+        <int name="status">0</int>
+        <int name="QTime">3597</int>
+      </lst>
+      <str name="core">newCollection_shard2_replica1</str>
+    </lst>
+  </lst>
+</response>
+----
+
+[[CollectionsAPI-modifycollection]]
+== MODIFYCOLLECTION: Modify Attributes of a Collection
+
+`/admin/collections?action=MODIFYCOLLECTION&collection=_<collection-name>&<attribute-name>=<attribute-value>&<another-attribute-name>=<another-value>_`
+
+It's possible to edit multiple attributes at a time. Changing these values only updates the z-node on Zookeeper, they do not change the topology of the collection. For instance, increasing replicationFactor will _not_ automatically add more replicas to the collection but _will_ allow more ADDREPLICA commands to succeed.
+
+*Query Parameters*
+
+// TODO: Change column width to %autowidth.spread when https://github.com/asciidoctor/asciidoctor-pdf/issues/599 is fixed
+
+[cols="20,15,10,55",options="header"]
+|===
+|Key |Type |Required |Description
+|collection |string |Yes |The name of the collection to be modified.
+|<attribute-name> |string |Yes a|
+Key-value pairs of attribute names and attribute values.
+
+The attributes that can be modified are:
+
+* maxShardsPerNode
+* replicationFactor
+* autoAddReplicas
+* collection.configName
+* rule
+* snitch
+
+See the <<CollectionsAPI-create,CREATE>> section above for details on these attributes.
+
+|===
+
+[[CollectionsAPI-reload]]
+== RELOAD: Reload a Collection
+
+`/admin/collections?action=RELOAD&name=_name_`
+
+The RELOAD action is used when you have changed a configuration in ZooKeeper.
+
+[[CollectionsAPI-Input.1]]
+=== Input
+
+*Query Parameters*
+
+
+// TODO: Change column width to %autowidth.spread when https://github.com/asciidoctor/asciidoctor-pdf/issues/599 is fixed
+
+[cols="20,15,10,55",options="header"]
+|===
+|Key |Type |Required |Description
+|name |string |Yes |The name of the collection to reload.
+|async |string |No |Request ID to track this action which will be <<CollectionsAPI-async,processed asynchronously>>.
+|===
+
+[[CollectionsAPI-Output.1]]
+=== Output
+
+The response will include the status of the request and the cores that were reloaded. If the status is anything other than "success", an error message will explain why the request failed.
+
+[[CollectionsAPI-Examples.1]]
+=== Examples
+
+*Input*
+
+[source,text]
+----
+http://localhost:8983/solr/admin/collections?action=RELOAD&name=newCollection
+----
+
+*Output*
+
+[source,xml]
+----
+<response>
+  <lst name="responseHeader">
+    <int name="status">0</int>
+    <int name="QTime">1551</int>
+  </lst>
+  <lst name="success">
+    <lst name="10.0.1.6:8983_solr">
+      <lst name="responseHeader">
+        <int name="status">0</int>
+        <int name="QTime">761</int>
+      </lst>
+    </lst>
+    <lst name="10.0.1.4:8983_solr">
+      <lst name="responseHeader">
+        <int name="status">0</int>
+        <int name="QTime">1527</int>
+      </lst>
+    </lst>
+  </lst>
+</response>
+----
+
+[[CollectionsAPI-splitshard]]
+== SPLITSHARD: Split a Shard
+
+`/admin/collections?action=SPLITSHARD&collection=_name_&shard=_shardID_`
+
+Splitting a shard will take an existing shard and break it into two pieces which are written to disk as two (new) shards. The original shard will continue to contain the same data as-is but it will start re-routing requests to the new shards. The new shards will have as many replicas as the original shard. A soft commit is automatically issued after splitting a shard so that documents are made visible on sub-shards. An explicit commit (hard or soft) is not necessary after a split operation because the index is automatically persisted to disk during the split operation.
+
+This command allows for seamless splitting and requires no downtime. A shard being split will continue to accept query and indexing requests and will automatically start routing them to the new shards once this operation is complete. This command can only be used for SolrCloud collections created with `numShards` parameter, meaning collections which rely on Solr's hash-based routing mechanism.
+
+The split is performed by dividing the original shard's hash range into two equal partitions and dividing up the documents in the original shard according to the new sub-ranges.
+
+One can also specify an optional `ranges` parameter to divide the original shard's hash range into arbitrary hash range intervals specified in hexadecimal. For example, if the original hash range is 0-1500 then adding the parameter: ranges=0-1f4,1f5-3e8,3e9-5dc will divide the original shard into three shards with hash range 0-500, 501-1000 and 1001-1500 respectively.
+
+Another optional parameter `split.key` can be used to split a shard using a route key such that all documents of the specified route key end up in a single dedicated sub-shard. Providing the 'shard' parameter is not required in this case because the route key is enough to figure out the right shard. A route key which spans more than one shard is not supported. For example, suppose `split.key=A!` hashes to the range 12-15 and belongs to shard 'shard1' with range 0-20 then splitting by this route key would yield three sub-shards with ranges 0-11, 12-15 and 16-20. Note that the sub-shard with the hash range of the route key may also contain documents for other route keys whose hash ranges overlap.
+
+Shard splitting can be a long running process. In order to avoid timeouts, you should run this as an <<CollectionsAPI-async,asynchronous call>>.
+
+[[CollectionsAPI-Input.2]]
+=== Input
+
+*Query Parameters*
+
+// TODO: Change column width to %autowidth.spread when https://github.com/asciidoctor/asciidoctor-pdf/issues/599 is fixed
+
+[cols="20,15,10,55",options="header"]
+|===
+|Key |Type |Required |Description
+|collection |string |Yes |The name of the collection that includes the shard to be split.
+|shard |string |Yes |The name of the shard to be split.
+|ranges |string |No |A comma-separated list of hash ranges in hexadecimal, such as `ranges=0-1f4,1f5-3e8,3e9-5dc`.
+|split.key |string |No |The key to use for splitting the index.
+|property._name_=_value_ |string |No |Set core property _name_ to _value_. See the section <<defining-core-properties.adoc#defining-core-properties,Defining core.properties>> for details on supported properties and values.
+|async |string |No |Request ID to track this action which will be <<CollectionsAPI-async,processed asynchronously>>
+|===
+
+[[CollectionsAPI-Output.2]]
+=== Output
+
+The output will include the status of the request and the new shard names, which will use the original shard as their basis, adding an underscore and a number. For example, "shard1" will become "shard1_0" and "shard1_1". If the status is anything other than "success", an error message will explain why the request failed.
+
+[[CollectionsAPI-Examples.2]]
+=== Examples
+
+*Input*
+
+Split shard1 of the "anotherCollection" collection.
+
+[source,text]
+----
+http://localhost:8983/solr/admin/collections?action=SPLITSHARD&collection=anotherCollection&shard=shard1
+----
+
+*Output*
+
+[source,xml]
+----
+<response>
+  <lst name="responseHeader">
+    <int name="status">0</int>
+    <int name="QTime">6120</int>
+  </lst>
+  <lst name="success">
+    <lst>
+      <lst name="responseHeader">
+        <int name="status">0</int>
+        <int name="QTime">3673</int>
+      </lst>
+      <str name="core">anotherCollection_shard1_1_replica1</str>
+    </lst>
+    <lst>
+      <lst name="responseHeader">
+        <int name="status">0</int>
+        <int name="QTime">3681</int>
+      </lst>
+      <str name="core">anotherCollection_shard1_0_replica1</str>
+    </lst>
+    <lst>
+      <lst name="responseHeader">
+        <int name="status">0</int>
+        <int name="QTime">6008</int>
+      </lst>
+    </lst>
+    <lst>
+      <lst name="responseHeader">
+        <int name="status">0</int>
+        <int name="QTime">6007</int>
+      </lst>
+    </lst>
+    <lst>
+      <lst name="responseHeader">
+        <int name="status">0</int>
+        <int name="QTime">71</int>
+      </lst>
+    </lst>
+    <lst>
+      <lst name="responseHeader">
+        <int name="status">0</int>
+        <int name="QTime">0</int>
+      </lst>
+      <str name="core">anotherCollection_shard1_1_replica1</str>
+      <str name="status">EMPTY_BUFFER</str>
+    </lst>
+    <lst>
+      <lst name="responseHeader">
+        <int name="status">0</int>
+        <int name="QTime">0</int>
+      </lst>
+      <str name="core">anotherCollection_shard1_0_replica1</str>
+      <str name="status">EMPTY_BUFFER</str>
+    </lst>
+  </lst>
+</response>
+----
+
+[[CollectionsAPI-createshard]]
+== CREATESHARD: Create a Shard
+
+Shards can only created with this API for collections that use the 'implicit' router. Use SPLITSHARD for collections using the 'compositeId' router. A new shard with a name can be created for an existing 'implicit' collection.
+
+`/admin/collections?action=CREATESHARD&shard=_shardName_&collection=_name_`
+
+[[CollectionsAPI-Input.3]]
+=== Input
+
+*Query Parameters*
+
+// TODO: Change column width to %autowidth.spread when https://github.com/asciidoctor/asciidoctor-pdf/issues/599 is fixed
+
+[cols="20,15,10,55",options="header"]
+|===
+|Key |Type |Required |Description
+|collection |string |Yes |The name of the collection that includes the shard that will be splitted.
+|shard |string |Yes |The name of the shard to be created.
+|createNodeSet |string |No |Allows defining the nodes to spread the new collection across. If not provided, the CREATE operation will create shard-replica spread across all live Solr nodes. The format is a comma-separated list of node_names, such as `localhost:8983_solr,` `localhost:8984_solr,` `localhost:8985_solr`.
+|property._name_=_value_ |string |No |Set core property _name_ to _value_. See the section <<defining-core-properties.adoc#defining-core-properties,Defining core.properties>> for details on supported properties and values.
+|async |string |No |Request ID to track this action which will be <<CollectionsAPI-async,processed asynchronously>>.
+|===
+
+[[CollectionsAPI-Output.3]]
+=== Output
+
+The output will include the status of the request. If the status is anything other than "success", an error message will explain why the request failed.
+
+[[CollectionsAPI-Examples.3]]
+=== Examples
+
+*Input*
+
+Create 'shard-z' for the "anImplicitCollection" collection.
+
+[source,text]
+----
+http://localhost:8983/solr/admin/collections?action=CREATESHARD&collection=anImplicitCollection&shard=shard-z
+----
+
+*Output*
+
+[source,xml]
+----
+<response>
+  <lst name="responseHeader">
+    <int name="status">0</int>
+    <int name="QTime">558</int>
+  </lst>
+</response>
+----
+
+[[CollectionsAPI-deleteshard]]
+== DELETESHARD: Delete a Shard
+
+Deleting a shard will unload all replicas of the shard, remove them from `clusterstate.json`, and (by default) delete the instanceDir and dataDir for each replica. It will only remove shards that are inactive, or which have no range given for custom sharding.
+
+`/admin/collections?action=DELETESHARD&shard=_shardID_&collection=_name_`
+
+[[CollectionsAPI-Input.4]]
+=== Input
+
+*Query Parameters*
+
+[cols=",,,",options="header",]
+|===
+|Key |Type |Required |Description
+|collection |string |Yes |The name of the collection that includes the shard to be deleted.
+|shard |string |Yes |The name of the shard to be deleted.
+|deleteInstanceDir |boolean |No |By default Solr will delete the entire instanceDir of each replica that is deleted. Set this to `false` to prevent the instance directory from being deleted.
+|deleteDataDir |boolean |No |By default Solr will delete the dataDir of each replica that is deleted. Set this to `false` to prevent the data directory from being deleted.
+|deleteIndex |boolean |No |By default Solr will delete the index of each replica that is deleted. Set this to `false` to prevent the index directory from being deleted.
+|async |string |No |Request ID to track this action which will be <<CollectionsAPI-async,processed asynchronously>>.
+|===
+
+[[CollectionsAPI-Output.4]]
+=== Output
+
+The output will include the status of the request. If the status is anything other than "success", an error message will explain why the request failed.
+
+[[CollectionsAPI-Examples.4]]
+=== Examples
+
+*Input*
+
+Delete 'shard1' of the "anotherCollection" collection.
+
+[source,text]
+----
+http://localhost:8983/solr/admin/collections?action=DELETESHARD&collection=anotherCollection&shard=shard1
+----
+
+*Output*
+
+[source,xml]
+----
+<response>
+  <lst name="responseHeader">
+    <int name="status">0</int>
+    <int name="QTime">558</int>
+  </lst>
+  <lst name="success">
+    <lst name="10.0.1.4:8983_solr">
+      <lst name="responseHeader">
+        <int name="status">0</int>
+        <int name="QTime">27</int>
+      </lst>
+    </lst>
+  </lst>
+</response>
+----
+
+[[CollectionsAPI-createalias]]
+== CREATEALIAS: Create or Modify an Alias for a Collection
+
+The `CREATEALIAS` action will create a new alias pointing to one or more collections. If an alias by the same name already exists, this action will replace the existing alias, effectively acting like an atomic "MOVE" command.
+
+`/admin/collections?action=CREATEALIAS&name=_name_&collections=_collectionlist_`
+
+[[CollectionsAPI-Input.5]]
+=== Input
+
+*Query Parameters*
+
+// TODO: Change column width to %autowidth.spread when https://github.com/asciidoctor/asciidoctor-pdf/issues/599 is fixed
+
+[cols="20,15,10,55",options="header"]
+|===
+|Key |Type |Required |Description
+|name |string |Yes |The alias name to be created.
+|collections |string |Yes |The list of collections to be aliased, separated by commas. They must already exist in the cluster.
+|async |string |No |Request ID to track this action which will be <<CollectionsAPI-async,processed asynchronously>>.
+|===
+
+[[CollectionsAPI-Output.5]]
+=== Output
+
+The output will simply be a responseHeader with details of the time it took to process the request. To confirm the creation of the alias, you can look in the Solr Admin UI, under the Cloud section and find the `aliases.json` file.
+
+[[CollectionsAPI-Examples.5]]
+=== Examples
+
+*Input*
+
+Create an alias named "testalias" and link it to the collections named "anotherCollection" and "testCollection".
+
+[source,text]
+----
+http://localhost:8983/solr/admin/collections?action=CREATEALIAS&name=testalias&collections=anotherCollection,testCollection
+----
+
+*Output*
+
+[source,xml]
+----
+<response>
+  <lst name="responseHeader">
+    <int name="status">0</int>
+    <int name="QTime">122</int>
+  </lst>
+</response>
+----
+
+[[CollectionsAPI-deletealias]]
+== DELETEALIAS: Delete a Collection Alias
+
+`/admin/collections?action=DELETEALIAS&name=_name_`
+
+[[CollectionsAPI-Input.6]]
+=== Input
+
+*Query Parameters*
+
+// TODO: Change column width to %autowidth.spread when https://github.com/asciidoctor/asciidoctor-pdf/issues/599 is fixed
+
+[cols="20,15,10,55",options="header"]
+|===
+|Key |Type |Required |Description
+|name |string |Yes |The name of the alias to delete.
+|async |string |No |Request ID to track this action which will be <<CollectionsAPI-async,processed asynchronously>>.
+|===
+
+[[CollectionsAPI-Output.6]]
+=== Output
+
+The output will simply be a responseHeader with details of the time it took to process the request. To confirm the removal of the alias, you can look in the Solr Admin UI, under the Cloud section, and find the `aliases.json` file.
+
+[[CollectionsAPI-Examples.6]]
+=== Examples
+
+*Input*
+
+Remove the alias named "testalias".
+
+[source,text]
+----
+http://localhost:8983/solr/admin/collections?action=DELETEALIAS&name=testalias
+----
+
+*Output*
+
+[source,xml]
+----
+<response>
+  <lst name="responseHeader">
+    <int name="status">0</int>
+    <int name="QTime">117</int>
+  </lst>
+</response>
+----
+
+[[CollectionsAPI-delete]]
+== DELETE: Delete a Collection
+
+`/admin/collections?action=DELETE&name=_collection_`
+
+[[CollectionsAPI-Input.7]]
+=== Input
+
+*Query Parameters*
+
+// TODO: Change column width to %autowidth.spread when https://github.com/asciidoctor/asciidoctor-pdf/issues/599 is fixed
+
+[cols="20,15,10,55",options="header"]
+|===
+|Key |Type |Required |Description
+|name |string |Yes |The name of the collection to delete.
+|async |string |No |Request ID to track this action which will be <<CollectionsAPI-async,processed asynchronously>>.
+|===
+
+[[CollectionsAPI-Output.7]]
+=== Output
+
+The response will include the status of the request and the cores that were deleted. If the status is anything other than "success", an error message will explain why the request failed.
+
+[[CollectionsAPI-Examples.7]]
+=== Examples
+
+*Input*
+
+Delete the collection named "newCollection".
+
+[source,text]
+----
+http://localhost:8983/solr/admin/collections?action=DELETE&name=newCollection
+----
+
+*Output*
+
+[source,xml]
+----
+<response>
+  <lst name="responseHeader">
+    <int name="status">0</int>
+    <int name="QTime">603</int>
+  </lst>
+  <lst name="success">
+    <lst name="10.0.1.6:8983_solr">
+      <lst name="responseHeader">
+        <int name="status">0</int>
+        <int name="QTime">19</int>
+      </lst>
+    </lst>
+    <lst name="10.0.1.4:8983_solr">
+      <lst name="responseHeader">
+        <int name="status">0</int>
+        <int name="QTime">67</int>
+      </lst>
+    </lst>
+  </lst>
+</response>
+----
+
+[[CollectionsAPI-deletereplica]]
+== DELETEREPLICA: Delete a Replica
+
+Delete a named replica from the specified collection and shard. If the corresponding core is up and running the core is unloaded, the entry is removed from the clusterstate, and (by default) delete the instanceDir and dataDir. If the node/core is down, the entry is taken off the clusterstate and if the core comes up later it is automatically unregistered.
+
+`/admin/collections?action=DELETEREPLICA&collection=_collection_&shard=_shard_&replica=_replica_`
+
+[[CollectionsAPI-Input.8]]
+=== Input
+
+*Query Parameters*
+
+// TODO: Change column width to %autowidth.spread when https://github.com/asciidoctor/asciidoctor-pdf/issues/599 is fixed
+
+[cols="20,15,10,55",options="header"]
+|===
+|Key |Type |Required |Description
+|collection |string |Yes |The name of the collection.
+|shard |string |Yes |The name of the shard that includes the replica to be removed.
+|replica |string |No |The name of the replica to remove. Not required if `count` is used instead.
+|count |integer |No |The number of replicas to remove. If the requested number exceeds the number of replicas, no replicas will be deleted. If there is only one replica, it will not be removed. This parameter is not required if `replica` is used instead.
+|deleteInstanceDir |boolean |No |By default Solr will delete the entire instanceDir of the replica that is deleted. Set this to `false` to prevent the instance directory from being deleted.
+|deleteDataDir |boolean |No |By default Solr will delete the dataDir of the replica that is deleted. Set this to `false` to prevent the data directory from being deleted.
+|deleteIndex |boolean |No |By default Solr will delete the index of the replica that is deleted. Set this to `false` to prevent the index directory from being deleted.
+|onlyIfDown |boolean |No |When set to 'true' will not take any action if the replica is active. Default 'false'
+|async |string |No |Request ID to track this action which will be <<CollectionsAPI-async,processed asynchronously>>.
+|===
+
+[[CollectionsAPI-Examples.8]]
+=== Examples
+
+*Input*
+
+[source,text]
+----
+http://localhost:8983/solr/admin/collections?action=DELETEREPLICA&collection=test2&shard=shard2&replica=core_node3
+----
+
+*Output*
+
+[source,xml]
+----
+<response>
+  <lst name="responseHeader">
+    <int name="status">0</int>
+    <int name="QTime">110</int>
+  </lst>
+</response>
+----
+
+[[CollectionsAPI-addreplica]]
+== ADDREPLICA: Add Replica
+
+Add a replica to a shard in a collection. The node name can be specified if the replica is to be created in a specific node.
+
+`/admin/collections?action=ADDREPLICA&collection=_collection_&shard=_shard_&node=_nodeName_`
+
+[[CollectionsAPI-Input.9]]
+=== Input
+
+*Query Parameters*
+
+// TODO: Change column width to %autowidth.spread when https://github.com/asciidoctor/asciidoctor-pdf/issues/599 is fixed
+
+[cols="20,15,10,55",options="header"]
+|===
+|Key |Type |Required |Description
+|collection |string |Yes |The name of the collection.
+|shard |string |Yes* a|
+The name of the shard to which replica is to be added.
+
+If shard is not specified, then _route_ must be.
+
+|_route_ |string |No* a|
+If the exact shard name is not known, users may pass the _route_ value and the system would identify the name of the shard.
+
+Ignored if the shard param is also specified.
+
+|node |string |No |The name of the node where the replica should be created
+|instanceDir |string |No |The instanceDir for the core that will be created
+|dataDir |string |No |The directory in which the core should be created
+|property._name_=_value_ |string |No |Set core property _name_ to _value_. See <<defining-core-properties.adoc#defining-core-properties,Defining core.properties>>.
+|async |string |No |Request ID to track this action which will be <<CollectionsAPI-async,processed asynchronously>>
+|===
+
+[[CollectionsAPI-Examples.9]]
+=== Examples
+
+*Input*
+
+[source,text]
+----
+http://localhost:8983/solr/admin/collections?action=ADDREPLICA&collection=test2&shard=shard2&node=192.167.1.2:8983_solr
+----
+
+*Output*
+
+[source,xml]
+----
+<response>
+  <lst name="responseHeader">
+    <int name="status">0</int>
+    <int name="QTime">3764</int>
+  </lst>
+  <lst name="success">
+    <lst>
+      <lst name="responseHeader">
+        <int name="status">0</int>
+        <int name="QTime">3450</int>
+      </lst>
+      <str name="core">test2_shard2_replica4</str>
+    </lst>
+  </lst>
+</response>
+----
+
+[[CollectionsAPI-clusterprop]]
+== CLUSTERPROP: Cluster Properties
+
+Add, edit or delete a cluster-wide property.
+
+`/admin/collections?action=CLUSTERPROP&name=_propertyName_&val=_propertyValue_`
+
+[[CollectionsAPI-Input.10]]
+=== Input
+
+*Query Parameters*
+
+// TODO: Change column width to %autowidth.spread when https://github.com/asciidoctor/asciidoctor-pdf/issues/599 is fixed
+
+[cols="20,15,10,55",options="header"]
+|===
+|Key |Type |Required |Description
+|name |string |Yes |The name of the property. The supported properties names are `urlScheme` and `autoAddReplicas and location`. Other names are rejected with an error.
+|val |string |Yes |The value of the property. If the value is empty or null, the property is unset.
+|===
+
+[[CollectionsAPI-Output.8]]
+=== Output
+
+The response will include the status of the request and the properties that were updated or removed. If the status is anything other than "0", an error message will explain why the request failed.
+
+[[CollectionsAPI-Examples.10]]
+=== Examples
+
+*Input*
+
+[source,text]
+----
+http://localhost:8983/solr/admin/collections?action=CLUSTERPROP&name=urlScheme&val=https
+----
+
+*Output*
+
+[source,xml]
+----
+<response>
+  <lst name="responseHeader">
+    <int name="status">0</int>
+    <int name="QTime">0</int>
+  </lst>
+</response>
+----
+
+[[CollectionsAPI-migrate]]
+== MIGRATE: Migrate Documents to Another Collection
+
+`/admin/collections?action=MIGRATE&collection=_name_&split.key=_key1!_&target.collection=_target_collection_&forward.timeout=60`
+
+The MIGRATE command is used to migrate all documents having the given routing key to another collection. The source collection will continue to have the same data as-is but it will start re-routing write requests to the target collection for the number of seconds specified by the forward.timeout parameter. It is the responsibility of the user to switch to the target collection for reads and writes after the ‘migrate’ command completes.
+
+The routing key specified by the `split.key` parameter may span multiple shards on both the source and the target collections. The migration is performed shard-by-shard in a single thread. One or more temporary collections may be created by this command during the ‘migrate’ process but they are cleaned up at the end automatically.
+
+This is a long running operation and therefore using the `async` parameter is highly recommended. If the async parameter is not specified then the operation is synchronous by default and keeping a large read timeout on the invocation is advised. Even with a large read timeout, the request may still timeout due to inherent limitations of the Collection APIs but that doesn’t necessarily mean that the operation has failed. Users should check logs, cluster state, source and target collections before invoking the operation again.
+
+This command works only with collections having the compositeId router. The target collection must not receive any writes during the time the migrate command is running otherwise some writes may be lost.
+
+Please note that the migrate API does not perform any de-duplication on the documents so if the target collection contains documents with the same uniqueKey as the documents being migrated then the target collection will end up with duplicate documents.
+
+[[CollectionsAPI-Input.11]]
+=== Input
+
+*Query Parameters*
+
+// TODO: Change column width to %autowidth.spread when https://github.com/asciidoctor/asciidoctor-pdf/issues/599 is fixed
+
+[cols="20,15,10,55",options="header"]
+|===
+|Key |Type |Required |Description
+|collection |string |Yes |The name of the source collection from which documents will be split.
+|target.collection |string |Yes |The name of the target collection to which documents will be migrated.
+|split.key |string |Yes |The routing key prefix. For example, if uniqueKey is a!123, then you would use `split.key=a!`.
+|forward.timeout |int |No |The timeout, in seconds, until which write requests made to the source collection for the given `split.key` will be forwarded to the target shard. The default is 60 seconds.
+|property._name_=_value_ |string |No |Set core property _name_ to _value_. See the section <<defining-core-properties.adoc#defining-core-properties,Defining core.properties>> for details on supported properties and values.
+|async |string |No |Request ID to track this action which will be <<CollectionsAPI-async,processed asynchronously>>.
+|===
+
+[[CollectionsAPI-Output.9]]
+=== Output
+
+The response will include the status of the request.
+
+[[CollectionsAPI-Examples.11]]
+=== Examples
+
+*Input*
+
+[source,text]
+----
+http://localhost:8983/solr/admin/collections?action=MIGRATE&collection=test1&split.key=a!&target.collection=test2
+----
+
+*Output*
+
+[source,xml]
+----
+<response>
+  <lst name="responseHeader">
+    <int name="status">0</int>
+    <int name="QTime">19014</int>
+  </lst>
+  <lst name="success">
+    <lst>
+      <lst name="responseHeader">
+        <int name="status">0</int>
+        <int name="QTime">1</int>
+      </lst>
+      <str name="core">test2_shard1_0_replica1</str>
+      <str name="status">BUFFERING</str>
+    </lst>
+    <lst>
+      <lst name="responseHeader">
+        <int name="status">0</int>
+        <int name="QTime">2479</int>
+      </lst>
+      <str name="core">split_shard1_0_temp_shard1_0_shard1_replica1</str>
+    </lst>
+    <lst>
+      <lst name="responseHeader">
+        <int name="status">0</int>
+        <int name="QTime">1002</int>
+      </lst>
+    </lst>
+    <lst>
+      <lst name="responseHeader">
+        <int name="status">0</int>
+        <int name="QTime">21</int>
+      </lst>
+    </lst>
+    <lst>
+      <lst name="responseHeader">
+        <int name="status">0</int>
+        <int name="QTime">1655</int>
+      </lst>
+      <str name="core">split_shard1_0_temp_shard1_0_shard1_replica2</str>
+    </lst>
+    <lst>
+      <lst name="responseHeader">
+        <int name="status">0</int>
+        <int name="QTime">4006</int>
+      </lst>
+    </lst>
+    <lst>
+      <lst name="responseHeader">
+        <int name="status">0</int>
+        <int name="QTime">17</int>
+      </lst>
+    </lst>
+    <lst>
+      <lst name="responseHeader">
+        <int name="status">0</int>
+        <int name="QTime">1</int>
+      </lst>
+      <str name="core">test2_shard1_0_replica1</str>
+      <str name="status">EMPTY_BUFFER</str>
+    </lst>
+    <lst name="192.168.43.52:8983_solr">
+      <lst name="responseHeader">
+        <int name="status">0</int>
+        <int name="QTime">31</int>
+      </lst>
+    </lst>
+    <lst name="192.168.43.52:8983_solr">
+      <lst name="responseHeader">
+        <int name="status">0</int>
+        <int name="QTime">31</int>
+      </lst>
+    </lst>
+    <lst>
+      <lst name="responseHeader">
+        <int name="status">0</int>
+        <int name="QTime">1</int>
+      </lst>
+      <str name="core">test2_shard1_1_replica1</str>
+      <str name="status">BUFFERING</str>
+    </lst>
+    <lst>
+      <lst name="responseHeader">
+        <int name="status">0</int>
+        <int name="QTime">1742</int>
+      </lst>
+      <str name="core">split_shard1_1_temp_shard1_1_shard1_replica1</str>
+    </lst>
+    <lst>
+      <lst name="responseHeader">
+        <int name="status">0</int>
+        <int name="QTime">1002</int>
+      </lst>
+    </lst>
+    <lst>
+      <lst name="responseHeader">
+        <int name="status">0</int>
+        <int name="QTime">15</int>
+      </lst>
+    </lst>
+    <lst>
+      <lst name="responseHeader">
+        <int name="status">0</int>
+        <int name="QTime">1917</int>
+      </lst>
+      <str name="core">split_shard1_1_temp_shard1_1_shard1_replica2</str>
+    </lst>
+    <lst>
+      <lst name="responseHeader">
+        <int name="status">0</int>
+        <int name="QTime">5007</int>
+      </lst>
+    </lst>
+    <lst>
+      <lst name="responseHeader">
+        <int name="status">0</int>
+        <int name="QTime">8</int>
+      </lst>
+    </lst>
+    <lst>
+      <lst name="responseHeader">
+        <int name="status">0</int>
+        <int name="QTime">1</int>
+      </lst>
+      <str name="core">test2_shard1_1_replica1</str>
+      <str name="status">EMPTY_BUFFER</str>
+    </lst>
+    <lst name="192.168.43.52:8983_solr">
+      <lst name="responseHeader">
+        <int name="status">0</int>
+        <int name="QTime">30</int>
+      </lst>
+    </lst>
+    <lst name="192.168.43.52:8983_solr">
+      <lst name="responseHeader">
+        <int name="status">0</int>
+        <int name="QTime">30</int>
+      </lst>
+    </lst>
+  </lst>
+</response>
+----
+
+[[CollectionsAPI-addrole]]
+== ADDROLE: Add a Role
+
+`/admin/collections?action=ADDROLE&role=_roleName_&node=_nodeName_`
+
+Assign a role to a given node in the cluster. The only supported role as of 4.7 is 'overseer'. Use this API to dedicate a particular node as Overseer. Invoke it multiple times to add more nodes. This is useful in large clusters where an Overseer is likely to get overloaded. If available, one among the list of nodes which are assigned the 'overseer' role would become the overseer. The system would assign the role to any other node if none of the designated nodes are up and running.
+
+[[CollectionsAPI-Input.12]]
+=== Input
+
+*Query Parameters*
+
+// TODO: Change column width to %autowidth.spread when https://github.com/asciidoctor/asciidoctor-pdf/issues/599 is fixed
+
+[cols="20,15,10,55",options="header"]
+|===
+|Key |Type |Required |Description
+|role |string |Yes |The name of the role. The only supported role as of now is _overseer_.
+|node |string |Yes |The name of the node. It is possible to assign a role even before that node is started.
+|===
+
+[[CollectionsAPI-Output.10]]
+=== Output
+
+The response will include the status of the request and the properties that were updated or removed. If the status is anything other than "0", an error message will explain why the request failed.
+
+[[CollectionsAPI-Examples.12]]
+=== Examples
+
+*Input*
+
+[source,text]
+----
+http://localhost:8983/solr/admin/collections?action=ADDROLE&role=overseer&node=192.167.1.2:8983_solr
+----
+
+*Output*
+
+[source,xml]
+----
+<response>
+  <lst name="responseHeader">
+    <int name="status">0</int>
+    <int name="QTime">0</int>
+  </lst>
+</response>
+----
+
+[[CollectionsAPI-removerole]]
+== REMOVEROLE: Remove Role
+
+Remove an assigned role. This API is used to undo the roles assigned using ADDROLE operation
+
+`/admin/collections?action=REMOVEROLE&role=_roleName_&node=_nodeName_`
+
+[[CollectionsAPI-Input.13]]
+=== Input
+
+*Query Parameters*
+
+// TODO: Change column width to %autowidth.spread when https://github.com/asciidoctor/asciidoctor-pdf/issues/599 is fixed
+
+[cols="20,15,10,55",options="header"]
+|===
+|Key |Type |Required |Description
+|role |string |Yes |The name of the role. The only supported role as of now is _overseer_.
+|node |string |Yes |The name of the node.
+|===
+
+[[CollectionsAPI-Output.11]]
+=== Output
+
+The response will include the status of the request and the properties that were updated or removed. If the status is anything other than "0", an error message will explain why the request failed.
+
+[[CollectionsAPI-Examples.13]]
+=== Examples
+
+*Input*
+
+[source,text]
+----
+http://localhost:8983/solr/admin/collections?action=REMOVEROLE&role=overseer&node=192.167.1.2:8983_solr
+----
+
+*Output*
+
+[source,xml]
+----
+<response>
+  <lst name="responseHeader">
+    <int name="status">0</int>
+    <int name="QTime">0</int>
+  </lst>
+</response>
+----
+
+[[CollectionsAPI-overseerstatus]]
+== OVERSEERSTATUS: Overseer Status and Statistics
+
+Returns the current status of the overseer, performance statistics of various overseer APIs, and the last 10 failures per operation type.
+
+`/admin/collections?action=OVERSEERSTATUS`
+
+[[CollectionsAPI-Examples.14]]
+=== Examples
+
+*Input:*
+
+[source,text]
+----
+http://localhost:8983/solr/admin/collections?action=OVERSEERSTATUS&wt=json
+----
+
+[source,json]
+----
+{
+  "responseHeader":{
+    "status":0,
+    "QTime":33},
+  "leader":"127.0.1.1:8983_solr",
+  "overseer_queue_size":0,
+  "overseer_work_queue_size":0,
+  "overseer_collection_queue_size":2,
+  "overseer_operations":[
+    "createcollection",{
+      "requests":2,
+      "errors":0,
+      "avgRequestsPerSecond":0.7467088842794136,
+      "5minRateRequestsPerSecond":7.525069023276674,
+      "15minRateRequestsPerSecond":10.271274280947182,
+      "avgTimePerRequest":0.5050685,
+      "medianRequestTime":0.5050685,
+      "75thPcRequestTime":0.519016,
+      "95thPcRequestTime":0.519016,
+      "99thPcRequestTime":0.519016,
+      "999thPcRequestTime":0.519016},
+    "removeshard",{
+      "..."
+  }],
+  "collection_operations":[
+    "splitshard",{
+      "requests":1,
+      "errors":1,
+      "recent_failures":[{
+          "request":{
+            "operation":"splitshard",
+            "shard":"shard2",
+            "collection":"example1"},
+          "response":[
+            "Operation splitshard caused exception:","org.apache.solr.common.SolrException:org.apache.solr.common.SolrException: No shard with the specified name exists: shard2",
+            "exception",{
+              "msg":"No shard with the specified name exists: shard2",
+              "rspCode":400}]}],
+      "avgRequestsPerSecond":0.8198143044809885,
+      "5minRateRequestsPerSecond":8.043840552427673,
+      "15minRateRequestsPerSecond":10.502079828515368,
+      "avgTimePerRequest":2952.7164175,
+      "medianRequestTime":2952.7164175000003,
+      "75thPcRequestTime":5904.384052,
+      "95thPcRequestTime":5904.384052,
+      "99thPcRequestTime":5904.384052,
+      "999thPcRequestTime":5904.384052},
+    "..."
+  ],
+  "overseer_queue":[
+    "..."
+  ],
+  "..."
+ }
+----
+
+[[CollectionsAPI-clusterstatus]]
+== CLUSTERSTATUS: Cluster Status
+
+Fetch the cluster status including collections, shards, replicas, configuration name as well as collection aliases and cluster properties.
+
+`/admin/collections?action=CLUSTERSTATUS`
+
+[[CollectionsAPI-Input.14]]
+=== Input
+
+*Query Parameters*
+
+// TODO: Change column width to %autowidth.spread when https://github.com/asciidoctor/asciidoctor-pdf/issues/599 is fixed
+
+[cols="20,15,10,55",options="header"]
+|===
+|Key |Type |Required |Description
+|collection |string |No |The collection name for which information is requested. If omitted, information on all collections in the cluster will be returned.
+|shard |string |No |The shard(s) for which information is requested. Multiple shard names can be specified as a comma separated list.
+|_route_ |string |No |This can be used if you need the details of the shard where a particular document belongs to and you don't know which shard it falls under.
+|===
+
+[[CollectionsAPI-Output.12]]
+=== Output
+
+The response will include the status of the request and the status of the cluster.
+
+[[CollectionsAPI-Examples.15]]
+=== Examples
+
+*Input*
+
+[source,text]
+----
+http://localhost:8983/solr/admin/collections?action=clusterstatus&wt=json
+----
+
+*Output*
+
+[source,json]
+----
+{
+  "responseHeader":{
+    "status":0,
+    "QTime":333},
+  "cluster":{
+    "collections":{
+      "collection1":{
+        "shards":{
+          "shard1":{
+            "range":"80000000-ffffffff",
+            "state":"active",
+            "replicas":{
+              "core_node1":{
+                "state":"active",
+                "core":"collection1",
+                "node_name":"127.0.1.1:8983_solr",
+                "base_url":"http://127.0.1.1:8983/solr",
+                "leader":"true"},
+              "core_node3":{
+                "state":"active",
+                "core":"collection1",
+                "node_name":"127.0.1.1:8900_solr",
+                "base_url":"http://127.0.1.1:8900/solr"}}},
+          "shard2":{
+            "range":"0-7fffffff",
+            "state":"active",
+            "replicas":{
+              "core_node2":{
+                "state":"active",
+                "core":"collection1",
+                "node_name":"127.0.1.1:7574_solr",
+                "base_url":"http://127.0.1.1:7574/solr",
+                "leader":"true"},
+              "core_node4":{
+                "state":"active",
+                "core":"collection1",
+                "node_name":"127.0.1.1:7500_solr",
+                "base_url":"http://127.0.1.1:7500/solr"}}}},
+        "maxShardsPerNode":"1",
+        "router":{"name":"compositeId"},
+        "replicationFactor":"1",
+        "znodeVersion": 11,
+        "autoCreated":"true",
+        "configName" : "my_config",
+        "aliases":["both_collections"]
+      },
+      "collection2":{
+        "..."
+      }
+    },
+    "aliases":{ "both_collections":"collection1,collection2" },
+    "roles":{
+      "overseer":[
+        "127.0.1.1:8983_solr",
+        "127.0.1.1:7574_solr"]
+    },
+    "live_nodes":[
+      "127.0.1.1:7574_solr",
+      "127.0.1.1:7500_solr",
+      "127.0.1.1:8983_solr",
+      "127.0.1.1:8900_solr"]
+  }
+}
+----
+
+[[CollectionsAPI-requeststatus]]
+== REQUESTSTATUS: Request Status of an Async Call
+
+Request the status and response of an already submitted <<CollectionsAPI-async,Asynchronous Collection API>> (below) call. This call is also used to clear up the stored statuses.
+
+`/admin/collections?action=REQUESTSTATUS&requestid=_request-id_`
+
+[[CollectionsAPI-Input.15]]
+=== Input
+
+*Query Parameters*
+
+// TODO: Change column width to %autowidth.spread when https://github.com/asciidoctor/asciidoctor-pdf/issues/599 is fixed
+
+[cols="20,15,10,55",options="header"]
+|===
+|Key |Type |Required |Description
+|requestid |string |Yes |The user defined request-id for the request. This can be used to track the status of the submitted asynchronous task.
+|===
+
+[[CollectionsAPI-Examples.16]]
+=== Examples
+
+*Input: Valid Request Status*
+
+[source,text]
+----
+http://localhost:8983/solr/admin/collections?action=REQUESTSTATUS&requestid=1000
+----
+
+*Output*
+
+[source,xml]
+----
+<response>
+  <lst name="responseHeader">
+    <int name="status">0</int>
+    <int name="QTime">1</int>
+  </lst>
+  <lst name="status">
+    <str name="state">completed</str>
+    <str name="msg">found 1000 in completed tasks</str>
+  </lst>
+</response>
+----
+
+*Input: Invalid RequestId*
+
+[source,text]
+----
+http://localhost:8983/solr/admin/collections?action=REQUESTSTATUS&requestid=1004
+----
+
+*Output*
+
+[source,xml]
+----
+<response>
+  <lst name="responseHeader">
+    <int name="status">0</int>
+    <int name="QTime">1</int>
+  </lst>
+  <lst name="status">
+    <str name="state">notfound</str>
+    <str name="msg">Did not find taskid [1004] in any tasks queue</str>
+  </lst>
+</response>
+----
+
+[[CollectionsAPI-deletestatus]]
+== DELETESTATUS: Delete Status
+
+Delete the stored response of an already failed or completed <<CollectionsAPI-async,Asynchronous Collection API>> call.
+
+`/admin/collections?action=DELETESTATUS&requestid=_request-id_`
+
+[[CollectionsAPI-Input.16]]
+=== Input
+
+*Query Parameters*
+
+// TODO: Change column width to %autowidth.spread when https://github.com/asciidoctor/asciidoctor-pdf/issues/599 is fixed
+
+[cols="20,15,10,55",options="header"]
+|===
+|Key |Type |Required |Description
+|requestid |string |No |The request-id of the async call we need to clear the stored response for.
+|flush |boolean |No |Set to true to clear all stored completed and failed async request responses.
+|===
+
+[[CollectionsAPI-Examples.17]]
+=== Examples
+
+*Input: Valid Request Status*
+
+[source,text]
+----
+http://localhost:8983/solr/admin/collections?action=DELETESTATUS&requestid=foo
+----
+
+*Output*
+
+[source,xml]
+----
+<response>
+  <lst name="responseHeader">
+    <int name="status">0</int>
+    <int name="QTime">1</int>
+  </lst>
+  <str name="status">successfully removed stored response for [foo]</str>
+</response>
+----
+
+*Input: Invalid RequestId*
+
+[source,text]
+----
+http://localhost:8983/solr/admin/collections?action=DELETESTATUS&requestid=bar
+----
+
+*Output*
+
+[source,xml]
+----
+<response>
+  <lst name="responseHeader">
+    <int name="status">0</int>
+    <int name="QTime">1</int>
+  </lst>
+  <str name="status">[bar] not found in stored responses</str>
+</response>
+----
+
+*Input: Clear all the stored statuses*
+
+[source
+----
+http://localhost:8983/solr/admin/collections?action=DELETESTATUS&flush=true
+----
+
+*Output*
+
+[source,xml]
+----
+<response>
+  <lst name="responseHeader">
+    <int name="status">0</int>
+    <int name="QTime">1</int>
+  </lst>
+  <str name="status"> successfully cleared stored collection api responses </str>
+</response>
+----
+
+[[CollectionsAPI-list]]
+== LIST: List Collections
+
+Fetch the names of the collections in the cluster.
+
+`/admin/collections?action=LIST`
+
+[[CollectionsAPI-Example]]
+=== Example
+
+*Input*
+
+[source,text]
+----
+http://localhost:8983/solr/admin/collections?action=LIST&wt=json
+----
+
+*Output*
+
+[source,json]
+----
+{
+  "responseHeader":{
+    "status":0,
+    "QTime":2011},
+  "collections":["collection1",
+    "example1",
+    "example2"]}
+----
+
+[[CollectionsAPI-addreplicaprop]]
+== ADDREPLICAPROP: Add Replica Property
+
+Assign an arbitrary property to a particular replica and give it the value specified. If the property already exists, it will be overwritten with the new value.
+
+`/admin/collections?action=ADDREPLICAPROP&collection=collectionName&shard=shardName&replica=replicaName&property=propertyName&property.value=value`
+
+[[CollectionsAPI-Input.17]]
+=== Input
+
+*Query Parameters*
+
+// TODO: Change column width to %autowidth.spread when https://github.com/asciidoctor/asciidoctor-pdf/issues/599 is fixed
+
+[cols="20,15,10,55",options="header"]
+|===
+|Key |Type |Required |Description
+|collection |string |Yes |The name of the collection this replica belongs to.
+|shard |string |Yes |The name of the shard the replica belongs to.
+|replica |string |Yes |The replica, e.g. core_node1.
+|property |string |Yes a|
+The property to add. Note: this will have the literal 'property.' prepended to distinguish it from system-maintained properties. So these two forms are equivalent:
+
+`property=special`
+
+and
+
+`property=property.special`
+
+There is one pre-defined property "preferredLeader" for which shardUnique is forced to 'true' and an error returned if shardUnique is explicitly set to 'false'. PreferredLeader is a boolean property, any value assigned that is not equal (case insensitive) to 'true' will be interpreted as 'false' for preferredLeader.
+|property.value |string |Yes |The value to assign to the property.
+|shardUnique (1) |Boolean |No |default: false. If true, then setting this property in one replica will remove the property from all other replicas in that shard.
+|===
+
+[[CollectionsAPI-Output.13]]
+=== Output
+
+The response will include the status of the request. If the status is anything other than "0", an error message will explain why the request failed.
+
+[[CollectionsAPI-Examples.18]]
+=== Examples
+
+*Input*
+
+This command would set the preferredLeader (`property.preferredLeader`) to true on core_node1, and remove that property from any other replica in the shard.
+
+[source,text]
+----
+http://localhost:8983/solr/admin/collections?action=ADDREPLICAPROP&shard=shard1&collection=collection1&replica=core_node1&property=preferredLeader&property.value=true
+----
+
+*Output*
+
+[source,xml]
+----
+<response>
+  <lst name="responseHeader">
+    <int name="status">0</int>
+    <int name="QTime">46</int>
+  </lst>
+</response>
+----
+
+*Input*
+
+This pair of commands will set the "testprop" (`property.testprop`) to 'value1' and 'value2' respectively for two nodes in the same shard.
+
+[source,text]
+----
+http://localhost:8983/solr/admin/collections?action=ADDREPLICAPROP&shard=shard1&collection=collection1&replica=core_node1&property=testprop&property.value=value1
+
+http://localhost:8983/solr/admin/collections?action=ADDREPLICAPROP&shard=shard1&collection=collection1&replica=core_node3&property=property.testprop&property.value=value2
+----
+
+*Input*
+
+This pair of commands would result in core_node_3 having the testprop (`property.testprop`) value set because the second command specifies `shardUnique=true`, which would cause the property to be removed from core_node_1.
+
+[source,text]
+----
+http://localhost:8983/solr/admin/collections?action=ADDREPLICAPROP&shard=shard1&collection=collection1&replica=core_node1&property=testprop&property.value=value1
+
+http://localhost:8983/solr/admin/collections?action=ADDREPLICAPROP&shard=shard1&collection=collection1&replica=core_node3&property=testprop&property.value=value2&shardUnique=true
+----
+
+[[CollectionsAPI-deletereplicaprop]]
+== DELETEREPLICAPROP: Delete Replica Property
+
+Deletes an arbitrary property from a particular replica.
+
+`/admin/collections?action=DELETEREPLICAPROP&collection=collectionName&shard=_shardName_&replica=_replicaName_&property=_propertyName_`
+
+[[CollectionsAPI-Input.18]]
+=== Input
+
+*Query Parameters*
+
+// TODO: Change column width to %autowidth.spread when https://github.com/asciidoctor/asciidoctor-pdf/issues/599 is fixed
+
+[cols="20,15,10,55",options="header"]
+|===
+|Key |Type |Required |Description
+|collection |string |Yes |The name of the collection this replica belongs to
+|shard |string |Yes |The name of the shard the replica belongs to.
+|replica |string |Yes |The replica, e.g. core_node1.
+|property |string |Yes a|
+The property to add. Note: this will have the literal 'property.' prepended to distinguish it from system-maintained properties. So these two forms are equivalent:
+
+`property=special`
+
+and
+
+`property=property.special`
+
+|===
+
+[[CollectionsAPI-Output.14]]
+=== Output
+
+The response will include the status of the request. If the status is anything other than "0", an error message will explain why the request failed.
+
+[[CollectionsAPI-Examples.19]]
+=== Examples
+
+*Input*
+
+This command would delete the preferredLeader (`property.preferredLeader`) from core_node1.
+
+[source,text]
+----
+http://localhost:8983/solr/admin/collections?action=DELETEREPLICAPROP&shard=shard1&collection=collection1&replica=core_node1&property=preferredLeader
+----
+
+*Output*
+
+[source,xml]
+----
+<response>
+  <lst name="responseHeader">
+    <int name="status">0</int>
+    <int name="QTime">9</int>
+  </lst>
+</response>
+----
+
+[[CollectionsAPI-balanceshardunique]]
+== BALANCESHARDUNIQUE: Balance a Property Across Nodes
+
+`/admin/collections?action=BALANCESHARDUNIQUE&collection=_collectionName_&property=_propertyName_`
+
+Insures that a particular property is distributed evenly amongst the physical nodes that make up a collection. If the property already exists on a replica, every effort is made to leave it there. If the property is *not* on any replica on a shard, one is chosen and the property is added.
+
+[[CollectionsAPI-Input.19]]
+=== Input
+
+*Query Parameters*
+
+// TODO: Change column width to %autowidth.spread when https://github.com/asciidoctor/asciidoctor-pdf/issues/599 is fixed
+
+[cols="20,15,10,55",options="header"]
+|===
+|Key |Type |Required |Description
+|collection |string |Yes |The name of the collection to balance the property in.
+|property |string |Yes |The property to balance. The literal "property." is prepended to this property if not specified explicitly.
+|onlyactivenodes |boolean |No |Defaults to true. Normally, the property is instantiated on active nodes only. If this parameter is specified as "false", then inactive nodes are also included for distribution.
+|shardUnique |boolean |No |Something of a safety valve. There is one pre-defined property (preferredLeader) that defaults this value to "true". For all other properties that are balanced, this must be set to "true" or an error message is returned.
+|===
+
+[[CollectionsAPI-Output.15]]
+=== Output
+
+The response will include the status of the request. If the status is anything other than "0", an error message will explain why the request failed.
+
+[[CollectionsAPI-Examples.20]]
+=== Examples
+
+*Input*
+
+Either of these commands would put the "preferredLeader" property on one replica in every shard in the "collection1" collection.
+
+[source,text]
+----
+http://localhost:8983/solr/admin/collections?action=BALANCESHARDUNIQUE&collection=collection1&property=preferredLeader
+
+http://localhost:8983/solr/admin/collections?action=BALANCESHARDUNIQUE&collection=collection1&property=property.preferredLeader
+----
+
+*Output*
+
+[source,xml]
+----
+<response>
+  <lst name="responseHeader">
+    <int name="status">0</int>
+    <int name="QTime">9</int>
+  </lst>
+</response>
+----
+
+Examining the clusterstate after issuing this call should show exactly one replica in each shard that has this property.
+
+[[CollectionsAPI-rebalanceleaders]]
+== REBALANCELEADERS: Rebalance Leaders
+
+Reassign leaders in a collection according to the preferredLeader property across active nodes.
+
+`/admin/collections?action=REBALANCELEADERS&collection=collectionName`
+
+Assigns leaders in a collection according to the preferredLeader property on active nodes. This command should be run after the preferredLeader property has been assigned via the BALANCESHARDUNIQUE or ADDREPLICAPROP commands. NOTE: it is not _required_ that all shards in a collection have a preferredLeader property. Rebalancing will only attempt to reassign leadership to those replicas that have the preferredLeader property set to "true" _and_ are not currently the shard leader _and_ are currently active.
+
+[[CollectionsAPI-Input.20]]
+=== Input
+
+*Query Parameters*
+
+// TODO: Change column width to %autowidth.spread when https://github.com/asciidoctor/asciidoctor-pdf/issues/599 is fixed
+
+[cols="20,15,10,55",options="header"]
+|===
+|Key |Type |Required |Description
+|collection |string |Yes |The name of the collection to rebalance preferredLeaders on.
+|maxAtOnce |string |No |The maximum number of reassignments to have queue up at once. Values <=0 are use the default value Integer.MAX_VALUE. When this number is reached, the process waits for one or more leaders to be successfully assigned before adding more to the queue.
+|maxWaitSeconds |string |No |Defaults to 60. This is the timeout value when waiting for leaders to be reassigned. NOTE: if maxAtOnce is less than the number of reassignments that will take place, this is the maximum interval that any _single_ wait for at least one reassignment. For example, if 10 reassignments are to take place and maxAtOnce is 1 and maxWaitSeconds is 60, the upper bound on the time that the command may wait is 10 minutes.
+|===
+
+[[CollectionsAPI-Output.16]]
+=== Output
+
+The response will include the status of the request. If the status is anything other than "0", an error message will explain why the request failed.
+
+[[CollectionsAPI-Examples.21]]
+=== Examples
+
+*Input*
+
+Either of these commands would cause all the active replicas that had the "preferredLeader" property set and were _not_ already the preferred leader to become leaders.
+
+[source,text]
+----
+http://localhost:8983/solr/admin/collections?action=REBALANCELEADERS&collection=collection1
+http://localhost:8983/solr/admin/collections?action=REBALANCELEADERS&collection=collection1&maxAtOnce=5&maxWaitSeconds=30
+----
+
+*Output*
+
+In this example, two replicas in the "alreadyLeaders" section already had the leader assigned to the same node as the preferredLeader property so no action was taken. The replica in the "inactivePreferreds" section had the preferredLeader property set but the node was down and no action was taken. The three nodes in the "successes" section were made leaders because they had the preferredLeader property set but were not leaders and they were active.
+
+[source,xml]
+----
+<response>
+  <lst name="responseHeader">
+    <int name="status">0</int>
+    <int name="QTime">123</int>
+  </lst>
+  <lst name="alreadyLeaders">
+    <lst name="core_node1">
+      <str name="status">success</str>
+      <str name="msg">Already leader</str>
+      <str name="nodeName">192.168.1.167:7400_solr</str>
+    </lst>
+    <lst name="core_node17">
+      <str name="status">success</str>
+      <str name="msg">Already leader</str>
+      <str name="nodeName">192.168.1.167:7600_solr</str>
+    </lst>
+  </lst>
+  <lst name="inactivePreferreds">
+    <lst name="core_node4">
+      <str name="status">skipped</str>
+      <str name="msg">Node is a referredLeader, but it's inactive. Skipping</str>
+      <str name="nodeName">192.168.1.167:7500_solr</str>
+    </lst>
+  </lst>
+  <lst name="successes">
+    <lst name="_collection1_shard3_replica1">
+      <str name="status">success</str>
+      <str name="msg">
+        Assigned 'Collection: 'collection1', Shard: 'shard3', Core: 'collection1_shard3_replica1', BaseUrl:
+        'http://192.168.1.167:8983/solr'' to be leader
+      </str>
+    </lst>
+    <lst name="_collection1_shard5_replica3">
+      <str name="status">success</str>
+      <str name="msg">
+        Assigned 'Collection: 'collection1', Shard: 'shard5', Core: 'collection1_shard5_replica3', BaseUrl:
+        'http://192.168.1.167:7200/solr'' to be leader
+      </str>
+    </lst>
+    <lst name="_collection1_shard4_replica2">
+      <str name="status">success</str>
+      <str name="msg">
+        Assigned 'Collection: 'collection1', Shard: 'shard4', Core: 'collection1_shard4_replica2', BaseUrl:
+        'http://192.168.1.167:7300/solr'' to be leader
+      </str>
+    </lst>
+  </lst>
+</response>
+----
+
+Examining the clusterstate after issuing this call should show that every live node that has the "preferredLeader" property should also have the "leader" property set to _true_.
+
+
+[[CollectionsAPI-FORCELEADER_ForceShardLeader]]
+
+[[CollectionsAPI-forceleader]]
+== FORCELEADER: Force Shard Leader
+
+In the unlikely event of a shard losing its leader, this command can be invoked to force the election of a new leader
+
+`/admin/collections?action=FORCELEADER&collection=<collectionName>&shard=<shardName>`
+
+[[CollectionsAPI-Input.21]]
+=== Input
+
+*Query Parameters*
+
+// TODO: Change column width to %autowidth.spread when https://github.com/asciidoctor/asciidoctor-pdf/issues/599 is fixed
+
+[cols="20,15,10,55",options="header"]
+|===
+|Key |Type |Required |Description
+|collection |string |Yes |The name of the collection
+|shard |string |Yes |The name of the shard
+|===
+
+[IMPORTANT]
+====
+This is an expert level command, and should be invoked only when regular leader election is not working. This may potentially lead to loss of data in the event that the new leader doesn't have certain updates, possibly recent ones, which were acknowledged by the old leader before going down.
+====
+
+[[CollectionsAPI-migratestateformat]]
+== MIGRATESTATEFORMAT: Migrate Cluster State
+
+A expert level utility API to move a collection from shared `clusterstate.json` zookeeper node (created with `stateFormat=1`, the default in all Solr releases prior to 5.0) to the per-collection `state.json` stored in ZooKeeper (created with `stateFormat=2`, the current default) seamlessly without any application down-time.
+
+`/admin/collections?action=MIGRATESTATEFORMAT&collection=<collection_name>`
+
+// TODO: Change column width to %autowidth.spread when https://github.com/asciidoctor/asciidoctor-pdf/issues/599 is fixed
+
+[cols="20,15,10,55",options="header"]
+|===
+|Key |Type |Required |Description
+|collection |string |Yes |The name of the collection to be migrated from `clusterstate.json` to its own `state.json` zookeeper node
+|async |string |No |Request ID to track this action which will be <<CollectionsAPI-async,processed asynchronously>>.
+|===
+
+This API is useful in migrating any collections created prior to Solr 5.0 to the more scalable cluster state format now used by default. If a collection was created in any Solr 5.x version or higher, then executing this command is not necessary.
+
+[[CollectionsAPI-backup]]
+== BACKUP: Backup Collection
+
+Backup Solr collections and it's associated configurations to a shared filesystem - for example a Network File System
+
+`/admin/collections?action=BACKUP&name=myBackupName&collection=myCollectionName&location=/path/to/my/shared/drive`
+
+The backup command will backup Solr indexes and configurations for a specified collection. The backup command takes one copy from each shard for the indexes. For configurations it backs up the configSet that was associated with the collection and metadata.
+
+[[CollectionsAPI-Input.22]]
+=== Input
+
+*Query Parameters*
+
+// TODO: Change column width to %autowidth.spread when https://github.com/asciidoctor/asciidoctor-pdf/issues/599 is fixed
+
+[cols="20,15,10,55",options="header"]
+|===
+|Key |Type |Required |Description
+|collection |string |Yes |The name of the collection that needs to be backed up
+|location |string |No |The location on the shared drive for the backup command to write to. Alternately it can be set as a <<CollectionsAPI-clusterprop,cluster property>>
+|async |string |No |Request ID to track this action which will be <<CollectionsAPI-async,processed asynchronously>>
+|repository |string |No |The name of the repository to be used for the backup. If no repository is specified then the local filesystem repository will be used automatically.
+|===
+
+[[CollectionsAPI-restore]]
+== RESTORE: Restore Collection
+
+Restores Solr indexes and associated configurations.
+
+`/admin/collections?action=RESTORE&name=myBackupName&location=/path/to/my/shared/drive&collection=myRestoredCollectionName`
+
+The restore operation will create a collection with the specified name in the collection parameter. You cannot restore into the same collection the backup was taken from and the target collection should not be present at the time the API is called as Solr will create it for you.
+
+The collection created will be of the same number of shards and replicas as the original collection, preserving routing information, etc. Optionally, you can override some parameters documented below. While restoring, if a configSet with the same name exists in ZooKeeper then Solr will reuse that, or else it will upload the backed up configSet in ZooKeeper and use that.
+
+You can use the collection <<CollectionsAPI-createalias,alias>> API to make sure client's don't need to change the endpoint to query or index against the newly restored collection.
+
+[[CollectionsAPI-Input.23]]
+=== Input
+
+*Query Parameters*
+
+// TODO: Change column width to %autowidth.spread when https://github.com/asciidoctor/asciidoctor-pdf/issues/599 is fixed
+
+[cols="20,15,10,55",options="header"]
+|===
+|Key |Type |Required |Description
+|collection |string |Yes |The collection where the indexes will be restored into.
+|location |string |No |The location on the shared drive for the restore command to read from. Alternately it can be set as a <<CollectionsAPI-clusterprop,cluster property>>.
+|async |string |No |Request ID to track this action which will be <<CollectionsAPI-async,processed asynchronously>>.
+|repository |string |No |The name of the repository to be used for the backup. If no repository is specified then the local filesystem repository will be used automatically.
+|===
+
+Additionally, there are several parameters that can be overridden:
+
+*Override Parameters*
+
+// TODO: Change column width to %autowidth.spread when https://github.com/asciidoctor/asciidoctor-pdf/issues/599 is fixed
+
+[cols="20,15,10,55",options="header"]
+|===
+|Key |Type |Required |Description
+|collection.configName |String |No |Defines the name of the configurations to use for this collection. These must already be stored in ZooKeeper. If not provided, Solr will default to the collection name as the configuration name.
+|replicationFactor |Integer |No |The number of replicas to be created for each shard.
+|maxShardsPerNode |Integer |No |When creating collections, the shards and/or replicas are spread across all available (i.e., live) nodes, and two replicas of the same shard will never be on the same node. If a node is not live when the CREATE operation is called, it will not get any parts of the new collection, which could lead to too many replicas being created on a single live node. Defining `maxShardsPerNode` sets a limit on the number of replicas CREATE will spread to each node. If the entire collection can not be fit into the live nodes, no collection will be created at all.
+|autoAddReplicas |Boolean |No |When set to true, enables auto addition of replicas on shared file systems. See the section <<running-solr-on-hdfs.adoc#RunningSolronHDFS-AutomaticallyAddReplicasinSolrCloud,Automatically Add Replicas in SolrCloud>> for more details on settings and overrides.
+|property._name_=_value_ |String |No |Set core property _name_ to _value_. See the section <<defining-core-properties.adoc#defining-core-properties,Defining core.properties>> for details on supported properties and values.
+|===
+
+[[CollectionsAPI-deletenode]]
+== DELETENODE: Delete Replicas in a Node
+
+Deletes all replicas of all collections in that node. Please note that the node itself will remain as a live node after this operation.
+
+`/admin/collections?action=DELETENODE&node=nodeName`
+
+[[CollectionsAPI-Input.24]]
+=== Input
+
+*Query Parameters*
+
+// TODO: Change column width to %autowidth.spread when https://github.com/asciidoctor/asciidoctor-pdf/issues/599 is fixed
+
+[cols="20,15,10,55",options="header"]
+|===
+|Key |Type |Required |Description
+|node |string |Yes |The node to be cleaned up
+|async |string |No |Request ID to track this action which will be <<CollectionsAPI-async,processed asynchronously>>.
+|===
+
+[[CollectionsAPI-replacenode]]
+== REPLACENODE: Move All Replicas in a Node to Another
+
+This command recreates replicas in the source node to the target node. After each replica is copied, the replicas in the source node are deleted.
+
+`/admin/collections?action=REPLACENODE&source=_source-node_&target=_target-node_`
+
+[[CollectionsAPI-Input.25]]
+=== Input
+
+*Query Parameters*
+
+// TODO: Change column width to %autowidth.spread when https://github.com/asciidoctor/asciidoctor-pdf/issues/599 is fixed
+
+[cols="20,15,10,55",options="header"]
+|===
+|Key |Type |Required |Description
+|source |string |Yes |The source node from which the replicas need to be copied from
+|target |string |Yes |The target node
+|parallel |boolean |No |default=false. if this flag is set to true, all replicas are created inseparatee threads. Keep in mind that this can lead to very high network and disk I/O if the replicas have very large indices.
+|async |string |No |Request ID to track this action which will be <<CollectionsAPI-async,processed asynchronously>>.
+|===
+
+[IMPORTANT]
+====
+This operation does not hold necessary locks on the replicas that belong to on the source node. So don't perform other collection operations in this period.
+====
+
+[[CollectionsAPI-async]]
+== Asynchronous Calls
+
+Since some collection API calls can be long running tasks e.g. Shard Split, you can optionally have the calls run asynchronously. Specifying `async=<request-id>` enables you to make an asynchronous call, the status of which can be requested using the <<CollectionsAPI-requeststatus,REQUESTSTATUS>> call at any time.
+
+As of now, REQUESTSTATUS does not automatically clean up the tracking data structures, meaning the status of completed or failed tasks stays stored in ZooKeeper unless cleared manually. DELETESTATUS can be used to clear the stored statuses. However, there is a limit of 10,000 on the number of async call responses stored in a cluster.
+
+[[CollectionsAPI-Example.1]]
+=== Example
+
+*Input*
+
+[source,text]
+----
+http://localhost:8983/solr/admin/collections?action=SPLITSHARD&collection=collection1&shard=shard1&async=1000
+----
+
+*Output*
+
+[source,xml]
+----
+<response>
+  <lst name="responseHeader">
+    <int name="status">0</int>
+    <int name="QTime">99</int>
+  </lst>
+  <str name="requestid">1000</str>
+</response>
+----

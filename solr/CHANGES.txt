@@ -90,6 +90,8 @@ New Features
 
 * SOLR-10262: Add support for configurable metrics implementations. (ab)
 
+* SOLR-10431: Make it possible to invoke v2 api calls using SolrJ (Cao Manh Dat, Noble Paul, shalin)
+
 Bug Fixes
 ----------------------
 * SOLR-9262: Connection and read timeouts are being ignored by UpdateShardHandler after SOLR-4509.
@@ -335,6 +337,10 @@ Bug Fixes
 * SOLR-10630: HttpSolrCall.getAuthCtx().new AuthorizationContext() {...}.getParams()
   sometimes throws java.lang.NullPointerException (hu xiaodong via shalin)
 
+* SOLR-9527: Improve distribution of replicas when restoring a collection
+  (Hrishikesh Gadre, Stephen Lewis, Rohit, Varun Thacker)
+
+
 Other Changes
 ----------------------
 
@@ -357,6 +363,7 @@ Other Changes
 
 * SOLR-10357: Enable edismax and standard query parsers to handle the option combination 
   sow=false / autoGeneratePhraseQueries="true" by setting QueryBuilder.autoGenerateMultiTermSynonymsQuery.
+  (Steve Rowe)
 
 * SOLR-10147: Admin UI -> Cloud -> Graph: Impossible to see shard state (Amrit Sarkar, janhoy)
 

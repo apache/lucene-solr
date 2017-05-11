@@ -42,6 +42,7 @@ import org.apache.http.HttpStatus;
 import org.apache.http.NameValuePair;
 import org.apache.http.client.HttpClient;
 import org.apache.http.client.entity.UrlEncodedFormEntity;
+import org.apache.http.client.methods.HttpDelete;
 import org.apache.http.client.methods.HttpEntityEnclosingRequestBase;
 import org.apache.http.client.methods.HttpGet;
 import org.apache.http.client.methods.HttpPost;
@@ -65,6 +66,7 @@ import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.request.RequestWriter;
+import org.apache.solr.client.solrj.request.V2Request;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
@@ -373,12 +375,24 @@ public class HttpSolrClient extends SolrClient {
     if (collection != null)
       basePath += "/" + collection;
 
+    if (request instanceof V2Request) {
+      if (System.getProperty("solr.v2RealPath") == null) {
+        basePath = baseUrl.replace("/solr", "/v2");
+      } else {
+        basePath = baseUrl + "/____v2";
+      }
+    }
+
     if (SolrRequest.METHOD.GET == request.getMethod()) {
       if (streams != null) {
         throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "GET can't send streams!");
       }
 
       return new HttpGet(basePath + path + wparams.toQueryString());
+    }
+
+    if (SolrRequest.METHOD.DELETE == request.getMethod()) {
+      return new HttpDelete(basePath + path + wparams.toQueryString());
     }
 
     if (SolrRequest.METHOD.POST == request.getMethod() || SolrRequest.METHOD.PUT == request.getMethod()) {

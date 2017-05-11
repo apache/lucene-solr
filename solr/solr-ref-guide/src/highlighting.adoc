@@ -1,0 +1,293 @@
+= Highlighting
+:page-shortname: highlighting
+:page-permalink: highlighting.html
+
+Highlighting in Solr allows fragments of documents that match the user's query to be included with the query response.
+
+The fragments are included in a special section of the query response (the `highlighting` section), and the client uses the formatting clues also included to determine how to present the snippets to users. Fragments are a portion of a document field that contains matches from the query and are sometimes also referred to as "snippets" or "passages".
+
+Highlighting is extremely configurable, perhaps more than any other part of Solr. There are many parameters each for fragment sizing, formatting, ordering, backup/alternate behavior, and more options that are hard to categorize. Nonetheless, highlighting is very simple to use.
+
+[[Highlighting-Usage]]
+== Usage
+
+You only need to set the `hl` and often `hl.fl` parameters to get results. The following table documents these and some other supported parameters. Note that many highlighting parameters support per-field overrides, such as: `f._title_txt_.hl.snippets`
+
+// TODO: Change column width to %autowidth.spread when https://github.com/asciidoctor/asciidoctor-pdf/issues/599 is fixed
+
+[cols="20,15,65",options="header"]
+|===
+|Parameter |Default |Description
+|hl |false |Use this parameter to enable or disable highlighting.
+|hl.method |original |The highlighting implementation to use. Acceptable values are: `unified`, `original`, `fastVector`, and `postings`. See the <<Highlighting-ChoosingaHighlighter,Choosing a Highlighter>> section below for more details on the differences between the available highlighters.
+|hl.fl |_(df=)_ |Specifies a list of fields to highlight. Accepts a comma- or space-delimited list of fields for which Solr should generate highlighted snippets. A wildcard of `\*` (asterisk) can be used to match field globs, such as `text_*` or even `\*` to highlight on all fields where highlighting is possible. When using `\*`, consider adding `hl.requireFieldMatch=true`.
+|hl.q |_(q=)_ |A query to use for highlighting. This parameter allows you to highlight different terms than those being used to retrieve documents.
+|hl.qparser |_(defType=)_ |The query parser to use for the `hl.q` query.
+|hl.requireFieldMatch |false a|
+By default, *false*, all query terms will be highlighted for each field to be highlighted (`hl.fl`) no matter what fields the parsed query refer to. If set to *true*, only query terms aligning with the field being highlighted will in turn be highlighted.
+
+Note: if the query references fields different from the field being highlighted and they have different text analysis, the query may not highlight query terms it should have and vice versa. The analysis used is that of the field being highlighted (`hl.fl`), not the query fields.
+
+|hl.usePhraseHighlighter |true |If set to *true*, Solr will highlight phrase queries (and other advanced position-sensitive queries) accurately – as phrases. If *false*, the parts of the phrase will be highlighted everywhere instead of only when it forms the given phrase.
+|hl.highlightMultiTerm |true |If set to *true*, Solr will highlight wildcard queries (and other `MultiTermQuery` subclasses). If *false*, they won't be highlighted at all.
+|hl.snippets |1 |Specifies maximum number of highlighted snippets to generate per field. It is possible for any number of snippets from zero to this value to be generated.
+|hl.fragsize |100 |Specifies the approximate size, in characters, of fragments to consider for highlighting. *0* indicates that no fragmenting should be considered and the whole field value should be used.
+|hl.tag.pre |<em> |(`hl.simple.pre` for the Original Highlighter) Specifies the “tag” to use before a highlighted term. This can be any string, but is most often an HTML or XML tag.
+|hl.tag.post |</em> |(`hl.simple.post` for the Original Highlighter) Specifies the “tag” to use after a highlighted term. This can be any string, but is most often an HTML or XML tag.
+|hl.encoder |_(blank)_ |If blank, the default, then the stored text will be returned without any escaping/encoding performed by the highlighter. If set to *html* then special HMTL/XML characters will be encoded (e.g. `&` becomes `\&amp;`). The pre/post snippet characters are never encoded.
+|hl.maxAnalyzedChars |51200 |The character limit to look for highlights, after which no highlighting will be done. This is mostly only a performance concern for an _analysis_ based offset source since it's the slowest. See <<Schema Options and Performance Considerations>>.
+|===
+
+There are more parameters supported as well depending on the highlighter (via `hl.method`) chosen.
+
+[[Highlighting-HighlightingintheQueryResponse]]
+=== Highlighting in the Query Response
+
+In the response to a query, Solr includes highlighting data in a section separate from the documents. It is up to a client to determine how to process this response and display the highlights to users.
+
+Using the example documents included with Solr, we can see how this might work:
+
+In response to a query such as:
+
+[source,text]
+http://localhost:8983/solr/gettingstarted/select?hl=on&q=apple&wt=json&hl.fl=manu&fl=id,name,manu,cat
+
+we get a response such as this (truncated slightly for space):
+
+[source,json]
+----
+{
+    "responseHeader": {
+        "..."
+        }
+    },
+    "response": {
+        "numFound": 1,
+        "start": 0,
+        "docs": [{
+            "id": "MA147LL/A",
+            "name": "Apple 60 GB iPod with Video Playback Black",
+            "manu": "Apple Computer Inc.",
+            "cat": [
+                "electronics",
+                "music"
+            ]
+        }]
+    },
+    "highlighting": {
+        "MA147LL/A": {
+            "manu": [
+                "<em>Apple</em> Computer Inc."
+            ]
+        }
+    }
+}
+----
+
+Note the two sections `docs` and `highlighting`. The `docs` section contains the fields of the document requested with the `fl` parameter of the query (only "id", "name", "manu", and "cat").
+
+The `highlighting` section includes the ID of each document, and the field that contains the highlighted portion. In this example, we used the `hl.fl` parameter to say we wanted query terms highlighted in the "manu" field. When there is a match to the query term in that field, it will be included for each document ID in the list.
+
+[[Highlighting-ChoosingaHighlighter]]
+== Choosing a Highlighter
+
+Solr provides a `HighlightComponent` (a `SearchComponent`) and it's in the default list of components for search handlers. It offers a somewhat unified API over multiple actual highlighting implementations (or simply "highlighters") that do the business of highlighting.
+
+There are many parameters supported by more than one highlighter, and sometimes the implementation details and semantics will be a bit different, so don't expect identical results when switching highlighters. You should use the `hl.method` parameter to choose a highlighter but it's also possible to explicitly configure an implementation by class name in `solrconfig.xml`.
+
+There are four highlighters available that can be chosen at runtime with the `hl.method` parameter, in order of general recommendation:
+
+<<The Unified Highlighter,Unified Highlighter>>:: (`hl.method=unified`)
++
+The Unified Highlighter is the newest highlighter (as of Solr 6.4), which stands out as the most flexible and performant of the options. We recommend that you try this highlighter even though it isn't the default (yet).
++
+This highlighter supports the most common highlighting parameters and can handle just about any query accurately, even SpanQueries (e.g. as seen from the `surround` parser). A strong benefit to this highlighter is that you can opt to configure Solr to put more information in the underlying index to speed up highlighting of large documents; multiple configurations are supported, even on a per-field basis. There is little or no such flexibility for the other highlighters. More on this below.
+
+<<The Original Highlighter,Original Highlighter>>:: (`hl.method=original`, the default)
++
+The Original Highlighter, sometimes called the "Standard Highlighter" or "Default Highlighter", is Lucene's original highlighter – a venerable option with a high degree of customization options. Its ability to highlight just about any query accurately is a strength shared with the Unified Highlighter (they share some code for this in fact).
++
+The Original Highlighter will normally analyze stored text on the fly in order to highlight. It will use full term vectors if available, however in this mode it isn't as fast as the Unified Highlighter or FastVector Highlighter.
++
+This highlighter is a good choice for a wide variety of search use-cases. Where it falls short is performance; it's often twice as slow as the Unified Highlighter. And despite being the most customizable, it doesn't have a BreakIterator based fragmenter (all the others do), which could pose a challenge for some languages.
+
+<<The FastVector Highlighter,FastVector Highlighter>>:: (`hl.method=fastVector`)
++
+The FastVector Highlighter _requires_ full term vector options (`termVectors`, `termPositions`, and `termOffsets`) on the field, and is optimized with that in mind. It is nearly as configurable as the Original Highlighter with some variability.
++
+This highlighter notably supports multi-colored highlighting such that different query words can be denoted in the fragment with different marking, usually expressed as an HTML tag with a unique color.
++
+This highlighter's query-representation is less advanced than the Original or Unified Highlighters: for example it will not work well with the `surround` parser, and there are multiple reported bugs pertaining to queries with stop-words.
++
+Note that both the FastVector and Original Highlighters can be used in conjunction in a search request to highlight some fields with one and some the other. In contrast, the other highlighters can only be chosen exclusively.
+
+<<Highlighting-ThePostingsHighlighter,Postings Highlighter>>:: (`hl.method=postings`)
++
+The Postings Highlighter is the ancestor of the Unified Highlighter, supporting a subset of its options and none of its index configuration flexibility - it _requires_ `storeOffsetsWithPositions` on all fields to highlight. This option is here for backwards compatibility; if you find you need it, please share your experience with the Solr community.
+
+The Unified Highlighter and Postings Highlighter from which it derives, are exclusively configured via search parameters. In contrast, some settings for the Original and FastVector Highlighters are set in `solrconfig.xml`. There's a robust example of the latter in the "```techproducts```" configset.
+
+In addition to further information below, more information can be found in the {solr-javadocs}/solr-core/org/apache/solr/highlight/package-summary.html[Solr javadocs].
+
+[[Highlighting-SchemaOptionsandPerformanceConsiderations]]
+=== Schema Options and Performance Considerations
+
+Fundamental to the internals of highlighting are detecting the _offsets_ of the individual words that match the query. Some of the highlighters can run the stored text through the analysis chain defined in the schema, some can look them up from _postings_, and some can look them up from _term vectors._ These choices have different trade-offs:
+
+* *Analysis*: Supported by the Unified and Original Highlighters. If you don't go out of your way to configure the other options below, the highlighter will analyze the stored text on the fly (during highlighting) to calculate offsets.
++
+The benefit of this approach is that your index won't grow larger with any extra data that isn't strictly necessary for highlighting.
++
+The down side is that highlighting speed is roughly linear with the amount of text to process, with a large factor being the complexity of your analysis chain.
++
+For "short" text, this is a good choice. Or maybe it's not short but you're prioritizing a smaller index and indexing speed over highlighting performance.
+* *Postings*: Supported by the Unified and Postings Highlighters. Set `storeOffsetsWithPositions` to `true`. This adds a moderate amount of extra data to the index but it speeds up highlighting tremendously, especially compared to analysis with longer text fields.
++
+However, wildcard queries will fall back to analysis unless "light" term vectors are added.
+
+** *with Term Vectors (light)*: Supported only by the Unified Highlighter. To enable this mode set `termVectors` to `true` but no other term vector related options on the field being highlighted.
++
+This adds even more data to the index than just `storeOffsetsWithPositions` but not as much as enabling all the extra term vector options. Term Vectors are only accessed by the highlighter when a wildcard query is used and will prevent a fall back to analysis of the stored text.
++
+This is definitely the fastest option for highlighting wildcard queries on large text fields.
+* *Term Vectors (full)*: Supported by the Unified, FastVector, and Original Highlighters. Set `termVectors`, `termPositions`, and `termOffsets` to `true`, and potentially `termPayloads` for advanced use cases.
++
+This adds substantial weight to the index – similar in size to the compressed stored text. If you are using the Unified Highlighter then this is not a recommended configuration since it's slower and heavier than postings with light term vectors. However, this could make sense if full term vectors are already needed for another use-case.
+
+[[Highlighting-TheUnifiedHighlighter]]
+== The Unified Highlighter
+
+The Unified Highlighter supports these following additional parameters to the ones listed earlier:
+
+// TODO: Change column width to %autowidth.spread when https://github.com/asciidoctor/asciidoctor-pdf/issues/599 is fixed
+
+[cols="20,15,65",options="header"]
+|===
+|Parameter |Default |Description
+|hl.offsetSource |_(blank)_ |By default, the Unified Highlighter will usually pick the right offset source (see above). However it may be ambiguous such as during a migration from one offset source to another that hasn't completed. The offset source can be explicitly configured to one of: *ANALYSIS,* *POSTINGS*, *POSTINGS_WITH_TERM_VECTORS*, *TERM_VECTORS*
+|hl.tag.ellipsis |_(blank)_ |By default, each snippet is returned as a separate value (as is done with the other highlighters). Set this parameter to instead return one string with this text as the delimiter. _Note: this is likely to be removed in the future._
+|hl.defaultSummary |false |If *true*, use the leading portion of the text as a snippet if a proper highlighted snippet can't otherwise be generated.
+|hl.score.k1 |1.2 |Specifies BM25 term frequency normalization parameter 'k1'. For example, it can be set to "0" to rank passages solely based on the number of query terms that match.
+|hl.score.b |0.75 |Specifies BM25 length normalization parameter 'b'. For example, it can be set to "0" to ignore the length of passages entirely when ranking.
+|hl.score.pivot |87 |Specifies BM25 average passage length in characters.
+|hl.bs.language |_(blank)_ |Specifies the breakiterator language for dividing the document into passages.
+|hl.bs.country |_(blank)_ |Specifies the breakiterator country for dividing the document into passages.
+|hl.bs.variant |_(blank)_ |Specifies the breakiterator variant for dividing the document into passages.
+|hl.bs.type |SENTENCE |Specifies the breakiterator type for dividing the document into passages. Can be *SEPARATOR*, *SENTENCE*, *WORD*, *CHARACTER*, *LINE*, or *WHOLE*. SEPARATOR is special value that splits text on a user-provided character in `hl.bs.separator`.
+|hl.bs.separator |_(blank)_ |Indicates which character to break the text on. Requires `hl.bs.type=SEPARATOR`. This is useful when the text has already been manipulated in advance to have a special delineation character at desired highlight passage boundaries. This character will still appear in the text as the last character of a passage.
+|===
+
+[[Highlighting-ThePostingsHighlighter]]
+=== The Postings Highlighter
+
+The Postings Highlighter is the ancestor of the Unified Highlighter, supporting a subset of it's options and sometimes with different default settings for some common parameters.
+
+Viewed from the perspective of the Unified Highlighter, these settings are effectively non-settings and fixed as-such:
+
+* `hl.offsetSource=POSTINGS`
+* `hl.requireFieldMatch=true`
+* `hl.usePhraseHighlighter=false`
+* `hl.fragsize=-1` (none).
+
+It has these different default settings:
+
+* `hl.defaultSummary=true`
+* `hl.tag.ellipsis="... "`.
+
+In addition, it has a setting `hl.multiValuedSeparatorChar=" "` (space).
+
+This highlighter never returns separate snippets as separate values; they are always joined by `hl.tag.ellipsis`.
+
+[[Highlighting-TheOriginalHighlighter]]
+== The Original Highlighter
+
+The Original Highlighter supports these following additional parameters to the ones listed earlier:
+
+// TODO: Change column width to %autowidth.spread when https://github.com/asciidoctor/asciidoctor-pdf/issues/599 is fixed
+
+[cols="25,15,60",options="header"]
+|===
+|Parameter |Default |Description
+|hl.mergeContiguous |false |Instructs Solr to collapse contiguous fragments into a single fragment. A value of *true* indicates contiguous fragments will be collapsed into single fragment. The default value, *false*, is also the backward-compatible setting.
+|hl.maxMultiValuedToExamine |`Integer.MAX_VALUE` |Specifies the maximum number of entries in a multi-valued field to examine before stopping. This can potentially return zero results if the limit is reached before any matches are found. If used with the `maxMultiValuedToMatch`, whichever limit is reached first will determine when to stop looking.
+|hl.maxMultiValuedToMatch |`Integer.MAX_VALUE` |Specifies the maximum number of matches in a multi-valued field that are found before stopping. If `hl.maxMultiValuedToExamine` is also defined, whichever limit is reached first will determine when to stop looking.
+|hl.alternateField |_(blank)_ |Specifies a field to be used as a backup default summary if Solr cannot generate a snippet (i.e., because no terms match).
+|hl.maxAlternateFieldLength |_(unlimited)_ |Specifies the maximum number of characters of the field to return. Any value less than or equal to 0 means the field's length is unlimited. This parameter is only used in conjunction with the `hl.alternateField` parameter.
+|hl.highlightAlternate |true |If set to *true*, and `hl.alternateFieldName` is active, Solr will show the entire alternate field, with highlighting of occurrences. If `hl.maxAlternateFieldLength=N` is used, Solr returns max `N` characters surrounding the best matching fragment. If set to *false*, or if there is no match in the alternate field either, the alternate field will be shown without highlighting.
+|hl.formatter |simple |Selects a formatter for the highlighted output. Currently the only legal value is *simple*, which surrounds a highlighted term with a customizable pre- and post-text snippet.
+|hl.simple.prehl.simple.post |<em> and </em> |Specifies the text that should appear before (`hl.simple.pre`) and after (`hl.simple.post`) a highlighted term, when using the simple formatter.
+|hl.fragmenter |gap |Specifies a text snippet generator for highlighted text. The standard fragmenter is *gap*, which creates fixed-sized fragments with gaps for multi-valued fields. Another option is *regex*, which tries to create fragments that resemble a specified regular expression.
+|hl.regex.slop |0.6 |When using the regex fragmenter (`hl.fragmenter=regex`), this parameter defines the factor by which the fragmenter can stray from the ideal fragment size (given by `hl.fragsize`) to accommodate a regular expression. For instance, a slop of 0.2 with `hl.fragsize=100` should yield fragments between 80 and 120 characters in length. It is usually good to provide a slightly smaller `hl.fragsize` value when using the regex fragmenter.
+|hl.regex.pattern |_(blank)_ |Specifies the regular expression for fragmenting. This could be used to extract sentences.
+|hl.regex.maxAnalyzedChars |10000 |Instructs Solr to analyze only this many characters from a field when using the regex fragmenter (after which, the fragmenter produces fixed-sized fragments). Applying a complicated regex to a huge field is computationally expensive.
+|hl.preserveMulti |false |If *true*, multi-valued fields will return all values in the order they were saved in the index. If *false*, only values that match the highlight request will be returned.
+|hl.payloads |_(automatic)_ |When `hl.usePhraseHighlighter` is true and the indexed field has payloads but not term vectors (generally quite rare), the index's payloads will be read into the highlighter's memory index along with the postings. If this may happen and you know you don't need them for highlighting (i.e. your queries don't filter by payload) then you can save a little memory by setting this to false.
+|===
+
+The Original Highlighter has a plugin architecture that enables new functionality to be registered in `solrconfig.xml`. The "```techproducts```" configset shows most of these settings explicitly. You can use it as a guide to provide your own components to include a `SolrFormatter`, `SolrEncoder`, and `SolrFragmenter.`
+
+[[Highlighting-TheFastVectorHighlighter]]
+== The FastVector Highlighter
+
+The FastVector Highlighter (FVH) can be used in conjunction with the Original Highlighter if not all fields should be highlighted with the FVH. In such a mode, set `hl.method=original` and `f.yourTermVecField.hl.method=fastVector` for all fields that should use the FVH. One annoyance to keep in mind is that the Original Highlighter uses `hl.simple.pre` whereas the FVH (and other highlighters) use `hl.tag.pre`.
+
+In addition to the initial listed parameters, the following parameters documented for the Original Highlighter above are also supported by the FVH:
+
+* `hl.alternateField`
+* `hl.maxAlternateFieldLength`
+* `hl.highlightAlternate`
+
+And here are additional parameters supported by the FVH:
+
+// TODO: Change column width to %autowidth.spread when https://github.com/asciidoctor/asciidoctor-pdf/issues/599 is fixed
+
+[cols="20,15,65",options="header"]
+|===
+|Parameter |Default |Description
+|hl.fragListBuilder |weighted |The snippet fragmenting algorithm. The *weighted* fragListBuilder uses IDF-weights to order fragments. Other options are *single*, which returns the entire field contents as one snippet, or *simple*. You can select a fragListBuilder with this parameter, or modify an existing implementation in `solrconfig.xml` to be the default by adding "default=true".
+|hl.fragmentsBuilder |default |The fragments builder is responsible for formatting the fragments, which uses <em> and </em> markup (if `hl.tag.pre` and `hl.tag.post` are not defined). Another pre-configured choice is *colored*, which is an example of how to use the fragments builder to insert HTML into the snippets for colored highlights if you choose. You can also implement your own if you'd like. You can select a fragments builder with this parameter, or modify an existing implementation in `solrconfig.xml` to be the default by adding "default=true".
+|hl.boundaryScanner | |See <<Using Boundary Scanners with the FastVector Highlighter>> below.
+|hl.bs.* | |See <<Using Boundary Scanners with the FastVector Highlighter>> below.
+|hl.phraseLimit |5000 |The maximum number of phrases to analyze when searching for the highest-scoring phrase.
+|hl.multiValuedSeparatorChar |" " _(space)_ |Text to use to separate one value from the next for a multi-valued field.
+|===
+
+[[Highlighting-UsingBoundaryScannerswiththeFastVectorHighlighter]]
+=== Using Boundary Scanners with the FastVector Highlighter
+
+The FastVector Highlighter will occasionally truncate highlighted words. To prevent this, implement a boundary scanner in `solrconfig.xml`, then use the `hl.boundaryScanner` parameter to specify the boundary scanner for highlighting.
+
+Solr supports two boundary scanners: `breakIterator` and `simple`.
+
+[[Highlighting-ThebreakIteratorBoundaryScanner]]
+==== The `breakIterator` Boundary Scanner
+
+The `breakIterator` boundary scanner offers excellent performance right out of the box by taking locale and boundary type into account. In most cases you will want to use the `breakIterator` boundary scanner. To implement the `breakIterator` boundary scanner, add this code to the `highlighting` section of your `solrconfig.xml` file, adjusting the type, language, and country values as appropriate to your application:
+
+[source,xml]
+----
+<boundaryScanner name="breakIterator" class="solr.highlight.BreakIteratorBoundaryScanner">
+   <lst name="defaults">
+     <str name="hl.bs.type">WORD</str>
+     <str name="hl.bs.language">en</str>
+     <str name="hl.bs.country">US</str>
+   </lst>
+</boundaryScanner>
+----
+
+Possible values for the `hl.bs.type` parameter are WORD, LINE, SENTENCE, and CHARACTER.
+
+[[Highlighting-ThesimpleBoundaryScanner]]
+==== The `simple` Boundary Scanner
+
+The `simple` boundary scanner scans term boundaries for a specified maximum character value (`hl.bs.maxScan`) and for common delimiters such as punctuation marks (`hl.bs.chars`). The `simple` boundary scanner may be useful for some custom To implement the `simple` boundary scanner, add this code to the `highlighting` section of your `solrconfig.xml` file, adjusting the values as appropriate to your application:
+
+[source,xml]
+----
+<boundaryScanner name="simple" class="solr.highlight.SimpleBoundaryScanner" default="true">
+   <lst name="defaults">
+     <str name="hl.bs.maxScan">10</str >
+     <str name="hl.bs.chars">.,!?\t\n</str >
+   </lst >
+</boundaryScanner>
+----

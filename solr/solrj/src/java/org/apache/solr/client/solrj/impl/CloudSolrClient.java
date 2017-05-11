@@ -53,6 +53,7 @@ import org.apache.solr.client.solrj.request.AbstractUpdateRequest;
 import org.apache.solr.client.solrj.request.IsUpdateRequest;
 import org.apache.solr.client.solrj.request.RequestWriter;
 import org.apache.solr.client.solrj.request.UpdateRequest;
+import org.apache.solr.client.solrj.request.V2Request;
 import org.apache.solr.client.solrj.util.ClientUtils;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
@@ -1089,8 +1090,12 @@ public class CloudSolrClient extends SolrClient {
     // collections is stale and needs to be refreshed ... this code has no impact on internal collections
     String stateVerParam = null;
     List<DocCollection> requestedCollections = null;
+    boolean isCollectionRequestOfV2 = false;
+    if (request instanceof V2Request) {
+      isCollectionRequestOfV2 = ((V2Request) request).isPerCollectionRequest();
+    }
     boolean isAdmin = ADMIN_PATHS.contains(request.getPath());
-    if (collection != null &&  !isAdmin) { // don't do _stateVer_ checking for admin requests
+    if (collection != null &&  !isAdmin && !isCollectionRequestOfV2) { // don't do _stateVer_ checking for admin, v2 api requests
       Set<String> requestedCollectionNames = getCollectionNames(collection);
 
       StringBuilder stateVerParamBuilder = null;
@@ -1147,8 +1152,10 @@ public class CloudSolrClient extends SolrClient {
     } catch (Exception exc) {
 
       Throwable rootCause = SolrException.getRootCause(exc);
-      // don't do retry support for admin requests or if the request doesn't have a collection specified
-      if (collection == null || isAdmin) {
+      // don't do retry support for admin requests
+      // or if the request doesn't have a collection specified
+      // or request is v2 api and its method is not GET
+      if (collection == null || isAdmin || (request instanceof V2Request && request.getMethod() != SolrRequest.METHOD.GET)) {
         if (exc instanceof SolrServerException) {
           throw (SolrServerException)exc;
         } else if (exc instanceof IOException) {
@@ -1274,7 +1281,15 @@ public class CloudSolrClient extends SolrClient {
       reqParams = new ModifiableSolrParams();
     }
     List<String> theUrlList = new ArrayList<>();
-    if (ADMIN_PATHS.contains(request.getPath())) {
+    if (request instanceof V2Request) {
+      Set<String> liveNodes = stateProvider.liveNodes();
+      if (!liveNodes.isEmpty()) {
+        List<String> liveNodesList = new ArrayList<>(liveNodes);
+        Collections.shuffle(liveNodesList, rand);
+        theUrlList.add(ZkStateReader.getBaseUrlForNodeName(liveNodesList.get(0),
+            (String) stateProvider.getClusterProperty(ZkStateReader.URL_SCHEME,"http")));
+      }
+    } else if (ADMIN_PATHS.contains(request.getPath())) {
       Set<String> liveNodes = stateProvider.liveNodes();
       for (String liveNode : liveNodes) {
         theUrlList.add(ZkStateReader.getBaseUrlForNodeName(liveNode,

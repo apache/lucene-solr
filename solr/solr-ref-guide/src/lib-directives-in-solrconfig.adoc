@@ -1,0 +1,24 @@
+= Lib Directives in SolrConfig
+:page-shortname: lib-directives-in-solrconfig
+:page-permalink: lib-directives-in-solrconfig.html
+
+Solr allows loading plugins by defining `<lib/>` directives in `solrconfig.xml`.
+
+The plugins are loaded in the order they appear in `solrconfig.xml`. If there are dependencies, list the lowest level dependency jar first.
+
+Regular expressions can be used to provide control loading jars with dependencies on other jars in the same directory. All directories are resolved as relative to the Solr `instanceDir`.
+
+[source,xml]
+----
+<lib dir="../../../contrib/extraction/lib" regex=".*\.jar" />
+<lib dir="../../../dist/" regex="solr-cell-\d.*\.jar" />
+
+<lib dir="../../../contrib/clustering/lib/" regex=".*\.jar" />
+<lib dir="../../../dist/" regex="solr-clustering-\d.*\.jar" />
+
+<lib dir="../../../contrib/langid/lib/" regex=".*\.jar" />
+<lib dir="../../../dist/" regex="solr-langid-\d.*\.jar" />
+
+<lib dir="../../../contrib/velocity/lib" regex=".*\.jar" />
+<lib dir="../../../dist/" regex="solr-velocity-\d.*\.jar" />
+----

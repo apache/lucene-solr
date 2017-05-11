@@ -20,16 +20,22 @@ package org.apache.solr.cloud;
 
 import java.lang.invoke.MethodHandles;
 import java.net.URI;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Properties;
 import java.util.Set;
 
 import org.apache.solr.cloud.overseer.OverseerAction;
+import org.apache.solr.cloud.rule.ReplicaAssigner;
+import org.apache.solr.common.SolrException;
+import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.ImplicitDocRouter;
@@ -53,6 +59,7 @@ import static org.apache.solr.cloud.OverseerCollectionMessageHandler.COLL_PROPS;
 import static org.apache.solr.cloud.OverseerCollectionMessageHandler.CREATE_NODE_SET;
 import static org.apache.solr.cloud.OverseerCollectionMessageHandler.CREATE_NODE_SET_EMPTY;
 import static org.apache.solr.cloud.OverseerCollectionMessageHandler.NUM_SLICES;
+import static org.apache.solr.cloud.OverseerCollectionMessageHandler.RANDOM;
 import static org.apache.solr.cloud.OverseerCollectionMessageHandler.SHARDS_PROP;
 import static org.apache.solr.common.cloud.ZkStateReader.COLLECTION_PROP;
 import static org.apache.solr.common.cloud.ZkStateReader.SHARD_ID_PROP;
@@ -60,7 +67,8 @@ import static org.apache.solr.common.params.CollectionParams.CollectionAction.CR
 import static org.apache.solr.common.params.CollectionParams.CollectionAction.CREATESHARD;
 import static org.apache.solr.common.params.CommonAdminParams.ASYNC;
 import static org.apache.solr.common.params.CommonParams.NAME;
-
+import static org.apache.solr.common.cloud.ZkStateReader.REPLICATION_FACTOR;
+import static org.apache.solr.common.cloud.ZkStateReader.MAX_SHARDS_PER_NODE;
 
 public class RestoreCmd implements OverseerCollectionMessageHandler.Cmd {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
@@ -74,6 +82,7 @@ public class RestoreCmd implements OverseerCollectionMessageHandler.Cmd {
   @Override
   public void call(ClusterState state, ZkNodeProps message, NamedList results) throws Exception {
     // TODO maybe we can inherit createCollection's options/code
+
     String restoreCollectionName = message.getStr(COLLECTION_PROP);
     String backupName = message.getStr(NAME); // of backup
     ShardHandler shardHandler = ocmh.shardHandlerFactory.getShardHandler();
@@ -92,6 +101,22 @@ public class RestoreCmd implements OverseerCollectionMessageHandler.Cmd {
     Properties properties = backupMgr.readBackupProperties(location, backupName);
     String backupCollection = properties.getProperty(BackupManager.COLLECTION_NAME_PROP);
     DocCollection backupCollectionState = backupMgr.readCollectionState(location, backupName, backupCollection);
+
+    // Get the Solr nodes to restore a collection.
+    final List<String> nodeList = OverseerCollectionMessageHandler.getLiveOrLiveAndCreateNodeSetList(
+        zkStateReader.getClusterState().getLiveNodes(), message, RANDOM);
+
+    int numShards = backupCollectionState.getActiveSlices().size();
+    int repFactor = message.getInt(REPLICATION_FACTOR, backupCollectionState.getReplicationFactor());
+    int maxShardsPerNode = message.getInt(MAX_SHARDS_PER_NODE, backupCollectionState.getMaxShardsPerNode());
+    int availableNodeCount = nodeList.size();
+    if ((numShards * repFactor) > (availableNodeCount * maxShardsPerNode)) {
+      throw new SolrException(ErrorCode.BAD_REQUEST,
+          String.format(Locale.ROOT, "Solr cloud with available number of nodes:%d is insufficient for"
+              + " restoring a collection with %d shards, replication factor %d and maxShardsPerNode %d."
+              + " Consider increasing maxShardsPerNode value OR number of available nodes.",
+              availableNodeCount, numShards, repFactor, maxShardsPerNode));
+    }
 
     //Upload the configs
     String configName = (String) properties.get(COLL_CONF);
@@ -168,9 +193,16 @@ public class RestoreCmd implements OverseerCollectionMessageHandler.Cmd {
       inQueue.offer(Utils.toJSON(new ZkNodeProps(propMap)));
     }
 
-    // TODO how do we leverage the CREATE_NODE_SET / RULE / SNITCH logic in createCollection?
+    // TODO how do we leverage the RULE / SNITCH logic in createCollection?
 
     ClusterState clusterState = zkStateReader.getClusterState();
+
+    List<String> sliceNames = new ArrayList<>();
+    restoreCollection.getSlices().forEach(x -> sliceNames.add(x.getName()));
+
+    Map<ReplicaAssigner.Position, String> positionVsNodes = ocmh.identifyNodes(clusterState, nodeList,
+        message, sliceNames, repFactor);
+
     //Create one replica per shard and copy backed up data to it
     for (Slice slice : restoreCollection.getSlices()) {
       log.debug("Adding replica for shard={} collection={} ", slice.getName(), restoreCollection);
@@ -178,6 +210,19 @@ public class RestoreCmd implements OverseerCollectionMessageHandler.Cmd {
       propMap.put(Overseer.QUEUE_OPERATION, CREATESHARD);
       propMap.put(COLLECTION_PROP, restoreCollectionName);
       propMap.put(SHARD_ID_PROP, slice.getName());
+
+      // Get the first node matching the shard to restore in
+      String node;
+      for (Map.Entry<ReplicaAssigner.Position, String> pvn : positionVsNodes.entrySet()) {
+        ReplicaAssigner.Position position = pvn.getKey();
+        if (position.shard == slice.getName()) {
+          node = pvn.getValue();
+          propMap.put(CoreAdminParams.NODE, node);
+          positionVsNodes.remove(position);
+          break;
+        }
+      }
+
       // add async param
       if (asyncId != null) {
         propMap.put(ASYNC, asyncId);
@@ -227,6 +272,19 @@ public class RestoreCmd implements OverseerCollectionMessageHandler.Cmd {
           HashMap<String, Object> propMap = new HashMap<>();
           propMap.put(COLLECTION_PROP, restoreCollectionName);
           propMap.put(SHARD_ID_PROP, slice.getName());
+
+          // Get the first node matching the shard to restore in
+          String node;
+          for (Map.Entry<ReplicaAssigner.Position, String> pvn : positionVsNodes.entrySet()) {
+            ReplicaAssigner.Position position = pvn.getKey();
+            if (position.shard == slice.getName()) {
+              node = pvn.getValue();
+              propMap.put(CoreAdminParams.NODE, node);
+              positionVsNodes.remove(position);
+              break;
+            }
+          }
+
           // add async param
           if (asyncId != null) {
             propMap.put(ASYNC, asyncId);

@@ -1,0 +1,8 @@
+= Java Properties
+:page-shortname: java-properties
+:page-permalink: java-properties.html
+
+The Java Properties screen provides easy access to one of the most essential components of a top-performing Solr systems. With the Java Properties screen, you can see all the properties of the JVM running Solr, including the class paths, file encodings, JVM memory settings, operating system, and more.
+
+.Java Properties Screen
+image::images/java-properties/javaproperties.png[image,width=593,height=250]

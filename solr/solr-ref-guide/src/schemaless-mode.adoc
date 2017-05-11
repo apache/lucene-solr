@@ -1,0 +1,268 @@
+= Schemaless Mode
+:page-shortname: schemaless-mode
+:page-permalink: schemaless-mode.html
+
+Schemaless Mode is a set of Solr features that, when used together, allow users to rapidly construct an effective schema by simply indexing sample data, without having to manually edit the schema.
+
+These Solr features, all controlled via `solrconfig.xml`, are:
+
+. Managed schema: Schema modifications are made at runtime through Solr APIs, which requires the use of `schemaFactory` that supports these changes - see <<schema-factory-definition-in-solrconfig.adoc#schema-factory-definition-in-solrconfig,Schema Factory Definition in SolrConfig>> for more details.
+. Field value class guessing: Previously unseen fields are run through a cascading set of value-based parsers, which guess the Java class of field values - parsers for Boolean, Integer, Long, Float, Double, and Date are currently available.
+. Automatic schema field addition, based on field value class(es): Previously unseen fields are added to the schema, based on field value Java classes, which are mapped to schema field types - see <<solr-field-types.adoc#solr-field-types,Solr Field Types>>.
+
+[[SchemalessMode-UsingtheSchemalessExample]]
+== Using the Schemaless Example
+
+The three features of schemaless mode are pre-configured in the `data_driven_schema_configs` <<config-sets.adoc#config-sets,config set>> in the Solr distribution. To start an example instance of Solr using these configs, run the following command:
+
+[source,bash]
+----
+bin/solr start -e schemaless
+----
+
+This will launch a Solr server, and automatically create a collection (named "```gettingstarted```") that contains only three fields in the initial schema: `id`, `\_version_`, and `\_text_`.
+
+You can use the `/schema/fields` <<schema-api.adoc#schema-api,Schema API>> to confirm this: `curl \http://localhost:8983/solr/gettingstarted/schema/fields` will output:
+
+[source,json]
+----
+{
+  "responseHeader":{
+    "status":0,
+    "QTime":1},
+  "fields":[{
+      "name":"_text_",
+      "type":"text_general",
+      "multiValued":true,
+      "indexed":true,
+      "stored":false},
+    {
+      "name":"_version_",
+      "type":"long",
+      "indexed":true,
+      "stored":true},
+    {
+      "name":"id",
+      "type":"string",
+      "multiValued":false,
+      "indexed":true,
+      "required":true,
+      "stored":true,
+      "uniqueKey":true}]}
+----
+
+[TIP]
+====
+Because the `data_driven_schema_configs` config set includes a `copyField` directive that causes all content to be indexed in a predefined "catch-all" `\_text_` field, to enable single-field search that includes all fields' content, the index will be larger than it would be without the `copyField`. When you nail down your schema, consider removing the `\_text_` field and the corresponding `copyField` directive if you don't need it.
+====
+
+[[SchemalessMode-ConfiguringSchemalessMode]]
+== Configuring Schemaless Mode
+
+As described above, there are three configuration elements that need to be in place to use Solr in schemaless mode. In the `data_driven_schema_configs` config set included with Solr these are already configured. If, however, you would like to implement schemaless on your own, you should make the following changes.
+
+[[SchemalessMode-EnableManagedSchema]]
+=== Enable Managed Schema
+
+As described in the section <<schema-factory-definition-in-solrconfig.adoc#schema-factory-definition-in-solrconfig,Schema Factory Definition in SolrConfig>>, Managed Schema support is enabled by default, unless your configuration specifies that `ClassicIndexSchemaFactory` should be used.
+
+You can configure the `ManagedIndexSchemaFactory` (and control the resource file used, or disable future modifications) by adding an explicit `<schemaFactory/>` like the one below, please see <<schema-factory-definition-in-solrconfig.adoc#schema-factory-definition-in-solrconfig,Schema Factory Definition in SolrConfig>> for more details on the options available.
+
+[source,xml]
+----
+<schemaFactory class="ManagedIndexSchemaFactory">
+  <bool name="mutable">true</bool>
+  <str name="managedSchemaResourceName">managed-schema</str>
+</schemaFactory>
+----
+
+[[SchemalessMode-DefineanUpdateRequestProcessorChain]]
+=== Define an UpdateRequestProcessorChain
+
+The UpdateRequestProcessorChain allows Solr to guess field types, and you can define the default field type classes to use. To start, you should define it as follows (see the javadoc links below for update processor factory documentation):
+
+[source,xml]
+----
+<updateRequestProcessorChain name="add-unknown-fields-to-the-schema">
+  <!-- UUIDUpdateProcessorFactory will generate an id if none is present in the incoming document -->
+  <processor class="solr.UUIDUpdateProcessorFactory" />
+  <processor class="solr.RemoveBlankFieldUpdateProcessorFactory"/>
+  <processor class="solr.FieldNameMutatingUpdateProcessorFactory">
+    <str name="pattern">[^\w-\.]</str>
+    <str name="replacement">_</str>
+  </processor>
+  <processor class="solr.ParseBooleanFieldUpdateProcessorFactory"/>
+  <processor class="solr.ParseLongFieldUpdateProcessorFactory"/>
+  <processor class="solr.ParseDoubleFieldUpdateProcessorFactory"/>
+  <processor class="solr.ParseDateFieldUpdateProcessorFactory">
+    <arr name="format">
+      <str>yyyy-MM-dd'T'HH:mm:ss.SSSZ</str>
+      <str>yyyy-MM-dd'T'HH:mm:ss,SSSZ</str>
+      <str>yyyy-MM-dd'T'HH:mm:ss.SSS</str>
+      <str>yyyy-MM-dd'T'HH:mm:ss,SSS</str>
+      <str>yyyy-MM-dd'T'HH:mm:ssZ</str>
+      <str>yyyy-MM-dd'T'HH:mm:ss</str>
+      <str>yyyy-MM-dd'T'HH:mmZ</str>
+      <str>yyyy-MM-dd'T'HH:mm</str>
+      <str>yyyy-MM-dd HH:mm:ss.SSSZ</str>
+      <str>yyyy-MM-dd HH:mm:ss,SSSZ</str>
+      <str>yyyy-MM-dd HH:mm:ss.SSS</str>
+      <str>yyyy-MM-dd HH:mm:ss,SSS</str>
+      <str>yyyy-MM-dd HH:mm:ssZ</str>
+      <str>yyyy-MM-dd HH:mm:ss</str>
+      <str>yyyy-MM-dd HH:mmZ</str>
+      <str>yyyy-MM-dd HH:mm</str>
+      <str>yyyy-MM-dd</str>
+    </arr>
+  </processor>
+  <processor class="solr.AddSchemaFieldsUpdateProcessorFactory">
+    <str name="defaultFieldType">strings</str>
+    <lst name="typeMapping">
+      <str name="valueClass">java.lang.Boolean</str>
+      <str name="fieldType">booleans</str>
+    </lst>
+    <lst name="typeMapping">
+      <str name="valueClass">java.util.Date</str>
+      <str name="fieldType">tdates</str>
+    </lst>
+    <lst name="typeMapping">
+      <str name="valueClass">java.lang.Long</str>
+      <str name="valueClass">java.lang.Integer</str>
+      <str name="fieldType">tlongs</str>
+    </lst>
+    <lst name="typeMapping">
+      <str name="valueClass">java.lang.Number</str>
+      <str name="fieldType">tdoubles</str>
+    </lst>
+  </processor>
+  <processor class="solr.LogUpdateProcessorFactory"/>
+  <processor class="solr.DistributedUpdateProcessorFactory"/>
+  <processor class="solr.RunUpdateProcessorFactory"/>
+</updateRequestProcessorChain>
+----
+
+Javadocs for update processor factories mentioned above:
+
+* {solr-javadocs}/solr-core/org/apache/solr/update/processor/UUIDUpdateProcessorFactory.html[UUIDUpdateProcessorFactory]
+* {solr-javadocs}/solr-core/org/apache/solr/update/processor/RemoveBlankFieldUpdateProcessorFactory.html[RemoveBlankFieldUpdateProcessorFactory]
+* {solr-javadocs}/solr-core/org/apache/solr/update/processor/FieldNameMutatingUpdateProcessorFactory.html[FieldNameMutatingUpdateProcessorFactory]
+* {solr-javadocs}/solr-core/org/apache/solr/update/processor/ParseBooleanFieldUpdateProcessorFactory.html[ParseBooleanFieldUpdateProcessorFactory]
+* {solr-javadocs}/solr-core/org/apache/solr/update/processor/ParseLongFieldUpdateProcessorFactory.html[ParseLongFieldUpdateProcessorFactory]
+* {solr-javadocs}/solr-core/org/apache/solr/update/processor/ParseDoubleFieldUpdateProcessorFactory.html[ParseDoubleFieldUpdateProcessorFactory]
+* {solr-javadocs}/solr-core/org/apache/solr/update/processor/ParseDateFieldUpdateProcessorFactory.html[ParseDateFieldUpdateProcessorFactory]
+* {solr-javadocs}/solr-core/org/apache/solr/update/processor/AddSchemaFieldsUpdateProcessorFactory.html[AddSchemaFieldsUpdateProcessorFactory]
+
+[[SchemalessMode-MaketheUpdateRequestProcessorChaintheDefaultfortheUpdateRequestHandler]]
+=== Make the UpdateRequestProcessorChain the Default for the UpdateRequestHandler
+
+Once the UpdateRequestProcessorChain has been defined, you must instruct your UpdateRequestHandlers to use it when working with index updates (i.e., adding, removing, replacing documents). Here is an example using <<initparams-in-solrconfig.adoc#initparams-in-solrconfig,InitParams>> to set the defaults on all `/update` request handlers:
+
+[source,xml]
+----
+<initParams path="/update/**">
+  <lst name="defaults">
+    <str name="update.chain">add-unknown-fields-to-the-schema</str>
+  </lst>
+</initParams>
+----
+
+[IMPORTANT]
+====
+After each of these changes have been made, Solr should be restarted (or, you can reload the cores to load the new `solrconfig.xml` definitions).
+====
+
+[[SchemalessMode-ExamplesofIndexedDocuments]]
+== Examples of Indexed Documents
+
+Once the schemaless mode has been enabled (whether you configured it manually or are using `data_driven_schema_configs` ), documents that include fields that are not defined in your schema should be added to the index, and the new fields added to the schema.
+
+For example, adding a CSV document will cause its fields that are not in the schema to be added, with fieldTypes based on values:
+
+[source,bash]
+----
+curl "http://localhost:8983/solr/gettingstarted/update?commit=true" -H "Content-type:application/csv" -d '
+id,Artist,Album,Released,Rating,FromDistributor,Sold
+44C,Old Shews,Mead for Walking,1988-08-13,0.01,14,0'
+----
+
+Output indicating success:
+
+[source,xml]
+----
+<response>
+  <lst name="responseHeader"><int name="status">0</int><int name="QTime">106</int></lst>
+</response>
+----
+
+The fields now in the schema (output from `curl \http://localhost:8983/solr/gettingstarted/schema/fields` ):
+
+[source,json]
+----
+{
+  "responseHeader":{
+    "status":0,
+    "QTime":1},
+  "fields":[{
+      "name":"Album",
+      "type":"strings"},      // Field value guessed as String -> strings fieldType
+    {
+      "name":"Artist",
+      "type":"strings"},      // Field value guessed as String -> strings fieldType
+    {
+      "name":"FromDistributor",
+      "type":"tlongs"},       // Field value guessed as Long -> tlongs fieldType
+    {
+      "name":"Rating",
+      "type":"tdoubles"},     // Field value guessed as Double -> tdoubles fieldType
+    {
+      "name":"Released",
+      "type":"tdates"},       // Field value guessed as Date -> tdates fieldType
+    {
+      "name":"Sold",
+      "type":"tlongs"},       // Field value guessed as Long -> tlongs fieldType
+    {
+      "name":"_text_",
+...
+    },
+    {
+      "name":"_version_",
+...
+    },
+    {
+      "name":"id",
+...
+    }]}
+----
+
+.You Can Still Be Explicit
+[TIP]
+====
+Even if you want to use schemaless mode for most fields, you can still use the <<schema-api.adoc#schema-api,Schema API>> to pre-emptively create some fields, with explicit types, before you index documents that use them.
+
+Internally, the Schema API and the Schemaless Update Processors both use the same <<schema-factory-definition-in-solrconfig.adoc#schema-factory-definition-in-solrconfig,Managed Schema>> functionality.
+====
+
+Once a field has been added to the schema, its field type is fixed. As a consequence, adding documents with field value(s) that conflict with the previously guessed field type will fail. For example, after adding the above document, the "```Sold```" field has the fieldType `tlongs`, but the document below has a non-integral decimal value in this field:
+
+[source,bash]
+----
+curl "http://localhost:8983/solr/gettingstarted/update?commit=true" -H "Content-type:application/csv" -d '
+id,Description,Sold
+19F,Cassettes by the pound,4.93'
+----
+
+This document will fail, as shown in this output:
+
+[source,xml]
+----
+<response>
+  <lst name="responseHeader">
+    <int name="status">400</int>
+    <int name="QTime">7</int>
+  </lst>
+  <lst name="error">
+    <str name="msg">ERROR: [doc=19F] Error adding field 'Sold'='4.93' msg=For input string: "4.93"</str>
+    <int name="code">400</int>
+  </lst>
+</response>
+----
