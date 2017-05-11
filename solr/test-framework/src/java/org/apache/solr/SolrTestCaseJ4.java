@@ -269,6 +269,7 @@ public abstract class SolrTestCaseJ4 extends LuceneTestCase {
     initCoreDataDir = createTempDir("init-core-data").toFile();
     System.err.println("Creating dataDir: " + initCoreDataDir.getAbsolutePath());
 
+    System.setProperty("solr.v2RealPath", "true");
     System.setProperty("zookeeper.forceSync", "no");
     System.setProperty("jetty.testMode", "true");
     System.setProperty("enable.update.log", usually() ? "true" : "false");
@@ -310,6 +311,7 @@ public abstract class SolrTestCaseJ4 extends LuceneTestCase {
       ObjectReleaseTracker.clear();
       TestInjection.reset();
       initCoreDataDir = null;
+      System.clearProperty("solr.v2RealPath");
       System.clearProperty("zookeeper.forceSync");
       System.clearProperty("jetty.testMode");
       System.clearProperty("tests.shardhandler.randomSeed");

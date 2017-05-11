@@ -90,6 +90,8 @@ New Features
 
 * SOLR-10262: Add support for configurable metrics implementations. (ab)
 
+* SOLR-10431: Make it possible to invoke v2 api calls using SolrJ (Cao Manh Dat, Noble Paul, shalin)
+
 Bug Fixes
 ----------------------
 * SOLR-9262: Connection and read timeouts are being ignored by UpdateShardHandler after SOLR-4509.
