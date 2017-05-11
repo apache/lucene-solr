@@ -18,94 +18,75 @@
 package org.apache.solr.handler.admin;
 
 import java.util.Arrays;
+import java.util.Collection;
+import java.util.EnumMap;
 import java.util.List;
+import java.util.Map;
 
 import org.apache.solr.client.solrj.request.CollectionApiMapping;
+import org.apache.solr.client.solrj.request.CollectionApiMapping.CommandMeta;
 import org.apache.solr.client.solrj.request.CollectionApiMapping.Meta;
 import org.apache.solr.client.solrj.request.CollectionApiMapping.V2EndPoint;
 import org.apache.solr.handler.admin.CollectionsHandler.CollectionOperation;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
 
-import static org.apache.solr.handler.admin.CollectionsHandler.CollectionOperation.*;
-
 public class CollectionHandlerApi extends BaseHandlerApiSupport {
   final CollectionsHandler handler;
+  static Collection<ApiCommand> apiCommands = createCollMapping();
+
+  private static Collection<ApiCommand> createCollMapping() {
+    Map<Meta, ApiCommand> result = new EnumMap<>(Meta.class);
+
+    for (Meta meta : Meta.values()) {
+      for (CollectionOperation op : CollectionOperation.values()) {
+        if (op.action == meta.action) {
+          result.put(meta, new ApiCommand() {
+            @Override
+            public CommandMeta meta() {
+              return meta;
+            }
+
+            @Override
+            public void invoke(SolrQueryRequest req, SolrQueryResponse rsp, BaseHandlerApiSupport apiHandler) throws Exception {
+              ((CollectionHandlerApi) apiHandler).handler.invokeAction(req, rsp, ((CollectionHandlerApi) apiHandler).handler.coreContainer, op.action, op);
+            }
+          });
+        }
+      }
+    }
+    result.put(Meta.GET_NODES, new ApiCommand() {
+      @Override
+      public CommandMeta meta() {
+        return Meta.GET_NODES;
+      }
+
+      @Override
+      public void invoke(SolrQueryRequest req, SolrQueryResponse rsp, BaseHandlerApiSupport apiHandler) throws Exception {
+        rsp.add("nodes", ((CollectionHandlerApi) apiHandler).handler.coreContainer.getZkController().getClusterState().getLiveNodes());
+      }
+    });
+    for (Meta meta : Meta.values()) {
+      if(result.get(meta) == null){
+        throw new RuntimeException("No implementation for "+ meta.name());
+      }
+    }
+
+    return result.values();
+  }
 
   public CollectionHandlerApi(CollectionsHandler handler) {
     this.handler = handler;
   }
 
   @Override
-  protected List<ApiCommand> getCommands() {
-    return Arrays.asList(Cmd.values());
+  protected Collection<ApiCommand> getCommands() {
+    return apiCommands;
   }
 
   @Override
   protected List<V2EndPoint> getEndPoints() {
     return Arrays.asList(CollectionApiMapping.EndPoint.values());
-  }
-
-
-  enum Cmd implements ApiCommand {
-    GET_COLLECTIONS(Meta.GET_COLLECTIONS,LIST_OP),
-    GET_CLUSTER(Meta.GET_CLUSTER,LIST_OP),
-    GET_CLUSTER_OVERSEER(Meta.GET_CLUSTER_OVERSEER,OVERSEERSTATUS_OP),
-    GET_CLUSTER_STATUS_CMD(Meta.GET_CLUSTER_STATUS_CMD,REQUESTSTATUS_OP),
-    DELETE_CLUSTER_STATUS(Meta.DELETE_CLUSTER_STATUS,DELETESTATUS_OP),
-    GET_A_COLLECTION(Meta.GET_A_COLLECTION,CLUSTERSTATUS_OP),
-    LIST_ALIASES(Meta.LIST_ALIASES,LISTALIASES_OP),
-    CREATE_COLLECTION(Meta.CREATE_COLLECTION, CREATE_OP),
-    DELETE_COLL(Meta.DELETE_COLL, DELETE_OP),
-    RELOAD_COLL(Meta.RELOAD_COLL, RELOAD_OP),
-    MODIFYCOLLECTION(Meta.MODIFYCOLLECTION, MODIFYCOLLECTION_OP),
-    MIGRATE_DOCS(Meta.MIGRATE_DOCS,MIGRATE_OP),
-    REBALANCELEADERS(Meta.REBALANCELEADERS, REBALANCELEADERS_OP),
-    CREATE_ALIAS(Meta.CREATE_ALIAS, CREATEALIAS_OP),
-    DELETE_ALIAS(Meta.DELETE_ALIAS, DELETEALIAS_OP),
-    CREATE_SHARD(Meta.CREATE_SHARD,CREATESHARD_OP),
-    SPLIT_SHARD(Meta.SPLIT_SHARD, SPLITSHARD_OP),
-    DELETE_SHARD(Meta.DELETE_SHARD,DELETESHARD_OP),
-    CREATE_REPLICA(Meta.CREATE_REPLICA,ADDREPLICA_OP),
-    DELETE_REPLICA(Meta.DELETE_REPLICA,DELETEREPLICA_OP),
-    SYNC_SHARD(Meta.SYNC_SHARD, SYNCSHARD_OP),
-    ADDREPLICAPROP(Meta.ADDREPLICAPROP, ADDREPLICAPROP_OP),
-    DELETEREPLICAPROP(Meta.DELETEREPLICAPROP, DELETEREPLICAPROP_OP),
-    ADDROLE(Meta.ADDROLE, ADDROLE_OP),
-    REMOVEROLE(Meta.REMOVEROLE, REMOVEROLE_OP),
-    CLUSTERPROP(Meta.CLUSTERPROP,CLUSTERPROP_OP),
-    BACKUP(Meta.BACKUP, BACKUP_OP),
-    RESTORE(Meta.RESTORE, RESTORE_OP),
-    GET_NODES(Meta.GET_NODES, null) {
-      @Override
-      public void invoke(SolrQueryRequest req, SolrQueryResponse rsp, BaseHandlerApiSupport apiHandler) throws Exception {
-        rsp.add("nodes", ((CollectionHandlerApi) apiHandler).handler.coreContainer.getZkController().getClusterState().getLiveNodes());
-      }
-    },
-    FORCELEADER(Meta.FORCELEADER,FORCELEADER_OP),
-    SYNCSHARD(Meta.SYNCSHARD,SYNCSHARD_OP),
-    BALANCESHARDUNIQUE(Meta.BALANCESHARDUNIQUE,BALANCESHARDUNIQUE_OP)
-
-    ;
-
-    public final CollectionApiMapping.CommandMeta meta;
-
-    public final CollectionOperation target;
-
-    Cmd(CollectionApiMapping.CommandMeta meta, CollectionOperation target) {
-      this.meta = meta;
-      this.target = target;
-    }
-
-    @Override
-    public CollectionApiMapping.CommandMeta meta() {
-      return meta;
-    }
-
-    public void invoke(SolrQueryRequest req, SolrQueryResponse rsp, BaseHandlerApiSupport apiHandler)
-        throws Exception {
-      ((CollectionHandlerApi) apiHandler).handler.invokeAction(req, rsp, ((CollectionHandlerApi) apiHandler).handler.coreContainer, target.action, target);
-    }
   }
 
 }
