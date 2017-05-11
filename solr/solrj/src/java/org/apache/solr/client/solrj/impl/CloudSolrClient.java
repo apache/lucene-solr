@@ -1285,7 +1285,7 @@ public class CloudSolrClient extends SolrClient {
       Set<String> liveNodes = stateProvider.liveNodes();
       if (!liveNodes.isEmpty()) {
         List<String> liveNodesList = new ArrayList<>(liveNodes);
-        Collections.shuffle(liveNodesList);
+        Collections.shuffle(liveNodesList, rand);
         theUrlList.add(ZkStateReader.getBaseUrlForNodeName(liveNodesList.get(0),
             (String) stateProvider.getClusterProperty(ZkStateReader.URL_SCHEME,"http")));
       }
