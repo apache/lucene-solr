@@ -4,7 +4,7 @@
 <meta name="description" content="{% if page.description %}{{ page.description | strip_html | strip_newlines | truncate: 160 }}{% endif %}">
 <meta name="keywords" content="{{page.tags}}{% if page.tags %}, {% endif %} {{page.keywords}}">
 {% comment %}NOTE: explicitly using the GUIDE version here (not solr) {% endcomment %}
-<title>{{ page.title }} | {{ site.site_title }} {{ site.solr-attributes.solr-guide-version}}</title>
+<title>{% if page.shortname != "index" %}{{ page.title }} | {% endif %}{{ site.site_title }} {{ site.solr-attributes.solr-guide-version}}</title>
 
 <link rel="stylesheet" type="text/css" href="https://maxcdn.bootstrapcdn.com/font-awesome/4.5.0/css/font-awesome.min.css">
 <!--<link rel="stylesheet" type="text/css" href="css/bootstrap.min.css">-->
@@ -23,7 +23,7 @@
 <script src="{{ "js/toc.js" }}"></script>
 <script src="{{ "js/customscripts.js" }}"></script>
 
-<link rel="shortcut icon" href="{{ "images/favicon.ico"  }}">
+<link rel="shortcut icon" href="{{ "images/icons/favicon.ico"  }}">
 
 <!-- HTML5 Shim and Respond.js IE8 support of HTML5 elements and media queries -->
 <!-- WARNING: Respond.js doesn't work if you view the page via file:// -->

@@ -5,7 +5,7 @@
   {% if "" != site.solr-attributes.solr-guide-draft-status %}
   <li class="draft-notice">
     This is an unofficial DRAFT of the Guide for {{ site.solr-attributes.solr-docs-version }}.
-    <a href="https://lucene.apache.org/solr/guide/">Official releases of this Guide are available from the Solr website</a>.
+    <a href="https://lucene.apache.org/solr/guide/">Official releases are available from the Solr website</a>.
   </li>
   {% endif %}
   {% for level1item in sidebar.kids %}
@@ -27,7 +27,7 @@
               <li class="sb-level4">
                 <a href="{{ level4item.url | remove: "/" }}">{{ level4item.title }}</a>
                 {% comment %}
-                <!-- NOTE: adding addiional levels here will also require additional changes to 
+                <!-- NOTE: adding addiional levels here will also require additional changes to
                      ref-guide.css in order to indent them properly
                   -->
                 {% endcomment %}
