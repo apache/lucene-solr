@@ -3,7 +3,8 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="description" content="{% if page.description %}{{ page.description | strip_html | strip_newlines | truncate: 160 }}{% endif %}">
 <meta name="keywords" content="{{page.tags}}{% if page.tags %}, {% endif %} {{page.keywords}}">
-<title>{{ page.title }} | {{ site.site_title }}</title>
+{% comment %}NOTE: explicitly using the GUIDE version here (not solr) {% endcomment %}
+<title>{{ page.title }} | {{ site.site_title }} {{ site.solr-attributes.solr-guide-version}}</title>
 
 <link rel="stylesheet" type="text/css" href="https://maxcdn.bootstrapcdn.com/font-awesome/4.5.0/css/font-awesome.min.css">
 <!--<link rel="stylesheet" type="text/css" href="css/bootstrap.min.css">-->

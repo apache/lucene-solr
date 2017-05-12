@@ -76,6 +76,10 @@ body
     margin: 0;
 }
 
+body.DRAFT {
+    background-image: url("../draft-background.png");
+}
+
 a
 {
     background: transparent;
