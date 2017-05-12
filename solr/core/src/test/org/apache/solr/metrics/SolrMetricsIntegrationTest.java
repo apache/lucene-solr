@@ -86,7 +86,7 @@ public class SolrMetricsIntegrationTest extends SolrTestCaseJ4 {
     cc.rename(DEFAULT_TEST_CORENAME, CORE_NAME);
     h.coreName = CORE_NAME;
     cfg = cc.getConfig();
-    PluginInfo[] plugins = cfg.getMetricReporterPlugins();
+    PluginInfo[] plugins = cfg.getMetricsConfig().getMetricReporters();
     assertNotNull(plugins);
     assertEquals(10 + jmxReporter, plugins.length);
     reporters = metricManager.getReporters("solr.node");

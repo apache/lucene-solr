@@ -19,6 +19,7 @@ package org.apache.solr.client.solrj.io.stream;
 import java.io.IOException;
 import java.sql.Connection;
 import java.sql.DriverManager;
+import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.ArrayList;
@@ -96,6 +97,8 @@ public class JDBCStreamTest extends SolrCloudTestCase {
     statement.executeUpdate("create table PEOPLE(ID int not null primary key, NAME varchar(50), COUNTRY_CODE char(2), DELETED char(1) default 'N')");
     statement.executeUpdate("create table PEOPLE_SPORTS(ID int not null primary key, PERSON_ID int, SPORT_NAME varchar(50), DELETED char(1) default 'N')");
     statement.executeUpdate("create table UNSUPPORTED_COLUMNS(ID int not null primary key, UNSP binary)");
+    statement.executeUpdate("create table DUAL(ID int not null primary key)");
+    statement.executeUpdate("insert into DUAL values(1)");
     
   }
 
@@ -158,8 +161,29 @@ public class JDBCStreamTest extends SolrCloudTestCase {
     assertOrderOf(tuples, "CODE", "NP", "NL", "NO", "US");
     assertOrderOf(tuples, "COUNTRY_NAME", "Nepal", "Netherlands", "Norway", "United States");
     
+    // Additional Types
+    String query = "select 1 as ID1, {ts '2017-02-18 12:34:56.789'} as TS1, {t '01:02:03'} as T1, "
+        + "{d '1593-03-14'} as D1, cast(12.34 AS DECIMAL(4,2)) as DEC4_2, "
+        + "cast(1234 AS DECIMAL(4,0)) as DEC4_0, cast('big stuff' as CLOB(100)) as CLOB1 "
+        + "from DUAL order by ID1";
+    stream = new JDBCStream("jdbc:hsqldb:mem:.", query, new FieldComparator("ID1", ComparatorOrder.ASCENDING));
+    tuples = getTuples(stream);
+    assertEquals(1, tuples.size());
+    Tuple t;
+    try (Connection connection = DriverManager.getConnection("jdbc:hsqldb:mem:.");
+        Statement statement = connection.createStatement()) {
+      ResultSet rs = statement.executeQuery(query);
+      rs.next();
+      t = tuples.iterator().next();
+      assertString(t, "CLOB1", rs.getString("CLOB1"));
+      assertString(t, "TS1", rs.getTimestamp("TS1").toInstant().toString());
+      assertString(t, "T1", rs.getTime("T1").toString());
+      assertString(t, "D1", rs.getDate("D1").toString());
+      assertDouble(t, "DEC4_2", rs.getDouble("DEC4_2"));
+      assertLong(t, "DEC4_0", rs.getLong("DEC4_0"));      
+    }     
   }
-
+  
   @Test
   public void testJDBCJoin() throws Exception {
     
@@ -640,6 +664,14 @@ public class JDBCStreamTest extends SolrCloudTestCase {
       throw new Exception("Longs not equal:"+l+" : "+lv);
     }
 
+    return true;
+  }
+  
+  public boolean assertDouble(Tuple tuple, String fieldName, double d) throws Exception {
+    double dv = (double)tuple.get(fieldName);
+    if(dv != d) {
+      throw new Exception("Doubles not equal:"+d+" : "+dv);
+    }
     return true;
   }
   

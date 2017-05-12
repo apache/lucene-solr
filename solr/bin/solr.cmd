@@ -246,6 +246,12 @@ IF "%1"=="zk" (
   goto parse_zk_args
 )
 
+IF "%1"=="auth" (
+  set SCRIPT_CMD=auth
+  SHIFT
+  goto run_auth
+)
+
 goto parse_args
 
 :usage
@@ -1639,6 +1645,28 @@ IF "!ZK_OP!"=="upconfig" (
   goto zk_short_usage
 )
 goto done
+
+ 
+:run_auth
+if "!AUTH_PORT!"=="" (
+  for /f "usebackq" %%i in (`dir /b "%SOLR_TIP%\bin" ^| findstr /i "^solr-.*\.port$"`) do (
+    set SOME_SOLR_PORT=
+    For /F "Delims=" %%J In ('type "%SOLR_TIP%\bin\%%i"') do set SOME_SOLR_PORT=%%~J
+    if NOT "!SOME_SOLR_PORT!"=="" (
+      for /f "tokens=2,5" %%j in ('netstat -aon ^| find "TCP " ^| find ":0 " ^| find ":!SOME_SOLR_PORT! "') do (
+        IF NOT "%%k"=="0" set AUTH_PORT=!SOME_SOLR_PORT!
+      )
+    )
+  )
+)
+for /f "tokens=1,* delims= " %%a in ("%*") do set auth_params=%%b
+"%JAVA%" %SOLR_SSL_OPTS% %AUTHC_OPTS% %SOLR_ZK_CREDS_AND_ACLS% -Dsolr.install.dir="%SOLR_TIP%" ^
+    -Dlog4j.configuration="file:%DEFAULT_SERVER_DIR%\scripts\cloud-scripts\log4j.properties" ^
+    -classpath "%DEFAULT_SERVER_DIR%\solr-webapp\webapp\WEB-INF\lib\*;%DEFAULT_SERVER_DIR%\lib\ext\*" ^
+    org.apache.solr.util.SolrCLI auth %auth_params% -solrIncludeFile "%SOLR_INCLUDE%" ^
+    -solrUrl !SOLR_URL_SCHEME!://%SOLR_TOOL_HOST%:!AUTH_PORT!/solr
+goto done
+
 
 :invalid_cmd_line
 @echo.

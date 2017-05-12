@@ -1,0 +1,15 @@
+= Introduction to Client APIs
+:page-shortname: introduction-to-client-apis
+:page-permalink: introduction-to-client-apis.html
+
+At its heart, Solr is a Web application, but because it is built on open protocols, any type of client application can use Solr.
+
+HTTP is the fundamental protocol used between client applications and Solr. The client makes a request and Solr does some work and provides a response. Clients use requests to ask Solr to do things like perform queries or index documents.
+
+Client applications can reach Solr by creating HTTP requests and parsing the HTTP responses. Client APIs encapsulate much of the work of sending requests and parsing responses, which makes it much easier to write client applications.
+
+Clients use Solr's five fundamental operations to work with Solr. The operations are query, index, delete, commit, and optimize.
+
+Queries are executed by creating a URL that contains all the query parameters. Solr examines the request URL, performs the query, and returns the results. The other operations are similar, although in certain cases the HTTP request is a POST operation and contains information beyond whatever is included in the request URL. An index operation, for example, may contain a document in the body of the request.
+
+Solr also features an EmbeddedSolrServer that offers a Java API without requiring an HTTP connection. For details, see <<using-solrj.adoc#using-solrj,Using SolrJ>>.

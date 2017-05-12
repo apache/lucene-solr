@@ -1,0 +1,21 @@
+= Replication Screen
+:page-shortname: replication-screen
+:page-permalink: replication-screen.html
+
+The Replication screen shows you the current replication state for the core you have specified. <<solrcloud.adoc#solrcloud,SolrCloud>> has supplanted much of this functionality, but if you are still using Master-Slave index replication, you can use this screen to:
+
+. View the replicatable index state. (on a master node)
+. View the current replication status (on a slave node)
+. Disable replication. (on a master node)
+
+.Caution When Using SolrCloud
+[IMPORTANT]
+====
+When using <<getting-started-with-solrcloud.adoc#getting-started-with-solrcloud,SolrCloud>>, do not attempt to disable replication via this screen.
+====
+
+.Sample Replication Screen
+image::images/replication-screen/replication.png[image,width=412,height=250]
+
+
+More details on how to configure replication is available in the section called <<index-replication.adoc#index-replication,Index Replication>>.

@@ -27,16 +27,18 @@ import java.util.Map;
 import java.util.Objects;
 
 import com.google.common.collect.ImmutableList;
-import org.apache.solr.client.solrj.SolrRequest;
-import org.apache.solr.common.SolrException;
-import org.apache.solr.common.params.SolrParams;
-import org.apache.solr.common.util.Utils;
-import org.apache.solr.request.SolrQueryRequest;
-import org.apache.solr.response.SolrQueryResponse;
-import org.apache.solr.util.CommandOperation;
 import org.apache.solr.api.Api;
 import org.apache.solr.api.ApiBag;
 import org.apache.solr.api.ApiSupport;
+import org.apache.solr.client.solrj.SolrRequest;
+import org.apache.solr.client.solrj.request.CollectionApiMapping.CommandMeta;
+import org.apache.solr.client.solrj.request.CollectionApiMapping.V2EndPoint;
+import org.apache.solr.common.SolrException;
+import org.apache.solr.common.params.SolrParams;
+import org.apache.solr.common.util.CommandOperation;
+import org.apache.solr.common.util.Utils;
+import org.apache.solr.request.SolrQueryRequest;
+import org.apache.solr.response.SolrQueryResponse;
 
 import static org.apache.solr.client.solrj.SolrRequest.METHOD.POST;
 import static org.apache.solr.common.SolrException.ErrorCode.BAD_REQUEST;
@@ -53,10 +55,10 @@ public abstract class BaseHandlerApiSupport implements ApiSupport {
   protected BaseHandlerApiSupport() {
     commandsMapping = new HashMap<>();
     for (ApiCommand cmd : getCommands()) {
-      Map<V2EndPoint, List<ApiCommand>> m = commandsMapping.get(cmd.getHttpMethod());
-      if (m == null) commandsMapping.put(cmd.getHttpMethod(), m = new HashMap<>());
-      List<ApiCommand> list = m.get(cmd.getEndPoint());
-      if (list == null) m.put(cmd.getEndPoint(), list = new ArrayList<>());
+      Map<V2EndPoint, List<ApiCommand>> m = commandsMapping.get(cmd.meta().getHttpMethod());
+      if (m == null) commandsMapping.put(cmd.meta().getHttpMethod(), m = new HashMap<>());
+      List<ApiCommand> list = m.get(cmd.meta().getEndPoint());
+      if (list == null) m.put(cmd.meta().getEndPoint(), list = new ArrayList<>());
       list.add(cmd);
     }
   }
@@ -86,7 +88,7 @@ public abstract class BaseHandlerApiSupport implements ApiSupport {
             ApiCommand command = null;
             String commandName = c == null ? null : c.name;
             for (ApiCommand cmd : commands) {
-              if (Objects.equals(cmd.getName(), commandName)) {
+              if (Objects.equals(cmd.meta().getName(), commandName)) {
                 command = cmd;
                 break;
               }
@@ -105,7 +107,7 @@ public abstract class BaseHandlerApiSupport implements ApiSupport {
             }
             if (commands.size() > 1) {
               for (ApiCommand command : commands) {
-                if (command.getName().equals(req.getPath())) {
+                if (command.meta().getName().equals(req.getPath())) {
                   commands = Collections.singletonList(command);
                   break;
                 }
@@ -147,7 +149,7 @@ public abstract class BaseHandlerApiSupport implements ApiSupport {
           }
 
           private Object getParams0(String param) {
-            param = cmd.getParamSubstitute(param);
+            param = cmd.meta().getParamSubstitute(param);
             Object o = param.indexOf('.') > 0 ?
                 Utils.getObjectByPath(map, true, splitSmart(param, '.')) :
                 map.get(param);
@@ -171,7 +173,7 @@ public abstract class BaseHandlerApiSupport implements ApiSupport {
 
           @Override
           public Iterator<String> getParameterNamesIterator() {
-            return cmd.getParamNames(co).iterator();
+            return cmd.meta().getParamNames(co).iterator();
 
           }
 
@@ -180,57 +182,15 @@ public abstract class BaseHandlerApiSupport implements ApiSupport {
 
   }
 
+  protected abstract Collection<ApiCommand> getCommands();
 
-  public static Collection<String> getParamNames(CommandOperation op, ApiCommand command) {
-    List<String> result = new ArrayList<>();
-    Object o = op.getCommandData();
-    if (o instanceof Map) {
-      Map map = (Map) o;
-      collectKeyNames(map, result, "");
-    }
-    return result;
-
-  }
-
-  public static void collectKeyNames(Map<String, Object> map, List<String> result, String prefix) {
-    for (Map.Entry<String, Object> e : map.entrySet()) {
-      if (e.getValue() instanceof Map) {
-        collectKeyNames((Map) e.getValue(), result, prefix + e.getKey() + ".");
-      } else {
-        result.add(prefix + e.getKey());
-      }
-    }
-  }
-
-  protected abstract List<ApiCommand> getCommands();
-
-  protected abstract List<V2EndPoint> getEndPoints();
+  protected abstract Collection<V2EndPoint> getEndPoints();
 
 
-  public interface ApiCommand {
-    String getName();
-
-    /**
-     * the http method supported by this command
-     */
-    SolrRequest.METHOD getHttpMethod();
-
-    V2EndPoint getEndPoint();
-
-    default Collection<String> getParamNames(CommandOperation op) {
-      return BaseHandlerApiSupport.getParamNames(op, this);
-    }
-
-
-    default String getParamSubstitute(String name) {
-      return name;
-    }
+  public interface ApiCommand  {
+    CommandMeta meta();
 
     void invoke(SolrQueryRequest req, SolrQueryResponse rsp, BaseHandlerApiSupport apiHandler) throws Exception;
   }
 
-  public interface V2EndPoint {
-
-    String getSpecName();
-  }
 }

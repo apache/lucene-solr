@@ -35,7 +35,7 @@ public final class SolrMetricTestUtils {
   }
 
   public static String getRandomScope(Random random, boolean shouldDefineScope) {
-    return shouldDefineScope ? TestUtil.randomSimpleString(random, 1, 10) : null; // must be simple string for JMX publishing
+    return shouldDefineScope ? TestUtil.randomSimpleString(random, 5, 10) : null; // must be simple string for JMX publishing
   }
 
   public static SolrInfoBean.Category getRandomCategory(Random random) {
@@ -65,7 +65,7 @@ public final class SolrMetricTestUtils {
       boolean shouldReplaceMetric = !existing.isEmpty() && random.nextBoolean();
       String name = shouldReplaceMetric
           ? existingKeys.get(TestUtil.nextInt(random, 0, existingKeys.size() - 1))
-          : TestUtil.randomSimpleString(random, 1, 10) + SUFFIX; // must be simple string for JMX publishing
+          : TestUtil.randomSimpleString(random, 5, 10) + SUFFIX; // must be simple string for JMX publishing
 
       Counter counter = new Counter();
       counter.inc(random.nextLong());

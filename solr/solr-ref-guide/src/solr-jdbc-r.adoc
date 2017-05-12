@@ -1,0 +1,37 @@
+= Solr JDBC - R
+:page-shortname: solr-jdbc-r
+:page-permalink: solr-jdbc-r.html
+
+R supports accessing JDBC using the https://www.rforge.net/RJDBC/[RJDBC] library.
+
+== RJDBC
+
+.run.sh
+[source,bash]
+----
+#!/usr/bin/env bash
+
+# Java 8 must already be installed and R configured with `R CMD javareconf`
+
+Rscript -e 'install.packages("RJDBC", dep=TRUE)'
+Rscript solr_rjdbc.R
+----
+
+.solr_rjdbc.R
+[source,r]
+----
+# https://www.rforge.net/RJDBC/
+
+library("RJDBC")
+
+solrCP <- c(list.files('/opt/solr/dist/solrj-lib', full.names=TRUE), list.files('/opt/solr/dist', pattern='solrj', full.names=TRUE, recursive = TRUE))
+
+drv <- JDBC("org.apache.solr.client.solrj.io.sql.DriverImpl",
+           solrCP,
+           identifier.quote="`")
+conn <- dbConnect(drv, "jdbc:solr://localhost:9983?collection=test", "user", "pwd")
+
+dbGetQuery(conn, "select fielda, fieldb, fieldc, fieldd_s, fielde_i from test limit 10")
+
+dbDisconnect(conn)
+----

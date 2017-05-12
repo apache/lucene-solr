@@ -1,0 +1,252 @@
+= Function Queries
+:page-shortname: function-queries
+:page-permalink: function-queries.html
+
+Function queries enable you to generate a relevancy score using the actual value of one or more numeric fields.
+
+Function queries are supported by the <<the-dismax-query-parser.adoc#the-dismax-query-parser,DisMax>>, <<the-extended-dismax-query-parser.adoc#the-extended-dismax-query-parser,Extended DisMax>>, and <<the-standard-query-parser.adoc#the-standard-query-parser,standard>> query parsers.
+
+Function queries use _functions_. The functions can be a constant (numeric or string literal), a field, another function or a parameter substitution argument. You can use these functions to modify the ranking of results for users. These could be used to change the ranking of results based on a user's location, or some other calculation.
+
+[[FunctionQueries-UsingFunctionQuery]]
+== Using Function Query
+
+Functions must be expressed as function calls (for example, `sum(a,b)` instead of simply `a+b`).
+
+There are several ways of using function queries in a Solr query:
+
+* Via an explicit QParser that expects function arguments, such <<other-parsers.adoc#OtherParsers-FunctionQueryParser,`func`>> or <<other-parsers.adoc#OtherParsers-FunctionRangeQueryParser,`frange`>> . For example:
++
+[source,text]
+----
+q={!func}div(popularity,price)&fq={!frange l=1000}customer_ratings
+----
+* In a Sort expression. For example:
++
+[source,text]
+----
+sort=div(popularity,price) desc, score desc
+----
+* Add the results of functions as pseudo-fields to documents in query results. For instance, for:
++
+[source,text]
+----
+&fl=sum(x, y),id,a,b,c,score
+----
++
+the output would be:
++
+[source,xml]
+----
+...
+<str name="id">foo</str>
+<float name="sum(x,y)">40</float>
+<float name="score">0.343</float>
+...
+----
+* Use in a parameter that is explicitly for specifying functions, such as the EDisMax query parser's <<the-extended-dismax-query-parser.adoc#the-extended-dismax-query-parser,`boost`>> param, or DisMax query parser's <<the-dismax-query-parser.adoc#TheDisMaxQueryParser-Thebf_BoostFunctions_Parameter,`bf` (boost function) parameter>>. (Note that the `bf` parameter actually takes a list of function queries separated by white space and each with an optional boost. Make sure you eliminate any internal white space in single function queries when using `bf`). For example:
++
+[source,text]
+----
+q=dismax&bf="ord(popularity)^0.5 recip(rord(price),1,1000,1000)^0.3"
+----
+* Introduce a function query inline in the lucene QParser with the `\_val_` keyword. For example:
++
+[source,text]
+----
+q=_val_:mynumericfield _val_:"recip(rord(myfield),1,2,3)"
+----
+
+Only functions with fast random access are recommended.
+
+[[FunctionQueries-AvailableFunctions]]
+== Available Functions
+
+The table below summarizes the functions available for function queries.
+
+// TODO: Change column width to %autowidth.spread when https://github.com/asciidoctor/asciidoctor-pdf/issues/599 is fixed
+
+[cols="20,40,40",options="header"]
+|===
+|Function |Description |Syntax Examples
+|abs |Returns the absolute value of the specified value or function. |`abs(x)` `abs(-5)`
+|"constant" |Specifies a floating point constant. |`1.5`
+|def |`def` is short for default. Returns the value of field "field", or if the field does not exist, returns the default value specified. and yields the first value where `exists()==true`.) |`def(rating,5):` This `def()` function returns the rating, or if no rating specified in the doc, returns 5 `def(myfield, 1.0):` equivalent to `if(exists(myfield),myfield,1.0)`
+|div |Divides one value or function by another. div(x,y) divides x by y. |`div(1,y)` `div(sum(x,100),max(y,1))`
+|dist |Return the distance between two vectors (points) in an n-dimensional space. Takes in the power, plus two or more ValueSource instances and calculates the distances between the two vectors. Each ValueSource must be a number. There must be an even number of ValueSource instances passed in and the method assumes that the first half represent the first vector and the second half represent the second vector. |`dist(2, x, y, 0, 0):` calculates the Euclidean distance between (0,0) and (x,y) for each document `dist(1, x, y, 0, 0)`: calculates the Manhattan (taxicab) distance between (0,0) and (x,y) for each document `dist(2, x,y,z,0,0,0):` Euclidean distance between (0,0,0) and (x,y,z) for each document. `dist(1,x,y,z,e,f,g)`: Manhattan distance between (x,y,z) and (e,f,g) where each letter is a field name
+|docfreq(field,val) |Returns the number of documents that contain the term in the field. This is a constant (the same value for all documents in the index). You can quote the term if it's more complex, or do parameter substitution for the term value. |`docfreq(text,'solr')` `...&defType=func` `&q=docfreq(text,$myterm)&myterm=solr`
+|field[[FunctionQueries-field]] a|
+Returns the numeric docValues or indexed value of the field with the specified name. In its simplest (single argument) form, this function can only be used on single valued fields, and can be called using the name of the field as a string, or for most conventional field names simply use the field name by itself with out using the `field(...)` syntax.
+
+When using docValues, an optional 2nd argument can be specified to select the "`min"` or "```max```" value of multivalued fields.
+
+0 is returned for documents without a value in the field.
+
+ a|
+These 3 examples are all equivalent:
+
+* `myFloatFieldName`
+* `field(myFloatFieldName)`
+* `field("myFloatFieldName")`
+
+The last form is convinient when your field name is atypical:
+
+* `field("my complex float fieldName")`
+
+For multivalued docValues fields:
+
+* `field(myMultiValuedFloatField,min)`
+* `field(myMultiValuedFloatField,max)`
+
+|hsin |The Haversine distance calculates the distance between two points on a sphere when traveling along the sphere. The values must be in radians. `hsin` also take a Boolean argument to specify whether the function should convert its output to radians. |`hsin(2, true, x, y, 0, 0)`
+|idf |Inverse document frequency; a measure of whether the term is common or rare across all documents. Obtained by dividing the total number of documents by the number of documents containing the term, and then taking the logarithm of that quotient. See also `tf`. |`idf(fieldName,'solr')`: measures the inverse of the frequency of the occurrence of the term `'solr'` in` fieldName`.
+|if a|
+Enables conditional function queries. In `if(test,value1,value2)`:
+
+* `test` is or refers to a logical value or expression that returns a logical value (TRUE or FALSE).
+* `value1` is the value that is returned by the function if `test` yields TRUE.
+* `value2` is the value that is returned by the function if `test` yields FALSE.
+
+An expression can be any function which outputs boolean values, or even functions returning numeric values, in which case value 0 will be interpreted as false, or strings, in which case empty string is interpreted as false.
+
+ |`if(termfreq` `(cat,'electronics'),` `popularity,42)` : This function checks each document for the to see if it contains the term "```electronics```" in the `cat` field. If it does, then the value of the `popularity` field is returned, otherwise the value of `42` is returned.
+|linear |Implements `m*x+c` where `m` and `c` are constants and `x` is an arbitrary function. This is equivalent to `sum(product(m,x),c)`, but slightly more efficient as it is implemented as a single function. |`linear(x,m,c)` `linear(x,2,4)` returns `2*x+4`
+|log |Returns the log base 10 of the specified function. a|
+`log(x)`
+
+`log(sum(x,100))`
+
+|map |Maps any values of an input function x that fall within min and max inclusive to the specified target. The arguments min and max must be constants. The arguments `target` and `default` can be constants or functions. If the value of x does not fall between min and max, then either the value of x is returned, or a default value is returned if specified as a 5th argument. a|
+`map(x,min,max,target)` `map(x,0,0,1)` - changes any values of 0 to 1. This can be useful in handling default 0 values.
+
+`map(x,min,max,target,default)` `map(x,0,100,1,-1)` - changes any values between `0` and `100` to `1`, and all other values to` -1`.
+
+`map(x,0,100,` `sum(x,599),` `docfreq(text,solr))` - changes any values between `0` and `100` to x+599, and all other values to frequency of the term 'solr' in the field text.
+
+|max a|
+Returns the maximum numeric value of multiple nested functions or constants, which are specified as arguments: `max(x,y,...)`. The max function can also be useful for "bottoming out" another function or field at some specified constant.
+
+(Use the `field(myfield,max)` syntax for <<FunctionQueries-field,selecting the maximum value of a single multivalued field>>)
+
+ |`max(myfield,myotherfield,0)`
+|maxdoc |Returns the number of documents in the index, including those that are marked as deleted but have not yet been purged. This is a constant (the same value for all documents in the index). |`maxdoc()`
+|min a|
+Returns the minimum numeric value of multiple nested functions of constants, which are specified as arguments: `min(x,y,...)`. The min function can also be useful for providing an "upper bound" on a function using a constant.
+
+(Use the `field(myfield,min)` <<FunctionQueries-field,syntax for selecting the minimum value of a single multivalued field>>)
+
+ |`min(myfield,myotherfield,0)`
+|ms a|
+Returns milliseconds of difference between its arguments. Dates are relative to the Unix or POSIX time epoch, midnight, January 1, 1970 UTC. Arguments may be the name of an indexed `TrieDateField`, or date math based on a <<working-with-dates.adoc#working-with-dates,constant date or `NOW`>>.
+
+* `ms()`: Equivalent to `ms(NOW)`, number of milliseconds since the epoch.
+* `ms(a):` Returns the number of milliseconds since the epoch that the argument represents.
+* `ms(a,b)` : Returns the number of milliseconds that b occurs before a (that is, a - b)
+
+ |`ms(NOW/DAY)` `ms(2000-01-01T00:00:00Z)` `ms(mydatefield)` `ms(NOW,mydatefield)` `ms(mydatefield,` `2000-01-01T00:00:00Z)` `ms(datefield1,` `datefield2)`
+|norm(_field_) |Returns the "norm" stored in the index for the specified field. This is the product of the index time boost and the length normalization factor, according to the {lucene-javadocs}/core/org/apache/lucene/search/similarities/Similarity.html[Similarity] for the field. |`norm(fieldName)`
+|numdocs |Returns the number of documents in the index, not including those that are marked as deleted but have not yet been purged. This is a constant (the same value for all documents in the index). |`numdocs()`
+|ord a|
+Returns the ordinal of the indexed field value within the indexed list of terms for that field in Lucene index order (lexicographically ordered by unicode value), starting at 1. In other words, for a given field, all values are ordered lexicographically; this function then returns the offset of a particular value in that ordering. The field must have a maximum of one value per document (not multi-valued). 0 is returned for documents without a value in the field.
+
+[IMPORTANT]
+====
+`ord()` depends on the position in an index and can change when other documents are inserted or deleted.
+====
+
+See also `rord` below.
+
+ |`ord(myIndexedField)` Example: If there were only three values ("apple","banana","pear") for a particular field X, then: `ord(X) `would be 1 for documents containing "apple", 2 for documnts containing "banana", etc...
+|payload a|
+Returns the float value computed from the decoded payloads of the term specified. The return value is computed using the `min`, `max`, or `average` of the decoded payloads. A special `first` function can be used instead of the others, to short-circuit term enumeration and return only the decoded payload of the first term. The field specified must have float or integer payload encoding capability (via `DelimitedPayloadTokenFilter` or `NumericPayloadTokenFilter`). If no payload is found for the term, the default value is returned.
+
+* `payload(field_name,term)`: default value is 0.0, `average` function is used.
+* `payload(field_name,term,default_value)`: default value can be a constant, field name, or another float returning function. `average` function used.
+* `payload(field_name,term,default_value,function)`: function values can be `min`, `max`, `average`, or `first`. |`payload(payloaded_field_dpf,term,0.0,first)`
+
+|pow |Raises the specified base to the specified power. `pow(x,y)` raises x to the power of y. |`pow(x,y)` `pow(x,log(y))` `pow(x,0.5):` the same as `sqrt`
+|product |Returns the product of multiple values or functions, which are specified in a comma-separated list. `mul(...)` may also be used as an alias for this function. |`product(x,y,...)` `product(x,2)` `product(x,y)mul(x,y)`
+|query |Returns the score for the given subquery, or the default value for documents not matching the query. Any type of subquery is supported through either parameter de-referencing `$otherparam` or direct specification of the query string in the <<local-parameters-in-queries.adoc#local-parameters-in-queries,Local Parameters>> through the `v` key. |`query(subquery, default)` `q=product` `(popularity,` ` query({!dismax v='solr rocks'})`: returns the product of the popularity and the score of the DisMax query. `q=product` `(popularity,` ` query($qq))&qq={!dismax}solr rocks`: equivalent to the previous query, using parameter de-referencing. `q=product` `(popularity,` ` query($qq,0.1))` `&qq={!dismax}` `solr rocks`: specifies a default score of 0.1 for documents that don't match the DisMax query.
+|recip a|
+Performs a reciprocal function with `recip(x,m,a,b)` implementing `a/(m*x+b)` where `m,a,b` are constants, and `x` is any arbitrarily complex function.
+
+When a and b are equal, and x>=0, this function has a maximum value of 1 that drops as x increases. Increasing the value of a and b together results in a movement of the entire function to a flatter part of the curve. These properties can make this an ideal function for boosting more recent documents when x is `rord(datefield)`.
+
+ |`recip(myfield,m,a,b)` `recip(rord` `(creationDate),` `1,1000,1000)`
+|rord |Returns the reverse ordering of that returned by `ord`. |`rord(myDateField)`
+|scale a|
+Scales values of the function x such that they fall between the specified `minTarget` and `maxTarget` inclusive. The current implementation traverses all of the function values to obtain the min and max, so it can pick the correct scale.
+
+The current implementation cannot distinguish when documents have been deleted or documents that have no value. It uses 0.0 values for these cases. This means that if values are normally all greater than 0.0, one can still end up with 0.0 as the min value to map from. In these cases, an appropriate map() function could be used as a workaround to change 0.0 to a value in the real range, as shown here: scale(map(x,0,0,5),1,2)
+
+ |`scale(x,` `minTarget,` `maxTarget)` `scale(x,1,2)`: scales the values of x such that all values will be between 1 and 2 inclusive.
+|sqedist |The Square Euclidean distance calculates the 2-norm (Euclidean distance) but does not take the square root, thus saving a fairly expensive operation. It is often the case that applications that care about Euclidean distance do not need the actual distance, but instead can use the square of the distance. There must be an even number of ValueSource instances passed in and the method assumes that the first half represent the first vector and the second half represent the second vector. |`sqedist(x_td, y_td, 0, 0)`
+|sqrt |Returns the square root of the specified value or function. |`sqrt(x)sqrt(100)sqrt(sum(x,100))`
+|strdist |Calculate the distance between two strings. Uses the Lucene spell checker `StringDistance` interface and supports all of the implementations available in that package, plus allows applications to plug in their own via Solr's resource loading capabilities. `strdist` takes (string1, string2, distance measure). Possible values for distance measure are: jw: Jaro-Winkler edit: Levenstein or Edit distance ngram: The NGramDistance, if specified, can optionally pass in the ngram size too. Default is 2. FQN: Fully Qualified class Name for an implementation of the StringDistance interface. Must have a no-arg constructor. |`strdist("SOLR",id,edit)`
+|sub |Returns x-y from sub(x,y). |`sub(myfield,myfield2)` `sub(100,` `sqrt(myfield))`
+|sum |Returns the sum of multiple values or functions, which are specified in a comma-separated list. `add(...)` may be used as an alias for this function |`sum(x,y,...) sum(x,1)` `sum(x,y)` `sum(sqrt(x),log(y),z,0.5)add(x,y)`
+|sumtotaltermfreq |Returns the sum of `totaltermfreq` values for all terms in the field in the entire index (i.e., the number of indexed tokens for that field). (Aliases `sumtotaltermfreq` to `sttf`.) |If doc1:(fieldX:A B C) and doc2:(fieldX:A A A A): `docFreq(fieldX:A)` = 2 (A appears in 2 docs) `freq(doc1, fieldX:A)` = 4 (A appears 4 times in doc 2) `totalTermFreq(fieldX:A)` = 5 (A appears 5 times across all docs) `sumTotalTermFreq(fieldX)` = 7 in `fieldX`, there are 5 As, 1 B, 1 C
+|termfreq |Returns the number of times the term appears in the field for that document. |`termfreq(text,'memory')`
+|tf |Term frequency; returns the term frequency factor for the given term, using the {lucene-javadocs}/core/org/apache/lucene/search/similarities/Similarity.html[Similarity] for the field. The `tf-idf` value increases proportionally to the number of times a word appears in the document, but is offset by the frequency of the word in the document, which helps to control for the fact that some words are generally more common than others. See also `idf`. |`tf(text,'solr')`
+|top a|
+Causes the function query argument to derive its values from the top-level IndexReader containing all parts of an index. For example, the ordinal of a value in a single segment will be different from the ordinal of that same value in the complete index.
+
+The `ord()` and `rord()` functions implicitly use `top()`, and hence `ord(foo)` is equivalent to `top(ord(foo))`.
+
+ |
+|totaltermfreq |Returns the number of times the term appears in the field in the entire index. (Aliases `totaltermfreq` to `ttf`.) |`ttf(text,'memory')`
+|===
+
+The following functions are boolean – they return true or false. They are mostly useful as the first argument of the `if` function, and some of these can be combined. If used somewhere else, it will yield a '1' or '0'.
+
+[width="100%",options="header",]
+|===
+|Function |Description |Syntax Examples
+|and |Returns a value of true if and only if all of its operands evaluate to true. |`and(not` `(exists` `(popularity)),` `exists` `(price)):` returns `true` for any document which has a value in the `price` field, but does not have a value in the `popularity` field
+|or |A logical disjunction. |`or(value1,value2):` TRUE if either `value1` or `value2` is true.
+|xor |Logical exclusive disjunction, or one or the other but not both. |`xor(field1,field2)` returns TRUE if either `field1` or `field2` is true; FALSE if both are true.
+|not |The logically negated value of the wrapped function. |`not(exists(author))`: TRUE only when `exists(author)` is false.
+|exists |Returns TRUE if any member of the field exists. |`exists(author)` returns TRUE for any document has a value in the "author" field. `exists(query(price:5.00))` returns TRUE if "price" matches "5.00".
+|gt, gte, lt, lte, eq |5 comparison functions: Greater Than, Greater Than or Equal, Less Than, Less Than or Equal, Equal |`if(lt(ms(mydatefield),315569259747),0.8,1)` translates to this pseudocode: `if mydatefield < 315569259747 then 0.8 else 1`
+|===
+
+[[FunctionQueries-ExampleFunctionQueries]]
+== Example Function Queries
+
+To give you a better understanding of how function queries can be used in Solr, suppose an index stores the dimensions in meters x,y,z of some hypothetical boxes with arbitrary names stored in field `boxname`. Suppose we want to search for box matching name `findbox` but ranked according to volumes of boxes. The query parameters would be:
+
+`q=boxname:findbox _val_:"product(x,y,z)"`
+
+This query will rank the results based on volumes. In order to get the computed volume, you will need to request the `score`, which will contain the resultant volume:
+
+`&fl=*, score`
+
+Suppose that you also have a field storing the weight of the box as `weight`. To sort by the density of the box and return the value of the density in score, you would submit the following query:
+
+[source,text]
+----
+http://localhost:8983/solr/collection_name/select?q=boxname:findbox _val_:"div(weight,product(x,y,z))"&fl=boxname x y z weight score
+----
+
+[[FunctionQueries-SortByFunction]]
+== Sort By Function
+
+You can sort your query results by the output of a function. For example, to sort results by distance, you could enter:
+
+[source,text]
+----
+http://localhost:8983/solr/collection_name/select?q=*:*&sort=dist(2, point1, point2) desc
+----
+
+Sort by function also supports pseudo-fields: fields can be generated dynamically and return results as though it was normal field in the index. For example,
+
+`&fl=id,sum(x, y),score`
+
+would return:
+
+[source,xml]
+----
+<str name="id">foo</str>
+<float name="sum(x,y)">40</float>
+<float name="score">0.343</float>
+----

@@ -1,0 +1,140 @@
+= Basic Authentication Plugin
+:page-shortname: basic-authentication-plugin
+:page-permalink: basic-authentication-plugin.html
+
+Solr can support Basic authentication for users with the use of the BasicAuthPlugin.
+
+An authorization plugin is also available to configure Solr with permissions to perform various activities in the system. The authorization plugin is described in the section <<rule-based-authorization-plugin.adoc#rule-based-authorization-plugin,Rule-Based Authorization Plugin>>.
+
+[[BasicAuthenticationPlugin-EnableBasicAuthentication]]
+== Enable Basic Authentication
+
+To use Basic authentication, you must first create a `security.json` file. This file and where to put it is described in detail in the section <<authentication-and-authorization-plugins.adoc#AuthenticationandAuthorizationPlugins-EnablePluginswithsecurity.json,Enable Plugins with security.json>>.
+
+For Basic authentication, the `security.json` file must have an `authentication` part which defines the class being used for authentication. Usernames and passwords (as a sha256(password+salt) hash) could be added when the file is created, or can be added later with the Basic authentication API, described below.
+
+The `authorization` part is not related to Basic authentication, but is a separate authorization plugin designed to support fine-grained user access control. For more information, see the section <<rule-based-authorization-plugin.adoc#rule-based-authorization-plugin,Rule-Based Authorization Plugin>>.
+
+An example `security.json` showing both sections is shown below to show how these plugins can work together:
+
+[source,json]
+----
+{
+"authentication":{
+   "blockUnknown": true,
+   "class":"solr.BasicAuthPlugin",
+   "credentials":{"solr":"IV0EHq1OnNrj6gvRCwvFwTrZ1+z1oBbnQdiVC3otuq0= Ndd7LKvVBAaZIF0QAVi1ekCfAJXr1GGfLtRUXhgrF8c="}
+},
+"authorization":{
+   "class":"solr.RuleBasedAuthorizationPlugin",
+   "permissions":[{"name":"security-edit",
+      "role":"admin"}],
+   "user-role":{"solr":"admin"}
+}}
+----
+
+There are several things defined in this file:
+
+* Basic authentication and rule-based authorization plugins are enabled.
+* A user called 'solr', with a password `'SolrRocks'` has been defined.
+* The parameter `"blockUnknown": true` means that unauthenticated requests are not allowed to pass through.
+* The 'admin' role has been defined, and it has permission to edit security settings.
+* The 'solr' user has been defined to the 'admin' role.
+
+Save your settings to a file called `security.json` locally. If you are using Solr in standalone mode, you should put this file in `$SOLR_HOME`.
+
+If `blockUnknown` does not appear in the `security.json` file, it will default to `false`. This has the effect of not requiring authentication at all. In some cases, you may want this; for example, if you want to have `security.json` in place but aren't ready to enable authentication. However, you will want to ensure that this parameter is set to `true` in order for authentication to be truly enabled in your system.
+
+If you are using SolrCloud, you must upload `security.json` to ZooKeeper. You can use this example command, ensuring that the ZooKeeper port is correct:
+
+[source,bash]
+----
+bin/solr zk cp file:path_to_local_security.json zk:/security.json -z localhost:9983
+----
+
+[[BasicAuthenticationPlugin-Caveats]]
+=== Caveats
+
+There are a few things to keep in mind when using the Basic authentication plugin.
+
+* Credentials are sent in plain text by default. It's recommended to use SSL for communication when Basic authentication is enabled, as described in the section <<enabling-ssl.adoc#enabling-ssl,Enabling SSL>>.
+* A user who has access to write permissions to `security.json` will be able to modify all the permissions and how users have been assigned permissions. Special care should be taken to only grant access to editing security to appropriate users.
+* Your network should, of course, be secure. Even with Basic authentication enabled, you should not unnecessarily expose Solr to the outside world.
+
+[[BasicAuthenticationPlugin-EditingAuthenticationPluginConfiguration]]
+== Editing Authentication Plugin Configuration
+
+An Authentication API allows modifying user IDs and passwords. The API provides an endpoint with specific commands to set user details or delete a user.
+
+[[BasicAuthenticationPlugin-APIEntryPoint]]
+=== API Entry Point
+
+`admin/authentication`
+
+This endpoint is not collection-specific, so users are created for the entire Solr cluster. If users need to be restricted to a specific collection, that can be done with the authorization rules.
+
+[[BasicAuthenticationPlugin-AddaUserorEditaPassword]]
+=== Add a User or Edit a Password
+
+The `set-user` command allows you to add users and change their passwords. For example, the following defines two users and their passwords:
+
+[source,bash]
+----
+curl --user solr:SolrRocks http://localhost:8983/solr/admin/authentication -H 'Content-type:application/json' -d '{
+  "set-user": {"tom" : "TomIsCool" ,
+               "harry":"HarrysSecret"}}'
+----
+
+[[BasicAuthenticationPlugin-DeleteaUser]]
+=== Delete a User
+
+The `delete-user` command allows you to remove a user. The user password does not need to be sent to remove a user. In the following example, we've asked that user IDs 'tom' and 'harry' be removed from the system.
+
+[source,bash]
+----
+curl --user solr:SolrRocks http://localhost:8983/solr/admin/authentication -H 'Content-type:application/json' -d  '{
+ "delete-user": ["tom","harry"]}'
+----
+
+[[BasicAuthenticationPlugin-Setaproperty]]
+=== Set a property
+
+Set arbitrary properties for authentication plugin. The only supported property is `'blockUnknown'`
+
+[source,bash]
+----
+curl --user solr:SolrRocks http://localhost:8983/solr/admin/authentication -H 'Content-type:application/json' -d  '{
+ "set-property": {"blockUnknown":false}}'
+----
+
+[[BasicAuthenticationPlugin-UsingBasicAuthwithSolrJ]]
+=== Using BasicAuth with SolrJ
+
+In SolrJ, the basic authentication credentials need to be set for each request as in this example:
+
+[source,java]
+----
+SolrRequest req ;//create a new request object
+req.setBasicAuthCredentials(userName, password);
+solrClient.request(req);
+----
+
+Query example:
+
+[source,java]
+----
+QueryRequest req = new QueryRequest(new SolrQuery("*:*"));
+req.setBasicAuthCredentials(userName, password);
+QueryResponse rsp = req.process(solrClient);
+----
+
+[[BasicAuthenticationPlugin-UsingCommandLinescriptswithBasicAuth]]
+=== Using Command Line scripts with BasicAuth
+
+Add the following line to the `solr.in.sh` or `solr.in.cmd` file. This example tells the `bin/solr` command line to to use "basic" as the type of authentication, and to pass credentials with the user-name "solr" and password "SolrRocks":
+
+[source,bash]
+----
+SOLR_AUTH_TYPE="basic"
+SOLR_AUTHENTICATION_OPTS="-Dbasicauth=solr:SolrRocks"
+----

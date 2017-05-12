@@ -49,6 +49,7 @@ import com.codahale.metrics.SharedMetricRegistries;
 import com.codahale.metrics.Timer;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.core.CoreContainer;
+import org.apache.solr.core.MetricsConfig;
 import org.apache.solr.core.PluginInfo;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.core.SolrInfoBean;
@@ -102,7 +103,41 @@ public class SolrMetricManager {
 
   public static final int DEFAULT_CLOUD_REPORTER_PERIOD = 60;
 
-  public SolrMetricManager() { }
+  private MetricRegistry.MetricSupplier<Counter> counterSupplier;
+  private MetricRegistry.MetricSupplier<Meter> meterSupplier;
+  private MetricRegistry.MetricSupplier<Timer> timerSupplier;
+  private MetricRegistry.MetricSupplier<Histogram> histogramSupplier;
+
+  public SolrMetricManager() {
+    counterSupplier = MetricSuppliers.counterSupplier(null, null);
+    meterSupplier = MetricSuppliers.meterSupplier(null, null);
+    timerSupplier = MetricSuppliers.timerSupplier(null, null);
+    histogramSupplier = MetricSuppliers.histogramSupplier(null, null);
+  }
+
+  public SolrMetricManager(SolrResourceLoader loader, MetricsConfig metricsConfig) {
+    counterSupplier = MetricSuppliers.counterSupplier(loader, metricsConfig.getCounterSupplier());
+    meterSupplier = MetricSuppliers.meterSupplier(loader, metricsConfig.getMeterSupplier());
+    timerSupplier = MetricSuppliers.timerSupplier(loader, metricsConfig.getTimerSupplier());
+    histogramSupplier = MetricSuppliers.histogramSupplier(loader, metricsConfig.getHistogramSupplier());
+  }
+
+  // for unit tests
+  public MetricRegistry.MetricSupplier<Counter> getCounterSupplier() {
+    return counterSupplier;
+  }
+
+  public MetricRegistry.MetricSupplier<Meter> getMeterSupplier() {
+    return meterSupplier;
+  }
+
+  public MetricRegistry.MetricSupplier<Timer> getTimerSupplier() {
+    return timerSupplier;
+  }
+
+  public MetricRegistry.MetricSupplier<Histogram> getHistogramSupplier() {
+    return histogramSupplier;
+  }
 
   /**
    * An implementation of {@link MetricFilter} that selects metrics
@@ -539,7 +574,7 @@ public class SolrMetricManager {
     if (info != null) {
       info.registerMetricName(name);
     }
-    return registry(registry).meter(name);
+    return registry(registry).meter(name, meterSupplier);
   }
 
   /**
@@ -555,7 +590,7 @@ public class SolrMetricManager {
     if (info != null) {
       info.registerMetricName(name);
     }
-    return registry(registry).timer(name);
+    return registry(registry).timer(name, timerSupplier);
   }
 
   /**
@@ -571,7 +606,7 @@ public class SolrMetricManager {
     if (info != null) {
       info.registerMetricName(name);
     }
-    return registry(registry).counter(name);
+    return registry(registry).counter(name, counterSupplier);
   }
 
   /**
@@ -587,7 +622,7 @@ public class SolrMetricManager {
     if (info != null) {
       info.registerMetricName(name);
     }
-    return registry(registry).histogram(name);
+    return registry(registry).histogram(name, histogramSupplier);
   }
 
   /**

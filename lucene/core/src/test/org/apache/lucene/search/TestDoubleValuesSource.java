@@ -17,6 +17,7 @@
 
 package org.apache.lucene.search;
 
+import java.io.IOException;
 import java.util.Arrays;
 import java.util.Collections;
 
@@ -26,6 +27,7 @@ import org.apache.lucene.document.Field;
 import org.apache.lucene.document.FloatDocValuesField;
 import org.apache.lucene.document.NumericDocValuesField;
 import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.store.Directory;
@@ -163,5 +165,66 @@ public class TestDoubleValuesSource extends LuceneTestCase {
       actual = searcher.searchAfter(actual.scoreDocs[size-1], query, size, mutatedSort);
       CheckHits.checkEqual(query, expected.scoreDocs, actual.scoreDocs);
     }
+  }
+
+  static final Query[] testQueries = new Query[]{
+      new MatchAllDocsQuery(),
+      new TermQuery(new Term("oddeven", "odd")),
+      new BooleanQuery.Builder()
+          .add(new TermQuery(new Term("english", "one")), BooleanClause.Occur.MUST)
+          .add(new TermQuery(new Term("english", "two")), BooleanClause.Occur.MUST)
+          .build()
+  };
+
+  public void testExplanations() throws Exception {
+    for (Query q : testQueries) {
+      testExplanations(q, DoubleValuesSource.fromIntField("int"));
+      testExplanations(q, DoubleValuesSource.fromLongField("long"));
+      testExplanations(q, DoubleValuesSource.fromFloatField("float"));
+      testExplanations(q, DoubleValuesSource.fromDoubleField("double"));
+      testExplanations(q, DoubleValuesSource.fromDoubleField("onefield"));
+      testExplanations(q, DoubleValuesSource.constant(5.45));
+      testExplanations(q, DoubleValuesSource.function(
+          DoubleValuesSource.fromDoubleField("double"), "v * 4 + 73",
+          v -> v * 4 + 73
+      ));
+      testExplanations(q, DoubleValuesSource.scoringFunction(
+          DoubleValuesSource.fromDoubleField("double"), "v * score", (v, s) -> v * s
+      ));
+    }
+  }
+
+  private void testExplanations(Query q, DoubleValuesSource vs) throws IOException {
+    searcher.search(q, new SimpleCollector() {
+
+      DoubleValues v;
+      LeafReaderContext ctx;
+
+      @Override
+      protected void doSetNextReader(LeafReaderContext context) throws IOException {
+        this.ctx = context;
+      }
+
+      @Override
+      public void setScorer(Scorer scorer) throws IOException {
+        this.v = vs.getValues(this.ctx, DoubleValuesSource.fromScorer(scorer));
+      }
+
+      @Override
+      public void collect(int doc) throws IOException {
+        Explanation scoreExpl = searcher.explain(q, ctx.docBase + doc);
+        if (this.v.advanceExact(doc)) {
+          CheckHits.verifyExplanation("", doc, (float) v.doubleValue(), true, vs.explain(ctx, doc, scoreExpl));
+        }
+        else {
+          assertFalse(vs.explain(ctx, doc, scoreExpl).isMatch());
+        }
+      }
+
+      @Override
+      public boolean needsScores() {
+        return vs.needsScores();
+      }
+    });
   }
 }

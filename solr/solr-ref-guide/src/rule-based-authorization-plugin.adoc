@@ -1,0 +1,225 @@
+= Rule-Based Authorization Plugin
+:page-shortname: rule-based-authorization-plugin
+:page-permalink: rule-based-authorization-plugin.html
+
+Solr allows configuring roles to control user access to the system.
+
+This is accomplished through rule-based permission definitions which are assigned to users. The roles are fully customizable, and provide the ability to limit access to specific collections, request handlers, request parameters, and request methods.
+
+The roles can be used with any of the authentication plugins or with a custom authentication plugin if you have created one. You will only need to ensure that you configure the role-to-user mappings with the proper user IDs that your authentication system provides.
+
+Once defined through the API, roles are stored in `security.json`.
+
+[[Rule-BasedAuthorizationPlugin-EnabletheAuthorizationPlugin]]
+== Enable the Authorization Plugin
+
+The plugin must be enabled in `security.json`. This file and where to put it in your system is described in detail in the section <<authentication-and-authorization-plugins.adoc#AuthenticationandAuthorizationPlugins-EnablePluginswithsecurity.json,Enable Plugins with security.json>>.
+
+This file has two parts, the `authentication` part and the `authorization` part. The `authentication` part stores information about the class being used for authentication.
+
+The `authorization` part is not related to Basic authentication, but is a separate authorization plugin designed to support fine-grained user access control. When creating `security.json` you can add the permissions to the file, or you can use the Authorization API described below to add them as needed.
+
+This example `security.json` shows how the <<basic-authentication-plugin.adoc#basic-authentication-plugin,Basic authentication plugin>> can work with this authorization plugin:
+
+[source,json]
+----
+{
+"authentication":{
+   "class":"solr.BasicAuthPlugin",
+   "blockUnknown": true,
+   "credentials":{"solr":"IV0EHq1OnNrj6gvRCwvFwTrZ1+z1oBbnQdiVC3otuq0= Ndd7LKvVBAaZIF0QAVi1ekCfAJXr1GGfLtRUXhgrF8c="}
+},
+"authorization":{
+   "class":"solr.RuleBasedAuthorizationPlugin",
+   "permissions":[{"name":"security-edit",
+      "role":"admin"}],
+   "user-role":{"solr":"admin"}
+}}
+----
+
+There are several things defined in this example:
+
+* Basic authentication and rule-based authorization plugins are enabled.
+* A user called 'solr', with a password has been defined.
+* All requests w/o credentials will be rejected with a 401 error. Set `'blockUnknown'` to false (or remove it altogether) if you wish to let unauthenticated requests to go through. However, if a particular resource is protected by a rule, they are rejected anyway with a 401 error.
+* The 'admin' role has been defined, and it has permission to edit security settings.
+* The 'solr' user has been defined to the 'admin' role.
+
+[[Rule-BasedAuthorizationPlugin-PermissionAttributes]]
+== Permission Attributes
+
+Each role is comprised of one or more permissions which define what the user is allowed to do. Each permission is made up of several attributes that define the allowed activity. There are some pre-defined permissions which cannot be modified.
+
+The permissions are consulted in order they appear in `security.json`. The first permission that matches is applied for each user, so the strictest permissions should be at the top of the list. Permissions order can be controlled with a parameter of the Authorization API, as described below.
+
+[[Rule-BasedAuthorizationPlugin-PredefinedPermissions]]
+=== Predefined Permissions
+
+There are several permissions that are pre-defined. These have fixed default values, which cannot be modified, and new attributes cannot be added. To use these attributes, simply define a role that includes this permission, and then assign a user to that role.
+
+The pre-defined permissions are:
+
+* *security-edit:* this permission is allowed to edit the security configuration, meaning any update action that modifies `security.json` through the APIs will be allowed.
+* *security-read*: this permission is allowed to read the security configuration, meaning any action that reads `security.json` settings through the APIs will be allowed.
+* *schema-edit*: this permission is allowed to edit a collection's schema using the <<schema-api.adoc#schema-api,Schema API>>. Note that this allows schema edit permissions for _all_ collections. If edit permissions should only be applied to specific collections, a custom permission would need to be created.
+* *schema-read*: this permission is allowed to read a collection's schema using the <<schema-api.adoc#schema-api,Schema API>>. Note that this allows schema read permissions for _all_ collections. If read permissions should only be applied to specific collections, a custom permission would need to be created.
+* *config-edit*: this permission is allowed to edit a collection's configuration using the <<config-api.adoc#config-api,Config API>>, the <<request-parameters-api.adoc#request-parameters-api,Request Parameters API>>, and other APIs which modify `configoverlay.json`. Note that this allows configuration edit permissions for _all_ collections. If edit permissions should only be applied to specific collections, a custom permission would need to be created.
+* *core-admin-read* : Read operations on the core admin API
+* *core-admin-edit*: Core admin commands that can mutate the system state.
+* *config-read*: this permission is allowed to read a collection's configuration using the <<config-api.adoc#config-api,Config API>>, the <<request-parameters-api.adoc#request-parameters-api,Request Parameters API>>, and other APIs which modify `configoverlay.json`. Note that this allows configuration read permissions for _all_ collections. If read permissions should only be applied to specific collections, a custom permission would need to be created.
+* *collection-admin-edit*: this permission is allowed to edit a collection's configuration using the <<collections-api.adoc#collections-api,Collections API>>. Note that this allows configuration edit permissions for _all_ collections. If edit permissions should only be applied to specific collections, a custom permission would need to be created. Specifically, the following actions of the Collections API would be allowed:
+** CREATE
+** RELOAD
+** SPLITSHARD
+** CREATESHARD
+** DELETESHARD
+** CREATEALIAS
+** DELETEALIAS
+** DELETE
+** DELETEREPLICA
+** ADDREPLICA
+** CLUSTERPROP
+** MIGRATE
+** ADDROLE
+** REMOVEROLE
+** ADDREPLICAPROP
+** DELETEREPLICAPROP
+** BALANCESHARDUNIQUE
+** REBALANCELEADERS
+* *collection-admin-read*: this permission is allowed to read a collection's configuration using the <<collections-api.adoc#collections-api,Collections API>>. Note that this allows configuration read permissions for _all_ collections. If read permissions should only be applied to specific collections, a custom permission would need to be created. Specifically, the following actions of the Collections API would be allowed:
+** LIST
+** OVERSEERSTATUS
+** CLUSTERSTATUS
+** REQUESTSTATUS
+* *update*: this permission is allowed to perform any update action on any collection. This includes sending documents for indexing (using an <<requesthandlers-and-searchcomponents-in-solrconfig.adoc#RequestHandlersandSearchComponentsinSolrConfig-UpdateRequestHandlers,update request handler>>). This applies to all collections by default (`collection:"*"`).
+* *read*: this permission is allowed to perform any read action on any collection. This includes querying using search handlers (using <<requesthandlers-and-searchcomponents-in-solrconfig.adoc#RequestHandlersandSearchComponentsinSolrConfig-SearchHandlers,request handlers>>) such as `/select`, `/get`, `/browse`, `/tvrh`, `/terms`, `/clustering`, `/elevate`, `/export`, `/spell`, `/clustering`, and `/sql`. This applies to all collections by default ( `collection:"*"` ).
+* *all*: Any requests coming to Solr.
+
+[[Rule-BasedAuthorizationPlugin-AuthorizationAPI]]
+== Authorization API
+
+[[Rule-BasedAuthorizationPlugin-APIEndpoint]]
+=== API Endpoint
+
+`/admin/authorization`: takes a set of commands to create permissions, map permissions to roles, and map roles to users.
+
+[[Rule-BasedAuthorizationPlugin-ManagePermissions]]
+=== Manage Permissions
+
+Three commands control managing permissions:
+
+* `set-permission`: create a new permission, overwrite an existing permission definition, or assign a pre-defined permission to a role.
+* `update-permission`: update some attributes of an existing permission definition.
+* `delete-permission`: remove a permission definition.
+
+Permissions need to be created if they are not on the list of pre-defined permissions above.
+
+Several properties can be used to define your custom permission.
+
+// TODO: Change column width to %autowidth.spread when https://github.com/asciidoctor/asciidoctor-pdf/issues/599 is fixed
+
+[cols="30,70",options="header"]
+|===
+|Property |Description
+|name |The name of the permission. This is required only if it is a predefined permission.
+|collection a|
+The collection or collections the permission will apply to.
+
+When the path that will be allowed is collection-specific, such as when setting permissions to allow useof the Schema API, omitting the collection property will allow the defined path and/or method for all collections. However, when the path is one that is non-collection-specific, such as the Collections API, the collection value must be `null`. The default value is * (all collections).
+
+|path |A request handler name, such as `/update` or `/select`. A wild card is supported, to allow for all paths as appropriate (such as, `/update/*`).
+|method |HTTP methods that are allowed for this permission. You could allow only GET requests, or have a role that allows PUT and POST requests. The method values that are allowed for this property are GET, POST, PUT,DELETEand HEAD.
+|params a|
+The names and values of request parameters. This property can be omitted if all request parameters are to be matched, but will restrict access only to the values provided if defined.
+
+For example, this property could be used to limit the actions a role is allowed to perform with the Collections API. If the role should only be allowed to perform the LIST or CLUSTERSTATUS requests, you would define this as follows:
+
+[source,json]
+----
+"params": {
+   "action": ["LIST", "CLUSTERSTATUS"]
+}
+----
+
+The value of the parameter can be a simple string or it could be a regular expression. Use the prefix `REGEX:` to use a regular expression match instead of a string identity match
+
+If the commands LIST and CLUSTERSTATUS are case insensitive, the above example should be as follows
+
+[source,json]
+----
+"params": {
+   "action": ["REGEX:(?i)LIST", "REGEX:(?i)CLUSTERSTATUS"]
+}
+----
+
+|before |This property allows ordering of permissions. The value of this property is the index of the permission that this new permission should be placed before in `security.json`. The index is automatically assigned in the order they are created
+|role |The name of the role(s) to give this permission. This name will be used to map user IDs to the role to grant these permissions. The value can be wildcard such as (`*`), which means that any user is OK, but no user is NOT OK.
+|===
+
+The following creates a new permission named "collection-mgr" that is allowed to create and list collections. The permission will be placed before the "read" permission. Note also that we have defined "collection as `null`, this is because requests to the Collections API are never collection-specific.
+
+[source,bash]
+----
+curl --user solr:SolrRocks -H 'Content-type:application/json' -d '{
+  "set-permission": {"collection": null,
+                     "path":"/admin/collections",
+                     "params":{"action":[LIST, CREATE]},
+                     "before: 3,
+                     "role": "admin"}
+}' http://localhost:8983/solr/admin/authorization
+----
+
+Apply an update permission on all collections to a role called `dev` and read permissions to a role called `guest`:
+
+[source,bash]
+----
+curl --user solr:SolrRocks -H 'Content-type:application/json' -d '{
+  "set-permission": {"name": "update, "role":"dev"},
+  "set-permission": {"name": "read, "role":"guest"},
+}' http://localhost:8983/solr/admin/authorization
+----
+
+[[Rule-BasedAuthorizationPlugin-UpdateorDeletePermissions]]
+=== Update or Delete Permissions
+
+Permissions can be accessed using their index in the list. Use the `/admin/authorization` API to see the existing permissions and their indices.
+
+The following example updates the '`role`' attribute of permission at index '`3`':
+
+[source,bash]
+----
+curl --user solr:SolrRocks -H 'Content-type:application/json' -d '{
+  "update-permission": {"index": 3,
+                       "role": ["admin", "dev"]}
+}' http://localhost:8983/solr/admin/authorization
+----
+
+The following example deletes permission at index '`3`':
+
+[source,bash]
+----
+curl --user solr:SolrRocks -H 'Content-type:application/json' -d '{
+  "delete-permission": 3
+}' http://localhost:8983/solr/admin/authorization
+----
+
+[[Rule-BasedAuthorizationPlugin-MapRolestoUsers]]
+=== Map Roles to Users
+
+A single command allows roles to be mapped to users:
+
+* `set-user-role`: map a user to a permission.
+
+To remove a user's permission, you should set the role to `null`. There is no command to delete a user role.
+
+The values supplied to the command are simply a user ID and one or more roles the user should have.
+
+For example, the following would grant a user "solr" the "admin" and "dev" roles, and remove all roles from the user ID "harry":
+
+[source,bash]
+----
+curl -u solr:SolrRocks -H 'Content-type:application/json' -d '{
+   "set-user-role" : {"solr": ["admin","dev"],
+                      "harry": null}
+}' http://localhost:8983/solr/admin/authorization
+----

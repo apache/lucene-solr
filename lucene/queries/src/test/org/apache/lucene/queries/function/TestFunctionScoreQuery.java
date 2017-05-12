@@ -70,7 +70,7 @@ public class TestFunctionScoreQuery extends FunctionTestSetup {
   public void testScoreModifyingSource() throws Exception {
 
     DoubleValuesSource iii = DoubleValuesSource.fromIntField("iii");
-    DoubleValuesSource score = DoubleValuesSource.scoringFunction(iii, (v, s) -> v * s);
+    DoubleValuesSource score = DoubleValuesSource.scoringFunction(iii, "v * s", (v, s) -> v * s);
 
     BooleanQuery bq = new BooleanQuery.Builder()
         .add(new TermQuery(new Term(TEXT_FIELD, "first")), BooleanClause.Occur.SHOULD)
@@ -96,7 +96,7 @@ public class TestFunctionScoreQuery extends FunctionTestSetup {
   public void testBoostsAreAppliedLast() throws Exception {
 
     DoubleValuesSource scores
-        = DoubleValuesSource.function(DoubleValuesSource.SCORES, v -> Math.log(v + 4));
+        = DoubleValuesSource.function(DoubleValuesSource.SCORES, "ln(v + 4)", v -> Math.log(v + 4));
 
     Query q1 = new FunctionScoreQuery(new TermQuery(new Term(TEXT_FIELD, "text")), scores);
     TopDocs plain = searcher.search(q1, 5);

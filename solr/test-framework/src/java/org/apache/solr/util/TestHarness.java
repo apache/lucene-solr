@@ -36,6 +36,7 @@ import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.CoreDescriptor;
 import org.apache.solr.core.CorePropertiesLocator;
 import org.apache.solr.core.CoresLocator;
+import org.apache.solr.core.MetricsConfig;
 import org.apache.solr.core.NodeConfig;
 import org.apache.solr.core.PluginInfo;
 import org.apache.solr.core.SolrConfig;
@@ -197,12 +198,15 @@ public class TestHarness extends BaseTestHarness {
     attributes.put("name", "default");
     attributes.put("class", SolrJmxReporter.class.getName());
     PluginInfo defaultPlugin = new PluginInfo("reporter", attributes);
+    MetricsConfig metricsConfig = new MetricsConfig.MetricsConfigBuilder()
+        .setMetricReporterPlugins(new PluginInfo[] {defaultPlugin})
+        .build();
 
     return new NodeConfig.NodeConfigBuilder("testNode", loader)
         .setUseSchemaCache(Boolean.getBoolean("shareSchema"))
         .setCloudConfig(cloudConfig)
         .setUpdateShardHandlerConfig(updateShardHandlerConfig)
-        .setMetricReporterPlugins(new PluginInfo[] {defaultPlugin})
+        .setMetricsConfig(metricsConfig)
         .build();
   }
 

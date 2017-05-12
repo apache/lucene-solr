@@ -292,7 +292,7 @@ public class FastLRUCache<K, V> extends SolrCacheBase implements SolrCache<K,V> 
 
   @Override
   public String toString() {
-    return name() + cacheMap != null ? cacheMap.getValue().toString() : "";
+    return name() + (cacheMap != null ? cacheMap.getValue().toString() : "");
   }
 
 }

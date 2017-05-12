@@ -59,6 +59,16 @@ public abstract class DoubleValuesSource {
   public abstract boolean needsScores();
 
   /**
+   * An explanation of the value for the named document.
+   *
+   * @param ctx the readers context to create the {@link Explanation} for.
+   * @param docId the document's id relative to the given context's reader
+   * @return an Explanation for the value
+   * @throws IOException if an {@link IOException} occurs
+   */
+  public abstract Explanation explain(LeafReaderContext ctx, int docId, Explanation scoreExplanation) throws IOException;
+
+  /**
    * Create a sort field based on the value of this producer
    * @param reverse true if the sort should be decreasing
    */
@@ -149,6 +159,11 @@ public abstract class DoubleValuesSource {
     public boolean needsScores() {
       return true;
     }
+
+    @Override
+    public Explanation explain(LeafReaderContext ctx, int docId, Explanation scoreExplanation) {
+      return scoreExplanation;
+    }
   };
 
   /**
@@ -177,6 +192,11 @@ public abstract class DoubleValuesSource {
       }
 
       @Override
+      public Explanation explain(LeafReaderContext ctx, int docId, Explanation scoreExplanation) {
+        return Explanation.match((float) value, "constant(" + value + ")");
+      }
+
+      @Override
       public String toString() {
         return "constant(" + value + ")";
       }
@@ -186,7 +206,7 @@ public abstract class DoubleValuesSource {
   /**
    * Creates a DoubleValuesSource that is a function of another DoubleValuesSource
    */
-  public static DoubleValuesSource function(DoubleValuesSource in, DoubleUnaryOperator function) {
+  public static DoubleValuesSource function(DoubleValuesSource in, String description, DoubleUnaryOperator function) {
     return new DoubleValuesSource() {
       @Override
       public DoubleValues getValues(LeafReaderContext ctx, DoubleValues scores) throws IOException {
@@ -208,15 +228,22 @@ public abstract class DoubleValuesSource {
       public boolean needsScores() {
         return in.needsScores();
       }
+
+      @Override
+      public Explanation explain(LeafReaderContext ctx, int docId, Explanation scoreExplanation) throws IOException {
+        Explanation inner = in.explain(ctx, docId, scoreExplanation);
+        return Explanation.match((float) function.applyAsDouble(inner.getValue()), description + ", computed from:", inner, scoreExplanation);
+      }
     };
   }
 
   /**
    * Creates a DoubleValuesSource that is a function of another DoubleValuesSource and a score
    * @param in        the DoubleValuesSource to use as an input
+   * @param description a description of the function
    * @param function  a function of the form (source, score) == result
    */
-  public static DoubleValuesSource scoringFunction(DoubleValuesSource in, ToDoubleBiFunction<Double, Double> function) {
+  public static DoubleValuesSource scoringFunction(DoubleValuesSource in, String description, ToDoubleBiFunction<Double, Double> function) {
     return new DoubleValuesSource() {
       @Override
       public DoubleValues getValues(LeafReaderContext ctx, DoubleValues scores) throws IOException {
@@ -237,6 +264,13 @@ public abstract class DoubleValuesSource {
       @Override
       public boolean needsScores() {
         return true;
+      }
+
+      @Override
+      public Explanation explain(LeafReaderContext ctx, int docId, Explanation scoreExplanation) throws IOException {
+        Explanation inner = in.explain(ctx, docId, scoreExplanation);
+        return Explanation.match((float) function.applyAsDouble((double)inner.getValue(), (double)scoreExplanation.getValue()),
+                    description + ", computed from:", inner, scoreExplanation);
       }
     };
   }
@@ -302,6 +336,15 @@ public abstract class DoubleValuesSource {
     @Override
     public boolean needsScores() {
       return false;
+    }
+
+    @Override
+    public Explanation explain(LeafReaderContext ctx, int docId, Explanation scoreExplanation) throws IOException {
+      DoubleValues values = getValues(ctx, null);
+      if (values.advanceExact(docId))
+        return Explanation.match((float)values.doubleValue(), "double(" + field + ")");
+      else
+        return Explanation.noMatch("double(" + field + ")");
     }
   }
 

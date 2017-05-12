@@ -1070,6 +1070,10 @@ public class SolrPluginUtils {
 
 
   public static void invokeSetters(Object bean, Iterable<Map.Entry<String,Object>> initArgs) {
+    invokeSetters(bean, initArgs, false);
+  }
+
+  public static void invokeSetters(Object bean, Iterable<Map.Entry<String,Object>> initArgs, boolean lenient) {
     if (initArgs == null) return;
     final Class<?> clazz = bean.getClass();
     for (Map.Entry<String,Object> entry : initArgs) {
@@ -1077,19 +1081,27 @@ public class SolrPluginUtils {
       String setterName = "set" + String.valueOf(Character.toUpperCase(key.charAt(0))) + key.substring(1);
       try {
         final Object val = entry.getValue();
-        final Method method = findSetter(clazz, setterName, key, val.getClass());
-        method.invoke(bean, val);
+        final Method method = findSetter(clazz, setterName, key, val.getClass(), lenient);
+        if (method != null) {
+          method.invoke(bean, val);
+        }
       } catch (InvocationTargetException | IllegalAccessException e1) {
+        if (lenient) {
+          continue;
+        }
         throw new RuntimeException("Error invoking setter " + setterName + " on class : " + clazz.getName(), e1);
       }
     }
   }
 
-  private static Method findSetter(Class<?> clazz, String setterName, String key, Class<?> paramClazz) {
+  private static Method findSetter(Class<?> clazz, String setterName, String key, Class<?> paramClazz, boolean lenient) {
     BeanInfo beanInfo;
     try {
       beanInfo = Introspector.getBeanInfo(clazz);
     } catch (IntrospectionException ie) {
+      if (lenient) {
+        return null;
+      }
       throw new RuntimeException("Error getting bean info for class : " + clazz.getName(), ie);
     }
     for (final boolean matchParamClazz: new boolean[]{true, false}) {
@@ -1101,6 +1113,9 @@ public class SolrPluginUtils {
           return m;
         }
       }
+    }
+    if (lenient) {
+      return null;
     }
     throw new RuntimeException("No setter corrresponding to '" + key + "' in " + clazz.getName());
   }

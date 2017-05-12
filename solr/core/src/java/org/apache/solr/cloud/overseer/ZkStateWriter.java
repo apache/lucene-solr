@@ -166,6 +166,9 @@ public class ZkStateWriter {
    * @return true if a flush is required, false otherwise
    */
   protected boolean maybeFlushBefore(ZkWriteCommand cmd) {
+    if (cmd.collection == null || lastStateFormat <= 0) {
+      return false;
+    }
     return cmd.collection.getStateFormat() != lastStateFormat;
   }
 

@@ -91,6 +91,35 @@ public class DistributedQueueTest extends SolrTestCaseJ4 {
   }
 
   @Test
+  public void testDistributedQueueCache() throws Exception {
+    String dqZNode = "/distqueue/test";
+    byte[] data = "hello world".getBytes(UTF8);
+
+    DistributedQueue consumer = makeDistributedQueue(dqZNode);
+    DistributedQueue producer = makeDistributedQueue(dqZNode);
+    DistributedQueue producer2 = makeDistributedQueue(dqZNode);
+
+    producer2.offer(data);
+    producer.offer(data);
+    producer.offer(data);
+    consumer.poll();
+
+    assertEquals(2, consumer.getStats().getQueueLength());
+    producer.offer(data);
+    producer2.offer(data);
+    consumer.poll();
+    // Wait for watcher being kicked off
+    while (!consumer.isDirty()) {
+      Thread.sleep(20);
+    }
+    // DQ still have elements in their queue, so we should not fetch elements path from Zk
+    assertEquals(1, consumer.getStats().getQueueLength());
+    consumer.poll();
+    consumer.peek();
+    assertEquals(2, consumer.getStats().getQueueLength());
+  }
+
+  @Test
   public void testDistributedQueueBlocking() throws Exception {
     String dqZNode = "/distqueue/test";
     String testData = "hello world";
@@ -161,6 +190,13 @@ public class DistributedQueueTest extends SolrTestCaseJ4 {
     // dirty and watcher state indeterminate here, race with watcher
     Thread.sleep(100); // watcher should have fired now
     assertNotNull(dq.peek());
+    // in case of race condition, childWatcher is kicked off after peek()
+    if (dq.watcherCount() == 0) {
+      assertTrue(dq.isDirty());
+      dq.poll();
+      dq.offer("hello world".getBytes(UTF8));
+      dq.peek();
+    }
     assertEquals(1, dq.watcherCount());
     assertFalse(dq.isDirty());
     assertFalse(dq.peekElements(1, 1, s -> true).isEmpty());

@@ -88,6 +88,10 @@ New Features
 * SOLR-10547: JSON Facet API: Implement support for single-valued string fields for min/max aggregations.
   (yonik)
 
+* SOLR-10262: Add support for configurable metrics implementations. (ab)
+
+* SOLR-10431: Make it possible to invoke v2 api calls using SolrJ (Cao Manh Dat, Noble Paul, shalin)
+
 Bug Fixes
 ----------------------
 * SOLR-9262: Connection and read timeouts are being ignored by UpdateShardHandler after SOLR-4509.
@@ -95,6 +99,11 @@ Bug Fixes
 
 * SOLR-9837: Fix 55% performance regression of FieldCache uninvert time of
   numeric fields.  (yonik)
+
+* SOLR-10408: v2 API introspect should return useful message for non-existent command (Cao Manh Dat)
+
+* SOLR-10411: v2 Collection API "modify" command specification's replicationFactor property is incorrectly typed as string, 
+  should be integer (Cao Manh Dat)
 
 Optimizations
 ----------------------
@@ -132,7 +141,29 @@ Other Changes
 * SOLR-10310: By default, stop splitting on whitespace prior to analysis
   in edismax and standard/"lucene" query parsers. (Steve Rowe)
 
-* SOLR-10572: Removed three "no longer supported in solrconfig.xml" asserts. (Christine Poerschke)
+* SOLR-10647: Move the V1 <-> V2 API mapping to SolrJ (noble)
+
+==================  6.7.0 ==================
+
+Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release.
+
+Versions of Major Components
+---------------------
+Apache Tika 1.13
+Carrot2 3.15.0
+Velocity 1.7 and Velocity Tools 2.0
+Apache UIMA 2.3.1
+Apache ZooKeeper 3.4.10
+Jetty 9.3.14.v20161028
+
+Detailed Change List
+----------------------
+
+Other Changes
+----------------------
+
+* SOLR-10617: JDBCStream accepts columns of type TIME, DATE & TIMESTAMP as well as CLOBs and decimal
+  numeric types (James Dyer)
 
 ==================  6.6.0 ==================
 
@@ -240,6 +271,11 @@ New Features
 
 * SOLR-10625: Add convolution Stream Evaluator (Joel Bernstein)
 
+* SOLR-10638: Add normalize Stream Evaluator (Joel Bernstein)
+
+* SOLR-8440: Support for enabling basic authentication using bin/solr|bin/solr.cmd. (Ishan Chattopadhyaya, janhoy,
+  Noble Paul, Hrishikesh Gadre)
+
 Optimizations
 ----------------------
 
@@ -256,7 +292,9 @@ Optimizations
 * SOLR-10548: JSON Facet API now uses hyper-log-log++ for determining the number of buckets
   when merging requests from a multi-shard distributed request. (yonik)
 
-* SOLR-10524: Explore in-memory partitioning for processing Overseer queue messages (Cao Manh Dat, Noble Paul, shalin, Scott Blum)
+* SOLR-10524: Better ZkStateWriter batching (Cao Manh Dat, Noble Paul, shalin, Scott Blum)
+
+* SOLR-10619: Optimize using cache for DistributedQueue in case of single-consumer (Cao Manh Dat, Scott Blum)
 
 Bug Fixes
 ----------------------
@@ -324,6 +362,10 @@ Bug Fixes
 * SOLR-10630: HttpSolrCall.getAuthCtx().new AuthorizationContext() {...}.getParams()
   sometimes throws java.lang.NullPointerException (hu xiaodong via shalin)
 
+* SOLR-9527: Improve distribution of replicas when restoring a collection
+  (Hrishikesh Gadre, Stephen Lewis, Rohit, Varun Thacker)
+
+
 Other Changes
 ----------------------
 
@@ -346,6 +388,7 @@ Other Changes
 
 * SOLR-10357: Enable edismax and standard query parsers to handle the option combination 
   sow=false / autoGeneratePhraseQueries="true" by setting QueryBuilder.autoGenerateMultiTermSynonymsQuery.
+  (Steve Rowe)
 
 * SOLR-10147: Admin UI -> Cloud -> Graph: Impossible to see shard state (Amrit Sarkar, janhoy)
 
@@ -390,6 +433,8 @@ Other Changes
 * SOLR-10522: Revert SpellCheckComponent response format change from SOLR-9972 (rel. 6.5.0).  While this
   was an improvement for the json "arrntv" format, it caused problems for the default json format.
   (James Dyer, reported by Nikita Pchelintsev)
+
+* SOLR-10644: solr.in.sh installed by install script should be writable by solr user (janhoy)
 
 ==================  6.5.1 ==================
 

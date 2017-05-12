@@ -30,7 +30,7 @@ import org.apache.solr.request.LocalSolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.security.BasicAuthPlugin;
 import org.apache.solr.security.RuleBasedAuthorizationPlugin;
-import org.apache.solr.util.CommandOperation;
+import org.apache.solr.common.util.CommandOperation;
 
 import static org.apache.solr.common.util.Utils.makeMap;
 import static org.apache.solr.handler.admin.SecurityConfHandler.SecurityConfig;

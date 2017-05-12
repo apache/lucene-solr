@@ -570,7 +570,7 @@ public class StreamExpressionTest extends SolrCloudTestCase {
         .add(id, "0", "a_i", "1", "a_f", "0", "s_multi", "aaa", "s_multi", "bbb", "i_multi", "100", "i_multi", "200")
         .add(id, "2", "a_s", "hello2", "a_i", "3", "a_f", "0")
         .add(id, "3", "a_s", "hello3", "a_i", "4", "a_f", "3")
-        .add(id, "4", "a_s", "hello4",             "a_f", "4")
+        .add(id, "4", "a_s", "hello4", "a_f", "4")
         .add(id, "1", "a_s", "hello1", "a_i", "2", "a_f", "1")
         .commit(cluster.getSolrClient(), COLLECTIONORALIAS);
 
@@ -4049,7 +4049,7 @@ public class StreamExpressionTest extends SolrCloudTestCase {
         false, true, TIMEOUT);
 
     new UpdateRequest()
-        .add(id, "0", "a_s", "hello0", "a_i", "0", "a_f", "0", "s_multi", "aaaa",  "s_multi", "bbbb",  "i_multi", "4", "i_multi", "7")
+        .add(id, "0", "a_s", "hello0", "a_i", "0", "a_f", "0", "s_multi", "aaaa", "s_multi", "bbbb", "i_multi", "4", "i_multi", "7")
         .add(id, "2", "a_s", "hello2", "a_i", "2", "a_f", "0", "s_multi", "aaaa1", "s_multi", "bbbb1", "i_multi", "44", "i_multi", "77")
         .add(id, "3", "a_s", "hello3", "a_i", "3", "a_f", "3", "s_multi", "aaaa2", "s_multi", "bbbb2", "i_multi", "444", "i_multi", "777")
         .add(id, "4", "a_s", "hello4", "a_i", "4", "a_f", "4", "s_multi", "aaaa3", "s_multi", "bbbb3", "i_multi", "4444", "i_multi", "7777")
@@ -5300,6 +5300,58 @@ public class StreamExpressionTest extends SolrCloudTestCase {
   }
 
   @Test
+  public void testReverse() throws Exception {
+    UpdateRequest updateRequest = new UpdateRequest();
+
+    int i=0;
+    while(i<50) {
+      updateRequest.add(id, "id_"+(++i),"test_dt", getDateString("2016", "5", "1"), "price_f", "400.00");
+    }
+
+    while(i<100) {
+      updateRequest.add(id, "id_"+(++i),"test_dt", getDateString("2015", "5", "1"), "price_f", "300.0");
+    }
+
+    while(i<150) {
+      updateRequest.add(id, "id_"+(++i),"test_dt", getDateString("2014", "5", "1"), "price_f", "500.0");
+    }
+
+    while(i<250) {
+      updateRequest.add(id, "id_"+(++i),"test_dt", getDateString("2013", "5", "1"), "price_f", "100.00");
+    }
+
+    updateRequest.commit(cluster.getSolrClient(), COLLECTIONORALIAS);
+
+    String expr = "timeseries("+COLLECTIONORALIAS+", q=\"*:*\", start=\"2013-01-01T01:00:00.000Z\", " +
+        "end=\"2016-12-01T01:00:00.000Z\", " +
+        "gap=\"+1YEAR\", " +
+        "field=\"test_dt\", " +
+        "count(*), sum(price_f), max(price_f), min(price_f))";
+
+    String cexpr = "let(a="+expr+", c=col(a, max(price_f)), tuple(reverse=rev(c)))";
+
+    ModifiableSolrParams paramsLoc = new ModifiableSolrParams();
+    paramsLoc.set("expr", cexpr);
+    paramsLoc.set("qt", "/stream");
+
+    String url = cluster.getJettySolrRunners().get(0).getBaseUrl().toString()+"/"+COLLECTIONORALIAS;
+    TupleStream solrStream = new SolrStream(url, paramsLoc);
+
+    StreamContext context = new StreamContext();
+    solrStream.setStreamContext(context);
+    List<Tuple> tuples = getTuples(solrStream);
+    assertTrue(tuples.size() == 1);
+    List<Number> reverse = (List<Number>)tuples.get(0).get("reverse");
+    assertTrue(reverse.size() == 4);
+    assertTrue(reverse.get(0).doubleValue() == 400D);
+    assertTrue(reverse.get(1).doubleValue() == 300D);
+    assertTrue(reverse.get(2).doubleValue() == 500D);
+    assertTrue(reverse.get(3).doubleValue() == 100D);
+  }
+
+
+
+  @Test
   public void testConvolution() throws Exception {
     UpdateRequest updateRequest = new UpdateRequest();
 
@@ -5399,6 +5451,59 @@ public class StreamExpressionTest extends SolrCloudTestCase {
     assertTrue(intercept == 0.0D);
     double prediction = tuple.getDouble("p");
     assertTrue(prediction == 600.0D);
+  }
+
+  @Test
+  public void testNormalize() throws Exception {
+    UpdateRequest updateRequest = new UpdateRequest();
+
+    updateRequest.add(id, "1", "price_f", "100.0", "col_s", "a", "order_i", "1");
+    updateRequest.add(id, "2", "price_f", "200.0", "col_s", "a", "order_i", "2");
+    updateRequest.add(id, "3", "price_f", "300.0", "col_s", "a", "order_i", "3");
+    updateRequest.add(id, "4", "price_f", "100.0", "col_s", "a", "order_i", "4");
+    updateRequest.add(id, "5", "price_f", "200.0", "col_s", "a", "order_i", "5");
+    updateRequest.add(id, "6", "price_f", "400.0", "col_s", "a", "order_i", "6");
+    updateRequest.add(id, "7", "price_f", "600.0", "col_s", "a", "order_i", "7");
+
+    updateRequest.commit(cluster.getSolrClient(), COLLECTIONORALIAS);
+
+    String expr1 = "search("+COLLECTIONORALIAS+", q=\"col_s:a\", fl=\"price_f, order_i\", sort=\"order_i asc\")";
+    String cexpr = "let(a="+expr1+", c=col(a, price_f), tuple(n=normalize(c), c=c))";
+
+    ModifiableSolrParams paramsLoc = new ModifiableSolrParams();
+    paramsLoc.set("expr", cexpr);
+    paramsLoc.set("qt", "/stream");
+
+    String url = cluster.getJettySolrRunners().get(0).getBaseUrl().toString()+"/"+COLLECTIONORALIAS;
+    TupleStream solrStream = new SolrStream(url, paramsLoc);
+
+    StreamContext context = new StreamContext();
+    solrStream.setStreamContext(context);
+    List<Tuple> tuples = getTuples(solrStream);
+    assertTrue(tuples.size() == 1);
+    Tuple tuple = tuples.get(0);
+    List<Double> col = (List<Double>)tuple.get("c");
+    List<Double> normalized = (List<Double>)tuple.get("n");
+
+    assertTrue(col.size() == normalized.size());
+
+    double total = 0.0D;
+
+    for(double d : normalized) {
+      total += d;
+    }
+
+    double mean = total/normalized.size();
+    assert(Math.round(mean) == 0);
+
+    double sd = 0;
+    for (int i = 0; i < normalized.size(); i++)
+    {
+      sd += Math.pow(normalized.get(i) - mean, 2) / normalized.size();
+    }
+    double standardDeviation = Math.sqrt(sd);
+
+    assertTrue(Math.round(standardDeviation) == 1);
   }
 
   @Test
@@ -5717,7 +5822,7 @@ public class StreamExpressionTest extends SolrCloudTestCase {
     cluster.getSolrClient().commit("destination");
     paramsLoc = new ModifiableSolrParams();
     paramsLoc.set("expr", "search(destination, q=\"*:*\", fl=\"id, body_t, field_i\", rows=1000, sort=\"field_i asc\")");
-    paramsLoc.set("qt","/stream");
+    paramsLoc.set("qt", "/stream");
 
     SolrStream solrStream = new SolrStream(url, paramsLoc);
     List<Tuple> tuples = getTuples(solrStream);

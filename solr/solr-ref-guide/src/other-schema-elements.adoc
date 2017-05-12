@@ -1,0 +1,90 @@
+= Other Schema Elements
+:page-shortname: other-schema-elements
+:page-permalink: other-schema-elements.html
+
+This section describes several other important elements of `schema.xml` not covered in earlier sections.
+
+[[OtherSchemaElements-UniqueKey]]
+== Unique Key
+
+The `uniqueKey` element specifies which field is a unique identifier for documents. Although `uniqueKey` is not required, it is nearly always warranted by your application design. For example, `uniqueKey` should be used if you will ever update a document in the index.
+
+You can define the unique key field by naming it:
+
+[source,xml]
+----
+<uniqueKey>id</uniqueKey>
+----
+
+Schema defaults and `copyFields` cannot be used to populate the `uniqueKey` field. The `fieldType` of `uniqueKey` must not be analyzed. You can use `UUIDUpdateProcessorFactory` to have `uniqueKey` values generated automatically.
+
+Further, the operation will fail if the `uniqueKey` field is used, but is multivalued (or inherits the multivalue-ness from the `fieldtype`). However, `uniqueKey` will continue to work, as long as the field is properly used.
+
+
+[[OtherSchemaElements-DefaultSearchField_QueryOperator]]
+== Default Search Field & Query Operator
+
+Although they have been deprecated for quite some time, Solr still has support for Schema based configuration of a `<defaultSearchField/>` (which is superseded by the <<the-standard-query-parser.adoc#the-standard-query-parser,`df parameter`>>) and `<solrQueryParser defaultOperator="OR"/>` (which is superseded by the <<the-standard-query-parser.adoc#the-standard-query-parser,`q.op` parameter>>.
+
+If you have these options specified in your Schema, you are strongly encouraged to replace them with request parameters (or <<request-parameters-api.adoc#request-parameters-api,request parameter defaults>>) as support for them may be removed from future Solr release.
+
+[[OtherSchemaElements-Similarity]]
+== Similarity
+
+Similarity is a Lucene class used to score a document in searching.
+
+Each collection has one "global" Similarity, and by default Solr uses an implicit {solr-javadocs}/solr-core/org/apache/solr/search/similarities/SchemaSimilarityFactory.html[`SchemaSimilarityFactory`] which allows individual field types to be configured with a "per-type" specific Similarity and implicitly uses `BM25Similarity` for any field type which does not have an explicit Similarity.
+
+This default behavior can be overridden by declaring a top level `<similarity/>` element in your `schema.xml`, outside of any single field type. This similarity declaration can either refer directly to the name of a class with a no-argument constructor, such as in this example showing `BM25Similarity`:
+
+[source,xml]
+----
+<similarity class="solr.BM25SimilarityFactory"/>
+----
+
+or by referencing a `SimilarityFactory` implementation, which may take optional initialization parameters:
+
+[source,xml]
+----
+<similarity class="solr.DFRSimilarityFactory">
+  <str name="basicModel">P</str>
+  <str name="afterEffect">L</str>
+  <str name="normalization">H2</str>
+  <float name="c">7</float>
+</similarity>
+----
+
+In most cases, specifying global level similarity like this will cause an error if your `schema.xml` also includes field type specific `<similarity/>` declarations. One key exception to this is that you may explicitly declare a {solr-javadocs}/solr-core/org/apache/solr/search/similarities/SchemaSimilarityFactory.html[`SchemaSimilarityFactory`] and specify what that default behavior will be for all field types that do not declare an explicit Similarity using the name of field type (specified by `defaultSimFromFieldType`) that _is_ configured with a specific similarity:
+
+[source,xml]
+----
+<similarity class="solr.SchemaSimilarityFactory">
+  <str name="defaultSimFromFieldType">text_dfr</str>
+</similarity>
+<fieldType name="text_dfr" class="solr.TextField">
+  <analyzer ... />
+  <similarity class="solr.DFRSimilarityFactory">
+    <str name="basicModel">I(F)</str>
+    <str name="afterEffect">B</str>
+    <str name="normalization">H3</str>
+    <float name="mu">900</float>
+  </similarity>
+</fieldType>
+<fieldType name="text_ib" class="solr.TextField">
+  <analyzer ... />
+  <similarity class="solr.IBSimilarityFactory">
+    <str name="distribution">SPL</str>
+    <str name="lambda">DF</str>
+    <str name="normalization">H2</str>
+  </similarity>
+</fieldType>
+<fieldType name="text_other" class="solr.TextField">
+  <analyzer ... />
+</fieldType>
+----
+
+In the example above `IBSimilarityFactory` (using the Information-Based model) will be used for any fields of type `text_ib`, while `DFRSimilarityFactory` (divergence from random) will be used for any fields of type `text_dfr`, as well as any fields using a type that does not explicitly specify a `<similarity/>`.
+
+If `SchemaSimilarityFactory` is explicitly declared with out configuring a `defaultSimFromFieldType`, then `BM25Similarity` is implicitly used as the default.
+
+In addition to the various factories mentioned on this page, there are several other similarity implementations that can be used such as the `SweetSpotSimilarityFactory`, `ClassicSimilarityFactory`, etc.... For details, see the Solr Javadocs for the {solr-javadocs}/solr-core/org/apache/solr/schema/SimilarityFactory.html[similarity factories].

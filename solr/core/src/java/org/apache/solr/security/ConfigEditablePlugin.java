@@ -19,7 +19,7 @@ package org.apache.solr.security;
 import java.util.List;
 import java.util.Map;
 
-import org.apache.solr.util.CommandOperation;
+import org.apache.solr.common.util.CommandOperation;
 
 /**An interface to be implemented by a Plugin whose Configuration is runtime editable
  *
@@ -33,6 +33,6 @@ public interface ConfigEditablePlugin {
    * of the implementation to ensure that the returned config is valid . The framework
    * does no validation of the data
    */
-  public Map<String,Object> edit(Map<String,Object> latestConf, List<CommandOperation> commands);
+  Map<String,Object> edit(Map<String, Object> latestConf, List<CommandOperation> commands);
 
 }

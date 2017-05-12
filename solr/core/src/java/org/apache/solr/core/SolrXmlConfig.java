@@ -103,8 +103,7 @@ public class SolrXmlConfig {
     if (cloudConfig != null)
       configBuilder.setCloudConfig(cloudConfig);
     configBuilder.setBackupRepositoryPlugins(getBackupRepositoryPluginInfos(config));
-    configBuilder.setMetricReporterPlugins(getMetricReporterPluginInfos(config));
-    configBuilder.setHiddenSysProps(getHiddenSysProps(config));
+    configBuilder.setMetricsConfig(getMetricsConfig(config));
     return fillSolrSection(configBuilder, entries);
   }
 
@@ -459,6 +458,32 @@ public class SolrXmlConfig {
       configs[i] = new PluginInfo(nodes.item(i), "BackupRepositoryFactory", true, true);
     }
     return configs;
+  }
+
+  private static MetricsConfig getMetricsConfig(Config config) {
+    MetricsConfig.MetricsConfigBuilder builder = new MetricsConfig.MetricsConfigBuilder();
+    Node node = config.getNode("solr/metrics/suppliers/counter", false);
+    if (node != null) {
+      builder = builder.setCounterSupplier(new PluginInfo(node, "counterSupplier", false, false));
+    }
+    node = config.getNode("solr/metrics/suppliers/meter", false);
+    if (node != null) {
+      builder = builder.setMeterSupplier(new PluginInfo(node, "meterSupplier", false, false));
+    }
+    node = config.getNode("solr/metrics/suppliers/timer", false);
+    if (node != null) {
+      builder = builder.setTimerSupplier(new PluginInfo(node, "timerSupplier", false, false));
+    }
+    node = config.getNode("solr/metrics/suppliers/histogram", false);
+    if (node != null) {
+      builder = builder.setHistogramSupplier(new PluginInfo(node, "histogramSupplier", false, false));
+    }
+    PluginInfo[] reporterPlugins = getMetricReporterPluginInfos(config);
+    Set<String> hiddenSysProps = getHiddenSysProps(config);
+    return builder
+        .setMetricReporterPlugins(reporterPlugins)
+        .setHiddenSysProps(hiddenSysProps)
+        .build();
   }
 
   private static PluginInfo[] getMetricReporterPluginInfos(Config config) {

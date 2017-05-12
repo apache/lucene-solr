@@ -25,6 +25,7 @@ import java.util.Objects;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.search.DoubleValues;
 import org.apache.lucene.search.DoubleValuesSource;
+import org.apache.lucene.search.Explanation;
 
 /**
  * A {@link DoubleValuesSource} which evaluates a {@link Expression} given the context of an {@link Bindings}.
@@ -136,5 +137,19 @@ final class ExpressionValueSource extends DoubleValuesSource {
   @Override
   public boolean needsScores() {
     return needsScores;
+  }
+
+  @Override
+  public Explanation explain(LeafReaderContext ctx, int docId, Explanation scoreExplanation) throws IOException {
+    Explanation[] explanations = new Explanation[variables.length];
+    DoubleValues dv = getValues(ctx, DoubleValuesSource.constant(scoreExplanation.getValue()).getValues(ctx, null));
+    if (dv.advanceExact(docId) == false) {
+      return Explanation.noMatch(expression.sourceText);
+    }
+    int i = 0;
+    for (DoubleValuesSource var : variables) {
+      explanations[i++] = var.explain(ctx, docId, scoreExplanation);
+    }
+    return Explanation.match((float)dv.doubleValue(), expression.sourceText + ", computed from:", explanations);
   }
 }
