@@ -102,6 +102,9 @@ Bug Fixes
 
 * SOLR-10408: v2 API introspect should return useful message for non-existent command (Cao Manh Dat)
 
+* SOLR-10411: v2 Collection API "modify" command specification's replicationFactor property is incorrectly typed as string, 
+  should be integer (Cao Manh Dat)
+
 Optimizations
 ----------------------
 
