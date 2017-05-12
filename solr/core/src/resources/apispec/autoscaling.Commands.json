@@ -42,34 +42,11 @@
         "actions": {
           "type": "array",
           "description": "The actions to be performed in sequence when the trigger is activated",
-          "event": {
-            "type": "string",
-            "description": "The event type on which to set a trigger"
-          },
-          "waitFor": {
-            "type": "string",
-            "description": "The amount of time to wait after the trigger condition is satisfied before trigger is activated"
-          },
-          "lowerBound": {
-            "type": "number",
-            "description": "The lower bound of the condition below which the trigger is activated"
-          },
-          "upperBound": {
-            "type": "number",
-            "description": "The upper bound of the condition below which the trigger is activated"
-          },
-          "enabled": {
-            "type": "boolean",
-            "description": "The state of the trigger"
-          },
-          "actions": {
-            "type": "array",
-            "description": "The actions to be performed in sequence when the trigger is activated",
-            "items": {
-              "type": "object"
-            }
+          "items": {
+            "type": "object"
           }
-        },
+        }
+      },
         "required": [
           "name",
           "event"

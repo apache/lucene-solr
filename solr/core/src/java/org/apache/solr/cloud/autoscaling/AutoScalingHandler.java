@@ -552,6 +552,11 @@ public class AutoScalingHandler extends RequestHandlerBase implements Permission
 
   @Override
   public Collection<Api> getApis() {
-    return ApiBag.wrapRequestHandlers(this, "scaling.Commands");
+    return ApiBag.wrapRequestHandlers(this, "autoscaling.Commands");
+  }
+
+  @Override
+  public Boolean registerV2() {
+    return Boolean.TRUE;
   }
 }
