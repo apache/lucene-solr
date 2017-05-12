@@ -2,6 +2,7 @@
   "documentation": "TODO NOCOMMIT",
   "description": "The Scaling API provides API for adding cluster level scaling rules, triggers and event listeners",
   "methods": [
+    "GET",
     "POST"
   ],
   "url": {

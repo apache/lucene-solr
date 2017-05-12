@@ -24,12 +24,15 @@ import java.util.List;
 import java.util.Map;
 
 import org.apache.solr.client.solrj.SolrClient;
+import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrResponse;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
+import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.cloud.SolrCloudTestCase;
 import org.apache.solr.common.cloud.ZkNodeProps;
+import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.ContentStream;
 import org.apache.solr.common.util.ContentStreamBase;
@@ -48,6 +51,8 @@ import org.junit.Test;
  * Test for AutoScalingHandler
  */
 public class AutoScalingHandlerTest extends SolrCloudTestCase {
+  private String path;
+
   @BeforeClass
   public static void setupCluster() throws Exception {
     configureCluster(2)
@@ -59,14 +64,14 @@ public class AutoScalingHandlerTest extends SolrCloudTestCase {
   public void beforeTest() throws Exception {
     // clear any persisted auto scaling configuration
     zkClient().setData(SOLR_AUTOSCALING_CONF_PATH, Utils.toJSON(new ZkNodeProps()), true);
+    // todo nocommit -- add testing for the v2 path
+    // String path = random().nextBoolean() ? "/admin/autoscaling" : "/v2/cluster/autoscaling";
+    this.path = "/admin/autoscaling";
   }
 
   @Test
   public void testSuspendTrigger() throws Exception {
     CloudSolrClient solrClient = cluster.getSolrClient();
-    // todo nocommit -- add testing for the v2 path
-    // String path = random().nextBoolean() ? "/admin/autoscaling" : "/v2/cluster/autoscaling";
-    String path = "/admin/autoscaling";
     String setTriggerCommand = "{" +
         "'set-trigger' : {" +
         "'name' : 'node_lost_trigger'," +
@@ -195,9 +200,6 @@ public class AutoScalingHandlerTest extends SolrCloudTestCase {
   @Test
   public void test() throws Exception {
     CloudSolrClient solrClient = cluster.getSolrClient();
-    // todo nocommit -- add testing for the v2 path
-    // String path = random().nextBoolean() ? "/admin/autoscaling" : "/v2/cluster/autoscaling";
-    String path = "/admin/autoscaling";
     String setTriggerCommand = "{" +
         "'set-trigger' : {" +
         "'name' : 'node_lost_trigger'," +
@@ -338,7 +340,11 @@ public class AutoScalingHandlerTest extends SolrCloudTestCase {
     } catch (HttpSolrClient.RemoteSolrException e) {
       // expected
     }
+  }
 
+  @Test
+  public void testPolicyAndPreferences() throws Exception {
+    CloudSolrClient solrClient = cluster.getSolrClient();
     // add multiple policies
     String setPolicyCommand =  "{'set-policy': {" +
         "    'xyz':[" +
@@ -350,11 +356,11 @@ public class AutoScalingHandlerTest extends SolrCloudTestCase {
         "      {'replica':'<2', 'shard': '#EACH', 'node': '#ANY'}" +
         "    ]" +
         "}}";
-    req = new AutoScalingRequest(SolrRequest.METHOD.POST, path, setPolicyCommand);
-    response = solrClient.request(req);
+    SolrRequest req = new AutoScalingRequest(SolrRequest.METHOD.POST, path, setPolicyCommand);
+    NamedList<Object> response = solrClient.request(req);
     assertEquals(response.get("result").toString(), "success");
-    data = zkClient().getData(SOLR_AUTOSCALING_CONF_PATH, null, null, true);
-    loaded = ZkNodeProps.load(data);
+    byte[] data = zkClient().getData(SOLR_AUTOSCALING_CONF_PATH, null, null, true);
+    ZkNodeProps loaded = ZkNodeProps.load(data);
     Map<String, Object> policies = (Map<String, Object>) loaded.get("policies");
     assertNotNull(policies);
     assertNotNull(policies.get("xyz"));
@@ -428,6 +434,85 @@ public class AutoScalingHandlerTest extends SolrCloudTestCase {
     List clusterPolicy = (List) loaded.get("cluster-policy");
     assertNotNull(clusterPolicy);
     assertEquals(3, clusterPolicy.size());
+  }
+
+  @Test
+  public void testReadApi() throws Exception  {
+    CloudSolrClient solrClient = cluster.getSolrClient();
+    // first trigger
+    String setTriggerCommand = "{" +
+        "'set-trigger' : {" +
+        "'name' : 'node_added_trigger1'," +
+        "'event' : 'nodeAdded'," +
+        "'waitFor' : '0s'," +
+        "'enabled' : true" +
+        "}}";
+    SolrRequest req = new AutoScalingRequest(SolrRequest.METHOD.POST, path, setTriggerCommand);
+    NamedList<Object> response = solrClient.request(req);
+    assertEquals(response.get("result").toString(), "success");
+
+    String setClusterPolicyCommand = "{" +
+        " 'set-cluster-policy': [" +
+        "      {'cores':'<10', 'node':'#ANY'}," +
+        "      {'replica':'<2', 'shard': '#EACH', 'node': '#ANY'}," +
+        "      {'nodeRole':'!overseer', 'replica':'#ANY'}" +
+        "    ]" +
+        "}";
+    req = new AutoScalingRequest(SolrRequest.METHOD.POST, path, setClusterPolicyCommand);
+    response = solrClient.request(req);
+    assertEquals(response.get("result").toString(), "success");
+
+    String setPreferencesCommand = "{" +
+        " 'set-cluster-preferences': [" +
+        "        {'minimize': 'cores', 'precision': 3}," +
+        "        {'maximize': 'freedisk','precision': 100}," +
+        "        {'minimize': 'cpu','precision': 10}]" +
+        "}";
+    req = new AutoScalingRequest(SolrRequest.METHOD.POST, path, setPreferencesCommand);
+    response = solrClient.request(req);
+    assertEquals(response.get("result").toString(), "success");
+
+    String setPolicyCommand =  "{'set-policy': {" +
+        "    'xyz':[" +
+        "      {'replica':'<2', 'shard': '#EACH', 'node': '#ANY'}," +
+        "      {'nodeRole':'!overseer', 'replica':'#ANY'}" +
+        "    ]," +
+        "    'policy1':[" +
+        "      {'cores':'<2', 'node':'#ANY'}," +
+        "      {'replica':'<2', 'shard': '#EACH', 'node': '#ANY'}" +
+        "    ]" +
+        "}}";
+    req = new AutoScalingRequest(SolrRequest.METHOD.POST, path, setPolicyCommand);
+    response = solrClient.request(req);
+    assertEquals(response.get("result").toString(), "success");
+
+    SolrQuery query = new SolrQuery().setParam(CommonParams.QT, path);
+    QueryResponse queryResponse = solrClient.query(query);
+    response = queryResponse.getResponse();
+
+    Map triggers = (Map) response.get("triggers");
+    assertNotNull(triggers);
+    assertEquals(1, triggers.size());
+    assertTrue(triggers.containsKey("node_added_trigger1"));
+    Map node_added_trigger1 = (Map) triggers.get("node_added_trigger1");
+    assertEquals(4, node_added_trigger1.size());
+    assertEquals(0L, node_added_trigger1.get("waitFor"));
+    assertEquals(true, node_added_trigger1.get("enabled"));
+    assertEquals(3, ((List)node_added_trigger1.get("actions")).size());
+
+    List<Map> clusterPrefs = (List<Map>) response.get("cluster-preferences");
+    assertNotNull(clusterPrefs);
+    assertEquals(3, clusterPrefs.size());
+
+    List<Map> clusterPolicy = (List<Map>) response.get("cluster-policy");
+    assertNotNull(clusterPolicy);
+    assertEquals(3, clusterPolicy.size());
+
+    Map policies = (Map) response.get("policies");
+    assertNotNull(policies);
+    assertEquals(2, policies.size());
+    assertNotNull(policies.get("xyz"));
+    assertNotNull(policies.get("policy1"));
   }
 
   static class AutoScalingRequest extends SolrRequest {

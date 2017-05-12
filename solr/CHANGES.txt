@@ -88,6 +88,9 @@ New Features
 
 * SOLR-10396: Implement trigger support for nodeLost event type (Cao Manh Dat, shalin)
 
+* SOLR-10373: Implement read API for autoscaling configuration at /admin/autoscaling or
+  /cluster/autoscaling paths. (shalin)
+
 Bug Fixes
 ----------------------
 * SOLR-9262: Connection and read timeouts are being ignored by UpdateShardHandler after SOLR-4509.
