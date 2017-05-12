@@ -100,6 +100,8 @@ Bug Fixes
 * SOLR-9837: Fix 55% performance regression of FieldCache uninvert time of
   numeric fields.  (yonik)
 
+* SOLR-10408: v2 API introspect should return useful message for non-existent command (Cao Manh Dat)
+
 Optimizations
 ----------------------
 

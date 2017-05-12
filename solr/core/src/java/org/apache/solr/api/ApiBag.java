@@ -154,7 +154,12 @@ public class ApiBag {
         ValidatingJsonMap commands = specCopy.getMap("commands", null);
         if (commands != null) {
           ValidatingJsonMap m = commands.getMap(cmd, null);
-          specCopy.put("commands", Collections.singletonMap(cmd, m));
+          if (m == null) {
+            specCopy.put("commands", Collections.singletonMap(cmd, "Command not found!"));
+          } else {
+            specCopy.put("commands", Collections.singletonMap(cmd, m));
+          }
+
         }
         result = specCopy;
       }
