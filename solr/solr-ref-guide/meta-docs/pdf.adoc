@@ -86,11 +86,7 @@ Our Ant target (`build-pdf`) uses the following settings:
   <!-- NOTE: If you add any attributes here for use in adoc files, you almost certainly need to also add
       them to the _config.yml.template file for building the jekyll site as well
   -->
-  <attribute key="solr-docs-version" value="${solr-docs-version}" />
-  <attribute key="solr-javadocs" value="${solr-javadocs}" />
-  <attribute key="lucene-javadocs" value="${lucene-javadocs}" />
-  <attribute key="build-date" value="${DSTAMP}" />
-  <attribute key="build-year" value="${current.year}" />
+  <!-- ... -->
 </asciidoctor:convert>
 ----
 
@@ -124,7 +120,9 @@ There are a lot of options here. Note that some include the `<attribute>` tag an
 
 These attributes use variables that are inserted by Ant during the PDF creation process. This allows us to pull from standard Lucene/Solr build files, and not have to update several places for any release. The Ant build process updates the `_config.yml` file from the `_config.yml.template`, then these attributes pull the proper value from that file.
 
-`<attribute key="solr-docs-version" value="${solr-docs-version}" />`:: Sets the version to the current release version.
+`<attribute key="solr-guide-draft-status" value="${solr-guide-draft-status}" />`:: Indicates if this is a `DRAFT` PDF or not.
+`<attribute key="solr-guide-version" value="${solr-guide-version}" />`:: The version of the Guide itself.
+`<attribute key="solr-docs-version" value="${solr-docs-version}" />`:: The version of Solr covered by this guide.
 `<attribute key="solr-javadocs" value="${solr-javadocs}" />`:: Sets the path for Solr javadoc links to include the right path for the current release version.
 `<attribute key="lucene-javadocs" value="${lucene-javadocs}" />`:: Sets the path for Lucene javadoc links to the right path for the current release version.
 `<attribute key="build-date" value="${DSTAMP}" />`:: Sets the date of the build to add the date to the footer of each page of the PDF.

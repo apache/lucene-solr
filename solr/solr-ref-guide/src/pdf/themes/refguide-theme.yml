@@ -250,10 +250,10 @@ footer:
   # * {section-or-chapter-title}
   # We have added some custom variables from the build, see _config.yml.template
   recto_content:
-    right: 'Published: {build-date}'
+    right: 'Guide Version {solr-guide-version} - Published: {build-date}'
     left: '(C) {build-year}, Apache Software Foundation'
   verso_content:
-    left: 'Published: {build-date}'
+    left: 'Guide Version {solr-guide-version} - Published: {build-date}'
     right: '(C) {build-year}, Apache Software Foundation'
 colophon:
   font_size: $base_font_size_small

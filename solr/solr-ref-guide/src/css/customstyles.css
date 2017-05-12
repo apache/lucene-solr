@@ -211,6 +211,20 @@ background-color: #347DBE;
     padding: 2px 10px;
     background-color: #f1f1f1;
 }
+.nav li.draft-notice {
+    /* we don't want the draft water mark to make this hard to notice */
+    background-color: rgb(255, 255, 255);
+}
+.nav li.draft-notice a, .nav li.draft-notice a:hover, .nav li.draft-notice a:active .nav li.draft-notice a:focus {
+    display: inline;
+    color: #2156a5;
+    text-decoration: underline;
+    
+    position: inherit;
+    line-height: inherit;
+    padding: inherit;
+    background-color: inherit;
+}
 
 .nav > li > a {
     line-height: 20px;
