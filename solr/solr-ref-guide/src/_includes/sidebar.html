@@ -1,7 +1,13 @@
 {% assign sidebar = site.data.sidebar %}
 
 <ul id="mysidebar" class="nav">
-  <li class="sidebarTitle">{{sidebar.title}} <!-- TODO: version from site.data --></li>
+  <li class="sidebarTitle">{{sidebar.title}}</li>
+  {% if "" != site.solr-attributes.solr-guide-draft-status %}
+  <li class="draft-notice">
+    This is an unofficial DRAFT of the Guide for {{ site.solr-attributes.solr-docs-version }}.
+    <a href="https://lucene.apache.org/solr/guide/">Official releases of this Guide are available from the Solr website</a>.
+  </li>
+  {% endif %}
   {% for level1item in sidebar.kids %}
   <li class="sb-level1">
     <a href="{{level1item.url | remove: "/"}}">{{ level1item.title }}</a>
