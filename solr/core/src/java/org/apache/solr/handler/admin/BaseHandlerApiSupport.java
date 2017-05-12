@@ -31,7 +31,7 @@ import org.apache.solr.api.Api;
 import org.apache.solr.api.ApiBag;
 import org.apache.solr.api.ApiSupport;
 import org.apache.solr.client.solrj.SolrRequest;
-import org.apache.solr.client.solrj.request.CollectionApiMapping;
+import org.apache.solr.client.solrj.request.CollectionApiMapping.CommandMeta;
 import org.apache.solr.client.solrj.request.CollectionApiMapping.V2EndPoint;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.SolrParams;
@@ -182,35 +182,13 @@ public abstract class BaseHandlerApiSupport implements ApiSupport {
 
   }
 
+  protected abstract Collection<ApiCommand> getCommands();
 
-  public static Collection<String> getParamNames(CommandOperation op, ApiCommand command) {
-    List<String> result = new ArrayList<>();
-    Object o = op.getCommandData();
-    if (o instanceof Map) {
-      Map map = (Map) o;
-      collectKeyNames(map, result, "");
-    }
-    return result;
-
-  }
-
-  public static void collectKeyNames(Map<String, Object> map, List<String> result, String prefix) {
-    for (Map.Entry<String, Object> e : map.entrySet()) {
-      if (e.getValue() instanceof Map) {
-        collectKeyNames((Map) e.getValue(), result, prefix + e.getKey() + ".");
-      } else {
-        result.add(prefix + e.getKey());
-      }
-    }
-  }
-
-  protected abstract List<ApiCommand> getCommands();
-
-  protected abstract List<V2EndPoint> getEndPoints();
+  protected abstract Collection<V2EndPoint> getEndPoints();
 
 
   public interface ApiCommand  {
-    CollectionApiMapping.CommandMeta meta();
+    CommandMeta meta();
 
     void invoke(SolrQueryRequest req, SolrQueryResponse rsp, BaseHandlerApiSupport apiHandler) throws Exception;
   }

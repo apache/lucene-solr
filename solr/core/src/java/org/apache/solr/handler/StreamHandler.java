@@ -173,6 +173,7 @@ public class StreamHandler extends RequestHandlerBase implements SolrCoreAware, 
       .withFunctionName("cov", CovarianceEvaluator.class)
       .withFunctionName("conv", ConvolutionEvaluator.class)
       .withFunctionName("normalize", NormalizeEvaluator.class)
+      .withFunctionName("rev", ReverseEvaluator.class)
 
       // metrics
          .withFunctionName("min", MinMetric.class)

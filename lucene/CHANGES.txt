@@ -92,6 +92,9 @@ Other
 * LUCENE-7753: Make fields static when possible.
   (Daniel Jelinski via Adrien Grand)
 
+======================= Lucene 6.7.0 =======================
+(No Changes)
+
 ======================= Lucene 6.6.0 =======================
 
 New Features

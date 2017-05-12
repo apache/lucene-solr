@@ -26,12 +26,31 @@ import java.util.Map;
 
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.common.params.CollectionParams.CollectionAction;
+import org.apache.solr.common.params.ConfigSetParams.ConfigSetAction;
 import org.apache.solr.common.util.CommandOperation;
 import org.apache.solr.common.util.Utils;
 
 import static org.apache.solr.client.solrj.SolrRequest.METHOD.DELETE;
 import static org.apache.solr.client.solrj.SolrRequest.METHOD.GET;
 import static org.apache.solr.client.solrj.SolrRequest.METHOD.POST;
+import static org.apache.solr.client.solrj.request.CollectionApiMapping.ConfigSetEndPoint.CONFIG_COMMANDS;
+import static org.apache.solr.client.solrj.request.CollectionApiMapping.ConfigSetEndPoint.CONFIG_DEL;
+import static org.apache.solr.client.solrj.request.CollectionApiMapping.ConfigSetEndPoint.LIST_CONFIG;
+import static org.apache.solr.client.solrj.request.CollectionApiMapping.EndPoint.CLUSTER;
+import static org.apache.solr.client.solrj.request.CollectionApiMapping.EndPoint.CLUSTER_ALIASES;
+import static org.apache.solr.client.solrj.request.CollectionApiMapping.EndPoint.CLUSTER_CMD;
+import static org.apache.solr.client.solrj.request.CollectionApiMapping.EndPoint.CLUSTER_CMD_STATUS;
+import static org.apache.solr.client.solrj.request.CollectionApiMapping.EndPoint.CLUSTER_CMD_STATUS_DELETE;
+import static org.apache.solr.client.solrj.request.CollectionApiMapping.EndPoint.CLUSTER_NODES;
+import static org.apache.solr.client.solrj.request.CollectionApiMapping.EndPoint.COLLECTIONS;
+import static org.apache.solr.client.solrj.request.CollectionApiMapping.EndPoint.COLLECTIONS_COMMANDS;
+import static org.apache.solr.client.solrj.request.CollectionApiMapping.EndPoint.COLLECTION_STATE;
+import static org.apache.solr.client.solrj.request.CollectionApiMapping.EndPoint.PER_COLLECTION;
+import static org.apache.solr.client.solrj.request.CollectionApiMapping.EndPoint.PER_COLLECTION_PER_SHARD_COMMANDS;
+import static org.apache.solr.client.solrj.request.CollectionApiMapping.EndPoint.PER_COLLECTION_PER_SHARD_DELETE;
+import static org.apache.solr.client.solrj.request.CollectionApiMapping.EndPoint.PER_COLLECTION_PER_SHARD_PER_REPLICA_DELETE;
+import static org.apache.solr.client.solrj.request.CollectionApiMapping.EndPoint.PER_COLLECTION_SHARDS_COMMANDS;
+import static org.apache.solr.common.params.CollectionParams.CollectionAction.*;
 import static org.apache.solr.common.params.CommonParams.NAME;
 
 /** stores the mapping of v1 API parameters to v2 API parameters
@@ -41,16 +60,17 @@ import static org.apache.solr.common.params.CommonParams.NAME;
 public class CollectionApiMapping {
 
   public enum Meta implements CommandMeta {
-    GET_COLLECTIONS(EndPoint.COLLECTIONS, GET),
-    GET_CLUSTER(EndPoint.CLUSTER, GET,  "/cluster", null),
-    GET_CLUSTER_OVERSEER(EndPoint.CLUSTER, GET, "/cluster/overseer", null),
-    GET_CLUSTER_STATUS_CMD(EndPoint.CLUSTER_CMD_STATUS, GET ),
-    DELETE_CLUSTER_STATUS(EndPoint.CLUSTER_CMD_STATUS_DELETE, DELETE),
-    GET_A_COLLECTION(EndPoint.COLLECTION_STATE, GET),
-    LIST_ALIASES(EndPoint.CLUSTER_ALIASES, GET),
-    CREATE_COLLECTION(EndPoint.COLLECTIONS_COMMANDS,
+    GET_COLLECTIONS(COLLECTIONS, GET, LIST),
+    GET_CLUSTER(CLUSTER, GET, LIST, "/cluster", null),
+    GET_CLUSTER_OVERSEER(CLUSTER, GET, OVERSEERSTATUS, "/cluster/overseer", null),
+    GET_CLUSTER_STATUS_CMD(CLUSTER_CMD_STATUS, GET, REQUESTSTATUS),
+    DELETE_CLUSTER_STATUS(CLUSTER_CMD_STATUS_DELETE, DELETE, DELETESTATUS),
+    GET_A_COLLECTION(COLLECTION_STATE, GET, CLUSTERSTATUS),
+    LIST_ALIASES(CLUSTER_ALIASES, GET, LISTALIASES),
+    CREATE_COLLECTION(COLLECTIONS_COMMANDS,
         POST,
-        CollectionAction.CREATE.toLower(),
+        CREATE,
+        CREATE.toLower(),
         Utils.makeMap(
             "collection.configName", "config",
             "createNodeSet.shuffle", "shuffleNodes",
@@ -60,37 +80,45 @@ public class CollectionApiMapping {
 
     DELETE_COLL(EndPoint.PER_COLLECTION_DELETE,
         DELETE,
+        CollectionAction.DELETE,
         CollectionAction.DELETE.toLower(),
         Utils.makeMap(NAME, "collection")),
 
-    RELOAD_COLL(EndPoint.PER_COLLECTION,
+    RELOAD_COLL(PER_COLLECTION,
         POST,
-        CollectionAction.RELOAD.toLower(),
+        RELOAD,
+        RELOAD.toLower(),
         Utils.makeMap(NAME, "collection")),
-    MODIFYCOLLECTION(EndPoint.PER_COLLECTION,
+    MODIFY_COLLECTION(PER_COLLECTION,
         POST,
+        MODIFYCOLLECTION,
         "modify",null),
-    MIGRATE_DOCS(EndPoint.PER_COLLECTION,
+    MIGRATE_DOCS(PER_COLLECTION,
         POST,
+        MIGRATE,
         "migrate-docs",
         Utils.makeMap("split.key", "splitKey",
             "target.collection", "target",
             "forward.timeout", "forwardTimeout"
         )),
-    REBALANCELEADERS(EndPoint.PER_COLLECTION,
+    REBALANCE_LEADERS(PER_COLLECTION,
         POST,
+        REBALANCELEADERS,
         "rebalance-leaders", null),
-    CREATE_ALIAS(EndPoint.COLLECTIONS_COMMANDS,
+    CREATE_ALIAS(COLLECTIONS_COMMANDS,
         POST,
+        CREATEALIAS,
         "create-alias",
         null),
 
-    DELETE_ALIAS(EndPoint.COLLECTIONS_COMMANDS,
+    DELETE_ALIAS(COLLECTIONS_COMMANDS,
         POST,
+        DELETEALIAS,
         "delete-alias",
         null),
-    CREATE_SHARD(EndPoint.PER_COLLECTION_SHARDS_COMMANDS,
+    CREATE_SHARD(PER_COLLECTION_SHARDS_COMMANDS,
         POST,
+        CREATESHARD,
         "create",
         Utils.makeMap("createNodeSet", "nodeSet"),
         Utils.makeMap("coreProperties.", "property.")) {
@@ -100,60 +128,69 @@ public class CollectionApiMapping {
       }
     },
 
-    SPLIT_SHARD(EndPoint.PER_COLLECTION_SHARDS_COMMANDS,
+    SPLIT_SHARD(PER_COLLECTION_SHARDS_COMMANDS,
         POST,
+        SPLITSHARD,
         "split",
         Utils.makeMap(
             "split.key", "splitKey"),
         Utils.makeMap("coreProperties.", "property.")),
-    DELETE_SHARD(EndPoint.PER_COLLECTION_PER_SHARD_DELETE,
-        DELETE),
+    DELETE_SHARD(PER_COLLECTION_PER_SHARD_DELETE,
+        DELETE, DELETESHARD),
 
-    CREATE_REPLICA(EndPoint.PER_COLLECTION_SHARDS_COMMANDS,
+    CREATE_REPLICA(PER_COLLECTION_SHARDS_COMMANDS,
         POST,
+        ADDREPLICA,
         "add-replica",
         null,
         Utils.makeMap("coreProperties.", "property.")),
 
-    DELETE_REPLICA(EndPoint.PER_COLLECTION_PER_SHARD_PER_REPLICA_DELETE,
-        DELETE),
+    DELETE_REPLICA(PER_COLLECTION_PER_SHARD_PER_REPLICA_DELETE,
+        DELETE, DELETEREPLICA),
 
-    SYNC_SHARD(EndPoint.PER_COLLECTION_PER_SHARD_COMMANDS,
+    SYNC_SHARD(PER_COLLECTION_PER_SHARD_COMMANDS,
         POST,
+        CollectionAction.SYNCSHARD,
         "synch-shard",
         null),
-    ADDREPLICAPROP(EndPoint.PER_COLLECTION,
+    ADD_REPLICA_PROPERTY(PER_COLLECTION,
         POST,
+        CollectionAction.ADDREPLICAPROP,
         "add-replica-property",
         Utils.makeMap("property", "name", "property.value", "value")),
-    DELETEREPLICAPROP(EndPoint.PER_COLLECTION,
+    DELETE_REPLICA_PROPERTY(PER_COLLECTION,
         POST,
+        DELETEREPLICAPROP,
         "delete-replica-property",
         null),
-    ADDROLE(EndPoint.CLUSTER_CMD,
+    ADD_ROLE(CLUSTER_CMD,
         POST,
+        ADDROLE,
         "add-role",null),
-    REMOVEROLE(EndPoint.CLUSTER_CMD,
+    REMOVE_ROLE(CLUSTER_CMD,
         POST,
+        REMOVEROLE,
         "remove-role",null),
 
-    CLUSTERPROP(EndPoint.CLUSTER_CMD,
+    SET_CLUSTER_PROPERTY(CLUSTER_CMD,
         POST,
+        CLUSTERPROP,
         "set-property",null),
 
-    BACKUP(EndPoint.COLLECTIONS_COMMANDS,
+    BACKUP_COLLECTION(COLLECTIONS_COMMANDS,
         POST,
+        BACKUP,
         "backup-collection", null
     ),
-    RESTORE(EndPoint.COLLECTIONS_COMMANDS,
+    RESTORE_COLLECTION(COLLECTIONS_COMMANDS,
         POST,
+        RESTORE,
         "restore-collection",
         null
     ),
-    GET_NODES(EndPoint.CLUSTER_NODES, null),
-    FORCELEADER(EndPoint.PER_COLLECTION_PER_SHARD_COMMANDS,POST, "force-leader",null),
-    SYNCSHARD(EndPoint.PER_COLLECTION_PER_SHARD_COMMANDS,POST, "sync-shard",null),
-    BALANCESHARDUNIQUE(EndPoint.PER_COLLECTION, POST, "balance-shard-unique",null)
+    GET_NODES(CLUSTER_NODES, GET, null),
+    FORCE_LEADER(PER_COLLECTION_PER_SHARD_COMMANDS, POST, CollectionAction.FORCELEADER, "force-leader", null),
+    BALANCE_SHARD_UNIQUE(PER_COLLECTION, POST, BALANCESHARDUNIQUE,"balance-shard-unique" , null)
     ;
 
     public final String commandName;
@@ -163,24 +200,26 @@ public class CollectionApiMapping {
     public final Map<String, String> paramstoAttr;
     //mapping of old prefix to new for instance properties.a=val can be substituted with property:{a:val}
     public final Map<String, String> prefixSubstitutes;
+    public final CollectionAction action;
 
     public SolrRequest.METHOD getMethod() {
       return method;
     }
 
 
-    Meta(EndPoint endPoint, SolrRequest.METHOD method) {
-      this(endPoint, method,  null, null);
+    Meta(EndPoint endPoint, SolrRequest.METHOD method, CollectionAction action) {
+      this(endPoint, method, action, null, null);
     }
 
-    Meta(EndPoint endPoint, SolrRequest.METHOD method,
+    Meta(EndPoint endPoint, SolrRequest.METHOD method, CollectionAction action,
          String commandName, Map paramstoAttr) {
-      this(endPoint, method,  commandName, paramstoAttr, Collections.EMPTY_MAP);
+      this(endPoint, method, action, commandName, paramstoAttr, Collections.EMPTY_MAP);
 
     }
 
-    Meta(EndPoint endPoint, SolrRequest.METHOD method,
+    Meta(EndPoint endPoint, SolrRequest.METHOD method, CollectionAction action,
          String commandName, Map paramstoAttr, Map prefixSubstitutes) {
+      this.action = action;
       this.commandName = commandName;
       this.endPoint = endPoint;
       this.method = method;
@@ -273,22 +312,21 @@ public class CollectionApiMapping {
   }
 
   public enum ConfigSetMeta implements CommandMeta {
-    LIST(ConfigSetEndPoint.LIST_CONFIG, GET),
-    CREATE(ConfigSetEndPoint.CONFIG_COMMANDS, POST, "create"),
-    DEL(ConfigSetEndPoint.CONFIG_DEL,  DELETE)
+    LIST(LIST_CONFIG, GET,null, ConfigSetAction.LIST),
+    CREATE(CONFIG_COMMANDS, POST, "create", ConfigSetAction.CREATE),
+    DEL(CONFIG_DEL,  DELETE, null, ConfigSetAction.DELETE)
     ;
-    private final ConfigSetEndPoint endPoint;
-    private final SolrRequest.METHOD method;
-    private final String cmdName;
+    public final ConfigSetEndPoint endPoint;
+    public final SolrRequest.METHOD method;
+    public final String cmdName;
+    public final ConfigSetAction action;
 
-    ConfigSetMeta(ConfigSetEndPoint endPoint, SolrRequest.METHOD method) {
-      this(endPoint, method, null);
-    }
 
-    ConfigSetMeta(ConfigSetEndPoint endPoint, SolrRequest.METHOD method, String cmdName) {
+    ConfigSetMeta(ConfigSetEndPoint endPoint, SolrRequest.METHOD method, String cmdName, ConfigSetAction action) {
       this.cmdName = cmdName;
       this.endPoint = endPoint;
       this.method = method;
+      this.action = action;
     }
 
     @Override

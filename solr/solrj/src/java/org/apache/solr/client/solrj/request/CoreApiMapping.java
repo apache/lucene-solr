@@ -19,7 +19,6 @@ package org.apache.solr.client.solrj.request;
 
 
 import java.util.Collections;
-import java.util.Locale;
 import java.util.Map;
 
 import org.apache.solr.client.solrj.SolrRequest;
@@ -41,36 +40,38 @@ import static org.apache.solr.client.solrj.request.CoreApiMapping.EndPoint.PER_C
  */
 public class CoreApiMapping {
   public enum Meta implements CommandMeta {
-    CREATE(CORES_COMMANDS, POST, CoreAdminAction.CREATE, Utils.makeMap("config", "configSet")),
-    UNLOAD(PER_CORE_COMMANDS, POST, CoreAdminAction.UNLOAD, null),
-    RELOAD(PER_CORE_COMMANDS, POST, CoreAdminAction.RELOAD, null),
-    STATUS(CORES_STATUS, GET, CoreAdminAction.STATUS, null),
-    SWAP(PER_CORE_COMMANDS, POST, CoreAdminAction.SWAP, Utils.makeMap("other", "with")),
-    RENAME(PER_CORE_COMMANDS, POST, CoreAdminAction.RENAME, null),
-    MERGEINDEXES(PER_CORE_COMMANDS, POST, "merge-indexes", null),
-    SPLIT(PER_CORE_COMMANDS, POST, CoreAdminAction.SPLIT, Utils.makeMap("split.key", "splitKey")),
-    PREPRECOVERY(PER_CORE_COMMANDS, POST, "prep-recovery", null),
-    REQUESTRECOVERY(PER_CORE_COMMANDS, POST, CoreAdminAction.REQUESTRECOVERY, null),
-    REQUESTSYNCSHARD(PER_CORE_COMMANDS, POST, "request-sync-shard", null),
-    REQUESTBUFFERUPDATES(PER_CORE_COMMANDS, POST, "request-buffer-updates", null),
-    REQUESTAPPLYUPDATES(PER_CORE_COMMANDS, POST, "request-apply-updates", null),
-    REQUESTSTATUS(PER_CORE_COMMANDS, POST, CoreAdminAction.REQUESTSTATUS, null),
-    OVERSEEROP(NODEAPIS, POST, "overseer-op", null),
-    REJOINLEADERELECTION(NODEAPIS, POST, "rejoin-leader-election", null),
-    INVOKE(NODEINVOKE, GET, CoreAdminAction.INVOKE, null),
-    FORCEPREPAREFORLEADERSHIP(PER_CORE_COMMANDS, POST, "force-prepare-for-leadership", null);
+    CREATE(CORES_COMMANDS, POST, CoreAdminAction.CREATE, "create", Utils.makeMap("config", "configSet")),
+    UNLOAD(PER_CORE_COMMANDS, POST, CoreAdminAction.UNLOAD, "unload", null),
+    RELOAD(PER_CORE_COMMANDS, POST, CoreAdminAction.RELOAD, "reload", null),
+    STATUS(CORES_STATUS, GET, CoreAdminAction.STATUS, "status", null),
+    SWAP(PER_CORE_COMMANDS, POST, CoreAdminAction.SWAP, "swap", Utils.makeMap("other", "with")),
+    RENAME(PER_CORE_COMMANDS, POST, CoreAdminAction.RENAME, "rename", null),
+    MERGEINDEXES(PER_CORE_COMMANDS, POST, CoreAdminAction.MERGEINDEXES, "merge-indexes", null),
+    SPLIT(PER_CORE_COMMANDS, POST, CoreAdminAction.SPLIT, "split", Utils.makeMap("split.key", "splitKey")),
+    PREPRECOVERY(PER_CORE_COMMANDS, POST, CoreAdminAction.PREPRECOVERY, "prep-recovery", null),
+    REQUESTRECOVERY(PER_CORE_COMMANDS, POST, CoreAdminAction.REQUESTRECOVERY, "request-recovery", null),
+    REQUESTSYNCSHARD(PER_CORE_COMMANDS, POST, CoreAdminAction.REQUESTSYNCSHARD, "request-sync-shard", null),
+    REQUESTBUFFERUPDATES(PER_CORE_COMMANDS, POST, CoreAdminAction.REQUESTBUFFERUPDATES, "request-buffer-updates", null),
+    REQUESTAPPLYUPDATES(PER_CORE_COMMANDS, POST, CoreAdminAction.REQUESTAPPLYUPDATES, "request-apply-updates", null),
+    REQUESTSTATUS(PER_CORE_COMMANDS, GET, CoreAdminAction.REQUESTSTATUS, "request-status", null),/*TODO*/
+    OVERSEEROP(NODEAPIS, POST, CoreAdminAction.OVERSEEROP, "overseer-op", null),
+    REJOINLEADERELECTION(NODEAPIS, POST, CoreAdminAction.REJOINLEADERELECTION, "rejoin-leader-election", null),
+    INVOKE(NODEINVOKE, GET, CoreAdminAction.INVOKE,"invoke",  null),
+    FORCEPREPAREFORLEADERSHIP(PER_CORE_COMMANDS, POST, CoreAdminAction.FORCEPREPAREFORLEADERSHIP, "force-prepare-for-leadership", null);
 
     public final String commandName;
     public final EndPoint endPoint;
     public final SolrRequest.METHOD method;
+    public final CoreAdminAction action;
     public final Map<String, String> paramstoAttr;
 
-    Meta(EndPoint endPoint, SolrRequest.METHOD method, Object commandName,
+    Meta(EndPoint endPoint, SolrRequest.METHOD method, CoreAdminAction action, String commandName,
          Map paramstoAttr) {
-      this.commandName = commandName.toString().toLowerCase(Locale.ROOT);
+      this.commandName = commandName;
       this.endPoint = endPoint;
       this.method = method;
       this.paramstoAttr = paramstoAttr == null ? Collections.EMPTY_MAP : Collections.unmodifiableMap(paramstoAttr);
+      this.action = action;
     }
 
     @Override

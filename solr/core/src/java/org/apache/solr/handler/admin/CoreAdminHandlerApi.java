@@ -18,94 +18,66 @@
 package org.apache.solr.handler.admin;
 
 import java.util.Arrays;
-import java.util.List;
+import java.util.Collection;
+import java.util.EnumMap;
+import java.util.Map;
 
-import org.apache.solr.client.solrj.request.CollectionApiMapping;
+import org.apache.solr.client.solrj.request.CollectionApiMapping.CommandMeta;
 import org.apache.solr.client.solrj.request.CollectionApiMapping.V2EndPoint;
 import org.apache.solr.client.solrj.request.CoreApiMapping;
-import org.apache.solr.client.solrj.request.CoreApiMapping.Meta;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
 
-import static org.apache.solr.handler.admin.CoreAdminOperation.CREATE_OP;
-import static org.apache.solr.handler.admin.CoreAdminOperation.FORCEPREPAREFORLEADERSHIP_OP;
-import static org.apache.solr.handler.admin.CoreAdminOperation.INVOKE_OP;
-import static org.apache.solr.handler.admin.CoreAdminOperation.MERGEINDEXES_OP;
-import static org.apache.solr.handler.admin.CoreAdminOperation.OVERSEEROP_OP;
-import static org.apache.solr.handler.admin.CoreAdminOperation.PREPRECOVERY_OP;
-import static org.apache.solr.handler.admin.CoreAdminOperation.REJOINLEADERELECTION_OP;
-import static org.apache.solr.handler.admin.CoreAdminOperation.RELOAD_OP;
-import static org.apache.solr.handler.admin.CoreAdminOperation.RENAME_OP;
-import static org.apache.solr.handler.admin.CoreAdminOperation.REQUESTAPPLYUPDATES_OP;
-import static org.apache.solr.handler.admin.CoreAdminOperation.REQUESTBUFFERUPDATES_OP;
-import static org.apache.solr.handler.admin.CoreAdminOperation.REQUESTRECOVERY_OP;
-import static org.apache.solr.handler.admin.CoreAdminOperation.REQUESTSTATUS_OP;
-import static org.apache.solr.handler.admin.CoreAdminOperation.REQUESTSYNCSHARD_OP;
-import static org.apache.solr.handler.admin.CoreAdminOperation.SPLIT_OP;
-import static org.apache.solr.handler.admin.CoreAdminOperation.STATUS_OP;
-import static org.apache.solr.handler.admin.CoreAdminOperation.SWAP_OP;
-import static org.apache.solr.handler.admin.CoreAdminOperation.UNLOAD_OP;
-
 public class CoreAdminHandlerApi extends BaseHandlerApiSupport {
   private final CoreAdminHandler handler;
+  static Collection<ApiCommand> apiCommands = createMapping();
+
+  private static Collection<ApiCommand> createMapping() {
+    Map<CoreApiMapping.Meta, ApiCommand> result = new EnumMap<>(CoreApiMapping.Meta.class);
+
+    for (CoreApiMapping.Meta meta : CoreApiMapping.Meta.values()) {
+
+      for (CoreAdminOperation op : CoreAdminOperation.values()) {
+        if (op.action == meta.action) {
+          result.put(meta, new ApiCommand() {
+            @Override
+            public CommandMeta meta() {
+              return meta;
+            }
+
+            @Override
+            public void invoke(SolrQueryRequest req, SolrQueryResponse rsp, BaseHandlerApiSupport apiHandler) throws Exception {
+              op.execute(new CoreAdminHandler.CallInfo(((CoreAdminHandlerApi) apiHandler).handler,
+                  req,
+                  rsp,
+                  op));
+            }
+          });
+        }
+      }
+    }
+
+    for (CoreApiMapping.Meta meta : CoreApiMapping.Meta.values()) {
+      if (result.get(meta) == null) {
+        throw new RuntimeException("No implementation for " + meta.name());
+      }
+    }
+
+    return result.values();
+  }
 
   public CoreAdminHandlerApi(CoreAdminHandler handler) {
     this.handler = handler;
   }
 
-  enum Cmd implements ApiCommand {
-    CREATE(Meta.CREATE, CREATE_OP),
-    UNLOAD(Meta.UNLOAD, UNLOAD_OP),
-    RELOAD(Meta.RELOAD, RELOAD_OP),
-    STATUS(Meta.STATUS, STATUS_OP),
-    SWAP(Meta.SWAP, SWAP_OP),
-    RENAME(Meta.RENAME, RENAME_OP),
-    MERGEINDEXES(Meta.MERGEINDEXES, MERGEINDEXES_OP),
-    SPLIT(Meta.SPLIT, SPLIT_OP),
-    PREPRECOVERY(Meta.PREPRECOVERY, PREPRECOVERY_OP),
-    REQUESTRECOVERY(Meta.REQUESTRECOVERY, REQUESTRECOVERY_OP),
-    REQUESTSYNCSHARD(Meta.REQUESTSYNCSHARD, REQUESTSYNCSHARD_OP),
-    REQUESTBUFFERUPDATES(Meta.REQUESTBUFFERUPDATES, REQUESTBUFFERUPDATES_OP),
-    REQUESTAPPLYUPDATES(Meta.REQUESTAPPLYUPDATES, REQUESTAPPLYUPDATES_OP),
-    REQUESTSTATUS(Meta.REQUESTSTATUS, REQUESTSTATUS_OP),
-    OVERSEEROP(Meta.OVERSEEROP, OVERSEEROP_OP),
-    REJOINLEADERELECTION(Meta.REJOINLEADERELECTION, REJOINLEADERELECTION_OP),
-    INVOKE(Meta.INVOKE, INVOKE_OP),
-    FORCEPREPAREFORLEADERSHIP(Meta.FORCEPREPAREFORLEADERSHIP, FORCEPREPAREFORLEADERSHIP_OP);
-
-    public final Meta meta;
-    public final CoreAdminOperation target;
-
-
-    Cmd(Meta meta, CoreAdminOperation target) {
-      this.meta = meta;
-      this.target = target;
-    }
-
-
-    @Override
-    public CollectionApiMapping.CommandMeta meta() {
-      return meta;
-    }
-
-    @Override
-    public void invoke(SolrQueryRequest req, SolrQueryResponse rsp, BaseHandlerApiSupport apiHandler) throws Exception {
-      target.execute(new CoreAdminHandler.CallInfo(((CoreAdminHandlerApi) apiHandler).handler,
-          req,
-          rsp,
-          target));
-
-    }
-  }
-
 
   @Override
-  protected List<ApiCommand> getCommands() {
-    return Arrays.asList(Cmd.values());
+  protected Collection<ApiCommand> getCommands() {
+    return apiCommands;
   }
 
   @Override
-  protected List<V2EndPoint> getEndPoints() {
+  protected Collection<V2EndPoint> getEndPoints() {
     return Arrays.asList(CoreApiMapping.EndPoint.values());
   }
 

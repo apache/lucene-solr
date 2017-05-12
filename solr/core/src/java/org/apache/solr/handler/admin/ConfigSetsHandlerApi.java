@@ -18,7 +18,10 @@
 package org.apache.solr.handler.admin;
 
 import java.util.Arrays;
+import java.util.Collection;
+import java.util.EnumMap;
 import java.util.List;
+import java.util.Map;
 
 import org.apache.solr.client.solrj.request.CollectionApiMapping;
 import org.apache.solr.client.solrj.request.CollectionApiMapping.ConfigSetMeta;
@@ -26,13 +29,39 @@ import org.apache.solr.handler.admin.ConfigSetsHandler.ConfigSetOperation;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
 
-import static org.apache.solr.handler.admin.ConfigSetsHandler.ConfigSetOperation.CREATE_OP;
-import static org.apache.solr.handler.admin.ConfigSetsHandler.ConfigSetOperation.DELETE_OP;
-import static org.apache.solr.handler.admin.ConfigSetsHandler.ConfigSetOperation.LIST_OP;
-
 public class ConfigSetsHandlerApi extends BaseHandlerApiSupport {
 
   final ConfigSetsHandler configSetHandler;
+  static Collection<ApiCommand> apiCommands = createMapping();
+
+  private static Collection<ApiCommand> createMapping() {
+    Map<ConfigSetMeta, ApiCommand> result = new EnumMap<>(ConfigSetMeta.class);
+
+    for (ConfigSetMeta meta : ConfigSetMeta.values())
+      for (ConfigSetOperation op : ConfigSetOperation.values()) {
+        if (op.action == meta.action) {
+          result.put(meta, new ApiCommand() {
+            @Override
+            public CollectionApiMapping.CommandMeta meta() {
+              return meta;
+            }
+
+            @Override
+            public void invoke(SolrQueryRequest req, SolrQueryResponse rsp, BaseHandlerApiSupport apiHandler) throws Exception {
+              ((ConfigSetsHandlerApi) apiHandler).configSetHandler.invokeAction(req, rsp, op.action);
+            }
+          });
+        }
+      }
+
+    for (ConfigSetMeta meta : ConfigSetMeta.values()) {
+      if(result.get(meta) == null){
+        throw new RuntimeException("No implementation for "+ meta.name());
+      }
+    }
+
+    return result.values();
+  }
 
   public ConfigSetsHandlerApi(ConfigSetsHandler configSetHandler) {
     this.configSetHandler = configSetHandler;
@@ -40,8 +69,8 @@ public class ConfigSetsHandlerApi extends BaseHandlerApiSupport {
 
 
   @Override
-  protected List<ApiCommand> getCommands() {
-    return Arrays.asList(Cmd.values());
+  protected Collection<ApiCommand> getCommands() {
+    return apiCommands;
   }
 
   @Override
@@ -49,29 +78,4 @@ public class ConfigSetsHandlerApi extends BaseHandlerApiSupport {
     return Arrays.asList(CollectionApiMapping.ConfigSetEndPoint.values());
   }
 
-  enum Cmd implements ApiCommand {
-    LIST(ConfigSetMeta.LIST, LIST_OP),
-    CREATE(ConfigSetMeta.CREATE, CREATE_OP),
-    DEL(ConfigSetMeta.DEL,DELETE_OP);
-
-    public ConfigSetMeta meta;
-
-    private final ConfigSetOperation op;
-
-    Cmd(ConfigSetMeta meta, ConfigSetOperation op) {
-      this.meta = meta;
-      this.op = op;
-    }
-
-    @Override
-    public CollectionApiMapping.CommandMeta meta() {
-      return meta;
-    }
-
-    @Override
-    public void invoke(SolrQueryRequest req, SolrQueryResponse rsp, BaseHandlerApiSupport apiHandler) throws Exception {
-      ((ConfigSetsHandlerApi) apiHandler).configSetHandler.invokeAction(req, rsp, op.action);
-    }
-
-  }
 }
