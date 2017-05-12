@@ -60,7 +60,7 @@ import org.slf4j.LoggerFactory;
 import com.carrotsearch.randomizedtesting.annotations.Repeat;
 
 @Slow
-public class TestPassiveReplica extends SolrCloudTestCase {
+public class TestPullReplica extends SolrCloudTestCase {
   
   private static final Logger LOG = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   
@@ -113,28 +113,6 @@ public class TestPassiveReplica extends SolrCloudTestCase {
     super.tearDown();
   }
   
-  // Just to compare test time, nocommit
-  @Ignore
-  public void testCreateDelete2() throws Exception {
-    try {
-      CollectionAdminRequest.createCollection(collectionName, "conf", 1, 8, 0, 0).process(cluster.getSolrClient());
-      DocCollection docCollection = getCollectionState(collectionName);
-      assertNotNull(docCollection);
-//      assertEquals("Expecting 4 relpicas per shard",
-//          8, docCollection.getReplicas().size());
-//      assertEquals("Expecting 6 passive replicas, 3 per shard",
-//          6, docCollection.getReplicas(EnumSet.of(Replica.Type.PASSIVE)).size());
-//      assertEquals("Expecting 2 writer replicas, one per shard",
-//          2, docCollection.getReplicas(EnumSet.of(Replica.Type.WRITER)).size());
-//      for (Slice s:docCollection.getSlices()) {
-//        // read-only replicas can never become leaders
-//        assertFalse(s.getLeader().isReadOnly());
-//      }
-    } finally {
-      zkClient().printLayoutToStdOut();
-    }
-  }
-  
   @Repeat(iterations=2) // 2 times to make sure cleanup is complete and we can create the same collection
   public void testCreateDelete() throws Exception {
     try {
@@ -147,13 +125,13 @@ public class TestPassiveReplica extends SolrCloudTestCase {
         assertNotNull(docCollection);
         assertEquals("Expecting 4 relpicas per shard",
             8, docCollection.getReplicas().size());
-        assertEquals("Expecting 6 passive replicas, 3 per shard",
-            6, docCollection.getReplicas(EnumSet.of(Replica.Type.PASSIVE)).size());
+        assertEquals("Expecting 6 pull replicas, 3 per shard",
+            6, docCollection.getReplicas(EnumSet.of(Replica.Type.PULL)).size());
         assertEquals("Expecting 2 writer replicas, one per shard",
-            2, docCollection.getReplicas(EnumSet.of(Replica.Type.REALTIME)).size());
+            2, docCollection.getReplicas(EnumSet.of(Replica.Type.NRT)).size());
         for (Slice s:docCollection.getSlices()) {
           // read-only replicas can never become leaders
-          assertFalse(s.getLeader().getType() == Replica.Type.PASSIVE);
+          assertFalse(s.getLeader().getType() == Replica.Type.PULL);
           List<String> shardElectionNodes = cluster.getZkClient().getChildren(ZkStateReader.getShardLeadersElectPath(collectionName, s.getName()), null, true);
           assertEquals("Unexpected election nodes for Shard: " + s.getName() + ": " + Arrays.toString(shardElectionNodes.toArray()), 
               1, shardElectionNodes.size());
@@ -175,8 +153,8 @@ public class TestPassiveReplica extends SolrCloudTestCase {
   }
   
   /**
-   * Asserts that Update logs exist for replicas of type {@link org.apache.solr.common.cloud.Replica.Type#REALTIME}, but not
-   * for replicas of type {@link org.apache.solr.common.cloud.Replica.Type#PASSIVE}
+   * Asserts that Update logs exist for replicas of type {@link org.apache.solr.common.cloud.Replica.Type#NRT}, but not
+   * for replicas of type {@link org.apache.solr.common.cloud.Replica.Type#PULL}
    */
   private void assertUlogPresence(DocCollection collection) {
     for (Slice s:collection.getSlices()) {
@@ -185,7 +163,7 @@ public class TestPassiveReplica extends SolrCloudTestCase {
         try {
           core = cluster.getReplicaJetty(r).getCoreContainer().getCore(r.getCoreName());
           assertNotNull(core);
-          assertEquals("Update log should not exist for replicas of type Passive", r.getType() == Replica.Type.REALTIME, 
+          assertEquals("Update log should not exist for replicas of type Passive", r.getType() == Replica.Type.NRT, 
               new java.io.File(core.getUlogDir()).exists());
         } finally {
           core.close();
@@ -214,7 +192,7 @@ public class TestPassiveReplica extends SolrCloudTestCase {
     }
     
     TimeOut t = new TimeOut(REPLICATION_TIMEOUT_SECS, TimeUnit.SECONDS);
-    for (Replica r:s.getReplicas(EnumSet.of(Replica.Type.PASSIVE))) {
+    for (Replica r:s.getReplicas(EnumSet.of(Replica.Type.PULL))) {
       //TODO: assert replication < REPLICATION_TIMEOUT_SECS
       try (HttpSolrClient readOnlyReplicaClient = getHttpSolrClient(r.getCoreUrl())) {
         while (true) {
@@ -241,7 +219,7 @@ public class TestPassiveReplica extends SolrCloudTestCase {
     assertUlogPresence(docCollection);
   }
   
-  public void testAddRemovePassiveReplica() throws Exception {
+  public void testAddRemovePullReplica() throws Exception {
     CollectionAdminRequest.createCollection(collectionName, "conf", 2, 1, 0, 0)
       .setMaxShardsPerNode(100)
       .process(cluster.getSolrClient());
@@ -250,18 +228,18 @@ public class TestPassiveReplica extends SolrCloudTestCase {
     DocCollection docCollection = assertNumberOfReplicas(2, 0, 0, false, true);
     assertEquals(2, docCollection.getSlices().size());
     
-    CollectionAdminRequest.addReplicaToShard(collectionName, "shard1", Replica.Type.PASSIVE).process(cluster.getSolrClient());
+    CollectionAdminRequest.addReplicaToShard(collectionName, "shard1", Replica.Type.PULL).process(cluster.getSolrClient());
     docCollection = assertNumberOfReplicas(2, 0, 1, true, false);
-    CollectionAdminRequest.addReplicaToShard(collectionName, "shard2", Replica.Type.PASSIVE).process(cluster.getSolrClient());    
+    CollectionAdminRequest.addReplicaToShard(collectionName, "shard2", Replica.Type.PULL).process(cluster.getSolrClient());    
     docCollection = assertNumberOfReplicas(2, 0, 2, true, false);
     
     waitForState("Expecting collection to have 2 shards and 2 replica each", collectionName, clusterShape(2, 2));
     
-    //Delete passive replica from shard1
+    //Delete pull replica from shard1
     CollectionAdminRequest.deleteReplica(
         collectionName, 
         "shard1", 
-        docCollection.getSlice("shard1").getReplicas(EnumSet.of(Replica.Type.PASSIVE)).get(0).getName())
+        docCollection.getSlice("shard1").getReplicas(EnumSet.of(Replica.Type.PULL)).get(0).getName())
     .process(cluster.getSolrClient());
     assertNumberOfReplicas(2, 0, 1, true, true);
   }
@@ -275,8 +253,8 @@ public class TestPassiveReplica extends SolrCloudTestCase {
   }
   
   @Ignore("Ignore until I figure out a way to reliably record state transitions")
-  public void testPassiveReplicaStates() throws Exception {
-    // Validate that passive replicas go through the correct states when starting, stopping, reconnecting
+  public void testPullReplicaStates() throws Exception {
+    // Validate that pull replicas go through the correct states when starting, stopping, reconnecting
     CollectionAdminRequest.createCollection(collectionName, "conf", 1, 1, 0, 0)
       .setMaxShardsPerNode(100)
       .process(cluster.getSolrClient());
@@ -294,7 +272,7 @@ public class TestPassiveReplica extends SolrCloudTestCase {
       LOG.info("CollectionStateWatcher saw state: {}", r.getState());
       return r.getState() == Replica.State.ACTIVE;
     });
-    CollectionAdminRequest.addReplicaToShard(collectionName, "shard1", Replica.Type.PASSIVE).process(cluster.getSolrClient());
+    CollectionAdminRequest.addReplicaToShard(collectionName, "shard1", Replica.Type.PULL).process(cluster.getSolrClient());
     waitForState("Replica not added", collectionName, activeReplicaCount(1, 0, 1));
     zkClient().printLayoutToStdOut();
     LOG.info("Saw states: " + Arrays.toString(statesSeen.toArray()));
@@ -366,7 +344,7 @@ public class TestPassiveReplica extends SolrCloudTestCase {
       assertEquals(1, leaderClient.query(new SolrQuery("*:*")).getResults().getNumFound());
     }
     
-    waitForNumDocsInAllReplicas(1, docCollection.getReplicas(EnumSet.of(Replica.Type.PASSIVE)));
+    waitForNumDocsInAllReplicas(1, docCollection.getReplicas(EnumSet.of(Replica.Type.PULL)));
     
     // Delete leader replica from shard1
     ignoreException("No registered leader was found"); //These are expected
@@ -391,29 +369,29 @@ public class TestPassiveReplica extends SolrCloudTestCase {
     Replica leader = docCollection.getSlice("shard1").getLeader();
     assertTrue(leader == null || !leader.isActive(cluster.getSolrClient().getZkStateReader().getClusterState().getLiveNodes()));
     
-    // Passive replica on the other hand should be active
-    Replica passiveReplica = docCollection.getSlice("shard1").getReplicas(EnumSet.of(Replica.Type.PASSIVE)).get(0);
-    assertTrue(passiveReplica.isActive(cluster.getSolrClient().getZkStateReader().getClusterState().getLiveNodes()));
+    // Pull replica on the other hand should be active
+    Replica pullReplica = docCollection.getSlice("shard1").getReplicas(EnumSet.of(Replica.Type.PULL)).get(0);
+    assertTrue(pullReplica.isActive(cluster.getSolrClient().getZkStateReader().getClusterState().getLiveNodes()));
 
-    // add document, this should fail since there is no leader. Passive replica should not accept the update
+    // add document, this should fail since there is no leader. Pull replica should not accept the update
     expectThrows(SolrException.class, () -> 
       cluster.getSolrClient().add(collectionName, new SolrInputDocument("id", "2", "foo", "zoo"))
     );
     
-    // Also fails if I send the update to the passive replica explicitly
-    try (HttpSolrClient passiveReplicaClient = getHttpSolrClient(docCollection.getReplicas(EnumSet.of(Replica.Type.PASSIVE)).get(0).getCoreUrl())) {
+    // Also fails if I send the update to the pull replica explicitly
+    try (HttpSolrClient pullReplicaClient = getHttpSolrClient(docCollection.getReplicas(EnumSet.of(Replica.Type.PULL)).get(0).getCoreUrl())) {
       expectThrows(SolrException.class, () -> 
         cluster.getSolrClient().add(collectionName, new SolrInputDocument("id", "2", "foo", "zoo"))
       );
     }
     
     // Queries should still work
-    waitForNumDocsInAllReplicas(1, docCollection.getReplicas(EnumSet.of(Replica.Type.PASSIVE)));
-    // Add realtime replica back. Since there is no rt now, new rt will have no docs. There will be data loss, since the it will become the leader
-    // and passive replicas will replicate from it. Maybe we want to change this. Replicate from passive replicas is not a good idea, since they
+    waitForNumDocsInAllReplicas(1, docCollection.getReplicas(EnumSet.of(Replica.Type.PULL)));
+    // Add nrt replica back. Since there is no rt now, new rt will have no docs. There will be data loss, since the it will become the leader
+    // and pull replicas will replicate from it. Maybe we want to change this. Replicate from pull replicas is not a good idea, since they
     // are by definition out of date.
     if (removeReplica) {
-      CollectionAdminRequest.addReplicaToShard(collectionName, "shard1", Replica.Type.REALTIME).process(cluster.getSolrClient());
+      CollectionAdminRequest.addReplicaToShard(collectionName, "shard1", Replica.Type.NRT).process(cluster.getSolrClient());
     } else {
       ChaosMonkey.start(leaderJetty);
     }
@@ -428,8 +406,8 @@ public class TestPassiveReplica extends SolrCloudTestCase {
 
     //nocommit: If jetty is restarted, the replication is not forced, and replica doesn't replicate from leader until new docs are added. Is this the correct behavior? Why should these two cases be different?
     if (removeReplica) {
-      // Passive replicas will replicate the empty index if a new replica was added and becomes leader
-      waitForNumDocsInAllReplicas(0, docCollection.getReplicas(EnumSet.of(Replica.Type.PASSIVE)));
+      // Pull replicas will replicate the empty index if a new replica was added and becomes leader
+      waitForNumDocsInAllReplicas(0, docCollection.getReplicas(EnumSet.of(Replica.Type.PULL)));
     }
     
     // add docs agin
@@ -439,11 +417,11 @@ public class TestPassiveReplica extends SolrCloudTestCase {
       leaderClient.commit();
       assertEquals(1, leaderClient.query(new SolrQuery("*:*")).getResults().getNumFound());
     }
-    waitForNumDocsInAllReplicas(1, docCollection.getReplicas(EnumSet.of(Replica.Type.PASSIVE)), "id:2");
-    waitForNumDocsInAllReplicas(1, docCollection.getReplicas(EnumSet.of(Replica.Type.PASSIVE)));
+    waitForNumDocsInAllReplicas(1, docCollection.getReplicas(EnumSet.of(Replica.Type.PULL)), "id:2");
+    waitForNumDocsInAllReplicas(1, docCollection.getReplicas(EnumSet.of(Replica.Type.PULL)));
   }
   
-  public void testKillPassiveReplica() throws Exception {
+  public void testKillPullReplica() throws Exception {
     CollectionAdminRequest.createCollection(collectionName, "conf", 1, 1, 0, 1)
       .setMaxShardsPerNode(100)
       .process(cluster.getSolrClient());
@@ -457,8 +435,8 @@ public class TestPassiveReplica extends SolrCloudTestCase {
     cluster.getSolrClient().commit(collectionName);
     waitForNumDocsInAllActiveReplicas(1);
     
-    JettySolrRunner passiveReplicaJetty = cluster.getReplicaJetty(docCollection.getSlice("shard1").getReplicas(EnumSet.of(Replica.Type.PASSIVE)).get(0));
-    ChaosMonkey.kill(passiveReplicaJetty);
+    JettySolrRunner pullReplicaJetty = cluster.getReplicaJetty(docCollection.getSlice("shard1").getReplicas(EnumSet.of(Replica.Type.PULL)).get(0));
+    ChaosMonkey.kill(pullReplicaJetty);
     waitForState("Replica not removed", collectionName, activeReplicaCount(1, 0, 0));
     // Also wait for the replica to be placed in state="down"
     waitForState("Didn't update state", collectionName, clusterStateReflectsActiveAndDownReplicas());
@@ -467,7 +445,7 @@ public class TestPassiveReplica extends SolrCloudTestCase {
     cluster.getSolrClient().commit(collectionName);
     waitForNumDocsInAllActiveReplicas(2);
     
-    ChaosMonkey.start(passiveReplicaJetty);
+    ChaosMonkey.start(pullReplicaJetty);
     waitForState("Replica not added", collectionName, activeReplicaCount(1, 0, 1));
     waitForNumDocsInAllActiveReplicas(2);
   }
@@ -523,18 +501,18 @@ public class TestPassiveReplica extends SolrCloudTestCase {
     }
   }
   
-  private DocCollection assertNumberOfReplicas(int numWriter, int numActive, int numPassive, boolean updateCollection, boolean activeOnly) throws KeeperException, InterruptedException {
+  private DocCollection assertNumberOfReplicas(int numNrtReplicas, int numTlogReplicas, int numPullReplicas, boolean updateCollection, boolean activeOnly) throws KeeperException, InterruptedException {
     if (updateCollection) {
       cluster.getSolrClient().getZkStateReader().forceUpdateCollection(collectionName);
     }
     DocCollection docCollection = getCollectionState(collectionName);
     assertNotNull(docCollection);
-    assertEquals("Unexpected number of writer replicas: " + docCollection, numWriter, 
-        docCollection.getReplicas(EnumSet.of(Replica.Type.REALTIME)).stream().filter(r->!activeOnly || r.getState() == Replica.State.ACTIVE).count());
-    assertEquals("Unexpected number of passive replicas: " + docCollection, numPassive, 
-        docCollection.getReplicas(EnumSet.of(Replica.Type.PASSIVE)).stream().filter(r->!activeOnly || r.getState() == Replica.State.ACTIVE).count());
-    assertEquals("Unexpected number of active replicas: " + docCollection, numActive, 
-        docCollection.getReplicas(EnumSet.of(Replica.Type.APPEND)).stream().filter(r->!activeOnly || r.getState() == Replica.State.ACTIVE).count());
+    assertEquals("Unexpected number of writer replicas: " + docCollection, numNrtReplicas, 
+        docCollection.getReplicas(EnumSet.of(Replica.Type.NRT)).stream().filter(r->!activeOnly || r.getState() == Replica.State.ACTIVE).count());
+    assertEquals("Unexpected number of pull replicas: " + docCollection, numPullReplicas, 
+        docCollection.getReplicas(EnumSet.of(Replica.Type.PULL)).stream().filter(r->!activeOnly || r.getState() == Replica.State.ACTIVE).count());
+    assertEquals("Unexpected number of active replicas: " + docCollection, numTlogReplicas, 
+        docCollection.getReplicas(EnumSet.of(Replica.Type.TLOG)).stream().filter(r->!activeOnly || r.getState() == Replica.State.ACTIVE).count());
     return docCollection;
   }
   
@@ -559,30 +537,30 @@ public class TestPassiveReplica extends SolrCloudTestCase {
   }
   
   
-  private CollectionStatePredicate activeReplicaCount(int numWriter, int numActive, int numPassive) {
+  private CollectionStatePredicate activeReplicaCount(int numNrtReplicas, int numTlogReplicas, int numPullReplicas) {
     return (liveNodes, collectionState) -> {
-      int writersFound = 0, activesFound = 0, passivesFound = 0;
+      int nrtFound = 0, tlogFound = 0, pullFound = 0;
       if (collectionState == null)
         return false;
       for (Slice slice : collectionState) {
         for (Replica replica : slice) {
           if (replica.isActive(liveNodes))
             switch (replica.getType()) {
-              case APPEND:
-                activesFound++;
+              case TLOG:
+                tlogFound++;
                 break;
-              case PASSIVE:
-                passivesFound++;
+              case PULL:
+                pullFound++;
                 break;
-              case REALTIME:
-                writersFound++;
+              case NRT:
+                nrtFound++;
                 break;
               default:
                 throw new AssertionError("Unexpected replica type");
             }
         }
       }
-      return numWriter == writersFound && numActive == activesFound && numPassive == passivesFound;
+      return numNrtReplicas == nrtFound && numTlogReplicas == tlogFound && numPullReplicas == pullFound;
     };
   }
   

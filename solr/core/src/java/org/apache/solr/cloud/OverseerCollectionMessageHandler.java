@@ -159,9 +159,9 @@ public class OverseerCollectionMessageHandler implements OverseerMessageHandler 
   public static final Map<String, Object> COLL_PROPS = Collections.unmodifiableMap(makeMap(
       ROUTER, DocRouter.DEFAULT_NAME,
       ZkStateReader.REPLICATION_FACTOR, "1",
-      ZkStateReader.REALTIME_REPLICAS, "1",
-      ZkStateReader.APPEND_REPLICAS, "0",
-      ZkStateReader.PASSIVE_REPLICAS, "0",
+      ZkStateReader.NRT_REPLICAS, "1",
+      ZkStateReader.TLOG_REPLICAS, "0",
+      ZkStateReader.PULL_REPLICAS, "0",
       ZkStateReader.MAX_SHARDS_PER_NODE, "1",
       ZkStateReader.AUTO_ADD_REPLICAS, "false",
       DocCollection.RULE, null,
@@ -733,32 +733,32 @@ public class OverseerCollectionMessageHandler implements OverseerMessageHandler 
                                       List<String> nodeList,
                                       ZkNodeProps message,
                                       List<String> shardNames,
-                                      int numRealtimeReplicas, 
-                                      int numAppendReplicas,
-                                      int numPassiveReplicas) throws IOException {
+                                      int numNrtReplicas, 
+                                      int numTlogReplicas,
+                                      int numPullReplicas) throws IOException {
     List<Map> rulesMap = (List) message.get("rule");
     if (rulesMap == null) {
       int i = 0;
       Map<Position, String> result = new HashMap<>();
       for (String aShard : shardNames) {
-        for (int j = 0; j < numRealtimeReplicas; j++){
-          result.put(new Position(aShard, j, Replica.Type.REALTIME), nodeList.get(i % nodeList.size()));
+        for (int j = 0; j < numNrtReplicas; j++){
+          result.put(new Position(aShard, j, Replica.Type.NRT), nodeList.get(i % nodeList.size()));
           i++;
         }
-        for (int j = 0; j < numAppendReplicas; j++){
-          result.put(new Position(aShard, j, Replica.Type.APPEND), nodeList.get(i % nodeList.size()));
+        for (int j = 0; j < numTlogReplicas; j++){
+          result.put(new Position(aShard, j, Replica.Type.TLOG), nodeList.get(i % nodeList.size()));
           i++;
         }
-        for (int j = 0; j < numPassiveReplicas; j++){
-          result.put(new Position(aShard, j, Replica.Type.PASSIVE), nodeList.get(i % nodeList.size()));
+        for (int j = 0; j < numPullReplicas; j++){
+          result.put(new Position(aShard, j, Replica.Type.PULL), nodeList.get(i % nodeList.size()));
           i++;
         }
       }
       return result;
     } else {
-      if (numAppendReplicas + numPassiveReplicas != 0) {
+      if (numTlogReplicas + numPullReplicas != 0) {
         throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, 
-            Replica.Type.APPEND + " or " + Replica.Type.PASSIVE + " replica types not supported with placement rules");
+            Replica.Type.TLOG + " or " + Replica.Type.PULL + " replica types not supported with placement rules");
       }
     }
 
@@ -767,7 +767,7 @@ public class OverseerCollectionMessageHandler implements OverseerMessageHandler 
 
     Map<String, Integer> sharVsReplicaCount = new HashMap<>();
 
-    for (String shard : shardNames) sharVsReplicaCount.put(shard, numRealtimeReplicas);
+    for (String shard : shardNames) sharVsReplicaCount.put(shard, numNrtReplicas);
     ReplicaAssigner replicaAssigner = new ReplicaAssigner(rules,
         sharVsReplicaCount,
         (List<Map>) message.get(SNITCH),

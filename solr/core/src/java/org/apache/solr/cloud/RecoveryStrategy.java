@@ -325,12 +325,12 @@ public class RecoveryStrategy implements Runnable, Closeable {
 
       String ourUrl = ZkCoreNodeProps.getCoreUrl(baseUrl, coreName);
 
-      boolean isLeader = leaderUrl.equals(ourUrl); //TODO: We can probably delete most of this code if we say this strategy can only be used for passive replicas
+      boolean isLeader = leaderUrl.equals(ourUrl); //TODO: We can probably delete most of this code if we say this strategy can only be used for pull replicas
       if (isLeader && !cloudDesc.isLeader()) {
         throw new SolrException(ErrorCode.SERVER_ERROR, "Cloud state still says we are leader.");
       }
       if (cloudDesc.isLeader()) {
-        assert cloudDesc.getReplicaType() != Replica.Type.PASSIVE;
+        assert cloudDesc.getReplicaType() != Replica.Type.PULL;
         // we are now the leader - no one else must have been suitable
         LOG.warn("We have not yet recovered - but we are now the leader!");
         LOG.info("Finished recovery process.");
@@ -461,7 +461,7 @@ public class RecoveryStrategy implements Runnable, Closeable {
     }
     
     // we temporary ignore peersync for Append replicas
-    boolean firstTime = replicaType != Replica.Type.APPEND;
+    boolean firstTime = replicaType != Replica.Type.TLOG;
 
     List<Long> recentVersions;
     try (UpdateLog.RecentUpdates recentUpdates = ulog.getRecentUpdates()) {
@@ -513,7 +513,7 @@ public class RecoveryStrategy implements Runnable, Closeable {
       }
     }
 
-    if (replicaType == Replica.Type.APPEND) {
+    if (replicaType == Replica.Type.TLOG) {
       zkController.stopReplicationFromLeader(coreName);
     }
 
@@ -670,7 +670,7 @@ public class RecoveryStrategy implements Runnable, Closeable {
         if (successfulRecovery) {
           LOG.info("Registering as Active after recovery.");
           try {
-            if (replicaType == Replica.Type.APPEND) {
+            if (replicaType == Replica.Type.TLOG) {
               zkController.startReplicationFromLeader(coreName, true);
             }
             zkController.publish(core.getCoreDescriptor(), Replica.State.ACTIVE);
@@ -753,7 +753,7 @@ public class RecoveryStrategy implements Runnable, Closeable {
     if (testing_beforeReplayBufferingUpdates != null) {
       testing_beforeReplayBufferingUpdates.run();
     }
-    if (replicaType == Replica.Type.APPEND) {
+    if (replicaType == Replica.Type.TLOG) {
       // roll over all updates during buffering to new tlog, make RTG available
       SolrQueryRequest req = new LocalSolrQueryRequest(core,
           new ModifiableSolrParams());

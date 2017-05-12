@@ -350,11 +350,11 @@ public class HttpShardHandler extends ShardHandler {
       String ourSlice = cloudDescriptor.getShardId();
       String ourCollection = cloudDescriptor.getCollectionName();
       // Some requests may only be fulfilled by replicas of type Replica.Type.REALTIME
-      boolean onlyRealtimeReplicas = Boolean.TRUE == req.getContext().get("distribOnlyRealtime");
+      boolean onlyNrtReplicas = Boolean.TRUE == req.getContext().get("distribOnlyRealtime");
       if (rb.slices.length == 1 && rb.slices[0] != null
           && ( rb.slices[0].equals(ourSlice) || rb.slices[0].equals(ourCollection + "_" + ourSlice) )  // handle the <collection>_<slice> format
           && cloudDescriptor.getLastPublished() == Replica.State.ACTIVE
-          && (!onlyRealtimeReplicas || cloudDescriptor.getReplicaType() == Replica.Type.REALTIME)) {
+          && (!onlyNrtReplicas || cloudDescriptor.getReplicaType() == Replica.Type.NRT)) {
         boolean shortCircuit = params.getBool("shortCircuit", true);       // currently just a debugging parameter to check distrib search on a single node
 
         String targetHandler = params.get(ShardParams.SHARDS_QT);
@@ -397,11 +397,11 @@ public class HttpShardHandler extends ShardHandler {
           for (Replica replica : allSliceReplicas) {
             if (!clusterState.liveNodesContain(replica.getNodeName())
                 || replica.getState() != Replica.State.ACTIVE
-                || (onlyRealtimeReplicas && replica.getType() == Replica.Type.PASSIVE)) {
+                || (onlyNrtReplicas && replica.getType() == Replica.Type.PULL)) {
               continue;
             }
             
-            if (onlyRealtimeReplicas && replica.getType() == Replica.Type.APPEND) {
+            if (onlyNrtReplicas && replica.getType() == Replica.Type.TLOG) {
               if (shardLeader == null) {
                 try {
                   shardLeader = zkController.getZkStateReader().getLeaderRetry(cloudDescriptor.getCollectionName(), slice.getName());

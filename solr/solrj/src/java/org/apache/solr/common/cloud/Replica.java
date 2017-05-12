@@ -86,23 +86,23 @@ public class Replica extends ZkNodeProps {
 
   public enum Type {
     /**
-     * Writes updates to transaction log and indexes locally. Replicas of type {@link #REALTIME} support NRT (soft commits) and RTG. 
-     * Any {@link #REALTIME} replica can become a leader. A shard leader will forward updates to all active {@link #REALTIME} and
-     * {@link #APPEND} replicas. 
+     * Writes updates to transaction log and indexes locally. Replicas of type {@link Type#NRT} support NRT (soft commits) and RTG. 
+     * Any {@link Type#NRT} replica can become a leader. A shard leader will forward updates to all active {@link Type#NRT} and
+     * {@link Type#TLOG} replicas. 
      */
-    REALTIME,
+    NRT,
     /**
-     * Writes to transaction log, but not to index, uses replication. Any {@link #APPEND} replica can become leader (by first
-     * applying all local transaction log elements). If a replica is of type {@link #APPEND} but is also the leader, it will behave 
-     * as a {@link #REALTIME}. A shard leader will forward updates to all active {@link #REALTIME} and {@link #APPEND} replicas.
+     * Writes to transaction log, but not to index, uses replication. Any {@link Type#TLOG} replica can become leader (by first
+     * applying all local transaction log elements). If a replica is of type {@link Type#TLOG} but is also the leader, it will behave 
+     * as a {@link Type#NRT}. A shard leader will forward updates to all active {@link Type#NRT} and {@link Type#TLOG} replicas.
      */
-    APPEND,
+    TLOG,
     /**
-     * Doesn’t index or writes to transaction log. Just replicates from {@link #REALTIME} or {@link #APPEND} replicas. {@link #PASSIVE}
-     * replicas can’t become shard leaders (i.e., if there are only passive replicas in the collection at some point, updates will fail
+     * Doesn’t index or writes to transaction log. Just replicates from {@link Type#NRT} or {@link Type#TLOG} replicas. {@link Type#PULL}
+     * replicas can’t become shard leaders (i.e., if there are only pull replicas in the collection at some point, updates will fail
      * same as if there is no leaders, queries continue to work), so they don’t even participate in elections.
      */
-    PASSIVE
+    PULL
   }
 
   private final String name;
@@ -122,7 +122,7 @@ public class Replica extends ZkNodeProps {
     }
     String typeString = (String)propMap.get(ZkStateReader.REPLICA_TYPE);
     if (typeString == null) {
-      this.type = Type.REALTIME;
+      this.type = Type.NRT;
     } else {
       this.type = Type.valueOf(typeString);
     }

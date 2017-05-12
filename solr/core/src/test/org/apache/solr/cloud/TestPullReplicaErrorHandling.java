@@ -52,7 +52,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 @SuppressSSL(bugUrl = "https://issues.apache.org/jira/browse/SOLR-5776")
-public class TestPassiveReplicaErrorHandling extends SolrCloudTestCase {
+public class TestPullReplicaErrorHandling extends SolrCloudTestCase {
   
   private final static int REPLICATION_TIMEOUT_SECS = 10;
   
@@ -132,7 +132,7 @@ public class TestPassiveReplicaErrorHandling extends SolrCloudTestCase {
   }
   
 //  @Repeat(iterations=10)
-  public void testCantConnectToPassiveReplica() throws Exception {
+  public void testCantConnectToPullReplica() throws Exception {
     int numShards = 2;
     CollectionAdminRequest.createCollection(collectionName, "conf", numShards, 1, 0, 1)
       .setMaxShardsPerNode(1)
@@ -140,7 +140,7 @@ public class TestPassiveReplicaErrorHandling extends SolrCloudTestCase {
     addDocs(10);
     DocCollection docCollection = assertNumberOfReplicas(numShards, 0, numShards, false, true);
     Slice s = docCollection.getSlices().iterator().next();
-    SocketProxy proxy = getProxyForReplica(s.getReplicas(EnumSet.of(Replica.Type.PASSIVE)).get(0));
+    SocketProxy proxy = getProxyForReplica(s.getReplicas(EnumSet.of(Replica.Type.PULL)).get(0));
     try {
       proxy.close();
       for (int i = 1; i <= 10; i ++) {
@@ -149,9 +149,9 @@ public class TestPassiveReplicaErrorHandling extends SolrCloudTestCase {
           assertNumDocs(10 + i, leaderClient);
         }
       }
-      try (HttpSolrClient passiveReplicaClient = getHttpSolrClient(s.getReplicas(EnumSet.of(Replica.Type.PASSIVE)).get(0).getCoreUrl())) {
-        passiveReplicaClient.query(new SolrQuery("*:*")).getResults().getNumFound();
-        fail("Shouldn't be able to query the passive replica");
+      try (HttpSolrClient pullReplicaClient = getHttpSolrClient(s.getReplicas(EnumSet.of(Replica.Type.PULL)).get(0).getCoreUrl())) {
+        pullReplicaClient.query(new SolrQuery("*:*")).getResults().getNumFound();
+        fail("Shouldn't be able to query the pull replica");
       } catch (SolrServerException e) {
         //expected
       }
@@ -168,8 +168,8 @@ public class TestPassiveReplicaErrorHandling extends SolrCloudTestCase {
       proxy.reopen();
     }
     
-    try (HttpSolrClient passiveReplicaClient = getHttpSolrClient(s.getReplicas(EnumSet.of(Replica.Type.PASSIVE)).get(0).getCoreUrl())) {
-      assertNumDocs(20, passiveReplicaClient);
+    try (HttpSolrClient pullReplicaClient = getHttpSolrClient(s.getReplicas(EnumSet.of(Replica.Type.PULL)).get(0).getCoreUrl())) {
+      assertNumDocs(20, pullReplicaClient);
     }
   }
   
@@ -184,13 +184,13 @@ public class TestPassiveReplicaErrorHandling extends SolrCloudTestCase {
     SocketProxy proxy = getProxyForReplica(s.getLeader());
     try {
       // wait for replication
-      try (HttpSolrClient passiveReplicaClient = getHttpSolrClient(s.getReplicas(EnumSet.of(Replica.Type.PASSIVE)).get(0).getCoreUrl())) {
-        assertNumDocs(10, passiveReplicaClient);
+      try (HttpSolrClient pullReplicaClient = getHttpSolrClient(s.getReplicas(EnumSet.of(Replica.Type.PULL)).get(0).getCoreUrl())) {
+        assertNumDocs(10, pullReplicaClient);
       }
       proxy.close();
       expectThrows(SolrException.class, ()->addDocs(1));
-      try (HttpSolrClient passiveReplicaClient = getHttpSolrClient(s.getReplicas(EnumSet.of(Replica.Type.PASSIVE)).get(0).getCoreUrl())) {
-        assertNumDocs(10, passiveReplicaClient);
+      try (HttpSolrClient pullReplicaClient = getHttpSolrClient(s.getReplicas(EnumSet.of(Replica.Type.PULL)).get(0).getCoreUrl())) {
+        assertNumDocs(10, pullReplicaClient);
       }
       assertNumDocs(10, cluster.getSolrClient());
     } finally {
@@ -198,7 +198,7 @@ public class TestPassiveReplicaErrorHandling extends SolrCloudTestCase {
     }
   }
   
-  public void testPassiveReplicaDisconnectsFromZooKeeper() throws Exception {
+  public void testPullReplicaDisconnectsFromZooKeeper() throws Exception {
     int numShards = 1;
     CollectionAdminRequest.createCollection(collectionName, "conf", numShards, 1, 0, 1)
       .setMaxShardsPerNode(1)
@@ -206,18 +206,18 @@ public class TestPassiveReplicaErrorHandling extends SolrCloudTestCase {
     addDocs(10);
     DocCollection docCollection = assertNumberOfReplicas(numShards, 0, numShards, false, true);
     Slice s = docCollection.getSlices().iterator().next();
-    try (HttpSolrClient passiveReplicaClient = getHttpSolrClient(s.getReplicas(EnumSet.of(Replica.Type.PASSIVE)).get(0).getCoreUrl())) {
-      assertNumDocs(10, passiveReplicaClient);
+    try (HttpSolrClient pullReplicaClient = getHttpSolrClient(s.getReplicas(EnumSet.of(Replica.Type.PULL)).get(0).getCoreUrl())) {
+      assertNumDocs(10, pullReplicaClient);
     }
     addDocs(20);
-    JettySolrRunner jetty = getJettyForReplica(s.getReplicas(EnumSet.of(Replica.Type.PASSIVE)).get(0));
+    JettySolrRunner jetty = getJettyForReplica(s.getReplicas(EnumSet.of(Replica.Type.PULL)).get(0));
     cluster.expireZkSession(jetty);
     addDocs(30);
     waitForState("Expecting node to be disconnected", collectionName, activeReplicaCount(1, 0, 0));
     addDocs(40);
     waitForState("Expecting node to be disconnected", collectionName, activeReplicaCount(1, 0, 1));
-    try (HttpSolrClient passiveReplicaClient = getHttpSolrClient(s.getReplicas(EnumSet.of(Replica.Type.PASSIVE)).get(0).getCoreUrl())) {
-      assertNumDocs(40, passiveReplicaClient);
+    try (HttpSolrClient pullReplicaClient = getHttpSolrClient(s.getReplicas(EnumSet.of(Replica.Type.PULL)).get(0).getCoreUrl())) {
+      assertNumDocs(40, pullReplicaClient);
     }
   }
   
@@ -251,11 +251,11 @@ public class TestPassiveReplicaErrorHandling extends SolrCloudTestCase {
     DocCollection docCollection = getCollectionState(collectionName);
     assertNotNull(docCollection);
     assertEquals("Unexpected number of writer replicas: " + docCollection, numWriter, 
-        docCollection.getReplicas(EnumSet.of(Replica.Type.REALTIME)).stream().filter(r->!activeOnly || r.getState() == Replica.State.ACTIVE).count());
-    assertEquals("Unexpected number of passive replicas: " + docCollection, numPassive, 
-        docCollection.getReplicas(EnumSet.of(Replica.Type.PASSIVE)).stream().filter(r->!activeOnly || r.getState() == Replica.State.ACTIVE).count());
+        docCollection.getReplicas(EnumSet.of(Replica.Type.NRT)).stream().filter(r->!activeOnly || r.getState() == Replica.State.ACTIVE).count());
+    assertEquals("Unexpected number of pull replicas: " + docCollection, numPassive, 
+        docCollection.getReplicas(EnumSet.of(Replica.Type.PULL)).stream().filter(r->!activeOnly || r.getState() == Replica.State.ACTIVE).count());
     assertEquals("Unexpected number of active replicas: " + docCollection, numActive, 
-        docCollection.getReplicas(EnumSet.of(Replica.Type.APPEND)).stream().filter(r->!activeOnly || r.getState() == Replica.State.ACTIVE).count());
+        docCollection.getReplicas(EnumSet.of(Replica.Type.TLOG)).stream().filter(r->!activeOnly || r.getState() == Replica.State.ACTIVE).count());
     return docCollection;
   }
   
@@ -309,13 +309,13 @@ public class TestPassiveReplicaErrorHandling extends SolrCloudTestCase {
         for (Replica replica : slice) {
           if (replica.isActive(liveNodes))
             switch (replica.getType()) {
-              case APPEND:
+              case TLOG:
                 activesFound++;
                 break;
-              case PASSIVE:
+              case PULL:
                 passivesFound++;
                 break;
-              case REALTIME:
+              case NRT:
                 writersFound++;
                 break;
               default:

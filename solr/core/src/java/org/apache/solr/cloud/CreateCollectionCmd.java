@@ -95,9 +95,9 @@ public class CreateCollectionCmd implements Cmd {
       // look at the replication factor and see if it matches reality
       // if it does not, find best nodes to create more cores
 
-      int numRealtimeReplicas = message.getInt(REALTIME_REPLICAS, message.getInt(REPLICATION_FACTOR, 1));
-      int numPassiveReplicas = message.getInt(PASSIVE_REPLICAS, 0);
-      int numAppendReplicas = message.getInt(APPEND_REPLICAS, 0);
+      int numNrtReplicas = message.getInt(NRT_REPLICAS, message.getInt(REPLICATION_FACTOR, 1));
+      int numPullReplicas = message.getInt(PULL_REPLICAS, 0);
+      int numTlogReplicas = message.getInt(TLOG_REPLICAS, 0);
 
       ShardHandler shardHandler = ocmh.shardHandlerFactory.getShardHandler();
       final String async = message.getStr(ASYNC);
@@ -117,8 +117,8 @@ public class CreateCollectionCmd implements Cmd {
 
       int maxShardsPerNode = message.getInt(MAX_SHARDS_PER_NODE, 1);
 
-      if (numRealtimeReplicas + numAppendReplicas <= 0) {
-        throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, REALTIME_REPLICAS + " + " + APPEND_REPLICAS + " must be greater than 0");
+      if (numNrtReplicas + numTlogReplicas <= 0) {
+        throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, NRT_REPLICAS + " + " + TLOG_REPLICAS + " must be greater than 0");
       }
 
       if (numSlices <= 0) {
@@ -136,7 +136,7 @@ public class CreateCollectionCmd implements Cmd {
 
         positionVsNodes = new HashMap<>();
       } else {
-        int totalNumReplicas = numRealtimeReplicas + numAppendReplicas + numPassiveReplicas;
+        int totalNumReplicas = numNrtReplicas + numTlogReplicas + numPullReplicas;
         if (totalNumReplicas > nodeList.size()) {
           log.warn("Specified number of replicas of "
               + totalNumReplicas
@@ -155,14 +155,14 @@ public class CreateCollectionCmd implements Cmd {
               + ", and the number of nodes currently live or live and part of your "+CREATE_NODE_SET+" is " + nodeList.size()
               + ". This allows a maximum of " + maxShardsAllowedToCreate
               + " to be created. Value of " + NUM_SLICES + " is " + numSlices
-              + ", value of " + REALTIME_REPLICAS + " is " + numRealtimeReplicas
-              + ", value of " + APPEND_REPLICAS + " is " + numAppendReplicas
-              + " and value of " + PASSIVE_REPLICAS + " is " + numPassiveReplicas
+              + ", value of " + NRT_REPLICAS + " is " + numNrtReplicas
+              + ", value of " + TLOG_REPLICAS + " is " + numTlogReplicas
+              + " and value of " + PULL_REPLICAS + " is " + numPullReplicas
               + ". This requires " + requestedShardsToCreate
               + " shards to be created (higher than the allowed number)");
         }
 
-        positionVsNodes = ocmh.identifyNodes(clusterState, nodeList, message, shardNames, numRealtimeReplicas, numAppendReplicas, numPassiveReplicas);
+        positionVsNodes = ocmh.identifyNodes(clusterState, nodeList, message, shardNames, numNrtReplicas, numTlogReplicas, numPullReplicas);
       }
 
       ZkStateReader zkStateReader = ocmh.zkStateReader;
@@ -202,8 +202,8 @@ public class CreateCollectionCmd implements Cmd {
       Map<String, String> requestMap = new HashMap<>();
 
 
-      log.debug(formatString("Creating SolrCores for new collection {0}, shardNames {1} , realtimeReplicas : {2}, appendReplicas: {3}, passiveReplicas: {4}",
-          collectionName, shardNames, numRealtimeReplicas, numAppendReplicas, numPassiveReplicas));
+      log.debug(formatString("Creating SolrCores for new collection {0}, shardNames {1} , nrtReplicas : {2}, tlogReplicas: {3}, pullReplicas: {4}",
+          collectionName, shardNames, numNrtReplicas, numTlogReplicas, numPullReplicas));
       Map<String,ShardRequest> coresToCreate = new LinkedHashMap<>();
       for (Map.Entry<ReplicaAssigner.Position, String> e : positionVsNodes.entrySet()) {
         ReplicaAssigner.Position position = e.getKey();

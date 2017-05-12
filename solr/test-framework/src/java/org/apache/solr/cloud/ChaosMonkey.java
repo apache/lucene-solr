@@ -379,7 +379,7 @@ public class ChaosMonkey {
     boolean canKillIndexer = canKillIndexer(slice);
     
     if (!canKillIndexer) {
-      monkeyLog("Number of indexer nodes (realtime or append) is not enough to kill one of them, Will only choose a passive replica to kill");
+      monkeyLog("Number of indexer nodes (nrt or tlog replicas) is not enough to kill one of them, Will only choose a pull replica to kill");
     }
     
     int chance = chaosRandom.nextInt(10);
@@ -395,10 +395,10 @@ public class ChaosMonkey {
         attempt++;
         int index = chaosRandom.nextInt(jetties.size());
         cjetty = jetties.get(index);
-        if (canKillIndexer || getTypeForJetty(slice, cjetty) == Replica.Type.PASSIVE) {
+        if (canKillIndexer || getTypeForJetty(slice, cjetty) == Replica.Type.PULL) {
           break;
         } else if (attempt > 20) {
-          monkeyLog("Can't kill indexer nodes (realtime or append) and couldn't find a random passive node after 20 attempts - monkey cannot kill :(");
+          monkeyLog("Can't kill indexer nodes (nrt or tlog replicas) and couldn't find a random pull node after 20 attempts - monkey cannot kill :(");
           return null;
         }
       }
@@ -481,7 +481,7 @@ public class ChaosMonkey {
       
       if (cloudJetty.jetty.isRunning()
           && state == Replica.State.ACTIVE
-          && (replicaType == Replica.Type.APPEND || replicaType == Replica.Type.REALTIME) 
+          && (replicaType == Replica.Type.TLOG || replicaType == Replica.Type.NRT) 
           && zkStateReader.getClusterState().liveNodesContain(nodeName)) {
         numIndexersFoundInShard++;
       }

@@ -328,7 +328,7 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
       replicaType = cloudDesc.getReplicaType();
     } else {
       collection = null;
-      replicaType = Replica.Type.REALTIME;
+      replicaType = Replica.Type.NRT;
     }
 
     boolean shouldClone = false;
@@ -679,7 +679,7 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
 
       forwardToLeader = false;
       List<ZkCoreNodeProps> replicaProps = zkController.getZkStateReader()
-          .getReplicaProps(collection, shardId, leaderReplica.getName(), null, Replica.State.DOWN, EnumSet.of(Replica.Type.REALTIME, Replica.Type.APPEND));
+          .getReplicaProps(collection, shardId, leaderReplica.getName(), null, Replica.State.DOWN, EnumSet.of(Replica.Type.NRT, Replica.Type.TLOG));
       if (replicaProps != null) {
         nodes = new ArrayList<>(replicaProps.size());
         for (ZkCoreNodeProps props : replicaProps) {
@@ -1189,7 +1189,7 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
                 checkDeleteByQueries = true;
               }
             }
-            if (replicaType == Replica.Type.APPEND && (cmd.getFlags() & UpdateCommand.REPLAY) == 0) {
+            if (replicaType == Replica.Type.TLOG && (cmd.getFlags() & UpdateCommand.REPLAY) == 0) {
               cmd.setFlags(cmd.getFlags() | UpdateCommand.IGNORE_INDEXWRITER);
             }
           }
@@ -1611,7 +1611,7 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
               collection, myShardId);
           // DBQ forwarded to Realtime and Append
           List<ZkCoreNodeProps> replicaProps = zkController.getZkStateReader()
-              .getReplicaProps(collection, myShardId, leaderReplica.getName(), null, Replica.State.DOWN, EnumSet.of(Replica.Type.REALTIME, Replica.Type.APPEND));
+              .getReplicaProps(collection, myShardId, leaderReplica.getName(), null, Replica.State.DOWN, EnumSet.of(Replica.Type.NRT, Replica.Type.TLOG));
           if (replicaProps != null) {
             final List<Node> myReplicas = new ArrayList<>(replicaProps.size());
             for (ZkCoreNodeProps replicaProp : replicaProps) {
@@ -1699,7 +1699,7 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
             return;
           }
 
-          if (replicaType == Replica.Type.APPEND && (cmd.getFlags() & UpdateCommand.REPLAY) == 0) {
+          if (replicaType == Replica.Type.TLOG && (cmd.getFlags() & UpdateCommand.REPLAY) == 0) {
             // Append replica not leader, don't write the DBQ to IW
             cmd.setFlags(cmd.getFlags() | UpdateCommand.IGNORE_INDEXWRITER);
           }
@@ -1857,7 +1857,7 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
               }
             }
 
-            if (replicaType == Replica.Type.APPEND && (cmd.getFlags() & UpdateCommand.REPLAY) == 0) {
+            if (replicaType == Replica.Type.TLOG && (cmd.getFlags() & UpdateCommand.REPLAY) == 0) {
               cmd.setFlags(cmd.getFlags() | UpdateCommand.IGNORE_INDEXWRITER);
             }
           }
@@ -1884,11 +1884,11 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
       zkCheck();
       
       nodes = getCollectionUrls(req, req.getCore().getCoreDescriptor()
-          .getCloudDescriptor().getCollectionName(), EnumSet.of(Replica.Type.APPEND,Replica.Type.REALTIME));
+          .getCloudDescriptor().getCollectionName(), EnumSet.of(Replica.Type.TLOG,Replica.Type.NRT));
       if (nodes == null) {
-        // This could happen if there are only passive replicas
+        // This could happen if there are only pull replicas
         throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, 
-            "Unable to distribute commit operation. No replicas available of types " + Replica.Type.APPEND + " or " + Replica.Type.REALTIME);
+            "Unable to distribute commit operation. No replicas available of types " + Replica.Type.TLOG + " or " + Replica.Type.NRT);
       }
       if (isLeader && nodes.size() == 1) {
         singleLeader = true;
@@ -1896,7 +1896,7 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
     }
     
     if (!zkEnabled || req.getParams().getBool(COMMIT_END_POINT, false) || singleLeader) {
-      if (replicaType == Replica.Type.APPEND) { // REALTIME will always commit
+      if (replicaType == Replica.Type.TLOG) { // REALTIME will always commit
         try {
           Replica leaderReplica = zkController.getZkStateReader().getLeaderRetry(
               collection, cloudDesc.getShardId());

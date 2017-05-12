@@ -897,7 +897,7 @@ public class CloudSolrClient extends SolrClient {
       String url = zkProps.getCoreUrl();
       urls.add(url);
       if (!directUpdatesToLeadersOnly) {
-        for (Replica replica : slice.getReplicas(EnumSet.of(Replica.Type.APPEND, Replica.Type.REALTIME))) {
+        for (Replica replica : slice.getReplicas(EnumSet.of(Replica.Type.TLOG, Replica.Type.NRT))) {
           if (!replica.getNodeName().equals(leader.getNodeName()) &&
               !replica.getName().equals(leader.getName())) {
             ZkCoreNodeProps zkProps1 = new ZkCoreNodeProps(replica);

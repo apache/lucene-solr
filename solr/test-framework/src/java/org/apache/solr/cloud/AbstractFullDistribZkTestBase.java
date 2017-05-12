@@ -236,10 +236,10 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
             CreateMode.PERSISTENT, true);
       }
     }
-    if (useAppendReplicas()) {
-      log.info("Will use {} replicas unless explicitly asked otherwise", Replica.Type.APPEND);
+    if (useTlogReplicas()) {
+      log.info("Will use {} replicas unless explicitly asked otherwise", Replica.Type.TLOG);
     } else {
-      log.info("Will use {} replicas unless explicitly asked otherwise", Replica.Type.REALTIME);
+      log.info("Will use {} replicas unless explicitly asked otherwise", Replica.Type.NRT);
     }
   }
 
@@ -281,7 +281,7 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
         shardToJetty, shardToLeaderJetty);
   }
 
-  protected boolean useAppendReplicas() {
+  protected boolean useTlogReplicas() {
     return false;
   }
   
@@ -397,13 +397,13 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
               "name", DEFAULT_COLLECTION, 
               "numShards", String.valueOf(sliceCount),
               DocCollection.STATE_FORMAT, getStateFormat(),
-              ZkStateReader.REALTIME_REPLICAS, useAppendReplicas()?"0":"1",
-              ZkStateReader.APPEND_REPLICAS, useAppendReplicas()?"1":"0",
-              ZkStateReader.PASSIVE_REPLICAS, String.valueOf(getPassiveReplicaCount()))));
+              ZkStateReader.NRT_REPLICAS, useTlogReplicas()?"0":"1",
+              ZkStateReader.TLOG_REPLICAS, useTlogReplicas()?"1":"0",
+              ZkStateReader.PULL_REPLICAS, String.valueOf(getPullReplicaCount()))));
       zkClient.close();
     }
     
-    int numPassiveReplicas = getPassiveReplicaCount() * sliceCount;
+    int numPullReplicas = getPullReplicaCount() * sliceCount;
 
     for (int i = 1; i <= numJettys; i++) {
       if (sb.length() > 0) sb.append(',');
@@ -415,17 +415,17 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
       setupJettySolrHome(jettyDir);
       JettySolrRunner j;
       
-      if (numPassiveReplicas > 0) {
-        numPassiveReplicas--;
-        log.info("create jetty {} in directory {} of type {}", i, jettyDir, Replica.Type.PASSIVE);
+      if (numPullReplicas > 0) {
+        numPullReplicas--;
+        log.info("create jetty {} in directory {} of type {}", i, jettyDir, Replica.Type.PULL);
         j = createJetty(jettyDir, useJettyDataDir ? getDataDir(testDir + "/jetty"
-            + cnt) : null, null, "solrconfig.xml", null, Replica.Type.PASSIVE);
-      } else if (useAppendReplicas()) {
-        log.info("create jetty {} in directory {} of type {}", i, jettyDir, Replica.Type.APPEND);
+            + cnt) : null, null, "solrconfig.xml", null, Replica.Type.PULL);
+      } else if (useTlogReplicas()) {
+        log.info("create jetty {} in directory {} of type {}", i, jettyDir, Replica.Type.TLOG);
         j = createJetty(jettyDir, useJettyDataDir ? getDataDir(testDir + "/jetty"
-            + cnt) : null, null, "solrconfig.xml", null, Replica.Type.APPEND);
+            + cnt) : null, null, "solrconfig.xml", null, Replica.Type.TLOG);
       } else {
-        log.info("create jetty {} in directory {} of type {}", i, jettyDir, Replica.Type.REALTIME);
+        log.info("create jetty {} in directory {} of type {}", i, jettyDir, Replica.Type.NRT);
         j = createJetty(jettyDir, useJettyDataDir ? getDataDir(testDir + "/jetty"
             + cnt) : null, null, "solrconfig.xml", null, null);
       }
@@ -477,7 +477,7 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
   }
 
 
-  protected int getPassiveReplicaCount() {
+  protected int getPullReplicaCount() {
     return 0;
   }
 
@@ -547,7 +547,7 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
     if (replicaType != null) {
       props.setProperty("replicaType", replicaType.toString());
     } else if (random().nextBoolean()) {
-      props.setProperty("replicaType", Replica.Type.REALTIME.toString());
+      props.setProperty("replicaType", Replica.Type.NRT.toString());
     }
     props.setProperty("coreRootDirectory", solrHome.toPath().resolve("cores").toAbsolutePath().toString());
     
@@ -586,7 +586,7 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
     if (replicaType != null) {
       props.setProperty("replicaType", replicaType.toString());
     } else if (random().nextBoolean()) {
-      props.setProperty("replicaType", Replica.Type.REALTIME.toString());
+      props.setProperty("replicaType", Replica.Type.NRT.toString());
     }
     props.setProperty("coreRootDirectory", solrHome.toPath().resolve("cores").toAbsolutePath().toString());
 
@@ -1616,23 +1616,23 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
       String shardNames = (String) collectionProps.get(SHARDS_PROP);
       numShards = StrUtils.splitSmart(shardNames,',').size();
     }
-    Integer numRealtimeReplicas = (Integer) collectionProps.get(ZkStateReader.REALTIME_REPLICAS);
-    if (numRealtimeReplicas == null) {
-      numRealtimeReplicas = (Integer) collectionProps.get(ZkStateReader.REPLICATION_FACTOR);
+    Integer numNrtReplicas = (Integer) collectionProps.get(ZkStateReader.NRT_REPLICAS);
+    if (numNrtReplicas == null) {
+      numNrtReplicas = (Integer) collectionProps.get(ZkStateReader.REPLICATION_FACTOR);
     }
-    if(numRealtimeReplicas == null){
-      numRealtimeReplicas = (Integer) OverseerCollectionMessageHandler.COLL_PROPS.get(ZkStateReader.REPLICATION_FACTOR);
+    if(numNrtReplicas == null){
+      numNrtReplicas = (Integer) OverseerCollectionMessageHandler.COLL_PROPS.get(ZkStateReader.REPLICATION_FACTOR);
     }
-    if (numRealtimeReplicas == null) {
-      numRealtimeReplicas = Integer.valueOf(0);
+    if (numNrtReplicas == null) {
+      numNrtReplicas = Integer.valueOf(0);
     }
-    Integer numAppendReplicas = (Integer) collectionProps.get(ZkStateReader.APPEND_REPLICAS);
-    if (numAppendReplicas == null) {
-      numAppendReplicas = Integer.valueOf(0);
+    Integer numTlogReplicas = (Integer) collectionProps.get(ZkStateReader.TLOG_REPLICAS);
+    if (numTlogReplicas == null) {
+      numTlogReplicas = Integer.valueOf(0);
     }
-    Integer numPassiveReplicas = (Integer) collectionProps.get(ZkStateReader.PASSIVE_REPLICAS);
-    if (numPassiveReplicas == null) {
-      numPassiveReplicas = Integer.valueOf(0);
+    Integer numPullReplicas = (Integer) collectionProps.get(ZkStateReader.PULL_REPLICAS);
+    if (numPullReplicas == null) {
+      numPullReplicas = Integer.valueOf(0);
     }
     if (confSetName != null) {
       params.set("collection.configName", confSetName);
@@ -1641,7 +1641,7 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
     int clientIndex = random().nextInt(2);
     List<Integer> list = new ArrayList<>();
     list.add(numShards);
-    list.add(numRealtimeReplicas + numAppendReplicas + numPassiveReplicas);
+    list.add(numNrtReplicas + numTlogReplicas + numPullReplicas);
     if (collectionInfos != null) {
       collectionInfos.put(collectionName, list);
     }
@@ -1669,14 +1669,14 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
   protected CollectionAdminResponse createCollection(Map<String,List<Integer>> collectionInfos,
       String collectionName, int numShards, int replicationFactor, int maxShardsPerNode, SolrClient client, String createNodeSetStr) throws SolrServerException, IOException {
 
-    int numRealtimeReplicas = useAppendReplicas()?0:replicationFactor;
-    int numAppendReplicas = useAppendReplicas()?replicationFactor:0;
+    int numNrtReplicas = useTlogReplicas()?0:replicationFactor;
+    int numTlogReplicas = useTlogReplicas()?replicationFactor:0;
     return createCollection(collectionInfos, collectionName,
         Utils.makeMap(
         NUM_SLICES, numShards,
-        ZkStateReader.REALTIME_REPLICAS, numRealtimeReplicas,
-        ZkStateReader.APPEND_REPLICAS, numAppendReplicas,
-        ZkStateReader.PASSIVE_REPLICAS, getPassiveReplicaCount(),
+        ZkStateReader.NRT_REPLICAS, numNrtReplicas,
+        ZkStateReader.TLOG_REPLICAS, numTlogReplicas,
+        ZkStateReader.PULL_REPLICAS, getPullReplicaCount(),
         CREATE_NODE_SET, createNodeSetStr,
         ZkStateReader.MAX_SHARDS_PER_NODE, maxShardsPerNode),
         client);
@@ -1685,14 +1685,14 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
   protected CollectionAdminResponse createCollection(Map<String, List<Integer>> collectionInfos,
                                                      String collectionName, int numShards, int replicationFactor, int maxShardsPerNode, SolrClient client, String createNodeSetStr, String configName) throws SolrServerException, IOException {
 
-    int numRealtimeReplicas = useAppendReplicas()?0:replicationFactor;
-    int numAppendReplicas = useAppendReplicas()?replicationFactor:0;
+    int numNrtReplicas = useTlogReplicas()?0:replicationFactor;
+    int numTlogReplicas = useTlogReplicas()?replicationFactor:0;
     return createCollection(collectionInfos, collectionName,
         Utils.makeMap(
         NUM_SLICES, numShards,
-        ZkStateReader.REALTIME_REPLICAS, numRealtimeReplicas,
-        ZkStateReader.APPEND_REPLICAS, numAppendReplicas,
-        ZkStateReader.PASSIVE_REPLICAS, getPassiveReplicaCount(),
+        ZkStateReader.NRT_REPLICAS, numNrtReplicas,
+        ZkStateReader.TLOG_REPLICAS, numTlogReplicas,
+        ZkStateReader.PULL_REPLICAS, getPullReplicaCount(),
         CREATE_NODE_SET, createNodeSetStr,
         ZkStateReader.MAX_SHARDS_PER_NODE, maxShardsPerNode),
         client, configName);
@@ -1873,13 +1873,13 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
                                   int numShards ) throws Exception {
     int maxShardsPerNode = ((((numShards+1) * replicationFactor) / getCommonCloudSolrClient()
         .getZkStateReader().getClusterState().getLiveNodes().size())) + 1;
-    int numRealtimeReplicas = useAppendReplicas()?0:replicationFactor;
-    int numAppendReplicas = useAppendReplicas()?replicationFactor:0;
+    int numNrtReplicas = useTlogReplicas()?0:replicationFactor;
+    int numTlogReplicas = useTlogReplicas()?replicationFactor:0;
     Map<String, Object> props = makeMap(
         ZkStateReader.MAX_SHARDS_PER_NODE, maxShardsPerNode,
-        ZkStateReader.REALTIME_REPLICAS, numRealtimeReplicas,
-        ZkStateReader.APPEND_REPLICAS, numAppendReplicas,
-        ZkStateReader.PASSIVE_REPLICAS, getPassiveReplicaCount(),
+        ZkStateReader.NRT_REPLICAS, numNrtReplicas,
+        ZkStateReader.TLOG_REPLICAS, numTlogReplicas,
+        ZkStateReader.PULL_REPLICAS, getPullReplicaCount(),
         NUM_SLICES, numShards);
     Map<String,List<Integer>> collectionInfos = new HashMap<>();
     createCollection(collectionInfos, collName, props, client);
@@ -2078,24 +2078,24 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
       if (timeout.hasTimedOut()) {
         fail("Unable to get leader indexVersion");
       }
-      for (Replica passiveReplica:s.getReplicas(EnumSet.of(Replica.Type.PASSIVE,Replica.Type.APPEND))) {
-        if (!zkStateReader.getClusterState().liveNodesContain(passiveReplica.getNodeName())) {
+      for (Replica pullReplica:s.getReplicas(EnumSet.of(Replica.Type.PULL,Replica.Type.TLOG))) {
+        if (!zkStateReader.getClusterState().liveNodesContain(pullReplica.getNodeName())) {
           continue;
         }
         while (true) {
-          long replicaIndexVersion = getIndexVersion(passiveReplica); 
+          long replicaIndexVersion = getIndexVersion(pullReplica); 
           if (leaderIndexVersion == replicaIndexVersion) {
-            log.debug("Leader replica's version ({}) in sync with replica({}): {} == {}", leader.getName(), passiveReplica.getName(), leaderIndexVersion, replicaIndexVersion);
+            log.debug("Leader replica's version ({}) in sync with replica({}): {} == {}", leader.getName(), pullReplica.getName(), leaderIndexVersion, replicaIndexVersion);
             break;
           } else {
             if (timeout.hasTimedOut()) {
               logReplicaTypesReplicationInfo(collectionName, zkStateReader);
-              fail(String.format(Locale.ROOT, "Timed out waiting for replica %s (%d) to replicate from leader %s (%d)", passiveReplica.getName(), replicaIndexVersion, leader.getName(), leaderIndexVersion));
+              fail(String.format(Locale.ROOT, "Timed out waiting for replica %s (%d) to replicate from leader %s (%d)", pullReplica.getName(), replicaIndexVersion, leader.getName(), leaderIndexVersion));
             }
             if (leaderIndexVersion > replicaIndexVersion) {
-              log.debug("{} version is {} and leader's is {}, will wait for replication", passiveReplica.getName(), replicaIndexVersion, leaderIndexVersion);
+              log.debug("{} version is {} and leader's is {}, will wait for replication", pullReplica.getName(), replicaIndexVersion, leaderIndexVersion);
             } else {
-              log.debug("Leader replica's version ({}) is lower than passive replica({}): {} < {}", leader.getName(), passiveReplica.getName(), leaderIndexVersion, replicaIndexVersion);
+              log.debug("Leader replica's version ({}) is lower than pull replica({}): {} < {}", leader.getName(), pullReplica.getName(), leaderIndexVersion, replicaIndexVersion);
             }
             Thread.sleep(1000);
           }

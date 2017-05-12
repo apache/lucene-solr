@@ -42,10 +42,10 @@ import org.slf4j.LoggerFactory;
 
 import static org.apache.solr.cloud.Assign.getNodesForNewReplicas;
 import static org.apache.solr.cloud.OverseerCollectionMessageHandler.COLL_CONF;
-import static org.apache.solr.common.cloud.ZkStateReader.APPEND_REPLICAS;
+import static org.apache.solr.common.cloud.ZkStateReader.TLOG_REPLICAS;
 import static org.apache.solr.common.cloud.ZkStateReader.COLLECTION_PROP;
-import static org.apache.solr.common.cloud.ZkStateReader.PASSIVE_REPLICAS;
-import static org.apache.solr.common.cloud.ZkStateReader.REALTIME_REPLICAS;
+import static org.apache.solr.common.cloud.ZkStateReader.PULL_REPLICAS;
+import static org.apache.solr.common.cloud.ZkStateReader.NRT_REPLICAS;
 import static org.apache.solr.common.cloud.ZkStateReader.REPLICATION_FACTOR;
 import static org.apache.solr.common.cloud.ZkStateReader.SHARD_ID_PROP;
 import static org.apache.solr.common.params.CommonAdminParams.ASYNC;
@@ -72,13 +72,13 @@ public class CreateShardCmd implements Cmd {
     ShardHandler shardHandler = ocmh.shardHandlerFactory.getShardHandler();
     DocCollection collection = clusterState.getCollection(collectionName);
 //    int repFactor = message.getInt(REPLICATION_FACTOR, collection.getInt(REPLICATION_FACTOR, 1));
-    int numRealtimeReplicas = message.getInt(REALTIME_REPLICAS, message.getInt(REPLICATION_FACTOR, collection.getInt(REALTIME_REPLICAS, collection.getInt(REPLICATION_FACTOR, 1))));
-    int numPassiveReplicas = message.getInt(PASSIVE_REPLICAS, collection.getInt(PASSIVE_REPLICAS, 0));
-    int numAppendReplicas = message.getInt(APPEND_REPLICAS, collection.getInt(APPEND_REPLICAS, 0));
-    int totalReplicas = numRealtimeReplicas + numPassiveReplicas + numAppendReplicas;
+    int numNrtReplicas = message.getInt(NRT_REPLICAS, message.getInt(REPLICATION_FACTOR, collection.getInt(NRT_REPLICAS, collection.getInt(REPLICATION_FACTOR, 1))));
+    int numPullReplicas = message.getInt(PULL_REPLICAS, collection.getInt(PULL_REPLICAS, 0));
+    int numTlogReplicas = message.getInt(TLOG_REPLICAS, collection.getInt(TLOG_REPLICAS, 0));
+    int totalReplicas = numNrtReplicas + numPullReplicas + numTlogReplicas;
     
-    if (numRealtimeReplicas + numAppendReplicas <= 0) {
-      throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, REALTIME_REPLICAS + " + " + APPEND_REPLICAS + " must be greater than 0");
+    if (numNrtReplicas + numTlogReplicas <= 0) {
+      throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, NRT_REPLICAS + " + " + TLOG_REPLICAS + " must be greater than 0");
     }
     
     Object createNodeSetStr = message.get(OverseerCollectionMessageHandler.CREATE_NODE_SET);
@@ -106,23 +106,23 @@ public class CreateShardCmd implements Cmd {
       requestMap = new HashMap<>(totalReplicas, 1.0f);
     }
     
-    int createdRealtimeReplicas = 0, createdAppendReplicas = 0, createdPassiveReplicas = 0;
+    int createdNrtReplicas = 0, createdTlogReplicas = 0, createdPullReplicas = 0;
 
     for (int j = 1; j <= totalReplicas; j++) {
       int coreNameNumber;
       Replica.Type typeToCreate;
-      if (createdRealtimeReplicas < numRealtimeReplicas) {
-        createdRealtimeReplicas++;
-        coreNameNumber = createdRealtimeReplicas;
-        typeToCreate = Replica.Type.REALTIME;
-      } else if (createdAppendReplicas < numAppendReplicas) {
-        createdAppendReplicas++;
-        coreNameNumber = createdAppendReplicas;
-        typeToCreate = Replica.Type.APPEND;
+      if (createdNrtReplicas < numNrtReplicas) {
+        createdNrtReplicas++;
+        coreNameNumber = createdNrtReplicas;
+        typeToCreate = Replica.Type.NRT;
+      } else if (createdTlogReplicas < numTlogReplicas) {
+        createdTlogReplicas++;
+        coreNameNumber = createdTlogReplicas;
+        typeToCreate = Replica.Type.TLOG;
       } else {
-        createdPassiveReplicas++;
-        coreNameNumber = createdPassiveReplicas;
-        typeToCreate = Replica.Type.PASSIVE;
+        createdPullReplicas++;
+        coreNameNumber = createdPullReplicas;
+        typeToCreate = Replica.Type.PULL;
       }
       String nodeName = sortedNodeList.get(((j - 1)) % sortedNodeList.size()).nodeName;
       String coreName = Assign.buildCoreName(collectionName, sliceName, typeToCreate, coreNameNumber);

@@ -181,10 +181,10 @@ public class RestoreCmd implements OverseerCollectionMessageHandler.Cmd {
       propMap.put(COLLECTION_PROP, restoreCollectionName);
       propMap.put(SHARD_ID_PROP, slice.getName());
       
-      if (restoreCollection.getNumRealtimeReplicas() != null && restoreCollection.getNumRealtimeReplicas() >= 1) {
-        propMap.put(REPLICA_TYPE, Replica.Type.REALTIME.name());
-      } else if (restoreCollection.getNumAppendReplicas() != null && restoreCollection.getNumAppendReplicas() >= 1) {
-        propMap.put(REPLICA_TYPE, Replica.Type.APPEND.name());
+      if (restoreCollection.getNumNrtReplicas() != null && restoreCollection.getNumNrtReplicas() >= 1) {
+        propMap.put(REPLICA_TYPE, Replica.Type.NRT.name());
+      } else if (restoreCollection.getNumTlogReplicas() != null && restoreCollection.getNumTlogReplicas() >= 1) {
+        propMap.put(REPLICA_TYPE, Replica.Type.TLOG.name());
       }
       // add async param
       if (asyncId != null) {
@@ -225,27 +225,27 @@ public class RestoreCmd implements OverseerCollectionMessageHandler.Cmd {
     restoreCollection = zkStateReader.getClusterState().getCollection(restoreCollectionName);
 
     //Add the remaining replicas for each shard, considering it's type
-    int numRealtimeReplicas = restoreCollection.getNumRealtimeReplicas() != null?
-        restoreCollection.getNumRealtimeReplicas():0;
-    if (numRealtimeReplicas == 0) {
-      numRealtimeReplicas = restoreCollection.getReplicationFactor() != null?
+    int numNrtReplicas = restoreCollection.getNumNrtReplicas() != null?
+        restoreCollection.getNumNrtReplicas():0;
+    if (numNrtReplicas == 0) {
+      numNrtReplicas = restoreCollection.getReplicationFactor() != null?
           restoreCollection.getReplicationFactor():0;
     }
-    int numAppendReplicas = restoreCollection.getNumAppendReplicas() != null?
-        restoreCollection.getNumAppendReplicas():0;
-    int numPassiveReplicas = restoreCollection.getNumPassiveReplicas() != null?
-        restoreCollection.getNumPassiveReplicas():0;
+    int numTlogReplicas = restoreCollection.getNumTlogReplicas() != null?
+        restoreCollection.getNumTlogReplicas():0;
+    int numPullReplicas = restoreCollection.getNumPullReplicas() != null?
+        restoreCollection.getNumPullReplicas():0;
     
-    int createdRealtimeReplicas = 0, createdAppendReplicas = 0, createdPassiveReplicas = 0;
+    int createdNrtReplicas = 0, createdTlogReplicas = 0, createdPullReplicas = 0;
     
-    // We already created either a REALTIME or an APPEND replica as leader
-    if (numRealtimeReplicas > 0) {
-      createdRealtimeReplicas++;
-    } else if (createdAppendReplicas > 0) {
-      createdAppendReplicas++;
+    // We already created either a REALTIME or an TLOG replica as leader
+    if (numNrtReplicas > 0) {
+      createdNrtReplicas++;
+    } else if (createdTlogReplicas > 0) {
+      createdTlogReplicas++;
     }
     
-    int totalReplicasPerShard = numRealtimeReplicas + numAppendReplicas + numPassiveReplicas;
+    int totalReplicasPerShard = numNrtReplicas + numTlogReplicas + numPullReplicas;
     
     if (totalReplicasPerShard > 1) {
       log.info("Adding replicas to restored collection={}", restoreCollection);
@@ -253,15 +253,15 @@ public class RestoreCmd implements OverseerCollectionMessageHandler.Cmd {
       for (Slice slice : restoreCollection.getSlices()) {
         for (int i = 1; i < totalReplicasPerShard; i++) {
           Replica.Type typeToCreate;
-          if (createdRealtimeReplicas < numRealtimeReplicas) {
-            createdRealtimeReplicas++;
-            typeToCreate = Replica.Type.REALTIME;
-          } else if (createdAppendReplicas < numAppendReplicas) {
-            createdAppendReplicas++;
-            typeToCreate = Replica.Type.APPEND;
+          if (createdNrtReplicas < numNrtReplicas) {
+            createdNrtReplicas++;
+            typeToCreate = Replica.Type.NRT;
+          } else if (createdTlogReplicas < numTlogReplicas) {
+            createdTlogReplicas++;
+            typeToCreate = Replica.Type.TLOG;
           } else {
-            createdPassiveReplicas++;
-            typeToCreate = Replica.Type.PASSIVE;
+            createdPullReplicas++;
+            typeToCreate = Replica.Type.PULL;
           }
           
           log.debug("Adding replica for shard={} collection={} of type {} ", slice.getName(), restoreCollection, typeToCreate);

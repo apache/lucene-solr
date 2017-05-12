@@ -67,7 +67,7 @@ public class CloudDescriptor {
     this.numShards = PropertiesUtil.toInteger(props.getProperty(CloudDescriptor.NUM_SHARDS), null);
     String replicaTypeStr = props.getProperty(CloudDescriptor.REPLICA_TYPE);
     if (Strings.isNullOrEmpty(replicaTypeStr)) {
-      this.replicaType = Replica.Type.REALTIME;
+      this.replicaType = Replica.Type.NRT;
     } else {
       this.replicaType = Replica.Type.valueOf(replicaTypeStr);
     }
@@ -79,7 +79,7 @@ public class CloudDescriptor {
   }
   
   public boolean requiresTransactionLog() {
-    return this.replicaType != Replica.Type.PASSIVE;
+    return this.replicaType != Replica.Type.PULL;
   }
   
   public Replica.State getLastPublished() {

@@ -98,7 +98,7 @@ public class ChaosMonkeyNothingIsSafeTest extends AbstractFullDistribZkTestBase 
   }
 
   @Override
-  protected boolean useAppendReplicas() {
+  protected boolean useTlogReplicas() {
     return onlyLeaderIndexes;
   }
 

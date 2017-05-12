@@ -86,10 +86,10 @@ public class TestTolerantUpdateProcessorCloud extends SolrCloudTestCase {
   /** A client for talking directly to the leader of shard2 */
   private static HttpSolrClient S_TWO_LEADER_CLIENT;
 
-  /** A client for talking directly to a passive replica of shard1 */
+  /** A client for talking directly to a pull replica of shard1 */
   private static HttpSolrClient S_ONE_NON_LEADER_CLIENT;
   
-  /** A client for talking directly to a passive replica of shard2 */
+  /** A client for talking directly to a pull replica of shard2 */
   private static HttpSolrClient S_TWO_NON_LEADER_CLIENT;
 
   /** A client for talking directly to a node that has no piece of the collection */

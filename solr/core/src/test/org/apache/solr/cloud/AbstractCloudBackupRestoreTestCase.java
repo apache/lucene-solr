@@ -82,12 +82,12 @@ public abstract class AbstractCloudBackupRestoreTestCase extends SolrCloudTestCa
     boolean isImplicit = random().nextBoolean();
     boolean doSplitShardOperation = !isImplicit && random().nextBoolean();
     int replFactor = TestUtil.nextInt(random(), 1, 2);
-    int numAppendReplicas = TestUtil.nextInt(random(), 0, 1);
-    int numPassiveReplicas = TestUtil.nextInt(random(), 0, 1);
+    int numTlogReplicas = TestUtil.nextInt(random(), 0, 1);
+    int numPullReplicas = TestUtil.nextInt(random(), 0, 1);
     CollectionAdminRequest.Create create =
-        CollectionAdminRequest.createCollection(getCollectionName(), "conf1", NUM_SHARDS, replFactor, numAppendReplicas, numPassiveReplicas);
-    if (NUM_SHARDS * (replFactor + numAppendReplicas + numPassiveReplicas) > cluster.getJettySolrRunners().size() || random().nextBoolean()) {
-      create.setMaxShardsPerNode((int)Math.ceil(NUM_SHARDS * (replFactor + numAppendReplicas + numPassiveReplicas) / cluster.getJettySolrRunners().size()));//just to assert it survives the restoration
+        CollectionAdminRequest.createCollection(getCollectionName(), "conf1", NUM_SHARDS, replFactor, numTlogReplicas, numPullReplicas);
+    if (NUM_SHARDS * (replFactor + numTlogReplicas + numPullReplicas) > cluster.getJettySolrRunners().size() || random().nextBoolean()) {
+      create.setMaxShardsPerNode((int)Math.ceil(NUM_SHARDS * (replFactor + numTlogReplicas + numPullReplicas) / cluster.getJettySolrRunners().size()));//just to assert it survives the restoration
       if (doSplitShardOperation) {
         create.setMaxShardsPerNode(create.getMaxShardsPerNode() * 2);
       }

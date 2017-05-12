@@ -399,9 +399,9 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
           AUTO_ADD_REPLICAS,
           RULE,
           SNITCH,
-          PASSIVE_REPLICAS,
-          APPEND_REPLICAS,
-          REALTIME_REPLICAS);
+          PULL_REPLICAS,
+          TLOG_REPLICAS,
+          NRT_REPLICAS);
 
       if (props.get(STATE_FORMAT) == null) {
         props.put(STATE_FORMAT, "2");

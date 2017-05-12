@@ -35,9 +35,9 @@ import org.noggit.JSONWriter;
 import static org.apache.solr.common.cloud.ZkStateReader.AUTO_ADD_REPLICAS;
 import static org.apache.solr.common.cloud.ZkStateReader.MAX_SHARDS_PER_NODE;
 import static org.apache.solr.common.cloud.ZkStateReader.REPLICATION_FACTOR;
-import static org.apache.solr.common.cloud.ZkStateReader.REALTIME_REPLICAS;
-import static org.apache.solr.common.cloud.ZkStateReader.APPEND_REPLICAS;
-import static org.apache.solr.common.cloud.ZkStateReader.PASSIVE_REPLICAS;
+import static org.apache.solr.common.cloud.ZkStateReader.NRT_REPLICAS;
+import static org.apache.solr.common.cloud.ZkStateReader.TLOG_REPLICAS;
+import static org.apache.solr.common.cloud.ZkStateReader.PULL_REPLICAS;
 
 /**
  * Models a Collection in zookeeper (but that Java name is obviously taken, hence "DocCollection")
@@ -61,9 +61,9 @@ public class DocCollection extends ZkNodeProps implements Iterable<Slice> {
   private final String znode;
 
   private final Integer replicationFactor;
-  private final Integer numRealtimeReplicas;
-  private final Integer numAppendReplicas;
-  private final Integer numPassiveReplicas;
+  private final Integer numNrtReplicas;
+  private final Integer numTlogReplicas;
+  private final Integer numPullReplicas;
   private final Integer maxShardsPerNode;
   private final Boolean autoAddReplicas;
 
@@ -87,9 +87,9 @@ public class DocCollection extends ZkNodeProps implements Iterable<Slice> {
     this.nodeNameLeaderReplicas = new HashMap<>();
     this.nodeNameReplicas = new HashMap<>();
     this.replicationFactor = (Integer) verifyProp(props, REPLICATION_FACTOR);
-    this.numRealtimeReplicas = (Integer) verifyProp(props, REALTIME_REPLICAS);
-    this.numAppendReplicas = (Integer) verifyProp(props, APPEND_REPLICAS);
-    this.numPassiveReplicas = (Integer) verifyProp(props, PASSIVE_REPLICAS);
+    this.numNrtReplicas = (Integer) verifyProp(props, NRT_REPLICAS);
+    this.numTlogReplicas = (Integer) verifyProp(props, TLOG_REPLICAS);
+    this.numPullReplicas = (Integer) verifyProp(props, PULL_REPLICAS);
     this.maxShardsPerNode = (Integer) verifyProp(props, MAX_SHARDS_PER_NODE);
     Boolean autoAddReplicas = (Boolean) verifyProp(props, AUTO_ADD_REPLICAS);
     this.autoAddReplicas = autoAddReplicas == null ? Boolean.FALSE : autoAddReplicas;
@@ -136,9 +136,9 @@ public class DocCollection extends ZkNodeProps implements Iterable<Slice> {
     switch (propName) {
       case MAX_SHARDS_PER_NODE:
       case REPLICATION_FACTOR:
-      case REALTIME_REPLICAS:
-      case PASSIVE_REPLICAS:
-      case APPEND_REPLICAS:
+      case NRT_REPLICAS:
+      case PULL_REPLICAS:
+      case TLOG_REPLICAS:
         return Integer.parseInt(o.toString());
       case AUTO_ADD_REPLICAS:
         return Boolean.parseBoolean(o.toString());
@@ -342,16 +342,16 @@ public class DocCollection extends ZkNodeProps implements Iterable<Slice> {
     return super.equals(that) && Objects.equals(this.znode, other.znode) && this.znodeVersion == other.znodeVersion;
   }
 
-  public Integer getNumRealtimeReplicas() {
-    return numRealtimeReplicas;
+  public Integer getNumNrtReplicas() {
+    return numNrtReplicas;
   }
 
-  public Integer getNumAppendReplicas() {
-    return numAppendReplicas;
+  public Integer getNumTlogReplicas() {
+    return numTlogReplicas;
   }
 
-  public Integer getNumPassiveReplicas() {
-    return numPassiveReplicas;
+  public Integer getNumPullReplicas() {
+    return numPullReplicas;
   }
 
 }

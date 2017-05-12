@@ -111,7 +111,7 @@ public class TestInPlaceUpdatesDistrib extends AbstractFullDistribZkTestBase {
   }
 
   @Override
-  protected boolean useAppendReplicas() {
+  protected boolean useTlogReplicas() {
     return onlyLeaderIndexes;
   }
 
@@ -270,7 +270,7 @@ public class TestInPlaceUpdatesDistrib extends AbstractFullDistribZkTestBase {
 
   private void reorderedDBQIndividualReplicaTest() throws Exception {
     if (onlyLeaderIndexes) {
-      log.info("RTG with DBQs are not working in append replicas");
+      log.info("RTG with DBQs are not working in tlog replicas");
       return;
     }
     clearIndex();
@@ -743,7 +743,7 @@ public class TestInPlaceUpdatesDistrib extends AbstractFullDistribZkTestBase {
    */
   private void reorderedDBQsResurrectionTest() throws Exception {
     if (onlyLeaderIndexes) {
-      log.info("RTG with DBQs are not working in append replicas");
+      log.info("RTG with DBQs are not working in tlog replicas");
       return;
     }
     clearIndex();
@@ -1145,7 +1145,7 @@ public class TestInPlaceUpdatesDistrib extends AbstractFullDistribZkTestBase {
    */
   private void reorderedDBQsUsingUpdatedValueFromADroppedUpdate() throws Exception {
     if (onlyLeaderIndexes) {
-      log.info("RTG with DBQs are not working in append replicas");
+      log.info("RTG with DBQs are not working in tlog replicas");
       return;
     }
     clearIndex();

@@ -347,7 +347,7 @@ public class OverseerCollectionConfigSetProcessorTest extends SolrTestCaseJ4 {
     assertEquals(numberOfSlices * numberOfReplica, coreNames.size());
     for (int i = 1; i <= numberOfSlices; i++) {
       for (int j = 1; j <= numberOfReplica; j++) {
-        String coreName = Assign.buildCoreName(COLLECTION_NAME, "shard" + i, Replica.Type.REALTIME, j);
+        String coreName = Assign.buildCoreName(COLLECTION_NAME, "shard" + i, Replica.Type.NRT, j);
         assertTrue("Shard " + coreName + " was not created",
             coreNames.contains(coreName));
         

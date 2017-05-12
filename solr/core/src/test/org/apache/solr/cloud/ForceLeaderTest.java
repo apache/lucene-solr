@@ -58,7 +58,7 @@ public class ForceLeaderTest extends HttpPartitionTest {
   private final boolean onlyLeaderIndexes = random().nextBoolean();
 
   @Override
-  protected boolean useAppendReplicas() {
+  protected boolean useTlogReplicas() {
     return onlyLeaderIndexes;
   }
 

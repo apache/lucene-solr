@@ -190,7 +190,7 @@ public class ReplicaAssigner {
       List<Position> positions = new ArrayList<>();
       for (int pos : p) {
         for (int j = 0; j < shardVsReplicaCount.get(shardNames.get(pos)); j++) {
-          positions.add(new Position(shardNames.get(pos), j, Replica.Type.REALTIME));
+          positions.add(new Position(shardNames.get(pos), j, Replica.Type.NRT));
         }
       }
       Collections.sort(positions);

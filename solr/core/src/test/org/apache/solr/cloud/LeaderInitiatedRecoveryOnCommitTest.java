@@ -46,7 +46,7 @@ public class LeaderInitiatedRecoveryOnCommitTest extends BasicDistributedZkTest 
   }
 
   @Override
-  protected boolean useAppendReplicas() {
+  protected boolean useTlogReplicas() {
     return onlyLeaderIndexes;
   }
 

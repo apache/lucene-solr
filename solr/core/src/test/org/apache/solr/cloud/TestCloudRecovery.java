@@ -110,7 +110,7 @@ public class TestCloudRecovery extends SolrCloudTestCase {
     assertEquals(4, resp.getResults().getNumFound());
     // Make sure all nodes is recover from tlog
     if (onlyLeaderIndexes) {
-      // Leader election can be kicked off, so 2 append replicas will replay its tlog before becoming new leader
+      // Leader election can be kicked off, so 2 tlog replicas will replay its tlog before becoming new leader
       assertTrue( countReplayLog.get() >=2);
     } else {
       assertEquals(4, countReplayLog.get());

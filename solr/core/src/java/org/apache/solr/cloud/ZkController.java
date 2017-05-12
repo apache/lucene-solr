@@ -889,13 +889,13 @@ public class ZkController {
           joinAtHead = replica.getBool(SliceMutator.PREFERRED_LEADER_PROP, false);
         }
         //TODO WHy would replica be null?
-        if (replica == null || replica.getType() != Type.PASSIVE) {
+        if (replica == null || replica.getType() != Type.PULL) {
           joinElection(desc, afterExpiration, joinAtHead);
-        } else if (replica.getType() == Type.PASSIVE) {
+        } else if (replica.getType() == Type.PULL) {
           if (joinAtHead) {
-            log.warn("Replica {} was designated as preferred leader but it's type is {}, It won't join election", coreZkNodeName, Type.PASSIVE);
+            log.warn("Replica {} was designated as preferred leader but it's type is {}, It won't join election", coreZkNodeName, Type.PULL);
           }
-          log.debug("Replica {} skipping election because it's type is {}", coreZkNodeName, Type.PASSIVE);
+          log.debug("Replica {} skipping election because it's type is {}", coreZkNodeName, Type.PULL);
           startReplicationFromLeader(coreName, false);
         }
       } catch (InterruptedException e) {
@@ -915,7 +915,7 @@ public class ZkController {
       log.debug("We are " + ourUrl + " and leader is " + leaderUrl);
       boolean isLeader = leaderUrl.equals(ourUrl);
       Replica.Type replicaType =  zkStateReader.getClusterState().getCollection(collection).getReplica(coreZkNodeName).getType();
-      assert !(isLeader && replicaType == Type.PASSIVE): "Passive replica became leader!";
+      assert !(isLeader && replicaType == Type.PULL): "Pull replica became leader!";
       
       try (SolrCore core = cc.getCore(desc.getName())) {
         
@@ -926,15 +926,15 @@ public class ZkController {
         // leader election perhaps?
         
         UpdateLog ulog = core.getUpdateHandler().getUpdateLog();
-        boolean isAppendAndNotLeader = replicaType == Replica.Type.APPEND && !isLeader;
-        if (isAppendAndNotLeader) {
+        boolean isTlogReplicaAndNotLeader = replicaType == Replica.Type.TLOG && !isLeader;
+        if (isTlogReplicaAndNotLeader) {
           String commitVersion = ReplicateFromLeader.getCommitVersion(core);
           if (commitVersion != null) {
             ulog.copyOverOldUpdates(Long.parseLong(commitVersion));
           }
         }
         // we will call register again after zk expiration and on reload
-        if (!afterExpiration && !core.isReloaded() && ulog != null && !isAppendAndNotLeader) {
+        if (!afterExpiration && !core.isReloaded() && ulog != null && !isTlogReplicaAndNotLeader) {
           // disable recovery in case shard is in construction state (for shard splits)
           Slice slice = getClusterState().getSlice(collection, shardId);
           if (slice.getState() != Slice.State.CONSTRUCTION || !isLeader) {
@@ -953,7 +953,7 @@ public class ZkController {
         boolean didRecovery
             = checkRecovery(recoverReloadedCores, isLeader, skipRecovery, collection, coreZkNodeName, core, cc, afterExpiration);
         if (!didRecovery) {
-          if (isAppendAndNotLeader) {
+          if (isTlogReplicaAndNotLeader) {
             startReplicationFromLeader(coreName, true);
           }
           publish(desc, Replica.State.ACTIVE);
@@ -1210,7 +1210,7 @@ public class ZkController {
       if (state != Replica.State.DOWN) {
         final Replica.State lirState = getLeaderInitiatedRecoveryState(collection, shardId, coreNodeName);
         if (lirState != null) {
-          assert cd.getCloudDescriptor().getReplicaType() != Replica.Type.PASSIVE: "LIR should not happen for passive replicas!";
+          assert cd.getCloudDescriptor().getReplicaType() != Replica.Type.PULL: "LIR should not happen for pull replicas!";
           if (state == Replica.State.ACTIVE) {
             // trying to become active, so leader-initiated state must be recovering
             if (lirState == Replica.State.RECOVERING) {
@@ -1295,14 +1295,14 @@ public class ZkController {
     }
     Replica replica = zkStateReader.getClusterState().getReplica(collection, coreNodeName);
     
-    if (replica == null || replica.getType() != Type.PASSIVE) {
+    if (replica == null || replica.getType() != Type.PULL) {
       ElectionContext context = electionContexts.remove(new ContextKey(collection, coreNodeName));
 
       if (context != null) {
         context.cancelElection();
       }
     }
-//    //TODO: Do we need to stop replication for type==append?
+//    //TODO: Do we need to stop replication for type==tlog?
 
     CloudDescriptor cloudDescriptor = cd.getCloudDescriptor();
     zkStateReader.unregisterCore(cloudDescriptor.getCollectionName());

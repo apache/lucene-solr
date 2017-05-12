@@ -122,7 +122,7 @@ public class DirectUpdateHandler2 extends UpdateHandler implements SolrCoreState
     indexWriterCloseWaitsForMerges = updateHandlerInfo.indexWriterCloseWaitsForMerges;
 
     ZkController zkController = core.getCoreContainer().getZkController();
-    if (zkController != null && core.getCoreDescriptor().getCloudDescriptor().getReplicaType() == Replica.Type.APPEND) {
+    if (zkController != null && core.getCoreDescriptor().getCloudDescriptor().getReplicaType() == Replica.Type.TLOG) {
       commitWithinSoftCommit = false;
       commitTracker.setOpenSearcher(true);
     }

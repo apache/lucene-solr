@@ -388,7 +388,7 @@ public class TestInjection {
             String localVersion = searcher.get().getIndexReader().getIndexCommit().getUserData().get(SolrIndexWriter.COMMIT_TIME_MSEC_KEY);
             if (localVersion == null && leaderVersion == 0 && !core.getUpdateHandler().getUpdateLog().hasUncommittedChanges()) return true;
             if (localVersion != null && Long.parseLong(localVersion) == leaderVersion && (leaderVersion >= t || i >= 6)) {
-              log.info("Waiting time for append replica to be in sync with leader: {}", System.currentTimeMillis()-currentTime);
+              log.info("Waiting time for tlog replica to be in sync with leader: {}", System.currentTimeMillis()-currentTime);
               return true;
             } else {
               log.debug("Append replica not in sync with leader yet. Attempt: {}", i);

@@ -50,20 +50,20 @@ import com.carrotsearch.randomizedtesting.annotations.ThreadLeakLingering;
 @SuppressSSL(bugUrl = "https://issues.apache.org/jira/browse/SOLR-5776")
 @ThreadLeakLingering(linger = 60000)
 @SuppressObjectReleaseTracker(bugUrl="Testing purposes")
-public class ChaosMonkeyNothingIsSafeWithPassiveReplicasTest extends AbstractFullDistribZkTestBase {
+public class ChaosMonkeyNothingIsSafeWithPullReplicasTest extends AbstractFullDistribZkTestBase {
   private static final int FAIL_TOLERANCE = 100;
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   
   private static final Integer RUN_LENGTH = Integer.parseInt(System.getProperty("solr.tests.cloud.cm.runlength", "-1"));
 
-  private final boolean useAppendReplicas = random().nextBoolean();
+  private final boolean useTlogReplicas = random().nextBoolean();
   
-  private final int numPassiveReplicas;
-  private final int numRealtimeOrAppendReplicas;
+  private final int numPullReplicas;
+  private final int numRealtimeOrTlogReplicas;
   
-  protected int getPassiveReplicaCount() {
-    return numPassiveReplicas;
+  protected int getPullReplicaCount() {
+    return numPullReplicas;
   }
 
   @BeforeClass
@@ -102,16 +102,16 @@ public class ChaosMonkeyNothingIsSafeWithPassiveReplicasTest extends AbstractFul
     useFactory("solr.StandardDirectoryFactory");
   }
   
-  public ChaosMonkeyNothingIsSafeWithPassiveReplicasTest() {
+  public ChaosMonkeyNothingIsSafeWithPullReplicasTest() {
     super();
-    numPassiveReplicas = random().nextInt(TEST_NIGHTLY ? 2 : 1) + 1;
-    numRealtimeOrAppendReplicas = random().nextInt(TEST_NIGHTLY ? 4 : 3) + 1;
+    numPullReplicas = random().nextInt(TEST_NIGHTLY ? 2 : 1) + 1;
+    numRealtimeOrTlogReplicas = random().nextInt(TEST_NIGHTLY ? 4 : 3) + 1;
     sliceCount = Integer.parseInt(System.getProperty("solr.tests.cloud.cm.slicecount", "-1"));
     if (sliceCount == -1) {
       sliceCount = random().nextInt(TEST_NIGHTLY ? 3 : 2) + 1;
     }
 
-    int numNodes = sliceCount * (numRealtimeOrAppendReplicas + numPassiveReplicas);
+    int numNodes = sliceCount * (numRealtimeOrTlogReplicas + numPullReplicas);
     fixShardCount(numNodes);
     log.info("Starting ChaosMonkey test with {} shards and {} nodes", sliceCount, numNodes);
 
@@ -121,8 +121,8 @@ public class ChaosMonkeyNothingIsSafeWithPassiveReplicasTest extends AbstractFul
   }
 
   @Override
-  protected boolean useAppendReplicas() {
-    return useAppendReplicas;
+  protected boolean useTlogReplicas() {
+    return useTlogReplicas;
   }
 
   @Test
@@ -132,10 +132,10 @@ public class ChaosMonkeyNothingIsSafeWithPassiveReplicasTest extends AbstractFul
     assertEquals(this.sliceCount, docCollection.getSlices().size());
     Slice s = docCollection.getSlice("shard1");
     assertNotNull(s);
-    assertEquals("Unexpected number of replicas. Collection: " + docCollection, numRealtimeOrAppendReplicas + numPassiveReplicas, s.getReplicas().size());
-    assertEquals("Unexpected number of passive replicas. Collection: " + docCollection, numPassiveReplicas, s.getReplicas(EnumSet.of(Replica.Type.PASSIVE)).size());
-    assertEquals(useAppendReplicas()?0:numRealtimeOrAppendReplicas, s.getReplicas(EnumSet.of(Replica.Type.REALTIME)).size());
-    assertEquals(useAppendReplicas()?numRealtimeOrAppendReplicas:0, s.getReplicas(EnumSet.of(Replica.Type.APPEND)).size());
+    assertEquals("Unexpected number of replicas. Collection: " + docCollection, numRealtimeOrTlogReplicas + numPullReplicas, s.getReplicas().size());
+    assertEquals("Unexpected number of pull replicas. Collection: " + docCollection, numPullReplicas, s.getReplicas(EnumSet.of(Replica.Type.PULL)).size());
+    assertEquals(useTlogReplicas()?0:numRealtimeOrTlogReplicas, s.getReplicas(EnumSet.of(Replica.Type.NRT)).size());
+    assertEquals(useTlogReplicas()?numRealtimeOrTlogReplicas:0, s.getReplicas(EnumSet.of(Replica.Type.TLOG)).size());
     
     boolean testSuccessful = false;
     try {
@@ -287,7 +287,7 @@ public class ChaosMonkeyNothingIsSafeWithPassiveReplicasTest extends AbstractFul
       }
       List<Integer> numShardsNumReplicas = new ArrayList<>(2);
       numShardsNumReplicas.add(1);
-      numShardsNumReplicas.add(1 + getPassiveReplicaCount());
+      numShardsNumReplicas.add(1 + getPullReplicaCount());
       checkForCollection("testcollection", numShardsNumReplicas, null);
       
       testSuccessful = true;

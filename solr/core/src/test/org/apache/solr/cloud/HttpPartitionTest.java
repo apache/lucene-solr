@@ -85,7 +85,7 @@ public class HttpPartitionTest extends AbstractFullDistribZkTestBase {
   }
 
   @Override
-  protected boolean useAppendReplicas() {
+  protected boolean useTlogReplicas() {
     return onlyLeaderIndexes;
   }
 

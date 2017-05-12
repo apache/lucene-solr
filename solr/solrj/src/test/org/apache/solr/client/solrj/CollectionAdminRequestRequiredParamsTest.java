@@ -81,7 +81,7 @@ public class CollectionAdminRequestRequiredParamsTest extends LuceneTestCase {
     request = new CollectionAdminRequest.AddReplica()
             .setShardName("shard")
             .setCollectionName("collection")
-            .setType(Replica.Type.REALTIME);
+            .setType(Replica.Type.NRT);
     assertContainsParams(request.getParams(), ACTION, COLLECTION, SHARD, ZkStateReader.REPLICA_TYPE);
   }
   

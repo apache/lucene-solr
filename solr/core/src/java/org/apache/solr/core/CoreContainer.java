@@ -1189,7 +1189,7 @@ public class CoreContainer {
           DocCollection docCollection = getZkController().getClusterState().getCollection(cd.getCollectionName());
           Replica replica = docCollection.getReplica(cd.getCloudDescriptor().getCoreNodeName());
           assert replica != null;
-          if (replica.getType() == Replica.Type.APPEND) { //TODO: needed here?
+          if (replica.getType() == Replica.Type.TLOG) { //TODO: needed here?
             getZkController().stopReplicationFromLeader(core.getName());
             if (!cd.getCloudDescriptor().isLeader()) {
               getZkController().startReplicationFromLeader(newCore.getName(), true);
@@ -1280,9 +1280,9 @@ public class CoreContainer {
     if (zkSys.getZkController() != null) {
       // cancel recovery in cloud mode
       core.getSolrCoreState().cancelRecovery();
-      if (core.getCoreDescriptor().getCloudDescriptor().getReplicaType() == Replica.Type.PASSIVE
-          || core.getCoreDescriptor().getCloudDescriptor().getReplicaType() == Replica.Type.APPEND) { 
-        // Stop replication if this is part of a passive replica before closing the code
+      if (core.getCoreDescriptor().getCloudDescriptor().getReplicaType() == Replica.Type.PULL
+          || core.getCoreDescriptor().getCloudDescriptor().getReplicaType() == Replica.Type.TLOG) { 
+        // Stop replication if this is part of a pull replica before closing the code
         zkSys.getZkController().stopReplicationFromLeader(name);
       }
     }
