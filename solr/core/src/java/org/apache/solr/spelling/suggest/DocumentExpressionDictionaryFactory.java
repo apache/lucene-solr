@@ -28,15 +28,6 @@ import org.apache.lucene.search.SortField;
 import org.apache.lucene.search.spell.Dictionary;
 import org.apache.lucene.search.suggest.DocumentValueSourceDictionary;
 import org.apache.solr.core.SolrCore;
-import org.apache.solr.schema.DoublePointField;
-import org.apache.solr.schema.FieldType;
-import org.apache.solr.schema.FloatPointField;
-import org.apache.solr.schema.IntPointField;
-import org.apache.solr.schema.LongPointField;
-import org.apache.solr.schema.TrieDoubleField;
-import org.apache.solr.schema.TrieFloatField;
-import org.apache.solr.schema.TrieIntField;
-import org.apache.solr.schema.TrieLongField;
 import org.apache.solr.search.SolrIndexSearcher;
 
 /**
@@ -81,15 +72,7 @@ public class DocumentExpressionDictionaryFactory extends DictionaryFactory {
       if (params.getName(i).equals(SORT_FIELD)) {
         String sortFieldName = (String) params.getVal(i);
 
-        SortField.Type sortFieldType = getSortFieldType(core, sortFieldName);
-        
-        if (sortFieldType == null) {
-          throw new IllegalArgumentException(sortFieldName + " could not be mapped to any appropriate type"
-              + " [long, int, float, double]");
-        }
-        
-        SortField sortField = new SortField(sortFieldName, sortFieldType);
-        sortFields.add(sortField);
+        sortFields.add(getSortField(core, sortFieldName));
       }
     }
    
@@ -111,20 +94,8 @@ public class DocumentExpressionDictionaryFactory extends DictionaryFactory {
     return expression.getDoubleValuesSource(bindings).toLongValuesSource();
   }
   
-  private SortField.Type getSortFieldType(SolrCore core, String sortFieldName) {
-    SortField.Type type = null;
-    String fieldTypeName = core.getLatestSchema().getField(sortFieldName).getType().getTypeName();
-    FieldType ft = core.getLatestSchema().getFieldTypes().get(fieldTypeName);
-    if (ft instanceof TrieFloatField || ft instanceof FloatPointField) {
-      type = SortField.Type.FLOAT;
-    } else if (ft instanceof TrieIntField || ft instanceof IntPointField) {
-      type = SortField.Type.INT;
-    } else if (ft instanceof TrieLongField || ft instanceof LongPointField) {
-      type = SortField.Type.LONG;
-    } else if (ft instanceof TrieDoubleField || ft instanceof DoublePointField) {
-      type = SortField.Type.DOUBLE;
-    }
-    return type;
+  private SortField getSortField(SolrCore core, String sortFieldName) {
+    return core.getLatestSchema().getField(sortFieldName).getSortField(true);
   }
   
 }
