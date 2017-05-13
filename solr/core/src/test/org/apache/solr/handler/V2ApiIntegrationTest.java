@@ -62,6 +62,14 @@ public class V2ApiIntegrationTest extends SolrCloudTestCase {
   }
 
   @Test
+  public void testSingleWarning() throws Exception {
+    NamedList resp = cluster.getSolrClient().request(
+        new V2Request.Builder("/c/"+COLL_NAME+"/_introspect").build());
+    List warnings = resp.getAll("WARNING");
+    assertEquals(1, warnings.size());
+  }
+
+  @Test
   public void testCollectionsApi() throws Exception {
     CloudSolrClient client = cluster.getSolrClient();
     Map result = resAsMap(client, new V2Request.Builder("/c/"+COLL_NAME+"/get/_introspect").build());

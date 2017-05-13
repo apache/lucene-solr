@@ -105,6 +105,8 @@ Bug Fixes
 * SOLR-10411: v2 Collection API "modify" command specification's replicationFactor property is incorrectly typed as string, 
   should be integer (Cao Manh Dat)
 
+* SOLR-10405: v2 API introspect response contains multiple copies of the experimental format WARNING (Cao Manh Dat)
+
 Optimizations
 ----------------------
 
