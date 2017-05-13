@@ -457,9 +457,8 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse> 
     public Integer getReplicationFactor() { return getNumNrtReplicas(); }
     public Integer getNumNrtReplicas() { return nrtReplicas; }
     public Boolean getAutoAddReplicas() { return autoAddReplicas; }
-    public Integer getNrtReplicas() { return nrtReplicas; }
-    public Integer getTlogReplicas() {return tlogReplicas;}
-    public Integer getPullReplicas() {return pullReplicas;}
+    public Integer getNumTlogReplicas() {return tlogReplicas;}
+    public Integer getNumPullReplicas() {return pullReplicas;}
 
     public Integer getStateFormat() { return stateFormat; }
     
