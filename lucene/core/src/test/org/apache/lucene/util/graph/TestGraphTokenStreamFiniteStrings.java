@@ -378,6 +378,59 @@ public class TestGraphTokenStreamFiniteStrings extends LuceneTestCase {
     assertArrayEquals(terms, new Term[] {new Term("field", "network")});
   }
 
+  public void testStackedGraphWithRepeat() throws Exception {
+    TokenStream ts = new CannedTokenStream(
+        token("ny", 1, 4),
+        token("new", 0, 1),
+        token("new", 0, 3),
+        token("york", 1, 1),
+        token("city", 1, 2),
+        token("york", 1, 1),
+        token("is", 1, 1),
+        token("great", 1, 1)
+    );
+
+    GraphTokenStreamFiniteStrings graph = new GraphTokenStreamFiniteStrings(ts);
+
+    Iterator<TokenStream> it = graph.getFiniteStrings();
+    assertTrue(it.hasNext());
+    assertTokenStream(it.next(), new String[]{"ny", "is", "great"}, new int[]{1, 1, 1});
+    assertTrue(it.hasNext());
+    assertTokenStream(it.next(), new String[]{"new", "york", "city", "is", "great"}, new int[]{1, 1, 1, 1, 1});
+    assertTrue(it.hasNext());
+    assertTokenStream(it.next(), new String[]{"new", "york", "is", "great"}, new int[]{1, 1, 1, 1});
+    assertFalse(it.hasNext());
+
+    int[] points = graph.articulationPoints();
+    assertArrayEquals(points, new int[] {4, 5});
+
+    assertTrue(graph.hasSidePath(0));
+    it = graph.getFiniteStrings(0, 4);
+    assertTrue(it.hasNext());
+    assertTokenStream(it.next(), new String[]{"ny"}, new int[]{1});
+    assertTrue(it.hasNext());
+    assertTokenStream(it.next(), new String[]{"new", "york", "city"}, new int[]{1, 1, 1});
+    assertTrue(it.hasNext());
+    assertTokenStream(it.next(), new String[]{"new", "york"}, new int[]{1, 1});
+    assertFalse(it.hasNext());
+
+    assertFalse(graph.hasSidePath(4));
+    it = graph.getFiniteStrings(4, 5);
+    assertTrue(it.hasNext());
+    assertTokenStream(it.next(), new String[]{"is"}, new int[] {1});
+    assertFalse(it.hasNext());
+    Term[] terms = graph.getTerms("field", 4);
+    assertArrayEquals(terms, new Term[] {new Term("field", "is")});
+
+    assertFalse(graph.hasSidePath(5));
+    it = graph.getFiniteStrings(5, -1);
+    assertTrue(it.hasNext());
+    assertTokenStream(it.next(), new String[]{"great"}, new int[] {1});
+    assertFalse(it.hasNext());
+    terms = graph.getTerms("field", 5);
+    assertArrayEquals(terms, new Term[] {new Term("field", "great")});
+  }
+
   public void testGraphWithRegularSynonym() throws Exception {
     TokenStream ts = new CannedTokenStream(
         token("fast", 1, 1),

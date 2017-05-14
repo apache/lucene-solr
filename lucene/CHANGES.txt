@@ -131,6 +131,9 @@ Bug Fixes
  "lucene"/standard query parser, should require " TO " in range queries,
   and accept "TO" as endpoints in range queries. (hossman, Steve Rowe)
 
+* LUCENE-7824: Fix graph query analysis for multi-word synonym rules with common terms (eg. new york, new york city).
+  (Jim Ferenczi)
+
 Improvements
 
 * LUCENE-7782: OfflineSorter now passes the total number of items it
