@@ -126,6 +126,10 @@ Bug Fixes
 * LUCENE-5365, LUCENE-7818: Fix incorrect condition in queryparser's
   QueryNodeOperation#logicalAnd().  (Olivier Binda, Amrit Sarkar,
   AppChecker via Uwe Schindler)
+  
+* LUCENE-7821: The classic and flexible query parsers, as well as Solr's
+ "lucene"/standard query parser, should require " TO " in range queries,
+  and accept "TO" as endpoints in range queries. (hossman, Steve Rowe)
 
 Improvements
 

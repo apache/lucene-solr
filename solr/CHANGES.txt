@@ -370,6 +370,9 @@ Bug Fixes
 * SOLR-9527: Improve distribution of replicas when restoring a collection
   (Hrishikesh Gadre, Stephen Lewis, Rohit, Varun Thacker)
 
+* LUCENE-7821: The classic and flexible query parsers, as well as Solr's
+ "lucene"/standard query parser, should require " TO " in range queries,
+  and accept "TO" as endpoints in range queries. (hossman, Steve Rowe)
 
 Other Changes
 ----------------------
