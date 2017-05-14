@@ -177,6 +177,7 @@ public class StreamHandler extends RequestHandlerBase implements SolrCoreAware, 
       .withFunctionName("length", LengthEvaluator.class)
       .withFunctionName("rank", RankEvaluator.class)
       .withFunctionName("scale", ScaleEvaluator.class)
+      .withFunctionName("distance", DistanceEvaluator.class)
 
       // metrics
          .withFunctionName("min", MinMetric.class)
