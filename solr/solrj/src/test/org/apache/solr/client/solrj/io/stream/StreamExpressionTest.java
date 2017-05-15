@@ -5398,6 +5398,75 @@ public class StreamExpressionTest extends SolrCloudTestCase {
     assertTrue(reverse.get(3).doubleValue() == 100D);
   }
 
+
+  @Test
+  public void testCopyOf() throws Exception {
+    UpdateRequest updateRequest = new UpdateRequest();
+
+    int i=0;
+    while(i<50) {
+      updateRequest.add(id, "id_"+(++i),"test_dt", getDateString("2016", "5", "1"), "price_f", "400.00");
+    }
+
+    while(i<100) {
+      updateRequest.add(id, "id_"+(++i),"test_dt", getDateString("2015", "5", "1"), "price_f", "300.0");
+    }
+
+    while(i<150) {
+      updateRequest.add(id, "id_"+(++i),"test_dt", getDateString("2014", "5", "1"), "price_f", "500.0");
+    }
+
+    while(i<250) {
+      updateRequest.add(id, "id_"+(++i),"test_dt", getDateString("2013", "5", "1"), "price_f", "100.00");
+    }
+
+    updateRequest.commit(cluster.getSolrClient(), COLLECTIONORALIAS);
+
+    String expr = "timeseries("+COLLECTIONORALIAS+", q=\"*:*\", start=\"2013-01-01T01:00:00.000Z\", " +
+        "end=\"2016-12-01T01:00:00.000Z\", " +
+        "gap=\"+1YEAR\", " +
+        "field=\"test_dt\", " +
+        "count(*), sum(price_f), max(price_f), min(price_f))";
+
+    String cexpr = "let(a="+expr+", c=col(a, max(price_f)), tuple(copy1=copyOf(c, 10), copy2=copyOf(c), copy3=copyOf(c, 2) ))";
+
+    ModifiableSolrParams paramsLoc = new ModifiableSolrParams();
+    paramsLoc.set("expr", cexpr);
+    paramsLoc.set("qt", "/stream");
+
+    String url = cluster.getJettySolrRunners().get(0).getBaseUrl().toString()+"/"+COLLECTIONORALIAS;
+    TupleStream solrStream = new SolrStream(url, paramsLoc);
+
+    StreamContext context = new StreamContext();
+    solrStream.setStreamContext(context);
+    List<Tuple> tuples = getTuples(solrStream);
+    assertTrue(tuples.size() == 1);
+    List<Number> copy1 = (List<Number>)tuples.get(0).get("copy1");
+    assertTrue(copy1.size() == 10);
+    assertTrue(copy1.get(0).doubleValue() == 100D);
+    assertTrue(copy1.get(1).doubleValue() == 500D);
+    assertTrue(copy1.get(2).doubleValue() == 300D);
+    assertTrue(copy1.get(3).doubleValue() == 400D);
+    assertTrue(copy1.get(4).doubleValue() == 0D);
+    assertTrue(copy1.get(5).doubleValue() == 0D);
+    assertTrue(copy1.get(6).doubleValue() == 0D);
+    assertTrue(copy1.get(7).doubleValue() == 0D);
+    assertTrue(copy1.get(8).doubleValue() == 0D);
+    assertTrue(copy1.get(9).doubleValue() == 0D);
+
+    List<Number> copy2 = (List<Number>)tuples.get(0).get("copy2");
+    assertTrue(copy2.size() == 4);
+    assertTrue(copy2.get(0).doubleValue() == 100D);
+    assertTrue(copy2.get(1).doubleValue() == 500D);
+    assertTrue(copy2.get(2).doubleValue() == 300D);
+    assertTrue(copy2.get(3).doubleValue() == 400D);
+
+    List<Number> copy3 = (List<Number>)tuples.get(0).get("copy3");
+    assertTrue(copy3.size() == 2);
+    assertTrue(copy3.get(0).doubleValue() == 100D);
+    assertTrue(copy3.get(1).doubleValue() == 500D);
+  }
+
   @Test
   public void testRankTransform() throws Exception {
     UpdateRequest updateRequest = new UpdateRequest();
