@@ -172,7 +172,7 @@ public class NodeAddedTrigger implements AutoScaling.Trigger<NodeAddedTrigger.No
 
       ZkStateReader reader = container.getZkController().getZkStateReader();
       Set<String> newLiveNodes = reader.getClusterState().getLiveNodes();
-      log.info("Found livenodes: " + newLiveNodes);
+      log.debug("Found livenodes: {}", newLiveNodes);
       if (lastLiveNodes == null) {
         lastLiveNodes = newLiveNodes;
         return;

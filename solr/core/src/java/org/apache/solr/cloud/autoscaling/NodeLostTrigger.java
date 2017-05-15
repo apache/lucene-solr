@@ -77,7 +77,7 @@ public class NodeLostTrigger implements AutoScaling.Trigger<NodeLostTrigger.Node
       actions = Collections.emptyList();
     }
     lastLiveNodes = container.getZkController().getZkStateReader().getClusterState().getLiveNodes();
-    log.info("Initial livenodes: " + lastLiveNodes);
+    log.debug("Initial livenodes: {}", lastLiveNodes);
     this.enabled = (boolean) properties.getOrDefault("enabled", true);
     this.waitForSecond = ((Long) properties.getOrDefault("waitFor", -1L)).intValue();
     this.eventType = AutoScaling.EventType.valueOf(properties.get("event").toString().toUpperCase(Locale.ROOT));
@@ -173,7 +173,7 @@ public class NodeLostTrigger implements AutoScaling.Trigger<NodeLostTrigger.Node
 
       ZkStateReader reader = container.getZkController().getZkStateReader();
       Set<String> newLiveNodes = reader.getClusterState().getLiveNodes();
-      log.info("Found livenodes: " + newLiveNodes);
+      log.debug("Found livenodes: {}", newLiveNodes);
 
       // have any nodes that we were tracking been added to the cluster?
       // if so, remove them from the tracking map
