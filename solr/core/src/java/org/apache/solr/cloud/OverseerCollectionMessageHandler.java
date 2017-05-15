@@ -100,7 +100,6 @@ import static org.apache.solr.common.cloud.ZkStateReader.SHARD_ID_PROP;
 import static org.apache.solr.common.cloud.ZkStateReader.SOLR_AUTOSCALING_CONF_PATH;
 import static org.apache.solr.common.params.CollectionParams.CollectionAction.*;
 import static org.apache.solr.common.params.CommonAdminParams.ASYNC;
-import static org.apache.solr.common.params.CommonParams.AUTOSCALING_PATH;
 import static org.apache.solr.common.params.CommonParams.NAME;
 import static org.apache.solr.common.util.Utils.makeMap;
 
@@ -711,7 +710,7 @@ public class OverseerCollectionMessageHandler implements OverseerMessageHandler 
                                       List<String> shardNames,
                                       int repFactor) throws IOException, KeeperException, InterruptedException {
     List<Map> rulesMap = (List) message.get("rule");
-    Map m = zkStateReader.getZkClient().getJson(AUTOSCALING_PATH, true);
+    Map m = zkStateReader.getZkClient().getJson(ZkStateReader.SOLR_AUTOSCALING_CONF_PATH, true);
     boolean useAutoScalingPolicy = false;
     String policyName = message.getStr("policy");
     if (rulesMap != null && (m.get(Policy.CLUSTER_POLICY) == null || m.get(Policy.CLUSTER_PREFERENCE) != null || policyName == null)) {
