@@ -107,6 +107,9 @@ Bug Fixes
 
 * SOLR-10405: v2 API introspect response contains multiple copies of the experimental format WARNING (Cao Manh Dat)
 
+* SOLR-10412: v2 API: many API command specification properties are typed "number" but should instead be typed "integer"
+  (Steve Rowe, Cao Manh Dat)
+
 Optimizations
 ----------------------
 

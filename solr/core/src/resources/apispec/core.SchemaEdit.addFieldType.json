@@ -10,7 +10,7 @@
       "description": "The class name to use for the field type. Class names do not need to be fully qualified if they are included with Solr, so instead of 'org.apache.solr.schema.TextField', you can abbreviate the name as 'solr.TextField'. Custom or third-party class names may need to be fully qualified, however."
     },
     "positionIncrementGap": {
-      "type": "number",
+      "type": "integer",
       "description": "The distance between the values of a multivalued field. This is used to prevent inaccurate phrase matches across two separate values of the same field.",
       "default": "0"
     },
