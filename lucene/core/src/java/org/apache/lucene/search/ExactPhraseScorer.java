@@ -53,8 +53,8 @@ final class ExactPhraseScorer extends Scorer {
     this.docScorer = docScorer;
     this.needsScores = needsScores;
 
-    List<DocIdSetIterator> iterators = new ArrayList<>();
-    List<PostingsAndPosition> postingsAndPositions = new ArrayList<>();
+    List<DocIdSetIterator> iterators = new ArrayList<>(postings.size());
+    List<PostingsAndPosition> postingsAndPositions = new ArrayList<>(postings.size());
     for(PhraseQuery.PostingsAndFreq posting : postings) {
       iterators.add(posting.postings);
       postingsAndPositions.add(new PostingsAndPosition(posting.postings, posting.position));
