@@ -70,6 +70,9 @@ Upgrading from Solr 6.x
   query text will not be split on whitespace before analysis. See
   https://lucidworks.com/2017/04/18/multi-word-synonyms-solr-adds-query-time-support/ .
 
+* Setting <solrQueryParser defaultOperator="..."/> in schema is no longer allowed and will cause an exception.
+  Please use "q.op" parameter on the request instead. For more details, see SOLR-10584.
+
 New Features
 ----------------------
 * SOLR-9857, SOLR-9858: Collect aggregated metrics from nodes and shard leaders in overseer. (ab)
@@ -102,7 +105,7 @@ Bug Fixes
 
 * SOLR-10408: v2 API introspect should return useful message for non-existent command (Cao Manh Dat)
 
-* SOLR-10411: v2 Collection API "modify" command specification's replicationFactor property is incorrectly typed as string, 
+* SOLR-10411: v2 Collection API "modify" command specification's replicationFactor property is incorrectly typed as string,
   should be integer (Cao Manh Dat)
 
 * SOLR-10405: v2 API introspect response contains multiple copies of the experimental format WARNING (Cao Manh Dat)
@@ -128,6 +131,7 @@ Optimizations
   (yonik)
 
 Other Changes
+----------------------
 * SOLR-10236: Removed FieldType.getNumericType(). Use getNumberType() instead. (Tomás Fernández Löbbe)
 
 * SOLR-10347: Removed index level boost support from "documents" section of the admin UI (Amrit Sarkar via
@@ -147,6 +151,9 @@ Other Changes
   in edismax and standard/"lucene" query parsers. (Steve Rowe)
 
 * SOLR-10647: Move the V1 <-> V2 API mapping to SolrJ (noble)
+
+* SOLR-10584: We'll now always throw an exception if defaultOperator is found in schema. This config has
+  been deprecated since 3.6, and enforced for new configs since 6.6 (janhoy)
 
 ==================  6.7.0 ==================
 
@@ -169,8 +176,8 @@ Other Changes
 
 * SOLR-10617: JDBCStream accepts columns of type TIME, DATE & TIMESTAMP as well as CLOBs and decimal
   numeric types (James Dyer)
-                                      
-* SOLR-10400: Replace (instanceof TrieFooField || instanceof FooPointField) constructs with 
+
+* SOLR-10400: Replace (instanceof TrieFooField || instanceof FooPointField) constructs with
   FieldType.getNumberType() or SchemaField.getSortField() where appropriate. (hossman, Steve Rowe)
 
 ==================  6.6.0 ==================
@@ -361,9 +368,9 @@ Bug Fixes
 
 * SOLR-10549: The new 'large' attribute had been forgotten in /schema/fieldtypes?showDefaults=true (David Smiley)
 
-* SOLR-10615: requests are suspended until SolrDispatchFilter initialization is completed. 
-  After core container shutdown or severe initialization problem Solr responds with 
-  http stauts 404 Not Found instead of 500 as it was before (Mikhail Khludnev) 
+* SOLR-10615: requests are suspended until SolrDispatchFilter initialization is completed.
+  After core container shutdown or severe initialization problem Solr responds with
+  http stauts 404 Not Found instead of 500 as it was before (Mikhail Khludnev)
 
 * SOLR-8149: Admin UI - Plugins / Stats - active item is now highlighted (Labuzov Dmitriy via janhoy)
 
@@ -438,9 +445,9 @@ Other Changes
 
 * SOLR-10601: StreamExpressionParser should handle white space around = in named parameters (Joel Bernstein)
 
-* SOLR-10614: Static fields have turned to instance's field in SimplePostTool. 
+* SOLR-10614: Static fields have turned to instance's field in SimplePostTool.
   Enabled TestSolrCLIRunExample.testTechproductsExample(). (Andrey Kudryavtsev, Mikhail Khludnev)
-  
+
 * SOLR-10522: Revert SpellCheckComponent response format change from SOLR-9972 (rel. 6.5.0).  While this
   was an improvement for the json "arrntv" format, it caused problems for the default json format.
   (James Dyer, reported by Nikita Pchelintsev)
