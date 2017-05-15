@@ -33,6 +33,7 @@ import java.util.Set;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
+import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.common.IteratorWriter;
 import org.apache.solr.common.MapWriter;
 import org.apache.solr.common.params.CollectionParams.CollectionAction;
@@ -300,7 +301,7 @@ public class Policy implements MapWriter {
   public static abstract class Suggester {
     protected final EnumMap<Hint, Object> hints = new EnumMap<>(Hint.class);
     Policy.Session session;
-    Map operation;
+    SolrRequest operation;
     private boolean isInitialized = false;
 
     private void _init(Session session) {
@@ -312,10 +313,10 @@ public class Policy implements MapWriter {
       return this;
     }
 
-    abstract Map init();
+    abstract SolrRequest init();
 
 
-    public Map getOperation() {
+    public SolrRequest getOperation() {
       if (!isInitialized) {
         this.operation = init();
         isInitialized = true;

@@ -19,10 +19,12 @@ package org.apache.solr.cloud.autoscaling;
 
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.CoreAdminParams;
 import org.apache.solr.common.util.Utils;
@@ -34,13 +36,40 @@ import static org.apache.solr.common.params.CollectionParams.CollectionAction.AD
 public class PolicyHelper {
   public static Map<String, List<String>> getReplicaLocations(String collName, Map<String, Object> autoScalingJson,
                                                               ClusterDataProvider cdp,
+                                                              Map<String, String> optionalPolicyMapping,
                                                               List<String> shardNames,
                                                               int repFactor) {
     Map<String, List<String>> positionMapping = new HashMap<>();
     for (String shardName : shardNames) positionMapping.put(shardName, new ArrayList<>(repFactor));
+    if (optionalPolicyMapping != null) {
+      final ClusterDataProvider delegate = cdp;
+      cdp = new ClusterDataProvider() {
+        @Override
+        public Map<String, Object> getNodeValues(String node, Collection<String> tags) {
+          return delegate.getNodeValues(node, tags);
+        }
+
+        @Override
+        public Map<String, Map<String, List<Policy.ReplicaInfo>>> getReplicaInfo(String node, Collection<String> keys) {
+          return delegate.getReplicaInfo(node, keys);
+        }
+
+        @Override
+        public Collection<String> getNodes() {
+          return delegate.getNodes();
+        }
+
+        @Override
+        public String getPolicy(String coll) {
+          return optionalPolicyMapping.containsKey(coll) ?
+              optionalPolicyMapping.get(coll) :
+              delegate.getPolicy(coll);
+        }
+      };
+
+    }
 
 
-//    Map<String, Object> merged = Policy.mergePolicies(collName, policyJson, defaultPolicy);
     Policy policy = new Policy(autoScalingJson);
     Policy.Session session = policy.createSession(cdp);
     for (String shardName : shardNames) {
@@ -48,12 +77,12 @@ public class PolicyHelper {
         Policy.Suggester suggester = session.getSuggester(ADDREPLICA)
             .hint(Hint.COLL, collName)
             .hint(Hint.SHARD, shardName);
-        Map op = suggester.getOperation();
+        SolrRequest op = suggester.getOperation();
         if (op == null) {
           throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "No node can satisfy the rules "+ Utils.toJSONString(policy));
         }
         session = suggester.getSession();
-        positionMapping.get(shardName).add((String) op.get(CoreAdminParams.NODE));
+        positionMapping.get(shardName).add((String) op.getParams().get(CoreAdminParams.NODE));
       }
     }
 

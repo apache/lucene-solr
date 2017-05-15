@@ -19,6 +19,8 @@ package org.apache.solr.cloud.autoscaling;
 
 import java.util.Map;
 
+import org.apache.solr.client.solrj.SolrRequest;
+import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.cloud.autoscaling.Policy.Suggester;
 import org.apache.solr.common.util.Pair;
 import org.apache.solr.common.util.Utils;
@@ -32,13 +34,13 @@ import static org.apache.solr.common.params.CoreAdminParams.REPLICA;
 public class MoveReplicaSuggester extends Suggester {
 
   @Override
-  Map init() {
-    Map operation = tryEachNode(true);
+  SolrRequest init() {
+    SolrRequest operation = tryEachNode(true);
     if (operation == null) operation = tryEachNode(false);
     return operation;
   }
 
-  Map tryEachNode(boolean strict) {
+  SolrRequest tryEachNode(boolean strict) {
     //iterate through elements and identify the least loaded
     for (Pair<Policy.ReplicaInfo, Row> fromReplica : getValidReplicas(true, true, -1)) {
       Row fromRow = fromReplica.second();
@@ -69,12 +71,10 @@ public class MoveReplicaSuggester extends Suggester {
           if (targetRow.violations.isEmpty()) {
             getMatrix().set(i, getMatrix().get(i).removeReplica(coll, shard).first());
             getMatrix().set(j, getMatrix().get(j).addReplica(coll, shard));
-            return Utils.makeMap("operation", MOVEREPLICA.toLower(),
-                COLLECTION_PROP, coll,
-                SHARD_ID_PROP, shard,
-                NODE, fromRow.node,
-                REPLICA, pair.second().name,
-                "targetNode", targetRow.node);
+            return new CollectionAdminRequest.MoveReplica(
+                coll,
+                pair.second().name,
+                targetRow.node);
           }
         }
       }

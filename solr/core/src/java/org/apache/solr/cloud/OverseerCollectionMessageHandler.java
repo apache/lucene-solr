@@ -45,6 +45,7 @@ import org.apache.solr.client.solrj.impl.ZkClientClusterStateProvider;
 import org.apache.solr.client.solrj.request.AbstractUpdateRequest;
 import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.client.solrj.response.UpdateResponse;
+import org.apache.solr.cloud.autoscaling.Policy;
 import org.apache.solr.cloud.autoscaling.PolicyHelper;
 import org.apache.solr.cloud.overseer.OverseerAction;
 import org.apache.solr.cloud.rule.ReplicaAssigner;
@@ -99,6 +100,7 @@ import static org.apache.solr.common.cloud.ZkStateReader.SHARD_ID_PROP;
 import static org.apache.solr.common.cloud.ZkStateReader.SOLR_AUTOSCALING_CONF_PATH;
 import static org.apache.solr.common.params.CollectionParams.CollectionAction.*;
 import static org.apache.solr.common.params.CommonAdminParams.ASYNC;
+import static org.apache.solr.common.params.CommonParams.AUTOSCALING_PATH;
 import static org.apache.solr.common.params.CommonParams.NAME;
 import static org.apache.solr.common.util.Utils.makeMap;
 
@@ -709,56 +711,64 @@ public class OverseerCollectionMessageHandler implements OverseerMessageHandler 
                                       List<String> shardNames,
                                       int repFactor) throws IOException, KeeperException, InterruptedException {
     List<Map> rulesMap = (List) message.get("rule");
+    Map m = zkStateReader.getZkClient().getJson(AUTOSCALING_PATH, true);
+    boolean useAutoScalingPolicy = false;
     String policyName = message.getStr("policy");
-    if (rulesMap == null && policyName == null) {
-      int i = 0;
-      Map<Position, String> result = new HashMap<>();
-      for (String aShard : shardNames) {
-        for (int j = 0; j < repFactor; j++){
-          result.put(new Position(aShard, j), nodeList.get(i % nodeList.size()));
-          i++;
-        }
-      }
-      return result;
+    if (rulesMap != null && (m.get(Policy.CLUSTER_POLICY) == null || m.get(Policy.CLUSTER_PREFERENCE) != null || policyName == null)) {
+      useAutoScalingPolicy = true;
     }
 
-    if (policyName != null) {
-      String collName = message.getStr(CommonParams.NAME, "coll_" + System.nanoTime());
-      try(CloudSolrClient csc = new CloudSolrClient.Builder()
-          .withClusterStateProvider(new ZkClientClusterStateProvider(zkStateReader))
-          .build()) {
-        SolrClientDataProvider clientDataProvider = new SolrClientDataProvider(csc);
-        Map<String, List<String>> locations = PolicyHelper.getReplicaLocations(collName,
-            zkStateReader.getZkClient().getJson(SOLR_AUTOSCALING_CONF_PATH, true),
-            clientDataProvider, shardNames, repFactor);
+      if (rulesMap == null && !useAutoScalingPolicy) {
+        int i = 0;
         Map<Position, String> result = new HashMap<>();
-        for (Map.Entry<String, List<String>> e : locations.entrySet()) {
-          List<String> value = e.getValue();
-          for ( int i = 0; i < value.size(); i++) {
-            result.put(new Position(e.getKey(),i), value.get(i));
+        for (String aShard : shardNames) {
+          for (int j = 0; j < repFactor; j++) {
+            result.put(new Position(aShard, j), nodeList.get(i % nodeList.size()));
+            i++;
           }
         }
         return result;
       }
 
-    } else {
-      List<Rule> rules = new ArrayList<>();
-      for (Object map : rulesMap) rules.add(new Rule((Map) map));
 
-      Map<String, Integer> sharVsReplicaCount = new HashMap<>();
+      if (useAutoScalingPolicy) {
+        String tmpCollName = "coll_" + System.nanoTime();
+        String collName = message.getStr(CommonParams.NAME, tmpCollName);
+        try (CloudSolrClient csc = new CloudSolrClient.Builder()
+            .withClusterStateProvider(new ZkClientClusterStateProvider(zkStateReader))
+            .build()) {
+          SolrClientDataProvider clientDataProvider = new SolrClientDataProvider(csc);
+          Map<String, List<String>> locations = PolicyHelper.getReplicaLocations(collName,
+              zkStateReader.getZkClient().getJson(SOLR_AUTOSCALING_CONF_PATH, true),
+              clientDataProvider, Collections.singletonMap(tmpCollName, policyName), shardNames, repFactor);
+          Map<Position, String> result = new HashMap<>();
+          for (Map.Entry<String, List<String>> e : locations.entrySet()) {
+            List<String> value = e.getValue();
+            for (int i = 0; i < value.size(); i++) {
+              result.put(new Position(e.getKey(), i), value.get(i));
+            }
+          }
+          return result;
+        }
 
-      for (String shard : shardNames) sharVsReplicaCount.put(shard, repFactor);
-      ReplicaAssigner replicaAssigner = new ReplicaAssigner(rules,
-          sharVsReplicaCount,
-          (List<Map>) message.get(SNITCH),
-          new HashMap<>(),//this is a new collection. So, there are no nodes in any shard
-          nodeList,
-          overseer.getZkController().getCoreContainer(),
-          clusterState);
+      } else {
+        List<Rule> rules = new ArrayList<>();
+        for (Object map : rulesMap) rules.add(new Rule((Map) map));
 
-      return replicaAssigner.getNodeMappings();
+        Map<String, Integer> sharVsReplicaCount = new HashMap<>();
+
+        for (String shard : shardNames) sharVsReplicaCount.put(shard, repFactor);
+        ReplicaAssigner replicaAssigner = new ReplicaAssigner(rules,
+            sharVsReplicaCount,
+            (List<Map>) message.get(SNITCH),
+            new HashMap<>(),//this is a new collection. So, there are no nodes in any shard
+            nodeList,
+            overseer.getZkController().getCoreContainer(),
+            clusterState);
+
+        return replicaAssigner.getNodeMappings();
+      }
     }
-  }
 
 
 

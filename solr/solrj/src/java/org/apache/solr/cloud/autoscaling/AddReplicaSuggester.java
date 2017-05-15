@@ -17,26 +17,19 @@
 
 package org.apache.solr.cloud.autoscaling;
 
-import java.util.Map;
-
-import org.apache.solr.common.util.Pair;
-import org.apache.solr.common.util.Utils;
+import org.apache.solr.client.solrj.SolrRequest;
+import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.cloud.autoscaling.Policy.Suggester;
-
-import static org.apache.solr.common.cloud.ZkStateReader.COLLECTION_PROP;
-import static org.apache.solr.common.cloud.ZkStateReader.SHARD_ID_PROP;
-import static org.apache.solr.common.params.CollectionParams.CollectionAction.ADDREPLICA;
-import static org.apache.solr.common.params.CoreAdminParams.NODE;
 
 class AddReplicaSuggester extends Suggester {
 
-  Map init() {
-    Map operation = tryEachNode(true);
+  SolrRequest init() {
+    SolrRequest operation = tryEachNode(true);
     if (operation == null) operation = tryEachNode(false);
     return operation;
   }
 
-  Map tryEachNode(boolean strict) {
+  SolrRequest tryEachNode(boolean strict) {
     String coll = (String) hints.get(Hint.COLL);
     String shard = (String) hints.get(Hint.SHARD);
     if (coll == null || shard == null)
@@ -52,10 +45,9 @@ class AddReplicaSuggester extends Suggester {
       }
       if (row.violations.isEmpty()) {// there are no rule violations
         getMatrix().set(i, getMatrix().get(i).addReplica(coll, shard));
-        return Utils.makeMap("operation", ADDREPLICA.toLower(),
-            COLLECTION_PROP, coll,
-            SHARD_ID_PROP, shard,
-            NODE, row.node);
+        return CollectionAdminRequest
+            .addReplicaToShard(coll, shard)
+            .setNode(row.node);
       }
     }
     return null;
