@@ -36,18 +36,6 @@ exclude:
   - .gitignore
   - pdf/
 
-# if you uncomment the next line, the Feedback link gets removed
-feedback_disable: true
-
-# used as a contact email for the Feedback link in the top navigation bar
-# feedback_email: an_email@apache.org
-
-# if you uncomment the next line, it changes the Feedback text
-# feedback_text: "Need help?"
-
-# if you uncomment the next line, it changes where the feedback link points to
-# feedback_link: "http://helpy.io/"
-
 # these are defaults used for the frontmatter for these file types
 defaults:
   -
