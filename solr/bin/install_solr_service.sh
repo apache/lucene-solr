@@ -251,9 +251,9 @@ solr_uid="`id -u "$SOLR_USER"`"
 if [ $? -ne 0 ]; then
   echo "Creating new user: $SOLR_USER"
   if [ "$distro" == "RedHat" ] || [ "$distro" == "CentOS" ] ; then
-    adduser "$SOLR_USER"
+    adduser --system -U -m --home-dir "$SOLR_VAR_DIR" "$SOLR_USER"
   elif [ "$distro" == "SUSE" ]; then
-    useradd -m "$SOLR_USER"
+    useradd --system -U -m --home-dir "$SOLR_VAR_DIR" "$SOLR_USER"
   else
     adduser --system --shell /bin/bash --group --disabled-password --home "$SOLR_VAR_DIR" "$SOLR_USER"
   fi
@@ -331,8 +331,8 @@ SOLR_LOGS_DIR=\"$SOLR_VAR_DIR/logs\"
 SOLR_PORT=\"$SOLR_PORT\"
 " >> "/etc/default/$SOLR_SERVICE.in.sh"
 fi
-chown ${SOLR_USER}: "/etc/default/$SOLR_SERVICE.in.sh"
-chmod 0660 "/etc/default/$SOLR_SERVICE.in.sh"
+chown root:${SOLR_USER} "/etc/default/$SOLR_SERVICE.in.sh"
+chmod 0640 "/etc/default/$SOLR_SERVICE.in.sh"
 
 # install data directories and files
 mkdir -p "$SOLR_VAR_DIR/data"
