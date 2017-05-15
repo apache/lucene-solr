@@ -276,7 +276,7 @@ goto done
 :script_usage
 @echo.
 @echo Usage: solr COMMAND OPTIONS
-@echo        where COMMAND is one of: start, stop, restart, healthcheck, create, create_core, create_collection, delete, version, zk
+@echo        where COMMAND is one of: start, stop, restart, healthcheck, create, create_core, create_collection, delete, version, zk, auth
 @echo.
 @echo   Standalone server example (start Solr running in the background on port 8984):
 @echo.
@@ -554,6 +554,35 @@ IF "%ZK_FULL%"=="true" (
 )
 goto done
 
+:auth_usage
+echo Usage: solr auth enable [-type basicAuth] -credentials user:pass [-blockUnknown ^<true|false^>] [-updateIncludeFileOnly ^<true|false^>]
+echo        solr auth enable [-type basicAuth] -prompt ^<true|false^> [-blockUnknown ^<true|false^>] [-updateIncludeFileOnly ^<true|false^>]
+echo        solr auth disable [-updateIncludeFileOnly ^<true|false^>]
+echo
+echo   -type ^<type^>                 The authentication mechanism to enable. Defaults to 'basicAuth'.
+echo
+echo   -credentials ^<user:pass^>     The username and password of the initial user
+echo                                Note: only one of -prompt or -credentials must be provided
+echo
+echo   -prompt ^<true|false^>         Prompts the user to provide the credentials
+echo                                Note: only one of -prompt or -credentials must be provided
+echo
+echo   -blockUnknown ^<true|false^>   When true, this blocks out access to unauthenticated users. When not provided,
+echo                                this defaults to false (i.e. unauthenticated users can access all endpoints, except the
+echo                                operations like collection-edit, security-edit, core-admin-edit etc.). Check the reference
+echo                                guide for Basic Authentication for more details.
+echo
+echo   -updateIncludeFileOnly ^<true|false^>    Only update the solr.in.sh or solr.in.cmd file, and skip actual enabling/disabling"
+echo                                          authentication (i.e. don't update security.json)"
+echo
+echo   -z zkHost                    Zookeeper connection string
+echo
+echo   -d <dir>                     Specify the Solr server directory"
+echo 
+echo   -s <dir>                     Specify the Solr home directory. This is where any credentials or authentication"
+echo                                configuration files (e.g. basicAuth.conf) would be placed."
+echo
+goto done
 
 REM Really basic command-line arg parsing
 :parse_args
@@ -1648,6 +1677,44 @@ goto done
 
  
 :run_auth
+IF "%1"=="-help" goto usage
+IF "%1"=="-usage" goto usage
+
+REM Options parsing.
+REM Note: With the following technique of parsing, it is not possible
+REM       to have an option without a value.
+set "AUTH_PARAMS=%1"
+set "option="
+for %%a in (%*) do (
+   if not defined option (
+      set arg=%%a
+      if "!arg:~0,1!" equ "-" set "option=!arg!"
+   ) else (
+      set "option!option!=%%a"
+      if "!option!" equ "-d" set "SOLR_SERVER_DIR=%%a"
+      if "!option!" equ "-s" set "SOLR_HOME=%%a"
+      if not "!option!" equ "-s" if not "!option!" equ "-d" (
+        set "AUTH_PARAMS=!AUTH_PARAMS! !option! %%a"
+      )
+      set "option="
+   )
+)
+IF "%SOLR_SERVER_DIR%"=="" set "SOLR_SERVER_DIR=%DEFAULT_SERVER_DIR%"
+IF NOT EXIST "%SOLR_SERVER_DIR%" (
+  set "SCRIPT_ERROR=Solr server directory %SOLR_SERVER_DIR% not found!"
+  goto err
+)
+IF "%SOLR_HOME%"=="" set "SOLR_HOME=%SOLR_SERVER_DIR%\solr"
+IF EXIST "%cd%\%SOLR_HOME%" set "SOLR_HOME=%cd%\%SOLR_HOME%"
+IF NOT EXIST "%SOLR_HOME%\" (
+  IF EXIST "%SOLR_SERVER_DIR%\%SOLR_HOME%" (
+    set "SOLR_HOME=%SOLR_SERVER_DIR%\%SOLR_HOME%"
+  ) ELSE (
+    set "SCRIPT_ERROR=Solr home directory %SOLR_HOME% not found!"
+    goto err
+  )
+)
+
 if "!AUTH_PORT!"=="" (
   for /f "usebackq" %%i in (`dir /b "%SOLR_TIP%\bin" ^| findstr /i "^solr-.*\.port$"`) do (
     set SOME_SOLR_PORT=
@@ -1659,11 +1726,10 @@ if "!AUTH_PORT!"=="" (
     )
   )
 )
-for /f "tokens=1,* delims= " %%a in ("%*") do set auth_params=%%b
 "%JAVA%" %SOLR_SSL_OPTS% %AUTHC_OPTS% %SOLR_ZK_CREDS_AND_ACLS% -Dsolr.install.dir="%SOLR_TIP%" ^
     -Dlog4j.configuration="file:%DEFAULT_SERVER_DIR%\scripts\cloud-scripts\log4j.properties" ^
     -classpath "%DEFAULT_SERVER_DIR%\solr-webapp\webapp\WEB-INF\lib\*;%DEFAULT_SERVER_DIR%\lib\ext\*" ^
-    org.apache.solr.util.SolrCLI auth %auth_params% -solrIncludeFile "%SOLR_INCLUDE%" ^
+    org.apache.solr.util.SolrCLI auth %AUTH_PARAMS% -solrIncludeFile "%SOLR_INCLUDE%" -authConfDir "%SOLR_HOME%" ^
     -solrUrl !SOLR_URL_SCHEME!://%SOLR_TOOL_HOST%:!AUTH_PORT!/solr
 goto done
 
