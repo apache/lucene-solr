@@ -120,18 +120,20 @@ public class ScheduledTriggers implements Closeable {
         if (actions != null) {
           actionExecutor.submit(() -> {
             assert hasPendingActions.get();
-            // let the action executor thread wait instead of the trigger thread so we use the throttle here
-            actionThrottle.minimumWaitBetweenActions();
-            actionThrottle.markAttemptingAction();
-            for (TriggerAction action : actions) {
-              try {
-                action.process(event);
-              } catch (Exception e) {
-                log.error("Error executing action: " + action.getName() + " for trigger event: " + event, e);
-                throw e;
-              } finally {
-                hasPendingActions.set(false);
+            try {
+              // let the action executor thread wait instead of the trigger thread so we use the throttle here
+              actionThrottle.minimumWaitBetweenActions();
+              actionThrottle.markAttemptingAction();
+              for (TriggerAction action : actions) {
+                try {
+                  action.process(event);
+                } catch (Exception e) {
+                  log.error("Error executing action: " + action.getName() + " for trigger event: " + event, e);
+                  throw e;
+                }
               }
+            } finally {
+              hasPendingActions.set(false);
             }
           });
         }
