@@ -47,7 +47,6 @@ bin/solr -e cloud -noprompt
 * `/schema/version`: <<SchemaAPI-ShowtheSchemaVersion,retrieve>> the schema version
 * `/schema/uniquekey`: <<SchemaAPI-ListUniqueKey,retrieve>> the defined uniqueKey
 * `/schema/similarity`: <<SchemaAPI-ShowGlobalSimilarity,retrieve>> the global similarity definition
-* `/schema/solrqueryparser/defaultoperator`: <<SchemaAPI-GettheDefaultQueryOperator,retrieve>> the default operator
 
 [[SchemaAPI-ModifytheSchema]]
 == Modify the Schema
@@ -1162,63 +1161,6 @@ curl http://localhost:8983/solr/gettingstarted/schema/similarity?wt=json
     "QTime":1},
   "similarity":{
     "class":"org.apache.solr.search.similarities.DefaultSimilarityFactory"}}
-----
-
-
-[[SchemaAPI-GettheDefaultQueryOperator]]
-=== Get the Default Query Operator
-
-`GET /_collection_/schema/solrqueryparser/defaultoperator`
-
-[[SchemaAPI-INPUT.9]]
-==== INPUT
-
-*Path Parameters*
-
-// TODO: Change column width to %autowidth.spread when https://github.com/asciidoctor/asciidoctor-pdf/issues/599 is fixed
-
-[cols="30,70",options="header"]
-|===
-|Key |Description
-|collection |The collection (or core) name.
-|===
-
-*Query Parameters*
-
-The query parameters can be added to the API request after a '?'.
-
-// TODO: Change column width to %autowidth.spread when https://github.com/asciidoctor/asciidoctor-pdf/issues/599 is fixed
-
-[cols="15,10,10,10,55",options="header"]
-|===
-|Key |Type |Required |Default |Description
-|wt |string |No |json |Defines the format of the response. The options are *json* or *xml*. If not specified, JSON will be returned by default.
-|===
-
-[[SchemaAPI-OUTPUT.9]]
-==== OUTPUT
-
-*Output Content*
-
-The output will include simply the default operator if none is defined by the user.
-
-[[SchemaAPI-EXAMPLES.9]]
-==== EXAMPLES
-
-Get the default operator.
-
-[source,bash]
-----
-curl http://localhost:8983/solr/gettingstarted/schema/solrqueryparser/defaultoperator?wt=json
-----
-
-[source,json]
-----
-{
-  "responseHeader":{
-    "status":0,
-    "QTime":2},
-  "defaultOperator":"OR"}
 ----
 
 

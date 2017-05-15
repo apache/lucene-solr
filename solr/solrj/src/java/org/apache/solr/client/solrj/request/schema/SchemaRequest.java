@@ -355,25 +355,6 @@ public class SchemaRequest extends AbstractSchemaRequest<SchemaResponse> {
   }
 
   /**
-   * Retrieves the default operator if it is defined in the schema.
-   */
-  public static class DefaultQueryOperator extends AbstractSchemaRequest<SchemaResponse.DefaultQueryOperatorResponse> {
-    public DefaultQueryOperator() {
-      this(null);
-    }
-
-    public DefaultQueryOperator(SolrParams q) {
-      super(METHOD.GET, "/schema/solrqueryparser/defaultoperator", q);
-    }
-
-    @Override
-    protected SchemaResponse.DefaultQueryOperatorResponse createResponse(SolrClient client) {
-      return new SchemaResponse.DefaultQueryOperatorResponse();
-    }
-  }
-
-
-  /**
    * Adds a new field definition to the schema.
    * If the field already exists, the method {@link #process(SolrClient, String)} will fail.
    * Note that the request will be translated to json, so please use concrete values (e.g. : true, 1)
