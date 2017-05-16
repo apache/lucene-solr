@@ -60,6 +60,8 @@ import java.util.stream.Stream;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
 
+import javax.net.ssl.SSLPeerUnverifiedException;
+
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.GnuParser;
 import org.apache.commons.cli.HelpFormatter;
@@ -113,6 +115,7 @@ import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.ContentStreamBase;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.security.Sha256AuthenticationProvider;
+import org.apache.solr.util.configuration.SSLConfigurationsFactory;
 import org.noggit.CharArr;
 import org.noggit.JSONParser;
 import org.noggit.JSONWriter;
@@ -251,6 +254,8 @@ public class SolrCLI {
       System.out.println(Version.LATEST);
       exit(0);
     }
+
+    SSLConfigurationsFactory.current().init();
 
     Tool tool = findTool(args);
     CommandLine cli = parseCmdLine(args, tool.getOptions());
@@ -867,6 +872,8 @@ public class SolrCLI {
       while (System.nanoTime() < timeout) {
         try {
           return getStatus(solrUrl);
+        } catch (SSLPeerUnverifiedException exc) {
+            throw exc;
         } catch (Exception exc) {
           if (exceptionIsAuthRelated(exc)) {
             throw exc;
