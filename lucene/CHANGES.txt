@@ -93,7 +93,10 @@ Other
   (Daniel Jelinski via Adrien Grand)
 
 ======================= Lucene 6.7.0 =======================
-(No Changes)
+
+Bug Fixes
+
+* LUCENE-7831: CodecUtil should not seek to negative offsets. (Adrien Grand)
 
 ======================= Lucene 6.6.0 =======================
 
