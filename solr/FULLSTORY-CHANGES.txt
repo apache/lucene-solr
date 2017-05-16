@@ -1,0 +1,3 @@
+================= FullStory ================
+
+* fs.ignoreconflicts (Scott Blum)
