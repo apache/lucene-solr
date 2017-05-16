@@ -134,6 +134,9 @@ Bug Fixes
 * LUCENE-7824: Fix graph query analysis for multi-word synonym rules with common terms (eg. new york, new york city).
   (Jim Ferenczi)
 
+* LUCENE-7817: Pass cached query to onQueryCache instead of null.
+  (Christoph Kaser via Adrien Grand)
+
 Improvements
 
 * LUCENE-7782: OfflineSorter now passes the total number of items it
