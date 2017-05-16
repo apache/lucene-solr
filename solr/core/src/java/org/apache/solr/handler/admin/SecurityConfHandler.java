@@ -34,7 +34,7 @@ import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.util.Utils;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.handler.RequestHandlerBase;
-import org.apache.solr.handler.SolrConfigHandler;
+import org.apache.solr.handler.RequestHandlerUtils;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.security.AuthenticationPlugin;
@@ -74,7 +74,7 @@ public abstract class SecurityConfHandler extends RequestHandlerBase implements 
 
   @Override
   public void handleRequestBody(SolrQueryRequest req, SolrQueryResponse rsp) throws Exception {
-    SolrConfigHandler.setWt(req, CommonParams.JSON);
+    RequestHandlerUtils.setWt(req, CommonParams.JSON);
     String httpMethod = (String) req.getContext().get("httpMethod");
     String path = (String) req.getContext().get("path");
     String key = path.substring(path.lastIndexOf('/')+1);

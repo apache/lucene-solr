@@ -52,6 +52,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import static org.apache.solr.common.cloud.ZkStateReader.SOLR_AUTOSCALING_CONF_PATH;
+import static org.apache.solr.common.params.CommonParams.JSON;
 
 /**
  * Handler for /cluster/autoscaling
@@ -83,6 +84,8 @@ public class AutoScalingHandler extends RequestHandlerBase implements Permission
   @Override
   public void handleRequestBody(SolrQueryRequest req, SolrQueryResponse rsp) throws Exception {
     String httpMethod = (String) req.getContext().get("httpMethod");
+    RequestHandlerUtils.setWt(req, JSON);
+
     if ("GET".equals(httpMethod)) {
       Map<String, Object> map = zkReadAutoScalingConf(container.getZkController().getZkStateReader());
       rsp.getValues().addAll(map);
