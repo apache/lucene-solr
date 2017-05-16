@@ -45,6 +45,8 @@ Bug Fixes
 * LUCENE-7817: Pass cached query to onQueryCache instead of null.
   (Christoph Kaser via Adrien Grand)
 
+* LUCENE-7831: CodecUtil should not seek to negative offsets. (Adrien Grand)
+
 Improvements
 
 * LUCENE-7782: OfflineSorter now passes the total number of items it
