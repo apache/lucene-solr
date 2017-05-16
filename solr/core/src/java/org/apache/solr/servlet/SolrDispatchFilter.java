@@ -73,6 +73,7 @@ import org.apache.solr.request.SolrRequestInfo;
 import org.apache.solr.security.AuthenticationPlugin;
 import org.apache.solr.security.PKIAuthenticationPlugin;
 import org.apache.solr.util.SolrFileCleaningTracker;
+import org.apache.solr.util.configuration.SSLConfigurationsFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -139,6 +140,7 @@ public class SolrDispatchFilter extends BaseSolrFilter {
   @Override
   public void init(FilterConfig config) throws ServletException
   {
+    SSLConfigurationsFactory.current().init();
     log.trace("SolrDispatchFilter.init(): {}", this.getClass().getClassLoader());
     CoreContainer coresInit = null;
     try{

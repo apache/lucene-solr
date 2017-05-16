@@ -87,6 +87,9 @@ REM set SOLR_JETTY_HOST=0.0.0.0
 REM Sets the port Solr binds to, default is 8983
 REM set SOLR_PORT=8983
 
+REM Enables HTTPS. It is implictly true if you set SOLR_SSL_KEY_STORE. Use this config
+REM to enable https module with custom jetty configuration.
+REM set SOLR_SSL_ENABLED=true
 REM Uncomment to set SSL-related system properties
 REM Be sure to update the paths to the correct keystore for your environment
 REM set SOLR_SSL_KEY_STORE=etc/solr-ssl.keystore.jks

@@ -163,22 +163,26 @@ fi
 SOLR_URL_SCHEME=http
 SOLR_JETTY_CONFIG=()
 SOLR_SSL_OPTS=""
-if [ -n "$SOLR_SSL_KEY_STORE" ]; then
+if [ -z "$SOLR_SSL_ENABLED" ]; then
+  if [ -n "$SOLR_SSL_KEY_STORE" ]; then
+    SOLR_SSL_ENABLED="true" # implicitly from earlier behaviour
+  else
+    SOLR_SSL_ENABLED="false"
+  fi
+fi
+if [ "$SOLR_SSL_ENABLED" == "true" ]; then
   SOLR_JETTY_CONFIG+=("--module=https")
   SOLR_URL_SCHEME=https
-  SOLR_SSL_OPTS+=" -Dsolr.jetty.keystore=$SOLR_SSL_KEY_STORE"
-  if [ -n "$SOLR_SSL_KEY_STORE_PASSWORD" ]; then
-    SOLR_SSL_OPTS+=" -Dsolr.jetty.keystore.password=$SOLR_SSL_KEY_STORE_PASSWORD"
+  if [ -n "$SOLR_SSL_KEY_STORE" ]; then
+    SOLR_SSL_OPTS+=" -Dsolr.jetty.keystore=$SOLR_SSL_KEY_STORE"
   fi
+
   if [ -n "$SOLR_SSL_KEY_STORE_TYPE" ]; then
     SOLR_SSL_OPTS+=" -Dsolr.jetty.keystore.type=$SOLR_SSL_KEY_STORE_TYPE"
   fi
 
   if [ -n "$SOLR_SSL_TRUST_STORE" ]; then
     SOLR_SSL_OPTS+=" -Dsolr.jetty.truststore=$SOLR_SSL_TRUST_STORE"
-  fi
-  if [ -n "$SOLR_SSL_TRUST_STORE_PASSWORD" ]; then
-    SOLR_SSL_OPTS+=" -Dsolr.jetty.truststore.password=$SOLR_SSL_TRUST_STORE_PASSWORD"
   fi
   if [ -n "$SOLR_SSL_TRUST_STORE_TYPE" ]; then
     SOLR_SSL_OPTS+=" -Dsolr.jetty.truststore.type=$SOLR_SSL_TRUST_STORE_TYPE"
@@ -194,18 +198,12 @@ if [ -n "$SOLR_SSL_KEY_STORE" ]; then
   if [ -n "$SOLR_SSL_CLIENT_KEY_STORE" ]; then
     SOLR_SSL_OPTS+=" -Djavax.net.ssl.keyStore=$SOLR_SSL_CLIENT_KEY_STORE"
 
-    if [ -n "$SOLR_SSL_CLIENT_KEY_STORE_PASSWORD" ]; then
-      SOLR_SSL_OPTS+=" -Djavax.net.ssl.keyStorePassword=$SOLR_SSL_CLIENT_KEY_STORE_PASSWORD"
-    fi
     if [ -n "$SOLR_SSL_CLIENT_KEY_STORE_TYPE" ]; then
       SOLR_SSL_OPTS+=" -Djavax.net.ssl.keyStoreType=$SOLR_SSL_CLIENT_KEY_STORE_TYPE"
     fi
   else
     if [ -n "$SOLR_SSL_KEY_STORE" ]; then
       SOLR_SSL_OPTS+=" -Djavax.net.ssl.keyStore=$SOLR_SSL_KEY_STORE"
-    fi
-    if [ -n "$SOLR_SSL_KEY_STORE_PASSWORD" ]; then
-      SOLR_SSL_OPTS+=" -Djavax.net.ssl.keyStorePassword=$SOLR_SSL_KEY_STORE_PASSWORD"
     fi
     if [ -n "$SOLR_SSL_KEY_STORE_TYPE" ]; then
       SOLR_SSL_OPTS+=" -Djavax.net.ssl.keyStoreType=$SOLR_SSL_KEYSTORE_TYPE"
@@ -215,20 +213,12 @@ if [ -n "$SOLR_SSL_KEY_STORE" ]; then
   if [ -n "$SOLR_SSL_CLIENT_TRUST_STORE" ]; then
     SOLR_SSL_OPTS+=" -Djavax.net.ssl.trustStore=$SOLR_SSL_CLIENT_TRUST_STORE"
 
-    if [ -n "$SOLR_SSL_CLIENT_TRUST_STORE_PASSWORD" ]; then
-      SOLR_SSL_OPTS+=" -Djavax.net.ssl.trustStorePassword=$SOLR_SSL_CLIENT_TRUST_STORE_PASSWORD"
-    fi
-
     if [ -n "$SOLR_SSL_CLIENT_TRUST_STORE_TYPE" ]; then
       SOLR_SSL_OPTS+=" -Djavax.net.ssl.trustStoreType=$SOLR_SSL_CLIENT_TRUST_STORE_TYPE"
     fi
   else
     if [ -n "$SOLR_SSL_TRUST_STORE" ]; then
       SOLR_SSL_OPTS+=" -Djavax.net.ssl.trustStore=$SOLR_SSL_TRUST_STORE"
-    fi
-
-    if [ -n "$SOLR_SSL_TRUST_STORE_PASSWORD" ]; then
-      SOLR_SSL_OPTS+=" -Djavax.net.ssl.trustStorePassword=$SOLR_SSL_TRUST_STORE_PASSWORD"
     fi
 
     if [ -n "$SOLR_SSL_TRUST_STORE_TYPE" ]; then
@@ -1836,7 +1826,7 @@ function launch_solr() {
 
 
   # If SSL-related system props are set, add them to SOLR_OPTS
-  if [ -n "$SOLR_SSL_OPTS" ]; then
+  if [ "$SOLR_SSL_ENABLED" ]; then
     # If using SSL and solr.jetty.https.port not set explicitly, use the jetty.port
     SSL_PORT_PROP="-Dsolr.jetty.https.port=$SOLR_PORT"
     SOLR_OPTS+=($SOLR_SSL_OPTS "$SSL_PORT_PROP")

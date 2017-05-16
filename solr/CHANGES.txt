@@ -171,6 +171,11 @@ Jetty 9.3.14.v20161028
 Detailed Change List
 ----------------------
 
+New Features
+----------------------
+
+* SOLR-10307: Allow Passing SSL passwords through environment variables. (Mano Kovacs via Mark Miller)
+
 Other Changes
 ----------------------
 
