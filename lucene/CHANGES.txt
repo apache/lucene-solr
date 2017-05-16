@@ -5,10 +5,6 @@ http://s.apache.org/luceneversions
 
 ======================= Lucene 6.7.0 =======================
 
-Bug Fixes
-
-* LUCENE-7831: CodecUtil should not seek to negative offsets. (Adrien Grand)
-
 ======================= Lucene 6.6.0 =======================
 
 New Features
@@ -50,6 +46,8 @@ Bug Fixes
 
 * LUCENE-7817: Pass cached query to onQueryCache instead of null.
   (Christoph Kaser via Adrien Grand)
+
+* LUCENE-7831: CodecUtil should not seek to negative offsets. (Adrien Grand)
 
 Improvements
 
