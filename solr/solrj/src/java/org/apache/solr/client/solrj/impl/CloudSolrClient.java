@@ -1325,6 +1325,7 @@ public class CloudSolrClient extends SolrClient {
         ClientUtils.addSlices(slices, collectionName, routeSlices, true);
       }
       Set<String> liveNodes = stateProvider.liveNodes();
+      log.debug("Live Nodes: {}", liveNodes);//nocommit
 
       List<String> leaderUrlList = null;
       List<String> urlList = null;
@@ -1339,7 +1340,10 @@ public class CloudSolrClient extends SolrClient {
           ZkCoreNodeProps coreNodeProps = new ZkCoreNodeProps(nodeProps);
           String node = coreNodeProps.getNodeName();
           if (!liveNodes.contains(coreNodeProps.getNodeName())
-              || Replica.State.getState(coreNodeProps.getState()) != Replica.State.ACTIVE) continue;
+              || Replica.State.getState(coreNodeProps.getState()) != Replica.State.ACTIVE) {
+            log.debug("{} not in liveNodes, skipping", coreNodeProps.getNodeName());//nocommit
+            continue;
+          }
           if (nodes.put(node, nodeProps) == null) {
             if (!sendToLeaders || coreNodeProps.isLeader()) {
               String url;
