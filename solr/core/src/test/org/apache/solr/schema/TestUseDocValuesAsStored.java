@@ -109,7 +109,7 @@ public class TestUseDocValuesAsStored extends AbstractBadConfigTestBase {
   @After
   private void afterTest() throws Exception {
     clearIndex();
-    commit();
+    assertU(commit());
     deleteCore();
     System.clearProperty("managed.schema.mutable");
     System.clearProperty("enable.update.log");
