@@ -5467,6 +5467,53 @@ public class StreamExpressionTest extends SolrCloudTestCase {
     assertTrue(copy3.get(1).doubleValue() == 500D);
   }
 
+
+  @Test
+  public void testPercentiles() throws Exception {
+    UpdateRequest updateRequest = new UpdateRequest();
+
+    int i=0;
+    while(i<100) {
+      i=i+2;
+      updateRequest.add(id, "id_"+(i), "price_f", Integer.toString(i));
+    }
+
+    updateRequest.commit(cluster.getSolrClient(), COLLECTIONORALIAS);
+
+    String expr = "search("+COLLECTIONORALIAS+", q=\"*:*\", fl=\"price_f\", sort=\"price_f asc\", rows=\"200\")";
+    String cexpr = "let(a="+expr+", c=col(a, price_f), e=empiricalDistribution(c), " +
+        "tuple(p1=percentile(e, 88), " +
+        "p2=percentile(e, 2), " +
+        "p3=percentile(e, 99), " +
+        "p4=percentile(e, 77), " +
+        "p5=percentile(e, 98)))";
+
+    ModifiableSolrParams paramsLoc = new ModifiableSolrParams();
+    paramsLoc.set("expr", cexpr);
+    paramsLoc.set("qt", "/stream");
+
+    String url = cluster.getJettySolrRunners().get(0).getBaseUrl().toString()+"/"+COLLECTIONORALIAS;
+    TupleStream solrStream = new SolrStream(url, paramsLoc);
+
+    StreamContext context = new StreamContext();
+    solrStream.setStreamContext(context);
+    List<Tuple> tuples = getTuples(solrStream);
+    assertTrue(tuples.size() == 1);
+    double percentile1 = tuples.get(0).getDouble("p1");
+    double percentile2 = tuples.get(0).getDouble("p2");
+    double percentile3 = tuples.get(0).getDouble("p3");
+    double percentile4 = tuples.get(0).getDouble("p4");
+    double percentile5 = tuples.get(0).getDouble("p5");
+
+
+    assertEquals(.88D, percentile1, 0.001);
+    assertEquals(.0D, percentile2, 0.001);
+    assertEquals(1.0D, percentile3, 0.001);
+    assertEquals(.78D, percentile4, 0.001);
+    assertEquals(.98D, percentile5, 0.001);
+
+  }
+
   @Test
   public void testRankTransform() throws Exception {
     UpdateRequest updateRequest = new UpdateRequest();
