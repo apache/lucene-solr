@@ -1302,8 +1302,6 @@ public class ZkController {
         context.cancelElection();
       }
     }
-//    //TODO: Do we need to stop replication for type==tlog?
-
     CloudDescriptor cloudDescriptor = cd.getCloudDescriptor();
     zkStateReader.unregisterCore(cloudDescriptor.getCollectionName());
 

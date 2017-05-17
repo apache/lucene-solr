@@ -79,11 +79,6 @@ public class ShardSplitTest extends BasicDistributedZkTest {
   public ShardSplitTest() {
     schemaString = "schema15.xml";      // we need a string id
   }
-  
-  @Override
-  protected boolean useTlogReplicas() {
-    return false;
-  }
 
   @Override
   public void distribSetUp() throws Exception {

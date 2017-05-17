@@ -405,7 +405,7 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
       return IndexFetchResult.LOCK_OBTAIN_FAILED;
     if (core.getCoreContainer().isShutDown()) {
       LOG.warn("I was asked to replicate but CoreContainer is shutting down");
-      return IndexFetchResult.LOCK_OBTAIN_FAILED;//nocommit: different 
+      return IndexFetchResult.CONTAINER_IS_SHUTTING_DOWN; 
     }
     try {
       if (masterUrl != null) {

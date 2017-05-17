@@ -64,7 +64,9 @@ public class ChaosMonkeySafeLeaderWithPullReplicasTest extends AbstractFullDistr
   @BeforeClass
   public static void beforeSuperClass() {
     schemaString = "schema15.xml";      // we need a string id
-    System.setProperty("solr.autoCommit.maxTime", "15000");
+    if (usually()) {
+      System.setProperty("solr.autoCommit.maxTime", "15000");
+    }
     TestInjection.waitForReplicasInSync = null;
     setErrorHook();
   }
@@ -202,6 +204,7 @@ public class ChaosMonkeySafeLeaderWithPullReplicasTest extends AbstractFullDistr
     log.info("control docs:" + controlClient.query(new SolrQuery("*:*")).getResults().getNumFound() + "\n\n");
     
     waitForReplicationFromReplicas(DEFAULT_COLLECTION, cloudClient.getZkStateReader(), new TimeOut(30, TimeUnit.SECONDS));
+    waitForAllWarmingSearchers();
 
     checkShardConsistency(batchSize == 1, true);
     

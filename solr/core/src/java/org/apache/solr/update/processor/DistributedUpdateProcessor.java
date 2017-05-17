@@ -1609,7 +1609,7 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
           String myShardId = req.getCore().getCoreDescriptor().getCloudDescriptor().getShardId();
           Replica leaderReplica = zkController.getZkStateReader().getLeaderRetry(
               collection, myShardId);
-          // DBQ forwarded to Realtime and Append
+          // DBQ forwarded to NRT and TLOG replicas
           List<ZkCoreNodeProps> replicaProps = zkController.getZkStateReader()
               .getReplicaProps(collection, myShardId, leaderReplica.getName(), null, Replica.State.DOWN, EnumSet.of(Replica.Type.NRT, Replica.Type.TLOG));
           if (replicaProps != null) {
@@ -1700,7 +1700,7 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
           }
 
           if (replicaType == Replica.Type.TLOG && (cmd.getFlags() & UpdateCommand.REPLAY) == 0) {
-            // Append replica not leader, don't write the DBQ to IW
+            // TLOG replica not leader, don't write the DBQ to IW
             cmd.setFlags(cmd.getFlags() | UpdateCommand.IGNORE_INDEXWRITER);
           }
           doLocalDelete(cmd);
@@ -1896,7 +1896,7 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
     }
     
     if (!zkEnabled || req.getParams().getBool(COMMIT_END_POINT, false) || singleLeader) {
-      if (replicaType == Replica.Type.TLOG) { // REALTIME will always commit
+      if (replicaType == Replica.Type.TLOG) {
         try {
           Replica leaderReplica = zkController.getZkStateReader().getLeaderRetry(
               collection, cloudDesc.getShardId());
@@ -1914,7 +1914,12 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
         } catch (InterruptedException e) {
           throw new SolrException(ErrorCode.SERVICE_UNAVAILABLE, "Exception finding leader for shard " + cloudDesc.getShardId(), e);
         }
+      } else if (replicaType == Replica.Type.PULL) {
+        log.warn("Commit not supported on replicas of type " + Replica.Type.PULL);
       } else {
+        // NRT replicas will always commit
+        long commitVersion = vinfo.getNewClock();
+        cmd.setVersion(commitVersion);
         doLocalCommit(cmd);
       }
     } else {

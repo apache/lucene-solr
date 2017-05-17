@@ -2103,6 +2103,17 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
       }
     }
   }
+  
+  protected void waitForAllWarmingSearchers() throws InterruptedException {
+    for (JettySolrRunner jetty:jettys) {
+      if (!jetty.isRunning()) {
+        continue;
+      }
+      for (SolrCore core:jetty.getCoreContainer().getCores()) {
+        waitForWarming(core);
+      }
+    }
+  }
 
   protected long getIndexVersion(Replica replica) throws IOException {
     try (HttpSolrClient client = new HttpSolrClient.Builder(replica.getCoreUrl()).build()) {

@@ -387,7 +387,7 @@ public class TestPullReplica extends SolrCloudTestCase {
     
     // Queries should still work
     waitForNumDocsInAllReplicas(1, docCollection.getReplicas(EnumSet.of(Replica.Type.PULL)));
-    // Add nrt replica back. Since there is no rt now, new rt will have no docs. There will be data loss, since the it will become the leader
+    // Add nrt replica back. Since there is no nrt now, new nrt will have no docs. There will be data loss, since the it will become the leader
     // and pull replicas will replicate from it. Maybe we want to change this. Replicate from pull replicas is not a good idea, since they
     // are by definition out of date.
     if (removeReplica) {
@@ -398,13 +398,13 @@ public class TestPullReplica extends SolrCloudTestCase {
     waitForState("Expected collection to be 1x2", collectionName, clusterShape(1, 2));
     unIgnoreException("No registered leader was found"); // Should have a leader from now on
 
-    // Validate that the new writer is the leader now
+    // Validate that the new nrt replica is the leader now
     cluster.getSolrClient().getZkStateReader().forceUpdateCollection(collectionName);
     docCollection = getCollectionState(collectionName);
     leader = docCollection.getSlice("shard1").getLeader();
     assertTrue(leader != null && leader.isActive(cluster.getSolrClient().getZkStateReader().getClusterState().getLiveNodes()));
 
-    //nocommit: If jetty is restarted, the replication is not forced, and replica doesn't replicate from leader until new docs are added. Is this the correct behavior? Why should these two cases be different?
+    // If jetty is restarted, the replication is not forced, and replica doesn't replicate from leader until new docs are added. Is this the correct behavior? Why should these two cases be different?
     if (removeReplica) {
       // Pull replicas will replicate the empty index if a new replica was added and becomes leader
       waitForNumDocsInAllReplicas(0, docCollection.getReplicas(EnumSet.of(Replica.Type.PULL)));

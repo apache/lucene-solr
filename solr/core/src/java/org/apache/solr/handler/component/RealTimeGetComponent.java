@@ -117,7 +117,7 @@ public class RealTimeGetComponent extends SearchComponent
                   cloudDesc.getCoreNodeName(),
                   Replica.Type.PULL));
         } 
-        // non-leader APPEND replicas should not respond to distrib /get requests, but internal requests are OK
+        // non-leader TLOG replicas should not respond to distrib /get requests, but internal requests are OK
       }
     }
     

@@ -147,25 +147,37 @@ public class TestTlogReplica extends SolrCloudTestCase {
       CollectionAdminRequest.createCollection(collectionName, "conf", 2, 0, 4, 0)
       .setMaxShardsPerNode(100)
       .process(cluster.getSolrClient());
-      DocCollection docCollection = getCollectionState(collectionName);
-      assertNotNull(docCollection);
-      assertEquals("Expecting 2 shards",
-          2, docCollection.getSlices().size());
-      assertEquals("Expecting 4 relpicas per shard",
-          8, docCollection.getReplicas().size());
-      assertEquals("Expecting 8 tlog replicas, 4 per shard",
-          8, docCollection.getReplicas(EnumSet.of(Replica.Type.TLOG)).size());
-      assertEquals("Expecting no nrt replicas",
-          0, docCollection.getReplicas(EnumSet.of(Replica.Type.NRT)).size());
-      assertEquals("Expecting no pull replicas",
-          0, docCollection.getReplicas(EnumSet.of(Replica.Type.PULL)).size());
-      for (Slice s:docCollection.getSlices()) {
-        assertTrue(s.getLeader().getType() == Replica.Type.TLOG);
-        List<String> shardElectionNodes = cluster.getZkClient().getChildren(ZkStateReader.getShardLeadersElectPath(collectionName, s.getName()), null, true);
-        assertEquals("Unexpected election nodes for Shard: " + s.getName() + ": " + Arrays.toString(shardElectionNodes.toArray()), 
-            4, shardElectionNodes.size());
+      boolean reloaded = false;
+      while (true) {
+        DocCollection docCollection = getCollectionState(collectionName);
+        assertNotNull(docCollection);
+        assertEquals("Expecting 2 shards",
+            2, docCollection.getSlices().size());
+        assertEquals("Expecting 4 relpicas per shard",
+            8, docCollection.getReplicas().size());
+        assertEquals("Expecting 8 tlog replicas, 4 per shard",
+            8, docCollection.getReplicas(EnumSet.of(Replica.Type.TLOG)).size());
+        assertEquals("Expecting no nrt replicas",
+            0, docCollection.getReplicas(EnumSet.of(Replica.Type.NRT)).size());
+        assertEquals("Expecting no pull replicas",
+            0, docCollection.getReplicas(EnumSet.of(Replica.Type.PULL)).size());
+        for (Slice s:docCollection.getSlices()) {
+          assertTrue(s.getLeader().getType() == Replica.Type.TLOG);
+          List<String> shardElectionNodes = cluster.getZkClient().getChildren(ZkStateReader.getShardLeadersElectPath(collectionName, s.getName()), null, true);
+          assertEquals("Unexpected election nodes for Shard: " + s.getName() + ": " + Arrays.toString(shardElectionNodes.toArray()), 
+              4, shardElectionNodes.size());
+        }
+        assertUlogPresence(docCollection);
+        if (reloaded) {
+          break;
+        } else {
+          // reload
+          CollectionAdminResponse response = CollectionAdminRequest.reloadCollection(collectionName)
+          .process(cluster.getSolrClient());
+          assertEquals(0, response.getStatus());
+          reloaded = true;
+        }
       }
-      assertUlogPresence(docCollection);
     } finally {
       zkClient().printLayoutToStdOut();
     }
@@ -225,7 +237,7 @@ public class TestTlogReplica extends SolrCloudTestCase {
     
     waitForState("Expecting collection to have 2 shards and 2 replica each", collectionName, clusterShape(2, 2));
     
-    //Delete pull replica from shard1
+    //Delete tlog replica from shard1
     CollectionAdminRequest.deleteReplica(
         collectionName, 
         "shard1", 
@@ -360,8 +372,8 @@ public class TestTlogReplica extends SolrCloudTestCase {
     JettySolrRunner pullReplicaJetty = cluster.getReplicaJetty(docCollection.getSlice("shard1").getReplicas(EnumSet.of(Replica.Type.TLOG)).get(0));
     ChaosMonkey.kill(pullReplicaJetty);
     waitForState("Replica not removed", collectionName, activeReplicaCount(0, 1, 0));
-    // Also wait for the replica to be placed in state="down"
-    waitForState("Didn't update state", collectionName, clusterStateReflectsActiveAndDownReplicas());
+//    // Also wait for the replica to be placed in state="down"
+//    waitForState("Didn't update state", collectionName, clusterStateReflectsActiveAndDownReplicas());
     
     cluster.getSolrClient().add(collectionName, new SolrInputDocument("id", "2", "foo", "bar"));
     cluster.getSolrClient().commit(collectionName);
@@ -436,6 +448,7 @@ public class TestTlogReplica extends SolrCloudTestCase {
     waitForReplicasCatchUp(20);
   }
   
+  @SuppressWarnings("unchecked")
   public void testRecovery() throws Exception {
     boolean useKill = random().nextBoolean();
     createAndWaitForCollection(1, 0, 2, 0);
@@ -445,7 +458,6 @@ public class TestTlogReplica extends SolrCloudTestCase {
         .add(sdoc("id", "3"))
         .add(sdoc("id", "4"))
         .commit(cloudClient, collectionName);
-    // Replica recovery
     new UpdateRequest()
         .add(sdoc("id", "5"))
         .process(cloudClient, collectionName);
@@ -455,30 +467,37 @@ public class TestTlogReplica extends SolrCloudTestCase {
     } else {
       ChaosMonkey.stop(solrRunner);
     }
+    waitForState("Replica still up", collectionName, activeReplicaCount(0,1,0));
     new UpdateRequest()
         .add(sdoc("id", "6"))
         .process(cloudClient, collectionName);
     ChaosMonkey.start(solrRunner);
     waitForState("Replica didn't recover", collectionName, activeReplicaCount(0,2,0));
     // We skip peerSync, so replica will always trigger commit on leader
-    waitForNumDocsInAllActiveReplicas(4);
+//    waitForNumDocsInAllActiveReplicas(4);
+    waitForNumDocsInAllReplicas(4, getCollectionState(collectionName).getReplicas(), 0);// Should be immediate
     
-    // If I add the doc immediately, the leader fails to communicate with the follower with broken pipe. Related to SOLR-9555 I believe
-    //nocommit
-    Thread.sleep(10000);
-    
-    // More Replica recovery testing
-    new UpdateRequest()
-        .add(sdoc("id", "7"))
-        .process(cloudClient, collectionName);
+    // If I add the doc immediately, the leader fails to communicate with the follower with broken pipe.
+    // Options are, wait or retry...
+    for (int i = 0; i < 3; i++) {
+      UpdateRequest ureq = new UpdateRequest().add(sdoc("id", "7"));
+      ureq.setParam("collection", collectionName);
+      ureq.setParam(UpdateRequest.MIN_REPFACT, "2");
+      NamedList<Object> response = cloudClient.request(ureq);
+      if ((Integer)((NamedList<Object>)response.get("responseHeader")).get(UpdateRequest.REPFACT) >= 2) {
+        break;
+      }
+      LOG.info("Min RF not achieved yet. retrying");
+    }
     checkRTG(3,7, cluster.getJettySolrRunners());
     DirectUpdateHandler2.commitOnClose = false;
     ChaosMonkey.stop(solrRunner);
+    waitForState("Replica still up", collectionName, activeReplicaCount(0,1,0));
     DirectUpdateHandler2.commitOnClose = true;
     ChaosMonkey.start(solrRunner);
     waitForState("Replica didn't recover", collectionName, activeReplicaCount(0,2,0));
     checkRTG(3,7, cluster.getJettySolrRunners());
-    waitForNumDocsInAllActiveReplicas(5, 0);
+    waitForNumDocsInAllReplicas(5, getCollectionState(collectionName).getReplicas(), 0);// Should be immediate
 
     // Test replica recovery apply buffer updates
     Semaphore waitingForBufferUpdates = new Semaphore(0);

@@ -385,13 +385,14 @@ public class TestInjection {
           long leaderVersion = (long) ((NamedList)response.get("details")).get("indexVersion");
           RefCounted<SolrIndexSearcher> searcher = core.getSearcher();
           try {
-            String localVersion = searcher.get().getIndexReader().getIndexCommit().getUserData().get(SolrIndexWriter.COMMIT_TIME_MSEC_KEY);
+//            String localVersion = searcher.get().getIndexReader().getIndexCommit().getUserData().get(SolrIndexWriter.COMMIT_TIME_MSEC_KEY);
+            String localVersion = searcher.get().getIndexReader().getIndexCommit().getUserData().get(SolrIndexWriter.COMMIT_COMMAND_VERSION);
             if (localVersion == null && leaderVersion == 0 && !core.getUpdateHandler().getUpdateLog().hasUncommittedChanges()) return true;
             if (localVersion != null && Long.parseLong(localVersion) == leaderVersion && (leaderVersion >= t || i >= 6)) {
               log.info("Waiting time for tlog replica to be in sync with leader: {}", System.currentTimeMillis()-currentTime);
               return true;
             } else {
-              log.debug("Append replica not in sync with leader yet. Attempt: {}", i);
+              log.debug("Tlog replica not in sync with leader yet. Attempt: {}. Local Version={}, leader Version={}", i, localVersion, leaderVersion);
               Thread.sleep(500);
             }
           } finally {

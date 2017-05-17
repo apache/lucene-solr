@@ -28,14 +28,12 @@ import org.apache.lucene.util.LuceneTestCase.Slow;
 import org.apache.solr.SolrTestCaseJ4.SuppressObjectReleaseTracker;
 import org.apache.solr.SolrTestCaseJ4.SuppressSSL;
 import org.apache.solr.client.solrj.SolrQuery;
-import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.cloud.ZkStateReader;
-import org.apache.solr.core.SolrCore;
 import org.apache.solr.util.TestInjection;
 import org.apache.solr.util.TimeOut;
 import org.junit.AfterClass;
@@ -69,7 +67,9 @@ public class ChaosMonkeyNothingIsSafeWithPullReplicasTest extends AbstractFullDi
   @BeforeClass
   public static void beforeSuperClass() {
     schemaString = "schema15.xml";      // we need a string id
-    System.setProperty("solr.autoCommit.maxTime", "15000");
+    if (usually()) {
+      System.setProperty("solr.autoCommit.maxTime", "15000");
+    }
     TestInjection.waitForReplicasInSync = null;
     setErrorHook();
   }
@@ -295,17 +295,6 @@ public class ChaosMonkeyNothingIsSafeWithPullReplicasTest extends AbstractFullDi
       if (!testSuccessful) {
         logReplicaTypesReplicationInfo(DEFAULT_COLLECTION, cloudClient.getZkStateReader());
         printLayout();
-      }
-    }
-  }
-
-  private void waitForAllWarmingSearchers() throws InterruptedException {
-    for (JettySolrRunner jetty:jettys) {
-      if (!jetty.isRunning()) {
-        continue;
-      }
-      for (SolrCore core:jetty.getCoreContainer().getCores()) {
-        waitForWarming(core);
       }
     }
   }

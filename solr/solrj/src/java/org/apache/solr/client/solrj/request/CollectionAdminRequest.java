@@ -338,7 +338,7 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse> 
    * @param collection the collection name
    * @param config     the collection config
    * @param numShards  the number of shards in the collection
-   * @param numReplicas the replication factor of the collection
+   * @param numReplicas the replication factor of the collection (same as numNrtReplicas)
    */
   public static Create createCollection(String collection, String config, int numShards, int numReplicas) {
     return new Create(collection, config, numShards, numReplicas, 0, 0);

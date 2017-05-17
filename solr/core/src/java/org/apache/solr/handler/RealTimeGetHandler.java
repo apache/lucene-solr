@@ -22,6 +22,7 @@ import java.util.List;
 
 import org.apache.solr.api.Api;
 import org.apache.solr.api.ApiBag;
+import org.apache.solr.handler.component.HttpShardHandler;
 import org.apache.solr.handler.component.RealTimeGetComponent;
 import org.apache.solr.handler.component.SearchHandler;
 import org.apache.solr.request.SolrQueryRequest;
@@ -40,7 +41,8 @@ public class RealTimeGetHandler extends SearchHandler {
   
   @Override
   public void handleRequestBody(SolrQueryRequest req, SolrQueryResponse rsp) throws Exception {
-    req.getContext().put("distribOnlyRealtime", Boolean.TRUE);
+    // Tell HttpShardHandlerthat this request should only be distributed to NRT replicas
+    req.getContext().put(HttpShardHandler.ONLY_NRT_REPLICAS, Boolean.TRUE);
     super.handleRequestBody(req, rsp);
   }
 

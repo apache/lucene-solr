@@ -126,7 +126,7 @@ public abstract class UpdateHandler implements SolrInfoBean {
 
     // If this is a replica of type PULL, don't create the update log
     boolean skipUpdateLog = core.getCoreDescriptor().getCloudDescriptor() != null && !core.getCoreDescriptor().getCloudDescriptor().requiresTransactionLog();
-    if (updateLog == null && ulogPluginInfo != null && !skipUpdateLog) {
+    if (updateLog == null && ulogPluginInfo != null && ulogPluginInfo.isEnabled() && !skipUpdateLog) {
       String dataDir = (String)ulogPluginInfo.initArgs.get("dir");
 
       String ulogDir = core.getCoreDescriptor().getUlogDir();
