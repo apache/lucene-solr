@@ -39,4 +39,10 @@ public class DefaultEncoder extends HighlightingPluginBase implements
   public String getDescription() {
     return "DefaultEncoder";
   }
+
+  // some comment
+
+  public String getAbc() {
+    return "abc";
+  }
 }
