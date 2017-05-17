@@ -19,16 +19,9 @@ package org.apache.solr.common.util;
 import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
 import java.util.Collection;
-
-import java.util.Enumeration;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import java.util.concurrent.BlockingQueue;
-import java.util.concurrent.Callable;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.RejectedExecutionHandler;
@@ -157,7 +150,7 @@ public class ExecutorUtil {
    * See {@link java.util.concurrent.Executors#newCachedThreadPool(ThreadFactory)}
    */
   public static ExecutorService newMDCAwareCachedThreadPool(ThreadFactory threadFactory) {
-    return new MDCAwareThreadPoolExecutor(0, Integer.MAX_VALUE,
+    return new MDCAwareThreadPoolExecutor(0, 128,
         60L, TimeUnit.SECONDS,
         new SynchronousQueue<Runnable>(),
         threadFactory);
