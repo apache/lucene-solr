@@ -74,7 +74,7 @@ import org.slf4j.LoggerFactory;
  * between versions in terms of API or back compat behaviour.
  * @lucene.experimental
  */
-public class RecoveryStrategy extends Thread implements Closeable {
+public class RecoveryStrategy implements Runnable, Closeable {
 
   public static class Builder implements NamedListInitializedPlugin {
     private NamedList args;
@@ -124,7 +124,6 @@ public class RecoveryStrategy extends Thread implements Closeable {
     this.cc = cc;
     this.coreName = cd.getName();
     this.recoveryListener = recoveryListener;
-    setName("RecoveryThread-"+this.coreName);
     zkController = cc.getZkController();
     zkStateReader = zkController.getZkStateReader();
     baseUrl = zkController.getBaseUrl();
@@ -370,7 +369,7 @@ public class RecoveryStrategy extends Thread implements Closeable {
     }
 
     Future<RecoveryInfo> replayFuture = null;
-    while (!successfulRecovery && !isInterrupted() && !isClosed()) { // don't use interruption or it will close channels though
+    while (!successfulRecovery && !Thread.currentThread().isInterrupted() && !isClosed()) { // don't use interruption or it will close channels though
       try {
         CloudDescriptor cloudDesc = core.getCoreDescriptor().getCloudDescriptor();
         ZkNodeProps leaderprops = zkStateReader.getLeaderRetry(

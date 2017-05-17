@@ -155,6 +155,8 @@ Other Changes
 * SOLR-10584: We'll now always throw an exception if defaultOperator is found in schema. This config has
   been deprecated since 3.6, and enforced for new configs since 6.6 (janhoy)
 
+* SOLR-10414: RecoveryStrategy is now a Runnable instead of a Thread. (Tomás Fernández Löbbe)
+
 ==================  6.7.0 ==================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release.
