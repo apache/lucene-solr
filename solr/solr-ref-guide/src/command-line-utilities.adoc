@@ -27,8 +27,6 @@ Use the `help` option to get a list of available commands from the script itself
 
 Both `zkcli.sh` (for Unix environments) and `zkcli.bat` (for Windows environments) support the following command line options:
 
-// TODO: Change column width to %autowidth.spread when https://github.com/asciidoctor/asciidoctor-pdf/issues/599 is fixed
-
 `-cmd <arg>`::
 The CLI Command to be executed. This parameter is *mandatory*. The following commands are supported:
 
