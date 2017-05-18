@@ -53,7 +53,7 @@ Specifies the field from which to retrieve terms.
 Example: `terms.fl=title`
 
 |terms.list |No |null a|
-Fetches the document frequency for a comma delimited list of terms. Terms are always returned in index order. If '`terms.ttf`' is set to true, also returns their total term frequency. If multiple '`terms.fl`' are defined, these statistics will be returned for each term in each requested field.
+Fetches the document frequency for a comma delimited list of terms. Terms are always returned in index order. If `terms.ttf` is set to true, also returns their total term frequency. If multiple `terms.fl` are defined, these statistics will be returned for each term in each requested field.
 
 Example: `terms.list=termA,termB,termC`
 
@@ -113,12 +113,12 @@ Example: `terms.regex.flag=case_insensitive`
 
 |terms.stats |No |null |Include index statistics in the results. Currently returns only the *numDocs* for a collection. When combined with terms.list it provides enough information to compute idf for a list of terms.
 |terms.sort |No |count a|
-Defines how to sort the terms returned. Valid options are **count**, which sorts by the term frequency, with the highest term frequency first, or **index**, which sorts in index order.
+Defines how to sort the terms returned. Valid options are *count*, which sorts by the term frequency, with the highest term frequency first, or *index*, which sorts in index order.
 
 Example: `terms.sort=index`
 
 |terms.ttf |No |false a|
-If set to true, returns both 'df' (docFreq) and 'ttf' (totalTermFreq) statistics for each requested term in '`terms.list`'. In this case, the response format is:
+If set to true, returns both `df` (docFreq) and `ttf` (totalTermFreq) statistics for each requested term in `terms.list`. In this case, the response format is:
 
 [source,xml]
 ----
