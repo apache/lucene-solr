@@ -77,9 +77,12 @@ import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.Diagnostics;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.handler.ReplicationHandler;
+import org.apache.solr.search.SolrIndexSearcher;
 import org.apache.solr.update.DirectUpdateHandler2;
 import org.apache.solr.update.SolrCmdDistributor;
+import org.apache.solr.update.SolrIndexWriter;
 import org.apache.solr.util.RTimer;
+import org.apache.solr.util.RefCounted;
 import org.apache.solr.util.TimeOut;
 import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.KeeperException;
@@ -2065,6 +2068,13 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
   protected void waitForReplicationFromReplicas(String collectionName, ZkStateReader zkStateReader, TimeOut timeout) throws KeeperException, InterruptedException, IOException {
     zkStateReader.forceUpdateCollection(collectionName);
     DocCollection collection = zkStateReader.getClusterState().getCollection(collectionName);
+    Map<String, CoreContainer> containers = new HashMap<>();
+    for (JettySolrRunner runner:jettys) {
+      if (!runner.isRunning()) {
+        continue;
+      }
+      containers.put(runner.getNodeName(), runner.getCoreContainer());
+    }
     for(Slice s:collection.getSlices()) {
       Replica leader = s.getLeader();
       long leaderIndexVersion = -1;
@@ -2086,7 +2096,22 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
           long replicaIndexVersion = getIndexVersion(pullReplica); 
           if (leaderIndexVersion == replicaIndexVersion) {
             log.debug("Leader replica's version ({}) in sync with replica({}): {} == {}", leader.getName(), pullReplica.getName(), leaderIndexVersion, replicaIndexVersion);
-            break;
+            
+            // Make sure the host is serving the correct version
+            try (SolrCore core = containers.get(pullReplica.getNodeName()).getCore(pullReplica.getCoreName())) {
+              RefCounted<SolrIndexSearcher> ref = core.getRegisteredSearcher();
+              try {
+                SolrIndexSearcher searcher = ref.get();
+                String servingVersion = searcher.getIndexReader().getIndexCommit().getUserData().get(SolrIndexWriter.COMMIT_TIME_MSEC_KEY);
+                if (Long.parseLong(servingVersion) == replicaIndexVersion) {
+                  break;
+                } else {
+                  log.debug("Replica {} has the correct version replicated, but the searcher is not ready yet. Replicated version: {}, Serving version: {}", pullReplica.getName(), replicaIndexVersion, servingVersion);
+                }
+              } finally {
+                if (ref != null) ref.decref();
+              }
+            }
           } else {
             if (timeout.hasTimedOut()) {
               logReplicaTypesReplicationInfo(collectionName, zkStateReader);
@@ -2097,8 +2122,8 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
             } else {
               log.debug("Leader replica's version ({}) is lower than pull replica({}): {} < {}", leader.getName(), pullReplica.getName(), leaderIndexVersion, replicaIndexVersion);
             }
-            Thread.sleep(1000);
           }
+          Thread.sleep(1000);
         }
       }
     }

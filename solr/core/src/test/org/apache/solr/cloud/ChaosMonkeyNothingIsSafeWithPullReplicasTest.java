@@ -252,7 +252,7 @@ public class ChaosMonkeyNothingIsSafeWithPullReplicasTest extends AbstractFullDi
       }
       
       waitForReplicationFromReplicas(DEFAULT_COLLECTION, zkStateReader, new TimeOut(30, TimeUnit.SECONDS));
-      waitForAllWarmingSearchers();
+//      waitForAllWarmingSearchers();
       
       Set<String> addFails = getAddFails(indexTreads);
       Set<String> deleteFails = getDeleteFails(indexTreads);
