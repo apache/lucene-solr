@@ -463,6 +463,15 @@ http://localhost:8983/solr/admin/collections?action=CREATEALIAS&name=testalias&c
 </response>
 ----
 
+== LISTALIASES: List Collection Aliases
+
+Lists all aliases for each collection.
+
+`/admin/collections?action=LISTALIASES`
+
+// TODO 6.6 examples
+
+
 [[CollectionsAPI-deletealias]]
 == DELETEALIAS: Delete a Collection Alias
 
@@ -1857,6 +1866,10 @@ This command recreates replicas in the source node to the target node. After eac
 ====
 This operation does not hold necessary locks on the replicas that belong to on the source node. So don't perform other collection operations in this period.
 ====
+
+== MOVEREPLICA: Move a Replica to a New node
+
+// TODO 6.6
 
 [[CollectionsAPI-async]]
 == Asynchronous Calls
