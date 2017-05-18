@@ -113,6 +113,8 @@ Bug Fixes
 * SOLR-10412: v2 API: many API command specification properties are typed "number" but should instead be typed "integer"
   (Steve Rowe, Cao Manh Dat)
 
+* SOLR-10413: v2 API: parsed JSON type should be coerced to expected type (Cao Manh Dat, Noble Paul)
+
 Optimizations
 ----------------------
 
