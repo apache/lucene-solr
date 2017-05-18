@@ -14,16 +14,10 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.solr.rest.schema;
-import org.apache.solr.rest.SolrRestletTestBase;
-import org.junit.Test;
+ 
+/** 
+ * Common Util APIs related to Solr configuration.
+ */
+package org.apache.solr.util.configuration;
 
-public class TestSolrQueryParserDefaultOperatorResource extends SolrRestletTestBase {
 
-  @Test
-  public void testGetDefaultOperator() throws Exception {
-    assertQ("/schema/solrqueryparser/defaultoperator?indent=on&wt=xml",
-            "count(/response/str[@name='defaultOperator']) = 1",
-            "/response/str[@name='defaultOperator'][.='OR']");
-  }
-}

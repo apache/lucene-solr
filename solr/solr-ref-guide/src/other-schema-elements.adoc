@@ -21,12 +21,12 @@ Schema defaults and `copyFields` cannot be used to populate the `uniqueKey` fiel
 Further, the operation will fail if the `uniqueKey` field is used, but is multivalued (or inherits the multivalue-ness from the `fieldtype`). However, `uniqueKey` will continue to work, as long as the field is properly used.
 
 
-[[OtherSchemaElements-DefaultSearchField_QueryOperator]]
-== Default Search Field & Query Operator
+[[OtherSchemaElements-DefaultSearchField]]
+== Default Search Field
 
-Although they have been deprecated for quite some time, Solr still has support for Schema based configuration of a `<defaultSearchField/>` (which is superseded by the <<the-standard-query-parser.adoc#the-standard-query-parser,`df parameter`>>) and `<solrQueryParser defaultOperator="OR"/>` (which is superseded by the <<the-standard-query-parser.adoc#the-standard-query-parser,`q.op` parameter>>.
+Although it has been deprecated for quite some time, Solr still has support for Schema based configuration of a `<defaultSearchField/>` (which is superseded by the <<the-standard-query-parser.adoc#the-standard-query-parser,`df parameter`>>).
 
-If you have these options specified in your Schema, you are strongly encouraged to replace them with request parameters (or <<request-parameters-api.adoc#request-parameters-api,request parameter defaults>>) as support for them may be removed from future Solr release.
+If you have this option specified in your Schema, you are strongly encouraged to replace it with request parameters (or <<request-parameters-api.adoc#request-parameters-api,request parameter defaults>>) as support for it will be removed from future Solr release.
 
 [[OtherSchemaElements-Similarity]]
 == Similarity

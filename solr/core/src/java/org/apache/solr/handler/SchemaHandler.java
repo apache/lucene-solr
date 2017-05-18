@@ -146,12 +146,6 @@ public class SchemaHandler extends RequestHandlerBase implements SolrCoreAware, 
           rsp.add(IndexSchema.DEFAULT_SEARCH_FIELD, defaultSearchFieldName);
           break;
         }
-        case "/schema/solrqueryparser": {
-          SimpleOrderedMap<Object> props = new SimpleOrderedMap<>();
-          props.add(IndexSchema.DEFAULT_OPERATOR, req.getSchema().getQueryParserDefaultOperator());
-          rsp.add(IndexSchema.SOLR_QUERY_PARSER, props);
-          break;
-        }
         case "/schema/zkversion": {
           int refreshIfBelowVersion = -1;
           Object refreshParam = req.getParams().get("refreshIfBelowVersion");
@@ -173,10 +167,6 @@ public class SchemaHandler extends RequestHandlerBase implements SolrCoreAware, 
             }
           }
           rsp.add("zkversion", zkVersion);
-          break;
-        }
-        case "/schema/solrqueryparser/defaultoperator": {
-          rsp.add(IndexSchema.DEFAULT_OPERATOR, req.getSchema().getQueryParserDefaultOperator());
           break;
         }
         default: {

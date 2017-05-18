@@ -93,7 +93,6 @@ Other
   (Daniel Jelinski via Adrien Grand)
 
 ======================= Lucene 6.7.0 =======================
-(No Changes)
 
 ======================= Lucene 6.6.0 =======================
 
@@ -133,6 +132,11 @@ Bug Fixes
 
 * LUCENE-7824: Fix graph query analysis for multi-word synonym rules with common terms (eg. new york, new york city).
   (Jim Ferenczi)
+
+* LUCENE-7817: Pass cached query to onQueryCache instead of null.
+  (Christoph Kaser via Adrien Grand)
+
+* LUCENE-7831: CodecUtil should not seek to negative offsets. (Adrien Grand)
 
 Improvements
 

@@ -92,7 +92,7 @@ title_page:
   align: right
   logo:
     top: 10%
-    image: image:../../solr-sunOnly-small.png[pdfwidth=10%]
+    image: image:../../images/solr-sunOnly-small.png[pdfwidth=10%]
     align: right
   title:
     top: 55%

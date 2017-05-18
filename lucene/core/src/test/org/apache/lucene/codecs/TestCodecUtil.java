@@ -303,4 +303,17 @@ public class TestCodecUtil extends LuceneTestCase {
     fakeChecksum.set((1L << 32) - 1); // ok
     CodecUtil.writeCRC(fakeOutput);
   }
+
+  public void testTruncatedFileThrowsCorruptIndexException() throws IOException {
+    RAMFile file = new RAMFile();
+    IndexOutput output = new RAMOutputStream(file, false);
+    output.close();
+    IndexInput input = new RAMInputStream("file", file);
+    CorruptIndexException e = expectThrows(CorruptIndexException.class,
+        () -> CodecUtil.checksumEntireFile(input));
+    assertEquals("misplaced codec footer (file truncated?): length=0 but footerLength==16 (resource=RAMInputStream(name=file))", e.getMessage());
+    e = expectThrows(CorruptIndexException.class,
+        () -> CodecUtil.retrieveChecksum(input));
+    assertEquals("misplaced codec footer (file truncated?): length=0 but footerLength==16 (resource=RAMInputStream(name=file))", e.getMessage());
+  }
 }

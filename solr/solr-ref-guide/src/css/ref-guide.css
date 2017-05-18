@@ -77,7 +77,7 @@ body
 }
 
 body.DRAFT {
-    background-image: url("../draft-background.png");
+    background-image: url("../images/draft-background.png");
 }
 
 a

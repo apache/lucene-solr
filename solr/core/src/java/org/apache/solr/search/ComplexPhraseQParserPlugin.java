@@ -156,7 +156,7 @@ public class ComplexPhraseQParserPlugin extends QParserPlugin {
       
       lparser.setInOrder(inOrder);
 
-      QueryParser.Operator defaultOperator = QueryParsing.getQueryParserDefaultOperator(getReq().getSchema(), getParam(QueryParsing.OP));
+      QueryParser.Operator defaultOperator = QueryParsing.parseOP(getParam(QueryParsing.OP));
 
       if (QueryParser.Operator.AND.equals(defaultOperator))
         lparser.setDefaultOperator(org.apache.lucene.queryparser.classic.QueryParser.Operator.AND);
