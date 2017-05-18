@@ -61,7 +61,7 @@
           "description": "The name of the property"
         },
         "val": {
-          "type": "string",
+          "type": ["string","boolean","null"],
           "description": "The value of the property. If the value is empty or null, the property is unset."
         }
       },
