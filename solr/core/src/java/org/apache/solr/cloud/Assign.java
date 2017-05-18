@@ -110,7 +110,7 @@ public class Assign {
   
   public static String buildCoreName(String collectionName, String shard, Replica.Type type, int replicaNum) {
     // TODO: Adding the suffix is great for debugging, but may be an issue if at some point we want to support a way to change replica type
-    return collectionName + "_" + shard + "_replica_" + type.name().substring(0,1).toLowerCase() + replicaNum;
+    return String.format(Locale.ROOT, "%s_%s_replica_%s%s", collectionName, shard, type.name().substring(0,1).toLowerCase(Locale.ROOT), replicaNum);
   }
 
   public static String buildCoreName(DocCollection collection, String shard, Replica.Type type) {

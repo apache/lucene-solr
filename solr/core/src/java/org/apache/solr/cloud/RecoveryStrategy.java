@@ -261,7 +261,7 @@ public class RecoveryStrategy implements Runnable, Closeable {
       UpdateRequest ureq = new UpdateRequest();
       ureq.setParams(new ModifiableSolrParams());
       ureq.getParams().set(DistributedUpdateProcessor.COMMIT_END_POINT, true);
-//      ureq.getParams().set(UpdateParams.OPEN_SEARCHER, onlyLeaderIndexes);// nocommit: Why do we need to open searcher if "onlyLeaderIndexes"?
+//      ureq.getParams().set(UpdateParams.OPEN_SEARCHER, onlyLeaderIndexes);// Why do we need to open searcher if "onlyLeaderIndexes"?
       ureq.getParams().set(UpdateParams.OPEN_SEARCHER, false);
       ureq.setAction(AbstractUpdateRequest.ACTION.COMMIT, false, true).process(
           client);

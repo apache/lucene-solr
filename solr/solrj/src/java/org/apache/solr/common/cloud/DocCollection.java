@@ -342,14 +342,23 @@ public class DocCollection extends ZkNodeProps implements Iterable<Slice> {
     return super.equals(that) && Objects.equals(this.znode, other.znode) && this.znodeVersion == other.znodeVersion;
   }
 
+  /**
+   * @return the number of replicas of type {@link org.apache.solr.common.cloud.Replica.Type#NRT} this collection was created with
+   */
   public Integer getNumNrtReplicas() {
     return numNrtReplicas;
   }
 
+  /**
+   * @return the number of replicas of type {@link org.apache.solr.common.cloud.Replica.Type#TLOG} this collection was created with
+   */
   public Integer getNumTlogReplicas() {
     return numTlogReplicas;
   }
 
+  /**
+   * @return the number of replicas of type {@link org.apache.solr.common.cloud.Replica.Type#PULL} this collection was created with
+   */
   public Integer getNumPullReplicas() {
     return numPullReplicas;
   }

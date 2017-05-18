@@ -25,7 +25,6 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -898,7 +897,7 @@ public class CloudSolrClient extends SolrClient {
       String url = zkProps.getCoreUrl();
       urls.add(url);
       if (!directUpdatesToLeadersOnly) {
-        for (Replica replica : slice.getReplicas(EnumSet.of(Replica.Type.TLOG, Replica.Type.NRT))) {
+        for (Replica replica : slice.getReplicas()) {
           if (!replica.getNodeName().equals(leader.getNodeName()) &&
               !replica.getName().equals(leader.getName())) {
             ZkCoreNodeProps zkProps1 = new ZkCoreNodeProps(replica);
@@ -1325,7 +1324,6 @@ public class CloudSolrClient extends SolrClient {
         ClientUtils.addSlices(slices, collectionName, routeSlices, true);
       }
       Set<String> liveNodes = stateProvider.liveNodes();
-      log.debug("Live Nodes: {}", liveNodes);//nocommit
 
       List<String> leaderUrlList = null;
       List<String> urlList = null;
@@ -1340,10 +1338,7 @@ public class CloudSolrClient extends SolrClient {
           ZkCoreNodeProps coreNodeProps = new ZkCoreNodeProps(nodeProps);
           String node = coreNodeProps.getNodeName();
           if (!liveNodes.contains(coreNodeProps.getNodeName())
-              || Replica.State.getState(coreNodeProps.getState()) != Replica.State.ACTIVE) {
-            log.debug("{} not in liveNodes, skipping", coreNodeProps.getNodeName());//nocommit
-            continue;
-          }
+              || Replica.State.getState(coreNodeProps.getState()) != Replica.State.ACTIVE) continue;
           if (nodes.put(node, nodeProps) == null) {
             if (!sendToLeaders || coreNodeProps.isLeader()) {
               String url;
