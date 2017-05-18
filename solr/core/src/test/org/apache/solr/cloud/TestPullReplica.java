@@ -187,7 +187,6 @@ public class TestPullReplica extends SolrCloudTestCase {
     
     Slice s = docCollection.getSlices().iterator().next();
     try (HttpSolrClient leaderClient = getHttpSolrClient(s.getLeader().getCoreUrl())) {
-      leaderClient.commit(); // TODO: this shouldn't be necessary here
       assertEquals(1, leaderClient.query(new SolrQuery("*:*")).getResults().getNumFound());
     }
     
@@ -283,7 +282,7 @@ public class TestPullReplica extends SolrCloudTestCase {
   }
   
   public void testRealTimeGet() throws SolrServerException, IOException, KeeperException, InterruptedException {
-    // should be redirected to Replica.Type.REALTIME
+    // should be redirected to Replica.Type.NRT
     int numReplicas = random().nextBoolean()?1:2;
     CollectionAdminRequest.createCollection(collectionName, "conf", 1, numReplicas, 0, numReplicas)
       .setMaxShardsPerNode(100)
@@ -425,7 +424,7 @@ public class TestPullReplica extends SolrCloudTestCase {
     CollectionAdminRequest.createCollection(collectionName, "conf", 1, 1, 0, 1)
       .setMaxShardsPerNode(100)
       .process(cluster.getSolrClient());
-    cluster.getSolrClient().getZkStateReader().registerCore(collectionName); //TODO: Is this needed? 
+//    cluster.getSolrClient().getZkStateReader().registerCore(collectionName); //TODO: Is this needed? 
     waitForState("Expected collection to be created with 1 shard and 2 replicas", collectionName, clusterShape(1, 2));
     DocCollection docCollection = assertNumberOfReplicas(1, 0, 1, false, true);
     assertEquals(1, docCollection.getSlices().size());
