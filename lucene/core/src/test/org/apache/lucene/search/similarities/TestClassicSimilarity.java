@@ -19,24 +19,34 @@ package org.apache.lucene.search.similarities;
 
 import java.io.IOException;
 import java.util.Arrays;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.StringField;
+import org.apache.lucene.document.TextField;
 import org.apache.lucene.document.Field.Store;
 import org.apache.lucene.index.DirectoryReader;
+import org.apache.lucene.index.FieldInvertState;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
+import org.apache.lucene.index.MultiReader;
+import org.apache.lucene.index.SegmentInfos;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.DisjunctionMaxQuery;
+import org.apache.lucene.search.Explanation;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.search.TopDocs;
+import org.apache.lucene.search.similarities.TFIDFSimilarity.IDFStats;
 import org.apache.lucene.search.BooleanClause.Occur;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.LuceneTestCase;
+import org.apache.lucene.util.TestUtil;
+import org.apache.lucene.util.Version;
 
 public class TestClassicSimilarity extends LuceneTestCase {
   private Directory directory;
@@ -63,14 +73,6 @@ public class TestClassicSimilarity extends LuceneTestCase {
     IOUtils.close(indexReader, directory);
     super.tearDown();
   }
-  
-  // Javadocs give this as an example so we test to make sure it's correct:
-  public void testPrecisionLoss() throws Exception {
-    ClassicSimilarity sim = new ClassicSimilarity();
-    float v = sim.decodeNormValue(sim.encodeNormValue(.89f));
-    assertEquals(0.875f, v, 0.0001f);
-  }
-
 
   public void testHit() throws IOException {
     Query query = new TermQuery(new Term("test", "hit"));
@@ -159,16 +161,83 @@ public class TestClassicSimilarity extends LuceneTestCase {
     assertTrue(topDocs.scoreDocs[0].score != 0);
   }
   
-  public void testSaneNormValues() {
+  public void testSaneNormValues() throws IOException {
     ClassicSimilarity sim = new ClassicSimilarity();
     for (int i = 0; i < 256; i++) {
-      float boost = sim.decodeNormValue((byte) i);
+      float boost = TFIDFSimilarity.OLD_NORM_TABLE[i];
       assertFalse("negative boost: " + boost + ", byte=" + i, boost < 0.0f);
       assertFalse("inf bost: " + boost + ", byte=" + i, Float.isInfinite(boost));
       assertFalse("nan boost for byte=" + i, Float.isNaN(boost));
       if (i > 0) {
-        assertTrue("boost is not increasing: " + boost + ",byte=" + i, boost > sim.decodeNormValue((byte)(i-1)));
+        assertTrue("boost is not increasing: " + boost + ",byte=" + i, boost > TFIDFSimilarity.OLD_NORM_TABLE[i-1]);
       }
+    }
+
+    TFIDFSimilarity.IDFStats stats = (IDFStats) sim.computeWeight(1f, new IndexSearcher(new MultiReader()).collectionStatistics("foo"));
+    for (int i = 0; i < 256; i++) {
+      float boost = stats.normTable[i];
+      assertFalse("negative boost: " + boost + ", byte=" + i, boost < 0.0f);
+      assertFalse("inf bost: " + boost + ", byte=" + i, Float.isInfinite(boost));
+      assertFalse("nan boost for byte=" + i, Float.isNaN(boost));
+      if (i > 0) {
+        assertTrue("boost is not decreasing: " + boost + ",byte=" + i, boost < stats.normTable[i-1]);
+      }
+    }
+  }
+
+  public void testNormEncodingBackwardCompatibility() throws IOException {
+    Similarity similarity = new ClassicSimilarity();
+    for (int indexCreatedVersionMajor : new int[] { Version.LUCENE_6_0_0.major, Version.LATEST.major}) {
+      for (int length : new int[] {1, 4, 16 }) { // these length values are encoded accurately on both cases
+        Directory dir = newDirectory();
+        // set the version on the directory
+        new SegmentInfos(indexCreatedVersionMajor).commit(dir);
+        IndexWriter w = new IndexWriter(dir, newIndexWriterConfig().setSimilarity(similarity));
+        Document doc = new Document();
+        String value = IntStream.range(0, length).mapToObj(i -> "b").collect(Collectors.joining(" "));
+        doc.add(new TextField("foo", value, Store.NO));
+        w.addDocument(doc);
+        IndexReader reader = DirectoryReader.open(w);
+        IndexSearcher searcher = newSearcher(reader);
+        searcher.setSimilarity(similarity);
+        Explanation expl = searcher.explain(new TermQuery(new Term("foo", "b")), 0);
+        Explanation fieldNorm = findExplanation(expl, "fieldNorm");
+        assertNotNull(fieldNorm);
+        assertEquals(fieldNorm.toString(), 1/Math.sqrt(length), fieldNorm.getValue(), 0f);
+        w.close();
+        reader.close();
+        dir.close();
+      }
+    }
+  }
+
+  private static Explanation findExplanation(Explanation expl, String text) {
+    if (expl.getDescription().startsWith(text)) {
+      return expl;
+    } else {
+      for (Explanation sub : expl.getDetails()) {
+        Explanation match = findExplanation(sub, text);
+        if (match != null) {
+          return match;
+        }
+      }
+    }
+    return null;
+  }
+
+  public void testSameNormsAsBM25() {
+    ClassicSimilarity sim1 = new ClassicSimilarity();
+    BM25Similarity sim2 = new BM25Similarity();
+    sim2.setDiscountOverlaps(true);
+    for (int iter = 0; iter < 100; ++iter) {
+      final int length = TestUtil.nextInt(random(), 1, 1000);
+      final int position = random().nextInt(length);
+      final int numOverlaps = random().nextInt(length);
+      FieldInvertState state = new FieldInvertState(Version.LATEST.major, "foo", position, length, numOverlaps, 100);
+      assertEquals(
+          sim2.computeNorm(state),
+          sim1.computeNorm(state),
+          0f);
     }
   }
 }

@@ -63,6 +63,9 @@ Improvements
 * LUCENE-7489: Better storage of sparse doc-values fields with the default
   codec. (Adrien Grand)
 
+* LUCENE-7730: More accurate encoding of the length normalization factor
+  thanks to the removal of index-time boosts. (Adrien Grand)
+
 Optimizations
 
 * LUCENE-7416: BooleanQuery optimizes queries that have queries that occur both

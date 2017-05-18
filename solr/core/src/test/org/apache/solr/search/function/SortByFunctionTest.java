@@ -65,9 +65,9 @@ public class SortByFunctionTest extends AbstractSolrTestCase {
     assertQ(req("fl", "id,score", "q", "f_t:ipod", "sort", "score desc"),
             "//*[@numFound='4']",
             "//result/doc[1]/int[@name='id'][.='1']",
-            "//result/doc[2]/int[@name='id'][.='4']",
-            "//result/doc[3]/int[@name='id'][.='2']",
-            "//result/doc[4]/int[@name='id'][.='3']"
+            "//result/doc[2]/int[@name='id'][.='2']",
+            "//result/doc[3]/int[@name='id'][.='3']",
+            "//result/doc[4]/int[@name='id'][.='4']"
     );
 
 
