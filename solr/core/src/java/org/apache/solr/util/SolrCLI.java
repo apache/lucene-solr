@@ -61,6 +61,8 @@ import java.util.stream.Stream;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
 
+import javax.net.ssl.SSLPeerUnverifiedException;
+
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.GnuParser;
 import org.apache.commons.cli.HelpFormatter;
@@ -114,6 +116,7 @@ import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.ContentStreamBase;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.security.Sha256AuthenticationProvider;
+import org.apache.solr.util.configuration.SSLConfigurationsFactory;
 import org.noggit.CharArr;
 import org.noggit.JSONParser;
 import org.noggit.JSONWriter;
@@ -252,6 +255,8 @@ public class SolrCLI {
       System.out.println(Version.LATEST);
       exit(0);
     }
+
+    SSLConfigurationsFactory.current().init();
 
     Tool tool = findTool(args);
     CommandLine cli = parseCmdLine(args, tool.getOptions());
@@ -867,6 +872,8 @@ public class SolrCLI {
       while (System.nanoTime() < timeout) {
         try {
           return getStatus(solrUrl);
+        } catch (SSLPeerUnverifiedException exc) {
+            throw exc;
         } catch (Exception exc) {
           if (exceptionIsAuthRelated(exc)) {
             throw exc;
@@ -2543,6 +2550,10 @@ public class SolrCLI {
             .withLongOpt("serverDir")
             .create('d'),
           OptionBuilder
+            .withArgName("FORCE")
+            .withDescription("Force option in case Solr is run as root")
+            .create("force"),
+          OptionBuilder
             .withArgName("DIR")
             .hasArg()
             .isRequired(false)
@@ -2911,6 +2922,7 @@ public class SolrCLI {
       String zkHostArg = (zkHost != null) ? " -z "+zkHost : "";
       String memArg = (memory != null) ? " -m "+memory : "";
       String cloudModeArg = cloudMode ? "-cloud " : "";
+      String forceArg = cli.hasOption("force") ? " -force" : "";
 
       String addlOpts = cli.getOptionValue('a');
       String addlOptsArg = (addlOpts != null) ? " -a \""+addlOpts+"\"" : "";
@@ -2929,8 +2941,8 @@ public class SolrCLI {
         solrHome = solrHome.substring(cwdPath.length()+1);
 
       String startCmd =
-          String.format(Locale.ROOT, "%s start %s -p %d -s \"%s\" %s %s %s %s %s",
-              callScript, cloudModeArg, port, solrHome, hostArg, zkHostArg, memArg, extraArgs, addlOptsArg);
+          String.format(Locale.ROOT, "%s start %s -p %d -s \"%s\" %s %s %s %s %s %s",
+              callScript, cloudModeArg, port, solrHome, hostArg, zkHostArg, memArg, forceArg, extraArgs, addlOptsArg);
       startCmd = startCmd.replaceAll("\\s+", " ").trim(); // for pretty printing
 
       echo("\nStarting up Solr on port " + port + " using command:");
@@ -3526,49 +3538,59 @@ public class SolrCLI {
     public Option[] getOptions() {
       return new Option[]{
           OptionBuilder
-              .withArgName("enable")
-              .withDescription("Enable authentication.")
-              .create("enable"),
+          .withArgName("type")
+          .hasArg()
+          .withDescription("The authentication mechanism to enable. Defaults to 'basicAuth'.")
+          .create("type"),
           OptionBuilder
-              .withArgName("disable")
-              .withDescription("Disable existing authentication.")
-              .create("disable"),
+          .withArgName("credentials")
+          .hasArg()
+          .withDescription("Credentials in the format username:password. Example: -credentials solr:SolrRocks")
+          .create("credentials"),
           OptionBuilder
-              .withArgName("type")
-              .hasArg()
-              .withDescription("basicAuth")
-              .create("type"),
+          .withArgName("prompt")
+          .hasArg()
+          .withDescription("Prompts the user to provide the credentials. Use either -credentials or -prompt, not both")
+          .create("prompt"),
           OptionBuilder
-              .withArgName("credentials")
-              .hasArg()
-              .withDescription("Credentials in the format username:password. Example: -credentials solr:SolrRocks")
-              .create("credentials"),
+          .withArgName("blockUnknown")
+          .withDescription("Blocks all access for unknown users (requires authentication for all endpoints)")
+          .hasArg()
+          .create("blockUnknown"),
           OptionBuilder
-              .withArgName("prompt")
-              .withDescription("Prompt for credentials. Use either -credentials or -prompt, not both")
-              .create("prompt"),              
+          .withArgName("solrIncludeFile")
+          .hasArg()
+          .withDescription("The Solr include file which contains overridable environment variables for configuring Solr configurations")
+          .create("solrIncludeFile"),
           OptionBuilder
-              .withArgName("blockUnknown")
-              .withDescription("Blocks all access for unknown users (requires authentication for all endpoints)")
-              .hasOptionalArg()
-              .create("blockUnknown"),
+          .withArgName("updateIncludeFileOnly")
+          .withDescription("Only update the solr.in.sh or solr.in.cmd file, and skip actual enabling/disabling"
+              + " authentication (i.e. don't update security.json)")
+          .hasArg()
+          .create("updateIncludeFileOnly"),
           OptionBuilder
-              .withArgName("solrIncludeFile")
-              .hasArg()
-              .withDescription("The Solr include file which contains overridable environment variables for configuring Solr configurations")
-              .create("solrIncludeFile"),
+          .withArgName("authConfDir")
+          .hasArg()
+          .isRequired()
+          .withDescription("This is where any authentication related configuration files, if any, would be placed.")
+          .create("authConfDir"),
           OptionBuilder
-              .withArgName("solrUrl")
-              .hasArg()
-              .withDescription("Solr URL")
-              .create("solrUrl"),
+          .withArgName("solrUrl")
+          .hasArg()
+          .withDescription("Solr URL")
+          .create("solrUrl"),
+          OptionBuilder
+          .withArgName("zkHost")
+          .hasArg()
+          .withDescription("ZooKeeper host")
+          .create("zkHost"),
       };
     }
 
     @Override
     public int runTool(CommandLine cli) throws Exception {
-      if (cli.getOptions().length == 0 || cli.getArgs().length > 0 || cli.hasOption("h")) {
-        new HelpFormatter().printHelp("bin/solr auth [OPTIONS]", getToolOptions(this));
+      if (cli.getOptions().length == 0 || cli.getArgs().length == 0 || cli.getArgs().length > 1 || cli.hasOption("h")) {
+        new HelpFormatter().printHelp("bin/solr auth <enable|disable> [OPTIONS]", getToolOptions(this));
         return 1;
       }
 
@@ -3578,128 +3600,153 @@ public class SolrCLI {
         exit(1);
       }
 
-      if (cli.hasOption("enable") && cli.hasOption("disable")) {
-        System.out.println("You have specified both -enable and -disable. Only one should be provided.");
-        return 1;
-      }
-      if  (cli.hasOption("enable")) {
-        String zkHost = getZkHost(cli);
-        if (zkHost == null) {
-          System.out.println("ZK Host not found. Solr should be running in cloud mode");
-          exit(1);
-        }
+      String cmd = cli.getArgs()[0];
+      boolean prompt = Boolean.parseBoolean(cli.getOptionValue("prompt", "false"));
+      boolean updateIncludeFileOnly = Boolean.parseBoolean(cli.getOptionValue("updateIncludeFileOnly", "false"));
+      switch (cmd) {
+        case "enable":
+          if (!prompt && !cli.hasOption("credentials")) {
+            System.out.println("Option -credentials or -prompt is required with enable.");
+            new HelpFormatter().printHelp("bin/solr auth <enable|disable> [OPTIONS]", getToolOptions(this));
+            exit(1);
+          } else if (!prompt && (cli.getOptionValue("credentials") == null || !cli.getOptionValue("credentials").contains(":"))) {
+            System.out.println("Option -credentials is not in correct format.");
+            new HelpFormatter().printHelp("bin/solr auth <enable|disable> [OPTIONS]", getToolOptions(this));
+            exit(1);
+          }
 
-        
-        if (cli.hasOption("credentials") == false && cli.hasOption("prompt") == false) {
-          System.out.println("Option -credentials or -prompt is required with -enable.");
-          new HelpFormatter().printHelp("bin/solr auth [OPTIONS]", getToolOptions(this));
-          exit(1);
-        } else if (cli.hasOption("prompt") == false &&
-            (cli.getOptionValue("credentials") == null || !cli.getOptionValue("credentials").contains(":"))) {
-          System.out.println("Option -credentials is not in correct format.");
-          new HelpFormatter().printHelp("bin/solr auth [OPTIONS]", getToolOptions(this));
-          exit(1);
-        }
+          String zkHost = null;
 
-        String username, password;
-        if (cli.hasOption("credentials")) {
-          String credentials = cli.getOptionValue("credentials");
-          username = credentials.split(":")[0];
-          password = credentials.split(":")[1];
-        } else {
-          Console console = System.console();
-          username = console.readLine("Enter username: ");
-          password = new String(console.readPassword("Enter password: "));
-        }
-        // check if security is already enabled or not
-        try (SolrZkClient zkClient = new SolrZkClient(zkHost, 10000)) {
-          if (zkClient.exists("/security.json", true)) {
-            byte oldSecurityBytes[] = zkClient.getData("/security.json", null, null, true);
-            if (!"{}".equals(new String(oldSecurityBytes, StandardCharsets.UTF_8).trim())) {
-              System.out.println("Security is already enabled. You can disable it with 'bin/solr auth -disable'. Existing security.json: \n"
-                  + new String(oldSecurityBytes, StandardCharsets.UTF_8));
+          if (!updateIncludeFileOnly) {
+            try {
+              zkHost = getZkHost(cli);
+            } catch (Exception ex) {
+              if (cli.hasOption("zkHost")) {
+                System.out.println("Couldn't get ZooKeeper host. Please make sure that ZooKeeper is running and the correct zkHost has been passed in.");
+              } else {
+                System.out.println("Couldn't get ZooKeeper host. Please make sure Solr is running in cloud mode, or a zkHost has been passed in.");
+              }
               exit(1);
             }
+            if (zkHost == null) {
+              if (cli.hasOption("zkHost")) {
+                System.out.println("Couldn't get ZooKeeper host. Please make sure that ZooKeeper is running and the correct zkHost has been passed in.");
+              } else {
+                System.out.println("Couldn't get ZooKeeper host. Please make sure Solr is running in cloud mode, or a zkHost has been passed in.");
+              }
+              exit(1);
+            }
+
+            // check if security is already enabled or not
+            try (SolrZkClient zkClient = new SolrZkClient(zkHost, 10000)) {
+              if (zkClient.exists("/security.json", true)) {
+                byte oldSecurityBytes[] = zkClient.getData("/security.json", null, null, true);
+                if (!"{}".equals(new String(oldSecurityBytes, StandardCharsets.UTF_8).trim())) {
+                  System.out.println("Security is already enabled. You can disable it with 'bin/solr auth disable'. Existing security.json: \n"
+                      + new String(oldSecurityBytes, StandardCharsets.UTF_8));
+                  exit(1);
+                }
+              }
+            }
           }
-        }
 
-        boolean blockUnknown = cli.getOptionValue("blockUnknown") == null ?
-            cli.hasOption("blockUnknown"): Boolean.valueOf(cli.getOptionValue("blockUnknown"));
+          String username, password;
+          if (cli.hasOption("credentials")) {
+            String credentials = cli.getOptionValue("credentials");
+            username = credentials.split(":")[0];
+            password = credentials.split(":")[1];
+          } else {
+            Console console = System.console();
+            username = console.readLine("Enter username: ");
+            password = new String(console.readPassword("Enter password: "));
+          }
 
-            String securityJson = "{" +
-                "\n  \"authentication\":{" +
-                "\n   \"blockUnknown\": " + blockUnknown + "," +
-                "\n   \"class\":\"solr.BasicAuthPlugin\"," +
-                "\n   \"credentials\":{\""+username+"\":\"" + Sha256AuthenticationProvider.getSaltedHashedValue(password) + "\"}" +
-                "\n  }," +
-                "\n  \"authorization\":{" +
-                "\n   \"class\":\"solr.RuleBasedAuthorizationPlugin\"," +
-                "\n   \"permissions\":[" +
-                "\n {\"name\":\"security-edit\", \"role\":\"admin\"}," +
-                "\n {\"name\":\"collection-admin-edit\", \"role\":\"admin\"}," +
-                "\n {\"name\":\"core-admin-edit\", \"role\":\"admin\"}" +
-                "\n   ]," +
-                "\n   \"user-role\":{\""+username+"\":\"admin\"}" +
-                "\n  }" +
-                "\n}";
+          boolean blockUnknown = Boolean.valueOf(cli.getOptionValue("blockUnknown", "false"));
+
+          String securityJson = "{" +
+              "\n  \"authentication\":{" +
+              "\n   \"blockUnknown\": " + blockUnknown + "," +
+              "\n   \"class\":\"solr.BasicAuthPlugin\"," +
+              "\n   \"credentials\":{\"" + username + "\":\"" + Sha256AuthenticationProvider.getSaltedHashedValue(password) + "\"}" +
+              "\n  }," +
+              "\n  \"authorization\":{" +
+              "\n   \"class\":\"solr.RuleBasedAuthorizationPlugin\"," +
+              "\n   \"permissions\":[" +
+              "\n {\"name\":\"security-edit\", \"role\":\"admin\"}," +
+              "\n {\"name\":\"collection-admin-edit\", \"role\":\"admin\"}," +
+              "\n {\"name\":\"core-admin-edit\", \"role\":\"admin\"}" +
+              "\n   ]," +
+              "\n   \"user-role\":{\"" + username + "\":\"admin\"}" +
+              "\n  }" +
+              "\n}";
+
+          if (!updateIncludeFileOnly) {
             System.out.println("Uploading following security.json: " + securityJson);
-
             try (SolrZkClient zkClient = new SolrZkClient(zkHost, 10000)) {
               zkClient.setData("/security.json", securityJson.getBytes(StandardCharsets.UTF_8), true);
             }
+          }
 
-            String solrIncludeFilename = cli.getOptionValue("solrIncludeFile");
-            File includeFile = new File(solrIncludeFilename);
-            if (includeFile.exists() == false || includeFile.canWrite() == false) {
-              System.out.println("Solr include file " + solrIncludeFilename + " doesn't exist or is not writeable.");
-              printAuthEnablingInstructions(username, password);
-              System.exit(0);
-            }
-            File basicAuthConfFile = new File(includeFile.getParent() + File.separator + "basicAuth.conf");
-            
-            if (basicAuthConfFile.getParentFile().canWrite() == false) {
-              System.out.println("Cannot write to file: " + basicAuthConfFile.getAbsolutePath());
-              printAuthEnablingInstructions(username, password);
-              System.exit(0);
-            }
-            
-            FileUtils.writeStringToFile(basicAuthConfFile, 
-                "httpBasicAuthUser=" + username + "\nhttpBasicAuthPassword=" + password, StandardCharsets.UTF_8);
+          String solrIncludeFilename = cli.getOptionValue("solrIncludeFile");
+          File includeFile = new File(solrIncludeFilename);
+          if (includeFile.exists() == false || includeFile.canWrite() == false) {
+            System.out.println("Solr include file " + solrIncludeFilename + " doesn't exist or is not writeable.");
+            printAuthEnablingInstructions(username, password);
+            System.exit(0);
+          }
+          String authConfDir = cli.getOptionValue("authConfDir");
+          File basicAuthConfFile = new File(authConfDir + File.separator + "basicAuth.conf");
 
-            // update the solr.in.sh file to contain the necessary authentication lines
-            updateIncludeFileEnableAuth(includeFile, basicAuthConfFile.getAbsolutePath(), username, password);
-            return 0;
-      } else if (cli.hasOption("disable")) {
-        String zkHost = getZkHost(cli);
-        if (zkHost == null) {
-          stdout.print("ZK Host not found. Solr should be running in cloud mode");
+          if (basicAuthConfFile.getParentFile().canWrite() == false) {
+            System.out.println("Cannot write to file: " + basicAuthConfFile.getAbsolutePath());
+            printAuthEnablingInstructions(username, password);
+            System.exit(0);
+          }
+
+          FileUtils.writeStringToFile(basicAuthConfFile,
+              "httpBasicAuthUser=" + username + "\nhttpBasicAuthPassword=" + password, StandardCharsets.UTF_8);
+
+          // update the solr.in.sh file to contain the necessary authentication lines
+          updateIncludeFileEnableAuth(includeFile, basicAuthConfFile.getAbsolutePath());
+          return 0;
+
+        case "disable":
+          if (!updateIncludeFileOnly) {
+            zkHost = getZkHost(cli);
+            if (zkHost == null) {
+              stdout.print("ZK Host not found. Solr should be running in cloud mode");
+              exit(1);
+            }
+
+            System.out.println("Uploading following security.json: {}");
+
+            try (SolrZkClient zkClient = new SolrZkClient(zkHost, 10000)) {
+              zkClient.setData("/security.json", "{}".getBytes(StandardCharsets.UTF_8), true);
+            }
+          }
+
+          solrIncludeFilename = cli.getOptionValue("solrIncludeFile");
+          includeFile = new File(solrIncludeFilename);
+          if (!includeFile.exists() || !includeFile.canWrite()) {
+            System.out.println("Solr include file " + solrIncludeFilename + " doesn't exist or is not writeable.");
+            System.out.println("Security has been disabled. Please remove any SOLR_AUTH_TYPE or SOLR_AUTHENTICATION_OPTS configuration from solr.in.sh/solr.in.cmd.\n");
+            System.exit(0);
+          }
+
+          // update the solr.in.sh file to comment out the necessary authentication lines
+          updateIncludeFileDisableAuth(includeFile);
+          return 0;
+
+        default:
+          System.out.println("Valid auth commands are: enable, disable");
           exit(1);
-        }
-
-        System.out.println("Uploading following security.json: {}");
-
-        try (SolrZkClient zkClient = new SolrZkClient(zkHost, 10000)) {
-          zkClient.setData("/security.json", "{}".getBytes(StandardCharsets.UTF_8), true);
-        }
-
-        String solrIncludeFilename = cli.getOptionValue("solrIncludeFile");
-        File includeFile = new File(solrIncludeFilename);
-        if (includeFile.exists() == false || includeFile.canWrite() == false) {
-          System.out.println("Solr include file " + solrIncludeFilename + " doesn't exist or is not writeable.");
-          System.out.println("Security has been disabled. Please remove any SOLR_AUTH_TYPE or SOLR_AUTHENTICATION_OPTS configuration from solr.in.sh/solr.in.cmd.\n");
-          System.exit(0);
-        }
-
-        // update the solr.in.sh file to comment out the necessary authentication lines
-        updateIncludeFileDisableAuth(includeFile);
-        return 0;
       }
 
-      System.out.println("Options not understood (should be -enable or -disable).");
-      new HelpFormatter().printHelp("bin/solr auth [OPTIONS]", getToolOptions(this));
+      System.out.println("Options not understood.");
+      new HelpFormatter().printHelp("bin/solr auth <enable|disable> [OPTIONS]", getToolOptions(this));
       return 1;
     }
-    
+
     private void printAuthEnablingInstructions(String username, String password) {
       if (SystemUtils.IS_OS_WINDOWS) {
         System.out.println("\nAdd the following lines to the solr.in.cmd file so that the solr.cmd script can use subsequently.\n");
@@ -3708,11 +3755,11 @@ public class SolrCLI {
       } else {
         System.out.println("\nAdd the following lines to the solr.in.sh file so that the ./solr script can use subsequently.\n");
         System.out.println("SOLR_AUTH_TYPE=\"basic\"\n"
-            + "SOLR_AUTHENTICATION_OPTS=\"-DbasicAuth=" + username + ":" + password + "\"\n");
+            + "SOLR_AUTHENTICATION_OPTS=\"-Dbasicauth=" + username + ":" + password + "\"\n");
       }
     }
 
-    private void updateIncludeFileEnableAuth(File includeFile, String basicAuthConfFile, String username, String password) throws IOException {
+    private void updateIncludeFileEnableAuth(File includeFile, String basicAuthConfFile) throws IOException {
       List<String> includeFileLines = FileUtils.readLines(includeFile, StandardCharsets.UTF_8);
       for (int i=0; i<includeFileLines.size(); i++) {
         String line = includeFileLines.get(i);
@@ -3738,7 +3785,7 @@ public class SolrCLI {
 
       System.out.println("Written out credentials file: " + basicAuthConfFile + ", updated Solr include file: " + includeFile.getAbsolutePath() + ".");
     }
-    
+
     private void updateIncludeFileDisableAuth(File includeFile) throws IOException {
       List<String> includeFileLines = FileUtils.readLines(includeFile, StandardCharsets.UTF_8);
       boolean hasChanged = false;
@@ -3762,7 +3809,7 @@ public class SolrCLI {
     @Override
     protected void runImpl(CommandLine cli) throws Exception {}
   }
-  
+
   public static class UtilsTool extends ToolBase {
     private Path serverPath;
     private Path logsPath;

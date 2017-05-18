@@ -2441,7 +2441,7 @@ public class TestIndexSorting extends LuceneTestCase {
         assertTrue(sparseValues.advanceExact(docID));
         assertTrue(sparseBinaryValues.advanceExact(docID));
         assertTrue(normsValues.advanceExact(docID));
-        assertEquals(124, normsValues.longValue());
+        assertEquals(1, normsValues.longValue());
         assertEquals(127-docID, (int) sparseValues.longValue());
         assertEquals(new BytesRef(Integer.toString(127-docID)), sparseBinaryValues.binaryValue());
       } else {

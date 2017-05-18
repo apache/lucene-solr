@@ -164,7 +164,7 @@ curl --user solr:SolrRocks -H 'Content-type:application/json' -d '{
   "set-permission": {"collection": null,
                      "path":"/admin/collections",
                      "params":{"action":[LIST, CREATE]},
-                     "before: 3,
+                     "before": 3,
                      "role": "admin"}
 }' http://localhost:8983/solr/admin/authorization
 ----

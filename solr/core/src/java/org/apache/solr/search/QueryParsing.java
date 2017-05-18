@@ -59,18 +59,15 @@ public class QueryParsing {
 
 
   /**
-   * Returns the "preferred" default operator for use by Query Parsers,
-   * based on the settings in the IndexSchema which may be overridden using 
-   * an optional String override value.
-   *
-   * @see IndexSchema#getQueryParserDefaultOperator()
-   * @see #OP
+   * Returns the default operator for use by Query Parsers, parsed from the df string
+   * @param notUsed is not used, but is there for back compat with 3rd party QParsers
+   * @param df the df string from request
+   * @deprecated this method is here purely not to break code back compat in 7.x
    */
-  public static QueryParser.Operator getQueryParserDefaultOperator(final IndexSchema sch,
-                                                       final String override) {
-    String val = override;
-    if (null == val) val = sch.getQueryParserDefaultOperator();
-    return "AND".equals(val) ? QueryParser.Operator.AND : QueryParser.Operator.OR;
+  @Deprecated
+  public static QueryParser.Operator getQueryParserDefaultOperator(final IndexSchema notUsed,
+                                                       final String df) {
+    return parseOP(df);
   }
 
   /**
@@ -396,4 +393,12 @@ public class QueryParsing {
     return out;
   }
 
+  /**
+   * Parses default operator string into Operator object
+   * @param operator the string from request
+   * @return Operator.AND if string equals "AND", else return Operator.OR (default)
+   */
+  public static QueryParser.Operator parseOP(String operator) {
+    return "and".equalsIgnoreCase(operator) ? QueryParser.Operator.AND : QueryParser.Operator.OR;
+  }
 }

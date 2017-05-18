@@ -603,7 +603,7 @@ final class DefaultIndexingChain extends DocConsumer {
       // PerField.invert to allow for later downgrading of the index options:
       fi.setIndexOptions(fieldType.indexOptions());
       
-      fp = new PerField(fi, invert);
+      fp = new PerField(docWriter.getIndexCreatedVersionMajor(), fi, invert);
       fp.next = fieldHash[hashPos];
       fieldHash[hashPos] = fp;
       totalFieldCount++;
@@ -633,6 +633,7 @@ final class DefaultIndexingChain extends DocConsumer {
   /** NOTE: not static: accesses at least docState, termsHash. */
   private final class PerField implements Comparable<PerField> {
 
+    final int indexCreatedVersionMajor;
     final FieldInfo fieldInfo;
     final Similarity similarity;
 
@@ -659,7 +660,8 @@ final class DefaultIndexingChain extends DocConsumer {
     // reused
     TokenStream tokenStream;
 
-    public PerField(FieldInfo fieldInfo, boolean invert) {
+    public PerField(int indexCreatedVersionMajor, FieldInfo fieldInfo, boolean invert) {
+      this.indexCreatedVersionMajor = indexCreatedVersionMajor;
       this.fieldInfo = fieldInfo;
       similarity = docState.similarity;
       if (invert) {
@@ -668,7 +670,7 @@ final class DefaultIndexingChain extends DocConsumer {
     }
 
     void setInvertState() {
-      invertState = new FieldInvertState(fieldInfo.name);
+      invertState = new FieldInvertState(indexCreatedVersionMajor, fieldInfo.name);
       termsHashPerField = termsHash.addField(invertState, fieldInfo);
       if (fieldInfo.omitsNorms() == false) {
         assert norms == null;

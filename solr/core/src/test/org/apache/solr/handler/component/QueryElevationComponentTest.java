@@ -97,8 +97,8 @@ public class QueryElevationComponentTest extends SolrTestCaseJ4 {
           CommonParams.FL, "id, score, [elevated]")
           , "//*[@numFound='3']"
           , "//result/doc[1]/float[@name='id'][.='7.0']"
-          , "//result/doc[2]/float[@name='id'][.='8.0']"
-          , "//result/doc[3]/float[@name='id'][.='9.0']",
+          , "//result/doc[2]/float[@name='id'][.='9.0']"
+          , "//result/doc[3]/float[@name='id'][.='8.0']",
           "//result/doc[1]/bool[@name='[elevated]'][.='true']",
           "//result/doc[2]/bool[@name='[elevated]'][.='false']",
           "//result/doc[3]/bool[@name='[elevated]'][.='false']"

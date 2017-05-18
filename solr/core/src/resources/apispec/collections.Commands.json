@@ -42,7 +42,7 @@
           }
         },
         "numShards": {
-          "type": "number",
+          "type": "integer",
           "description": "The number of shards to be created as part of the collection. Shards are logical partitions of a single collection. Each shard has at least one replica, but more replicas for each shard can be defined with the replicationFactor property. This is a required parameter when using the 'compositeId' router."
         },
         "shards": {
@@ -50,7 +50,7 @@
           "description": "A comma-separated list of shard names, e.g., shard-x,shard-y,shard-z. This is a required parameter when using the 'implicit' router."
         },
         "replicationFactor": {
-          "type": "number",
+          "type": "integer",
           "description": "The number of replicas to be created for each shard. Replicas are physical copies of each shard, acting as failover for the shard."
         },
         "nodeSet": {

@@ -71,17 +71,10 @@ import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.core.PluginInfo;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.request.SolrQueryRequest;
-import org.apache.solr.schema.DoublePointField;
 import org.apache.solr.schema.FieldType;
-import org.apache.solr.schema.FloatPointField;
-import org.apache.solr.schema.IntPointField;
-import org.apache.solr.schema.LongPointField;
+import org.apache.solr.schema.NumberType;
 import org.apache.solr.schema.SchemaField;
 import org.apache.solr.schema.StrField;
-import org.apache.solr.schema.TrieDoubleField;
-import org.apache.solr.schema.TrieFloatField;
-import org.apache.solr.schema.TrieIntField;
-import org.apache.solr.schema.TrieLongField;
 import org.apache.solr.search.CollapsingQParserPlugin;
 import org.apache.solr.search.DocIterator;
 import org.apache.solr.search.DocList;
@@ -216,7 +209,7 @@ public class ExpandComponent extends SearchComponent implements PluginInfoInitia
     FieldType fieldType = schemaField.getType();
 
     SortedDocValues values = null;
-    long nullValue = 0;
+    long nullValue = 0L;
 
     if(fieldType instanceof StrField) {
       //Get The Top Level SortedDocValues
@@ -231,21 +224,20 @@ public class ExpandComponent extends SearchComponent implements PluginInfoInitia
     } else {
       //Get the nullValue for the numeric collapse field
       String defaultValue = searcher.getSchema().getField(field).getDefaultValue();
-      if(defaultValue != null) {
-        if(fieldType instanceof TrieIntField || fieldType instanceof TrieLongField ||
-            fieldType instanceof IntPointField || fieldType instanceof LongPointField) {
+      
+      final NumberType numType = fieldType.getNumberType();
+
+      // Since the expand component depends on the operation of the collapse component, 
+      // which validates that numeric field types are 32-bit,
+      // we don't need to handle invalid 64-bit field types here.
+      if (defaultValue != null) {
+        if (numType == NumberType.INTEGER) {
           nullValue = Long.parseLong(defaultValue);
-        } else if(fieldType instanceof TrieFloatField || fieldType instanceof FloatPointField){
+        } else if (numType == NumberType.FLOAT) {
           nullValue = Float.floatToIntBits(Float.parseFloat(defaultValue));
-        } else if(fieldType instanceof TrieDoubleField || fieldType instanceof DoublePointField){
-          nullValue = Double.doubleToLongBits(Double.parseDouble(defaultValue));
         }
-      } else {
-        if(fieldType instanceof TrieFloatField || fieldType instanceof FloatPointField){
-          nullValue = Float.floatToIntBits(0.0f);
-        } else if(fieldType instanceof TrieDoubleField || fieldType instanceof DoublePointField){
-          nullValue = Double.doubleToLongBits(0.0f);
-        }
+      } else if (NumberType.FLOAT.equals(numType)) { // Integer case already handled by nullValue defaulting to 0
+        nullValue = Float.floatToIntBits(0.0f);
       }
     }
 

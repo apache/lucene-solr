@@ -69,13 +69,8 @@ import org.apache.solr.request.LocalSolrQueryRequest;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.request.SolrRequestInfo;
 import org.apache.solr.schema.FieldType;
-import org.apache.solr.schema.FloatPointField;
-import org.apache.solr.schema.IntPointField;
-import org.apache.solr.schema.LongPointField;
 import org.apache.solr.schema.StrField;
-import org.apache.solr.schema.TrieFloatField;
-import org.apache.solr.schema.TrieIntField;
-import org.apache.solr.schema.TrieLongField;
+import org.apache.solr.schema.NumberType;
 import org.apache.solr.uninverting.UninvertingReader;
 
 import static org.apache.solr.common.params.CommonParams.SORT;
@@ -966,14 +961,26 @@ public class CollapsingQParserPlugin extends QParserPlugin {
       } else if (funcQuery != null) {
         this.collapseStrategy =  new OrdValueSourceStrategy(maxDoc, nullPolicy, new int[valueCount], groupHeadSelector, this.needsScores, boostDocs, funcQuery, searcher, collapseValues);
       } else {
-        if (fieldType instanceof TrieIntField || fieldType instanceof IntPointField) {
-          this.collapseStrategy = new OrdIntStrategy(maxDoc, nullPolicy, new int[valueCount], groupHeadSelector, this.needsScores, boostDocs, collapseValues);
-        } else if (fieldType instanceof TrieFloatField || fieldType instanceof FloatPointField) {
-          this.collapseStrategy = new OrdFloatStrategy(maxDoc, nullPolicy, new int[valueCount], groupHeadSelector, this.needsScores, boostDocs, collapseValues);
-        } else if (fieldType instanceof TrieLongField || fieldType instanceof LongPointField) {
-          this.collapseStrategy =  new OrdLongStrategy(maxDoc, nullPolicy, new int[valueCount], groupHeadSelector, this.needsScores, boostDocs, collapseValues);
-        } else {
-          throw new IOException("min/max must be either Int/Long/Float field types");
+        NumberType numType = fieldType.getNumberType();
+        if (null == numType) {
+          throw new IOException("min/max must be either Int/Long/Float based field types");
+        }
+        switch (numType) {
+          case INTEGER: {
+            this.collapseStrategy = new OrdIntStrategy(maxDoc, nullPolicy, new int[valueCount], groupHeadSelector, this.needsScores, boostDocs, collapseValues);
+            break;
+          }
+          case FLOAT: {
+            this.collapseStrategy = new OrdFloatStrategy(maxDoc, nullPolicy, new int[valueCount], groupHeadSelector, this.needsScores, boostDocs, collapseValues);
+            break;
+          }
+          case LONG: {
+            this.collapseStrategy =  new OrdLongStrategy(maxDoc, nullPolicy, new int[valueCount], groupHeadSelector, this.needsScores, boostDocs, collapseValues);
+            break;
+          }
+          default: {
+            throw new IOException("min/max must be either Int/Long/Float field types");
+          }
         }
       }
     }
@@ -1150,12 +1157,20 @@ public class CollapsingQParserPlugin extends QParserPlugin {
       } else if (funcQuery != null) {
         this.collapseStrategy =  new IntValueSourceStrategy(maxDoc, size, collapseField, nullValue, nullPolicy, groupHeadSelector, this.needsScores, boostDocsMap, funcQuery, searcher);
       } else {
-        if (fieldType instanceof TrieIntField || fieldType instanceof IntPointField) {
-          this.collapseStrategy = new IntIntStrategy(maxDoc, size, collapseField, nullValue, nullPolicy, groupHeadSelector, this.needsScores, boostDocsMap);
-        } else if (fieldType instanceof TrieFloatField || fieldType instanceof FloatPointField) {
-          this.collapseStrategy = new IntFloatStrategy(maxDoc, size, collapseField, nullValue, nullPolicy, groupHeadSelector, this.needsScores, boostDocsMap);
-        } else {
-          throw new IOException("min/max must be Int or Float field types when collapsing on numeric fields");
+        NumberType numType = fieldType.getNumberType();
+        assert null != numType; // shouldn't make it here for non-numeric types
+        switch (numType) {
+          case INTEGER: {
+            this.collapseStrategy = new IntIntStrategy(maxDoc, size, collapseField, nullValue, nullPolicy, groupHeadSelector, this.needsScores, boostDocsMap);
+            break;
+          }
+          case FLOAT: {
+            this.collapseStrategy = new IntFloatStrategy(maxDoc, size, collapseField, nullValue, nullPolicy, groupHeadSelector, this.needsScores, boostDocsMap);
+            break;
+          }
+          default: {
+            throw new IOException("min/max must be Int or Float field types when collapsing on numeric fields");
+          }
         }
       }
     }
@@ -1262,14 +1277,11 @@ public class CollapsingQParserPlugin extends QParserPlugin {
   }
 
   private static class CollectorFactory {
-
+    /** @see #isNumericCollapsible */
+    private final static EnumSet<NumberType> NUMERIC_COLLAPSIBLE_TYPES = EnumSet.of(NumberType.INTEGER,
+                                                                                    NumberType.FLOAT);
     private boolean isNumericCollapsible(FieldType collapseFieldType) {
-      if (collapseFieldType instanceof TrieIntField || collapseFieldType instanceof IntPointField ||
-          collapseFieldType instanceof TrieFloatField || collapseFieldType instanceof FloatPointField) {
-        return true;
-      } else {
-        return false;
-      }
+      return NUMERIC_COLLAPSIBLE_TYPES.contains(collapseFieldType.getNumberType());
     }
 
     public DelegatingCollector getCollector(String collapseField,
@@ -1352,14 +1364,15 @@ public class CollapsingQParserPlugin extends QParserPlugin {
 
           int nullValue = 0;
 
-          if (collapseFieldType instanceof TrieFloatField || collapseFieldType instanceof FloatPointField) {
+          // must be non-null at this point
+          if (collapseFieldType.getNumberType().equals(NumberType.FLOAT)) {
             if (defaultValue != null) {
               nullValue = Float.floatToIntBits(Float.parseFloat(defaultValue));
             } else {
               nullValue = Float.floatToIntBits(0.0f);
             }
           } else {
-              if (defaultValue != null) {
+            if (defaultValue != null) {
               nullValue = Integer.parseInt(defaultValue);
             }
           }
@@ -1386,18 +1399,19 @@ public class CollapsingQParserPlugin extends QParserPlugin {
                                             funcQuery,
                                             searcher);
 
-        } else if(isNumericCollapsible(collapseFieldType)) {
+        } else if (isNumericCollapsible(collapseFieldType)) {
 
           int nullValue = 0;
 
-          if (collapseFieldType instanceof TrieFloatField || collapseFieldType instanceof FloatPointField) {
-            if(defaultValue != null) {
+          // must be non-null at this point
+          if (collapseFieldType.getNumberType().equals(NumberType.FLOAT)) {
+            if (defaultValue != null) {
               nullValue = Float.floatToIntBits(Float.parseFloat(defaultValue));
             } else {
               nullValue = Float.floatToIntBits(0.0f);
             }
           } else {
-            if(defaultValue != null) {
+            if (defaultValue != null) {
               nullValue = Integer.parseInt(defaultValue);
             }
           }

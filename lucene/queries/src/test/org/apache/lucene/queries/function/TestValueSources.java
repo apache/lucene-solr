@@ -367,7 +367,7 @@ public class TestValueSources extends LuceneTestCase {
       // no norm field (so agnostic to indexed similarity)
       searcher.setSimilarity(new ClassicSimilarity());
       ValueSource vs = new NormValueSource("byte");
-      assertHits(new FunctionQuery(vs), new float[] { 0f, 0f });
+      assertHits(new FunctionQuery(vs), new float[] { 1f, 1f });
 
       // regardless of whether norms exist, value source exists == 0
       assertAllExist(vs);

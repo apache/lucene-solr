@@ -23,6 +23,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
+import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
@@ -59,6 +60,24 @@ public class V2ApiIntegrationTest extends SolrCloudTestCase {
         new V2Request.Builder("/c/"+COLL_NAME+"/_introspect")
             .withParams(params).build());
     assertEquals("Command not found!", Utils.getObjectByPath(result, false, "/spec[0]/commands/XXXX"));
+  }
+
+  @Test
+  public void testSingleWarning() throws Exception {
+    NamedList resp = cluster.getSolrClient().request(
+        new V2Request.Builder("/c/"+COLL_NAME+"/_introspect").build());
+    List warnings = resp.getAll("WARNING");
+    assertEquals(1, warnings.size());
+  }
+
+  @Test
+  public void testSetPropertyValidationOfCluster() throws IOException, SolrServerException {
+    NamedList resp = cluster.getSolrClient().request(
+      new V2Request.Builder("/cluster").withMethod(SolrRequest.METHOD.POST).withPayload("{set-property: {name: autoAddReplicas, val:false}}").build());
+    assertTrue(resp.toString().contains("status=0"));
+    resp = cluster.getSolrClient().request(
+        new V2Request.Builder("/cluster").withMethod(SolrRequest.METHOD.POST).withPayload("{set-property: {name: autoAddReplicas, val:null}}").build());
+    assertTrue(resp.toString().contains("status=0"));
   }
 
   @Test

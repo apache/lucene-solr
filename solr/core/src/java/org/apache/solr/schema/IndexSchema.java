@@ -94,7 +94,6 @@ import static java.util.Collections.singletonMap;
 public class IndexSchema {
   public static final String COPY_FIELD = "copyField";
   public static final String COPY_FIELDS = COPY_FIELD + "s";
-  public static final String DEFAULT_OPERATOR = "defaultOperator";
   public static final String DEFAULT_SCHEMA_FILE = "schema.xml";
   public static final String DEFAULT_SEARCH_FIELD = "defaultSearchField";
   public static final String DESTINATION = "dest";
@@ -112,7 +111,6 @@ public class IndexSchema {
   public static final String SCHEMA = "schema";
   public static final String SIMILARITY = "similarity";
   public static final String SLASH = "/";
-  public static final String SOLR_QUERY_PARSER = "solrQueryParser";
   public static final String SOURCE = "source";
   public static final String TYPE = "type";
   public static final String TYPES = "types";
@@ -148,9 +146,6 @@ public class IndexSchema {
   protected List<SchemaAware> schemaAware = new ArrayList<>();
 
   protected String defaultSearchFieldName=null;
-  protected String queryParserDefaultOperator = "OR";
-  protected boolean isExplicitQueryParserDefaultOperator = false;
-
 
   protected Map<String, List<CopyField>> copyFieldsMap = new HashMap<>();
   public Map<String,List<CopyField>> getCopyFieldsMap() { return Collections.unmodifiableMap(copyFieldsMap); }
@@ -310,13 +305,6 @@ public class IndexSchema {
    */
   public String getDefaultSearchFieldName() {
     return defaultSearchFieldName;
-  }
-
-  /**
-   * default operator ("AND" or "OR") for QueryParser
-   */
-  public String getQueryParserDefaultOperator() {
-    return queryParserDefaultOperator;
   }
 
   protected SchemaField uniqueKeyField;
@@ -540,15 +528,10 @@ public class IndexSchema {
       }
 
       //                      /schema/solrQueryParser/@defaultOperator
-      expression = stepsToPath(SCHEMA, SOLR_QUERY_PARSER, AT + DEFAULT_OPERATOR);
+      expression = stepsToPath(SCHEMA, "solrQueryParser", AT + "defaultOperator");
       node = (Node) xpath.evaluate(expression, document, XPathConstants.NODE);
-      if (node==null) {
-        log.debug("Default query parser operator not set in Schema");
-      } else {
-        isExplicitQueryParserDefaultOperator = true;
-        queryParserDefaultOperator=node.getNodeValue().trim();
-        log.warn("[{}] query parser default operator is {}. WARNING: Deprecated, please use 'q.op' on request instead.",
-            coreName, queryParserDefaultOperator);
+      if (node != null) {
+        throw new SolrException(ErrorCode.SERVER_ERROR, "Setting default operator in schema (solrQueryParser/@defaultOperator) not supported");
       }
 
       //                      /schema/uniqueKey/text()
@@ -1402,9 +1385,6 @@ public class IndexSchema {
       VERSION(IndexSchema.VERSION, sp -> sp.schema.getVersion()),
       UNIQUE_KEY(IndexSchema.UNIQUE_KEY, sp -> sp.schema.uniqueKeyFieldName),
       DEFAULT_SEARCH_FIELD(IndexSchema.DEFAULT_SEARCH_FIELD, sp -> sp.schema.defaultSearchFieldName),
-      SOLR_QUERY_PARSER(IndexSchema.SOLR_QUERY_PARSER, sp -> sp.schema.isExplicitQueryParserDefaultOperator ?
-          singletonMap(DEFAULT_OPERATOR, sp.schema.queryParserDefaultOperator) :
-          null),
       SIMILARITY(IndexSchema.SIMILARITY, sp -> sp.schema.isExplicitSimilarity ?
           sp.schema.similarityFactory.getNamedPropertyValues() :
           null),

@@ -26,7 +26,6 @@ import org.apache.lucene.analysis.Tokenizer;
 import org.apache.lucene.analysis.tokenattributes.PayloadAttribute;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
-import org.apache.lucene.index.FieldInvertState;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.NoMergePolicy;
 import org.apache.lucene.index.RandomIndexWriter;
@@ -143,9 +142,9 @@ public class TestPayloadScoreQuery extends LuceneTestCase {
     // check includeSpanScore makes a difference here
     searcher.setSimilarity(new MultiplyingSimilarity());
     try {
-      checkQuery(q, new MaxPayloadFunction(), new int[]{ 122, 222 }, new float[]{ 41.802513122558594f, 34.13160705566406f });
-      checkQuery(q, new MinPayloadFunction(), new int[]{ 222, 122 }, new float[]{ 34.13160705566406f, 20.901256561279297f });
-      checkQuery(q, new AveragePayloadFunction(), new int[] { 122, 222 }, new float[]{ 38.3189697265625f, 34.13160705566406f });
+      checkQuery(q, new MaxPayloadFunction(), new int[]{ 122, 222 }, new float[]{ 20.901256561279297f, 17.06580352783203f });
+      checkQuery(q, new MinPayloadFunction(), new int[]{ 222, 122 }, new float[]{ 17.06580352783203f, 10.450628280639648f });
+      checkQuery(q, new AveragePayloadFunction(), new int[] { 122, 222 }, new float[]{ 19.15948486328125f, 17.06580352783203f });
       checkQuery(q, new MaxPayloadFunction(), false, new int[]{122, 222}, new float[]{4.0f, 4.0f});
       checkQuery(q, new MinPayloadFunction(), false, new int[]{222, 122}, new float[]{4.0f, 2.0f});
       checkQuery(q, new AveragePayloadFunction(), false, new int[]{222, 122}, new float[]{4.0f, 3.666666f});
@@ -298,7 +297,7 @@ public class TestPayloadScoreQuery extends LuceneTestCase {
     //Make everything else 1 so we see the effect of the payload
     //!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     @Override
-    public float lengthNorm(FieldInvertState state) {
+    public float lengthNorm(int length) {
       return 1;
     }
 

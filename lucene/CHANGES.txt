@@ -63,6 +63,9 @@ Improvements
 * LUCENE-7489: Better storage of sparse doc-values fields with the default
   codec. (Adrien Grand)
 
+* LUCENE-7730: More accurate encoding of the length normalization factor
+  thanks to the removal of index-time boosts. (Adrien Grand)
+
 Optimizations
 
 * LUCENE-7416: BooleanQuery optimizes queries that have queries that occur both
@@ -93,7 +96,12 @@ Other
   (Daniel Jelinski via Adrien Grand)
 
 ======================= Lucene 6.7.0 =======================
-(No Changes)
+
+Other
+
+* LUCENE-7800: Remove code that potentially rethrows checked exceptions 
+  from methods that don't declare them ("sneaky throw" hack). (Robert Muir,
+  Uwe Schindler, Dawid Weiss)  
 
 ======================= Lucene 6.6.0 =======================
 
@@ -126,6 +134,18 @@ Bug Fixes
 * LUCENE-5365, LUCENE-7818: Fix incorrect condition in queryparser's
   QueryNodeOperation#logicalAnd().  (Olivier Binda, Amrit Sarkar,
   AppChecker via Uwe Schindler)
+  
+* LUCENE-7821: The classic and flexible query parsers, as well as Solr's
+ "lucene"/standard query parser, should require " TO " in range queries,
+  and accept "TO" as endpoints in range queries. (hossman, Steve Rowe)
+
+* LUCENE-7824: Fix graph query analysis for multi-word synonym rules with common terms (eg. new york, new york city).
+  (Jim Ferenczi)
+
+* LUCENE-7817: Pass cached query to onQueryCache instead of null.
+  (Christoph Kaser via Adrien Grand)
+
+* LUCENE-7831: CodecUtil should not seek to negative offsets. (Adrien Grand)
 
 Improvements
 

@@ -193,6 +193,10 @@ class DocumentsWriterPerThread {
     return fieldInfos;
   }
 
+  public int getIndexCreatedVersionMajor() {
+    return indexWriter.segmentInfos.getIndexCreatedVersionMajor();
+  }
+
   final void testPoint(String message) {
     if (enableTestPoints) {
       assert infoStream.isEnabled("TP"); // don't enable unless you need them.

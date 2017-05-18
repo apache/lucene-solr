@@ -16,6 +16,7 @@
  */
 package org.apache.solr.search;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashSet;
@@ -915,4 +916,21 @@ public class TestCollapseQParserPlugin extends SolrTestCaseJ4 {
     
   }
 
+  @Test
+  public void test64BitCollapseFieldException() {
+    ModifiableSolrParams doubleParams = new ModifiableSolrParams();
+    doubleParams.add("q", "*:*");
+    doubleParams.add("fq", "{!collapse field=group_d}");
+    expectThrows(RuntimeException.class, IOException.class, () -> h.query(req(doubleParams)));
+
+    ModifiableSolrParams dateParams = new ModifiableSolrParams();
+    dateParams.add("q", "*:*");
+    dateParams.add("fq", "{!collapse field=group_dt}");
+    expectThrows(RuntimeException.class, IOException.class, () -> h.query(req(dateParams)));
+
+    ModifiableSolrParams longParams = new ModifiableSolrParams();
+    longParams.add("q", "*:*");
+    longParams.add("fq", "{!collapse field=group_l}");
+    expectThrows(RuntimeException.class, IOException.class, () -> h.query(req(longParams)));
+  }
 }

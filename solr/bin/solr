@@ -163,22 +163,26 @@ fi
 SOLR_URL_SCHEME=http
 SOLR_JETTY_CONFIG=()
 SOLR_SSL_OPTS=""
-if [ -n "$SOLR_SSL_KEY_STORE" ]; then
+if [ -z "$SOLR_SSL_ENABLED" ]; then
+  if [ -n "$SOLR_SSL_KEY_STORE" ]; then
+    SOLR_SSL_ENABLED="true" # implicitly from earlier behaviour
+  else
+    SOLR_SSL_ENABLED="false"
+  fi
+fi
+if [ "$SOLR_SSL_ENABLED" == "true" ]; then
   SOLR_JETTY_CONFIG+=("--module=https")
   SOLR_URL_SCHEME=https
-  SOLR_SSL_OPTS+=" -Dsolr.jetty.keystore=$SOLR_SSL_KEY_STORE"
-  if [ -n "$SOLR_SSL_KEY_STORE_PASSWORD" ]; then
-    SOLR_SSL_OPTS+=" -Dsolr.jetty.keystore.password=$SOLR_SSL_KEY_STORE_PASSWORD"
+  if [ -n "$SOLR_SSL_KEY_STORE" ]; then
+    SOLR_SSL_OPTS+=" -Dsolr.jetty.keystore=$SOLR_SSL_KEY_STORE"
   fi
+
   if [ -n "$SOLR_SSL_KEY_STORE_TYPE" ]; then
     SOLR_SSL_OPTS+=" -Dsolr.jetty.keystore.type=$SOLR_SSL_KEY_STORE_TYPE"
   fi
 
   if [ -n "$SOLR_SSL_TRUST_STORE" ]; then
     SOLR_SSL_OPTS+=" -Dsolr.jetty.truststore=$SOLR_SSL_TRUST_STORE"
-  fi
-  if [ -n "$SOLR_SSL_TRUST_STORE_PASSWORD" ]; then
-    SOLR_SSL_OPTS+=" -Dsolr.jetty.truststore.password=$SOLR_SSL_TRUST_STORE_PASSWORD"
   fi
   if [ -n "$SOLR_SSL_TRUST_STORE_TYPE" ]; then
     SOLR_SSL_OPTS+=" -Dsolr.jetty.truststore.type=$SOLR_SSL_TRUST_STORE_TYPE"
@@ -194,18 +198,12 @@ if [ -n "$SOLR_SSL_KEY_STORE" ]; then
   if [ -n "$SOLR_SSL_CLIENT_KEY_STORE" ]; then
     SOLR_SSL_OPTS+=" -Djavax.net.ssl.keyStore=$SOLR_SSL_CLIENT_KEY_STORE"
 
-    if [ -n "$SOLR_SSL_CLIENT_KEY_STORE_PASSWORD" ]; then
-      SOLR_SSL_OPTS+=" -Djavax.net.ssl.keyStorePassword=$SOLR_SSL_CLIENT_KEY_STORE_PASSWORD"
-    fi
     if [ -n "$SOLR_SSL_CLIENT_KEY_STORE_TYPE" ]; then
       SOLR_SSL_OPTS+=" -Djavax.net.ssl.keyStoreType=$SOLR_SSL_CLIENT_KEY_STORE_TYPE"
     fi
   else
     if [ -n "$SOLR_SSL_KEY_STORE" ]; then
       SOLR_SSL_OPTS+=" -Djavax.net.ssl.keyStore=$SOLR_SSL_KEY_STORE"
-    fi
-    if [ -n "$SOLR_SSL_KEY_STORE_PASSWORD" ]; then
-      SOLR_SSL_OPTS+=" -Djavax.net.ssl.keyStorePassword=$SOLR_SSL_KEY_STORE_PASSWORD"
     fi
     if [ -n "$SOLR_SSL_KEY_STORE_TYPE" ]; then
       SOLR_SSL_OPTS+=" -Djavax.net.ssl.keyStoreType=$SOLR_SSL_KEYSTORE_TYPE"
@@ -215,20 +213,12 @@ if [ -n "$SOLR_SSL_KEY_STORE" ]; then
   if [ -n "$SOLR_SSL_CLIENT_TRUST_STORE" ]; then
     SOLR_SSL_OPTS+=" -Djavax.net.ssl.trustStore=$SOLR_SSL_CLIENT_TRUST_STORE"
 
-    if [ -n "$SOLR_SSL_CLIENT_TRUST_STORE_PASSWORD" ]; then
-      SOLR_SSL_OPTS+=" -Djavax.net.ssl.trustStorePassword=$SOLR_SSL_CLIENT_TRUST_STORE_PASSWORD"
-    fi
-
     if [ -n "$SOLR_SSL_CLIENT_TRUST_STORE_TYPE" ]; then
       SOLR_SSL_OPTS+=" -Djavax.net.ssl.trustStoreType=$SOLR_SSL_CLIENT_TRUST_STORE_TYPE"
     fi
   else
     if [ -n "$SOLR_SSL_TRUST_STORE" ]; then
       SOLR_SSL_OPTS+=" -Djavax.net.ssl.trustStore=$SOLR_SSL_TRUST_STORE"
-    fi
-
-    if [ -n "$SOLR_SSL_TRUST_STORE_PASSWORD" ]; then
-      SOLR_SSL_OPTS+=" -Djavax.net.ssl.trustStorePassword=$SOLR_SSL_TRUST_STORE_PASSWORD"
     fi
 
     if [ -n "$SOLR_SSL_TRUST_STORE_TYPE" ]; then
@@ -294,7 +284,7 @@ function print_usage() {
   if [ -z "$CMD" ]; then
     echo ""
     echo "Usage: solr COMMAND OPTIONS"
-    echo "       where COMMAND is one of: start, stop, restart, status, healthcheck, create, create_core, create_collection, delete, version, zk"
+    echo "       where COMMAND is one of: start, stop, restart, status, healthcheck, create, create_core, create_collection, delete, version, zk, auth"
     echo ""
     echo "  Standalone server example (start Solr running in the background on port 8984):"
     echo ""
@@ -543,6 +533,35 @@ function print_usage() {
     echo ""
     echo "             <path>: The Zookeeper path to create. Leading slash is assumed if not present."
     echo "                     Intermediate nodes are created as needed if not present."
+    echo ""
+  elif [ "$CMD" == "auth" ]; then
+    echo ""
+    echo "Usage: solr auth enable [-type basicAuth] -credentials user:pass [-blockUnknown <true|false>] [-updateIncludeFileOnly <true|false>]"
+    echo "       solr auth enable [-type basicAuth] -prompt <true|false> [-blockUnknown <true|false>] [-updateIncludeFileOnly <true|false>]"
+    echo "       solr auth disable [-updateIncludeFileOnly <true|false>]"
+    echo ""
+    echo "  -type <type>                           The authentication mechanism to enable. Defaults to 'basicAuth'."
+    echo ""
+    echo "  -credentials <user:pass>               The username and password of the initial user"
+    echo "                                         Note: only one of -prompt or -credentials must be provided"
+    echo ""
+    echo "  -prompt <true|false>                   Prompts the user to provide the credentials"
+    echo "                                         Note: only one of -prompt or -credentials must be provided"
+    echo ""
+    echo "  -blockUnknown <true|false>             When true, this blocks out access to unauthenticated users. When not provided,"
+    echo "                                         this defaults to false (i.e. unauthenticated users can access all endpoints, except the"
+    echo "                                         operations like collection-edit, security-edit, core-admin-edit etc.). Check the reference"
+    echo "                                         guide for Basic Authentication for more details."
+    echo ""
+    echo "  -updateIncludeFileOnly <true|false>    Only update the solr.in.sh or solr.in.cmd file, and skip actual enabling/disabling"
+    echo "                                         authentication (i.e. don't update security.json)"
+    echo ""
+    echo "  -z zkHost                              Zookeeper connection string"
+    echo ""
+    echo "  -d <dir>                               Specify the Solr server directory"
+    echo ""
+    echo "  -s <dir>                               Specify the Solr home directory. This is where any credentials or authentication"
+    echo "                                         configuration files (e.g. basicAuth.conf) would be placed."
     echo ""
   fi
 } # end print_usage
@@ -1187,19 +1206,130 @@ if [[ "$SCRIPT_CMD" == "zk" ]]; then
 fi
 
 if [[ "$SCRIPT_CMD" == "auth" ]]; then
-    if [ -z "$AUTH_PORT" ]; then
-      for ID in `ps auxww | grep java | grep start\.jar | awk '{print $2}' | sort -r`
-        do
-          port=`jetty_port "$ID"`
-          if [ "$port" != "" ]; then
-            AUTH_PORT=$port
+  declare -a AUTH_PARAMS
+  if [ $# -gt 0 ]; then
+    while true; do
+      case "$1" in
+        enable|disable)
+            AUTH_OP=$1
+            AUTH_PARAMS=("${AUTH_PARAMS[@]}" "$AUTH_OP")
+            shift
+        ;;
+        -z|-zkhost|zkHost)
+            ZK_HOST="$2"
+            AUTH_PARAMS=("${AUTH_PARAMS[@]}" "-zkHost" "$ZK_HOST")
+            shift 2
+        ;;
+        -t|-type)
+            AUTH_TYPE="$2"
+            AUTH_PARAMS=("${AUTH_PARAMS[@]}" "-type" "$AUTH_TYPE")
+            shift 2
+        ;;
+        -credentials)
+            AUTH_CREDENTIALS="$2"
+            AUTH_PARAMS=("${AUTH_PARAMS[@]}" "-credentials" "$AUTH_CREDENTIALS")
+            shift 2
+        ;;
+        -solrIncludeFile)
+            SOLR_INCLUDE="$2"
+            shift 2
+        ;;
+        -prompt)
+            AUTH_PARAMS=("${AUTH_PARAMS[@]}" "-prompt" "$2")
+            shift
+        ;;
+        -blockUnknown)
+            AUTH_PARAMS=("${AUTH_PARAMS[@]}" "-blockUnknown" "$2")
+            shift
             break
-          fi
-        done
+        ;;
+        -updateIncludeFileOnly)
+            AUTH_PARAMS=("${AUTH_PARAMS[@]}" "-updateIncludeFileOnly" "$2")
+            shift
+            break
+        ;;
+        -d|-dir)
+            if [[ -z "$2" || "${2:0:1}" == "-" ]]; then
+              print_usage "$SCRIPT_CMD" "Server directory is required when using the $1 option!"
+              exit 1
+            fi
+
+            if [[ "$2" == "." || "$2" == "./" || "$2" == ".." || "$2" == "../" ]]; then
+              SOLR_SERVER_DIR="$(pwd)/$2"
+            else
+              # see if the arg value is relative to the tip vs full path
+              if [[ "$2" != /* ]] && [[ -d "$SOLR_TIP/$2" ]]; then
+                SOLR_SERVER_DIR="$SOLR_TIP/$2"
+              else
+                SOLR_SERVER_DIR="$2"
+              fi
+            fi
+            # resolve it to an absolute path
+            SOLR_SERVER_DIR="$(cd "$SOLR_SERVER_DIR"; pwd)"
+            shift 2
+        ;;
+        -s|-solr.home)
+            if [[ -z "$2" || "${2:0:1}" == "-" ]]; then
+              print_usage "$SCRIPT_CMD" "Solr home directory is required when using the $1 option!"
+              exit 1
+            fi
+
+            SOLR_HOME="$2"
+            shift 2
+        ;;
+        -help|-usage|-h)
+            print_usage "$SCRIPT_CMD"
+            exit 0
+        ;;
+        --)
+            shift
+            break
+        ;;
+        *)
+            shift
+            break
+        ;;
+      esac
+    done
+  fi
+
+  if [ -z "$SOLR_SERVER_DIR" ]; then
+    SOLR_SERVER_DIR="$DEFAULT_SERVER_DIR"
+  fi
+  if [ ! -e "$SOLR_SERVER_DIR" ]; then
+    echo -e "\nSolr server directory $SOLR_SERVER_DIR not found!\n"
+    exit 1
+  fi
+  if [ -z "$SOLR_HOME" ]; then
+    SOLR_HOME="$SOLR_SERVER_DIR/solr"
+  else
+    if [[ $SOLR_HOME != /* ]] && [[ -d "$SOLR_SERVER_DIR/$SOLR_HOME" ]]; then
+      SOLR_HOME="$SOLR_SERVER_DIR/$SOLR_HOME"
+      SOLR_PID_DIR="$SOLR_HOME"
+    elif [[ $SOLR_HOME != /* ]] && [[ -d "`pwd`/$SOLR_HOME" ]]; then
+      SOLR_HOME="$(pwd)/$SOLR_HOME"
     fi
-    solr_include_file=$SOLR_INCLUDE
-    run_tool auth "$@" -solrUrl "$SOLR_URL_SCHEME://$SOLR_TOOL_HOST:$AUTH_PORT/solr" -solrIncludeFile "$solr_include_file"
-    exit $?
+  fi
+
+  if [ -z "$AUTH_OP" ]; then
+    print_usage "$SCRIPT_CMD"
+    exit 0
+  fi
+
+  AUTH_PARAMS=("${AUTH_PARAMS[@]}" "-solrIncludeFile" "$SOLR_INCLUDE")
+
+  if [ -z "$AUTH_PORT" ]; then
+    for ID in `ps auxww | grep java | grep start\.jar | awk '{print $2}' | sort -r`
+      do
+        port=`jetty_port "$ID"`
+        if [ "$port" != "" ]; then
+          AUTH_PORT=$port
+          break
+        fi
+      done
+  fi
+  run_tool auth ${AUTH_PARAMS[@]} -solrUrl "$SOLR_URL_SCHEME://$SOLR_TOOL_HOST:$AUTH_PORT/solr" -authConfDir "$SOLR_HOME"
+  exit $?
 fi
 
 
@@ -1339,6 +1469,7 @@ if [ $# -gt 0 ]; then
         ;;
         -force)
             FORCE=true
+            PASS_TO_RUN_EXAMPLE+=" -force"
             shift
         ;;
         --)
@@ -1696,7 +1827,7 @@ function launch_solr() {
 
 
   # If SSL-related system props are set, add them to SOLR_OPTS
-  if [ -n "$SOLR_SSL_OPTS" ]; then
+  if [ "$SOLR_SSL_ENABLED" ]; then
     # If using SSL and solr.jetty.https.port not set explicitly, use the jetty.port
     SSL_PORT_PROP="-Dsolr.jetty.https.port=$SOLR_PORT"
     SOLR_OPTS+=($SOLR_SSL_OPTS "$SSL_PORT_PROP")

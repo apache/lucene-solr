@@ -154,7 +154,7 @@ public class SimpleQParserPlugin extends QParserPlugin {
       parser = new SolrSimpleQueryParser(req.getSchema().getQueryAnalyzer(), queryFields, enabledOps, this, schema);
 
       // Set the default operator to be either 'AND' or 'OR' for the query.
-      QueryParser.Operator defaultOp = QueryParsing.getQueryParserDefaultOperator(req.getSchema(), defaultParams.get(QueryParsing.OP));
+      QueryParser.Operator defaultOp = QueryParsing.parseOP(defaultParams.get(QueryParsing.OP));
 
       if (defaultOp == QueryParser.Operator.AND) {
         parser.setDefaultOperator(BooleanClause.Occur.MUST);

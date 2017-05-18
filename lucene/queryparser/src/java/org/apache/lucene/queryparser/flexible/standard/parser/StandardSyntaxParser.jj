@@ -445,9 +445,9 @@ QueryNode Term(CharSequence field) : {
        }
      }
      | ( ( <RANGEIN_START> {startInc=true;} | <RANGEEX_START> )
-         ( goop1=<RANGE_GOOP>|goop1=<RANGE_QUOTED> )
-         [ <RANGE_TO> ]
-         ( goop2=<RANGE_GOOP>|goop2=<RANGE_QUOTED> )
+         ( goop1=<RANGE_GOOP>|goop1=<RANGE_QUOTED>|goop1=<RANGE_TO> )
+         ( <RANGE_TO> )
+         ( goop2=<RANGE_GOOP>|goop2=<RANGE_QUOTED>|goop2=<RANGE_TO> )
          ( <RANGEIN_END> {endInc=true;} | <RANGEEX_END>))
        [ <CARAT> boost=<NUMBER> ]
         {

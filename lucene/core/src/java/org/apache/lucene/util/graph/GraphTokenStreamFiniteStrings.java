@@ -48,7 +48,6 @@ import static org.apache.lucene.util.automaton.Operations.DEFAULT_MAX_DETERMINIZ
  * This class also provides helpers to explore the different paths of the {@link Automaton}.
  */
 public final class GraphTokenStreamFiniteStrings {
-  private final Map<BytesRef, Integer> termToID = new HashMap<>();
   private final Map<Integer, BytesRef> idToTerm = new HashMap<>();
   private final Map<Integer, Integer> idToInc = new HashMap<>();
   private final Automaton det;
@@ -247,35 +246,18 @@ public final class GraphTokenStreamFiniteStrings {
   }
 
   /**
-   * Gets an integer id for a given term.
-   *
-   * If there is no position gaps for this token then we can reuse the id for the same term if it appeared at another
-   * position without a gap.  If we have a position gap generate a new id so we can keep track of the position
-   * increment.
+   * Gets an integer id for a given term and saves the position increment if needed.
    */
   private int getTermID(int incr, int prevIncr, BytesRef term) {
     assert term != null;
     boolean isStackedGap = incr == 0 && prevIncr > 1;
-    boolean hasGap = incr > 1;
-    Integer id;
-    if (hasGap || isStackedGap) {
-      id = idToTerm.size();
-      idToTerm.put(id, BytesRef.deepCopyOf(term));
-
-      // stacked token should have the same increment as original token at this position
-      if (isStackedGap) {
-        idToInc.put(id, prevIncr);
-      } else {
-        idToInc.put(id, incr);
-      }
-    } else {
-      id = termToID.get(term);
-      if (id == null) {
-        term = BytesRef.deepCopyOf(term);
-        id = idToTerm.size();
-        termToID.put(term, id);
-        idToTerm.put(id, term);
-      }
+    int id = idToTerm.size();
+    idToTerm.put(id, BytesRef.deepCopyOf(term));
+    // stacked token should have the same increment as original token at this position
+    if (isStackedGap) {
+      idToInc.put(id, prevIncr);
+    } else if (incr > 1) {
+      idToInc.put(id, incr);
     }
     return id;
   }

@@ -53,21 +53,19 @@ public class JsonValidatorTest extends SolrTestCaseJ4 {
     JsonSchemaValidator validator = new JsonSchemaValidator(createSchema);
     List<String> errs = validator.validateJson(Utils.fromJSONString("{name : x, collections: [ c1 , c2]}"));
     assertNull(toJSONString(errs), errs);
-    errs = validator.validateJson(Utils.fromJSONString("{name : x, collections: c1 }"));
+    errs = validator.validateJson(Utils.fromJSONString("{name : x, collections: [c1] }"));
     assertNull(toJSONString(errs), errs);
     errs = validator.validateJson(Utils.fromJSONString("{name : x, x:y, collections: [ c1 , c2]}"));
     assertNotNull(toJSONString(errs), errs);
     assertTrue(toJSONString(errs), errs.get(0).contains("Unknown"));
     errs = validator.validateJson(Utils.fromJSONString("{name : 123, collections: c1 }"));
     assertNotNull(toJSONString(errs), errs);
-    assertTrue(toJSONString(errs), errs.get(0).contains("Expected type"));
+    assertTrue(toJSONString(errs), errs.get(0).contains("expected"));
     errs = validator.validateJson(Utils.fromJSONString("{x:y, collections: [ c1 , c2]}"));
-    assertEquals(toJSONString(errs), 2, errs.size());
-    assertTrue(toJSONString(errs), StrUtils.join(errs, '|').contains("Missing field"));
     assertTrue(toJSONString(errs), StrUtils.join(errs, '|').contains("Unknown"));
     errs = validator.validateJson(Utils.fromJSONString("{name : x, collections: [ 1 , 2]}"));
     assertFalse(toJSONString(errs), errs.isEmpty());
-    assertTrue(toJSONString(errs), errs.get(0).contains("Expected elements of type"));
+    assertTrue(toJSONString(errs), errs.get(0).contains("expected"));
     validator = new JsonSchemaValidator("{" +
         "  type:object," +
         "  properties: {" +
@@ -77,7 +75,7 @@ public class JsonValidatorTest extends SolrTestCaseJ4 {
     errs = validator.validateJson(Utils.fromJSONString("{name:x, age:21, adult:true}"));
     assertNull(errs);
     errs = validator.validateJson(Utils.fromJSONString("{name:x, age:'21', adult:'true'}"));
-    assertNull(errs);
+    assertNotNull(errs);
 
     errs = validator.validateJson(Utils.fromJSONString("{name:x, age:'x21', adult:'true'}"));
     assertEquals(1, errs.size());
@@ -128,8 +126,8 @@ public class JsonValidatorTest extends SolrTestCaseJ4 {
     assertNull("errs are " + errs, errs);
     errs = validator.validateJson(Utils.fromJSONString("{name: 'Joe Average' , sex:m}"));
     assertEquals(1, errs.size());
-    assertTrue(errs.get(0).contains("value of enum"));
-    
+    assertTrue(errs.get(0).contains("Value of enum"));
+
     String schema = "{\n" +
         "  'type': 'object',\n" +
         "  'properties': {\n" +
@@ -167,9 +165,18 @@ public class JsonValidatorTest extends SolrTestCaseJ4 {
         "    }\n" +
         "  ]\n" +
         "}"));
-    
 
-
+    schema = "{\n" +
+        "'type' : 'object',\n" +
+        "'oneOf' : ['a', 'b']\n" +
+        "}";
+    validator = new JsonSchemaValidator(schema);
+    errs = validator.validateJson(Utils.fromJSONString("" +
+        "{'c':'val'}"));
+    assertNotNull(errs);
+    errs = validator.validateJson(Utils.fromJSONString("" +
+        "{'a':'val'}"));
+    assertNull(errs);
 
   }
 
