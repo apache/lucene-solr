@@ -31,6 +31,8 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 package org.tartarus.snowball;
 
+import java.lang.reflect.UndeclaredThrowableException;
+
 import org.apache.lucene.util.ArrayUtil;
 
 /**
@@ -313,8 +315,10 @@ public abstract class SnowballProgram {
           boolean res = false;
           try {
             res = (boolean) w.method.invokeExact(this);
+          } catch (Error | RuntimeException e) {
+            throw e;
           } catch (Throwable e) {
-            rethrow(e);
+            throw new UndeclaredThrowableException(e);
           }
           cursor = c + w.s_size;
           if (res) return w.result;
@@ -376,8 +380,10 @@ public abstract class SnowballProgram {
           boolean res = false;
           try {
             res = (boolean) w.method.invokeExact(this);
+          } catch (Error | RuntimeException e) {
+            throw e;
           } catch (Throwable e) {
-            rethrow(e);
+            throw new UndeclaredThrowableException(e);
           }
           cursor = c - w.s_size;
           if (res) return w.result;
@@ -485,15 +491,5 @@ extern void debug(struct SN_env * z, int number, int line_count)
     printf("'\n");
 }
 */
-
-    // Hack to rethrow unknown Exceptions from {@link MethodHandle#invoke}:
-    private static void rethrow(Throwable t) {
-      SnowballProgram.<Error>rethrow0(t);
-    }
-    
-    @SuppressWarnings("unchecked")
-    private static <T extends Throwable> void rethrow0(Throwable t) throws T {
-      throw (T) t;
-    }
 };
 

@@ -97,6 +97,12 @@ Other
 
 ======================= Lucene 6.7.0 =======================
 
+Other
+
+* LUCENE-7800: Remove code that potentially rethrows checked exceptions 
+  from methods that don't declare them ("sneaky throw" hack). (Robert Muir,
+  Uwe Schindler, Dawid Weiss)  
+
 ======================= Lucene 6.6.0 =======================
 
 New Features
