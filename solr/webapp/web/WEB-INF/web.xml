@@ -141,11 +141,6 @@
 
   <servlet-mapping>
     <servlet-name>LoadAdminUI</servlet-name>
-    <url-pattern>/old.html</url-pattern>
-  </servlet-mapping>
-
-  <servlet-mapping>
-    <servlet-name>LoadAdminUI</servlet-name>
     <url-pattern>/index.html</url-pattern>
   </servlet-mapping>
 
