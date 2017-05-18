@@ -24,6 +24,7 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.Random;
 import java.util.stream.Collectors;
 
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
@@ -252,7 +253,7 @@ public class SqlStream extends TupleStream implements Expressible {
     try {
 
       List<String> shardUrls = getShards(this.zkHost, this.collection, this.streamContext);
-      Collections.shuffle(shardUrls);
+      Collections.shuffle(shardUrls, new Random());
       String url  = shardUrls.get(0);
       ModifiableSolrParams mParams = new ModifiableSolrParams(params);
       mParams.add(CommonParams.QT, "/sql");
