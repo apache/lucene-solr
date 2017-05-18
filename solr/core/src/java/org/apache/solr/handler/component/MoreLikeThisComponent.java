@@ -333,7 +333,7 @@ public class MoreLikeThisComponent extends SearchComponent {
     s.params.remove(CommonParams.FL);
     
     // Should probably add something like this:
-    // String fl = s.params.get(MoreLikeThisParams.RETURN_FL, "*");
+    // String fl = s.params.get(MoreLikeThisParameters.RETURN_FL, "*");
     // if(fl != null){
     // s.params.set(CommonParams.FL, fl + ",score");
     // }
@@ -388,7 +388,6 @@ public class MoreLikeThisComponent extends SearchComponent {
       
       if (dbg != null) {
         SimpleOrderedMap<Object> docDbg = new SimpleOrderedMap<>();
-        docDbg.add("rawMLTQuery", mltHelper.getRawMLTQuery().toString());
         docDbg
             .add("boostedMLTQuery", mltHelper.getBoostedMLTQuery().toString());
         docDbg.add("realMLTQuery", mltHelper.getRealMLTQuery().toString());

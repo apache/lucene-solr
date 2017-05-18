@@ -163,7 +163,7 @@ public class ConfusionMatrixGeneratorTest extends ClassificationTestBase<Object>
     try {
       MockAnalyzer analyzer = new MockAnalyzer(random());
       reader = getSampleIndex(analyzer);
-      Classifier<BytesRef> classifier = new KNearestNeighborClassifier(reader, null, analyzer, null, 1, 0, 0, categoryFieldName, textFieldName);
+      Classifier<BytesRef> classifier = new KNearestNeighborClassifier(reader, null, analyzer, null, 1, 1, 1, categoryFieldName, textFieldName);
       ConfusionMatrixGenerator.ConfusionMatrix confusionMatrix = ConfusionMatrixGenerator.getConfusionMatrix(reader,
           classifier, categoryFieldName, textFieldName, -1);
       checkCM(confusionMatrix);

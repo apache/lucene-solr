@@ -18,9 +18,9 @@ package org.apache.solr.search.mlt;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.legacy.LegacyNumericUtils;
 import org.apache.lucene.queries.mlt.MoreLikeThis;
+import org.apache.lucene.queries.mlt.MoreLikeThisParameters;
 import org.apache.lucene.search.BooleanClause;
 import org.apache.lucene.search.BooleanQuery;
-import org.apache.lucene.search.BoostQuery;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.ScoreDoc;
 import org.apache.lucene.search.TermQuery;
@@ -68,16 +68,21 @@ public class SimpleMLTQParser extends QParser {
           "document with id [" + uniqueValue + "]");
       ScoreDoc[] scoreDocs = td.scoreDocs;
       MoreLikeThis mlt = new MoreLikeThis(req.getSearcher().getIndexReader());
-      
-      mlt.setMinTermFreq(localParams.getInt("mintf", MoreLikeThis.DEFAULT_MIN_TERM_FREQ));
-      mlt.setMinDocFreq(localParams.getInt("mindf", MoreLikeThis.DEFAULT_MIN_DOC_FREQ));
-      mlt.setMinWordLen(localParams.getInt("minwl", MoreLikeThis.DEFAULT_MIN_WORD_LENGTH));
-      mlt.setMaxWordLen(localParams.getInt("maxwl", MoreLikeThis.DEFAULT_MAX_WORD_LENGTH));
-      mlt.setMaxQueryTerms(localParams.getInt("maxqt", MoreLikeThis.DEFAULT_MAX_QUERY_TERMS));
-      mlt.setMaxNumTokensParsed(localParams.getInt("maxntp", MoreLikeThis.DEFAULT_MAX_NUM_TOKENS_PARSED));
-      mlt.setMaxDocFreq(localParams.getInt("maxdf", MoreLikeThis.DEFAULT_MAX_DOC_FREQ));
-      Boolean boost = localParams.getBool("boost", false);
-      mlt.setBoost(boost);
+      MoreLikeThisParameters mltParams = new MoreLikeThisParameters();
+      mlt.setParameters(mltParams);
+
+      mltParams.setMinTermFreq(localParams.getInt("mintf", MoreLikeThisParameters.DEFAULT_MIN_TERM_FREQ));
+      mltParams.setMinDocFreq(localParams.getInt("mindf", MoreLikeThisParameters.DEFAULT_MIN_DOC_FREQ));
+      mltParams.setMinWordLen(localParams.getInt("minwl", MoreLikeThisParameters.DEFAULT_MIN_WORD_LENGTH));
+      mltParams.setMaxWordLen(localParams.getInt("maxwl", MoreLikeThisParameters.DEFAULT_MAX_WORD_LENGTH));
+      mltParams.setMaxQueryTerms(localParams.getInt("maxqt", MoreLikeThisParameters.DEFAULT_MAX_QUERY_TERMS));
+      mltParams.setMaxNumTokensParsed(localParams.getInt("maxntp", MoreLikeThisParameters.DEFAULT_MAX_NUM_TOKENS_PARSED));
+      mltParams.setMaxDocFreq(localParams.getInt("maxdf", MoreLikeThisParameters.DEFAULT_MAX_DOC_FREQ));
+      // what happens if value is explicitly set to false?
+      if(localParams.get("boost") != null) {
+        mltParams.enableBoost(localParams.getBool("boost", false));
+        boostFields = SolrPluginUtils.parseFieldBoosts(qf);
+      }
 
       String[] fieldNames;
       
@@ -111,31 +116,11 @@ public class SimpleMLTQParser extends QParser {
             "MoreLikeThis requires at least one similarity field: qf" );
       }
 
-      mlt.setFieldNames(fieldNames);
-      mlt.setAnalyzer(req.getSchema().getIndexAnalyzer());
+      mltParams.setFieldNames(fieldNames);
+      mltParams.setAnalyzer(req.getSchema().getIndexAnalyzer());
+      mltParams.setFieldToQueryTimeBoostFactor(boostFields);
 
-      Query rawMLTQuery = mlt.like(scoreDocs[0].doc);
-      BooleanQuery boostedMLTQuery = (BooleanQuery) rawMLTQuery;
-
-      if (boost && boostFields.size() > 0) {
-        BooleanQuery.Builder newQ = new BooleanQuery.Builder();
-        newQ.setMinimumNumberShouldMatch(boostedMLTQuery.getMinimumNumberShouldMatch());
-
-        for (BooleanClause clause : boostedMLTQuery) {
-          Query q = clause.getQuery();
-          float originalBoost = 1f;
-          if (q instanceof BoostQuery) {
-            BoostQuery bq = (BoostQuery) q;
-            q = bq.getQuery();
-            originalBoost = bq.getBoost();
-          }
-          Float fieldBoost = boostFields.get(((TermQuery) q).getTerm().field());
-          q = ((fieldBoost != null) ? new BoostQuery(q, fieldBoost * originalBoost) : clause.getQuery());
-          newQ.add(q, clause.getOccur());
-        }
-
-        boostedMLTQuery = newQ.build();
-      }
+      BooleanQuery boostedMLTQuery = (BooleanQuery) mlt.like(scoreDocs[0].doc);
 
       // exclude current document from results
       BooleanQuery.Builder realMLTQuery = new BooleanQuery.Builder();

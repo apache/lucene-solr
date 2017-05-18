@@ -224,7 +224,7 @@ public class BM25Similarity extends Similarity {
     return new BM25DocScorer(bm25stats, context.reader().getNormValues(bm25stats.field));
   }
   
-  private class BM25DocScorer extends SimScorer {
+  public class BM25DocScorer extends SimScorer {
     private final BM25Stats stats;
     private final float weightValue; // boost * idf * (k1 + 1)
     private final NumericDocValues norms;
@@ -256,6 +256,10 @@ public class BM25Similarity extends Similarity {
     @Override
     public Explanation explain(int doc, Explanation freq) throws IOException {
       return explainScore(doc, freq, stats, norms);
+    }
+
+    public float score(float freq, float norm) throws IOException {
+      return weightValue * freq / (freq + norm);
     }
 
     @Override
@@ -293,6 +297,10 @@ public class BM25Similarity extends Similarity {
       this.weight = idf.getValue() * boost;
     }
 
+  }
+
+  public final BM25DocScorer instantiateSimilarityScorer(SimWeight stats, NumericDocValues norms) throws IOException {
+    return new BM25DocScorer((BM25Stats)stats, norms);
   }
 
   private Explanation explainTFNorm(int doc, Explanation freq, BM25Stats stats, NumericDocValues norms) throws IOException {
