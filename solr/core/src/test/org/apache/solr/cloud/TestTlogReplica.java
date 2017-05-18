@@ -384,14 +384,6 @@ public class TestTlogReplica extends SolrCloudTestCase {
     waitForNumDocsInAllActiveReplicas(2);
   }
   
-  public void testSearchWhileReplicationHappens() {
-      
-  }
-  
-  public void testReplication() {
-    // Validate incremental replication
-  }
-  
   public void testOnlyLeaderIndexes() throws Exception {
     createAndWaitForCollection(1, 0, 2, 0);
     
@@ -647,7 +639,7 @@ public class TestTlogReplica extends SolrCloudTestCase {
     .setMaxShardsPerNode(100)
     .process(cluster.getSolrClient());
     int numReplicasPerShard = numNrtReplicas + numTlogReplicas + numPullReplicas;
-    cluster.getSolrClient().getZkStateReader().registerCore(collectionName); //TODO: Is this needed? 
+    cluster.getSolrClient().getZkStateReader().registerCore(collectionName); //TODO: Why is this needed? see SOLR-9440 
     waitForState("Expected collection to be created with " + numShards + " shards and  " + numReplicasPerShard + " replicas", 
         collectionName, clusterShape(numShards, numReplicasPerShard));
     return assertNumberOfReplicas(numNrtReplicas*numShards, numTlogReplicas*numShards, numPullReplicas*numShards, false, true);

@@ -1918,8 +1918,10 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
         log.warn("Commit not supported on replicas of type " + Replica.Type.PULL);
       } else {
         // NRT replicas will always commit
-        long commitVersion = vinfo.getNewClock();
-        cmd.setVersion(commitVersion);
+        if (vinfo != null) {
+          long commitVersion = vinfo.getNewClock();
+          cmd.setVersion(commitVersion);
+        }
         doLocalCommit(cmd);
       }
     } else {

@@ -222,7 +222,7 @@ public class TestPullReplica extends SolrCloudTestCase {
     CollectionAdminRequest.createCollection(collectionName, "conf", 2, 1, 0, 0)
       .setMaxShardsPerNode(100)
       .process(cluster.getSolrClient());
-    cluster.getSolrClient().getZkStateReader().registerCore(collectionName); //TODO: Is this needed? 
+    cluster.getSolrClient().getZkStateReader().registerCore(collectionName); //TODO: Why is this needed? see SOLR-9440
     waitForState("Expected collection to be created with 2 shards and 1 replica each", collectionName, clusterShape(2, 1));
     DocCollection docCollection = assertNumberOfReplicas(2, 0, 0, false, true);
     assertEquals(2, docCollection.getSlices().size());
@@ -331,7 +331,7 @@ public class TestPullReplica extends SolrCloudTestCase {
     CollectionAdminRequest.createCollection(collectionName, "conf", 1, 1, 0, 1)
       .setMaxShardsPerNode(100)
       .process(cluster.getSolrClient());
-    cluster.getSolrClient().getZkStateReader().registerCore(collectionName); //TODO: Is this needed? 
+    cluster.getSolrClient().getZkStateReader().registerCore(collectionName); //TODO: Why is this needed? see SOLR-9440 
     waitForState("Expected collection to be created with 1 shard and 2 replicas", collectionName, clusterShape(1, 2));
     DocCollection docCollection = assertNumberOfReplicas(1, 0, 1, false, true);
     

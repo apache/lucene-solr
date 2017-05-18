@@ -54,7 +54,7 @@ import org.slf4j.LoggerFactory;
 @SuppressSSL(bugUrl = "https://issues.apache.org/jira/browse/SOLR-5776")
 public class TestPullReplicaErrorHandling extends SolrCloudTestCase {
   
-  private final static int REPLICATION_TIMEOUT_SECS = 10;
+  private final static int REPLICATION_TIMEOUT_SECS = 30;
   
   private static final Logger LOG = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   private static Map<URI, SocketProxy> proxies;
@@ -194,7 +194,14 @@ public class TestPullReplicaErrorHandling extends SolrCloudTestCase {
       }
       assertNumDocs(10, cluster.getSolrClient());
     } finally {
+      LOG.info("Opening leader node");
       proxy.reopen();
+    }
+    // Back to normal
+    addDocs(20);
+    assertNumDocs(20, cluster.getSolrClient());
+    try (HttpSolrClient pullReplicaClient = getHttpSolrClient(s.getReplicas(EnumSet.of(Replica.Type.PULL)).get(0).getCoreUrl())) {
+      assertNumDocs(20, pullReplicaClient);
     }
   }
   
