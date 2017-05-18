@@ -16,12 +16,7 @@
  */
 package org.apache.lucene.classification;
 
-import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.MockAnalyzer;
-import org.apache.lucene.analysis.Tokenizer;
-import org.apache.lucene.analysis.core.KeywordTokenizer;
-import org.apache.lucene.analysis.ngram.EdgeNGramTokenFilter;
-import org.apache.lucene.analysis.reverse.ReverseStringFilter;
 import org.apache.lucene.classification.utils.ConfusionMatrixGenerator;
 import org.apache.lucene.index.LeafReader;
 import org.apache.lucene.index.MultiFields;
