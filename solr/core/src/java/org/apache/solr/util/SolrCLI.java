@@ -2550,6 +2550,10 @@ public class SolrCLI {
             .withLongOpt("serverDir")
             .create('d'),
           OptionBuilder
+            .withArgName("FORCE")
+            .withDescription("Force option in case Solr is run as root")
+            .create("force"),
+          OptionBuilder
             .withArgName("DIR")
             .hasArg()
             .isRequired(false)
@@ -2918,6 +2922,7 @@ public class SolrCLI {
       String zkHostArg = (zkHost != null) ? " -z "+zkHost : "";
       String memArg = (memory != null) ? " -m "+memory : "";
       String cloudModeArg = cloudMode ? "-cloud " : "";
+      String forceArg = cli.hasOption("force") ? " -force" : "";
 
       String addlOpts = cli.getOptionValue('a');
       String addlOptsArg = (addlOpts != null) ? " -a \""+addlOpts+"\"" : "";
@@ -2936,8 +2941,8 @@ public class SolrCLI {
         solrHome = solrHome.substring(cwdPath.length()+1);
 
       String startCmd =
-          String.format(Locale.ROOT, "%s start %s -p %d -s \"%s\" %s %s %s %s %s",
-              callScript, cloudModeArg, port, solrHome, hostArg, zkHostArg, memArg, extraArgs, addlOptsArg);
+          String.format(Locale.ROOT, "%s start %s -p %d -s \"%s\" %s %s %s %s %s %s",
+              callScript, cloudModeArg, port, solrHome, hostArg, zkHostArg, memArg, forceArg, extraArgs, addlOptsArg);
       startCmd = startCmd.replaceAll("\\s+", " ").trim(); // for pretty printing
 
       echo("\nStarting up Solr on port " + port + " using command:");

@@ -1469,6 +1469,7 @@ if [ $# -gt 0 ]; then
         ;;
         -force)
             FORCE=true
+            PASS_TO_RUN_EXAMPLE+=" -force"
             shift
         ;;
         --)

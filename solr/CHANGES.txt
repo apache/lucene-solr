@@ -115,6 +115,8 @@ Bug Fixes
 
 * SOLR-10413: v2 API: parsed JSON type should be coerced to expected type (Cao Manh Dat, Noble Paul)
 
+* SOLR-10223: Allow running examples as root on Linux with -force option (janhoy)
+
 Optimizations
 ----------------------
 
