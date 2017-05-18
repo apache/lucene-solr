@@ -17,12 +17,9 @@
 package org.apache.solr.client.solrj.io.stream;
 
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.Locale;
-import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Random;
 import java.util.stream.Collectors;
@@ -38,15 +35,9 @@ import org.apache.solr.client.solrj.io.stream.expr.StreamExpression;
 import org.apache.solr.client.solrj.io.stream.expr.StreamExpressionNamedParameter;
 import org.apache.solr.client.solrj.io.stream.expr.StreamExpressionValue;
 import org.apache.solr.client.solrj.io.stream.expr.StreamFactory;
-import org.apache.solr.common.cloud.Aliases;
-import org.apache.solr.common.cloud.ClusterState;
-import org.apache.solr.common.cloud.DocCollection;
-import org.apache.solr.common.cloud.Slice;
-import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
-import org.apache.solr.common.util.StrUtils;
 
 public class SqlStream extends TupleStream implements Expressible {
 
@@ -185,12 +176,8 @@ public class SqlStream extends TupleStream implements Expressible {
     this.collection = collectionName;
     this.params = new ModifiableSolrParams(params);
 
-    // If the comparator is null then it was not explicitly set so we will create one using the sort parameter
-    // of the query. While doing this we will also take into account any aliases such that if we are sorting on
-    // fieldA but fieldA is aliased to alias.fieldA then the comparater will be against alias.fieldA.
-
     if (params.get("stmt") == null) {
-      throw new IOException("stmt param expected for search function");
+      throw new IOException("stmt param expected for sql function");
     }
   }
 
@@ -198,10 +185,6 @@ public class SqlStream extends TupleStream implements Expressible {
     this.streamContext = context;
   }
 
-  /**
-   * Opens the CloudSolrStream
-   *
-   ***/
   public void open() throws IOException {
     constructStream();
     tupleStream.open();
@@ -209,44 +192,6 @@ public class SqlStream extends TupleStream implements Expressible {
 
   public List<TupleStream> children() {
     return null;
-  }
-
-
-  public static Collection<Slice> getSlices(String collectionName, ZkStateReader zkStateReader, boolean checkAlias) throws IOException {
-    ClusterState clusterState = zkStateReader.getClusterState();
-
-    Map<String, DocCollection> collectionsMap = clusterState.getCollectionsMap();
-
-    // Check collection case sensitive
-    if(collectionsMap.containsKey(collectionName)) {
-      return collectionsMap.get(collectionName).getActiveSlices();
-    }
-
-    // Check collection case insensitive
-    for(String collectionMapKey : collectionsMap.keySet()) {
-      if(collectionMapKey.equalsIgnoreCase(collectionName)) {
-        return collectionsMap.get(collectionMapKey).getActiveSlices();
-      }
-    }
-
-    if(checkAlias) {
-      // check for collection alias
-      Aliases aliases = zkStateReader.getAliases();
-      String alias = aliases.getCollectionAlias(collectionName);
-      if (alias != null) {
-        Collection<Slice> slices = new ArrayList<>();
-
-        List<String> aliasList = StrUtils.splitSmart(alias, ",", true);
-        for (String aliasCollectionName : aliasList) {
-          // Add all active slices for this alias collection
-          slices.addAll(collectionsMap.get(aliasCollectionName).getActiveSlices());
-        }
-
-        return slices;
-      }
-    }
-
-    throw new IOException("Slices not found for " + collectionName);
   }
 
   protected void constructStream() throws IOException {
