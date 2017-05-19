@@ -1681,7 +1681,7 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse> 
   }
   
   /**
-   * Returns a SolrRequest to add a replica to a shard in a collection
+   * Returns a SolrRequest to add a replica of type {@link org.apache.solr.common.cloud.Replica.Type#NRT} to a shard in a collection
    */
   public static AddReplica addReplicaToShard(String collection, String shard) {
     return addReplicaToShard(collection, shard, Replica.Type.NRT);

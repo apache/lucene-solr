@@ -1283,7 +1283,7 @@ public class CoreContainer {
       core.getSolrCoreState().cancelRecovery();
       if (core.getCoreDescriptor().getCloudDescriptor().getReplicaType() == Replica.Type.PULL
           || core.getCoreDescriptor().getCloudDescriptor().getReplicaType() == Replica.Type.TLOG) { 
-        // Stop replication if this is part of a pull replica before closing the code
+        // Stop replication if this is part of a pull/tlog replica before closing the core
         zkSys.getZkController().stopReplicationFromLeader(name);
       }
     }

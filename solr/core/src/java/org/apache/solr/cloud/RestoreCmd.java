@@ -228,6 +228,9 @@ public class RestoreCmd implements OverseerCollectionMessageHandler.Cmd {
         propMap.put(REPLICA_TYPE, Replica.Type.NRT.name());
       } else if (numTlogReplicas >= 1) {
         propMap.put(REPLICA_TYPE, Replica.Type.TLOG.name());
+      } else {
+        throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Unexpected number of replicas, replicationFactor, " + 
+            Replica.Type.NRT + " or " + Replica.Type.TLOG + " must be greater than 0");
       }
 
       // Get the first node matching the shard to restore in

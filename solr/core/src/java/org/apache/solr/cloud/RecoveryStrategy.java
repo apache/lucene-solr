@@ -435,14 +435,7 @@ public class RecoveryStrategy implements Runnable, Closeable {
     }
 
   }
-
-  // if replay was skipped (possibly to due pulling a full index from the leader),
-  // then we still need to update version bucket seeds after recovery
-  if (successfulRecovery) {
-    LOG.info("Updating version bucket highest from index after successful recovery.");
-    core.seedVersionBuckets();
-  }
-
+  // We skip core.seedVersionBuckets(); We don't have a transaction log
   LOG.info("Finished recovery process, successful=[{}]", Boolean.toString(successfulRecovery));
 }
 
@@ -460,7 +453,7 @@ public class RecoveryStrategy implements Runnable, Closeable {
       return;
     }
     
-    // we temporary ignore peersync for Append replicas
+    // we temporary ignore peersync for tlog replicas
     boolean firstTime = replicaType != Replica.Type.TLOG;
 
     List<Long> recentVersions;

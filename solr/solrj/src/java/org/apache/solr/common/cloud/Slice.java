@@ -234,7 +234,7 @@ public class Slice extends ZkNodeProps implements Iterable<Replica> {
   }
   
   /**
-   * Gets the list of replicas that have a state present in s
+   * Gets the list of replicas that have a type present in s
    */
   public List<Replica> getReplicas(EnumSet<Replica.Type> s) {
     return this.getReplicas(r->s.contains(r.getType()));

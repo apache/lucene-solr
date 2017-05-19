@@ -1890,7 +1890,7 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
         throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, 
             "Unable to distribute commit operation. No replicas available of types " + Replica.Type.TLOG + " or " + Replica.Type.NRT);
       }
-      if (isLeader && nodes.size() == 1 && req.getCore().getCoreDescriptor().getCloudDescriptor().getReplicaType() != Replica.Type.PULL) {
+      if (isLeader && nodes.size() == 1 && replicaType != Replica.Type.PULL) {
         singleLeader = true;
       }
     }
