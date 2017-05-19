@@ -16,6 +16,7 @@
  */
 package org.apache.solr.highlight;
 import org.apache.lucene.search.Query;
+import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.HighlightParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;
@@ -56,9 +57,9 @@ public abstract class SolrHighlighter
 
     // if no fields specified in the request, or the handler, fall back to programmatic default, or default search field.
     if(emptyArray(fields)) {
-      // use default search field if highlight fieldlist not specified.
+      // use default search field from request if highlight fieldlist not specified.
       if (emptyArray(defaultFields)) {
-        String defaultSearchField = request.getSchema().getDefaultSearchFieldName();
+        String defaultSearchField = request.getParams().get(CommonParams.DF);
         fields = null == defaultSearchField ? new String[]{} : new String[]{defaultSearchField};
       } else {
         fields = defaultFields;

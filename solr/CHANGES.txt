@@ -73,6 +73,9 @@ Upgrading from Solr 6.x
 * Setting <solrQueryParser defaultOperator="..."/> in schema is no longer allowed and will cause an exception.
   Please use "q.op" parameter on the request instead. For more details, see SOLR-10584.
 
+* Setting <defaultSearchField> in schema is no longer allowed and will cause an exception.
+  Please use "df" parameter on the request instead. For more details, see SOLR-10585.
+
 New Features
 ----------------------
 * SOLR-9857, SOLR-9858: Collect aggregated metrics from nodes and shard leaders in overseer. (ab)
@@ -158,6 +161,9 @@ Other Changes
 
 * SOLR-10584: We'll now always throw an exception if defaultOperator is found in schema. This config has
   been deprecated since 3.6, and enforced for new configs since 6.6 (janhoy)
+
+* SOLR-10585: We'll now always throw an exception if defaultSearchField is found in schema. This config has
+  been deprecated since 3.6, and enforced for new configs since 6.6 (janhoy, David Smiley)
 
 * SOLR-10414: RecoveryStrategy is now a Runnable instead of a Thread. (Tomás Fernández Löbbe)
 

@@ -137,7 +137,6 @@ public class SchemaResponse extends SolrResponseBase {
     schemaRepresentation.setName(getSchemaName(schemaObj));
     schemaRepresentation.setVersion(getSchemaVersion(schemaObj));
     schemaRepresentation.setUniqueKey(getSchemaUniqueKey(schemaObj));
-    schemaRepresentation.setDefaultSearchField(getDefaultSearchField(schemaObj));
     schemaRepresentation.setSimilarity(getSimilarity(schemaObj));
     schemaRepresentation.setFields(getFields(schemaObj));
     schemaRepresentation.setDynamicFields(getDynamicFields(schemaObj));
@@ -156,10 +155,6 @@ public class SchemaResponse extends SolrResponseBase {
 
   private static String getSchemaUniqueKey(Map schemaNamedList) {
     return (String) schemaNamedList.get("uniqueKey");
-  }
-
-  private static String getDefaultSearchField(Map schemaNamedList) {
-    return (String) schemaNamedList.get("defaultSearchField");
   }
 
   private static Map<String, Object> getSimilarity(Map schemaNamedList) {

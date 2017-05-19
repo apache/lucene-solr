@@ -25,7 +25,7 @@
   <field name="title" type="text_simple" indexed="true" stored="true" multiValued="true"/>
   <field name="format" type="string" indexed="true" stored="true"/>
 
-  <!-- field "text" is searchable (it is the default search field) but it is not stored to save space -->
+  <!-- field "text" is searchable but it is not stored to save space -->
   <field name="text" type="text_simple" indexed="true" stored="false" multiValued="true"/>
 
 

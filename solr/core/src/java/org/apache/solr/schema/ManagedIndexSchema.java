@@ -1357,7 +1357,6 @@ public final class ManagedIndexSchema extends IndexSchema {
     
     newSchema.name = name;
     newSchema.version = version;
-    newSchema.defaultSearchFieldName = defaultSearchFieldName;
     newSchema.similarity = similarity;
     newSchema.similarityFactory = similarityFactory;
     newSchema.isExplicitSimilarity = isExplicitSimilarity;

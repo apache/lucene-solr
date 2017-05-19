@@ -98,11 +98,6 @@ public class SchemaXmlWriter extends TextResponseWriter {
         closeStartTag(false);
         writer.write(val.toString());
         endTag(IndexSchema.UNIQUE_KEY, false);
-      } else if (schemaPropName.equals(IndexSchema.DEFAULT_SEARCH_FIELD)) {
-        openStartTag(IndexSchema.DEFAULT_SEARCH_FIELD);
-        closeStartTag(false);
-        writer.write(val.toString());
-        endTag(IndexSchema.DEFAULT_SEARCH_FIELD, false);
       } else if (schemaPropName.equals(IndexSchema.SIMILARITY)) {
         writeSimilarity((SimpleOrderedMap<Object>) val);
       } else if (schemaPropName.equals(IndexSchema.FIELD_TYPES)) {

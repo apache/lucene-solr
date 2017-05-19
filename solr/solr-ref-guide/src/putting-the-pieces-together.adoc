@@ -22,8 +22,6 @@ These are supplemented by `copyFields`.
 
 The `uniqueKey` must always be defined.
 
-In older Solr versions you would find `defaultSearchField` and `solrQueryParser` tags as well, but although these still work they are deprecated and discouraged, see <<other-schema-elements.adoc#other-schema-elements,Other Schema Elements>>.
-
 .Types and fields are optional tags
 [NOTE]
 ====

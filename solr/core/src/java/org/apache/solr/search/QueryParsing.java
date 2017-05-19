@@ -71,13 +71,16 @@ public class QueryParsing {
   }
 
   /**
-   * Returns the effective default field based on the 'df' param or
-   * hardcoded schema default.  May be null if either exists specified.
+   * Returns the effective default field based on the 'df' param.
+   * TODO: This is kept for 3rd party QParser compat in 7.x. Remove this method in Solr 8.0
+   * @param ignored Not in use
+   * @param df the default field, which will be returned as-is
    * @see org.apache.solr.common.params.CommonParams#DF
-   * @see org.apache.solr.schema.IndexSchema#getDefaultSearchFieldName
+   * @deprecated IndexScema does not contain defaultField anymore, you must rely on df alone
    */
-  public static String getDefaultField(final IndexSchema s, final String df) {
-    return df != null ? df : s.getDefaultSearchFieldName();
+  @Deprecated
+  public static String getDefaultField(final IndexSchema ignored, final String df) {
+    return df;
   }
 
   /**

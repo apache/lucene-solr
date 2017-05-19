@@ -68,13 +68,11 @@ solrAdminApp.controller('SchemaController',
                     }
                     $scope.leftbar = leftbar;
                     $scope.core = $routeParams.core;
-                    $scope.defaultSearchField = data.default_search_field;
                     $scope.uniqueKeyField = data.unique_key_field;
                     $scope.similarity = data.similarity; 
                     if ($scope.similarity && $scope.similarity.className) {
                         $scope.similarity.className = shortenPackages($scope.similarity.className); 
                     }
-                    $scope.isDefaultSearchField = ($scope.selectedType == "Field" && $scope.name == $scope.defaultSearchField);
                     $scope.isUniqueKeyField = ($scope.selectedType == "Field" && $scope.name == $scope.uniqueKeyField);
 
                     $scope.display = getFieldProperties(data, $routeParams.core, $scope.is, $scope.name);
@@ -336,7 +334,6 @@ var filterFields = function(type, data, name) {
 var mergeIndexAndSchemaData = function(index, schema) {
 
     var data = {
-        default_search_field: null,
         unique_key_field: null,
         similarity: null,
         key: {},
@@ -357,7 +354,6 @@ var mergeIndexAndSchemaData = function(index, schema) {
 
     data.key = index.info.key;
 
-    data.default_search_field = schema.defaultSearchField;
     data.unique_key_field = schema.uniqueKeyField;
     data.similarity = schema.similarity;
 
