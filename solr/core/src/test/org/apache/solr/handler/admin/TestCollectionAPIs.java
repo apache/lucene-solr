@@ -27,6 +27,7 @@ import java.util.List;
 import java.util.Map;
 
 import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.api.ApiException;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.params.CollectionParams;
@@ -118,7 +119,7 @@ public class TestCollectionAPIs extends SolrTestCaseJ4 {
     );
 
     compareOutput(apiBag, "/collections/collName", POST,
-        "{modify : {rule : 'replica:*,cores:<5', autoAddReplicas : false} }", null,
+        "{modify : {rule : ['replica:*, cores:<5'], autoAddReplicas : false} }", null,
         "{collection: collName, operation : modifycollection , autoAddReplicas : 'false', rule : [{replica: '*', cores : '<5' }]}"
     );
     compareOutput(apiBag, "/cluster", POST,
@@ -185,7 +186,7 @@ public class TestCollectionAPIs extends SolrTestCaseJ4 {
     };
     try {
       api.call(req, rsp);
-    } catch (ApiBag.ExceptionWithErrObject e) {
+    } catch (ApiException e) {
       throw new RuntimeException(e.getMessage() + Utils.toJSONString(e.getErrs()), e);
 
     }
