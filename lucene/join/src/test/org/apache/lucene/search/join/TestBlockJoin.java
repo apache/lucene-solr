@@ -52,6 +52,9 @@ import org.apache.lucene.index.ReaderUtil;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.*;
 import org.apache.lucene.search.BooleanClause.Occur;
+import org.apache.lucene.search.similarities.BasicStats;
+import org.apache.lucene.search.similarities.Similarity;
+import org.apache.lucene.search.similarities.SimilarityBase;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.BitSet;
 import org.apache.lucene.util.Bits;
@@ -230,11 +233,11 @@ public class TestBlockJoin extends LuceneTestCase {
     matchingChildren = s.search(childrenQuery, 1);
     assertEquals(1, matchingChildren.totalHits);
     assertEquals("java", s.doc(matchingChildren.scoreDocs[0].doc).get("skill"));
-    
+
     r.close();
     dir.close();
   }
-  
+
   public void testSimple() throws Exception {
 
     final Directory dir = newDirectory();
@@ -1472,5 +1475,60 @@ public class TestBlockJoin extends LuceneTestCase {
     dir.close();
   }
 
+  public void testScoreMode() throws IOException {
+    Similarity sim = new SimilarityBase() {
+
+      @Override
+      public String toString() {
+        return "TestSim";
+      }
+
+      @Override
+      protected float score(BasicStats stats, float freq, float docLen) {
+        return freq;
+      }
+    };
+    Directory dir = newDirectory();
+    RandomIndexWriter w = new RandomIndexWriter(random(), dir, newIndexWriterConfig().setSimilarity(sim));
+    w.addDocuments(Arrays.asList(
+        Collections.singleton(newTextField("foo", "bar bar", Store.NO)),
+        Collections.singleton(newTextField("foo", "bar", Store.NO)),
+        Collections.emptyList(),
+        Collections.singleton(newStringField("type", new BytesRef("parent"), Store.NO))));
+    DirectoryReader reader = w.getReader();
+    w.close();
+    IndexSearcher searcher = newSearcher(reader);
+    searcher.setSimilarity(sim);
+    BitSetProducer parents = new QueryBitSetProducer(new TermQuery(new Term("type", "parent")));
+    for (ScoreMode scoreMode : ScoreMode.values()) {
+      Query query = new ToParentBlockJoinQuery(new TermQuery(new Term("foo", "bar")), parents, scoreMode);
+      TopDocs topDocs = searcher.search(query, 10);
+      assertEquals(1, topDocs.totalHits);
+      assertEquals(3, topDocs.scoreDocs[0].doc);
+      float expectedScore;
+      switch (scoreMode) {
+        case Avg:
+          expectedScore = 1.5f;
+          break;
+        case Max:
+          expectedScore = 2f;
+          break;
+        case Min:
+          expectedScore = 1f;
+          break;
+        case None:
+          expectedScore = 0f;
+          break;
+        case Total:
+          expectedScore = 3f;
+          break;
+        default:
+          throw new AssertionError();
+      }
+      assertEquals(expectedScore, topDocs.scoreDocs[0].score, 0f);
+    }
+    reader.close();
+    dir.close();
+  }
 
 }
