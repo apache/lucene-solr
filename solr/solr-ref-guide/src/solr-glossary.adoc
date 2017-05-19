@@ -38,7 +38,7 @@ In Solr, one or more <<document,Documents>> grouped together in a single logical
 +
 In <<solrclouddef,SolrCloud>> a collection may be divided up into multiple logical shards, which may in turn be distributed across many nodes, or in a Single node Solr installation, a collection may be a single <<core,Core>>.
 
-[[commit]]Commit::
+[[defcommit]]Commit::
 To make document changes permanent in the index. In the case of added documents, they would be searchable after a _commit_.
 
 [[core]]Core::
@@ -65,7 +65,7 @@ A <<zookeeper,ZooKeeper>> term to indicate multiple ZooKeeper instances running 
 [[SolrGlossary-F]]
 === F
 
-[[facet]]Facet::
+[[deffacet]]Facet::
 The arrangement of search results into categories based on indexed terms.
 
 [[field]]Field::
