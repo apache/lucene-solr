@@ -177,6 +177,7 @@
                  imagesDir="${build.content.dir}"
                  doctype="book"
                  safemode="unsafe">
+      <attribute key="section-toc" value='' /><!-- we don't use these in the pdf -->
       <attribute key="icons" value="font" />
       <attribute key="icon-set" value="fa" />
       <attribute key="pdf-stylesDir" value="./pdf/themes"/>

@@ -1098,50 +1098,60 @@ body.toc2 #header > h1:nth-last-child(2)
     border-bottom: 1px solid #efefed;
 }
 
-#toc > ul
+@media only screen
+       and (min-width : 768px)
+{
+    #toc.toc-right
+    {   
+	float: right;
+	margin-left: 1em;
+	border: none;
+    }
+}
+.toc > ul
 {
     margin-left: .125em;
 }
 
-#toc ul.sectlevel0 > li > a
+.toc ul.sectlevel0 > li > a
 {
     font-weight: bold;
 }
 
-#toc ul.sectlevel0 ul.sectlevel1
+.toc ul.sectlevel0 ul.sectlevel1
 {
     margin: .5em 0;
 }
 
-#toc ul
+.toc ul
 {
     list-style-type: none;
     font-family: 'Noto Sans', sans-serif;
 }
 
-#toc a
+.toc a
 {
     text-decoration: none;
 }
 
-#toc a:active
+.toc a:active
 {
     text-decoration: underline;
 }
 
-#toctitle
+.toctitle
 {
     color: #7a2518;
     font-size: 1.2em;
 }
 
-div#toc ul li {
+div.toc ul li {
     margin: 8px 0 8px 22px;
     list-style: square;
     line-height: 1.25;
 }
 
-div#toc ul {
+div.toc ul {
     background-color: whitesmoke;
     padding: 5px;
     border-radius: 5px;
@@ -1149,16 +1159,19 @@ div#toc ul {
     color: gray;
 }
 
-div#toc ul li ul {
+div.toc ul li ul {
     padding-left:8px;
 
 }
 
-div#toc ul li ul li::before {
+div.toc ul li ul li::before {
     content: "–  ";
 }
 
-div#toc >ul::before {
+div.toc.section-toc >ul::before {
+    content: "In this section";
+}
+div.toc >ul::before {
     content: "On this Page";
     font-weight: bold;
     color: #555;
@@ -1290,12 +1303,12 @@ div#toc >ul::before {
     background: #f8f8f7;
 }
 
-#content #toc > :first-child
+#content .toc > :first-child
 {
     margin-top: 0;
 }
 
-#content #toc > :last-child
+#content .toc > :last-child
 {
     margin-bottom: 0;
 }
@@ -1421,6 +1434,7 @@ h6 > a.link:hover
 .videoblock
 {
     margin-bottom: 1.25em;
+    overflow: auto;
 }
 
 
@@ -1445,7 +1459,7 @@ table.tableblock #preamble > .sectionbody > .paragraph:first-of-type p
 
 .admonitionblock > table
 {
-    width: 100%;
+    width: auto;
     border: 0;
     border-collapse: separate;
     background: none;
