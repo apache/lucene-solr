@@ -612,20 +612,3 @@ var sortedObjectArray = function(list) {
 var shortenPackages = function(className) {
     return className.replace("org.apache.solr", "o.a.s").replace("org.apache.lucene", "o.a.l");
 };
-
-/*
-        var get_width = function get_width()
-        {
-          return $( this ).width();
-        }
-
-  var max_width = 10 + Math.max.apply( Math, $( 'p', topterms_table_element ).map( get_width ).get() );
-  topterms:
-    p { width: {{maxWidth}}px !important; }
-    ul { margin-left: {{max_width + 5 }}px !important; }
-
-  var max_width = 10 + Math.max.apply( Math, $( 'dt', histogram_holder_element ).map( get_width ).get() );
-  histogram_holder:
-    ul { margin-left: {{maxWidth}}px !important; }
-    li dt { left: {{-maxWidth}}px !important; width: {{maxWidth}}px !important; }
-*/
