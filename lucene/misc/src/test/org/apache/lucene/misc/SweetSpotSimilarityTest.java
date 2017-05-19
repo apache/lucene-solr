@@ -33,6 +33,7 @@ import org.apache.lucene.search.similarities.PerFieldSimilarityWrapper;
 import org.apache.lucene.search.similarities.Similarity;
 import org.apache.lucene.search.similarities.TFIDFSimilarity;
 import org.apache.lucene.store.Directory;
+import org.apache.lucene.store.RAMDirectory;
 import org.apache.lucene.util.LuceneTestCase;
 
 /**
@@ -42,7 +43,7 @@ public class SweetSpotSimilarityTest extends LuceneTestCase {
   
   private static float computeNorm(Similarity sim, String field, int length) throws IOException {
     String value = IntStream.range(0, length).mapToObj(i -> "a").collect(Collectors.joining(" "));
-    Directory dir = newDirectory();
+    Directory dir = new RAMDirectory();
     IndexWriter w = new IndexWriter(dir, newIndexWriterConfig().setSimilarity(sim));
     w.addDocument(Collections.singleton(newTextField(field, value, Store.NO)));
     DirectoryReader reader = DirectoryReader.open(w);
