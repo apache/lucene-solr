@@ -54,6 +54,8 @@ public class OverseerTriggerThread implements Runnable, Closeable {
 
   private final ZkStateReader zkStateReader;
 
+  private final SolrZkClient zkClient;
+
   private final ScheduledTriggers scheduledTriggers;
 
   private final AutoScaling.TriggerFactory triggerFactory;
@@ -74,6 +76,7 @@ public class OverseerTriggerThread implements Runnable, Closeable {
   public OverseerTriggerThread(ZkController zkController) {
     this.zkController = zkController;
     zkStateReader = zkController.getZkStateReader();
+    zkClient = zkController.getZkClient();
     scheduledTriggers = new ScheduledTriggers();
     triggerFactory = new AutoScaling.TriggerFactory(zkController.getCoreContainer());
   }
@@ -90,13 +93,27 @@ public class OverseerTriggerThread implements Runnable, Closeable {
     }
     IOUtils.closeQuietly(triggerFactory);
     IOUtils.closeQuietly(scheduledTriggers);
+    log.debug("OverseerTriggerThread has been closed explicitly");
   }
 
   @Override
   public void run() {
     int lastZnodeVersion = znodeVersion;
-    SolrZkClient zkClient = zkStateReader.getZkClient();
-    createWatcher(zkClient);
+
+    try {
+      refreshAutoScalingConf(new AutoScalingWatcher());
+    } catch (KeeperException.ConnectionLossException | KeeperException.SessionExpiredException e) {
+      log.warn("ZooKeeper watch triggered for autoscaling conf, but Solr cannot talk to ZK: [{}]", e.getMessage());
+    } catch (KeeperException e) {
+      log.error("A ZK error has occurred", e);
+      throw new ZooKeeperException(SolrException.ErrorCode.SERVER_ERROR, "A ZK error has occurred", e);
+    } catch (InterruptedException e) {
+      // Restore the interrupted status
+      Thread.currentThread().interrupt();
+      log.warn("Interrupted", e);
+    } catch (Exception e)  {
+      log.error("Unexpected exception", e);
+    }
 
     while (true) {
       Map<String, AutoScaling.Trigger> copy = null;
@@ -104,18 +121,31 @@ public class OverseerTriggerThread implements Runnable, Closeable {
         // this can throw InterruptedException and we don't want to unlock if it did, so we keep this outside
         // of the try/finally block
         updateLock.lockInterruptibly();
+
+        // must check for close here before we await on the condition otherwise we can only be woken up on interruption
+        if (isClosed) {
+          log.warn("OverseerTriggerThread has been closed, exiting.");
+          break;
+        }
+
+        log.debug("Current znodeVersion {}, lastZnodeVersion {}", znodeVersion, lastZnodeVersion);
+
         try {
           if (znodeVersion == lastZnodeVersion) {
             updated.await();
 
             // are we closed?
-            if (isClosed) break;
+            if (isClosed) {
+              log.warn("OverseerTriggerThread woken up but we are closed, exiting.");
+              break;
+            }
 
             // spurious wakeup?
             if (znodeVersion == lastZnodeVersion) continue;
-            lastZnodeVersion = znodeVersion;
           }
           copy = new HashMap<>(activeTriggers);
+          lastZnodeVersion = znodeVersion;
+          log.debug("Processed trigger updates upto znodeVersion {}", znodeVersion);
         } catch (InterruptedException e) {
           // Restore the interrupted status
           Thread.currentThread().interrupt();
@@ -145,77 +175,65 @@ public class OverseerTriggerThread implements Runnable, Closeable {
     }
   }
 
-  private void createWatcher(SolrZkClient zkClient) {
+  class AutoScalingWatcher implements Watcher  {
+    @Override
+    public void process(WatchedEvent watchedEvent) {
+      // session events are not change events, and do not remove the watcher
+      if (Event.EventType.None.equals(watchedEvent.getType())) {
+        return;
+      }
+
+      try {
+        refreshAutoScalingConf(this);
+      } catch (KeeperException.ConnectionLossException | KeeperException.SessionExpiredException e) {
+        log.warn("ZooKeeper watch triggered for autoscaling conf, but Solr cannot talk to ZK: [{}]", e.getMessage());
+      } catch (KeeperException e) {
+        log.error("A ZK error has occurred", e);
+        throw new ZooKeeperException(SolrException.ErrorCode.SERVER_ERROR, "A ZK error has occurred", e);
+      } catch (InterruptedException e) {
+        // Restore the interrupted status
+        Thread.currentThread().interrupt();
+        log.warn("Interrupted", e);
+      } catch (Exception e)  {
+        log.error("Unexpected exception", e);
+      }
+    }
+
+  }
+
+  private void refreshAutoScalingConf(Watcher watcher) throws KeeperException, InterruptedException {
+    updateLock.lock();
     try {
-      zkClient.exists(ZkStateReader.SOLR_AUTOSCALING_CONF_PATH, new Watcher() {
-        @Override
-        public void process(WatchedEvent watchedEvent) {
-          // session events are not change events, and do not remove the watcher
-          if (Event.EventType.None.equals(watchedEvent.getType())) {
-            return;
-          }
+      if (isClosed) {
+        return;
+      }
+      final Stat stat = new Stat();
+      final byte[] data = zkClient.getData(ZkStateReader.SOLR_AUTOSCALING_CONF_PATH, watcher, stat, true);
+      log.debug("Refreshing {} with znode version {}", ZkStateReader.SOLR_AUTOSCALING_CONF_PATH, stat.getVersion());
+      if (znodeVersion >= stat.getVersion()) {
+        // protect against reordered watcher fires by ensuring that we only move forward
+        return;
+      }
+      znodeVersion = stat.getVersion();
+      Map<String, AutoScaling.Trigger> triggerMap = loadTriggers(triggerFactory, data);
 
-          try {
-            refreshAndWatch();
-          } catch (KeeperException.ConnectionLossException | KeeperException.SessionExpiredException e) {
-            log.warn("ZooKeeper watch triggered for autoscaling conf, but Solr cannot talk to ZK: [{}]", e.getMessage());
-          } catch (KeeperException e) {
-            log.error("A ZK error has occurred", e);
-            throw new ZooKeeperException(SolrException.ErrorCode.SERVER_ERROR, "A ZK error has occurred", e);
-          } catch (InterruptedException e) {
-            // Restore the interrupted status
-            Thread.currentThread().interrupt();
-            log.warn("Interrupted", e);
-          } catch (Exception e)  {
-            log.error("Unexpected exception", e);
-          }
+      // remove all active triggers that have been removed from ZK
+      Set<String> trackingKeySet = activeTriggers.keySet();
+      trackingKeySet.retainAll(triggerMap.keySet());
+
+      // now lets add or remove triggers which have been enabled or disabled respectively
+      for (Map.Entry<String, AutoScaling.Trigger> entry : triggerMap.entrySet()) {
+        String triggerName = entry.getKey();
+        AutoScaling.Trigger trigger = entry.getValue();
+        if (trigger.isEnabled()) {
+          activeTriggers.put(triggerName, trigger);
+        } else {
+          activeTriggers.remove(triggerName);
         }
-
-        private void refreshAndWatch() throws KeeperException, InterruptedException {
-          updateLock.lock();
-          try {
-            if (isClosed) {
-              return;
-            }
-            final Stat stat = new Stat();
-            final byte[] data = zkClient.getData(ZkStateReader.SOLR_AUTOSCALING_CONF_PATH, this, stat, true);
-            log.debug("{} watcher fired with znode version {}", ZkStateReader.SOLR_AUTOSCALING_CONF_PATH, stat.getVersion());
-            if (znodeVersion >= stat.getVersion()) {
-              // protect against reordered watcher fires by ensuring that we only move forward
-              return;
-            }
-            znodeVersion = stat.getVersion();
-            Map<String, AutoScaling.Trigger> triggerMap = loadTriggers(triggerFactory, data);
-
-            // remove all active triggers that have been removed from ZK
-            Set<String> trackingKeySet = activeTriggers.keySet();
-            trackingKeySet.retainAll(triggerMap.keySet());
-
-            // now lets add or remove triggers which have been enabled or disabled respectively
-            for (Map.Entry<String, AutoScaling.Trigger> entry : triggerMap.entrySet()) {
-              String triggerName = entry.getKey();
-              AutoScaling.Trigger trigger = entry.getValue();
-              if (trigger.isEnabled()) {
-                activeTriggers.put(triggerName, trigger);
-              } else {
-                activeTriggers.remove(triggerName);
-              }
-            }
-            updated.signalAll();
-          } finally {
-            updateLock.unlock();
-          }
-        }
-      }, true);
-    } catch (KeeperException.ConnectionLossException | KeeperException.SessionExpiredException e) {
-      log.error("OverseerTriggerThread could not talk to ZooKeeper", e);
-    } catch (KeeperException e) {
-      log.error("Exception in OverseerTriggerThread", e);
-      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
-    } catch (InterruptedException e) {
-      // Restore the interrupted status
-      Thread.currentThread().interrupt();
-      log.error("OverseerTriggerThread interrupted", e);
+      }
+      updated.signalAll();
+    } finally {
+      updateLock.unlock();
     }
   }
 

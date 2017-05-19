@@ -101,6 +101,9 @@ Bug Fixes
 
 * SOLR-10602: Triggers should be able to restore state from old instances when taking over. (shalin)
 
+* SOLR-10714: OverseerTriggerThread does not start triggers on overseer start until autoscaling
+  config watcher is fired. (shalin)
+
 Optimizations
 ----------------------
 
