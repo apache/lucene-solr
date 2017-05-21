@@ -1102,10 +1102,10 @@ body.toc2 #header > h1:nth-last-child(2)
        and (min-width : 768px)
 {
     #toc.toc-right
-    {   
-	float: right;
-	margin-left: 1em;
-	border: none;
+    {
+        float: right;
+        margin-left: 1em;
+        border: none;
     }
 }
 .toc > ul
