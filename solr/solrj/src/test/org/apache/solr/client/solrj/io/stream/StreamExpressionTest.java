@@ -5508,6 +5508,54 @@ public class StreamExpressionTest extends SolrCloudTestCase {
   }
 
 
+  public void testCopyOfRange() throws Exception {
+    UpdateRequest updateRequest = new UpdateRequest();
+
+    int i=0;
+    while(i<50) {
+      updateRequest.add(id, "id_"+(++i),"test_dt", getDateString("2016", "5", "1"), "price_f", "400.00");
+    }
+
+    while(i<100) {
+      updateRequest.add(id, "id_"+(++i),"test_dt", getDateString("2015", "5", "1"), "price_f", "300.0");
+    }
+
+    while(i<150) {
+      updateRequest.add(id, "id_"+(++i),"test_dt", getDateString("2014", "5", "1"), "price_f", "500.0");
+    }
+
+    while(i<250) {
+      updateRequest.add(id, "id_"+(++i),"test_dt", getDateString("2013", "5", "1"), "price_f", "100.00");
+    }
+
+    updateRequest.commit(cluster.getSolrClient(), COLLECTIONORALIAS);
+
+    String expr = "timeseries("+COLLECTIONORALIAS+", q=\"*:*\", start=\"2013-01-01T01:00:00.000Z\", " +
+        "end=\"2016-12-01T01:00:00.000Z\", " +
+        "gap=\"+1YEAR\", " +
+        "field=\"test_dt\", " +
+        "count(*), sum(price_f), max(price_f), min(price_f))";
+
+    String cexpr = "let(a="+expr+", c=col(a, max(price_f)), tuple(copy=copyOfRange(c, 1, 3)))";
+
+    ModifiableSolrParams paramsLoc = new ModifiableSolrParams();
+    paramsLoc.set("expr", cexpr);
+    paramsLoc.set("qt", "/stream");
+
+    String url = cluster.getJettySolrRunners().get(0).getBaseUrl().toString()+"/"+COLLECTIONORALIAS;
+    TupleStream solrStream = new SolrStream(url, paramsLoc);
+
+    StreamContext context = new StreamContext();
+    solrStream.setStreamContext(context);
+    List<Tuple> tuples = getTuples(solrStream);
+    assertTrue(tuples.size() == 1);
+    List<Number> copy1 = (List<Number>)tuples.get(0).get("copy");
+    assertTrue(copy1.size() == 2);
+    assertTrue(copy1.get(0).doubleValue() == 500D);
+    assertTrue(copy1.get(1).doubleValue() == 300D);
+  }
+
+
   @Test
   public void testPercentiles() throws Exception {
     UpdateRequest updateRequest = new UpdateRequest();
