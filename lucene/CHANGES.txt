@@ -147,6 +147,9 @@ Bug Fixes
 
 * LUCENE-7831: CodecUtil should not seek to negative offsets. (Adrien Grand)
 
+* LUCENE-7833: ToParentBlockJoinQuery computed the min score instead of the max
+  score with ScoreMode.MAX. (Adrien Grand)
+
 Improvements
 
 * LUCENE-7782: OfflineSorter now passes the total number of items it

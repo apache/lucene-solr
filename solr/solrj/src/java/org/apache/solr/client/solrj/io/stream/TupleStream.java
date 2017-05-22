@@ -18,7 +18,9 @@ package org.apache.solr.client.solrj.io.stream;
 
 import java.io.Closeable;
 import java.io.IOException;
+import java.io.PrintWriter;
 import java.io.Serializable;
+import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -35,7 +37,6 @@ import org.apache.solr.client.solrj.io.stream.expr.Explanation;
 import org.apache.solr.client.solrj.io.stream.expr.StreamFactory;
 import org.apache.solr.common.IteratorWriter;
 import org.apache.solr.common.MapWriter;
-import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.Aliases;
 import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.DocCollection;
@@ -44,9 +45,13 @@ import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.cloud.ZkCoreNodeProps;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.util.StrUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 
 public abstract class TupleStream implements Closeable, Serializable, MapWriter {
+
+  private static final Logger logger = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   private static final long serialVersionUID = 1;
   
@@ -78,7 +83,7 @@ public abstract class TupleStream implements Closeable, Serializable, MapWriter 
     open();
     ew.put("docs", (IteratorWriter) iw -> {
       try {
-        for (; ; ) {
+        for ( ; ; ) {
           Tuple tuple = read();
           if (tuple != null) {
             iw.add(tuple);
@@ -90,8 +95,22 @@ public abstract class TupleStream implements Closeable, Serializable, MapWriter 
             break;
           }
         }
-      } catch (IOException e) {
-        throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
+      } catch (Throwable e) {
+        close();
+        Throwable ex = e;
+        while(ex != null) {
+          String m = ex.getMessage();
+          if(m != null && m.contains("Broken pipe")) {
+            throw new IgnoreException();
+          }
+          ex = ex.getCause();
+        }
+
+        if(e instanceof IOException) {
+          throw e;
+        } else {
+          throw new IOException(e);
+        }
       }
     });
   }
@@ -177,5 +196,15 @@ public abstract class TupleStream implements Closeable, Serializable, MapWriter 
     }
 
     throw new IOException("Slices not found for " + collectionName);
+  }
+
+  public static class IgnoreException extends IOException {
+    public void printStackTrace(PrintWriter pw) {
+      pw.print("Early Client Disconnect");
+    }
+
+    public String getMessage() {
+      return "Early Client Disconnect";
+    }
   }
 }

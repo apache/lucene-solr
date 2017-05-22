@@ -73,14 +73,14 @@ Upgrading from Solr 6.x
 * Setting <solrQueryParser defaultOperator="..."/> in schema is no longer allowed and will cause an exception.
   Please use "q.op" parameter on the request instead. For more details, see SOLR-10584.
 
+* Setting <defaultSearchField> in schema is no longer allowed and will cause an exception.
+  Please use "df" parameter on the request instead. For more details, see SOLR-10585.
+
 New Features
 ----------------------
 * SOLR-9857, SOLR-9858: Collect aggregated metrics from nodes and shard leaders in overseer. (ab)
 
 * SOLR-9835: Create another replication mode for SolrCloud
-
-* SOLR-10292: Adds CartesianProductStream which turns a single tuple with a multi-valued field into N 
-  tuples, one for each value in the multi-valued field. (Dennis Gove)
 
 * SOLR-10356: Adds basic math Streaming Evaluators (Dennis Gove)
 
@@ -158,6 +158,9 @@ Other Changes
 
 * SOLR-10584: We'll now always throw an exception if defaultOperator is found in schema. This config has
   been deprecated since 3.6, and enforced for new configs since 6.6 (janhoy)
+
+* SOLR-10585: We'll now always throw an exception if defaultSearchField is found in schema. This config has
+  been deprecated since 3.6, and enforced for new configs since 6.6 (janhoy, David Smiley)
 
 * SOLR-10414: RecoveryStrategy is now a Runnable instead of a Thread. (Tomás Fernández Löbbe)
 
@@ -305,6 +308,9 @@ New Features
 
 * SOLR-8440: Support for enabling basic authentication using bin/solr|bin/solr.cmd. (Ishan Chattopadhyaya, janhoy,
   Noble Paul, Hrishikesh Gadre)
+
+* SOLR-10292: Adds CartesianProductStream which turns a single tuple with a multi-valued field into N
+  tuples, one for each value in the multi-valued field. (Dennis Gove)
 
 Optimizations
 ----------------------

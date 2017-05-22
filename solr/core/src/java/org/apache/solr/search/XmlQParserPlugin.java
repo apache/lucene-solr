@@ -53,7 +53,7 @@ public class XmlQParserPlugin extends QParserPlugin {
         return null;
       }
       final IndexSchema schema = req.getSchema();
-      final String defaultField = QueryParsing.getDefaultField(schema, getParam(CommonParams.DF));
+      final String defaultField = getParam(CommonParams.DF);
       final Analyzer analyzer = schema.getQueryAnalyzer();
 
       final SolrCoreParser solrParser = new SolrCoreParser(defaultField, analyzer, req);

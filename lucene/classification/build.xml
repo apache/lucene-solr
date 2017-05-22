@@ -47,7 +47,7 @@
     <invoke-module-javadoc>
       <links>
         <link href="../queries"/>
-        <link href="../analyzers/common"/>
+        <link href="../analyzers-common"/>
         <link href="../grouping"/>
         <link href="../sandbox"/>
       </links>

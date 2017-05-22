@@ -118,7 +118,7 @@ public class TestCollectionAPIs extends SolrTestCaseJ4 {
     );
 
     compareOutput(apiBag, "/collections/collName", POST,
-        "{modify : {rule : 'replica:*,cores:<5', autoAddReplicas : false} }", null,
+        "{modify : {rule : ['replica:*, cores:<5'], autoAddReplicas : false} }", null,
         "{collection: collName, operation : modifycollection , autoAddReplicas : 'false', rule : [{replica: '*', cores : '<5' }]}"
     );
     compareOutput(apiBag, "/cluster", POST,
