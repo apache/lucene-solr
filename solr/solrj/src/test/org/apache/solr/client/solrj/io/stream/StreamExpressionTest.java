@@ -5508,6 +5508,54 @@ public class StreamExpressionTest extends SolrCloudTestCase {
   }
 
 
+  public void testCopyOfRange() throws Exception {
+    UpdateRequest updateRequest = new UpdateRequest();
+
+    int i=0;
+    while(i<50) {
+      updateRequest.add(id, "id_"+(++i),"test_dt", getDateString("2016", "5", "1"), "price_f", "400.00");
+    }
+
+    while(i<100) {
+      updateRequest.add(id, "id_"+(++i),"test_dt", getDateString("2015", "5", "1"), "price_f", "300.0");
+    }
+
+    while(i<150) {
+      updateRequest.add(id, "id_"+(++i),"test_dt", getDateString("2014", "5", "1"), "price_f", "500.0");
+    }
+
+    while(i<250) {
+      updateRequest.add(id, "id_"+(++i),"test_dt", getDateString("2013", "5", "1"), "price_f", "100.00");
+    }
+
+    updateRequest.commit(cluster.getSolrClient(), COLLECTIONORALIAS);
+
+    String expr = "timeseries("+COLLECTIONORALIAS+", q=\"*:*\", start=\"2013-01-01T01:00:00.000Z\", " +
+        "end=\"2016-12-01T01:00:00.000Z\", " +
+        "gap=\"+1YEAR\", " +
+        "field=\"test_dt\", " +
+        "count(*), sum(price_f), max(price_f), min(price_f))";
+
+    String cexpr = "let(a="+expr+", c=col(a, max(price_f)), tuple(copy=copyOfRange(c, 1, 3)))";
+
+    ModifiableSolrParams paramsLoc = new ModifiableSolrParams();
+    paramsLoc.set("expr", cexpr);
+    paramsLoc.set("qt", "/stream");
+
+    String url = cluster.getJettySolrRunners().get(0).getBaseUrl().toString()+"/"+COLLECTIONORALIAS;
+    TupleStream solrStream = new SolrStream(url, paramsLoc);
+
+    StreamContext context = new StreamContext();
+    solrStream.setStreamContext(context);
+    List<Tuple> tuples = getTuples(solrStream);
+    assertTrue(tuples.size() == 1);
+    List<Number> copy1 = (List<Number>)tuples.get(0).get("copy");
+    assertTrue(copy1.size() == 2);
+    assertTrue(copy1.get(0).doubleValue() == 500D);
+    assertTrue(copy1.get(1).doubleValue() == 300D);
+  }
+
+
   @Test
   public void testPercentiles() throws Exception {
     UpdateRequest updateRequest = new UpdateRequest();
@@ -5769,6 +5817,61 @@ public class StreamExpressionTest extends SolrCloudTestCase {
     assertTrue(intercept == 0.0D);
     double prediction = tuple.getDouble("p");
     assertTrue(prediction == 600.0D);
+  }
+
+  @Test
+  public void testDescribe() throws Exception {
+    UpdateRequest updateRequest = new UpdateRequest();
+
+
+    updateRequest.add(id, "1", "price_f", "100.0", "col_s", "a", "order_i", "1");
+    updateRequest.add(id, "2", "price_f", "200.0", "col_s", "a", "order_i", "2");
+    updateRequest.add(id, "3", "price_f", "300.0", "col_s", "a", "order_i", "3");
+    updateRequest.add(id, "4", "price_f", "100.0", "col_s", "a", "order_i", "4");
+    updateRequest.add(id, "5", "price_f", "200.0", "col_s", "a", "order_i", "5");
+    updateRequest.add(id, "6", "price_f", "400.0", "col_s", "a", "order_i", "6");
+    updateRequest.add(id, "7", "price_f", "600.0", "col_s", "a", "order_i", "7");
+
+
+    updateRequest.commit(cluster.getSolrClient(), COLLECTIONORALIAS);
+
+    String expr1 = "search("+COLLECTIONORALIAS+", q=\"col_s:a\", fl=\"price_f, order_i\", sort=\"order_i asc\")";
+
+    String cexpr = "let(a="+expr1+", b=col(a, price_f),  tuple(stats=describe(b)))";
+
+    ModifiableSolrParams paramsLoc = new ModifiableSolrParams();
+    paramsLoc.set("expr", cexpr);
+    paramsLoc.set("qt", "/stream");
+
+    String url = cluster.getJettySolrRunners().get(0).getBaseUrl().toString()+"/"+COLLECTIONORALIAS;
+    TupleStream solrStream = new SolrStream(url, paramsLoc);
+
+    StreamContext context = new StreamContext();
+    solrStream.setStreamContext(context);
+    List<Tuple> tuples = getTuples(solrStream);
+    assertTrue(tuples.size() == 1);
+    Tuple tuple = tuples.get(0);
+    Map stats = (Map)tuple.get("stats");
+    Number min = (Number)stats.get("min");
+    Number max = (Number)stats.get("max");
+    Number mean = (Number)stats.get("mean");
+    Number stdev = (Number)stats.get("stdev");
+    Number popVar = (Number)stats.get("popVar");
+    Number skewness = (Number)stats.get("skewness");
+    Number kurtosis = (Number)stats.get("kurtosis");
+    Number var = (Number)stats.get("var");
+    Number geometricMean = (Number)stats.get("geometricMean");
+    Number N = (Number)stats.get("N");
+    assertEquals(min.doubleValue(), 100.0D, 0.0);
+    assertEquals(max.doubleValue(), 600.0D, 0.0);
+    assertEquals(N.doubleValue(), 7.0D, 0.0);
+    assertEquals(mean.doubleValue(), 271.42D, 0.5);
+    assertEquals(popVar.doubleValue(), 27755.10, 0.5);
+    assertEquals(kurtosis.doubleValue(), .70D, 0.5);
+    assertEquals(skewness.doubleValue(), 1.07D, 0.5);
+    assertEquals(var.doubleValue(), 32380.95D, 0.5);
+    assertEquals(geometricMean .doubleValue(), 224.56D, 0.5);
+    assertEquals(stdev .doubleValue(), 179.94D, 0.5);
   }
 
 
