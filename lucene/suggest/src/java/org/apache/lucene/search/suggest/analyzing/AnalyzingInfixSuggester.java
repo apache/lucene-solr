@@ -281,6 +281,8 @@ public class AnalyzingInfixSuggester extends Lookup implements Closeable {
       }
       searcherMgr = new SearcherManager(writer, null);
       success = true;
+      writer.close();
+      writer = null;
     } finally {
       if (success == false && writer != null) {
         writer.rollback();
@@ -293,10 +295,9 @@ public class AnalyzingInfixSuggester extends Lookup implements Closeable {
    *
    *  @see IndexWriter#commit */
   public void commit() throws IOException {
-    if (writer == null) {
-      throw new IllegalStateException("Cannot commit on an closed writer. Add documents first");
+    if (writer != null) {
+      writer.commit();
     }
-    writer.commit();
   }
 
   private Analyzer getGramAnalyzer() {
