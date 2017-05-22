@@ -158,6 +158,15 @@ public class TestScoreJoinQPNoScore extends SolrTestCaseJ4 {
 
   }
 
+  public void testNotEquals() throws SyntaxError, IOException{
+    try (SolrQueryRequest req = req("*:*")) {
+      Query x = QParser.getParser("{!join from=dept_id_s to=dept_ss score=none}text_t:develop", req).getQuery();
+      Query y = QParser.getParser("{!join from=dept_ss to=dept_ss score=none}text_t:develop", req).getQuery();
+      assertFalse("diff from fields produce equal queries",
+                  x.equals(y));
+    }
+  }
+    
   public void testJoinQueryType() throws SyntaxError, IOException{
     SolrQueryRequest req = null;
     try{

@@ -20,7 +20,6 @@ import java.io.IOException;
 import java.util.Set;
 
 import org.apache.lucene.index.DocValues;
-import org.apache.lucene.index.IndexReaderContext;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.MultiDocValues;
 import org.apache.lucene.index.SortedDocValues;
@@ -45,27 +44,38 @@ final class GlobalOrdinalsWithScoreQuery extends Query {
   private final Query toQuery;
 
   // just for hashcode and equals:
+  private final ScoreMode scoreMode;
   private final Query fromQuery;
   private final int min;
   private final int max;
   // id of the context rather than the context itself in order not to hold references to index readers
   private final Object indexReaderContextId;
 
-  GlobalOrdinalsWithScoreQuery(GlobalOrdinalsWithScoreCollector collector, String joinField, MultiDocValues.OrdinalMap globalOrds, Query toQuery, Query fromQuery, int min, int max, IndexReaderContext context) {
+  GlobalOrdinalsWithScoreQuery(GlobalOrdinalsWithScoreCollector collector, ScoreMode scoreMode, String joinField,
+                               MultiDocValues.OrdinalMap globalOrds, Query toQuery, Query fromQuery, int min, int max,
+                               Object indexReaderContextId) {
     this.collector = collector;
     this.joinField = joinField;
     this.globalOrds = globalOrds;
     this.toQuery = toQuery;
+    this.scoreMode = scoreMode;
     this.fromQuery = fromQuery;
     this.min = min;
     this.max = max;
-    this.indexReaderContextId = context.id();
+    this.indexReaderContextId = indexReaderContextId;
   }
 
   @Override
   public Weight createWeight(IndexSearcher searcher, boolean needsScores, float boost) throws IOException {
     if (searcher.getTopReaderContext().id() != indexReaderContextId) {
       throw new IllegalStateException("Creating the weight against a different index reader than this query has been built for.");
+    }
+    boolean doNoMinMax = min <= 0 && max == Integer.MAX_VALUE;
+    if (needsScores == false && doNoMinMax) {
+      // We don't need scores then quickly change the query to not uses the scores:
+      GlobalOrdinalsQuery globalOrdinalsQuery = new GlobalOrdinalsQuery(collector.collectedOrds, joinField, globalOrds,
+          toQuery, fromQuery, indexReaderContextId);
+      return globalOrdinalsQuery.createWeight(searcher, false, boost);
     }
     return new W(this, toQuery.createWeight(searcher, false, 1f));
   }
@@ -79,6 +89,7 @@ final class GlobalOrdinalsWithScoreQuery extends Query {
   private boolean equalsTo(GlobalOrdinalsWithScoreQuery other) {
     return min == other.min &&
            max == other.max &&
+           scoreMode.equals(other.scoreMode) &&
            joinField.equals(other.joinField) &&
            fromQuery.equals(other.fromQuery) &&
            toQuery.equals(other.toQuery) &&
@@ -88,6 +99,7 @@ final class GlobalOrdinalsWithScoreQuery extends Query {
   @Override
   public int hashCode() {
     int result = classHash();
+    result = 31 * result + scoreMode.hashCode();
     result = 31 * result + joinField.hashCode();
     result = 31 * result + toQuery.hashCode();
     result = 31 * result + fromQuery.hashCode();
