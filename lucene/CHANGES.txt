@@ -93,6 +93,9 @@ Other
 * LUCENE-7761: Fixed comment in ReqExclScorer.
   (Pablo Pita Leira via Adrien Grand)
 
+* LUCENE-7815: Deprecate the PostingsHighlighter. It evolved into the
+  UnifiedHighlighter. (David Smiley)
+
 ======================= Lucene 6.5.1 =======================
 
 Bug Fixes
