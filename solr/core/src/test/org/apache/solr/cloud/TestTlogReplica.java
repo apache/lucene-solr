@@ -466,8 +466,8 @@ public class TestTlogReplica extends SolrCloudTestCase {
     ChaosMonkey.start(solrRunner);
     waitForState("Replica didn't recover", collectionName, activeReplicaCount(0,2,0));
     // We skip peerSync, so replica will always trigger commit on leader
-//    waitForNumDocsInAllActiveReplicas(4);
-    waitForNumDocsInAllReplicas(4, getCollectionState(collectionName).getReplicas(), 0);// Should be immediate
+    // We query only the non-leader replicas, since we haven't opened a new searcher on the leader yet
+    waitForNumDocsInAllReplicas(4, getNonLeaderReplias(collectionName), 0);// Should be immediate
     
     // If I add the doc immediately, the leader fails to communicate with the follower with broken pipe.
     // Options are, wait or retry...
@@ -489,7 +489,8 @@ public class TestTlogReplica extends SolrCloudTestCase {
     ChaosMonkey.start(solrRunner);
     waitForState("Replica didn't recover", collectionName, activeReplicaCount(0,2,0));
     checkRTG(3,7, cluster.getJettySolrRunners());
-    waitForNumDocsInAllReplicas(5, getCollectionState(collectionName).getReplicas(), 0);// Should be immediate
+    waitForNumDocsInAllReplicas(5, getNonLeaderReplias(collectionName), 0);// Should be immediate
+    cluster.getSolrClient().commit(collectionName);
 
     // Test replica recovery apply buffer updates
     Semaphore waitingForBufferUpdates = new Semaphore(0);
@@ -524,6 +525,11 @@ public class TestTlogReplica extends SolrCloudTestCase {
       assertFalse("IndexWriter at replicas must not see updates ", iwRef.get().hasUncommittedChanges());
       iwRef.decref();
     }
+  }
+  
+  private List<Replica> getNonLeaderReplias(String collectionName) {
+    return getCollectionState(collectionName).getReplicas().stream().filter(
+        (r)-> !r.getBool("leader", false)).collect(Collectors.toList());
   }
   
   public void testDeleteById() throws Exception{
@@ -667,7 +673,7 @@ public class TestTlogReplica extends SolrCloudTestCase {
       try (HttpSolrClient replicaClient = getHttpSolrClient(r.getCoreUrl())) {
         while (true) {
           try {
-            assertEquals("Replica " + r.getName() + " not up to date after " + REPLICATION_TIMEOUT_SECS + " seconds",
+            assertEquals("Replica " + r.getName() + " not up to date after " + timeout + " seconds",
                 numDocs, replicaClient.query(new SolrQuery(query)).getResults().getNumFound());
             break;
           } catch (AssertionError e) {
