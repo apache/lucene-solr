@@ -85,7 +85,7 @@ public enum Operand {
     return operand + expectedVal.toString();
   }
 
-  Object checkNumeric(Object val) {
+  Integer checkNumeric(Object val) {
     if (val == null) return null;
     try {
       return Integer.parseInt(val.toString());

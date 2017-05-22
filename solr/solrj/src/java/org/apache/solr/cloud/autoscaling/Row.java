@@ -93,9 +93,12 @@ class Row implements MapWriter {
     Row row = copy();
     Map<String, List<ReplicaInfo>> c = row.replicaInfo.get(coll);
     if (c == null) row.replicaInfo.put(coll, c = new HashMap<>());
-    List<ReplicaInfo> s = c.get(shard);
-    if (s == null) c.put(shard, s = new ArrayList<>());
-    s.add(new ReplicaInfo(""+new Random().nextInt(1000)+1000,coll,shard, new HashMap<>()));
+    List<ReplicaInfo> replicas = c.get(shard);
+    if (replicas == null) c.put(shard, replicas = new ArrayList<>());
+    replicas.add(new ReplicaInfo("" + new Random().nextInt(1000) + 1000, coll, shard, new HashMap<>()));
+    for (Cell cell : row.cells) {
+      if (cell.name.equals("cores")) cell.val = ((Number) cell.val).intValue() + 1;
+    }
     return row;
 
   }
@@ -103,10 +106,10 @@ class Row implements MapWriter {
   Pair<Row, ReplicaInfo> removeReplica(String coll, String shard) {
     Row row = copy();
     Map<String, List<ReplicaInfo>> c = row.replicaInfo.get(coll);
-    if(c == null) return null;
+    if (c == null) return null;
     List<ReplicaInfo> s = c.get(shard);
     if (s == null || s.isEmpty()) return null;
-    return new Pair(row,s.remove(0));
+    return new Pair(row, s.remove(0));
 
   }
 }

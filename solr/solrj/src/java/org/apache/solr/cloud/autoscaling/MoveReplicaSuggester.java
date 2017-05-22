@@ -17,19 +17,13 @@
 
 package org.apache.solr.cloud.autoscaling;
 
-import java.util.Map;
+import java.util.List;
 
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
+import org.apache.solr.cloud.autoscaling.Clause.Violation;
 import org.apache.solr.cloud.autoscaling.Policy.Suggester;
 import org.apache.solr.common.util.Pair;
-import org.apache.solr.common.util.Utils;
-
-import static org.apache.solr.common.cloud.ZkStateReader.COLLECTION_PROP;
-import static org.apache.solr.common.cloud.ZkStateReader.SHARD_ID_PROP;
-import static org.apache.solr.common.params.CollectionParams.CollectionAction.MOVEREPLICA;
-import static org.apache.solr.common.params.CoreAdminParams.NODE;
-import static org.apache.solr.common.params.CoreAdminParams.REPLICA;
 
 public class MoveReplicaSuggester extends Suggester {
 
@@ -53,29 +47,21 @@ public class MoveReplicaSuggester extends Suggester {
         continue;
       }
       tmpRow.violations.clear();
-      for (Clause clause : session.expandedClauses) {
-        if (strict || clause.strict) {
-          clause.test(tmpRow);
-        }
-      }
+
       final int i = getMatrix().indexOf(fromRow);
-      if (tmpRow.violations.isEmpty()) {
-        for (int j = getMatrix().size() - 1; j > i; j--) {
-          Row targetRow = getMatrix().get(j);
-          if (!isAllowed(targetRow.node, Hint.TARGET_NODE)) continue;
-          targetRow = targetRow.addReplica(coll, shard);
-          targetRow.violations.clear();
-          for (Clause clause : session.expandedClauses) {
-            if (strict || clause.strict) clause.test(targetRow);
-          }
-          if (targetRow.violations.isEmpty()) {
-            getMatrix().set(i, getMatrix().get(i).removeReplica(coll, shard).first());
-            getMatrix().set(j, getMatrix().get(j).addReplica(coll, shard));
-            return new CollectionAdminRequest.MoveReplica(
-                coll,
-                pair.second().name,
-                targetRow.node);
-          }
+      for (int j = getMatrix().size() - 1; j > i; j--) {
+        Row targetRow = getMatrix().get(j);
+        if (!isAllowed(targetRow.node, Hint.TARGET_NODE)) continue;
+        targetRow = targetRow.addReplica(coll, shard);
+        targetRow.violations.clear();
+        List<Violation> errs = testChangedRow(strict, getModifiedMatrix(getModifiedMatrix(getMatrix(), tmpRow, i), targetRow, j));
+        if (!containsNewErrors(errs)) {
+          getMatrix().set(i, getMatrix().get(i).removeReplica(coll, shard).first());
+          getMatrix().set(j, getMatrix().get(j).addReplica(coll, shard));
+          return new CollectionAdminRequest.MoveReplica(
+              coll,
+              pair.second().name,
+              targetRow.node);
         }
       }
     }

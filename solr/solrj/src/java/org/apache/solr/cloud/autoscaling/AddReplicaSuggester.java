@@ -17,6 +17,8 @@
 
 package org.apache.solr.cloud.autoscaling;
 
+import java.util.List;
+
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.cloud.autoscaling.Policy.Suggester;
@@ -35,15 +37,16 @@ class AddReplicaSuggester extends Suggester {
     if (coll == null || shard == null)
       throw new RuntimeException("add-replica requires 'collection' and 'shard'");
     //iterate through elements and identify the least loaded
+
     for (int i = getMatrix().size() - 1; i >= 0; i--) {
       Row row = getMatrix().get(i);
       if (!isAllowed(row.node, Hint.TARGET_NODE)) continue;
-      row = row.addReplica(coll, shard);
-      row.violations.clear();
-      for (Clause clause : session.expandedClauses) {
-        if (strict || clause.strict) clause.test(row);
-      }
-      if (row.violations.isEmpty()) {// there are no rule violations
+      Row tmpRow = row.addReplica(coll, shard);
+      tmpRow.violations.clear();
+
+      List<Clause.Violation> errs = testChangedRow(strict, getModifiedMatrix(getMatrix(), tmpRow, i));
+
+      if (!containsNewErrors(errs)) {// there are no rule violations
         getMatrix().set(i, getMatrix().get(i).addReplica(coll, shard));
         return CollectionAdminRequest
             .addReplicaToShard(coll, shard)
@@ -52,5 +55,6 @@ class AddReplicaSuggester extends Suggester {
     }
     return null;
   }
+
 
 }

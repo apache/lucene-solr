@@ -18,16 +18,19 @@
 package org.apache.solr.cloud.autoscaling;
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
-import java.util.function.Predicate;
 
+import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.common.MapWriter;
 import org.apache.solr.common.util.Utils;
 import org.apache.solr.cloud.autoscaling.Policy.ReplicaInfo;
@@ -124,6 +127,10 @@ public class Clause implements MapWriter, Comparable<Clause> {
       return op.match(val, row.getVal(name));
     }
 
+    TestStatus match(Object testVal) {
+      return op.match(this.val, testVal);
+    }
+
     boolean isPass(Object inputVal) {
       return op.match(val, inputVal) == PASS;
     }
@@ -169,44 +176,91 @@ public class Clause implements MapWriter, Comparable<Clause> {
     }
   }
 
+  public class Violation {
+    final String shard, coll, node;
+    private final int hash;
 
-  TestStatus test(Row row) {
-    AtomicReference<TestStatus> result = new AtomicReference<>(NOT_APPLICABLE);
+
+    private Violation(String coll, String shard, String node) {
+      this.shard = shard;
+      this.coll = coll;
+      this.node = node;
+      hash = ("" + coll + " " + shard + " " + node + " " + Utils.toJSONString(getClause().toMap(new HashMap<>()))).hashCode();
+    }
+
+    public Clause getClause() {
+      return Clause.this;
+    }
+
+    @Override
+    public int hashCode() {
+      return hash;
+    }
+
+    @Override
+    public boolean equals(Object that) {
+      if (that instanceof Violation) {
+        Violation ve = (Violation) that;
+        return Objects.equals(this.shard, (ve).shard) &&
+            Objects.equals(this.coll, (ve).coll) &&
+            Objects.equals(this.node, (ve).node);
+      }
+      return false;
+    }
+  }
+
+
+  public List<Violation> test(List<Row> allRows) {
+    List<Violation> errors = new ArrayList<>();
     if (isPerCollectiontag()) {
-
-      for (Map.Entry<String, Map<String, List<ReplicaInfo>>> colls : row.replicaInfo.entrySet()) {
-        if (result.get() == FAIL) break;
-        if (!collection.isPass(colls.getKey())) continue;
-        int count = 0;
-        for (Map.Entry<String, List<ReplicaInfo>> shards : colls.getValue().entrySet()) {
-          if (!shard.isPass(shards.getKey()) || result.get() == FAIL) break;
-          count += shards.getValue().size();
-          if (shard.val.equals(EACH)) testReplicaCount(row, result, count);
-          if (EACH.equals(shard.val)) count = 0;
+      Map<String, Map<String, Map<String, AtomicInteger>>> replicaCount = computeReplicaCounts(allRows);
+      for (Map.Entry<String, Map<String, Map<String, AtomicInteger>>> e : replicaCount.entrySet()) {
+        if (!collection.isPass(e.getKey())) continue;
+        for (Map.Entry<String, Map<String, AtomicInteger>> shardVsCount : e.getValue().entrySet()) {
+          if (!shard.isPass(shardVsCount.getKey())) continue;
+          for (Map.Entry<String, AtomicInteger> counts : shardVsCount.getValue().entrySet()) {
+            if (!replica.isPass(counts.getValue())) {
+              errors.add(new Violation(e.getKey(), shardVsCount.getKey(),
+                  tag.name.equals("node") ? counts.getKey() : null));
+            }
+          }
         }
-        if (shard.val.equals(ANY)) testReplicaCount(row, result, count);
       }
     } else {
-      if (!tag.isPass(row)) result.set(TestStatus.FAIL);
+      for (Row r : allRows) {
+        if (!tag.isPass(r)) {
+          errors.add(new Violation(null, null, r.node));
+        }
+      }
     }
-    if (result.get() == FAIL)
-      row.violations.add(this);
-    return result.get();
+    return errors;
 
   }
 
-  private void testReplicaCount(Row row, AtomicReference<TestStatus> result, int count) {
-    if ("node".equals(tag.name)) if (!tag.isPass(row.node)) return;
-    boolean checkCount = replica.op.match(replica.val, 0) != PASS || count > 0;
-    if (replica.op == WILDCARD && count > 0 && !tag.isPass(row)) {//nodeRole:'!overseer', strict:false
-      result.set(FAIL);
-    } else if (checkCount && !replica.isPass(count)) {
-      if (tag.op != WILDCARD && tag.isPass(row)) {
-        result.set(FAIL);
-      } else {
-        result.set(FAIL);
+
+  private Map<String, Map<String, Map<String, AtomicInteger>>> computeReplicaCounts(List<Row> allRows) {
+    Map<String, Map<String, Map<String, AtomicInteger>>> replicaCount = new HashMap<>();
+    for (Row row : allRows)
+      for (Map.Entry<String, Map<String, List<ReplicaInfo>>> colls : row.replicaInfo.entrySet()) {
+        String collectionName = colls.getKey();
+        if (!collection.isPass(collectionName)) continue;
+        replicaCount.putIfAbsent(collectionName, new HashMap<>());
+        Map<String, Map<String, AtomicInteger>> collMap = replicaCount.get(collectionName);
+        for (Map.Entry<String, List<ReplicaInfo>> shards : colls.getValue().entrySet()) {
+          String shardName = shards.getKey();
+          if (ANY.equals(shard.val)) shardName = ANY;
+          if (!shard.isPass(shardName)) break;
+          collMap.putIfAbsent(shardName, new HashMap<>());
+          Map<String, AtomicInteger> tagVsCount = collMap.get(shardName);
+          AtomicInteger count = null;
+          Object tagVal = row.getVal(tag.name);
+          if (tag.isPass(tagVal)) {
+            tagVsCount.put(String.valueOf(tagVal), count = tagVsCount.getOrDefault(tagVal, new AtomicInteger()));
+            count.addAndGet(shards.getValue().size());
+          }
+        }
       }
-    }
+    return replicaCount;
   }
 
   public boolean isStrict() {

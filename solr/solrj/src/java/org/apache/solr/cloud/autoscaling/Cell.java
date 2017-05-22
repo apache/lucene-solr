@@ -18,8 +18,10 @@
 package org.apache.solr.cloud.autoscaling;
 
 import java.io.IOException;
+import java.util.HashMap;
 
 import org.apache.solr.common.MapWriter;
+import org.apache.solr.common.util.Utils;
 
 class Cell implements MapWriter {
   final int index;
@@ -42,6 +44,11 @@ class Cell implements MapWriter {
   @Override
   public void writeMap(EntryWriter ew) throws IOException {
     ew.put(name, val);
+  }
+
+  @Override
+  public String toString() {
+    return Utils.toJSONString(this.toMap(new HashMap<>()));
   }
 
   public Cell copy() {

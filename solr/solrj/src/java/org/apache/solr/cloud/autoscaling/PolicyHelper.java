@@ -23,6 +23,9 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.function.BiConsumer;
+import java.util.function.Consumer;
+import java.util.function.Predicate;
 
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.common.SolrException;
@@ -51,7 +54,13 @@ public class PolicyHelper {
 
         @Override
         public Map<String, Map<String, List<Policy.ReplicaInfo>>> getReplicaInfo(String node, Collection<String> keys) {
-          return delegate.getReplicaInfo(node, keys);
+          Map<String, Map<String, List<Policy.ReplicaInfo>>> replicaInfo = delegate.getReplicaInfo(node, keys);
+          for (String s : optionalPolicyMapping.keySet()) {
+            if (!replicaInfo.containsKey(s)) {
+              replicaInfo.put(s, new HashMap<>());
+            }
+          }
+          return replicaInfo;
         }
 
         @Override
@@ -79,10 +88,10 @@ public class PolicyHelper {
             .hint(Hint.SHARD, shardName);
         SolrRequest op = suggester.getOperation();
         if (op == null) {
-          throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "No node can satisfy the rules "+ Utils.toJSONString(policy));
+          throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "No node can satisfy the rules "+ Utils.toJSONString(Utils.getDeepCopy(session.expandedClauses, 4, true)));
         }
         session = suggester.getSession();
-        positionMapping.get(shardName).add((String) op.getParams().get(CoreAdminParams.NODE));
+        positionMapping.get(shardName).add(op.getParams().get(CoreAdminParams.NODE));
       }
     }
 
