@@ -92,7 +92,9 @@ import org.apache.lucene.util.automaton.CharacterRunAutomaton;
  * <p>
  * This is thread-safe, and can be used across different readers.
  * @lucene.experimental
+ * @deprecated This evolved into the UnifiedHighlighter; use that instead.
  */
+@Deprecated
 public class PostingsHighlighter {
   
   // TODO: maybe allow re-analysis for tiny fields? currently we require offsets,
