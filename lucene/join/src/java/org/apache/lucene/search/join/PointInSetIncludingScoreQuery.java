@@ -66,6 +66,7 @@ abstract class PointInSetIncludingScoreQuery extends Query {
     }
   };
 
+  final ScoreMode scoreMode;
   final Query originalQuery;
   final boolean multipleValuesPerDocument;
   final PrefixCodedTerms sortedPackedPoints;
@@ -81,8 +82,9 @@ abstract class PointInSetIncludingScoreQuery extends Query {
 
   }
 
-  PointInSetIncludingScoreQuery(Query originalQuery, boolean multipleValuesPerDocument, String field, int bytesPerDim,
-                                Stream packedPoints) {
+  PointInSetIncludingScoreQuery(ScoreMode scoreMode, Query originalQuery, boolean multipleValuesPerDocument,
+                                String field, int bytesPerDim, Stream packedPoints) {
+    this.scoreMode = scoreMode;
     this.originalQuery = originalQuery;
     this.multipleValuesPerDocument = multipleValuesPerDocument;
     this.field = field;
@@ -287,6 +289,7 @@ abstract class PointInSetIncludingScoreQuery extends Query {
   @Override
   public final int hashCode() {
     int hash = classHash();
+    hash = 31 * hash + scoreMode.hashCode();
     hash = 31 * hash + field.hashCode();
     hash = 31 * hash + originalQuery.hashCode();
     hash = 31 * hash + sortedPackedPointsHashCode;
@@ -301,7 +304,8 @@ abstract class PointInSetIncludingScoreQuery extends Query {
   }
 
   private boolean equalsTo(PointInSetIncludingScoreQuery other) {
-    return other.field.equals(field) &&
+    return other.scoreMode.equals(scoreMode) &&
+           other.field.equals(field) &&
            other.originalQuery.equals(originalQuery) &&
            other.bytesPerDim == bytesPerDim &&
            other.sortedPackedPointsHashCode == sortedPackedPointsHashCode &&

@@ -16,6 +16,9 @@
  */
 package org.apache.lucene.search.join;
 
+import java.io.IOException;
+import java.util.Objects;
+
 import org.apache.lucene.index.FilteredTermsEnum;
 import org.apache.lucene.index.Terms;
 import org.apache.lucene.index.TermsEnum;
@@ -24,8 +27,6 @@ import org.apache.lucene.search.Query;
 import org.apache.lucene.util.AttributeSource;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.BytesRefHash;
-
-import java.io.IOException;
 
 /**
  * A query that has an array of terms from a specific field. This query will match documents have one or more terms in
@@ -37,17 +38,25 @@ class TermsQuery extends MultiTermQuery {
 
   private final BytesRefHash terms;
   private final int[] ords;
-  private final Query fromQuery; // Used for equals() only
+
+  // These fields are used for equals() and hashcode() only
+  private final String fromField;
+  private final Query fromQuery;
+  // id of the context rather than the context itself in order not to hold references to index readers
+  private final Object indexReaderContextId;
 
   /**
-   * @param field The field that should contain terms that are specified in the previous parameter
-   * @param terms The terms that matching documents should have. The terms must be sorted by natural order.
+   * @param toField               The field that should contain terms that are specified in the next parameter.
+   * @param terms                 The terms that matching documents should have. The terms must be sorted by natural order.
+   * @param indexReaderContextId  Refers to the top level index reader used to create the set of terms in the previous parameter.
    */
-  TermsQuery(String field, Query fromQuery, BytesRefHash terms) {
-    super(field);
-    this.fromQuery = fromQuery;
+  TermsQuery(String toField, BytesRefHash terms, String fromField, Query fromQuery, Object indexReaderContextId) {
+    super(toField);
     this.terms = terms;
     ords = terms.sort();
+    this.fromField = fromField;
+    this.fromQuery = fromQuery;
+    this.indexReaderContextId = indexReaderContextId;
   }
 
   @Override
@@ -63,6 +72,7 @@ class TermsQuery extends MultiTermQuery {
   public String toString(String string) {
     return "TermsQuery{" +
         "field=" + field +
+        "fromQuery=" + fromQuery.toString(field) +
         '}';
   }
 
@@ -77,18 +87,15 @@ class TermsQuery extends MultiTermQuery {
     }
 
     TermsQuery other = (TermsQuery) obj;
-    if (!fromQuery.equals(other.fromQuery)) {
-      return false;
-    }
-    return true;
+    return Objects.equals(field, other.field) &&
+        Objects.equals(fromField, other.fromField) &&
+        Objects.equals(fromQuery, other.fromQuery) &&
+        Objects.equals(indexReaderContextId, other.indexReaderContextId);
   }
 
   @Override
   public int hashCode() {
-    final int prime = 31;
-    int result = super.hashCode();
-    result += prime * fromQuery.hashCode();
-    return result;
+    return classHash() + Objects.hash(field, fromField, fromQuery, indexReaderContextId);
   }
 
   static class SeekingTermSetTermsEnum extends FilteredTermsEnum {

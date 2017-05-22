@@ -20,7 +20,6 @@ import java.io.IOException;
 import java.util.Set;
 
 import org.apache.lucene.index.DocValues;
-import org.apache.lucene.index.IndexReaderContext;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.MultiDocValues;
 import org.apache.lucene.index.SortedDocValues;
@@ -51,13 +50,14 @@ final class GlobalOrdinalsQuery extends Query {
   // id of the context rather than the context itself in order not to hold references to index readers
   private final Object indexReaderContextId;
 
-  GlobalOrdinalsQuery(LongBitSet foundOrds, String joinField, MultiDocValues.OrdinalMap globalOrds, Query toQuery, Query fromQuery, IndexReaderContext context) {
+  GlobalOrdinalsQuery(LongBitSet foundOrds, String joinField, MultiDocValues.OrdinalMap globalOrds, Query toQuery,
+                      Query fromQuery, Object indexReaderContextId) {
     this.foundOrds = foundOrds;
     this.joinField = joinField;
     this.globalOrds = globalOrds;
     this.toQuery = toQuery;
     this.fromQuery = fromQuery;
-    this.indexReaderContextId = context.id();
+    this.indexReaderContextId = indexReaderContextId;
   }
 
   @Override
