@@ -53,6 +53,9 @@ Bug Fixes
 * LUCENE-7847: Fixed all-docs-match optimization of range queries on range
   fields. (Adrien Grand)
 
+* LUCENE-7810: Fix equals() and hashCode() methods of several join queries.
+  (Hossman, Adrien Grand, Martijn van Groningen)
+
 Improvements
 
 * LUCENE-7782: OfflineSorter now passes the total number of items it
