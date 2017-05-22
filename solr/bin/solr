@@ -1874,9 +1874,16 @@ function launch_solr() {
 
     echo -e "\n"
   fi
-    
-  # need to launch solr from the server dir
-  cd "$SOLR_SERVER_DIR"
+
+  if [ -z "$SOLR_CONFIG_DIR" ]; then
+    SOLR_CONFIG_DIR="$SOLR_SERVER_DIR"
+  else
+    # Copy the jetty configuration to conf directory (so that Jetty can pickup the webapp config)
+    cp -r "${SOLR_SERVER_DIR}/contexts" "${SOLR_CONFIG_DIR}"
+  fi
+
+  # need to launch solr from the solr config dir
+  cd "$SOLR_CONFIG_DIR"
   
   if [ ! -e "$SOLR_SERVER_DIR/start.jar" ]; then
     echo -e "\nERROR: start.jar file not found in $SOLR_SERVER_DIR!\nPlease check your -d parameter to set the correct Solr server directory.\n"
@@ -1911,12 +1918,12 @@ function launch_solr() {
   esac
 
   if [ "$run_in_foreground" == "true" ]; then
-    exec "$JAVA" "${SOLR_START_OPTS[@]}" $SOLR_ADDL_ARGS -jar start.jar "${SOLR_JETTY_CONFIG[@]}"
+    exec "$JAVA" "${SOLR_START_OPTS[@]}" $SOLR_ADDL_ARGS -jar "${SOLR_SERVER_DIR}"/start.jar "${SOLR_JETTY_CONFIG[@]}"
   else
     # run Solr in the background
     nohup "$JAVA" "${SOLR_START_OPTS[@]}" $SOLR_ADDL_ARGS -Dsolr.log.muteconsole \
 	"-XX:OnOutOfMemoryError=$SOLR_TIP/bin/oom_solr.sh $SOLR_PORT $SOLR_LOGS_DIR" \
-        -jar start.jar "${SOLR_JETTY_CONFIG[@]}" \
+        -jar "${SOLR_SERVER_DIR}"/start.jar "${SOLR_JETTY_CONFIG[@]}" \
 	1>"$SOLR_LOGS_DIR/solr-$SOLR_PORT-console.log" 2>&1 & echo $! > "$SOLR_PID_DIR/solr-$SOLR_PORT.pid"
 
     # check if /proc/sys/kernel/random/entropy_avail exists then check output of cat /proc/sys/kernel/random/entropy_avail to see if less than 300
