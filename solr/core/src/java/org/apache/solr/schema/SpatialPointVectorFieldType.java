@@ -25,8 +25,9 @@ import org.apache.lucene.spatial.vector.PointVectorStrategy;
 
 /**
  * @see PointVectorStrategy
- * @lucene.experimental
+ * @deprecated use {@link LatLonPointSpatialField} instead
  */
+@Deprecated
 public class SpatialPointVectorFieldType extends AbstractSpatialFieldType<PointVectorStrategy> implements SchemaAware {
 
   protected String numberFieldName = "tdouble";//in example schema defaults to non-zero precision step -- a good choice

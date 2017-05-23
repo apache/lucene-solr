@@ -40,7 +40,10 @@ import org.locationtech.spatial4j.shape.Point;
  * This is a class that represents a <a
  * href="http://en.wikipedia.org/wiki/Geohash">Geohash</a> field. The field is
  * provided as a lat/lon pair and is internally represented as a string.
+ *
+ * @deprecated use {@link LatLonPointSpatialField} instead
  */
+@Deprecated
 public class GeoHashField extends FieldType implements SpatialQueryable {
 
   @Override

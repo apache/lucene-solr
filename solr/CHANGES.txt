@@ -79,6 +79,9 @@ Upgrading from Solr 6.x
 * The PostingsSolrHighlighter is deprecated. Furthermore, it now internally works via a re-configuration
   of the UnifiedSolrHighlighter.
 
+* Deprecated LatLonType, GeoHashField, SpatialPointVectorFieldType, and SpatialTermQueryPrefixTreeFieldType.
+  Instead, switch to LatLonPointSpatialField or SpatialRecursivePrefixTreeFieldType or RptWithGeometrySpatialField.
+
 New Features
 ----------------------
 * SOLR-9857, SOLR-9858: Collect aggregated metrics from nodes and shard leaders in overseer. (ab)
@@ -503,6 +506,10 @@ Other Changes
   (James Dyer, reported by Nikita Pchelintsev)
 
 * SOLR-10644: solr.in.sh installed by install script should be writable by solr user (janhoy)
+
+* SOLR-10729: Deprecated LatLonType, GeoHashField, SpatialPointVectorFieldType, and SpatialTermQueryPrefixTreeFieldType.
+  Instead, switch to LatLonPointSpatialField or SpatialRecursivePrefixTreeFieldType or RptWithGeometrySpatialField.
+  (David Smiley)
 
 ==================  6.5.1 ==================
 
