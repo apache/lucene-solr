@@ -36,7 +36,6 @@ import org.apache.lucene.util.BitSetIterator;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.BytesRefHash;
 import org.apache.lucene.util.FixedBitSet;
-import org.apache.lucene.util.LegacyNumericUtils;
 
 class TermsIncludingScoreQuery extends Query {
 
