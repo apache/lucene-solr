@@ -634,7 +634,8 @@ public class TestJsonFacets extends SolrTestCaseHS {
                 " , f3:{${terms} type:terms, field:'${cat_s}', sort:'x desc', facet:{x:'unique(${where_s})'}  } " +
                 " , f4:{${terms} type:terms, field:'${cat_s}', sort:'x desc', facet:{x:'hll(${where_s})'}  } " +
                 " , f5:{${terms} type:terms, field:'${cat_s}', sort:'x desc', facet:{x:'variance(${num_d})'}  } " +
-                "}"
+                " , f6:{type:terms, field:${num_d}, limit:1, sort:'x desc', facet:{x:'hll(${num_i})'}  } " +  // facet on a field that will cause hashing and exercise hll.resize on numeric field
+            "}"
         )
         , "facets=={ 'count':6, " +
             "  f1:{  'buckets':[{ val:'A', count:2, x:2.0 },  { val:'B', count:3, x:-9.0}]}" +
@@ -642,6 +643,7 @@ public class TestJsonFacets extends SolrTestCaseHS {
             ", f3:{  'buckets':[{ val:'A', count:2, x:2 },    { val:'B', count:3, x:2 }]} " +
             ", f4:{  'buckets':[{ val:'A', count:2, x:2 },    { val:'B', count:3, x:2 }]} " +
             ", f5:{  'buckets':[{ val:'B', count:3, x:74.6666666666666 },    { val:'A', count:2, x:1.0 }]} " +
+            ", f6:{  buckets:[{ val:-9.0, count:1, x:1 }]} " +
             "}"
     );
 
