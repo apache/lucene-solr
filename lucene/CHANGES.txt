@@ -11,11 +11,6 @@ Other
   from methods that don't declare them ("sneaky throw" hack). (Robert Muir,
   Uwe Schindler, Dawid Weiss)  
 
-Bug Fixes
-
-* LUCENE-7810: Fix equals() and hashCode() methods of several join queries.
-  (Hossman, Adrien Grand, Martijn van Groningen)
-
 ======================= Lucene 6.6.0 =======================
 
 New Features
@@ -65,6 +60,9 @@ Bug Fixes
 
 * LUCENE-7847: Fixed all-docs-match optimization of range queries on range
   fields. (Adrien Grand)
+
+* LUCENE-7810: Fix equals() and hashCode() methods of several join queries.
+  (Hossman, Adrien Grand, Martijn van Groningen)
 
 Improvements
 
