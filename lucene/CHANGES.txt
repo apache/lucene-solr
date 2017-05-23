@@ -68,6 +68,8 @@ Improvements
 * LUCENE-7811: Sorted set facets now use sparse storage when
   collecting hits, when appropriate.  (Mike McCandless)
 
+* LUCENE-7841: Normalize ґ to г in Ukrainian analyzer. (Andriy Rysin via Dawid Weiss)
+
 Optimizations
 
 * LUCENE-7787: spatial-extras HeatmapFacetCounter will now short-circuit it's
