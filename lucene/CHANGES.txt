@@ -53,6 +53,10 @@ API Changes
 * LUCENE-7741: DoubleValuesSource now has an explain() method (Alan Woodward,
   Adrien Grand)
 
+* LUCENE-7815: Removed the PostingsHighlighter; you should use the UnifiedHighlighter
+  instead, which derived from the UH.  WholeBreakIterator and
+  CustomSeparatorBreakIterator were moved to UH's package. (David Smiley)
+
 Bug Fixes
 
 * LUCENE-7626: IndexWriter will no longer accept broken token offsets
