@@ -121,6 +121,7 @@ public class StreamHandler extends RequestHandlerBase implements SolrCoreAware, 
       .withFunctionName("topic", TopicStream.class)
       .withFunctionName("commit", CommitStream.class)
       .withFunctionName("random", RandomStream.class)
+      .withFunctionName("knn", KnnStream.class)
       
       // decorator streams
       .withFunctionName("merge", MergeStream.class)
