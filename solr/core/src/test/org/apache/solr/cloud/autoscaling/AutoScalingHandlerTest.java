@@ -29,6 +29,8 @@ import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrResponse;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
+import org.apache.solr.client.solrj.request.CollectionAdminRequest;
+import org.apache.solr.client.solrj.response.CollectionAdminResponse;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.cloud.SolrCloudTestCase;
 import org.apache.solr.common.cloud.ZkNodeProps;
@@ -396,7 +398,7 @@ public class AutoScalingHandlerTest extends SolrCloudTestCase {
         " 'set-cluster-preferences': [" +
         "        {'minimize': 'cores', 'precision': 3}," +
         "        {'maximize': 'freedisk','precision': 100}," +
-        "        {'minimize': 'cpu','precision': 10}]" +
+        "        {'minimize': 'sysLoadAvg','precision': 10}]" +
         "}";
     req = new AutoScalingRequest(SolrRequest.METHOD.POST, path, setPreferencesCommand);
     response = solrClient.request(req);
@@ -409,7 +411,7 @@ public class AutoScalingHandlerTest extends SolrCloudTestCase {
     // set preferences
     setPreferencesCommand = "{" +
         " 'set-cluster-preferences': [" +
-        "        {'minimize': 'cpu','precision': 10}]" +
+        "        {'minimize': 'sysLoadAvg','precision': 10}]" +
         "}";
     req = new AutoScalingRequest(SolrRequest.METHOD.POST, path, setPreferencesCommand);
     response = solrClient.request(req);
@@ -466,7 +468,8 @@ public class AutoScalingHandlerTest extends SolrCloudTestCase {
         " 'set-cluster-preferences': [" +
         "        {'minimize': 'cores', 'precision': 3}," +
         "        {'maximize': 'freedisk','precision': 100}," +
-        "        {'minimize': 'cpu','precision': 10}]" +
+        "        {'minimize': 'sysLoadAvg','precision': 10}," +
+        "        {'minimize': 'heapUsage','precision': 10}]" +
         "}";
     req = new AutoScalingRequest(SolrRequest.METHOD.POST, path, setPreferencesCommand);
     response = solrClient.request(req);
@@ -478,7 +481,6 @@ public class AutoScalingHandlerTest extends SolrCloudTestCase {
         "      {'nodeRole':'!overseer', 'replica':'#ANY'}" +
         "    ]," +
         "    'policy1':[" +
-        "      {'cores':'<2', 'node':'#ANY'}," +
         "      {'replica':'<2', 'shard': '#EACH', 'node': '#ANY'}" +
         "    ]" +
         "}}";
@@ -486,7 +488,7 @@ public class AutoScalingHandlerTest extends SolrCloudTestCase {
     response = solrClient.request(req);
     assertEquals(response.get("result").toString(), "success");
 
-    SolrQuery query = new SolrQuery().setParam(CommonParams.QT, path);
+    SolrQuery query = new SolrQuery().setParam(CommonParams.QT, path).setParam("diagnostics", true);
     QueryResponse queryResponse = solrClient.query(query);
     response = queryResponse.getResponse();
 
@@ -502,7 +504,7 @@ public class AutoScalingHandlerTest extends SolrCloudTestCase {
 
     List<Map> clusterPrefs = (List<Map>) response.get("cluster-preferences");
     assertNotNull(clusterPrefs);
-    assertEquals(3, clusterPrefs.size());
+    assertEquals(4, clusterPrefs.size());
 
     List<Map> clusterPolicy = (List<Map>) response.get("cluster-policy");
     assertNotNull(clusterPolicy);
@@ -513,6 +515,81 @@ public class AutoScalingHandlerTest extends SolrCloudTestCase {
     assertEquals(2, policies.size());
     assertNotNull(policies.get("xyz"));
     assertNotNull(policies.get("policy1"));
+
+    Map<String, Object> diagnostics = (Map<String, Object>) response.get("diagnostics");
+    List sortedNodes = (List) diagnostics.get("sortedNodes");
+    assertNotNull(sortedNodes);
+
+    assertEquals(2, sortedNodes.size());
+    String[] sortedNodeNames = new String[2];
+    for (int i = 0; i < 2; i++) {
+      Map node = (Map) sortedNodes.get(i);
+      assertNotNull(node);
+      assertEquals(5, node.size());
+      assertNotNull(sortedNodeNames[i] = (String) node.get("node"));
+      assertNotNull(node.get("cores"));
+      assertEquals(0, node.get("cores"));
+      assertNotNull(node.get("freedisk"));
+      assertNotNull(node.get("sysLoadAvg"));
+      assertNotNull(node.get("heapUsage"));
+    }
+
+    List<Map<String, Object>> violations = (List<Map<String, Object>>) diagnostics.get("violations");
+    assertNotNull(violations);
+    assertEquals(0, violations.size());
+
+    // lets create a collection and ensure that its details show up in the diagnostics output
+    CollectionAdminRequest.Create create = CollectionAdminRequest.Create.createCollection("readApiTest", 1, 2);
+    CollectionAdminResponse adminResponse = create.process(solrClient);
+    assertTrue(adminResponse.isSuccess());
+
+    // get the diagnostics output again
+    queryResponse = solrClient.query(query);
+    response = queryResponse.getResponse();
+    diagnostics = (Map<String, Object>) response.get("diagnostics");
+    sortedNodes = (List) diagnostics.get("sortedNodes");
+    assertNotNull(sortedNodes);
+
+    assertEquals(2, sortedNodes.size());
+    for (int i = 0; i < 2; i++) {
+      Map node = (Map) sortedNodes.get(i);
+      assertNotNull(node);
+      assertEquals(5, node.size());
+      assertNotNull(node.get("node"));
+      assertEquals(sortedNodeNames[i], node.get("node"));
+      assertNotNull(node.get("cores"));
+      assertEquals(1, node.get("cores"));
+      assertNotNull(node.get("freedisk"));
+      assertNotNull(node.get("sysLoadAvg"));
+      assertNotNull(node.get("heapUsage"));
+    }
+
+    violations = (List<Map<String, Object>>) diagnostics.get("violations");
+    assertNotNull(violations);
+    assertEquals(0, violations.size());
+
+    // lets create a collection which violates the rule replicas < 2
+    create = CollectionAdminRequest.Create.createCollection("readApiTestViolations", 1, 6);
+    create.setMaxShardsPerNode(10);
+    adminResponse = create.process(solrClient);
+    assertTrue(adminResponse.isSuccess());
+
+    // get the diagnostics output again
+    queryResponse = solrClient.query(query);
+    response = queryResponse.getResponse();
+    diagnostics = (Map<String, Object>) response.get("diagnostics");
+    sortedNodes = (List) diagnostics.get("sortedNodes");
+    assertNotNull(sortedNodes);
+
+    violations = (List<Map<String, Object>>) diagnostics.get("violations");
+    assertNotNull(violations);
+    assertEquals(2, violations.size());
+    for (Map<String, Object> violation : violations) {
+      assertEquals("readApiTestViolations", violation.get("collection"));
+      assertEquals("shard1", violation.get("shard"));
+      assertEquals(Utils.makeMap("replica", "3"), violation.get("violation"));
+      assertNotNull(violation.get("clause"));
+    }
   }
 
   static class AutoScalingRequest extends SolrRequest {

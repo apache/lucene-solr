@@ -166,13 +166,13 @@ public class TestPolicy extends SolrTestCaseJ4 {
         " cluster-preferences:[" +
         "{minimize:cores , precision:2}," +
         "{maximize:freedisk, precision:50}, " +
-        "{minimize:heap, precision:1000}]}";
+        "{minimize:heapUsage, precision:1000}]}";
 
     Map<String, Map> nodeValues = (Map<String, Map>) Utils.fromJSONString("{" +
-        "node1:{cores:12, freedisk: 334, heap:10480}," +
-        "node2:{cores:4, freedisk: 749, heap:6873}," +
-        "node3:{cores:7, freedisk: 262, heap:7834}," +
-        "node4:{cores:8, freedisk: 375, heap:16900, nodeRole:overseer}" +
+        "node1:{cores:12, freedisk: 334, heapUsage:10480}," +
+        "node2:{cores:4, freedisk: 749, heapUsage:6873}," +
+        "node3:{cores:7, freedisk: 262, heapUsage:7834}," +
+        "node4:{cores:8, freedisk: 375, heapUsage:16900, nodeRole:overseer}" +
         "}");
 
     Policy policy = new Policy((Map<String, Object>) Utils.fromJSONString(rules));
@@ -199,11 +199,11 @@ public class TestPolicy extends SolrTestCaseJ4 {
     assertEquals("node2", operation.get("node"));
 
     nodeValues = (Map<String, Map>) Utils.fromJSONString("{" +
-        "node1:{cores:12, freedisk: 334, heap:10480}," +
-        "node2:{cores:4, freedisk: 749, heap:6873}," +
-        "node3:{cores:7, freedisk: 262, heap:7834}," +
-        "node5:{cores:0, freedisk: 895, heap:17834}," +
-        "node4:{cores:8, freedisk: 375, heap:16900, nodeRole:overseer}" +
+        "node1:{cores:12, freedisk: 334, heapUsage:10480}," +
+        "node2:{cores:4, freedisk: 749, heapUsage:6873}," +
+        "node3:{cores:7, freedisk: 262, heapUsage:7834}," +
+        "node5:{cores:0, freedisk: 895, heapUsage:17834}," +
+        "node4:{cores:8, freedisk: 375, heapUsage:16900, nodeRole:overseer}" +
         "}");
     session = policy.createSession(getClusterDataProvider(nodeValues, clusterState));
     SolrRequest opReq = session.getSuggester(MOVEREPLICA)
@@ -282,7 +282,7 @@ public class TestPolicy extends SolrTestCaseJ4 {
         "'cluster-preferences':[" +
         "{'minimize':'cores','precision':2}," +
         "{'maximize':'freedisk','precision':50}," +
-        "{'minimize':'heap','precision':1000}" +
+        "{'minimize':'heapUsage','precision':1000}" +
         "]," +
         "'cluster-policy':[" +
         "{'nodeRole':'!overseer','strict':false}," +
@@ -300,10 +300,10 @@ public class TestPolicy extends SolrTestCaseJ4 {
         "}";
 
     Map<String, Map> nodeValues = (Map<String, Map>) Utils.fromJSONString("{" +
-        "node1:{cores:12, freedisk: 334, heap:10480, rack: rack4}," +
-        "node2:{cores:4, freedisk: 749, heap:6873, rack: rack3}," +
-        "node3:{cores:7, freedisk: 262, heap:7834, rack: rack2}," +
-        "node4:{cores:8, freedisk: 375, heap:16900, nodeRole:overseer, rack: rack1}" +
+        "node1:{cores:12, freedisk: 334, heapUsage:10480, rack: rack4}," +
+        "node2:{cores:4, freedisk: 749, heapUsage:6873, rack: rack3}," +
+        "node3:{cores:7, freedisk: 262, heapUsage:7834, rack: rack2}," +
+        "node4:{cores:8, freedisk: 375, heapUsage:16900, nodeRole:overseer, rack: rack1}" +
         "}");
     Policy policy = new Policy((Map<String, Object>) Utils.fromJSONString(rules));
     ClusterDataProvider clusterDataProvider = getClusterDataProvider(nodeValues, clusterState);

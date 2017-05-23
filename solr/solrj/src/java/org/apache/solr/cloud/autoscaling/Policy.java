@@ -100,6 +100,10 @@ public class Policy implements MapWriter {
     return clusterPolicy;
   }
 
+  public List<Preference> getClusterPreferences() {
+    return clusterPreferences;
+  }
+
   @Override
   public void writeMap(EntryWriter ew) throws IOException {
     if (!policies.isEmpty()) {
@@ -241,7 +245,7 @@ public class Policy implements MapWriter {
   }
 
   enum SortParam {
-    freedisk, cores, heap, cpu;
+    freedisk, cores, heapUsage, sysLoadAvg;
 
     static SortParam get(String m) {
       for (SortParam p : values()) if (p.name().equals(m)) return p;

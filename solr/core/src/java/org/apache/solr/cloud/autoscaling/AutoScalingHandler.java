@@ -17,6 +17,7 @@
 
 package org.apache.solr.cloud.autoscaling;
 
+import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -33,6 +34,8 @@ import java.util.concurrent.TimeUnit;
 import com.google.common.collect.ImmutableSet;
 import org.apache.solr.api.Api;
 import org.apache.solr.api.ApiBag;
+import org.apache.solr.client.solrj.impl.CloudSolrClient;
+import org.apache.solr.client.solrj.impl.SolrClientDataProvider;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.cloud.ZkStateReader;
@@ -83,58 +86,98 @@ public class AutoScalingHandler extends RequestHandlerBase implements Permission
 
   @Override
   public void handleRequestBody(SolrQueryRequest req, SolrQueryResponse rsp) throws Exception {
-    String httpMethod = (String) req.getContext().get("httpMethod");
-    RequestHandlerUtils.setWt(req, JSON);
+    try {
+      String httpMethod = (String) req.getContext().get("httpMethod");
+      RequestHandlerUtils.setWt(req, JSON);
 
-    if ("GET".equals(httpMethod)) {
-      Map<String, Object> map = zkReadAutoScalingConf(container.getZkController().getZkStateReader());
-      rsp.getValues().addAll(map);
-      RequestHandlerUtils.addExperimentalFormatWarning(rsp);
-    } else  {
-      if (req.getContentStreams() == null) {
-        throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "No commands specified for autoscaling");
-      }
-      List<CommandOperation> ops = CommandOperation.readCommands(req.getContentStreams(), rsp, singletonCommands);
-      if (ops == null) {
-        // errors have already been added to the response so there's nothing left to do
-        return;
-      }
-      for (CommandOperation op : ops) {
-        switch (op.name) {
-          case "set-trigger":
-            handleSetTrigger(req, rsp, op);
-            break;
-          case "remove-trigger":
-            handleRemoveTrigger(req, rsp, op);
-            break;
-          case "set-listener":
-            handleSetListener(req, rsp, op);
-            break;
-          case "remove-listener":
-            handleRemoveListener(req, rsp, op);
-            break;
-          case "suspend-trigger":
-            handleSuspendTrigger(req, rsp, op);
-            break;
-          case "resume-trigger":
-            handleResumeTrigger(req, rsp, op);
-            break;
-          case "set-policy":
-            handleSetPolicies(req, rsp, op);
-            break;
-          case "remove-policy":
-            handleRemovePolicy(req, rsp, op);
-            break;
-          case "set-cluster-preferences":
-            handleSetClusterPreferences(req, rsp, op);
-            break;
-          case "set-cluster-policy":
-            handleSetClusterPolicy(req, rsp, op);
-            break;
-          default:
-            throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Unknown command: " + op.name);
+      if ("GET".equals(httpMethod)) {
+        Map<String, Object> map = zkReadAutoScalingConf(container.getZkController().getZkStateReader());
+        rsp.getValues().addAll(map);
+        if (req.getParams().getBool("diagnostics", false)) {
+          handleDiagnostics(rsp, map);
+        }
+      } else {
+        if (req.getContentStreams() == null) {
+          throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "No commands specified for autoscaling");
+        }
+        List<CommandOperation> ops = CommandOperation.readCommands(req.getContentStreams(), rsp, singletonCommands);
+        if (ops == null) {
+          // errors have already been added to the response so there's nothing left to do
+          return;
+        }
+        for (CommandOperation op : ops) {
+          switch (op.name) {
+            case "set-trigger":
+              handleSetTrigger(req, rsp, op);
+              break;
+            case "remove-trigger":
+              handleRemoveTrigger(req, rsp, op);
+              break;
+            case "set-listener":
+              handleSetListener(req, rsp, op);
+              break;
+            case "remove-listener":
+              handleRemoveListener(req, rsp, op);
+              break;
+            case "suspend-trigger":
+              handleSuspendTrigger(req, rsp, op);
+              break;
+            case "resume-trigger":
+              handleResumeTrigger(req, rsp, op);
+              break;
+            case "set-policy":
+              handleSetPolicies(req, rsp, op);
+              break;
+            case "remove-policy":
+              handleRemovePolicy(req, rsp, op);
+              break;
+            case "set-cluster-preferences":
+              handleSetClusterPreferences(req, rsp, op);
+              break;
+            case "set-cluster-policy":
+              handleSetClusterPolicy(req, rsp, op);
+              break;
+            default:
+              throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Unknown command: " + op.name);
+          }
         }
       }
+    } finally {
+      RequestHandlerUtils.addExperimentalFormatWarning(rsp);
+    }
+  }
+
+  private void handleDiagnostics(SolrQueryResponse rsp, Map<String, Object> autoScalingConf) throws IOException {
+    Policy policy = new Policy(autoScalingConf);
+    try (CloudSolrClient build = new CloudSolrClient.Builder()
+        .withHttpClient(container.getUpdateShardHandler().getHttpClient())
+        .withZkHost(container.getZkController().getZkServerAddress()).build()) {
+      Policy.Session session = policy.createSession(new SolrClientDataProvider(build));
+      List<Row> sorted = session.getSorted();
+      List<Clause.Violation> violations = session.getViolations();
+
+      List<Preference> clusterPreferences = policy.getClusterPreferences();
+
+      List<Map<String, Object>> sortedNodes = new ArrayList<>(sorted.size());
+      for (Row row : sorted) {
+        Map<String, Object> map = Utils.makeMap("node", row.node);
+        for (Cell cell : row.cells) {
+          for (Preference clusterPreference : clusterPreferences) {
+            Policy.SortParam name = clusterPreference.name;
+            if (cell.name.equalsIgnoreCase(name.name()))  {
+              map.put(name.name(), cell.val);
+              break;
+            }
+          }
+        }
+        sortedNodes.add(map);
+      }
+
+      Map<String, Object> map = new HashMap<>(2);
+      map.put("sortedNodes", sortedNodes);
+
+      map.put("violations", violations);
+      rsp.getValues().add("diagnostics", map);
     }
   }
 

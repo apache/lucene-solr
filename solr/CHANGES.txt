@@ -91,6 +91,9 @@ New Features
 * SOLR-10373: Implement read API for autoscaling configuration at /admin/autoscaling or
   /cluster/autoscaling paths. (shalin)
 
+* SOLR-10677: Expose a diagnostics API to return nodes sorted by load in descending order and
+  any policy violations. (shalin)
+
 Bug Fixes
 ----------------------
 * SOLR-9262: Connection and read timeouts are being ignored by UpdateShardHandler after SOLR-4509.
