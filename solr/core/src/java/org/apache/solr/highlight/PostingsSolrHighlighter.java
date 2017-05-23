@@ -98,9 +98,10 @@ import org.apache.solr.util.plugin.PluginInfoInitialized;
  *    <li>hl.highlightMultiTerm enables highlighting for range/wildcard/fuzzy/prefix queries.
  *        NOTE: currently hl.maxAnalyzedChars cannot yet be specified per-field
  *  </ul>
- *  
- * @lucene.experimental 
+ *
+ * @deprecated Use {@link UnifiedSolrHighlighter} instead
  */
+@Deprecated
 public class PostingsSolrHighlighter extends SolrHighlighter implements PluginInfoInitialized {
   
   @Override

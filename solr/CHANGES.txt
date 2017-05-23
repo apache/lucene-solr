@@ -365,6 +365,8 @@ Other Changes
   Instead, switch to LatLonPointSpatialField or SpatialRecursivePrefixTreeFieldType or RptWithGeometrySpatialField.
   (David Smiley)
 
+* SOLR-10700: Deprecated PostingsSolrHighlighter. Use UnifiedSolrHighlighter instead. (David Smiley)
+
 ==================  6.5.1 ==================
 
 Bug Fixes
