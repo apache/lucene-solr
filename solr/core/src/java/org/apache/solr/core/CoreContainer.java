@@ -178,9 +178,6 @@ public class CoreContainer {
 
   protected MetricsHandler metricsHandler;
 
-  protected MetricsCollectorHandler metricsCollectorHandler;
-
-
   // Bits for the state variable.
   public final static long LOAD_COMPLETE = 0x1L;
   public final static long CORE_DISCOVERY_COMPLETE = 0x2L;
