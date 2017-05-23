@@ -18,6 +18,7 @@
 package org.apache.solr.handler.admin;
 
 import java.lang.invoke.MethodHandles;
+import java.util.Objects;
 
 import org.apache.lucene.search.MatchAllDocsQuery;
 import org.apache.solr.cloud.CloudDescriptor;
@@ -63,18 +64,20 @@ class PrepRecoveryOp implements CoreAdminHandler.CoreAdminOp {
     Boolean onlyIfLeader = params.getBool("onlyIfLeader");
     Boolean onlyIfLeaderActive = params.getBool("onlyIfLeaderActive");
 
-    log.info("Going to wait for coreNodeName: " + coreNodeName + ", state: " + waitForState
-        + ", checkLive: " + checkLive + ", onlyIfLeader: " + onlyIfLeader
-        + ", onlyIfLeaderActive: " + onlyIfLeaderActive);
 
-    int maxTries = 0;
+    CoreContainer coreContainer = it.handler.coreContainer;
+    // wait long enough for the leader conflict to work itself out plus a little extra
+    int conflictWaitMs = coreContainer.getZkController().getLeaderConflictResolveWait();
+    int maxTries = (int) Math.round(conflictWaitMs / 1000) + 3;
+    log.info("Going to wait for coreNodeName: {}, state: {}, checkLive: {}, onlyIfLeader: {}, onlyIfLeaderActive: {}, maxTime: {} s",
+        coreNodeName, waitForState, checkLive, onlyIfLeader, onlyIfLeaderActive, maxTries);
+    
     Replica.State state = null;
     boolean live = false;
     int retry = 0;
     while (true) {
-      CoreContainer coreContainer = it.handler.coreContainer;
       try (SolrCore core = coreContainer.getCore(cname)) {
-        if (core == null && retry == 30) {
+        if (core == null && retry == Math.min(30, maxTries)) {
           throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "core not found:"
               + cname);
         }
@@ -100,15 +103,6 @@ class PrepRecoveryOp implements CoreAdminHandler.CoreAdminOp {
 
             // force a cluster state update
             coreContainer.getZkController().getZkStateReader().forceUpdateCollection(collectionName);
-          }
-
-          if (maxTries == 0) {
-            // wait long enough for the leader conflict to work itself out plus a little extra
-            int conflictWaitMs = coreContainer.getZkController().getLeaderConflictResolveWait();
-            maxTries = (int) Math.round(conflictWaitMs / 1000) + 3;
-            log.info("Will wait a max of " + maxTries + " seconds to see " + cname + " (" +
-                cloudDescriptor.getShardId() + " of " +
-                cloudDescriptor.getCollectionName() + ") have state: " + waitForState);
           }
 
           ClusterState clusterState = coreContainer.getZkController().getClusterState();
@@ -160,6 +154,7 @@ class PrepRecoveryOp implements CoreAdminHandler.CoreAdminOp {
           String collection = null;
           String leaderInfo = null;
           String shardId = null;
+          
           try {
             CloudDescriptor cloudDescriptor =
                 core.getCoreDescriptor().getCloudDescriptor();
@@ -175,8 +170,7 @@ class PrepRecoveryOp implements CoreAdminHandler.CoreAdminOp {
               "I was asked to wait on state " + waitForState + " for "
                   + shardId + " in " + collection + " on " + nodeName
                   + " but I still do not see the requested state. I see state: "
-                  + state.toString() + " live:" + live + " leader from ZK: " + leaderInfo
-          );
+                  + Objects.toString(state) + " live:" + live + " leader from ZK: " + leaderInfo);
         }
 
         if (coreContainer.isShutDown()) {
@@ -185,7 +179,7 @@ class PrepRecoveryOp implements CoreAdminHandler.CoreAdminOp {
         }
 
         // solrcloud_debug
-        if (log.isDebugEnabled()) {
+        if (log.isDebugEnabled() && core != null) {
           try {
             LocalSolrQueryRequest r = new LocalSolrQueryRequest(core,
                 new ModifiableSolrParams());

@@ -39,6 +39,7 @@ import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.ImplicitDocRouter;
+import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.cloud.ZkStateReader;
@@ -63,11 +64,15 @@ import static org.apache.solr.cloud.OverseerCollectionMessageHandler.RANDOM;
 import static org.apache.solr.cloud.OverseerCollectionMessageHandler.SHARDS_PROP;
 import static org.apache.solr.common.cloud.ZkStateReader.COLLECTION_PROP;
 import static org.apache.solr.common.cloud.ZkStateReader.SHARD_ID_PROP;
+import static org.apache.solr.common.cloud.ZkStateReader.REPLICA_TYPE;
 import static org.apache.solr.common.params.CollectionParams.CollectionAction.CREATE;
 import static org.apache.solr.common.params.CollectionParams.CollectionAction.CREATESHARD;
 import static org.apache.solr.common.params.CommonAdminParams.ASYNC;
 import static org.apache.solr.common.params.CommonParams.NAME;
 import static org.apache.solr.common.cloud.ZkStateReader.REPLICATION_FACTOR;
+import static org.apache.solr.common.cloud.ZkStateReader.NRT_REPLICAS;
+import static org.apache.solr.common.cloud.ZkStateReader.PULL_REPLICAS;
+import static org.apache.solr.common.cloud.ZkStateReader.TLOG_REPLICAS;
 import static org.apache.solr.common.cloud.ZkStateReader.MAX_SHARDS_PER_NODE;
 
 public class RestoreCmd implements OverseerCollectionMessageHandler.Cmd {
@@ -107,15 +112,23 @@ public class RestoreCmd implements OverseerCollectionMessageHandler.Cmd {
         zkStateReader.getClusterState().getLiveNodes(), message, RANDOM);
 
     int numShards = backupCollectionState.getActiveSlices().size();
-    int repFactor = message.getInt(REPLICATION_FACTOR, backupCollectionState.getReplicationFactor());
+    
+    int numNrtReplicas = getInt(message, NRT_REPLICAS, backupCollectionState.getNumNrtReplicas(), 0);
+    if (numNrtReplicas == 0) {
+      numNrtReplicas = getInt(message, REPLICATION_FACTOR, backupCollectionState.getReplicationFactor(), 0);
+    }
+    int numTlogReplicas = getInt(message, TLOG_REPLICAS, backupCollectionState.getNumTlogReplicas(), 0);
+    int numPullReplicas = getInt(message, PULL_REPLICAS, backupCollectionState.getNumPullReplicas(), 0);
+    int totalReplicasPerShard = numNrtReplicas + numTlogReplicas + numPullReplicas;
+    
     int maxShardsPerNode = message.getInt(MAX_SHARDS_PER_NODE, backupCollectionState.getMaxShardsPerNode());
     int availableNodeCount = nodeList.size();
-    if ((numShards * repFactor) > (availableNodeCount * maxShardsPerNode)) {
+    if ((numShards * totalReplicasPerShard) > (availableNodeCount * maxShardsPerNode)) {
       throw new SolrException(ErrorCode.BAD_REQUEST,
           String.format(Locale.ROOT, "Solr cloud with available number of nodes:%d is insufficient for"
-              + " restoring a collection with %d shards, replication factor %d and maxShardsPerNode %d."
+              + " restoring a collection with %d shards, total replicas per shard %d and maxShardsPerNode %d."
               + " Consider increasing maxShardsPerNode value OR number of available nodes.",
-              availableNodeCount, numShards, repFactor, maxShardsPerNode));
+              availableNodeCount, numShards, totalReplicasPerShard, maxShardsPerNode));
     }
 
     //Upload the configs
@@ -201,7 +214,7 @@ public class RestoreCmd implements OverseerCollectionMessageHandler.Cmd {
     restoreCollection.getSlices().forEach(x -> sliceNames.add(x.getName()));
 
     Map<ReplicaAssigner.Position, String> positionVsNodes = ocmh.identifyNodes(clusterState, nodeList,
-        message, sliceNames, repFactor);
+        message, sliceNames, numNrtReplicas, numTlogReplicas, numPullReplicas);
 
     //Create one replica per shard and copy backed up data to it
     for (Slice slice : restoreCollection.getSlices()) {
@@ -210,6 +223,15 @@ public class RestoreCmd implements OverseerCollectionMessageHandler.Cmd {
       propMap.put(Overseer.QUEUE_OPERATION, CREATESHARD);
       propMap.put(COLLECTION_PROP, restoreCollectionName);
       propMap.put(SHARD_ID_PROP, slice.getName());
+      
+      if (numNrtReplicas >= 1) {
+        propMap.put(REPLICA_TYPE, Replica.Type.NRT.name());
+      } else if (numTlogReplicas >= 1) {
+        propMap.put(REPLICA_TYPE, Replica.Type.TLOG.name());
+      } else {
+        throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Unexpected number of replicas, replicationFactor, " + 
+            Replica.Type.NRT + " or " + Replica.Type.TLOG + " must be greater than 0");
+      }
 
       // Get the first node matching the shard to restore in
       String node;
@@ -261,17 +283,39 @@ public class RestoreCmd implements OverseerCollectionMessageHandler.Cmd {
     //refresh the location copy of collection state
     restoreCollection = zkStateReader.getClusterState().getCollection(restoreCollectionName);
 
-    //Add the remaining replicas for each shard
-    Integer numReplicas = restoreCollection.getReplicationFactor();
-    if (numReplicas != null && numReplicas > 1) {
+    if (totalReplicasPerShard > 1) {
       log.info("Adding replicas to restored collection={}", restoreCollection);
-
       for (Slice slice : restoreCollection.getSlices()) {
-        for (int i = 1; i < numReplicas; i++) {
-          log.debug("Adding replica for shard={} collection={} ", slice.getName(), restoreCollection);
+
+        //Add the remaining replicas for each shard, considering it's type
+        int createdNrtReplicas = 0, createdTlogReplicas = 0, createdPullReplicas = 0;
+
+        // We already created either a NRT or an TLOG replica as leader
+        if (numNrtReplicas > 0) {
+          createdNrtReplicas++;
+        } else if (createdTlogReplicas > 0) {
+          createdTlogReplicas++;
+        }
+        
+        for (int i = 1; i < totalReplicasPerShard; i++) {
+          Replica.Type typeToCreate;
+          if (createdNrtReplicas < numNrtReplicas) {
+            createdNrtReplicas++;
+            typeToCreate = Replica.Type.NRT;
+          } else if (createdTlogReplicas < numTlogReplicas) {
+            createdTlogReplicas++;
+            typeToCreate = Replica.Type.TLOG;
+          } else {
+            createdPullReplicas++;
+            typeToCreate = Replica.Type.PULL;
+            assert createdPullReplicas <= numPullReplicas: "Unexpected number of replicas";
+          }
+
+          log.debug("Adding replica for shard={} collection={} of type {} ", slice.getName(), restoreCollection, typeToCreate);
           HashMap<String, Object> propMap = new HashMap<>();
           propMap.put(COLLECTION_PROP, restoreCollectionName);
           propMap.put(SHARD_ID_PROP, slice.getName());
+          propMap.put(REPLICA_TYPE, typeToCreate.name());
 
           // Get the first node matching the shard to restore in
           String node;
@@ -297,5 +341,10 @@ public class RestoreCmd implements OverseerCollectionMessageHandler.Cmd {
     }
 
     log.info("Completed restoring collection={} backupName={}", restoreCollection, backupName);
+  }
+
+  private int getInt(ZkNodeProps message, String propertyName, Integer default1, int default2) {
+    Integer value = message.getInt(REPLICATION_FACTOR, default1);
+    return value!=null?value:default2;
   }
 }

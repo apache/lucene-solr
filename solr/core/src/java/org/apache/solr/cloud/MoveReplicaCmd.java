@@ -111,7 +111,7 @@ public class MoveReplicaCmd implements Cmd{
 
   private void moveHdfsReplica(ClusterState clusterState, NamedList results, String dataDir, String targetNode, String async,
                                  DocCollection coll, Replica replica, Slice slice) throws Exception {
-    String newCoreName = Assign.buildCoreName(coll, slice.getName());
+    String newCoreName = Assign.buildCoreName(coll, slice.getName(), replica.getType());
 
     ZkNodeProps removeReplicasProps = new ZkNodeProps(
         COLLECTION_PROP, coll.getName(),
@@ -155,7 +155,7 @@ public class MoveReplicaCmd implements Cmd{
 
   private void moveNormalReplica(ClusterState clusterState, NamedList results, String targetNode, String async,
                                  DocCollection coll, Replica replica, Slice slice) throws Exception {
-    String newCoreName = Assign.buildCoreName(coll, slice.getName());
+    String newCoreName = Assign.buildCoreName(coll, slice.getName(), replica.getType());
     ZkNodeProps addReplicasProps = new ZkNodeProps(
         COLLECTION_PROP, coll.getName(),
         SHARD_ID_PROP, slice.getName(),
