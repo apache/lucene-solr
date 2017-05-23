@@ -186,6 +186,13 @@ public class CoreContainer {
 
   protected MetricsCollectorHandler metricsCollectorHandler;
 
+
+  // Bits for the state variable.
+  public final static long LOAD_COMPLETE = 0x1L;
+  public final static long CORE_DISCOVERY_COMPLETE = 0x2L;
+  public final static long INITIAL_CORE_LOAD_COMPLETE = 0x4L;
+  private volatile long status = 0L;
+
   private enum CoreInitFailedAction { fromleader, none }
 
   /**
@@ -579,7 +586,8 @@ public class CoreContainer {
         Collections.sort(cds, coreComparator::compare);
       }
       checkForDuplicateCoreNames(cds);
-
+      status |= CORE_DISCOVERY_COMPLETE;
+      
       for (final CoreDescriptor cd : cds) {
         if (cd.isTransient() || !cd.isLoadOnStartup()) {
           getTransientCacheHandler().addTransientDescriptor(cd.getName(), cd);
@@ -641,7 +649,10 @@ public class CoreContainer {
     if (isZooKeeperAware()) {
       zkSys.getZkController().checkOverseerDesignate();
     }
+    // This is a bit redundant but these are two distinct concepts for all they're accomplished at the same time.
+    status |= LOAD_COMPLETE | INITIAL_CORE_LOAD_COMPLETE;
   }
+
 
   public TransientSolrCoreCache getTransientCacheHandler() {
 
@@ -1531,6 +1542,10 @@ public class CoreContainer {
 
   public NodeConfig getNodeConfig() {
     return cfg;
+  }
+
+  public long getStatus() {
+    return status;
   }
 
 }

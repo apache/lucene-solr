@@ -222,6 +222,9 @@ New Features
 
 * SOLR-10307: Allow Passing SSL passwords through environment variables. (Mano Kovacs via Mark Miller)
 
+* SOLR-10721: Provide a way to know when Core Discovery is finished and when all async cores are done loading
+  (Erick Erickson)
+
 Bug Fixes
 ----------------------
 * SOLR-10723 JSON Facet API: resize() implemented incorrectly for CountSlotAcc, HllAgg.NumericAcc
