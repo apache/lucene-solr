@@ -5,6 +5,10 @@ http://s.apache.org/luceneversions
 
 ======================= Lucene 6.7.0 =======================
 
+Improvements
+
+* LUCENE-7841: Normalize ґ to г in Ukrainian analyzer. (Andriy Rysin via Dawid Weiss)
+
 Other
 
 * LUCENE-7800: Remove code that potentially rethrows checked exceptions 
@@ -58,7 +62,6 @@ Bug Fixes
 * LUCENE-7833: ToParentBlockJoinQuery computed the min score instead of the max
   score with ScoreMode.MAX. (Adrien Grand)
 
-Improvements
 
 * LUCENE-7782: OfflineSorter now passes the total number of items it
   will write to getWriter (Mike McCandless)
@@ -75,6 +78,10 @@ Improvements
 
 * LUCENE-7811: Sorted set facets now use sparse storage when
   collecting hits, when appropriate.  (Mike McCandless)
+
+Improvements
+
+* LUCENE-7841: Normalize ґ to г in Ukrainian analyzer. (Andriy Rysin via Dawid Weiss)
 
 Optimizations
 
