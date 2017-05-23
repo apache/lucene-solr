@@ -20,8 +20,9 @@ import org.apache.lucene.spatial.prefix.TermQueryPrefixTreeStrategy;
 
 /**
  * @see TermQueryPrefixTreeStrategy
- * @lucene.experimental
+ * @deprecated use {@link org.apache.lucene.spatial.prefix.RecursivePrefixTreeStrategy} or {@link RptWithGeometrySpatialField}
  */
+@Deprecated
 public class SpatialTermQueryPrefixTreeFieldType extends AbstractSpatialPrefixTreeFieldType<TermQueryPrefixTreeStrategy> {
 
   @Override
