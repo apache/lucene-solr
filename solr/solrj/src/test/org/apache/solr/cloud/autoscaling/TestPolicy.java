@@ -32,7 +32,7 @@ import com.google.common.collect.ImmutableList;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
-import org.apache.solr.client.solrj.request.CollectionAdminRequest.MoveReplica;
+import org.apache.solr.cloud.autoscaling.Clause.Violation;
 import org.apache.solr.cloud.autoscaling.Policy.Suggester.Hint;
 import org.apache.solr.common.params.CollectionParams;
 import org.apache.solr.common.params.SolrParams;
@@ -186,21 +186,12 @@ public class TestPolicy extends SolrTestCaseJ4 {
     assertEquals("node2", l.get(3).node);
 
 
-    /*Map<String, List<Clause>> violations = session.getViolations();
-    System.out.println(Utils.getDeepCopy(violations, 6));
+    List<Violation> violations = session.getViolations();
     assertEquals(3, violations.size());
-    List<Clause> v = violations.get("node4");
-    assertNotNull(v);
-    assertEquals(v.get(0).tag.name, "nodeRole");
-    v = violations.get("node1");
-    assertNotNull(v);
-    assertEquals(v.get(0).replica.op, Operand.LESS_THAN);
-    assertEquals(v.get(0).replica.val, 2);
-    v = violations.get("node3");
-    assertNotNull(v);
-    assertEquals(v.get(0).replica.op, Operand.LESS_THAN);
-    assertEquals(v.get(0).replica.val, 1);
-    assertEquals(v.get(0).tag.val, "node3");*/
+    assertTrue( violations.stream().anyMatch(violation -> "node3".equals(violation.getClause().tag.val)));
+    assertTrue( violations.stream().anyMatch(violation -> "nodeRole".equals(violation.getClause().tag.name)));
+    assertTrue(violations.stream().anyMatch(violation -> (violation.getClause().replica.op == Operand.LESS_THAN && "node".equals(violation.getClause().tag.name))));
+
     Policy.Suggester suggester = session.getSuggester(ADDREPLICA)
         .hint(Hint.COLL, "gettingstarted")
         .hint(Hint.SHARD, "r1");

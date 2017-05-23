@@ -64,6 +64,12 @@ public interface MapWriter extends MapSerializable {
      */
     EntryWriter put(String k, Object v) throws IOException;
 
+    default EntryWriter putIfNotNull(String k, Object v) throws IOException {
+      if(v != null) put(k,v);
+      return this;
+    }
+
+
     default EntryWriter put(String k, int v) throws IOException {
       put(k, (Integer) v);
       return this;
