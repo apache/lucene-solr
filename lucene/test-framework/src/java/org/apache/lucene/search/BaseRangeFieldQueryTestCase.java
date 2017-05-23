@@ -61,7 +61,9 @@ public abstract class BaseRangeFieldQueryTestCase extends LuceneTestCase {
 
   public void testRandomTiny() throws Exception {
     // Make sure single-leaf-node case is OK:
-    doTestRandom(10, false);
+    for (int i = 0; i < 10; ++i) {
+      doTestRandom(10, false);
+    }
   }
 
   public void testRandomMedium() throws Exception {
