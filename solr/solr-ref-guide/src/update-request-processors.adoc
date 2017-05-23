@@ -90,7 +90,7 @@ Do not forget to add `RunUpdateProcessorFactory` at the end of any chains you de
 
 Update request processors can also be configured independent of a chain in `solrconfig.xml`.
 
-.updateProcessor
+.updateProcessor Configuration
 [source,xml]
 ----
 <updateProcessor class="solr.processor.SignatureUpdateProcessorFactory" name="signature">
@@ -105,7 +105,7 @@ Update request processors can also be configured independent of a chain in `solr
 
 In this case, an instance of `SignatureUpdateProcessorFactory` is configured with the name "signature" and a `RemoveBlankFieldUpdateProcessorFactory` is defined with the name "remove_blanks". Once the above has been specified in `solrconfig.xml`, we can be refer to them in update request processor chains in `solrconfig.xml` as follows:
 
-.updateRequestProcessorChains and updateProcessors
+.updateRequestProcessorChain Configuration
 [source,xml]
 ----
 <updateProcessorChain name="custom" processor="remove_blanks,signature">
@@ -135,7 +135,7 @@ In summary:
 
 In the previous section, we saw that the `updateRequestProcessorChain` was configured with `processor="remove_blanks, signature"`. This means that such processors are of the #1 kind and are run only on the forwarding nodes. Similarly, we can configure them as the #2 kind by specifying with the attribute "post-processor" as follows:
 
-.post-processors
+.post-processor Configuration
 [source,xml]
 ----
 <updateProcessorChain name="custom" processor="signature" post-processor="remove_blanks">
@@ -145,18 +145,18 @@ In the previous section, we saw that the `updateRequestProcessorChain` was confi
 
 However executing a processor only on the forwarding nodes is a great way of distributing an expensive computation such as de-duplication across a SolrCloud cluster by sending requests randomly via a load balancer. Otherwise the expensive computation is repeated on both the leader and replica nodes.
 
-// TODO 6.6 I think this can be removed after SOLR-9530 -CT
-.Pre-processors and Atomic Updates
-[WARNING]
-====
-Because `DistributedUpdateProcessor` is responsible for processing <<updating-parts-of-documents.adoc#updating-parts-of-documents,Atomic Updates>> into full documents on the leader node, this means that pre-processors which are executed only on the forwarding nodes can only operate on the partial document. If you have a processor which must process a full document then the only choice is to specify it as a post-processor.
-====
-
 .Custom update chain post-processors may never be invoked on a recovering replica
 [WARNING]
 ====
 While a replica is in <<read-and-write-side-fault-tolerance.adoc#ReadandWriteSideFaultTolerance-WriteSideFaultTolerance,recovery>>, inbound update requests are buffered to the transaction log. After recovery has completed successfully, those buffered update requests are replayed. As of this writing, however, custom update chain post-processors are never invoked for buffered update requests. See https://issues.apache.org/jira/browse/SOLR-8030[SOLR-8030]. To work around this problem until SOLR-8030 has been fixed, *avoid specifying post-processors in custom update chains*.
 ====
+
+=== Atomic Updates
+
+If the `AtomicUpdateProcessorFactory` is in the update chain before the `DistributedUpdateProcessor`, the incoming document to the chain will be a partial document.
+
+Because `DistributedUpdateProcessor` is responsible for processing <<updating-parts-of-documents.adoc#updating-parts-of-documents,Atomic Updates>> into full documents on the leader node, this means that pre-processors which are executed only on the forwarding nodes can only operate on the partial document. If you have a processor which must process a full document then the only choice is to specify it as a post-processor.
+
 
 [[UpdateRequestProcessors-UsingCustomChains]]
 == Using Custom Chains
