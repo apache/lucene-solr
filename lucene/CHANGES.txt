@@ -105,12 +105,7 @@ Other
 
 * LUCENE-7800: Remove code that potentially rethrows checked exceptions 
   from methods that don't declare them ("sneaky throw" hack). (Robert Muir,
-  Uwe Schindler, Dawid Weiss)  
-
-Bug Fixes
-
-* LUCENE-7810: Fix equals() and hashCode() methods of several join queries.
-  (Hossman, Adrien Grand, Martijn van Groningen)
+  Uwe Schindler, Dawid Weiss)
 
 ======================= Lucene 6.6.0 =======================
 
@@ -161,6 +156,9 @@ Bug Fixes
 
 * LUCENE-7847: Fixed all-docs-match optimization of range queries on range
   fields. (Adrien Grand)
+
+* LUCENE-7810: Fix equals() and hashCode() methods of several join queries.
+  (Hossman, Adrien Grand, Martijn van Groningen)
 
 Improvements
 
