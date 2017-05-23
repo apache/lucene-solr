@@ -46,7 +46,7 @@ public class ImplicitSnitch extends Snitch {
   public static final String CORES = "cores";
   public static final String DISK = "freedisk";
   public static final String ROLE = "role";
-  public static final String NODEROLE = "noderole";
+  public static final String NODEROLE = "nodeRole";
   public static final String SYSPROP = "sysprop.";
   public static final List<String> IP_SNITCHES = Collections.unmodifiableList(Arrays.asList("ip_1", "ip_2", "ip_3", "ip_4"));
   public static final Set<String> tags = Collections.unmodifiableSet(new HashSet<>(Arrays.asList(NODE, PORT, HOST, CORES, DISK, ROLE, "ip_1", "ip_2", "ip_3", "ip_4")));
