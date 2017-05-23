@@ -155,6 +155,9 @@ Bug Fixes
 * LUCENE-7833: ToParentBlockJoinQuery computed the min score instead of the max
   score with ScoreMode.MAX. (Adrien Grand)
 
+* LUCENE-7847: Fixed all-docs-match optimization of range queries on range
+  fields. (Adrien Grand)
+
 Improvements
 
 * LUCENE-7782: OfflineSorter now passes the total number of items it

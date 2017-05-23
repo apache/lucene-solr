@@ -31,11 +31,18 @@ public class TestFloatRangeFieldQueries extends BaseRangeFieldQueryTestCase {
   private static final String FIELD_NAME = "floatRangeField";
 
   private float nextFloatInternal() {
-    if (rarely()) {
-      return random().nextBoolean() ? Float.NEGATIVE_INFINITY : Float.POSITIVE_INFINITY;
+    switch (random().nextInt(5)) {
+      case 0:
+        return Float.NEGATIVE_INFINITY;
+      case 1:
+        return Float.POSITIVE_INFINITY;
+      default:
+        if (random().nextBoolean()) {
+          return random().nextFloat();
+        } else {
+          return (random().nextInt(15) - 7) / 3f;
+        }
     }
-    float max = Float.MAX_VALUE / 2;
-    return (max + max) * random().nextFloat() - max;
   }
 
   @Override

@@ -31,11 +31,18 @@ public class TestDoubleRangeFieldQueries extends BaseRangeFieldQueryTestCase {
   private static final String FIELD_NAME = "doubleRangeField";
 
   private double nextDoubleInternal() {
-    if (rarely()) {
-      return random().nextBoolean() ? Double.POSITIVE_INFINITY : Double.NEGATIVE_INFINITY;
+    switch (random().nextInt(5)) {
+      case 0:
+        return Double.NEGATIVE_INFINITY;
+      case 1:
+        return Double.POSITIVE_INFINITY;
+      default:
+        if (random().nextBoolean()) {
+          return random().nextDouble();
+        } else {
+          return (random().nextInt(15) - 7) / 3d;
+        }
     }
-    double max = Double.MAX_VALUE / 2;
-    return (max + max) * random().nextDouble() - max;
   }
 
   @Override
