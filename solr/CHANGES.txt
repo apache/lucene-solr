@@ -76,6 +76,9 @@ Upgrading from Solr 6.x
 * Setting <defaultSearchField> in schema is no longer allowed and will cause an exception.
   Please use "df" parameter on the request instead. For more details, see SOLR-10585.
 
+* The PostingsSolrHighlighter is deprecated. Furthermore, it now internally works via a re-configuration
+  of the UnifiedSolrHighlighter.
+
 New Features
 ----------------------
 * SOLR-9857, SOLR-9858: Collect aggregated metrics from nodes and shard leaders in overseer. (ab)
@@ -184,6 +187,9 @@ Other Changes
 * SOLR-10042: Delete old deprecated Admin UI, leaving the AngularJS UI the only one supported (janhoy)
 
 * SOLR-10378: Clicking Solr logo on AdminUI shows blank page (Takumi Yoshida via janhoy)
+
+* SOLR-10700: Deprecated and converted the PostingsSolrHighlighter to extend UnifiedSolrHighlighter and thus no
+  longer use the PostingsHighlighter.  It should behave mostly the same. (David Smiley)
 
 ==================  6.7.0 ==================
 
