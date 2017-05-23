@@ -33,6 +33,9 @@ import org.junit.After;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
+import static org.apache.solr.core.CoreContainer.CORE_DISCOVERY_COMPLETE;
+import static org.apache.solr.core.CoreContainer.INITIAL_CORE_LOAD_COMPLETE;
+import static org.apache.solr.core.CoreContainer.LOAD_COMPLETE;
 import static org.hamcrest.CoreMatchers.not;
 import static org.junit.internal.matchers.StringContains.containsString;
 
@@ -107,14 +110,23 @@ public class TestCoreDiscovery extends SolrTestCaseJ4 {
   }
 
   private CoreContainer init() throws Exception {
-    final CoreContainer cores = new CoreContainer();
+    final CoreContainer container = new CoreContainer();
     try {
-      cores.load();
+      container.load();
     } catch (Exception e) {
-      cores.shutdown();
+      container.shutdown();
       throw e;
     }
-    return cores;
+
+    long status = container.getStatus();
+
+    assertTrue("Load complete flag should be set", 
+        (status & LOAD_COMPLETE) == LOAD_COMPLETE);
+    assertTrue("Core discovery should be complete", 
+        (status & CORE_DISCOVERY_COMPLETE) == CORE_DISCOVERY_COMPLETE);
+    assertTrue("Initial core loading should be complete", 
+        (status & INITIAL_CORE_LOAD_COMPLETE) == INITIAL_CORE_LOAD_COMPLETE);
+    return container;
   }
 
   @After
