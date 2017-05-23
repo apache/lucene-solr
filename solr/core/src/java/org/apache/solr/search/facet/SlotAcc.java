@@ -551,7 +551,7 @@ class CountSlotArrAcc extends CountSlotAcc {
 
   @Override
   public void resize(Resizer resizer) {
-    resizer.resize(result, 0);
+    result = resizer.resize(result, 0);
   }
 }
 
