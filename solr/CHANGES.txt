@@ -148,6 +148,9 @@ Optimizations
   string fields from the FieldCache, resulting in up to 56% better throughput for those cases.
   (yonik)
 
+* SOLR-10727: Avoid polluting the filter cache for certain types of faceting (typically ranges) when
+  the base docset is empty. (David Smiley)
+
 Other Changes
 ----------------------
 * SOLR-10236: Removed FieldType.getNumericType(). Use getNumberType() instead. (Tomás Fernández Löbbe)
