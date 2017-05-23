@@ -23,6 +23,8 @@ import java.util.Set;
 
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
+import org.apache.solr.common.cloud.Replica;
+import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.ShardParams;
 import org.apache.solr.common.params.SolrParams;
 
@@ -74,6 +76,13 @@ public class CollectionAdminRequestRequiredParamsTest extends LuceneTestCase {
             .setRouteKey("route")
             .setCollectionName("collection");
     assertContainsParams(request.getParams(), ACTION, COLLECTION, ShardParams._ROUTE_);
+    
+    // with type parameter
+    request = new CollectionAdminRequest.AddReplica()
+            .setShardName("shard")
+            .setCollectionName("collection")
+            .setType(Replica.Type.NRT);
+    assertContainsParams(request.getParams(), ACTION, COLLECTION, SHARD, ZkStateReader.REPLICA_TYPE);
   }
   
   public void testAddReplicaProp() {

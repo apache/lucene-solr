@@ -119,8 +119,8 @@ public class BasicDistributedZkTest extends AbstractFullDistribZkTestBase {
   }
 
   @Override
-  protected int getRealtimeReplicas() {
-    return onlyLeaderIndexes? 1 : -1;
+  protected boolean useTlogReplicas() {
+    return onlyLeaderIndexes;
   }
 
   @Override
@@ -1073,12 +1073,6 @@ public class BasicDistributedZkTest extends AbstractFullDistribZkTestBase {
     assertEquals(collection1Docs, found);
     
     assertEquals(collection3Docs, collection2Docs - 1);
-  }
-  
-  protected SolrInputDocument getDoc(Object... fields) throws Exception {
-    SolrInputDocument doc = new SolrInputDocument();
-    addFields(doc, fields);
-    return doc;
   }
   
   protected void indexDoc(String collection, SolrInputDocument doc) throws IOException, SolrServerException {

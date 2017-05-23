@@ -286,7 +286,7 @@ public class CollectionsAPIDistributedZkTest extends SolrCloudTestCase {
     // first we make a core with the core name the collections api
     // will try and use - this will cause our mock fail
     Create createCmd = new Create();
-    createCmd.setCoreName("halfcollection_shard1_replica1");
+    createCmd.setCoreName(Assign.buildCoreName("halfcollection", "shard1", Replica.Type.NRT, 1));
     createCmd.setCollection("halfcollectionblocker");
     String dataDir = createTempDir().toFile().getAbsolutePath();
     createCmd.setDataDir(dataDir);
@@ -298,7 +298,7 @@ public class CollectionsAPIDistributedZkTest extends SolrCloudTestCase {
     }
 
     createCmd = new Create();
-    createCmd.setCoreName("halfcollection_shard1_replica1");
+    createCmd.setCoreName(Assign.buildCoreName("halfcollection", "shard1", Replica.Type.NRT, 1));
     createCmd.setCollection("halfcollectionblocker2");
     dataDir = createTempDir().toFile().getAbsolutePath();
     createCmd.setDataDir(dataDir);

@@ -72,6 +72,7 @@ public class AddReplicaCmd implements OverseerCollectionMessageHandler.Cmd {
     String node = message.getStr(CoreAdminParams.NODE);
     String shard = message.getStr(SHARD_ID_PROP);
     String coreName = message.getStr(CoreAdminParams.NAME);
+    Replica.Type replicaType = Replica.Type.valueOf(message.getStr(ZkStateReader.REPLICA_TYPE, Replica.Type.NRT.name()));
     boolean parallel = message.getBool("parallel", false);
     if (StringUtils.isBlank(coreName)) {
       coreName = message.getStr(CoreAdminParams.PROPERTY_PREFIX + CoreAdminParams.NAME);
@@ -93,7 +94,7 @@ public class AddReplicaCmd implements OverseerCollectionMessageHandler.Cmd {
     // Kind of unnecessary, but it does put the logic of whether to override maxShardsPerNode in one place.
     if (!skipCreateReplicaInClusterState) {
       node = getNodesForNewReplicas(clusterState, collection, shard, 1, node,
-          ocmh.overseer.getZkController().getCoreContainer()).get(0).nodeName;
+          ocmh.overseer.getZkController().getCoreContainer()).get(0).nodeName;// TODO: use replica type in this logic too
     }
     log.info("Node Identified {} for creating new replica", node);
 
@@ -101,7 +102,7 @@ public class AddReplicaCmd implements OverseerCollectionMessageHandler.Cmd {
       throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Node: " + node + " is not live");
     }
     if (coreName == null) {
-      coreName = Assign.buildCoreName(coll, shard);
+      coreName = Assign.buildCoreName(coll, shard, replicaType);
     } else if (!skipCreateReplicaInClusterState) {
       //Validate that the core name is unique in that collection
       for (Slice slice : coll.getSlices()) {
@@ -126,7 +127,8 @@ public class AddReplicaCmd implements OverseerCollectionMessageHandler.Cmd {
             ZkStateReader.CORE_NAME_PROP, coreName,
             ZkStateReader.STATE_PROP, Replica.State.DOWN.toString(),
             ZkStateReader.BASE_URL_PROP, zkStateReader.getBaseUrlForNodeName(node),
-            ZkStateReader.NODE_NAME_PROP, node);
+            ZkStateReader.NODE_NAME_PROP, node,
+            ZkStateReader.REPLICA_TYPE, replicaType.name());
         Overseer.getStateUpdateQueue(zkStateReader.getZkClient()).offer(Utils.toJSON(props));
       }
       params.set(CoreAdminParams.CORE_NODE_NAME,
@@ -142,6 +144,7 @@ public class AddReplicaCmd implements OverseerCollectionMessageHandler.Cmd {
     params.set(CoreAdminParams.NAME, coreName);
     params.set(COLL_CONF, configName);
     params.set(CoreAdminParams.COLLECTION, collection);
+    params.set(CoreAdminParams.REPLICA_TYPE, replicaType.name());
     if (shard != null) {
       params.set(CoreAdminParams.SHARD, shard);
     } else if (routeKey != null) {

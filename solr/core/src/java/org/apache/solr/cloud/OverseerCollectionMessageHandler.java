@@ -16,6 +16,51 @@
  */
 package org.apache.solr.cloud;
 
+import static org.apache.solr.common.cloud.DocCollection.SNITCH;
+import static org.apache.solr.common.cloud.ZkStateReader.BASE_URL_PROP;
+import static org.apache.solr.common.cloud.ZkStateReader.COLLECTION_PROP;
+import static org.apache.solr.common.cloud.ZkStateReader.CORE_NAME_PROP;
+import static org.apache.solr.common.cloud.ZkStateReader.CORE_NODE_NAME_PROP;
+import static org.apache.solr.common.cloud.ZkStateReader.ELECTION_NODE_PROP;
+import static org.apache.solr.common.cloud.ZkStateReader.PROPERTY_PROP;
+import static org.apache.solr.common.cloud.ZkStateReader.PROPERTY_VALUE_PROP;
+import static org.apache.solr.common.cloud.ZkStateReader.REJOIN_AT_HEAD_PROP;
+import static org.apache.solr.common.cloud.ZkStateReader.REPLICA_PROP;
+import static org.apache.solr.common.cloud.ZkStateReader.SHARD_ID_PROP;
+import static org.apache.solr.common.params.CollectionParams.CollectionAction.ADDREPLICA;
+import static org.apache.solr.common.params.CollectionParams.CollectionAction.ADDREPLICAPROP;
+import static org.apache.solr.common.params.CollectionParams.CollectionAction.ADDROLE;
+import static org.apache.solr.common.params.CollectionParams.CollectionAction.BACKUP;
+import static org.apache.solr.common.params.CollectionParams.CollectionAction.BALANCESHARDUNIQUE;
+import static org.apache.solr.common.params.CollectionParams.CollectionAction.CREATE;
+import static org.apache.solr.common.params.CollectionParams.CollectionAction.CREATEALIAS;
+import static org.apache.solr.common.params.CollectionParams.CollectionAction.CREATESHARD;
+import static org.apache.solr.common.params.CollectionParams.CollectionAction.CREATESNAPSHOT;
+import static org.apache.solr.common.params.CollectionParams.CollectionAction.DELETE;
+import static org.apache.solr.common.params.CollectionParams.CollectionAction.DELETEALIAS;
+import static org.apache.solr.common.params.CollectionParams.CollectionAction.DELETENODE;
+import static org.apache.solr.common.params.CollectionParams.CollectionAction.DELETEREPLICA;
+import static org.apache.solr.common.params.CollectionParams.CollectionAction.DELETEREPLICAPROP;
+import static org.apache.solr.common.params.CollectionParams.CollectionAction.DELETESHARD;
+import static org.apache.solr.common.params.CollectionParams.CollectionAction.DELETESNAPSHOT;
+import static org.apache.solr.common.params.CollectionParams.CollectionAction.MIGRATE;
+import static org.apache.solr.common.params.CollectionParams.CollectionAction.MIGRATESTATEFORMAT;
+import static org.apache.solr.common.params.CollectionParams.CollectionAction.MOCK_COLL_TASK;
+import static org.apache.solr.common.params.CollectionParams.CollectionAction.MOCK_REPLICA_TASK;
+import static org.apache.solr.common.params.CollectionParams.CollectionAction.MOCK_SHARD_TASK;
+import static org.apache.solr.common.params.CollectionParams.CollectionAction.MOVEREPLICA;
+import static org.apache.solr.common.params.CollectionParams.CollectionAction.MODIFYCOLLECTION;
+import static org.apache.solr.common.params.CollectionParams.CollectionAction.OVERSEERSTATUS;
+import static org.apache.solr.common.params.CollectionParams.CollectionAction.REBALANCELEADERS;
+import static org.apache.solr.common.params.CollectionParams.CollectionAction.RELOAD;
+import static org.apache.solr.common.params.CollectionParams.CollectionAction.REMOVEROLE;
+import static org.apache.solr.common.params.CollectionParams.CollectionAction.REPLACENODE;
+import static org.apache.solr.common.params.CollectionParams.CollectionAction.RESTORE;
+import static org.apache.solr.common.params.CollectionParams.CollectionAction.SPLITSHARD;
+import static org.apache.solr.common.params.CommonAdminParams.ASYNC;
+import static org.apache.solr.common.params.CommonParams.NAME;
+import static org.apache.solr.common.util.Utils.makeMap;
+
 import java.io.Closeable;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
@@ -33,7 +78,6 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.SynchronousQueue;
 import java.util.concurrent.TimeUnit;
 
-import com.google.common.collect.ImmutableMap;
 import org.apache.commons.lang.StringUtils;
 import org.apache.solr.client.solrj.SolrResponse;
 import org.apache.solr.client.solrj.SolrServerException;
@@ -80,21 +124,7 @@ import org.apache.zookeeper.KeeperException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import static org.apache.solr.common.cloud.DocCollection.SNITCH;
-import static org.apache.solr.common.cloud.ZkStateReader.BASE_URL_PROP;
-import static org.apache.solr.common.cloud.ZkStateReader.COLLECTION_PROP;
-import static org.apache.solr.common.cloud.ZkStateReader.CORE_NAME_PROP;
-import static org.apache.solr.common.cloud.ZkStateReader.CORE_NODE_NAME_PROP;
-import static org.apache.solr.common.cloud.ZkStateReader.ELECTION_NODE_PROP;
-import static org.apache.solr.common.cloud.ZkStateReader.PROPERTY_PROP;
-import static org.apache.solr.common.cloud.ZkStateReader.PROPERTY_VALUE_PROP;
-import static org.apache.solr.common.cloud.ZkStateReader.REJOIN_AT_HEAD_PROP;
-import static org.apache.solr.common.cloud.ZkStateReader.REPLICA_PROP;
-import static org.apache.solr.common.cloud.ZkStateReader.SHARD_ID_PROP;
-import static org.apache.solr.common.params.CollectionParams.CollectionAction.*;
-import static org.apache.solr.common.params.CommonAdminParams.ASYNC;
-import static org.apache.solr.common.params.CommonParams.NAME;
-import static org.apache.solr.common.util.Utils.makeMap;
+import com.google.common.collect.ImmutableMap;
 
 /**
  * A {@link OverseerMessageHandler} that handles Collections API related
@@ -130,9 +160,11 @@ public class OverseerCollectionMessageHandler implements OverseerMessageHandler 
   public static final Map<String, Object> COLL_PROPS = Collections.unmodifiableMap(makeMap(
       ROUTER, DocRouter.DEFAULT_NAME,
       ZkStateReader.REPLICATION_FACTOR, "1",
+      ZkStateReader.NRT_REPLICAS, "1",
+      ZkStateReader.TLOG_REPLICAS, "0",
+      ZkStateReader.PULL_REPLICAS, "0",
       ZkStateReader.MAX_SHARDS_PER_NODE, "1",
       ZkStateReader.AUTO_ADD_REPLICAS, "false",
-      ZkStateReader.REALTIME_REPLICAS, "-1",
       DocCollection.RULE, null,
       SNITCH, null));
 
@@ -702,18 +734,33 @@ public class OverseerCollectionMessageHandler implements OverseerMessageHandler 
                                       List<String> nodeList,
                                       ZkNodeProps message,
                                       List<String> shardNames,
-                                      int repFactor) throws IOException {
+                                      int numNrtReplicas, 
+                                      int numTlogReplicas,
+                                      int numPullReplicas) throws IOException {
     List<Map> rulesMap = (List) message.get("rule");
     if (rulesMap == null) {
       int i = 0;
       Map<Position, String> result = new HashMap<>();
       for (String aShard : shardNames) {
-        for (int j = 0; j < repFactor; j++){
-          result.put(new Position(aShard, j), nodeList.get(i % nodeList.size()));
+        for (int j = 0; j < numNrtReplicas; j++){
+          result.put(new Position(aShard, j, Replica.Type.NRT), nodeList.get(i % nodeList.size()));
+          i++;
+        }
+        for (int j = 0; j < numTlogReplicas; j++){
+          result.put(new Position(aShard, j, Replica.Type.TLOG), nodeList.get(i % nodeList.size()));
+          i++;
+        }
+        for (int j = 0; j < numPullReplicas; j++){
+          result.put(new Position(aShard, j, Replica.Type.PULL), nodeList.get(i % nodeList.size()));
           i++;
         }
       }
       return result;
+    } else {
+      if (numTlogReplicas + numPullReplicas != 0) {
+        throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, 
+            Replica.Type.TLOG + " or " + Replica.Type.PULL + " replica types not supported with placement rules");
+      }
     }
 
     List<Rule> rules = new ArrayList<>();
@@ -721,7 +768,7 @@ public class OverseerCollectionMessageHandler implements OverseerMessageHandler 
 
     Map<String, Integer> sharVsReplicaCount = new HashMap<>();
 
-    for (String shard : shardNames) sharVsReplicaCount.put(shard, repFactor);
+    for (String shard : shardNames) sharVsReplicaCount.put(shard, numNrtReplicas);
     ReplicaAssigner replicaAssigner = new ReplicaAssigner(rules,
         sharVsReplicaCount,
         (List<Map>) message.get(SNITCH),
@@ -752,6 +799,8 @@ public class OverseerCollectionMessageHandler implements OverseerMessageHandler 
       
       if (result.size() == coreNames.size()) {
         return result;
+      } else {
+        log.debug("Expecting {} cores but found {}", coreNames.size(), result.size());
       }
       if (timeout.hasTimedOut()) {
         throw new SolrException(ErrorCode.SERVER_ERROR, "Timed out waiting to see all replicas: " + coreNames + " in cluster state.");

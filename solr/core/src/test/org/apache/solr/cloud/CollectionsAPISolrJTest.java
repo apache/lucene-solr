@@ -67,7 +67,7 @@ public class CollectionsAPISolrJTest extends SolrCloudTestCase {
     Map<String, NamedList<Integer>> coresStatus = response.getCollectionCoresStatus();
     assertEquals(4, coresStatus.size());
     for (int i=0; i<4; i++) {
-      NamedList<Integer> status = coresStatus.get(collectionName + "_shard" + (i/2+1) + "_replica" + (i%2+1));
+      NamedList<Integer> status = coresStatus.get(Assign.buildCoreName(collectionName, "shard" + (i/2+1), Replica.Type.NRT, (i%2+1)));
       assertEquals(0, (int)status.get("status"));
       assertTrue(status.get("QTime") > 0);
     }
@@ -117,17 +117,17 @@ public class CollectionsAPISolrJTest extends SolrCloudTestCase {
 
   @Test
   public void testCreateAndDeleteShard() throws IOException, SolrServerException {
-
     // Create an implicit collection
     String collectionName = "solrj_implicit";
     CollectionAdminResponse response
-        = CollectionAdminRequest.createCollectionWithImplicitRouter(collectionName, "conf", "shardA,shardB", 1)
+        = CollectionAdminRequest.createCollectionWithImplicitRouter(collectionName, "conf", "shardA,shardB", 1, 1, 1)
+        .setMaxShardsPerNode(3)
         .process(cluster.getSolrClient());
 
     assertEquals(0, response.getStatus());
     assertTrue(response.isSuccess());
     Map<String, NamedList<Integer>> coresStatus = response.getCollectionCoresStatus();
-    assertEquals(2, coresStatus.size());
+    assertEquals(6, coresStatus.size());
 
     // Add a shard to the implicit collection
     response = CollectionAdminRequest.createShard(collectionName, "shardC").process(cluster.getSolrClient());
@@ -135,8 +135,10 @@ public class CollectionsAPISolrJTest extends SolrCloudTestCase {
     assertEquals(0, response.getStatus());
     assertTrue(response.isSuccess());
     coresStatus = response.getCollectionCoresStatus();
-    assertEquals(1, coresStatus.size());
-    assertEquals(0, (int) coresStatus.get(collectionName + "_shardC_replica1").get("status"));
+    assertEquals(3, coresStatus.size());
+    assertEquals(0, (int) coresStatus.get(Assign.buildCoreName(collectionName,  "shardC", Replica.Type.NRT, 1)).get("status"));
+    assertEquals(0, (int) coresStatus.get(Assign.buildCoreName(collectionName,  "shardC", Replica.Type.TLOG, 1)).get("status"));
+    assertEquals(0, (int) coresStatus.get(Assign.buildCoreName(collectionName,  "shardC", Replica.Type.PULL, 1)).get("status"));
 
     response = CollectionAdminRequest.deleteShard(collectionName, "shardC").process(cluster.getSolrClient());
 
@@ -174,8 +176,8 @@ public class CollectionsAPISolrJTest extends SolrCloudTestCase {
     assertEquals(0, response.getStatus());
     assertTrue(response.isSuccess());
     Map<String, NamedList<Integer>> coresStatus = response.getCollectionCoresStatus();
-    assertEquals(0, (int) coresStatus.get(collectionName + "_shard1_0_replica1").get("status"));
-    assertEquals(0, (int) coresStatus.get(collectionName + "_shard1_1_replica1").get("status"));
+    assertEquals(0, (int) coresStatus.get(Assign.buildCoreName(collectionName, "shard1_0" , Replica.Type.NRT, 1)).get("status"));
+    assertEquals(0, (int) coresStatus.get(Assign.buildCoreName(collectionName, "shard1_1" , Replica.Type.NRT, 1)).get("status"));
 
     waitForState("Expected all shards to be active and parent shard to be removed", collectionName, (n, c) -> {
       if (c.getSlice("shard1").getState() == Slice.State.ACTIVE)

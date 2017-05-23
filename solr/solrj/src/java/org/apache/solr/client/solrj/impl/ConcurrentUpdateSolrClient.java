@@ -449,9 +449,12 @@ public class ConcurrentUpdateSolrClient extends SolrClient {
     try {
       Runner r = new Runner();
       runners.add(r);
-      
-      scheduler.execute(r);  // this can throw an exception if the scheduler has been shutdown, but that should be fine.
-
+      try {
+        scheduler.execute(r);  // this can throw an exception if the scheduler has been shutdown, but that should be fine.
+      } catch (RuntimeException e) {
+        runners.remove(r);
+        throw e;
+      }
     } finally {
       MDC.remove("ConcurrentUpdateSolrClient.url");
     }
@@ -640,9 +643,15 @@ public class ConcurrentUpdateSolrClient extends SolrClient {
   }
 
   private void waitForEmptyQueue() {
+    boolean threadInterrupted = Thread.currentThread().isInterrupted();
 
     while (!queue.isEmpty()) {
       if (log.isDebugEnabled()) emptyQueueLoops.incrementAndGet();
+      if (scheduler.isTerminated()) {
+        log.warn("The task queue still has elements but the update scheduler {} is terminated. Can't process any more tasks. "
+            + "Queue size: {}, Runners: {}. Current thread Interrupted? {}", scheduler, queue.size(), runners.size(), threadInterrupted);
+        break;
+      }
 
       synchronized (runners) {
         int queueSize = queue.size();
@@ -656,9 +665,15 @@ public class ConcurrentUpdateSolrClient extends SolrClient {
         try {
           queue.wait(250);
         } catch (InterruptedException e) {
-          Thread.currentThread().interrupt();
+          // If we set the thread as interrupted again, the next time the wait it's called i t's going to return immediately
+          threadInterrupted = true;
+          log.warn("Thread interrupted while waiting for update queue to be empty. There are still {} elements in the queue.", 
+              queue.size());
         }
       }
+    }
+    if (threadInterrupted) {
+      Thread.currentThread().interrupt();
     }
   }
 

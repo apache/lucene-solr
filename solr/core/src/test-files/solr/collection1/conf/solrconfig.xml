@@ -63,6 +63,10 @@
 
   <updateHandler class="solr.DirectUpdateHandler2">
 
+    <autoCommit>
+      <maxTime>${solr.autoCommit.maxTime:-1}</maxTime>
+    </autoCommit>
+
     <!-- autocommit pending docs if certain criteria are met
     <autoCommit>
       <maxDocs>10000</maxDocs>
@@ -478,7 +482,7 @@
       <str name="facet.query">foo_s:bar</str>
     </lst>
   </requestHandler>
-
+  
   <admin>
     <defaultQuery>solr</defaultQuery>
     <gettableFiles>solrconfig.xml schema.xml admin-extra.html</gettableFiles>
@@ -577,6 +581,8 @@
       <str name="df">text</str>
     </lst>
   </initParams>
+  
+  
 
 </config>
 

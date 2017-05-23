@@ -60,8 +60,7 @@ import static org.apache.solr.cloud.OverseerCollectionMessageHandler.COLL_CONF;
 import static org.apache.solr.cloud.OverseerCollectionMessageHandler.CREATE_NODE_SET;
 import static org.apache.solr.cloud.OverseerCollectionMessageHandler.NUM_SLICES;
 import static org.apache.solr.cloud.OverseerCollectionMessageHandler.RANDOM;
-import static org.apache.solr.common.cloud.ZkStateReader.MAX_SHARDS_PER_NODE;
-import static org.apache.solr.common.cloud.ZkStateReader.REPLICATION_FACTOR;
+import static org.apache.solr.common.cloud.ZkStateReader.*;
 import static org.apache.solr.common.params.CollectionParams.CollectionAction.ADDREPLICA;
 import static org.apache.solr.common.params.CommonAdminParams.ASYNC;
 import static org.apache.solr.common.params.CommonParams.NAME;
@@ -96,7 +95,9 @@ public class CreateCollectionCmd implements Cmd {
       // look at the replication factor and see if it matches reality
       // if it does not, find best nodes to create more cores
 
-      int repFactor = message.getInt(REPLICATION_FACTOR, 1);
+      int numNrtReplicas = message.getInt(NRT_REPLICAS, message.getInt(REPLICATION_FACTOR, 1));
+      int numPullReplicas = message.getInt(PULL_REPLICAS, 0);
+      int numTlogReplicas = message.getInt(TLOG_REPLICAS, 0);
 
       ShardHandler shardHandler = ocmh.shardHandlerFactory.getShardHandler();
       final String async = message.getStr(ASYNC);
@@ -116,8 +117,8 @@ public class CreateCollectionCmd implements Cmd {
 
       int maxShardsPerNode = message.getInt(MAX_SHARDS_PER_NODE, 1);
 
-      if (repFactor <= 0) {
-        throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, REPLICATION_FACTOR + " must be greater than 0");
+      if (numNrtReplicas + numTlogReplicas <= 0) {
+        throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, NRT_REPLICAS + " + " + TLOG_REPLICAS + " must be greater than 0");
       }
 
       if (numSlices <= 0) {
@@ -135,32 +136,33 @@ public class CreateCollectionCmd implements Cmd {
 
         positionVsNodes = new HashMap<>();
       } else {
-        if (repFactor > nodeList.size()) {
-          log.warn("Specified "
-              + REPLICATION_FACTOR
-              + " of "
-              + repFactor
+        int totalNumReplicas = numNrtReplicas + numTlogReplicas + numPullReplicas;
+        if (totalNumReplicas > nodeList.size()) {
+          log.warn("Specified number of replicas of "
+              + totalNumReplicas
               + " on collection "
               + collectionName
-              + " is higher than or equal to the number of Solr instances currently live or live and part of your " + CREATE_NODE_SET + "("
+              + " is higher than the number of Solr instances currently live or live and part of your " + CREATE_NODE_SET + "("
               + nodeList.size()
               + "). It's unusual to run two replica of the same slice on the same Solr-instance.");
         }
 
         int maxShardsAllowedToCreate = maxShardsPerNode * nodeList.size();
-        int requestedShardsToCreate = numSlices * repFactor;
+        int requestedShardsToCreate = numSlices * totalNumReplicas;
         if (maxShardsAllowedToCreate < requestedShardsToCreate) {
           throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Cannot create collection " + collectionName + ". Value of "
               + MAX_SHARDS_PER_NODE + " is " + maxShardsPerNode
               + ", and the number of nodes currently live or live and part of your "+CREATE_NODE_SET+" is " + nodeList.size()
               + ". This allows a maximum of " + maxShardsAllowedToCreate
               + " to be created. Value of " + NUM_SLICES + " is " + numSlices
-              + " and value of " + REPLICATION_FACTOR + " is " + repFactor
+              + ", value of " + NRT_REPLICAS + " is " + numNrtReplicas
+              + ", value of " + TLOG_REPLICAS + " is " + numTlogReplicas
+              + " and value of " + PULL_REPLICAS + " is " + numPullReplicas
               + ". This requires " + requestedShardsToCreate
               + " shards to be created (higher than the allowed number)");
         }
 
-        positionVsNodes = ocmh.identifyNodes(clusterState, nodeList, message, shardNames, repFactor);
+        positionVsNodes = ocmh.identifyNodes(clusterState, nodeList, message, shardNames, numNrtReplicas, numTlogReplicas, numPullReplicas);
       }
 
       ZkStateReader zkStateReader = ocmh.zkStateReader;
@@ -200,13 +202,13 @@ public class CreateCollectionCmd implements Cmd {
       Map<String, String> requestMap = new HashMap<>();
 
 
-      log.debug(formatString("Creating SolrCores for new collection {0}, shardNames {1} , replicationFactor : {2}",
-          collectionName, shardNames, repFactor));
+      log.debug(formatString("Creating SolrCores for new collection {0}, shardNames {1} , nrtReplicas : {2}, tlogReplicas: {3}, pullReplicas: {4}",
+          collectionName, shardNames, numNrtReplicas, numTlogReplicas, numPullReplicas));
       Map<String,ShardRequest> coresToCreate = new LinkedHashMap<>();
       for (Map.Entry<ReplicaAssigner.Position, String> e : positionVsNodes.entrySet()) {
         ReplicaAssigner.Position position = e.getKey();
         String nodeName = e.getValue();
-        String coreName = collectionName + "_" + position.shard + "_replica" + (position.index + 1);
+        String coreName = Assign.buildCoreName(collectionName, position.shard, position.type, position.index + 1);
         log.debug(formatString("Creating core {0} as part of shard {1} of collection {2} on {3}"
             , coreName, position.shard, collectionName, nodeName));
 
@@ -221,7 +223,8 @@ public class CreateCollectionCmd implements Cmd {
               ZkStateReader.SHARD_ID_PROP, position.shard,
               ZkStateReader.CORE_NAME_PROP, coreName,
               ZkStateReader.STATE_PROP, Replica.State.DOWN.toString(),
-              ZkStateReader.BASE_URL_PROP, baseUrl);
+              ZkStateReader.BASE_URL_PROP, baseUrl, 
+              ZkStateReader.REPLICA_TYPE, position.type.name());
           Overseer.getStateUpdateQueue(zkStateReader.getZkClient()).offer(Utils.toJSON(props));
         }
 
@@ -235,6 +238,7 @@ public class CreateCollectionCmd implements Cmd {
         params.set(CoreAdminParams.SHARD, position.shard);
         params.set(ZkStateReader.NUM_SHARDS_PROP, numSlices);
         params.set(CoreAdminParams.NEW_COLLECTION, "true");
+        params.set(CoreAdminParams.REPLICA_TYPE, position.type.name());
 
         if (async != null) {
           String coreAdminAsyncId = async + Math.abs(System.nanoTime());

@@ -1092,7 +1092,7 @@ public static final int VERSION_IDX = 1;
 
   /**
    * Replay current tlog, so all updates will be written to index.
-   * This is must do task for a append replica become a new leader.
+   * This is must do task for a tlog replica become a new leader.
    * @return future of this task
    */
   public Future<RecoveryInfo> recoverFromCurrentLog() {
@@ -1706,7 +1706,7 @@ public static final int VERSION_IDX = 1;
 
     public void doReplay(TransactionLog translog) {
       try {
-        loglog.warn("Starting log replay " + translog + " active=" + activeLog + " starting pos=" + recoveryInfo.positionOfStart);
+        loglog.warn("Starting log replay " + translog + " active=" + activeLog + " starting pos=" + recoveryInfo.positionOfStart + " inSortedOrder=" + inSortedOrder);
         long lastStatusTime = System.nanoTime();
         if (inSortedOrder) {
           tlogReader = translog.getSortedReader(recoveryInfo.positionOfStart);
@@ -1786,7 +1786,7 @@ public static final int VERSION_IDX = 1;
                 recoveryInfo.adds++;
                 AddUpdateCommand cmd = convertTlogEntryToAddUpdateCommand(req, entry, oper, version);
                 cmd.setFlags(UpdateCommand.REPLAY | UpdateCommand.IGNORE_AUTOCOMMIT);
-                log.debug("{} {}", oper == ADD ? "add" : "update", cmd);
+                if (debug) log.debug("{} {}", oper == ADD ? "add" : "update", cmd);
                 proc.processAdd(cmd);
                 break;
               }
@@ -1854,6 +1854,7 @@ public static final int VERSION_IDX = 1;
             // something wrong with the request?
           }
           assert TestInjection.injectUpdateLogReplayRandomPause();
+          
         }
 
         CommitUpdateCommand cmd = new CommitUpdateCommand(req, false);

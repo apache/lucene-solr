@@ -16,6 +16,17 @@
  */
 package org.apache.solr.core;
 
+import static java.util.Objects.requireNonNull;
+import static org.apache.solr.common.params.CommonParams.AUTHC_PATH;
+import static org.apache.solr.common.params.CommonParams.AUTHZ_PATH;
+import static org.apache.solr.common.params.CommonParams.COLLECTIONS_HANDLER_PATH;
+import static org.apache.solr.common.params.CommonParams.CONFIGSETS_HANDLER_PATH;
+import static org.apache.solr.common.params.CommonParams.CORES_HANDLER_PATH;
+import static org.apache.solr.common.params.CommonParams.INFO_HANDLER_PATH;
+import static org.apache.solr.common.params.CommonParams.METRICS_PATH;
+import static org.apache.solr.common.params.CommonParams.ZK_PATH;
+import static org.apache.solr.security.AuthenticationPlugin.AUTHENTICATION_PLUGIN_PROP;
+
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.nio.file.Path;
@@ -56,6 +67,7 @@ import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.Replica.State;
+import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.common.util.IOUtils;
 import org.apache.solr.common.util.Utils;
@@ -95,17 +107,7 @@ import org.apache.zookeeper.KeeperException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import static java.util.Objects.requireNonNull;
-import static org.apache.solr.common.params.CommonParams.AUTHC_PATH;
-import static org.apache.solr.common.params.CommonParams.AUTHZ_PATH;
-import static org.apache.solr.common.params.CommonParams.COLLECTIONS_HANDLER_PATH;
-import static org.apache.solr.common.params.CommonParams.CONFIGSETS_HANDLER_PATH;
-import static org.apache.solr.common.params.CommonParams.CORES_HANDLER_PATH;
-import static org.apache.solr.common.params.CommonParams.INFO_HANDLER_PATH;
-import static org.apache.solr.common.params.CommonParams.METRICS_PATH;
-import static org.apache.solr.common.params.CommonParams.ZK_PATH;
 import static org.apache.solr.core.CorePropertiesLocator.PROPERTIES_FILENAME;
-import static org.apache.solr.security.AuthenticationPlugin.AUTHENTICATION_PLUGIN_PROP;
 
 /**
  *
@@ -1185,10 +1187,15 @@ public class CoreContainer {
         SolrCore newCore = core.reload(coreConfig);
         registerCore(cd, newCore, false, false);
         if (getZkController() != null) {
-          boolean onlyLeaderIndexes = getZkController().getClusterState().getCollection(cd.getCollectionName()).getRealtimeReplicas() == 1;
-          if (onlyLeaderIndexes && !cd.getCloudDescriptor().isLeader()) {
+          DocCollection docCollection = getZkController().getClusterState().getCollection(cd.getCollectionName());
+          Replica replica = docCollection.getReplica(cd.getCloudDescriptor().getCoreNodeName());
+          assert replica != null;
+          if (replica.getType() == Replica.Type.TLOG) { //TODO: needed here?
             getZkController().stopReplicationFromLeader(core.getName());
-            getZkController().startReplicationFromLeader(newCore.getName());
+            if (!cd.getCloudDescriptor().isLeader()) {
+              getZkController().startReplicationFromLeader(newCore.getName(), true);
+            }
+            
           }
         }
       } catch (SolrCoreState.CoreIsClosedException e) {
@@ -1274,6 +1281,11 @@ public class CoreContainer {
     if (zkSys.getZkController() != null) {
       // cancel recovery in cloud mode
       core.getSolrCoreState().cancelRecovery();
+      if (core.getCoreDescriptor().getCloudDescriptor().getReplicaType() == Replica.Type.PULL
+          || core.getCoreDescriptor().getCloudDescriptor().getReplicaType() == Replica.Type.TLOG) { 
+        // Stop replication if this is part of a pull/tlog replica before closing the core
+        zkSys.getZkController().stopReplicationFromLeader(name);
+      }
     }
     
     core.unloadOnClose(cd, deleteIndexDir, deleteDataDir, deleteInstanceDir);

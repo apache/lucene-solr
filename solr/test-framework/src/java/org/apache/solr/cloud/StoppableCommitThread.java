@@ -17,67 +17,53 @@
 package org.apache.solr.cloud;
 
 import java.lang.invoke.MethodHandles;
-
-import java.util.Random;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import org.apache.lucene.util.LuceneTestCase;
-import org.apache.solr.client.solrj.SolrQuery;
-import org.apache.solr.client.solrj.SolrServerException;
-import org.apache.solr.client.solrj.impl.CloudSolrClient;
+import org.apache.solr.client.solrj.SolrClient;
+import org.apache.solr.cloud.AbstractFullDistribZkTestBase.StoppableThread;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-class StoppableSearchThread extends AbstractFullDistribZkTestBase.StoppableThread {
+public class StoppableCommitThread extends StoppableThread {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
-
-  private final CloudSolrClient cloudClient;
+  
+  private final SolrClient cloudClient;
+  private final long timeBetweenCommitsMs;
+  private final boolean softCommits;
   private volatile boolean stop = false;
-  protected final AtomicInteger queryFails = new AtomicInteger();
-  private String[] QUERIES = new String[] {"to come","their country","aid","co*"};
+  private final AtomicInteger numCommits = new AtomicInteger(0);
+  private final AtomicInteger numFails = new AtomicInteger(0);
 
-  public StoppableSearchThread(CloudSolrClient cloudClient) {
-    super("StoppableSearchThread");
+  public StoppableCommitThread(SolrClient cloudClient, long timeBetweenCommitsMs, boolean softCommits) {
+    super("StoppableCommitThread");
     this.cloudClient = cloudClient;
-    setDaemon(true);
+    this.timeBetweenCommitsMs = timeBetweenCommitsMs;
+    this.softCommits = softCommits;
   }
-
+  
   @Override
   public void run() {
-    Random random = LuceneTestCase.random();
-    int numSearches = 0;
-
+    log.debug("StoppableCommitThread started");
     while (!stop) {
-      numSearches++;
       try {
-        //to come to the aid of their country.
-        cloudClient.query(new SolrQuery(QUERIES[random.nextInt(QUERIES.length)]));
+        cloudClient.commit(false, false, softCommits);
+        numCommits.incrementAndGet();
       } catch (Exception e) {
-        System.err.println("QUERY REQUEST FAILED:");
-        e.printStackTrace();
-        if (e instanceof SolrServerException) {
-          System.err.println("ROOT CAUSE:");
-          ((SolrServerException) e).getRootCause().printStackTrace();
-        }
-        queryFails.incrementAndGet();
+        numFails.incrementAndGet();
       }
       try {
-        Thread.sleep(random.nextInt(4000) + 300);
+        Thread.sleep(timeBetweenCommitsMs);
       } catch (InterruptedException e) {
         Thread.currentThread().interrupt();
+        break;
       }
     }
-
-    log.info("num searches done:" + numSearches + " with " + queryFails + " fails");
+    log.debug("StoppableCommitThread finished. Committed {} times. Failed {} times.", numCommits.get(), numFails.get());
   }
 
   @Override
   public void safeStop() {
-    stop = true;
-  }
-
-  public int getFails() {
-    return queryFails.get();
+    this.stop = true;
   }
 
 }

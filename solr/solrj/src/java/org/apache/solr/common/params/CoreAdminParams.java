@@ -128,6 +128,11 @@ public abstract class CoreAdminParams
    */
   public static final String NEW_COLLECTION = "newCollection";
 
+  /**
+   * Tells the CoreAdminHandler that the new Core will be a replica of a particular {@link org.apache.solr.common.cloud.Replica.Type}
+   */
+  public static final String REPLICA_TYPE = "replicaType";
+
   public enum CoreAdminAction {
     STATUS(true),
     UNLOAD,

@@ -16,6 +16,8 @@
  */
 package org.apache.solr.client.solrj.request;
 
+import static org.apache.solr.common.params.CollectionAdminParams.COUNT_PROP;
+
 import java.io.IOException;
 import java.util.Collection;
 import java.util.Map;
@@ -34,6 +36,7 @@ import org.apache.solr.client.solrj.util.SolrIdentifierValidator;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.ImplicitDocRouter;
+import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.CollectionAdminParams;
 import org.apache.solr.common.params.CollectionParams.CollectionAction;
@@ -45,7 +48,6 @@ import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.ContentStream;
 import org.apache.solr.common.util.NamedList;
 
-import static org.apache.solr.common.params.CollectionAdminParams.COUNT_PROP;
 import static org.apache.solr.common.params.CollectionAdminParams.CREATE_NODE_SET_PARAM;
 import static org.apache.solr.common.params.CollectionAdminParams.CREATE_NODE_SET_SHUFFLE_PARAM;
 
@@ -323,10 +325,23 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse> 
    * @param collection the collection name
    * @param config     the collection config
    * @param numShards  the number of shards in the collection
-   * @param numReplicas the replication factor of the collection
+   * @param numNrtReplicas the number of {@link org.apache.solr.common.cloud.Replica.Type#NRT} replicas
+   * @param numTlogReplicas the number of {@link org.apache.solr.common.cloud.Replica.Type#TLOG} replicas
+   * @param numPullReplicas the number of {@link org.apache.solr.common.cloud.Replica.Type#PULL} replicas
+   */
+  public static Create createCollection(String collection, String config, int numShards, int numNrtReplicas, int numTlogReplicas, int numPullReplicas) {
+    return new Create(collection, config, numShards, numNrtReplicas, numTlogReplicas, numPullReplicas);
+  }
+  
+  /**
+   * Returns a SolrRequest for creating a collection
+   * @param collection the collection name
+   * @param config     the collection config
+   * @param numShards  the number of shards in the collection
+   * @param numReplicas the replication factor of the collection (same as numNrtReplicas)
    */
   public static Create createCollection(String collection, String config, int numShards, int numReplicas) {
-    return new Create(collection, config, numShards, numReplicas);
+    return new Create(collection, config, numShards, numReplicas, 0, 0);
   }
 
   /**
@@ -340,7 +355,7 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse> 
    * @param numReplicas the replication factor of the collection
    */
   public static Create createCollection(String collection, int numShards, int numReplicas) {
-    return new Create(collection, numShards, numReplicas);
+    return new Create(collection, null, numShards, numReplicas, 0, 0);
   }
 
   /**
@@ -353,6 +368,22 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse> 
   public static Create createCollectionWithImplicitRouter(String collection, String config, String shards, int numReplicas) {
     return new Create(collection, config, shards, numReplicas);
   }
+  
+  /**
+   * Returns a SolrRequest for creating a collection with the implicit router and specific types of replicas
+   * @param collection  the collection name
+   * @param config      the collection config
+   * @param shards      a shard definition string
+   * @param numNrtReplicas the number of replicas of type {@link org.apache.solr.common.cloud.Replica.Type#NRT}
+   * @param numTlogReplicas the number of replicas of type {@link org.apache.solr.common.cloud.Replica.Type#TLOG}
+   * @param numPullReplicas the number of replicas of type {@link org.apache.solr.common.cloud.Replica.Type#PULL}
+   */
+  public static Create createCollectionWithImplicitRouter(String collection, String config, String shards, int numNrtReplicas, int numTlogReplicas, int numPullReplicas) {
+    Create createRequest = new Create(collection, config, shards, numNrtReplicas);
+    createRequest.tlogReplicas = numTlogReplicas;
+    createRequest.pullReplicas = numPullReplicas;
+    return createRequest;
+  }
 
   // CREATE request
   public static class Create extends AsyncCollectionSpecificAdminRequest {
@@ -364,39 +395,36 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse> 
     protected String routerField;
     protected Integer numShards;
     protected Integer maxShardsPerNode;
-    protected Integer replicationFactor;
+    protected Integer nrtReplicas;
+    protected Integer pullReplicas;
+    protected Integer tlogReplicas;
 
     private Properties properties;
     protected Boolean autoAddReplicas;
-    protected Integer realtimeReplicas;
     protected Integer stateFormat;
     private String[] rule , snitch;
 
     /**
-     * @deprecated Use {@link #createCollection(String, String, int, int)}
+     * @deprecated Use {@link #createCollection(String, String, int, int, int, int)}
      */
     @Deprecated
     public Create() {
       super(CollectionAction.CREATE, null);
     }
-
-    private Create(String collection, String config, int numShards, int numReplicas) {
+    
+    private Create(String collection, String config, int numShards, int numNrtReplicas, int numTlogReplicas, int numPullReplicas) { // TODO: maybe add other constructors
       super(CollectionAction.CREATE, SolrIdentifierValidator.validateCollectionName(collection));
       this.configName = config;
       this.numShards = numShards;
-      this.replicationFactor = numReplicas;
+      this.nrtReplicas = numNrtReplicas;
+      this.pullReplicas = numPullReplicas;
+      this.tlogReplicas = numTlogReplicas;
     }
 
-    private Create(String collection, int numShards, int numReplicas) {
-      super(CollectionAction.CREATE, SolrIdentifierValidator.validateCollectionName(collection));
-      this.numShards = numShards;
-      this.replicationFactor = numReplicas;
-    }
-
-    private Create(String collection, String config, String shards, int numReplicas) {
+    private Create(String collection, String config, String shards, int numNrtReplicas) {
       super(CollectionAction.CREATE, SolrIdentifierValidator.validateCollectionName(collection));
       this.configName = config;
-      this.replicationFactor = numReplicas;
+      this.nrtReplicas = numNrtReplicas;
       this.shards = shards;
       this.routerName = ImplicitDocRouter.NAME;
     }
@@ -410,9 +438,11 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse> 
     public Create setNumShards(Integer numShards) {this.numShards = numShards; return this; }
     public Create setMaxShardsPerNode(Integer numShards) { this.maxShardsPerNode = numShards; return this; }
     public Create setAutoAddReplicas(boolean autoAddReplicas) { this.autoAddReplicas = autoAddReplicas; return this; }
-    public Create setRealtimeReplicas(Integer realtimeReplicas) { this.realtimeReplicas = realtimeReplicas; return this;}
-    @Deprecated
-    public Create setReplicationFactor(Integer repl) { this.replicationFactor = repl; return this; }
+    public Create setNrtReplicas(Integer nrtReplicas) { this.nrtReplicas = nrtReplicas; return this;}
+    public Create setTlogReplicas(Integer tlogReplicas) { this.tlogReplicas = tlogReplicas; return this;}
+    public Create setPullReplicas(Integer pullReplicas) { this.pullReplicas = pullReplicas; return this;}
+
+    public Create setReplicationFactor(Integer repl) { this.nrtReplicas = repl; return this; }
     public Create setStateFormat(Integer stateFormat) { this.stateFormat = stateFormat; return this; }
     public Create setRule(String... s){ this.rule = s; return this; }
     public Create setSnitch(String... s){ this.snitch = s; return this; }
@@ -423,9 +453,13 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse> 
     public String getShards() { return  shards; }
     public Integer getNumShards() { return numShards; }
     public Integer getMaxShardsPerNode() { return maxShardsPerNode; }
-    public Integer getReplicationFactor() { return replicationFactor; }
+    
+    public Integer getReplicationFactor() { return getNumNrtReplicas(); }
+    public Integer getNumNrtReplicas() { return nrtReplicas; }
     public Boolean getAutoAddReplicas() { return autoAddReplicas; }
-    public Integer getRealtimeReplicas() { return realtimeReplicas; }
+    public Integer getNumTlogReplicas() {return tlogReplicas;}
+    public Integer getNumPullReplicas() {return pullReplicas;}
+
     public Integer getStateFormat() { return stateFormat; }
     
     /**
@@ -506,20 +540,24 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse> 
       if (routerField != null) {
         params.set("router.field", routerField);
       }
-      if (replicationFactor != null) {
-        params.set( "replicationFactor", replicationFactor);
+      if (nrtReplicas != null) {
+        params.set( "replicationFactor", nrtReplicas);// Keep both for compatibility?
+        params.set( ZkStateReader.NRT_REPLICAS, nrtReplicas);
       }
       if (autoAddReplicas != null) {
         params.set(ZkStateReader.AUTO_ADD_REPLICAS, autoAddReplicas);
-      }
-      if (realtimeReplicas != null) {
-        params.set(ZkStateReader.REALTIME_REPLICAS, realtimeReplicas);
       }
       if(properties != null) {
         addProperties(params, properties);
       }
       if (stateFormat != null) {
         params.set(DocCollection.STATE_FORMAT, stateFormat);
+      }
+      if (pullReplicas != null) {
+        params.set(ZkStateReader.PULL_REPLICAS, pullReplicas);
+      }
+      if (tlogReplicas != null) {
+        params.set(ZkStateReader.TLOG_REPLICAS, tlogReplicas);
       }
       if(rule != null) params.set("rule", rule);
       if(snitch != null) params.set("snitch", snitch);
@@ -1641,19 +1679,26 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse> 
 
 
   }
-
+  
   /**
-   * Returns a SolrRequest to add a replica to a shard in a collection
+   * Returns a SolrRequest to add a replica of type {@link org.apache.solr.common.cloud.Replica.Type#NRT} to a shard in a collection
    */
   public static AddReplica addReplicaToShard(String collection, String shard) {
-    return new AddReplica(collection, shard, null);
+    return addReplicaToShard(collection, shard, Replica.Type.NRT);
+  }
+
+  /**
+   * Returns a SolrRequest to add a replica of the specified type to a shard in a collection
+   */
+  public static AddReplica addReplicaToShard(String collection, String shard, Replica.Type replicaType) {
+    return new AddReplica(collection, shard, null, replicaType);
   }
 
   /**
    * Returns a SolrRequest to add a replica to a collection using a route key
    */
   public static AddReplica addReplicaByRouteKey(String collection, String routeKey) {
-    return new AddReplica(collection, null, routeKey);
+    return new AddReplica(collection, null, routeKey, Replica.Type.NRT);
   }
 
   // ADDREPLICA request
@@ -1666,6 +1711,7 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse> 
     protected String instanceDir;
     protected String dataDir;
     protected Properties properties;
+    protected Replica.Type type;
 
     /**
      * @deprecated Use {@link #addReplicaByRouteKey(String, String)} or {@link #addReplicaToShard(String, String)}
@@ -1675,11 +1721,12 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse> 
       super(CollectionAction.ADDREPLICA);
     }
 
-    private AddReplica(String collection, String shard, String routeKey) {
+    private AddReplica(String collection, String shard, String routeKey, Replica.Type type) {
       super(CollectionAction.ADDREPLICA);
       this.collection = collection;
       this.shard = shard;
       this.routeKey = routeKey;
+      this.type = type;
     }
 
     public Properties getProperties() {
@@ -1753,6 +1800,11 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse> 
       this.asyncId = id;
       return this;
     }
+    
+    public AddReplica setType(Replica.Type type) {
+      this.type = type;
+      return this;
+    }
 
     @Override
     public SolrParams getParams() {
@@ -1777,6 +1829,9 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse> 
       }
       if (dataDir != null)  {
         params.add("dataDir", dataDir);
+      }
+      if (type != null) {
+        params.add(ZkStateReader.REPLICA_TYPE, type.name());
       }
       if (properties != null) {
         addProperties(params, properties);
