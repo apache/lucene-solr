@@ -107,6 +107,8 @@ Bug Fixes
 * SOLR-10714: OverseerTriggerThread does not start triggers on overseer start until autoscaling
   config watcher is fired. (shalin)
 
+* SOLR-10738: TriggerAction is initialised even if the trigger is never scheduled. (shalin)
+
 Optimizations
 ----------------------
 

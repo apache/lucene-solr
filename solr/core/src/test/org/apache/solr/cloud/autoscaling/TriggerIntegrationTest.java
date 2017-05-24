@@ -473,8 +473,7 @@ public class TriggerIntegrationTest extends SolrCloudTestCase {
   public static class TestTriggerAction implements TriggerAction {
 
     public TestTriggerAction() {
-      log.info("TestTriggerAction instantiated");
-      actionCreated.countDown();
+
     }
 
     @Override
@@ -507,7 +506,8 @@ public class TriggerIntegrationTest extends SolrCloudTestCase {
 
     @Override
     public void init(Map<String, String> args) {
-
+      log.info("TestTriggerAction init");
+      actionCreated.countDown();
     }
   }
 }

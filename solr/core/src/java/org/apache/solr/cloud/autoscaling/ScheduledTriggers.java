@@ -143,6 +143,10 @@ public class ScheduledTriggers implements Closeable {
         return false;
       }
     });
+    List<TriggerAction> actions = newTrigger.getActions();
+    for (TriggerAction action : actions) {
+      action.init(newTrigger.getProperties());
+    }
     scheduledTrigger.scheduledFuture = scheduledThreadPoolExecutor.scheduleWithFixedDelay(scheduledTrigger, 0, DEFAULT_SCHEDULED_TRIGGER_DELAY_SECONDS, TimeUnit.SECONDS);
   }
 
