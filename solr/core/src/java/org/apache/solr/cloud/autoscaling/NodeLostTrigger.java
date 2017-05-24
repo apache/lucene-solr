@@ -83,6 +83,17 @@ public class NodeLostTrigger implements AutoScaling.Trigger<NodeLostTrigger.Node
   }
 
   @Override
+  public void init() {
+    List<Map<String, String>> o = (List<Map<String, String>>) properties.get("actions");
+    if (o != null && !o.isEmpty()) {
+      for (int i = 0; i < o.size(); i++) {
+        Map<String, String> map = o.get(i);
+        actions.get(i).init(map);
+      }
+    }
+  }
+
+  @Override
   public void setListener(AutoScaling.TriggerListener<NodeLostEvent> listener) {
     listenerRef.set(listener);
   }

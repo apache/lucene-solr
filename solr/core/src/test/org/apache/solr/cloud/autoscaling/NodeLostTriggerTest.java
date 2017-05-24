@@ -196,7 +196,17 @@ public class NodeLostTriggerTest extends SolrCloudTestCase {
     NodeLostTrigger trigger = new NodeLostTrigger("node_lost_trigger", props, container);
     trigger.setListener(noFirstRunListener);
     trigger.run();
-    newNode.stop();
+
+    // stop the newly created node
+    List<JettySolrRunner> jettySolrRunners = cluster.getJettySolrRunners();
+    for (int i = 0; i < jettySolrRunners.size(); i++) {
+      JettySolrRunner jettySolrRunner = jettySolrRunners.get(i);
+      if (newNode == jettySolrRunner) {
+        cluster.stopJettySolrRunner(i);
+        break;
+      }
+    }
+
     trigger.run(); // this run should detect the lost node
     trigger.close(); // close the old trigger
 
