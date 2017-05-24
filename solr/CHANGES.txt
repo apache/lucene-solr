@@ -239,6 +239,9 @@ Other Changes
 
 * SOLR-10400: Replace (instanceof TrieFooField || instanceof FooPointField) constructs with
   FieldType.getNumberType() or SchemaField.getSortField() where appropriate. (hossman, Steve Rowe)
+  
+* SOLR-10438: Assign explicit useDocValuesAsStored values to all points field types in 
+  schema-point.xml/TestPointFields. (hossman, Steve Rowe)
 
 ==================  6.6.0 ==================
 
