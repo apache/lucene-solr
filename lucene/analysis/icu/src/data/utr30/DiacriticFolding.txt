@@ -168,11 +168,14 @@ FFE3>
 1134D>
 11366..1136C>
 11370..11374>
+11442>
+11446>
 114C2..114C3>
 115BF..115C0>
 1163F>
 116B6..116B7>
 1172B>
+11C3F>
 16AF0..16AF4>
 16F8F..16F9F>
 1D167..1D169>
@@ -181,6 +184,8 @@ FFE3>
 1D185..1D18B>
 1D1AA..1D1AD>
 1E8D0..1E8D6>
+1E944..1E946>
+1E948..1E94A>
 
 # Latin script "composed" that do not further decompose, so decompose here
 # These are from AsciiFoldingFilter

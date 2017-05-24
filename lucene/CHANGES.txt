@@ -9,7 +9,9 @@ Other
 
 * LUCENE-7800: Remove code that potentially rethrows checked exceptions 
   from methods that don't declare them ("sneaky throw" hack). (Robert Muir,
-  Uwe Schindler, Dawid Weiss)  
+  Uwe Schindler, Dawid Weiss) 
+
+* LUCENE-7540: Upgrade ICU to 59.1. (Mike McCandless, Jim Ferenczi) 
 
 Improvements
 
