@@ -129,7 +129,36 @@ abstract class FacetFieldProcessor extends FacetProcessor<FacetField> {
       }
       sortAcc = indexOrderAcc;
       deferredAggs = freq.getFacetStats();
-    } else {
+    }
+
+    // If we are going to return all buckets and if there are no subfacets (that would need a domain), then don't defer
+    // any aggregation calculations to a second phase.  This way we can avoid calculating domains for each bucket, which
+    // can be expensive.
+    if (freq.limit == -1 && freq.subFacets.size() == 0) {
+      accs = new SlotAcc[ freq.getFacetStats().size() ];
+      int otherAccIdx = 0;
+      for (Map.Entry<String,AggValueSource> entry : freq.getFacetStats().entrySet()) {
+        AggValueSource agg = entry.getValue();
+        SlotAcc acc = agg.createSlotAcc(fcontext, numDocs, numSlots);
+        acc.key = entry.getKey();
+        accMap.put(acc.key, acc);
+        accs[otherAccIdx++] = acc;
+      }
+      if (accs.length == 1) {
+        collectAcc = accs[0];
+      } else {
+        collectAcc = new MultiAcc(fcontext, accs);
+      }
+
+      if (sortAcc == null) {
+        sortAcc = accMap.get(freq.sortVariable);
+        assert sortAcc != null;
+      }
+
+      deferredAggs = null;
+    }
+
+    if (sortAcc == null) {
       AggValueSource sortAgg = freq.getFacetStats().get(freq.sortVariable);
       if (sortAgg != null) {
         collectAcc = sortAgg.createSlotAcc(fcontext, numDocs, numSlots);
@@ -140,7 +169,7 @@ abstract class FacetFieldProcessor extends FacetProcessor<FacetField> {
       deferredAggs.remove(freq.sortVariable);
     }
 
-    if (deferredAggs.size() == 0) {
+    if (deferredAggs == null || deferredAggs.size() == 0) {
       deferredAggs = null;
     }
 
@@ -437,6 +466,54 @@ abstract class FacetFieldProcessor extends FacetProcessor<FacetField> {
       }
     }
   }
+
+  static class MultiAcc extends SlotAcc {
+    final SlotAcc[] subAccs;
+
+    MultiAcc(FacetContext fcontext, SlotAcc[] subAccs) {
+      super(fcontext);
+      this.subAccs = subAccs;
+    }
+
+    @Override
+    public void collect(int doc, int slot) throws IOException {
+      for (SlotAcc acc : subAccs) {
+        acc.collect(doc, slot);
+      }
+    }
+
+    @Override
+    public int compare(int slotA, int slotB) {
+      throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public Object getValue(int slotNum) throws IOException {
+      throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public void reset() throws IOException {
+      for (SlotAcc acc : subAccs) {
+        acc.reset();
+      }
+    }
+
+    @Override
+    public void resize(Resizer resizer) {
+      for (SlotAcc acc : subAccs) {
+        acc.resize(resizer);
+      }
+    }
+
+    @Override
+    public void setValues(SimpleOrderedMap<Object> bucket, int slotNum) throws IOException {
+      for (SlotAcc acc : subAccs) {
+        acc.setValues(bucket, slotNum);
+      }
+    }
+  }
+
 
   static class SpecialSlotAcc extends SlotAcc {
     SlotAcc collectAcc;

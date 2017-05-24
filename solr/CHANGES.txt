@@ -231,6 +231,14 @@ Bug Fixes
   resulting in exceptions when using a hashing faceting method and sorting by hll(numeric_field).
   (yonik)
 
+Optimizations
+----------------------
+* SOLR-10634: JSON Facet API: When a field/terms facet will retrieve all buckets (i.e. limit:-1)
+  and there are no nested facets, aggregations are computed in the first collection phase
+  so that the second phase which would normally involve calculating the domain for the bucket
+  can be skipped entirely, leading to large performance improvements. (yonik)
+
+
 Other Changes
 ----------------------
 

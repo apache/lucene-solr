@@ -471,7 +471,7 @@ public class TestJsonFacets extends SolrTestCaseHS {
     doStatsTemplated(client, params(p, "facet","true",       "rows","0", "noexist","noexist_ss", "cat_s","cat_ss", "where_s","where_ss", "num_d","num_f", "num_i","num_l", "num_is","num_ls", "num_fs", "num_ds", "super_s","super_ss", "val_b","val_b", "date","date_dt", "sparse_s","sparse_ss", "multi_ss","multi_ss") );
 
     // multi-valued strings, method=dv for terms facets
-    doStatsTemplated(client, params(p, "terms", "method:dv,", "rows", "0", "noexist", "noexist_ss", "cat_s", "cat_ss", "where_s", "where_ss", "num_d", "num_f", "num_i", "num_l", "super_s", "super_ss", "val_b", "val_b", "date", "date_dt", "sparse_s", "sparse_ss", "multi_ss", "multi_ss"));
+    doStatsTemplated(client, params(p, "terms_method", "method:dv,", "rows", "0", "noexist", "noexist_ss", "cat_s", "cat_ss", "where_s", "where_ss", "num_d", "num_f", "num_i", "num_l", "super_s", "super_ss", "val_b", "val_b", "date", "date_dt", "sparse_s", "sparse_ss", "multi_ss", "multi_ss"));
 
     // single valued docvalues for strings, and single valued numeric doc values for numeric fields
     doStatsTemplated(client, params(p,                "rows","0", "noexist","noexist_sd",  "cat_s","cat_sd", "where_s","where_sd", "num_d","num_dd", "num_i","num_id", "num_is","num_lds", "num_fs","num_dds", "super_s","super_sd", "val_b","val_b", "date","date_dtd", "sparse_s","sparse_sd"    ,"multi_ss","multi_sds") );
@@ -490,6 +490,26 @@ public class TestJsonFacets extends SolrTestCaseHS {
     p.set("sparse_num_d", "sparse_" + p.get("num_d") );
     if (p.get("num_is") == null) p.add("num_is","num_is");
     if (p.get("num_fs") == null) p.add("num_fs","num_fs");
+
+    String terms = p.get("terms");
+    if (terms == null) terms="";
+    int limit=0;
+    switch (random().nextInt(4)) {
+      case 0: limit=-1;
+      case 1: limit=1000000;
+      case 2: // fallthrough
+      case 3: // fallthrough
+    }
+    if (limit != 0) {
+      terms=terms+"limit:"+limit+",";
+    }
+    String terms_method = p.get("terms_method");
+    if (terms_method != null) {
+      terms=terms+terms_method;
+    }
+    p.set("terms", terms);
+    // "${terms}" should be put at the beginning of generic terms facets.
+    // It may specify "method=..." or "limit:-1", so should not be used if the facet explicitly specifies.
 
     MacroExpander m = new MacroExpander( p.getMap() );
 
@@ -862,7 +882,7 @@ public class TestJsonFacets extends SolrTestCaseHS {
 
     // test numBuckets
     client.testJQ(params(p, "q", "*:*", "rows", "0", "facet", "true"
-            , "json.facet", "{f1:{terms:{${terms} field:${cat_s}, numBuckets:true, limit:1}}}" // TODO: limit:0 produced an error
+            , "json.facet", "{f1:{terms:{${terms_method} field:${cat_s}, numBuckets:true, limit:1}}}" // TODO: limit:0 produced an error
         )
         , "facets=={ 'count':6, " +
             "'f1':{ numBuckets:2, buckets:[{val:B, count:3}]} } "
@@ -1048,10 +1068,10 @@ public class TestJsonFacets extends SolrTestCaseHS {
     // also test limit:0
     client.testJQ(params(p, "q", "*:*"
             , "json.facet", "{" +
-                " f0:{${terms} type:terms, field:${multi_ss}, allBuckets:true, limit:0} " +
-                ",f1:{${terms} type:terms, field:${multi_ss}, allBuckets:true, limit:0, offset:1} " +  // offset with 0 limit
-                ",f2:{${terms} type:terms, field:${multi_ss}, allBuckets:true, limit:0, facet:{x:'sum(${num_d})'}, sort:'x desc' } " +
-                ",f3:{${terms} type:terms, field:${multi_ss}, allBuckets:true, limit:0, missing:true, facet:{x:'sum(${num_d})', y:'avg(${num_d})'}, sort:'x desc' } " +
+                " f0:{${terms_method} type:terms, field:${multi_ss}, allBuckets:true, limit:0} " +
+                ",f1:{${terms_method} type:terms, field:${multi_ss}, allBuckets:true, limit:0, offset:1} " +  // offset with 0 limit
+                ",f2:{${terms_method} type:terms, field:${multi_ss}, allBuckets:true, limit:0, facet:{x:'sum(${num_d})'}, sort:'x desc' } " +
+                ",f3:{${terms_method} type:terms, field:${multi_ss}, allBuckets:true, limit:0, missing:true, facet:{x:'sum(${num_d})', y:'avg(${num_d})'}, sort:'x desc' } " +
                 "}"
         )
         , "facets=={ 'count':6, " +
@@ -1066,9 +1086,9 @@ public class TestJsonFacets extends SolrTestCaseHS {
     // also test limit:0
     client.testJQ(params(p, "q", "*:*"
             , "json.facet", "{" +
-                " f0:{${terms} type:terms, field:${num_i}, allBuckets:true, limit:0} " +
-                ",f1:{${terms} type:terms, field:${num_i}, allBuckets:true, limit:0, offset:1} " +  // offset with 0 limit
-                ",f2:{${terms} type:terms, field:${num_i}, allBuckets:true, limit:0, facet:{x:'sum(${num_d})'}, sort:'x desc' } " +
+                " f0:{${terms_method} type:terms, field:${num_i}, allBuckets:true, limit:0} " +
+                ",f1:{${terms_method} type:terms, field:${num_i}, allBuckets:true, limit:0, offset:1} " +  // offset with 0 limit
+                ",f2:{${terms_method} type:terms, field:${num_i}, allBuckets:true, limit:0, facet:{x:'sum(${num_d})'}, sort:'x desc' } " +
                 "}"
         )
         , "facets=={ 'count':6, " +
@@ -1397,6 +1417,102 @@ public class TestJsonFacets extends SolrTestCaseHS {
 
 
     }
+
+
+    ////////////////////////////////////////////////////////////////
+    // test which phase stats are calculated in
+    ////////////////////////////////////////////////////////////////
+    if (client.local()) {
+      long creates, resets;
+      // NOTE: these test the current implementation and may need to be adjusted to match future optimizations (such as calculating N buckets in parallel in the second phase)
+
+      creates = DebugAgg.Acc.creates.get();
+      resets = DebugAgg.Acc.resets.get();
+      client.testJQ(params(p, "q", "*:*"
+          , "json.facet", "{f1:{terms:{${terms_method} field:${super_s}, limit:1, facet:{x:'debug()'}   }}}"  // x should be deferred to 2nd phase
+          )
+          , "facets=={ 'count':6, " +
+              "f1:{  buckets:[{ val:batman, count:1, x:1}]} } "
+      );
+
+      assertEquals(1, DebugAgg.Acc.creates.get() - creates);
+      assertTrue( DebugAgg.Acc.resets.get() - resets <= 1);
+      assertTrue( DebugAgg.Acc.last.numSlots <= 2 ); // probably "1", but may be special slot for something.  As long as it's not cardinality of the field
+
+
+      creates = DebugAgg.Acc.creates.get();
+      resets = DebugAgg.Acc.resets.get();
+      client.testJQ(params(p, "q", "*:*"
+          , "json.facet", "{f1:{terms:{${terms_method} field:${super_s}, limit:1, facet:{ x:'debug()'} , sort:'x asc'  }}}"  // sorting by x... must be done all at once in first phase
+          )
+          , "facets=={ 'count':6, " +
+              "f1:{  buckets:[{ val:batman, count:1, x:1}]}" +
+              " } "
+      );
+
+      assertEquals(1, DebugAgg.Acc.creates.get() - creates);
+      assertTrue( DebugAgg.Acc.resets.get() - resets == 0);
+      assertTrue( DebugAgg.Acc.last.numSlots >= 5 ); // all slots should be done in a single shot. there may be more than 5 due to special slots or hashing.
+
+
+      // When limit:-1, we should do most stats in first phase (SOLR-10634)
+      creates = DebugAgg.Acc.creates.get();
+      resets = DebugAgg.Acc.resets.get();
+      client.testJQ(params(p, "q", "*:*"
+          , "json.facet", "{f1:{terms:{${terms_method} field:${super_s}, limit:-1, facet:{x:'debug()'}  }}}"
+          )
+          , "facets=="
+      );
+
+      assertEquals(1, DebugAgg.Acc.creates.get() - creates);
+      assertTrue( DebugAgg.Acc.resets.get() - resets == 0);
+      assertTrue( DebugAgg.Acc.last.numSlots >= 5 ); // all slots should be done in a single shot. there may be more than 5 due to special slots or hashing.
+
+      // Now for a numeric field
+      // When limit:-1, we should do most stats in first phase (SOLR-10634)
+      creates = DebugAgg.Acc.creates.get();
+      resets = DebugAgg.Acc.resets.get();
+      client.testJQ(params(p, "q", "*:*"
+          , "json.facet", "{f1:{terms:{${terms_method} field:${num_d}, limit:-1, facet:{x:'debug()'}  }}}"
+          )
+          , "facets=="
+      );
+
+      assertEquals(1, DebugAgg.Acc.creates.get() - creates);
+      assertTrue( DebugAgg.Acc.resets.get() - resets == 0);
+      assertTrue( DebugAgg.Acc.last.numSlots >= 5 ); // all slots should be done in a single shot. there may be more than 5 due to special slots or hashing.
+
+
+      // But if we need to calculate domains anyway, it probably makes sense to calculate most stats in the 2nd phase (along with sub-facets)
+      creates = DebugAgg.Acc.creates.get();
+      resets = DebugAgg.Acc.resets.get();
+      client.testJQ(params(p, "q", "*:*"
+          , "json.facet", "{f1:{terms:{${terms_method} field:${super_s}, limit:-1, facet:{ x:'debug()' , y:{terms:${where_s}}   }  }}}"
+          )
+          , "facets=="
+      );
+
+      assertEquals(1, DebugAgg.Acc.creates.get() - creates);
+      assertTrue( DebugAgg.Acc.resets.get() - resets >=4);
+      assertTrue( DebugAgg.Acc.last.numSlots <= 2 ); // probably 1, but could be higher
+
+      // Now with a numeric field
+      // But if we need to calculate domains anyway, it probably makes sense to calculate most stats in the 2nd phase (along with sub-facets)
+      creates = DebugAgg.Acc.creates.get();
+      resets = DebugAgg.Acc.resets.get();
+      client.testJQ(params(p, "q", "*:*"
+          , "json.facet", "{f1:{terms:{${terms_method} field:${num_d}, limit:-1, facet:{ x:'debug()' , y:{terms:${where_s}}   }  }}}"
+          )
+          , "facets=="
+      );
+
+      assertEquals(1, DebugAgg.Acc.creates.get() - creates);
+      assertTrue( DebugAgg.Acc.resets.get() - resets >=4);
+      assertTrue( DebugAgg.Acc.last.numSlots <= 2 ); // probably 1, but could be higher
+    }
+    //////////////////////////////////////////////////////////////// end phase testing
+
+
 
   }
 
