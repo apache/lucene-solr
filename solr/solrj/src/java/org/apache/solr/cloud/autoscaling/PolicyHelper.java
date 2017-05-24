@@ -54,13 +54,7 @@ public class PolicyHelper {
 
         @Override
         public Map<String, Map<String, List<Policy.ReplicaInfo>>> getReplicaInfo(String node, Collection<String> keys) {
-          Map<String, Map<String, List<Policy.ReplicaInfo>>> replicaInfo = delegate.getReplicaInfo(node, keys);
-          for (String s : optionalPolicyMapping.keySet()) {
-            if (!replicaInfo.containsKey(s)) {
-              replicaInfo.put(s, new HashMap<>());
-            }
-          }
-          return replicaInfo;
+          return delegate.getReplicaInfo(node, keys);
         }
 
         @Override

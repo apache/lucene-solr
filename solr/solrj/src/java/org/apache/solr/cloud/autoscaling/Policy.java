@@ -165,13 +165,7 @@ public class Policy implements MapWriter {
           .collect(Collectors.toList());
 
       for (String c : collections) {
-        String p = dataProvider.getPolicy(c);
-        if (p != null) {
-          List<Clause> perCollPolicy = policies.get(p);
-          if (perCollPolicy == null)
-            throw new RuntimeException(StrUtils.formatString("Policy for collection {0} is {1} . It does not exist", c, p));
-        }
-        expandedClauses.addAll(mergePolicies(c, policies.getOrDefault(p, emptyList()), clusterPolicy));
+        addClausesForCollection(dataProvider, c);
       }
 
       Collections.sort(expandedClauses);
@@ -181,6 +175,16 @@ public class Policy implements MapWriter {
       matrix = new ArrayList<>(nodes.size());
       for (String node : nodes) matrix.add(new Row(node, paramsOfInterest, dataProvider));
       applyRules();
+    }
+
+    private void addClausesForCollection(ClusterDataProvider dataProvider, String c) {
+      String p = dataProvider.getPolicy(c);
+      if (p != null) {
+        List<Clause> perCollPolicy = policies.get(p);
+        if (perCollPolicy == null)
+          throw new RuntimeException(StrUtils.formatString("Policy for collection {0} is {1} . It does not exist", c, p));
+      }
+      expandedClauses.addAll(mergePolicies(c, policies.getOrDefault(p, emptyList()), clusterPolicy));
     }
 
     Session copy() {
@@ -343,6 +347,16 @@ public class Policy implements MapWriter {
 
     public SolrRequest getOperation() {
       if (!isInitialized) {
+        String coll = (String) hints.get(Hint.COLL);
+        if(coll != null){
+          // if this is not a known collection from the existing clusterstate,
+          // then add it
+          if(session.matrix.stream().noneMatch(row -> row.replicaInfo.containsKey(coll))){
+            session.matrix.get(0).replicaInfo.put(coll, new HashMap<>());
+            session.addClausesForCollection(session.dataProvider, coll);
+            Collections.sort(session.expandedClauses);
+          }
+        }
         session.applyRules();
         originalViolations.addAll(session.getViolations());
         this.operation = init();
