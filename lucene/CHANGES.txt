@@ -99,6 +99,8 @@ Other
 * LUCENE-7753: Make fields static when possible.
   (Daniel Jelinski via Adrien Grand)
 
+* LUCENE-7540: Upgrade ICU to 59.1 (Mike McCandless, Jim Ferenczi)
+
 ======================= Lucene 6.7.0 =======================
 
 Other
