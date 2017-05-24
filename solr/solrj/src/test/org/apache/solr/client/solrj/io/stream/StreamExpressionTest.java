@@ -925,36 +925,23 @@ public class StreamExpressionTest extends SolrCloudTestCase {
   public void testKnnStream() throws Exception {
 
     UpdateRequest update = new UpdateRequest();
-
     update.add(id, "1", "a_t", "hello world have a very nice day blah");
-    update.add(id, "2", "a_t", "hello world have a very nice day fancy sky");
-    update.add(id, "3", "a_t", "hello world have a very nice bug out");
     update.add(id, "4", "a_t", "hello world have a very streaming is fun");
-
-
+    update.add(id, "3", "a_t", "hello world have a very nice bug out");
+    update.add(id, "2", "a_t", "hello world have a very nice day fancy sky");
     update.commit(cluster.getSolrClient(), COLLECTIONORALIAS);
-
-    StreamExpression expression;
-    TupleStream stream;
-
-    StreamFactory factory = new StreamFactory()
-        .withCollectionZkHost(COLLECTIONORALIAS, cluster.getZkServer().getZkAddress())
-        .withFunctionName("random", RandomStream.class);
-
 
     StreamContext context = new StreamContext();
     SolrClientCache cache = new SolrClientCache();
     try {
       context.setSolrClientCache(cache);
-
       ModifiableSolrParams sParams = new ModifiableSolrParams(StreamingTest.mapParams(CommonParams.QT, "/stream"));
-      sParams.add("expr", "knn(" + COLLECTIONORALIAS + ", id=\"1\", qf=\"a_t\", rows=\"4\", fl=\"id\")");
+      sParams.add("expr", "knn(" + COLLECTIONORALIAS + ", id=\"1\", qf=\"a_t\", rows=\"4\", fl=\"id, score\", mintf=\"1\")");
       JettySolrRunner jetty = cluster.getJettySolrRunner(0);
       SolrStream solrStream = new SolrStream(jetty.getBaseUrl().toString() + "/collection1", sParams);
       List<Tuple> tuples = getTuples(solrStream);
-      System.out.println("## Tuples:"+tuples.size());
-      assertTrue(tuples.size() == 4);
-
+      assertTrue(tuples.size() == 3);
+      assertOrder(tuples,2,3,4);
     } finally {
       cache.close();
     }
