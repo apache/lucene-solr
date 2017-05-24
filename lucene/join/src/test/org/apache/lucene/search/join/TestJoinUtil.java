@@ -1153,7 +1153,7 @@ public class TestJoinUtil extends LuceneTestCase {
                   indexSearcher, scoreMode1)));
         }
 
-        for (int i = 0; i < 13; i++) {
+        for (int i = 14; i < 26; i++) {
           Document doc = new Document();
           doc.add(new TextField("id", "new_id" , Field.Store.NO));
           doc.add(new TextField("name", "name5", Field.Store.NO));
@@ -1171,7 +1171,7 @@ public class TestJoinUtil extends LuceneTestCase {
         }
         try (IndexReader r = w.getReader()) {
           IndexSearcher indexSearcher = new IndexSearcher(r);
-          assertFalse("Query shouldn't be equal, because different index readers ",
+          assertFalse("Query shouldn't be equal, because new join values have been indexed",
               x.equals(JoinUtil.createJoinQuery(joinField, multiValued, joinField,
                   Integer.class, new TermQuery(new Term("name", "name5")),
                   indexSearcher, scoreMode1)));
