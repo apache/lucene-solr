@@ -82,7 +82,6 @@ public class KnnStream extends TupleStream implements Expressible  {
     }
 
     // Named parameters - passed directly to solr as solrparams
-    System.out.println("####Params:"+namedParams.size());
     if(namedParams.size() < 2){
       throw new IOException(String.format(Locale.ROOT,"invalid expression %s - at least two named parameters expected. eg. 'id' and 'qf'",expression));
     }
