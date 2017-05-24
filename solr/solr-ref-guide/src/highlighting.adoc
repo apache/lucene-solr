@@ -35,7 +35,7 @@ You only need to set the `hl` and often `hl.fl` parameters to get results. The f
 |===
 |Parameter |Default |Description
 |hl |false |Use this parameter to enable or disable highlighting.
-|hl.method |original |The highlighting implementation to use. Acceptable values are: `unified`, `original`, `fastVector`, and `postings`. See the <<Highlighting-ChoosingaHighlighter,Choosing a Highlighter>> section below for more details on the differences between the available highlighters.
+|hl.method |original |The highlighting implementation to use. Acceptable values are: `unified`, `original`, `fastVector`. See the <<Highlighting-ChoosingaHighlighter,Choosing a Highlighter>> section below for more details on the differences between the available highlighters.
 |hl.fl |_(df=)_ |Specifies a list of fields to highlight. Accepts a comma- or space-delimited list of fields for which Solr should generate highlighted snippets. A wildcard of `\*` (asterisk) can be used to match field globs, such as `text_*` or even `\*` to highlight on all fields where highlighting is possible. When using `\*`, consider adding `hl.requireFieldMatch=true`.
 |hl.q |_(q=)_ |A query to use for highlighting. This parameter allows you to highlight different terms than those being used to retrieve documents.
 |hl.qparser |_(defType=)_ |The query parser to use for the `hl.q` query.
@@ -136,13 +136,6 @@ This highlighter notably supports multi-colored highlighting such that different
 This highlighter's query-representation is less advanced than the Original or Unified Highlighters: for example it will not work well with the `surround` parser, and there are multiple reported bugs pertaining to queries with stop-words.
 +
 Note that both the FastVector and Original Highlighters can be used in conjunction in a search request to highlight some fields with one and some the other. In contrast, the other highlighters can only be chosen exclusively.
-
-The Postings Highlighter:: (`hl.method=postings`)
-+
-The Postings Highlighter is the ancestor of the Unified Highlighter, supporting a subset of its options and none of its index configuration flexibility - it _requires_ `storeOffsetsWithPositions` on all fields to highlight.
-This option is here for backwards compatibility; it's deprecated.
-In 7.0, it is internally implemented as a reconfiguration of the Unified Highlighter.
-See older reference guide editions for its options.
 
 The Unified Highlighter is exclusively configured via search parameters. In contrast, some settings for the Original and FastVector Highlighters are set in `solrconfig.xml`. There's a robust example of the latter in the "```techproducts```" configset.
 

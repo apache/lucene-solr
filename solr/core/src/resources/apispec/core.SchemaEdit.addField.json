@@ -82,7 +82,7 @@
     },
     "termPayloads": {
       "type": "boolean",
-      "description": "If true, term payloads will be stored for use with highlighting. If this is not defined, it will inherit the value from the fieldType. If the fieldType does not define a value, it will default to false. Do not enable this if using the PostingsHighlighter.",
+      "description": "If true, term vectors will include payloads. If this is not defined, it will inherit the value from the fieldType. If the fieldType does not define a value, it will default to false.",
       "default": "false"
     },
     "useDocValuesAsStored": {
