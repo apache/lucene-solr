@@ -70,7 +70,6 @@ public class NodeAddedTrigger implements AutoScaling.Trigger<NodeAddedTrigger.No
       actions = new ArrayList<>(3);
       for (Map<String, String> map : o) {
         TriggerAction action = container.getResourceLoader().newInstance(map.get("class"), TriggerAction.class);
-        action.init(map);
         actions.add(action);
       }
     } else {
