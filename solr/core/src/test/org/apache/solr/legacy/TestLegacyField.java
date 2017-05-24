@@ -14,7 +14,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.lucene.legacy;
+package org.apache.solr.legacy;
 
 import java.io.StringReader;
 

@@ -14,7 +14,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.lucene.legacy;
+package org.apache.solr.legacy;
 
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
@@ -23,11 +23,11 @@ import org.apache.lucene.index.MultiFields;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.Terms;
 import org.apache.lucene.index.TermsEnum;
-import org.apache.lucene.legacy.LegacyDoubleField;
-import org.apache.lucene.legacy.LegacyFloatField;
-import org.apache.lucene.legacy.LegacyIntField;
-import org.apache.lucene.legacy.LegacyLongField;
-import org.apache.lucene.legacy.LegacyNumericUtils;
+import org.apache.solr.legacy.LegacyDoubleField;
+import org.apache.solr.legacy.LegacyFloatField;
+import org.apache.solr.legacy.LegacyIntField;
+import org.apache.solr.legacy.LegacyLongField;
+import org.apache.solr.legacy.LegacyNumericUtils;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.NumericUtils;

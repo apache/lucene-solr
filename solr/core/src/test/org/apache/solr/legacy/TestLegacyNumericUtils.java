@@ -14,7 +14,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.lucene.legacy;
+package org.apache.solr.legacy;
 
 
 import java.util.Arrays;
@@ -22,7 +22,7 @@ import java.util.Collections;
 import java.util.Iterator;
 import java.util.Random;
 
-import org.apache.lucene.legacy.LegacyNumericUtils;
+import org.apache.solr.legacy.LegacyNumericUtils;
 import org.apache.lucene.util.BytesRefBuilder;
 import org.apache.lucene.util.FixedBitSet;
 import org.apache.lucene.util.LongBitSet;

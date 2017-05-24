@@ -16,7 +16,7 @@
  */
 package org.apache.solr.search.mlt;
 import org.apache.lucene.index.Term;
-import org.apache.lucene.legacy.LegacyNumericUtils;
+import org.apache.solr.legacy.LegacyNumericUtils;
 import org.apache.lucene.queries.mlt.MoreLikeThis;
 import org.apache.lucene.search.BooleanClause;
 import org.apache.lucene.search.BooleanQuery;

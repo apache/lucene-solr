@@ -14,7 +14,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.lucene.legacy;
+package org.apache.solr.legacy;
 
 import org.apache.lucene.document.FieldType;
 import org.apache.lucene.index.IndexOptions;
@@ -60,7 +60,7 @@ public final class LegacyFieldType extends FieldType {
   
   /** 
    * LegacyNumericType: if non-null then the field's value will be indexed
-   * numerically so that {@link org.apache.lucene.legacy.LegacyNumericRangeQuery} can be used at
+   * numerically so that {@link org.apache.solr.legacy.LegacyNumericRangeQuery} can be used at
    * search time. 
    * <p>
    * The default is <code>null</code> (no numeric type) 
@@ -97,7 +97,7 @@ public final class LegacyFieldType extends FieldType {
    * <p>
    * This has no effect if {@link #numericType()} returns null.
    * <p>
-   * The default is {@link org.apache.lucene.legacy.LegacyNumericUtils#PRECISION_STEP_DEFAULT}
+   * The default is {@link org.apache.solr.legacy.LegacyNumericUtils#PRECISION_STEP_DEFAULT}
    * @see #setNumericPrecisionStep(int)
    *
    * @deprecated Please switch to {@link org.apache.lucene.index.PointValues} instead

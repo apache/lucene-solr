@@ -57,6 +57,8 @@ API Changes
   instead, which derived from the UH.  WholeBreakIterator and
   CustomSeparatorBreakIterator were moved to UH's package. (David Smiley)
 
+* LUCENE-7850: Removed support for legacy numerics. (Adrien Grand)
+
 Bug Fixes
 
 * LUCENE-7626: IndexWriter will no longer accept broken token offsets

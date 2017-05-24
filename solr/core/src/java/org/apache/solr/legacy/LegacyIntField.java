@@ -14,7 +14,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.lucene.legacy;
+package org.apache.solr.legacy;
 
 
 import org.apache.lucene.document.Document;
@@ -50,7 +50,7 @@ import org.apache.lucene.index.IndexOptions;
  * LegacyDoubleField}.
  *
  * <p>To perform range querying or filtering against a
- * <code>LegacyIntField</code>, use {@link org.apache.lucene.legacy.LegacyNumericRangeQuery}.
+ * <code>LegacyIntField</code>, use {@link org.apache.solr.legacy.LegacyNumericRangeQuery}.
  * To sort according to a
  * <code>LegacyIntField</code>, use the normal numeric sort types, eg
  * {@link org.apache.lucene.search.SortField.Type#INT}. <code>LegacyIntField</code>
@@ -84,7 +84,7 @@ import org.apache.lucene.index.IndexOptions;
  * LegacyFieldType#setNumericPrecisionStep} method if you'd
  * like to change the value.  Note that you must also
  * specify a congruent value when creating {@link
- * org.apache.lucene.legacy.LegacyNumericRangeQuery}.
+ * org.apache.solr.legacy.LegacyNumericRangeQuery}.
  * For low cardinality fields larger precision steps are good.
  * If the cardinality is &lt; 100, it is fair
  * to use {@link Integer#MAX_VALUE}, which produces one
@@ -93,8 +93,8 @@ import org.apache.lucene.index.IndexOptions;
  * <p>For more information on the internals of numeric trie
  * indexing, including the <a
  * href="LegacyNumericRangeQuery.html#precisionStepDesc"><code>precisionStep</code></a>
- * configuration, see {@link org.apache.lucene.legacy.LegacyNumericRangeQuery}. The format of
- * indexed values is described in {@link org.apache.lucene.legacy.LegacyNumericUtils}.
+ * configuration, see {@link org.apache.solr.legacy.LegacyNumericRangeQuery}. The format of
+ * indexed values is described in {@link org.apache.solr.legacy.LegacyNumericUtils}.
  *
  * <p>If you only need to sort by numeric value, and never
  * run range querying/filtering, you can index using a
@@ -102,7 +102,7 @@ import org.apache.lucene.index.IndexOptions;
  * This will minimize disk space consumed. </p>
  *
  * <p>More advanced users can instead use {@link
- * org.apache.lucene.legacy.LegacyNumericTokenStream} directly, when indexing numbers. This
+ * org.apache.solr.legacy.LegacyNumericTokenStream} directly, when indexing numbers. This
  * class is a wrapper around this token stream type for
  * easier, more intuitive usage.</p>
  *
@@ -145,7 +145,7 @@ public final class LegacyIntField extends LegacyField {
 
   /** Creates a stored or un-stored LegacyIntField with the provided value
    *  and default <code>precisionStep</code> {@link
-   *  org.apache.lucene.legacy.LegacyNumericUtils#PRECISION_STEP_DEFAULT_32} (8).
+   *  org.apache.solr.legacy.LegacyNumericUtils#PRECISION_STEP_DEFAULT_32} (8).
    *  @param name field name
    *  @param value 32-bit integer value
    *  @param stored Store.YES if the content should also be stored

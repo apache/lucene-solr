@@ -18,4 +18,4 @@
 /** 
  * Deprecated stuff!
  */
-package org.apache.lucene.legacy;
+package org.apache.solr.legacy;

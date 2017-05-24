@@ -20,8 +20,8 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
-import org.apache.lucene.legacy.LegacyFieldType;
-import org.apache.lucene.spatial.vector.PointVectorStrategy;
+import org.apache.solr.legacy.LegacyFieldType;
+import org.apache.solr.legacy.PointVectorStrategy;
 
 /**
  * @see PointVectorStrategy

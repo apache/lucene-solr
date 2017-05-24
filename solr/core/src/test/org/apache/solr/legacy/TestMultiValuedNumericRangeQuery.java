@@ -14,7 +14,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.lucene.legacy;
+package org.apache.solr.legacy;
 
 
 import java.util.Locale;
@@ -26,8 +26,8 @@ import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.RandomIndexWriter;
-import org.apache.lucene.legacy.LegacyIntField;
-import org.apache.lucene.legacy.LegacyNumericRangeQuery;
+import org.apache.solr.legacy.LegacyIntField;
+import org.apache.solr.legacy.LegacyNumericRangeQuery;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.TermRangeQuery;
 import org.apache.lucene.search.TopDocs;

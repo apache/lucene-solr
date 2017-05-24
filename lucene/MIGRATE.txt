@@ -74,3 +74,9 @@ collecting TopDocs for each group, but instead takes a GroupReducer that will
 perform any type of reduction on the top groups collected on a first-pass.  To
 reproduce the old behaviour of SecondPassGroupingCollector, you should instead
 use TopGroupsCollector.
+
+## Removed legacy numerics (LUCENE-7850)
+
+Support for legacy numerics has been removed since legacy numerics had been
+deprecated since Lucene 6.0. Points should be used instead, see
+org.apache.lucene.index.PointValues for an introduction.

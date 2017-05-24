@@ -14,16 +14,16 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.lucene.legacy;
+package org.apache.solr.legacy;
 
 
 import org.apache.lucene.util.AttributeImpl;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.analysis.tokenattributes.TermToBytesRefAttribute;
 import org.apache.lucene.analysis.tokenattributes.TypeAttribute;
-import org.apache.lucene.legacy.LegacyNumericTokenStream;
-import org.apache.lucene.legacy.LegacyNumericUtils;
-import org.apache.lucene.legacy.LegacyNumericTokenStream.LegacyNumericTermAttributeImpl;
+import org.apache.solr.legacy.LegacyNumericTokenStream;
+import org.apache.solr.legacy.LegacyNumericUtils;
+import org.apache.solr.legacy.LegacyNumericTokenStream.LegacyNumericTermAttributeImpl;
 import org.apache.lucene.analysis.BaseTokenStreamTestCase;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttributeImpl;
