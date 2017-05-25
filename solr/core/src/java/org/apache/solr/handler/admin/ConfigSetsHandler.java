@@ -238,6 +238,10 @@ public class ConfigSetsHandler extends RequestHandlerBase implements PermissionN
         props.put(param, params.get(param));
       }
     }
+
+    // The configset created via an API should be mutable.
+    props.put("immutable", "false");
+
     return props;
   }
 
