@@ -47,6 +47,8 @@ import org.apache.solr.common.SolrDocumentList;
 import org.apache.solr.common.params.ModifiableSolrParams;
 
 import static org.apache.solr.common.params.CommonParams.Q;
+import static org.apache.solr.common.params.CommonParams.ROWS;
+
 
 public class KnnStream extends TupleStream implements Expressible  {
 
@@ -193,6 +195,13 @@ public class KnnStream extends TupleStream implements Expressible  {
         builder.append(" " + key + "=" + params.get(key));
         params.remove(key);
       }
+    }
+
+    String k = params.get("k");
+
+    if(k != null) {
+      params.add(ROWS, k);
+      params.remove(k);
     }
 
     params.add(Q, "{!mlt"+builder.toString()+"}"+id);
