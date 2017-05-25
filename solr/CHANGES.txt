@@ -256,6 +256,9 @@ Other Changes
 * SOLR-10438: Assign explicit useDocValuesAsStored values to all points field types in 
   schema-point.xml/TestPointFields. (hossman, Steve Rowe)
 
+* SOLR-10659: Remove ResponseBuilder.getSortSpec use in SearchGroupShardResponseProcessor.
+  (Judith Silverman via Christine Poerschke)
+
 ==================  6.6.0 ==================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release.
