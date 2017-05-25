@@ -5207,8 +5207,8 @@ public class StreamExpressionTest extends SolrCloudTestCase {
 
 
   @Test
-  public void testSequence() throws Exception {
-    String expr = "tuple(seq=sequence(20, 0, 1))";
+  public void testEvaluatorOnly() throws Exception {
+    String expr = "sequence(20, 0, 1)";
     ModifiableSolrParams paramsLoc = new ModifiableSolrParams();
     paramsLoc.set("expr", expr);
     paramsLoc.set("qt", "/stream");
@@ -5220,40 +5220,10 @@ public class StreamExpressionTest extends SolrCloudTestCase {
     solrStream.setStreamContext(context);
     List<Tuple> tuples = getTuples(solrStream);
     assertTrue(tuples.size() == 1);
-    List<Number> sequence = (List<Number>)tuples.get(0).get("seq");
+    List<Number> sequence = (List<Number>)tuples.get(0).get("out");
     assertTrue(sequence.size() == 20);
     for(int i=0; i<sequence.size(); i++) {
       assertTrue(sequence.get(i).intValue() == i);
-    }
-
-    //Change the size, stride
-    expr = "tuple(seq=sequence(100, 0, 4))";
-    paramsLoc = new ModifiableSolrParams();
-    paramsLoc.set("expr", expr);
-    paramsLoc.set("qt", "/stream");
-
-    solrStream = new SolrStream(url, paramsLoc);
-    tuples = getTuples(solrStream);
-    assertTrue(tuples.size() == 1);
-    sequence = (List<Number>)tuples.get(0).get("seq");
-    assertTrue(sequence.size() == 100);
-    for(int i=0; i<sequence.size(); i++) {
-      assertTrue(sequence.get(i).intValue() == (i*4));
-    }
-
-    //Change the start
-    expr = "tuple(seq=sequence(100, 10, 1))";
-    paramsLoc = new ModifiableSolrParams();
-    paramsLoc.set("expr", expr);
-    paramsLoc.set("qt", "/stream");
-
-    solrStream = new SolrStream(url, paramsLoc);
-    tuples = getTuples(solrStream);
-    assertTrue(tuples.size() == 1);
-    sequence = (List<Number>)tuples.get(0).get("seq");
-    assertTrue(sequence.size() == 100);
-    for(int i=0; i<sequence.size(); i++) {
-      assertTrue(sequence.get(i).intValue() == (i+10));
     }
   }
 
