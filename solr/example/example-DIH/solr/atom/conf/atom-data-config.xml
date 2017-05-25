@@ -3,7 +3,7 @@
   <document>
 
     <entity name="stackoverflow"
-            url="http://stackoverflow.com/feeds/tag/solr"
+            url="https://stackoverflow.com/feeds/tag/solr"
             processor="XPathEntityProcessor"
             forEach="/feed|/feed/entry"
             transformer="HTMLStripTransformer,RegexTransformer">
