@@ -109,6 +109,10 @@ Other
   from methods that don't declare them ("sneaky throw" hack). (Robert Muir,
   Uwe Schindler, Dawid Weiss)
 
+Improvements
+
+* LUCENE-7841: Normalize ґ to г in Ukrainian analyzer. (Andriy Rysin via Dawid Weiss)
+
 ======================= Lucene 6.6.0 =======================
 
 New Features

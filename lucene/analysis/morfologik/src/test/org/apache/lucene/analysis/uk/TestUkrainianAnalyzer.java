@@ -52,10 +52,17 @@ public class TestUkrainianAnalyzer extends BaseTokenStreamTestCase {
   public void testCapsTokenStream() throws Exception {
     Analyzer a = new UkrainianMorfologikAnalyzer();
     assertAnalyzesTo(a, "Цих Чайковського і Ґете.",
-                     new String[] { "Чайковське", "Чайковський", "Ґете" });
+                     new String[] { "Чайковське", "Чайковський", "Гете" });
     a.close();
   }
 
+  public void testCharNormalization() throws Exception {
+    Analyzer a = new UkrainianMorfologikAnalyzer();
+    assertAnalyzesTo(a, "Ґюмрі та Гюмрі.",
+                     new String[] { "Гюмрі", "Гюмрі" });
+    a.close();
+  }
+  
   public void testSampleSentence() throws Exception {
     Analyzer a = new UkrainianMorfologikAnalyzer();
     assertAnalyzesTo(a, "Це — проект генерування словника з тегами частин мови для української мови.",
