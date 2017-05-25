@@ -22,7 +22,7 @@ Managed resources expose a REST API endpoint for performing Create-Read-Update-D
 
 Any long-lived Solr object that has configuration settings and/or data is a good candidate to be a managed resource. Managed resources complement other programmatically manageable components in Solr, such as the RESTful schema API to add fields to a managed schema.
 
-Consider a Web-based UI that offers Solr-as-a-Service where users need to configure a set of stop words and synonym mappings as part of an initial setup process for their search application. This type of use case can easily be supported using the Managed Stop Filter & Managed Synonym Filter Factories provided by Solr, via the Managed resources REST API.
+Consider a Web-based UI that offers Solr-as-a-Service where users need to configure a set of stop words and synonym mappings as part of an initial setup process for their search application. This type of use case can easily be supported using the Managed Stop Filter & Managed Synonym Graph Filter Factories provided by Solr, via the Managed resources REST API.
 
 Users can also write their own custom plugins, that leverage the same internal hooks to make additional resources REST managed.
 
@@ -142,14 +142,16 @@ For the most part, the API for managing synonyms behaves similar to the API for 
 [source,xml]
 ----
 <fieldType name="managed_en" positionIncrementGap="100">
-  <analyzer>
+  <analyzer type="index">
     <tokenizer class="solr.StandardTokenizerFactory"/>
-    <filter class="solr.ManagedStopFilterFactory"
-            managed="english" />
-
-    <filter class="solr.ManagedSynonymFilterFactory"
-            managed="english" />
-
+    <filter class="solr.ManagedStopFilterFactory" managed="english" />
+    <filter class="solr.ManagedSynonymGraphFilterFactory" managed="english" />
+    <filter class="solr.FlattenGraphFilterFactory"/> <!-- required on index analyzers after graph filters -->
+  </analyzer>
+  <analyzer type="query">
+    <tokenizer class="solr.StandardTokenizerFactory"/>
+    <filter class="solr.ManagedStopFilterFactory" managed="english" />
+    <filter class="solr.ManagedSynonymGraphFilterFactory" managed="english" />
   </analyzer>
 </fieldType>
 ----
@@ -254,7 +256,7 @@ The response body is a JSON document containing metadata about managed resources
     },
     {
       "resourceId":"/schema/analysis/synonyms/english",
-      "class":"org.apache.solr.rest.schema.analysis.ManagedSynonymFilterFactory$SynonymManager",
+      "class":"org.apache.solr.rest.schema.analysis.ManagedSynonymGraphFilterFactory$SynonymManager",
       "numObservers":"1"
     }
   ]
