@@ -31,6 +31,8 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.TreeMap;
+import java.util.TreeSet;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -53,33 +55,59 @@ public class Utils {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   
   public static Map getDeepCopy(Map map, int maxDepth) {
-    return getDeepCopy(map, maxDepth, true);
+    return getDeepCopy(map, maxDepth, true, false);
   }
 
   public static Map getDeepCopy(Map map, int maxDepth, boolean mutable) {
+    return getDeepCopy(map, maxDepth, mutable, false);
+  }
+
+  public static Map getDeepCopy(Map map, int maxDepth, boolean mutable, boolean sorted) {
     if(map == null) return null;
     if (maxDepth < 1) return map;
-    Map copy = new LinkedHashMap();
+    Map copy;
+    if (sorted) {
+      copy = new TreeMap();
+    } else {
+      copy = new LinkedHashMap();
+    }
     for (Object o : map.entrySet()) {
       Map.Entry e = (Map.Entry) o;
-      copy.put(e.getKey(), makeDeepCopy(e.getValue(),maxDepth, mutable));
+      copy.put(e.getKey(), makeDeepCopy(e.getValue(),maxDepth, mutable, sorted));
     }
     return mutable ? copy : Collections.unmodifiableMap(copy);
   }
 
-  private static Object makeDeepCopy(Object v, int maxDepth, boolean mutable) {
-    if (v instanceof MapWriter && maxDepth > 1) v = ((MapWriter) v).toMap(new LinkedHashMap<>());
-    else if (v instanceof IteratorWriter && maxDepth > 1) v = ((IteratorWriter) v).toList(new ArrayList<>());
+  private static Object makeDeepCopy(Object v, int maxDepth, boolean mutable, boolean sorted) {
+    if (v instanceof MapWriter && maxDepth > 1) {
+      v = ((MapWriter) v).toMap(new LinkedHashMap<>());
+    } else if (v instanceof IteratorWriter && maxDepth > 1) {
+      v = ((IteratorWriter) v).toList(new ArrayList<>());
+      if (sorted) {
+        Collections.sort((List)v);
+      }
+    }
 
-    if (v instanceof Map) v = getDeepCopy((Map) v, maxDepth - 1, mutable);
-    else if (v instanceof Collection) v = getDeepCopy((Collection) v, maxDepth - 1, mutable);
+    if (v instanceof Map) {
+      v = getDeepCopy((Map) v, maxDepth - 1, mutable, sorted);
+    } else if (v instanceof Collection) {
+      v = getDeepCopy((Collection) v, maxDepth - 1, mutable, sorted);
+    }
     return v;
   }
 
   public static Collection getDeepCopy(Collection c, int maxDepth, boolean mutable) {
+    return getDeepCopy(c, maxDepth, mutable, false);
+  }
+
+  public static Collection getDeepCopy(Collection c, int maxDepth, boolean mutable, boolean sorted) {
     if (c == null || maxDepth < 1) return c;
-    Collection result = c instanceof Set ? new HashSet() : new ArrayList();
-    for (Object o : c) result.add(makeDeepCopy(o, maxDepth, mutable));
+    Collection result = c instanceof Set ?
+        ( sorted? new TreeSet() : new HashSet()) : new ArrayList();
+    for (Object o : c) result.add(makeDeepCopy(o, maxDepth, mutable, sorted));
+    if (sorted && (result instanceof List)) {
+      Collections.sort((List)result);
+    }
     return mutable ? result : result instanceof Set ? unmodifiableSet((Set) result) : unmodifiableList((List) result);
   }
 

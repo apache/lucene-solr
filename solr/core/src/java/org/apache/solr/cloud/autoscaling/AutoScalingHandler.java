@@ -39,7 +39,6 @@ import org.apache.solr.client.solrj.impl.SolrClientDataProvider;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.cloud.ZkStateReader;
-import org.apache.solr.common.util.SuppressForbidden;
 import org.apache.solr.common.util.Utils;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.handler.RequestHandlerBase;
@@ -49,6 +48,7 @@ import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.security.AuthorizationContext;
 import org.apache.solr.security.PermissionNameProvider;
 import org.apache.solr.util.CommandOperation;
+import org.apache.solr.util.TimeSource;
 import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.data.Stat;
 import org.slf4j.Logger;
@@ -66,6 +66,7 @@ public class AutoScalingHandler extends RequestHandlerBase implements Permission
   protected final CoreContainer container;
   private final List<Map<String, String>> DEFAULT_ACTIONS = new ArrayList<>(3);
   private static ImmutableSet<String> singletonCommands = ImmutableSet.of("set-cluster-preferences", "set-cluster-policy");
+  private static final TimeSource timeSource = TimeSource.CURRENT_TIME;
 
 
   public AutoScalingHandler(CoreContainer container) {
@@ -250,7 +251,6 @@ public class AutoScalingHandler extends RequestHandlerBase implements Permission
     rsp.getValues().add("result", "success");
   }
 
-  @SuppressForbidden(reason = "currentTimeMillis is used to find the resume time for the trigger")
   private void handleSuspendTrigger(SolrQueryRequest req, SolrQueryResponse rsp, CommandOperation op) throws KeeperException, InterruptedException {
     String triggerName = op.getStr("name");
 
@@ -263,7 +263,8 @@ public class AutoScalingHandler extends RequestHandlerBase implements Permission
     if (timeout != null) {
       try {
         int timeoutSeconds = parseHumanTime(timeout);
-        resumeTime = new Date(System.currentTimeMillis() + TimeUnit.MILLISECONDS.convert(timeoutSeconds, TimeUnit.SECONDS));
+        resumeTime = new Date(TimeUnit.MILLISECONDS.convert(timeSource.getTime(), TimeUnit.NANOSECONDS)
+            + TimeUnit.MILLISECONDS.convert(timeoutSeconds, TimeUnit.SECONDS));
       } catch (IllegalArgumentException e) {
         throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Invalid 'timeout' value for suspend trigger: " + triggerName);
       }

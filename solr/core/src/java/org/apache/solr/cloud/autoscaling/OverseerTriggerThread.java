@@ -22,6 +22,7 @@ import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
@@ -77,7 +78,7 @@ public class OverseerTriggerThread implements Runnable, Closeable {
     this.zkController = zkController;
     zkStateReader = zkController.getZkStateReader();
     zkClient = zkController.getZkClient();
-    scheduledTriggers = new ScheduledTriggers();
+    scheduledTriggers = new ScheduledTriggers(zkClient);
     triggerFactory = new AutoScaling.TriggerFactory(zkController.getCoreContainer());
   }
 

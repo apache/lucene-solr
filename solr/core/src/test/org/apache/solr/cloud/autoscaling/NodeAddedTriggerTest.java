@@ -30,6 +30,7 @@ import java.util.concurrent.atomic.AtomicReference;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.cloud.SolrCloudTestCase;
 import org.apache.solr.core.CoreContainer;
+import org.apache.solr.util.TimeSource;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -42,10 +43,12 @@ public class NodeAddedTriggerTest extends SolrCloudTestCase {
   private static AtomicBoolean actionInitCalled = new AtomicBoolean(false);
   private static AtomicBoolean actionCloseCalled = new AtomicBoolean(false);
 
-  private AutoScaling.TriggerListener<NodeAddedTrigger.NodeAddedEvent> noFirstRunListener = event -> {
+  private AutoScaling.TriggerListener noFirstRunListener = event -> {
     fail("Did not expect the listener to fire on first run!");
     return true;
   };
+
+  private static final TimeSource timeSource = TimeSource.CURRENT_TIME;
 
   @BeforeClass
   public static void setupCluster() throws Exception {
@@ -73,11 +76,11 @@ public class NodeAddedTriggerTest extends SolrCloudTestCase {
 
       JettySolrRunner newNode = cluster.startJettySolrRunner();
       AtomicBoolean fired = new AtomicBoolean(false);
-      AtomicReference<NodeAddedTrigger.NodeAddedEvent> eventRef = new AtomicReference<>();
+      AtomicReference<TriggerEvent> eventRef = new AtomicReference<>();
       trigger.setListener(event -> {
         if (fired.compareAndSet(false, true)) {
           eventRef.set(event);
-          if (System.nanoTime() - event.getEventNanoTime() <= TimeUnit.NANOSECONDS.convert(waitForSeconds, TimeUnit.SECONDS)) {
+          if (timeSource.getTime() - event.getEventTime() <= TimeUnit.NANOSECONDS.convert(waitForSeconds, TimeUnit.SECONDS)) {
             fail("NodeAddedListener was fired before the configured waitFor period");
           }
         } else {
@@ -94,9 +97,9 @@ public class NodeAddedTriggerTest extends SolrCloudTestCase {
         }
       } while (!fired.get());
 
-      NodeAddedTrigger.NodeAddedEvent nodeAddedEvent = eventRef.get();
+      TriggerEvent nodeAddedEvent = eventRef.get();
       assertNotNull(nodeAddedEvent);
-      assertEquals("", newNode.getNodeName(), nodeAddedEvent.getNodeName());
+      assertEquals("", newNode.getNodeName(), nodeAddedEvent.getProperty(TriggerEvent.NODE_NAME));
     }
 
     // add a new node but remove it before the waitFor period expires
@@ -111,7 +114,7 @@ public class NodeAddedTriggerTest extends SolrCloudTestCase {
       AtomicBoolean fired = new AtomicBoolean(false);
       trigger.setListener(event -> {
         if (fired.compareAndSet(false, true)) {
-          if (System.nanoTime() - event.getEventNanoTime() <= TimeUnit.NANOSECONDS.convert(waitTime, TimeUnit.SECONDS)) {
+          if (timeSource.getTime() - event.getEventTime() <= TimeUnit.NANOSECONDS.convert(waitTime, TimeUnit.SECONDS)) {
             fail("NodeAddedListener was fired before the configured waitFor period");
           }
         } else {
@@ -170,7 +173,7 @@ public class NodeAddedTriggerTest extends SolrCloudTestCase {
     }
 
     @Override
-    public void process(AutoScaling.TriggerEvent event) {
+    public void process(TriggerEvent event) {
 
     }
 
@@ -246,11 +249,11 @@ public class NodeAddedTriggerTest extends SolrCloudTestCase {
 
     try (NodeAddedTrigger newTrigger = new NodeAddedTrigger("node_added_trigger", props, container))  {
       AtomicBoolean fired = new AtomicBoolean(false);
-      AtomicReference<NodeAddedTrigger.NodeAddedEvent> eventRef = new AtomicReference<>();
+      AtomicReference<TriggerEvent> eventRef = new AtomicReference<>();
       newTrigger.setListener(event -> {
         if (fired.compareAndSet(false, true)) {
           eventRef.set(event);
-          if (System.nanoTime() - event.getEventNanoTime() <= TimeUnit.NANOSECONDS.convert(waitTime, TimeUnit.SECONDS)) {
+          if (timeSource.getTime() - event.getEventTime() <= TimeUnit.NANOSECONDS.convert(waitTime, TimeUnit.SECONDS)) {
             fail("NodeAddedListener was fired before the configured waitFor period");
           }
         } else {
@@ -270,9 +273,9 @@ public class NodeAddedTriggerTest extends SolrCloudTestCase {
 
       // ensure the event was fired
       assertTrue(fired.get());
-      NodeAddedTrigger.NodeAddedEvent nodeAddedEvent = eventRef.get();
+      TriggerEvent nodeAddedEvent = eventRef.get();
       assertNotNull(nodeAddedEvent);
-      assertEquals("", newNode.getNodeName(), nodeAddedEvent.getNodeName());
+      assertEquals("", newNode.getNodeName(), nodeAddedEvent.getProperty(NodeAddedTrigger.NodeAddedEvent.NODE_NAME));
     }
   }
 

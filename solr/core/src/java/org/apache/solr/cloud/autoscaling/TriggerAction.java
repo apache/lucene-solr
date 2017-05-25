@@ -30,5 +30,5 @@ public interface TriggerAction extends MapInitializedPlugin, Closeable {
 
   public String getClassName();
 
-  public void process(AutoScaling.TriggerEvent event);
+  public void process(TriggerEvent event);
 }
