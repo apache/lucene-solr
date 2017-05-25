@@ -473,7 +473,7 @@ Here is an example from the `atom` collection in the `dih` example (data-config 
   <document>
 
     <entity name="stackoverflow"
-            url="http://stackoverflow.com/feeds/tag/solr"
+            url="https://stackoverflow.com/feeds/tag/solr"
             processor="XPathEntityProcessor"
             forEach="/feed|/feed/entry"
             transformer="HTMLStripTransformer,RegexTransformer">
