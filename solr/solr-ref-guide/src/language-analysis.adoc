@@ -511,42 +511,7 @@ Solr can stem Catalan using the Snowball Porter Stemmer with an argument of `lan
 [[LanguageAnalysis-Chinese]]
 === Chinese
 
-[[LanguageAnalysis-ChineseTokenizer]]
-==== Chinese Tokenizer
-
-The Chinese Tokenizer is deprecated as of Solr 3.4. Use the <<tokenizers.adoc#Tokenizers-StandardTokenizer,`solr.StandardTokenizerFactory`>> instead.
-
-*Factory class:* `solr.ChineseTokenizerFactory`
-
-*Arguments:* None
-
-*Example:*
-
-[source,xml]
-----
-<analyzer type="index">
-  <tokenizer class="solr.ChineseTokenizerFactory"/>
-</analyzer>
-----
-
-[[LanguageAnalysis-ChineseFilterFactory]]
-==== Chinese Filter Factory
-
-The Chinese Filter Factory is deprecated as of Solr 3.4. Use the <<filter-descriptions.adoc#FilterDescriptions-StopFilter,`solr.StopFilterFactory`>> instead.
-
-*Factory class:* `solr.ChineseFilterFactory`
-
-*Arguments:* None
-
-*Example:*
-
-[source,xml]
-----
-<analyzer type="index">
-  <tokenizer class="solr.StandardTokenizerFactory"/>
-  <filter class="solr.ChineseFilterFactory"/>
-</analyzer>
-----
+<<tokenizers.adoc#Tokenizers-StandardTokenizer,`solr.StandardTokenizerFactory`>> is suitable for Traditional Chinese text.  Following the Word Break rules from the Unicode Text Segmentation algorithm, it produces one token per Chinese character.
 
 [[LanguageAnalysis-SimplifiedChinese]]
 === Simplified Chinese
