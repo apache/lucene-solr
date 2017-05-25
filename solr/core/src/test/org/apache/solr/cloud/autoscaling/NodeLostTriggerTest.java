@@ -29,8 +29,8 @@ import java.util.concurrent.atomic.AtomicReference;
 
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.cloud.SolrCloudTestCase;
-import org.apache.solr.common.util.Utils;
 import org.apache.solr.core.CoreContainer;
+import org.apache.solr.util.TimeSource;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -43,10 +43,13 @@ public class NodeLostTriggerTest extends SolrCloudTestCase {
   private static AtomicBoolean actionInitCalled = new AtomicBoolean(false);
   private static AtomicBoolean actionCloseCalled = new AtomicBoolean(false);
 
-  private AutoScaling.TriggerListener<NodeLostTrigger.NodeLostEvent> noFirstRunListener = event -> {
+  private AutoScaling.TriggerListener noFirstRunListener = event -> {
     fail("Did not expect the listener to fire on first run!");
     return true;
   };
+
+  // use the same time source as the trigger
+  private final TimeSource timeSource = TimeSource.CURRENT_TIME;
 
   @BeforeClass
   public static void setupCluster() throws Exception {
@@ -75,11 +78,11 @@ public class NodeLostTriggerTest extends SolrCloudTestCase {
       cluster.stopJettySolrRunner(1);
 
       AtomicBoolean fired = new AtomicBoolean(false);
-      AtomicReference<NodeLostTrigger.NodeLostEvent> eventRef = new AtomicReference<>();
+      AtomicReference<TriggerEvent> eventRef = new AtomicReference<>();
       trigger.setListener(event -> {
         if (fired.compareAndSet(false, true)) {
           eventRef.set(event);
-          if (System.nanoTime() - event.getEventNanoTime() <= TimeUnit.NANOSECONDS.convert(waitForSeconds, TimeUnit.SECONDS)) {
+          if (timeSource.getTime() - event.getEventTime() <= TimeUnit.NANOSECONDS.convert(waitForSeconds, TimeUnit.SECONDS)) {
             fail("NodeLostListener was fired before the configured waitFor period");
           }
         } else {
@@ -96,9 +99,9 @@ public class NodeLostTriggerTest extends SolrCloudTestCase {
         }
       } while (!fired.get());
 
-      NodeLostTrigger.NodeLostEvent nodeLostEvent = eventRef.get();
+      TriggerEvent nodeLostEvent = eventRef.get();
       assertNotNull(nodeLostEvent);
-      assertEquals("", lostNodeName, nodeLostEvent.getNodeName());
+      assertEquals("", lostNodeName, nodeLostEvent.getProperty(NodeLostTrigger.NodeLostEvent.NODE_NAME));
 
     }
 
@@ -115,7 +118,7 @@ public class NodeLostTriggerTest extends SolrCloudTestCase {
       AtomicBoolean fired = new AtomicBoolean(false);
       trigger.setListener(event -> {
         if (fired.compareAndSet(false, true)) {
-          if (System.nanoTime() - event.getEventNanoTime() <= TimeUnit.NANOSECONDS.convert(waitTime, TimeUnit.SECONDS)) {
+          if (timeSource.getTime() - event.getEventTime() <= TimeUnit.NANOSECONDS.convert(waitTime, TimeUnit.SECONDS)) {
             fail("NodeLostListener was fired before the configured waitFor period");
           }
         } else {
@@ -184,7 +187,7 @@ public class NodeLostTriggerTest extends SolrCloudTestCase {
     }
 
     @Override
-    public void process(AutoScaling.TriggerEvent event) {
+    public void process(TriggerEvent event) {
 
     }
 
@@ -284,11 +287,11 @@ public class NodeLostTriggerTest extends SolrCloudTestCase {
 
     try (NodeLostTrigger newTrigger = new NodeLostTrigger("node_lost_trigger", props, container)) {
       AtomicBoolean fired = new AtomicBoolean(false);
-      AtomicReference<NodeLostTrigger.NodeLostEvent> eventRef = new AtomicReference<>();
+      AtomicReference<TriggerEvent> eventRef = new AtomicReference<>();
       newTrigger.setListener(event -> {
         if (fired.compareAndSet(false, true)) {
           eventRef.set(event);
-          if (System.nanoTime() - event.getEventNanoTime() <= TimeUnit.NANOSECONDS.convert(waitForSeconds, TimeUnit.SECONDS)) {
+          if (timeSource.getTime() - event.getEventTime() <= TimeUnit.NANOSECONDS.convert(waitForSeconds, TimeUnit.SECONDS)) {
             fail("NodeLostListener was fired before the configured waitFor period");
           }
         } else {
@@ -306,9 +309,9 @@ public class NodeLostTriggerTest extends SolrCloudTestCase {
         }
       } while (!fired.get());
 
-      NodeLostTrigger.NodeLostEvent nodeLostEvent = eventRef.get();
+      TriggerEvent nodeLostEvent = eventRef.get();
       assertNotNull(nodeLostEvent);
-      assertEquals("", lostNodeName, nodeLostEvent.getNodeName());
+      assertEquals("", lostNodeName, nodeLostEvent.getProperty(NodeLostTrigger.NodeLostEvent.NODE_NAME));
     }
   }
 

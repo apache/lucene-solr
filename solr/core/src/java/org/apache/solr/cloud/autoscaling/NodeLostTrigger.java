@@ -20,6 +20,7 @@ package org.apache.solr.cloud.autoscaling;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -35,23 +36,25 @@ import org.apache.lucene.util.IOUtils;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.core.CoreContainer;
+import org.apache.solr.util.TimeSource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
  * Trigger for the {@link AutoScaling.EventType#NODELOST} event
  */
-public class NodeLostTrigger implements AutoScaling.Trigger<NodeLostTrigger.NodeLostEvent> {
+public class NodeLostTrigger extends TriggerBase {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   private final String name;
   private final Map<String, Object> properties;
   private final CoreContainer container;
   private final List<TriggerAction> actions;
-  private final AtomicReference<AutoScaling.TriggerListener<NodeLostEvent>> listenerRef;
+  private final AtomicReference<AutoScaling.TriggerListener> listenerRef;
   private final boolean enabled;
   private final int waitForSecond;
   private final AutoScaling.EventType eventType;
+  private final TimeSource timeSource;
 
   private boolean isClosed = false;
 
@@ -61,9 +64,11 @@ public class NodeLostTrigger implements AutoScaling.Trigger<NodeLostTrigger.Node
 
   public NodeLostTrigger(String name, Map<String, Object> properties,
                          CoreContainer container) {
+    super(container.getZkController().getZkClient());
     this.name = name;
     this.properties = properties;
     this.container = container;
+    this.timeSource = TimeSource.CURRENT_TIME;
     this.listenerRef = new AtomicReference<>();
     List<Map<String, String>> o = (List<Map<String, String>>) properties.get("actions");
     if (o != null && !o.isEmpty()) {
@@ -75,7 +80,7 @@ public class NodeLostTrigger implements AutoScaling.Trigger<NodeLostTrigger.Node
     } else {
       actions = Collections.emptyList();
     }
-    lastLiveNodes = container.getZkController().getZkStateReader().getClusterState().getLiveNodes();
+    lastLiveNodes = new HashSet<>(container.getZkController().getZkStateReader().getClusterState().getLiveNodes());
     log.debug("Initial livenodes: {}", lastLiveNodes);
     this.enabled = (boolean) properties.getOrDefault("enabled", true);
     this.waitForSecond = ((Long) properties.getOrDefault("waitFor", -1L)).intValue();
@@ -94,12 +99,12 @@ public class NodeLostTrigger implements AutoScaling.Trigger<NodeLostTrigger.Node
   }
 
   @Override
-  public void setListener(AutoScaling.TriggerListener<NodeLostEvent> listener) {
+  public void setListener(AutoScaling.TriggerListener listener) {
     listenerRef.set(listener);
   }
 
   @Override
-  public AutoScaling.TriggerListener<NodeLostEvent> getListener() {
+  public AutoScaling.TriggerListener getListener() {
     return listenerRef.get();
   }
 
@@ -157,7 +162,7 @@ public class NodeLostTrigger implements AutoScaling.Trigger<NodeLostTrigger.Node
   }
 
   @Override
-  public void restoreState(AutoScaling.Trigger<NodeLostEvent> old) {
+  public void restoreState(AutoScaling.Trigger old) {
     assert old.isClosed();
     if (old instanceof NodeLostTrigger) {
       NodeLostTrigger that = (NodeLostTrigger) old;
@@ -167,6 +172,28 @@ public class NodeLostTrigger implements AutoScaling.Trigger<NodeLostTrigger.Node
     } else  {
       throw new SolrException(SolrException.ErrorCode.INVALID_STATE,
           "Unable to restore state from an unknown type of trigger");
+    }
+  }
+
+  @Override
+  protected Map<String, Object> getState() {
+    Map<String,Object> state = new HashMap<>();
+    state.put("lastLiveNodes", lastLiveNodes);
+    state.put("nodeNameVsTimeRemoved", nodeNameVsTimeRemoved);
+    return state;
+  }
+
+  @Override
+  protected void setState(Map<String, Object> state) {
+    this.lastLiveNodes.clear();
+    this.nodeNameVsTimeRemoved.clear();
+    Collection<String> lastLiveNodes = (Collection<String>)state.get("lastLiveNodes");
+    if (lastLiveNodes != null) {
+      this.lastLiveNodes.addAll(lastLiveNodes);
+    }
+    Map<String,Long> nodeNameVsTimeRemoved = (Map<String,Long>)state.get("nodeNameVsTimeRemoved");
+    if (nodeNameVsTimeRemoved != null) {
+      this.nodeNameVsTimeRemoved.putAll(nodeNameVsTimeRemoved);
     }
   }
 
@@ -194,20 +221,20 @@ public class NodeLostTrigger implements AutoScaling.Trigger<NodeLostTrigger.Node
       Set<String> copyOfLastLiveNodes = new HashSet<>(lastLiveNodes);
       copyOfLastLiveNodes.removeAll(newLiveNodes);
       copyOfLastLiveNodes.forEach(n -> {
-        log.info("Tracking lost node: {}", n);
-        nodeNameVsTimeRemoved.put(n, System.nanoTime());
+        log.debug("Tracking lost node: {}", n);
+        nodeNameVsTimeRemoved.put(n, timeSource.getTime());
       });
 
       // has enough time expired to trigger events for a node?
       for (Map.Entry<String, Long> entry : nodeNameVsTimeRemoved.entrySet()) {
         String nodeName = entry.getKey();
         Long timeRemoved = entry.getValue();
-        if (TimeUnit.SECONDS.convert(System.nanoTime() - timeRemoved, TimeUnit.NANOSECONDS) >= getWaitForSecond()) {
+        if (TimeUnit.SECONDS.convert(timeSource.getTime() - timeRemoved, TimeUnit.NANOSECONDS) >= getWaitForSecond()) {
           // fire!
-          AutoScaling.TriggerListener<NodeLostEvent> listener = listenerRef.get();
+          AutoScaling.TriggerListener listener = listenerRef.get();
           if (listener != null) {
-            log.info("NodeLostTrigger firing registered listener");
-            if (listener.triggerFired(new NodeLostEvent(this, timeRemoved, nodeName)))  {
+            log.debug("NodeLostTrigger firing registered listener");
+            if (listener.triggerFired(new NodeLostEvent(getEventType(), getName(), timeRemoved, nodeName)))  {
               trackingKeySet.remove(nodeName);
             }
           } else  {
@@ -216,7 +243,7 @@ public class NodeLostTrigger implements AutoScaling.Trigger<NodeLostTrigger.Node
         }
       }
 
-      lastLiveNodes = newLiveNodes;
+      lastLiveNodes = new HashSet<>(newLiveNodes);
     } catch (RuntimeException e) {
       log.error("Unexpected exception in NodeLostTrigger", e);
     }
@@ -229,45 +256,10 @@ public class NodeLostTrigger implements AutoScaling.Trigger<NodeLostTrigger.Node
     }
   }
 
-  public static class NodeLostEvent implements AutoScaling.TriggerEvent<NodeLostTrigger> {
-    private final NodeLostTrigger source;
-    private final long nodeLostNanoTime;
-    private final String nodeName;
+  public static class NodeLostEvent extends TriggerEvent {
 
-    private Map<String, Object> context;
-
-    public NodeLostEvent(NodeLostTrigger source, long nodeLostNanoTime, String nodeRemoved) {
-      this.source = source;
-      this.nodeLostNanoTime = nodeLostNanoTime;
-      this.nodeName = nodeRemoved;
-    }
-
-    @Override
-    public NodeLostTrigger getSource() {
-      return source;
-    }
-
-    @Override
-    public long getEventNanoTime() {
-      return nodeLostNanoTime;
-    }
-
-    public String getNodeName() {
-      return nodeName;
-    }
-
-    public AutoScaling.EventType getType() {
-      return source.getEventType();
-    }
-
-    @Override
-    public void setContext(Map<String, Object> context) {
-      this.context = context;
-    }
-
-    @Override
-    public Map<String, Object> getContext() {
-      return context;
+    public NodeLostEvent(AutoScaling.EventType eventType, String source, long nodeLostTime, String nodeRemoved) {
+      super(eventType, source, nodeLostTime, Collections.singletonMap(NODE_NAME, nodeRemoved));
     }
   }
 }

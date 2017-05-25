@@ -45,7 +45,7 @@ public class ExecutePlanAction implements TriggerAction {
   }
 
   @Override
-  public void process(AutoScaling.TriggerEvent event) {
+  public void process(TriggerEvent event) {
 
   }
 }
