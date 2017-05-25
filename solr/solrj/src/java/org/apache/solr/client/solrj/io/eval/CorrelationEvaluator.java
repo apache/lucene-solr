@@ -14,16 +14,13 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
-package org.apache.solr.client.solrj.io.stream;
+package org.apache.solr.client.solrj.io.eval;
 
 import java.io.IOException;
 import java.util.List;
 
-import org.apache.commons.math3.ml.distance.EuclideanDistance;
+import org.apache.commons.math3.stat.correlation.PearsonsCorrelation;
 import org.apache.solr.client.solrj.io.Tuple;
-import org.apache.solr.client.solrj.io.eval.ComplexEvaluator;
-import org.apache.solr.client.solrj.io.eval.StreamEvaluator;
 import org.apache.solr.client.solrj.io.stream.expr.Explanation;
 import org.apache.solr.client.solrj.io.stream.expr.Explanation.ExpressionType;
 import org.apache.solr.client.solrj.io.stream.expr.Expressible;
@@ -31,11 +28,11 @@ import org.apache.solr.client.solrj.io.stream.expr.StreamExpression;
 import org.apache.solr.client.solrj.io.stream.expr.StreamExpressionParameter;
 import org.apache.solr.client.solrj.io.stream.expr.StreamFactory;
 
-public class DistanceEvaluator extends ComplexEvaluator implements Expressible {
+public class CorrelationEvaluator extends ComplexEvaluator implements Expressible {
 
   private static final long serialVersionUID = 1;
 
-  public DistanceEvaluator(StreamExpression expression, StreamFactory factory) throws IOException {
+  public CorrelationEvaluator(StreamExpression expression, StreamFactory factory) throws IOException {
     super(expression, factory);
   }
 
@@ -56,8 +53,9 @@ public class DistanceEvaluator extends ComplexEvaluator implements Expressible {
       column2[i] = numbers2.get(i).doubleValue();
     }
 
-    EuclideanDistance distance = new EuclideanDistance();
-    return distance.compute(column1, column2);
+    PearsonsCorrelation pearsonsCorrelation = new PearsonsCorrelation();
+
+    return pearsonsCorrelation.correlation(column1, column2);
   }
 
   @Override

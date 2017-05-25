@@ -14,19 +14,15 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.solr.client.solrj.io.stream;
+package org.apache.solr.client.solrj.io.eval;
 
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Arrays;
 
-import org.apache.commons.math3.random.EmpiricalDistribution;
-import org.apache.commons.math3.stat.descriptive.StatisticalSummary;
+import org.apache.commons.math3.stat.regression.SimpleRegression;
 import org.apache.solr.client.solrj.io.Tuple;
-import org.apache.solr.client.solrj.io.eval.ComplexEvaluator;
-import org.apache.solr.client.solrj.io.eval.StreamEvaluator;
 import org.apache.solr.client.solrj.io.stream.expr.Explanation;
 import org.apache.solr.client.solrj.io.stream.expr.Explanation.ExpressionType;
 import org.apache.solr.client.solrj.io.stream.expr.Expressible;
@@ -34,81 +30,66 @@ import org.apache.solr.client.solrj.io.stream.expr.StreamExpression;
 import org.apache.solr.client.solrj.io.stream.expr.StreamExpressionParameter;
 import org.apache.solr.client.solrj.io.stream.expr.StreamFactory;
 
-public class EmpiricalDistributionEvaluator extends ComplexEvaluator implements Expressible {
+public class RegressionEvaluator extends ComplexEvaluator implements Expressible {
 
   private static final long serialVersionUID = 1;
 
-  public EmpiricalDistributionEvaluator(StreamExpression expression, StreamFactory factory) throws IOException {
+  public RegressionEvaluator(StreamExpression expression, StreamFactory factory) throws IOException {
     super(expression, factory);
   }
 
   public Tuple evaluate(Tuple tuple) throws IOException {
 
-    if(subEvaluators.size() != 1) {
-      throw new IOException("Empirical dist expects 1 column as a parameters");
+    if(subEvaluators.size() != 2) {
+      throw new IOException("Regress expects 2 columns as parameters");
     }
 
     StreamEvaluator colEval1 = subEvaluators.get(0);
+    StreamEvaluator colEval2 = subEvaluators.get(1);
 
     List<Number> numbers1 = (List<Number>)colEval1.evaluate(tuple);
+    List<Number> numbers2 = (List<Number>)colEval2.evaluate(tuple);
     double[] column1 = new double[numbers1.size()];
+    double[] column2 = new double[numbers2.size()];
 
     for(int i=0; i<numbers1.size(); i++) {
       column1[i] = numbers1.get(i).doubleValue();
     }
 
-    Arrays.sort(column1);
-    EmpiricalDistribution empiricalDistribution = new EmpiricalDistribution();
-    empiricalDistribution.load(column1);
-
-    Map map = new HashMap();
-    StatisticalSummary statisticalSummary = empiricalDistribution.getSampleStats();
-
-    map.put("max", statisticalSummary.getMax());
-    map.put("mean", statisticalSummary.getMean());
-    map.put("min", statisticalSummary.getMin());
-    map.put("stdev", statisticalSummary.getStandardDeviation());
-    map.put("sum", statisticalSummary.getSum());
-    map.put("N", statisticalSummary.getN());
-    map.put("var", statisticalSummary.getVariance());
-
-    return new EmpiricalDistributionTuple(empiricalDistribution, column1, map);
-  }
-
-  public static class EmpiricalDistributionTuple extends Tuple {
-
-    private EmpiricalDistribution empiricalDistribution;
-    private double[] backingArray;
-
-    public EmpiricalDistributionTuple(EmpiricalDistribution empiricalDistribution, double[] backingArray, Map map) {
-      super(map);
-      this.empiricalDistribution = empiricalDistribution;
-      this.backingArray = backingArray;
+    for(int i=0; i<numbers2.size(); i++) {
+      column2[i] = numbers2.get(i).doubleValue();
     }
 
-    public double percentile(double d) {
-      int slot = Arrays.binarySearch(backingArray, d);
+    SimpleRegression regression = new SimpleRegression();
+    for(int i=0; i<column1.length; i++) {
+      regression.addData(column1[i], column2[i]);
+    }
 
-      if(slot == 0) {
-        return 0.0;
-      }
+    Map map = new HashMap();
+    map.put("slope", regression.getSlope());
+    map.put("intercept", regression.getIntercept());
+    map.put("R", regression.getR());
+    map.put("N", regression.getN());
+    map.put("regressionSumSquares", regression.getRegressionSumSquares());
+    map.put("slopeConfidenceInterval", regression.getSlopeConfidenceInterval());
+    map.put("interceptStdErr", regression.getInterceptStdErr());
+    map.put("totalSumSquares", regression.getTotalSumSquares());
+    map.put("significance", regression.getSignificance());
+    map.put("meanSquareError", regression.getMeanSquareError());
+    return new RegressionTuple(regression, map);
+  }
 
-      if(slot < 0) {
-        if(slot == -1) {
-          return 0.0D;
-        } else {
-          //Not a direct hit
-          slot = Math.abs(slot);
-          --slot;
-          if(slot == backingArray.length) {
-            return 1.0D;
-          } else {
-            return (this.empiricalDistribution.cumulativeProbability(backingArray[slot]));
-          }
-        }
-      } else {
-        return this.empiricalDistribution.cumulativeProbability(backingArray[slot]);
-      }
+  public static class RegressionTuple extends Tuple {
+
+    private SimpleRegression simpleRegression;
+
+    public RegressionTuple(SimpleRegression simpleRegression, Map map) {
+      super(map);
+      this.simpleRegression = simpleRegression;
+    }
+
+    public double predict(double d) {
+      return this.simpleRegression.predict(d);
     }
   }
 
