@@ -80,7 +80,11 @@ import static org.apache.solr.update.processor.DistributedUpdateProcessor.Distri
 import static org.apache.solr.update.processor.DistributingUpdateProcessorFactory.DISTRIB_UPDATE_PARAM;
 
 
-/** @lucene.experimental */
+/** 
+ * @lucene.experimental 
+ * This holds references to the transaction logs and pointers for the document IDs to their
+ * exact positions in the transaction logs.
+ */
 public class UpdateLog implements PluginInfoInitialized, SolrMetricProducer {
   private static final long STATUS_TIME = TimeUnit.NANOSECONDS.convert(60, TimeUnit.SECONDS);
   public static String LOG_FILENAME_PATTERN = "%s.%019d";
@@ -143,7 +147,7 @@ public class UpdateLog implements PluginInfoInitialized, SolrMetricProducer {
   /**
    * The index of the _version_ value in an entry from the transaction log.
    */
-public static final int VERSION_IDX = 1;
+  public static final int VERSION_IDX = 1;
   
   /**
    * The index of the previous pointer in an entry from the transaction log.
@@ -204,6 +208,9 @@ public static final int VERSION_IDX = 1;
     }
   };
 
+  /**
+   * Holds the query and the version for a DeleteByQuery command
+   */
   public static class DBQ {
     public String q;     // the query string
     public long version; // positive version of the DBQ
