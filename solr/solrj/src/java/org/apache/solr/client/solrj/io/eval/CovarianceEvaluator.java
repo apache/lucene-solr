@@ -14,14 +14,13 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.solr.client.solrj.io.stream;
+package org.apache.solr.client.solrj.io.eval;
 
 import java.io.IOException;
-import java.util.ArrayList;
 import java.util.List;
 
+import org.apache.commons.math3.stat.correlation.Covariance;
 import org.apache.solr.client.solrj.io.Tuple;
-import org.apache.solr.client.solrj.io.eval.SimpleEvaluator;
 import org.apache.solr.client.solrj.io.stream.expr.Explanation;
 import org.apache.solr.client.solrj.io.stream.expr.Explanation.ExpressionType;
 import org.apache.solr.client.solrj.io.stream.expr.Expressible;
@@ -29,35 +28,34 @@ import org.apache.solr.client.solrj.io.stream.expr.StreamExpression;
 import org.apache.solr.client.solrj.io.stream.expr.StreamExpressionParameter;
 import org.apache.solr.client.solrj.io.stream.expr.StreamFactory;
 
-public class ColumnEvaluator extends SimpleEvaluator implements Expressible {
+public class CovarianceEvaluator extends ComplexEvaluator implements Expressible {
 
   private static final long serialVersionUID = 1;
-  private String name;
-  private String fieldName;
- ;
-  public ColumnEvaluator(StreamExpression expression, StreamFactory factory) throws IOException {
-    String name = factory.getValueOperand(expression, 0);
-    String fieldName = factory.getValueOperand(expression, 1);
-    init(name, fieldName);
+
+  public CovarianceEvaluator(StreamExpression expression, StreamFactory factory) throws IOException {
+    super(expression, factory);
   }
 
-  private void init(String name, String fieldName) {
-    this.name = name;
-    this.fieldName = fieldName;
-  }
+  public Number evaluate(Tuple tuple) throws IOException {
+    StreamEvaluator colEval1 = subEvaluators.get(0);
+    StreamEvaluator colEval2 = subEvaluators.get(1);
 
-  public List<Number> evaluate(Tuple tuple) throws IOException {
-    List<Tuple> tuples = (List<Tuple>)tuple.get(name);
-    List<Number> column = new ArrayList(tuples.size());
-    for(Tuple t : tuples) {
-      Object o = t.get(fieldName);
-      if(o instanceof Number) {
-        column.add((Number)o);
-      } else {
-        throw new IOException("Found non-numeric in column:"+o.toString());
-      }
+    List<Number> numbers1 = (List<Number>)colEval1.evaluate(tuple);
+    List<Number> numbers2 = (List<Number>)colEval2.evaluate(tuple);
+    double[] column1 = new double[numbers1.size()];
+    double[] column2 = new double[numbers2.size()];
+
+    for(int i=0; i<numbers1.size(); i++) {
+      column1[i] = numbers1.get(i).doubleValue();
     }
-    return column;
+
+    for(int i=0; i<numbers2.size(); i++) {
+      column2[i] = numbers2.get(i).doubleValue();
+    }
+
+    Covariance covariance = new Covariance();
+
+    return covariance.covariance(column1, column2);
   }
 
   @Override

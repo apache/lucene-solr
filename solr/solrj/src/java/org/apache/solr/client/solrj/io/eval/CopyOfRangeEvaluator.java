@@ -14,17 +14,14 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.solr.client.solrj.io.stream;
+package org.apache.solr.client.solrj.io.eval;
 
 import java.io.IOException;
-import java.util.HashMap;
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
-import java.util.Map;
 
-import org.apache.commons.math3.stat.descriptive.DescriptiveStatistics;
 import org.apache.solr.client.solrj.io.Tuple;
-import org.apache.solr.client.solrj.io.eval.ComplexEvaluator;
-import org.apache.solr.client.solrj.io.eval.StreamEvaluator;
 import org.apache.solr.client.solrj.io.stream.expr.Explanation;
 import org.apache.solr.client.solrj.io.stream.expr.Explanation.ExpressionType;
 import org.apache.solr.client.solrj.io.stream.expr.Expressible;
@@ -32,48 +29,42 @@ import org.apache.solr.client.solrj.io.stream.expr.StreamExpression;
 import org.apache.solr.client.solrj.io.stream.expr.StreamExpressionParameter;
 import org.apache.solr.client.solrj.io.stream.expr.StreamFactory;
 
-public class DescribeEvaluator extends ComplexEvaluator implements Expressible {
+public class CopyOfRangeEvaluator extends ComplexEvaluator implements Expressible {
 
   private static final long serialVersionUID = 1;
 
-  public DescribeEvaluator(StreamExpression expression, StreamFactory factory) throws IOException {
+  public CopyOfRangeEvaluator(StreamExpression expression, StreamFactory factory) throws IOException {
     super(expression, factory);
   }
 
-  public Tuple evaluate(Tuple tuple) throws IOException {
+  public List<Number> evaluate(Tuple tuple) throws IOException {
+    StreamEvaluator colEval1 = subEvaluators.get(0);
 
-    if(subEvaluators.size() != 1) {
-      throw new IOException("describe expects 1 column as a parameters");
+    List<Number> numbers1 = (List<Number>)colEval1.evaluate(tuple);
+    double[] vals = new double[numbers1.size()];
+
+    for(int i=0; i<vals.length; i++) {
+      vals[i] = numbers1.get(i).doubleValue();
     }
 
-    StreamEvaluator colEval = subEvaluators.get(0);
+    StreamEvaluator startIndexEval = subEvaluators.get(1);
+    Number startIndexNum = (Number)startIndexEval.evaluate(tuple);
+    int startIndex = startIndexNum.intValue();
 
-    List<Number> numbers = (List<Number>)colEval.evaluate(tuple);
-    DescriptiveStatistics descriptiveStatistics = new DescriptiveStatistics();
+    StreamEvaluator endIndexEval = subEvaluators.get(2);
+    Number endIndexNum = (Number)endIndexEval.evaluate(tuple);
+    int endIndex = endIndexNum.intValue();
 
-    for(Number n : numbers) {
-      descriptiveStatistics.addValue(n.doubleValue());
+    vals = Arrays.copyOfRange(vals, startIndex, endIndex);
+
+    List<Number> copyOf = new ArrayList(vals.length);
+
+    for(int i=0; i<vals.length; i++) {
+      copyOf.add(vals[i]);
     }
 
-
-    Map map = new HashMap();
-
-    map.put("max", descriptiveStatistics.getMax());
-    map.put("mean", descriptiveStatistics.getMean());
-    map.put("min", descriptiveStatistics.getMin());
-    map.put("stdev", descriptiveStatistics.getStandardDeviation());
-    map.put("sum", descriptiveStatistics.getSum());
-    map.put("N", descriptiveStatistics.getN());
-    map.put("var", descriptiveStatistics.getVariance());
-    map.put("kurtosis", descriptiveStatistics.getKurtosis());
-    map.put("skewness", descriptiveStatistics.getSkewness());
-    map.put("popVar", descriptiveStatistics.getPopulationVariance());
-    map.put("geometricMean", descriptiveStatistics.getGeometricMean());
-    map.put("sumsq", descriptiveStatistics.getSumsq());
-
-    return new Tuple(map);
+    return copyOf;
   }
-
 
   @Override
   public StreamExpressionParameter toExpression(StreamFactory factory) throws IOException {

@@ -14,16 +14,15 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.solr.client.solrj.io.stream;
+package org.apache.solr.client.solrj.io.eval;
 
 import java.io.IOException;
-import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
-import org.apache.commons.math3.stat.ranking.NaturalRanking;
+import org.apache.commons.math3.stat.descriptive.DescriptiveStatistics;
 import org.apache.solr.client.solrj.io.Tuple;
-import org.apache.solr.client.solrj.io.eval.ComplexEvaluator;
-import org.apache.solr.client.solrj.io.eval.StreamEvaluator;
 import org.apache.solr.client.solrj.io.stream.expr.Explanation;
 import org.apache.solr.client.solrj.io.stream.expr.Explanation.ExpressionType;
 import org.apache.solr.client.solrj.io.stream.expr.Expressible;
@@ -31,32 +30,48 @@ import org.apache.solr.client.solrj.io.stream.expr.StreamExpression;
 import org.apache.solr.client.solrj.io.stream.expr.StreamExpressionParameter;
 import org.apache.solr.client.solrj.io.stream.expr.StreamFactory;
 
-public class RankEvaluator extends ComplexEvaluator implements Expressible {
+public class DescribeEvaluator extends ComplexEvaluator implements Expressible {
 
   private static final long serialVersionUID = 1;
 
-  public RankEvaluator(StreamExpression expression, StreamFactory factory) throws IOException {
+  public DescribeEvaluator(StreamExpression expression, StreamFactory factory) throws IOException {
     super(expression, factory);
   }
 
-  public List<Number> evaluate(Tuple tuple) throws IOException {
+  public Tuple evaluate(Tuple tuple) throws IOException {
+
+    if(subEvaluators.size() != 1) {
+      throw new IOException("describe expects 1 column as a parameters");
+    }
+
     StreamEvaluator colEval = subEvaluators.get(0);
 
     List<Number> numbers = (List<Number>)colEval.evaluate(tuple);
-    double[] values = new double[numbers.size()];
-    for(int i=0; i<numbers.size(); i++) {
-      values[i] = numbers.get(i).doubleValue();
+    DescriptiveStatistics descriptiveStatistics = new DescriptiveStatistics();
+
+    for(Number n : numbers) {
+      descriptiveStatistics.addValue(n.doubleValue());
     }
 
-    NaturalRanking rank = new NaturalRanking();
-    double[] ranked = rank.rank(values);
-    List<Number> rankedList = new ArrayList();
-    for(int i=0; i<numbers.size(); i++) {
-      rankedList.add(ranked[i]);
-    }
 
-    return rankedList;
+    Map map = new HashMap();
+
+    map.put("max", descriptiveStatistics.getMax());
+    map.put("mean", descriptiveStatistics.getMean());
+    map.put("min", descriptiveStatistics.getMin());
+    map.put("stdev", descriptiveStatistics.getStandardDeviation());
+    map.put("sum", descriptiveStatistics.getSum());
+    map.put("N", descriptiveStatistics.getN());
+    map.put("var", descriptiveStatistics.getVariance());
+    map.put("kurtosis", descriptiveStatistics.getKurtosis());
+    map.put("skewness", descriptiveStatistics.getSkewness());
+    map.put("popVar", descriptiveStatistics.getPopulationVariance());
+    map.put("geometricMean", descriptiveStatistics.getGeometricMean());
+    map.put("sumsq", descriptiveStatistics.getSumsq());
+
+    return new Tuple(map);
   }
+
 
   @Override
   public StreamExpressionParameter toExpression(StreamFactory factory) throws IOException {

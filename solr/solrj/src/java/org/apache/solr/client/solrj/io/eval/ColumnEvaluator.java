@@ -14,16 +14,13 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.solr.client.solrj.io.stream;
+package org.apache.solr.client.solrj.io.eval;
 
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
-import org.apache.commons.math3.stat.StatUtils;
 import org.apache.solr.client.solrj.io.Tuple;
-import org.apache.solr.client.solrj.io.eval.ComplexEvaluator;
-import org.apache.solr.client.solrj.io.eval.StreamEvaluator;
 import org.apache.solr.client.solrj.io.stream.expr.Explanation;
 import org.apache.solr.client.solrj.io.stream.expr.Explanation.ExpressionType;
 import org.apache.solr.client.solrj.io.stream.expr.Expressible;
@@ -31,32 +28,35 @@ import org.apache.solr.client.solrj.io.stream.expr.StreamExpression;
 import org.apache.solr.client.solrj.io.stream.expr.StreamExpressionParameter;
 import org.apache.solr.client.solrj.io.stream.expr.StreamFactory;
 
-public class NormalizeEvaluator extends ComplexEvaluator implements Expressible {
+public class ColumnEvaluator extends SimpleEvaluator implements Expressible {
 
   private static final long serialVersionUID = 1;
+  private String name;
+  private String fieldName;
+ ;
+  public ColumnEvaluator(StreamExpression expression, StreamFactory factory) throws IOException {
+    String name = factory.getValueOperand(expression, 0);
+    String fieldName = factory.getValueOperand(expression, 1);
+    init(name, fieldName);
+  }
 
-  public NormalizeEvaluator(StreamExpression expression, StreamFactory factory) throws IOException {
-    super(expression, factory);
+  private void init(String name, String fieldName) {
+    this.name = name;
+    this.fieldName = fieldName;
   }
 
   public List<Number> evaluate(Tuple tuple) throws IOException {
-    StreamEvaluator colEval1 = subEvaluators.get(0);
-
-    List<Number> numbers1 = (List<Number>)colEval1.evaluate(tuple);
-    double[] column1 = new double[numbers1.size()];
-
-    for(int i=0; i<numbers1.size(); i++) {
-      column1[i] = numbers1.get(i).doubleValue();
+    List<Tuple> tuples = (List<Tuple>)tuple.get(name);
+    List<Number> column = new ArrayList(tuples.size());
+    for(Tuple t : tuples) {
+      Object o = t.get(fieldName);
+      if(o instanceof Number) {
+        column.add((Number)o);
+      } else {
+        throw new IOException("Found non-numeric in column:"+o.toString());
+      }
     }
-
-    double[] normalized = StatUtils.normalize(column1);
-
-    List<Number> normalizeList = new ArrayList(normalized.length);
-    for(double d : normalized) {
-      normalizeList.add(d);
-    }
-
-    return normalizeList;
+    return column;
   }
 
   @Override

@@ -14,7 +14,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.solr.client.solrj.io.stream;
+package org.apache.solr.client.solrj.io.eval;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -22,8 +22,6 @@ import java.util.Arrays;
 import java.util.List;
 
 import org.apache.solr.client.solrj.io.Tuple;
-import org.apache.solr.client.solrj.io.eval.ComplexEvaluator;
-import org.apache.solr.client.solrj.io.eval.StreamEvaluator;
 import org.apache.solr.client.solrj.io.stream.expr.Explanation;
 import org.apache.solr.client.solrj.io.stream.expr.Explanation.ExpressionType;
 import org.apache.solr.client.solrj.io.stream.expr.Expressible;
@@ -31,11 +29,11 @@ import org.apache.solr.client.solrj.io.stream.expr.StreamExpression;
 import org.apache.solr.client.solrj.io.stream.expr.StreamExpressionParameter;
 import org.apache.solr.client.solrj.io.stream.expr.StreamFactory;
 
-public class CopyOfRangeEvaluator extends ComplexEvaluator implements Expressible {
+public class CopyOfEvaluator extends ComplexEvaluator implements Expressible {
 
   private static final long serialVersionUID = 1;
 
-  public CopyOfRangeEvaluator(StreamExpression expression, StreamFactory factory) throws IOException {
+  public CopyOfEvaluator(StreamExpression expression, StreamFactory factory) throws IOException {
     super(expression, factory);
   }
 
@@ -49,15 +47,14 @@ public class CopyOfRangeEvaluator extends ComplexEvaluator implements Expressibl
       vals[i] = numbers1.get(i).doubleValue();
     }
 
-    StreamEvaluator startIndexEval = subEvaluators.get(1);
-    Number startIndexNum = (Number)startIndexEval.evaluate(tuple);
-    int startIndex = startIndexNum.intValue();
-
-    StreamEvaluator endIndexEval = subEvaluators.get(2);
-    Number endIndexNum = (Number)endIndexEval.evaluate(tuple);
-    int endIndex = endIndexNum.intValue();
-
-    vals = Arrays.copyOfRange(vals, startIndex, endIndex);
+    if(subEvaluators.size() == 2) {
+      StreamEvaluator lengthEval = subEvaluators.get(1);
+      Number lengthNum = (Number)lengthEval.evaluate(tuple);
+      int length = lengthNum.intValue();
+      vals = Arrays.copyOf(vals, length);
+    } else {
+      vals = Arrays.copyOf(vals, vals.length);
+    }
 
     List<Number> copyOf = new ArrayList(vals.length);
 

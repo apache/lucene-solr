@@ -14,15 +14,14 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.solr.client.solrj.io.stream;
+package org.apache.solr.client.solrj.io.eval;
 
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.apache.commons.math3.util.MathArrays;
 import org.apache.solr.client.solrj.io.Tuple;
-import org.apache.solr.client.solrj.io.eval.ComplexEvaluator;
-import org.apache.solr.client.solrj.io.eval.StreamEvaluator;
 import org.apache.solr.client.solrj.io.stream.expr.Explanation;
 import org.apache.solr.client.solrj.io.stream.expr.Explanation.ExpressionType;
 import org.apache.solr.client.solrj.io.stream.expr.Expressible;
@@ -30,24 +29,34 @@ import org.apache.solr.client.solrj.io.stream.expr.StreamExpression;
 import org.apache.solr.client.solrj.io.stream.expr.StreamExpressionParameter;
 import org.apache.solr.client.solrj.io.stream.expr.StreamFactory;
 
-public class ReverseEvaluator extends ComplexEvaluator implements Expressible {
+public class ScaleEvaluator extends ComplexEvaluator implements Expressible {
 
   private static final long serialVersionUID = 1;
 
-  public ReverseEvaluator(StreamExpression expression, StreamFactory factory) throws IOException {
+  public ScaleEvaluator(StreamExpression expression, StreamFactory factory) throws IOException {
     super(expression, factory);
   }
 
   public List<Number> evaluate(Tuple tuple) throws IOException {
-    StreamEvaluator colEval1 = subEvaluators.get(0);
+    StreamEvaluator numEval = subEvaluators.get(0);
+    StreamEvaluator colEval1 = subEvaluators.get(1);
 
+    Number num = (Number)numEval.evaluate(tuple);
     List<Number> numbers1 = (List<Number>)colEval1.evaluate(tuple);
-    List<Number> rev = new ArrayList();
-    for(int i=numbers1.size()-1; i>=0; i--) {
-      rev.add(numbers1.get(i));
+    double[] column1 = new double[numbers1.size()];
+
+    for(int i=0; i<numbers1.size(); i++) {
+      column1[i] = numbers1.get(i).doubleValue();
     }
 
-    return rev;
+    double[] scaled = MathArrays.scale(num.doubleValue(), column1);
+
+    List<Number> scaledList = new ArrayList(scaled.length);
+    for(double d : scaled) {
+      scaledList.add(d);
+    }
+
+    return scaledList;
   }
 
   @Override

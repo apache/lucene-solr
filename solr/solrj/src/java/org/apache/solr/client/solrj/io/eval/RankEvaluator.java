@@ -14,14 +14,14 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.solr.client.solrj.io.stream;
+package org.apache.solr.client.solrj.io.eval;
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.List;
 
+import org.apache.commons.math3.stat.ranking.NaturalRanking;
 import org.apache.solr.client.solrj.io.Tuple;
-import org.apache.solr.client.solrj.io.eval.ComplexEvaluator;
-import org.apache.solr.client.solrj.io.eval.StreamEvaluator;
 import org.apache.solr.client.solrj.io.stream.expr.Explanation;
 import org.apache.solr.client.solrj.io.stream.expr.Explanation.ExpressionType;
 import org.apache.solr.client.solrj.io.stream.expr.Expressible;
@@ -29,18 +29,31 @@ import org.apache.solr.client.solrj.io.stream.expr.StreamExpression;
 import org.apache.solr.client.solrj.io.stream.expr.StreamExpressionParameter;
 import org.apache.solr.client.solrj.io.stream.expr.StreamFactory;
 
-public class LengthEvaluator extends ComplexEvaluator implements Expressible {
+public class RankEvaluator extends ComplexEvaluator implements Expressible {
 
   private static final long serialVersionUID = 1;
 
-  public LengthEvaluator(StreamExpression expression, StreamFactory factory) throws IOException {
+  public RankEvaluator(StreamExpression expression, StreamFactory factory) throws IOException {
     super(expression, factory);
   }
 
-  public Number evaluate(Tuple tuple) throws IOException {
-    StreamEvaluator colEval1 = subEvaluators.get(0);
-    List<Number> numbers = (List<Number>)colEval1.evaluate(tuple);
-    return numbers.size();
+  public List<Number> evaluate(Tuple tuple) throws IOException {
+    StreamEvaluator colEval = subEvaluators.get(0);
+
+    List<Number> numbers = (List<Number>)colEval.evaluate(tuple);
+    double[] values = new double[numbers.size()];
+    for(int i=0; i<numbers.size(); i++) {
+      values[i] = numbers.get(i).doubleValue();
+    }
+
+    NaturalRanking rank = new NaturalRanking();
+    double[] ranked = rank.rank(values);
+    List<Number> rankedList = new ArrayList();
+    for(int i=0; i<numbers.size(); i++) {
+      rankedList.add(ranked[i]);
+    }
+
+    return rankedList;
   }
 
   @Override

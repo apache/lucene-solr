@@ -14,16 +14,12 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.solr.client.solrj.io.stream;
+
+package org.apache.solr.client.solrj.io.eval;
 
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
 
 import org.apache.solr.client.solrj.io.Tuple;
-import org.apache.solr.client.solrj.io.eval.ComplexEvaluator;
-import org.apache.solr.client.solrj.io.eval.StreamEvaluator;
 import org.apache.solr.client.solrj.io.stream.expr.Explanation;
 import org.apache.solr.client.solrj.io.stream.expr.Explanation.ExpressionType;
 import org.apache.solr.client.solrj.io.stream.expr.Expressible;
@@ -31,40 +27,26 @@ import org.apache.solr.client.solrj.io.stream.expr.StreamExpression;
 import org.apache.solr.client.solrj.io.stream.expr.StreamExpressionParameter;
 import org.apache.solr.client.solrj.io.stream.expr.StreamFactory;
 
-public class CopyOfEvaluator extends ComplexEvaluator implements Expressible {
+public class PercentileEvaluator extends ComplexEvaluator implements Expressible {
 
   private static final long serialVersionUID = 1;
 
-  public CopyOfEvaluator(StreamExpression expression, StreamFactory factory) throws IOException {
+  public PercentileEvaluator(StreamExpression expression, StreamFactory factory) throws IOException {
     super(expression, factory);
   }
 
-  public List<Number> evaluate(Tuple tuple) throws IOException {
-    StreamEvaluator colEval1 = subEvaluators.get(0);
+  public Number evaluate(Tuple tuple) throws IOException {
 
-    List<Number> numbers1 = (List<Number>)colEval1.evaluate(tuple);
-    double[] vals = new double[numbers1.size()];
-
-    for(int i=0; i<vals.length; i++) {
-      vals[i] = numbers1.get(i).doubleValue();
+    if(subEvaluators.size() != 2) {
+      throw new IOException("Percentile expects 2 parameters: a regression result and a number");
     }
 
-    if(subEvaluators.size() == 2) {
-      StreamEvaluator lengthEval = subEvaluators.get(1);
-      Number lengthNum = (Number)lengthEval.evaluate(tuple);
-      int length = lengthNum.intValue();
-      vals = Arrays.copyOf(vals, length);
-    } else {
-      vals = Arrays.copyOf(vals, vals.length);
-    }
+    StreamEvaluator r = subEvaluators.get(0);
+    StreamEvaluator d = subEvaluators.get(1);
 
-    List<Number> copyOf = new ArrayList(vals.length);
-
-    for(int i=0; i<vals.length; i++) {
-      copyOf.add(vals[i]);
-    }
-
-    return copyOf;
+    EmpiricalDistributionEvaluator.EmpiricalDistributionTuple e = (EmpiricalDistributionEvaluator.EmpiricalDistributionTuple)r.evaluate(tuple);
+    Number n = (Number)d.evaluate(tuple);
+    return e.percentile(n.doubleValue());
   }
 
   @Override

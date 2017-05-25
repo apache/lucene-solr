@@ -15,13 +15,13 @@
  * limitations under the License.
  */
 
-package org.apache.solr.client.solrj.io.stream;
+package org.apache.solr.client.solrj.io.eval;
 
 import java.io.IOException;
+import java.util.List;
 
+import org.apache.commons.math3.ml.distance.EuclideanDistance;
 import org.apache.solr.client.solrj.io.Tuple;
-import org.apache.solr.client.solrj.io.eval.ComplexEvaluator;
-import org.apache.solr.client.solrj.io.eval.StreamEvaluator;
 import org.apache.solr.client.solrj.io.stream.expr.Explanation;
 import org.apache.solr.client.solrj.io.stream.expr.Explanation.ExpressionType;
 import org.apache.solr.client.solrj.io.stream.expr.Expressible;
@@ -29,26 +29,33 @@ import org.apache.solr.client.solrj.io.stream.expr.StreamExpression;
 import org.apache.solr.client.solrj.io.stream.expr.StreamExpressionParameter;
 import org.apache.solr.client.solrj.io.stream.expr.StreamFactory;
 
-public class PercentileEvaluator extends ComplexEvaluator implements Expressible {
+public class DistanceEvaluator extends ComplexEvaluator implements Expressible {
 
   private static final long serialVersionUID = 1;
 
-  public PercentileEvaluator(StreamExpression expression, StreamFactory factory) throws IOException {
+  public DistanceEvaluator(StreamExpression expression, StreamFactory factory) throws IOException {
     super(expression, factory);
   }
 
   public Number evaluate(Tuple tuple) throws IOException {
+    StreamEvaluator colEval1 = subEvaluators.get(0);
+    StreamEvaluator colEval2 = subEvaluators.get(1);
 
-    if(subEvaluators.size() != 2) {
-      throw new IOException("Percentile expects 2 parameters: a regression result and a number");
+    List<Number> numbers1 = (List<Number>)colEval1.evaluate(tuple);
+    List<Number> numbers2 = (List<Number>)colEval2.evaluate(tuple);
+    double[] column1 = new double[numbers1.size()];
+    double[] column2 = new double[numbers2.size()];
+
+    for(int i=0; i<numbers1.size(); i++) {
+      column1[i] = numbers1.get(i).doubleValue();
     }
 
-    StreamEvaluator r = subEvaluators.get(0);
-    StreamEvaluator d = subEvaluators.get(1);
+    for(int i=0; i<numbers2.size(); i++) {
+      column2[i] = numbers2.get(i).doubleValue();
+    }
 
-    EmpiricalDistributionEvaluator.EmpiricalDistributionTuple e = (EmpiricalDistributionEvaluator.EmpiricalDistributionTuple)r.evaluate(tuple);
-    Number n = (Number)d.evaluate(tuple);
-    return e.percentile(n.doubleValue());
+    EuclideanDistance distance = new EuclideanDistance();
+    return distance.compute(column1, column2);
   }
 
   @Override
