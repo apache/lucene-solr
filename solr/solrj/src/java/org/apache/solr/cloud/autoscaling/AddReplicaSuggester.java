@@ -38,6 +38,8 @@ class AddReplicaSuggester extends Suggester {
       throw new RuntimeException("add-replica requires 'collection' and 'shard'");
     //iterate through elements and identify the least loaded
 
+    List<Clause.Violation> leastSeriousViolation = null;
+    Integer targetNodeIndex = null;
     for (int i = getMatrix().size() - 1; i >= 0; i--) {
       Row row = getMatrix().get(i);
       if (!isAllowed(row.node, Hint.TARGET_NODE)) continue;
@@ -45,14 +47,21 @@ class AddReplicaSuggester extends Suggester {
       tmpRow.violations.clear();
 
       List<Clause.Violation> errs = testChangedRow(strict, getModifiedMatrix(getMatrix(), tmpRow, i));
-
-      if (!containsNewErrors(errs)) {// there are no rule violations
-        getMatrix().set(i, getMatrix().get(i).addReplica(coll, shard));
-        return CollectionAdminRequest
-            .addReplicaToShard(coll, shard)
-            .setNode(row.node);
+      if(!containsNewErrors(errs)) {
+        if(isLessSerious(errs, leastSeriousViolation)){
+          leastSeriousViolation = errs;
+          targetNodeIndex = i;
+        }
       }
     }
+
+    if (targetNodeIndex != null) {// there are no rule violations
+      getMatrix().set(targetNodeIndex, getMatrix().get(targetNodeIndex).addReplica(coll, shard));
+      return CollectionAdminRequest
+          .addReplicaToShard(coll, shard)
+          .setNode(getMatrix().get(targetNodeIndex).node);
+    }
+
     return null;
   }
 

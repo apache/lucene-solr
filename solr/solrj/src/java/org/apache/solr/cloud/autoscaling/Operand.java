@@ -40,12 +40,23 @@ public enum Operand {
       return ANY.equals(val) || Policy.EACH.equals(val) ? val : null;
     }
   },
-  EQUAL("", 0),
+  EQUAL("", 0) {
+    @Override
+    public int _delta(int expected, int actual) {
+      return expected - actual;
+    }
+  },
   NOT_EQUAL("!", 2) {
     @Override
     public TestStatus match(Object ruleVal, Object testVal) {
       return super.match(ruleVal, testVal) == PASS ? FAIL : PASS;
     }
+
+    @Override
+    public int _delta(int expected, int actual) {
+      return expected - actual;
+    }
+
   },
   GREATER_THAN(">", 1) {
     @Override
@@ -60,12 +71,21 @@ public enum Operand {
       return compareNum(ruleVal, testVal) == 1 ? PASS : FAIL;
     }
 
+    @Override
+    protected int _delta(int expected, int actual) {
+      return actual > expected ? 0 : (expected + 1) - actual;
+    }
   },
   LESS_THAN("<", 2) {
     @Override
     public TestStatus match(Object ruleVal, Object testVal) {
       if (testVal == null) return NOT_APPLICABLE;
       return compareNum(ruleVal, testVal) == -1 ? PASS : FAIL;
+    }
+
+    @Override
+    protected int _delta(int expected, int actual) {
+      return actual < expected ? 0 : (expected ) - actual;
     }
 
     @Override
@@ -117,5 +137,19 @@ public enum Operand {
       return Integer.parseInt(String.valueOf(o));
     }
     return o;
+  }
+
+  public Integer delta(Object expected, Object actual) {
+    try {
+      Integer expectedInt = Integer.parseInt(String.valueOf(expected));
+      Integer actualInt = Integer.parseInt(String.valueOf(actual));
+      return _delta(expectedInt, actualInt);
+    } catch (Exception e) {
+      return null;
+    }
+  }
+
+  protected int _delta(int expected, int actual) {
+    return 0;
   }
 }

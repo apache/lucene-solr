@@ -348,13 +348,20 @@ public class Policy implements MapWriter {
     public SolrRequest getOperation() {
       if (!isInitialized) {
         String coll = (String) hints.get(Hint.COLL);
-        if(coll != null){
-          // if this is not a known collection from the existing clusterstate,
-          // then add it
-          if(session.matrix.stream().noneMatch(row -> row.replicaInfo.containsKey(coll))){
-            session.matrix.get(0).replicaInfo.put(coll, new HashMap<>());
-            session.addClausesForCollection(session.dataProvider, coll);
-            Collections.sort(session.expandedClauses);
+        String shard = (String) hints.get(Hint.SHARD);
+        // if this is not a known collection from the existing clusterstate,
+        // then add it
+        if(session.matrix.stream().noneMatch(row -> row.replicaInfo.containsKey(coll))){
+          session.addClausesForCollection(session.dataProvider, coll);
+          Collections.sort(session.expandedClauses);
+        }
+        if(coll != null) {
+          for (Row row : session.matrix) {
+            if (!row.replicaInfo.containsKey(coll)) row.replicaInfo.put(coll, new HashMap<>());
+            if(shard != null){
+              Map<String, List<ReplicaInfo>> shardInfo = row.replicaInfo.get(coll);
+              if(!shardInfo.containsKey(shard)) shardInfo.put(shard, new ArrayList<>());
+            }
           }
         }
         session.applyRules();
@@ -373,7 +380,23 @@ public class Policy implements MapWriter {
       return session.matrix;
 
     }
-    boolean containsNewErrors(List<Clause.Violation> errs){
+
+    boolean isLessSerious(List<Violation> fresh, List<Violation> old) {
+      if (old == null || fresh.size() < old.size()) return true;
+      if(fresh.size() == old.size()){
+        for (int i = 0; i < old.size(); i++) {
+          if(fresh.get(i).equals(old.get(i))) {
+            if (fresh.get(i) != null &&
+                old.get(i).delta != null &&
+                Math.abs(fresh.get(i).delta) < Math.abs(old.get(i).delta))
+              return true;
+          }
+        }
+
+      }
+      return false;
+    }
+    boolean containsNewErrors(List<Violation> errs){
       for (Clause.Violation err : errs) {
         if(!originalViolations.contains(err)) return true;
       }
