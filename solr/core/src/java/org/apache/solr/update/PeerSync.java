@@ -65,7 +65,11 @@ import static org.apache.solr.common.params.CommonParams.ID;
 import static org.apache.solr.update.processor.DistributedUpdateProcessor.DistribPhase.FROMLEADER;
 import static org.apache.solr.update.processor.DistributingUpdateProcessorFactory.DISTRIB_UPDATE_PARAM;
 
-/** @lucene.experimental */
+/**
+ * @lucene.experimental
+ * This class is useful for performing peer to peer synchronization of recently indexed update commands during
+ * recovery process.
+ */
 public class PeerSync implements SolrMetricProducer {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   private boolean debug = log.isDebugEnabled();
