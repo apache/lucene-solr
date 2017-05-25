@@ -29,7 +29,6 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.locks.ReentrantLock;
 
 import org.apache.solr.client.solrj.SolrRequest;
-import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
@@ -40,7 +39,6 @@ import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.Utils;
 import org.apache.solr.util.LogLevel;
 import org.apache.solr.util.TimeOut;
-import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.data.Stat;
 import org.junit.Before;
 import org.junit.BeforeClass;
@@ -58,7 +56,8 @@ import static org.apache.solr.common.cloud.ZkStateReader.SOLR_AUTOSCALING_CONF_P
 public class TriggerIntegrationTest extends SolrCloudTestCase {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
-  private static CountDownLatch actionCreated;
+  private static CountDownLatch actionConstructorCalled;
+  private static CountDownLatch actionInitCalled;
   private static CountDownLatch triggerFiredLatch;
   private static int waitForSeconds = 1;
   private static AtomicBoolean triggerFired;
@@ -76,7 +75,8 @@ public class TriggerIntegrationTest extends SolrCloudTestCase {
   @Before
   public void setupTest() throws Exception {
     waitForSeconds = 1 + random().nextInt(3);
-    actionCreated = new CountDownLatch(1);
+    actionConstructorCalled = new CountDownLatch(1);
+    actionInitCalled = new CountDownLatch(1);
     triggerFiredLatch = new CountDownLatch(1);
     triggerFired = new AtomicBoolean(false);
     eventRef = new AtomicReference<>();
@@ -96,7 +96,7 @@ public class TriggerIntegrationTest extends SolrCloudTestCase {
   @Test
   public void testTriggerThrottling() throws Exception  {
     // for this test we want to create two triggers so we must assert that the actions were created twice
-    TriggerIntegrationTest.actionCreated = new CountDownLatch(2);
+    TriggerIntegrationTest.actionInitCalled = new CountDownLatch(2);
     // similarly we want both triggers to fire
     triggerFiredLatch = new CountDownLatch(2);
 
@@ -129,7 +129,7 @@ public class TriggerIntegrationTest extends SolrCloudTestCase {
     assertEquals(response.get("result").toString(), "success");
 
     // wait until the two instances of action are created
-    if (!actionCreated.await(3, TimeUnit.SECONDS))  {
+    if (!actionInitCalled.await(3, TimeUnit.SECONDS))  {
       fail("Two TriggerAction instances should have been created by now");
     }
 
@@ -141,7 +141,7 @@ public class TriggerIntegrationTest extends SolrCloudTestCase {
 
     // reset shared state
     lastActionExecutedAt.set(0);
-    TriggerIntegrationTest.actionCreated = new CountDownLatch(2);
+    TriggerIntegrationTest.actionInitCalled = new CountDownLatch(2);
     triggerFiredLatch = new CountDownLatch(2);
 
     setTriggerCommand = "{" +
@@ -169,7 +169,7 @@ public class TriggerIntegrationTest extends SolrCloudTestCase {
     assertEquals(response.get("result").toString(), "success");
 
     // wait until the two instances of action are created
-    if (!actionCreated.await(3, TimeUnit.SECONDS))  {
+    if (!actionInitCalled.await(3, TimeUnit.SECONDS))  {
       fail("Two TriggerAction instances should have been created by now");
     }
 
@@ -231,7 +231,7 @@ public class TriggerIntegrationTest extends SolrCloudTestCase {
   @Test
   public void testNodeLostTriggerRestoreState() throws Exception {
     // for this test we want to update the trigger so we must assert that the actions were created twice
-    TriggerIntegrationTest.actionCreated = new CountDownLatch(2);
+    TriggerIntegrationTest.actionInitCalled = new CountDownLatch(2);
 
     // start a new node
     JettySolrRunner newNode = cluster.startJettySolrRunner();
@@ -252,10 +252,10 @@ public class TriggerIntegrationTest extends SolrCloudTestCase {
     assertEquals(response.get("result").toString(), "success");
 
     TimeOut timeOut = new TimeOut(2, TimeUnit.SECONDS);
-    while (actionCreated.getCount() == 0 && !timeOut.hasTimedOut()) {
+    while (actionInitCalled.getCount() == 0 && !timeOut.hasTimedOut()) {
       Thread.sleep(200);
     }
-    assertTrue("The action specified in node_lost_restore_trigger was not instantiated even after 2 seconds",actionCreated.getCount() > 0);
+    assertTrue("The action specified in node_lost_restore_trigger was not instantiated even after 2 seconds", actionInitCalled.getCount() > 0);
 
     List<JettySolrRunner> jettySolrRunners = cluster.getJettySolrRunners();
     int index = -1;
@@ -283,7 +283,7 @@ public class TriggerIntegrationTest extends SolrCloudTestCase {
     assertEquals(response.get("result").toString(), "success");
 
     // wait until the second instance of action is created
-    if (!actionCreated.await(3, TimeUnit.SECONDS))  {
+    if (!actionInitCalled.await(3, TimeUnit.SECONDS))  {
       fail("Two TriggerAction instances should have been created by now");
     }
 
@@ -299,7 +299,7 @@ public class TriggerIntegrationTest extends SolrCloudTestCase {
   @Test
   public void testNodeAddedTriggerRestoreState() throws Exception {
     // for this test we want to update the trigger so we must assert that the actions were created twice
-    TriggerIntegrationTest.actionCreated = new CountDownLatch(2);
+    TriggerIntegrationTest.actionInitCalled = new CountDownLatch(2);
 
     CloudSolrClient solrClient = cluster.getSolrClient();
     waitForSeconds = 5;
@@ -316,10 +316,10 @@ public class TriggerIntegrationTest extends SolrCloudTestCase {
     assertEquals(response.get("result").toString(), "success");
 
     TimeOut timeOut = new TimeOut(2, TimeUnit.SECONDS);
-    while (actionCreated.getCount() == 0 && !timeOut.hasTimedOut()) {
+    while (actionInitCalled.getCount() == 0 && !timeOut.hasTimedOut()) {
       Thread.sleep(200);
     }
-    assertTrue("The action specified in node_added_restore_trigger was not instantiated even after 2 seconds",actionCreated.getCount() > 0);
+    assertTrue("The action specified in node_added_restore_trigger was not instantiated even after 2 seconds", actionInitCalled.getCount() > 0);
 
     // start a new node
     JettySolrRunner newNode = cluster.startJettySolrRunner();
@@ -341,7 +341,7 @@ public class TriggerIntegrationTest extends SolrCloudTestCase {
     assertEquals(response.get("result").toString(), "success");
 
     // wait until the second instance of action is created
-    if (!actionCreated.await(3, TimeUnit.SECONDS))  {
+    if (!actionInitCalled.await(3, TimeUnit.SECONDS))  {
       fail("Two TriggerAction instances should have been created by now");
     }
 
@@ -369,7 +369,7 @@ public class TriggerIntegrationTest extends SolrCloudTestCase {
     NamedList<Object> response = solrClient.request(req);
     assertEquals(response.get("result").toString(), "success");
 
-    if (!actionCreated.await(3, TimeUnit.SECONDS))  {
+    if (!actionInitCalled.await(3, TimeUnit.SECONDS))  {
       fail("The TriggerAction should have been created by now");
     }
 
@@ -381,6 +381,30 @@ public class TriggerIntegrationTest extends SolrCloudTestCase {
     assertNotNull(nodeAddedEvent);
     assertEquals("The node added trigger was fired but for a different node",
         newNode.getNodeName(), nodeAddedEvent.getNodeName());
+
+    // reset
+    actionConstructorCalled = new CountDownLatch(1);
+    actionInitCalled = new CountDownLatch(1);
+
+    // update the trigger with exactly the same data
+    setTriggerCommand = "{" +
+        "'set-trigger' : {" +
+        "'name' : 'node_added_trigger'," +
+        "'event' : 'nodeAdded'," +
+        "'waitFor' : '" + waitForSeconds + "s'," +
+        "'enabled' : true," +
+        "'actions' : [{'name':'test','class':'" + TestTriggerAction.class.getName() + "'}]" +
+        "}}";
+    req = new AutoScalingHandlerTest.AutoScalingRequest(SolrRequest.METHOD.POST, path, setTriggerCommand);
+    response = solrClient.request(req);
+    assertEquals(response.get("result").toString(), "success");
+
+    // this should be a no-op so the action should have been created but init should not be called
+    if (!actionConstructorCalled.await(3, TimeUnit.SECONDS))  {
+      fail("The TriggerAction should have been created by now");
+    }
+
+    assertFalse(actionInitCalled.await(2, TimeUnit.SECONDS));
   }
 
   @Test
@@ -407,7 +431,7 @@ public class TriggerIntegrationTest extends SolrCloudTestCase {
     NamedList<Object> response = solrClient.request(req);
     assertEquals(response.get("result").toString(), "success");
 
-    if (!actionCreated.await(3, TimeUnit.SECONDS))  {
+    if (!actionInitCalled.await(3, TimeUnit.SECONDS))  {
       fail("The TriggerAction should have been created by now");
     }
 
@@ -420,6 +444,30 @@ public class TriggerIntegrationTest extends SolrCloudTestCase {
     assertNotNull(nodeLostEvent);
     assertEquals("The node lost trigger was fired but for a different node",
         lostNodeName, nodeLostEvent.getNodeName());
+
+    // reset
+    actionConstructorCalled = new CountDownLatch(1);
+    actionInitCalled = new CountDownLatch(1);
+
+    // update the trigger with exactly the same data
+    setTriggerCommand = "{" +
+        "'set-trigger' : {" +
+        "'name' : 'node_lost_trigger'," +
+        "'event' : 'nodeLost'," +
+        "'waitFor' : '" + waitForSeconds + "s'," +
+        "'enabled' : true," +
+        "'actions' : [{'name':'test','class':'" + TestTriggerAction.class.getName() + "'}]" +
+        "}}";
+    req = new AutoScalingHandlerTest.AutoScalingRequest(SolrRequest.METHOD.POST, path, setTriggerCommand);
+    response = solrClient.request(req);
+    assertEquals(response.get("result").toString(), "success");
+
+    // this should be a no-op so the action should have been created but init should not be called
+    if (!actionConstructorCalled.await(3, TimeUnit.SECONDS))  {
+      fail("The TriggerAction should have been created by now");
+    }
+
+    assertFalse(actionInitCalled.await(2, TimeUnit.SECONDS));
   }
 
   @Test
@@ -453,7 +501,7 @@ public class TriggerIntegrationTest extends SolrCloudTestCase {
     SolrRequest req = new AutoScalingHandlerTest.AutoScalingRequest(SolrRequest.METHOD.POST, path, setTriggerCommand);
     response = solrClient.request(req);
     assertEquals(response.get("result").toString(), "success");
-    if (!actionCreated.await(3, TimeUnit.SECONDS))  {
+    if (!actionInitCalled.await(3, TimeUnit.SECONDS))  {
       fail("The TriggerAction should have been created by now");
     }
 
@@ -473,7 +521,7 @@ public class TriggerIntegrationTest extends SolrCloudTestCase {
   public static class TestTriggerAction implements TriggerAction {
 
     public TestTriggerAction() {
-
+      actionConstructorCalled.countDown();
     }
 
     @Override
@@ -507,7 +555,7 @@ public class TriggerIntegrationTest extends SolrCloudTestCase {
     @Override
     public void init(Map<String, String> args) {
       log.info("TestTriggerAction init");
-      actionCreated.countDown();
+      actionInitCalled.countDown();
     }
   }
 }

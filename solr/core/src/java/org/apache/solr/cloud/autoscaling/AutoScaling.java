@@ -115,6 +115,12 @@ public class AutoScaling {
     public boolean isClosed();
 
     public void restoreState(Trigger<E> old);
+
+    /**
+     * Called before a trigger is scheduled. Any heavy object creation or initialisation should
+     * be done in this method instead of the Trigger's constructor.
+     */
+    public void init();
   }
 
   public static class TriggerFactory implements Closeable {
