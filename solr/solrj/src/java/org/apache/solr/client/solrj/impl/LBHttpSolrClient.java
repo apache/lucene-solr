@@ -185,11 +185,17 @@ public class LBHttpSolrClient extends SolrClient {
     protected SolrRequest request;
     protected List<String> servers;
     protected int numDeadServersToTry;
+    private final Integer numServersToTry;
 
     public Req(SolrRequest request, List<String> servers) {
+      this(request, servers, null);
+    }
+
+    public Req(SolrRequest request, List<String> servers, Integer numServersToTry) {
       this.request = request;
       this.servers = servers;
       this.numDeadServersToTry = servers.size();
+      this.numServersToTry = numServersToTry;
     }
 
     public SolrRequest getRequest() {
@@ -208,6 +214,10 @@ public class LBHttpSolrClient extends SolrClient {
      * Defaults to the number of servers in this request. */
     public void setNumDeadServersToTry(int numDeadServersToTry) {
       this.numDeadServersToTry = numDeadServersToTry;
+    }
+
+    public Integer getNumServersToTry() {
+      return numServersToTry;
     }
   }
 
@@ -360,6 +370,9 @@ public class LBHttpSolrClient extends SolrClient {
     boolean isNonRetryable = req.request instanceof IsUpdateRequest || ADMIN_PATHS.contains(req.request.getPath());
     List<ServerWrapper> skipped = null;
 
+    final Integer numServersToTry = req.getNumServersToTry();
+    int numServersTried = 0;
+
     boolean timeAllowedExceeded = false;
     long timeAllowedNano = getTimeAllowedInNanos(req.getRequest());
     long timeOutTime = System.nanoTime() + timeAllowedNano;
@@ -387,8 +400,14 @@ public class LBHttpSolrClient extends SolrClient {
       }
       try {
         MDC.put("LBHttpSolrClient.url", serverStr);
+
+        if (numServersToTry != null && numServersTried > numServersToTry.intValue()) {
+          break;
+        }
+
         HttpSolrClient client = makeSolrClient(serverStr);
 
+        ++numServersTried;
         ex = doRequest(client, req, rsp, isNonRetryable, false, null);
         if (ex == null) {
           return rsp; // SUCCESS
@@ -405,8 +424,13 @@ public class LBHttpSolrClient extends SolrClient {
           break;
         }
 
+        if (numServersToTry != null && numServersTried > numServersToTry.intValue()) {
+          break;
+        }
+
         try {
           MDC.put("LBHttpSolrClient.url", wrapper.client.getBaseURL());
+          ++numServersTried;
           ex = doRequest(wrapper.client, req, rsp, isNonRetryable, true, wrapper.getKey());
           if (ex == null) {
             return rsp; // SUCCESS
@@ -422,7 +446,13 @@ public class LBHttpSolrClient extends SolrClient {
     if (timeAllowedExceeded) {
       solrServerExceptionMessage = "Time allowed to handle this request exceeded";
     } else {
-      solrServerExceptionMessage = "No live SolrServers available to handle this request";
+      if (numServersToTry != null && numServersTried > numServersToTry.intValue()) {
+        solrServerExceptionMessage = "No live SolrServers available to handle this request:"
+            + " numServersTried="+numServersTried
+            + " numServersToTry="+numServersToTry.intValue();
+      } else {
+        solrServerExceptionMessage = "No live SolrServers available to handle this request";
+      }
     }
     if (ex == null) {
       throw new SolrServerException(solrServerExceptionMessage);
@@ -594,10 +624,16 @@ public class LBHttpSolrClient extends SolrClient {
   @Override
   public NamedList<Object> request(final SolrRequest request, String collection)
           throws SolrServerException, IOException {
+    return request(request, collection, null);
+  }
+
+  public NamedList<Object> request(final SolrRequest request, String collection,
+      final Integer numServersToTry) throws SolrServerException, IOException {
     Exception ex = null;
     ServerWrapper[] serverList = aliveServerList;
     
-    int maxTries = serverList.length;
+    final int maxTries = (numServersToTry == null ? serverList.length : numServersToTry.intValue());
+    int numServersTried = 0;
     Map<String,ServerWrapper> justFailed = null;
 
     boolean timeAllowedExceeded = false;
@@ -612,6 +648,7 @@ public class LBHttpSolrClient extends SolrClient {
       ServerWrapper wrapper = serverList[count % serverList.length];
 
       try {
+        ++numServersTried;
         return wrapper.client.request(request, collection);
       } catch (SolrException e) {
         // Server is alive but the request was malformed or invalid
@@ -638,6 +675,7 @@ public class LBHttpSolrClient extends SolrClient {
       
       if (wrapper.standard==false || justFailed!=null && justFailed.containsKey(wrapper.getKey())) continue;
       try {
+        ++numServersTried;
         NamedList<Object> rsp = wrapper.client.request(request, collection);
         // remove from zombie list *before* adding to alive to avoid a race that could lose a server
         zombieServers.remove(wrapper.getKey());
@@ -663,7 +701,13 @@ public class LBHttpSolrClient extends SolrClient {
     if (timeAllowedExceeded) {
       solrServerExceptionMessage = "Time allowed to handle this request exceeded";
     } else {
-      solrServerExceptionMessage = "No live SolrServers available to handle this request";
+      if (numServersToTry != null && numServersTried > numServersToTry.intValue()) {
+        solrServerExceptionMessage = "No live SolrServers available to handle this request:"
+            + " numServersTried="+numServersTried
+            + " numServersToTry="+numServersToTry.intValue();
+      } else {
+        solrServerExceptionMessage = "No live SolrServers available to handle this request";
+      }
     }
     if (ex == null) {
       throw new SolrServerException(solrServerExceptionMessage);
