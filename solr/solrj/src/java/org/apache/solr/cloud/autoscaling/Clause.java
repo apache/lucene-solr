@@ -76,7 +76,7 @@ public class Clause implements MapWriter, Comparable<Clause> {
         int replicaCount = Integer.parseInt(String.valueOf(replica.val));
         this.replica = new Condition(replica.name, replicaCount, replica.op);
       } catch (NumberFormatException e) {
-        throw new RuntimeException("Only an integer value is supported for replica "+Utils.toJSONString(m));
+        throw new RuntimeException("Only an integer value is supported for replica " + Utils.toJSONString(m));
       }
       m.forEach((s, o) -> parseCondition(s, o));
     }
@@ -110,8 +110,8 @@ public class Clause implements MapWriter, Comparable<Clause> {
       if (v != 0) return v;
       if (this.isPerCollectiontag() && that.isPerCollectiontag()) {
         v = Integer.compare(this.replica.op.priority, that.replica.op.priority);
-        if(v ==0) {
-          v = Integer.compare((Integer)this.replica.val, (Integer)that.replica.val);
+        if (v == 0) {
+          v = Integer.compare((Integer) this.replica.val, (Integer) that.replica.val);
           v = this.replica.op == LESS_THAN ? v : v * -1;
         }
         return v;
@@ -195,16 +195,18 @@ public class Clause implements MapWriter, Comparable<Clause> {
     final String shard, coll, node;
     final Object actualVal;
     final Integer delta;//how far is the actual value from the expected value
+    final Object tagKey;
     private final int hash;
 
 
-    private Violation(String coll, String shard, String node, Object actualVal, Integer delta ) {
+    private Violation(String coll, String shard, String node, Object actualVal, Integer delta, Object tagKey) {
       this.shard = shard;
       this.coll = coll;
       this.node = node;
       this.delta = delta;
       this.actualVal = actualVal;
-      hash = ("" + coll + " " + shard + " " + node + " " + Utils.toJSONString(getClause().toMap(new HashMap<>()))).hashCode();
+      this.tagKey = tagKey;
+      hash = ("" + coll + " " + shard + " " + node + " " + String.valueOf(tagKey) + " " + Utils.toJSONString(getClause().toMap(new HashMap<>()))).hashCode();
     }
 
     public Clause getClause() {
@@ -219,10 +221,12 @@ public class Clause implements MapWriter, Comparable<Clause> {
     @Override
     public boolean equals(Object that) {
       if (that instanceof Violation) {
-        Violation ve = (Violation) that;
-        return Objects.equals(this.shard, (ve).shard) &&
-            Objects.equals(this.coll, (ve).coll) &&
-            Objects.equals(this.node, (ve).node);
+        Violation v = (Violation) that;
+        return Objects.equals(this.shard, v.shard) &&
+            Objects.equals(this.coll, v.coll) &&
+            Objects.equals(this.node, v.node) &&
+            Objects.equals(this.tagKey, v.tagKey)
+            ;
       }
       return false;
     }
@@ -232,6 +236,7 @@ public class Clause implements MapWriter, Comparable<Clause> {
       ew.putIfNotNull("collection", coll);
       ew.putIfNotNull("shard", shard);
       ew.putIfNotNull("node", node);
+      ew.putIfNotNull("tagKey", String.valueOf(tagKey));
       ew.putIfNotNull("violation", (MapWriter) ew1 -> {
         ew1.put(getClause().isPerCollectiontag() ? "replica" : tag.name,
             String.valueOf(actualVal));
@@ -252,8 +257,14 @@ public class Clause implements MapWriter, Comparable<Clause> {
           if (!shard.isPass(shardVsCount.getKey())) continue;
           for (Map.Entry<String, AtomicInteger> counts : shardVsCount.getValue().entrySet()) {
             if (!replica.isPass(counts.getValue())) {
-              errors.add(new Violation(e.getKey(), shardVsCount.getKey(),
-                  tag.name.equals("node") ? counts.getKey() : null, counts.getValue(), replica.delta(counts.getValue())));
+              errors.add(new Violation(
+                  e.getKey(),
+                  shardVsCount.getKey(),
+                  tag.name.equals("node") ? counts.getKey() : null,
+                  counts.getValue(),
+                  replica.delta(counts.getValue()),
+                  counts.getKey()
+              ));
             }
           }
         }
@@ -261,7 +272,7 @@ public class Clause implements MapWriter, Comparable<Clause> {
     } else {
       for (Row r : allRows) {
         if (!tag.isPass(r)) {
-          errors.add(new Violation(null, null, r.node, r.getVal(tag.name) , tag.delta(r.getVal(tag.name))));
+          errors.add(new Violation(null, null, r.node, r.getVal(tag.name), tag.delta(r.getVal(tag.name)), null));
         }
       }
     }
@@ -285,7 +296,7 @@ public class Clause implements MapWriter, Comparable<Clause> {
           collMap.putIfAbsent(shardName, new HashMap<>());
           Map<String, AtomicInteger> tagVsCount = collMap.get(shardName);
           Object tagVal = row.getVal(tag.name);
-          tagVsCount.putIfAbsent(tag.isPass(tagVal)? String.valueOf(tagVal) : "", new AtomicInteger());
+          tagVsCount.putIfAbsent(tag.isPass(tagVal) ? String.valueOf(tagVal) : "", new AtomicInteger());
           if (tag.isPass(tagVal)) {
             tagVsCount.get(tagVal).addAndGet(shards.getValue().size());
           }

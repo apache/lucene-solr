@@ -221,7 +221,7 @@ public class TestPolicy extends SolrTestCaseJ4 {
         "      'cluster-policy':[" +
         "      {'cores':'<10','node':'#ANY'}," +
         "      {'replica':'<3','shard':'#EACH','node':'#ANY'}," +
-        "      { 'replica': 2, 'sysprop.fs': 'ssd', 'shard': '#EACH'}," +
+        "      { 'replica': 2, 'sysprop.fs': 'ssd', 'shard': '#EACH'}," +//greedy condition
         "      {'nodeRole':'overseer','replica':'0'}]," +
         "      'cluster-preferences':[" +
         "      {'minimize':'cores', 'precision':3}," +
@@ -264,12 +264,23 @@ public class TestPolicy extends SolrTestCaseJ4 {
         .getOperation();
     assertNotNull(op);
     assertEquals("node3", op.getParams().get("node"));
-    op = suggester
+    suggester = suggester
+        .getSession()
+        .getSuggester(ADDREPLICA)
         .hint(Hint.COLL, "newColl")
-        .hint(Hint.SHARD, "shard1")
-        .getOperation();
+        .hint(Hint.SHARD, "shard1");
+    op = suggester.getOperation();
     assertNotNull(op);
     assertEquals("node3", op.getParams().get("node"));
+
+    suggester = suggester
+        .getSession()
+        .getSuggester(ADDREPLICA)
+        .hint(Hint.COLL, "newColl")
+        .hint(Hint.SHARD, "shard1");
+    op = suggester.getOperation();
+    assertNotNull(op);
+    assertEquals("node2", op.getParams().get("node"));
   }
 
   public void testMoveReplica() {

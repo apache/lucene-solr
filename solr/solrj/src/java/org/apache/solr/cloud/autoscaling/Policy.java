@@ -384,13 +384,16 @@ public class Policy implements MapWriter {
     boolean isLessSerious(List<Violation> fresh, List<Violation> old) {
       if (old == null || fresh.size() < old.size()) return true;
       if(fresh.size() == old.size()){
-        for (int i = 0; i < old.size(); i++) {
-          if(fresh.get(i).equals(old.get(i))) {
-            if (fresh.get(i) != null &&
-                old.get(i).delta != null &&
-                Math.abs(fresh.get(i).delta) < Math.abs(old.get(i).delta))
-              return true;
+        for (int i = 0; i < fresh.size(); i++) {
+          Violation freshViolation = fresh.get(i);
+          Violation oldViolation = null;
+          for (Violation v : old) {
+            if(v.equals(freshViolation)){
+              oldViolation =v;
+            }
           }
+          if (oldViolation != null && oldViolation.delta != null &&
+              Math.abs(fresh.get(i).delta) < Math.abs(oldViolation.delta)) return true;
         }
 
       }
