@@ -174,8 +174,8 @@ public class TestRestManager extends SolrRestletTestBase {
      * 
              "/managedResources/[0]/class=='org.apache.solr.rest.schema.analysis.ManagedWordSetResource'",
              "/managedResources/[0]/resourceId=='/schema/analysis/stopwords/english'",
-             "/managedResources/[1]/class=='org.apache.solr.rest.schema.analysis.ManagedSynonymFilterFactory$SynonymManager'",
-             "/managedResources/[1]/resourceId=='/schema/analysis/synonyms/english'");
+             "/managedResources/[1]/class=='org.apache.solr.rest.schema.analysis.ManagedSynonymGraphFilterFactory$SynonymManager'",
+             "/managedResources/[1]/resourceId=='/schema/analysis/synonyms/englishgraph'");
     */
     
     // no pre-existing managed config components
