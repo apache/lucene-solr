@@ -38,6 +38,9 @@ class Preference implements MapWriter {
     name = Policy.SortParam.get(m.get(sort.name()).toString());
     Object p = m.getOrDefault("precision", 0);
     precision = p instanceof Number ? ((Number) p).intValue() : Integer.parseInt(p.toString());
+    if (precision < 0) {
+      throw new RuntimeException("precision must be a positive value ");
+    }
 
   }
 
