@@ -5227,6 +5227,53 @@ public class StreamExpressionTest extends SolrCloudTestCase {
     }
   }
 
+  @Test
+  public void testHist() throws Exception {
+    String expr = "hist(sequence(100, 0, 1), 10)";
+    ModifiableSolrParams paramsLoc = new ModifiableSolrParams();
+    paramsLoc.set("expr", expr);
+    paramsLoc.set("qt", "/stream");
+
+    String url = cluster.getJettySolrRunners().get(0).getBaseUrl().toString()+"/"+COLLECTIONORALIAS;
+    TupleStream solrStream = new SolrStream(url, paramsLoc);
+
+    StreamContext context = new StreamContext();
+    solrStream.setStreamContext(context);
+    List<Tuple> tuples = getTuples(solrStream);
+    assertTrue(tuples.size() == 1);
+    List<Map> hist = (List<Map>)tuples.get(0).get("return-value");
+    assertTrue(hist.size() == 10);
+    for(int i=0; i<hist.size(); i++) {
+      Map stats = hist.get(i);
+      assertTrue(((Number)stats.get("N")).intValue() == 10);
+      assertTrue(((Number)stats.get("min")).intValue() == 10*i);
+      assertTrue(((Number)stats.get("var")).doubleValue() == 9.166666666666666);
+      assertTrue(((Number)stats.get("stdev")).doubleValue() == 3.0276503540974917);
+    }
+
+    expr = "hist(sequence(100, 0, 1), 5)";
+    paramsLoc = new ModifiableSolrParams();
+    paramsLoc.set("expr", expr);
+    paramsLoc.set("qt", "/stream");
+
+    solrStream = new SolrStream(url, paramsLoc);
+    solrStream.setStreamContext(context);
+    tuples = getTuples(solrStream);
+    assertTrue(tuples.size() == 1);
+    hist = (List<Map>)tuples.get(0).get("return-value");
+    assertTrue(hist.size() == 5);
+    for(int i=0; i<hist.size(); i++) {
+      Map stats = hist.get(i);
+      assertTrue(((Number)stats.get("N")).intValue() == 20);
+      assertTrue(((Number)stats.get("min")).intValue() == 20*i);
+      assertTrue(((Number)stats.get("var")).doubleValue() == 35);
+      assertTrue(((Number)stats.get("stdev")).doubleValue() == 5.916079783099616);
+    }
+  }
+
+
+
+
 
 
   @Test
@@ -5747,7 +5794,7 @@ public class StreamExpressionTest extends SolrCloudTestCase {
     solrStream.setStreamContext(context);
     List<Tuple> tuples = getTuples(solrStream);
     assertTrue(tuples.size() == 1);
-    List<Number> out = (List<Number>)tuples.get(0).get("out");
+    List<Number> out = (List<Number>)tuples.get(0).get("return-value");
     assertTrue(out.size() == 6);
     assertTrue(out.get(0).intValue() == 1);
     assertTrue(out.get(1).intValue() == 2);
@@ -5764,7 +5811,7 @@ public class StreamExpressionTest extends SolrCloudTestCase {
     solrStream.setStreamContext(context);
     tuples = getTuples(solrStream);
     assertTrue(tuples.size() == 1);
-    out = (List<Number>)tuples.get(0).get("out");
+    out = (List<Number>)tuples.get(0).get("return-value");
     assertTrue(out.size() == 6);
     assertTrue(out.get(0).doubleValue() == 1.122D);
     assertTrue(out.get(1).doubleValue() == 2.222D);
