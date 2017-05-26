@@ -378,9 +378,8 @@ These factories are each designed to work with specific languages. The languages
 * <<Brazilian Portuguese>>
 * <<Bulgarian>>
 * <<Catalan>>
-* <<Chinese>>
+* <<Traditional Chinese>>
 * <<Simplified Chinese>>
-* <<CJK>>
 * <<LanguageAnalysis-Czech,Czech>>
 * <<LanguageAnalysis-Danish,Danish>>
 
@@ -508,15 +507,100 @@ Solr can stem Catalan using the Snowball Porter Stemmer with an argument of `lan
 
 *Out:* "llengu"(1), "llengu"(2)
 
-[[LanguageAnalysis-Chinese]]
-=== Chinese
+[[LanguageAnalysis-TraditionalChinese]]
+=== Traditional Chinese
 
-<<tokenizers.adoc#Tokenizers-StandardTokenizer,`solr.StandardTokenizerFactory`>> is suitable for Traditional Chinese text.  Following the Word Break rules from the Unicode Text Segmentation algorithm, it produces one token per Chinese character.
+The default configuration of the <<tokenizers.adoc#Tokenizers-ICUTokenizer,ICU Tokenizer>> is suitable for Traditional Chinese text.  It follows the Word Break rules from the Unicode Text Segmentation algorithm for non-Chinese text, and uses a dictionary to segment Chinese words.  To use this tokenizer, see `solr/contrib/analysis-extras/README.txt` for instructions on which jars you need to add to your `solr_home/lib`.
+
+<<tokenizers.adoc#Tokenizers-StandardTokenizer,Standard Tokenizer>> can also be used to tokenize Traditional Chinese text.  Following the Word Break rules from the Unicode Text Segmentation algorithm, it produces one token per Chinese character.  When combined with <<LanguageAnalysis-CJKBigramFilter,CJK Bigram Filter>>, overlapping bigrams of Chinese characters are formed.
+ 
+<<LanguageAnalysis-CJKWidthFilter,CJK Width Filter>> folds fullwidth ASCII variants into the equivalent Basic Latin forms.
+
+*Examples:*
+
+[source,xml]
+----
+<analyzer>
+  <tokenizer class="solr.ICUTokenizerFactory"/>
+  <filter class="solr.CJKWidthFilterFactory"/>
+  <filter class="solr.LowerCaseFilterFactory"/>
+</analyzer>
+----
+
+[source,xml]
+----
+<analyzer>
+  <tokenizer class="solr.StandardTokenizerFactory"/>
+  <filter class="solr.CJKBigramFilterFactory"/>
+  <filter class="solr.CJKWidthFilterFactory"/>
+  <filter class="solr.LowerCaseFilterFactory"/>
+</analyzer>
+----
+
+[[LanguageAnalysis-CJKBigramFilter]]
+=== CJK Bigram Filter
+
+Forms bigrams (overlapping 2-character sequences) of CJK characters that are generated from <<tokenizers.adoc#Tokenizers-StandardTokenizer,Standard Tokenizer>> or <<tokenizers.adoc#Tokenizers-ICUTokenizer,ICU Tokenizer>>.
+
+By default, all CJK characters produce bigrams, but finer grained control is available by specifying orthographic type arguments `han`, `hiragana`, `katakana`, and `hangul`.  When set to `false`, characters of the corresponding type will be passed through as unigrams, and will not be included in any bigrams.
+
+When a CJK character has no adjacent characters to form a bigram, it is output in unigram form. If you want to always output both unigrams and bigrams, set the `outputUnigrams` argument to `true`.
+
+In all cases, all non-CJK input is passed through unmodified.
+
+*Arguments:*
+
+`han`:: (true/false) If false, Han (Chinese) characters will not form bigrams. Default is true.
+
+`hiragana`:: (true/false) If false, Hiragana (Japanese) characters will not form bigrams. Default is true.
+
+`katakana`:: (true/false) If false, Katakana (Japanese) characters will not form bigrams. Default is true.
+
+`hangul`:: (true/false) If false, Hangul (Korean) characters will not form bigrams. Default is true.
+
+`outputUnigrams`:: (true/false) If true, in addition to forming bigrams, all characters are also passed through as unigrams. Default is false.
+
+See the example under <<LanguageAnalysis-TraditionalChinese,Traditional Chinese>>.
 
 [[LanguageAnalysis-SimplifiedChinese]]
 === Simplified Chinese
 
-For Simplified Chinese, Solr provides support for Chinese sentence and word segmentation with the `solr.HMMChineseTokenizerFactory` in the `analysis-extras` contrib module. This component includes a large dictionary and segments Chinese text into words with the Hidden Markov Model. To use this filter, see `solr/contrib/analysis-extras/README.txt` for instructions on which jars you need to add to your `solr_home/lib`.
+For Simplified Chinese, Solr provides support for Chinese sentence and word segmentation with the <<LanguageAnalysis-HMMChineseTokenizerFactory,HMM Chinese Tokenizer`>>. This component includes a large dictionary and segments Chinese text into words with the Hidden Markov Model. To use this tokenizer, you must add additional .jars to Solr's classpath (as described in the section <<lib-directives-in-solrconfig.adoc#lib-directives-in-solrconfig,Lib Directives in SolrConfig>>). See the `solr/contrib/analysis-extras/README.txt` for information on which jars you need to add to your `SOLR_HOME/lib`.
+
+The default configuration of the <<tokenizers.adoc#Tokenizers-ICUTokenizer,ICU Tokenizer>> is also suitable for Simplified Chinese text.  It follows the Word Break rules from the Unicode Text Segmentation algorithm for non-Chinese text, and uses a dictionary to segment Chinese words.  To use this tokenizer, you must add additional .jars to Solr's classpath (as described in the section <<lib-directives-in-solrconfig.adoc#lib-directives-in-solrconfig,Lib Directives in SolrConfig>>). See the `solr/contrib/analysis-extras/README.txt` for information on which jars you need to add to your `SOLR_HOME/lib`.
+
+Also useful for Chinese analysis:
+
+<<LanguageAnalysis-CJKWidthFilter,CJK Width Filter>> folds fullwidth ASCII variants into the equivalent Basic Latin forms, and folds halfwidth Katakana variants into their equivalent fullwidth forms.
+
+*Examples:*
+
+[source,xml]
+----
+<analyzer>
+  <tokenizer class="solr.HMMChineseTokenizerFactory"/>
+  <filter class="solr.CJKWidthFilterFactory"/>
+  <filter class="solr.StopFilterFactory"
+          words="org/apache/lucene/analysis/cn/smart/stopwords.txt"/>
+  <filter class="solr.PorterStemFilterFactory"/>
+  <filter class="solr.LowerCaseFilterFactory"/>
+</analyzer>
+----
+
+[source,xml]
+----
+<analyzer>
+  <tokenizer class="solr.ICUTokenizerFactory"/>
+  <filter class="solr.CJKWidthFilterFactory"/>
+  <filter class="solr.StopFilterFactory"
+          words="org/apache/lucene/analysis/cn/smart/stopwords.txt"/>
+  <filter class="solr.LowerCaseFilterFactory"/>
+</analyzer>
+----
+
+=== HMM Chinese Tokenizer
+
+For Simplified Chinese, Solr provides support for Chinese sentence and word segmentation with the `solr.HMMChineseTokenizerFactory` in the `analysis-extras` contrib module. This component includes a large dictionary and segments Chinese text into words with the Hidden Markov Model. To use this tokenizer, see `solr/contrib/analysis-extras/README.txt` for instructions on which jars you need to add to your `solr_home/lib`.
 
 *Factory class:* `solr.HMMChineseTokenizerFactory`
 
@@ -528,35 +612,7 @@ To use the default setup with fallback to English Porter stemmer for English wor
 
 `<analyzer class="org.apache.lucene.analysis.cn.smart.SmartChineseAnalyzer"/>`
 
-Or to configure your own analysis setup, use the `solr.HMMChineseTokenizerFactory` along with your custom filter setup.
-
-[source,xml]
-----
-<analyzer>
-  <tokenizer class="solr.HMMChineseTokenizerFactory"/>
-  <filter class="solr.StopFilterFactory"
-          words="org/apache/lucene/analysis/cn/smart/stopwords.txt"/>
-  <filter class="solr.PorterStemFilterFactory"/>
-</analyzer>
-----
-
-[[LanguageAnalysis-CJK]]
-=== CJK
-
-This tokenizer breaks Chinese, Japanese and Korean language text into tokens. These are not whitespace delimited languages. The tokens generated by this tokenizer are "doubles", overlapping pairs of CJK characters found in the field text.
-
-*Factory class:* `solr.CJKTokenizerFactory`
-
-*Arguments:* None
-
-*Example:*
-
-[source,xml]
-----
-<analyzer type="index">
-  <tokenizer class="solr.CJKTokenizerFactory"/>
-</analyzer>
-----
+Or to configure your own analysis setup, use the `solr.HMMChineseTokenizerFactory` along with your custom filter setup.  See an example of this in the <<LanguageAnalysis-SimplifiedChinese,Simplified Chinese>> section. 
 
 [[LanguageAnalysis-Czech]]
 === Czech
@@ -947,15 +1003,15 @@ Solr can stem Irish using the Snowball Porter Stemmer with an argument of `langu
 
 Solr includes support for analyzing Japanese, via the Lucene Kuromoji morphological analyzer, which includes several analysis components - more details on each below:
 
-* `JapaneseIterationMarkCharFilter` normalizes Japanese horizontal iteration marks (odoriji) to their expanded form.
-* `JapaneseTokenizer` tokenizes Japanese using morphological analysis, and annotates each term with part-of-speech, base form (a.k.a. lemma), reading and pronunciation.
-* `JapaneseBaseFormFilter` replaces original terms with their base forms (a.k.a. lemmas).
-* `JapanesePartOfSpeechStopFilter` removes terms that have one of the configured parts-of-speech.
-* `JapaneseKatakanaStemFilter` normalizes common katakana spelling variations ending in a long sound character (U+30FC) by removing the long sound character.
+* <<LanguageAnalysis-JapaneseIterationMarkCharFilter,`JapaneseIterationMarkCharFilter`>> normalizes Japanese horizontal iteration marks (odoriji) to their expanded form.
+* <<LanguageAnalysis-JapaneseTokenizer,`JapaneseTokenizer`>> tokenizes Japanese using morphological analysis, and annotates each term with part-of-speech, base form (a.k.a. lemma), reading and pronunciation.
+* <<LanguageAnalysis-JapaneseBaseFormFilter,`JapaneseBaseFormFilter`>> replaces original terms with their base forms (a.k.a. lemmas).
+* <<LanguageAnalysis-JapanesePartOfSpeechStopFilter,`JapanesePartOfSpeechStopFilter`>> removes terms that have one of the configured parts-of-speech.
+* <<LanguageAnalysis-JapaneseKatakanaStemFilter,`JapaneseKatakanaStemFilter`>> normalizes common katakana spelling variations ending in a long sound character (U+30FC) by removing the long sound character.
 
 Also useful for Japanese analysis, from lucene-analyzers-common:
 
-* `CJKWidthFilter` folds fullwidth ASCII variants into the equivalent Basic Latin forms, and folds halfwidth Katakana variants into their equivalent fullwidth forms.
+* <<LanguageAnalysis-CJKWidthFilter,`CJKWidthFilter`>> folds fullwidth ASCII variants into the equivalent Basic Latin forms, and folds halfwidth Katakana variants into their equivalent fullwidth forms.
 
 [[LanguageAnalysis-JapaneseIterationMarkCharFilter]]
 ==== Japanese Iteration Mark CharFilter
@@ -1022,7 +1078,7 @@ Removes terms with one of the configured parts-of-speech. `JapaneseTokenizer` an
 
 Normalizes common katakana spelling variations ending in a long sound character (U+30FC) by removing the long sound character.
 
-`CJKWidthFilterFactory` should be specified prior to this filter to normalize half-width katakana to full-width.
+<<LanguageAnalysis-CJKWidthFilter,`solr.CJKWidthFilterFactory`>> should be specified prior to this filter to normalize half-width katakana to full-width.
 
 *Factory class:* `JapaneseKatakanaStemFilterFactory`
 
