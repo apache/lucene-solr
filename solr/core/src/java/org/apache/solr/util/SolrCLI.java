@@ -2941,7 +2941,7 @@ public class SolrCLI {
         solrHome = solrHome.substring(cwdPath.length()+1);
 
       String startCmd =
-          String.format(Locale.ROOT, "%s start %s -p %d -s \"%s\" %s %s %s %s %s %s",
+          String.format(Locale.ROOT, "\"%s\" start %s -p %d -s \"%s\" %s %s %s %s %s %s",
               callScript, cloudModeArg, port, solrHome, hostArg, zkHostArg, memArg, forceArg, extraArgs, addlOptsArg);
       startCmd = startCmd.replaceAll("\\s+", " ").trim(); // for pretty printing
 
