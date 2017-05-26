@@ -1431,7 +1431,7 @@ By contrast, a query like "`find the popsicle`" would remove "```the```" as a st
 
 `format`:: (optional; default: `wordset`) Defines how the words file will be parsed. If `words` is not specified, then `format` must not be specified. The valid values for the format option are:
 
-`wordset`:: This is the default format, which supports one word per line (including any intra-word whitespace) and allows whole line comments begining with the `#` character. Blank lines are ignored.
+`wordset`:: This is the default format, which supports one word per line (including any intra-word whitespace) and allows whole line comments beginning with the `#` character. Blank lines are ignored.
 
 `snowball`:: This format allows for multiple words specified on each line, and trailing comments may be specified using the vertical line (`|`). Blank lines are ignored.
 
