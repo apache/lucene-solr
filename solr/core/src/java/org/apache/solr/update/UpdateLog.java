@@ -81,9 +81,10 @@ import static org.apache.solr.update.processor.DistributingUpdateProcessorFactor
 
 
 /** 
- * @lucene.experimental 
  * This holds references to the transaction logs and pointers for the document IDs to their
  * exact positions in the transaction logs.
+ *
+ * @lucene.experimental
  */
 public class UpdateLog implements PluginInfoInitialized, SolrMetricProducer {
   private static final long STATUS_TIME = TimeUnit.NANOSECONDS.convert(60, TimeUnit.SECONDS);
