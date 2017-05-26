@@ -457,7 +457,7 @@ public class AutoScalingHandlerTest extends SolrCloudTestCase {
         " 'set-cluster-policy': [" +
         "      {'cores':'<10', 'node':'#ANY'}," +
         "      {'replica':'<2', 'shard': '#EACH', 'node': '#ANY'}," +
-        "      {'nodeRole':'!overseer', 'replica':0}" +
+        "      {'nodeRole':'overseer', 'replica':0}" +
         "    ]" +
         "}";
     req = new AutoScalingRequest(SolrRequest.METHOD.POST, path, setClusterPolicyCommand);
@@ -478,7 +478,7 @@ public class AutoScalingHandlerTest extends SolrCloudTestCase {
     String setPolicyCommand =  "{'set-policy': {" +
         "    'xyz':[" +
         "      {'replica':'<2', 'shard': '#EACH', 'node': '#ANY'}," +
-        "      {'nodeRole':'!overseer', 'replica':0}" +
+        "      {'nodeRole':'overseer', 'replica':0}" +
         "    ]," +
         "    'policy1':[" +
         "      {'replica':'<2', 'shard': '#EACH', 'node': '#ANY'}" +
@@ -538,40 +538,14 @@ public class AutoScalingHandlerTest extends SolrCloudTestCase {
     assertNotNull(violations);
     assertEquals(0, violations.size());
 
-    // lets create a collection and ensure that its details show up in the diagnostics output
-    CollectionAdminRequest.Create create = CollectionAdminRequest.Create.createCollection("readApiTest", 1, 2);
-    CollectionAdminResponse adminResponse = create.process(solrClient);
-    assertTrue(adminResponse.isSuccess());
-
-    // get the diagnostics output again
-    queryResponse = solrClient.query(query);
-    response = queryResponse.getResponse();
-    diagnostics = (Map<String, Object>) response.get("diagnostics");
-    sortedNodes = (List) diagnostics.get("sortedNodes");
-    assertNotNull(sortedNodes);
-
-    assertEquals(2, sortedNodes.size());
-    for (int i = 0; i < 2; i++) {
-      Map node = (Map) sortedNodes.get(i);
-      assertNotNull(node);
-      assertEquals(5, node.size());
-      assertNotNull(node.get("node"));
-      assertEquals(sortedNodeNames[i], node.get("node"));
-      assertNotNull(node.get("cores"));
-      assertEquals(1, node.get("cores"));
-      assertNotNull(node.get("freedisk"));
-      assertNotNull(node.get("sysLoadAvg"));
-      assertNotNull(node.get("heapUsage"));
-    }
-
     violations = (List<Map<String, Object>>) diagnostics.get("violations");
     assertNotNull(violations);
     assertEquals(0, violations.size());
 
     // lets create a collection which violates the rule replicas < 2
-    create = CollectionAdminRequest.Create.createCollection("readApiTestViolations", 1, 6);
+    CollectionAdminRequest.Create create = CollectionAdminRequest.Create.createCollection("readApiTestViolations", 1, 6);
     create.setMaxShardsPerNode(10);
-    adminResponse = create.process(solrClient);
+    CollectionAdminResponse adminResponse = create.process(solrClient);
     assertTrue(adminResponse.isSuccess());
 
     // get the diagnostics output again
@@ -587,7 +561,7 @@ public class AutoScalingHandlerTest extends SolrCloudTestCase {
     for (Map<String, Object> violation : violations) {
       assertEquals("readApiTestViolations", violation.get("collection"));
       assertEquals("shard1", violation.get("shard"));
-      assertEquals(Utils.makeMap("replica", "3"), violation.get("violation"));
+      assertEquals(Utils.makeMap("replica", "3", "delta", -1), violation.get("violation"));
       assertNotNull(violation.get("clause"));
     }
   }
