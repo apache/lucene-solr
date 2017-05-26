@@ -510,7 +510,7 @@ Solr can stem Catalan using the Snowball Porter Stemmer with an argument of `lan
 [[LanguageAnalysis-TraditionalChinese]]
 === Traditional Chinese
 
-The default configuration of the <<tokenizers.adoc#Tokenizers-ICUTokenizer,ICU Tokenizer>> is suitable for Traditional Chinese text.  It follows the Word Break rules from the Unicode Text Segmentation algorithm for non-Chinese text, and uses a dictionary to segment Chinese words.  To use this tokenizer, see `solr/contrib/analysis-extras/README.txt` for instructions on which jars you need to add to your `solr_home/lib`.
+The default configuration of the <<tokenizers.adoc#Tokenizers-ICUTokenizer,ICU Tokenizer>> is suitable for Traditional Chinese text.  It follows the Word Break rules from the Unicode Text Segmentation algorithm for non-Chinese text, and uses a dictionary to segment Chinese words.  To use this tokenizer, you must add additional .jars to Solr's classpath (as described in the section <<lib-directives-in-solrconfig.adoc#lib-directives-in-solrconfig,Lib Directives in SolrConfig>>). See the `solr/contrib/analysis-extras/README.txt` for information on which jars you need to add to your `SOLR_HOME/lib`.
 
 <<tokenizers.adoc#Tokenizers-StandardTokenizer,Standard Tokenizer>> can also be used to tokenize Traditional Chinese text.  Following the Word Break rules from the Unicode Text Segmentation algorithm, it produces one token per Chinese character.  When combined with <<LanguageAnalysis-CJKBigramFilter,CJK Bigram Filter>>, overlapping bigrams of Chinese characters are formed.
  
