@@ -565,7 +565,7 @@ See the example under <<LanguageAnalysis-TraditionalChinese,Traditional Chinese>
 [[LanguageAnalysis-SimplifiedChinese]]
 === Simplified Chinese
 
-For Simplified Chinese, Solr provides support for Chinese sentence and word segmentation with the <<LanguageAnalysis-HMMChineseTokenizerFactory,HMM Chinese Tokenizer`>>. This component includes a large dictionary and segments Chinese text into words with the Hidden Markov Model. To use this tokenizer, you must add additional .jars to Solr's classpath (as described in the section <<lib-directives-in-solrconfig.adoc#lib-directives-in-solrconfig,Lib Directives in SolrConfig>>). See the `solr/contrib/analysis-extras/README.txt` for information on which jars you need to add to your `SOLR_HOME/lib`.
+For Simplified Chinese, Solr provides support for Chinese sentence and word segmentation with the <<LanguageAnalysis-HMMChineseTokenizer,HMM Chinese Tokenizer`>>. This component includes a large dictionary and segments Chinese text into words with the Hidden Markov Model. To use this tokenizer, you must add additional .jars to Solr's classpath (as described in the section <<lib-directives-in-solrconfig.adoc#lib-directives-in-solrconfig,Lib Directives in SolrConfig>>). See the `solr/contrib/analysis-extras/README.txt` for information on which jars you need to add to your `SOLR_HOME/lib`.
 
 The default configuration of the <<tokenizers.adoc#Tokenizers-ICUTokenizer,ICU Tokenizer>> is also suitable for Simplified Chinese text.  It follows the Word Break rules from the Unicode Text Segmentation algorithm for non-Chinese text, and uses a dictionary to segment Chinese words.  To use this tokenizer, you must add additional .jars to Solr's classpath (as described in the section <<lib-directives-in-solrconfig.adoc#lib-directives-in-solrconfig,Lib Directives in SolrConfig>>). See the `solr/contrib/analysis-extras/README.txt` for information on which jars you need to add to your `SOLR_HOME/lib`.
 
@@ -598,6 +598,7 @@ Also useful for Chinese analysis:
 </analyzer>
 ----
 
+[[LanguageAnalysis-HMMChineseTokenizer]]
 === HMM Chinese Tokenizer
 
 For Simplified Chinese, Solr provides support for Chinese sentence and word segmentation with the `solr.HMMChineseTokenizerFactory` in the `analysis-extras` contrib module. This component includes a large dictionary and segments Chinese text into words with the Hidden Markov Model. To use this tokenizer, see `solr/contrib/analysis-extras/README.txt` for instructions on which jars you need to add to your `solr_home/lib`.
