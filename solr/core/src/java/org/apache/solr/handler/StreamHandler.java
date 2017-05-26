@@ -190,6 +190,7 @@ public class StreamHandler extends RequestHandlerBase implements SolrCoreAware, 
       .withFunctionName("describe", DescribeEvaluator.class)
       .withFunctionName("finddelay", FindDelayEvaluator.class)
       .withFunctionName("sequence", SequenceEvaluator.class)
+      .withFunctionName("array", ArrayEvaluator.class)
 
       // metrics
          .withFunctionName("min", MinMetric.class)
