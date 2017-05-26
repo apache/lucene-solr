@@ -303,7 +303,7 @@ public class Clause implements MapWriter, Comparable<Clause> {
           Object tagVal = row.getVal(tag.name);
           tagVsCount.putIfAbsent(tag.isPass(tagVal) ? String.valueOf(tagVal) : "", new AtomicInteger());
           if (tag.isPass(tagVal)) {
-            tagVsCount.get(tagVal).addAndGet(shards.getValue().size());
+            tagVsCount.get(String.valueOf(tagVal)).addAndGet(shards.getValue().size());
           }
         }
       }
