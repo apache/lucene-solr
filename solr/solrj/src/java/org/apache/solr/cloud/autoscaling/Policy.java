@@ -178,7 +178,7 @@ public class Policy implements MapWriter {
     }
 
     private void addClausesForCollection(ClusterDataProvider dataProvider, String c) {
-      String p = dataProvider.getPolicy(c);
+      String p = dataProvider.getPolicyNameByCollection(c);
       if (p != null) {
         List<Clause> perCollPolicy = policies.get(p);
         if (perCollPolicy == null)
@@ -353,15 +353,15 @@ public class Policy implements MapWriter {
         String shard = (String) hints.get(Hint.SHARD);
         // if this is not a known collection from the existing clusterstate,
         // then add it
-        if (session.matrix.stream().noneMatch(row -> row.replicaInfo.containsKey(coll))) {
+        if (session.matrix.stream().noneMatch(row -> row.collectionVsShardVsReplicas.containsKey(coll))) {
           session.addClausesForCollection(session.dataProvider, coll);
           Collections.sort(session.expandedClauses);
         }
         if (coll != null) {
           for (Row row : session.matrix) {
-            if (!row.replicaInfo.containsKey(coll)) row.replicaInfo.put(coll, new HashMap<>());
+            if (!row.collectionVsShardVsReplicas.containsKey(coll)) row.collectionVsShardVsReplicas.put(coll, new HashMap<>());
             if (shard != null) {
-              Map<String, List<ReplicaInfo>> shardInfo = row.replicaInfo.get(coll);
+              Map<String, List<ReplicaInfo>> shardInfo = row.collectionVsShardVsReplicas.get(coll);
               if (!shardInfo.containsKey(shard)) shardInfo.put(shard, new ArrayList<>());
             }
           }
@@ -423,7 +423,7 @@ public class Policy implements MapWriter {
 
     void addReplicaToList(Row r, boolean isSource, List<Pair<Policy.ReplicaInfo, Row>> replicaList) {
       if (!isAllowed(r.node, isSource ? Hint.SRC_NODE : Hint.TARGET_NODE)) return;
-      for (Map.Entry<String, Map<String, List<Policy.ReplicaInfo>>> e : r.replicaInfo.entrySet()) {
+      for (Map.Entry<String, Map<String, List<Policy.ReplicaInfo>>> e : r.collectionVsShardVsReplicas.entrySet()) {
         if (!isAllowed(e.getKey(), Hint.COLL)) continue;
         for (Map.Entry<String, List<Policy.ReplicaInfo>> shard : e.getValue().entrySet()) {
           if (!isAllowed(e.getKey(), Hint.SHARD)) continue;
@@ -432,7 +432,7 @@ public class Policy implements MapWriter {
       }
     }
 
-    protected List<Violation> testChangedRow(boolean strict, List<Row> rows) {
+    protected List<Violation> testChangedMatrix(boolean strict, List<Row> rows) {
       List<Violation> errors = new ArrayList<>();
       for (Clause clause : session.expandedClauses) {
         if (strict || clause.strict) {

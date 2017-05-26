@@ -23,9 +23,6 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.function.BiConsumer;
-import java.util.function.Consumer;
-import java.util.function.Predicate;
 
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.common.SolrException;
@@ -33,7 +30,6 @@ import org.apache.solr.common.params.CoreAdminParams;
 import org.apache.solr.common.util.Utils;
 import org.apache.solr.cloud.autoscaling.Policy.Suggester.Hint;
 
-import static java.util.Arrays.asList;
 import static org.apache.solr.common.params.CollectionParams.CollectionAction.ADDREPLICA;
 
 public class PolicyHelper {
@@ -63,10 +59,10 @@ public class PolicyHelper {
         }
 
         @Override
-        public String getPolicy(String coll) {
+        public String getPolicyNameByCollection(String coll) {
           return optionalPolicyMapping.containsKey(coll) ?
               optionalPolicyMapping.get(coll) :
-              delegate.getPolicy(coll);
+              delegate.getPolicyNameByCollection(coll);
         }
       };
 

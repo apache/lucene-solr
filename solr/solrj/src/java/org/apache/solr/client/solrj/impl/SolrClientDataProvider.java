@@ -86,7 +86,7 @@ public class SolrClientDataProvider implements ClusterDataProvider, MapWriter {
   }
 
   @Override
-  public String getPolicy(String coll) {
+  public String getPolicyNameByCollection(String coll) {
     ClusterState.CollectionRef state = solrClient.getClusterStateProvider().getState(coll);
     return state == null || state.get() == null ? null : (String) state.get().getProperties().get("policy");
   }

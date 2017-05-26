@@ -46,7 +46,7 @@ class AddReplicaSuggester extends Suggester {
       Row tmpRow = row.addReplica(coll, shard);
       tmpRow.violations.clear();
 
-      List<Clause.Violation> errs = testChangedRow(strict, getModifiedMatrix(getMatrix(), tmpRow, i));
+      List<Clause.Violation> errs = testChangedMatrix(strict, getModifiedMatrix(getMatrix(), tmpRow, i));
       if(!containsNewErrors(errs)) {
         if(isLessSerious(errs, leastSeriousViolation)){
           leastSeriousViolation = errs;

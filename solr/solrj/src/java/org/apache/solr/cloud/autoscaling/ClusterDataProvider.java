@@ -46,7 +46,7 @@ public interface ClusterDataProvider extends Closeable {
 
   Collection<String> getNodes();
 
-  String getPolicy(String coll);
+  String getPolicyNameByCollection(String coll);
 
   @Override
   default void close() throws IOException {

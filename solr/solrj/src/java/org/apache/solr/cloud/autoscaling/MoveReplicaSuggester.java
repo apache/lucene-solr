@@ -60,7 +60,7 @@ public class MoveReplicaSuggester extends Suggester {
         if (!isAllowed(targetRow.node, Hint.TARGET_NODE)) continue;
         targetRow = targetRow.addReplica(coll, shard);
         targetRow.violations.clear();
-        List<Violation> errs = testChangedRow(strict, getModifiedMatrix(getModifiedMatrix(getMatrix(), tmpRow, i), targetRow, j));
+        List<Violation> errs = testChangedMatrix(strict, getModifiedMatrix(getModifiedMatrix(getMatrix(), tmpRow, i), targetRow, j));
         if (!containsNewErrors(errs) && isLessSerious(errs, leastSeriousViolation)) {
           leastSeriousViolation = errs;
           targetNodeIndex = j;

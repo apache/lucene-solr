@@ -64,10 +64,10 @@ public class TestPolicy extends SolrTestCaseJ4 {
     Row row = new Row("nodex", new Cell[]{new Cell(0, "node", "nodex")}, false, new HashMap<>(), new ArrayList<>());
     Row r1 = row.addReplica("c1", "s1");
     Row r2 = r1.addReplica("c1", "s1");
-    assertEquals(1, r1.replicaInfo.get("c1").get("s1").size());
-    assertEquals(2, r2.replicaInfo.get("c1").get("s1").size());
-    assertTrue(r2.replicaInfo.get("c1").get("s1").get(0) instanceof Policy.ReplicaInfo);
-    assertTrue(r2.replicaInfo.get("c1").get("s1").get(1) instanceof Policy.ReplicaInfo);
+    assertEquals(1, r1.collectionVsShardVsReplicas.get("c1").get("s1").size());
+    assertEquals(2, r2.collectionVsShardVsReplicas.get("c1").get("s1").size());
+    assertTrue(r2.collectionVsShardVsReplicas.get("c1").get("s1").get(0) instanceof Policy.ReplicaInfo);
+    assertTrue(r2.collectionVsShardVsReplicas.get("c1").get("s1").get(1) instanceof Policy.ReplicaInfo);
   }
 
   public void testMerge() {
@@ -252,7 +252,7 @@ public class TestPolicy extends SolrTestCaseJ4 {
       }
 
       @Override
-      public String getPolicy(String coll) {
+      public String getPolicyNameByCollection(String coll) {
         return null;
       }
     };
@@ -330,7 +330,7 @@ public class TestPolicy extends SolrTestCaseJ4 {
       }
 
       @Override
-      public String getPolicy(String coll) {
+      public String getPolicyNameByCollection(String coll) {
         return null;
       }
     });
@@ -392,7 +392,7 @@ public class TestPolicy extends SolrTestCaseJ4 {
       }
 
       @Override
-      public String getPolicy(String coll) {
+      public String getPolicyNameByCollection(String coll) {
         return "p1";
       }
     };
@@ -422,7 +422,7 @@ public class TestPolicy extends SolrTestCaseJ4 {
       }
 
       @Override
-      public String getPolicy(String coll) {
+      public String getPolicyNameByCollection(String coll) {
         return null;
       }
 
@@ -476,7 +476,7 @@ public class TestPolicy extends SolrTestCaseJ4 {
       }
 
       @Override
-      public String getPolicy(String coll) {
+      public String getPolicyNameByCollection(String coll) {
         return null;
       }
 

@@ -19,7 +19,6 @@ package org.apache.solr.cloud.autoscaling;
 
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -37,16 +36,16 @@ import static org.apache.solr.common.params.CoreAdminParams.NODE;
 class Row implements MapWriter {
   public final String node;
   final Cell[] cells;
-  Map<String, Map<String, List<ReplicaInfo>>> replicaInfo;
+  Map<String, Map<String, List<ReplicaInfo>>> collectionVsShardVsReplicas;
   List<Clause> violations = new ArrayList<>();
   boolean anyValueMissing = false;
 
-  Row(String node, List<String> params, ClusterDataProvider snitch) {
-    replicaInfo = snitch.getReplicaInfo(node, params);
-    if (replicaInfo == null) replicaInfo = new HashMap<>();
+  Row(String node, List<String> params, ClusterDataProvider dataProvider) {
+    collectionVsShardVsReplicas = dataProvider.getReplicaInfo(node, params);
+    if (collectionVsShardVsReplicas == null) collectionVsShardVsReplicas = new HashMap<>();
     this.node = node;
     cells = new Cell[params.size()];
-    Map<String, Object> vals = snitch.getNodeValues(node, params);
+    Map<String, Object> vals = dataProvider.getNodeValues(node, params);
     for (int i = 0; i < params.size(); i++) {
       String s = params.get(i);
       cells[i] = new Cell(i, s, vals.get(s));
@@ -55,7 +54,7 @@ class Row implements MapWriter {
     }
   }
 
-  Row(String node, Cell[] cells, boolean anyValueMissing, Map<String, Map<String, List<ReplicaInfo>>> replicaInfo, List<Clause> violations) {
+  Row(String node, Cell[] cells, boolean anyValueMissing, Map<String, Map<String, List<ReplicaInfo>>> collectionVsShardVsReplicas, List<Clause> violations) {
     this.node = node;
     this.cells = new Cell[cells.length];
     for (int i = 0; i < this.cells.length; i++) {
@@ -63,20 +62,20 @@ class Row implements MapWriter {
 
     }
     this.anyValueMissing = anyValueMissing;
-    this.replicaInfo = replicaInfo;
+    this.collectionVsShardVsReplicas = collectionVsShardVsReplicas;
     this.violations = violations;
   }
 
   @Override
   public void writeMap(EntryWriter ew) throws IOException {
     ew.put(node, (IteratorWriter) iw -> {
-      iw.add((MapWriter) e -> e.put("replicas", replicaInfo));
+      iw.add((MapWriter) e -> e.put("replicas", collectionVsShardVsReplicas));
       for (Cell cell : cells) iw.add(cell);
     });
   }
 
   Row copy() {
-    return new Row(node, cells, anyValueMissing, Utils.getDeepCopy(replicaInfo, 3), new ArrayList<>(violations));
+    return new Row(node, cells, anyValueMissing, Utils.getDeepCopy(collectionVsShardVsReplicas, 3), new ArrayList<>(violations));
   }
 
   Object getVal(String name) {
@@ -89,10 +88,11 @@ class Row implements MapWriter {
     return node;
   }
 
+  // this adds a replica to the replica info
   Row addReplica(String coll, String shard) {
     Row row = copy();
-    Map<String, List<ReplicaInfo>> c = row.replicaInfo.get(coll);
-    if (c == null) row.replicaInfo.put(coll, c = new HashMap<>());
+    Map<String, List<ReplicaInfo>> c = row.collectionVsShardVsReplicas.get(coll);
+    if (c == null) row.collectionVsShardVsReplicas.put(coll, c = new HashMap<>());
     List<ReplicaInfo> replicas = c.get(shard);
     if (replicas == null) c.put(shard, replicas = new ArrayList<>());
     replicas.add(new ReplicaInfo("" + new Random().nextInt(1000) + 1000, coll, shard, new HashMap<>()));
@@ -105,7 +105,7 @@ class Row implements MapWriter {
 
   Pair<Row, ReplicaInfo> removeReplica(String coll, String shard) {
     Row row = copy();
-    Map<String, List<ReplicaInfo>> c = row.replicaInfo.get(coll);
+    Map<String, List<ReplicaInfo>> c = row.collectionVsShardVsReplicas.get(coll);
     if (c == null) return null;
     List<ReplicaInfo> s = c.get(shard);
     if (s == null || s.isEmpty()) return null;

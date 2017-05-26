@@ -26,7 +26,7 @@ import org.apache.solr.common.util.Utils;
 class Cell implements MapWriter {
   final int index;
   final String name;
-  Object val, val_;
+  Object val, approxVal;
 
   Cell(int index, String name, Object val) {
     this.index = index;
@@ -34,11 +34,11 @@ class Cell implements MapWriter {
     this.val = val;
   }
 
-  Cell(int index, String name, Object val, Object val_) {
+  Cell(int index, String name, Object val, Object approxVal) {
     this.index = index;
     this.name = name;
     this.val = val;
-    this.val_ = val_;
+    this.approxVal = approxVal;
   }
 
   @Override
@@ -52,6 +52,6 @@ class Cell implements MapWriter {
   }
 
   public Cell copy() {
-    return new Cell(index, name, val, val_);
+    return new Cell(index, name, val, approxVal);
   }
 }
