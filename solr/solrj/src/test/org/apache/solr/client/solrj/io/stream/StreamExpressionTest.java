@@ -5220,7 +5220,7 @@ public class StreamExpressionTest extends SolrCloudTestCase {
     solrStream.setStreamContext(context);
     List<Tuple> tuples = getTuples(solrStream);
     assertTrue(tuples.size() == 1);
-    List<Number> sequence = (List<Number>)tuples.get(0).get("out");
+    List<Number> sequence = (List<Number>)tuples.get(0).get("return-value");
     assertTrue(sequence.size() == 20);
     for(int i=0; i<sequence.size(); i++) {
       assertTrue(sequence.get(i).intValue() == i);
