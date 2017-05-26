@@ -388,7 +388,7 @@ public final class DocExpirationUpdateProcessorFactory
             // No-Op
             return;
           }
-          log.info("Begining periodic deletion of expired docs");
+          log.info("Beginning periodic deletion of expired docs");
 
           UpdateRequestProcessorChain chain = core.getUpdateProcessingChain(deleteChainName);
           UpdateRequestProcessor proc = chain.createProcessor(req, rsp);

@@ -331,7 +331,7 @@ The graph is built according to linkages between documents based on the terms fo
 |to |The field name of matching documents to inspect to identify outgoing edges for graph traversal. Defaults to `edge_ids` .
 |from |The field name to of candidate documents to inspect to identify incoming graph edges. Defaults to `node_id` .
 |traversalFilter |An optional query that can be supplied to limit the scope of documents that are traversed.
-|maxDepth |Integer specifying how deep the breadth first search of the graph should go begining with the initial query. Defaults to -1 (unlimited)
+|maxDepth |Integer specifying how deep the breadth first search of the graph should go beginning with the initial query. Defaults to -1 (unlimited)
 |returnRoot |Boolean to indicate if the documents that matched the original query (to define the starting points for graph) should be included in the final results. Defaults to true
 |returnOnlyLeaf |Boolean that indicates if the results of the query should be filtered so that only documents with no outgoing edges are returned. Defaults to false
 |useAutn |Boolean that indicates if an Automatons should be compiled for each iteration of the breadth first search, which may be faster for some graphs. Defaults to false.

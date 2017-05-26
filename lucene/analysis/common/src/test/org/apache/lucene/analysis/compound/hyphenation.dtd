@@ -54,7 +54,7 @@
 <!-- The hyphenation patterns, space separated. A pattern is made of 'equivalent'
      characters as described before, between any two word characters a digit
      in the range 0 to 9 may be specified. The absence of a digit is equivalent
-     to zero. The '.' character is reserved to indicate begining or ending
+     to zero. The '.' character is reserved to indicate beginning or ending
      of words. -->
 <!ELEMENT patterns (#PCDATA)>
 
