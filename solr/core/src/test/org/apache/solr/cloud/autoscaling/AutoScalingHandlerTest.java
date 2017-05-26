@@ -351,7 +351,7 @@ public class AutoScalingHandlerTest extends SolrCloudTestCase {
     String setPolicyCommand =  "{'set-policy': {" +
         "    'xyz':[" +
         "      {'replica':'<2', 'shard': '#EACH', 'node': '#ANY'}," +
-        "      {'nodeRole':'!overseer', 'replica':'#ANY'}" +
+        "      {'nodeRole':'!overseer', 'replica':0}" +
         "    ]," +
         "    'policy1':[" +
         "      {'cores':'<2', 'node':'#ANY'}," +
@@ -425,7 +425,7 @@ public class AutoScalingHandlerTest extends SolrCloudTestCase {
         " 'set-cluster-policy': [" +
         "      {'cores':'<10', 'node':'#ANY'}," +
         "      {'replica':'<2', 'shard': '#EACH', 'node': '#ANY'}," +
-        "      {'nodeRole':'!overseer', 'replica':'#ANY'}" +
+        "      {'nodeRole':'!overseer', 'replica':0}" +
         "    ]" +
         "}";
     req = new AutoScalingRequest(SolrRequest.METHOD.POST, path, setClusterPolicyCommand);
@@ -457,7 +457,7 @@ public class AutoScalingHandlerTest extends SolrCloudTestCase {
         " 'set-cluster-policy': [" +
         "      {'cores':'<10', 'node':'#ANY'}," +
         "      {'replica':'<2', 'shard': '#EACH', 'node': '#ANY'}," +
-        "      {'nodeRole':'!overseer', 'replica':'#ANY'}" +
+        "      {'nodeRole':'!overseer', 'replica':0}" +
         "    ]" +
         "}";
     req = new AutoScalingRequest(SolrRequest.METHOD.POST, path, setClusterPolicyCommand);
@@ -478,7 +478,7 @@ public class AutoScalingHandlerTest extends SolrCloudTestCase {
     String setPolicyCommand =  "{'set-policy': {" +
         "    'xyz':[" +
         "      {'replica':'<2', 'shard': '#EACH', 'node': '#ANY'}," +
-        "      {'nodeRole':'!overseer', 'replica':'#ANY'}" +
+        "      {'nodeRole':'!overseer', 'replica':0}" +
         "    ]," +
         "    'policy1':[" +
         "      {'replica':'<2', 'shard': '#EACH', 'node': '#ANY'}" +
