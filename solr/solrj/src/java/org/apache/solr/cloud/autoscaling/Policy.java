@@ -216,7 +216,7 @@ public class Policy implements MapWriter {
         //approximate values are set now. Let's do recursive sorting
         Collections.sort(matrix, (r1, r2) -> {
           int result = clusterPreferences.get(0).compare(r1, r2, true);
-          if(result == 0) result = clusterPreferences.get(0).compare(r1, r2, false);
+          if (result == 0) result = clusterPreferences.get(0).compare(r1, r2, false);
           return result;
         });
       }
@@ -291,7 +291,7 @@ public class Policy implements MapWriter {
 
   public static class ReplicaInfo implements MapWriter {
     final String name;
-    String core,collection,shard;
+    String core, collection, shard;
     Map<String, Object> variables;
 
     public ReplicaInfo(String name, String coll, String shard, Map<String, Object> vals) {
@@ -305,14 +305,16 @@ public class Policy implements MapWriter {
     public void writeMap(EntryWriter ew) throws IOException {
       ew.put(name, variables);
     }
-    public String getCore(){
+
+    public String getCore() {
       return core;
     }
-    public String getCollection(){
+
+    public String getCollection() {
       return collection;
     }
 
-    public String getShard(){
+    public String getShard() {
       return shard;
     }
   }
@@ -351,16 +353,16 @@ public class Policy implements MapWriter {
         String shard = (String) hints.get(Hint.SHARD);
         // if this is not a known collection from the existing clusterstate,
         // then add it
-        if(session.matrix.stream().noneMatch(row -> row.replicaInfo.containsKey(coll))){
+        if (session.matrix.stream().noneMatch(row -> row.replicaInfo.containsKey(coll))) {
           session.addClausesForCollection(session.dataProvider, coll);
           Collections.sort(session.expandedClauses);
         }
-        if(coll != null) {
+        if (coll != null) {
           for (Row row : session.matrix) {
             if (!row.replicaInfo.containsKey(coll)) row.replicaInfo.put(coll, new HashMap<>());
-            if(shard != null){
+            if (shard != null) {
               Map<String, List<ReplicaInfo>> shardInfo = row.replicaInfo.get(coll);
-              if(!shardInfo.containsKey(shard)) shardInfo.put(shard, new ArrayList<>());
+              if (!shardInfo.containsKey(shard)) shardInfo.put(shard, new ArrayList<>());
             }
           }
         }
@@ -381,41 +383,40 @@ public class Policy implements MapWriter {
 
     }
 
+    //check if the fresh set of violations is less serious than the last set of violations
     boolean isLessSerious(List<Violation> fresh, List<Violation> old) {
       if (old == null || fresh.size() < old.size()) return true;
-      if(fresh.size() == old.size()){
+      if (fresh.size() == old.size()) {
         for (int i = 0; i < fresh.size(); i++) {
           Violation freshViolation = fresh.get(i);
           Violation oldViolation = null;
           for (Violation v : old) {
-            if(v.equals(freshViolation)){
-              oldViolation =v;
-            }
+            if (v.equals(freshViolation)) oldViolation = v;
           }
-          if (oldViolation != null && oldViolation.delta != null &&
-              Math.abs(fresh.get(i).delta) < Math.abs(oldViolation.delta)) return true;
+          if (oldViolation != null && freshViolation.isLessSerious(oldViolation)) return true;
         }
-
-      }
-      return false;
-    }
-    boolean containsNewErrors(List<Violation> errs){
-      for (Clause.Violation err : errs) {
-        if(!originalViolations.contains(err)) return true;
       }
       return false;
     }
 
+    boolean containsNewErrors(List<Violation> violations) {
+      for (Violation v : violations) {
+        int idx = originalViolations.indexOf(v);
+        if (idx < 0 || originalViolations.get(idx).isLessSerious(v)) return true;
+      }
+      return false;
+    }
 
     List<Pair<ReplicaInfo, Row>> getValidReplicas(boolean sortDesc, boolean isSource, int until) {
       List<Pair<Policy.ReplicaInfo, Row>> allPossibleReplicas = new ArrayList<>();
 
       if (sortDesc) {
-        if(until == -1) until = getMatrix().size();
+        if (until == -1) until = getMatrix().size();
         for (int i = 0; i < until; i++) addReplicaToList(getMatrix().get(i), isSource, allPossibleReplicas);
       } else {
-        if(until == -1) until = 0;
-        for (int i = getMatrix().size() - 1; i >= until; i--) addReplicaToList(getMatrix().get(i), isSource, allPossibleReplicas);
+        if (until == -1) until = 0;
+        for (int i = getMatrix().size() - 1; i >= until; i--)
+          addReplicaToList(getMatrix().get(i), isSource, allPossibleReplicas);
       }
       return allPossibleReplicas;
     }
@@ -430,7 +431,8 @@ public class Policy implements MapWriter {
         }
       }
     }
-    protected List<Violation> testChangedRow(boolean strict,List<Row> rows) {
+
+    protected List<Violation> testChangedRow(boolean strict, List<Row> rows) {
       List<Violation> errors = new ArrayList<>();
       for (Clause clause : session.expandedClauses) {
         if (strict || clause.strict) {
@@ -443,7 +445,7 @@ public class Policy implements MapWriter {
       return errors;
     }
 
-    ArrayList<Row> getModifiedMatrix(List<Row> matrix ,Row tmpRow, int i) {
+    ArrayList<Row> getModifiedMatrix(List<Row> matrix, Row tmpRow, int i) {
       ArrayList<Row> copy = new ArrayList<>(matrix);
       copy.set(i, tmpRow);
       return copy;

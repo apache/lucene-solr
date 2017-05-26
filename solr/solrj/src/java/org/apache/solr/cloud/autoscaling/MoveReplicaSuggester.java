@@ -22,6 +22,7 @@ import java.util.List;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.cloud.autoscaling.Clause.Violation;
+import org.apache.solr.cloud.autoscaling.Policy.ReplicaInfo;
 import org.apache.solr.cloud.autoscaling.Policy.Suggester;
 import org.apache.solr.common.util.Pair;
 
@@ -36,11 +37,16 @@ public class MoveReplicaSuggester extends Suggester {
 
   SolrRequest tryEachNode(boolean strict) {
     //iterate through elements and identify the least loaded
-    for (Pair<Policy.ReplicaInfo, Row> fromReplica : getValidReplicas(true, true, -1)) {
+    List<Clause.Violation> leastSeriousViolation = null;
+    Integer targetNodeIndex = null;
+    Integer fromNodeIndex = null;
+    ReplicaInfo fromReplicaInfo = null;
+    for (Pair<ReplicaInfo, Row> fromReplica : getValidReplicas(true, true, -1)) {
       Row fromRow = fromReplica.second();
-      String coll = fromReplica.first().collection;
-      String shard = fromReplica.first().shard;
-      Pair<Row, Policy.ReplicaInfo> pair = fromRow.removeReplica(coll, shard);
+      ReplicaInfo replicaInfo = fromReplica.first();
+      String coll = replicaInfo.collection;
+      String shard = replicaInfo.shard;
+      Pair<Row, ReplicaInfo> pair = fromRow.removeReplica(coll, shard);
       Row tmpRow = pair.first();
       if (tmpRow == null) {
         //no such replica available
@@ -55,15 +61,21 @@ public class MoveReplicaSuggester extends Suggester {
         targetRow = targetRow.addReplica(coll, shard);
         targetRow.violations.clear();
         List<Violation> errs = testChangedRow(strict, getModifiedMatrix(getModifiedMatrix(getMatrix(), tmpRow, i), targetRow, j));
-        if (!containsNewErrors(errs)) {
-          getMatrix().set(i, getMatrix().get(i).removeReplica(coll, shard).first());
-          getMatrix().set(j, getMatrix().get(j).addReplica(coll, shard));
-          return new CollectionAdminRequest.MoveReplica(
-              coll,
-              pair.second().name,
-              targetRow.node);
+        if (!containsNewErrors(errs) && isLessSerious(errs, leastSeriousViolation)) {
+          leastSeriousViolation = errs;
+          targetNodeIndex = j;
+          fromNodeIndex = i;
+          fromReplicaInfo = replicaInfo;
         }
       }
+    }
+    if (targetNodeIndex != null && fromNodeIndex != null) {
+      getMatrix().set(fromNodeIndex, getMatrix().get(fromNodeIndex).removeReplica(fromReplicaInfo.collection, fromReplicaInfo.shard).first());
+      getMatrix().set(targetNodeIndex, getMatrix().get(targetNodeIndex).addReplica(fromReplicaInfo.collection, fromReplicaInfo.shard));
+      return new CollectionAdminRequest.MoveReplica(
+          fromReplicaInfo.collection,
+          fromReplicaInfo.name,
+          getMatrix().get(targetNodeIndex).node);
     }
     return null;
   }

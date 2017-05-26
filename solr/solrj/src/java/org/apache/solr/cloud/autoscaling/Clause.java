@@ -217,6 +217,11 @@ public class Clause implements MapWriter, Comparable<Clause> {
     public int hashCode() {
       return hash;
     }
+    //if the delta is lower , this violation is less serious
+    public boolean isLessSerious(Violation that) {
+      return that.delta != null && delta != null &&
+          Math.abs(delta) < Math.abs(that.delta);
+    }
 
     @Override
     public boolean equals(Object that) {
