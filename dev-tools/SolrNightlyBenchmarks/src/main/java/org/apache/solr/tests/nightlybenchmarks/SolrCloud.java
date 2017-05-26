@@ -3,6 +3,7 @@ package org.apache.solr.tests.nightlybenchmarks;
 import java.io.IOException;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 
 import org.eclipse.jgit.api.errors.GitAPIException;
@@ -24,6 +25,7 @@ public class SolrCloud {
 	public String url;
 	public String host;
 	public boolean createADefaultCollection;
+	public Map<String, String> returnMapCreateCollection;
 	
 	public SolrCloud(int solrNodes, String shards, String replicas, String commitId, String configName, String host, boolean creatADefaultCollection) {
 		super();
@@ -60,7 +62,7 @@ public class SolrCloud {
 			}
 			
 			if (this.createADefaultCollection) {
-					nodes.get(0).createCollection(this.collectionName, this.configName, this.shards, this.replicas);
+				returnMapCreateCollection = nodes.get(0).createCollection(this.collectionName, this.configName, this.shards, this.replicas);
 			}
 			
 			this.port = nodes.get(0).port;
@@ -92,13 +94,19 @@ public class SolrCloud {
 			return "http://" + this.host + ":" + this.port + "/solr/";
 		}
 	}
-	
-	public void shutdown() {
+
+	public String getBaseURL() {
+			return "http://" + this.host + ":" + this.port + "/solr/";
+	}
+
+	public void shutdown() throws IOException, InterruptedException {
 		for (SolrNode node: nodes) {
 			node.stop();
 			node.cleanup();
+			
 		}
 		zookeeperNode.stop();
+		zookeeperNode.clean();
 	}	
 	
 }

@@ -1,74 +1,50 @@
 package org.apache.solr.tests.nightlybenchmarks;
-import java.io.File;
 import java.io.IOException;
-import java.util.HashMap;
 import java.util.Map;
-import java.util.UUID;
+
+import org.apache.solr.tests.nightlybenchmarks.ThreadedNumericQueryClient.NumericQueryType;
 
 public class SolrNightlyBenchmarks {
 
 	public static void main(String[] args) throws IOException, InterruptedException {
 
-	
-		Map<String, String> argM = new HashMap<String, String>();
-		for (int i = 0; i < args.length; i += 2) {
-			argM.put(args[i], args[i + 1]);
-		}
-		
 		Util.getProperties();		
 		Util.checkWebAppFiles();
 		Util.checkBaseAndTempDir();
-		Util.getSystemEnvironmentInformation();
 
-		File statusFile = new File(BenchmarkAppConnector.benchmarkAppDirectory + "iamalive.txt");
-		if (!statusFile.exists()) {
-			statusFile.createNewFile();			
+		Util.setAliveFlag();
+		Map<String, String> argM = Util.getArgs(args);
+		Util.getSystemEnvironmentInformation();
+			
+		String commitID = "";
+		if(argM.containsKey("-commitID")) {
+			commitID = argM.get("-commitID");
+		} else {
+			commitID = Util.getLatestCommitID();	
+			Util.postMessage("The latest commit ID is: " + commitID, MessageType.RESULT_ERRROR, false);
 		}
+		Util.commitId = commitID;
 		
-		try {
-			
-			String commitID = "";
-			if(argM.containsKey("-commitID")) {
-				commitID = argM.get("-commitID");
-			} else {
-				commitID = Util.getLatestCommitID();	
-				Util.postMessage("The latest commit ID is: " + commitID, MessageType.RESULT_ERRROR, false);
-			}
-			Util.commitId = commitID;
-			
-			
-			// Sample Test
+		Tests.indexingTests(commitID, 10000);
 		
-			SolrNode node = new SolrNode(commitID, "", "", false);
-			node.start();			
-			Util.getEnvironmentInformationFromMetricAPI(commitID, node.port);
-			node.createCore("Core-" + UUID.randomUUID(), "Collection-" + UUID.randomUUID());	
-			
-			SolrClient client = new SolrClient("localhost", node.port, node.collectionName, commitID);
-			client.indexAmazonFoodData(10000, node.getBaseUrl() + node.collectionName);
-			
-			node.stop();		
-			node.cleanup();	
-			
-			SolrCloud cloud = new SolrCloud(5, "2", "2", commitID, null, "localhost", true);
-			SolrClient cloudClient = new SolrClient("localhost", cloud.port, cloud.collectionName, commitID);
-			cloudClient.indexAmazonFoodData(10000, cloud.getuRL(), cloud.zookeeperIp, cloud.zookeeperPort, cloud.collectionName);
-			cloudClient.indexAmazonFoodData(10000, cloud.getuRL(), cloud.zookeeperIp, cloud.zookeeperPort, cloud.collectionName, 10000, 10);
-			cloud.shutdown();
-			
-			// End Sample Test
-			
-		} catch (Exception e) {
-			e.printStackTrace();
-		}
+		Tests.setUpCloudForFeatureTests(commitID, 50000);
 		
-		statusFile = new File(BenchmarkAppConnector.benchmarkAppDirectory + "iamalive.txt");
-		if (statusFile.exists()) {
-			statusFile.delete();			
-		}
+		BenchmarkReportData.numericQueryTNQMetric = Tests.numericQueryTests(commitID, NumericQueryType.TERM_NUMERIC_QUERY, 1000, 60);
+		Thread.sleep(5000);
+		BenchmarkReportData.numericQueryRNQMetric =	Tests.numericQueryTests(commitID, NumericQueryType.RANGE_NUMERIC_QUERY, 1000, 60);
+		Thread.sleep(5000);
+		BenchmarkReportData.numericQueryLNQMetric =	Tests.numericQueryTests(commitID, NumericQueryType.LESS_THAN_NUMERIC_QUERY, 1000, 60);
+		Thread.sleep(5000);
+		BenchmarkReportData.numericQueryGNQMetric =	Tests.numericQueryTests(commitID, NumericQueryType.GREATER_THAN_NUMERIC_QUERY, 1000, 60);
+		
+		Tests.shutDown();
+		
+		OutPort.publishDataForWebApp();
 		
 		if(argM.containsKey("-Housekeeping")) {
 			Util.cleanUpSrcDirs();
 		}
+		
+		Util.setDeadFlag();
 	}
 }

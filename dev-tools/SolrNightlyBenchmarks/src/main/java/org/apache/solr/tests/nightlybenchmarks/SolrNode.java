@@ -5,10 +5,11 @@ import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.text.SimpleDateFormat;
 import java.util.Date;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.UUID;
 
 import org.apache.log4j.Logger;
-import org.apache.solr.tests.nightlybenchmarks.BenchmarkAppConnector.FileType;
 import org.eclipse.jgit.api.Git;
 import org.eclipse.jgit.api.errors.GitAPIException;
 
@@ -199,7 +200,7 @@ public class SolrNode {
 
 	
 	@SuppressWarnings("deprecation")
-	public void createCore(String coreName, String collectionName) throws IOException, InterruptedException {
+	public Map<String, String> createCore(String coreName, String collectionName) throws IOException, InterruptedException {
 
         Thread thread =new Thread(new MetricEstimation(this.commitId, TestType.STANDALONE_CREATE_COLLECTION, this.port));  
         thread.start();  
@@ -209,23 +210,31 @@ public class SolrNode {
 
 		long start;
 		long end;
+		int returnVal;
 		
 		start = System.nanoTime();
-		Util.execute("./solr create_core -c " + coreName + " -p " + port + " -collection " + collectionName + " -force", nodeDirectory);
+		returnVal = Util.execute("./solr create_core -c " + coreName + " -p " + port + " -collection " + collectionName + " -force", nodeDirectory);
 		end = System.nanoTime();
 		
 		Util.postMessage("** Time for creating the core is: " + (end-start) + " nanosecond(s)", MessageType.RESULT_ERRROR, false);
 		
-         Date dNow = new Date( );
-		 SimpleDateFormat ft =  new SimpleDateFormat ("yyyy/MM/dd HH:mm:ss");
-		
-		BenchmarkAppConnector.writeToWebAppDataFile("create_collection_data_standalone_regular.csv", ft.format(dNow) + ", " + ((end-start)/1000000) + ", " + this.commitId + ", " + Util.getCommitInformation(), false, FileType.STANDALONE_CREATE_COLLECTION_MAIN);	
+        Date dNow = new Date( );
+	    SimpleDateFormat ft =  new SimpleDateFormat ("yyyy/MM/dd HH:mm:ss");
 		
 		thread.stop();
+		
+		Map<String, String> returnMap = new HashMap<String, String>();
+		
+		returnMap.put("ProcessExitValue", "" + returnVal);
+		returnMap.put("TimeStamp", "" + ft.format(dNow));
+		returnMap.put("CreateCollectionTime", "" + (double)((double)(end-start)/(double)1000000));
+		returnMap.put("CommitID", this.commitId);
+
+		return returnMap;
 	}
 	
 	@SuppressWarnings("deprecation")
-	public int createCollection(String collectionName, String configName, String shards, String replicationFactor)
+	public Map<String, String> createCollection(String collectionName, String configName, String shards, String replicationFactor)
 			throws IOException, InterruptedException {
 
         Thread thread =new Thread(new MetricEstimation(this.commitId, TestType.CLOUD_CREATE_COLLECTION, this.port));  
@@ -258,10 +267,17 @@ public class SolrNode {
         Date dNow = new Date( );
 		SimpleDateFormat ft =  new SimpleDateFormat ("yyyy/MM/dd HH:mm:ss");
 		
-		BenchmarkAppConnector.writeToWebAppDataFile("create_collection_data_cloud_regular.csv", ft.format(dNow) + ", " + ((end-start)/1000000) + ", " + this.commitId + ", " + Util.getCommitInformation(), false, FileType.CLOUD_CREATE_COLLECTION_MAIN);	
 		
-		thread.stop();		
-		return returnVal;
+		thread.stop();
+		
+		Map<String, String> returnMap = new HashMap<String, String>();
+		
+		returnMap.put("ProcessExitValue", "" + returnVal);
+		returnMap.put("TimeStamp", "" + ft.format(dNow));
+		returnMap.put("CreateCollectionTime", "" + (double)((double)(end-start)/(double)1000000));
+		returnMap.put("CommitID", this.commitId);
+		
+		return returnMap;
 	}
 
 

@@ -289,6 +289,7 @@ public class Util {
 	}
 
 	public static String getCommitInformation() {
+		// This method is failing need to check !
 		Util.postMessage("** Getting the latest commit Information from local repository", MessageType.GENERAL, false);
 		File directory = new File(Util.gitRepositoryPath);
 		directory.setExecutable(true);
@@ -297,18 +298,19 @@ public class Util {
 			reader = new BufferedReader(new InputStreamReader(Runtime.getRuntime()
 					.exec("git show --no-patch " + Util.commitId, new String[] {}, directory).getInputStream()));
 
-			reader.readLine();
-			String returnString;
-			returnString = reader.readLine().replaceAll("<", " ").replaceAll(">", " ").trim() + ", "
-					+ reader.readLine().trim();
-			reader.readLine();
-			returnString += ", " + reader.readLine().trim();
+			String line = "";
+			String returnString = "";
+			while ((line = reader.readLine()) != null) {
+				returnString += line.replaceAll("<", " ").replaceAll(">", " ").replaceAll(",", "").trim() + ",";
+			}
+			
 			return returnString;
 
 		} catch (IOException e) {
 			e.printStackTrace();
 			return "";
 		}
+
 	}
 
 	public static void getSystemEnvironmentInformation() {
@@ -393,11 +395,11 @@ public class Util {
 			Util.postMessage(
 					"Getting Property Value for benchmarkAppDirectory: " + BenchmarkAppConnector.benchmarkAppDirectory,
 					MessageType.PROCESS, false);
-			SolrClient.solrCommitHistoryData = prop.getProperty("SolrNightlyBenchmarks.solrCommitHistoryData");
-			Util.postMessage("Getting Property Value for solrCommitHistoryData: " + SolrClient.solrCommitHistoryData,
+			SolrIndexingClient.solrCommitHistoryData = prop.getProperty("SolrNightlyBenchmarks.solrCommitHistoryData");
+			Util.postMessage("Getting Property Value for solrCommitHistoryData: " + SolrIndexingClient.solrCommitHistoryData,
 					MessageType.PROCESS, false);
-			SolrClient.amazonFoodDataLocation = prop.getProperty("SolrNightlyBenchmarks.amazonFoodDataLocation");
-			Util.postMessage("Getting Property Value for amazonFoodDataLocation: " + SolrClient.amazonFoodDataLocation,
+			SolrIndexingClient.amazonFoodDataLocation = prop.getProperty("SolrNightlyBenchmarks.amazonFoodDataLocation");
+			Util.postMessage("Getting Property Value for amazonFoodDataLocation: " + SolrIndexingClient.amazonFoodDataLocation,
 					MessageType.PROCESS, false);		
 			MetricEstimation.metricsURL = prop.getProperty("SolrNightlyBenchmarks.metricsURL");
 			Util.postMessage("Getting Property Value for metricsURL: " + MetricEstimation.metricsURL,
@@ -415,6 +417,10 @@ public class Util {
 			Util.postMessage("Getting Property Value for zookeeperHostPort: " + Util.ZOOKEEPER_PORT,
 					MessageType.PROCESS, false);
 			
+			if (BenchmarkAppConnector.benchmarkAppDirectory.charAt(BenchmarkAppConnector.benchmarkAppDirectory.length()-1) != File.separator.charAt(0)) {
+				Util.postMessage("Corrupt URL for BenchmarkAppConnector.benchmarkAppDirectory Property, correcting ...", MessageType.RESULT_ERRROR, false);
+				BenchmarkAppConnector.benchmarkAppDirectory += File.separator;
+			}			
 
 		} catch (IOException ex) {
 			ex.printStackTrace();
@@ -586,5 +592,34 @@ public class Util {
 	            }
 	        }
 	    }
-	}	
+	}
+	
+	public static void setAliveFlag() throws IOException {
+		
+		File statusFile = new File(BenchmarkAppConnector.benchmarkAppDirectory + "iamalive.txt");
+		if (!statusFile.exists()) {
+			statusFile.createNewFile();			
+		}
+		
+	}
+	
+	public static void setDeadFlag() {
+		
+		File statusFile = new File(BenchmarkAppConnector.benchmarkAppDirectory + "iamalive.txt");
+		if (statusFile.exists()) {
+			statusFile.delete();			
+		}
+		
+	}
+	
+	public static Map<String, String> getArgs(String[] args) {
+
+		Map<String, String> argM = new HashMap<String, String>();
+		for (int i = 0; i < args.length; i += 2) {
+			argM.put(args[i], args[i + 1]);
+		}
+		
+		return argM;
+	}
+	
 }

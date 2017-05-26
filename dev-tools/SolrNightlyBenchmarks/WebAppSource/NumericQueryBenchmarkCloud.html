@@ -124,7 +124,7 @@
                             <div class="col-xs-9 cols-md-9 col-lg-9">
 
                                 <div class="panel panel-info" style="height:87%">
-                                    <div class="panel-heading">Indexing Throughput (doc/sec)</div>
+                                    <div class="panel-heading">Numeric Query - QPS</div>
                                     <div class="panel-body" id="graphdiv2" style="width:95%; height:85%;">                                                              
                                     </div>
                                 </div>
@@ -133,16 +133,16 @@
 
                             <div class="col-xs-3 cols-md-3 col-lg-3">
 
-                                <div class="panel panel-warning" style="height:60%">
+                                <div class="panel panel-warning" style="height:50%">
                                     <div class="panel-heading">Test Runtime Information</div>
                                     <div class="panel-body" id="testRuntime">                                        
                                     </div>
                                 </div>
 
-                                <div class="panel panel-danger" style="height:24%">
+                                <div class="panel panel-danger" style="height:34%">
                                     <div class="panel-heading">Graph Information</div>
                                     <div class="panel-body">
-                                        <span class="text-muted">X-Axis: Date/Time | Y-Axis: Documents/Sec</span><br/>
+                                        <span class="text-muted">X-Axis: Day/Time | Y-Axis: Seconds</span><br/>
                                         <div id="status"></div><br/>
                                         <div id="pointData">Please hover on the graph to get more information!</div>                                       
                                     </div>
@@ -168,7 +168,7 @@
                             $.ajax({
 
                                     type: "GET",
-                                    url: "data/indexing_throughput_data_standalone_regular.csv",
+                                    url: "data/numeric_query_benchmark_cloud.csv",
                                     dataType: "text",
                                     success: function(data) {
 	                                    fileData = data.split("\n");
@@ -189,12 +189,12 @@
                             });
 
 
-                            g2 = new Dygraph(document.getElementById("graphdiv2"), "data/indexing_throughput_data_standalone_regular.csv", {
-                                 labelsDiv: document.getElementById('status'), visibility: [true, false, true],
+                            g2 = new Dygraph(document.getElementById("graphdiv2"), "data/numeric_query_benchmark_cloud.csv", {
+                                labelsDiv: document.getElementById('status'), visibility: [false, true, false, false, true, false, false, true, false, false, true, false, false],
 
                                  highlightCallback: function (e, x, pts, row) {
-                                                    commitID = fileData[(row + 1)].split(",")[2].trim();
-                                                    document.getElementById("pointData").innerHTML = "Commit ID: <font color='red'>" + fileData[(row + 1)].split(",")[2] + "</font>";
+                                                    commitID = fileData[(row + 1)].split(",")[1].trim();
+                                                    document.getElementById("pointData").innerHTML = "Commit ID: <font color='red'>" + fileData[(row + 1)].split(",")[1] + "</font>";
                                                 },
                                      clickCallback: function (e, x, pts) {
 
@@ -202,8 +202,8 @@
                                                      document.getElementById('memProfileFileChangeListLink').setAttribute('href', "https://git-wip-us.apache.org/repos/asf?p=lucene-solr.git;h=" + commitID);
 
                                                      setTimeout(function () {
-                                                         g3 = new Dygraph(document.getElementById("memProfileGraph"), "data/" + commitID + "_MEM_ESTIMATION_STANDALONE_INDEXING_dump.csv", { labelsDiv: document.getElementById('memProfileStats') });
-                                                         g4 = new Dygraph(document.getElementById("cpuProfileGraph"), "data/" + commitID + "_CPU_ESTIMATION_STANDALONE_INDEXING_dump.csv", { labelsDiv: document.getElementById('cpuProfileStats') });
+                                                         g3 = new Dygraph(document.getElementById("memProfileGraph"), "data/" + commitID + "_MEM_ESTIMATION_CLOUD_INDEXING_CONCURRENT_dump.csv", { labelsDiv: document.getElementById('memProfileStats') });
+                                                         g4 = new Dygraph(document.getElementById("cpuProfileGraph"), "data/" + commitID + "_CPU_ESTIMATION_CLOUD_INDEXING_CONCURRENT_dump.csv", { labelsDiv: document.getElementById('cpuProfileStats') });
                                                      }, 250);
 
                                                 }
@@ -224,7 +224,7 @@
 
                                     $("#HeapMemoryUsageTab").addClass("active");
 
-                                    g3 = new Dygraph(document.getElementById("memProfileGraph"), "data/" + commitID + "_MEM_ESTIMATION_STANDALONE_INDEXING_dump.csv", { labelsDiv: document.getElementById('memProfileStats') });
+                                    g3 = new Dygraph(document.getElementById("memProfileGraph"), "data/" + commitID + "_MEM_ESTIMATION_CLOUD_INDEXING_CONCURRENT_dump.csv", { labelsDiv: document.getElementById('memProfileStats') });
 
                                 }
 
@@ -249,7 +249,7 @@
 
                                     $("#ProcessCPULoadTab").addClass("active");
 
-                                    g4 = new Dygraph(document.getElementById("cpuProfileGraph"), "data/" + commitID + "_CPU_ESTIMATION_STANDALONE_INDEXING_dump.csv", { labelsDiv: document.getElementById('cpuProfileStats') });
+                                    g4 = new Dygraph(document.getElementById("cpuProfileGraph"), "data/" + commitID + "_CPU_ESTIMATION_CLOUD_INDEXING_CONCURRENT_dump.csv", { labelsDiv: document.getElementById('cpuProfileStats') });
 
                                 }
 
