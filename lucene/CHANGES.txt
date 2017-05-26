@@ -88,6 +88,10 @@ Optimizations
   values using different numbers of bits per value if this proves to save
   storage. (Adrien Grand)
 
+* LUCENE-7845: Enhance spatial-extras RecursivePrefixTreeStrategy queries when the
+  query is a point (for 2D) or a is a simple date interval (e.g. 1 month).  When
+  the strategy is marked as pointsOnly, the results is a TermQuery. (David Smiley)
+
 Other
 
 * LUCENE-7328: Remove LegacyNumericEncoding from GeoPointField. (Nick Knize)

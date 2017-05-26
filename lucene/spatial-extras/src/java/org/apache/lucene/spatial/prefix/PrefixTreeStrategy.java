@@ -21,8 +21,6 @@ import java.util.Iterator;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
-import org.locationtech.spatial4j.shape.Point;
-import org.locationtech.spatial4j.shape.Shape;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.FieldType;
 import org.apache.lucene.index.IndexOptions;
@@ -34,6 +32,10 @@ import org.apache.lucene.spatial.prefix.tree.SpatialPrefixTree;
 import org.apache.lucene.spatial.query.SpatialArgs;
 import org.apache.lucene.spatial.util.ShapeFieldCacheDistanceValueSource;
 import org.apache.lucene.util.Bits;
+import org.locationtech.spatial4j.shape.Circle;
+import org.locationtech.spatial4j.shape.Point;
+import org.locationtech.spatial4j.shape.Rectangle;
+import org.locationtech.spatial4j.shape.Shape;
 
 /**
  * An abstract SpatialStrategy based on {@link SpatialPrefixTree}. The two
@@ -163,7 +165,7 @@ public abstract class PrefixTreeStrategy extends SpatialStrategy {
   }
 
   protected Iterator<Cell> createCellIteratorToIndex(Shape shape, int detailLevel, Iterator<Cell> reuse) {
-    if (pointsOnly && !(shape instanceof Point)) {
+    if (pointsOnly && !isPointShape(shape)) {
       throw new IllegalArgumentException("pointsOnly is true yet a " + shape.getClass() + " is given for indexing");
     }
     return grid.getTreeCellIterator(shape, detailLevel);//TODO should take a re-use iterator
@@ -204,5 +206,17 @@ public abstract class PrefixTreeStrategy extends SpatialStrategy {
   public HeatmapFacetCounter.Heatmap calcFacets(IndexReaderContext context, Bits topAcceptDocs,
                                    Shape inputShape, final int facetLevel, int maxCells) throws IOException {
     return HeatmapFacetCounter.calcFacets(this, context, topAcceptDocs, inputShape, facetLevel, maxCells);
+  }
+
+  protected boolean isPointShape(Shape shape) {
+    if (shape instanceof Point) {
+      return true;
+    } else if (shape instanceof Circle) {
+      return ((Circle) shape).getRadius() == 0.0;
+    } else if (shape instanceof Rectangle) {
+      Rectangle rect = (Rectangle) shape;
+      return rect.getWidth() == 0.0 && rect.getHeight() == 0.0;
+    }
+    return false;
   }
 }
