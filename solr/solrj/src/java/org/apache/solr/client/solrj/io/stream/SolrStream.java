@@ -41,7 +41,6 @@ import org.apache.solr.client.solrj.io.stream.expr.StreamExplanation;
 import org.apache.solr.client.solrj.io.stream.expr.StreamFactory;
 import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.common.params.CommonParams;
-import org.apache.solr.common.params.MapSolrParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;
@@ -70,19 +69,6 @@ public class SolrStream extends TupleStream {
   private String slice;
   private long checkpoint = -1;
   private CloseableHttpResponse closeableHttpResponse;
-
-  /**
-   * @param baseUrl Base URL of the stream.
-   * @param params  Map&lt;String, String&gt; of parameters
-   * @deprecated, use the form that thakes SolrParams. Existing code can use
-   * new ModifiableSolrParams(SolrParams.toMultiMap(new NamedList(params)))
-   * for existing calls that use Map&lt;String, String&gt;
-   */
-  @Deprecated
-  public SolrStream(String baseUrl, Map params) {
-    this.baseUrl = baseUrl;
-    this.params = new ModifiableSolrParams(new MapSolrParams(params));
-  }
 
   /**
    * @param baseUrl Base URL of the stream.

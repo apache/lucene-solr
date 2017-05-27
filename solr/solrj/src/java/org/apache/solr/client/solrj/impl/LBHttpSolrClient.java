@@ -237,28 +237,9 @@ public class LBHttpSolrClient extends SolrClient {
   }
 
   /**
-   * @deprecated use {@link Builder} instead.
-   */
-  @Deprecated
-  public LBHttpSolrClient(String... solrServerUrls) throws MalformedURLException {
-    this(null, solrServerUrls);
-  }
-  
-  /**
    * The provided httpClient should use a multi-threaded connection manager
-   * @deprecated use {@link Builder} instead.
-   */ 
-  @Deprecated
-  public LBHttpSolrClient(HttpClient httpClient, String... solrServerUrl) {
-    this(httpClient, new BinaryResponseParser(), solrServerUrl);
-  }
-
-  /**
-   * The provided httpClient should use a multi-threaded connection manager
-   * @deprecated use {@link Builder} instead.  This will soon be a protected
-   * method and will only be available for use in implementing subclasses.
    */
-  public LBHttpSolrClient(HttpSolrClient.Builder httpSolrClientBuilder,
+  protected LBHttpSolrClient(HttpSolrClient.Builder httpSolrClientBuilder,
                           HttpClient httpClient, String... solrServerUrl) {
     clientIsInternal = httpClient == null;
     this.httpSolrClientBuilder = httpSolrClientBuilder;
@@ -275,11 +256,8 @@ public class LBHttpSolrClient extends SolrClient {
 
   /**
    * The provided httpClient should use a multi-threaded connection manager
-   * @deprecated use {@link Builder} instead.  This will soon be a protected
-   * method and will only be available for use in implementing subclasses.
    */
-  @Deprecated
-  public LBHttpSolrClient(HttpClient httpClient, ResponseParser parser, String... solrServerUrl) {
+  protected LBHttpSolrClient(HttpClient httpClient, ResponseParser parser, String... solrServerUrl) {
     clientIsInternal = (httpClient == null);
     this.httpClient = httpClient == null ? constructClient(solrServerUrl) : httpClient;
     this.parser = parser;

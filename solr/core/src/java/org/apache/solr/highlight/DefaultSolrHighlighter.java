@@ -84,6 +84,12 @@ import org.slf4j.LoggerFactory;
 public class DefaultSolrHighlighter extends SolrHighlighter implements PluginInfoInitialized
 {
 
+  /** 
+   * This constant was formerly part of HighlightParams.  After deprecation it was removed so clients 
+   * would no longer use it, but we still support it server side.
+   */
+  private static final String USE_FVH = HighlightParams.HIGHLIGHT + ".useFastVectorHighlighter";
+  
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   protected final SolrCore solrCore;
@@ -492,7 +498,7 @@ public class DefaultSolrHighlighter extends SolrHighlighter implements PluginInf
     boolean methodFvh =
         HighlightComponent.HighlightMethod.FAST_VECTOR.getMethodName().equals(
             params.getFieldParam(schemaField.getName(), HighlightParams.METHOD))
-        || params.getFieldBool(schemaField.getName(), HighlightParams.USE_FVH, false);
+        || params.getFieldBool(schemaField.getName(), USE_FVH, false);
     if (!methodFvh) return false;
     boolean termPosOff = schemaField.storeTermPositions() && schemaField.storeTermOffsets();
     if (!termPosOff) {

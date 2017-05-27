@@ -35,21 +35,15 @@ public class DelegationTokenHttpSolrClient extends HttpSolrClient {
   public final static String DELEGATION_TOKEN_PARAM = "delegation";
 
   /**
-   * This constructor is deprecated in favor of passing delegation token via
-   * {@linkplain org.apache.solr.client.solrj.impl.HttpSolrClient.Builder#withInvariantParams(ModifiableSolrParams)}.
-   *
-   * @param baseURL The base url to communicate with the Solr server
-   * @param client Http client instance to use for communication
-   * @param parser Response parser instance to use to decode response from Solr server
-   * @param allowCompression Should compression be allowed ?
-   * @param delegationToken The delegation token string.
+   * Package protected constructor for use by 
+   * {@linkplain org.apache.solr.client.solrj.impl.HttpSolrClient.Builder}.
+   * @lucene.internal
    */
-  @Deprecated
-  public DelegationTokenHttpSolrClient(String baseURL,
-                                       HttpClient client,
-                                       ResponseParser parser,
-                                       boolean allowCompression,
-                                       String delegationToken) {
+  DelegationTokenHttpSolrClient(String baseURL,
+                                HttpClient client,
+                                ResponseParser parser,
+                                boolean allowCompression,
+                                String delegationToken) {
     super(baseURL, client, parser, allowCompression);
     if (delegationToken == null) {
       throw new IllegalArgumentException("Delegation token cannot be null");

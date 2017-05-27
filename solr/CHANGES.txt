@@ -196,6 +196,8 @@ Other Changes
 
 * SOLR-10710: Fix LTR failing tests. (Diego Ceccarelli via Tomás Fernández Löbbe)
 
+* SOLR-10755: delete/refactor many solrj deprecations (hossman)
+
 ==================  6.7.0 ==================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release.

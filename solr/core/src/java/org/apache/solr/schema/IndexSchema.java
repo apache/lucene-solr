@@ -373,7 +373,7 @@ public class IndexSchema {
   void persist(Writer writer) throws IOException {
     final SolrQueryResponse response = new SolrQueryResponse();
     response.add(IndexSchema.SCHEMA, getNamedPropertyValues());
-    final NamedList args = new NamedList(Arrays.<Object>asList("indent", "on"));
+    final SolrParams args = (new ModifiableSolrParams()).set("indent", "on");
     final LocalSolrQueryRequest req = new LocalSolrQueryRequest(null, args);
     final SchemaXmlWriter schemaXmlWriter = new SchemaXmlWriter(writer, req, response);
     schemaXmlWriter.setEmitManagedSchemaDoNotEditWarning(true);
