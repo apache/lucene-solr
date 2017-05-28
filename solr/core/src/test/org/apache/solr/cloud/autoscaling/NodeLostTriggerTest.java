@@ -50,6 +50,8 @@ public class NodeLostTriggerTest extends SolrCloudTestCase {
 
   // use the same time source as the trigger
   private final TimeSource timeSource = TimeSource.CURRENT_TIME;
+  // currentTimeMillis is not as precise so to avoid false positives while comparing time of fire, we add some delta
+  private static final long WAIT_FOR_DELTA_NANOS = TimeUnit.MILLISECONDS.toNanos(5);
 
   @BeforeClass
   public static void setupCluster() throws Exception {
@@ -84,7 +86,7 @@ public class NodeLostTriggerTest extends SolrCloudTestCase {
           eventRef.set(event);
           long currentTimeNanos = timeSource.getTime();
           long eventTimeNanos = event.getEventTime();
-          long waitForNanos = TimeUnit.NANOSECONDS.convert(waitForSeconds, TimeUnit.SECONDS);
+          long waitForNanos = TimeUnit.NANOSECONDS.convert(waitForSeconds, TimeUnit.SECONDS) - WAIT_FOR_DELTA_NANOS;
           if (currentTimeNanos - eventTimeNanos <= waitForNanos) {
             fail("NodeLostListener was fired before the configured waitFor period: currentTimeNanos=" + currentTimeNanos + ", eventTimeNanos=" +  eventTimeNanos + ",waitForNanos=" + waitForNanos);
           }
@@ -123,7 +125,7 @@ public class NodeLostTriggerTest extends SolrCloudTestCase {
         if (fired.compareAndSet(false, true)) {
           long currentTimeNanos = timeSource.getTime();
           long eventTimeNanos = event.getEventTime();
-          long waitForNanos = TimeUnit.NANOSECONDS.convert(waitForSeconds, TimeUnit.SECONDS);
+          long waitForNanos = TimeUnit.NANOSECONDS.convert(waitTime, TimeUnit.SECONDS) - WAIT_FOR_DELTA_NANOS;
           if (currentTimeNanos - eventTimeNanos <= waitForNanos) {
             fail("NodeLostListener was fired before the configured waitFor period: currentTimeNanos=" + currentTimeNanos + ", eventTimeNanos=" +  eventTimeNanos + ",waitForNanos=" + waitForNanos);
           }
@@ -297,8 +299,11 @@ public class NodeLostTriggerTest extends SolrCloudTestCase {
       newTrigger.setListener(event -> {
         if (fired.compareAndSet(false, true)) {
           eventRef.set(event);
-          if (timeSource.getTime() - event.getEventTime() <= TimeUnit.NANOSECONDS.convert(waitForSeconds, TimeUnit.SECONDS)) {
-            fail("NodeLostListener was fired before the configured waitFor period");
+          long currentTimeNanos = timeSource.getTime();
+          long eventTimeNanos = event.getEventTime();
+          long waitForNanos = TimeUnit.NANOSECONDS.convert(waitForSeconds, TimeUnit.SECONDS) - WAIT_FOR_DELTA_NANOS;
+          if (currentTimeNanos - eventTimeNanos <= waitForNanos) {
+            fail("NodeLostListener was fired before the configured waitFor period: currentTimeNanos=" + currentTimeNanos + ", eventTimeNanos=" + eventTimeNanos + ",waitForNanos=" + waitForNanos);
           }
         } else {
           fail("NodeLostListener was fired more than once!");
