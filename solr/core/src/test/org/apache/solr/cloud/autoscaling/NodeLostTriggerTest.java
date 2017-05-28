@@ -82,8 +82,11 @@ public class NodeLostTriggerTest extends SolrCloudTestCase {
       trigger.setListener(event -> {
         if (fired.compareAndSet(false, true)) {
           eventRef.set(event);
-          if (timeSource.getTime() - event.getEventTime() <= TimeUnit.NANOSECONDS.convert(waitForSeconds, TimeUnit.SECONDS)) {
-            fail("NodeLostListener was fired before the configured waitFor period");
+          long currentTimeNanos = timeSource.getTime();
+          long eventTimeNanos = event.getEventTime();
+          long waitForNanos = TimeUnit.NANOSECONDS.convert(waitForSeconds, TimeUnit.SECONDS);
+          if (currentTimeNanos - eventTimeNanos <= waitForNanos) {
+            fail("NodeLostListener was fired before the configured waitFor period: currentTimeNanos=" + currentTimeNanos + ", eventTimeNanos=" +  eventTimeNanos + ",waitForNanos=" + waitForNanos);
           }
         } else {
           fail("NodeLostListener was fired more than once!");
@@ -118,8 +121,11 @@ public class NodeLostTriggerTest extends SolrCloudTestCase {
       AtomicBoolean fired = new AtomicBoolean(false);
       trigger.setListener(event -> {
         if (fired.compareAndSet(false, true)) {
-          if (timeSource.getTime() - event.getEventTime() <= TimeUnit.NANOSECONDS.convert(waitTime, TimeUnit.SECONDS)) {
-            fail("NodeLostListener was fired before the configured waitFor period");
+          long currentTimeNanos = timeSource.getTime();
+          long eventTimeNanos = event.getEventTime();
+          long waitForNanos = TimeUnit.NANOSECONDS.convert(waitForSeconds, TimeUnit.SECONDS);
+          if (currentTimeNanos - eventTimeNanos <= waitForNanos) {
+            fail("NodeLostListener was fired before the configured waitFor period: currentTimeNanos=" + currentTimeNanos + ", eventTimeNanos=" +  eventTimeNanos + ",waitForNanos=" + waitForNanos);
           }
         } else {
           fail("NodeLostListener was fired more than once!");
