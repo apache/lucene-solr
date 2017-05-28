@@ -260,6 +260,9 @@ Other Changes
   
 * SOLR-10438: Assign explicit useDocValuesAsStored values to all points field types in 
   schema-point.xml/TestPointFields. (hossman, Steve Rowe)
+  
+* LUCENE-7705: Allow CharTokenizer-derived tokenizers and KeywordTokenizer to configure the max token length.
+  (Amrit Sarkar via Erick Erickson)
 
 * SOLR-10659: Remove ResponseBuilder.getSortSpec use in SearchGroupShardResponseProcessor.
   (Judith Silverman via Christine Poerschke)

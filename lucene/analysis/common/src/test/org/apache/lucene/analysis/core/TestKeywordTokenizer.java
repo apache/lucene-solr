@@ -16,7 +16,6 @@
  */
 package org.apache.lucene.analysis.core;
 
-
 import java.io.IOException;
 import java.io.StringReader;
 import java.util.HashMap;
@@ -26,32 +25,21 @@ import org.apache.lucene.analysis.BaseTokenStreamTestCase;
 import org.apache.lucene.analysis.Tokenizer;
 import org.apache.lucene.util.AttributeFactory;
 
-public class TestUnicodeWhitespaceTokenizer extends BaseTokenStreamTestCase {
-  
-  // clone of test from WhitespaceTokenizer
+public class TestKeywordTokenizer extends BaseTokenStreamTestCase {
+
   public void testSimple() throws IOException {
     StringReader reader = new StringReader("Tokenizer \ud801\udc1ctest");
-    UnicodeWhitespaceTokenizer tokenizer = new UnicodeWhitespaceTokenizer();
+    KeywordTokenizer tokenizer = new KeywordTokenizer();
     tokenizer.setReader(reader);
-    assertTokenStreamContents(tokenizer, new String[] { "Tokenizer",
-        "\ud801\udc1ctest" });
-  }
-  
-  public void testNBSP() throws IOException {
-    StringReader reader = new StringReader("Tokenizer\u00A0test");
-    UnicodeWhitespaceTokenizer tokenizer = new UnicodeWhitespaceTokenizer();
-    tokenizer.setReader(reader);
-    assertTokenStreamContents(tokenizer, new String[] { "Tokenizer",
-        "test" });
+    assertTokenStreamContents(tokenizer, new String[]{"Tokenizer \ud801\udc1ctest"});
   }
 
   public void testFactory() {
     Map<String, String> args = new HashMap<>();
-    args.put("rule", "unicode");
-    WhitespaceTokenizerFactory factory = new WhitespaceTokenizerFactory(args);
+    KeywordTokenizerFactory factory = new KeywordTokenizerFactory(args);
     AttributeFactory attributeFactory = newAttributeFactory();
     Tokenizer tokenizer = factory.create(attributeFactory);
-    assertEquals(UnicodeWhitespaceTokenizer.class, tokenizer.getClass());
+    assertEquals(KeywordTokenizer.class, tokenizer.getClass());
   }
 
   private Map<String, String> makeArgs(String... args) {
@@ -63,46 +51,38 @@ public class TestUnicodeWhitespaceTokenizer extends BaseTokenStreamTestCase {
   }
 
   public void testParamsFactory() throws IOException {
-    
-
     // negative maxTokenLen
     IllegalArgumentException iae = expectThrows(IllegalArgumentException.class, () ->
-        new WhitespaceTokenizerFactory(makeArgs("rule", "unicode", "maxTokenLen", "-1")));
+        new KeywordTokenizerFactory(makeArgs("maxTokenLen", "-1")));
     assertEquals("maxTokenLen must be greater than 0 and less than 1048576 passed: -1", iae.getMessage());
 
     // zero maxTokenLen
     iae = expectThrows(IllegalArgumentException.class, () ->
-        new WhitespaceTokenizerFactory(makeArgs("rule", "unicode", "maxTokenLen", "0")));
+        new KeywordTokenizerFactory(makeArgs("maxTokenLen", "0")));
     assertEquals("maxTokenLen must be greater than 0 and less than 1048576 passed: 0", iae.getMessage());
 
     // Added random param, should throw illegal error
     iae = expectThrows(IllegalArgumentException.class, () ->
-        new WhitespaceTokenizerFactory(makeArgs("rule", "unicode", "maxTokenLen", "255", "randomParam", "rValue")));
+        new KeywordTokenizerFactory(makeArgs("maxTokenLen", "255", "randomParam", "rValue")));
     assertEquals("Unknown parameters: {randomParam=rValue}", iae.getMessage());
 
-    // tokeniser will split at 5, Token | izer, no matter what happens 
-    WhitespaceTokenizerFactory factory = new WhitespaceTokenizerFactory(makeArgs("rule", "unicode", "maxTokenLen", "5"));
+    // tokeniser will never split, no matter what is passed, 
+    // but the buffer will not be more than length of the token
+
+    KeywordTokenizerFactory factory = new KeywordTokenizerFactory(makeArgs("maxTokenLen", "5"));
     AttributeFactory attributeFactory = newAttributeFactory();
     Tokenizer tokenizer = factory.create(attributeFactory);
-    StringReader reader = new StringReader("Tokenizer \ud801\udc1ctest");
+    StringReader reader = new StringReader("Tokenizertest");
     tokenizer.setReader(reader);
-    assertTokenStreamContents(tokenizer, new String[]{"Token", "izer", "\ud801\udc1ctes", "t"});
+    assertTokenStreamContents(tokenizer, new String[]{"Tokenizertest"});
 
-    // tokeniser will split at 2, To | ke | ni | ze | r, no matter what happens 
-    factory = new WhitespaceTokenizerFactory(makeArgs("rule", "unicode", "maxTokenLen", "2"));
+    // tokeniser will never split, no matter what is passed, 
+    // but the buffer will not be more than length of the token
+    factory = new KeywordTokenizerFactory(makeArgs("maxTokenLen", "2"));
     attributeFactory = newAttributeFactory();
     tokenizer = factory.create(attributeFactory);
     reader = new StringReader("Tokenizer\u00A0test");
     tokenizer.setReader(reader);
-    assertTokenStreamContents(tokenizer, new String[]{"To", "ke", "ni", "ze", "r", "te", "st"});
-
-    // tokeniser will split at 10, no matter what happens, 
-    // but tokens' length are less than that
-    factory = new WhitespaceTokenizerFactory(makeArgs("rule", "unicode", "maxTokenLen", "10"));
-    attributeFactory = newAttributeFactory();
-    tokenizer = factory.create(attributeFactory);
-    reader = new StringReader("Tokenizer\u00A0test");
-    tokenizer.setReader(reader);
-    assertTokenStreamContents(tokenizer, new String[]{"Tokenizer", "test"});
+    assertTokenStreamContents(tokenizer, new String[]{"Tokenizer\u00A0test"});
   }
 }
