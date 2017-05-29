@@ -511,7 +511,7 @@ public class AutoScalingHandlerTest extends SolrCloudTestCase {
     response = solrClient.request(req);
     assertEquals(response.get("result").toString(), "success");
 
-    SolrQuery query = new SolrQuery().setParam(CommonParams.QT, path).setParam("diagnostics", true);
+    SolrQuery query = new SolrQuery().setParam(CommonParams.QT, path);
     QueryResponse queryResponse = solrClient.query(query);
     response = queryResponse.getResponse();
 
@@ -538,6 +538,10 @@ public class AutoScalingHandlerTest extends SolrCloudTestCase {
     assertEquals(2, policies.size());
     assertNotNull(policies.get("xyz"));
     assertNotNull(policies.get("policy1"));
+
+    query = new SolrQuery().setParam(CommonParams.QT, path + "/diagnostics");
+    queryResponse = solrClient.query(query);
+    response = queryResponse.getResponse();
 
     Map<String, Object> diagnostics = (Map<String, Object>) response.get("diagnostics");
     List sortedNodes = (List) diagnostics.get("sortedNodes");

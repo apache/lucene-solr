@@ -182,6 +182,7 @@ public interface CommonParams {
   String ZK_PATH = "/admin/zookeeper";
   String METRICS_PATH = "/admin/metrics";
   String AUTOSCALING_PATH = "/admin/autoscaling";
+  String AUTOSCALING_DIAGNOSTICS_PATH = "/admin/autoscaling/diagnostics";
 
   Set<String> ADMIN_PATHS = new HashSet<>(Arrays.asList(
       CORES_HANDLER_PATH,
@@ -191,6 +192,7 @@ public interface CommonParams {
       AUTHZ_PATH,
       METRICS_PATH,
       AUTOSCALING_PATH,
+      AUTOSCALING_DIAGNOSTICS_PATH,
       "/____v2/cluster/security/authentication",
       "/____v2/cluster/security/authorization"));
 

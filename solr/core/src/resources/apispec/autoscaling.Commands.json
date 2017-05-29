@@ -7,7 +7,8 @@
   ],
   "url": {
     "paths": [
-      "/cluster/autoscaling"
+      "/cluster/autoscaling",
+      "/cluster/autoscaling/diagnostics"
     ]
   },
   "commands": {

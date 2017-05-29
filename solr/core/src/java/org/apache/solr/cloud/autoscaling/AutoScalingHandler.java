@@ -39,11 +39,13 @@ import org.apache.solr.client.solrj.impl.SolrClientDataProvider;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.cloud.ZkStateReader;
+import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.common.util.Utils;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.handler.RequestHandlerBase;
 import org.apache.solr.handler.RequestHandlerUtils;
 import org.apache.solr.request.SolrQueryRequest;
+import org.apache.solr.request.SolrRequestHandler;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.security.AuthorizationContext;
 import org.apache.solr.security.PermissionNameProvider;
@@ -92,9 +94,20 @@ public class AutoScalingHandler extends RequestHandlerBase implements Permission
       RequestHandlerUtils.setWt(req, JSON);
 
       if ("GET".equals(httpMethod)) {
+        String path = (String) req.getContext().get("path");
+        if (path == null) path = "/cluster/autoscaling";
+        List<String> parts = StrUtils.splitSmart(path, '/');
+        if (parts.get(0).isEmpty()) parts.remove(0);
+
+        if (parts.size() < 2 || parts.size() > 3) {
+          // invalid
+          throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Unknown path: " + path);
+        }
+
         Map<String, Object> map = zkReadAutoScalingConf(container.getZkController().getZkStateReader());
-        rsp.getValues().addAll(map);
-        if (req.getParams().getBool("diagnostics", false)) {
+        if (parts.size() == 2)  {
+          rsp.getValues().addAll(map);
+        } else if (parts.size() == 3 && "diagnostics".equals(parts.get(2))) {
           handleDiagnostics(rsp, map);
         }
       } else {
@@ -622,5 +635,11 @@ public class AutoScalingHandler extends RequestHandlerBase implements Permission
   @Override
   public Boolean registerV2() {
     return Boolean.TRUE;
+  }
+
+  @Override
+  public SolrRequestHandler getSubHandler(String path) {
+    if (path.equals("/diagnostics")) return this;
+    return null;
   }
 }
