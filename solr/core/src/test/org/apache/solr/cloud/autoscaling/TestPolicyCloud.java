@@ -61,8 +61,14 @@ public class TestPolicyCloud extends SolrCloudTestCase {
     DocCollection rulesCollection = getCollectionState("policiesTest");
     SolrClientDataProvider provider = new SolrClientDataProvider(cluster.getSolrClient());
 
-    Map<String, Object> val = provider.getNodeValues(rulesCollection.getReplicas().get(0).getNodeName(), Arrays.asList("freedisk", "cores"));
+    Map<String, Object> val = provider.getNodeValues(rulesCollection.getReplicas().get(0).getNodeName(), Arrays.asList(
+        "freedisk",
+        "cores",
+        "heapUsage",
+        "sysLoadAvg"));
     assertTrue(((Number) val.get("cores")).intValue() > 0);
     assertTrue("freedisk value is "+((Number) val.get("freedisk")).longValue() , ((Number) val.get("freedisk")).longValue() > 0);
+    assertTrue("heapUsage value is "+((Number) val.get("heapUsage")).longValue() , ((Number) val.get("heapUsage")).longValue() > 0);
+    assertTrue("sysLoadAvg value is "+((Number) val.get("sysLoadAvg")).longValue() , ((Number) val.get("sysLoadAvg")).longValue() > 0);
   }
 }
