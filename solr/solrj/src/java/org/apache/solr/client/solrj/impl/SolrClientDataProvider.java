@@ -21,6 +21,7 @@ package org.apache.solr.client.solrj.impl;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
@@ -53,16 +54,16 @@ import org.apache.zookeeper.data.Stat;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-/**Class that implements {@link ClusterStateProvider} accepting a SolrClient
- *
+/**
+ * Class that implements {@link ClusterStateProvider} accepting a SolrClient
  */
 public class SolrClientDataProvider implements ClusterDataProvider, MapWriter {
 
   private final CloudSolrClient solrClient;
   private Set<String> liveNodes;
-  private Map<String,Object> snitchSession = new HashMap<>();
+  private Map<String, Object> snitchSession = new HashMap<>();
   private final Map<String, Map<String, Map<String, List<ReplicaInfo>>>> data = new HashMap<>();
-  private Map<String,Map> nodeVsTags = new HashMap<>();
+  private Map<String, Map> nodeVsTags = new HashMap<>();
 
   public SolrClientDataProvider(CloudSolrClient solrClient) {
     this.solrClient = solrClient;
@@ -80,7 +81,7 @@ public class SolrClientDataProvider implements ClusterDataProvider, MapWriter {
         if (collData == null) nodeData.put(collName, collData = new HashMap<>());
         List<ReplicaInfo> replicas = collData.get(shard);
         if (replicas == null) collData.put(shard, replicas = new ArrayList<>());
-        replicas.add(new ReplicaInfo(replica.getName(), collName , shard, new HashMap<>()));
+        replicas.add(new ReplicaInfo(replica.getName(), collName, shard, new HashMap<>()));
       });
     });
   }
@@ -93,7 +94,7 @@ public class SolrClientDataProvider implements ClusterDataProvider, MapWriter {
 
   @Override
   public Map<String, Object> getNodeValues(String node, Collection<String> tags) {
-    AutoScalingSnitch  snitch = new AutoScalingSnitch();
+    AutoScalingSnitch snitch = new AutoScalingSnitch();
     ClientSnitchCtx ctx = new ClientSnitchCtx(null, node, snitchSession, solrClient);
     snitch.getTags(node, new HashSet<>(tags), ctx);
     nodeVsTags.put(node, ctx.getTags());
@@ -165,6 +166,7 @@ public class SolrClientDataProvider implements ClusterDataProvider, MapWriter {
     @Override
     protected void getRemoteInfo(String solrNode, Set<String> requestedTags, SnitchContext ctx) {
       ClientSnitchCtx snitchContext = (ClientSnitchCtx) ctx;
+      readSysProps(solrNode, requestedTags, snitchContext);
       Set<String> groups = new HashSet<>();
       List<String> prefixes = new ArrayList<>();
       if (requestedTags.contains(DISK)) {
@@ -179,43 +181,75 @@ public class SolrClientDataProvider implements ClusterDataProvider, MapWriter {
         groups.add("solr.jvm");
         prefixes.add("os.systemLoadAverage");
       }
-      if (requestedTags.contains(HEAPUSAGE))  {
+      if (requestedTags.contains(HEAPUSAGE)) {
         groups.add("solr.jvm");
         prefixes.add("memory.heap.usage");
       }
-      if(groups.isEmpty() || prefixes.isEmpty()) return;
+      if (groups.isEmpty() || prefixes.isEmpty()) return;
 
       ModifiableSolrParams params = new ModifiableSolrParams();
       params.add("group", StrUtils.join(groups, ','));
-      params.add("prefix", StrUtils.join(prefixes,','));
+      params.add("prefix", StrUtils.join(prefixes, ','));
 
       try {
         SimpleSolrResponse rsp = snitchContext.invoke(solrNode, CommonParams.METRICS_PATH, params);
         Map m = rsp.nl.asMap(4);
-        if(requestedTags.contains(DISK)){
-          Number n = (Number) Utils.getObjectByPath(m,true, "metrics/solr.node/CONTAINER.fs.usableSpace/value");
-          if(n != null) ctx.getTags().put(DISK, n.doubleValue() / 1024.0d / 1024.0d / 1024.0d);
+        if (requestedTags.contains(DISK)) {
+          Number n = (Number) Utils.getObjectByPath(m, true, "metrics/solr.node/CONTAINER.fs.usableSpace/value");
+          if (n != null) ctx.getTags().put(DISK, n.doubleValue() / 1024.0d / 1024.0d / 1024.0d);
         }
-        if(requestedTags.contains(CORES)){
+        if (requestedTags.contains(CORES)) {
           int count = 0;
-          Map cores  = (Map) m.get("metrics");
+          Map cores = (Map) m.get("metrics");
           for (Object o : cores.keySet()) {
-            if(o.toString().startsWith("solr.core.")) count++;
+            if (o.toString().startsWith("solr.core.")) count++;
           }
           ctx.getTags().put(CORES, count);
         }
         if (requestedTags.contains(SYSLOADAVG)) {
           Number n = (Number) Utils.getObjectByPath(m, true, "metrics/solr.jvm/os.systemLoadAverage/value");
-          if (n != null)  ctx.getTags().put(SYSLOADAVG, n.doubleValue() * 100.0d);
+          if (n != null) ctx.getTags().put(SYSLOADAVG, n.doubleValue() * 100.0d);
         }
-        if (requestedTags.contains(HEAPUSAGE))  {
+        if (requestedTags.contains(HEAPUSAGE)) {
           Number n = (Number) Utils.getObjectByPath(m, true, "metrics/solr.jvm/memory.heap.usage/value");
-          if (n != null)  ctx.getTags().put(HEAPUSAGE, n.doubleValue() * 100.0d);
+          if (n != null) ctx.getTags().put(HEAPUSAGE, n.doubleValue() * 100.0d);
         }
       } catch (Exception e) {
         throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "", e);
       }
+    }
 
+    private void readSysProps(String solrNode, Set<String> requestedTags, ClientSnitchCtx snitchContext) {
+      List<String> prefixes = null;
+      ModifiableSolrParams params;
+      List<String> sysProp = null;
+      for (String tag : requestedTags) {
+        if (!tag.startsWith(SYSPROP)) continue;
+        if (sysProp == null) {
+          prefixes = new ArrayList<>();
+          sysProp = new ArrayList<>();
+          prefixes.add("system.properties");
+        }
+        sysProp.add(tag.substring(SYSPROP.length()));
+      }
+
+      if (sysProp == null) return;
+      params = new ModifiableSolrParams();
+      params.add("prefix", StrUtils.join(prefixes, ','));
+      for (String s : sysProp) params.add("property", s);
+      try {
+        SimpleSolrResponse rsp = snitchContext.invoke(solrNode, CommonParams.METRICS_PATH, params);
+        Map m = rsp.nl.asMap(6);
+        for (String s : sysProp) {
+          Object v = Utils.getObjectByPath(m, true,
+              Arrays.asList("metrics", "solr.jvm", "system.properties", "value", s));
+          if (v != null) snitchContext.getTags().put("sysprop." + s, v);
+        }
+
+      } catch (Exception e) {
+        throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "", e);
+
+      }
     }
   }
 

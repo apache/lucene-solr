@@ -82,12 +82,17 @@ public class TestPolicyCloud extends SolrCloudTestCase {
       }
       Thread.sleep(100);
     }
-    val = provider.getNodeValues(overseerNode, Arrays.asList("nodeRole", "ip_1","ip_2","ip_3", "ip_4", "sysprop.java.version"));
+    val = provider.getNodeValues(overseerNode, Arrays.asList(
+        "nodeRole",
+        "ip_1","ip_2","ip_3", "ip_4",
+        "sysprop.java.version",
+        "sysprop.java.vendor"));
     assertEquals("overseer", val.get("nodeRole"));
     assertNotNull( val.get("ip_1"));
     assertNotNull( val.get("ip_2"));
     assertNotNull( val.get("ip_3"));
     assertNotNull( val.get("ip_4"));
-//    assertNotNull( val.get("sysprop.java.version"));
+    assertNotNull( val.get("sysprop.java.version"));
+    assertNotNull( val.get("sysprop.java.vendor"));
   }
 }
