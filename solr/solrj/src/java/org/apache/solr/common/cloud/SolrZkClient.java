@@ -364,7 +364,12 @@ public class SolrZkClient implements Closeable {
   }
 
   public Map<String, Object> getJson(String path, boolean retryOnConnLoss) throws KeeperException, InterruptedException {
-    byte[] bytes = getData(path, null, null, retryOnConnLoss);
+    byte[] bytes = null;
+    try {
+      bytes = getData(path, null, null, retryOnConnLoss);
+    } catch (KeeperException.NoNodeException e) {
+      return null;
+    }
     if (bytes != null && bytes.length > 0) {
       return (Map<String, Object>) Utils.fromJSON(bytes);
     }

@@ -95,7 +95,7 @@ public class SolrClientDataProvider implements ClusterDataProvider, MapWriter {
   public Map<String, Object> getNodeValues(String node, Collection<String> tags) {
     AutoScalingSnitch  snitch = new AutoScalingSnitch();
     ClientSnitchCtx ctx = new ClientSnitchCtx(null, node, snitchSession, solrClient);
-    snitch.getRemoteInfo(node, new HashSet<>(tags), ctx);
+    snitch.getTags(node, new HashSet<>(tags), ctx);
     nodeVsTags.put(node, ctx.getTags());
     return ctx.getTags();
   }
@@ -162,8 +162,6 @@ public class SolrClientDataProvider implements ClusterDataProvider, MapWriter {
 
   //uses metrics API to get node information
   static class AutoScalingSnitch extends ImplicitSnitch {
-
-
     @Override
     protected void getRemoteInfo(String solrNode, Set<String> requestedTags, SnitchContext ctx) {
       ClientSnitchCtx snitchContext = (ClientSnitchCtx) ctx;

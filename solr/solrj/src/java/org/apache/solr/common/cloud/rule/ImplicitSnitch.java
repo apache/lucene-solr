@@ -64,7 +64,8 @@ public class ImplicitSnitch extends Snitch {
       Matcher hostAndPortMatcher = hostAndPortPattern.matcher(solrNode);
       if (hostAndPortMatcher.find()) ctx.getTags().put(PORT, hostAndPortMatcher.group(2));
     }
-    if (requestedTags.contains(ROLE) || requestedTags.contains(NODEROLE)) fillRole(solrNode, ctx);
+    if (requestedTags.contains(ROLE)) fillRole(solrNode, ctx, ROLE);
+    if (requestedTags.contains(NODEROLE)) fillRole(solrNode, ctx, NODEROLE);// for new policy framework
 
     addIpTags(solrNode, requestedTags, ctx);
 
@@ -81,7 +82,7 @@ public class ImplicitSnitch extends Snitch {
     if (params.size() > 0) ctx.invokeRemote(solrNode, params, "org.apache.solr.cloud.rule.ImplicitSnitch", null);
   }
 
-  private void fillRole(String solrNode, SnitchContext ctx) {
+  private void fillRole(String solrNode, SnitchContext ctx, String key) {
     Map roles = (Map) ctx.retrieve(ZkStateReader.ROLES); // we don't want to hit the ZK for each node
     // so cache and reuse
     if(roles == null) roles = ctx.getZkJson(ZkStateReader.ROLES);
@@ -91,7 +92,7 @@ public class ImplicitSnitch extends Snitch {
         Map.Entry e = (Map.Entry) o;
         if (e.getValue() instanceof List) {
           if(((List) e.getValue()).contains(solrNode)) {
-            ctx.getTags().put(ROLE, e.getKey());
+            ctx.getTags().put(key, e.getKey());
             break;
           }
         }

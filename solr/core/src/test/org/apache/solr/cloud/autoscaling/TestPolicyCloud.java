@@ -25,9 +25,13 @@ import org.apache.lucene.util.LuceneTestCase;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.impl.SolrClientDataProvider;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
+import org.apache.solr.cloud.OverseerNodePrioritizer;
+import org.apache.solr.cloud.OverseerTaskProcessor;
 import org.apache.solr.cloud.SolrCloudTestCase;
 import org.apache.solr.common.cloud.DocCollection;
+import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.util.Utils;
+import org.apache.zookeeper.KeeperException;
 import org.junit.After;
 import org.junit.BeforeClass;
 import org.junit.rules.ExpectedException;
@@ -55,20 +59,30 @@ public class TestPolicyCloud extends SolrCloudTestCase {
   }
 
 
-  public void testDataProvider() throws IOException, SolrServerException {
+  public void testDataProvider() throws IOException, SolrServerException, KeeperException, InterruptedException {
     CollectionAdminRequest.createCollectionWithImplicitRouter("policiesTest", "conf", "shard1", 2)
         .process(cluster.getSolrClient());
     DocCollection rulesCollection = getCollectionState("policiesTest");
     SolrClientDataProvider provider = new SolrClientDataProvider(cluster.getSolrClient());
-
     Map<String, Object> val = provider.getNodeValues(rulesCollection.getReplicas().get(0).getNodeName(), Arrays.asList(
         "freedisk",
         "cores",
         "heapUsage",
         "sysLoadAvg"));
     assertTrue(((Number) val.get("cores")).intValue() > 0);
-    assertTrue("freedisk value is "+((Number) val.get("freedisk")).longValue() , ((Number) val.get("freedisk")).longValue() > 0);
-    assertTrue("heapUsage value is "+((Number) val.get("heapUsage")).longValue() , ((Number) val.get("heapUsage")).longValue() > 0);
-    assertTrue("sysLoadAvg value is "+((Number) val.get("sysLoadAvg")).longValue() , ((Number) val.get("sysLoadAvg")).longValue() > 0);
+    assertTrue("freedisk value is " + ((Number) val.get("freedisk")).longValue(), ((Number) val.get("freedisk")).longValue() > 0);
+    assertTrue("heapUsage value is " + ((Number) val.get("heapUsage")).longValue(), ((Number) val.get("heapUsage")).longValue() > 0);
+    assertTrue("sysLoadAvg value is " + ((Number) val.get("sysLoadAvg")).longValue(), ((Number) val.get("sysLoadAvg")).longValue() > 0);
+    String overseerNode = OverseerTaskProcessor.getLeaderNode(cluster.getZkClient());
+    cluster.getSolrClient().request(CollectionAdminRequest.addRole(overseerNode, "overseer"));
+    for (int i = 0; i < 10; i++) {
+      Map<String, Object> data = cluster.getSolrClient().getZkStateReader().getZkClient().getJson(ZkStateReader.ROLES, true);
+      if (i >= 9 && data == null) {
+        throw new RuntimeException("NO overseer node created");
+      }
+      Thread.sleep(100);
+    }
+    val = provider.getNodeValues(overseerNode, Arrays.asList("nodeRole"));
+    assertEquals("overseer",val.get("nodeRole"));
   }
 }
