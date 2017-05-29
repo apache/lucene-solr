@@ -64,6 +64,9 @@ Bug Fixes
 * SOLR-11261, SOLR-10966: Upgrade to Hadoop 2.7.4 to fix incompatibility with Java 9.
   (Uwe Schindler)
 
+* SOLR-10719: Creating a core.properties fails if the parent of core.properties is a symlinked directory
+  (Erick Erickson)
+
 ==================  6.6.0 ==================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release.

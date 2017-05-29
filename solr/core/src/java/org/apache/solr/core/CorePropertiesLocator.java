@@ -39,6 +39,7 @@ import java.util.stream.Collectors;
 
 import com.google.common.collect.Lists;
 import org.apache.solr.common.SolrException;
+import org.apache.solr.util.FileUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -85,13 +86,15 @@ public class CorePropertiesLocator implements CoresLocator {
   private void writePropertiesFile(CoreDescriptor cd, Path propfile)  {
     Properties p = buildCoreProperties(cd);
     try {
-      Files.createDirectories(propfile.getParent());
+      FileUtils.createDirectories(propfile.getParent()); // Handling for symlinks.
       try (Writer os = new OutputStreamWriter(Files.newOutputStream(propfile), StandardCharsets.UTF_8)) {
         p.store(os, "Written by CorePropertiesLocator");
       }
     }
     catch (IOException e) {
       logger.error("Couldn't persist core properties to {}: {}", propfile, e.getMessage());
+      throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,
+          "Couldn't persist core properties to " + propfile.toAbsolutePath().toString() + " : " + e.getMessage());
     }
   }
 
