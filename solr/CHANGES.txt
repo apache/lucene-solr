@@ -239,6 +239,10 @@ Bug Fixes
 * SOLR-10735: Windows script (solr.cmd) didn't work properly with directory containing spaces. Adding quotations
   to fix (Uwe Schindler, janhoy, Tomas Fernandez-Lobbe, Ishan Chattopadhyaya) 
 
+* SOLR-10718: BasicAuth configuration in script include files caused errors during collection creation. Fixed by not
+  using a Pre-emptive authentication based interceptor when BasicAuth is not used. (Shawn Feldman, Hrishikesh Gadre,
+  janhoy, Jason Gerlowski via Ishan Chattopadhyaya)
+
 Ref Guide
 ----------------------
 

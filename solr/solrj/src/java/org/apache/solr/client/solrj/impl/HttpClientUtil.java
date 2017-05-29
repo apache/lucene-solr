@@ -261,6 +261,7 @@ public class HttpClientUtil {
           new UsernamePasswordCredentials(basicAuthUser, basicAuthPass));
     } else {
       httpClient.getCredentialsProvider().clear();
+      httpClient.removeRequestInterceptorByClass(PreemptiveAuth.class);
     }
   }
 
