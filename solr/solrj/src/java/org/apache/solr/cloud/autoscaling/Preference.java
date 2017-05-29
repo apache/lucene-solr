@@ -22,6 +22,7 @@ import java.util.List;
 import java.util.Map;
 
 import org.apache.solr.common.MapWriter;
+import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.common.util.Utils;
 
 class Preference implements MapWriter {
@@ -40,6 +41,10 @@ class Preference implements MapWriter {
     precision = p instanceof Number ? ((Number) p).intValue() : Integer.parseInt(p.toString());
     if (precision < 0) {
       throw new RuntimeException("precision must be a positive value ");
+    }
+    if(precision< name.min || precision> name.max){
+      throw new RuntimeException(StrUtils.formatString("invalid precision value {0} must lie between {1} and {1}",
+          precision, name.min, name.max ) );
     }
 
   }

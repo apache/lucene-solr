@@ -262,7 +262,14 @@ public class Policy implements MapWriter {
   }
 
   enum SortParam {
-    freedisk, cores, heapUsage, sysLoadAvg;
+    freedisk(0, Integer.MAX_VALUE), cores(0, Integer.MAX_VALUE), heapUsage(0, Integer.MAX_VALUE), sysLoadAvg(0, 100);
+
+    public final int min,max;
+
+    SortParam(int min, int max) {
+      this.min = min;
+      this.max = max;
+    }
 
     static SortParam get(String m) {
       for (SortParam p : values()) if (p.name().equals(m)) return p;
@@ -323,8 +330,7 @@ public class Policy implements MapWriter {
   /* A suggester is capable of suggesting a collection operation
    * given a particular session. Before it suggests a new operation,
    * it ensures that ,
-   *  a) the node that it lightens load on the 'most loaded node' and/or 'lightens load'
-   *     on the least loaded node
+   *  a) load is reduced on the most loaded node
    *  b) it causes no new violations
    *
    */

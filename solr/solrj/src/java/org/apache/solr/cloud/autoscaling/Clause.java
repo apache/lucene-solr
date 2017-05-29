@@ -29,15 +29,12 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import org.apache.solr.common.MapWriter;
-import org.apache.solr.common.util.Utils;
 import org.apache.solr.cloud.autoscaling.Policy.ReplicaInfo;
+import org.apache.solr.common.MapWriter;
+import org.apache.solr.common.util.StrUtils;
+import org.apache.solr.common.util.Utils;
 
-import static java.util.Collections.reverseOrder;
 import static java.util.Collections.singletonMap;
-import static org.apache.solr.common.params.CoreAdminParams.COLLECTION;
-import static org.apache.solr.common.params.CoreAdminParams.REPLICA;
-import static org.apache.solr.common.params.CoreAdminParams.SHARD;
 import static org.apache.solr.cloud.autoscaling.Clause.TestStatus.PASS;
 import static org.apache.solr.cloud.autoscaling.Operand.EQUAL;
 import static org.apache.solr.cloud.autoscaling.Operand.GREATER_THAN;
@@ -45,6 +42,9 @@ import static org.apache.solr.cloud.autoscaling.Operand.LESS_THAN;
 import static org.apache.solr.cloud.autoscaling.Operand.NOT_EQUAL;
 import static org.apache.solr.cloud.autoscaling.Operand.WILDCARD;
 import static org.apache.solr.cloud.autoscaling.Policy.ANY;
+import static org.apache.solr.common.params.CoreAdminParams.COLLECTION;
+import static org.apache.solr.common.params.CoreAdminParams.REPLICA;
+import static org.apache.solr.common.params.CoreAdminParams.SHARD;
 
 // a set of conditions in a policy
 public class Clause implements MapWriter, Comparable<Clause> {
@@ -62,13 +62,21 @@ public class Clause implements MapWriter, Comparable<Clause> {
       if (m.size() > 2) {
         throw new RuntimeException("Only one extra tag supported for the tag " + globalTagName.get() + " in " + Utils.toJSONString(m));
       }
-      tag = parse(m.keySet().stream().filter(s -> (!globalTagName.get().equals(s) && !IGNORE_TAGS.contains(s))).findFirst().get(), m);
+      tag = parse(m.keySet().stream()
+          .filter(s -> (!globalTagName.get().equals(s) && !IGNORE_TAGS.contains(s)))
+          .findFirst().get(), m);
     } else {
       collection = parse(COLLECTION, m);
       shard = parse(SHARD, m);
+      if(m.get(REPLICA) == null){
+        throw new RuntimeException(StrUtils.formatString("'replica' is required" + Utils.toJSONString(m)));
+      }
       Condition replica = parse(REPLICA, m);
       try {
         int replicaCount = Integer.parseInt(String.valueOf(replica.val));
+        if(replicaCount<0){
+          throw new RuntimeException("replica value sould be non null "+ Utils.toJSONString(m));
+        }
         this.replica = new Condition(replica.name, replicaCount, replica.op);
       } catch (NumberFormatException e) {
         throw new RuntimeException("Only an integer value is supported for replica " + Utils.toJSONString(m));
