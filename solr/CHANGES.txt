@@ -142,6 +142,8 @@ Other Changes
 
 * SOLR-10643: Throttling strategy for triggers and policy executions. (shalin)
 
+* SOLR-10764: AutoScalingHandler should validate policy and preferences before updating zookeeper. (shalin)
+
 ----------------------
 
 ==================  6.6.0 ==================

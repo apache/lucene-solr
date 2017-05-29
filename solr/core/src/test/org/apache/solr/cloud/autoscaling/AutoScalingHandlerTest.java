@@ -27,6 +27,7 @@ import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrResponse;
+import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
@@ -359,8 +360,30 @@ public class AutoScalingHandlerTest extends SolrCloudTestCase {
         "    ]" +
         "}}";
     SolrRequest req = new AutoScalingRequest(SolrRequest.METHOD.POST, path, setPolicyCommand);
-    NamedList<Object> response = solrClient.request(req);
+    NamedList<Object> response = null;
+    try {
+      response = solrClient.request(req);
+      fail("Adding a policy with 'cores' attribute should not have succeeded.");
+    } catch (HttpSolrClient.RemoteSolrException e) {
+      // expected
+      assertTrue(e.getMessage().contains("cores is only allowed in 'cluster-policy'"));
+    } catch (Exception e) {
+      throw e;
+    }
+
+    setPolicyCommand =  "{'set-policy': {" +
+        "    'xyz':[" +
+        "      {'replica':'<2', 'shard': '#EACH', 'node': '#ANY'}," +
+        "      {'nodeRole':'!overseer', 'replica':0}" +
+        "    ]," +
+        "    'policy1':[" +
+        "      {'replica':'<2', 'shard': '#EACH', 'node': '#ANY'}" +
+        "    ]" +
+        "}}";
+    req = new AutoScalingRequest(SolrRequest.METHOD.POST, path, setPolicyCommand);
+    response = solrClient.request(req);
     assertEquals(response.get("result").toString(), "success");
+
     byte[] data = zkClient().getData(SOLR_AUTOSCALING_CONF_PATH, null, null, true);
     ZkNodeProps loaded = ZkNodeProps.load(data);
     Map<String, Object> policies = (Map<String, Object>) loaded.get("policies");

@@ -143,7 +143,11 @@ public class AutoScalingHandler extends RequestHandlerBase implements Permission
           }
         }
       }
-    } finally {
+    } catch (Exception e) {
+      rsp.getValues().add("result", "failure");
+      throw e;
+    }
+    finally {
       RequestHandlerUtils.addExperimentalFormatWarning(rsp);
     }
   }
@@ -182,7 +186,7 @@ public class AutoScalingHandler extends RequestHandlerBase implements Permission
     }
   }
 
-  private void handleSetClusterPolicy(SolrQueryRequest req, SolrQueryResponse rsp, CommandOperation op) throws KeeperException, InterruptedException {
+  private void handleSetClusterPolicy(SolrQueryRequest req, SolrQueryResponse rsp, CommandOperation op) throws KeeperException, InterruptedException, IOException {
     List clusterPolicy = (List) op.getCommandData();
     if (clusterPolicy == null || !(clusterPolicy instanceof List)) {
       throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "A list of cluster policies was not found");
@@ -191,7 +195,7 @@ public class AutoScalingHandler extends RequestHandlerBase implements Permission
     rsp.getValues().add("result", "success");
   }
 
-  private void handleSetClusterPreferences(SolrQueryRequest req, SolrQueryResponse rsp, CommandOperation op) throws KeeperException, InterruptedException {
+  private void handleSetClusterPreferences(SolrQueryRequest req, SolrQueryResponse rsp, CommandOperation op) throws KeeperException, InterruptedException, IOException {
     List preferences = (List) op.getCommandData();
     if (preferences == null || !(preferences instanceof List)) {
       throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "A list of cluster preferences not found");
@@ -200,7 +204,7 @@ public class AutoScalingHandler extends RequestHandlerBase implements Permission
     rsp.getValues().add("result", "success");
   }
 
-  private void handleRemovePolicy(SolrQueryRequest req, SolrQueryResponse rsp, CommandOperation op) throws KeeperException, InterruptedException {
+  private void handleRemovePolicy(SolrQueryRequest req, SolrQueryResponse rsp, CommandOperation op) throws KeeperException, InterruptedException, IOException {
     String policyName = (String) op.getCommandData();
 
     if (policyName.trim().length() == 0) {
@@ -216,7 +220,7 @@ public class AutoScalingHandler extends RequestHandlerBase implements Permission
     rsp.getValues().add("result", "success");
   }
 
-  private void handleSetPolicies(SolrQueryRequest req, SolrQueryResponse rsp, CommandOperation op) throws KeeperException, InterruptedException {
+  private void handleSetPolicies(SolrQueryRequest req, SolrQueryResponse rsp, CommandOperation op) throws KeeperException, InterruptedException, IOException {
     Map<String, Object> policies = op.getDataMap();
     for (Map.Entry<String, Object> policy: policies.entrySet()) {
       String policyName = policy.getKey();
@@ -516,7 +520,7 @@ public class AutoScalingHandler extends RequestHandlerBase implements Permission
     }
   }
 
-  private void zkSetPolicies(ZkStateReader reader, String policyBeRemoved, Map<String, Object> newPolicies) throws KeeperException, InterruptedException {
+  private void zkSetPolicies(ZkStateReader reader, String policyBeRemoved, Map<String, Object> newPolicies) throws KeeperException, InterruptedException, IOException {
     while (true) {
       Stat stat = new Stat();
       ZkNodeProps loaded = null;
@@ -530,6 +534,7 @@ public class AutoScalingHandler extends RequestHandlerBase implements Permission
         policies.remove(policyBeRemoved);
       }
       loaded = loaded.plus("policies", policies);
+      verifyAutoScalingConf(loaded.getProperties());
       try {
         reader.getZkClient().setData(SOLR_AUTOSCALING_CONF_PATH, Utils.toJSON(loaded), stat.getVersion(), true);
       } catch (KeeperException.BadVersionException bve) {
@@ -540,13 +545,14 @@ public class AutoScalingHandler extends RequestHandlerBase implements Permission
     }
   }
 
-  private void zkSetPreferences(ZkStateReader reader, List preferences) throws KeeperException, InterruptedException {
+  private void zkSetPreferences(ZkStateReader reader, List preferences) throws KeeperException, InterruptedException, IOException {
     while (true) {
       Stat stat = new Stat();
       ZkNodeProps loaded = null;
       byte[] data = reader.getZkClient().getData(SOLR_AUTOSCALING_CONF_PATH, null, stat, true);
       loaded = ZkNodeProps.load(data);
       loaded = loaded.plus("cluster-preferences", preferences);
+      verifyAutoScalingConf(loaded.getProperties());
       try {
         reader.getZkClient().setData(SOLR_AUTOSCALING_CONF_PATH, Utils.toJSON(loaded), stat.getVersion(), true);
       } catch (KeeperException.BadVersionException bve) {
@@ -557,13 +563,14 @@ public class AutoScalingHandler extends RequestHandlerBase implements Permission
     }
   }
 
-  private void zkSetClusterPolicy(ZkStateReader reader, List clusterPolicy) throws KeeperException, InterruptedException {
+  private void zkSetClusterPolicy(ZkStateReader reader, List clusterPolicy) throws KeeperException, InterruptedException, IOException {
     while (true) {
       Stat stat = new Stat();
       ZkNodeProps loaded = null;
       byte[] data = reader.getZkClient().getData(SOLR_AUTOSCALING_CONF_PATH, null, stat, true);
       loaded = ZkNodeProps.load(data);
       loaded = loaded.plus("cluster-policy", clusterPolicy);
+      verifyAutoScalingConf(loaded.getProperties());
       try {
         reader.getZkClient().setData(SOLR_AUTOSCALING_CONF_PATH, Utils.toJSON(loaded), stat.getVersion(), true);
       } catch (KeeperException.BadVersionException bve) {
@@ -571,6 +578,16 @@ public class AutoScalingHandler extends RequestHandlerBase implements Permission
         continue;
       }
       break;
+    }
+  }
+
+  private void verifyAutoScalingConf(Map<String, Object> autoScalingConf) throws IOException {
+    try (CloudSolrClient build = new CloudSolrClient.Builder()
+        .withHttpClient(container.getUpdateShardHandler().getHttpClient())
+        .withZkHost(container.getZkController().getZkServerAddress()).build()) {
+      Policy policy = new Policy(autoScalingConf);
+      Policy.Session session = policy.createSession(new SolrClientDataProvider(build));
+      log.debug("Verified autoscaling configuration");
     }
   }
 
