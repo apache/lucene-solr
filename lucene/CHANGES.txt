@@ -119,6 +119,11 @@ Other
 
 ======================= Lucene 6.7.0 =======================
 
+New Features
+
+* LUCENE-7855: Added advanced options of the Wikipedia tokenizer to its factory.
+  (Juan Pedro via Adrien Grand)
+
 Other
 
 * LUCENE-7800: Remove code that potentially rethrows checked exceptions 
