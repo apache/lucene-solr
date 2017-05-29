@@ -43,7 +43,7 @@ import java.util.Collection;
   * refuses to run by default. Specify {@code -delete-prior-commits}
   * to override this, allowing the tool to delete all but the last commit.
   * From Java code this can be enabled by passing {@code true} to
-  * {@link #IndexUpgrader(Directory,InfoStream,boolean)}.
+  * {@link #IndexUpgrader(Directory,InfoStream,boolean,boolean)}.
   * <p><b>Warning:</b> This tool may reorder documents if the index was partially
   * upgraded before execution (e.g., documents were added). If your application relies
   * on &quot;monotonicity&quot; of doc IDs (which means that the order in which the documents
@@ -59,7 +59,7 @@ public final class IndexUpgrader {
   private static void printUsage() {
     System.err.println("Upgrades an index so all segments created with a previous Lucene version are rewritten.");
     System.err.println("Usage:");
-    System.err.println("  java " + IndexUpgrader.class.getName() + " [-delete-prior-commits] [-verbose] [-dir-impl X] indexDir");
+    System.err.println("  java " + IndexUpgrader.class.getName() + " [-include-new-segments] [-num-segments N] [-delete-prior-commits] [-verbose] [-include-new-segments] [-dir-impl X] indexDir");
     System.err.println("This tool keeps only the last commit in an index; for this");
     System.err.println("reason, if the incoming index has more than one commit, the tool");
     System.err.println("refuses to run by default. Specify -delete-prior-commits to override");
@@ -67,6 +67,13 @@ public final class IndexUpgrader {
     System.err.println("Specify a " + FSDirectory.class.getSimpleName() + 
         " implementation through the -dir-impl option to force its use. If no package is specified the " 
         + FSDirectory.class.getPackage().getName() + " package will be used.");
+    System.err.println("If -include-new-segments is enabled, segments which have already been upgraded will be considered as merge candidates");
+    System.err.println("If -num-segments is not specified and -include-new-segments is enabled this will merge all segments into a single segment");
+    System.err.println("otherwise if -include-new-segments is not enabled only segments needing to be upgraded will be merged together.");
+    System.err.println("If the desired outcome is for all segments to be rewritten as the latest version and for no actual merges to occur");
+    System.err.println("enable -include-new-segments and set -num-segments >= current number of segments (this case will not affect segments written with the current version).");
+    System.err.println("e.x. -include-new-segments -num-segments " + Integer.MAX_VALUE);
+    System.err.println("Note: -num-segments is only supported when -include-new-segments is enabled");
     System.err.println("WARNING: This tool may reorder document IDs!");
     System.exit(1);
   }
@@ -75,13 +82,15 @@ public final class IndexUpgrader {
    *  command-line. */
   @SuppressWarnings("deprecation")
   public static void main(String[] args) throws IOException {
-    parseArgs(args).upgrade();
+    doUpgrade(args);
   }
   
   @SuppressForbidden(reason = "System.out required: command line tool")
-  static IndexUpgrader parseArgs(String[] args) throws IOException {
+  static void doUpgrade(String[] args) throws IOException {
     String path = null;
     boolean deletePriorCommits = false;
+    boolean includeNewSegments = false;
+    int numSegments = 1;
     InfoStream out = null;
     String dirImpl = null;
     int i = 0;
@@ -98,9 +107,19 @@ public final class IndexUpgrader {
         }
         i++;
         dirImpl = args[i];
+      } else if("-include-new-segments".equals(arg)) {
+        includeNewSegments = true;
+      } else if("-num-segments".equals(arg)) {
+        if (i == args.length - 1 ) {
+          System.err.println("ERROR: missing value for -num-segments option");
+          System.exit(1);
+        }
+        i++;
+        numSegments = Integer.valueOf(args[i]);
       } else if (path == null) {
         path = arg;
-      } else {
+      }
+      else {
         printUsage();
       }
       i++;
@@ -116,12 +135,20 @@ public final class IndexUpgrader {
     } else {
       dir = CommandLineUtil.newFSDirectory(dirImpl, p);
     }
-    return new IndexUpgrader(dir, out, deletePriorCommits);
+    
+    if(numSegments > 1 && !includeNewSegments) {
+      System.err.println("-num-segments > 1 and -include-new-segments is not set");
+      printUsage();
+      System.exit(1);
+    }
+    
+    new IndexUpgrader(dir, out, deletePriorCommits, includeNewSegments).upgrade(numSegments);
   }
   
   private final Directory dir;
   private final IndexWriterConfig iwc;
   private final boolean deletePriorCommits;
+  private final boolean includeNewSegments;
   
   /** Creates index upgrader on the given directory, using an {@link IndexWriter} using the given
    * {@code matchVersion}. The tool refuses to upgrade indexes with multiple commit points. */
@@ -132,24 +159,37 @@ public final class IndexUpgrader {
   /** Creates index upgrader on the given directory, using an {@link IndexWriter} using the given
    * {@code matchVersion}. You have the possibility to upgrade indexes with multiple commit points by removing
    * all older ones. If {@code infoStream} is not {@code null}, all logging output will be sent to this stream. */
-  public IndexUpgrader(Directory dir, InfoStream infoStream, boolean deletePriorCommits) {
-    this(dir, new IndexWriterConfig(null), deletePriorCommits);
+  public IndexUpgrader(Directory dir, InfoStream infoStream, boolean deletePriorCommits, boolean includeNewSegments) {
+    this(dir, new IndexWriterConfig(null), deletePriorCommits, includeNewSegments);
     if (null != infoStream) {
       this.iwc.setInfoStream(infoStream);
     }
+  }
+
+  public IndexUpgrader(Directory dir, IndexWriterConfig iwc, boolean deletePriorCommits) {
+    this(dir, iwc, deletePriorCommits, false);
   }
   
   /** Creates index upgrader on the given directory, using an {@link IndexWriter} using the given
    * config. You have the possibility to upgrade indexes with multiple commit points by removing
    * all older ones. */
-  public IndexUpgrader(Directory dir, IndexWriterConfig iwc, boolean deletePriorCommits) {
+  public IndexUpgrader(Directory dir, IndexWriterConfig iwc, boolean deletePriorCommits, boolean includeNewSegments) {
     this.dir = dir;
     this.iwc = iwc;
     this.deletePriorCommits = deletePriorCommits;
+    this.includeNewSegments = includeNewSegments;
+  }
+  
+  public IndexWriterConfig getIndexWriterConfig() {
+    return iwc;
+  }
+  
+  public void upgrade() throws IOException {
+    this.upgrade(1);
   }
 
   /** Perform the upgrade. */
-  public void upgrade() throws IOException {
+  public void upgrade(int maxSegements) throws IOException {
     if (!DirectoryReader.indexExists(dir)) {
       throw new IndexNotFoundException(dir.toString());
     }
@@ -161,7 +201,17 @@ public final class IndexUpgrader {
       }
     }
     
-    iwc.setMergePolicy(new UpgradeIndexMergePolicy(iwc.getMergePolicy()));
+    MergePolicy mp;
+    if(includeNewSegments) {
+      LiveUpgradeSegmentsMergePolicy uimp = new LiveUpgradeSegmentsMergePolicy(iwc.getMergePolicy());
+      uimp.setEnableUpgrades(true);
+      mp = uimp;
+    } else {
+      mp = new UpgradeIndexMergePolicy(iwc.getMergePolicy()); 
+    }
+    
+    
+    iwc.setMergePolicy(mp);
     iwc.setIndexDeletionPolicy(new KeepOnlyLastCommitDeletionPolicy());
     
     try (final IndexWriter w = new IndexWriter(dir, iwc)) {
@@ -169,7 +219,7 @@ public final class IndexUpgrader {
       if (infoStream.isEnabled(LOG_PREFIX)) {
         infoStream.message(LOG_PREFIX, "Upgrading all pre-" + Version.LATEST + " segments of index directory '" + dir + "' to version " + Version.LATEST + "...");
       }
-      w.forceMerge(1);
+      w.forceMerge(maxSegements);
       if (infoStream.isEnabled(LOG_PREFIX)) {
         infoStream.message(LOG_PREFIX, "All segments upgraded to version " + Version.LATEST);
         infoStream.message(LOG_PREFIX, "Enforcing commit to rewrite all index metadata...");
