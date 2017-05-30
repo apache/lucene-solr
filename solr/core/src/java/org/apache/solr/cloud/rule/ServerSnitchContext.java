@@ -74,13 +74,12 @@ public class ServerSnitchContext extends SnitchContext {
 
   public void invokeRemote(String node, ModifiableSolrParams params, String klas, RemoteCallback callback) {
     if (callback == null) callback = this;
-    String url = coreContainer.getZkController().getZkStateReader().getBaseUrlForNodeName(node);
     params.add("class", klas);
     params.add(ACTION, INVOKE.toString());
     //todo batch all requests to the same server
 
     try {
-      SimpleSolrResponse rsp = invoke(coreContainer.getUpdateShardHandler(), url, CommonParams.CORES_HANDLER_PATH, params);
+      SimpleSolrResponse rsp = invoke(node, CommonParams.CORES_HANDLER_PATH, params);
       Map<String, Object> returnedVal = (Map<String, Object>) rsp.getResponse().get(klas);
       if(exception == null){
 //        log this
@@ -94,8 +93,10 @@ public class ServerSnitchContext extends SnitchContext {
     }
   }
 
-  public SimpleSolrResponse invoke(UpdateShardHandler shardHandler,  final String url, String path, SolrParams params)
+  public SimpleSolrResponse invoke(String solrNode, String path, SolrParams params)
       throws IOException, SolrServerException {
+    String url = coreContainer.getZkController().getZkStateReader().getBaseUrlForNodeName(solrNode);
+    UpdateShardHandler shardHandler = coreContainer.getUpdateShardHandler();
     GenericSolrRequest request = new GenericSolrRequest(SolrRequest.METHOD.GET, path, params);
     try (HttpSolrClient client = new HttpSolrClient.Builder(url).withHttpClient(shardHandler.getHttpClient())
         .withResponseParser(new BinaryResponseParser()).build()) {

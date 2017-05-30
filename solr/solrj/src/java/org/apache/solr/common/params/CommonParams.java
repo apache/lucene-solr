@@ -181,6 +181,8 @@ public interface CommonParams {
   String AUTHC_PATH = "/admin/authentication";
   String ZK_PATH = "/admin/zookeeper";
   String METRICS_PATH = "/admin/metrics";
+  String AUTOSCALING_PATH = "/admin/autoscaling";
+  String AUTOSCALING_DIAGNOSTICS_PATH = "/admin/autoscaling/diagnostics";
 
   Set<String> ADMIN_PATHS = new HashSet<>(Arrays.asList(
       CORES_HANDLER_PATH,
@@ -188,7 +190,9 @@ public interface CommonParams {
       CONFIGSETS_HANDLER_PATH,
       AUTHC_PATH,
       AUTHZ_PATH,
-      METRICS_PATH));
+      METRICS_PATH,
+      AUTOSCALING_PATH,
+      AUTOSCALING_DIAGNOSTICS_PATH));
 
   /** valid values for: <code>echoParams</code> */
   enum EchoParamStyle {

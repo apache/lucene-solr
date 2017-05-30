@@ -64,7 +64,7 @@ Upgrading from Solr 6.x
   registries as hierarchical MBeans. This behavior can be also disabled by specifying a SolrJmxReporter
   configuration with a boolean init arg "enabled" set to "false". For a more fine-grained control users
   should explicitly specify at least one SolrJmxReporter configuration.
-  
+
 * The sow (split-on-whitespace) request param now defaults to false (true in previous versions).
   This affects the edismax and standard/"lucene" query parsers: if the sow param is not specified,
   query text will not be split on whitespace before analysis. See
@@ -102,18 +102,24 @@ New Features
 * SOLR-10431: Make it possible to invoke v2 api calls using SolrJ (Cao Manh Dat, Noble Paul, shalin)
 
 * SOLR-10233: Add support for different replica types, that can handle updates differently:
-  - NRT: Writes updates to transaction log and indexes locally. Replicas of type “NRT” support NRT 
-         (soft commits) and RTG. Any NRT replica can become a leader. This was the only type supported 
+  - NRT: Writes updates to transaction log and indexes locally. Replicas of type “NRT” support NRT
+         (soft commits) and RTG. Any NRT replica can become a leader. This was the only type supported
          in SolrCloud until now and it’s the default type.
-  - TLOG: Writes to transaction log, but not to index, uses replication to copy segment files from the 
-          shard leader. Any TLOG replica can become leader (by first applying all local transaction log 
+  - TLOG: Writes to transaction log, but not to index, uses replication to copy segment files from the
+          shard leader. Any TLOG replica can become leader (by first applying all local transaction log
           elements). If a replica is of type TLOG but is also the leader, it will behave as a NRT. This
           is exactly what was added in SOLR-9835 (non-realtime replicas), just the API and naming changes.
-  - PULL: Doesn’t index or writes to transaction log, just replicates from the shard leader. PULL replicas 
-          can’t become shard leaders (i.e., if there are only PULL replicas in the collection at some point, 
-          updates will fail same as if there is no leaders, queries continue to work), so they don’t even 
+  - PULL: Doesn’t index or writes to transaction log, just replicates from the shard leader. PULL replicas
+          can’t become shard leaders (i.e., if there are only PULL replicas in the collection at some point,
+          updates will fail same as if there is no leaders, queries continue to work), so they don’t even
           participate in elections.
   (Tomás Fernández Löbbe)
+
+* SOLR-10373: Implement read API for autoscaling configuration at /admin/autoscaling or
+  /cluster/autoscaling paths. (shalin)
+
+* SOLR-10677: Expose a diagnostics API to return nodes sorted by load in descending order and
+  any policy violations. (shalin)
 
 Bug Fixes
 ----------------------
@@ -198,6 +204,8 @@ Other Changes
 
 * SOLR-10755: delete/refactor many solrj deprecations (hossman)
 
+* SOLR-10764: AutoScalingHandler should validate policy and preferences before updating zookeeper. (shalin)
+
 ==================  6.7.0 ==================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release.
@@ -230,7 +238,7 @@ New Features
 
 * SOLR-10721: Provide a way to know when Core Discovery is finished and when all async cores are done loading
   (Erick Erickson)
-  
+
 * SOLR-10379: Add ManagedSynonymGraphFilterFactory, deprecate ManagedSynonymFilterFactory. (Steve Rowe)
 
 * SOLR-10479: Adds support for HttpShardHandlerFactory.loadBalancerRequests(MinimumAbsolute|MaximumFraction)
@@ -257,8 +265,8 @@ Other Changes
 
 * SOLR-10400: Replace (instanceof TrieFooField || instanceof FooPointField) constructs with
   FieldType.getNumberType() or SchemaField.getSortField() where appropriate. (hossman, Steve Rowe)
-  
-* SOLR-10438: Assign explicit useDocValuesAsStored values to all points field types in 
+
+* SOLR-10438: Assign explicit useDocValuesAsStored values to all points field types in
   schema-point.xml/TestPointFields. (hossman, Steve Rowe)
   
 * LUCENE-7705: Allow CharTokenizer-derived tokenizers and KeywordTokenizer to configure the max token length.
@@ -335,7 +343,7 @@ New Features
 
 * SOLR-10507: Core Admin status command to emit collection details of each core (noble)
 
-* SOLR-10521: introducing sort=childfield(field) asc for searching by {!parent} (Mikhail Khludnev) 
+* SOLR-10521: introducing sort=childfield(field) asc for searching by {!parent} (Mikhail Khludnev)
 
 * SOLR-9596: Add Solr support for SimpleTextCodec, via <codecFactory class="solr.SimpleTextCodecFactory"/>
   in solrconfig.xml (per-field specification in the schema is not possible). (Steve Rowe)
@@ -394,7 +402,7 @@ Optimizations
 * SOLR-10499: facet.heatmap is now significantly faster when the docset (base query) matches everything and there are no
   deleted docs.  It's also faster when the docset matches a small fraction of the index or none. (David Smiley)
 
-* SOLR-9217: Reduced heap consumption for filter({!join ... score=...}) 
+* SOLR-9217: Reduced heap consumption for filter({!join ... score=...})
   (Andrey Kudryavtsev, Gopikannan Venugopalsamy via Mikhail Khludnev)
 
 * SOLR-10548: JSON Facet API now uses hyper-log-log++ for determining the number of buckets
@@ -423,8 +431,8 @@ Bug Fixes
 
 * SOLR-10264: Fixes multi-term synonym parsing in ManagedSynonymFilterFactory.
   (Jörg Rathlev, Steve Rowe, Christine Poerschke)
-  
-* SOLR-8807: fix Spellcheck "collateMaxCollectDocs" parameter to work with queries that have the 
+
+* SOLR-8807: fix Spellcheck "collateMaxCollectDocs" parameter to work with queries that have the
   CollpasingQParserPlugin applied.  (James Dyer)
 
 * SOLR-10474: TestPointFields.testPointFieldReturn() depends on order of unsorted hits. (Steve Rowe)
@@ -434,7 +442,7 @@ Bug Fixes
 
 * SOLR-10047: Mismatched Docvalues segments cause exception in Sorting/Faceting. Solr now uninverts per segment
   to avoid such exceptions. (Keith Laban via shalin)
-  
+
 * SOLR-10472: Fixed uninversion (aka: FieldCache) bugs with the numeric PointField classes, and CurrencyField (hossman)
 
 * SOLR-5127: Multiple highlight fields and wildcards are now supported e.g. hl.fl=title,text_*
@@ -446,13 +454,13 @@ Bug Fixes
   when there was a mincount > 1.  This has been corrected by changing numBuckets cardinality processing to
   ignore mincount > 1 for non-distributed requests. (yonik)
 
-* SOLR-10520: child.facet.field doubled counts at least when rows>0. (Dr. Oleg Savrasov via Mikhail Khludnev) 
+* SOLR-10520: child.facet.field doubled counts at least when rows>0. (Dr. Oleg Savrasov via Mikhail Khludnev)
 
 * SOLR-10480: Full pagination in JSON Facet API using offset does not work. (yonik)
 
 * SOLR-10526: facet.heatmap didn't honor facet exclusions ('ex') for distributed search. (David Smiley)
 
-* SOLR-10500: nested child docs are adopted by neighbour when several parents come in update/json/docs 
+* SOLR-10500: nested child docs are adopted by neighbour when several parents come in update/json/docs
   (Alexey Suprun,noble via Mikhail Khludnev)
 
 * SOLR-10316: Unloading a core can remove a ZK SolrCore registration entry for the wrong SolrCore. (Mark Miller)
@@ -478,7 +486,7 @@ Bug Fixes
   and accept "TO" as endpoints in range queries. (hossman, Steve Rowe)
 
 * SOLR-10735: Windows script (solr.cmd) didn't work properly with directory containing spaces. Adding quotations
-  to fix (Uwe Schindler, janhoy, Tomas Fernandez-Lobbe, Ishan Chattopadhyaya) 
+  to fix (Uwe Schindler, janhoy, Tomas Fernandez-Lobbe, Ishan Chattopadhyaya)
 
 Ref Guide
 ----------------------
@@ -578,7 +586,7 @@ Bug Fixes
 
 * SOLR-10404: The fetch() streaming expression wouldn't work if a value included query syntax chars (like :+-).
   Fixed, and enhanced the generated query to not pollute the queryCache. (David Smiley)
-  
+
 * SOLR-10423: Disable graph query production via schema configuration <fieldtype ... enableGraphQueries="false">.
   This fixes broken queries for ShingleFilter-containing query-time analyzers when request param sow=false.
   (Steve Rowe)

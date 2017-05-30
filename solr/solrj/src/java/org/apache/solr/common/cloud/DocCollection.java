@@ -26,6 +26,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
+import java.util.function.BiConsumer;
 
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
@@ -168,6 +169,10 @@ public class DocCollection extends ZkNodeProps implements Iterable<Slice> {
 
   public Slice getSlice(String sliceName) {
     return slices.get(sliceName);
+  }
+
+  public void forEachReplica(BiConsumer<String, Replica> consumer) {
+    slices.forEach((shard, slice) -> slice.getReplicasMap().forEach((s, replica) -> consumer.accept(shard, replica)));
   }
 
   /**

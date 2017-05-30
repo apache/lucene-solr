@@ -102,7 +102,9 @@ public class V2Request extends SolrRequest {
      * @return builder object
      */
     public Builder withPayload(String payload) {
-      this.payload = new ByteArrayInputStream(payload.getBytes(StandardCharsets.UTF_8));
+      if (payload != null) {
+        this.payload = new ByteArrayInputStream(payload.getBytes(StandardCharsets.UTF_8));
+      }
       return this;
     }
 

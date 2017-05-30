@@ -33,6 +33,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicLong;
 
 import org.apache.solr.common.EnumFieldValue;
 import org.apache.solr.common.IteratorWriter;
@@ -390,7 +392,18 @@ public class JavaBinCodec implements PushWriter {
       writeMap(((MapSerializable) val).toMap(new NamedList().asShallowMap()));
       return true;
     }
-
+    if (val instanceof AtomicInteger) {
+      writeInt(((AtomicInteger) val).get());
+      return true;
+    }
+    if (val instanceof AtomicLong) {
+      writeLong(((AtomicLong) val).get());
+      return true;
+    }
+    if (val instanceof AtomicBoolean) {
+      writeBoolean(((AtomicBoolean) val).get());
+      return true;
+    }
     return false;
   }
 

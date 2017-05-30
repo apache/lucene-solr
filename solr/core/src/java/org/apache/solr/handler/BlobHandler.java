@@ -80,7 +80,7 @@ public class BlobHandler extends RequestHandlerBase implements PluginInfoInitial
   public void handleRequestBody(final SolrQueryRequest req, SolrQueryResponse rsp) throws Exception {
     String httpMethod = req.getHttpMethod();
     String path = (String) req.getContext().get("path");
-    SolrConfigHandler.setWt(req, JSON);
+    RequestHandlerUtils.setWt(req, JSON);
 
     List<String> pieces = StrUtils.splitSmart(path, '/');
     String blobName = null;

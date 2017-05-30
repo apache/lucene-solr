@@ -58,7 +58,7 @@ import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.ToleratedUpdateError;
-import org.apache.solr.common.cloud.ClusterState;
+import org.apache.solr.common.cloud.ClusterState.CollectionRef;
 import org.apache.solr.common.cloud.CollectionStatePredicate;
 import org.apache.solr.common.cloud.CollectionStateWatcher;
 import org.apache.solr.common.cloud.DocCollection;
@@ -83,8 +83,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.slf4j.MDC;
 
-import static org.apache.solr.common.params.CommonParams.ADMIN_PATHS;
 import static org.apache.solr.common.params.CommonParams.ID;
+import static org.apache.solr.common.params.CommonParams.ADMIN_PATHS;
 
 /**
  * SolrJ client class to communicate with SolrCloud.
@@ -312,7 +312,7 @@ public class CloudSolrClient extends SolrClient {
     assert seconds > 0;
     this.collectionStateCache.timeToLive = seconds * 1000L;
   }
-  
+
   public ResponseParser getParser() {
     return lbClient.getParser();
   }
@@ -347,6 +347,7 @@ public class CloudSolrClient extends SolrClient {
   public ZkStateReader getZkStateReader() {
     if (stateProvider instanceof ZkClientClusterStateProvider) {
       ZkClientClusterStateProvider provider = (ZkClientClusterStateProvider) stateProvider;
+      stateProvider.connect();
       return provider.zkStateReader;
     }
     throw new IllegalStateException("This has no Zk stateReader");
@@ -430,7 +431,7 @@ public class CloudSolrClient extends SolrClient {
     throw new IllegalArgumentException("This client does not use ZK");
 
   }
-  
+
   /**
    * Block until a collection state matches a predicate, or a timeout
    *
@@ -1210,7 +1211,7 @@ public class CloudSolrClient extends SolrClient {
           && !cacheEntry.shoulRetry()) return col;
     }
 
-    ClusterState.CollectionRef ref = getCollectionRef(collection);
+    CollectionRef ref = getCollectionRef(collection);
     if (ref == null) {
       //no such collection exists
       return null;
@@ -1245,7 +1246,7 @@ public class CloudSolrClient extends SolrClient {
     }
   }
 
-  ClusterState.CollectionRef getCollectionRef(String collection) {
+  CollectionRef getCollectionRef(String collection) {
     return stateProvider.getState(collection);
   }
 
@@ -1407,7 +1408,7 @@ public class CloudSolrClient extends SolrClient {
       this.solrUrls.add(solrUrl);
       return this;
     }
-    
+
     /**
      * Provide a list of Solr URL to be used when configuring {@link CloudSolrClient} instances.
      * One of the provided values will be used to fetch the list of live Solr

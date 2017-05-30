@@ -32,6 +32,7 @@ import java.lang.invoke.MethodHandles;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.RejectedExecutionException;
 import java.util.regex.Pattern;
@@ -44,6 +45,7 @@ import org.apache.solr.common.cloud.ZkClientConnectionStrategy.ZkUpdate;
 import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.common.util.ObjectReleaseTracker;
 import org.apache.solr.common.util.SolrjNamedThreadFactory;
+import org.apache.solr.common.util.Utils;
 import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.KeeperException.NoNodeException;
@@ -360,6 +362,19 @@ public class SolrZkClient implements Closeable {
     } else {
       return keeper.getData(path, wrapWatcher(watcher), stat);
     }
+  }
+
+  public Map<String, Object> getJson(String path, boolean retryOnConnLoss) throws KeeperException, InterruptedException {
+    byte[] bytes = null;
+    try {
+      bytes = getData(path, null, null, retryOnConnLoss);
+    } catch (KeeperException.NoNodeException e) {
+      return null;
+    }
+    if (bytes != null && bytes.length > 0) {
+      return (Map<String, Object>) Utils.fromJSON(bytes);
+    }
+    return null;
   }
 
   /**
