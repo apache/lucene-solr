@@ -5822,6 +5822,24 @@ public class StreamExpressionTest extends SolrCloudTestCase {
   }
 
   @Test
+  public void testAnova() throws Exception {
+    String cexpr = "anova(array(1,2,3,5,4,6), array(5,2,3,5,4,6), array(1,2,7,5,4,6))";
+    ModifiableSolrParams paramsLoc = new ModifiableSolrParams();
+    paramsLoc.set("expr", cexpr);
+    paramsLoc.set("qt", "/stream");
+    String url = cluster.getJettySolrRunners().get(0).getBaseUrl().toString()+"/"+COLLECTIONORALIAS;
+    TupleStream solrStream = new SolrStream(url, paramsLoc);
+    StreamContext context = new StreamContext();
+    solrStream.setStreamContext(context);
+    List<Tuple> tuples = getTuples(solrStream);
+    assertTrue(tuples.size() == 1);
+    Map out = (Map)tuples.get(0).get("return-value");
+    assertEquals((double)out.get("p-value"), 0.788298D, .0001);
+    assertEquals((double)out.get("f-ratio"), 0.24169D, .0001);
+  }
+
+
+  @Test
   public void testScale() throws Exception {
     UpdateRequest updateRequest = new UpdateRequest();
 
