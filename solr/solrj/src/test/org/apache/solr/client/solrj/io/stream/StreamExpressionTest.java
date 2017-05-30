@@ -5838,6 +5838,26 @@ public class StreamExpressionTest extends SolrCloudTestCase {
     assertEquals((double)out.get("f-ratio"), 0.24169D, .0001);
   }
 
+  @Test
+  public void testMovingAverage() throws Exception {
+    String cexpr = "movingAvg(array(1,2,3,4,5,6,7), 4)";
+    ModifiableSolrParams paramsLoc = new ModifiableSolrParams();
+    paramsLoc.set("expr", cexpr);
+    paramsLoc.set("qt", "/stream");
+    String url = cluster.getJettySolrRunners().get(0).getBaseUrl().toString()+"/"+COLLECTIONORALIAS;
+    TupleStream solrStream = new SolrStream(url, paramsLoc);
+    StreamContext context = new StreamContext();
+    solrStream.setStreamContext(context);
+    List<Tuple> tuples = getTuples(solrStream);
+    assertTrue(tuples.size() == 1);
+    List<Number> out = (List<Number>)tuples.get(0).get("return-value");
+    assertTrue(out.size()==4);
+    assertEquals((double)out.get(0), 2.5, .0);
+    assertEquals((double)out.get(1), 3.5, .0);
+    assertEquals((double)out.get(2), 4.5, .0);
+    assertEquals((double)out.get(3), 5.5, .0);
+  }
+
 
   @Test
   public void testScale() throws Exception {
