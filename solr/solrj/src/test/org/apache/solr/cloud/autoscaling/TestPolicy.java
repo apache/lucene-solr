@@ -239,6 +239,37 @@ public class TestPolicy extends SolrTestCaseJ4 {
 
   }
 
+  public void testNegativeConditions() {
+    String autoscaleJson = "{" +
+        "      'cluster-policy':[" +
+        "      {'replica':'<4','shard':'#EACH','node':'#ANY'}," +
+        "      { 'replica': 0, 'sysprop.fs': '!ssd', 'shard': '#EACH'}," +//negative greedy condition
+        "      {'nodeRole':'overseer','replica':'0'}]," +
+        "      'cluster-preferences':[" +
+        "      {'minimize':'cores', 'precision':3}," +
+        "      {'maximize':'freedisk','precision':100}]}";
+    Map<String, Map> nodeValues = (Map<String, Map>) Utils.fromJSONString("{" +
+        "node1:{cores:12, freedisk: 334, heapUsage:10480, rack: rack4}," +
+        "node2:{cores:4, freedisk: 749, heapUsage:6873, rack: rack3}," +
+        "node3:{cores:7, freedisk: 262, heapUsage:7834, rack: rack2, sysprop.fs : ssd}," +
+        "node4:{cores:8, freedisk: 375, heapUsage:16900, nodeRole:overseer, rack: rack1}" +
+        "}");
+    Policy policy = new Policy((Map<String, Object>) Utils.fromJSONString(autoscaleJson));
+    ClusterDataProvider clusterDataProvider = getClusterDataProvider(nodeValues, clusterState);
+    Policy.Session session = policy.createSession(clusterDataProvider);
+    for (int i = 0; i < 3; i++) {
+      Policy.Suggester suggester = session.getSuggester(ADDREPLICA);
+      SolrRequest op = suggester
+          .hint(Hint.COLL, "newColl")
+          .hint(Hint.SHARD, "shard1")
+          .getOperation();
+      assertNotNull(op);
+      assertEquals("node3", op.getParams().get("node"));
+      session = suggester.getSession();
+    }
+
+  }
+
   public void testGreedyConditions() {
     String autoscaleJson = "{" +
         "      'cluster-policy':[" +
