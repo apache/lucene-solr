@@ -75,14 +75,34 @@ public class AutoScalingHandlerTest extends SolrCloudTestCase {
   @Test
   public void testSuspendTrigger() throws Exception {
     CloudSolrClient solrClient = cluster.getSolrClient();
+    String suspendEachCommand = "{\n" +
+        "\t\"suspend-trigger\" : {\n" +
+        "\t\t\"name\" : \"" + Policy.EACH + "\"\n" +
+        "\t}\n" +
+        "}";
+    String resumeEachCommand = "{\n" +
+        "\t\"resume-trigger\" : {\n" +
+        "\t\t\"name\" : \"" + Policy.EACH + "\"\n" +
+        "\t}\n" +
+        "}";
+    // these should be no-ops because there are no triggers, and it should succeed
+    SolrRequest req = new AutoScalingRequest(SolrRequest.METHOD.POST, path, suspendEachCommand);
+    NamedList<Object> response = solrClient.request(req);
+    assertEquals(response.get("result").toString(), "success");
+    assertEquals(response.get("changed").toString(), "[]");
+    req = new AutoScalingRequest(SolrRequest.METHOD.POST, path, resumeEachCommand);
+    response = solrClient.request(req);
+    assertEquals(response.get("result").toString(), "success");
+    assertEquals(response.get("changed").toString(), "[]");
+
     String setTriggerCommand = "{" +
         "'set-trigger' : {" +
         "'name' : 'node_lost_trigger'," +
         "'event' : 'nodeLost'," +
         "'waitFor' : '10m'," +
         "'enabled' : true}}";
-    SolrRequest req = new AutoScalingRequest(SolrRequest.METHOD.POST, path, setTriggerCommand);
-    NamedList<Object> response = solrClient.request(req);
+    req = new AutoScalingRequest(SolrRequest.METHOD.POST, path, setTriggerCommand);
+    response = solrClient.request(req);
     assertEquals(response.get("result").toString(), "success");
 
     setTriggerCommand = "{" +
@@ -105,6 +125,7 @@ public class AutoScalingHandlerTest extends SolrCloudTestCase {
     req = new AutoScalingRequest(SolrRequest.METHOD.POST, path, suspendTriggerCommand);
     response = solrClient.request(req);
     assertEquals(response.get("result").toString(), "success");
+    assertEquals(response.get("changed").toString(), "[node_lost_trigger]");
 
     byte[] data = zkClient().getData(SOLR_AUTOSCALING_CONF_PATH, null, null, true);
     ZkNodeProps loaded = ZkNodeProps.load(data);
@@ -122,12 +143,15 @@ public class AutoScalingHandlerTest extends SolrCloudTestCase {
 
     suspendTriggerCommand = "{" +
         "'suspend-trigger' : {" +
-        "'name' : '#EACH'" +
+        "'name' : '" + Policy.EACH + "'" +
         "}" +
         "}";
     req = new AutoScalingRequest(SolrRequest.METHOD.POST, path, suspendTriggerCommand);
     response = solrClient.request(req);
     assertEquals(response.get("result").toString(), "success");
+    List<String> changed = (List<String>)response.get("changed");
+    assertEquals(1, changed.size());
+    assertTrue(changed.contains("node_added_trigger"));
     data = zkClient().getData(SOLR_AUTOSCALING_CONF_PATH, null, null, true);
     loaded = ZkNodeProps.load(data);
     triggers = (Map<String, Object>) loaded.get("triggers");
@@ -148,6 +172,9 @@ public class AutoScalingHandlerTest extends SolrCloudTestCase {
     req = new AutoScalingRequest(SolrRequest.METHOD.POST, path, resumeTriggerCommand);
     response = solrClient.request(req);
     assertEquals(response.get("result").toString(), "success");
+    changed = (List<String>)response.get("changed");
+    assertEquals(1, changed.size());
+    assertTrue(changed.contains("node_added_trigger"));
     data = zkClient().getData(SOLR_AUTOSCALING_CONF_PATH, null, null, true);
     loaded = ZkNodeProps.load(data);
     triggers = (Map<String, Object>) loaded.get("triggers");
@@ -162,12 +189,15 @@ public class AutoScalingHandlerTest extends SolrCloudTestCase {
 
     resumeTriggerCommand = "{" +
         "'resume-trigger' : {" +
-        "'name' : '#EACH'" +
+        "'name' : '" + Policy.EACH + "'" +
         "}" +
         "}";
     req = new AutoScalingRequest(SolrRequest.METHOD.POST, path, resumeTriggerCommand);
     response = solrClient.request(req);
     assertEquals(response.get("result").toString(), "success");
+    changed = (List<String>)response.get("changed");
+    assertEquals(1, changed.size());
+    assertTrue(changed.contains("node_lost_trigger"));
     data = zkClient().getData(SOLR_AUTOSCALING_CONF_PATH, null, null, true);
     loaded = ZkNodeProps.load(data);
     triggers = (Map<String, Object>) loaded.get("triggers");
@@ -189,6 +219,9 @@ public class AutoScalingHandlerTest extends SolrCloudTestCase {
     req = new AutoScalingRequest(SolrRequest.METHOD.POST, path, suspendTriggerCommand);
     response = solrClient.request(req);
     assertEquals(response.get("result").toString(), "success");
+    changed = (List<String>)response.get("changed");
+    assertEquals(1, changed.size());
+    assertTrue(changed.contains("node_lost_trigger"));
     data = zkClient().getData(SOLR_AUTOSCALING_CONF_PATH, null, null, true);
     loaded = ZkNodeProps.load(data);
     triggers = (Map<String, Object>) loaded.get("triggers");
