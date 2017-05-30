@@ -17,7 +17,6 @@
 package org.apache.solr.client.solrj.io.stream;
 
 import java.io.IOException;
-import java.text.SimpleDateFormat;
 import java.time.LocalDateTime;
 import java.time.ZoneOffset;
 import java.time.format.DateTimeFormatter;
@@ -57,8 +56,8 @@ public class TimeSeriesStream extends TupleStream implements Expressible  {
   private String end;
   private String gap;
   private String field;
+  private String format;
   private DateTimeFormatter formatter;
-  private SimpleDateFormat ISOFormatter = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm'Z'");
 
   private Metric[] metrics;
   private List<Tuple> tuples = new ArrayList();
@@ -197,7 +196,8 @@ public class TimeSeriesStream extends TupleStream implements Expressible  {
     this.params = params;
     this.end = end;
     if(format != null) {
-      formatter = DateTimeFormatter.ofPattern(format);
+      this.format = format;
+      formatter = DateTimeFormatter.ofPattern(format, Locale.ROOT);
     }
   }
 
@@ -225,6 +225,8 @@ public class TimeSeriesStream extends TupleStream implements Expressible  {
     expression.addParameter(new StreamExpressionNamedParameter("end", end));
     expression.addParameter(new StreamExpressionNamedParameter("gap", gap));
     expression.addParameter(new StreamExpressionNamedParameter("field", gap));
+    expression.addParameter(new StreamExpressionNamedParameter("format", format));
+
 
     // zkHost
     expression.addParameter(new StreamExpressionNamedParameter("zkHost", zkHost));
