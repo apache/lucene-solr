@@ -241,6 +241,9 @@ Bug Fixes
 * SOLR-10723 JSON Facet API: resize() implemented incorrectly for CountSlotAcc, HllAgg.NumericAcc
   resulting in exceptions when using a hashing faceting method and sorting by hll(numeric_field).
   (yonik)
+  
+* SOLR-10719: Creating a core.properties fails if the parent of core.properties is a symlinked dierctory
+  (Erick Erickson)
 
 Optimizations
 ----------------------
