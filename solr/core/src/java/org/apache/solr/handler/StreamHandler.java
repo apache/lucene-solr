@@ -192,6 +192,7 @@ public class StreamHandler extends RequestHandlerBase implements SolrCoreAware, 
       .withFunctionName("sequence", SequenceEvaluator.class)
       .withFunctionName("array", ArrayEvaluator.class)
       .withFunctionName("hist", HistogramEvaluator.class)
+      .withFunctionName("anova", AnovaEvaluator.class)
 
       // metrics
          .withFunctionName("min", MinMetric.class)
