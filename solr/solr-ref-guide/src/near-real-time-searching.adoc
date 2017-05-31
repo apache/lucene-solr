@@ -29,9 +29,9 @@ However, pay special attention to cache and autowarm settings as they can have a
 [[NearRealTimeSearching-CommitsandOptimizing]]
 == Commits and Optimizing
 
-A commit operation makes index changes visible to new search requests. A *hard commit* uses the transaction log to get the id of the latest document changes, and also calls `fsync` on the index files to ensure they have been flushed to stable storage and no data loss will result from a power failure.
+A commit operation makes index changes visible to new search requests. A *hard commit* uses the transaction log to get the id of the latest document changes, and also calls `fsync` on the index files to ensure they have been flushed to stable storage and no data loss will result from a power failure. The current transaction log is closed and a new one is opened. See the "transaction log" discussion below for data loss issues.
 
-A *soft commit* is much faster since it only makes index changes visible and does not `fsync` index files or write a new index descriptor. If the JVM crashes or there is a loss of power, changes that occurred after the last *hard commit* will be lost. Search collections that have NRT requirements (that want index changes to be quickly visible to searches) will want to soft commit often but hard commit less frequently. A softCommit may be "less expensive" in terms of time, but not free, since it can slow throughput.
+A *soft commit* is much faster since it only makes index changes visible and does not `fsync` index files, or write a new index descriptor or start a new transaction log. Search collections that have NRT requirements (that want index changes to be quickly visible to searches) will want to soft commit often but hard commit less frequently. A softCommit may be "less expensive", but it is not free, since it can slow throughput. See the "transaction log" discussion below for data loss issues. 
 
 An *optimize* is like a *hard commit* except that it forces all of the index segments to be merged into a single segment first. Depending on the use, this operation should be performed infrequently (e.g., nightly), if at all, since it involves reading and re-writing the entire index. Segments are normally merged over time anyway (as determined by the merge policy), and optimize just forces these merges to occur immediately.
 
@@ -47,6 +47,15 @@ Soft commit takes uses two parameters: `maxDocs` and `maxTime`.
 |===
 
 Use `maxDocs` and `maxTime` judiciously to fine-tune your commit strategies.
+
+[[NearRealTimeSearching-TransactionLogs]]
+=== Transaction Logs (tlogs)
+
+Transaction logs are a "rolling window" of at least the last `N` (default 100) documents indexed. Tlogs are configured in solrconfig.xml, including the value of `N`. The current transaction log is closed and a new one opened each time any variety of hard commit occurs. Soft commits have no effect on the transaction log.
+  
+When tlogs are enabled, documents being added to the index are written to the tlog before the indexing call returns to the client. In the event of an un-graceful shutdown (power loss, JVM crash, `kill -9` etc) any documents written to the tlog that was open when Solr stopped are replayed on startup.
+
+When Solr is shut down gracefully (i.e. using the `bin/solr stop` command and the like) Solr will close the tlog file and index segments so no replay will be necessary on startup.
 
 [[NearRealTimeSearching-AutoCommits]]
 === AutoCommits
@@ -75,6 +84,7 @@ It's better to use `maxTime` rather than `maxDocs` to modify an `autoSoftCommit`
 |===
 |Parameter |Valid Attributes |Description
 |`waitSearcher` |true, false |Block until a new searcher is opened and registered as the main query searcher, making the changes visible. Default is true.
+|`OpenSearcher` |true, false |Open a new searcher making all documents indexed so far visible for searching. Default is true.
 |`softCommit` |true, false |Perform a soft commit. This will refresh the view of the index faster, but without guarantees that the document is stably stored. Default is false.
 |`expungeDeletes` |true, false |Valid for `commit` only. This parameter purges deleted data from segments. The default is false.
 |`maxSegments` |integer |Valid for `optimize` only. Optimize down to at most this number of segments. The default is 1.

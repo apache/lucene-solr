@@ -5368,6 +5368,87 @@ public class StreamExpressionTest extends SolrCloudTestCase {
     assertTrue(tuples.get(3).getDouble("max(price_f)").equals(400D));
     assertTrue(tuples.get(3).getDouble("min(price_f)").equals(400D));
 
+
+    expr = "timeseries("+COLLECTIONORALIAS+", q=\"*:*\", start=\"2013-01-01T01:00:00.000Z\", " +
+        "end=\"2016-12-01T01:00:00.000Z\", " +
+        "gap=\"+1YEAR\", " +
+        "field=\"test_dt\", " +
+        "format=\"yyyy\", " +
+        "count(*), sum(price_f), max(price_f), min(price_f))";
+    paramsLoc = new ModifiableSolrParams();
+    paramsLoc.set("expr", expr);
+    paramsLoc.set("qt", "/stream");
+
+    solrStream = new SolrStream(url, paramsLoc);
+
+    solrStream.setStreamContext(context);
+    tuples = getTuples(solrStream);
+    assertTrue(tuples.size() == 4);
+
+    assertTrue(tuples.get(0).get("test_dt").equals("2013"));
+    assertTrue(tuples.get(0).getLong("count(*)").equals(100L));
+    assertTrue(tuples.get(0).getDouble("sum(price_f)").equals(10000D));
+    assertTrue(tuples.get(0).getDouble("max(price_f)").equals(100D));
+    assertTrue(tuples.get(0).getDouble("min(price_f)").equals(100D));
+
+    assertTrue(tuples.get(1).get("test_dt").equals("2014"));
+    assertTrue(tuples.get(1).getLong("count(*)").equals(50L));
+    assertTrue(tuples.get(1).getDouble("sum(price_f)").equals(25000D));
+    assertTrue(tuples.get(1).getDouble("max(price_f)").equals(500D));
+    assertTrue(tuples.get(1).getDouble("min(price_f)").equals(500D));
+
+    assertTrue(tuples.get(2).get("test_dt").equals("2015"));
+    assertTrue(tuples.get(2).getLong("count(*)").equals(50L));
+    assertTrue(tuples.get(2).getDouble("sum(price_f)").equals(15000D));
+    assertTrue(tuples.get(2).getDouble("max(price_f)").equals(300D));
+    assertTrue(tuples.get(2).getDouble("min(price_f)").equals(300D));
+
+    assertTrue(tuples.get(3).get("test_dt").equals("2016"));
+    assertTrue(tuples.get(3).getLong("count(*)").equals(50L));
+    assertTrue(tuples.get(3).getDouble("sum(price_f)").equals(20000D));
+    assertTrue(tuples.get(3).getDouble("max(price_f)").equals(400D));
+    assertTrue(tuples.get(3).getDouble("min(price_f)").equals(400D));
+
+    expr = "timeseries("+COLLECTIONORALIAS+", q=\"*:*\", start=\"2013-01-01T01:00:00.000Z\", " +
+        "end=\"2016-12-01T01:00:00.000Z\", " +
+        "gap=\"+1YEAR\", " +
+        "field=\"test_dt\", " +
+        "format=\"yyyy-MM\", " +
+        "count(*), sum(price_f), max(price_f), min(price_f))";
+    paramsLoc = new ModifiableSolrParams();
+    paramsLoc.set("expr", expr);
+    paramsLoc.set("qt", "/stream");
+
+    solrStream = new SolrStream(url, paramsLoc);
+
+    solrStream.setStreamContext(context);
+    tuples = getTuples(solrStream);
+    assertTrue(tuples.size() == 4);
+
+    assertTrue(tuples.get(0).get("test_dt").equals("2013-01"));
+    assertTrue(tuples.get(0).getLong("count(*)").equals(100L));
+    assertTrue(tuples.get(0).getDouble("sum(price_f)").equals(10000D));
+    assertTrue(tuples.get(0).getDouble("max(price_f)").equals(100D));
+    assertTrue(tuples.get(0).getDouble("min(price_f)").equals(100D));
+
+    assertTrue(tuples.get(1).get("test_dt").equals("2014-01"));
+    assertTrue(tuples.get(1).getLong("count(*)").equals(50L));
+    assertTrue(tuples.get(1).getDouble("sum(price_f)").equals(25000D));
+    assertTrue(tuples.get(1).getDouble("max(price_f)").equals(500D));
+    assertTrue(tuples.get(1).getDouble("min(price_f)").equals(500D));
+
+    assertTrue(tuples.get(2).get("test_dt").equals("2015-01"));
+    assertTrue(tuples.get(2).getLong("count(*)").equals(50L));
+    assertTrue(tuples.get(2).getDouble("sum(price_f)").equals(15000D));
+    assertTrue(tuples.get(2).getDouble("max(price_f)").equals(300D));
+    assertTrue(tuples.get(2).getDouble("min(price_f)").equals(300D));
+
+    assertTrue(tuples.get(3).get("test_dt").equals("2016-01"));
+    assertTrue(tuples.get(3).getLong("count(*)").equals(50L));
+    assertTrue(tuples.get(3).getDouble("sum(price_f)").equals(20000D));
+    assertTrue(tuples.get(3).getDouble("max(price_f)").equals(400D));
+    assertTrue(tuples.get(3).getDouble("min(price_f)").equals(400D));
+
   }
 
   @Test
