@@ -198,6 +198,8 @@ Other Changes
 
 * SOLR-10755: delete/refactor many solrj deprecations (hossman)
 
+* SOLR-10757: delete/refactor/cleanup CollectionAdminRequest deprecations (hossman)
+
 ==================  6.7.0 ==================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release.

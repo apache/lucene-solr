@@ -523,16 +523,12 @@ public class ShardSplitTest extends BasicDistributedZkTest {
 
     log.info("Starting testSplitShardWithRule");
     String collectionName = "shardSplitWithRule";
-    CollectionAdminRequest.Create createRequest = new CollectionAdminRequest.Create()
-        .setCollectionName(collectionName)
-        .setNumShards(1)
-        .setReplicationFactor(2)
+    CollectionAdminRequest.Create createRequest = CollectionAdminRequest.createCollection(collectionName,1,2)
         .setRule("shard:*,replica:<2,node:*");
     CollectionAdminResponse response = createRequest.process(cloudClient);
     assertEquals(0, response.getStatus());
 
-    CollectionAdminRequest.SplitShard splitShardRequest = new CollectionAdminRequest.SplitShard()
-        .setCollectionName(collectionName)
+    CollectionAdminRequest.SplitShard splitShardRequest = CollectionAdminRequest.splitShard(collectionName)
         .setShardName("shard1");
     response = splitShardRequest.process(cloudClient);
     assertEquals(String.valueOf(response.getErrorMessages()), 0, response.getStatus());
