@@ -252,6 +252,8 @@ Bug Fixes
 
 * SOLR-10360: Solr HDFS snapshot export fails due to FileNotFoundException error when using MR1 instead of
   yarn. (Hrishikesh via Mark Miller)
+  
+* SOLR-10137: Ensure that ConfigSets created via API are mutable. (Hrishikesh via Mark Miller)
 
 Optimizations
 ----------------------

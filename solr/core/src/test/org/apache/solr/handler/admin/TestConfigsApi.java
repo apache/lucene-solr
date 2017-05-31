@@ -54,6 +54,6 @@ public class TestConfigsApi extends SolrTestCaseJ4 {
         "{name :sample, operation:delete}");
 
     compareOutput(apiBag, "/cluster/configs", POST, "{create:{name : newconf, baseConfigSet: sample }}", null,
-        "{operation:create, name :newconf,  baseConfigSet: sample }");
+        "{operation:create, name :newconf,  baseConfigSet: sample, immutable: false }");
   }
 }
