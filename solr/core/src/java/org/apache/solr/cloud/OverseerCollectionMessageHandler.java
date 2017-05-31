@@ -87,6 +87,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import static java.util.Collections.singletonMap;
+import static org.apache.solr.cloud.autoscaling.Policy.POLICY;
 import static org.apache.solr.common.cloud.DocCollection.SNITCH;
 import static org.apache.solr.common.cloud.ZkStateReader.BASE_URL_PROP;
 import static org.apache.solr.common.cloud.ZkStateReader.COLLECTION_PROP;
@@ -144,6 +145,7 @@ public class OverseerCollectionMessageHandler implements OverseerMessageHandler 
       ZkStateReader.MAX_SHARDS_PER_NODE, "1",
       ZkStateReader.AUTO_ADD_REPLICAS, "false",
       DocCollection.RULE, null,
+      POLICY, null,
       SNITCH, null));
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
@@ -714,9 +716,9 @@ public class OverseerCollectionMessageHandler implements OverseerMessageHandler 
                                       List<String> shardNames,
                                       int numNrtReplicas, 
                                       int numTlogReplicas,
-                                      int numPullReplicas) throws IOException, KeeperException, InterruptedException {
+                                      int numPullReplicas) throws KeeperException, InterruptedException {
     List<Map> rulesMap = (List) message.get("rule");
-    String policyName = message.getStr("policy");
+    String policyName = message.getStr(POLICY);
     Map autoSalingJson = zkStateReader.getZkClient().getJson(SOLR_AUTOSCALING_CONF_PATH, true);
     autoSalingJson = autoSalingJson == null ? Collections.EMPTY_MAP : autoSalingJson;
 
@@ -746,23 +748,8 @@ public class OverseerCollectionMessageHandler implements OverseerMessageHandler 
     }
 
     if (policyName != null || autoSalingJson.get(Policy.CLUSTER_POLICY) != null) {
-      String collName = message.getStr(COLLECTION_PROP, message.getStr(NAME));
-      try (CloudSolrClient csc = new CloudSolrClient.Builder()
-          .withClusterStateProvider(new ZkClientClusterStateProvider(zkStateReader))
-          .build()) {
-        SolrClientDataProvider clientDataProvider = new SolrClientDataProvider(csc);
-        Map<String, List<String>> locations = PolicyHelper.getReplicaLocations(collName,
-            zkStateReader.getZkClient().getJson(SOLR_AUTOSCALING_CONF_PATH, true),
-            clientDataProvider, singletonMap(collName, policyName), shardNames, numNrtReplicas);
-        Map<Position, String> result = new HashMap<>();
-        for (Map.Entry<String, List<String>> e : locations.entrySet()) {
-          List<String> value = e.getValue();
-          for (int i = 0; i < value.size(); i++) {
-            result.put(new Position(e.getKey(), i, Replica.Type.NRT), value.get(i));
-          }
-        }
-        return result;
-      }
+      return Assign.getPositionsUsingPolicy(message.getStr(COLLECTION_PROP, message.getStr(NAME)),
+          shardNames, numNrtReplicas, policyName, zkStateReader);
 
     } else {
       List<Rule> rules = new ArrayList<>();

@@ -22,7 +22,7 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
-import java.util.function.BiConsumer;
+import java.util.function.Consumer;
 
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrRequest;
@@ -44,7 +44,6 @@ import org.apache.solr.common.util.ContentStream;
 import org.apache.solr.common.util.ContentStreamBase;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.Utils;
-import org.apache.zookeeper.KeeperException;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -303,7 +302,7 @@ public class AutoScalingHandlerTest extends SolrCloudTestCase {
     }
   }
 
-  public void testCreateCollectionPolicy() throws Exception {
+  public void testCreateCollectionAddShardUsingPolicy() throws Exception {
     JettySolrRunner jetty = cluster.getRandomJetty(random());
     int port = jetty.getLocalPort();
 
@@ -313,12 +312,18 @@ public class AutoScalingHandlerTest extends SolrCloudTestCase {
     Map<String, Object> json = cluster.getZkClient().getJson(ZkStateReader.SOLR_AUTOSCALING_CONF_PATH, true);
     assertEquals("full json:"+ Utils.toJSONString(json) , "#EACH",
         Utils.getObjectByPath(json, true, "/policies/c1[0]/shard"));
-    CollectionAdminRequest.createCollection("policiesTest",2, 1)
+    CollectionAdminRequest.createCollectionWithImplicitRouter("policiesTest", null, "s1,s2", 1)
         .setPolicy("c1")
         .process(cluster.getSolrClient());
 
     DocCollection coll = getCollectionState("policiesTest");
+    assertEquals("c1", coll.getPolicyName());
+    assertEquals(2,coll.getReplicas().size());
     coll.forEachReplica((s, replica) -> assertEquals(jetty.getNodeName(), replica.getNodeName()));
+    CollectionAdminRequest.createShard("policiesTest", "s3").process(cluster.getSolrClient());
+    coll = getCollectionState("policiesTest");
+    assertEquals(1, coll.getSlice("s3").getReplicas().size());
+    coll.getSlice("s3").forEach(replica -> assertEquals(jetty.getNodeName(), replica.getNodeName()));
   }
 
   static SolrRequest createAutoScalingRequest(SolrRequest.METHOD m, String message) {
