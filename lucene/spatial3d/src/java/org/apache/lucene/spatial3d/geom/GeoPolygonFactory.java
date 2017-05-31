@@ -56,9 +56,9 @@ public class GeoPolygonFactory {
    * that we are dealing with a concave polygon, e.g. the polygon has been serialized.
    * If there is not such certainty, please refer to @{@link GeoPolygonFactory#makeGeoPolygon(PlanetModel, List)}.
    * @param pointList is a list of the GeoPoints to build an arbitrary polygon out of.
-   * @return a GeoConcavePolygon corresponding to what was specified.
+   * @return a GeoPolygon corresponding to what was specified.
    */
-  public static GeoConcavePolygon makeGeoConcavePolygon(final PlanetModel planetModel,
+  public static GeoPolygon makeGeoConcavePolygon(final PlanetModel planetModel,
                                                         final List<GeoPoint> pointList) {
     return new GeoConcavePolygon(planetModel, pointList);
   }
@@ -70,9 +70,9 @@ public class GeoPolygonFactory {
    * there is certainty that we are dealing with a convex polygon, e.g. the polygon has been serialized.
    * If there is not such certainty, please refer to @{@link GeoPolygonFactory#makeGeoPolygon(PlanetModel, List)}.
    * @param pointList is a list of the GeoPoints to build an arbitrary polygon out of.
-   * @return a GeoConvexPolygon corresponding to what was specified.
+   * @return a GeoPolygon corresponding to what was specified.
    */
-  public static GeoConvexPolygon makeGeoConvexPolygon(final PlanetModel planetModel,
+  public static GeoPolygon makeGeoConvexPolygon(final PlanetModel planetModel,
                                                       final List<GeoPoint> pointList) {
     return new GeoConvexPolygon(planetModel, pointList);
   }
@@ -105,9 +105,9 @@ public class GeoPolygonFactory {
    * @param pointList is a list of the GeoPoints to build an arbitrary polygon out of.
    * @param holes is a list of polygons representing "holes" in the outside polygon.  Holes describe the area outside
    *  each hole as being "in set".  Null == none.
-   * @return a GeoConcavePolygon corresponding to what was specified.
+   * @return a GeoPolygon corresponding to what was specified.
    */
-  public static GeoConcavePolygon makeGeoConcavePolygon(final PlanetModel planetModel,
+  public static GeoPolygon makeGeoConcavePolygon(final PlanetModel planetModel,
                                                         final List<GeoPoint> pointList,
                                                         final List<GeoPolygon> holes) {
     return new GeoConcavePolygon(planetModel,pointList, holes);
@@ -122,9 +122,9 @@ public class GeoPolygonFactory {
    * @param pointList is a list of the GeoPoints to build an arbitrary polygon out of.
    * @param holes is a list of polygons representing "holes" in the outside polygon.  Holes describe the area outside
    *  each hole as being "in set".  Null == none.
-   * @return a GeoConvexPolygon corresponding to what was specified.
+   * @return a GeoPolygon corresponding to what was specified.
    */
-  public static GeoConvexPolygon makeGeoConvexPolygon(final PlanetModel planetModel,
+  public static GeoPolygon makeGeoConvexPolygon(final PlanetModel planetModel,
                                                       final List<GeoPoint> pointList,
                                                       final List<GeoPolygon> holes) {
     return new GeoConvexPolygon(planetModel,pointList, holes);
