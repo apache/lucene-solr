@@ -20,7 +20,7 @@
 
 Solr can encrypt communications to and from clients, and between nodes in SolrCloud mode, with SSL.
 
-This section describes enabling SSL with the example Jetty server using a self-signed certificate.
+This section describes enabling SSL using a self-signed certificate.
 
 For background on SSL certificates and keys, see http://www.tldp.org/HOWTO/SSL-Certificates-HOWTO/.
 

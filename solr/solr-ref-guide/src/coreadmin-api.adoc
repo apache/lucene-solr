@@ -119,7 +119,7 @@ The RELOAD action loads a new core from the configuration of an existing, regist
 
 `admin/cores?action=RELOAD&core=_core-name_`
 
-This is useful when you've made changes to a Solr core's configuration on disk, such as adding new field definitions. Calling the RELOAD action lets you apply the new configuration without having to restart the Web container.
+This is useful when you've made changes to a Solr core's configuration on disk, such as adding new field definitions. Calling the RELOAD action lets you apply the new configuration without having to restart Solr.
 
 [IMPORTANT]
 ====
