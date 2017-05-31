@@ -29,6 +29,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
 import org.apache.http.client.HttpClient;
+import org.apache.http.client.methods.HttpGet;
 import org.apache.lucene.util.LuceneTestCase.Slow;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrServerException;
@@ -116,9 +117,22 @@ public class TestPullReplica extends SolrCloudTestCase {
   @Repeat(iterations=2) // 2 times to make sure cleanup is complete and we can create the same collection
   public void testCreateDelete() throws Exception {
     try {
-      CollectionAdminRequest.createCollection(collectionName, "conf", 2, 1, 0, 3)
-      .setMaxShardsPerNode(100)
-      .process(cluster.getSolrClient());
+      if (random().nextBoolean()) {
+        CollectionAdminRequest.createCollection(collectionName, "conf", 2, 1, 0, 3)
+        .setMaxShardsPerNode(100)
+        .process(cluster.getSolrClient());
+      } else {
+        // Sometimes don't use SolrJ.
+        String url = String.format(Locale.ROOT, "%s/admin/collections?action=CREATE&name=%s&numShards=%s&pullReplicas=%s&maxShardsPerNode=%s", 
+            cluster.getRandomJetty(random()).getBaseUrl(), 
+            collectionName,
+            2,    // numShards
+            3,    // pullReplicas 
+            100); // maxShardsPerNode
+        url = url + pickRandom("", "&nrtReplicas=1", "&replicationFactor=1"); // These options should all mean the same
+        HttpGet createCollectionRequest = new HttpGet(url);
+        cluster.getSolrClient().getHttpClient().execute(createCollectionRequest);
+      }
       boolean reloaded = false;
       while (true) {
         DocCollection docCollection = getCollectionState(collectionName);

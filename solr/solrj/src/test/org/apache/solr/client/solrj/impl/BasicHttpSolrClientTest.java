@@ -839,7 +839,7 @@ public class BasicHttpSolrClientTest extends SolrJettyTestBase {
 
     try(HttpSolrClient createdClient = new HttpSolrClient.Builder()
         .withBaseSolrUrl(jetty.getBaseUrl().toString())
-        .withDelegationToken("mydt")
+        .withKerberosDelegationToken("mydt")
         .withInvariantParams(SolrTestCaseJ4.params(DelegationTokenHttpSolrClient.DELEGATION_TOKEN_PARAM, "mydt"))
         .build()) {
       fail();

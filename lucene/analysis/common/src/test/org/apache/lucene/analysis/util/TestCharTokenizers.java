@@ -25,8 +25,10 @@ import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.BaseTokenStreamTestCase;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.Tokenizer;
+import org.apache.lucene.analysis.core.KeywordTokenizer;
 import org.apache.lucene.analysis.core.LetterTokenizer;
 import org.apache.lucene.analysis.core.LowerCaseTokenizer;
+import org.apache.lucene.analysis.core.WhitespaceTokenizer;
 import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
 import org.apache.lucene.util.TestUtil;
 
@@ -88,6 +90,99 @@ public class TestCharTokenizers extends BaseTokenStreamTestCase {
     Tokenizer tokenizer = new LowerCaseTokenizer(newAttributeFactory());
     tokenizer.setReader(new StringReader(builder.toString() + builder.toString()));
     assertTokenStreamContents(tokenizer, new String[] {builder.toString().toLowerCase(Locale.ROOT), builder.toString().toLowerCase(Locale.ROOT)});
+  }
+
+  /*
+   * tests the max word length passed as parameter - tokenizer will split at the passed position char no matter what happens
+   */
+  public void testCustomMaxTokenLength() throws IOException {
+
+    StringBuilder builder = new StringBuilder();
+    for (int i = 0; i < 100; i++) {
+      builder.append("A");
+    }
+    Tokenizer tokenizer = new LowerCaseTokenizer(newAttributeFactory(), 100);
+    // Tricky, passing two copies of the string to the reader....
+    tokenizer.setReader(new StringReader(builder.toString() + builder.toString()));
+    assertTokenStreamContents(tokenizer, new String[]{builder.toString().toLowerCase(Locale.ROOT), 
+        builder.toString().toLowerCase(Locale.ROOT) });
+
+    Exception e = expectThrows(IllegalArgumentException.class, () ->
+        new LowerCaseTokenizer(newAttributeFactory(), -1));
+    assertEquals("maxTokenLen must be greater than 0 and less than 1048576 passed: -1", e.getMessage());
+
+    tokenizer = new LetterTokenizer(newAttributeFactory(), 100);
+    tokenizer.setReader(new StringReader(builder.toString() + builder.toString()));
+    assertTokenStreamContents(tokenizer, new String[]{builder.toString(), builder.toString()});
+
+
+    // Let's test that we can get a token longer than 255 through.
+    builder.setLength(0);
+    for (int i = 0; i < 500; i++) {
+      builder.append("Z");
+    }
+    tokenizer = new LetterTokenizer(newAttributeFactory(), 500);
+    tokenizer.setReader(new StringReader(builder.toString()));
+    assertTokenStreamContents(tokenizer, new String[]{builder.toString()});
+
+    
+    // Just to be sure what is happening here, token lengths of zero make no sense, 
+    // Let's try the edge cases, token > I/O buffer (4096)
+    builder.setLength(0);
+    for (int i = 0; i < 600; i++) {
+      builder.append("aUrOkIjq"); // 600 * 8 = 4800 chars.
+    }
+
+    e = expectThrows(IllegalArgumentException.class, () ->
+        new LowerCaseTokenizer(newAttributeFactory(), 0));
+    assertEquals("maxTokenLen must be greater than 0 and less than 1048576 passed: 0", e.getMessage());
+
+    e = expectThrows(IllegalArgumentException.class, () ->
+        new LowerCaseTokenizer(newAttributeFactory(), 10_000_000));
+    assertEquals("maxTokenLen must be greater than 0 and less than 1048576 passed: 10000000", e.getMessage());
+
+    tokenizer = new LowerCaseTokenizer(newAttributeFactory(), 4800);
+    tokenizer.setReader(new StringReader(builder.toString()));
+    assertTokenStreamContents(tokenizer, new String[]{builder.toString().toLowerCase(Locale.ROOT)});
+
+
+    e = expectThrows(IllegalArgumentException.class, () ->
+        new KeywordTokenizer(newAttributeFactory(), 0));
+    assertEquals("maxTokenLen must be greater than 0 and less than 1048576 passed: 0", e.getMessage());
+
+    e = expectThrows(IllegalArgumentException.class, () ->
+        new KeywordTokenizer(newAttributeFactory(), 10_000_000));
+    assertEquals("maxTokenLen must be greater than 0 and less than 1048576 passed: 10000000", e.getMessage());
+
+
+    tokenizer = new KeywordTokenizer(newAttributeFactory(), 4800);
+    tokenizer.setReader(new StringReader(builder.toString()));
+    assertTokenStreamContents(tokenizer, new String[]{builder.toString()});
+
+    e = expectThrows(IllegalArgumentException.class, () ->
+        new LetterTokenizer(newAttributeFactory(), 0));
+    assertEquals("maxTokenLen must be greater than 0 and less than 1048576 passed: 0", e.getMessage());
+
+    e = expectThrows(IllegalArgumentException.class, () ->
+        new LetterTokenizer(newAttributeFactory(), 2_000_000));
+    assertEquals("maxTokenLen must be greater than 0 and less than 1048576 passed: 2000000", e.getMessage());
+
+    tokenizer = new LetterTokenizer(newAttributeFactory(), 4800);
+    tokenizer.setReader(new StringReader(builder.toString()));
+    assertTokenStreamContents(tokenizer, new String[]{builder.toString()});
+
+    e = expectThrows(IllegalArgumentException.class, () ->
+        new WhitespaceTokenizer(newAttributeFactory(), 0));
+    assertEquals("maxTokenLen must be greater than 0 and less than 1048576 passed: 0", e.getMessage());
+
+    e = expectThrows(IllegalArgumentException.class, () ->
+        new WhitespaceTokenizer(newAttributeFactory(), 3_000_000));
+    assertEquals("maxTokenLen must be greater than 0 and less than 1048576 passed: 3000000", e.getMessage());
+
+    tokenizer = new WhitespaceTokenizer(newAttributeFactory(), 4800);
+    tokenizer.setReader(new StringReader(builder.toString()));
+    assertTokenStreamContents(tokenizer, new String[]{builder.toString()});
+
   }
   
   /*

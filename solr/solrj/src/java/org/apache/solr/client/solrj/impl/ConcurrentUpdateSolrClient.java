@@ -96,56 +96,11 @@ public class ConcurrentUpdateSolrClient extends SolrClient {
   AtomicInteger emptyQueueLoops;
   
   /**
-   * Uses an internally managed HttpClient instance.
-   * 
-   * @param solrServerUrl
-   *          The Solr server URL
-   * @param queueSize
-   *          The buffer size before the documents are sent to the server
-   * @param threadCount
-   *          The number of background threads used to empty the queue
-   *          
-   * @deprecated use {@link Builder} instead.
-   */
-  @Deprecated
-  public ConcurrentUpdateSolrClient(String solrServerUrl, int queueSize,
-                                    int threadCount) {
-    this(solrServerUrl, null, queueSize, threadCount);
-    shutdownExecutor = true;
-    internalHttpClient = true;
-  }
-  
-  /**
-   * @deprecated use {@link Builder} instead.
-   */
-  @Deprecated
-  public ConcurrentUpdateSolrClient(String solrServerUrl,
-                                    HttpClient client, int queueSize, int threadCount) {
-    this(solrServerUrl, client, queueSize, threadCount, ExecutorUtil.newMDCAwareCachedThreadPool(
-        new SolrjNamedThreadFactory("concurrentUpdateScheduler")));
-    shutdownExecutor = true;
-  }
-
-  /**
    * Uses the supplied HttpClient to send documents to the Solr server.
-   * 
-   * @deprecated use {@link Builder} instead.
    */
-  @Deprecated
-  public ConcurrentUpdateSolrClient(String solrServerUrl,
-                                    HttpClient client, int queueSize, int threadCount, ExecutorService es) {
-    this(solrServerUrl, client, queueSize, threadCount, es, false);
-  }
-  
-  /**
-   * Uses the supplied HttpClient to send documents to the Solr server.
-   * 
-   * @deprecated use {@link Builder} instead.  This will soon be a
-   * protected method, and will only be available for use in implementing subclasses.
-   */
-  @Deprecated
-  public ConcurrentUpdateSolrClient(String solrServerUrl,
-                                    HttpClient client, int queueSize, int threadCount, ExecutorService es, boolean streamDeletes) {
+  protected ConcurrentUpdateSolrClient(String solrServerUrl,
+                                       HttpClient client, int queueSize, int threadCount,
+                                       ExecutorService es, boolean streamDeletes) {
     this.internalHttpClient = (client == null);
     this.client = new HttpSolrClient.Builder(solrServerUrl)
         .withHttpClient(client)

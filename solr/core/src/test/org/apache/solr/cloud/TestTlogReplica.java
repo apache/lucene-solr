@@ -30,6 +30,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
 import org.apache.http.client.HttpClient;
+import org.apache.http.client.methods.HttpGet;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.util.LuceneTestCase.Slow;
 import org.apache.solr.client.solrj.SolrClient;
@@ -144,9 +145,22 @@ public class TestTlogReplica extends SolrCloudTestCase {
   @Repeat(iterations=2) // 2 times to make sure cleanup is complete and we can create the same collection
   public void testCreateDelete() throws Exception {
     try {
-      CollectionAdminRequest.createCollection(collectionName, "conf", 2, 0, 4, 0)
-      .setMaxShardsPerNode(100)
-      .process(cluster.getSolrClient());
+      if (random().nextBoolean()) {
+        CollectionAdminRequest.createCollection(collectionName, "conf", 2, 0, 4, 0)
+        .setMaxShardsPerNode(100)
+        .process(cluster.getSolrClient());
+      } else {
+        // Sometimes don't use SolrJ
+        String url = String.format(Locale.ROOT, "%s/admin/collections?action=CREATE&name=%s&numShards=%s&tlogReplicas=%s&maxShardsPerNode=%s", 
+            cluster.getRandomJetty(random()).getBaseUrl(), 
+            collectionName,
+            2,    // numShards
+            4,    // tlogReplicas 
+            100); // maxShardsPerNode
+        HttpGet createCollectionRequest = new HttpGet(url);
+        cluster.getSolrClient().getHttpClient().execute(createCollectionRequest);
+      }
+      
       boolean reloaded = false;
       while (true) {
         DocCollection docCollection = getCollectionState(collectionName);

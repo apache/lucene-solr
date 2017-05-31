@@ -45,6 +45,9 @@ import org.apache.solr.client.solrj.io.stream.expr.Explanation;
 import org.apache.solr.client.solrj.io.stream.expr.Explanation.ExpressionType;
 import org.apache.solr.client.solrj.io.stream.expr.Expressible;
 import org.apache.solr.client.solrj.io.stream.expr.StreamExplanation;
+import org.apache.solr.client.solrj.io.stream.expr.StreamExpression;
+import org.apache.solr.client.solrj.io.stream.expr.StreamExpressionNamedParameter;
+import org.apache.solr.client.solrj.io.stream.expr.StreamExpressionParser;
 import org.apache.solr.client.solrj.io.stream.expr.StreamFactory;
 import org.apache.solr.client.solrj.io.stream.metrics.CountMetric;
 import org.apache.solr.client.solrj.io.stream.metrics.MaxMetric;
@@ -185,6 +188,12 @@ public class StreamHandler extends RequestHandlerBase implements SolrCoreAware, 
       .withFunctionName("percentile", PercentileEvaluator.class)
       .withFunctionName("empiricalDistribution", EmpiricalDistributionEvaluator.class)
       .withFunctionName("describe", DescribeEvaluator.class)
+      .withFunctionName("finddelay", FindDelayEvaluator.class)
+      .withFunctionName("sequence", SequenceEvaluator.class)
+      .withFunctionName("array", ArrayEvaluator.class)
+      .withFunctionName("hist", HistogramEvaluator.class)
+      .withFunctionName("anova", AnovaEvaluator.class)
+      .withFunctionName("movingAvg", MovingAverageEvaluator.class)
 
       // metrics
          .withFunctionName("min", MinMetric.class)
@@ -296,7 +305,14 @@ public class StreamHandler extends RequestHandlerBase implements SolrCoreAware, 
     TupleStream tupleStream;
 
     try {
-      tupleStream = this.streamFactory.constructStream(params.get("expr"));
+      StreamExpression streamExpression = StreamExpressionParser.parse(params.get("expr"));
+      if(this.streamFactory.isEvaluator(streamExpression)) {
+        StreamExpression tupleExpression = new StreamExpression("tuple");
+        tupleExpression.addParameter(new StreamExpressionNamedParameter("return-value", streamExpression));
+        tupleStream = this.streamFactory.constructStream(tupleExpression);
+      } else {
+        tupleStream = this.streamFactory.constructStream(streamExpression);
+      }
     } catch (Exception e) {
       //Catch exceptions that occur while the stream is being created. This will include streaming expression parse rules.
       SolrException.log(logger, e);

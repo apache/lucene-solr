@@ -55,7 +55,6 @@ import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.cloud.ZkCoreNodeProps;
 import org.apache.solr.common.cloud.ZkStateReader;
-import org.apache.solr.common.params.MapSolrParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.ExecutorUtil;
@@ -82,24 +81,6 @@ public class TopicStream extends CloudSolrStream implements Expressible  {
   private Map<String, Long> checkpoints = new HashMap<>();
   private String checkpointCollection;
   private long initialCheckpoint = -1;
-
-  // Use TopicStream that takes a SolrParams
-  @Deprecated
-  public TopicStream(String zkHost,
-                     String checkpointCollection,
-                     String collection,
-                     String id,
-                     long initialCheckpoint,
-                     long checkpointEvery,
-                     Map<String, String> params) {
-    init(zkHost,
-         checkpointCollection,
-         collection,
-         id,
-         initialCheckpoint,
-         checkpointEvery,
-         new MapSolrParams(params));
-  }
 
   public TopicStream(String zkHost,
                      String checkpointCollection,

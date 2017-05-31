@@ -60,9 +60,7 @@ public class SqlStream extends TupleStream implements Expressible {
    *                     takes a SolrParams. Transition code can call the preferred method that takes SolrParams
    *                     by calling CloudSolrStream(zkHost, collectionName,
    *                     new ModifiableSolrParams(SolrParams.toMultiMap(new NamedList(Map&lt;String, String&gt;)));
-   * @deprecated         Use the constructor that has a SolrParams obj rather than a Map
    */
-  
   public SqlStream(String zkHost, String collectionName, SolrParams params) throws IOException {
     init(collectionName, zkHost, params);
   }

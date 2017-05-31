@@ -158,40 +158,7 @@ public class HttpSolrClient extends SolrClient {
   private volatile Integer connectionTimeout;
   private volatile Integer soTimeout;
   
-  /**
-   * @param baseURL
-   *          The URL of the Solr server. For example, "
-   *          <code>http://localhost:8983/solr/</code>" if you are using the
-   *          standard distribution Solr webapp on your local machine.
-   * @deprecated use {@link Builder} instead.
-   */
-  @Deprecated
-  public HttpSolrClient(String baseURL) {
-    this(baseURL, null, new BinaryResponseParser());
-  }
-  
-  /**
-   * @deprecated use {@link Builder} instead.
-   */
-  @Deprecated
-  public HttpSolrClient(String baseURL, HttpClient client) {
-    this(baseURL, client, new BinaryResponseParser());
-  }
-  
-  /**
-   * @deprecated use {@link Builder} instead.
-   */
-  @Deprecated
-  public HttpSolrClient(String baseURL, HttpClient client, ResponseParser parser) {
-    this(baseURL, client, parser, false);
-  }
-  
-  /**
-   * @deprecated use {@link Builder} instead.  This will soon be a 'protected'
-   * method, and will only be available for use in implementing subclasses.
-   */
-  @Deprecated
-  public HttpSolrClient(String baseURL, HttpClient client, ResponseParser parser, boolean allowCompression) {
+  protected HttpSolrClient(String baseURL, HttpClient client, ResponseParser parser, boolean allowCompression) {
     this.baseUrl = baseURL;
     if (baseUrl.endsWith("/")) {
       baseUrl = baseUrl.substring(0, baseUrl.length() - 1);
@@ -840,14 +807,6 @@ public class HttpSolrClient extends SolrClient {
      * Use a delegation token for authenticating via the KerberosPlugin
      */
     public Builder withKerberosDelegationToken(String delegationToken) {
-      return withDelegationToken(delegationToken);
-    }
-
-    @Deprecated
-    /**
-     * @deprecated use {@link withKerberosDelegationToken(String)} instead
-     */
-    public Builder withDelegationToken(String delegationToken) {
       if (this.invariantParams.get(DelegationTokenHttpSolrClient.DELEGATION_TOKEN_PARAM) != null) {
         throw new IllegalStateException(DelegationTokenHttpSolrClient.DELEGATION_TOKEN_PARAM + " is already defined!");
       }

@@ -57,6 +57,8 @@ API Changes
   instead, which derived from the UH.  WholeBreakIterator and
   CustomSeparatorBreakIterator were moved to UH's package. (David Smiley)
 
+* LUCENE-7850: Removed support for legacy numerics. (Adrien Grand)
+
 Bug Fixes
 
 * LUCENE-7626: IndexWriter will no longer accept broken token offsets
@@ -88,6 +90,10 @@ Optimizations
   values using different numbers of bits per value if this proves to save
   storage. (Adrien Grand)
 
+* LUCENE-7845: Enhance spatial-extras RecursivePrefixTreeStrategy queries when the
+  query is a point (for 2D) or a is a simple date interval (e.g. 1 month).  When
+  the strategy is marked as pointsOnly, the results is a TermQuery. (David Smiley)
+
 Other
 
 * LUCENE-7328: Remove LegacyNumericEncoding from GeoPointField. (Nick Knize)
@@ -99,6 +105,8 @@ Other
 * LUCENE-7753: Make fields static when possible.
   (Daniel Jelinski via Adrien Grand)
 
+* LUCENE-7540: Upgrade ICU to 59.1 (Mike McCandless, Jim Ferenczi)
+
 ======================= Lucene 6.7.0 =======================
 
 Other
@@ -106,6 +114,10 @@ Other
 * LUCENE-7800: Remove code that potentially rethrows checked exceptions 
   from methods that don't declare them ("sneaky throw" hack). (Robert Muir,
   Uwe Schindler, Dawid Weiss)
+
+Improvements
+
+* LUCENE-7841: Normalize ґ to г in Ukrainian analyzer. (Andriy Rysin via Dawid Weiss)
 
 ======================= Lucene 6.6.0 =======================
 

@@ -244,6 +244,7 @@ public abstract class AbstractCloudBackupRestoreTestCase extends SolrCloudTestCa
         // may need to increase maxShardsPerNode (e.g. if it was shard split, then now we need more)
         restore.setMaxShardsPerNode((int)Math.ceil(backupCollection.getReplicas().size()/cluster.getJettySolrRunners().size()));
       }
+      
 
       if (rarely()) { // Try with createNodeSet configuration
         int nodeSetSize = cluster.getJettySolrRunners().size() / 2;
@@ -255,7 +256,11 @@ public abstract class AbstractCloudBackupRestoreTestCase extends SolrCloudTestCa
         restore.setCreateNodeSet(String.join(",", nodeStrs));
         restore.setCreateNodeSetShuffle(usually());
         // we need to double maxShardsPerNode value since we reduced number of available nodes by half.
-        restore.setMaxShardsPerNode(origShardToDocCount.size() * 2);
+        if (restore.getMaxShardsPerNode() != null) {
+          restore.setMaxShardsPerNode(restore.getMaxShardsPerNode() * 2);
+        } else {
+          restore.setMaxShardsPerNode(origShardToDocCount.size() * 2);
+        }
       }
 
       Properties props = new Properties();

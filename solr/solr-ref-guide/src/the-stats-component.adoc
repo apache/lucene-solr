@@ -43,16 +43,6 @@ Specifies a field for which statistics should be generated. This parameter may b
 
 <<local-parameters-in-queries.adoc#local-parameters-in-queries,Local Parameters>> may be used to indicate which subset of the supported statistics should be computed, and/or that statistics should be computed over the results of an arbitrary numeric function (or query) instead of a simple field name. See the examples below.
 
-|stats.facet a|
-Returns sub-results for values within the specified facet.
-
-This legacy parameter is not recommended for new users - instead please consider <<TheStatsComponent-TheStatsComponentandFaceting,combining `stats.field` with `facet.pivot`>>
-
-|stats.calcdistinct a|
-If **true**, the "countDistinct" and "distinctValues" statistics will be computed and included the response. These calculations can be very expensive for fields that do not have a tiny cardinality, so they are disabled by default.
-
-This parameter can be specified using per-filed override (ie: `f.<field>.stats.calcdistinct=true`) but users are encouraged to instead the statistics desired <<TheStatsComponent-LocalParameters,as Local Parameter>> - As a top level request parameter, this option is deprecated.
-
 |===
 
 [[TheStatsComponent-Example]]
@@ -151,7 +141,6 @@ Additional "Expert" local params are supported in some cases for affecting the b
 ** `hllPreHashed` - a boolean option indicating that the statistics are being computed over a "long" field that has already been hashed at index time – allowing the HLL computation to skip this step.
 ** `hllLog2m` - an integer value specifying an explicit "log2m" value to use, overriding the heuristic value determined by the cardinality local param and the field type – see the https://github.com/aggregateknowledge/java-hll/[java-hll] documentation for more details
 ** `hllRegwidth` - an integer value specifying an explicit "regwidth" value to use, overriding the heuristic value determined by the cardinality local param and the field type – see the https://github.com/aggregateknowledge/java-hll/[java-hll] documentation for more details
-* `calcDistinct` - for backwards compatibility, `calcDistinct=true` may be specified as an alias for both `countDistinct=true distinctValues=true`
 
 [[TheStatsComponent-Examples]]
 === Examples
@@ -190,6 +179,6 @@ Here we compute some statistics for the price field. The min, max, mean, 90th, a
 [[TheStatsComponent-TheStatsComponentandFaceting]]
 == The Stats Component and Faceting
 
-Although the `stats.facet` parameter is no longer recommended, sets of `stats.field` parameters can be referenced by '`tag`' when using Pivot Faceting to compute multiple statistics at every level (i.e.: field) in the tree of pivot constraints.
+Sets of `stats.field` parameters can be referenced by '`tag`' when using Pivot Faceting to compute multiple statistics at every level (i.e.: field) in the tree of pivot constraints.
 
 For more information and a detailed example, please see <<faceting.adoc#Faceting-CombiningStatsComponentWithPivots,Combining Stats Component With Pivots>>.

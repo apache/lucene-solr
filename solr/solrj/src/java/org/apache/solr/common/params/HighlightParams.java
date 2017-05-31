@@ -24,8 +24,6 @@ public interface HighlightParams {
   // primary
   public static final String HIGHLIGHT   = "hl";
   public static final String METHOD      = HIGHLIGHT+".method"; // original|fastVector|postings|unified
-  @Deprecated // see hl.method
-  public static final String USE_FVH     = HIGHLIGHT + ".useFastVectorHighlighter";
   public static final String FIELDS      = HIGHLIGHT+".fl";
   public static final String SNIPPETS    = HIGHLIGHT+".snippets";
 

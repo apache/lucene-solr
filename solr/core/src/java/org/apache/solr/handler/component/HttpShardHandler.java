@@ -449,17 +449,7 @@ public class HttpShardHandler extends ShardHandler {
           }
         }
         // And now recreate the | delimited list of equivalent servers
-        final StringBuilder sliceShardsStr = new StringBuilder();
-        boolean first = true;
-        for (String shardUrl : shardUrls) {
-          if (first) {
-            first = false;
-          } else {
-            sliceShardsStr.append('|');
-          }
-          sliceShardsStr.append(shardUrl);
-        }
-        rb.shards[i] = sliceShardsStr.toString();
+        rb.shards[i] = createSliceShardsStr(shardUrls);
       }
     }
     String shards_rows = params.get(ShardParams.SHARDS_ROWS);
@@ -470,6 +460,20 @@ public class HttpShardHandler extends ShardHandler {
     if(shards_start != null) {
       rb.shards_start = Integer.parseInt(shards_start);
     }
+  }
+
+  private static String createSliceShardsStr(final List<String> shardUrls) {
+    final StringBuilder sliceShardsStr = new StringBuilder();
+    boolean first = true;
+    for (String shardUrl : shardUrls) {
+      if (first) {
+        first = false;
+      } else {
+        sliceShardsStr.append('|');
+      }
+      sliceShardsStr.append(shardUrl);
+    }
+    return sliceShardsStr.toString();
   }
 
 

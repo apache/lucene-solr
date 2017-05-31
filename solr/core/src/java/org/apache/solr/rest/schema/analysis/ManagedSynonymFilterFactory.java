@@ -28,6 +28,7 @@ import java.util.TreeMap;
 import java.util.TreeSet;
 
 import org.apache.lucene.analysis.Analyzer;
+import org.apache.lucene.analysis.core.FlattenGraphFilterFactory;  // javadocs
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.synonym.SynonymFilterFactory;
 import org.apache.lucene.analysis.synonym.SynonymMap;
@@ -50,7 +51,11 @@ import org.slf4j.LoggerFactory;
 /**
  * TokenFilterFactory and ManagedResource implementation for 
  * doing CRUD on synonyms using the REST API.
+ * 
+ * @deprecated Use {@link ManagedSynonymGraphFilterFactory} instead, but be sure to also
+ * use {@link FlattenGraphFilterFactory} at index time (not at search time) as well.
  */
+@Deprecated
 public class ManagedSynonymFilterFactory extends BaseManagedTokenFilterFactory {
   
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());

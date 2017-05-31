@@ -843,6 +843,23 @@ See <<FilterDescriptions-StopFilter,Stop Filter>> for example input/output.
 
 This is specialized version of the <<FilterDescriptions-SynonymFilter,Synonym Filter Factory>> that uses a mapping on synonyms that is <<managed-resources.adoc#managed-resources,managed from a REST API.>>
 
+.Managed Synonym Filter has been Deprecated
+[WARNING]
+====
+Managed Synonym Filter has been deprecated in favor of Managed Synonym Graph Filter, which is required for multi-term synonym support.
+====
+
+*Factory class:* `solr.ManagedSynonymFilterFactory`
+
+For arguments and examples, see the Managed Synonym Graph Filter below.
+
+[[FilterDescriptions-ManagedSynonymGraphFilter]]
+== Managed Synonym Graph Filter
+
+This is specialized version of the <<FilterDescriptions-SynonymGraphFilter,Synonym Graph Filter Factory>> that uses a mapping on synonyms that is <<managed-resources.adoc#managed-resources,managed from a REST API.>>
+
+This filter maps single- or multi-token synonyms, producing a fully correct graph output. This filter is a replacement for the Managed Synonym Filter, which produces incorrect graphs for multi-token synonyms.
+
 *Arguments:*
 
 `managed`:: The name that should be used for this mapping on synonyms in the managed REST API.
@@ -853,13 +870,18 @@ With this configuration the set of mappings is named "english" and can be manage
 
 [source,xml]
 ----
-<analyzer>
+<analyzer type="index">
   <tokenizer class="solr.StandardTokenizerFactory"/>
-  <filter class="solr.ManagedSynonymFilterFactory" managed="english"/>
+  <filter class="solr.ManagedSynonymGraphFilterFactory" managed="english"/>
+  <filter class="solr.FlattenGraphFilterFactory"/> <!-- required on index analyzers after graph filters -->
+</analyzer>
+<analyzer type="query">
+  <tokenizer class="solr.StandardTokenizerFactory"/>
+  <filter class="solr.ManagedSynonymGraphFilterFactory" managed="english"/>
 </analyzer>
 ----
 
-See <<FilterDescriptions-SynonymFilter,Synonym Filter>> for example input/output.
+See <<FilterDescriptions-ManagedSynonymFilter,Managed Synonym Filter>> for example input/output.
 
 [[FilterDescriptions-N-GramFilter]]
 == N-Gram Filter
@@ -1409,7 +1431,7 @@ By contrast, a query like "`find the popsicle`" would remove "```the```" as a st
 
 `format`:: (optional; default: `wordset`) Defines how the words file will be parsed. If `words` is not specified, then `format` must not be specified. The valid values for the format option are:
 
-`wordset`:: This is the default format, which supports one word per line (including any intra-word whitespace) and allows whole line comments begining with the `#` character. Blank lines are ignored.
+`wordset`:: This is the default format, which supports one word per line (including any intra-word whitespace) and allows whole line comments beginning with the `#` character. Blank lines are ignored.
 
 `snowball`:: This format allows for multiple words specified on each line, and trailing comments may be specified using the vertical line (`|`). Blank lines are ignored.
 

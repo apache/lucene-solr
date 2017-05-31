@@ -63,12 +63,7 @@ public class TestPointVectorStrategy extends StrategyTestCase {
   @Test
   public void testCitiesIntersectsBBox() throws IOException {
     // note: does not require docValues
-    if (random().nextBoolean()) {
-      this.strategy = PointVectorStrategy.newInstance(ctx, getClass().getSimpleName());
-    } else {
-      // switch to legacy instance sometimes, which has no docValues
-      this.strategy = PointVectorStrategy.newLegacyInstance(ctx, getClass().getSimpleName());
-    }
+    this.strategy = PointVectorStrategy.newInstance(ctx, getClass().getSimpleName());
     getAddAndVerifyIndexedDocuments(DATA_WORLD_CITIES_POINTS);
     executeQueries(SpatialMatchConcern.FILTER, QTEST_Cities_Intersects_BBox);
   }

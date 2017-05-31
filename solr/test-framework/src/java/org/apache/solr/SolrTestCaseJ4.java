@@ -2222,7 +2222,14 @@ public abstract class SolrTestCaseJ4 extends LuceneTestCase {
   public static Object skewed(Object likely, Object unlikely) {
     return (0 == TestUtil.nextInt(random(), 0, 9)) ? unlikely : likely;
   }
-  
+
+  /**
+   * A variant of {@link  org.apache.solr.client.solrj.impl.CloudSolrClient.Builder} that will randomize which nodes recieve updates 
+   * unless otherwise specified by the caller.
+   *
+   * @see #sendDirectUpdatesToAnyShardReplica
+   * @see #sendDirectUpdatesToShardLeadersOnly
+   */
   public static class CloudSolrClientBuilder extends CloudSolrClient.Builder {
 
     private boolean configuredDUTflag = false;
@@ -2267,30 +2274,35 @@ public abstract class SolrTestCaseJ4 extends LuceneTestCase {
     }
   }
 
+  /**
+   * This method <i>may</i> randomize unspecified aspects of the resulting SolrClient.
+   * Tests that do not wish to have any randomized behavior should use the 
+   * {@link org.apache.solr.client.solrj.impl.CloudSolrClient.Builder} class directly
+   */ 
   public static CloudSolrClient getCloudSolrClient(String zkHost) {
-    if (random().nextBoolean()) {
-      return new CloudSolrClient(zkHost);
-    }
     return new CloudSolrClientBuilder()
         .withZkHost(zkHost)
         .build();
   }
   
+  /**
+   * This method <i>may</i> randomize unspecified aspects of the resulting SolrClient.
+   * Tests that do not wish to have any randomized behavior should use the 
+   * {@link org.apache.solr.client.solrj.impl.CloudSolrClient.Builder} class directly
+   */ 
   public static CloudSolrClient getCloudSolrClient(String zkHost, HttpClient httpClient) {
-    if (random().nextBoolean()) {
-      return new CloudSolrClient(zkHost, httpClient);
-    }
     return new CloudSolrClientBuilder()
         .withZkHost(zkHost)
         .withHttpClient(httpClient)
         .build();
   }
   
+  /**
+   * This method <i>may</i> randomize unspecified aspects of the resulting SolrClient.
+   * Tests that do not wish to have any randomized behavior should use the 
+   * {@link org.apache.solr.client.solrj.impl.CloudSolrClient.Builder} class directly
+   */ 
   public static CloudSolrClient getCloudSolrClient(String zkHost, boolean shardLeadersOnly) {
-    if (random().nextBoolean()) {
-      return new CloudSolrClient(zkHost, shardLeadersOnly);
-    }
-    
     if (shardLeadersOnly) {
       return new CloudSolrClientBuilder()
           .withZkHost(zkHost)
@@ -2303,11 +2315,12 @@ public abstract class SolrTestCaseJ4 extends LuceneTestCase {
         .build();
   }
   
+  /**
+   * This method <i>may</i> randomize unspecified aspects of the resulting SolrClient.
+   * Tests that do not wish to have any randomized behavior should use the 
+   * {@link org.apache.solr.client.solrj.impl.CloudSolrClient.Builder} class directly
+   */ 
   public static CloudSolrClient getCloudSolrClient(String zkHost, boolean shardLeadersOnly, HttpClient httpClient) {
-    if (random().nextBoolean()) {
-      return new CloudSolrClient(zkHost, shardLeadersOnly, httpClient);
-    }
-    
     if (shardLeadersOnly) {
       return new CloudSolrClientBuilder()
           .withZkHost(zkHost)
@@ -2322,20 +2335,24 @@ public abstract class SolrTestCaseJ4 extends LuceneTestCase {
         .build();
   }
   
+  /**
+   * This method <i>may</i> randomize unspecified aspects of the resulting SolrClient.
+   * Tests that do not wish to have any randomized behavior should use the 
+   * {@link org.apache.solr.client.solrj.impl.ConcurrentUpdateSolrClient.Builder} class directly
+   */ 
   public static ConcurrentUpdateSolrClient getConcurrentUpdateSolrClient(String baseSolrUrl, int queueSize, int threadCount) {
-    if (random().nextBoolean()) {
-      return new ConcurrentUpdateSolrClient(baseSolrUrl, queueSize, threadCount);
-    }
     return new ConcurrentUpdateSolrClient.Builder(baseSolrUrl)
         .withQueueSize(queueSize)
         .withThreadCount(threadCount)
         .build();
   }
   
+  /**
+   * This method <i>may</i> randomize unspecified aspects of the resulting SolrClient.
+   * Tests that do not wish to have any randomized behavior should use the 
+   * {@link org.apache.solr.client.solrj.impl.ConcurrentUpdateSolrClient.Builder} class directly
+   */ 
   public static ConcurrentUpdateSolrClient getConcurrentUpdateSolrClient(String baseSolrUrl, HttpClient httpClient, int queueSize, int threadCount) {
-    if (random().nextBoolean()) {
-      return new ConcurrentUpdateSolrClient(baseSolrUrl, httpClient, queueSize, threadCount);
-    }
     return new ConcurrentUpdateSolrClient.Builder(baseSolrUrl)
         .withHttpClient(httpClient)
         .withQueueSize(queueSize)
@@ -2343,30 +2360,35 @@ public abstract class SolrTestCaseJ4 extends LuceneTestCase {
         .build();
   }
   
+  /**
+   * This method <i>may</i> randomize unspecified aspects of the resulting SolrClient.
+   * Tests that do not wish to have any randomized behavior should use the 
+   * {@link org.apache.solr.client.solrj.impl.LBHttpSolrClient.Builder} class directly
+   */ 
   public static LBHttpSolrClient getLBHttpSolrClient(HttpClient client, String... solrUrls) {
-    if (random().nextBoolean()) {
-      return new LBHttpSolrClient(client, solrUrls);
-    }
-    
     return new LBHttpSolrClient.Builder()
         .withHttpClient(client)
         .withBaseSolrUrls(solrUrls)
         .build();
   }
   
+  /**
+   * This method <i>may</i> randomize unspecified aspects of the resulting SolrClient.
+   * Tests that do not wish to have any randomized behavior should use the 
+   * {@link org.apache.solr.client.solrj.impl.LBHttpSolrClient.Builder} class directly
+   */ 
   public static LBHttpSolrClient getLBHttpSolrClient(String... solrUrls) throws MalformedURLException {
-    if (random().nextBoolean()) {
-      return new LBHttpSolrClient(solrUrls);
-    }
     return new LBHttpSolrClient.Builder()
         .withBaseSolrUrls(solrUrls)
         .build();
   }
   
+  /**
+   * This method <i>may</i> randomize unspecified aspects of the resulting SolrClient.
+   * Tests that do not wish to have any randomized behavior should use the 
+   * {@link org.apache.solr.client.solrj.impl.HttpSolrClient.Builder} class directly
+   */ 
   public static HttpSolrClient getHttpSolrClient(String url, HttpClient httpClient, ResponseParser responseParser, boolean compression) {
-    if(random().nextBoolean()) {
-      return new HttpSolrClient(url, httpClient, responseParser, compression);
-    }
     return new Builder(url)
         .withHttpClient(httpClient)
         .withResponseParser(responseParser)
@@ -2374,29 +2396,35 @@ public abstract class SolrTestCaseJ4 extends LuceneTestCase {
         .build();
   }
   
+  /**
+   * This method <i>may</i> randomize unspecified aspects of the resulting SolrClient.
+   * Tests that do not wish to have any randomized behavior should use the 
+   * {@link org.apache.solr.client.solrj.impl.HttpSolrClient.Builder} class directly
+   */ 
   public static HttpSolrClient getHttpSolrClient(String url, HttpClient httpClient, ResponseParser responseParser) {
-    if(random().nextBoolean()) {
-      return new HttpSolrClient(url, httpClient, responseParser);
-    }
     return new Builder(url)
         .withHttpClient(httpClient)
         .withResponseParser(responseParser)
         .build();
   }
   
+  /**
+   * This method <i>may</i> randomize unspecified aspects of the resulting SolrClient.
+   * Tests that do not wish to have any randomized behavior should use the 
+   * {@link org.apache.solr.client.solrj.impl.HttpSolrClient.Builder} class directly
+   */ 
   public static HttpSolrClient getHttpSolrClient(String url, HttpClient httpClient) {
-    if(random().nextBoolean()) {
-      return new HttpSolrClient(url, httpClient);
-    }
     return new Builder(url)
         .withHttpClient(httpClient)
         .build();
   }
 
+  /**
+   * This method <i>may</i> randomize unspecified aspects of the resulting SolrClient.
+   * Tests that do not wish to have any randomized behavior should use the 
+   * {@link org.apache.solr.client.solrj.impl.HttpSolrClient.Builder} class directly
+   */ 
   public static HttpSolrClient getHttpSolrClient(String url) {
-    if(random().nextBoolean()) {
-      return new HttpSolrClient(url);
-    }
     return new Builder(url)
         .build();
   }

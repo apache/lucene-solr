@@ -47,6 +47,19 @@ public final class UnicodeWhitespaceTokenizer extends CharTokenizer {
   public UnicodeWhitespaceTokenizer(AttributeFactory factory) {
     super(factory);
   }
+
+  /**
+   * Construct a new UnicodeWhitespaceTokenizer using a given
+   * {@link org.apache.lucene.util.AttributeFactory}.
+   *
+   * @param factory the attribute factory to use for this {@link Tokenizer}
+   * @param maxTokenLen maximum token length the tokenizer will emit. 
+   *        Must be greater than 0 and less than MAX_TOKEN_LENGTH_LIMIT (1024*1024)
+   * @throws IllegalArgumentException if maxTokenLen is invalid.
+   */
+  public UnicodeWhitespaceTokenizer(AttributeFactory factory, int maxTokenLen) {
+    super(factory, maxTokenLen);
+  }
   
   /** Collects only characters which do not satisfy Unicode's WHITESPACE property. */
   @Override

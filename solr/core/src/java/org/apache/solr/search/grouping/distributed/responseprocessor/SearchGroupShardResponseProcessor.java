@@ -52,7 +52,7 @@ public class SearchGroupShardResponseProcessor implements ShardResponseProcessor
    */
   @Override
   public void process(ResponseBuilder rb, ShardRequest shardRequest) {
-    SortSpec ss = rb.getSortSpec();
+    SortSpec groupSortSpec = rb.getGroupingSpec().getGroupSortSpec();
     Sort groupSort = rb.getGroupingSpec().getGroupSort();
     final String[] fields = rb.getGroupingSpec().getFields();
     Sort withinGroupSort = rb.getGroupingSpec().getSortWithinGroup();
@@ -144,7 +144,7 @@ public class SearchGroupShardResponseProcessor implements ShardResponseProcessor
     rb.firstPhaseElapsedTime = maxElapsedTime;
     for (String groupField : commandSearchGroups.keySet()) {
       List<Collection<SearchGroup<BytesRef>>> topGroups = commandSearchGroups.get(groupField);
-      Collection<SearchGroup<BytesRef>> mergedTopGroups = SearchGroup.merge(topGroups, ss.getOffset(), ss.getCount(), groupSort);
+      Collection<SearchGroup<BytesRef>> mergedTopGroups = SearchGroup.merge(topGroups, groupSortSpec.getOffset(), groupSortSpec.getCount(), groupSort);
       if (mergedTopGroups == null) {
         continue;
       }

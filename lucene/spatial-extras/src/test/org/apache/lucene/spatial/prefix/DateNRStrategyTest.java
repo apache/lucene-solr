@@ -27,7 +27,7 @@ import org.junit.Before;
 import org.junit.Test;
 import org.locationtech.spatial4j.shape.Shape;
 
-import static com.carrotsearch.randomizedtesting.RandomizedTest.randomBoolean;
+import static com.carrotsearch.randomizedtesting.RandomizedTest.randomInt;
 import static com.carrotsearch.randomizedtesting.RandomizedTest.randomIntBetween;
 
 public class DateNRStrategyTest extends RandomSpatialOpStrategyTestCase {
@@ -42,17 +42,8 @@ public class DateNRStrategyTest extends RandomSpatialOpStrategyTestCase {
   public void setUp() throws Exception {
     super.setUp();
     tree = DateRangePrefixTree.INSTANCE;
-    if (randomBoolean()) {
-      strategy = new NumberRangePrefixTreeStrategy(tree, "dateRange");
-    } else {
-      //Test the format that existed <= Lucene 5.0
-      strategy = new NumberRangePrefixTreeStrategy(tree, "dateRange") {
-        @Override
-        protected CellToBytesRefIterator newCellToBytesRefIterator() {
-          return new CellToBytesRefIterator50();
-        }
-      };
-    }
+    strategy = new NumberRangePrefixTreeStrategy(tree, "dateRange");
+    ((NumberRangePrefixTreeStrategy)strategy).setPointsOnly(randomInt() % 5 == 0);
     Calendar tmpCal = tree.newCal();
     int randomCalWindowField = randomIntBetween(Calendar.YEAR, Calendar.MILLISECOND);
     tmpCal.add(randomCalWindowField, 2_000);
@@ -79,15 +70,16 @@ public class DateNRStrategyTest extends RandomSpatialOpStrategyTestCase {
 
   @Test
   public void testWithinSame() throws IOException {
-    final Calendar cal = tree.newCal();
+    Shape shape = randomIndexedShape();
     testOperation(
-        tree.toShape(cal),
+        shape,
         SpatialOperation.IsWithin,
-        tree.toShape(cal), true);//is within itself
+        shape, true);//is within itself
   }
 
   @Test
   public void testWorld() throws IOException {
+    ((NumberRangePrefixTreeStrategy)strategy).setPointsOnly(false);
     testOperation(
         tree.toShape(tree.newCal()),//world matches everything
         SpatialOperation.Contains,
@@ -96,6 +88,7 @@ public class DateNRStrategyTest extends RandomSpatialOpStrategyTestCase {
 
   @Test
   public void testBugInitIterOptimization() throws Exception {
+    ((NumberRangePrefixTreeStrategy)strategy).setPointsOnly(false);
     //bug due to fast path initIter() optimization
     testOperation(
         tree.parseShape("[2014-03-27T23 TO 2014-04-01T01]"),
@@ -114,6 +107,21 @@ public class DateNRStrategyTest extends RandomSpatialOpStrategyTestCase {
 
   @Override
   protected Shape randomIndexedShape() {
+    if (((NumberRangePrefixTreeStrategy)strategy).isPointsOnly()) {
+      Calendar cal = tree.newCal();
+      cal.setTimeInMillis(random().nextLong());
+      return tree.toShape(cal);
+    } else {
+      return randomShape();
+    }
+  }
+
+  @Override
+  protected Shape randomQueryShape() {
+    return randomShape();
+  }
+
+  private Shape randomShape() {
     Calendar cal1 = randomCalendar();
     UnitNRShape s1 = tree.toShape(cal1);
     if (rarely()) {
@@ -143,10 +151,5 @@ public class DateNRStrategyTest extends RandomSpatialOpStrategyTestCase {
         throw e;
     }
     return cal;
-  }
-
-  @Override
-  protected Shape randomQueryShape() {
-    return randomIndexedShape();
   }
 }
