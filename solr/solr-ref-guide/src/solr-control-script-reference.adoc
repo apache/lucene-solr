@@ -425,7 +425,7 @@ This option is useful if you are running multiple standalone Solr instances on t
 
 The `bin/solr` script allows enabling or disabling Basic Authentication, allowing you to configure authentication from the command line.
 
-Currently, this script only enables Basic Authentication.
+Currently, this script only enables Basic Authentication, and is only available when using SolrCloud mode.
 
 === Enabling Basic Authentication
 
@@ -435,7 +435,7 @@ TIP: For more information about Solr's authentication plugins, see the section <
 
 The `bin/solr auth enable` command makes several changes to enable Basic Authentication:
 
-* Creates a `security.json` file and, if using SolrCloud, uploads it to ZooKeeper. The `security.json` file will look similar to:
+* Creates a `security.json` file and uploads it to ZooKeeper. The `security.json` file will look similar to:
 +
 [source,json]
 ----
@@ -484,15 +484,14 @@ When *true*, blocks all unauthenticated users from accessing Solr. This defaults
 `-updateIncludeFileOnly`::
 When *true*, only the settings in `bin/solr.in.sh` or `bin\solr.in.cmd` will be updated, and `security.json` will not be created.
 
-// TODO 6.6 clarify when this is required
 `-z`::
-Defines the ZooKeeper connect string.
+Defines the ZooKeeper connect string. This is useful if you want to enable authentication before all your Solr nodes have come up.
 
 `-d`::
-Defines the Solr server directory, by default `$SOLR_HOME/server`. It is not common to need to override the default.
+Defines the Solr server directory, by default `$SOLR_HOME/server`. It is not common to need to override the default, and is only needed if you have customized the `$SOLR_HOME` directory path.
 
 `-s`::
-Defines the location of `solr.solr.home`, which by default is `server/solr`. If you have multiple instances of Solr on the same host, you likely need to define this.
+Defines the location of `solr.solr.home`, which by default is `server/solr`. If you have multiple instances of Solr on the same host, or if you have customized the `$SOLR_HOME` directory path, you likely need to define this.
 
 === Disabling Basic Authentication
 

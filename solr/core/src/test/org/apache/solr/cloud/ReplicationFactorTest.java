@@ -101,9 +101,7 @@ public class ReplicationFactorTest extends AbstractFullDistribZkTestBase {
     CollectionAdminResponse resp = createCollection(testCollectionName, numShards, replicationFactor, maxShardsPerNode);
     
     if (resp.getResponse().get("failure") != null) {
-      CollectionAdminRequest.Delete req = new CollectionAdminRequest.Delete();
-      req.setCollectionName(testCollectionName);
-      req.process(cloudClient);
+      CollectionAdminRequest.deleteCollection(testCollectionName).process(cloudClient);
       
       resp = createCollection(testCollectionName, numShards, replicationFactor, maxShardsPerNode);
       
