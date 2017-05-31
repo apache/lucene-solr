@@ -198,6 +198,9 @@ Other Changes
 
 * SOLR-10755: delete/refactor many solrj deprecations (hossman)
 
+* SOLR-10752: replicationFactor (nrtReplicas) default is 0 if tlogReplicas is specified when creating a collection
+  (Tomás Fernández Löbbe)
+
 ==================  6.7.0 ==================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release.
