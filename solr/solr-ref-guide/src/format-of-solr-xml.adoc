@@ -25,7 +25,7 @@ This section will describe the default `solr.xml` file included with Solr and ho
 [[Formatofsolr.xml-Definingsolr.xml]]
 == Defining solr.xml
 
-You can find `solr.xml` in your Solr Home directory or in Zookeeper. The default `solr.xml` file looks like this:
+You can find `solr.xml` in your `$SOLR_HOME` directory (usually `server/solr`) in standalone mode or in Zookeeper when using SolrCloud. The default `solr.xml` file looks like this:
 
 [source,xml]
 ----
@@ -66,17 +66,17 @@ There are no attributes that you can specify in the `<solr>` tag, which is the r
 |`collectionsHandler` |As above, for custom CollectionsHandler implementations.
 | `infoHandler` |As above, for custom InfoHandler implementations.
 |`coreLoadThreads` |Specifies the number of threads that will be assigned to load cores in parallel.
-|`coreRootDirectory` |The root of the core discovery tree, defaults to SOLR_HOME.
+|`coreRootDirectory` |The root of the core discovery tree, defaults to `$SOLR_HOME`.
 |`managementPath` |Currently non-operational.
-|`sharedLib` |Specifies the path to a common library directory that will be shared across all cores. Any JAR files in this directory will be added to the search path for Solr plugins. This path is relative to the top-level container's Solr Home. Custom handlers may be placed in this directory
+|`sharedLib` |Specifies the path to a common library directory that will be shared across all cores. Any JAR files in this directory will be added to the search path for Solr plugins. This path is relative to `$SOLR_HOME`. Custom handlers may be placed in this directory.
 |`shareSchema` |This attribute, when set to true, ensures that the multiple cores pointing to the same Schema resource file will be referring to the same IndexSchema Object. Sharing the IndexSchema Object makes loading the core faster. If you use this feature, make sure that no core-specific property is used in your Schema file.
 |`transientCacheSize` |Defines how many cores with transient=true that can be loaded before swapping the least recently used core for a new core.
-|`configSetBaseDir` |The directory under which configsets for solr cores can be found. Defaults to SOLR_HOME/configsets
+|`configSetBaseDir` |The directory under which configsets for Solr cores can be found. Defaults to `$SOLR_HOME/configsets`.
 |===
 
-==== The `<solrcloud>` element
+==== The `<solrcloud>` Element
 
-This element defines several parameters that relate so SolrCloud. This section is ignored unless the solr instance is started with either `-DzkRun` or `-DzkHost`
+This element defines several parameters that relate so SolrCloud. This section is ignored unless theSolr instance is started with either `-DzkRun` or `-DzkHost`
 
 // TODO: Change column width to %autowidth.spread when https://github.com/asciidoctor/asciidoctor-pdf/issues/599 is fixed
 
@@ -96,18 +96,18 @@ This element defines several parameters that relate so SolrCloud. This section i
 |`zkCredentialsProvider` & ` zkACLProvider` |Optional parameters that can be specified if you are using <<zookeeper-access-control.adoc#zookeeper-access-control,ZooKeeper Access Control>>.
 |===
 
-==== The `<logging>` element
+==== The `<logging>` Element
 
 // TODO: Change column width to %autowidth.spread when https://github.com/asciidoctor/asciidoctor-pdf/issues/599 is fixed
 
 [cols="30,70",options="header"]
 |===
 |Node |Description
-|`class` |The class to use for logging. The corresponding JAR file must be available to solr, perhaps through a `<lib>` directive in solrconfig.xml.
+|`class` |The class to use for logging. The corresponding JAR file must be available to Solr, perhaps through a `<lib>` directive in `solrconfig.xml`.
 |`enabled` |true/false - whether to enable logging or not.
 |===
 
-===== The `<logging><watcher>` element
+===== The `<logging><watcher>` Element
 
 // TODO: Change column width to %autowidth.spread when https://github.com/asciidoctor/asciidoctor-pdf/issues/599 is fixed
 
@@ -118,7 +118,7 @@ This element defines several parameters that relate so SolrCloud. This section i
 |`threshold` |The logging level above which your particular logging implementation will record. For example when using log4j one might specify DEBUG, WARN, INFO, etc.
 |===
 
-==== The `<shardHandlerFactory>` element
+==== The `<shardHandlerFactory>` Element
 
 Custom shard handlers can be defined in `solr.xml` if you wish to create a custom shard handler.
 
@@ -134,8 +134,8 @@ Since this is a custom shard handler, sub-elements are specific to the implement
 [cols="30,70",options="header"]
 |===
 |Node |Description
-|`socketTimeout` |The read timeout for intra-cluster query and administrative requests. The default is the same as the distribUpdateSoTimeout specified in the solrcloud section.
-|`connTimeout` |The connection timeout for intra-cluster query and administrative requests. Defaults to the distribUpdateConnTimeout specified in the solrcloud section
+|`socketTimeout` |The read timeout for intra-cluster query and administrative requests. The default is the same as the `distribUpdateSoTimeout` specified in the `<solrcloud>` section.
+|`connTimeout` |The connection timeout for intra-cluster query and administrative requests. Defaults to the `distribUpdateConnTimeout` specified in the `<solrcloud>` section
 |`urlScheme` |URL scheme to be used in distributed search
 |`maxConnectionsPerHost` |Maximum connections allowed per host. Defaults to 20
 |`maxConnections` |Maximum total connections allowed. Defaults to 10000
