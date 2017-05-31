@@ -58,11 +58,19 @@ public class TestCollectionAPIs extends SolrTestCaseJ4 {
     MockCollectionsHandler collectionsHandler = new MockCollectionsHandler();
     ApiBag apiBag = new ApiBag(false);
     Collection<Api> apis = collectionsHandler.getApis();
-    for (Api api : apis) apiBag.register(api, Collections.EMPTY_MAP);
+    for (Api api : apis) apiBag.register(api, Collections.emptyMap());
     //test a simple create collection call
     compareOutput(apiBag, "/collections", POST,
         "{create:{name:'newcoll', config:'schemaless', numShards:2, replicationFactor:2 }}", null,
         "{name:newcoll, fromApi:'true', replicationFactor:'2', collection.configName:schemaless, numShards:'2', stateFormat:'2', operation:create}");
+    
+    compareOutput(apiBag, "/collections", POST,
+        "{create:{name:'newcoll', config:'schemaless', numShards:2, nrtReplicas:2 }}", null,
+        "{name:newcoll, fromApi:'true', nrtReplicas:'2', collection.configName:schemaless, numShards:'2', stateFormat:'2', operation:create}");
+    
+    compareOutput(apiBag, "/collections", POST,
+        "{create:{name:'newcoll', config:'schemaless', numShards:2, nrtReplicas:2, tlogReplicas:2, pullReplicas:2 }}", null,
+        "{name:newcoll, fromApi:'true', nrtReplicas:'2', tlogReplicas:'2', pullReplicas:'2', collection.configName:schemaless, numShards:'2', stateFormat:'2', operation:create}");
 
     //test a create collection with custom properties
     compareOutput(apiBag, "/collections", POST,
@@ -105,6 +113,21 @@ public class TestCollectionAPIs extends SolrTestCaseJ4 {
     compareOutput(apiBag, "/collections/collName/shards", POST,
         "{split:{ splitKey:id12345, coreProperties : {prop1:prop1Val, prop2:prop2Val} }}", null,
         "{collection: collName , split.key : id12345 , operation : splitshard, property.prop1:prop1Val, property.prop2: prop2Val}"
+    );
+    
+    compareOutput(apiBag, "/collections/collName/shards", POST,
+        "{add-replica:{shard: shard1, node: 'localhost_8978' , type:'TLOG' }}", null,
+        "{collection: collName , shard : shard1, node :'localhost_8978', operation : addreplica, type: TLOG}"
+    );
+    
+    compareOutput(apiBag, "/collections/collName/shards", POST,
+        "{add-replica:{shard: shard1, node: 'localhost_8978' , type:'PULL' }}", null,
+        "{collection: collName , shard : shard1, node :'localhost_8978', operation : addreplica, type: PULL}"
+    );
+    
+    assertErrorContains(apiBag, "/collections/collName/shards", POST,
+        "{add-replica:{shard: shard1, node: 'localhost_8978' , type:'foo' }}", null,
+        "Value of enum must be one of"
     );
 
     compareOutput(apiBag, "/collections/collName", POST,
@@ -150,13 +173,22 @@ public class TestCollectionAPIs extends SolrTestCaseJ4 {
     Map expected = (Map) fromJSONString(expectedOutputMapJson);
     assertMapEqual(expected, output);
     return output;
-
+  }
+  
+  static void assertErrorContains(final ApiBag apiBag, final String path, final SolrRequest.METHOD method,
+      final String payload, final CoreContainer cc, String expectedErrorMsg) throws Exception {
+    try {
+      makeCall(apiBag, path, method, payload, cc);
+      fail("Expected exception");
+    } catch (RuntimeException e) {
+      assertTrue("Expected exception with error message '" + expectedErrorMsg + "' but got: " + e.getMessage(), e.getMessage().contains(expectedErrorMsg));
+    }
   }
 
   public static Pair<SolrQueryRequest, SolrQueryResponse> makeCall(final ApiBag apiBag, String path,
                                                                    final SolrRequest.METHOD method,
                                                                    final String payload, final CoreContainer cc) throws Exception {
-    SolrParams queryParams = new MultiMapSolrParams(Collections.EMPTY_MAP);
+    SolrParams queryParams = new MultiMapSolrParams(Collections.emptyMap());
     if (path.indexOf('?') > 0) {
       String queryStr = path.substring(path.indexOf('?') + 1);
       path = path.substring(0, path.indexOf('?'));
