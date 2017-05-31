@@ -486,6 +486,47 @@ public class TestPolicy extends SolrTestCaseJ4 {
 
     };
   }
+  public void testEmptyClusterState(){
+    String autoScaleJson =  " {'policies':{'c1':[{" +
+        "        'replica':1," +
+        "        'shard':'#EACH'," +
+        "        'port':'50096'}]}}";
+    Map<String, Map> nodeValues = (Map<String, Map>) Utils.fromJSONString("{" +
+        "    '127.0.0.1:50097_solr':{" +
+        "      'cores':0," +
+        "      'port':'50097'}," +
+        "    '127.0.0.1:50096_solr':{" +
+        "      'cores':0," +
+        "      'port':'50096'}}");
+    ClusterDataProvider dataProvider = new ClusterDataProvider() {
+      @Override
+      public Map<String, Object> getNodeValues(String node, Collection<String> keys) {
+        Map<String, Object> result = new LinkedHashMap<>();
+        keys.stream().forEach(s -> result.put(s, nodeValues.get(node).get(s)));
+        return result;
+      }
+
+      @Override
+      public Map<String, Map<String, List<Policy.ReplicaInfo>>> getReplicaInfo(String node, Collection<String> keys) {
+        return getReplicaDetails(node, clusterState);
+      }
+
+      @Override
+      public String getPolicyNameByCollection(String coll) {
+        return null;
+      }
+
+      @Override
+      public Collection<String> getNodes() {
+        return Arrays.asList( "127.0.0.1:50097_solr", "127.0.0.1:50096_solr");
+      }
+    };
+    Map<String, List<String>> locations = PolicyHelper.getReplicaLocations(
+        "newColl", (Map<String, Object>) Utils.fromJSONString(autoScaleJson),
+        dataProvider, Collections.singletonMap("newColl", "c1"), Arrays.asList("shard1", "shard2"), 1);
+    assertTrue(locations.get("shard1").containsAll(ImmutableList.of("127.0.0.1:50096_solr")));
+    assertTrue(locations.get("shard2").containsAll(ImmutableList.of("127.0.0.1:50096_solr")));
+  }
 
   public void testMultiReplicaPlacement() {
     String autoScaleJson = "{" +
@@ -502,7 +543,6 @@ public class TestPolicy extends SolrTestCaseJ4 {
         "    'policy1': [" +
         "      { 'replica': '<2', 'shard': '#EACH', 'node': '#ANY'}," +
         "      { 'replica': '<2', 'shard': '#EACH', 'rack': 'rack1'}" +
-//        "      { 'replica': '1', 'sysprop.fs': 'ssd', 'shard': '#EACH'}" +
         "    ]" +
         "  }" +
         "}";

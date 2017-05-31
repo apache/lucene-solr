@@ -30,6 +30,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
+import java.util.function.Consumer;
+import java.util.function.Predicate;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
@@ -56,6 +58,7 @@ import static java.util.stream.Collectors.toList;
  *
  */
 public class Policy implements MapWriter {
+  public static final String POLICY = "policy";
   public static final String EACH = "#EACH";
   public static final String ANY = "#ANY";
   public static final String CLUSTER_POLICY = "cluster-policy";
@@ -79,13 +82,28 @@ public class Policy implements MapWriter {
     if (clusterPreferences.isEmpty()) {
       clusterPreferences.add(new Preference((Map<String, Object>) Utils.fromJSONString("{minimize : cores, precision:1}")));
     }
+    for (Preference preference : clusterPreferences) {
+      if (params.contains(preference.name.name())) {
+        throw new RuntimeException(preference.name + " is repeated");
+      }
+      params.add(preference.name.toString());
+      preference.idx = params.size() - 1;
+    }
     clusterPolicy = ((List<Map<String, Object>>) jsonMap.getOrDefault(CLUSTER_POLICY, emptyList())).stream()
         .map(Clause::new)
+        .filter(clause -> {
+          clause.addTags(params);
+          return true;
+        })
         .collect(Collectors.toList());
 
     ((Map<String, List<Map<String, Object>>>) jsonMap.getOrDefault("policies", emptyMap())).forEach((s, l1) ->
         this.policies.put(s, l1.stream()
             .map(Clause::new)
+            .filter(clause -> {
+              clause.addTags(params);
+              return true;
+            })
             .sorted()
             .collect(toList())));
 
@@ -96,13 +114,14 @@ public class Policy implements MapWriter {
       }
     });
 
-    for (Preference preference : clusterPreferences) {
-      if (params.contains(preference.name.name())) {
-        throw new RuntimeException(preference.name + " is repeated");
+
+
+    clusterPolicy.stream().forEach(new Consumer<Clause>() {
+      @Override
+      public void accept(Clause clause) {
+        clause.addTags(params);
       }
-      params.add(preference.name.toString());
-      preference.idx = params.size() - 1;
-    }
+    });
   }
 
   public List<Clause> getClusterPolicy() {

@@ -126,6 +126,11 @@ public class Clause implements MapWriter, Comparable<Clause> {
     }
   }
 
+  void addTags(List<String> params) {
+    if (globalTag != null && !params.contains(globalTag.name)) params.add(globalTag.name);
+    if (tag != null && !params.contains(tag.name)) params.add(tag.name);
+  }
+
   static class Condition {
     final String name;
     final Object val;
