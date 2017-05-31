@@ -250,6 +250,9 @@ Bug Fixes
 * SOLR-10719: Creating a core.properties fails if the parent of core.properties is a symlinked dierctory
   (Erick Erickson)
 
+* SOLR-10360: Solr HDFS snapshot export fails due to FileNotFoundException error when using MR1 instead of
+  yarn. (Hrishikesh via Mark Miller)
+
 Optimizations
 ----------------------
 * SOLR-10634: JSON Facet API: When a field/terms facet will retrieve all buckets (i.e. limit:-1)
