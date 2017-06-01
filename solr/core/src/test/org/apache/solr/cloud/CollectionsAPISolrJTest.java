@@ -267,17 +267,21 @@ public class CollectionsAPISolrJTest extends SolrCloudTestCase {
   @Test
   public void testClusterProp() throws InterruptedException, IOException, SolrServerException {
 
+    // sanity check our expected default
+    final ClusterProperties props = new ClusterProperties(zkClient());
+    assertEquals("Expecting prop to default to unset, test needs upated",
+                 props.getClusterProperty(ZkStateReader.LEGACY_CLOUD, null), null);
+    
     CollectionAdminResponse response = CollectionAdminRequest.setClusterProperty(ZkStateReader.LEGACY_CLOUD, "false")
-        .process(cluster.getSolrClient());
+      .process(cluster.getSolrClient());
 
     assertEquals(0, response.getStatus());
 
-    ClusterProperties props = new ClusterProperties(zkClient());
-    assertEquals("Cluster property was not set", props.getClusterProperty(ZkStateReader.LEGACY_CLOUD, "true"), "false");
+    assertEquals("Cluster property was not set", props.getClusterProperty(ZkStateReader.LEGACY_CLOUD, null), "false");
 
     // Unset ClusterProp that we set.
     CollectionAdminRequest.setClusterProperty(ZkStateReader.LEGACY_CLOUD, null).process(cluster.getSolrClient());
-    assertEquals("Cluster property was not unset", props.getClusterProperty(ZkStateReader.LEGACY_CLOUD, "true"), "true");
+    assertEquals("Cluster property was not unset", props.getClusterProperty(ZkStateReader.LEGACY_CLOUD, null), null);
 
   }
 

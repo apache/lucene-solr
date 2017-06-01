@@ -65,7 +65,9 @@ public class ReplaceNodeTest extends SolrCloudTestCase {
     String emptyNode = l.remove(0);
     String node2bdecommissioned = l.get(0);
     CollectionAdminRequest.Create create;
-    create = pickRandom(CollectionAdminRequest.createCollection(coll, "conf1", 5, 2),
+    // NOTE: always using the createCollection that takes in 'int' for all types of replicas, so we never
+    // have to worry about null checking when comparing the Create command with the final Slices
+    create = pickRandom(CollectionAdminRequest.createCollection(coll, "conf1", 5, 2,0,0),
                         CollectionAdminRequest.createCollection(coll, "conf1", 5, 1,1,0),
                         CollectionAdminRequest.createCollection(coll, "conf1", 5, 0,1,1),
                         CollectionAdminRequest.createCollection(coll, "conf1", 5, 1,0,1),

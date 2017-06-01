@@ -51,7 +51,19 @@
         },
         "replicationFactor": {
           "type": "integer",
-          "description": "The number of replicas to be created for each shard. Replicas are physical copies of each shard, acting as failover for the shard."
+          "description": "The number of NRT replicas to be created for each shard. Replicas are physical copies of each shard, acting as failover for the shard."
+        },
+        "nrtReplicas": {
+          "type": "integer",
+          "description": "The number of NRT replicas to be created for each shard. Replicas are physical copies of each shard, acting as failover for the shard. Replicas of type NRT will be updated with each document that is added to the cluster, and can use \"softCommits\" to get a new view of the index in Near Real Time. This parameter works in the same way as 'replicationFactor'"
+        },
+        "tlogReplicas": {
+          "type": "integer",
+          "description": "The number of TLOG replicas to be created for each shard. TLOG replicas update their transaction log for every update to the cluster, but only the shard leader updates the local index, other TLOG replicas will use segment replication and copy the latest index files from the leader."
+        },
+        "pullReplicas": {
+          "type": "integer",
+          "description": "The number of PULL replicas to be created for each shard. PULL replicas don't receive copies of the documents on update requests, they just replicate the latest segments periodically from the shard leader. PULL replicas can't become shard leaders, and need at least one active TLOG(recommended) or NRT replicas in the shard to replicate from."
         },
         "nodeSet": {
           "type": "array",

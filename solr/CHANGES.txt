@@ -201,6 +201,8 @@ Other Changes
 * SOLR-10752: replicationFactor (nrtReplicas) default is 0 if tlogReplicas is specified when creating a collection
   (Tomás Fernández Löbbe)
 
+* SOLR-10757: delete/refactor/cleanup CollectionAdminRequest deprecations (hossman)
+
 ==================  6.7.0 ==================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release.
@@ -247,6 +249,11 @@ Bug Fixes
   
 * SOLR-10719: Creating a core.properties fails if the parent of core.properties is a symlinked dierctory
   (Erick Erickson)
+
+* SOLR-10360: Solr HDFS snapshot export fails due to FileNotFoundException error when using MR1 instead of
+  yarn. (Hrishikesh via Mark Miller)
+  
+* SOLR-10137: Ensure that ConfigSets created via API are mutable. (Hrishikesh via Mark Miller)
 
 Optimizations
 ----------------------

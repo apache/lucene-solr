@@ -146,12 +146,8 @@ public class SharedFSAutoReplicaFailoverTest extends AbstractFullDistribZkTestBa
   // serially
   private void testBasics() throws Exception {
     String collection1 = "solrj_collection";
-    Create createCollectionRequest = new Create()
-            .setCollectionName(collection1)
-            .setNumShards(2)
-            .setReplicationFactor(2)
+    Create createCollectionRequest = CollectionAdminRequest.createCollection(collection1,"conf1",2,2)
             .setMaxShardsPerNode(2)
-            .setConfigName("conf1")
             .setRouterField("myOwnField")
             .setAutoAddReplicas(true);
     CollectionAdminResponse response = createCollectionRequest.process(cloudClient);
@@ -161,12 +157,8 @@ public class SharedFSAutoReplicaFailoverTest extends AbstractFullDistribZkTestBa
     waitForRecoveriesToFinish(collection1, false);
     
     String collection2 = "solrj_collection2";
-    createCollectionRequest = new Create()
-            .setCollectionName(collection2)
-            .setNumShards(2)
-            .setReplicationFactor(2)
+    createCollectionRequest = CollectionAdminRequest.createCollection(collection2,"conf1",2,2)
             .setMaxShardsPerNode(2)
-            .setConfigName("conf1")
             .setRouterField("myOwnField")
             .setAutoAddReplicas(false);
     CollectionAdminResponse response2 = createCollectionRequest.process(getCommonCloudSolrClient());
@@ -177,12 +169,8 @@ public class SharedFSAutoReplicaFailoverTest extends AbstractFullDistribZkTestBa
     waitForRecoveriesToFinish(collection2, false);
     
     String collection3 = "solrj_collection3";
-    createCollectionRequest = new Create()
-            .setCollectionName(collection3)
-            .setNumShards(5)
-            .setReplicationFactor(1)
+    createCollectionRequest = CollectionAdminRequest.createCollection(collection3,"conf1",5,1)
             .setMaxShardsPerNode(1)
-            .setConfigName("conf1")
             .setRouterField("myOwnField")
             .setAutoAddReplicas(true);
     CollectionAdminResponse response3 = createCollectionRequest.process(getCommonCloudSolrClient());
@@ -194,12 +182,8 @@ public class SharedFSAutoReplicaFailoverTest extends AbstractFullDistribZkTestBa
 
     // a collection has only 1 replica per a shard
     String collection4 = "solrj_collection4";
-    createCollectionRequest = new Create()
-        .setCollectionName(collection4)
-        .setNumShards(5)
-        .setReplicationFactor(1)
+    createCollectionRequest = CollectionAdminRequest.createCollection(collection4,"conf1",5,1)
         .setMaxShardsPerNode(5)
-        .setConfigName("conf1")
         .setRouterField("text")
         .setAutoAddReplicas(true);
     CollectionAdminResponse response4 = createCollectionRequest.process(getCommonCloudSolrClient());

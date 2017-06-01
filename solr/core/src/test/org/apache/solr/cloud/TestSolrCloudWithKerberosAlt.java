@@ -174,10 +174,7 @@ public class TestSolrCloudWithKerberosAlt extends LuceneTestCase {
       String configName = "solrCloudCollectionConfig";
       miniCluster.uploadConfigSet(SolrTestCaseJ4.TEST_PATH().resolve("collection1/conf"), configName);
 
-      CollectionAdminRequest.Create createRequest = new CollectionAdminRequest.Create();
-      createRequest.setCollectionName(collectionName);
-      createRequest.setNumShards(NUM_SHARDS);
-      createRequest.setReplicationFactor(REPLICATION_FACTOR);
+      CollectionAdminRequest.Create createRequest = CollectionAdminRequest.createCollection(collectionName,NUM_SHARDS,REPLICATION_FACTOR);
       Properties properties = new Properties();
       properties.put(CoreDescriptor.CORE_CONFIG, "solrconfig-tlog.xml");
       properties.put("solr.tests.maxBufferedDocs", "100000");
@@ -216,9 +213,7 @@ public class TestSolrCloudWithKerberosAlt extends LuceneTestCase {
         assertEquals(1, rsp.getResults().getNumFound());
         
         // delete the collection we created earlier
-        CollectionAdminRequest.Delete deleteRequest = new CollectionAdminRequest.Delete();
-        deleteRequest.setCollectionName(collectionName);
-        deleteRequest.process(cloudSolrClient);
+        CollectionAdminRequest.deleteCollection(collectionName).process(cloudSolrClient);
         
         AbstractDistribZkTestBase.waitForCollectionToDisappear(collectionName, zkStateReader, true, true, 330);
       }

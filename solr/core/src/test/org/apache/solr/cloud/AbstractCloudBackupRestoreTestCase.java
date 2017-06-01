@@ -87,8 +87,12 @@ public abstract class AbstractCloudBackupRestoreTestCase extends SolrCloudTestCa
     int replFactor = TestUtil.nextInt(random(), 1, 2);
     int numTlogReplicas = TestUtil.nextInt(random(), 0, 1);
     int numPullReplicas = TestUtil.nextInt(random(), 0, 1);
-    CollectionAdminRequest.Create create =
-        CollectionAdminRequest.createCollection(getCollectionName(), "conf1", NUM_SHARDS, replFactor, numTlogReplicas, numPullReplicas);
+    
+    CollectionAdminRequest.Create create = isImplicit ?
+      // NOTE: use shard list with same # of shards as NUM_SHARDS; we assume this later
+      CollectionAdminRequest.createCollectionWithImplicitRouter(getCollectionName(), "conf1", "shard1,shard2", replFactor, numTlogReplicas, numPullReplicas) :
+      CollectionAdminRequest.createCollection(getCollectionName(), "conf1", NUM_SHARDS, replFactor, numTlogReplicas, numPullReplicas);
+    
     if (NUM_SHARDS * (replFactor + numTlogReplicas + numPullReplicas) > cluster.getJettySolrRunners().size() || random().nextBoolean()) {
       create.setMaxShardsPerNode((int)Math.ceil(NUM_SHARDS * (replFactor + numTlogReplicas + numPullReplicas) / cluster.getJettySolrRunners().size()));//just to assert it survives the restoration
       if (doSplitShardOperation) {
@@ -102,9 +106,6 @@ public abstract class AbstractCloudBackupRestoreTestCase extends SolrCloudTestCa
     coreProps.put("customKey", "customValue");//just to assert it survives the restoration
     create.setProperties(coreProps);
     if (isImplicit) { //implicit router
-      create.setRouterName(ImplicitDocRouter.NAME);
-      create.setNumShards(null);//erase it. TODO suggest a new createCollectionWithImplicitRouter method
-      create.setShards("shard1,shard2"); // however still same number as NUM_SHARDS; we assume this later
       create.setRouterField("shard_s");
     } else {//composite id router
       if (random().nextBoolean()) {

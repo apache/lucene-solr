@@ -17,7 +17,7 @@
 package org.apache.solr.client.solrj.request;
 
 import org.apache.lucene.util.LuceneTestCase;
-import org.apache.solr.client.solrj.request.CollectionAdminRequest.Create;
+import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest.CreateAlias;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest.CreateShard;
 import org.apache.solr.common.SolrException;
@@ -30,57 +30,57 @@ public class TestCollectionAdminRequest extends LuceneTestCase {
   
   @Test
   public void testInvalidCollectionNameRejectedWhenCreatingCollection() {
-    final Create createRequest = new Create();
-    try {
-      createRequest.setCollectionName("invalid$collection@name");
-      fail();
-    } catch (SolrException e) {
-      final String exceptionMessage = e.getMessage();
-      assertTrue(exceptionMessage.contains("Invalid collection"));
-      assertTrue(exceptionMessage.contains("invalid$collection@name"));
-      assertTrue(exceptionMessage.contains("must consist entirely of periods, underscores, hyphens, and alphanumerics"));
-    }
+    final SolrException e = expectThrows(SolrException.class, () -> {
+        CollectionAdminRequest.createCollection("invalid$collection@name", null, 1, 1);
+      });
+    final String exceptionMessage = e.getMessage();
+    assertTrue(exceptionMessage.contains("Invalid collection"));
+    assertTrue(exceptionMessage.contains("invalid$collection@name"));
+    assertTrue(exceptionMessage.contains("must consist entirely of periods, underscores, hyphens, and alphanumerics"));
   }
   
   @Test
-  public void testInvalidShardNamesRejectedWhenCreatingCollection() {
-    final Create createRequest = new Create();
-    try {
-      createRequest.setShards("invalid$shard@name");
-      fail();
-    } catch (SolrException e) {
-      final String exceptionMessage = e.getMessage();
-      assertTrue(exceptionMessage.contains("Invalid shard"));
-      assertTrue(exceptionMessage.contains("invalid$shard@name"));
-      assertTrue(exceptionMessage.contains("must consist entirely of periods, underscores, hyphens, and alphanumerics"));
-    }
+  public void testInvalidShardNamesRejectedWhenCreatingImplicitCollection() {
+    final SolrException e = expectThrows(SolrException.class, () -> {
+        CollectionAdminRequest.createCollectionWithImplicitRouter("fine", "fine", "invalid$shard@name",1,0,0);
+      });
+    final String exceptionMessage = e.getMessage();
+    assertTrue(exceptionMessage.contains("Invalid shard"));
+    assertTrue(exceptionMessage.contains("invalid$shard@name"));
+    assertTrue(exceptionMessage.contains("must consist entirely of periods, underscores, hyphens, and alphanumerics"));
+  }
+  
+  @Test
+  public void testInvalidShardNamesRejectedWhenCallingSetShards() {
+    CollectionAdminRequest.Create request = CollectionAdminRequest.createCollectionWithImplicitRouter("fine",null,"fine",1);
+    final SolrException e = expectThrows(SolrException.class, () -> {
+        request.setShards("invalid$shard@name");
+      });
+    final String exceptionMessage = e.getMessage();
+    assertTrue(exceptionMessage.contains("Invalid shard"));
+    assertTrue(exceptionMessage.contains("invalid$shard@name"));
+    assertTrue(exceptionMessage.contains("must consist entirely of periods, underscores, hyphens, and alphanumerics"));
   }
   
   @Test
   public void testInvalidAliasNameRejectedWhenCreatingAlias() {
-    final CreateAlias createAliasRequest = new CreateAlias();
-    try {
-      createAliasRequest.setAliasName("invalid$alias@name");
-      fail();
-    } catch (SolrException e) {
-      final String exceptionMessage = e.getMessage();
-      assertTrue(exceptionMessage.contains("Invalid alias"));
-      assertTrue(exceptionMessage.contains("invalid$alias@name"));
-      assertTrue(exceptionMessage.contains("must consist entirely of periods, underscores, hyphens, and alphanumerics"));
-    }
+    final SolrException e = expectThrows(SolrException.class, () -> {
+        CreateAlias createAliasRequest = CollectionAdminRequest.createAlias("invalid$alias@name","ignored");
+      });
+    final String exceptionMessage = e.getMessage();
+    assertTrue(exceptionMessage.contains("Invalid alias"));
+    assertTrue(exceptionMessage.contains("invalid$alias@name"));
+    assertTrue(exceptionMessage.contains("must consist entirely of periods, underscores, hyphens, and alphanumerics"));
   }
   
   @Test
   public void testInvalidShardNameRejectedWhenCreatingShard() {
-    final CreateShard createShardRequest = new CreateShard();
-    try {
-      createShardRequest.setShardName("invalid$shard@name");
-      fail();
-    } catch (SolrException e) {
-      final String exceptionMessage = e.getMessage();
-      assertTrue(exceptionMessage.contains("Invalid shard"));
-      assertTrue(exceptionMessage.contains("invalid$shard@name"));
-      assertTrue(exceptionMessage.contains("must consist entirely of periods, underscores, hyphens, and alphanumerics"));
-    }
+    final SolrException e = expectThrows(SolrException.class, () -> {
+        CreateShard createShardRequest = CollectionAdminRequest.createShard("ignored","invalid$shard@name");
+      });
+    final String exceptionMessage = e.getMessage();
+    assertTrue(exceptionMessage.contains("Invalid shard"));
+    assertTrue(exceptionMessage.contains("invalid$shard@name"));
+    assertTrue(exceptionMessage.contains("must consist entirely of periods, underscores, hyphens, and alphanumerics"));
   }
 }

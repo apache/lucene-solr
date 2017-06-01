@@ -1892,8 +1892,7 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
       throws SolrServerException, IOException {
     CollectionAdminResponse resp = createCollection(testCollectionName, numShards, replicationFactor, maxShardsPerNode);
     if (resp.getResponse().get("failure") != null) {
-      CollectionAdminRequest.Delete req = new CollectionAdminRequest.Delete();
-      req.setCollectionName(testCollectionName);
+      CollectionAdminRequest.Delete req = CollectionAdminRequest.deleteCollection(testCollectionName);
       req.process(cloudClient);
 
       resp = createCollection(testCollectionName, numShards, replicationFactor, maxShardsPerNode);
@@ -2158,6 +2157,22 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
     }
   }
   
+  /** 
+   * Logs a WARN if collection can't be deleted, but does not fail or throw an exception
+   * @return true if success, else false
+   */
+  protected static boolean attemptCollectionDelete(CloudSolrClient client, String collectionName) {
+    // try to clean up
+    try {
+      CollectionAdminRequest.deleteCollection(collectionName).process(client);
+      return true;
+    } catch (Exception e) {
+      // don't fail the test
+      log.warn("Could not delete collection {} - ignoring", collectionName);
+    }
+    return false;
+  }
+
   protected void logReplicationDetails(Replica replica, StringBuilder builder) throws IOException {
     try (HttpSolrClient client = new HttpSolrClient.Builder(replica.getCoreUrl()).build()) {
       ModifiableSolrParams params = new ModifiableSolrParams();
@@ -2203,9 +2218,7 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
   }
 
   static CollectionAdminResponse getStatusResponse(String requestId, SolrClient client) throws SolrServerException, IOException {
-    CollectionAdminRequest.RequestStatus requestStatusRequest = new CollectionAdminRequest.RequestStatus();
-    requestStatusRequest.setRequestId(requestId);
-    return requestStatusRequest.process(client);
+    return CollectionAdminRequest.requestStatus(requestId).process(client);
   }
 
 }
