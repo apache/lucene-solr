@@ -1883,9 +1883,30 @@ This command recreates replicas in the source node to the target node. After eac
 This operation does not hold necessary locks on the replicas that belong to on the source node. So don't perform other collection operations in this period.
 ====
 
+[[CollectionsAPI-movereplica]]
 == MOVEREPLICA: Move a Replica to a New node
 
-// TODO 6.6
+This command move a replica from a node to a new node, in case of shared-file systems the `dataDir` will be reused.
+
+`/admin/collections?action=MOVEREPLICA&collection=collection&shard=shard&replica=replica&node=nodeName&toNode=nodeName`
+
+[[CollectionsAPI-Input.26]]
+=== Input
+
+*Query Parameters*
+
+// TODO: Change column width to %autowidth.spread when https://github.com/asciidoctor/asciidoctor-pdf/issues/599 is fixed
+
+[cols="20,15,10,55",options="header"]
+|===
+|Key |Type |Required |Description
+|collection |string |Yes |The name of the collection.
+|shard |string |Yes |The name of shard that replica belong to.
+|replica |string |Yes |The name of the replica.
+|node |string |Yes |The name of the node that contains the replica.
+|toNode |string |Yes |The name of the destination node.
+|async |string |No |Request ID to track this action which will be <<CollectionsAPI-async,processed asynchronously>>.
+|===
 
 [[CollectionsAPI-async]]
 == Asynchronous Calls
