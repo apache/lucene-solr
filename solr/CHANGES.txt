@@ -213,6 +213,8 @@ Other Changes
 
 * SOLR-10792: Deprecate and remove implicit registration of "lucenePlusSort" aka OldLuceneQParser (hossman)
 
+* SOLR-10791: Remove deprecated options in SSLTestConfig (hossman)
+
 ==================  6.7.0 ==================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release.
