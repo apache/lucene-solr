@@ -62,7 +62,7 @@ enum MessageType {
 };
 
 public class Util {
-	
+
 	public static String WORK_DIRECTORY = System.getProperty("user.dir");
 	public static String DNAME = "SolrNightlyBenchmarksWorkDirectory";
 	public static String BASE_DIR = WORK_DIRECTORY + File.separator + DNAME + File.separator;
@@ -79,7 +79,7 @@ public class Util {
 	public static String COMMIT_ID;
 	public static boolean SILENT = false;
 	public static String TEST_ID = UUID.randomUUID().toString();
-	public static String TEST_TIME = new SimpleDateFormat ("yyyy/MM/dd HH:mm:ss").format(new Date()); 
+	public static String TEST_TIME = new SimpleDateFormat("yyyy/MM/dd HH:mm:ss").format(new Date());
 
 	final static Logger logger = Logger.getLogger(Util.class);
 
@@ -511,8 +511,9 @@ public class Util {
 				+ ((JSONObject) ((JSONObject) jsonObject.get("metrics")).get("solr.jvm")).get("os.totalSwapSpaceSize")
 				+ " Bytes</b><br/>\n";
 
-		BenchmarkAppConnector.writeToWebAppDataFile(Util.TEST_ID + "_" + commitID + "_" + FileType.TEST_ENV_FILE + "_dump.csv", printString,
-				true, FileType.TEST_ENV_FILE);
+		BenchmarkAppConnector.writeToWebAppDataFile(
+				Util.TEST_ID + "_" + commitID + "_" + FileType.TEST_ENV_FILE + "_dump.csv", printString, true,
+				FileType.TEST_ENV_FILE);
 
 		response = null;
 		jsonObject = null;
@@ -657,12 +658,12 @@ public class Util {
 				commitID = Util.getLatestCommitID(Util.LUCENE_SOLR_REPOSITORY_URL);
 				Util.postMessage("The latest commit ID is: " + commitID, MessageType.RED_TEXT, false);
 			}
-			
+
 			if (argM.containsKey("-RunSilently")) {
 				Util.postMessage("** Running silently since -RunSilently is set ...", MessageType.BLUE_TEXT, false);
 				Util.SILENT = true;
 			}
-			
+
 			Util.COMMIT_ID = commitID;
 
 			Util.checkWebAppFiles();
@@ -670,19 +671,20 @@ public class Util {
 			Util.getSystemEnvironmentInformation();
 
 			if (!BenchmarkAppConnector.isRunningFolderEmpty()) {
-				Util.postMessage("** It looks like the last test session failed or was aborted ..", MessageType.RED_TEXT, false);
+				Util.postMessage("** It looks like the last test session failed or was aborted ..",
+						MessageType.RED_TEXT, false);
 
 				Util.killProcesses("zookeeper");
 				Util.killProcesses("Dsolr.jetty.https.port");
-				
+
 				Thread.sleep(5000);
-				
+
 				Util.cleanRunDirectory();
 				Util.deleteRunningFile();
-			} 
-			
+			}
+
 			Util.createIsRunningFile();
-			
+
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
@@ -705,56 +707,57 @@ public class Util {
 			e.printStackTrace();
 		}
 	}
-	
+
 	public static void createLastRunFile() {
-		
+
 		BenchmarkAppConnector.deleteFile(FileType.LAST_RUN_COMMIT);
 		BenchmarkAppConnector.writeToWebAppDataFile(Util.COMMIT_ID, "", true, FileType.LAST_RUN_COMMIT);
-		
+
 	}
-	
+
 	public static void createIsRunningFile() {
-		
+
 		BenchmarkAppConnector.deleteFile(FileType.IS_RUNNING_FILE);
 		BenchmarkAppConnector.writeToWebAppDataFile(Util.COMMIT_ID, "", true, FileType.IS_RUNNING_FILE);
-		
+
 	}
-	
+
 	public static void deleteRunningFile() {
 		BenchmarkAppConnector.deleteFile(FileType.IS_RUNNING_FILE);
 	}
-	
+
 	public static void cleanRunDirectory() {
-		    Util.execute("rm -r -f " + Util.RUN_DIR, Util.RUN_DIR);
+		Util.execute("rm -r -f " + Util.RUN_DIR, Util.RUN_DIR);
 	}
-	
+
 	public static void killProcesses(String lookFor) {
-		
-			Util.postMessage("** Searching and killing " + lookFor + " process(es) ...", MessageType.RED_TEXT, false);
 
-			BufferedReader reader;
-			String line = "";
+		Util.postMessage("** Searching and killing " + lookFor + " process(es) ...", MessageType.RED_TEXT, false);
 
-			try {
-				String[] cmd = { "/bin/sh", "-c", "ps -ef | grep " + lookFor + " | awk '{print $2}'" };
-				reader = new BufferedReader(new InputStreamReader(Runtime.getRuntime().exec(cmd).getInputStream()));
+		BufferedReader reader;
+		String line = "";
 
-				while ((line = reader.readLine()) != null) {
+		try {
+			String[] cmd = { "/bin/sh", "-c", "ps -ef | grep " + lookFor + " | awk '{print $2}'" };
+			reader = new BufferedReader(new InputStreamReader(Runtime.getRuntime().exec(cmd).getInputStream()));
 
-										line = line.trim();
-										Util.postMessage("** Found " + lookFor + " Running with PID " + line + " Killing now ..", MessageType.RED_TEXT, false);
-										Runtime.getRuntime().exec("kill -9 " + line);
-				}
+			while ((line = reader.readLine()) != null) {
 
-				reader.close();
-
-			} catch (IOException e) {
-				e.printStackTrace();
-			} finally {
-				// Marking for GC
-				reader = null;
-				line = null;
+				line = line.trim();
+				Util.postMessage("** Found " + lookFor + " Running with PID " + line + " Killing now ..",
+						MessageType.RED_TEXT, false);
+				Runtime.getRuntime().exec("kill -9 " + line);
 			}
-			
+
+			reader.close();
+
+		} catch (IOException e) {
+			e.printStackTrace();
+		} finally {
+			// Marking for GC
+			reader = null;
+			line = null;
+		}
+
 	}
 }
