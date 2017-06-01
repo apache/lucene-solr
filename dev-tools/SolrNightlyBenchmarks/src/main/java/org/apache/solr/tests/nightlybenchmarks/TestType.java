@@ -1,7 +1,0 @@
-package org.apache.solr.tests.nightlybenchmarks;
-
-public enum TestType {
-
-	STANDALONE_CREATE_COLLECTION, STANDALONE_INDEXING, CLOUD_CREATE_COLLECTION, CLOUD_INDEXING_REGULAR, CLOUD_INDEXING_CONCURRENT
-	
-}
