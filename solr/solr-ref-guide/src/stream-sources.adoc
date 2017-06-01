@@ -497,7 +497,7 @@ the tuple stream from the Stream Expression into a list of Tuples.
 [source,text]
 ----
 tuple(a=add(1,1),
-      b=search(collection1, q="cat:a", fl="a, b, c", sort"a desc"))
+      b=search(collection1, q="cat:a", fl="a, b, c", sort="a desc"))
 ----
 
 
