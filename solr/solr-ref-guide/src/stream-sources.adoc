@@ -390,7 +390,36 @@ stats(collection1,
 
 == timeseries
 
-//TODO
+The `timeseries` function builds a time series aggregation. Under the covers the `timeseries` function uses the
+JSON Facet API as its high performance aggregation engine.
+
+=== timeseries Parameters
+
+* `collection`: (Mandatory) Collection the stats will be aggregated from.
+* `q`: (Mandatory) The query to build the aggregations from.
+* `field`: (Mandatory) The date field for the time series.
+* `start`: (Mandatory) The start of the time series expressed in Solr date or date math syntax.
+* `end`: (Mandatory) The end of the time series expressed in Solr date or date math syntax.
+* `gap`: (Mandatory) The time gap between time series aggregation points expressed in Solr date math syntax.
+* `metrics`: (Mandatory) The metrics to include in the result tuple. Current supported metrics are `sum(col)`, `avg(col)`, `min(col)`, `max(col)` and `count(*)`
+
+=== timeseries Syntax
+
+[source,text]
+----
+timeseries(collection1,
+           q=*:*,
+           field="rec_dt"
+           start="NOW-30DAYS",
+           end="NOW",
+           gap="+1DAY",
+           sum(a_i),
+           max(a_i),
+           max(a_f),
+           avg(a_i),
+           avg(a_f),
+           count(*))
+----
 
 == train
 
