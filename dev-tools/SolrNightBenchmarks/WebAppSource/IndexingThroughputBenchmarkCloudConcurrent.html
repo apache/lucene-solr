@@ -1,0 +1,333 @@
+<html>
+	<head>
+		<title>Solr Nightly Benchmarks</title>
+        <link rel="shortcut icon" type="image/png" href="images/solr_logo_rgb.png" />
+        <script src="http://cdnjs.cloudflare.com/ajax/libs/dygraph/2.0.0/dygraph.min.js"></script>
+        <link rel="stylesheet" src="http://cdnjs.cloudflare.com/ajax/libs/dygraph/2.0.0/dygraph.min.css" />
+        <script src="https://code.jquery.com/jquery-3.2.1.min.js" integrity="sha256-hwg4gsxgFZhOsEEamdOYGBf13FyQuiTwlAQgxVSNgt4=" crossorigin="anonymous"></script>
+        <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css" integrity="sha384-BVYiiSIFeK1dGmJRAkycuHAHRg32OmUcww7on3RYdg4Va+PmSTsz/K68vbdEjh4u" crossorigin="anonymous">
+        <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js" integrity="sha384-Tc5IQib027qvyjSMfHjOMaLkfuWVxZxUPnCJA7l2mCWNIpG9mGCD8wGNIcPD7Txa" crossorigin="anonymous"></script>
+
+	</head>
+	<body>
+        <nav class="navbar navbar-inverse">
+            <div class="container-fluid">
+            <div class="navbar-header">
+                <button type="button" class="navbar-toggle collapsed" data-toggle="collapse" data-target="#bs-example-navbar-collapse-1" aria-expanded="false">
+                <span class="sr-only">Toggle navigation</span>
+                <span class="icon-bar"></span>
+                <span class="icon-bar"></span>
+                <span class="icon-bar"></span>
+                </button>
+                <a class="navbar-brand" href="#"><img src="images/solr_logo_rgb.png" width="25" height="25"/></a>
+            </div>
+            <div class="collapse navbar-collapse" id="bs-example-navbar-collapse-1">
+                <ul class="nav navbar-nav">
+                <li class="dropdown">
+                    <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" aria-haspopup="true" aria-expanded="false">Standalone Metrics<span class="caret"></span></a>
+                    <ul class="dropdown-menu">
+                        <li><a href="IndexingBenchmarkStandalone.html">Indexing</a></li>
+                        <li><a href="IndexingThroughputBenchmarkStandalone.html">Indexing Throughput</a></li>
+                        <li><a href="CreateCollectionBenchmarkStandalone.html">Create Collection</a></li>
+                    </ul>
+                </li>
+                    <li class="dropdown">
+                        <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" aria-haspopup="true" aria-expanded="false">Cloud Metrics<span class="caret"></span></a>
+                        <ul class="dropdown-menu">
+                            <li><a href="IndexingBenchmarkCloud.html">Indexing - Serial</a></li>
+                            <li><a href="IndexingThroughputBenchmarkCloud.html">Indexing Throughput - Serial</a></li>
+                            <li><a href="IndexingBenchmarkCloudConcurrent.html">Indexing - Concurrent Client</a></li>
+                            <li><a href="IndexingThroughputBenchmarkCloudConcurrent.html">Indexing Throughput - Concurrent</a></li>
+                            <li><a href="CreateCollectionBenchmarkCloud.html">Create Collection</a></li>
+                        </ul>
+                    </li>
+                    <li class="dropdown">
+                        <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" aria-haspopup="true" aria-expanded="false">Numeric Query Benchmarks<span class="caret"></span></a>
+                        <ul class="dropdown-menu">
+                            <li><a href="NumericQueryBenchmarkCloud.html">Numeric Query - Cloud</a></li>
+                        </ul>
+                    </li>
+                </ul>
+                <ul class="nav navbar-nav navbar-right">
+                <li id="ReloadButton" class="hidden"><input type="button" onclick="location.reload();" class="btn btn-success" data-toggle="modal" data-target="#envDetails" value="New Metrics Available Click to Refresh" style="margin-top:8px;" /></li>
+                <li>&nbsp;&nbsp;&nbsp;</li>
+                <li><div id="green" style="width:20px;height:20px;display:none;background-color:#C2FF33;margin-top:14px"></div></li>
+                <li><a href="#">Home</a></li>
+                <li><input type="button" class="btn btn-warning" data-toggle="modal" data-target="#envDetails" value="Environment Details" style="margin-top:8px;"/></li>
+                </ul>
+            </div>
+            </div>
+        </nav>
+
+                <!-- Modal -->
+                <div id="envDetails" class="modal fade" role="dialog">
+                    <div class="modal-dialog">
+
+                        <!-- Modal content-->
+                        <div class="modal-content">
+                            <div class="modal-header">
+                                <button type="button" class="close" data-dismiss="modal">&times;</button>
+                                <h4 class="modal-title">Test Environment Details</h4>
+                            </div>
+                            <div class="modal-body"  id="testEnvironmentDetails">
+                            </div>
+                            <div class="modal-footer">
+                                <button type="button" class="btn btn-warning" data-dismiss="modal">Close</button>
+                            </div>
+                        </div>
+
+                    </div>
+                </div>
+
+                <!-- Modal -->
+                <div id="memProfile" class="modal fade" role="dialog">
+                    <div class="modal-dialog">
+
+                        <!-- Modal content-->
+                        <div class="modal-content">
+                            <div class="modal-header">
+                                <button type="button" class="close" data-dismiss="modal">&times;</button>
+                                <h4 class="modal-title">Profile</h4>
+                            </div>
+                            <div class="modal-body">
+
+                                <ul class="nav nav-tabs">
+                                    <li id="HeapMemoryUsageTab" role="presentation" class="active"><a href="#">Heap Space Usage</a></li>
+                                    <li id="ProcessCPULoadTab" role="presentation"><a href="#">Process CPU Load</a></li>
+                                    <li id="TestEnvTab" role="presentation"><a href="#">Test Environment Details</a></li>
+                                </ul>
+                                <br/>
+                                <div id="memTabBody">
+                                        <div id="memProfileGraph"></div><br/>
+                                        <div id="memProfileStats" style="width:100%;height:35px; text-align:center">&nbsp;</div>
+                                </div>
+                                <div id="cpuTabBody" class="hidden">
+                                        <div id="cpuProfileGraph"></div><br/>
+                                        <div id="cpuProfileStats" style="width:100%;height:35px; text-align:center">&nbsp;</div>
+                                </div>
+                                <div id="testEnvTabBody" class="hidden">
+                                </div>
+                            </div>
+                            <div class="modal-footer">
+                                <span class="pull-left">For more information (file changes etc.) please: <a id="memProfileFileChangeListLink" href="#" target="_blank">click here</a></span>
+                                <button type="button" class="btn btn-success" data-dismiss="modal">Close</button>
+                            </div>
+                        </div>
+
+                    </div>
+                </div>
+    
+                <div class="container-fluid">
+
+                    <div class="row">
+
+                            <div class="col-xs-9 cols-md-9 col-lg-9">
+
+                                <div class="panel panel-info" style="height:87%">
+                                    <div class="panel-heading">Indexing Throughput (doc/sec)</div>
+                                    <div class="panel-body" id="graphdiv2" style="width:95%; height:85%;">                                                              
+                                    </div>
+                                </div>
+
+                            </div>
+
+                            <div class="col-xs-3 cols-md-3 col-lg-3">
+
+                                <div class="panel panel-warning" style="height:50%">
+                                    <div class="panel-heading">Test Runtime Information</div>
+                                    <div class="panel-body" id="testRuntime">                                        
+                                    </div>
+                                </div>
+
+                                <div class="panel panel-danger" style="height:34%">
+                                    <div class="panel-heading">Graph Information</div>
+                                    <div class="panel-body">
+                                        <span class="text-muted">X-Axis: Date/Time | Y-Axis: Documents/Sec</span><br/>
+                                        <div id="status"></div><br/>
+                                        <div id="pointData">Please hover on the graph to get more information!</div>                                       
+                                    </div>
+                                </div>
+
+                            </div>
+
+                    </div>
+
+                </div>
+
+	</body>
+
+    <script type="text/javascript">
+
+	    var fileData;
+	    var commitID;
+	    var testID;
+
+	    $(document).ready(function () {
+
+	                        $("#ReloadButton").hide();
+
+                            $.ajax({
+
+                                    type: "GET",
+                                    url: "data/indexing_throughput_data_cloud_concurrent.csv",
+                                    dataType: "text",
+                                    success: function(data) {
+	                                    fileData = data.split("\n");
+                                    }
+
+                            });
+
+
+                            $.ajax({
+
+                                type: "GET",
+                                url: "data/testEnv.csv",
+                                dataType: "text",
+                                success: function (data) {
+                                    document.getElementById("testEnvironmentDetails").innerHTML = data;
+                                }
+
+                            });
+
+
+                            g2 = new Dygraph(document.getElementById("graphdiv2"), "data/indexing_throughput_data_cloud_concurrent.csv", {
+                                labelsDiv: document.getElementById('status'), visibility: [false, false, true, true, true, true, true],
+
+                                 highlightCallback: function (e, x, pts, row) {
+                                     commitID = fileData[(row + 1)].split(",")[2].trim();
+                                     testID = fileData[(row + 1)].split(",")[1].trim();
+
+                                                    document.getElementById("pointData").innerHTML = "Commit ID: <font color='red'>" + fileData[(row + 1)].split(",")[2] + "</font>";
+                                                },
+                                     clickCallback: function (e, x, pts) {
+
+                                                     $('#memProfile').modal();
+                                                     document.getElementById('memProfileFileChangeListLink').setAttribute('href', "https://git-wip-us.apache.org/repos/asf?p=lucene-solr.git;h=" + commitID);
+
+                                                     setTimeout(function () {
+                                                         g3 = new Dygraph(document.getElementById("memProfileGraph"), "data/" + testID + "_" + commitID + "_MEM_ESTIMATION_CLOUD_INDEXING_CONCURRENT_dump.csv", { visibility: [false, true], labelsDiv: document.getElementById('memProfileStats') });
+                                                         g4 = new Dygraph(document.getElementById("cpuProfileGraph"), "data/" + testID + "_" + commitID + "_CPU_ESTIMATION_CLOUD_INDEXING_CONCURRENT_dump.csv", { visibility: [false, true], labelsDiv: document.getElementById('cpuProfileStats') });
+                                                     }, 250);
+
+                                                }
+
+                            });
+
+                            $("#HeapMemoryUsageTab").click(function () {
+
+                                if ($("#HeapMemoryUsageTab").hasClass("active")) {
+                                    //Do Nothing
+                                } else {
+                                    $("#ProcessCPULoadTab").removeClass("active");
+                                    $("#TestEnvTab").removeClass("active");
+
+                                    $("#cpuTabBody").hide();
+                                    $("#testEnvTabBody").hide();
+                                    $("#memTabBody").show("slow");
+
+                                    $("#HeapMemoryUsageTab").addClass("active");
+
+                                    g3 = new Dygraph(document.getElementById("memProfileGraph"), "data/" + testID + "_" + commitID + "_MEM_ESTIMATION_CLOUD_INDEXING_CONCURRENT_dump.csv", { visibility: [false, true], labelsDiv: document.getElementById('memProfileStats') });
+
+                                }
+
+                            });
+
+                            $("#ProcessCPULoadTab").click(function () {
+
+                                if ($("#ProcessCPULoadTab").hasClass("active")) {
+                                    //Do Nothing
+                                } else {
+
+                                    if ($("#cpuTabBody").hasClass("hidden")) {
+                                        $("#cpuTabBody").removeClass("hidden");
+                                    }
+
+                                    $("#HeapMemoryUsageTab").removeClass("active");
+                                    $("#TestEnvTab").removeClass("active");
+
+                                    $("#memTabBody").hide();
+                                    $("#testEnvTabBody").hide();
+                                    $("#cpuTabBody").show("slow");
+
+                                    $("#ProcessCPULoadTab").addClass("active");
+
+                                    g4 = new Dygraph(document.getElementById("cpuProfileGraph"), "data/" + testID + "_" + commitID + "_CPU_ESTIMATION_CLOUD_INDEXING_CONCURRENT_dump.csv", { visibility: [false, true], labelsDiv: document.getElementById('cpuProfileStats') });
+
+                                }
+
+                            });
+
+                            $("#TestEnvTab").click(function () {
+
+                                if ($("#TestEnvTab").hasClass("active")) {
+                                    //Do Nothing
+                                } else {
+
+                                    if ($("#testEnvTabBody").hasClass("hidden")) {
+                                        $("#testEnvTabBody").removeClass("hidden");
+                                    }
+
+                                    $("#HeapMemoryUsageTab").removeClass("active");
+                                    $("#ProcessCPULoadTab").removeClass("active");
+
+                                    $("#memTabBody").hide();
+                                    $("#cpuTabBody").hide();
+                                    $("#testEnvTabBody").show("slow");
+
+                                    $("#TestEnvTab").addClass("active");
+
+                                    $.ajax({
+
+                                        type: "GET",
+                                        url: "data/" + testID + "_" + commitID + "_TEST_ENV_FILE_dump.csv",
+                                        dataType: "text",
+                                        success: function (data) {
+                                            document.getElementById("testEnvTabBody").innerHTML = data;
+                                        }
+
+                                    });
+                                    
+                                }
+
+                            });
+
+                            var wasRunning = false;
+
+                            setInterval(function () {
+
+                                                    $.ajax({
+
+                                                        type: "GET",
+                                                        url: "iamalive.txt",
+                                                        dataType: "text",
+                                                        success: function (data) {
+
+                                                            $("#green").fadeIn("slow");
+                                                            $("#green").fadeOut("slow");
+                                                            wasRunning = true;
+
+                                                        },
+
+                                                        error: function (data) {
+                                                            $("#green").fadeOut("slow");
+
+                                                            if (wasRunning) {
+                                                                wasRunning = false;
+                                                                setTimeout(function () {}, 1000);
+                                                                $("#ReloadButton").removeClass("hidden");
+                                                                $("#ReloadButton").fadeIn("slow");
+                                                            }
+                                                        }
+
+                                                    });
+
+                            }, 3000);
+
+
+        });
+
+    </script>
+
+
+</html>
