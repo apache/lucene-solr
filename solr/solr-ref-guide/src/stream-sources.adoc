@@ -480,3 +480,24 @@ topic(checkpointCollection,
       q="topic query",
       fl="id, name, country")
 ----
+
+== tuple
+
+The `tuple` function emits a single Tuple with name/value pairs. The values can be set to variables assigned in a `let` expression, literals, Stream Evaluators or
+Stream Expressions. In the case of Stream Evaluators the tuple will output the return value from the evaluator.
+This could be a numeric, list or map. If a Stream Expression is set to a value, the `tuple` function will flatten
+the tuple stream from the Stream Expression into a list of Tuples.
+
+=== tuple Parameters
+
+* name=value pairs
+
+=== tuple Syntax
+
+[source,text]
+----
+tuple(a=add(1,1),
+      b=search(collection1, q="cat:a", fl="a, b, c", sort"a desc"))
+----
+
+
