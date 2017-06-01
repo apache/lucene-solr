@@ -101,27 +101,13 @@ public class Policy implements MapWriter {
         this.policies.put(s, l1.stream()
             .map(Clause::new)
             .filter(clause -> {
+              if (!clause.isPerCollectiontag())
+                throw new RuntimeException(clause.globalTag.name + " is only allowed in 'cluster-policy'");
               clause.addTags(params);
               return true;
             })
             .sorted()
             .collect(toList())));
-
-    this.policies.forEach((s, c) -> {
-      for (Clause clause : c) {
-        if (!clause.isPerCollectiontag())
-          throw new RuntimeException(clause.globalTag.name + " is only allowed in 'cluster-policy'");
-      }
-    });
-
-
-
-    clusterPolicy.stream().forEach(new Consumer<Clause>() {
-      @Override
-      public void accept(Clause clause) {
-        clause.addTags(params);
-      }
-    });
   }
 
   public List<Clause> getClusterPolicy() {
