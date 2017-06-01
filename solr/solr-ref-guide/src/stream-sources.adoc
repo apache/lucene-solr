@@ -327,7 +327,30 @@ The expression above performs a breadth-first search to find the shortest paths 
 The search starts from the nodeID "\john@company.com" in the `from_address` field and searches for the nodeID "\jane@company.com" in the `to_address` field. This search is performed iteratively until the `maxDepth` has been reached. Each level in the traversal is implemented as a parallel partitioned nested loop join across the entire collection. The `threads` parameter controls the number of threads performing the join at each level, while the `partitionSize` parameter controls the of number of nodes in each join partition. The `maxDepth` parameter controls the number of levels to traverse. `fq` is a limiting query applied to each level in the traversal.
 
 == shuffle
-//TODO
+
+The `shuffle` expression sorts and exports entire result sets. The `shuffle` expression is similar to the `search` expression except that
+under the covers `shuffle` always uses the /export handler. The `shuffle` expression is designed to be combined with the relational algebra
+decorators that require complete, sorted result sets. Shuffled result sets can be partitioned across worker nodes with the parallel
+stream decorator to perform parallel relational algebra. When used in parallel mode the partitionKeys parameter must be provided.
+
+=== shuffle Parameters
+
+* `collection`: (Mandatory) the collection being searched.
+* `q`: (Mandatory) The query to perform on the Solr index.
+* `fl`: (Mandatory) The list of fields to return.
+* `sort`: (Mandatory) The sort criteria.
+* `zkHost`: Only needs to be defined if the collection being searched is found in a different zkHost than the local stream handler.
+* `partitionKeys`: Comma delimited list of keys to partition the search results by. To be used with the parallel function for parallelizing operations across worker nodes. See the <<stream-decorators.adoc#parallel,parallel>> function for details.
+
+=== shuffle Syntax
+
+[source,text]
+----
+shuffle(collection1,
+        q="*:*",
+        fl="id,a_s,a_i,a_f",
+        sort="a_f asc, a_i asc")
+----
 
 == stats
 
