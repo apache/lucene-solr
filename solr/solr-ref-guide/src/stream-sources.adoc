@@ -117,6 +117,8 @@ jdbc(
 The `echo` function returns a single Tuple echoing its text parameter. `Echo` is the simplest stream source designed to provide text
 to a text analyzing stream decorator.
 
+=== echo Syntax
+
 [source,text]
 ----
 echo("Hello world")
