@@ -71,7 +71,6 @@ import static org.apache.solr.common.params.CommonParams.JSON;
 import static org.apache.solr.common.params.CommonParams.SORT;
 import static org.apache.solr.common.params.CommonParams.VERSION;
 import static org.apache.solr.common.util.Utils.makeMap;
-import static org.apache.solr.security.PermissionNameProvider.Name.UPDATE_PERM;
 
 public class BlobHandler extends RequestHandlerBase implements PluginInfoInitialized , PermissionNameProvider {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());

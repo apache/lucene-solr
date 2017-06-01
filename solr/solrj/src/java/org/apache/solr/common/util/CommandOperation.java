@@ -219,6 +219,10 @@ public class CommandOperation {
    */
   public static List<CommandOperation> parse(Reader rdr) throws IOException {
     JSONParser parser = new JSONParser(rdr);
+    parser.setFlags(parser.getFlags() |
+        JSONParser.ALLOW_MISSING_COLON_COMMA_BEFORE_OBJECT |
+        JSONParser.OPTIONAL_OUTER_BRACES
+    );
 
     ObjectBuilder ob = new ObjectBuilder(parser);
 

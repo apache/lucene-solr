@@ -205,6 +205,9 @@ Other Changes
 
 * SOLR-10793: BlobHandler should have a well-known permission name (noble)
 
+* SOLR-10744: Update noggit to newer version (0.8) (noble)
+
+
 ==================  6.7.0 ==================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release.
