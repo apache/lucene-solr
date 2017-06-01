@@ -64,6 +64,9 @@ Bug Fixes
 * LUCENE-7626: IndexWriter will no longer accept broken token offsets
   (Mike McCandless)
 
+* LUCENE-7859: Spatial-extras PackedQuadPrefixTree bug that only revealed itself
+  with the new pointsOnly optimizations in LUCENE-7845. (David Smiley)
+
 Improvements
 
 * LUCENE-7489: Better storage of sparse doc-values fields with the default
