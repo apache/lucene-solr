@@ -485,7 +485,7 @@ topic(checkpointCollection,
 
 The `tuple` function emits a single Tuple with name/value pairs. The values can be set to variables assigned in a `let` expression, literals, Stream Evaluators or
 Stream Expressions. In the case of Stream Evaluators the tuple will output the return value from the evaluator.
-This could be a numeric, list or map. If a Stream Expression is set to a value, the `tuple` function will flatten
+This could be a numeric, list or map. If a value is set to a Stream Expression, the `tuple` function will flatten
 the tuple stream from the Stream Expression into a list of Tuples.
 
 === tuple Parameters
