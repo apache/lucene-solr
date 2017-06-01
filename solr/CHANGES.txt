@@ -203,6 +203,8 @@ Other Changes
 
 * SOLR-10757: delete/refactor/cleanup CollectionAdminRequest deprecations (hossman)
 
+* SOLR-10793: BlobHandler should have a well-known permission name (noble)
+
 ==================  6.7.0 ==================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release.

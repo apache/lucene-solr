@@ -54,6 +54,8 @@ import org.apache.solr.request.SolrRequestInfo;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.schema.FieldType;
 import org.apache.solr.search.QParser;
+import org.apache.solr.security.AuthorizationContext;
+import org.apache.solr.security.PermissionNameProvider;
 import org.apache.solr.update.AddUpdateCommand;
 import org.apache.solr.update.CommitUpdateCommand;
 import org.apache.solr.update.processor.UpdateRequestProcessor;
@@ -69,8 +71,9 @@ import static org.apache.solr.common.params.CommonParams.JSON;
 import static org.apache.solr.common.params.CommonParams.SORT;
 import static org.apache.solr.common.params.CommonParams.VERSION;
 import static org.apache.solr.common.util.Utils.makeMap;
+import static org.apache.solr.security.PermissionNameProvider.Name.UPDATE_PERM;
 
-public class BlobHandler extends RequestHandlerBase implements PluginInfoInitialized {
+public class BlobHandler extends RequestHandlerBase implements PluginInfoInitialized , PermissionNameProvider {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   private static final long DEFAULT_MAX_SIZE = 5 * 1024 * 1024; // 5MB
@@ -292,5 +295,18 @@ public class BlobHandler extends RequestHandlerBase implements PluginInfoInitial
   @Override
   public Collection<Api> getApis() {
     return ApiBag.wrapRequestHandlers(this, "core.system.blob", "core.system.blob.upload");
+  }
+
+  @Override
+  public Name getPermissionName(AuthorizationContext ctx) {
+    switch (ctx.getHttpMethod()) {
+      case "GET":
+        return Name.READ_PERM;
+      case "POST":
+        return Name.UPDATE_PERM;
+      default:
+        return null;
+    }
+
   }
 }
