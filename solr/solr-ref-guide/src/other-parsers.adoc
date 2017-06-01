@@ -645,17 +645,6 @@ If the `q1` parameter is price, then the query would be a function query on the 
 
 For more information about the possibilities of nested queries, see Yonik Seeley's blog post https://lucidworks.com/2009/03/31/nested-queries-in-solr/[Nested Queries in Solr].
 
-[[OtherParsers-OldLuceneQueryParser]]
-== Old Lucene Query Parser
-
-`OldLuceneQParser` extends the `QParserPlugin` by parsing Solr's variant of Lucene's QueryParser syntax, including the deprecated sort specification after the query.
-
-Example:
-
-[source,text]
-----
-{!lucenePlusSort} myfield:foo +bar -baz;price asc
-----
 
 [[OtherParsers-PayloadQueryParsers]]
 == Payload Query Parsers

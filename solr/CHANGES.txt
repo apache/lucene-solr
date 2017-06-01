@@ -82,6 +82,10 @@ Upgrading from Solr 6.x
 * Deprecated LatLonType, GeoHashField, SpatialPointVectorFieldType, and SpatialTermQueryPrefixTreeFieldType.
   Instead, switch to LatLonPointSpatialField or SpatialRecursivePrefixTreeFieldType or RptWithGeometrySpatialField.
 
+* The 'lucenePlusSort' QParser has been deprecated, and is no longer implicitly defined.  If you wish to continue using
+  this QParser untill Solr 8, you must explicitly register it in your solrconfig.xml:
+     '<queryParser name="lucenePlusSort" class="solr.OldLuceneQParserPlugin"/>'
+
 New Features
 ----------------------
 * SOLR-9857, SOLR-9858: Collect aggregated metrics from nodes and shard leaders in overseer. (ab)
@@ -207,6 +211,7 @@ Other Changes
 
 * SOLR-10744: Update noggit to newer version (0.8) (noble)
 
+* SOLR-10792: Deprecate and remove implicit registration of "lucenePlusSort" aka OldLuceneQParser (hossman)
 
 ==================  6.7.0 ==================
 

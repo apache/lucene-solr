@@ -94,6 +94,7 @@ public class QueryEqualityTest extends SolrTestCaseJ4 {
                       " +apache +solr");
   }
 
+  @Deprecated
   public void testQueryLucenePlusSort() throws Exception {
     assertQueryEquals("lucenePlusSort", 
                       "apache solr", "apache  solr", "apache solr ; score desc");

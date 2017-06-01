@@ -23,7 +23,10 @@ import org.apache.solr.request.SolrQueryRequest;
  * Parse Solr's variant of Lucene QueryParser syntax, including the
  * deprecated sort specification after the query.
  * <br>Example: <code>{!lucenePlusSort}myfield:foo +bar -baz;price asc</code>
+ *
+ * @deprecated This class should have been removed a long time ago, it will be removed in Solr 8.0
  */
+@Deprecated
 public class OldLuceneQParserPlugin extends QParserPlugin {
   public static final String NAME = "lucenePlusSort";
 

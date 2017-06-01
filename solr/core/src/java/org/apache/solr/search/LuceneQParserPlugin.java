@@ -42,7 +42,7 @@ public class LuceneQParserPlugin extends QParserPlugin {
   }
 }
 
-
+@Deprecated 
 class OldLuceneQParser extends LuceneQParser {
   String sortStr;
 
