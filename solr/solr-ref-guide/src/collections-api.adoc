@@ -536,6 +536,36 @@ http://localhost:8983/solr/admin/collections?action=DELETEALIAS&name=testalias
 </response>
 ----
 
+[[CollectionsAPI-listaliases]]
+== LISTALIASES: List of all aliases in the cluster
+
+`/admin/collections?action=LISTALIASES`
+
+[[CollectionsAPI-Output.6]]
+=== Output
+
+The output will contain a list of aliases with the corresponding collection names.
+
+[[CollectionsAPI-Examples.6]]
+=== Examples
+
+*Output*
+
+[source,xml]
+----
+<response>
+  <lst name="responseHeader">
+    <int name="status">0</int>
+    <int name="QTime">0</int>
+  </lst>
+  <lst name="aliases">
+    <str name="testalias1">collection1</str>
+    <str name="testalias2">collection2</str>
+  </lst>
+</response>
+----
+
+
 [[CollectionsAPI-delete]]
 == DELETE: Delete a Collection
 
