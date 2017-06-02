@@ -32,6 +32,7 @@ The base URL for all API calls is `\http://<hostname>:<port>/solr`.
 * `/admin/configs?action=CREATE`: <<ConfigSetsAPI-create,create>> a ConfigSet, based on an existing ConfigSet
 * `/admin/configs?action=DELETE`: <<ConfigSetsAPI-delete,delete>> a ConfigSet
 * `/admin/configs?action=LIST`: <<ConfigSetsAPI-list,list>> all ConfigSets
+* `/admin/configs?action=UPLOAD`: <<ConfigSetsAPI-upload,upload>> a ConfigSet
 
 [[ConfigSetsAPI-createCreateaConfigSet]]
 
@@ -169,3 +170,48 @@ http://localhost:8983/solr/admin/configs?action=LIST&wt=json
   "configSets":["myConfigSet1",
     "myConfig2"]}
 ----
+
+[[ConfigSetsAPI-uploadCreateaConfigSet]]
+
+[[ConfigSetsAPI-upload]]
+== Upload a ConfigSet
+
+`/admin/configs?action=UPLOAD&name=_name_`
+
+Upload a ConfigSet, sent in as a zipped file. Please note that a ConfigSet is uploaded in a "trusted" mode if authentication is enabled and this upload operation is performed as an authenticated request. Without authentication, a ConfigSet is uploaded in an "untrusted" mode. Upon creation of a collection using an "untrusted" ConfigSet, the following functionality would not work:
+
+ * RunExecutableListener does not initialize, if specified in the ConfigSet.
+ * DataImportHandler's ScriptTransformer does not initialize, if specified in the ConfigSet.
+ * XSLT transformer (tr parameter) cannot be used at request processing time.
+ * StatelessScriptUpdateProcessor does not initialize, if specified in the ConfigSet.
+
+[[ConfigSetsAPI-Input]]
+=== Input
+
+// TODO: Change column width to %autowidth.spread when https://github.com/asciidoctor/asciidoctor-pdf/issues/599 is fixed
+
+[cols="20,15,10,15,40",options="header"]
+|===
+|Key |Type |Required |Default |Description
+|name |String |Yes | |ConfigSet to be created
+|===
+
+The body of the request should contain a zipped config set.
+
+[[ConfigSetsAPI-Output]]
+=== Output
+
+*Output Content*
+
+The output will include the status of the request. If the status is anything other than "success", an error message will explain why the request failed.
+
+[[ConfigSetsAPI-Examples]]
+=== Examples
+
+Create a ConfigSet named 'myConfigSet' based on a 'predefinedTemplate' ConfigSet, overriding the immutable property to false.
+
+[source,text]
+----
+curl -X POST -d @myconfigset.zip http://localhost:8983/solr/admin/configs?action=CREATE&name=myConfigSet --header "Content-Type:text/xml"
+----
+
