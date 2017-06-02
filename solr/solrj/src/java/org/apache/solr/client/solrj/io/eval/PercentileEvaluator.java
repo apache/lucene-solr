@@ -17,8 +17,6 @@
 
 package org.apache.solr.client.solrj.io.eval;
 
-import java.text.DecimalFormat;
-import java.text.NumberFormat;
 import java.util.List;
 import java.io.IOException;
 
