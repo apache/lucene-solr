@@ -98,7 +98,7 @@ public class Assign {
       map.put(shardId, cnt);
     }
 
-    Collections.sort(shardIdNames, (o1, o2) -> {
+    Collections.sort(shardIdNames, (String o1, String o2) -> {
       Integer one = map.get(o1);
       Integer two = map.get(o2);
       return one.compareTo(two);
