@@ -541,12 +541,12 @@ http://localhost:8983/solr/admin/collections?action=DELETEALIAS&name=testalias
 
 `/admin/collections?action=LISTALIASES`
 
-[[CollectionsAPI-Output.6]]
+[[CollectionsAPI-Output.27]]
 === Output
 
 The output will contain a list of aliases with the corresponding collection names.
 
-[[CollectionsAPI-Examples.6]]
+[[CollectionsAPI-Examples.27]]
 === Examples
 
 *Output*
