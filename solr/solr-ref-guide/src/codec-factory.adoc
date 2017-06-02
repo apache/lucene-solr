@@ -22,14 +22,12 @@ A `codecFactory` can be specified in `solrconfig.xml` to determine which Lucene 
 
 If not specified, Lucene's default codec is implicitly used.
 
-There are two alternatives to Lucene's default codec:
+== Alternatives to the Default Codec
+There are two alternatives to Lucene's default codec.
 
-. {solr-javadocs}/solr-core/org/apache/solr/core/SchemaCodecFactory.html[`solr.SchemaCodecFactory`] 
-. {solr-javadocs}/solr-core/org/apache/solr/core/SimpleTextCodecFactory.html[`solr.SimpleTextCodecFactory`] 
- 
 === solr.SchemaCodecFactory
 
-`solr.SchemaCodecFactory` supports 2 key features:
+The {solr-javadocs}/solr-core/org/apache/solr/core/SchemaCodecFactory.html[`solr.SchemaCodecFactory`] supports 2 key features:
 
 * Schema based per-fieldtype configuration for `docValuesFormat` and `postingsFormat` - see the <<field-type-definitions-and-properties.adoc#field-type-properties,Field Type Properties>> section for more details.
 * A `compressionMode` option:
@@ -47,9 +45,9 @@ Example:
 
 === solr.SimpleTextCodecFactory
 
-This factory for Lucene's `SimpleTextCodec` produces a plain text human-readable index format.
+This factory for Lucene's {solr-javadocs}/solr-core/org/apache/solr/core/SimpleTextCodecFactory.html[`solr.SimpleTextCodecFactory`] produces a plain text human-readable index format.
 
-CAUTION: *FOR RECREATIONAL USE ONLY*.  This codec should never be used in production.  `SimpleTextCodec` is relatively slow and takes up a large amount of disk space.  Its use should be limited to educational and debugging purposes.
+CAUTION: *FOR RECREATIONAL USE ONLY*. This codec should never be used in production. `SimpleTextCodec` is relatively slow and takes up a large amount of disk space. Its use should be limited to educational and debugging purposes.
 
 Example:
 
