@@ -110,6 +110,9 @@ Other
 
 * LUCENE-7540: Upgrade ICU to 59.1 (Mike McCandless, Jim Ferenczi)
 
+* LUCENE-7852: Correct copyright year(s) in lucene/LICENSE.txt file.
+  (Christine Poerschke, Steve Rowe)
+
 ======================= Lucene 6.7.0 =======================
 
 Other

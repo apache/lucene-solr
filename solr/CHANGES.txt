@@ -215,6 +215,9 @@ Other Changes
 
 * SOLR-10791: Remove deprecated options in SSLTestConfig (hossman)
 
+* LUCENE-7852: Correct copyright year(s) in solr/LICENSE.txt file.
+  (Christine Poerschke, Steve Rowe)
+
 ==================  6.7.0 ==================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release.
