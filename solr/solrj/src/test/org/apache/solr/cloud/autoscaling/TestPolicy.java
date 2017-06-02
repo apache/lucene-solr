@@ -110,6 +110,57 @@ public class TestPolicy extends SolrTestCaseJ4 {
     return result;
   }
 
+  public void testValidate() {
+    expectError("replica", -1, "must be greater than" );
+    expectError("replica","hello", "not a valid number" );
+    assertEquals( 1l,   Clause.validate("replica", "1"));
+    assertEquals("c",   Clause.validate("collection", "c"));
+    assertEquals( "s",   Clause.validate("shard", "s"));
+    assertEquals( "overseer",   Clause.validate("nodeRole", "overseer"));
+
+    expectError("nodeRole", "wrong","must be one of");
+
+    expectError("sysLoadAvg", "101","must be less than ");
+    expectError("sysLoadAvg", 101,"must be less than ");
+    expectError("sysLoadAvg", "-1","must be greater than");
+    expectError("sysLoadAvg", -1,"must be greater than");
+
+    assertEquals(12l,Clause.validate("sysLoadAvg", "12.46"));
+    assertEquals(12l,Clause.validate("sysLoadAvg", 12.46d));
+
+
+    expectError("ip_1", "300","must be less than ");
+    expectError("ip_1", 300,"must be less than ");
+    expectError("ip_1", "-1","must be greater than");
+    expectError("ip_1", -1,"must be greater than");
+
+    assertEquals(1l,Clause.validate("ip_1", "1"));
+
+    expectError("heapUsage", "-1","must be greater than");
+    expectError("heapUsage", -1,"must be greater than");
+    assertEquals(69l,Clause.validate("heapUsage", "69.9"));
+    assertEquals(69l,Clause.validate("heapUsage", 69.9d));
+
+    expectError("port", "70000","must be less than ");
+    expectError("port", 70000,"must be less than ");
+    expectError("port", "1000","must be greater than");
+    expectError("port", 1000,"must be greater than");
+
+    expectError("cores", "-1","must be greater than");
+
+
+  }
+
+  private static void expectError(String name, Object val, String msg){
+    try {
+      Clause.validate(name, val);
+      fail("expected exception containing "+msg);
+    } catch (Exception e) {
+      assertTrue("expected exception containing "+msg,e.getMessage().contains(msg));
+    }
+
+  }
+
   public void testOperands() {
     Clause c = new Clause((Map<String, Object>) Utils.fromJSONString("{replica:'<2', node:'#ANY'}"));
     assertFalse(c.replica.isPass(3));

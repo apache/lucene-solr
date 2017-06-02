@@ -20,6 +20,7 @@ package org.apache.solr.cloud.autoscaling;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -31,10 +32,12 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import org.apache.solr.cloud.autoscaling.Policy.ReplicaInfo;
 import org.apache.solr.common.MapWriter;
+import org.apache.solr.common.cloud.rule.ImplicitSnitch;
 import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.common.util.Utils;
 
 import static java.util.Collections.singletonMap;
+import static java.util.Collections.unmodifiableSet;
 import static org.apache.solr.cloud.autoscaling.Clause.TestStatus.PASS;
 import static org.apache.solr.cloud.autoscaling.Operand.EQUAL;
 import static org.apache.solr.cloud.autoscaling.Operand.GREATER_THAN;
@@ -337,4 +340,80 @@ public class Clause implements MapWriter, Comparable<Clause> {
   }
 
   private static final Set<String> IGNORE_TAGS = new HashSet<>(Arrays.asList(REPLICA, COLLECTION, SHARD, "strict"));
+
+  static class ValidateInfo {
+    final Class type;
+    final Set<String> vals;
+    final Long min;
+    final Long max;
+
+
+    ValidateInfo(Class type, Set<String> vals, Long min, Long max) {
+      this.type = type;
+      this.vals = vals;
+      this.min = min;
+      this.max = max;
+    }
+  }
+
+
+  public static Object validate(String name, Object val) {
+    if (val == null) return null;
+    ValidateInfo info = validatetypes.get(name);
+    if (info == null && name.startsWith(ImplicitSnitch.SYSPROP)) info = validatetypes.get(null);
+    if (info == null) throw new RuntimeException("Unknown type :" + name);
+    if (info.type == Long.class) {
+      Long num = parseNumber(name, val);
+      if (info.min != null)
+        if (num < info.min) throw new RuntimeException(name + ": " + val + " must be greater than " + info.min);
+      if (info.max != null)
+        if (num > info.max) throw new RuntimeException(name + ": " + val + " must be less than " + info.max);
+      return num;
+    } else if (info.type == String.class) {
+      if (info.vals != null && !info.vals.contains(val))
+        throw new RuntimeException(name + ": " + val + " must be one of " + StrUtils.join(info.vals, ','));
+      return val;
+    } else {
+      throw new RuntimeException("Invalid type ");
+    }
+
+  }
+
+  public static Long parseNumber(String name, Object val) {
+    if (val == null) return null;
+    Number num = 0;
+    if (val instanceof String) {
+      try {
+        num = Long.parseLong((String) val);
+      } catch (NumberFormatException e) {
+        try {
+          num = Double.parseDouble((String) val);
+        } catch (NumberFormatException e1) {
+          throw new RuntimeException(name + ": " + val + "not a valid number", e);
+        }
+      }
+
+    } else if (val instanceof Number) {
+      num = (Number) val;
+    }
+    return num.longValue();
+  }
+
+  private static final Map<String, ValidateInfo> validatetypes = new HashMap();
+
+  static {
+    validatetypes.put("collection", new ValidateInfo(String.class, null, null, null));
+    validatetypes.put("shard", new ValidateInfo(String.class, null, null, null));
+    validatetypes.put("replica", new ValidateInfo(Long.class, null, 0l, null));
+    validatetypes.put(ImplicitSnitch.PORT, new ValidateInfo(Long.class, null, 1024l, 65535l));
+    validatetypes.put(ImplicitSnitch.DISK, new ValidateInfo(Long.class, null, 0l, Long.MAX_VALUE));
+    validatetypes.put(ImplicitSnitch.NODEROLE, new ValidateInfo(String.class, unmodifiableSet(new HashSet(Arrays.asList("overseer"))), null, null));
+    validatetypes.put(ImplicitSnitch.CORES, new ValidateInfo(Long.class, null, 0l, Long.MAX_VALUE));
+    validatetypes.put(ImplicitSnitch.SYSLOADAVG, new ValidateInfo(Long.class, null, 0l, 100l));
+    validatetypes.put(ImplicitSnitch.HEAPUSAGE, new ValidateInfo(Long.class, null, 0l, Long.MAX_VALUE));
+    validatetypes.put(null, new ValidateInfo(String.class, null, null, null));
+    for (String ip : ImplicitSnitch.IP_SNITCHES) validatetypes.put(ip, new ValidateInfo(Long.class, null, 0l, 255l));
+
+
+  }
 }
