@@ -38,6 +38,11 @@ public class ScaleEvaluator extends ComplexEvaluator implements Expressible {
   }
 
   public List<Number> evaluate(Tuple tuple) throws IOException {
+
+    if(subEvaluators.size() != 2) {
+      throw new IOException("Scale evaluator expects 2 parameters found: "+subEvaluators.size());
+    }
+
     StreamEvaluator numEval = subEvaluators.get(0);
     StreamEvaluator colEval1 = subEvaluators.get(1);
 

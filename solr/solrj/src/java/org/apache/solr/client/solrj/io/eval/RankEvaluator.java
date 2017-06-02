@@ -38,6 +38,11 @@ public class RankEvaluator extends ComplexEvaluator implements Expressible {
   }
 
   public List<Number> evaluate(Tuple tuple) throws IOException {
+
+    if(subEvaluators.size() != 1) {
+      throw new IOException("Rank evaluator expects 1 parameters found: "+subEvaluators.size());
+    }
+
     StreamEvaluator colEval = subEvaluators.get(0);
 
     List<Number> numbers = (List<Number>)colEval.evaluate(tuple);
