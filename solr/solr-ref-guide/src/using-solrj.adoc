@@ -35,8 +35,12 @@ SolrClient solr = new HttpSolrClient.Builder(urlString).build();
 .SolrCloud client
 [source,java]
 ----
+// Using a ZK Host String
 String zkHostString = "zkServerA:2181,zkServerB:2181,zkServerC:2181/solr";
 SolrClient solr = new CloudSolrClient.Builder().withZkHost(zkHostString).build();
+
+// Using already running Solr nodes
+SolrClient solr = new CloudSolrClient.Builder().withSolrUrl("http://localhost:8983/solr").build();
 ----
 
 Once you have a `SolrClient`, you can use it by calling methods like `query()`, `add()`, and `commit()`.
