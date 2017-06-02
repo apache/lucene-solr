@@ -22,7 +22,6 @@ The `solr.xml` file defines some global configuration options that apply to all 
 
 This section will describe the default `solr.xml` file included with Solr and how to modify it for your needs. For details on how to configure `core.properties`, see the section <<defining-core-properties.adoc#defining-core-properties,Defining core.properties>>.
 
-[[Formatofsolr.xml-Definingsolr.xml]]
 == Defining solr.xml
 
 You can find `solr.xml` in your `$SOLR_HOME` directory (usually `server/solr`) in standalone mode or in Zookeeper when using SolrCloud. The default `solr.xml` file looks like this:
@@ -50,10 +49,9 @@ You can find `solr.xml` in your `$SOLR_HOME` directory (usually `server/solr`) i
 
 As you can see, the discovery Solr configuration is "SolrCloud friendly". However, the presence of the `<solrcloud>` element does _not_ mean that the Solr instance is running in SolrCloud mode. Unless the `-DzkHost` or `-DzkRun` are specified at startup time, this section is ignored.
 
-[[Formatofsolr.xml-Solr.xmlParameters]]
-=== Solr.xml Parameters
+== Solr.xml Parameters
 
-==== The `<solr>` Element
+=== The <solr> Element
 
 There are no attributes that you can specify in the `<solr>` tag, which is the root element of `solr.xml`. The tables below list the child nodes of each XML element in `solr.xml`.
 
@@ -74,7 +72,7 @@ There are no attributes that you can specify in the `<solr>` tag, which is the r
 |`configSetBaseDir` |The directory under which configsets for Solr cores can be found. Defaults to `$SOLR_HOME/configsets`.
 |===
 
-==== The `<solrcloud>` Element
+=== The <solrcloud> Element
 
 This element defines several parameters that relate so SolrCloud. This section is ignored unless theSolr instance is started with either `-DzkRun` or `-DzkHost`
 
@@ -96,7 +94,7 @@ This element defines several parameters that relate so SolrCloud. This section i
 |`zkCredentialsProvider` & ` zkACLProvider` |Optional parameters that can be specified if you are using <<zookeeper-access-control.adoc#zookeeper-access-control,ZooKeeper Access Control>>.
 |===
 
-==== The `<logging>` Element
+=== The <logging> Element
 
 // TODO: Change column width to %autowidth.spread when https://github.com/asciidoctor/asciidoctor-pdf/issues/599 is fixed
 
@@ -107,7 +105,7 @@ This element defines several parameters that relate so SolrCloud. This section i
 |`enabled` |true/false - whether to enable logging or not.
 |===
 
-===== The `<logging><watcher>` Element
+==== The <logging><watcher> Element
 
 // TODO: Change column width to %autowidth.spread when https://github.com/asciidoctor/asciidoctor-pdf/issues/599 is fixed
 
@@ -118,7 +116,7 @@ This element defines several parameters that relate so SolrCloud. This section i
 |`threshold` |The logging level above which your particular logging implementation will record. For example when using log4j one might specify DEBUG, WARN, INFO, etc.
 |===
 
-==== The `<shardHandlerFactory>` Element
+=== The <shardHandlerFactory> Element
 
 Custom shard handlers can be defined in `solr.xml` if you wish to create a custom shard handler.
 
@@ -146,14 +144,19 @@ Since this is a custom shard handler, sub-elements are specific to the implement
 |`fairnessPolicy` |A boolean to configure if the threadpool favours fairness over throughput. Default is false to favor throughput.
 |===
 
-[[Formatofsolr.xml-SubstitutingJVMSystemPropertiesinsolr.xml]]
+=== The <metrics> Element
+
+The `<metrics>` element in `solr.xml` allows you to customize the metrics reported by Solr. You can define system properties that should not be returned, or define custom suppliers and reporters. 
+
+In a default `solr.xml` you will not see any `<metrics>` configuration. If you would like to customize the metrics for your installation, see the section <<metrics-reporting.adoc#metrics-configuration,Metrics Configuration>>.
+
 == Substituting JVM System Properties in solr.xml
 
-Solr supports variable substitution of JVM system property values in `solr.xml`, which allows runtime specification of various configuration options. The syntax is `${propertyname[:option default value]`}. This allows defining a default that can be overridden when Solr is launched. If a default value is not specified, then the property must be specified at runtime or the `solr.xml` file will generate an error when parsed.
+Solr supports variable substitution of JVM system property values in `solr.xml`, which allows runtime specification of various configuration options. The syntax is `${propertyname[:option default value]}`. This allows defining a default that can be overridden when Solr is launched. If a default value is not specified, then the property must be specified at runtime or the `solr.xml` file will generate an error when parsed.
 
-Any JVM system properties usually specified using the -D flag when starting the JVM, can be used as variables in the `solr.xml` file.
+Any JVM system properties usually specified using the `-D` flag when starting the JVM, can be used as variables in the `solr.xml` file.
 
-For example, in the `solr.xml` file shown below, the `socketTimeout` and `connTimeout` values are each set to "0". However, if you start Solr using '`bin/solr -DsocketTimeout=1000`', the `socketTimeout` option of the `HttpShardHandlerFactory` to be overridden using a value of 1000ms, while the `connTimeout` option will continue to use the default property value of "0".
+For example, in the `solr.xml` file shown below, the `socketTimeout` and `connTimeout` values are each set to "0". However, if you start Solr using `bin/solr -DsocketTimeout=1000`, the `socketTimeout` option of the `HttpShardHandlerFactory` to be overridden using a value of 1000ms, while the `connTimeout` option will continue to use the default property value of "0".
 
 [source,xml]
 ----
