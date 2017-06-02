@@ -17,9 +17,6 @@
 
 package org.apache.solr.client.solrj.io.eval;
 
-import java.text.DecimalFormat;
-import java.text.NumberFormat;
-import java.util.List;
 import java.io.IOException;
 
 import org.apache.solr.client.solrj.io.Tuple;
@@ -29,34 +26,27 @@ import org.apache.solr.client.solrj.io.stream.expr.Expressible;
 import org.apache.solr.client.solrj.io.stream.expr.StreamExpression;
 import org.apache.solr.client.solrj.io.stream.expr.StreamExpressionParameter;
 import org.apache.solr.client.solrj.io.stream.expr.StreamFactory;
-import org.apache.commons.math3.stat.descriptive.rank.Percentile;
 
-public class PercentileEvaluator extends ComplexEvaluator implements Expressible {
+public class CumulativeProbabilityEvaluator extends ComplexEvaluator implements Expressible {
 
   private static final long serialVersionUID = 1;
 
-  public PercentileEvaluator(StreamExpression expression, StreamFactory factory) throws IOException {
+  public CumulativeProbabilityEvaluator(StreamExpression expression, StreamFactory factory) throws IOException {
     super(expression, factory);
   }
 
   public Number evaluate(Tuple tuple) throws IOException {
+
     if(subEvaluators.size() != 2) {
-      throw new IOException("Percentile expects 2 parameters: an array and a number");
+      throw new IOException("Cumulative probability expects 2 parameters: an emperical distribution and a number");
     }
 
-    StreamEvaluator colEval = subEvaluators.get(0);
-    List<Number> column = (List<Number>)colEval.evaluate(tuple);
+    StreamEvaluator r = subEvaluators.get(0);
+    StreamEvaluator d = subEvaluators.get(1);
 
-    double[] data = new double[column.size()];
-    for(int i=0; i<data.length; i++) {
-      data[i] = column.get(i).doubleValue();
-    }
-
-    Percentile percentile = new Percentile();
-    percentile.setData(data);
-    StreamEvaluator numEval = subEvaluators.get(1);
-    Number num  = (Number)numEval.evaluate(tuple);
-    return percentile.evaluate(num.doubleValue());
+    EmpiricalDistributionEvaluator.EmpiricalDistributionTuple e = (EmpiricalDistributionEvaluator.EmpiricalDistributionTuple)r.evaluate(tuple);
+    Number n = (Number)d.evaluate(tuple);
+    return e.percentile(n.doubleValue());
   }
 
   @Override

@@ -5759,8 +5759,61 @@ public class StreamExpressionTest extends SolrCloudTestCase {
   }
 
 
+
   @Test
-  public void testPercentiles() throws Exception {
+  public void testPercentile() throws Exception {
+    String cexpr = "percentile(array(1,2,3,4,5,6,7,8,9,10,11), 50)";
+    ModifiableSolrParams paramsLoc = new ModifiableSolrParams();
+    paramsLoc.set("expr", cexpr);
+    paramsLoc.set("qt", "/stream");
+
+    String url = cluster.getJettySolrRunners().get(0).getBaseUrl().toString()+"/"+COLLECTIONORALIAS;
+    TupleStream solrStream = new SolrStream(url, paramsLoc);
+
+    StreamContext context = new StreamContext();
+    solrStream.setStreamContext(context);
+    List<Tuple> tuples = getTuples(solrStream);
+    assertTrue(tuples.size() == 1);
+    Tuple tuple = tuples.get(0);
+    double p = tuple.getDouble("return-value");
+    assertEquals(p, 6, 0.0);
+
+
+    cexpr = "percentile(array(11,10,3,4,5,6,7,8,9,2,1), 50)";
+    paramsLoc = new ModifiableSolrParams();
+    paramsLoc.set("expr", cexpr);
+    paramsLoc.set("qt", "/stream");
+
+    solrStream = new SolrStream(url, paramsLoc);
+
+    context = new StreamContext();
+    solrStream.setStreamContext(context);
+    tuples = getTuples(solrStream);
+    assertTrue(tuples.size() == 1);
+    tuple = tuples.get(0);
+    p = tuple.getDouble("return-value");
+    assertEquals(p, 6, 0.0);
+
+    cexpr = "percentile(array(11,10,3,4,5,6,7,8,9,2,1), 20)";
+    paramsLoc = new ModifiableSolrParams();
+    paramsLoc.set("expr", cexpr);
+    paramsLoc.set("qt", "/stream");
+
+    solrStream = new SolrStream(url, paramsLoc);
+
+    context = new StreamContext();
+    solrStream.setStreamContext(context);
+    tuples = getTuples(solrStream);
+    assertTrue(tuples.size() == 1);
+    tuple = tuples.get(0);
+    p = tuple.getDouble("return-value");
+    assertEquals(p, 2.4, 0.001);
+
+  }
+
+
+  @Test
+  public void testCumulativeProbability() throws Exception {
     UpdateRequest updateRequest = new UpdateRequest();
 
     int i=0;
@@ -5773,11 +5826,11 @@ public class StreamExpressionTest extends SolrCloudTestCase {
 
     String expr = "search("+COLLECTIONORALIAS+", q=\"*:*\", fl=\"price_f\", sort=\"price_f asc\", rows=\"200\")";
     String cexpr = "let(a="+expr+", c=col(a, price_f), e=empiricalDistribution(c), " +
-        "tuple(p1=percentile(e, 88), " +
-        "p2=percentile(e, 2), " +
-        "p3=percentile(e, 99), " +
-        "p4=percentile(e, 77), " +
-        "p5=percentile(e, 98)))";
+        "tuple(p1=cumulativeProbability(e, 88), " +
+        "p2=cumulativeProbability(e, 2), " +
+        "p3=cumulativeProbability(e, 99), " +
+        "p4=cumulativeProbability(e, 77), " +
+        "p5=cumulativeProbability(e, 98)))";
 
     ModifiableSolrParams paramsLoc = new ModifiableSolrParams();
     paramsLoc.set("expr", cexpr);
