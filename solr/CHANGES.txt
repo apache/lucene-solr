@@ -228,6 +228,8 @@ Other Changes
 * SOLR-10799: Extracted functionality to collect eligible replicas from HttpShardHandler.prepDistributed()
   to a new method (Domenico Fabio Marino via Tomás Fernández Löbbe)
 
+* SOLR-10801: Remove several deprecated methods that were exposed to plugin writers (hossman)
+
 ==================  6.7.0 ==================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release.

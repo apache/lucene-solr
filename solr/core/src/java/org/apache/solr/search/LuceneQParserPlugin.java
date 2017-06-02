@@ -79,12 +79,6 @@ class OldLuceneQParser extends LuceneQParser {
   }
 
   @Override
-  @Deprecated
-  public SortSpec getSort(boolean useGlobal) throws SyntaxError {
-    return getSortSpec(useGlobal);
-  }
-
-  @Override
   public SortSpec getSortSpec(boolean useGlobal) throws SyntaxError {
     SortSpec sort = super.getSortSpec(useGlobal);
     if (sortStr != null && sortStr.length()>0 && sort.getSort()==null) {

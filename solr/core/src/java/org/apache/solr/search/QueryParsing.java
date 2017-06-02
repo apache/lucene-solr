@@ -57,32 +57,6 @@ public class QueryParsing {
   // true if the value was specified by the "v" param (i.e. v=myval, or v=$param)
   public static final String VAL_EXPLICIT = "__VAL_EXPLICIT__";
 
-
-  /**
-   * Returns the default operator for use by Query Parsers, parsed from the df string
-   * @param notUsed is not used, but is there for back compat with 3rd party QParsers
-   * @param df the df string from request
-   * @deprecated this method is here purely not to break code back compat in 7.x
-   */
-  @Deprecated
-  public static QueryParser.Operator getQueryParserDefaultOperator(final IndexSchema notUsed,
-                                                       final String df) {
-    return parseOP(df);
-  }
-
-  /**
-   * Returns the effective default field based on the 'df' param.
-   * TODO: This is kept for 3rd party QParser compat in 7.x. Remove this method in Solr 8.0
-   * @param ignored Not in use
-   * @param df the default field, which will be returned as-is
-   * @see org.apache.solr.common.params.CommonParams#DF
-   * @deprecated IndexScema does not contain defaultField anymore, you must rely on df alone
-   */
-  @Deprecated
-  public static String getDefaultField(final IndexSchema ignored, final String df) {
-    return df;
-  }
-
   /**
    * @param txt Text to parse
    * @param start Index into text for start of parsing
