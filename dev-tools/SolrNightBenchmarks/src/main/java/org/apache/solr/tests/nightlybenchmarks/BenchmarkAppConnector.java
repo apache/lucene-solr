@@ -229,23 +229,42 @@ public class BenchmarkAppConnector {
 					false, FileType.CLOUD_CREATE_COLLECTION_MAIN);
 		}
 
-		if (BenchmarkReportData.numericQueryTNQMetric != null) {
+		if (BenchmarkReportData.numericQueryTNQMetricC != null) {
 			BenchmarkAppConnector.writeToWebAppDataFile("numeric_query_benchmark_cloud.csv",
-					BenchmarkReportData.numericQueryTNQMetric.get("TimeStamp") + ", " + Util.TEST_ID + ", "
-							+ BenchmarkReportData.numericQueryTNQMetric.get("CommitID") + ", "
-							+ BenchmarkReportData.numericQueryTNQMetric.get("QueriesPerSecond") + ", "
-							+ BenchmarkReportData.numericQueryTNQMetric.get("MinQTime") + ", "
-							+ BenchmarkReportData.numericQueryTNQMetric.get("MaxQTime") + ", "
-							+ BenchmarkReportData.numericQueryRNQMetric.get("QueriesPerSecond") + ", "
-							+ BenchmarkReportData.numericQueryRNQMetric.get("MinQTime") + ", "
-							+ BenchmarkReportData.numericQueryRNQMetric.get("MaxQTime") + ", "
-							+ BenchmarkReportData.numericQueryLNQMetric.get("QueriesPerSecond") + ", "
-							+ BenchmarkReportData.numericQueryLNQMetric.get("MinQTime") + ", "
-							+ BenchmarkReportData.numericQueryLNQMetric.get("MaxQTime") + ", "
-							+ BenchmarkReportData.numericQueryGNQMetric.get("QueriesPerSecond") + ", "
-							+ BenchmarkReportData.numericQueryGNQMetric.get("MinQTime") + ", "
-							+ BenchmarkReportData.numericQueryGNQMetric.get("MaxQTime"),
+					BenchmarkReportData.numericQueryTNQMetricC.get("TimeStamp") + ", " + Util.TEST_ID + ", "
+							+ BenchmarkReportData.numericQueryTNQMetricC.get("CommitID") + ", "
+							+ BenchmarkReportData.numericQueryTNQMetricC.get("QueriesPerSecond") + ", "
+							+ BenchmarkReportData.numericQueryTNQMetricC.get("MinQTime") + ", "
+							+ BenchmarkReportData.numericQueryTNQMetricC.get("MaxQTime") + ", "
+							+ BenchmarkReportData.numericQueryRNQMetricC.get("QueriesPerSecond") + ", "
+							+ BenchmarkReportData.numericQueryRNQMetricC.get("MinQTime") + ", "
+							+ BenchmarkReportData.numericQueryRNQMetricC.get("MaxQTime") + ", "
+							+ BenchmarkReportData.numericQueryLNQMetricC.get("QueriesPerSecond") + ", "
+							+ BenchmarkReportData.numericQueryLNQMetricC.get("MinQTime") + ", "
+							+ BenchmarkReportData.numericQueryLNQMetricC.get("MaxQTime") + ", "
+							+ BenchmarkReportData.numericQueryGNQMetricC.get("QueriesPerSecond") + ", "
+							+ BenchmarkReportData.numericQueryGNQMetricC.get("MinQTime") + ", "
+							+ BenchmarkReportData.numericQueryGNQMetricC.get("MaxQTime"),
 					false, FileType.NUMERIC_QUERY_CLOUD);
+		}
+
+		if (BenchmarkReportData.numericQueryTNQMetricS != null) {
+			BenchmarkAppConnector.writeToWebAppDataFile("numeric_query_benchmark_standalone.csv",
+					BenchmarkReportData.numericQueryTNQMetricS.get("TimeStamp") + ", " + Util.TEST_ID + ", "
+							+ BenchmarkReportData.numericQueryTNQMetricS.get("CommitID") + ", "
+							+ BenchmarkReportData.numericQueryTNQMetricS.get("QueriesPerSecond") + ", "
+							+ BenchmarkReportData.numericQueryTNQMetricS.get("MinQTime") + ", "
+							+ BenchmarkReportData.numericQueryTNQMetricS.get("MaxQTime") + ", "
+							+ BenchmarkReportData.numericQueryRNQMetricS.get("QueriesPerSecond") + ", "
+							+ BenchmarkReportData.numericQueryRNQMetricS.get("MinQTime") + ", "
+							+ BenchmarkReportData.numericQueryRNQMetricS.get("MaxQTime") + ", "
+							+ BenchmarkReportData.numericQueryLNQMetricS.get("QueriesPerSecond") + ", "
+							+ BenchmarkReportData.numericQueryLNQMetricS.get("MinQTime") + ", "
+							+ BenchmarkReportData.numericQueryLNQMetricS.get("MaxQTime") + ", "
+							+ BenchmarkReportData.numericQueryGNQMetricS.get("QueriesPerSecond") + ", "
+							+ BenchmarkReportData.numericQueryGNQMetricS.get("MinQTime") + ", "
+							+ BenchmarkReportData.numericQueryGNQMetricS.get("MaxQTime"),
+					false, FileType.NUMERIC_QUERY_STANDALONE);
 		}
 
 		Util.postMessage("** Publishing data for webapp [COMPLETE] ..", MessageType.WHITE_TEXT, false);

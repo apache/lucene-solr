@@ -27,18 +27,40 @@ public class SolrNightlyBenchmarks {
 
 		Util.init(args);
 
-		Tests.indexingTests(Util.COMMIT_ID, 10000);
+		//Tests.indexingTests(Util.COMMIT_ID, 10000);
 
-		Tests.setUpCloudForFeatureTests(Util.COMMIT_ID, 50000, 1, "2", "2");
-		BenchmarkReportData.numericQueryTNQMetric = Tests.numericQueryTests(Util.COMMIT_ID,
-				QueryType.TERM_NUMERIC_QUERY, 1, 180, 120);
-		BenchmarkReportData.numericQueryRNQMetric = Tests.numericQueryTests(Util.COMMIT_ID,
-				QueryType.RANGE_NUMERIC_QUERY, 1, 180, 120);
-		BenchmarkReportData.numericQueryLNQMetric = Tests.numericQueryTests(Util.COMMIT_ID,
-				QueryType.LESS_THAN_NUMERIC_QUERY, 1, 180, 120);
-		BenchmarkReportData.numericQueryGNQMetric = Tests.numericQueryTests(Util.COMMIT_ID,
-				QueryType.GREATER_THAN_NUMERIC_QUERY, 1, 180, 120);
-		Tests.shutDown();
+/*		Tests.setUpCloudForFeatureTests(Util.COMMIT_ID, 50000, 1, "2", "2", 10000);
+		BenchmarkReportData.numericQueryTNQMetricC = Tests.numericQueryTests(Util.COMMIT_ID,
+				QueryType.TERM_NUMERIC_QUERY, 1, 180, 120, ConfigurationType.CLOUD, Tests.cloud.getBaseURL(),
+				Tests.cloud.collectionName);
+		BenchmarkReportData.numericQueryRNQMetricC = Tests.numericQueryTests(Util.COMMIT_ID,
+				QueryType.RANGE_NUMERIC_QUERY, 1, 180, 120, ConfigurationType.CLOUD, Tests.cloud.getBaseURL(),
+				Tests.cloud.collectionName);
+		BenchmarkReportData.numericQueryLNQMetricC = Tests.numericQueryTests(Util.COMMIT_ID,
+				QueryType.LESS_THAN_NUMERIC_QUERY, 1, 180, 120, ConfigurationType.CLOUD, Tests.cloud.getBaseURL(),
+				Tests.cloud.collectionName);
+		BenchmarkReportData.numericQueryGNQMetricC = Tests.numericQueryTests(Util.COMMIT_ID,
+				QueryType.GREATER_THAN_NUMERIC_QUERY, 1, 180, 120, ConfigurationType.CLOUD, Tests.cloud.getBaseURL(),
+				Tests.cloud.collectionName);
+		Tests.shutDownCloud();
+*/		
+		Tests.setUpStandaloneNodeForFeatureTests(Util.COMMIT_ID, 10000);
+
+		BenchmarkReportData.numericQueryTNQMetricS = Tests.numericQueryTests(Util.COMMIT_ID,
+				QueryType.TERM_NUMERIC_QUERY, 1, 180, 120, ConfigurationType.STANDALONE, Tests.node.getBaseUrl(),
+				Tests.node.collectionName);
+		BenchmarkReportData.numericQueryRNQMetricS = Tests.numericQueryTests(Util.COMMIT_ID,
+				QueryType.RANGE_NUMERIC_QUERY, 1, 180, 120, ConfigurationType.STANDALONE, Tests.node.getBaseUrl(),
+				Tests.node.collectionName);
+		BenchmarkReportData.numericQueryLNQMetricS = Tests.numericQueryTests(Util.COMMIT_ID,
+				QueryType.LESS_THAN_NUMERIC_QUERY, 1, 180, 120, ConfigurationType.STANDALONE, Tests.node.getBaseUrl(),
+				Tests.node.collectionName);
+		BenchmarkReportData.numericQueryGNQMetricS = Tests.numericQueryTests(Util.COMMIT_ID,
+				QueryType.GREATER_THAN_NUMERIC_QUERY, 1, 180, 120, ConfigurationType.STANDALONE, Tests.node.getBaseUrl(),
+				Tests.node.collectionName);
+		
+		Tests.shutDownStandalone();
+		
 		BenchmarkAppConnector.publishDataForWebApp();
 
 		Util.destroy();

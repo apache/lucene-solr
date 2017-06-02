@@ -30,9 +30,13 @@ public class BenchmarkReportData {
 	public static Map<String, String> metricMapCloudConcurrent6;
 	public static Map<String, String> metricMapCloudConcurrent8;
 	public static Map<String, String> metricMapCloudConcurrent10;
-	public static Map<String, String> numericQueryTNQMetric;
-	public static Map<String, String> numericQueryRNQMetric;
-	public static Map<String, String> numericQueryLNQMetric;
-	public static Map<String, String> numericQueryGNQMetric;
+	public static Map<String, String> numericQueryTNQMetricC;
+	public static Map<String, String> numericQueryRNQMetricC;
+	public static Map<String, String> numericQueryLNQMetricC;
+	public static Map<String, String> numericQueryGNQMetricC;
+	public static Map<String, String> numericQueryTNQMetricS;
+	public static Map<String, String> numericQueryRNQMetricS;
+	public static Map<String, String> numericQueryLNQMetricS;
+	public static Map<String, String> numericQueryGNQMetricS;
 
 }

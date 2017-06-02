@@ -26,12 +26,14 @@ import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-
 import org.apache.solr.tests.nightlybenchmarks.QueryClient.QueryType;
+
+enum ConfigurationType { STANDALONE, CLOUD }
 
 public class Tests {
 
 	public static SolrCloud cloud;
+	public static SolrNode node;
 
 	public static boolean indexingTests(String commitID, int numDocuments) {
 
@@ -80,7 +82,7 @@ public class Tests {
 	}
 
 	public static Map<String, String> numericQueryTests(String commitID, QueryType queryType, int numberOfThreads,
-			int secondsToWait, long delayEstimationBySeconds) {
+			int secondsToWait, long delayEstimationBySeconds, ConfigurationType confType, String baseURL, String collectionName) {
 
 		try {
 
@@ -88,7 +90,7 @@ public class Tests {
 			LinkedList<QueryClient> list = new LinkedList<QueryClient>();
 
 			for (int i = 0; i < numberOfThreads; i++) {
-				QueryClient client = new QueryClient(cloud.getBaseURL(), 10000, 10, cloud.collectionName, queryType,
+				QueryClient client = new QueryClient(baseURL, 10000, 10, collectionName, queryType,
 						numberOfThreads, delayEstimationBySeconds);
 				list.add(client);
 			}
@@ -134,19 +136,40 @@ public class Tests {
 	}
 
 	public static void setUpCloudForFeatureTests(String commitID, int documentCount, int solrNodes, String shards,
-			String replicas) {
+			String replicas, int numDocuments) {
 
 		SolrCloud cloud = new SolrCloud(solrNodes, shards, replicas, commitID, null, "localhost", true);
 		Tests.cloud = cloud;
 		SolrIndexingClient cloudClient = new SolrIndexingClient("localhost", cloud.port, cloud.collectionName,
 				commitID);
 		cloudClient.indexAmazonFoodData(documentCount, cloud.getuRL(), cloud.zookeeperIp, cloud.zookeeperPort,
-				cloud.collectionName, 10000, 10);
+				cloud.collectionName, numDocuments, 10);
 
 	}
+	
+	public static void setUpStandaloneNodeForFeatureTests(String commitID, int numDocuments) {
+		
+		try {
+			SolrNode snode = new SolrNode(commitID, "", "", false);
+			snode.doAction(SolrNodeAction.NODE_START);
+			snode.createCollection("Core-" + UUID.randomUUID(),"Collection-" + UUID.randomUUID());
+			
+			SolrIndexingClient client = new SolrIndexingClient("localhost", snode.port, snode.collectionName, commitID);
+			client.indexAmazonFoodData(numDocuments, snode.getBaseUrl() + snode.collectionName);
+			
+			node = snode;
+		} catch(Exception e) {
+			e.printStackTrace();
+		}
+	}
 
-	public static void shutDown() throws IOException, InterruptedException {
+	public static void shutDownCloud() throws IOException, InterruptedException {
 		cloud.shutdown();
+	}
+
+	public static void shutDownStandalone() throws IOException, InterruptedException {
+		node.doAction(SolrNodeAction.NODE_STOP);
+		node.cleanup();
 	}
 
 }
