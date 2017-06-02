@@ -37,6 +37,11 @@ public class ReverseEvaluator extends ComplexEvaluator implements Expressible {
   }
 
   public List<Number> evaluate(Tuple tuple) throws IOException {
+
+    if(subEvaluators.size() != 1) {
+      throw new IOException("Reverse evaluator expects 1 parameters found: "+subEvaluators.size());
+    }
+
     StreamEvaluator colEval1 = subEvaluators.get(0);
 
     List<Number> numbers1 = (List<Number>)colEval1.evaluate(tuple);

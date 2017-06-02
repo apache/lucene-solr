@@ -37,6 +37,11 @@ public class CorrelationEvaluator extends ComplexEvaluator implements Expressibl
   }
 
   public Number evaluate(Tuple tuple) throws IOException {
+
+    if(subEvaluators.size() != 2) {
+      throw new IOException("Correlation evaluator expects 2 parameters found: "+subEvaluators.size());
+    }
+
     StreamEvaluator colEval1 = subEvaluators.get(0);
     StreamEvaluator colEval2 = subEvaluators.get(1);
 

@@ -38,6 +38,12 @@ public class ConvolutionEvaluator extends ComplexEvaluator implements Expressibl
   }
 
   public List<Number> evaluate(Tuple tuple) throws IOException {
+
+    if(subEvaluators.size() != 2) {
+      throw new IOException("Convolution evaluator expects 2 parameters found: "+subEvaluators.size());
+    }
+
+
     StreamEvaluator colEval1 = subEvaluators.get(0);
     StreamEvaluator colEval2 = subEvaluators.get(1);
 

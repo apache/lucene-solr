@@ -40,6 +40,11 @@ public class AnovaEvaluator extends ComplexEvaluator implements Expressible {
   }
 
   public Tuple evaluate(Tuple tuple) throws IOException {
+
+    if(subEvaluators.size() < 2) {
+      throw new IOException("ANOVA evaluator expects atleast 2 parameters found: "+subEvaluators.size());
+    }
+
     List<double[]> list = new ArrayList();
     for(StreamEvaluator subEvaluator : subEvaluators) {
       List<Number> nums = (List<Number>)subEvaluator.evaluate(tuple);

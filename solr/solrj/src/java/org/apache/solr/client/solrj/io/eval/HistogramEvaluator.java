@@ -42,6 +42,10 @@ public class HistogramEvaluator extends ComplexEvaluator implements Expressible 
 
   public List<Map> evaluate(Tuple tuple) throws IOException {
 
+    if(subEvaluators.size() != 2) {
+      throw new IOException("Histogram evaluator expects 2 parameters found: "+subEvaluators.size());
+    }
+
     StreamEvaluator colEval1 = subEvaluators.get(0);
 
     List<Number> numbers1 = (List<Number>)colEval1.evaluate(tuple);
@@ -78,8 +82,6 @@ public class HistogramEvaluator extends ComplexEvaluator implements Expressible 
 
     return binList;
   }
-
-
 
   @Override
   public StreamExpressionParameter toExpression(StreamFactory factory) throws IOException {

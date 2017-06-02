@@ -38,6 +38,11 @@ public class SequenceEvaluator extends ComplexEvaluator implements Expressible {
   }
 
   public List<Number> evaluate(Tuple tuple) throws IOException {
+
+    if(subEvaluators.size() != 3) {
+      throw new IOException("Sequence evaluator expects 3 parameters found: "+subEvaluators.size());
+    }
+
     StreamEvaluator sizeEval = subEvaluators.get(0);
     StreamEvaluator startEval = subEvaluators.get(1);
     StreamEvaluator strideEval = subEvaluators.get(2);

@@ -38,6 +38,11 @@ public class MovingAverageEvaluator extends ComplexEvaluator implements Expressi
   }
 
   public List<Number> evaluate(Tuple tuple) throws IOException {
+
+    if(subEvaluators.size() != 2) {
+      throw new IOException("Moving average evaluator expects 2 parameters found: "+subEvaluators.size());
+    }
+
     StreamEvaluator colEval = subEvaluators.get(0);
     StreamEvaluator windowEval = subEvaluators.get(1);
 
