@@ -93,5 +93,5 @@ If you for example would like to keep your `solr.xml` in ZooKeeper to avoid havi
 
 [source,bash]
 ----
-bin/solr cp file:local/file/path/to/solr.xml zk:/solr.xml -z localhost:2181
+bin/solr zk cp file:local/file/path/to/solr.xml zk:/solr.xml -z localhost:2181
 ----
