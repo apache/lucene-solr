@@ -262,9 +262,55 @@ The `admin/metrics` endpoint provides access to all the metrics for all metric g
 
 A few query parameters are available to limit the request:
 
-* *group*: The metric group to retrieve. The default is `all` to retrieve all metrics for all groups. Other possible values are: `jvm`, `jetty`, `node`, and `core`. More than one group can be specified in a request; multiple group names should be separated by a comma.
-* *type*: The type of metric to retrieve. The default is `all` to retrieve all metric types. Other possible values are `counter`, `gauge`, `histogram`, `meter`, and `timer`. More than one type can be specified in a request; multiple types should be separated by a comma.
-* *prefix*: The first characters of metric name that will filter the metrics returned to those starting with the provided string. It can be combined with group and/or type parameters. More than one prefix can be specified in a request; multiple prefixes should be separated by a comma. Prefix matching is also case-sensitive.
+group:: The metric group to retrieve. The default is `all` to retrieve all metrics for all groups. Other possible values are: `jvm`, `jetty`, `node`, and `core`. More than one group can be specified in a request; multiple group names should be separated by a comma.
+
+type:: The type of metric to retrieve. The default is `all` to retrieve all metric types. Other possible values are `counter`, `gauge`, `histogram`, `meter`, and `timer`. More than one type can be specified in a request; multiple types should be separated by a comma.
+
+prefix:: The first characters of metric name that will filter the metrics returned to those starting with the provided string. It can be combined with group and/or type parameters. More than one prefix can be specified in a request; multiple prefixes should be separated by a comma. Prefix matching is also case-sensitive.
+
+compact:: When true, a more compact format of the response will be returned. Instead of a response like this:
++
+[source,json]
+  "metrics": [
+    "solr.core.gettingstarted",
+    {
+      "CORE.aliases": {
+        "value": ["gettingstarted"]
+      },
+      "CORE.coreName": {
+        "value": "gettingstarted"
+      },
+      "CORE.indexDir": {
+        "value": "/solr/example/schemaless/solr/gettingstarted/data/index/"
+      },
+      "CORE.instanceDir": {
+        "value": "/solr/example/schemaless/solr/gettingstarted"
+      },
+      "CORE.refCount": {
+        "value": 1
+      },
+      "CORE.startTime": {
+        "value": "2017-03-14T11:43:23.822Z"
+      }
+    }
+  ]
++
+The response will look like this:
++
+[source,json]
+  "metrics": [
+    "solr.core.gettingstarted",
+    {
+      "CORE.aliases": [
+        "gettingstarted"
+      ],
+      "CORE.coreName": "gettingstarted",
+      "CORE.indexDir": "/solr/example/schemaless/solr/gettingstarted/data/index/",
+      "CORE.instanceDir": "/solr/example/schemaless/solr/gettingstarted",
+      "CORE.refCount": 1,
+      "CORE.startTime": "2017-03-14T11:43:23.822Z"
+    }
+  ]
 
 Like other request handlers, the Metrics API can also take the `wt` parameter to define the output format.
 
