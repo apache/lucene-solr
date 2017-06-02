@@ -140,8 +140,6 @@ http://localhost:8983/solr/admin/configs?action=DELETE&name=myConfigSet
 </response>
 ----
 
-[[ConfigSetsAPI-listListConfigSets]]
-
 [[ConfigSetsAPI-list]]
 == List ConfigSets
 
@@ -171,8 +169,6 @@ http://localhost:8983/solr/admin/configs?action=LIST&wt=json
     "myConfig2"]}
 ----
 
-[[ConfigSetsAPI-uploadCreateaConfigSet]]
-
 [[ConfigSetsAPI-upload]]
 == Upload a ConfigSet
 
@@ -185,7 +181,7 @@ Upload a ConfigSet, sent in as a zipped file. Please note that a ConfigSet is up
  * XSLT transformer (tr parameter) cannot be used at request processing time.
  * StatelessScriptUpdateProcessor does not initialize, if specified in the ConfigSet.
 
-[[ConfigSetsAPI-Input]]
+[[ConfigSetsAPI-Input.3]]
 === Input
 
 // TODO: Change column width to %autowidth.spread when https://github.com/asciidoctor/asciidoctor-pdf/issues/599 is fixed
@@ -198,14 +194,14 @@ Upload a ConfigSet, sent in as a zipped file. Please note that a ConfigSet is up
 
 The body of the request should contain a zipped config set.
 
-[[ConfigSetsAPI-Output]]
+[[ConfigSetsAPI-Output.3]]
 === Output
 
 *Output Content*
 
 The output will include the status of the request. If the status is anything other than "success", an error message will explain why the request failed.
 
-[[ConfigSetsAPI-Examples]]
+[[ConfigSetsAPI-Examples.3]]
 === Examples
 
 Create a ConfigSet named 'myConfigSet' based on a 'predefinedTemplate' ConfigSet, overriding the immutable property to false.
@@ -214,4 +210,3 @@ Create a ConfigSet named 'myConfigSet' based on a 'predefinedTemplate' ConfigSet
 ----
 curl -X POST -d @myconfigset.zip http://localhost:8983/solr/admin/configs?action=CREATE&name=myConfigSet --header "Content-Type:text/xml"
 ----
-
