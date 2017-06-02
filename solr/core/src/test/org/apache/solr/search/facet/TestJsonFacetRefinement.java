@@ -235,6 +235,22 @@ public class TestJsonFacetRefinement extends SolrTestCaseHS {
 
   @Test
   public void testBasicRefinement() throws Exception {
+    ModifiableSolrParams p = params("cat_s", "cat_s", "xy_s", "xy_s", "num_d", "num_d", "qw_s", "qw_s", "er_s","er_s");
+    doBasicRefinement( p );
+
+    p.set("terms","method:dv,");
+    doBasicRefinement( p );
+
+    // multi-valued strings
+    p = params("cat_s", "cat_ss", "xy_s", "xy_ss", "num_d", "num_d", "qw_s", "qw_ss", "er_s","er_ss");
+    doBasicRefinement( p );
+
+    // single valued docvalues
+    p = params("cat_s", "cat_sd", "xy_s", "xy_sd", "num_d", "num_dd", "qw_s", "qw_sd", "er_s","er_sd");
+    doBasicRefinement( p );
+  }
+
+  public void doBasicRefinement(ModifiableSolrParams p) throws Exception {
     initServers();
     Client client = servers.getClient(random().nextInt());
     client.queryDefaults().set( "shards", servers.getShards(), "debugQuery", Boolean.toString(random().nextBoolean()) );
@@ -244,7 +260,6 @@ public class TestJsonFacetRefinement extends SolrTestCaseHS {
 
     client.deleteByQuery("*:*", null);
 
-    ModifiableSolrParams p = params("cat_s", "cat_s", "xy_s", "xy_s", "num_d", "num_d", "qw_s", "qw_s", "er_s","er_s");
     String cat_s = p.get("cat_s");
     String xy_s = p.get("xy_s");
     String qw_s = p.get("qw_s");
@@ -281,7 +296,7 @@ public class TestJsonFacetRefinement extends SolrTestCaseHS {
 
     client.testJQ(params(p, "q", "*:*",
         "json.facet", "{" +
-            "cat0:{type:terms, field:${cat_s}, sort:'count desc', limit:1, overrequest:0, refine:false}" +
+            "cat0:{${terms} type:terms, field:${cat_s}, sort:'count desc', limit:1, overrequest:0, refine:false}" +
             "}"
         )
         , "facets=={ count:8" +
@@ -291,7 +306,7 @@ public class TestJsonFacetRefinement extends SolrTestCaseHS {
 
     client.testJQ(params(p, "q", "*:*",
         "json.facet", "{" +
-            "cat0:{type:terms, field:${cat_s}, sort:'count desc', limit:1, overrequest:0, refine:true}" +
+            "cat0:{${terms} type:terms, field:${cat_s}, sort:'count desc', limit:1, overrequest:0, refine:true}" +
             "}"
         )
         , "facets=={ count:8" +
@@ -302,7 +317,7 @@ public class TestJsonFacetRefinement extends SolrTestCaseHS {
     // test that basic stats work for refinement
     client.testJQ(params(p, "q", "*:*",
         "json.facet", "{" +
-            "cat0:{type:terms, field:${cat_s}, sort:'count desc', limit:1, overrequest:0, refine:true, facet:{ stat1:'sum(${num_d})'}   }" +
+            "cat0:{${terms} type:terms, field:${cat_s}, sort:'count desc', limit:1, overrequest:0, refine:true, facet:{ stat1:'sum(${num_d})'}   }" +
             "}"
         )
         , "facets=={ count:8" +
@@ -313,11 +328,11 @@ public class TestJsonFacetRefinement extends SolrTestCaseHS {
     // test sorting buckets by a different stat
     client.testJQ(params(p, "q", "*:*",
         "json.facet", "{" +
-            " cat0:{type:terms, field:${cat_s}, sort:'min1 asc', limit:1, overrequest:0, refine:false, facet:{ min1:'min(${num_d})'}   }" +
-            ",cat1:{type:terms, field:${cat_s}, sort:'min1 asc', limit:1, overrequest:0, refine:true,  facet:{ min1:'min(${num_d})'}   }" +
-            ",qfacet:{type:query, q:'*:*', facet:{  cat2:{type:terms, field:${cat_s}, sort:'min1 asc', limit:1, overrequest:0, refine:true,  facet:{ min1:'min(${num_d})'}   }  }}" +  // refinement needed through a query facet
-            ",allf:{type:terms, field:all_s,  facet:{  cat3:{type:terms, field:${cat_s}, sort:'min1 asc', limit:1, overrequest:0, refine:true,  facet:{ min1:'min(${num_d})'}   }  }}" +  // refinement needed through field facet
-            ",sum1:'sum(num_d)'" +  // make sure that root bucket stats aren't affected by refinement
+            " cat0:{${terms} type:terms, field:${cat_s}, sort:'min1 asc', limit:1, overrequest:0, refine:false, facet:{ min1:'min(${num_d})'}   }" +
+            ",cat1:{${terms} type:terms, field:${cat_s}, sort:'min1 asc', limit:1, overrequest:0, refine:true,  facet:{ min1:'min(${num_d})'}   }" +
+            ",qfacet:{type:query, q:'*:*', facet:{  cat2:{${terms} type:terms, field:${cat_s}, sort:'min1 asc', limit:1, overrequest:0, refine:true,  facet:{ min1:'min(${num_d})'}   }  }}" +  // refinement needed through a query facet
+            ",allf:{${terms} type:terms, field:all_s,  facet:{  cat3:{${terms} type:terms, field:${cat_s}, sort:'min1 asc', limit:1, overrequest:0, refine:true,  facet:{ min1:'min(${num_d})'}   }  }}" +  // refinement needed through field facet
+            ",sum1:'sum(${num_d})'" +  // make sure that root bucket stats aren't affected by refinement
             "}"
         )
         , "facets=={ count:8" +
@@ -332,7 +347,7 @@ public class TestJsonFacetRefinement extends SolrTestCaseHS {
     // test partial buckets (field facet within field facet)
     client.testJQ(params(p, "q", "*:*",
         "json.facet", "{" +
-            "ab:{type:terms, field:${cat_s}, limit:1, overrequest:0, refine:true,  facet:{  xy:{type:terms, field:${xy_s}, limit:1, overrequest:0, refine:true   }  }}" +
+            "ab:{${terms} type:terms, field:${cat_s}, limit:1, overrequest:0, refine:true,  facet:{  xy:{${terms} type:terms, field:${xy_s}, limit:1, overrequest:0, refine:true   }  }}" +
             "}"
         )
         , "facets=={ count:8" +
@@ -343,10 +358,10 @@ public class TestJsonFacetRefinement extends SolrTestCaseHS {
     // test that sibling facets and stats are included for _p buckets, but skipped for _s buckets
     client.testJQ(params(p, "q", "*:*",
         "json.facet", "{" +
-            " ab :{type:terms, field:${cat_s}, limit:1, overrequest:0, refine:true,  facet:{  xy:{type:terms, field:${xy_s}, limit:1, overrequest:0, refine:true}, qq:{query:'*:*'},ww:'sum(${num_d})'  }}" +
-            ",ab2:{type:terms, field:${cat_s}, limit:1, overrequest:0, refine:false, facet:{  xy:{type:terms, field:${xy_s}, limit:1, overrequest:0, refine:true}, qq:{query:'*:*'},ww:'sum(${num_d})'  }}" + // top level refine=false shouldn't matter
-            ",allf :{type:terms, field:all_s, limit:1, overrequest:0, refine:true,  facet:{cat:{type:terms, field:${cat_s}, limit:1, overrequest:0, refine:true}, qq:{query:'*:*'},ww:'sum(${num_d})'  }}" +
-            ",allf2:{type:terms, field:all_s, limit:1, overrequest:0, refine:false, facet:{cat:{type:terms, field:${cat_s}, limit:1, overrequest:0, refine:true}, qq:{query:'*:*'},ww:'sum(${num_d})'  }}" + // top level refine=false shouldn't matter
+            " ab :{${terms} type:terms, field:${cat_s}, limit:1, overrequest:0, refine:true,  facet:{  xy:{${terms} type:terms, field:${xy_s}, limit:1, overrequest:0, refine:true}, qq:{query:'*:*'},ww:'sum(${num_d})'  }}" +
+            ",ab2:{${terms} type:terms, field:${cat_s}, limit:1, overrequest:0, refine:false, facet:{  xy:{${terms} type:terms, field:${xy_s}, limit:1, overrequest:0, refine:true}, qq:{query:'*:*'},ww:'sum(${num_d})'  }}" + // top level refine=false shouldn't matter
+            ",allf :{${terms} type:terms, field:all_s, limit:1, overrequest:0, refine:true,  facet:{cat:{${terms} type:terms, field:${cat_s}, limit:1, overrequest:0, refine:true}, qq:{query:'*:*'},ww:'sum(${num_d})'  }}" +
+            ",allf2:{${terms} type:terms, field:all_s, limit:1, overrequest:0, refine:false, facet:{cat:{${terms} type:terms, field:${cat_s}, limit:1, overrequest:0, refine:true}, qq:{query:'*:*'},ww:'sum(${num_d})'  }}" + // top level refine=false shouldn't matter
             "}"
         )
         , "facets=={ count:8" +
@@ -360,7 +375,7 @@ public class TestJsonFacetRefinement extends SolrTestCaseHS {
     // test refining under the special "missing" bucket of a field facet
     client.testJQ(params(p, "q", "*:*",
         "json.facet", "{" +
-            "f:{type:terms, field:missing_s, limit:1, overrequest:0, missing:true, refine:true,  facet:{  cat:{type:terms, field:${cat_s}, limit:1, overrequest:0, refine:true   }  }}" +
+            "f:{${terms} type:terms, field:missing_s, limit:1, overrequest:0, missing:true, refine:true,  facet:{  cat:{${terms} type:terms, field:${cat_s}, limit:1, overrequest:0, refine:true   }  }}" +
             "}"
         )
         , "facets=={ count:8" +
@@ -372,11 +387,11 @@ public class TestJsonFacetRefinement extends SolrTestCaseHS {
     client.testJQ(params(p, "q", "*:*",
         "json.facet", "{" +
             // test all values missing in sub-facet
-            " ab :{type:terms, field:${cat_s}, limit:1, overrequest:0, refine:false,  facet:{  zz:{type:terms, field:missing_s, limit:1, overrequest:0, refine:false, missing:true}  }}" +
-            ",ab2:{type:terms, field:${cat_s}, limit:1, overrequest:0, refine:true ,  facet:{  zz:{type:terms, field:missing_s, limit:1, overrequest:0, refine:true , missing:true}  }}" +
+            " ab :{${terms} type:terms, field:${cat_s}, limit:1, overrequest:0, refine:false,  facet:{  zz:{${terms} type:terms, field:missing_s, limit:1, overrequest:0, refine:false, missing:true}  }}" +
+            ",ab2:{${terms} type:terms, field:${cat_s}, limit:1, overrequest:0, refine:true ,  facet:{  zz:{${terms} type:terms, field:missing_s, limit:1, overrequest:0, refine:true , missing:true}  }}" +
             // test some values missing in sub-facet (and test that this works with normal partial bucket refinement)
-            ", cd :{type:terms, field:${cat_s}, limit:1, overrequest:0, refine:false,  facet:{  qw:{type:terms, field:${qw_s}, limit:1, overrequest:0, refine:false, missing:true,   facet:{qq:{query:'*:*'}}   }  }}" +
-            ", cd2:{type:terms, field:${cat_s}, limit:1, overrequest:0, refine:true ,  facet:{  qw:{type:terms, field:${qw_s}, limit:1, overrequest:0, refine:true , missing:true,   facet:{qq:{query:'*:*'}}   }  }}" +
+            ", cd :{${terms} type:terms, field:${cat_s}, limit:1, overrequest:0, refine:false,  facet:{  qw:{${terms} type:terms, field:${qw_s}, limit:1, overrequest:0, refine:false, missing:true,   facet:{qq:{query:'*:*'}}   }  }}" +
+            ", cd2:{${terms} type:terms, field:${cat_s}, limit:1, overrequest:0, refine:true ,  facet:{  qw:{${terms} type:terms, field:${qw_s}, limit:1, overrequest:0, refine:true , missing:true,   facet:{qq:{query:'*:*'}}   }  }}" +
 
             "}"
         )
@@ -391,9 +406,9 @@ public class TestJsonFacetRefinement extends SolrTestCaseHS {
     // test filling in missing "allBuckets"
     client.testJQ(params(p, "q", "*:*",
         "json.facet", "{" +
-            "  cat :{type:terms, field:${cat_s}, limit:1, overrequest:0, refine:false, allBuckets:true, facet:{  xy:{type:terms, field:${xy_s}, limit:1, overrequest:0, allBuckets:true, refine:false}  }  }" +
-            ", cat2:{type:terms, field:${cat_s}, limit:1, overrequest:0, refine:true , allBuckets:true, facet:{  xy:{type:terms, field:${xy_s}, limit:1, overrequest:0, allBuckets:true, refine:true }  }  }" +
-            ", cat3:{type:terms, field:${cat_s}, limit:1, overrequest:0, refine:true , allBuckets:true, facet:{  xy:{type:terms, field:${xy_s}, limit:1, overrequest:0, allBuckets:true, refine:true , facet:{f:'sum(${num_d})'}   }  }  }" +
+            "  cat :{${terms} type:terms, field:${cat_s}, limit:1, overrequest:0, refine:false, allBuckets:true, facet:{  xy:{${terms} type:terms, field:${xy_s}, limit:1, overrequest:0, allBuckets:true, refine:false}  }  }" +
+            ", cat2:{${terms} type:terms, field:${cat_s}, limit:1, overrequest:0, refine:true , allBuckets:true, facet:{  xy:{${terms} type:terms, field:${xy_s}, limit:1, overrequest:0, allBuckets:true, refine:true }  }  }" +
+            ", cat3:{${terms} type:terms, field:${cat_s}, limit:1, overrequest:0, refine:true , allBuckets:true, facet:{  xy:{${terms} type:terms, field:${xy_s}, limit:1, overrequest:0, allBuckets:true, refine:true , facet:{f:'sum(${num_d})'}   }  }  }" +
             "}"
         )
         , "facets=={ count:8" +
@@ -406,8 +421,8 @@ public class TestJsonFacetRefinement extends SolrTestCaseHS {
     // test filling in missing numBuckets
     client.testJQ(params(p, "q", "*:*",
         "json.facet", "{" +
-            "  cat :{type:terms, field:${cat_s}, limit:1, overrequest:0, refine:false, numBuckets:true, facet:{  er:{type:terms, field:${er_s}, limit:1, overrequest:0, numBuckets:true, refine:false}  }  }" +
-            ", cat2:{type:terms, field:${cat_s}, limit:1, overrequest:0, refine:true , numBuckets:true, facet:{  er:{type:terms, field:${er_s}, limit:1, overrequest:0, numBuckets:true, refine:true }  }  }" +
+            "  cat :{${terms} type:terms, field:${cat_s}, limit:1, overrequest:0, refine:false, numBuckets:true, facet:{  er:{${terms} type:terms, field:${er_s}, limit:1, overrequest:0, numBuckets:true, refine:false}  }  }" +
+            ", cat2:{${terms} type:terms, field:${cat_s}, limit:1, overrequest:0, refine:true , numBuckets:true, facet:{  er:{${terms} type:terms, field:${er_s}, limit:1, overrequest:0, numBuckets:true, refine:true }  }  }" +
             "}"
         )
         , "facets=={ count:8" +
@@ -420,7 +435,7 @@ public class TestJsonFacetRefinement extends SolrTestCaseHS {
     // simplistic join domain testing: no refinement == low count
     client.testJQ(params(p, "q", "${xy_s}:Y", // query only matches one doc per shard
                          "json.facet", "{"+
-                         "  cat0:{type:terms, field:${cat_s}, "+sort_limit_over+" refine:false,"+
+                         "  cat0:{${terms} type:terms, field:${cat_s}, "+sort_limit_over+" refine:false,"+
                          // self join on all_s ensures every doc on every shard included in facets
                          "        domain: { join: { from:all_s, to:all_s } } }" +
                          "}"
@@ -434,7 +449,7 @@ public class TestJsonFacetRefinement extends SolrTestCaseHS {
     // simplistic join domain testing: refinement == correct count
     client.testJQ(params(p, "q", "${xy_s}:Y", // query only matches one doc per shard
                          "json.facet", "{" +
-                         "  cat0:{type:terms, field:${cat_s}, "+sort_limit_over+" refine:true,"+
+                         "  cat0:{${terms} type:terms, field:${cat_s}, "+sort_limit_over+" refine:true,"+
                          // self join on all_s ensures every doc on every shard included in facets
                          "        domain: { join: { from:all_s, to:all_s } } }" +
                          "}"
@@ -449,10 +464,10 @@ public class TestJsonFacetRefinement extends SolrTestCaseHS {
     client.testJQ(params(p, "q", "${xy_s}:Y", // query only matches one doc per shard
                          "json.facet", "{" +
                          // top level facet has a single term
-                         "  all:{type:terms, field:all_s, "+sort_limit_over+" refine:true, " +
+                         "  all:{${terms} type:terms, field:all_s, "+sort_limit_over+" refine:true, " +
                          "       facet:{  "+
                          // subfacet will facet on cat after joining on all (so all docs should be included in subfacet)
-                         "         cat0:{type:terms, field:${cat_s}, "+sort_limit_over+" refine:true,"+
+                         "         cat0:{${terms} type:terms, field:${cat_s}, "+sort_limit_over+" refine:true,"+
                          "               domain: { join: { from:all_s, to:all_s } } } } }" +
                          "}"
                          )
