@@ -33,6 +33,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.solr.cloud.autoscaling.Policy.ReplicaInfo;
 import org.apache.solr.common.MapWriter;
 import org.apache.solr.common.cloud.rule.ImplicitSnitch;
+import org.apache.solr.common.util.RetryUtil;
 import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.common.util.Utils;
 
@@ -74,16 +75,8 @@ public class Clause implements MapWriter, Comparable<Clause> {
       if(m.get(REPLICA) == null){
         throw new RuntimeException(StrUtils.formatString("'replica' is required" + Utils.toJSONString(m)));
       }
-      Condition replica = parse(REPLICA, m);
-      try {
-        int replicaCount = Integer.parseInt(String.valueOf(replica.val));
-        if(replicaCount<0){
-          throw new RuntimeException("replica value sould be non null "+ Utils.toJSONString(m));
-        }
-        this.replica = new Condition(replica.name, replicaCount, replica.op);
-      } catch (NumberFormatException e) {
-        throw new RuntimeException("Only an integer value is supported for replica " + Utils.toJSONString(m));
-      }
+      this.replica = parse(REPLICA, m);
+      if (replica.op == WILDCARD) throw new RuntimeException("replica val cannot be null" + Utils.toJSONString(m));
       m.forEach((s, o) -> parseCondition(s, o));
     }
     if (tag == null)
@@ -117,7 +110,7 @@ public class Clause implements MapWriter, Comparable<Clause> {
       if (this.isPerCollectiontag() && that.isPerCollectiontag()) {
         v = Integer.compare(this.replica.op.priority, that.replica.op.priority);
         if (v == 0) {
-          v = Integer.compare((Integer) this.replica.val, (Integer) that.replica.val);
+          v = Long.compare((Long) this.replica.val, (Long) that.replica.val);
           v = this.replica.op == LESS_THAN ? v : v * -1;
         }
         return v;
@@ -154,7 +147,7 @@ public class Clause implements MapWriter, Comparable<Clause> {
     }
 
     boolean isPass(Object inputVal) {
-      return op.match(val, inputVal) == PASS;
+      return op.match(val, validate(name, inputVal, false)) == PASS;
     }
 
     boolean isPass(Row row) {
@@ -180,8 +173,28 @@ public class Clause implements MapWriter, Comparable<Clause> {
     Object val = m.get(s);
     try {
       String conditionName = s.trim();
-      String value = val == null ? null : String.valueOf(val).trim();
       Operand operand = null;
+      if (val == null) {
+        operand = WILDCARD;
+        expectedVal = Policy.ANY;
+      } else if (val instanceof String) {
+        String strVal = ((String) val).trim();
+        if (Policy.ANY.equals(strVal) || Policy.EACH.equals(strVal)) operand = WILDCARD;
+        else if (strVal.startsWith(NOT_EQUAL.operand)) operand = NOT_EQUAL;
+        else if (strVal.startsWith(GREATER_THAN.operand)) operand = GREATER_THAN;
+        else if (strVal.startsWith(LESS_THAN.operand)) operand = LESS_THAN;
+        else operand = EQUAL;
+        expectedVal = validate(s, strVal.substring(EQUAL == operand || WILDCARD == operand ? 0 : 1), true);
+      } else if (val instanceof Number) {
+        operand = EQUAL;
+        expectedVal = validate(s, val, true);
+      }
+/*
+
+
+        String value = val == null ? null : String.valueOf(val).trim();
+      if(WILDCARD)
+
       if ((expectedVal = WILDCARD.parse(value)) != null) {
         operand = WILDCARD;
       } else if ((expectedVal = NOT_EQUAL.parse(value)) != null) {
@@ -194,6 +207,7 @@ public class Clause implements MapWriter, Comparable<Clause> {
         operand = EQUAL;
         expectedVal = EQUAL.parse(value);
       }
+*/
 
       return new Condition(conditionName, expectedVal, operand);
 
@@ -357,26 +371,34 @@ public class Clause implements MapWriter, Comparable<Clause> {
   }
 
 
-  public static Object validate(String name, Object val) {
+  /**
+   *
+   * @param name name of the condition
+   * @param val value of the condition
+   * @param isRuleVal is this provided in the rule
+   * @return actual validated value
+   */
+  public static Object validate(String name, Object val, boolean isRuleVal) {
     if (val == null) return null;
     ValidateInfo info = validatetypes.get(name);
-    if (info == null && name.startsWith(ImplicitSnitch.SYSPROP)) info = validatetypes.get(null);
+    if (info == null && name.startsWith(ImplicitSnitch.SYSPROP)) info = validatetypes.get("STRING");
     if (info == null) throw new RuntimeException("Unknown type :" + name);
     if (info.type == Long.class) {
       Long num = parseNumber(name, val);
-      if (info.min != null)
-        if (num < info.min) throw new RuntimeException(name + ": " + val + " must be greater than " + info.min);
-      if (info.max != null)
-        if (num > info.max) throw new RuntimeException(name + ": " + val + " must be less than " + info.max);
+      if (isRuleVal) {
+        if (info.min != null)
+          if (num < info.min) throw new RuntimeException(name + ": " + val + " must be greater than " + info.min);
+        if (info.max != null)
+          if (num > info.max) throw new RuntimeException(name + ": " + val + " must be less than " + info.max);
+      }
       return num;
     } else if (info.type == String.class) {
-      if (info.vals != null && !info.vals.contains(val))
+      if (isRuleVal && info.vals != null && !info.vals.contains(val))
         throw new RuntimeException(name + ": " + val + " must be one of " + StrUtils.join(info.vals, ','));
       return val;
     } else {
       throw new RuntimeException("Invalid type ");
     }
-
   }
 
   public static Long parseNumber(String name, Object val) {
@@ -384,7 +406,7 @@ public class Clause implements MapWriter, Comparable<Clause> {
     Number num = 0;
     if (val instanceof String) {
       try {
-        num = Long.parseLong((String) val);
+        num = Long.parseLong(((String) val).trim());
       } catch (NumberFormatException e) {
         try {
           num = Double.parseDouble((String) val);
@@ -411,7 +433,9 @@ public class Clause implements MapWriter, Comparable<Clause> {
     validatetypes.put(ImplicitSnitch.CORES, new ValidateInfo(Long.class, null, 0l, Long.MAX_VALUE));
     validatetypes.put(ImplicitSnitch.SYSLOADAVG, new ValidateInfo(Long.class, null, 0l, 100l));
     validatetypes.put(ImplicitSnitch.HEAPUSAGE, new ValidateInfo(Long.class, null, 0l, Long.MAX_VALUE));
-    validatetypes.put(null, new ValidateInfo(String.class, null, null, null));
+    validatetypes.put("NUMBER", new ValidateInfo(Long.class, null, 0l, Long.MAX_VALUE));//generic number validation
+    validatetypes.put("STRING", new ValidateInfo(String.class, null, null, null));//generic string validation
+    validatetypes.put("node", new ValidateInfo(String.class, null, null, null));
     for (String ip : ImplicitSnitch.IP_SNITCHES) validatetypes.put(ip, new ValidateInfo(Long.class, null, 0l, 255l));
 
 

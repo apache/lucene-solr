@@ -34,11 +34,6 @@ public enum Operand {
       return testVal == null ? NOT_APPLICABLE : PASS;
     }
 
-    @Override
-    public Object parse(String val) {
-      if (val == null) return ANY;
-      return ANY.equals(val) || Policy.EACH.equals(val) ? val : null;
-    }
   },
   EQUAL("", 0) {
     @Override
@@ -60,15 +55,9 @@ public enum Operand {
   },
   GREATER_THAN(">", 1) {
     @Override
-    public Object parse(String val) {
-      return checkNumeric(super.parse(val));
-    }
-
-
-    @Override
     public TestStatus match(Object ruleVal, Object testVal) {
       if (testVal == null) return NOT_APPLICABLE;
-      return compareNum(ruleVal, testVal) == 1 ? PASS : FAIL;
+     return getLong(testVal) > getLong(ruleVal) ? PASS: FAIL ;
     }
 
     @Override
@@ -80,7 +69,7 @@ public enum Operand {
     @Override
     public TestStatus match(Object ruleVal, Object testVal) {
       if (testVal == null) return NOT_APPLICABLE;
-      return compareNum(ruleVal, testVal) == -1 ? PASS : FAIL;
+      return getLong(testVal) < getLong(ruleVal) ? PASS: FAIL ;
     }
 
     @Override
@@ -88,10 +77,6 @@ public enum Operand {
       return actual < expected ? 0 : (expected ) - actual;
     }
 
-    @Override
-    public Object parse(String val) {
-      return checkNumeric(super.parse(val));
-    }
   };
   public final String operand;
   final int priority;
@@ -105,38 +90,15 @@ public enum Operand {
     return operand + expectedVal.toString();
   }
 
-  Integer checkNumeric(Object val) {
-    if (val == null) return null;
-    try {
-      return Integer.parseInt(val.toString());
-    } catch (NumberFormatException e) {
-      throw new RuntimeException("for operand " + operand + " the value must be numeric");
-    }
-  }
-
-  public Object parse(String val) {
-    if (operand.isEmpty()) return val;
-    return val.startsWith(operand) ? val.substring(1) : null;
-  }
-
   public TestStatus match(Object ruleVal, Object testVal) {
-    return Objects.equals(String.valueOf(ruleVal), String.valueOf(testVal)) ? PASS : FAIL;
+    return Objects.equals(ruleVal, testVal) ? PASS : FAIL;
   }
 
+  Long getLong(Object o) {
+    if (o instanceof Long) return (Long) o;
+    if(o instanceof Number ) return ((Number) o).longValue();
+    return Long.parseLong(String.valueOf(o));
 
-  public int compareNum(Object n1Val, Object n2Val) {
-    Integer n1 = (Integer) parseObj(n1Val, Integer.class);
-    Integer n2 = (Integer) parseObj(n2Val, Integer.class);
-    return n1 > n2 ? -1 : Objects.equals(n1, n2) ? 0 : 1;
-  }
-
-  Object parseObj(Object o, Class typ) {
-    if (o == null) return o;
-    if (typ == String.class) return String.valueOf(o);
-    if (typ == Integer.class) {
-      return Integer.parseInt(String.valueOf(o));
-    }
-    return o;
   }
 
   public Integer delta(Object expected, Object actual) {

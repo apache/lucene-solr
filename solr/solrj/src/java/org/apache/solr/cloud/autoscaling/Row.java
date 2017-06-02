@@ -48,7 +48,7 @@ class Row implements MapWriter {
     Map<String, Object> vals = dataProvider.getNodeValues(node, params);
     for (int i = 0; i < params.size(); i++) {
       String s = params.get(i);
-      cells[i] = new Cell(i, s, vals.get(s));
+      cells[i] = new Cell(i, s, Clause.validate(s,vals.get(s), false));
       if (NODE.equals(s)) cells[i].val = node;
       if (cells[i].val == null) anyValueMissing = true;
     }

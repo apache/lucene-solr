@@ -113,10 +113,10 @@ public class TestPolicy extends SolrTestCaseJ4 {
   public void testValidate() {
     expectError("replica", -1, "must be greater than" );
     expectError("replica","hello", "not a valid number" );
-    assertEquals( 1l,   Clause.validate("replica", "1"));
-    assertEquals("c",   Clause.validate("collection", "c"));
-    assertEquals( "s",   Clause.validate("shard", "s"));
-    assertEquals( "overseer",   Clause.validate("nodeRole", "overseer"));
+    assertEquals( 1l,   Clause.validate("replica", "1", true));
+    assertEquals("c",   Clause.validate("collection", "c", true));
+    assertEquals( "s",   Clause.validate("shard", "s",true));
+    assertEquals( "overseer",   Clause.validate("nodeRole", "overseer",true));
 
     expectError("nodeRole", "wrong","must be one of");
 
@@ -125,8 +125,8 @@ public class TestPolicy extends SolrTestCaseJ4 {
     expectError("sysLoadAvg", "-1","must be greater than");
     expectError("sysLoadAvg", -1,"must be greater than");
 
-    assertEquals(12l,Clause.validate("sysLoadAvg", "12.46"));
-    assertEquals(12l,Clause.validate("sysLoadAvg", 12.46d));
+    assertEquals(12l,Clause.validate("sysLoadAvg", "12.46",true));
+    assertEquals(12l,Clause.validate("sysLoadAvg", 12.46d,true));
 
 
     expectError("ip_1", "300","must be less than ");
@@ -134,12 +134,12 @@ public class TestPolicy extends SolrTestCaseJ4 {
     expectError("ip_1", "-1","must be greater than");
     expectError("ip_1", -1,"must be greater than");
 
-    assertEquals(1l,Clause.validate("ip_1", "1"));
+    assertEquals(1l,Clause.validate("ip_1", "1",true));
 
     expectError("heapUsage", "-1","must be greater than");
     expectError("heapUsage", -1,"must be greater than");
-    assertEquals(69l,Clause.validate("heapUsage", "69.9"));
-    assertEquals(69l,Clause.validate("heapUsage", 69.9d));
+    assertEquals(69l,Clause.validate("heapUsage", "69.9",true));
+    assertEquals(69l,Clause.validate("heapUsage", 69.9d,true));
 
     expectError("port", "70000","must be less than ");
     expectError("port", 70000,"must be less than ");
@@ -153,7 +153,7 @@ public class TestPolicy extends SolrTestCaseJ4 {
 
   private static void expectError(String name, Object val, String msg){
     try {
-      Clause.validate(name, val);
+      Clause.validate(name, val,true);
       fail("expected exception containing "+msg);
     } catch (Exception e) {
       assertTrue("expected exception containing "+msg,e.getMessage().contains(msg));
@@ -202,7 +202,7 @@ public class TestPolicy extends SolrTestCaseJ4 {
         "    'policy1': [" +
         "      { 'replica': '1', 'sysprop.fs': 'ssd', 'shard': '#EACH'}," +
         "      { 'replica': '<2', 'shard': '#ANY', 'node': '#ANY'}," +
-        "      { 'replica': '<2', 'shard': '#EACH', 'rack': 'rack1'}" +
+        "      { 'replica': '<2', 'shard': '#EACH', 'sysprop.rack': 'rack1'}" +
         "    ]" +
         "  }" +
         "}");
@@ -213,7 +213,7 @@ public class TestPolicy extends SolrTestCaseJ4 {
     assertEquals("1", String.valueOf(clauses.get(0).original.get("replica")));
     assertEquals("0", String.valueOf(clauses.get(1).original.get("replica")));
     assertEquals("#ANY", clauses.get(3).original.get("shard"));
-    assertEquals("rack1", clauses.get(2).original.get("rack"));
+    assertEquals("rack1", clauses.get(2).original.get("sysprop.rack"));
     assertEquals("overseer", clauses.get(1).original.get("nodeRole"));
   }
 
@@ -223,13 +223,13 @@ public class TestPolicy extends SolrTestCaseJ4 {
         "      { 'nodeRole':'overseer', replica: 0,  'strict':false}," +
         "      { 'replica':'<1', 'node':'node3', 'shard':'#EACH'}," +
         "      { 'replica':'<2', 'node':'#ANY', 'shard':'#EACH'}," +
-        "      { 'replica':1, 'rack':'rack1'}]" +
+        "      { 'replica':1, 'sysprop.rack':'rack1'}]" +
         "  }";
     Policy p = new Policy((Map<String, Object>) Utils.fromJSONString(rules));
     List<Clause> clauses = new ArrayList<>(p.getClusterPolicy());
     Collections.sort(clauses);
     assertEquals("nodeRole", clauses.get(1).tag.name);
-    assertEquals("rack", clauses.get(0).tag.name);
+    assertEquals("sysprop.rack", clauses.get(0).tag.name);
   }
 
   public void testRules() throws IOException {
@@ -467,7 +467,7 @@ public class TestPolicy extends SolrTestCaseJ4 {
         "{replica:0, 'nodeRole':'overseer','strict':false}," +
         "{'replica':'<1','node':'node3'}," +
         "{'replica':'<2','node':'#ANY','shard':'#EACH'}," +
-        "{'replica':'<3','shard':'#EACH','rack':'#ANY'}" +
+        "{'replica':'<3','shard':'#EACH','sysprop.rack':'#ANY'}" +
         "]" +
         "}" +
         "}";
@@ -476,7 +476,7 @@ public class TestPolicy extends SolrTestCaseJ4 {
         "node1:{cores:12, freedisk: 334, heapUsage:10480, rack: rack4}," +
         "node2:{cores:4, freedisk: 749, heapUsage:6873, rack: rack3}," +
         "node3:{cores:7, freedisk: 262, heapUsage:7834, rack: rack2}," +
-        "node4:{cores:8, freedisk: 375, heapUsage:16900, nodeRole:overseer, rack: rack1}" +
+        "node4:{cores:8, freedisk: 375, heapUsage:16900, nodeRole:overseer, sysprop.rack: rack1}" +
         "}");
     Policy policy = new Policy((Map<String, Object>) Utils.fromJSONString(rules));
     ClusterDataProvider clusterDataProvider = getClusterDataProvider(nodeValues, clusterState);
@@ -593,17 +593,17 @@ public class TestPolicy extends SolrTestCaseJ4 {
         "  'policies': {" +
         "    'policy1': [" +
         "      { 'replica': '<2', 'shard': '#EACH', 'node': '#ANY'}," +
-        "      { 'replica': '<2', 'shard': '#EACH', 'rack': 'rack1'}" +
+        "      { 'replica': '<2', 'shard': '#EACH', 'sysprop.rack': 'rack1'}" +
         "    ]" +
         "  }" +
         "}";
 
 
     Map<String, Map> nodeValues = (Map<String, Map>) Utils.fromJSONString("{" +
-        "node1:{cores:12, freedisk: 334, heap:10480, rack:rack3}," +
-        "node2:{cores:4, freedisk: 749, heap:6873, sysprop.fs : ssd, rack:rack1}," +
-        "node3:{cores:7, freedisk: 262, heap:7834, rack:rack4}," +
-        "node4:{cores:0, freedisk: 900, heap:16900, nodeRole:overseer, rack:rack2}" +
+        "node1:{cores:12, freedisk: 334, heap:10480, sysprop.rack:rack3}," +
+        "node2:{cores:4, freedisk: 749, heap:6873, sysprop.fs : ssd, sysprop.rack:rack1}," +
+        "node3:{cores:7, freedisk: 262, heap:7834, sysprop.rack:rack4}," +
+        "node4:{cores:0, freedisk: 900, heap:16900, nodeRole:overseer, sysprop.rack:rack2}" +
         "}");
 
     ClusterDataProvider dataProvider = new ClusterDataProvider() {

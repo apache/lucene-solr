@@ -259,7 +259,7 @@ public class AutoScalingHandlerTest extends SolrCloudTestCase {
       assertEquals(5, node.size());
       assertNotNull(sortedNodeNames[i] = (String) node.get("node"));
       assertNotNull(node.get("cores"));
-      assertEquals(0, node.get("cores"));
+      assertEquals("0", String.valueOf(node.get("cores")));
       assertNotNull(node.get("freedisk"));
       assertNotNull(node.get("sysLoadAvg"));
       assertNotNull(node.get("heapUsage"));
