@@ -125,8 +125,8 @@ public class TestPolicy extends SolrTestCaseJ4 {
     expectError("sysLoadAvg", "-1","must be greater than");
     expectError("sysLoadAvg", -1,"must be greater than");
 
-    assertEquals(12l,Clause.validate("sysLoadAvg", "12.46",true));
-    assertEquals(12l,Clause.validate("sysLoadAvg", 12.46d,true));
+    assertEquals(12.46d,Clause.validate("sysLoadAvg", "12.46",true));
+    assertEquals(12.46,Clause.validate("sysLoadAvg", 12.46d,true));
 
 
     expectError("ip_1", "300","must be less than ");
@@ -138,8 +138,8 @@ public class TestPolicy extends SolrTestCaseJ4 {
 
     expectError("heapUsage", "-1","must be greater than");
     expectError("heapUsage", -1,"must be greater than");
-    assertEquals(69l,Clause.validate("heapUsage", "69.9",true));
-    assertEquals(69l,Clause.validate("heapUsage", 69.9d,true));
+    assertEquals(69.9d,Clause.validate("heapUsage", "69.9",true));
+    assertEquals(69.9d,Clause.validate("heapUsage", 69.9d,true));
 
     expectError("port", "70000","must be less than ");
     expectError("port", 70000,"must be less than ");
@@ -175,6 +175,18 @@ public class TestPolicy extends SolrTestCaseJ4 {
     c = new Clause((Map<String, Object>) Utils.fromJSONString("{replica:0, nodeRole:'!overseer'}"));
     assertTrue(c.tag.isPass("OVERSEER"));
     assertFalse(c.tag.isPass("overseer"));
+
+    c = new Clause((Map<String, Object>) Utils.fromJSONString("{replica:0, sysLoadAvg:'<12.7'}"));
+    assertTrue(c.tag.isPass("12.6"));
+    assertTrue(c.tag.isPass(12.6d));
+    assertFalse(c.tag.isPass("12.9"));
+    assertFalse(c.tag.isPass(12.9d));
+
+    c = new Clause((Map<String, Object>) Utils.fromJSONString("{replica:0, sysLoadAvg:'>12.7'}"));
+    assertTrue(c.tag.isPass("12.8"));
+    assertTrue(c.tag.isPass(12.8d));
+    assertFalse(c.tag.isPass("12.6"));
+    assertFalse(c.tag.isPass(12.6d));
   }
 
   public void testRow() {

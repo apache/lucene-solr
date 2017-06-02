@@ -57,6 +57,9 @@ public enum Operand {
     @Override
     public TestStatus match(Object ruleVal, Object testVal) {
       if (testVal == null) return NOT_APPLICABLE;
+      if (ruleVal instanceof Double) {
+        return Double.compare(Clause.parseDouble("", testVal), (Double) ruleVal) == 1 ? PASS : FAIL;
+      }
      return getLong(testVal) > getLong(ruleVal) ? PASS: FAIL ;
     }
 
@@ -69,6 +72,9 @@ public enum Operand {
     @Override
     public TestStatus match(Object ruleVal, Object testVal) {
       if (testVal == null) return NOT_APPLICABLE;
+      if (ruleVal instanceof Double) {
+        return Double.compare(Clause.parseDouble("", testVal), (Double) ruleVal) == -1 ? PASS : FAIL;
+      }
       return getLong(testVal) < getLong(ruleVal) ? PASS: FAIL ;
     }
 

@@ -20,7 +20,6 @@ package org.apache.solr.cloud.autoscaling;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -33,7 +32,6 @@ import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.solr.cloud.autoscaling.Policy.ReplicaInfo;
 import org.apache.solr.common.MapWriter;
 import org.apache.solr.common.cloud.rule.ImplicitSnitch;
-import org.apache.solr.common.util.RetryUtil;
 import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.common.util.Utils;
 
@@ -189,26 +187,6 @@ public class Clause implements MapWriter, Comparable<Clause> {
         operand = EQUAL;
         expectedVal = validate(s, val, true);
       }
-/*
-
-
-        String value = val == null ? null : String.valueOf(val).trim();
-      if(WILDCARD)
-
-      if ((expectedVal = WILDCARD.parse(value)) != null) {
-        operand = WILDCARD;
-      } else if ((expectedVal = NOT_EQUAL.parse(value)) != null) {
-        operand = NOT_EQUAL;
-      } else if ((expectedVal = GREATER_THAN.parse(value)) != null) {
-        operand = GREATER_THAN;
-      } else if ((expectedVal = LESS_THAN.parse(value)) != null) {
-        operand = LESS_THAN;
-      } else {
-        operand = EQUAL;
-        expectedVal = EQUAL.parse(value);
-      }
-*/
-
       return new Condition(conditionName, expectedVal, operand);
 
     } catch (Exception e) {
@@ -358,15 +336,17 @@ public class Clause implements MapWriter, Comparable<Clause> {
   static class ValidateInfo {
     final Class type;
     final Set<String> vals;
-    final Long min;
-    final Long max;
+    final Number min;
+    final Number max;
 
 
-    ValidateInfo(Class type, Set<String> vals, Long min, Long max) {
+    ValidateInfo(Class type, Set<String> vals, Number min, Number max) {
       this.type = type;
       this.vals = vals;
       this.min = min;
+      if(min != null && !type.isInstance(min)) throw new RuntimeException("wrong min value type");
       this.max = max;
+      if(max != null && !type.isInstance(max)) throw new RuntimeException("wrong max value type");
     }
   }
 
@@ -383,13 +363,26 @@ public class Clause implements MapWriter, Comparable<Clause> {
     ValidateInfo info = validatetypes.get(name);
     if (info == null && name.startsWith(ImplicitSnitch.SYSPROP)) info = validatetypes.get("STRING");
     if (info == null) throw new RuntimeException("Unknown type :" + name);
-    if (info.type == Long.class) {
-      Long num = parseNumber(name, val);
+    if (info.type == Double.class) {
+      Double num = parseDouble(name, val);
       if (isRuleVal) {
         if (info.min != null)
-          if (num < info.min) throw new RuntimeException(name + ": " + val + " must be greater than " + info.min);
+          if (Double.compare(num, (Double) info.min) == -1)
+            throw new RuntimeException(name + ": " + val + " must be greater than " + info.min);
         if (info.max != null)
-          if (num > info.max) throw new RuntimeException(name + ": " + val + " must be less than " + info.max);
+          if (Double.compare(num, (Double) info.max) == 1)
+            throw new RuntimeException(name + ": " + val + " must be less than " + info.max);
+      }
+      return num;
+    } else if (info.type == Long.class) {
+      Long num = parseLong(name, val);
+      if (isRuleVal) {
+        if (info.min != null)
+          if (num < info.min.longValue())
+            throw new RuntimeException(name + ": " + val + " must be greater than " + info.min);
+        if (info.max != null)
+          if (num > info.max.longValue())
+            throw new RuntimeException(name + ": " + val + " must be less than " + info.max);
       }
       return num;
     } else if (info.type == String.class) {
@@ -401,9 +394,10 @@ public class Clause implements MapWriter, Comparable<Clause> {
     }
   }
 
-  public static Long parseNumber(String name, Object val) {
+  public static Long parseLong(String name, Object val) {
     if (val == null) return null;
-    Number num = 0;
+    if (val instanceof Long) return (Long) val;
+    Number num = null;
     if (val instanceof String) {
       try {
         num = Long.parseLong(((String) val).trim());
@@ -421,6 +415,23 @@ public class Clause implements MapWriter, Comparable<Clause> {
     return num.longValue();
   }
 
+  public static Double parseDouble(String name, Object val) {
+    if (val == null) return null;
+    if (val instanceof Double) return (Double) val;
+    Number num = 0;
+    if (val instanceof String) {
+      try {
+        num = Double.parseDouble((String) val);
+      } catch (NumberFormatException e) {
+        throw new RuntimeException(name + ": " + val + "not a valid number", e);
+      }
+
+    } else if (val instanceof Number) {
+      num = (Number) val;
+    }
+    return num.doubleValue();
+  }
+
   private static final Map<String, ValidateInfo> validatetypes = new HashMap();
 
   static {
@@ -431,8 +442,8 @@ public class Clause implements MapWriter, Comparable<Clause> {
     validatetypes.put(ImplicitSnitch.DISK, new ValidateInfo(Long.class, null, 0l, Long.MAX_VALUE));
     validatetypes.put(ImplicitSnitch.NODEROLE, new ValidateInfo(String.class, unmodifiableSet(new HashSet(Arrays.asList("overseer"))), null, null));
     validatetypes.put(ImplicitSnitch.CORES, new ValidateInfo(Long.class, null, 0l, Long.MAX_VALUE));
-    validatetypes.put(ImplicitSnitch.SYSLOADAVG, new ValidateInfo(Long.class, null, 0l, 100l));
-    validatetypes.put(ImplicitSnitch.HEAPUSAGE, new ValidateInfo(Long.class, null, 0l, Long.MAX_VALUE));
+    validatetypes.put(ImplicitSnitch.SYSLOADAVG, new ValidateInfo(Double.class, null, 0d, 100d));
+    validatetypes.put(ImplicitSnitch.HEAPUSAGE, new ValidateInfo(Double.class, null, 0d, null));
     validatetypes.put("NUMBER", new ValidateInfo(Long.class, null, 0l, Long.MAX_VALUE));//generic number validation
     validatetypes.put("STRING", new ValidateInfo(String.class, null, null, null));//generic string validation
     validatetypes.put("node", new ValidateInfo(String.class, null, null, null));
