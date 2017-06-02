@@ -225,6 +225,9 @@ Other Changes
   support in favor of the <mergePolicyFactory> element introduced by SOLR-8621 in Solr 5.5.0.
   (Christine Poerschke, hossman)
 
+* SOLR-10799: Extracted functionality to collect eligible replicas from HttpShardHandler.prepDistributed()
+  to a new method (Domenico Fabio Marino via Tomás Fernández Löbbe)
+
 ==================  6.7.0 ==================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release.
