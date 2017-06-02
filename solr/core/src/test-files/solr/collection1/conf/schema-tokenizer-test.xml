@@ -50,7 +50,7 @@ more concise example.
 
   <!-- Seperate analyzers for index and query time -->
 
-  <fieldType name="letterfieldType" class="solr.TextField" positionIncrementGap="100">
+  <fieldType name="letterfieldType" class="solr.TextField" positionIncrementGap="100" autoGeneratePhraseQueries="false">
       <analyzer type="index">
         <tokenizer class="solr.LetterTokenizerFactory" maxTokenLen="3" />
       </analyzer>
@@ -59,7 +59,7 @@ more concise example.
       </analyzer>
   </fieldType>
 
-  <fieldType name="lowerCasefieldType" class="solr.TextField" positionIncrementGap="100">
+  <fieldType name="lowerCasefieldType" class="solr.TextField" positionIncrementGap="100" autoGeneratePhraseQueries="false">
     <analyzer type="index">
       <tokenizer class="solr.LowerCaseTokenizerFactory" maxTokenLen="3" />
     </analyzer>
@@ -68,7 +68,7 @@ more concise example.
     </analyzer>
   </fieldType>
 
-  <fieldType name="whiteSpfieldType" class="solr.TextField" positionIncrementGap="100">
+  <fieldType name="whiteSpfieldType" class="solr.TextField" positionIncrementGap="100" autoGeneratePhraseQueries="false">
     <analyzer type="index">
       <tokenizer class="solr.WhitespaceTokenizerFactory" maxTokenLen="3" />
     </analyzer>
@@ -77,7 +77,7 @@ more concise example.
     </analyzer>
   </fieldType>
 
-  <fieldType name="uniWhiteSpfieldType" class="solr.TextField" positionIncrementGap="100">
+  <fieldType name="uniWhiteSpfieldType" class="solr.TextField" positionIncrementGap="100" autoGeneratePhraseQueries="false">
     <analyzer type="index">
       <tokenizer class="solr.WhitespaceTokenizerFactory" maxTokenLen="3" />
     </analyzer>
@@ -86,7 +86,7 @@ more concise example.
     </analyzer>
   </fieldType>
 
-  <fieldType name="keywordfieldType" class="solr.TextField" positionIncrementGap="100">
+  <fieldType name="keywordfieldType" class="solr.TextField" positionIncrementGap="100" autoGeneratePhraseQueries="false">
     <analyzer index="index">
       <tokenizer class="solr.KeywordTokenizerFactory" maxTokenLen="3" />
     </analyzer>
@@ -97,31 +97,31 @@ more concise example.
 
   <!-- Same analyzers for both index and query time -->
 
-  <fieldType name="letter0fieldType" class="solr.TextField" positionIncrementGap="100">
+  <fieldType name="letter0fieldType" class="solr.TextField" positionIncrementGap="100" autoGeneratePhraseQueries="false">
     <analyzer>
       <tokenizer class="solr.LetterTokenizerFactory" maxTokenLen="3" />
     </analyzer>
   </fieldType>
 
-  <fieldType name="lowerCase0fieldType" class="solr.TextField" positionIncrementGap="100">
+  <fieldType name="lowerCase0fieldType" class="solr.TextField" positionIncrementGap="100" autoGeneratePhraseQueries="false">
     <analyzer>
       <tokenizer class="solr.LowerCaseTokenizerFactory" maxTokenLen="3" />
     </analyzer>
   </fieldType>
 
-  <fieldType name="whiteSp0fieldType" class="solr.TextField" positionIncrementGap="100">
+  <fieldType name="whiteSp0fieldType" class="solr.TextField" positionIncrementGap="100" autoGeneratePhraseQueries="false">
     <analyzer>
       <tokenizer class="solr.WhitespaceTokenizerFactory" maxTokenLen="3" />
     </analyzer>
   </fieldType>
 
-  <fieldType name="uniWhiteSp0fieldType" class="solr.TextField" positionIncrementGap="100">
+  <fieldType name="uniWhiteSp0fieldType" class="solr.TextField" positionIncrementGap="100" autoGeneratePhraseQueries="false">
     <analyzer>
       <tokenizer class="solr.WhitespaceTokenizerFactory" maxTokenLen="3" />
     </analyzer>
   </fieldType>
 
-  <fieldType name="keyword0fieldType" class="solr.TextField" positionIncrementGap="100">
+  <fieldType name="keyword0fieldType" class="solr.TextField" positionIncrementGap="100" autoGeneratePhraseQueries="false">
     <analyzer>
       <tokenizer class="solr.KeywordTokenizerFactory"  maxTokenLen="3" />
     </analyzer>
