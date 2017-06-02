@@ -34,10 +34,14 @@
     </metrics>
     <!-- intentionally set very low values here to trigger multiple flushes and merges.
          DO NOT USE THESE ABSURD VALUES IN PRODUCTION. -->
-    <mergeFactor>3</mergeFactor>
     <maxBufferedDocs>100</maxBufferedDocs>
 
-    <mergePolicy class="org.apache.lucene.index.TieredMergePolicy"/>
+    <mergePolicyFactory class="org.apache.solr.index.TieredMergePolicyFactory">
+      <!-- intentionally set very low values here to trigger multiple flushes and merges.
+           DO NOT USE THESE ABSURD VALUES IN PRODUCTION. -->
+      <int name="maxMergeAtOnce">3</int>
+      <int name="segmentsPerTier">3</int>
+    </mergePolicyFactory>
   </indexConfig>
 
   <updateHandler class="solr.DirectUpdateHandler2">

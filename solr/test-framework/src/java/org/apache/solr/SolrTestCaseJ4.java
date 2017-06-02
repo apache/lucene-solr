@@ -171,16 +171,8 @@ public abstract class SolrTestCaseJ4 extends LuceneTestCase {
   public static final String DEFAULT_TEST_CORENAME = DEFAULT_TEST_COLLECTION_NAME;
   protected static final String CORE_PROPERTIES_FILENAME = "core.properties";
 
-  // keep solr.tests.mergePolicyFactory use i.e. do not remove with SOLR-8668
   public static final String SYSTEM_PROPERTY_SOLR_TESTS_MERGEPOLICYFACTORY = "solr.tests.mergePolicyFactory";
-  @Deprecated // remove solr.tests.mergePolicy use with SOLR-8668
-  public static final String SYSTEM_PROPERTY_SOLR_TESTS_MERGEPOLICY = "solr.tests.mergePolicy";
 
-  @Deprecated // remove solr.tests.useMergePolicyFactory with SOLR-8668
-  public static final String SYSTEM_PROPERTY_SOLR_TESTS_USEMERGEPOLICYFACTORY = "solr.tests.useMergePolicyFactory";
-  @Deprecated // remove solr.tests.useMergePolicy use with SOLR-8668
-  public static final String SYSTEM_PROPERTY_SOLR_TESTS_USEMERGEPOLICY = "solr.tests.useMergePolicy";
-  
   /**
    * The system property {@code "solr.tests.preferPointFields"} can be used to make tests use PointFields when possible. 
    * PointFields will only be used if the schema used by the tests uses "${solr.tests.TYPEClass}" when defining fields. 
@@ -2480,33 +2472,6 @@ public abstract class SolrTestCaseJ4 extends LuceneTestCase {
 
   protected void waitForWarming() throws InterruptedException {
     waitForWarming(h.getCore());
-  }
-
-  @BeforeClass
-  public static void chooseMPForMP() throws Exception {
-    if (random().nextBoolean()) {
-      System.setProperty(SYSTEM_PROPERTY_SOLR_TESTS_USEMERGEPOLICYFACTORY, "true");
-      System.setProperty(SYSTEM_PROPERTY_SOLR_TESTS_USEMERGEPOLICY, "false");
-    } else {
-      System.setProperty(SYSTEM_PROPERTY_SOLR_TESTS_USEMERGEPOLICYFACTORY, "false");
-      System.setProperty(SYSTEM_PROPERTY_SOLR_TESTS_USEMERGEPOLICY, "true");
-    }
-  }
-
-  @AfterClass
-  public static void unchooseMPForMP() {
-    System.clearProperty(SYSTEM_PROPERTY_SOLR_TESTS_USEMERGEPOLICYFACTORY);
-    System.clearProperty(SYSTEM_PROPERTY_SOLR_TESTS_USEMERGEPOLICY);
-  }
-
-  @Deprecated // remove with SOLR-8668
-  protected static void systemSetPropertySolrTestsMergePolicy(String value) {
-    System.setProperty(SYSTEM_PROPERTY_SOLR_TESTS_MERGEPOLICY, value);
-  }
-
-  @Deprecated // remove with SOLR-8668
-  protected static void systemClearPropertySolrTestsMergePolicy() {
-    System.clearProperty(SYSTEM_PROPERTY_SOLR_TESTS_MERGEPOLICY);
   }
 
   protected static void systemSetPropertySolrTestsMergePolicyFactory(String value) {

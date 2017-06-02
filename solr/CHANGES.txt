@@ -86,6 +86,9 @@ Upgrading from Solr 6.x
   this QParser untill Solr 8, you must explicitly register it in your solrconfig.xml:
      '<queryParser name="lucenePlusSort" class="solr.OldLuceneQParserPlugin"/>'
 
+* In solrconfig.xml the deprecated <mergePolicy> and <mergeFactor> and <maxMergeDocs> elements have
+  been removed in favor of the <mergePolicyFactory> element introduced by SOLR-8621 in Solr 5.5.0.
+
 New Features
 ----------------------
 * SOLR-9857, SOLR-9858: Collect aggregated metrics from nodes and shard leaders in overseer. (ab)
@@ -217,6 +220,10 @@ Other Changes
 
 * LUCENE-7852: Correct copyright year(s) in solr/LICENSE.txt file.
   (Christine Poerschke, Steve Rowe)
+
+* SOLR-8668: In solrconfig.xml remove <mergePolicy> (and related <mergeFactor> and <maxMergeDocs>)
+  support in favor of the <mergePolicyFactory> element introduced by SOLR-8621 in Solr 5.5.0.
+  (Christine Poerschke, hossman)
 
 ==================  6.7.0 ==================
 

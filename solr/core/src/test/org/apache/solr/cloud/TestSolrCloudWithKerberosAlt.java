@@ -23,7 +23,6 @@ import java.util.List;
 import java.util.Properties;
 
 import org.apache.commons.io.FileUtils;
-import org.apache.lucene.index.TieredMergePolicy;
 import org.apache.lucene.util.Constants;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.solr.SolrTestCaseJ4;
@@ -180,15 +179,7 @@ public class TestSolrCloudWithKerberosAlt extends LuceneTestCase {
       properties.put("solr.tests.maxBufferedDocs", "100000");
       properties.put("solr.tests.ramBufferSizeMB", "100");
       // use non-test classes so RandomizedRunner isn't necessary
-      if (random().nextBoolean()) {
-        properties.put(SolrTestCaseJ4.SYSTEM_PROPERTY_SOLR_TESTS_MERGEPOLICY, TieredMergePolicy.class.getName());
-        properties.put(SolrTestCaseJ4.SYSTEM_PROPERTY_SOLR_TESTS_USEMERGEPOLICY, "true");
-        properties.put(SolrTestCaseJ4.SYSTEM_PROPERTY_SOLR_TESTS_USEMERGEPOLICYFACTORY, "false");
-      } else {
-        properties.put(SolrTestCaseJ4.SYSTEM_PROPERTY_SOLR_TESTS_MERGEPOLICYFACTORY, TieredMergePolicyFactory.class.getName());
-        properties.put(SolrTestCaseJ4.SYSTEM_PROPERTY_SOLR_TESTS_USEMERGEPOLICYFACTORY, "true");
-        properties.put(SolrTestCaseJ4.SYSTEM_PROPERTY_SOLR_TESTS_USEMERGEPOLICY, "false");
-      }
+      properties.put(SolrTestCaseJ4.SYSTEM_PROPERTY_SOLR_TESTS_MERGEPOLICYFACTORY, TieredMergePolicyFactory.class.getName());
       properties.put("solr.tests.mergeScheduler", "org.apache.lucene.index.ConcurrentMergeScheduler");
       properties.put("solr.directoryFactory", "solr.RAMDirectoryFactory");
       createRequest.setProperties(properties);

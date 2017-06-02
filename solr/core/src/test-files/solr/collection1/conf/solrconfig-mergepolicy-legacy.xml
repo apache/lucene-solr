@@ -23,7 +23,6 @@
   <schemaFactory class="ClassicIndexSchemaFactory"/>
 
   <indexConfig>
-    <mergeFactor>7</mergeFactor>
     <useCompoundFile>${useCompoundFile:false}</useCompoundFile>
   </indexConfig>
 

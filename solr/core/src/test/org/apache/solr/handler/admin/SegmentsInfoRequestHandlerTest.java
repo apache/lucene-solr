@@ -16,7 +16,6 @@
  */
 package org.apache.solr.handler.admin;
 
-import org.apache.lucene.index.LogDocMergePolicy;
 import org.apache.lucene.util.Version;
 import org.apache.solr.index.LogDocMergePolicyFactory;
 import org.apache.solr.util.AbstractSolrTestCase;
@@ -38,7 +37,6 @@ public class SegmentsInfoRequestHandlerTest extends AbstractSolrTestCase {
     // we need a consistent segmentation to ensure we don't get a random
     // merge that reduces the total num docs in all segments, or the number of deletes
     //
-    systemSetPropertySolrTestsMergePolicy(LogDocMergePolicy.class.getName());
     systemSetPropertySolrTestsMergePolicyFactory(LogDocMergePolicyFactory.class.getName());
     
     System.setProperty("enable.update.log", "false"); // no _version_ in our schema

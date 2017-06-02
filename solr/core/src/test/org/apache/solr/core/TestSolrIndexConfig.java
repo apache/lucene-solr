@@ -31,7 +31,7 @@ public class TestSolrIndexConfig extends SolrTestCaseJ4 {
 
   @BeforeClass
   public static void beforeClass() throws Exception {
-    initCore(random().nextBoolean() ? "solrconfig-indexconfig.xml" : "solrconfig-indexconfig-mergepolicyfactory.xml","schema.xml");
+    initCore("solrconfig-indexconfig-mergepolicyfactory.xml","schema.xml");
   }
 
   public void testLiveWriter() throws Exception {

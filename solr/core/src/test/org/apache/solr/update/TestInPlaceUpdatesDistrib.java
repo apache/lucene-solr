@@ -87,10 +87,6 @@ public class TestInPlaceUpdatesDistrib extends AbstractFullDistribZkTestBase {
     // asserting inplace updates happen by checking the internal [docid]
     systemSetPropertySolrTestsMergePolicyFactory(NoMergePolicyFactory.class.getName());
 
-    // HACK: Don't use a RandomMergePolicy, but only use the mergePolicyFactory that we've just set
-    System.setProperty(SYSTEM_PROPERTY_SOLR_TESTS_USEMERGEPOLICYFACTORY, "true");
-    System.setProperty(SYSTEM_PROPERTY_SOLR_TESTS_USEMERGEPOLICY, "false");
-
     initCore(configString, schemaString);
     
     // sanity check that autocommits are disabled
