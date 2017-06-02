@@ -97,7 +97,7 @@ class Row implements MapWriter {
     if (replicas == null) c.put(shard, replicas = new ArrayList<>());
     replicas.add(new ReplicaInfo("" + new Random().nextInt(1000) + 1000, coll, shard, new HashMap<>()));
     for (Cell cell : row.cells) {
-      if (cell.name.equals("cores")) cell.val = ((Number) cell.val).intValue() + 1;
+      if (cell.name.equals("cores")) cell.val = ((Number) cell.val).longValue() + 1;
     }
     return row;
 
