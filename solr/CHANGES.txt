@@ -298,6 +298,9 @@ Other Changes
 * SOLR-10741: Factor out createSliceShardsStr method from HttpShardHandler.prepDistributed.
   (Domenico Fabio Marino via Christine Poerschke)
 
+* SOLR-10790: Fix warnings in Assign.java and ReplicaAssigner.java classes.
+  (Christine Poerschke)
+
 ==================  6.6.0 ==================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release.
