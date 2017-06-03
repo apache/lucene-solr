@@ -1,23 +1,5 @@
 package org.apache.solr.tests.nightlybenchmarks;
 
-/**
- * Licensed to the Apache Software Foundation (ASF) under one or more
- * contributor license agreements.  See the NOTICE file distributed with
- * this work for additional information regarding copyright ownership.
- * The ASF licenses this file to You under the Apache License, Version 2.0
- * (the "License"); you may not use this file except in compliance with
- * the License.  You may obtain a copy of the License at
- * <p/>
- * http://www.apache.org/licenses/LICENSE-2.0
- * <p/>
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
-
-import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
@@ -78,14 +60,13 @@ public class BenchmarkAppConnector {
 	}
 
 	public static void writeToWebAppDataFile(String fileName, String data, boolean createNewFile, FileType type) {
-
-		BufferedWriter bw = null;
-		FileWriter fw = null;
+		
+		File dataDir = null;
 		File file = null;
-
-		try {
-
-			File dataDir = null;
+		FileWriter fw = null;
+		
+		try
+		{
 
 			if (type == FileType.IS_RUNNING_FILE) {
 				dataDir = new File(benchmarkAppDirectory + "data" + File.separator + "running" + File.separator);
@@ -108,9 +89,7 @@ public class BenchmarkAppConnector {
 			} else {
 				file = new File(benchmarkAppDirectory + "data" + File.separator + fileName);
 			}
-			fw = new FileWriter(file.getAbsoluteFile(), true);
-			bw = new BufferedWriter(fw);
-
+			
 			if (file.exists() && createNewFile) {
 				file.delete();
 				file.createNewFile();
@@ -120,51 +99,54 @@ public class BenchmarkAppConnector {
 				file.createNewFile();
 			}
 
+		    fw = new FileWriter(file, true); 
+			
 			if (file.length() == 0) {
 
 				file.setReadable(true);
 				file.setWritable(true);
 				if (type == FileType.MEMORY_HEAP_USED) {
-					bw.write("Date, Test_ID, Heap Space Used (MB)\n");
+					fw.write("Date, Test_ID, Heap Space Used (MB)\n");
 				} else if (type == FileType.PROCESS_CPU_LOAD) {
-					bw.write("Date, Test_ID, Process CPU Load (%)\n");
+					fw.write("Date, Test_ID, Process CPU Load (%)\n");
 				} else if (type == FileType.STANDALONE_CREATE_COLLECTION_MAIN
 						|| type == FileType.CLOUD_CREATE_COLLECTION_MAIN) {
-					bw.write("Date, Test_ID, Milliseconds, CommitID\n");
+					fw.write("Date, Test_ID, Milliseconds, CommitID\n");
 				} else if (type == FileType.STANDALONE_INDEXING_MAIN || type == FileType.CLOUD_INDEXING_SERIAL) {
-					bw.write("Date, Test_ID, Seconds, CommitID\n");
+					fw.write("Date, Test_ID, Seconds, CommitID\n");
 				} else if (type == FileType.TEST_ENV_FILE) {
 					// Don't add any header
 				} else if (type == FileType.STANDALONE_INDEXING_THROUGHPUT
 						|| type == FileType.CLOUD_SERIAL_INDEXING_THROUGHPUT) {
-					bw.write("Date, Test_ID, Throughput (doc/sec), CommitID\n");
+					fw.write("Date, Test_ID, Throughput (doc/sec), CommitID\n");
 				} else if (type == FileType.CLOUD_INDEXING_CONCURRENT) {
-					bw.write(
+					fw.write(
 							"Date, Test_ID, CommitID, Seconds (2 Threads), Seconds (4 Threads), Seconds (6 Threads), Seconds (8 Threads), Seconds (10 Threads)\n");
 				} else if (type == FileType.CLOUD_CONCURRENT_INDEXING_THROUGHPUT) {
-					bw.write(
+					fw.write(
 							"Date, Test_ID, CommitID, Throughput (2 Threads), Throughput (4 Threads), Throughput (6 Threads), Throughput (8 Threads), Throughput (10 Threads) \n");
 				} else if (type == FileType.NUMERIC_QUERY_CLOUD || type == FileType.NUMERIC_QUERY_STANDALONE) {
-					bw.write(
+					fw.write(
 							"Date, Test_ID, CommitID, QPS(Term), QTime-Min(Term), QTime-Max(Term), QPS(Range), QTime-Min(Range), QTime-Max(Range), QPS(Less Than), QTime-Min(Less Than), QTime-Max(Less Than), QPS(Greater Than), QTime-Min(Greater Than), QTime-Max(Greater Than)\n");
 				}
 			}
-
-			bw.write(data + "\n");
-
-		} catch (IOException e) {
-			e.printStackTrace();
+			
+		    fw.write(data + "\n");
+		    
+		}
+		catch(IOException ioe)
+		{
+		    Util.postMessage(ioe.getMessage(), MessageType.RED_TEXT, false);
 		} finally {
-			try {
-				if (bw != null)
-					bw.close();
-				if (fw != null)
-					fw.close();
-			} catch (IOException ex) {
-				ex.printStackTrace();
+			if (fw != null) {
+					try {
+						fw.close();
+					} catch (IOException e) {
+						e.printStackTrace();
+					}
 			}
 		}
-
+		
 	}
 
 	public static void publishDataForWebApp() {
