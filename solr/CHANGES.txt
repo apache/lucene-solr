@@ -313,6 +313,8 @@ Other Changes
 * SOLR-10790: Fix warnings in Assign.java and ReplicaAssigner.java classes.
   (Christine Poerschke)
 
+* SOLR-8437: Improve RAMDirectory details in sample solrconfig files (Mark Miller, Varun Thacker)
+
 ==================  6.6.0 ==================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release.
