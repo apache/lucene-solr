@@ -48,17 +48,14 @@
                 <li class="dropdown">
                     <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" aria-haspopup="true" aria-expanded="false">Standalone Metrics<span class="caret"></span></a>
                     <ul class="dropdown-menu">
-                        <li><a href="IndexingBenchmarkStandalone.html">Indexing</a></li>
-                        <li><a href="IndexingThroughputBenchmarkStandalone.html">Indexing Throughput</a></li>
+                        <li><a href="IndexingThroughputBenchmarkStandalone.html">Indexing Throughput - HTTP Client</a></li>
                         <li><a href="CreateCollectionBenchmarkStandalone.html">Create Collection</a></li>
                     </ul>
                 </li>
                     <li class="dropdown">
                         <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" aria-haspopup="true" aria-expanded="false">Cloud Metrics<span class="caret"></span></a>
                         <ul class="dropdown-menu">
-                            <li><a href="IndexingBenchmarkCloud.html">Indexing - Serial</a></li>
                             <li><a href="IndexingThroughputBenchmarkCloud.html">Indexing Throughput - Serial</a></li>
-                            <li><a href="IndexingBenchmarkCloudConcurrent.html">Indexing - Concurrent Client</a></li>
                             <li><a href="IndexingThroughputBenchmarkCloudConcurrent.html">Indexing Throughput - Concurrent</a></li>
                             <li><a href="CreateCollectionBenchmarkCloud.html">Create Collection</a></li>
                         </ul>
@@ -318,33 +315,32 @@
 
                             setInterval(function () {
 
-                                                    $.ajax({
+                                $.ajax({
 
-                                                        type: "GET",
-                                                        url: "iamalive.txt",
-                                                        dataType: "text",
-                                                        success: function (data) {
+                                    type: "GET",
+                                    url: "iamalive.txt",
+                                    dataType: "text",
+                                    success: function (data) {
 
-                                                            $("#green").fadeIn("slow");
-                                                            $("#green").fadeOut("slow");
-                                                            wasRunning = true;
+                                        $("#green").show();
+                                        wasRunning = true;
 
-                                                        },
+                                    },
 
-                                                        error: function (data) {
-                                                            $("#green").fadeOut("slow");
+                                    error: function (data) {
+                                        $("#green").hide();
 
-                                                            if (wasRunning) {
-                                                                wasRunning = false;
-                                                                setTimeout(function () {}, 1000);
-                                                                $("#ReloadButton").removeClass("hidden");
-                                                                $("#ReloadButton").fadeIn("slow");
-                                                            }
-                                                        }
+                                        if (wasRunning) {
+                                            wasRunning = false;
+                                            setTimeout(function () {}, 1000);
+                                            $("#ReloadButton").removeClass("hidden");
+                                            $("#ReloadButton").fadeIn("slow");
+                                        }
+                                    }
 
-                                                    });
+                                });
 
-                            }, 3000);
+					        }, 3000);
 
 
         });
