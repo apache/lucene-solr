@@ -205,7 +205,7 @@ public class SolrNode {
 
 		returnMap.put("ProcessExitValue", "" + returnVal);
 		returnMap.put("TimeStamp", "" + Util.TEST_TIME);
-		returnMap.put("CreateCollectionTime", "" + (double) ((double) (end - start) / (double) 1000000));
+		returnMap.put("CreateCollectionTime", "" + (double) ((double) (end - start) / (double) 1000000000));
 		returnMap.put("CommitID", this.commitId);
 
 		return returnMap;
@@ -246,7 +246,7 @@ public class SolrNode {
 
 		returnMap.put("ProcessExitValue", "" + returnVal);
 		returnMap.put("TimeStamp", "" + Util.TEST_TIME);
-		returnMap.put("CreateCollectionTime", "" + (double) ((double) (end - start) / (double) 1000000));
+		returnMap.put("CreateCollectionTime", "" + (double) ((double) (end - start) / (double) 1000000000));
 		returnMap.put("CommitID", this.commitId);
 
 		return returnMap;

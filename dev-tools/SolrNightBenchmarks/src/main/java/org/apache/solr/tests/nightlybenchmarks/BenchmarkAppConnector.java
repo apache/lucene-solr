@@ -111,7 +111,7 @@ public class BenchmarkAppConnector {
 					fw.write("Date, Test_ID, Process CPU Load (%)\n");
 				} else if (type == FileType.STANDALONE_CREATE_COLLECTION_MAIN
 						|| type == FileType.CLOUD_CREATE_COLLECTION_MAIN) {
-					fw.write("Date, Test_ID, Milliseconds, CommitID\n");
+					fw.write("Date, Test_ID, Seconds, CommitID\n");
 				} else if (type == FileType.STANDALONE_INDEXING_MAIN || type == FileType.CLOUD_INDEXING_SERIAL) {
 					fw.write("Date, Test_ID, Seconds, CommitID\n");
 				} else if (type == FileType.TEST_ENV_FILE) {

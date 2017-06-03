@@ -35,6 +35,29 @@ public class Tests {
 
 	public static SolrCloud cloud;
 	public static SolrNode node;
+	
+	
+	public static boolean createCollectionTestStandalone(String commitID) {
+
+		try {
+			SolrNode node = new SolrNode(commitID, "", "", false);
+
+			node.doAction(SolrNodeAction.NODE_START);
+
+			Util.getEnvironmentInformationFromMetricAPI(commitID, node.port);
+
+			BenchmarkReportData.returnStandaloneCreateCollectionMap = node.createCollection("Core-" + UUID.randomUUID(),
+					"Collection-" + UUID.randomUUID());
+
+			node.doAction(SolrNodeAction.NODE_STOP);
+			node.cleanup();
+
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+
+		return true;
+	}
 
 	public static boolean indexingTestsStandalone(String commitID, int numDocuments) {
 
