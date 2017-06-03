@@ -26,6 +26,7 @@ import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+
 import org.apache.solr.tests.nightlybenchmarks.QueryClient.QueryType;
 
 enum ConfigurationType { STANDALONE, CLOUD }
@@ -35,10 +36,9 @@ public class Tests {
 	public static SolrCloud cloud;
 	public static SolrNode node;
 
-	public static boolean indexingTests(String commitID, int numDocuments) {
+	public static boolean indexingTestsStandalone(String commitID, int numDocuments) {
 
 		try {
-
 			SolrNode node = new SolrNode(commitID, "", "", false);
 
 			node.doAction(SolrNodeAction.NODE_START);
@@ -53,23 +53,55 @@ public class Tests {
 			node.doAction(SolrNodeAction.NODE_STOP);
 			node.cleanup();
 
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+
+		return true;
+	}
+	
+	public static boolean indexingTestsStandaloneConcurrent(String commitID, int numDocuments) {
+
+		try {
+			SolrNode node = new SolrNode(commitID, "", "", false);
+			node.doAction(SolrNodeAction.NODE_START);
+			node.createCollection("Core-" + UUID.randomUUID(),"Collection-" + UUID.randomUUID());
+			SolrIndexingClient client = new SolrIndexingClient("localhost", node.port, node.collectionName, commitID);
+			
+
+			BenchmarkReportData.metricMapStandaloneConcurrent2 = client.indexAmazonFoodData(numDocuments,
+					node.getBaseUrlC(), node.collectionName, 10000, 2);
+			BenchmarkReportData.metricMapStandaloneConcurrent4 = client.indexAmazonFoodData(numDocuments,
+					node.getBaseUrlC(), node.collectionName, 10000, 4);
+			BenchmarkReportData.metricMapStandaloneConcurrent6 = client.indexAmazonFoodData(numDocuments,
+					node.getBaseUrlC(), node.collectionName, 10000, 6);
+			BenchmarkReportData.metricMapStandaloneConcurrent8 = client.indexAmazonFoodData(numDocuments,
+					node.getBaseUrlC(), node.collectionName, 10000, 8);
+			BenchmarkReportData.metricMapStandaloneConcurrent10 = client.indexAmazonFoodData(numDocuments,
+					node.getBaseUrlC(), node.collectionName, 10000, 10);
+
+			
+			node.doAction(SolrNodeAction.NODE_STOP);
+			node.cleanup();
+			
+
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+
+		return true;
+	}
+
+	public static boolean indexingTestsCloudSerial(String commitID, int numDocuments) {
+
+		try {
+
 			SolrCloud cloud = new SolrCloud(5, "2", "2", commitID, null, "localhost", true);
 			Tests.cloud = cloud;
 			SolrIndexingClient cloudClient = new SolrIndexingClient("localhost", cloud.port, cloud.collectionName,
 					commitID);
 			BenchmarkReportData.metricMapCloudSerial = cloudClient.indexAmazonFoodData(numDocuments, cloud.getuRL(),
 					cloud.zookeeperIp, cloud.zookeeperPort, cloud.collectionName);
-
-			BenchmarkReportData.metricMapCloudConcurrent2 = cloudClient.indexAmazonFoodData(numDocuments,
-					cloud.getuRL(), cloud.zookeeperIp, cloud.zookeeperPort, cloud.collectionName, 10000, 2);
-			BenchmarkReportData.metricMapCloudConcurrent4 = cloudClient.indexAmazonFoodData(numDocuments,
-					cloud.getuRL(), cloud.zookeeperIp, cloud.zookeeperPort, cloud.collectionName, 10000, 4);
-			BenchmarkReportData.metricMapCloudConcurrent6 = cloudClient.indexAmazonFoodData(numDocuments,
-					cloud.getuRL(), cloud.zookeeperIp, cloud.zookeeperPort, cloud.collectionName, 10000, 6);
-			BenchmarkReportData.metricMapCloudConcurrent8 = cloudClient.indexAmazonFoodData(numDocuments,
-					cloud.getuRL(), cloud.zookeeperIp, cloud.zookeeperPort, cloud.collectionName, 10000, 8);
-			BenchmarkReportData.metricMapCloudConcurrent10 = cloudClient.indexAmazonFoodData(numDocuments,
-					cloud.getuRL(), cloud.zookeeperIp, cloud.zookeeperPort, cloud.collectionName, 10000, 10);
 
 			cloud.shutdown();
 			BenchmarkReportData.returnCloudCreateCollectionMap = cloud.returnMapCreateCollection;
@@ -81,6 +113,35 @@ public class Tests {
 		return true;
 	}
 
+	public static boolean indexingTestsCloudConcurrent(String commitID, int numDocuments) {
+
+		try {
+
+			SolrCloud cloud = new SolrCloud(5, "2", "2", commitID, null, "localhost", true);
+			Tests.cloud = cloud;
+			SolrIndexingClient cloudClient = new SolrIndexingClient("localhost", cloud.port, cloud.collectionName,
+					commitID);
+
+			BenchmarkReportData.metricMapCloudConcurrent2 = cloudClient.indexAmazonFoodData(numDocuments,
+					cloud.getuRL(), cloud.collectionName, 10000, 2);
+			BenchmarkReportData.metricMapCloudConcurrent4 = cloudClient.indexAmazonFoodData(numDocuments,
+					cloud.getuRL(), cloud.collectionName, 10000, 4);
+			BenchmarkReportData.metricMapCloudConcurrent6 = cloudClient.indexAmazonFoodData(numDocuments,
+					cloud.getuRL(), cloud.collectionName, 10000, 6);
+			BenchmarkReportData.metricMapCloudConcurrent8 = cloudClient.indexAmazonFoodData(numDocuments,
+					cloud.getuRL(), cloud.collectionName, 10000, 8);
+			BenchmarkReportData.metricMapCloudConcurrent10 = cloudClient.indexAmazonFoodData(numDocuments,
+					cloud.getuRL(), cloud.collectionName, 10000, 10);
+
+			cloud.shutdown();
+
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+
+		return true;
+	}
+	
 	public static Map<String, String> numericQueryTests(String commitID, QueryType queryType, int numberOfThreads,
 			int secondsToWait, long delayEstimationBySeconds, ConfigurationType confType, String baseURL, String collectionName) {
 
@@ -142,8 +203,7 @@ public class Tests {
 		Tests.cloud = cloud;
 		SolrIndexingClient cloudClient = new SolrIndexingClient("localhost", cloud.port, cloud.collectionName,
 				commitID);
-		cloudClient.indexAmazonFoodData(documentCount, cloud.getuRL(), cloud.zookeeperIp, cloud.zookeeperPort,
-				cloud.collectionName, numDocuments, 10);
+		cloudClient.indexAmazonFoodData(documentCount, cloud.getuRL(), cloud.collectionName, numDocuments, 10);
 
 	}
 	
@@ -170,6 +230,47 @@ public class Tests {
 	public static void shutDownStandalone() throws IOException, InterruptedException {
 		node.doAction(SolrNodeAction.NODE_STOP);
 		node.cleanup();
+	}
+	
+	public static void runNumericTestsCloud() throws IOException, InterruptedException {
+		
+		Tests.setUpCloudForFeatureTests(Util.COMMIT_ID, 50000, 1, "2", "2", 10000);
+		BenchmarkReportData.numericQueryTNQMetricC = Tests.numericQueryTests(Util.COMMIT_ID,
+				QueryType.TERM_NUMERIC_QUERY, 1, 180, 120, ConfigurationType.CLOUD, Tests.cloud.getBaseURL(),
+				Tests.cloud.collectionName);
+		BenchmarkReportData.numericQueryRNQMetricC = Tests.numericQueryTests(Util.COMMIT_ID,
+				QueryType.RANGE_NUMERIC_QUERY, 1, 180, 120, ConfigurationType.CLOUD, Tests.cloud.getBaseURL(),
+				Tests.cloud.collectionName);
+		BenchmarkReportData.numericQueryLNQMetricC = Tests.numericQueryTests(Util.COMMIT_ID,
+				QueryType.LESS_THAN_NUMERIC_QUERY, 1, 180, 120, ConfigurationType.CLOUD, Tests.cloud.getBaseURL(),
+				Tests.cloud.collectionName);
+		BenchmarkReportData.numericQueryGNQMetricC = Tests.numericQueryTests(Util.COMMIT_ID,
+				QueryType.GREATER_THAN_NUMERIC_QUERY, 1, 180, 120, ConfigurationType.CLOUD, Tests.cloud.getBaseURL(),
+				Tests.cloud.collectionName);
+		Tests.shutDownCloud();
+
+	}
+	
+	public static void runNumericQueryTestsStandalone() throws IOException, InterruptedException {
+	
+		
+		Tests.setUpStandaloneNodeForFeatureTests(Util.COMMIT_ID, 10000);
+
+		BenchmarkReportData.numericQueryTNQMetricS = Tests.numericQueryTests(Util.COMMIT_ID,
+				QueryType.TERM_NUMERIC_QUERY, 1, 180, 120, ConfigurationType.STANDALONE, Tests.node.getBaseUrl(),
+				Tests.node.collectionName);
+		BenchmarkReportData.numericQueryRNQMetricS = Tests.numericQueryTests(Util.COMMIT_ID,
+				QueryType.RANGE_NUMERIC_QUERY, 1, 180, 120, ConfigurationType.STANDALONE, Tests.node.getBaseUrl(),
+				Tests.node.collectionName);
+		BenchmarkReportData.numericQueryLNQMetricS = Tests.numericQueryTests(Util.COMMIT_ID,
+				QueryType.LESS_THAN_NUMERIC_QUERY, 1, 180, 120, ConfigurationType.STANDALONE, Tests.node.getBaseUrl(),
+				Tests.node.collectionName);
+		BenchmarkReportData.numericQueryGNQMetricS = Tests.numericQueryTests(Util.COMMIT_ID,
+				QueryType.GREATER_THAN_NUMERIC_QUERY, 1, 180, 120, ConfigurationType.STANDALONE, Tests.node.getBaseUrl(),
+				Tests.node.collectionName);
+		
+		Tests.shutDownStandalone();
+
 	}
 
 }

@@ -51,7 +51,7 @@ public class Zookeeper {
 			base.setExecutable(true);
 		}
 
-		File release = new File(Util.TEMP_DIR + "zookeeper-" + Util.ZOOKEEPER_RELEASE + ".tar.gz");
+		File release = new File(Util.DOWNLOAD_DIR + "zookeeper-" + Util.ZOOKEEPER_RELEASE + ".tar.gz");
 		if (!release.exists()) {
 
 			Util.postMessage("** Attempting to download zookeeper release ..." + " : " + Util.ZOOKEEPER_RELEASE,
@@ -60,16 +60,16 @@ public class Zookeeper {
 
 			Util.download(
 					Util.ZOOKEEPER_DOWNLOAD_URL + "zookeeper-" + Util.ZOOKEEPER_RELEASE + File.separator + fileName,
-					Util.TEMP_DIR + fileName);
+					Util.DOWNLOAD_DIR + fileName);
 
 		} else {
 			Util.postMessage("** Release present nothing to download ...", MessageType.GREEN_TEXT, false);
 		}
 
-		File urelease = new File(Util.TEMP_DIR + "zookeeper-" + Util.ZOOKEEPER_RELEASE);
+		File urelease = new File(Util.DOWNLOAD_DIR + "zookeeper-" + Util.ZOOKEEPER_RELEASE);
 		if (!urelease.exists()) {
 
-			Util.execute("tar -xf " + Util.TEMP_DIR + "zookeeper-" + Util.ZOOKEEPER_RELEASE + ".tar.gz" + " -C "
+			Util.execute("tar -xf " + Util.DOWNLOAD_DIR + "zookeeper-" + Util.ZOOKEEPER_RELEASE + ".tar.gz" + " -C "
 					+ Util.ZOOKEEPER_DIR, Util.ZOOKEEPER_DIR);
 
 			Util.execute(

@@ -67,7 +67,7 @@ public class Util {
 	public static String DNAME = "SolrNightlyBenchmarksWorkDirectory";
 	public static String BASE_DIR = WORK_DIRECTORY + File.separator + DNAME + File.separator;
 	public static String RUN_DIR = BASE_DIR + "RunDirectory" + File.separator;
-	public static String TEMP_DIR = BASE_DIR + "Download" + File.separator;
+	public static String DOWNLOAD_DIR = BASE_DIR + "Download" + File.separator;
 	public static String ZOOKEEPER_DOWNLOAD_URL = "http://www.us.apache.org/dist/zookeeper/";
 	public static String ZOOKEEPER_RELEASE = "3.4.6";
 	public static String ZOOKEEPER_DIR = RUN_DIR;
@@ -152,7 +152,7 @@ public class Util {
 		BasicConfigurator.configure();
 		File baseDirectory = new File(BASE_DIR);
 		baseDirectory.mkdir();
-		File tempDirectory = new File(TEMP_DIR);
+		File tempDirectory = new File(DOWNLOAD_DIR);
 		tempDirectory.mkdir();
 
 		// Marking for GC
@@ -696,7 +696,7 @@ public class Util {
 		try {
 			if (argM.containsKey("-Housekeeping")) {
 				Util.postMessage("** Initiating Housekeeping activities! ... ", MessageType.RED_TEXT, false);
-				Util.execute("rm -r -f " + Util.TEMP_DIR, Util.TEMP_DIR);
+				Util.execute("rm -r -f " + Util.DOWNLOAD_DIR, Util.DOWNLOAD_DIR);
 			}
 
 			Util.setDeadFlag();

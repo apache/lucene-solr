@@ -211,6 +211,27 @@ public class BenchmarkAppConnector {
 					false, FileType.CLOUD_CONCURRENT_INDEXING_THROUGHPUT);
 		}
 
+		if (BenchmarkReportData.metricMapStandaloneConcurrent2 != null) {
+			BenchmarkAppConnector.writeToWebAppDataFile("indexing_data_standalone_concurrent.csv",
+					BenchmarkReportData.metricMapStandaloneConcurrent2.get("TimeStamp") + ", " + Util.TEST_ID + ", "
+							+ BenchmarkReportData.metricMapStandaloneConcurrent2.get("CommitID") + ", "
+							+ BenchmarkReportData.metricMapStandaloneConcurrent2.get("IndexingTime") + ", "
+							+ BenchmarkReportData.metricMapStandaloneConcurrent4.get("IndexingTime") + ", "
+							+ BenchmarkReportData.metricMapStandaloneConcurrent6.get("IndexingTime") + ", "
+							+ BenchmarkReportData.metricMapStandaloneConcurrent8.get("IndexingTime") + ", "
+							+ BenchmarkReportData.metricMapStandaloneConcurrent10.get("IndexingTime"),
+					false, FileType.CLOUD_INDEXING_CONCURRENT);
+			BenchmarkAppConnector.writeToWebAppDataFile("indexing_throughput_data_standalone_concurrent.csv",
+					BenchmarkReportData.metricMapStandaloneConcurrent2.get("TimeStamp") + ", " + Util.TEST_ID + ", "
+							+ BenchmarkReportData.metricMapStandaloneConcurrent2.get("CommitID") + ", "
+							+ BenchmarkReportData.metricMapStandaloneConcurrent2.get("IndexingThroughput") + ", "
+							+ BenchmarkReportData.metricMapStandaloneConcurrent4.get("IndexingThroughput") + ", "
+							+ BenchmarkReportData.metricMapStandaloneConcurrent6.get("IndexingThroughput") + ", "
+							+ BenchmarkReportData.metricMapStandaloneConcurrent8.get("IndexingThroughput") + ", "
+							+ BenchmarkReportData.metricMapStandaloneConcurrent10.get("IndexingThroughput"),
+					false, FileType.CLOUD_CONCURRENT_INDEXING_THROUGHPUT);
+		}
+		
 		if (BenchmarkReportData.returnStandaloneCreateCollectionMap != null) {
 			BenchmarkAppConnector.writeToWebAppDataFile("create_collection_data_standalone_regular.csv",
 					BenchmarkReportData.returnStandaloneCreateCollectionMap.get("TimeStamp") + ", " + Util.TEST_ID

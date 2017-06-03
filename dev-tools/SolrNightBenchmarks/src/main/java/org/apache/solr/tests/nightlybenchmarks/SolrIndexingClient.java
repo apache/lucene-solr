@@ -235,8 +235,7 @@ public class SolrIndexingClient {
 	}
 
 	@SuppressWarnings("deprecation")
-	public Map<String, String> indexAmazonFoodData(int numDocuments, String urlString, String zookeeperIp,
-			String zookeeperPort, String collectionName, int queueSize, int threadCount) {
+	public Map<String, String> indexAmazonFoodData(int numDocuments, String urlString, String collectionName, int queueSize, int threadCount) {
 
 		documentCount = numDocuments;
 

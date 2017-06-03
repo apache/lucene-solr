@@ -47,7 +47,7 @@ public class SolrNode {
 	public String baseDirectory;
 	public boolean isRunningInCloudMode;
 
-	private String gitDirectoryPath = Util.TEMP_DIR + "git-repository-";
+	private String gitDirectoryPath = Util.DOWNLOAD_DIR + "git-repository-";
 
 	public SolrNode(String commitId, String zooKeeperIp, String zooKeeperPort, boolean isRunningInCloudMode)
 			throws IOException, GitAPIException {
@@ -56,7 +56,7 @@ public class SolrNode {
 		this.zooKeeperIp = zooKeeperIp;
 		this.zooKeeperPort = zooKeeperPort;
 		this.isRunningInCloudMode = isRunningInCloudMode;
-		this.gitDirectoryPath = Util.TEMP_DIR + "git-repository-" + commitId;
+		this.gitDirectoryPath = Util.DOWNLOAD_DIR + "git-repository-" + commitId;
 		Util.GIT_REPOSITORY_PATH = this.gitDirectoryPath;
 		this.install();
 	}
@@ -90,7 +90,7 @@ public class SolrNode {
 		}
 
 		this.checkoutCommitAndBuild();
-		Util.extract(Util.TEMP_DIR + "solr-" + commitId + ".zip", baseDirectory);
+		Util.extract(Util.DOWNLOAD_DIR + "solr-" + commitId + ".zip", baseDirectory);
 	}
 
 	void checkoutCommitAndBuild() throws IOException, GitAPIException {
@@ -112,7 +112,7 @@ public class SolrNode {
 		}
 
 		String packageFilename = gitDirectoryPath + "/solr/package/solr-7.0.0-SNAPSHOT.zip";
-		String tarballLocation = Util.TEMP_DIR + "solr-" + commitId + ".zip";
+		String tarballLocation = Util.DOWNLOAD_DIR + "solr-" + commitId + ".zip";
 
 		if (new File(tarballLocation).exists() == false) {
 			if (new File(packageFilename).exists() == false) {
@@ -258,6 +258,10 @@ public class SolrNode {
 
 	public String getBaseUrl() {
 		return "http://localhost:" + port + "/solr/";
+	}
+
+	public String getBaseUrlC() {
+		return "http://localhost:" + port + "/solr/" + this.collectionName;
 	}
 
 	public void cleanup() {

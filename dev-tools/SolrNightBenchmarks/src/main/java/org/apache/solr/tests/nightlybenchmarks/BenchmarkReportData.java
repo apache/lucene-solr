@@ -23,17 +23,27 @@ public class BenchmarkReportData {
 
 	public static Map<String, String> returnStandaloneCreateCollectionMap;
 	public static Map<String, String> returnCloudCreateCollectionMap;
+	
 	public static Map<String, String> metricMapStandalone;
 	public static Map<String, String> metricMapCloudSerial;
+	
 	public static Map<String, String> metricMapCloudConcurrent2;
 	public static Map<String, String> metricMapCloudConcurrent4;
 	public static Map<String, String> metricMapCloudConcurrent6;
 	public static Map<String, String> metricMapCloudConcurrent8;
 	public static Map<String, String> metricMapCloudConcurrent10;
+
+	public static Map<String, String> metricMapStandaloneConcurrent2;
+	public static Map<String, String> metricMapStandaloneConcurrent4;
+	public static Map<String, String> metricMapStandaloneConcurrent6;
+	public static Map<String, String> metricMapStandaloneConcurrent8;
+	public static Map<String, String> metricMapStandaloneConcurrent10;
+	
 	public static Map<String, String> numericQueryTNQMetricC;
 	public static Map<String, String> numericQueryRNQMetricC;
 	public static Map<String, String> numericQueryLNQMetricC;
 	public static Map<String, String> numericQueryGNQMetricC;
+
 	public static Map<String, String> numericQueryTNQMetricS;
 	public static Map<String, String> numericQueryRNQMetricS;
 	public static Map<String, String> numericQueryLNQMetricS;
