@@ -526,6 +526,10 @@ public class Util {
 
 		File webAppSourceDir = new File("WebAppSource");
 		File webAppTargetDir = new File(BenchmarkAppConnector.benchmarkAppDirectory);
+		
+		if (!webAppTargetDir.exists()) {
+			webAppTargetDir.mkdir();
+		}
 
 		try {
 
@@ -616,6 +620,7 @@ public class Util {
 	public static void setAliveFlag() throws IOException {
 
 		File statusFile = new File(BenchmarkAppConnector.benchmarkAppDirectory + "iamalive.txt");
+		
 		if (!statusFile.exists()) {
 			statusFile.createNewFile();
 		}
@@ -648,6 +653,11 @@ public class Util {
 		try {
 
 			Util.getPropertyValues();
+
+			Util.checkWebAppFiles();
+			
+			Util.checkBaseAndTempDir();
+
 			Util.setAliveFlag();
 			argM = Util.getArgs(args);
 
@@ -666,8 +676,6 @@ public class Util {
 
 			Util.COMMIT_ID = commitID;
 
-			Util.checkWebAppFiles();
-			Util.checkBaseAndTempDir();
 			Util.getSystemEnvironmentInformation();
 
 			if (!BenchmarkAppConnector.isRunningFolderEmpty()) {
