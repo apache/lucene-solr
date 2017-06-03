@@ -42,22 +42,38 @@ public class BenchmarkAppConnector {
 	}
 
 	public static boolean isRunningFolderEmpty() {
-		return new File(benchmarkAppDirectory + "data" + File.separator + "running" + File.separator)
-				.listFiles().length == 0 ? true : false;
+		
+		File dir = new File(benchmarkAppDirectory + "data" + File.separator + "running" + File.separator);
+		
+		if (!dir.exists()) {
+			dir.mkdir();
+		}
+		
+		return dir.listFiles().length == 0 ? true : false;
 	}
 
 	public static void deleteFile(FileType type) {
 
 		if (type == FileType.LAST_RUN_COMMIT) {
 			 File dir = new File(BenchmarkAppConnector.benchmarkAppDirectory + "data" + File.separator + "lastrun" + File.separator);
-			 for (File file: dir.listFiles()) {
-			        if (!file.isDirectory()) file.delete();
-			    }
+			 
+			 if (!dir.exists()) {
+				 dir.mkdir();
+			 } else {
+						 for (File file: dir.listFiles()) {
+						        if (!file.isDirectory()) file.delete();
+						    }
+			 }
 		} else if (type == FileType.IS_RUNNING_FILE) {
 			 File dir = new File(BenchmarkAppConnector.benchmarkAppDirectory + "data" + File.separator + "running" + File.separator);
-			 for (File file: dir.listFiles()) {
-			        if (!file.isDirectory()) file.delete();
-			    }
+			 
+			 if (!dir.exists()) {
+				 dir.mkdir();
+			 } else {
+						 for (File file: dir.listFiles()) {
+						        if (!file.isDirectory()) file.delete();
+						    }
+			 }
 		}
 	}
 
