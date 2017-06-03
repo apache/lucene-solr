@@ -44,7 +44,7 @@ public class SolrNightlyBenchmarks {
 				Tests.cloud.collectionName);
 		Tests.shutDownCloud();
 */		
-		Tests.setUpStandaloneNodeForFeatureTests(Util.COMMIT_ID, 10000);
+/*		Tests.setUpStandaloneNodeForFeatureTests(Util.COMMIT_ID, 10000);
 
 		BenchmarkReportData.numericQueryTNQMetricS = Tests.numericQueryTests(Util.COMMIT_ID,
 				QueryType.TERM_NUMERIC_QUERY, 1, 180, 120, ConfigurationType.STANDALONE, Tests.node.getBaseUrl(),
@@ -62,7 +62,7 @@ public class SolrNightlyBenchmarks {
 		Tests.shutDownStandalone();
 		
 		BenchmarkAppConnector.publishDataForWebApp();
-
+*/
 		Util.destroy();
 	}
 }

@@ -49,15 +49,15 @@ public class BenchmarkAppConnector {
 	public static void deleteFile(FileType type) {
 
 		if (type == FileType.LAST_RUN_COMMIT) {
-			Util.execute(
-					"rm -r -f " + BenchmarkAppConnector.benchmarkAppDirectory + "data" + File.separator + "lastrun"
-							+ File.separator + "*",
-					BenchmarkAppConnector.benchmarkAppDirectory + "data" + File.separator + "lastrun" + File.separator);
+			 File dir = new File(BenchmarkAppConnector.benchmarkAppDirectory + "data" + File.separator + "lastrun" + File.separator);
+			 for (File file: dir.listFiles()) {
+			        if (!file.isDirectory()) file.delete();
+			    }
 		} else if (type == FileType.IS_RUNNING_FILE) {
-			Util.execute(
-					"rm -r -f " + BenchmarkAppConnector.benchmarkAppDirectory + "data" + File.separator + "running"
-							+ File.separator + "*",
-					BenchmarkAppConnector.benchmarkAppDirectory + "data" + File.separator + "running" + File.separator);
+			 File dir = new File(BenchmarkAppConnector.benchmarkAppDirectory + "data" + File.separator + "running" + File.separator);
+			 for (File file: dir.listFiles()) {
+			        if (!file.isDirectory()) file.delete();
+			    }
 		}
 	}
 
