@@ -14,20 +14,19 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.solr.analytics.util.valuesource;
+package org.apache.solr.search.function;
 
 import java.io.IOException;
 
 import org.apache.lucene.queries.function.FunctionValues;
 import org.apache.lucene.queries.function.ValueSource;
-import org.apache.solr.analytics.util.AnalyticsParams;
 
 /**
  * <code>ConcatStringFunction</code> concatenates the string values of its 
  * components in the order given.
  */
 public class ConcatStringFunction extends MultiStringFunction {
-  public final static String NAME = AnalyticsParams.CONCATENATE;
+  public final static String NAME = "concat";
 
   public ConcatStringFunction(ValueSource[] sources) {
     super(sources);

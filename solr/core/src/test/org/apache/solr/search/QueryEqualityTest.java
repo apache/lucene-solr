@@ -862,6 +862,21 @@ public class QueryEqualityTest extends SolrTestCaseJ4 {
     }
   }
 
+  public void testFuncConcat() throws Exception {
+    SolrQueryRequest req = req("myField","bar_f","myOtherField","bar_t");
+
+    try {
+      assertFuncEquals(req,
+          "concat(bar_f,bar_t)",
+          "concat($myField,bar_t)",
+          "concat(bar_f,$myOtherField)",
+          "concat($myField,$myOtherField)");
+
+    } finally {
+      req.close();
+    }
+  }
+
   public void testFuncSingleValueMathFuncs() throws Exception {
     SolrQueryRequest req = req("myVal","45", "myField","foo_i");
     for (final String func : new String[] {"abs","rad","deg","sqrt","cbrt",

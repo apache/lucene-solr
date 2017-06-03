@@ -276,6 +276,8 @@ New Features
 * SOLR-10479: Adds support for HttpShardHandlerFactory.loadBalancerRequests(MinimumAbsolute|MaximumFraction)
   configuration. (Ramsey Haddad, Daniel Collins, Christine Poerschke)
 
+* SOLR-3702: concat(...) function query (Andrey Kudryavtsev via Mikhail Khludnev)
+
 Bug Fixes
 ----------------------
 * SOLR-10723 JSON Facet API: resize() implemented incorrectly for CountSlotAcc, HllAgg.NumericAcc
