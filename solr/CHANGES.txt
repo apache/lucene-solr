@@ -315,6 +315,8 @@ Other Changes
 
 * SOLR-8437: Improve RAMDirectory details in sample solrconfig files (Mark Miller, Varun Thacker)
 
+* SOLR-8762: return child docs in DIH debug (Gopikannan Venugopalsamy via Mikhail Khludnev)
+
 ==================  6.6.0 ==================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release.
