@@ -323,6 +323,11 @@
                                     dataType: "text",
                                     success: function (data) {
 
+                                    	if(!$("#ReloadButton").hasClass("hidden")) {
+                                        			$("#ReloadButton").addClass("hidden");
+                                    	}
+                                    	
+                                        $("#ReloadButton").hide();
                                         $("#green").show();
                                         wasRunning = true;
 
