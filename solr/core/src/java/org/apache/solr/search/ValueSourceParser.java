@@ -65,6 +65,7 @@ import org.apache.solr.search.facet.SumsqAgg;
 import org.apache.solr.search.facet.UniqueAgg;
 import org.apache.solr.search.facet.VarianceAgg;
 import org.apache.solr.search.function.CollapseScoreFunction;
+import org.apache.solr.search.function.ConcatStringFunction;
 import org.apache.solr.search.function.OrdFieldSource;
 import org.apache.solr.search.function.ReverseOrdFieldSource;
 import org.apache.solr.search.function.SolrComparisonBoolFunction;
@@ -934,6 +935,14 @@ public abstract class ValueSourceParser implements NamedListInitializedPlugin {
       @Override
       public ValueSource parse(FunctionQParser fp) throws SyntaxError {
         return new DefFunction(fp.parseValueSourceList());
+      }
+    });
+
+    addParser("concat", new ValueSourceParser() {
+      @Override
+      public ValueSource parse(FunctionQParser fp) throws SyntaxError {
+        List<ValueSource> sources = fp.parseValueSourceList();
+        return new ConcatStringFunction(sources.toArray(new ValueSource[sources.size()]));
       }
     });
 
