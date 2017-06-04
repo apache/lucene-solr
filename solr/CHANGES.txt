@@ -236,6 +236,8 @@ Other Changes
 * SOLR-10671: Add abstract doInit method to the SolrMetricReporter base class.
   (Christine Poerschke, Anshum Gupta)
 
+* SOLR-10713: Ignore .pid and .out files in solr working directory (Jason Gerlowski via Mike Drob)
+
 ==================  6.7.0 ==================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release.
