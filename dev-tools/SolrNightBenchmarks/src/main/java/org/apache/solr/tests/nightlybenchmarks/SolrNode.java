@@ -102,11 +102,9 @@ public class SolrNode {
 
 		if (gitDirectory.exists()) {
 			repository = Git.open(gitDirectory);
-
 			repository.checkout().setName(commitId).call();
-
 		} else {
-			repository = Git.cloneRepository().setURI("https://github.com/apache/lucene-solr")
+			repository = Git.cloneRepository().setURI(Util.LUCENE_SOLR_REPOSITORY_URL)
 					.setDirectory(gitDirectory).call();
 			repository.checkout().setName(commitId).call();
 		}

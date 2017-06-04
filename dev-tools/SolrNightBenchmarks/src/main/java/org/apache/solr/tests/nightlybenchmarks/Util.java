@@ -294,6 +294,11 @@ public class Util {
 		return Util.GIT_REPOSITORY_PATH;
 	}
 	
+	public static String getLocalLastRepoPath() {
+		Util.GIT_REPOSITORY_PATH = Util.DOWNLOAD_DIR + "git-repository-" + BenchmarkAppConnector.getLastRunCommitID();
+		return Util.GIT_REPOSITORY_PATH;
+	}
+	
 	public static void getAndPublishCommitInformation() {
 		BenchmarkAppConnector.writeToWebAppDataFile(Util.TEST_ID + "_" + Util.COMMIT_ID + "_COMMIT_INFORMATION_dump.csv", Util.getCommitInformation(), true, FileType.COMMIT_INFORMATION_FILE);
 	}
@@ -669,21 +674,6 @@ public class Util {
 			Util.checkWebAppFiles();
 			
 			Util.checkBaseAndTempDir();
-
-			if (!BenchmarkAppConnector.isRunningFolderEmpty()) {
-				Util.postMessage("** It looks like the last test session failed or was aborted ..",
-						MessageType.RED_TEXT, false);
-
-				Util.killProcesses("zookeeper");
-				Util.killProcesses("Dsolr.jetty.https.port");
-
-				Thread.sleep(5000);
-
-				Util.cleanRunDirectory();
-				Util.deleteRunningFile();
-			}
-
-			Util.createIsRunningFile();
 			
 			Util.setAliveFlag();
 			argM = Util.getArgs(args);
@@ -704,6 +694,23 @@ public class Util {
 			Util.COMMIT_ID = commitID;
 
 			Util.getSystemEnvironmentInformation();
+
+			if (!BenchmarkAppConnector.isRunningFolderEmpty()) {
+				Util.postMessage("** It looks like the last test session failed or was aborted ..",
+						MessageType.RED_TEXT, false);
+
+				Util.killProcesses("zookeeper");
+				Util.killProcesses("Dsolr.jetty.https.port");
+				Util.execute("rm -r -f " + getLocalRepoPath(), Util.getLocalRepoPath());
+
+				Thread.sleep(5000);
+
+				Util.cleanRunDirectory();
+				Util.deleteRunningFile();
+			}
+
+			Util.createIsRunningFile();
+		
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
