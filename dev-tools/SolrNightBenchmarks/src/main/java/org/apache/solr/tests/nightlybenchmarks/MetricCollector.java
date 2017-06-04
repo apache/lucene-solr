@@ -56,8 +56,6 @@ public class MetricCollector extends Thread {
 
 	public void run() {
 
-		if (testType == TestType.STANDALONE_INDEXING) {
-
 			while (true) {
 				try {
 
@@ -87,169 +85,11 @@ public class MetricCollector extends Thread {
 											* 100),
 							false, FileType.PROCESS_CPU_LOAD);
 
-					Thread.sleep(1000);
+					Thread.sleep(Integer.parseInt(Util.METRIC_ESTIMATION_PERIOD));
 				} catch (InterruptedException e) {
 					e.printStackTrace();
 				}
 			}
-
-		}
-
-		if (testType == TestType.STANDALONE_CREATE_COLLECTION) {
-
-			while (true) {
-				try {
-
-					String response = Util.getResponse(
-							"http://localhost:" + this.port + "/solr/admin/metrics?wt=json&group=jvm",
-							MediaType.APPLICATION_JSON);
-					JSONObject jsonObject = (JSONObject) JSONValue.parse(response);
-
-					Date dNow = new Date();
-					SimpleDateFormat ft = new SimpleDateFormat("yyyy/MM/dd HH:mm:ss");
-					BenchmarkAppConnector.writeToWebAppDataFile(
-							Util.TEST_ID + "_" + this.commitID + "_" + MetricType.MEM_ESTIMATION + "_"
-									+ TestType.STANDALONE_CREATE_COLLECTION + "_dump.csv",
-							ft.format(dNow) + ", " + Util.TEST_ID + ", "
-									+ (Double.parseDouble(
-											((JSONObject) ((JSONObject) jsonObject.get("metrics")).get("solr.jvm"))
-													.get("memory.heap.used").toString())
-											/ (1024 * 1024)),
-							false, FileType.MEMORY_HEAP_USED);
-					BenchmarkAppConnector.writeToWebAppDataFile(
-							Util.TEST_ID + "_" + this.commitID + "_" + MetricType.CPU_ESTIMATION + "_"
-									+ TestType.STANDALONE_CREATE_COLLECTION + "_dump.csv",
-							ft.format(dNow) + ", " + Util.TEST_ID + ", "
-									+ (Double.parseDouble(
-											((JSONObject) ((JSONObject) jsonObject.get("metrics")).get("solr.jvm"))
-													.get("os.processCpuLoad").toString())
-											* 100),
-							false, FileType.PROCESS_CPU_LOAD);
-
-					Thread.sleep(1000);
-				} catch (InterruptedException e) {
-					e.printStackTrace();
-				}
-			}
-
-		}
-
-		if (testType == TestType.CLOUD_CREATE_COLLECTION) {
-
-			while (true) {
-				try {
-
-					String response = Util.getResponse(
-							"http://localhost:" + this.port + "/solr/admin/metrics?wt=json&group=jvm",
-							MediaType.APPLICATION_JSON);
-					JSONObject jsonObject = (JSONObject) JSONValue.parse(response);
-
-					Date dNow = new Date();
-					SimpleDateFormat ft = new SimpleDateFormat("yyyy/MM/dd HH:mm:ss");
-					BenchmarkAppConnector.writeToWebAppDataFile(
-							Util.TEST_ID + "_" + this.commitID + "_" + MetricType.MEM_ESTIMATION + "_"
-									+ TestType.CLOUD_CREATE_COLLECTION + "_dump.csv",
-							ft.format(dNow) + ", " + Util.TEST_ID + ", "
-									+ (Double.parseDouble(
-											((JSONObject) ((JSONObject) jsonObject.get("metrics")).get("solr.jvm"))
-													.get("memory.heap.used").toString())
-											/ (1024 * 1024)),
-							false, FileType.MEMORY_HEAP_USED);
-					BenchmarkAppConnector.writeToWebAppDataFile(
-							Util.TEST_ID + "_" + this.commitID + "_" + MetricType.CPU_ESTIMATION + "_"
-									+ TestType.CLOUD_CREATE_COLLECTION + "_dump.csv",
-							ft.format(dNow) + ", " + Util.TEST_ID + ", "
-									+ (Double.parseDouble(
-											((JSONObject) ((JSONObject) jsonObject.get("metrics")).get("solr.jvm"))
-													.get("os.processCpuLoad").toString())
-											* 100),
-							false, FileType.PROCESS_CPU_LOAD);
-
-					Thread.sleep(1000);
-				} catch (InterruptedException e) {
-					e.printStackTrace();
-				}
-			}
-
-		}
-
-		if (testType == TestType.CLOUD_INDEXING_REGULAR) {
-
-			while (true) {
-				try {
-
-					String response = Util.getResponse(
-							"http://localhost:" + this.port + "/solr/admin/metrics?wt=json&group=jvm",
-							MediaType.APPLICATION_JSON);
-					JSONObject jsonObject = (JSONObject) JSONValue.parse(response);
-
-					Date dNow = new Date();
-					SimpleDateFormat ft = new SimpleDateFormat("yyyy/MM/dd HH:mm:ss");
-					BenchmarkAppConnector.writeToWebAppDataFile(
-							Util.TEST_ID + "_" + this.commitID + "_" + MetricType.MEM_ESTIMATION + "_"
-									+ TestType.CLOUD_INDEXING_REGULAR + "_dump.csv",
-							ft.format(dNow) + ", " + Util.TEST_ID + ", "
-									+ (Double.parseDouble(
-											((JSONObject) ((JSONObject) jsonObject.get("metrics")).get("solr.jvm"))
-													.get("memory.heap.used").toString())
-											/ (1024 * 1024)),
-							false, FileType.MEMORY_HEAP_USED);
-					BenchmarkAppConnector.writeToWebAppDataFile(
-							Util.TEST_ID + "_" + this.commitID + "_" + MetricType.CPU_ESTIMATION + "_"
-									+ TestType.CLOUD_INDEXING_REGULAR + "_dump.csv",
-							ft.format(dNow) + ", " + Util.TEST_ID + ", "
-									+ (Double.parseDouble(
-											((JSONObject) ((JSONObject) jsonObject.get("metrics")).get("solr.jvm"))
-													.get("os.processCpuLoad").toString())
-											* 100),
-							false, FileType.PROCESS_CPU_LOAD);
-
-					Thread.sleep(1000);
-				} catch (InterruptedException e) {
-					e.printStackTrace();
-				}
-			}
-
-		}
-
-		if (testType == TestType.CLOUD_INDEXING_CONCURRENT) {
-
-			while (true) {
-				try {
-
-					String response = Util.getResponse(
-							"http://localhost:" + this.port + "/solr/admin/metrics?wt=json&group=jvm",
-							MediaType.APPLICATION_JSON);
-					JSONObject jsonObject = (JSONObject) JSONValue.parse(response);
-
-					Date dNow = new Date();
-					SimpleDateFormat ft = new SimpleDateFormat("yyyy/MM/dd HH:mm:ss");
-					BenchmarkAppConnector.writeToWebAppDataFile(
-							Util.TEST_ID + "_" + this.commitID + "_" + MetricType.MEM_ESTIMATION + "_"
-									+ TestType.CLOUD_INDEXING_CONCURRENT + "_dump.csv",
-							ft.format(dNow) + ", " + Util.TEST_ID + ", "
-									+ (Double.parseDouble(
-											((JSONObject) ((JSONObject) jsonObject.get("metrics")).get("solr.jvm"))
-													.get("memory.heap.used").toString())
-											/ (1024 * 1024)),
-							false, FileType.MEMORY_HEAP_USED);
-					BenchmarkAppConnector.writeToWebAppDataFile(
-							Util.TEST_ID + "_" + this.commitID + "_" + MetricType.CPU_ESTIMATION + "_"
-									+ TestType.CLOUD_INDEXING_CONCURRENT + "_dump.csv",
-							ft.format(dNow) + ", " + Util.TEST_ID + ", "
-									+ (Double.parseDouble(
-											((JSONObject) ((JSONObject) jsonObject.get("metrics")).get("solr.jvm"))
-													.get("os.processCpuLoad").toString())
-											* 100),
-							false, FileType.PROCESS_CPU_LOAD);
-
-					Thread.sleep(1000);
-				} catch (InterruptedException e) {
-					e.printStackTrace();
-				}
-			}
-
-		}
 
 	}
 }

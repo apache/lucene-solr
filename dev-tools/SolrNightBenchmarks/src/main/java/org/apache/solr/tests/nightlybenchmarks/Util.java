@@ -77,9 +77,10 @@ public class Util {
 	public static String LUCENE_SOLR_REPOSITORY_URL = "https://github.com/apache/lucene-solr";
 	public static String GIT_REPOSITORY_PATH;
 	public static String COMMIT_ID;
-	public static boolean SILENT = false;
 	public static String TEST_ID = UUID.randomUUID().toString();
 	public static String TEST_TIME = new SimpleDateFormat("yyyy/MM/dd HH:mm:ss").format(new Date());
+	public static String METRIC_ESTIMATION_PERIOD = "1000";
+	public static boolean SILENT = false;
 
 	final static Logger logger = Logger.getLogger(Util.class);
 
@@ -420,6 +421,9 @@ public class Util {
 					MessageType.YELLOW_TEXT, false);
 			Util.LUCENE_SOLR_REPOSITORY_URL = prop.getProperty("SolrNightlyBenchmarks.luceneSolrRepositoryURL");
 			Util.postMessage("Getting Property Value for luceneSolrRepositoryURL: " + Util.LUCENE_SOLR_REPOSITORY_URL,
+					MessageType.YELLOW_TEXT, false);
+			Util.METRIC_ESTIMATION_PERIOD = prop.getProperty("SolrNightlyBenchmarks.metricEstimationPeriod");
+			Util.postMessage("Getting Property Value for metricEstimationPeriod: " + Util.METRIC_ESTIMATION_PERIOD,
 					MessageType.YELLOW_TEXT, false);
 
 			if (BenchmarkAppConnector.benchmarkAppDirectory
