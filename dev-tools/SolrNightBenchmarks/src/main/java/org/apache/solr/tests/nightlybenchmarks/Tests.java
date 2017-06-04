@@ -66,7 +66,7 @@ public class Tests {
 
 			node.doAction(SolrNodeAction.NODE_START);
 			Util.getEnvironmentInformationFromMetricAPI(commitID, node.port);
-			BenchmarkReportData.returnStandaloneCreateCollectionMap = node.createCollection("Core-" + UUID.randomUUID(),
+			node.createCollection("Core-" + UUID.randomUUID(),
 					"Collection-" + UUID.randomUUID());
 
 			SolrIndexingClient client = new SolrIndexingClient("localhost", node.port, node.collectionName, commitID);
@@ -165,7 +165,7 @@ public class Tests {
 		return true;
 	}
 	
-	public static Map<String, String> numericQueryTests(String commitID, QueryType queryType, int numberOfThreads,
+	private static Map<String, String> numericQueryTests(String commitID, QueryType queryType, int numberOfThreads,
 			int secondsToWait, long delayEstimationBySeconds, ConfigurationType confType, String baseURL, String collectionName) {
 
 		try {
@@ -219,7 +219,7 @@ public class Tests {
 		return null;
 	}
 
-	public static void setUpCloudForFeatureTests(String commitID, int documentCount, int solrNodes, String shards,
+	private static void setUpCloudForFeatureTests(String commitID, int documentCount, int solrNodes, String shards,
 			String replicas, int numDocuments) {
 
 		SolrCloud cloud = new SolrCloud(solrNodes, shards, replicas, commitID, null, "localhost", true);
@@ -230,7 +230,7 @@ public class Tests {
 
 	}
 	
-	public static void setUpStandaloneNodeForFeatureTests(String commitID, int numDocuments) {
+	private static void setUpStandaloneNodeForFeatureTests(String commitID, int numDocuments) {
 		
 		try {
 			SolrNode snode = new SolrNode(commitID, "", "", false);
@@ -246,11 +246,11 @@ public class Tests {
 		}
 	}
 
-	public static void shutDownCloud() throws IOException, InterruptedException {
+	private static void shutDownCloud() throws IOException, InterruptedException {
 		cloud.shutdown();
 	}
 
-	public static void shutDownStandalone() throws IOException, InterruptedException {
+	private static void shutDownStandalone() throws IOException, InterruptedException {
 		node.doAction(SolrNodeAction.NODE_STOP);
 		node.cleanup();
 	}

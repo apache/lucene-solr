@@ -26,9 +26,22 @@ public class SolrNightlyBenchmarks {
 		
 		Util.init(args);
 
+		Tests.indexingTestsStandalone(Util.COMMIT_ID, 10000);
+		
 		Tests.createCollectionTestStandalone(Util.COMMIT_ID);
+
 		Tests.indexingTestsStandaloneConcurrent(Util.COMMIT_ID, 10000);
 
+		Tests.runNumericQueryTestsStandalone();
+		
+
+		Tests.indexingTestsCloudSerial(Util.COMMIT_ID, 10000);
+
+		Tests.indexingTestsCloudConcurrent(Util.COMMIT_ID, 10000);
+		
+		Tests.runNumericTestsCloud();
+		
+		
 		BenchmarkAppConnector.publishDataForWebApp();
 		
 		Util.destroy();
