@@ -26,6 +26,7 @@ import java.util.Map;
 import java.util.UUID;
 
 import org.apache.log4j.Logger;
+import org.apache.solr.tests.nightlybenchmarks.BenchmarkAppConnector.FileType;
 import org.eclipse.jgit.api.Git;
 import org.eclipse.jgit.api.errors.GitAPIException;
 
@@ -104,9 +105,11 @@ public class SolrNode {
 			repository = Git.open(gitDirectory);
 			repository.checkout().setName(commitId).call();
 		} else {
-			repository = Git.cloneRepository().setURI(Util.LUCENE_SOLR_REPOSITORY_URL)
-					.setDirectory(gitDirectory).call();
-			repository.checkout().setName(commitId).call();
+			BenchmarkAppConnector.writeToWebAppDataFile("iamcloning.txt", "", true, FileType.IS_CLONING_FILE);
+					repository = Git.cloneRepository().setURI(Util.LUCENE_SOLR_REPOSITORY_URL)
+							.setDirectory(gitDirectory).call();
+					repository.checkout().setName(commitId).call();
+			BenchmarkAppConnector.deleteFile(FileType.IS_CLONING_FILE);
 		}
 
 		String packageFilename = gitDirectoryPath + "/solr/package/solr-7.0.0-SNAPSHOT.zip";

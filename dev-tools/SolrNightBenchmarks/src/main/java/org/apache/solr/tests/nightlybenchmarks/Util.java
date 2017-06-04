@@ -701,8 +701,13 @@ public class Util {
 
 				Util.killProcesses("zookeeper");
 				Util.killProcesses("Dsolr.jetty.https.port");
-				Util.execute("rm -r -f " + getLocalRepoPath(), Util.getLocalRepoPath());
-
+				
+				if (!BenchmarkAppConnector.isCloningFolderEmpty()) {
+					Util.postMessage("** Looks like a broken clone exists removing it ..",
+							MessageType.RED_TEXT, false);
+					Util.execute("rm -r -f " + Util.getLocalRepoPath(), Util.getLocalRepoPath());
+				}
+				
 				Thread.sleep(5000);
 
 				Util.cleanRunDirectory();

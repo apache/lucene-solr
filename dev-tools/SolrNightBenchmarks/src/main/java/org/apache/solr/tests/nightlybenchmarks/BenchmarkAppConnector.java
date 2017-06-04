@@ -14,7 +14,7 @@ public class BenchmarkAppConnector {
 
 	public enum FileType {
 
-		MEMORY_HEAP_USED, PROCESS_CPU_LOAD, TEST_ENV_FILE, STANDALONE_INDEXING_MAIN, STANDALONE_CREATE_COLLECTION_MAIN, STANDALONE_INDEXING_THROUGHPUT, CLOUD_CREATE_COLLECTION_MAIN, CLOUD_SERIAL_INDEXING_THROUGHPUT, CLOUD_CONCURRENT_INDEXING_THROUGHPUT, CLOUD_INDEXING_SERIAL, CLOUD_INDEXING_CONCURRENT, NUMERIC_QUERY_STANDALONE, NUMERIC_QUERY_CLOUD, LAST_RUN_COMMIT, IS_RUNNING_FILE, COMMIT_INFORMATION_FILE
+		MEMORY_HEAP_USED, PROCESS_CPU_LOAD, TEST_ENV_FILE, STANDALONE_INDEXING_MAIN, STANDALONE_CREATE_COLLECTION_MAIN, STANDALONE_INDEXING_THROUGHPUT, CLOUD_CREATE_COLLECTION_MAIN, CLOUD_SERIAL_INDEXING_THROUGHPUT, CLOUD_CONCURRENT_INDEXING_THROUGHPUT, CLOUD_INDEXING_SERIAL, CLOUD_INDEXING_CONCURRENT, NUMERIC_QUERY_STANDALONE, NUMERIC_QUERY_CLOUD, LAST_RUN_COMMIT, IS_RUNNING_FILE, COMMIT_INFORMATION_FILE, IS_CLONING_FILE
 
 	}
 
@@ -26,6 +26,17 @@ public class BenchmarkAppConnector {
 	public static boolean isRunningFolderEmpty() {
 		
 		File dir = new File(benchmarkAppDirectory + "data" + File.separator + "running" + File.separator);
+		
+		if (!dir.exists()) {
+			dir.mkdir();
+		}
+		
+		return dir.listFiles().length == 0 ? true : false;
+	}
+
+	public static boolean isCloningFolderEmpty() {
+		
+		File dir = new File(benchmarkAppDirectory + "data" + File.separator + "cloning" + File.separator);
 		
 		if (!dir.exists()) {
 			dir.mkdir();
@@ -56,6 +67,16 @@ public class BenchmarkAppConnector {
 						        if (!file.isDirectory()) file.delete();
 						    }
 			 }
+		} else if (type == FileType.IS_CLONING_FILE) {
+			 File dir = new File(BenchmarkAppConnector.benchmarkAppDirectory + "data" + File.separator + "cloning" + File.separator);
+			 
+			 if (!dir.exists()) {
+				 dir.mkdir();
+			 } else {
+						 for (File file: dir.listFiles()) {
+						        if (!file.isDirectory()) file.delete();
+						    }
+			 }
 		}
 	}
 
@@ -72,6 +93,8 @@ public class BenchmarkAppConnector {
 				dataDir = new File(benchmarkAppDirectory + "data" + File.separator + "running" + File.separator);
 			} else if (type == FileType.LAST_RUN_COMMIT) {
 				dataDir = new File(benchmarkAppDirectory + "data" + File.separator + "lastrun" + File.separator);
+			} else if (type == FileType.IS_CLONING_FILE) {
+				dataDir = new File(benchmarkAppDirectory + "data" + File.separator + "cloning" + File.separator);
 			} else {
 				dataDir = new File(benchmarkAppDirectory + "data" + File.separator);
 			}
@@ -86,6 +109,9 @@ public class BenchmarkAppConnector {
 			} else if (type == FileType.LAST_RUN_COMMIT) {
 				file = new File(
 						benchmarkAppDirectory + "data" + File.separator + "lastrun" + File.separator + fileName);
+			} else if (type == FileType.IS_CLONING_FILE) {
+				file = new File(
+						benchmarkAppDirectory + "data" + File.separator + "cloning" + File.separator + fileName);
 			} else {
 				file = new File(benchmarkAppDirectory + "data" + File.separator + fileName);
 			}
