@@ -666,6 +666,21 @@ public class Util {
 			
 			Util.checkBaseAndTempDir();
 
+			if (!BenchmarkAppConnector.isRunningFolderEmpty()) {
+				Util.postMessage("** It looks like the last test session failed or was aborted ..",
+						MessageType.RED_TEXT, false);
+
+				Util.killProcesses("zookeeper");
+				Util.killProcesses("Dsolr.jetty.https.port");
+
+				Thread.sleep(5000);
+
+				Util.cleanRunDirectory();
+				Util.deleteRunningFile();
+			}
+
+			Util.createIsRunningFile();
+			
 			Util.setAliveFlag();
 			argM = Util.getArgs(args);
 
@@ -685,22 +700,6 @@ public class Util {
 			Util.COMMIT_ID = commitID;
 
 			Util.getSystemEnvironmentInformation();
-
-			if (!BenchmarkAppConnector.isRunningFolderEmpty()) {
-				Util.postMessage("** It looks like the last test session failed or was aborted ..",
-						MessageType.RED_TEXT, false);
-
-				Util.killProcesses("zookeeper");
-				Util.killProcesses("Dsolr.jetty.https.port");
-
-				Thread.sleep(5000);
-
-				Util.cleanRunDirectory();
-				Util.deleteRunningFile();
-			}
-
-			Util.createIsRunningFile();
-
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
@@ -710,6 +709,8 @@ public class Util {
 	public static void destroy() {
 
 		try {
+			Util.getAndPublishCommitInformation();
+
 			if (argM.containsKey("-Housekeeping")) {
 				Util.postMessage("** Initiating Housekeeping activities! ... ", MessageType.RED_TEXT, false);
 				Util.execute("rm -r -f " + Util.DOWNLOAD_DIR, Util.DOWNLOAD_DIR);
