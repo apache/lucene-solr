@@ -157,16 +157,18 @@
 
                                 <div class="panel panel-success" style="height:50%">
                                     <div class="panel-heading">Test Information</div>
-                                    <div class="panel-body" id="testRuntime">                                        
+	                                    <div class="panel-body" id="testRuntimeInformation">
+		                                    <div id="testCommitInformation" style=" white-space: pre-wrap;white-space: -moz-pre-wrap;white-space: -pre-wrap;white-space: -o-pre-wrap;word-wrap: break-word;">
+	                                    </div>                                        
                                     </div>
                                 </div>
 
-                                <div class="panel panel-danger" style="height:24%">
+                                <div class="panel panel-danger" style="height:34%">
                                     <div class="panel-heading">Graph Information</div>
                                     <div class="panel-body">
-                                        <span class="text-muted">X-Axis: Day/Time | Y-Axis: Seconds</span><br/>
-                                        <div id="status"></div><br/>
-                                        <div id="pointData">Please hover on the graph and click on a specific point on the graph to get more details ...</div>                                       
+                                        <span class="text-muted">X-Axis: Day/Time | Y-Axis: Seconds</span><br/><br/>
+                                        <div id="pointData"></div>
+                                        <div id="welcomeMessage">Please hover on the graph and click on a specific point on the graph to get more details ...</div>                                       
                                     </div>
                                 </div>
 
@@ -213,13 +215,25 @@
 
 
                             g2 = new Dygraph(document.getElementById("graphdiv2"), "data/create_collection_data_cloud_regular.csv", {
-                                 labelsDiv: document.getElementById('status'), visibility: [false, true, false, true], colors: ['#6B8E23','#4B0082','#FF0000','#DA70D6','#CD853F'],
+                                 labelsDiv: document.getElementById('pointData'), visibility: [false, true, false, true], colors: ['#6B8E23','#4B0082','#FF0000','#DA70D6','#CD853F'],
 
                                  highlightCallback: function (e, x, pts, row) {
                                      commitID = fileData[(row + 1)].split(",")[3].trim();
                                      testID = fileData[(row + 1)].split(",")[1].trim();
 
-                                                    document.getElementById("pointData").innerHTML = "Commit ID: <font color='red'>" + fileData[(row + 1)].split(",")[3] + "</font>";
+				                                     $.ajax({
+				                         				
+				                                         type: "GET",
+				                                         url: "data/" + testID + "_" + commitID + "_COMMIT_INFORMATION_dump.csv",
+				                                         dataType: "text",
+				                                         success: function(data) {
+				                                        	 document.getElementById("testCommitInformation").innerHTML = data;
+				                                         }
+				
+					                                 });
+				                                     
+				                     				 document.getElementById("welcomeMessage").innerHTML = "";
+
                                                 },
                                      clickCallback: function (e, x, pts) {
 
