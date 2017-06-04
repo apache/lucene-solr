@@ -286,8 +286,9 @@ public class BenchmarkAppConnector {
 					false, FileType.NUMERIC_QUERY_STANDALONE);
 		}
 
-		Util.postMessage("** Publishing data for webapp [COMPLETE] ..", MessageType.WHITE_TEXT, false);
+		Util.getAndPublishCommitInformation();
 
+		Util.postMessage("** Publishing data for webapp [COMPLETE] ..", MessageType.WHITE_TEXT, false);
 	}
 
 }

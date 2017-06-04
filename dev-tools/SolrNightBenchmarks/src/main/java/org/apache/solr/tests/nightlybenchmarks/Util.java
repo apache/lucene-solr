@@ -709,7 +709,6 @@ public class Util {
 	public static void destroy() {
 
 		try {
-			Util.getAndPublishCommitInformation();
 
 			if (argM.containsKey("-Housekeeping")) {
 				Util.postMessage("** Initiating Housekeeping activities! ... ", MessageType.RED_TEXT, false);
