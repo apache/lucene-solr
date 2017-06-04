@@ -26,9 +26,11 @@ public class SolrNightlyBenchmarks {
 		
 		Util.init(args);
 
+		Util.getAndPublishCommitInformation();
+
 		Tests.indexingTestsStandalone(Util.COMMIT_ID, 10000);
 		
-		Tests.createCollectionTestStandalone(Util.COMMIT_ID);
+/*		Tests.createCollectionTestStandalone(Util.COMMIT_ID);
 
 		Tests.indexingTestsStandaloneConcurrent(Util.COMMIT_ID, 10000);
 
@@ -41,8 +43,9 @@ public class SolrNightlyBenchmarks {
 		
 		Tests.runNumericTestsCloud();
 		
-		
+*/		
 		BenchmarkAppConnector.publishDataForWebApp();
+		
 		
 		Util.destroy();
 	}

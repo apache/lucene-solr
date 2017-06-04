@@ -287,12 +287,20 @@ public class Util {
 				Runtime.getRuntime().exec("git ls-remote " + repositoryURL + " HEAD").getInputStream())).readLine()
 						.split("HEAD")[0].trim();
 	}
-
+	
+	public static String getLocalRepoPath() {
+		Util.GIT_REPOSITORY_PATH = Util.DOWNLOAD_DIR + "git-repository-" + Util.COMMIT_ID;
+		return Util.GIT_REPOSITORY_PATH;
+	}
+	
+	public static void getAndPublishCommitInformation() {
+		BenchmarkAppConnector.writeToWebAppDataFile(Util.TEST_ID + "_" + Util.COMMIT_ID + "_COMMIT_INFORMATION_dump.csv", Util.getCommitInformation(), true, FileType.COMMIT_INFORMATION_FILE);
+	}
+	
 	public static String getCommitInformation() {
-		// This method is failing need to check !
 		Util.postMessage("** Getting the latest commit Information from local repository", MessageType.BLUE_TEXT,
 				false);
-		File directory = new File(Util.GIT_REPOSITORY_PATH);
+		File directory = new File(Util.getLocalRepoPath());
 		directory.setExecutable(true);
 		BufferedReader reader;
 		String line = "";
@@ -303,7 +311,7 @@ public class Util {
 					.exec("git show --no-patch " + Util.COMMIT_ID, new String[] {}, directory).getInputStream()));
 
 			while ((line = reader.readLine()) != null) {
-				returnString += line.replaceAll("<", " ").replaceAll(">", " ").replaceAll(",", "").trim() + ",";
+				returnString += line.replaceAll("<", " ").replaceAll(">", " ").replaceAll(",", "").trim() + "<br/>";
 			}
 
 			return returnString;
