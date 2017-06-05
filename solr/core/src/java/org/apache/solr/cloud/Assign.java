@@ -41,19 +41,17 @@ import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.Slice;
-import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.util.StrUtils;
+import org.apache.solr.common.util.Utils;
 import org.apache.solr.core.CoreContainer;
 import org.apache.zookeeper.KeeperException;
 
 import static java.util.Collections.singletonMap;
 import static org.apache.solr.cloud.autoscaling.Policy.POLICY;
-import static org.apache.solr.common.cloud.ZkStateReader.COLLECTION_PROP;
 import static org.apache.solr.common.cloud.ZkStateReader.CORE_NAME_PROP;
 import static org.apache.solr.common.cloud.ZkStateReader.MAX_SHARDS_PER_NODE;
 import static org.apache.solr.common.cloud.ZkStateReader.SOLR_AUTOSCALING_CONF_PATH;
-import static org.apache.solr.common.params.CommonParams.NAME;
 
 
 public class Assign {
@@ -198,8 +196,8 @@ public class Assign {
       positions = getNodesViaRules(clusterState, shard, numberOfNodes, cc, coll, createNodeList, l);
     }
     String policyName = coll.getStr(POLICY);
-    Map autoSalingJson = cc.getZkController().getZkStateReader().getZkClient().getJson(SOLR_AUTOSCALING_CONF_PATH, true);
-    if (policyName != null || autoSalingJson.get(Policy.CLUSTER_POLICY) != null) {
+    Map autoScalingJson = Utils.getJson(cc.getZkController().getZkClient(), SOLR_AUTOSCALING_CONF_PATH, true);
+    if (policyName != null || autoScalingJson.get(Policy.CLUSTER_POLICY) != null) {
       positions= Assign.getPositionsUsingPolicy(collectionName, Collections.singletonList(shard), numberOfNodes,
           policyName, cc.getZkController().getZkStateReader());
     }
@@ -223,8 +221,9 @@ public class Assign {
         .withClusterStateProvider(new ZkClientClusterStateProvider(zkStateReader))
         .build()) {
       SolrClientDataProvider clientDataProvider = new SolrClientDataProvider(csc);
+      Map<String, Object> autoScalingJson = Utils.getJson(zkStateReader.getZkClient(), SOLR_AUTOSCALING_CONF_PATH, true);
       Map<String, List<String>> locations = PolicyHelper.getReplicaLocations(collName,
-          zkStateReader.getZkClient().getJson(SOLR_AUTOSCALING_CONF_PATH, true),
+          autoScalingJson,
           clientDataProvider, singletonMap(collName, policyName), shardNames, numReplicas);
       Map<ReplicaAssigner.Position, String> result = new HashMap<>();
       for (Map.Entry<String, List<String>> e : locations.entrySet()) {

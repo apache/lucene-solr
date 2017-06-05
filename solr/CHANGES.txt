@@ -206,6 +206,8 @@ Other Changes
 
 * SOLR-10764: AutoScalingHandler should validate policy and preferences before updating zookeeper. (shalin)
 
+* SOLR-10782: Improve error handling and tests for Snitch and subclasses and general cleanups. (Noble Paul, shalin)
+
 ==================  6.7.0 ==================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release.

@@ -37,16 +37,12 @@ import com.google.common.collect.ImmutableMap;
 import org.apache.commons.lang.StringUtils;
 import org.apache.solr.client.solrj.SolrResponse;
 import org.apache.solr.client.solrj.SolrServerException;
-import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.impl.HttpSolrClient.RemoteSolrException;
-import org.apache.solr.client.solrj.impl.SolrClientDataProvider;
-import org.apache.solr.client.solrj.impl.ZkClientClusterStateProvider;
 import org.apache.solr.client.solrj.request.AbstractUpdateRequest;
 import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.client.solrj.response.UpdateResponse;
 import org.apache.solr.cloud.autoscaling.Policy;
-import org.apache.solr.cloud.autoscaling.PolicyHelper;
 import org.apache.solr.cloud.overseer.OverseerAction;
 import org.apache.solr.cloud.rule.ReplicaAssigner;
 import org.apache.solr.cloud.rule.ReplicaAssigner.Position;
@@ -65,7 +61,6 @@ import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.CollectionAdminParams;
 import org.apache.solr.common.params.CollectionParams.CollectionAction;
-import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.CoreAdminParams;
 import org.apache.solr.common.params.CoreAdminParams.CoreAdminAction;
 import org.apache.solr.common.params.ModifiableSolrParams;
@@ -86,7 +81,6 @@ import org.apache.zookeeper.KeeperException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import static java.util.Collections.singletonMap;
 import static org.apache.solr.cloud.autoscaling.Policy.POLICY;
 import static org.apache.solr.common.cloud.DocCollection.SNITCH;
 import static org.apache.solr.common.cloud.ZkStateReader.BASE_URL_PROP;
@@ -719,8 +713,7 @@ public class OverseerCollectionMessageHandler implements OverseerMessageHandler 
                                       int numPullReplicas) throws KeeperException, InterruptedException {
     List<Map> rulesMap = (List) message.get("rule");
     String policyName = message.getStr(POLICY);
-    Map autoSalingJson = zkStateReader.getZkClient().getJson(SOLR_AUTOSCALING_CONF_PATH, true);
-    autoSalingJson = autoSalingJson == null ? Collections.EMPTY_MAP : autoSalingJson;
+    Map autoScalingJson = Utils.getJson(zkStateReader.getZkClient(), SOLR_AUTOSCALING_CONF_PATH, true);
 
     if (rulesMap == null && policyName == null) {
       int i = 0;
@@ -747,7 +740,7 @@ public class OverseerCollectionMessageHandler implements OverseerMessageHandler 
       }
     }
 
-    if (policyName != null || autoSalingJson.get(Policy.CLUSTER_POLICY) != null) {
+    if (policyName != null || autoScalingJson.get(Policy.CLUSTER_POLICY) != null) {
       return Assign.getPositionsUsingPolicy(message.getStr(COLLECTION_PROP, message.getStr(NAME)),
           shardNames, numNrtReplicas, policyName, zkStateReader);
 

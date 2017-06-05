@@ -226,7 +226,6 @@ public class AutoScalingHandlerTest extends SolrCloudTestCase {
     response = solrClient.request(req);
     assertEquals(response.get("result").toString(), "success");
 
-//    SolrQuery query = new SolrQuery().setParam(CommonParams.QT, path);
     req = createAutoScalingRequest(SolrRequest.METHOD.GET, null);
     response = solrClient.request(req);
 
@@ -252,17 +251,19 @@ public class AutoScalingHandlerTest extends SolrCloudTestCase {
     assertNotNull(sortedNodes);
 
     assertEquals(2, sortedNodes.size());
-    String[] sortedNodeNames = new String[2];
     for (int i = 0; i < 2; i++) {
       Map node = (Map) sortedNodes.get(i);
       assertNotNull(node);
       assertEquals(5, node.size());
-      assertNotNull(sortedNodeNames[i] = (String) node.get("node"));
+      assertNotNull(node.get("node"));
       assertNotNull(node.get("cores"));
-      assertEquals("0", String.valueOf(node.get("cores")));
+      assertEquals(0L, node.get("cores"));
       assertNotNull(node.get("freedisk"));
+      assertTrue(node.get("freedisk") instanceof Double);
       assertNotNull(node.get("sysLoadAvg"));
+      assertTrue(node.get("sysLoadAvg") instanceof Double);
       assertNotNull(node.get("heapUsage"));
+      assertTrue(node.get("heapUsage") instanceof Double);
     }
 
     List<Map<String, Object>> violations = (List<Map<String, Object>>) diagnostics.get("violations");
@@ -314,7 +315,7 @@ public class AutoScalingHandlerTest extends SolrCloudTestCase {
   static class AutoScalingRequest extends SolrRequest {
     protected final String message;
 
-    public AutoScalingRequest(METHOD m, String path, String message) {
+    AutoScalingRequest(METHOD m, String path, String message) {
       super(m, path);
       this.message = message;
     }

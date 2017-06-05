@@ -57,10 +57,13 @@ class Preference implements MapWriter {
     Object o2 = useApprox ? r2.cells[idx].approxVal : r2.cells[idx].val;
     int result = 0;
     if (o1 instanceof Integer && o2 instanceof Integer) result = ((Integer) o1).compareTo((Integer) o2);
-    if (o1 instanceof Long && o2 instanceof Long) result = ((Long) o1).compareTo((Long) o2);
-    if (o1 instanceof Float && o2 instanceof Float) result = ((Float) o1).compareTo((Float) o2);
-    if (o1 instanceof Double && o2 instanceof Double) result = ((Double) o1).compareTo((Double) o2);
-    return result == 0 ? next == null ? 0 : next.compare(r1, r2, useApprox) : sort.sortval * result;
+    else if (o1 instanceof Long && o2 instanceof Long) result = ((Long) o1).compareTo((Long) o2);
+    else if (o1 instanceof Float && o2 instanceof Float) result = ((Float) o1).compareTo((Float) o2);
+    else if (o1 instanceof Double && o2 instanceof Double) result = ((Double) o1).compareTo((Double) o2);
+    else if (!o1.getClass().getName().equals(o2.getClass().getName()))  {
+      throw new RuntimeException("Unable to compare " + o1 + " of type: " + o1.getClass().getName() + " from " + r1.cells[idx].toString() + " and " + o2 + " of type: " + o2.getClass().getName() + " from " + r2.cells[idx].toString());
+    }
+    return result == 0 ? (next == null ? 0 : next.compare(r1, r2, useApprox)) : sort.sortval * result;
   }
 
   //sets the new value according to precision in val_
@@ -68,7 +71,7 @@ class Preference implements MapWriter {
     Object prevVal = null;
     for (Row row : tmpMatrix) {
       prevVal = row.cells[idx].approxVal =
-          prevVal == null || Math.abs(((Number) prevVal).longValue() - ((Number) row.cells[idx].val).longValue()) > precision ?
+          (prevVal == null || Double.compare(Math.abs(((Number) prevVal).doubleValue() - ((Number) row.cells[idx].val).doubleValue()), precision) > 0) ?
               row.cells[idx].val :
               prevVal;
     }

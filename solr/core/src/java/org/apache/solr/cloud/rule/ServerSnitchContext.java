@@ -19,6 +19,7 @@ package org.apache.solr.cloud.rule;
 
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
+import java.util.Collections;
 import java.util.Map;
 
 import org.apache.solr.client.solrj.SolrRequest;
@@ -36,7 +37,7 @@ import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.Utils;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.update.UpdateShardHandler;
-import org.apache.zookeeper.data.Stat;
+import org.apache.zookeeper.KeeperException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -55,21 +56,12 @@ public class ServerSnitchContext extends SnitchContext {
   }
 
 
-  public  Map getZkJson(String path) {
+  public Map getZkJson(String path) throws KeeperException, InterruptedException {
     if (coreContainer.isZooKeeperAware()) {
-      try {
-        byte[] data = coreContainer.getZkController().getZkClient().getData(path, null, new Stat(), true);
-        if (data == null) return null;
-        return (Map) Utils.fromJSON(data);
-      } catch (Exception e) {
-        log.warn("Unable to read from ZK path : " + path, e);
-        return null;
-
-      }
+      return Utils.getJson(coreContainer.getZkController().getZkClient(), path, true);
     } else {
-      return null;
+      return Collections.emptyMap();
     }
-
   }
 
   public void invokeRemote(String node, ModifiableSolrParams params, String klas, RemoteCallback callback) {

@@ -143,8 +143,8 @@ public class TestPolicy extends SolrTestCaseJ4 {
 
     expectError("port", "70000","must be less than ");
     expectError("port", 70000,"must be less than ");
-    expectError("port", "1000","must be greater than");
-    expectError("port", 1000,"must be greater than");
+    expectError("port", "0","must be greater than");
+    expectError("port", 0,"must be greater than");
 
     expectError("cores", "-1","must be greater than");
 
@@ -268,8 +268,8 @@ public class TestPolicy extends SolrTestCaseJ4 {
 
     List<Row> l = session.getSorted();
     assertEquals("node1", l.get(0).node);
-    assertEquals("node3", l.get(1).node);
-    assertEquals("node4", l.get(2).node);
+    assertEquals("node4", l.get(1).node);
+    assertEquals("node3", l.get(2).node);
     assertEquals("node2", l.get(3).node);
 
 

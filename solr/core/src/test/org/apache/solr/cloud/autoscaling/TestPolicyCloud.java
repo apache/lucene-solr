@@ -55,17 +55,19 @@ public class TestPolicyCloud extends SolrCloudTestCase {
   }
 
   @After
-  public void removeCollections() throws Exception {
+  public void after() throws Exception {
     cluster.deleteAllCollections();
+    cluster.getSolrClient().getZkStateReader().getZkClient().setData(ZkStateReader.SOLR_AUTOSCALING_CONF_PATH,
+        "{}".getBytes(StandardCharsets.UTF_8), true);
   }
+
   public void testCreateCollectionAddShardUsingPolicy() throws Exception {
     JettySolrRunner jetty = cluster.getRandomJetty(random());
     int port = jetty.getLocalPort();
 
-    String commands =  "{set-policy :{c1 : [{replica:1 , shard:'#EACH', port: 'REPLACEPORT'}]}}".replace("REPLACEPORT",String.valueOf(port));
-    Utils.fromJSONString(commands);
+    String commands =  "{set-policy :{c1 : [{replica:1 , shard:'#EACH', port: '" + port + "'}]}}";
     cluster.getSolrClient().request(AutoScalingHandlerTest.createAutoScalingRequest(SolrRequest.METHOD.POST, commands));
-    Map<String, Object> json = cluster.getZkClient().getJson(ZkStateReader.SOLR_AUTOSCALING_CONF_PATH, true);
+    Map<String, Object> json = Utils.getJson(cluster.getZkClient(), ZkStateReader.SOLR_AUTOSCALING_CONF_PATH, true);
     assertEquals("full json:"+ Utils.toJSONString(json) , "#EACH",
         Utils.getObjectByPath(json, true, "/policies/c1[0]/shard"));
     CollectionAdminRequest.createCollectionWithImplicitRouter("policiesTest", null, "s1,s2", 1)
@@ -80,8 +82,6 @@ public class TestPolicyCloud extends SolrCloudTestCase {
     coll = getCollectionState("policiesTest");
     assertEquals(1, coll.getSlice("s3").getReplicas().size());
     coll.getSlice("s3").forEach(replica -> assertEquals(jetty.getNodeName(), replica.getNodeName()));
-    cluster.getSolrClient().getZkStateReader().getZkClient().setData(ZkStateReader.SOLR_AUTOSCALING_CONF_PATH,
-        "{}".getBytes(StandardCharsets.UTF_8), true);
   }
 
   public void testDataProvider() throws IOException, SolrServerException, KeeperException, InterruptedException {
@@ -98,14 +98,14 @@ public class TestPolicyCloud extends SolrCloudTestCase {
     assertNotNull(val.get("heapUsage"));
     assertNotNull(val.get("sysLoadAvg"));
     assertTrue(((Number) val.get("cores")).intValue() > 0);
-    assertTrue("freedisk value is " + ((Number) val.get("freedisk")).longValue(), ((Number) val.get("freedisk")).longValue() > 0);
-    assertTrue("heapUsage value is " + ((Number) val.get("heapUsage")).longValue(), ((Number) val.get("heapUsage")).longValue() > 0);
-    assertTrue("sysLoadAvg value is " + ((Number) val.get("sysLoadAvg")).longValue(), ((Number) val.get("sysLoadAvg")).longValue() > 0);
+    assertTrue("freedisk value is " + ((Number) val.get("freedisk")).doubleValue(),  Double.compare(((Number) val.get("freedisk")).doubleValue(), 0.0d) > 0);
+    assertTrue("heapUsage value is " + ((Number) val.get("heapUsage")).doubleValue(), Double.compare(((Number) val.get("heapUsage")).doubleValue(), 0.0d) > 0);
+    assertTrue("sysLoadAvg value is " + ((Number) val.get("sysLoadAvg")).doubleValue(), Double.compare(((Number) val.get("sysLoadAvg")).doubleValue(), 0.0d) > 0);
     String overseerNode = OverseerTaskProcessor.getLeaderNode(cluster.getZkClient());
     cluster.getSolrClient().request(CollectionAdminRequest.addRole(overseerNode, "overseer"));
     for (int i = 0; i < 10; i++) {
-      Map<String, Object> data = cluster.getSolrClient().getZkStateReader().getZkClient().getJson(ZkStateReader.ROLES, true);
-      if (i >= 9 && data == null) {
+      Map<String, Object> data = Utils.getJson(cluster.getZkClient(), ZkStateReader.ROLES, true);
+      if (i >= 9 && data.isEmpty()) {
         throw new RuntimeException("NO overseer node created");
       }
       Thread.sleep(100);

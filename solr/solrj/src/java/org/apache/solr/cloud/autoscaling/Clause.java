@@ -20,6 +20,7 @@ package org.apache.solr.cloud.autoscaling;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -36,7 +37,6 @@ import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.common.util.Utils;
 
 import static java.util.Collections.singletonMap;
-import static java.util.Collections.unmodifiableSet;
 import static org.apache.solr.cloud.autoscaling.Clause.TestStatus.PASS;
 import static org.apache.solr.cloud.autoscaling.Operand.EQUAL;
 import static org.apache.solr.cloud.autoscaling.Operand.GREATER_THAN;
@@ -71,7 +71,7 @@ public class Clause implements MapWriter, Comparable<Clause> {
       collection = parse(COLLECTION, m);
       shard = parse(SHARD, m);
       if(m.get(REPLICA) == null){
-        throw new RuntimeException(StrUtils.formatString("'replica' is required" + Utils.toJSONString(m)));
+        throw new RuntimeException(StrUtils.formatString("'replica' is required in {0}", Utils.toJSONString(m)));
       }
       this.replica = parse(REPLICA, m);
       if (replica.op == WILDCARD) throw new RuntimeException("replica val cannot be null" + Utils.toJSONString(m));
@@ -344,9 +344,9 @@ public class Clause implements MapWriter, Comparable<Clause> {
       this.type = type;
       this.vals = vals;
       this.min = min;
-      if(min != null && !type.isInstance(min)) throw new RuntimeException("wrong min value type");
+      if(min != null && !type.isInstance(min)) throw new RuntimeException("wrong min value type, expected: " + type.getName() + " actual: " + min.getClass().getName());
       this.max = max;
-      if(max != null && !type.isInstance(max)) throw new RuntimeException("wrong max value type");
+      if(max != null && !type.isInstance(max)) throw new RuntimeException("wrong max value type, expected: " + type.getName() + " actual: " + max.getClass().getName());
     }
   }
 
@@ -412,13 +412,17 @@ public class Clause implements MapWriter, Comparable<Clause> {
     } else if (val instanceof Number) {
       num = (Number) val;
     }
-    return num.longValue();
+
+    if (num != null)  {
+      return num.longValue();
+    }
+    throw new RuntimeException(name + ": " + val + "not a valid number");
   }
 
   public static Double parseDouble(String name, Object val) {
     if (val == null) return null;
     if (val instanceof Double) return (Double) val;
-    Number num = 0;
+    Number num = null;
     if (val instanceof String) {
       try {
         num = Double.parseDouble((String) val);
@@ -429,26 +433,28 @@ public class Clause implements MapWriter, Comparable<Clause> {
     } else if (val instanceof Number) {
       num = (Number) val;
     }
-    return num.doubleValue();
+
+    if (num != null)  {
+      return num.doubleValue();
+    }
+    throw new RuntimeException(name + ": " + val + "not a valid number");
   }
 
-  private static final Map<String, ValidateInfo> validatetypes = new HashMap();
+  private static final Map<String, ValidateInfo> validatetypes = new HashMap<>();
 
   static {
     validatetypes.put("collection", new ValidateInfo(String.class, null, null, null));
     validatetypes.put("shard", new ValidateInfo(String.class, null, null, null));
-    validatetypes.put("replica", new ValidateInfo(Long.class, null, 0l, null));
-    validatetypes.put(ImplicitSnitch.PORT, new ValidateInfo(Long.class, null, 1024l, 65535l));
-    validatetypes.put(ImplicitSnitch.DISK, new ValidateInfo(Long.class, null, 0l, Long.MAX_VALUE));
-    validatetypes.put(ImplicitSnitch.NODEROLE, new ValidateInfo(String.class, unmodifiableSet(new HashSet(Arrays.asList("overseer"))), null, null));
-    validatetypes.put(ImplicitSnitch.CORES, new ValidateInfo(Long.class, null, 0l, Long.MAX_VALUE));
+    validatetypes.put("replica", new ValidateInfo(Long.class, null, 0L, null));
+    validatetypes.put(ImplicitSnitch.PORT, new ValidateInfo(Long.class, null, 1L, 65535L));
+    validatetypes.put(ImplicitSnitch.DISK, new ValidateInfo(Double.class, null, 0d, Double.MAX_VALUE));
+    validatetypes.put(ImplicitSnitch.NODEROLE, new ValidateInfo(String.class, Collections.singleton("overseer"), null, null));
+    validatetypes.put(ImplicitSnitch.CORES, new ValidateInfo(Long.class, null, 0L, Long.MAX_VALUE));
     validatetypes.put(ImplicitSnitch.SYSLOADAVG, new ValidateInfo(Double.class, null, 0d, 100d));
     validatetypes.put(ImplicitSnitch.HEAPUSAGE, new ValidateInfo(Double.class, null, 0d, null));
-    validatetypes.put("NUMBER", new ValidateInfo(Long.class, null, 0l, Long.MAX_VALUE));//generic number validation
+    validatetypes.put("NUMBER", new ValidateInfo(Long.class, null, 0L, Long.MAX_VALUE));//generic number validation
     validatetypes.put("STRING", new ValidateInfo(String.class, null, null, null));//generic string validation
     validatetypes.put("node", new ValidateInfo(String.class, null, null, null));
-    for (String ip : ImplicitSnitch.IP_SNITCHES) validatetypes.put(ip, new ValidateInfo(Long.class, null, 0l, 255l));
-
-
+    for (String ip : ImplicitSnitch.IP_SNITCHES) validatetypes.put(ip, new ValidateInfo(Long.class, null, 0L, 255L));
   }
 }

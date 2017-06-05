@@ -50,7 +50,7 @@ import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.common.util.Utils;
-import org.apache.zookeeper.data.Stat;
+import org.apache.zookeeper.KeeperException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -135,15 +135,9 @@ public class SolrClientDataProvider implements ClusterDataProvider, MapWriter {
     }
 
 
-    public Map getZkJson(String path) {
-      try {
-        byte[] data = zkClientClusterStateProvider.getZkStateReader().getZkClient().getData(path, null, new Stat(), true);
-        if (data == null) return null;
-        return (Map) Utils.fromJSON(data);
-      } catch (Exception e) {
-        log.warn("Unable to read from ZK path : " + path, e);
-        return null;
-      }
+    @Override
+    public Map getZkJson(String path) throws KeeperException, InterruptedException {
+      return Utils.getJson(zkClientClusterStateProvider.getZkStateReader().getZkClient(), path, true);
     }
 
     public void invokeRemote(String node, ModifiableSolrParams params, String klas, RemoteCallback callback) {

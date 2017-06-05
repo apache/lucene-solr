@@ -30,8 +30,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
-import java.util.function.Consumer;
-import java.util.function.Predicate;
+import java.util.SortedSet;
+import java.util.TreeSet;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
@@ -63,11 +63,11 @@ public class Policy implements MapWriter {
   public static final String ANY = "#ANY";
   public static final String CLUSTER_POLICY = "cluster-policy";
   public static final String CLUSTER_PREFERENCE = "cluster-preferences";
-  public static final Set<String> GLOBAL_ONLY_TAGS = Collections.unmodifiableSet(new HashSet<>(Arrays.asList("cores")));
+  public static final Set<String> GLOBAL_ONLY_TAGS = Collections.singleton("cores");
   final Map<String, List<Clause>> policies = new HashMap<>();
   final List<Clause> clusterPolicy;
   final List<Preference> clusterPreferences;
-  final List<String> params = new ArrayList<>();
+  final List<String> params;
 
 
   public Policy(Map<String, Object> jsonMap) {
@@ -82,13 +82,15 @@ public class Policy implements MapWriter {
     if (clusterPreferences.isEmpty()) {
       clusterPreferences.add(new Preference((Map<String, Object>) Utils.fromJSONString("{minimize : cores, precision:1}")));
     }
+    SortedSet<String> paramsOfInterest = new TreeSet<>();
     for (Preference preference : clusterPreferences) {
-      if (params.contains(preference.name.name())) {
+      if (paramsOfInterest.contains(preference.name.name())) {
         throw new RuntimeException(preference.name + " is repeated");
       }
-      params.add(preference.name.toString());
-      preference.idx = params.size() - 1;
+      paramsOfInterest.add(preference.name.toString());
     }
+    this.params = new ArrayList<>(paramsOfInterest);
+
     clusterPolicy = ((List<Map<String, Object>>) jsonMap.getOrDefault(CLUSTER_POLICY, emptyList())).stream()
         .map(Clause::new)
         .filter(clause -> {
@@ -146,16 +148,13 @@ public class Policy implements MapWriter {
     Set<String> collections = new HashSet<>();
     List<Clause> expandedClauses;
     List<Violation> violations = new ArrayList<>();
-    private List<String> paramsOfInterest;
 
     private Session(List<String> nodes, ClusterDataProvider dataProvider,
-                    List<Row> matrix, List<Clause> expandedClauses,
-                    List<String> paramsOfInterest) {
+                    List<Row> matrix, List<Clause> expandedClauses) {
       this.nodes = nodes;
       this.dataProvider = dataProvider;
       this.matrix = matrix;
       this.expandedClauses = expandedClauses;
-      this.paramsOfInterest = paramsOfInterest;
     }
 
     Session(ClusterDataProvider dataProvider) {
@@ -174,11 +173,9 @@ public class Policy implements MapWriter {
       }
 
       Collections.sort(expandedClauses);
-      List<String> p = new ArrayList<>(params);
-      p.addAll(expandedClauses.stream().map(clause -> clause.tag.name).distinct().collect(Collectors.toList()));
-      paramsOfInterest = new ArrayList<>(p);
+
       matrix = new ArrayList<>(nodes.size());
-      for (String node : nodes) matrix.add(new Row(node, paramsOfInterest, dataProvider));
+      for (String node : nodes) matrix.add(new Row(node, params, dataProvider));
       applyRules();
     }
 
@@ -193,7 +190,7 @@ public class Policy implements MapWriter {
     }
 
     Session copy() {
-      return new Session(nodes, dataProvider, getMatrixCopy(), expandedClauses, paramsOfInterest);
+      return new Session(nodes, dataProvider, getMatrixCopy(), expandedClauses);
     }
 
     List<Row> getMatrixCopy() {
