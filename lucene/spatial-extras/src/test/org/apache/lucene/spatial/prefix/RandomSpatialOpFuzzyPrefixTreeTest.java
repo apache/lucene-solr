@@ -164,6 +164,19 @@ public class RandomSpatialOpFuzzyPrefixTreeTest extends StrategyTestCase {
     assertEquals(1, executeQuery(query, 1).numFound);
   }
 
+  @Test
+  public void testPointsOnlyOptBug() throws IOException {
+    setupQuadGrid(8, false);
+    setupCtx2D(ctx);
+    ((PrefixTreeStrategy) strategy).setPointsOnly(true);
+    Point point = ctx.makePoint(86, -127.44362190053255);
+    adoc("0", point);
+    commit();
+    Query query = strategy.makeQuery(new SpatialArgs(SpatialOperation.Intersects,
+        ctx.makeRectangle(point, point)));
+    assertEquals(1, executeQuery(query, 1).numFound);
+  }
+
   /** See LUCENE-5062, {@link ContainsPrefixTreeQuery#multiOverlappingIndexedShapes}. */
   @Test
   public void testContainsPairOverlap() throws IOException {

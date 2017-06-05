@@ -32,9 +32,7 @@ import org.apache.lucene.spatial.prefix.tree.SpatialPrefixTree;
 import org.apache.lucene.spatial.query.SpatialArgs;
 import org.apache.lucene.spatial.util.ShapeFieldCacheDistanceValueSource;
 import org.apache.lucene.util.Bits;
-import org.locationtech.spatial4j.shape.Circle;
 import org.locationtech.spatial4j.shape.Point;
-import org.locationtech.spatial4j.shape.Rectangle;
 import org.locationtech.spatial4j.shape.Shape;
 
 /**
@@ -208,15 +206,12 @@ public abstract class PrefixTreeStrategy extends SpatialStrategy {
     return HeatmapFacetCounter.calcFacets(this, context, topAcceptDocs, inputShape, facetLevel, maxCells);
   }
 
+  /**
+   * Returns true if the {@code shape} is a {@link Point}.  For custom spatial contexts, it may make sense to
+   * have certain other shapes return true.
+   * @lucene.experimental
+   */
   protected boolean isPointShape(Shape shape) {
-    if (shape instanceof Point) {
-      return true;
-    } else if (shape instanceof Circle) {
-      return ((Circle) shape).getRadius() == 0.0;
-    } else if (shape instanceof Rectangle) {
-      Rectangle rect = (Rectangle) shape;
-      return rect.getWidth() == 0.0 && rect.getHeight() == 0.0;
-    }
-    return false;
+    return shape instanceof Point;
   }
 }
