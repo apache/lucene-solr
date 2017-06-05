@@ -86,7 +86,7 @@ public class QueryClient implements Runnable {
 
 			if (running == true) {
 				// Critical Section ....
-				SolrResponse response;
+				SolrResponse response = null;
 				try {
 					NamedList<String> list = new NamedList<>();
 					list.add("defType", "edismax");
@@ -117,9 +117,9 @@ public class QueryClient implements Runnable {
 					}
 
 					params = SolrParams.toSolrParams(list);
-
-					response = solrClient.query(collectionName, params);
-
+					
+					response = this.fireQuery(collectionName, params);
+					
 					if ((System.nanoTime() - startTime) >= (delayEstimationBySeconds * 1000000000)) {
 						setQueryCounter();
 						elapsedTime = response.getElapsedTime();
@@ -146,6 +146,12 @@ public class QueryClient implements Runnable {
 
 		solrClient.close();
 		return;
+	}
+	
+	private synchronized SolrResponse fireQuery(String collectionName, SolrParams params) throws SolrServerException, IOException {
+		
+		return solrClient.query(collectionName, params);
+	
 	}
 
 	private synchronized void setQueryCounter() {

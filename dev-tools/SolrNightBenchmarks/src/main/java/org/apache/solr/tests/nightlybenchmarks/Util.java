@@ -80,6 +80,7 @@ public class Util {
 	public static String TEST_ID = UUID.randomUUID().toString();
 	public static String TEST_TIME = new SimpleDateFormat("yyyy/MM/dd HH:mm:ss").format(new Date());
 	public static String METRIC_ESTIMATION_PERIOD = "1000";
+	public static String QUERY_THREAD_COUNT = "1";
 	public static boolean SILENT = false;
 
 	final static Logger logger = Logger.getLogger(Util.class);
@@ -429,6 +430,9 @@ public class Util {
 					MessageType.YELLOW_TEXT, false);
 			Util.METRIC_ESTIMATION_PERIOD = prop.getProperty("SolrNightlyBenchmarks.metricEstimationPeriod");
 			Util.postMessage("Getting Property Value for metricEstimationPeriod: " + Util.METRIC_ESTIMATION_PERIOD,
+					MessageType.YELLOW_TEXT, false);
+			Util.QUERY_THREAD_COUNT = prop.getProperty("SolrNightlyBenchmarks.queryThreadCount");
+			Util.postMessage("Getting Property Value for queryThreadCount: " + Util.QUERY_THREAD_COUNT,
 					MessageType.YELLOW_TEXT, false);
 
 			if (BenchmarkAppConnector.benchmarkAppDirectory
