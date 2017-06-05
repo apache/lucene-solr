@@ -1,0 +1,43 @@
+#**
+ *  Display grouped results
+ *#
+
+<div class="result-document">
+
+  <div class="result-title">
+    <b>$grouping.key</b>
+  </div>
+
+  <div>
+    Total Matches in Group: $grouping.value.matches
+  </div>
+
+  <div>  ## list of groups
+
+    #foreach ($group in $grouping.value.groups)
+      <div class="group-value">
+        #if($group.groupValue)$group.groupValue#{else}<i>No group</i>#end
+        <span #annTitle("The count of the number of documents in this group")>
+          ($group.doclist.numFound)
+        </span>
+      </div>
+
+      <div class="group-doclist"
+        #annTitle("Contains the top scoring documents in the group")
+      >
+        #foreach ($doc in $group.doclist)
+          #set($docId = $doc.getFieldValue('id'))
+          #if($doc.getFieldValue('name'))
+            #parse("product_doc.vm")
+          #elseif($doc.getFieldValue('compName_s'))
+            #parse("join_doc.vm")
+          #else
+            #parse("richtext_doc.vm")
+          #end
+        #end
+      </div>
+
+    #end  ## end of foreach group in grouping.value.groups
+  </div>  ## div tag for entire list of groups
+
+</div>  ## end of div class=result-document

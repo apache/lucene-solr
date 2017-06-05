@@ -39,7 +39,7 @@ parent.iml
 /solr/example/solr/zoo_data
 /solr/example/work/*
 /solr/example/exampledocs/post.jar
-
+/solr/example/techproducts/*
 /solr/example/example-DIH/**/data
 /solr/example/example-DIH/**/dataimport.properties
 /solr/example/example-DIH/solr/mail/lib/*.jar
@@ -47,7 +47,7 @@ parent.iml
 solr/contrib/dataimporthandler/test-lib/
 
 solr/core/test-lib/
-
+solr/server/solr/*
 solr/server/logs/
 solr/server/solr/zoo_data/
 solr/server/solr-webapp

@@ -1,0 +1,24 @@
+<!-- 
+  Default configuration for the Lingo clustering algorithm.
+
+  This file can be loaded (and saved) by Carrot2 Workbench.
+  http://project.carrot2.org/download.html
+-->
+<attribute-sets default="attributes">
+    <attribute-set id="attributes">
+      <value-set>
+        <label>attributes</label>
+          <!-- 
+          The language to assume for clustered documents.
+          For a list of allowed values, see: 
+          http://download.carrot2.org/stable/manual/#section.attribute.lingo.MultilingualClustering.defaultLanguage
+          -->
+          <attribute key="MultilingualClustering.defaultLanguage">
+            <value type="org.carrot2.core.LanguageCode" value="ENGLISH"/>
+          </attribute>
+          <attribute key="LingoClusteringAlgorithm.desiredClusterCountBase">
+            <value type="java.lang.Integer" value="20"/>
+          </attribute>
+      </value-set>
+  </attribute-set>
+</attribute-sets>

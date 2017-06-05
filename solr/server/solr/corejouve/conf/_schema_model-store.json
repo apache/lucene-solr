@@ -1,0 +1,22 @@
+{
+  "initArgs":{},
+  "initializedOn":"2017-02-02T09:05:07.181Z",
+  "updatedSinceInit":"2017-02-02T10:18:15.117Z",
+  "managedList":[{
+      "name":"jouvemodel",
+      "class":"org.apache.solr.ltr.model.LinearModel",
+      "store":"jouvestore",
+      "features":[
+        {
+          "name":"isInStock",
+          "norm":{"class":"org.apache.solr.ltr.norm.IdentityNormalizer"}},
+        {
+          "name":"color_red",
+          "norm":{"class":"org.apache.solr.ltr.norm.IdentityNormalizer"}},
+        {
+          "name":"originalScore",
+          "norm":{"class":"org.apache.solr.ltr.norm.IdentityNormalizer"}}],
+      "params":{"weights":{
+          "originalScore":0.0,
+          "isInStock":0.0,
+          "color_red":1.70225344624}}}]}

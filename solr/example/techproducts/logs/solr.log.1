@@ -1,0 +1,1117 @@
+INFO  - 2017-02-01 11:16:53.506; [   ] org.eclipse.jetty.util.log.Log; Logging initialized @315ms
+INFO  - 2017-02-01 11:16:53.679; [   ] org.eclipse.jetty.server.Server; jetty-9.3.14.v20161028
+INFO  - 2017-02-01 11:16:53.709; [   ] org.eclipse.jetty.deploy.providers.ScanningAppProvider; Deployment monitor [file:///Users/qfdk/GitHub/lucene-solr/solr/server/contexts/] at interval 0
+INFO  - 2017-02-01 11:16:54.039; [   ] org.eclipse.jetty.webapp.StandardDescriptorProcessor; NO JSP Support for /solr, did not find org.apache.jasper.servlet.JspServlet
+INFO  - 2017-02-01 11:16:54.073; [   ] org.apache.solr.servlet.SolrDispatchFilter;  ___      _       Welcome to Apache Solr™ version 7.0.0-SNAPSHOT ca50e5b61c2d8bfb703169cea2fb0ab20fd24c6b - qfdk - 2017-01-31 20:51:29
+INFO  - 2017-02-01 11:16:54.073; [   ] org.apache.solr.servlet.SolrDispatchFilter; / __| ___| |_ _   Starting in standalone mode on port 8983
+INFO  - 2017-02-01 11:16:54.073; [   ] org.apache.solr.servlet.SolrDispatchFilter; \__ \/ _ \ | '_|  Install dir: /Users/qfdk/GitHub/lucene-solr/solr
+INFO  - 2017-02-01 11:16:54.086; [   ] org.apache.solr.servlet.SolrDispatchFilter; |___/\___/_|_|    Start time: 2017-02-01T11:16:54.075Z
+INFO  - 2017-02-01 11:16:54.099; [   ] org.apache.solr.core.SolrResourceLoader; Using system property solr.solr.home: /Users/qfdk/GitHub/lucene-solr/solr/example/techproducts/solr
+INFO  - 2017-02-01 11:16:54.106; [   ] org.apache.solr.core.SolrXmlConfig; Loading container configuration from /Users/qfdk/GitHub/lucene-solr/solr/example/techproducts/solr/solr.xml
+INFO  - 2017-02-01 11:16:54.454; [   ] org.apache.solr.core.CorePropertiesLocator; Found 0 core definitions underneath /Users/qfdk/GitHub/lucene-solr/solr/example/techproducts/solr
+INFO  - 2017-02-01 11:16:54.521; [   ] org.eclipse.jetty.server.handler.ContextHandler; Started o.e.j.w.WebAppContext@11438d26{/solr,file:///Users/qfdk/GitHub/lucene-solr/solr/server/solr-webapp/webapp/,AVAILABLE}{/Users/qfdk/GitHub/lucene-solr/solr/server/solr-webapp/webapp}
+INFO  - 2017-02-01 11:16:54.534; [   ] org.eclipse.jetty.server.AbstractConnector; Started ServerConnector@d5b810e{HTTP/1.1,[http/1.1]}{0.0.0.0:8983}
+INFO  - 2017-02-01 11:16:54.534; [   ] org.eclipse.jetty.server.Server; Started @1345ms
+INFO  - 2017-02-01 11:16:55.834; [   ] org.apache.solr.servlet.HttpSolrCall; [admin] webapp=null path=/admin/info/system params={wt=json} status=0 QTime=50
+INFO  - 2017-02-01 11:16:55.869; [   ] org.apache.solr.servlet.HttpSolrCall; [admin] webapp=null path=/admin/cores params={core=techproducts&action=STATUS&wt=json} status=0 QTime=0
+INFO  - 2017-02-01 11:16:55.890; [   ] org.apache.solr.servlet.HttpSolrCall; [admin] webapp=null path=/admin/info/system params={wt=json} status=0 QTime=12
+INFO  - 2017-02-01 11:16:55.910; [   ] org.apache.solr.servlet.HttpSolrCall; [admin] webapp=null path=/admin/info/system params={wt=json} status=0 QTime=12
+INFO  - 2017-02-01 11:16:55.917; [   ] org.apache.solr.servlet.HttpSolrCall; [admin] webapp=null path=/admin/cores params={core=techproducts&action=STATUS&wt=json} status=0 QTime=0
+INFO  - 2017-02-01 11:16:55.993; [   ] org.apache.solr.handler.admin.CoreAdminOperation; core create command name=techproducts&action=CREATE&instanceDir=techproducts&wt=json
+WARN  - 2017-02-01 11:16:56.073; [   x:techproducts] org.apache.solr.core.SolrConfig; Couldn't add files from /Users/qfdk/GitHub/lucene-solr/solr/contrib/ltr/lib filtered by .*\.jar to classpath: /Users/qfdk/GitHub/lucene-solr/solr/contrib/ltr/lib
+INFO  - 2017-02-01 11:16:56.087; [   x:techproducts] org.apache.solr.core.SolrResourceLoader; [techproducts] Added 52 libs to classloader, from paths: [/Users/qfdk/GitHub/lucene-solr/solr/contrib/clustering/lib, /Users/qfdk/GitHub/lucene-solr/solr/contrib/extraction/lib, /Users/qfdk/GitHub/lucene-solr/solr/contrib/langid/lib, /Users/qfdk/GitHub/lucene-solr/solr/contrib/velocity/lib, /Users/qfdk/GitHub/lucene-solr/solr/dist]
+INFO  - 2017-02-01 11:16:56.269; [   x:techproducts] org.apache.solr.update.SolrIndexConfig; IndexWriter infoStream solr logging is enabled
+INFO  - 2017-02-01 11:16:56.277; [   x:techproducts] org.apache.solr.core.SolrConfig; Using Lucene MatchVersion: 7.0.0
+INFO  - 2017-02-01 11:16:56.461; [   x:techproducts] org.apache.solr.schema.IndexSchema; [techproducts] Schema name=example
+WARN  - 2017-02-01 11:16:56.600; [   x:techproducts] org.apache.solr.core.SolrResourceLoader; Solr loaded a deprecated plugin/analysis class [solr.SynonymFilterFactory]. Please consult documentation how to replace it accordingly.
+WARN  - 2017-02-01 11:16:56.618; [   x:techproducts] org.apache.solr.core.SolrResourceLoader; Solr loaded a deprecated plugin/analysis class [solr.WordDelimiterFilterFactory]. Please consult documentation how to replace it accordingly.
+INFO  - 2017-02-01 11:16:57.067; [   x:techproducts] org.apache.solr.rest.RestManager$Registry; Registered ManagedResource impl org.apache.solr.rest.schema.analysis.ManagedWordSetResource for path /schema/analysis/stopwords/english
+INFO  - 2017-02-01 11:16:57.068; [   x:techproducts] org.apache.solr.rest.RestManager$Registry; Registered ManagedResource impl org.apache.solr.rest.schema.analysis.ManagedSynonymFilterFactory$SynonymManager for path /schema/analysis/synonyms/english
+INFO  - 2017-02-01 11:16:57.077; [   x:techproducts] org.apache.solr.schema.IndexSchema; Loaded schema example/1.6 with uniqueid field id
+INFO  - 2017-02-01 11:16:57.078; [   x:techproducts] org.apache.solr.rest.RestManager$Registry; Added observer of type org.apache.solr.rest.schema.analysis.ManagedStopFilterFactory to existing ManagedResource /schema/analysis/stopwords/english
+INFO  - 2017-02-01 11:16:57.078; [   x:techproducts] org.apache.solr.rest.RestManager$Registry; Added observer of type org.apache.solr.rest.schema.analysis.ManagedSynonymFilterFactory to existing ManagedResource /schema/analysis/synonyms/english
+INFO  - 2017-02-01 11:16:57.123; [   x:techproducts] org.apache.solr.core.CoreContainer; Creating SolrCore 'techproducts' using configuration from instancedir /Users/qfdk/GitHub/lucene-solr/solr/example/techproducts/solr/techproducts
+INFO  - 2017-02-01 11:16:57.151; [   x:techproducts] org.apache.solr.core.SolrCore; [[techproducts] ] Opening new SolrCore at [/Users/qfdk/GitHub/lucene-solr/solr/example/techproducts/solr/techproducts], dataDir=[/Users/qfdk/GitHub/lucene-solr/solr/example/techproducts/solr/techproducts/data/]
+INFO  - 2017-02-01 11:16:57.154; [   x:techproducts] org.apache.solr.core.JmxMonitoredMap; JMX monitoring is enabled. Adding Solr mbeans to JMX Server: com.sun.jmx.mbeanserver.JmxMBeanServer@6a6afff2
+INFO  - 2017-02-01 11:16:57.243; [   x:techproducts] org.apache.solr.response.XSLTResponseWriter; xsltCacheLifetimeSeconds=5
+INFO  - 2017-02-01 11:16:57.528; [   x:techproducts] org.apache.solr.update.UpdateHandler; Using UpdateLog implementation: org.apache.solr.update.UpdateLog
+INFO  - 2017-02-01 11:16:57.529; [   x:techproducts] org.apache.solr.update.UpdateLog; Initializing UpdateLog: dataDir= defaultSyncLevel=FLUSH numRecordsToKeep=100 maxNumLogsToKeep=10 numVersionBuckets=65536
+INFO  - 2017-02-01 11:16:57.544; [   x:techproducts] org.apache.solr.update.CommitTracker; Hard AutoCommit: if uncommited for 15000ms; 
+INFO  - 2017-02-01 11:16:57.545; [   x:techproducts] org.apache.solr.update.CommitTracker; Soft AutoCommit: disabled
+INFO  - 2017-02-01 11:16:57.564; [   x:techproducts] org.apache.solr.search.SolrIndexSearcher; Opening [Searcher@d3287f[techproducts] main]
+INFO  - 2017-02-01 11:16:57.573; [   x:techproducts] org.apache.solr.rest.ManagedResourceStorage$FileStorageIO; File-based storage initialized to use dir: /Users/qfdk/GitHub/lucene-solr/solr/example/techproducts/solr/techproducts/conf
+INFO  - 2017-02-01 11:16:57.575; [   x:techproducts] org.apache.solr.rest.ManagedResourceStorage; Loaded LinkedHashMap at path _rest_managed.json using file:dir=/Users/qfdk/GitHub/lucene-solr/solr/example/techproducts/solr/techproducts/conf
+INFO  - 2017-02-01 11:16:57.576; [   x:techproducts] org.apache.solr.rest.ManagedResource; Loaded initArgs {} for /rest/managed
+INFO  - 2017-02-01 11:16:57.577; [   x:techproducts] org.apache.solr.rest.ManagedResourceStorage; Loaded LinkedHashMap at path _schema_analysis_stopwords_english.json using file:dir=/Users/qfdk/GitHub/lucene-solr/solr/example/techproducts/solr/techproducts/conf
+INFO  - 2017-02-01 11:16:57.577; [   x:techproducts] org.apache.solr.rest.ManagedResource; Loaded initArgs {ignoreCase=true} for /schema/analysis/stopwords/english
+INFO  - 2017-02-01 11:16:57.578; [   x:techproducts] org.apache.solr.rest.schema.analysis.ManagedWordSetResource; Loaded 35 words for /schema/analysis/stopwords/english
+INFO  - 2017-02-01 11:16:57.578; [   x:techproducts] org.apache.solr.rest.ManagedResource; Notified 2 observers of /schema/analysis/stopwords/english
+INFO  - 2017-02-01 11:16:57.579; [   x:techproducts] org.apache.solr.rest.ManagedResourceStorage; Loaded LinkedHashMap at path _schema_analysis_synonyms_english.json using file:dir=/Users/qfdk/GitHub/lucene-solr/solr/example/techproducts/solr/techproducts/conf
+INFO  - 2017-02-01 11:16:57.580; [   x:techproducts] org.apache.solr.rest.ManagedResource; Loaded initArgs {ignoreCase=true,format=solr} for /schema/analysis/synonyms/english
+INFO  - 2017-02-01 11:16:57.581; [   x:techproducts] org.apache.solr.rest.schema.analysis.ManagedSynonymFilterFactory$SynonymManager; Loaded 3 synonym mappings for /schema/analysis/synonyms/english
+INFO  - 2017-02-01 11:16:57.582; [   x:techproducts] org.apache.solr.rest.ManagedResource; Notified 2 observers of /schema/analysis/synonyms/english
+INFO  - 2017-02-01 11:16:57.584; [   x:techproducts] org.apache.solr.rest.RestManager$Registry; Registered ManagedResource impl org.apache.solr.ltr.store.rest.ManagedFeatureStore for path /schema/feature-store
+WARN  - 2017-02-01 11:16:57.584; [   x:techproducts] org.apache.solr.rest.ManagedResource; No stored data found for /schema/feature-store
+INFO  - 2017-02-01 11:16:57.585; [   x:techproducts] org.apache.solr.ltr.store.rest.ManagedFeatureStore; ------ managed feature ~ loading ------
+INFO  - 2017-02-01 11:16:57.586; [   x:techproducts] org.apache.solr.rest.ManagedResource; Notified 1 observers of /schema/feature-store
+INFO  - 2017-02-01 11:16:57.586; [   x:techproducts] org.apache.solr.rest.RestManager; Registered new managed resource /schema/feature-store
+INFO  - 2017-02-01 11:16:57.588; [   x:techproducts] org.apache.solr.rest.RestManager$Registry; Registered ManagedResource impl org.apache.solr.ltr.store.rest.ManagedModelStore for path /schema/model-store
+WARN  - 2017-02-01 11:16:57.590; [   x:techproducts] org.apache.solr.rest.ManagedResource; No stored data found for /schema/model-store
+INFO  - 2017-02-01 11:16:57.590; [   x:techproducts] org.apache.solr.ltr.store.rest.ManagedModelStore; INIT model store
+INFO  - 2017-02-01 11:16:57.590; [   x:techproducts] org.apache.solr.ltr.store.rest.ManagedModelStore; ------ managed models ~ loading ------
+INFO  - 2017-02-01 11:16:57.591; [   x:techproducts] org.apache.solr.rest.ManagedResource; Notified 1 observers of /schema/model-store
+INFO  - 2017-02-01 11:16:57.591; [   x:techproducts] org.apache.solr.rest.RestManager; Registered new managed resource /schema/model-store
+INFO  - 2017-02-01 11:16:57.598; [   x:techproducts] org.apache.solr.handler.component.SpellCheckComponent; Initializing spell checkers
+INFO  - 2017-02-01 11:16:57.605; [   x:techproducts] org.apache.solr.spelling.DirectSolrSpellChecker; init: {name=default,field=text,classname=solr.DirectSolrSpellChecker,distanceMeasure=internal,accuracy=0.5,maxEdits=2,minPrefix=1,maxInspections=5,minQueryLength=4,maxQueryFrequency=0.01}
+INFO  - 2017-02-01 11:16:57.612; [   x:techproducts] org.apache.solr.handler.component.SuggestComponent; Initializing SuggestComponent
+INFO  - 2017-02-01 11:16:57.616; [   x:techproducts] org.apache.solr.spelling.suggest.SolrSuggester; init: {name=mySuggester,lookupImpl=FuzzyLookupFactory,dictionaryImpl=DocumentDictionaryFactory,field=cat,weightField=price,suggestAnalyzerFieldType=string,buildOnStartup=false}
+INFO  - 2017-02-01 11:16:57.632; [   x:techproducts] org.apache.solr.spelling.suggest.SolrSuggester; Dictionary loaded with params: {name=mySuggester,lookupImpl=FuzzyLookupFactory,dictionaryImpl=DocumentDictionaryFactory,field=cat,weightField=price,suggestAnalyzerFieldType=string,buildOnStartup=false}
+INFO  - 2017-02-01 11:16:57.633; [   x:techproducts] org.apache.solr.handler.component.QueryElevationComponent; Loading QueryElevation from: /Users/qfdk/GitHub/lucene-solr/solr/example/techproducts/solr/techproducts/conf/elevate.xml
+INFO  - 2017-02-01 11:16:57.643; [   x:techproducts] org.apache.solr.handler.ReplicationHandler; Commits will be reserved for  10000
+INFO  - 2017-02-01 11:16:57.661; [   x:techproducts] org.apache.solr.core.QuerySenderListener; QuerySenderListener sending requests to Searcher@d3287f[techproducts] main{ExitableDirectoryReader(UninvertingDirectoryReader())}
+INFO  - 2017-02-01 11:16:57.697; [   x:techproducts] org.apache.solr.update.UpdateLog; Could not find max version in index or recent updates, using new clock 1558129218889449472
+INFO  - 2017-02-01 11:16:57.707; [   x:techproducts] org.apache.solr.servlet.HttpSolrCall; [admin] webapp=null path=/admin/cores params={name=techproducts&action=CREATE&instanceDir=techproducts&wt=json} status=0 QTime=1713
+INFO  - 2017-02-01 11:16:57.753; [   x:techproducts] org.apache.solr.core.SolrCore; [techproducts]  webapp=null path=null params={q=static+firstSearcher+warming+in+solrconfig.xml&distrib=false&event=firstSearcher} hits=0 status=0 QTime=90
+INFO  - 2017-02-01 11:16:57.754; [   x:techproducts] org.apache.solr.core.QuerySenderListener; QuerySenderListener done.
+INFO  - 2017-02-01 11:16:57.754; [   x:techproducts] org.apache.solr.handler.component.SpellCheckComponent$SpellCheckerListener; Loading spell index for spellchecker: default
+INFO  - 2017-02-01 11:16:57.758; [   x:techproducts] org.apache.solr.handler.component.SpellCheckComponent$SpellCheckerListener; Loading spell index for spellchecker: wordbreak
+INFO  - 2017-02-01 11:16:57.762; [   x:techproducts] org.apache.solr.core.SolrCore; [techproducts] Registered new searcher Searcher@d3287f[techproducts] main{ExitableDirectoryReader(UninvertingDirectoryReader())}
+INFO  - 2017-02-01 11:16:57.903; [   x:techproducts] org.apache.solr.update.processor.LogUpdateProcessorFactory$LogUpdateProcessor; [techproducts]  webapp=/solr path=/update params={}{add=[GB18030TEST (1558129219037298688)]} 0 152
+INFO  - 2017-02-01 11:16:57.945; [   x:techproducts] org.apache.solr.update.processor.LogUpdateProcessorFactory$LogUpdateProcessor; [techproducts]  webapp=/solr path=/update params={}{add=[SP2514N (1558129219118039040), 6H500F0 (1558129219143204864)]} 0 32
+INFO  - 2017-02-01 11:16:57.960; [   x:techproducts] org.apache.solr.update.processor.LogUpdateProcessorFactory$LogUpdateProcessor; [techproducts]  webapp=/solr path=/update params={}{add=[F8V7067-APL-KIT (1558129219159982080), IW-02 (1558129219163127808)]} 0 7
+INFO  - 2017-02-01 11:16:57.980; [   x:techproducts] org.apache.solr.update.processor.LogUpdateProcessorFactory$LogUpdateProcessor; [techproducts]  webapp=/solr path=/update params={}{add=[MA147LL/A (1558129219173613568)]} 0 13
+INFO  - 2017-02-01 11:16:57.993; [   x:techproducts] org.apache.solr.update.processor.LogUpdateProcessorFactory$LogUpdateProcessor; [techproducts]  webapp=/solr path=/update params={}{add=[adata (1558129219191439360), apple (1558129219191439361), asus (1558129219192487936), ati (1558129219193536512), belkin (1558129219193536513), canon (1558129219194585088), corsair (1558129219195633664), dell (1558129219195633665), maxtor (1558129219196682240), samsung (1558129219197730816), ... (11 adds)]} 0 9
+INFO  - 2017-02-01 11:16:58.005; [   x:techproducts] org.apache.solr.update.processor.LogUpdateProcessorFactory$LogUpdateProcessor; [techproducts]  webapp=/solr path=/update params={}{add=[TWINX2048-3200PRO (1558129219204022272), VS1GB400C3 (1558129219208216576), VDBDB1A16 (1558129219210313728)]} 0 8
+INFO  - 2017-02-01 11:16:58.017; [   x:techproducts] org.apache.solr.update.processor.LogUpdateProcessorFactory$LogUpdateProcessor; [techproducts]  webapp=/solr path=/update params={}{add=[USD (1558129219219750912), EUR (1558129219221848064), GBP (1558129219222896640), NOK (1558129219223945216)]} 0 6
+INFO  - 2017-02-01 11:16:58.026; [   x:techproducts] org.apache.solr.update.processor.LogUpdateProcessorFactory$LogUpdateProcessor; [techproducts]  webapp=/solr path=/update params={}{add=[3007WFP (1558129219232333824)]} 0 3
+INFO  - 2017-02-01 11:16:58.033; [   x:techproducts] org.apache.solr.update.processor.LogUpdateProcessorFactory$LogUpdateProcessor; [techproducts]  webapp=/solr path=/update params={}{add=[VA902B (1558129219239673856)]} 0 2
+INFO  - 2017-02-01 11:16:58.041; [   x:techproducts] org.apache.solr.update.processor.LogUpdateProcessorFactory$LogUpdateProcessor; [techproducts]  webapp=/solr path=/update params={}{add=[0579B002 (1558129219247013888)]} 0 3
+INFO  - 2017-02-01 11:16:58.048; [   x:techproducts] org.apache.solr.update.processor.LogUpdateProcessorFactory$LogUpdateProcessor; [techproducts]  webapp=/solr path=/update params={}{add=[9885A004 (1558129219254353920)]} 0 3
+INFO  - 2017-02-01 11:16:58.055; [   x:techproducts] org.apache.solr.update.processor.LogUpdateProcessorFactory$LogUpdateProcessor; [techproducts]  webapp=/solr path=/update params={}{add=[SOLR1000 (1558129219261693952)]} 0 3
+INFO  - 2017-02-01 11:16:58.065; [   x:techproducts] org.apache.solr.update.processor.LogUpdateProcessorFactory$LogUpdateProcessor; [techproducts]  webapp=/solr path=/update params={}{add=[UTF8TEST (1558129219271131136)]} 0 6
+INFO  - 2017-02-01 11:16:58.083; [   x:techproducts] org.apache.solr.update.processor.LogUpdateProcessorFactory$LogUpdateProcessor; [techproducts]  webapp=/solr path=/update params={}{add=[EN7800GTX/2DHTV/256M (1558129219281616896), 100-435805 (1558129219291054080)]} 0 12
+INFO  - 2017-02-01 11:16:58.085; [   x:techproducts] org.apache.solr.update.DirectUpdateHandler2; start commit{,optimize=false,openSearcher=true,waitSearcher=true,expungeDeletes=false,softCommit=false,prepareCommit=false}
+INFO  - 2017-02-01 11:16:58.086; [   x:techproducts] org.apache.solr.update.SolrIndexWriter; Calling setCommitData with IW:org.apache.solr.update.SolrIndexWriter@122027ce
+INFO  - 2017-02-01 11:16:58.227; [   x:techproducts] org.apache.solr.search.SolrIndexSearcher; Opening [Searcher@776f4b1a[techproducts] main]
+INFO  - 2017-02-01 11:16:58.231; [   x:techproducts] org.apache.solr.core.QuerySenderListener; QuerySenderListener sending requests to Searcher@776f4b1a[techproducts] main{ExitableDirectoryReader(UninvertingDirectoryReader(Uninverting(_0(7.0.0):C32)))}
+INFO  - 2017-02-01 11:16:58.231; [   x:techproducts] org.apache.solr.core.QuerySenderListener; QuerySenderListener done.
+INFO  - 2017-02-01 11:16:58.231; [   x:techproducts] org.apache.solr.update.DirectUpdateHandler2; end_commit_flush
+INFO  - 2017-02-01 11:16:58.235; [   x:techproducts] org.apache.solr.core.SolrCore; [techproducts] Registered new searcher Searcher@776f4b1a[techproducts] main{ExitableDirectoryReader(UninvertingDirectoryReader(Uninverting(_0(7.0.0):C32)))}
+INFO  - 2017-02-01 11:16:58.237; [   x:techproducts] org.apache.solr.update.processor.LogUpdateProcessorFactory$LogUpdateProcessor; [techproducts]  webapp=/solr path=/update params={commit=true}{commit=} 0 151
+INFO  - 2017-02-01 11:17:20.019; [   x:techproducts] org.apache.solr.core.SolrCore; [techproducts]  webapp=/solr path=/select params={q=ipad&indent=on&fl=id,name_txt_en,description_txt_en&rows=20&wt=json} hits=0 status=0 QTime=6
+INFO  - 2017-02-01 11:17:28.238; [   x:techproducts] org.apache.solr.core.SolrCore; [techproducts]  webapp=/solr path=/select params={q=ipod&indent=on&fl=id,name_txt_en,description_txt_en&rows=20&wt=json} hits=3 status=0 QTime=7
+INFO  - 2017-02-01 11:17:43.227; [   x:techproducts] org.apache.solr.core.SolrCore; [techproducts]  webapp=/solr path=/select params={q=ipod&indent=on&fl=*&rows=20&wt=json} hits=3 status=0 QTime=0
+INFO  - 2017-02-01 11:18:50.417; [   x:techproducts] org.apache.solr.core.SolrCore; [techproducts]  webapp=/solr path=/select params={q=ipod&indent=on&fl=inStock,price&rows=20&wt=json} hits=3 status=0 QTime=0
+ERROR - 2017-02-01 11:18:54.692; [   x:techproducts] org.apache.solr.common.SolrException; org.apache.solr.common.SolrException: Error parsing fieldname: Expected identifier at pos 1 str='$'
+	at org.apache.solr.search.SolrReturnFields.add(SolrReturnFields.java:361)
+	at org.apache.solr.search.SolrReturnFields.parseFieldList(SolrReturnFields.java:114)
+	at org.apache.solr.search.SolrReturnFields.<init>(SolrReturnFields.java:100)
+	at org.apache.solr.search.SolrReturnFields.<init>(SolrReturnFields.java:76)
+	at org.apache.solr.handler.component.QueryComponent.prepare(QueryComponent.java:139)
+	at org.apache.solr.handler.component.SearchHandler.handleRequestBody(SearchHandler.java:268)
+	at org.apache.solr.handler.RequestHandlerBase.handleRequest(RequestHandlerBase.java:166)
+	at org.apache.solr.core.SolrCore.execute(SolrCore.java:2402)
+	at org.apache.solr.servlet.HttpSolrCall.execute(HttpSolrCall.java:658)
+	at org.apache.solr.servlet.HttpSolrCall.call(HttpSolrCall.java:464)
+	at org.apache.solr.servlet.SolrDispatchFilter.doFilter(SolrDispatchFilter.java:345)
+	at org.apache.solr.servlet.SolrDispatchFilter.doFilter(SolrDispatchFilter.java:296)
+	at org.eclipse.jetty.servlet.ServletHandler$CachedChain.doFilter(ServletHandler.java:1699)
+	at org.eclipse.jetty.servlets.CrossOriginFilter.handle(CrossOriginFilter.java:308)
+	at org.eclipse.jetty.servlets.CrossOriginFilter.doFilter(CrossOriginFilter.java:262)
+	at org.eclipse.jetty.servlet.ServletHandler$CachedChain.doFilter(ServletHandler.java:1691)
+	at org.eclipse.jetty.servlet.ServletHandler.doHandle(ServletHandler.java:582)
+	at org.eclipse.jetty.server.handler.ScopedHandler.handle(ScopedHandler.java:143)
+	at org.eclipse.jetty.security.SecurityHandler.handle(SecurityHandler.java:548)
+	at org.eclipse.jetty.server.session.SessionHandler.doHandle(SessionHandler.java:226)
+	at org.eclipse.jetty.server.handler.ContextHandler.doHandle(ContextHandler.java:1180)
+	at org.eclipse.jetty.servlet.ServletHandler.doScope(ServletHandler.java:512)
+	at org.eclipse.jetty.server.session.SessionHandler.doScope(SessionHandler.java:185)
+	at org.eclipse.jetty.server.handler.ContextHandler.doScope(ContextHandler.java:1112)
+	at org.eclipse.jetty.server.handler.ScopedHandler.handle(ScopedHandler.java:141)
+	at org.eclipse.jetty.server.handler.ContextHandlerCollection.handle(ContextHandlerCollection.java:213)
+	at org.eclipse.jetty.server.handler.HandlerCollection.handle(HandlerCollection.java:119)
+	at org.eclipse.jetty.server.handler.HandlerWrapper.handle(HandlerWrapper.java:134)
+	at org.eclipse.jetty.server.Server.handle(Server.java:534)
+	at org.eclipse.jetty.server.HttpChannel.handle(HttpChannel.java:320)
+	at org.eclipse.jetty.server.HttpConnection.onFillable(HttpConnection.java:251)
+	at org.eclipse.jetty.io.AbstractConnection$ReadCallback.succeeded(AbstractConnection.java:273)
+	at org.eclipse.jetty.io.FillInterest.fillable(FillInterest.java:95)
+	at org.eclipse.jetty.io.SelectChannelEndPoint$2.run(SelectChannelEndPoint.java:93)
+	at org.eclipse.jetty.util.thread.strategy.ExecuteProduceConsume.executeProduceConsume(ExecuteProduceConsume.java:303)
+	at org.eclipse.jetty.util.thread.strategy.ExecuteProduceConsume.produceConsume(ExecuteProduceConsume.java:148)
+	at org.eclipse.jetty.util.thread.strategy.ExecuteProduceConsume.run(ExecuteProduceConsume.java:136)
+	at org.eclipse.jetty.util.thread.QueuedThreadPool.runJob(QueuedThreadPool.java:671)
+	at org.eclipse.jetty.util.thread.QueuedThreadPool$2.run(QueuedThreadPool.java:589)
+	at java.lang.Thread.run(Thread.java:745)
+Caused by: org.apache.solr.search.SyntaxError: Expected identifier at pos 1 str='$'
+	at org.apache.solr.search.StrParser.getId(StrParser.java:189)
+	at org.apache.solr.search.StrParser.getId(StrParser.java:168)
+	at org.apache.solr.search.FunctionQParser.parseValueSource(FunctionQParser.java:311)
+	at org.apache.solr.search.FunctionQParser.parse(FunctionQParser.java:80)
+	at org.apache.solr.search.QParser.getQuery(QParser.java:168)
+	at org.apache.solr.search.SolrReturnFields.add(SolrReturnFields.java:302)
+	... 39 more
+
+INFO  - 2017-02-01 11:18:54.692; [   x:techproducts] org.apache.solr.core.SolrCore; [techproducts]  webapp=/solr path=/select params={q=ipod&indent=on&fl=inStock,price,$&rows=20&wt=json} status=400 QTime=3
+INFO  - 2017-02-01 11:19:02.212; [   x:techproducts] org.apache.solr.core.SolrCore; [techproducts]  webapp=/solr path=/select params={q=ipod&indent=on&fl=inStock,price,{!field+f%3Dname}${user_query}&rows=20&wt=json} hits=3 status=0 QTime=3
+ERROR - 2017-02-01 11:19:02.213; [   x:techproducts] org.apache.solr.common.SolrException; null:java.lang.NullPointerException
+	at org.apache.lucene.search.IndexSearcher.rewrite(IndexSearcher.java:674)
+	at org.apache.lucene.search.IndexSearcher.createNormalizedWeight(IndexSearcher.java:724)
+	at org.apache.lucene.queries.function.valuesource.QueryValueSource.createWeight(QueryValueSource.java:74)
+	at org.apache.solr.response.transform.ValueSourceAugmenter.setContext(ValueSourceAugmenter.java:69)
+	at org.apache.solr.response.DocsStreamer.<init>(DocsStreamer.java:113)
+	at org.apache.solr.response.ResultContext.getProcessedDocuments(ResultContext.java:55)
+	at org.apache.solr.response.TextResponseWriter.writeDocuments(TextResponseWriter.java:260)
+	at org.apache.solr.response.TextResponseWriter.writeVal(TextResponseWriter.java:156)
+	at org.apache.solr.response.JSONWriter.writeNamedListAsMapWithDups(JSONResponseWriter.java:209)
+	at org.apache.solr.response.JSONWriter.writeNamedList(JSONResponseWriter.java:325)
+	at org.apache.solr.response.JSONWriter.writeResponse(JSONResponseWriter.java:120)
+	at org.apache.solr.response.JSONResponseWriter.write(JSONResponseWriter.java:71)
+	at org.apache.solr.response.QueryResponseWriterUtil.writeQueryResponse(QueryResponseWriterUtil.java:65)
+	at org.apache.solr.servlet.HttpSolrCall.writeResponse(HttpSolrCall.java:732)
+	at org.apache.solr.servlet.HttpSolrCall.call(HttpSolrCall.java:473)
+	at org.apache.solr.servlet.SolrDispatchFilter.doFilter(SolrDispatchFilter.java:345)
+	at org.apache.solr.servlet.SolrDispatchFilter.doFilter(SolrDispatchFilter.java:296)
+	at org.eclipse.jetty.servlet.ServletHandler$CachedChain.doFilter(ServletHandler.java:1699)
+	at org.eclipse.jetty.servlets.CrossOriginFilter.handle(CrossOriginFilter.java:308)
+	at org.eclipse.jetty.servlets.CrossOriginFilter.doFilter(CrossOriginFilter.java:262)
+	at org.eclipse.jetty.servlet.ServletHandler$CachedChain.doFilter(ServletHandler.java:1691)
+	at org.eclipse.jetty.servlet.ServletHandler.doHandle(ServletHandler.java:582)
+	at org.eclipse.jetty.server.handler.ScopedHandler.handle(ScopedHandler.java:143)
+	at org.eclipse.jetty.security.SecurityHandler.handle(SecurityHandler.java:548)
+	at org.eclipse.jetty.server.session.SessionHandler.doHandle(SessionHandler.java:226)
+	at org.eclipse.jetty.server.handler.ContextHandler.doHandle(ContextHandler.java:1180)
+	at org.eclipse.jetty.servlet.ServletHandler.doScope(ServletHandler.java:512)
+	at org.eclipse.jetty.server.session.SessionHandler.doScope(SessionHandler.java:185)
+	at org.eclipse.jetty.server.handler.ContextHandler.doScope(ContextHandler.java:1112)
+	at org.eclipse.jetty.server.handler.ScopedHandler.handle(ScopedHandler.java:141)
+	at org.eclipse.jetty.server.handler.ContextHandlerCollection.handle(ContextHandlerCollection.java:213)
+	at org.eclipse.jetty.server.handler.HandlerCollection.handle(HandlerCollection.java:119)
+	at org.eclipse.jetty.server.handler.HandlerWrapper.handle(HandlerWrapper.java:134)
+	at org.eclipse.jetty.server.Server.handle(Server.java:534)
+	at org.eclipse.jetty.server.HttpChannel.handle(HttpChannel.java:320)
+	at org.eclipse.jetty.server.HttpConnection.onFillable(HttpConnection.java:251)
+	at org.eclipse.jetty.io.AbstractConnection$ReadCallback.succeeded(AbstractConnection.java:273)
+	at org.eclipse.jetty.io.FillInterest.fillable(FillInterest.java:95)
+	at org.eclipse.jetty.io.SelectChannelEndPoint$2.run(SelectChannelEndPoint.java:93)
+	at org.eclipse.jetty.util.thread.strategy.ExecuteProduceConsume.executeProduceConsume(ExecuteProduceConsume.java:303)
+	at org.eclipse.jetty.util.thread.strategy.ExecuteProduceConsume.produceConsume(ExecuteProduceConsume.java:148)
+	at org.eclipse.jetty.util.thread.strategy.ExecuteProduceConsume.run(ExecuteProduceConsume.java:136)
+	at org.eclipse.jetty.util.thread.QueuedThreadPool.runJob(QueuedThreadPool.java:671)
+	at org.eclipse.jetty.util.thread.QueuedThreadPool$2.run(QueuedThreadPool.java:589)
+	at java.lang.Thread.run(Thread.java:745)
+
+ERROR - 2017-02-01 11:19:20.056; [   x:techproducts] org.apache.solr.common.SolrException; org.apache.solr.common.SolrException: Error parsing fieldname: Expected identifier at pos 1 str='$'
+	at org.apache.solr.search.SolrReturnFields.add(SolrReturnFields.java:361)
+	at org.apache.solr.search.SolrReturnFields.parseFieldList(SolrReturnFields.java:114)
+	at org.apache.solr.search.SolrReturnFields.<init>(SolrReturnFields.java:100)
+	at org.apache.solr.search.SolrReturnFields.<init>(SolrReturnFields.java:76)
+	at org.apache.solr.handler.component.QueryComponent.prepare(QueryComponent.java:139)
+	at org.apache.solr.handler.component.SearchHandler.handleRequestBody(SearchHandler.java:268)
+	at org.apache.solr.handler.RequestHandlerBase.handleRequest(RequestHandlerBase.java:166)
+	at org.apache.solr.core.SolrCore.execute(SolrCore.java:2402)
+	at org.apache.solr.servlet.HttpSolrCall.execute(HttpSolrCall.java:658)
+	at org.apache.solr.servlet.HttpSolrCall.call(HttpSolrCall.java:464)
+	at org.apache.solr.servlet.SolrDispatchFilter.doFilter(SolrDispatchFilter.java:345)
+	at org.apache.solr.servlet.SolrDispatchFilter.doFilter(SolrDispatchFilter.java:296)
+	at org.eclipse.jetty.servlet.ServletHandler$CachedChain.doFilter(ServletHandler.java:1699)
+	at org.eclipse.jetty.servlets.CrossOriginFilter.handle(CrossOriginFilter.java:308)
+	at org.eclipse.jetty.servlets.CrossOriginFilter.doFilter(CrossOriginFilter.java:262)
+	at org.eclipse.jetty.servlet.ServletHandler$CachedChain.doFilter(ServletHandler.java:1691)
+	at org.eclipse.jetty.servlet.ServletHandler.doHandle(ServletHandler.java:582)
+	at org.eclipse.jetty.server.handler.ScopedHandler.handle(ScopedHandler.java:143)
+	at org.eclipse.jetty.security.SecurityHandler.handle(SecurityHandler.java:548)
+	at org.eclipse.jetty.server.session.SessionHandler.doHandle(SessionHandler.java:226)
+	at org.eclipse.jetty.server.handler.ContextHandler.doHandle(ContextHandler.java:1180)
+	at org.eclipse.jetty.servlet.ServletHandler.doScope(ServletHandler.java:512)
+	at org.eclipse.jetty.server.session.SessionHandler.doScope(SessionHandler.java:185)
+	at org.eclipse.jetty.server.handler.ContextHandler.doScope(ContextHandler.java:1112)
+	at org.eclipse.jetty.server.handler.ScopedHandler.handle(ScopedHandler.java:141)
+	at org.eclipse.jetty.server.handler.ContextHandlerCollection.handle(ContextHandlerCollection.java:213)
+	at org.eclipse.jetty.server.handler.HandlerCollection.handle(HandlerCollection.java:119)
+	at org.eclipse.jetty.server.handler.HandlerWrapper.handle(HandlerWrapper.java:134)
+	at org.eclipse.jetty.server.Server.handle(Server.java:534)
+	at org.eclipse.jetty.server.HttpChannel.handle(HttpChannel.java:320)
+	at org.eclipse.jetty.server.HttpConnection.onFillable(HttpConnection.java:251)
+	at org.eclipse.jetty.io.AbstractConnection$ReadCallback.succeeded(AbstractConnection.java:273)
+	at org.eclipse.jetty.io.FillInterest.fillable(FillInterest.java:95)
+	at org.eclipse.jetty.io.SelectChannelEndPoint$2.run(SelectChannelEndPoint.java:93)
+	at org.eclipse.jetty.util.thread.strategy.ExecuteProduceConsume.executeProduceConsume(ExecuteProduceConsume.java:303)
+	at org.eclipse.jetty.util.thread.strategy.ExecuteProduceConsume.produceConsume(ExecuteProduceConsume.java:148)
+	at org.eclipse.jetty.util.thread.strategy.ExecuteProduceConsume.run(ExecuteProduceConsume.java:136)
+	at org.eclipse.jetty.util.thread.QueuedThreadPool.runJob(QueuedThreadPool.java:671)
+	at org.eclipse.jetty.util.thread.QueuedThreadPool$2.run(QueuedThreadPool.java:589)
+	at java.lang.Thread.run(Thread.java:745)
+Caused by: org.apache.solr.search.SyntaxError: Expected identifier at pos 1 str='$'
+	at org.apache.solr.search.StrParser.getId(StrParser.java:189)
+	at org.apache.solr.search.StrParser.getId(StrParser.java:168)
+	at org.apache.solr.search.FunctionQParser.parseValueSource(FunctionQParser.java:311)
+	at org.apache.solr.search.FunctionQParser.parse(FunctionQParser.java:80)
+	at org.apache.solr.search.QParser.getQuery(QParser.java:168)
+	at org.apache.solr.search.SolrReturnFields.add(SolrReturnFields.java:302)
+	... 39 more
+
+INFO  - 2017-02-01 11:19:20.056; [   x:techproducts] org.apache.solr.core.SolrCore; [techproducts]  webapp=/solr path=/select params={q=$&indent=on&fl=inStock,price,$&rows=20&wt=json} status=400 QTime=1
+INFO  - 2017-02-01 11:19:30.286; [   x:techproducts] org.apache.solr.core.SolrCore; [techproducts]  webapp=/solr path=/select params={q=$&indent=on&fl=inStock,price&rows=20&wt=json} hits=0 status=0 QTime=1
+INFO  - 2017-02-01 11:19:34.298; [   x:techproducts] org.apache.solr.core.SolrCore; [techproducts]  webapp=/solr path=/select params={q={!field+f%3Dname}${user_query}&indent=on&fl=inStock,price&rows=20&wt=json} hits=0 status=0 QTime=0
+INFO  - 2017-02-01 11:19:54.595; [   x:techproducts] org.apache.solr.core.SolrCore; [techproducts]  webapp=/solr path=/select params={q=$&indent=on&fl=inStock,price&rows=20&wt=json} hits=0 status=0 QTime=0
+INFO  - 2017-02-01 11:20:09.573; [   x:techproducts] org.apache.solr.core.SolrCore; [techproducts]  webapp=/solr path=/select params={q=*&indent=on&fl=inStock,price&rows=20&wt=json} hits=32 status=0 QTime=3
+INFO  - 2017-02-01 11:20:14.843; [   x:techproducts] org.apache.solr.core.SolrCore; [techproducts]  webapp=/solr path=/select params={q=*&indent=on&fl=name,inStock,price&rows=20&wt=json} hits=32 status=0 QTime=0
+INFO  - 2017-02-01 11:23:03.026; [   x:techproducts] org.eclipse.jetty.server.handler.ContextHandler$Context; SolrRestApi: [Restlet] ServerServlet: component class is null
+INFO  - 2017-02-01 11:23:03.138; [   x:techproducts] org.eclipse.jetty.server.handler.ContextHandler$Context; SolrRestApi: [Restlet] Attaching application: org.apache.solr.rest.SolrSchemaRestApi@6a39a31e to URI: /solr/schema
+INFO  - 2017-02-01 11:23:03.159; [   x:techproducts] org.apache.solr.rest.SolrSchemaRestApi; createInboundRoot started for /schema
+INFO  - 2017-02-01 11:23:03.163; [   x:techproducts] org.apache.solr.rest.RestManager; Attached managed resource at path: /analysis/stopwords/english
+INFO  - 2017-02-01 11:23:03.163; [   x:techproducts] org.apache.solr.rest.RestManager; Attached managed resource at path: /analysis/synonyms/english
+INFO  - 2017-02-01 11:23:03.164; [   x:techproducts] org.apache.solr.rest.RestManager; Attached managed resource at path: /feature-store
+INFO  - 2017-02-01 11:23:03.164; [   x:techproducts] org.apache.solr.rest.RestManager; Attached managed resource at path: /managed
+INFO  - 2017-02-01 11:23:03.164; [   x:techproducts] org.apache.solr.rest.RestManager; Attached managed resource at path: /model-store
+INFO  - 2017-02-01 11:23:03.164; [   x:techproducts] org.apache.solr.rest.RestManager; Attached 5 ManagedResource endpoints to Restlet router: /schema
+INFO  - 2017-02-01 11:23:03.165; [   x:techproducts] org.apache.solr.rest.SolrSchemaRestApi; createInboundRoot complete for /schema
+INFO  - 2017-02-01 11:23:03.172; [   x:techproducts] org.apache.solr.rest.RestManager$ManagedEndpoint; Resource not found for /schema/feature-store/jouvestore, looking for parent: /schema/feature-store
+INFO  - 2017-02-01 11:23:03.173; [   x:techproducts] org.apache.solr.rest.RestManager$ManagedEndpoint; Found parent resource /schema/feature-store for child: jouvestore
+INFO  - 2017-02-01 11:23:03.173; [   x:techproducts] org.apache.solr.rest.RestManager$ManagedEndpoint; Found ManagedResource [org.apache.solr.ltr.store.rest.ManagedFeatureStore@16ba0b34] for /schema/feature-store/jouvestore
+INFO  - 2017-02-01 11:23:03.176; [   x:techproducts] org.apache.solr.rest.ManagedResourceStorage$JsonStorage; Saved JSON object to path _schema_feature-store.json using file:dir=/Users/qfdk/GitHub/lucene-solr/solr/example/techproducts/solr/techproducts/conf
+INFO  - 2017-02-01 11:23:03.177; [   x:techproducts] org.apache.solr.rest.BaseSolrResource; [techproducts]  webapp=/solr path=/schema/feature-store/jouvestore params={} status=0 QTime=155
+INFO  - 2017-02-01 11:23:03.192; [   x:techproducts] org.apache.solr.rest.RestManager$ManagedEndpoint; Found ManagedResource [org.apache.solr.ltr.store.rest.ManagedFeatureStore@16ba0b34] for /schema/feature-store
+INFO  - 2017-02-01 11:23:03.193; [   x:techproducts] org.apache.solr.rest.ManagedResource; Processing update to /schema/feature-store: [{store=jouvestore, name=isInStock, class=org.apache.solr.ltr.feature.FieldValueFeature, params={field=inStock}}, {store=jouvestore, name=originalScore, class=org.apache.solr.ltr.feature.OriginalScoreFeature, params={}}, {store=jouvestore, name=price, class=org.apache.solr.ltr.feature.FieldValueFeature, params={field=price}}, {store=jouvestore, name=productNameMatchQuery, class=org.apache.solr.ltr.feature.SolrFeature, params={q={!field f=name}${user_query}}}] is a java.util.ArrayList
+INFO  - 2017-02-01 11:23:03.193; [   x:techproducts] org.apache.solr.ltr.store.rest.ManagedFeatureStore; register feature based on {store=jouvestore, name=isInStock, class=org.apache.solr.ltr.feature.FieldValueFeature, params={field=inStock}}
+INFO  - 2017-02-01 11:23:03.201; [   x:techproducts] org.apache.solr.ltr.store.rest.ManagedFeatureStore; register feature based on {store=jouvestore, name=originalScore, class=org.apache.solr.ltr.feature.OriginalScoreFeature, params={}}
+INFO  - 2017-02-01 11:23:03.202; [   x:techproducts] org.apache.solr.ltr.store.rest.ManagedFeatureStore; register feature based on {store=jouvestore, name=price, class=org.apache.solr.ltr.feature.FieldValueFeature, params={field=price}}
+INFO  - 2017-02-01 11:23:03.202; [   x:techproducts] org.apache.solr.ltr.store.rest.ManagedFeatureStore; register feature based on {store=jouvestore, name=productNameMatchQuery, class=org.apache.solr.ltr.feature.SolrFeature, params={q={!field f=name}${user_query}}}
+INFO  - 2017-02-01 11:23:03.207; [   x:techproducts] org.apache.solr.rest.ManagedResourceStorage$JsonStorage; Saved JSON object to path _schema_feature-store.json using file:dir=/Users/qfdk/GitHub/lucene-solr/solr/example/techproducts/solr/techproducts/conf
+INFO  - 2017-02-01 11:23:03.207; [   x:techproducts] org.apache.solr.rest.BaseSolrResource; [techproducts]  webapp=/solr path=/schema/feature-store params={} status=0 QTime=16
+INFO  - 2017-02-01 11:23:26.379; [   x:techproducts] org.apache.solr.rest.RestManager$ManagedEndpoint; Resource not found for /schema/feature-store/jouvestore, looking for parent: /schema/feature-store
+INFO  - 2017-02-01 11:23:26.380; [   x:techproducts] org.apache.solr.rest.RestManager$ManagedEndpoint; Found parent resource /schema/feature-store for child: jouvestore
+INFO  - 2017-02-01 11:23:26.380; [   x:techproducts] org.apache.solr.rest.RestManager$ManagedEndpoint; Found ManagedResource [org.apache.solr.ltr.store.rest.ManagedFeatureStore@16ba0b34] for /schema/feature-store/jouvestore
+INFO  - 2017-02-01 11:23:26.380; [   x:techproducts] org.apache.solr.rest.ManagedResourceStorage$JsonStorage; Saved JSON object to path _schema_feature-store.json using file:dir=/Users/qfdk/GitHub/lucene-solr/solr/example/techproducts/solr/techproducts/conf
+INFO  - 2017-02-01 11:23:26.380; [   x:techproducts] org.apache.solr.rest.BaseSolrResource; [techproducts]  webapp=/solr path=/schema/feature-store/jouvestore params={} status=0 QTime=2
+INFO  - 2017-02-01 11:23:26.386; [   x:techproducts] org.apache.solr.rest.RestManager$ManagedEndpoint; Found ManagedResource [org.apache.solr.ltr.store.rest.ManagedFeatureStore@16ba0b34] for /schema/feature-store
+INFO  - 2017-02-01 11:23:26.387; [   x:techproducts] org.apache.solr.rest.ManagedResource; Processing update to /schema/feature-store: [{store=jouvestore, name=isInStock, class=org.apache.solr.ltr.feature.FieldValueFeature, params={field=inStock}}, {store=jouvestore, name=originalScore, class=org.apache.solr.ltr.feature.OriginalScoreFeature, params={}}, {store=jouvestore, name=price, class=org.apache.solr.ltr.feature.FieldValueFeature, params={field=price}}, {store=jouvestore, name=productNameMatchQuery, class=org.apache.solr.ltr.feature.SolrFeature, params={q={!field f=name}${user_query}}}] is a java.util.ArrayList
+INFO  - 2017-02-01 11:23:26.388; [   x:techproducts] org.apache.solr.ltr.store.rest.ManagedFeatureStore; register feature based on {store=jouvestore, name=isInStock, class=org.apache.solr.ltr.feature.FieldValueFeature, params={field=inStock}}
+INFO  - 2017-02-01 11:23:26.389; [   x:techproducts] org.apache.solr.ltr.store.rest.ManagedFeatureStore; register feature based on {store=jouvestore, name=originalScore, class=org.apache.solr.ltr.feature.OriginalScoreFeature, params={}}
+INFO  - 2017-02-01 11:23:26.389; [   x:techproducts] org.apache.solr.ltr.store.rest.ManagedFeatureStore; register feature based on {store=jouvestore, name=price, class=org.apache.solr.ltr.feature.FieldValueFeature, params={field=price}}
+INFO  - 2017-02-01 11:23:26.389; [   x:techproducts] org.apache.solr.ltr.store.rest.ManagedFeatureStore; register feature based on {store=jouvestore, name=productNameMatchQuery, class=org.apache.solr.ltr.feature.SolrFeature, params={q={!field f=name}${user_query}}}
+INFO  - 2017-02-01 11:23:26.390; [   x:techproducts] org.apache.solr.rest.ManagedResourceStorage$JsonStorage; Saved JSON object to path _schema_feature-store.json using file:dir=/Users/qfdk/GitHub/lucene-solr/solr/example/techproducts/solr/techproducts/conf
+INFO  - 2017-02-01 11:23:26.391; [   x:techproducts] org.apache.solr.rest.BaseSolrResource; [techproducts]  webapp=/solr path=/schema/feature-store params={} status=0 QTime=5
+INFO  - 2017-02-01 11:23:44.434; [   x:techproducts] org.apache.solr.rest.RestManager$ManagedEndpoint; Resource not found for /schema/feature-store/jouvestore, looking for parent: /schema/feature-store
+INFO  - 2017-02-01 11:23:44.435; [   x:techproducts] org.apache.solr.rest.RestManager$ManagedEndpoint; Found parent resource /schema/feature-store for child: jouvestore
+INFO  - 2017-02-01 11:23:44.435; [   x:techproducts] org.apache.solr.rest.RestManager$ManagedEndpoint; Found ManagedResource [org.apache.solr.ltr.store.rest.ManagedFeatureStore@16ba0b34] for /schema/feature-store/jouvestore
+INFO  - 2017-02-01 11:23:44.435; [   x:techproducts] org.apache.solr.rest.ManagedResourceStorage$JsonStorage; Saved JSON object to path _schema_feature-store.json using file:dir=/Users/qfdk/GitHub/lucene-solr/solr/example/techproducts/solr/techproducts/conf
+INFO  - 2017-02-01 11:23:44.435; [   x:techproducts] org.apache.solr.rest.BaseSolrResource; [techproducts]  webapp=/solr path=/schema/feature-store/jouvestore params={} status=0 QTime=2
+INFO  - 2017-02-01 11:23:44.438; [   x:techproducts] org.apache.solr.rest.RestManager$ManagedEndpoint; Found ManagedResource [org.apache.solr.ltr.store.rest.ManagedFeatureStore@16ba0b34] for /schema/feature-store
+INFO  - 2017-02-01 11:23:44.439; [   x:techproducts] org.apache.solr.rest.ManagedResource; Processing update to /schema/feature-store: [{store=jouvestore, name=isInStock, class=org.apache.solr.ltr.feature.FieldValueFeature, params={field=inStock}}, {store=jouvestore, name=originalScore, class=org.apache.solr.ltr.feature.OriginalScoreFeature, params={}}, {store=jouvestore, name=price, class=org.apache.solr.ltr.feature.FieldValueFeature, params={field=price}}, {store=jouvestore, name=productNameMatchQuery, class=org.apache.solr.ltr.feature.SolrFeature, params={q={!field f=name}${user_query}}}] is a java.util.ArrayList
+INFO  - 2017-02-01 11:23:44.439; [   x:techproducts] org.apache.solr.ltr.store.rest.ManagedFeatureStore; register feature based on {store=jouvestore, name=isInStock, class=org.apache.solr.ltr.feature.FieldValueFeature, params={field=inStock}}
+INFO  - 2017-02-01 11:23:44.439; [   x:techproducts] org.apache.solr.ltr.store.rest.ManagedFeatureStore; register feature based on {store=jouvestore, name=originalScore, class=org.apache.solr.ltr.feature.OriginalScoreFeature, params={}}
+INFO  - 2017-02-01 11:23:44.440; [   x:techproducts] org.apache.solr.ltr.store.rest.ManagedFeatureStore; register feature based on {store=jouvestore, name=price, class=org.apache.solr.ltr.feature.FieldValueFeature, params={field=price}}
+INFO  - 2017-02-01 11:23:44.440; [   x:techproducts] org.apache.solr.ltr.store.rest.ManagedFeatureStore; register feature based on {store=jouvestore, name=productNameMatchQuery, class=org.apache.solr.ltr.feature.SolrFeature, params={q={!field f=name}${user_query}}}
+INFO  - 2017-02-01 11:23:44.440; [   x:techproducts] org.apache.solr.rest.ManagedResourceStorage$JsonStorage; Saved JSON object to path _schema_feature-store.json using file:dir=/Users/qfdk/GitHub/lucene-solr/solr/example/techproducts/solr/techproducts/conf
+INFO  - 2017-02-01 11:23:44.440; [   x:techproducts] org.apache.solr.rest.BaseSolrResource; [techproducts]  webapp=/solr path=/schema/feature-store params={} status=0 QTime=2
+INFO  - 2017-02-01 11:23:44.448; [   x:techproducts] org.apache.solr.core.SolrCore; [techproducts]  webapp=/solr path=/query params={q=id:"SP2514N"&fl=id,score,[features+store%3Djouvestore+efi.user_query%3D'\'hard%2Bdrive\'']} hits=1 status=0 QTime=2
+INFO  - 2017-02-01 11:23:44.489; [   x:techproducts] org.apache.solr.core.SolrCore; [techproducts]  webapp=/solr path=/query params={q=id:"6H500F0"&fl=id,score,[features+store%3Djouvestore+efi.user_query%3D'\'hard%2Bdrive\'']} hits=1 status=0 QTime=0
+INFO  - 2017-02-01 11:23:44.495; [   x:techproducts] org.apache.solr.core.SolrCore; [techproducts]  webapp=/solr path=/query params={q=id:"F8V7067-APL-KIT"&fl=id,score,[features+store%3Djouvestore+efi.user_query%3D'\'hard%2Bdrive\'']} hits=1 status=0 QTime=0
+INFO  - 2017-02-01 11:23:44.498; [   x:techproducts] org.apache.solr.core.SolrCore; [techproducts]  webapp=/solr path=/query params={q=id:"IW-02"&fl=id,score,[features+store%3Djouvestore+efi.user_query%3D'\'hard%2Bdrive\'']} hits=1 status=0 QTime=0
+INFO  - 2017-02-01 11:23:44.501; [   x:techproducts] org.apache.solr.core.SolrCore; [techproducts]  webapp=/solr path=/query params={q=id:"MA147LL/A"&fl=id,score,[features+store%3Djouvestore+efi.user_query%3D'\'ipod\'']} hits=1 status=0 QTime=0
+INFO  - 2017-02-01 11:23:44.504; [   x:techproducts] org.apache.solr.core.SolrCore; [techproducts]  webapp=/solr path=/query params={q=id:"F8V7067-APL-KIT"&fl=id,score,[features+store%3Djouvestore+efi.user_query%3D'\'ipod\'']} hits=1 status=0 QTime=0
+INFO  - 2017-02-01 11:23:44.509; [   x:techproducts] org.apache.solr.core.SolrCore; [techproducts]  webapp=/solr path=/query params={q=id:"IW-02"&fl=id,score,[features+store%3Djouvestore+efi.user_query%3D'\'ipod\'']} hits=1 status=0 QTime=0
+INFO  - 2017-02-01 11:23:44.515; [   x:techproducts] org.apache.solr.core.SolrCore; [techproducts]  webapp=/solr path=/query params={q=id:"6H500F0"&fl=id,score,[features+store%3Djouvestore+efi.user_query%3D'\'ipod\'']} hits=1 status=0 QTime=0
+INFO  - 2017-02-01 11:23:44.524; [   x:techproducts] org.apache.solr.rest.RestManager$ManagedEndpoint; Resource not found for /schema/model-store/jouvemodel, looking for parent: /schema/model-store
+INFO  - 2017-02-01 11:23:44.525; [   x:techproducts] org.apache.solr.rest.RestManager$ManagedEndpoint; Found parent resource /schema/model-store for child: jouvemodel
+INFO  - 2017-02-01 11:23:44.525; [   x:techproducts] org.apache.solr.rest.RestManager$ManagedEndpoint; Found ManagedResource [ManagedModelStore [store=ModelStore [availableModels=[]], featureStores=org.apache.solr.ltr.store.rest.ManagedFeatureStore@16ba0b34]] for /schema/model-store/jouvemodel
+INFO  - 2017-02-01 11:23:44.526; [   x:techproducts] org.apache.solr.rest.ManagedResourceStorage$JsonStorage; Saved JSON object to path _schema_model-store.json using file:dir=/Users/qfdk/GitHub/lucene-solr/solr/example/techproducts/solr/techproducts/conf
+INFO  - 2017-02-01 11:23:44.526; [   x:techproducts] org.apache.solr.rest.BaseSolrResource; [techproducts]  webapp=/solr path=/schema/model-store/jouvemodel params={} status=0 QTime=2
+INFO  - 2017-02-01 11:23:44.529; [   x:techproducts] org.apache.solr.rest.RestManager$ManagedEndpoint; Found ManagedResource [ManagedModelStore [store=ModelStore [availableModels=[]], featureStores=org.apache.solr.ltr.store.rest.ManagedFeatureStore@16ba0b34]] for /schema/model-store
+INFO  - 2017-02-01 11:23:44.530; [   x:techproducts] org.apache.solr.rest.ManagedResource; Processing update to /schema/model-store: {class=org.apache.solr.ltr.model.LinearModel, store=jouvestore, name=jouvemodel, features=[{name=isInStock}, {name=productNameMatchQuery}, {name=price}, {name=originalScore}], params={weights={isInStock=-0.0159519944454, originalScore=0.0, price=-0.00383910490283, productNameMatchQuery=0.523391342892}}} is a java.util.LinkedHashMap
+INFO  - 2017-02-01 11:23:44.535; [   x:techproducts] org.apache.solr.ltr.store.rest.ManagedModelStore; adding model jouvemodel
+INFO  - 2017-02-01 11:23:44.535; [   x:techproducts] org.apache.solr.rest.ManagedResourceStorage$JsonStorage; Saved JSON object to path _schema_model-store.json using file:dir=/Users/qfdk/GitHub/lucene-solr/solr/example/techproducts/solr/techproducts/conf
+INFO  - 2017-02-01 11:23:44.536; [   x:techproducts] org.apache.solr.rest.BaseSolrResource; [techproducts]  webapp=/solr path=/schema/model-store params={} status=0 QTime=7
+ERROR - 2017-02-01 11:24:28.330; [   x:techproducts] org.apache.solr.common.SolrException; org.apache.solr.common.SolrException: java.lang.RuntimeException: Exception from createWeight for SolrFeature [name=productNameMatchQuery, params={q={!field f=name}${user_query}}] SolrFeatureWeight requires efi parameter that was not passed in request.
+	at org.apache.solr.search.ReRankCollector.topDocs(ReRankCollector.java:138)
+	at org.apache.solr.search.SolrIndexSearcher.getDocListNC(SolrIndexSearcher.java:1880)
+	at org.apache.solr.search.SolrIndexSearcher.getDocListC(SolrIndexSearcher.java:1694)
+	at org.apache.solr.search.SolrIndexSearcher.search(SolrIndexSearcher.java:626)
+	at org.apache.solr.handler.component.QueryComponent.process(QueryComponent.java:548)
+	at org.apache.solr.handler.component.SearchHandler.handleRequestBody(SearchHandler.java:294)
+	at org.apache.solr.handler.RequestHandlerBase.handleRequest(RequestHandlerBase.java:166)
+	at org.apache.solr.core.SolrCore.execute(SolrCore.java:2402)
+	at org.apache.solr.servlet.HttpSolrCall.execute(HttpSolrCall.java:658)
+	at org.apache.solr.servlet.HttpSolrCall.call(HttpSolrCall.java:464)
+	at org.apache.solr.servlet.SolrDispatchFilter.doFilter(SolrDispatchFilter.java:345)
+	at org.apache.solr.servlet.SolrDispatchFilter.doFilter(SolrDispatchFilter.java:296)
+	at org.eclipse.jetty.servlet.ServletHandler$CachedChain.doFilter(ServletHandler.java:1699)
+	at org.eclipse.jetty.servlets.CrossOriginFilter.handle(CrossOriginFilter.java:308)
+	at org.eclipse.jetty.servlets.CrossOriginFilter.doFilter(CrossOriginFilter.java:262)
+	at org.eclipse.jetty.servlet.ServletHandler$CachedChain.doFilter(ServletHandler.java:1691)
+	at org.eclipse.jetty.servlet.ServletHandler.doHandle(ServletHandler.java:582)
+	at org.eclipse.jetty.server.handler.ScopedHandler.handle(ScopedHandler.java:143)
+	at org.eclipse.jetty.security.SecurityHandler.handle(SecurityHandler.java:548)
+	at org.eclipse.jetty.server.session.SessionHandler.doHandle(SessionHandler.java:226)
+	at org.eclipse.jetty.server.handler.ContextHandler.doHandle(ContextHandler.java:1180)
+	at org.eclipse.jetty.servlet.ServletHandler.doScope(ServletHandler.java:512)
+	at org.eclipse.jetty.server.session.SessionHandler.doScope(SessionHandler.java:185)
+	at org.eclipse.jetty.server.handler.ContextHandler.doScope(ContextHandler.java:1112)
+	at org.eclipse.jetty.server.handler.ScopedHandler.handle(ScopedHandler.java:141)
+	at org.eclipse.jetty.server.handler.ContextHandlerCollection.handle(ContextHandlerCollection.java:213)
+	at org.eclipse.jetty.server.handler.HandlerCollection.handle(HandlerCollection.java:119)
+	at org.eclipse.jetty.server.handler.HandlerWrapper.handle(HandlerWrapper.java:134)
+	at org.eclipse.jetty.server.Server.handle(Server.java:534)
+	at org.eclipse.jetty.server.HttpChannel.handle(HttpChannel.java:320)
+	at org.eclipse.jetty.server.HttpConnection.onFillable(HttpConnection.java:251)
+	at org.eclipse.jetty.io.AbstractConnection$ReadCallback.succeeded(AbstractConnection.java:273)
+	at org.eclipse.jetty.io.FillInterest.fillable(FillInterest.java:95)
+	at org.eclipse.jetty.io.SelectChannelEndPoint$2.run(SelectChannelEndPoint.java:93)
+	at org.eclipse.jetty.util.thread.strategy.ExecuteProduceConsume.executeProduceConsume(ExecuteProduceConsume.java:303)
+	at org.eclipse.jetty.util.thread.strategy.ExecuteProduceConsume.produceConsume(ExecuteProduceConsume.java:148)
+	at org.eclipse.jetty.util.thread.strategy.ExecuteProduceConsume.run(ExecuteProduceConsume.java:136)
+	at org.eclipse.jetty.util.thread.QueuedThreadPool.runJob(QueuedThreadPool.java:671)
+	at org.eclipse.jetty.util.thread.QueuedThreadPool$2.run(QueuedThreadPool.java:589)
+	at java.lang.Thread.run(Thread.java:745)
+Caused by: java.lang.RuntimeException: Exception from createWeight for SolrFeature [name=productNameMatchQuery, params={q={!field f=name}${user_query}}] SolrFeatureWeight requires efi parameter that was not passed in request.
+	at org.apache.solr.ltr.LTRScoringQuery.createWeights(LTRScoringQuery.java:241)
+	at org.apache.solr.ltr.LTRScoringQuery.createWeight(LTRScoringQuery.java:208)
+	at org.apache.solr.ltr.LTRScoringQuery.createWeight(LTRScoringQuery.java:55)
+	at org.apache.lucene.search.IndexSearcher.createWeight(IndexSearcher.java:735)
+	at org.apache.lucene.search.IndexSearcher.createNormalizedWeight(IndexSearcher.java:725)
+	at org.apache.solr.ltr.LTRRescorer.rescore(LTRRescorer.java:117)
+	at org.apache.solr.search.ReRankCollector.topDocs(ReRankCollector.java:104)
+	... 39 more
+Caused by: org.apache.solr.ltr.feature.FeatureException: SolrFeatureWeight requires efi parameter that was not passed in request.
+	at org.apache.solr.ltr.feature.SolrFeature$SolrFeatureWeight.<init>(SolrFeature.java:145)
+	at org.apache.solr.ltr.feature.SolrFeature.createWeight(SolrFeature.java:113)
+	at org.apache.solr.ltr.LTRScoringQuery.createWeights(LTRScoringQuery.java:237)
+	... 45 more
+
+INFO  - 2017-02-01 11:24:28.330; [   x:techproducts] org.apache.solr.core.SolrCore; [techproducts]  webapp=/solr path=/select params={q=ipod&indent=on&fl=name,[features]&rows=100&wt=json&rq={!ltr+model%3Djouvemodel+reRankDocs%3D5}} status=400 QTime=5
+ERROR - 2017-02-01 11:24:29.044; [   x:techproducts] org.apache.solr.common.SolrException; org.apache.solr.common.SolrException: java.lang.RuntimeException: Exception from createWeight for SolrFeature [name=productNameMatchQuery, params={q={!field f=name}${user_query}}] SolrFeatureWeight requires efi parameter that was not passed in request.
+	at org.apache.solr.search.ReRankCollector.topDocs(ReRankCollector.java:138)
+	at org.apache.solr.search.SolrIndexSearcher.getDocListNC(SolrIndexSearcher.java:1880)
+	at org.apache.solr.search.SolrIndexSearcher.getDocListC(SolrIndexSearcher.java:1694)
+	at org.apache.solr.search.SolrIndexSearcher.search(SolrIndexSearcher.java:626)
+	at org.apache.solr.handler.component.QueryComponent.process(QueryComponent.java:548)
+	at org.apache.solr.handler.component.SearchHandler.handleRequestBody(SearchHandler.java:294)
+	at org.apache.solr.handler.RequestHandlerBase.handleRequest(RequestHandlerBase.java:166)
+	at org.apache.solr.core.SolrCore.execute(SolrCore.java:2402)
+	at org.apache.solr.servlet.HttpSolrCall.execute(HttpSolrCall.java:658)
+	at org.apache.solr.servlet.HttpSolrCall.call(HttpSolrCall.java:464)
+	at org.apache.solr.servlet.SolrDispatchFilter.doFilter(SolrDispatchFilter.java:345)
+	at org.apache.solr.servlet.SolrDispatchFilter.doFilter(SolrDispatchFilter.java:296)
+	at org.eclipse.jetty.servlet.ServletHandler$CachedChain.doFilter(ServletHandler.java:1699)
+	at org.eclipse.jetty.servlets.CrossOriginFilter.handle(CrossOriginFilter.java:308)
+	at org.eclipse.jetty.servlets.CrossOriginFilter.doFilter(CrossOriginFilter.java:262)
+	at org.eclipse.jetty.servlet.ServletHandler$CachedChain.doFilter(ServletHandler.java:1691)
+	at org.eclipse.jetty.servlet.ServletHandler.doHandle(ServletHandler.java:582)
+	at org.eclipse.jetty.server.handler.ScopedHandler.handle(ScopedHandler.java:143)
+	at org.eclipse.jetty.security.SecurityHandler.handle(SecurityHandler.java:548)
+	at org.eclipse.jetty.server.session.SessionHandler.doHandle(SessionHandler.java:226)
+	at org.eclipse.jetty.server.handler.ContextHandler.doHandle(ContextHandler.java:1180)
+	at org.eclipse.jetty.servlet.ServletHandler.doScope(ServletHandler.java:512)
+	at org.eclipse.jetty.server.session.SessionHandler.doScope(SessionHandler.java:185)
+	at org.eclipse.jetty.server.handler.ContextHandler.doScope(ContextHandler.java:1112)
+	at org.eclipse.jetty.server.handler.ScopedHandler.handle(ScopedHandler.java:141)
+	at org.eclipse.jetty.server.handler.ContextHandlerCollection.handle(ContextHandlerCollection.java:213)
+	at org.eclipse.jetty.server.handler.HandlerCollection.handle(HandlerCollection.java:119)
+	at org.eclipse.jetty.server.handler.HandlerWrapper.handle(HandlerWrapper.java:134)
+	at org.eclipse.jetty.server.Server.handle(Server.java:534)
+	at org.eclipse.jetty.server.HttpChannel.handle(HttpChannel.java:320)
+	at org.eclipse.jetty.server.HttpConnection.onFillable(HttpConnection.java:251)
+	at org.eclipse.jetty.io.AbstractConnection$ReadCallback.succeeded(AbstractConnection.java:273)
+	at org.eclipse.jetty.io.FillInterest.fillable(FillInterest.java:95)
+	at org.eclipse.jetty.io.SelectChannelEndPoint$2.run(SelectChannelEndPoint.java:93)
+	at org.eclipse.jetty.util.thread.strategy.ExecuteProduceConsume.executeProduceConsume(ExecuteProduceConsume.java:303)
+	at org.eclipse.jetty.util.thread.strategy.ExecuteProduceConsume.produceConsume(ExecuteProduceConsume.java:148)
+	at org.eclipse.jetty.util.thread.strategy.ExecuteProduceConsume.run(ExecuteProduceConsume.java:136)
+	at org.eclipse.jetty.util.thread.QueuedThreadPool.runJob(QueuedThreadPool.java:671)
+	at org.eclipse.jetty.util.thread.QueuedThreadPool$2.run(QueuedThreadPool.java:589)
+	at java.lang.Thread.run(Thread.java:745)
+Caused by: java.lang.RuntimeException: Exception from createWeight for SolrFeature [name=productNameMatchQuery, params={q={!field f=name}${user_query}}] SolrFeatureWeight requires efi parameter that was not passed in request.
+	at org.apache.solr.ltr.LTRScoringQuery.createWeights(LTRScoringQuery.java:241)
+	at org.apache.solr.ltr.LTRScoringQuery.createWeight(LTRScoringQuery.java:208)
+	at org.apache.solr.ltr.LTRScoringQuery.createWeight(LTRScoringQuery.java:55)
+	at org.apache.lucene.search.IndexSearcher.createWeight(IndexSearcher.java:735)
+	at org.apache.lucene.search.IndexSearcher.createNormalizedWeight(IndexSearcher.java:725)
+	at org.apache.solr.ltr.LTRRescorer.rescore(LTRRescorer.java:117)
+	at org.apache.solr.search.ReRankCollector.topDocs(ReRankCollector.java:104)
+	... 39 more
+Caused by: org.apache.solr.ltr.feature.FeatureException: SolrFeatureWeight requires efi parameter that was not passed in request.
+	at org.apache.solr.ltr.feature.SolrFeature$SolrFeatureWeight.<init>(SolrFeature.java:145)
+	at org.apache.solr.ltr.feature.SolrFeature.createWeight(SolrFeature.java:113)
+	at org.apache.solr.ltr.LTRScoringQuery.createWeights(LTRScoringQuery.java:237)
+	... 45 more
+
+INFO  - 2017-02-01 11:24:29.045; [   x:techproducts] org.apache.solr.core.SolrCore; [techproducts]  webapp=/solr path=/select params={q=ipod&indent=on&fl=name,[features]&rows=100&wt=json&rq={!ltr+model%3Djouvemodel+reRankDocs%3D5}} status=400 QTime=3
+ERROR - 2017-02-01 11:24:29.244; [   x:techproducts] org.apache.solr.common.SolrException; org.apache.solr.common.SolrException: java.lang.RuntimeException: Exception from createWeight for SolrFeature [name=productNameMatchQuery, params={q={!field f=name}${user_query}}] SolrFeatureWeight requires efi parameter that was not passed in request.
+	at org.apache.solr.search.ReRankCollector.topDocs(ReRankCollector.java:138)
+	at org.apache.solr.search.SolrIndexSearcher.getDocListNC(SolrIndexSearcher.java:1880)
+	at org.apache.solr.search.SolrIndexSearcher.getDocListC(SolrIndexSearcher.java:1694)
+	at org.apache.solr.search.SolrIndexSearcher.search(SolrIndexSearcher.java:626)
+	at org.apache.solr.handler.component.QueryComponent.process(QueryComponent.java:548)
+	at org.apache.solr.handler.component.SearchHandler.handleRequestBody(SearchHandler.java:294)
+	at org.apache.solr.handler.RequestHandlerBase.handleRequest(RequestHandlerBase.java:166)
+	at org.apache.solr.core.SolrCore.execute(SolrCore.java:2402)
+	at org.apache.solr.servlet.HttpSolrCall.execute(HttpSolrCall.java:658)
+	at org.apache.solr.servlet.HttpSolrCall.call(HttpSolrCall.java:464)
+	at org.apache.solr.servlet.SolrDispatchFilter.doFilter(SolrDispatchFilter.java:345)
+	at org.apache.solr.servlet.SolrDispatchFilter.doFilter(SolrDispatchFilter.java:296)
+	at org.eclipse.jetty.servlet.ServletHandler$CachedChain.doFilter(ServletHandler.java:1699)
+	at org.eclipse.jetty.servlets.CrossOriginFilter.handle(CrossOriginFilter.java:308)
+	at org.eclipse.jetty.servlets.CrossOriginFilter.doFilter(CrossOriginFilter.java:262)
+	at org.eclipse.jetty.servlet.ServletHandler$CachedChain.doFilter(ServletHandler.java:1691)
+	at org.eclipse.jetty.servlet.ServletHandler.doHandle(ServletHandler.java:582)
+	at org.eclipse.jetty.server.handler.ScopedHandler.handle(ScopedHandler.java:143)
+	at org.eclipse.jetty.security.SecurityHandler.handle(SecurityHandler.java:548)
+	at org.eclipse.jetty.server.session.SessionHandler.doHandle(SessionHandler.java:226)
+	at org.eclipse.jetty.server.handler.ContextHandler.doHandle(ContextHandler.java:1180)
+	at org.eclipse.jetty.servlet.ServletHandler.doScope(ServletHandler.java:512)
+	at org.eclipse.jetty.server.session.SessionHandler.doScope(SessionHandler.java:185)
+	at org.eclipse.jetty.server.handler.ContextHandler.doScope(ContextHandler.java:1112)
+	at org.eclipse.jetty.server.handler.ScopedHandler.handle(ScopedHandler.java:141)
+	at org.eclipse.jetty.server.handler.ContextHandlerCollection.handle(ContextHandlerCollection.java:213)
+	at org.eclipse.jetty.server.handler.HandlerCollection.handle(HandlerCollection.java:119)
+	at org.eclipse.jetty.server.handler.HandlerWrapper.handle(HandlerWrapper.java:134)
+	at org.eclipse.jetty.server.Server.handle(Server.java:534)
+	at org.eclipse.jetty.server.HttpChannel.handle(HttpChannel.java:320)
+	at org.eclipse.jetty.server.HttpConnection.onFillable(HttpConnection.java:251)
+	at org.eclipse.jetty.io.AbstractConnection$ReadCallback.succeeded(AbstractConnection.java:273)
+	at org.eclipse.jetty.io.FillInterest.fillable(FillInterest.java:95)
+	at org.eclipse.jetty.io.SelectChannelEndPoint$2.run(SelectChannelEndPoint.java:93)
+	at org.eclipse.jetty.util.thread.strategy.ExecuteProduceConsume.executeProduceConsume(ExecuteProduceConsume.java:303)
+	at org.eclipse.jetty.util.thread.strategy.ExecuteProduceConsume.produceConsume(ExecuteProduceConsume.java:148)
+	at org.eclipse.jetty.util.thread.strategy.ExecuteProduceConsume.run(ExecuteProduceConsume.java:136)
+	at org.eclipse.jetty.util.thread.QueuedThreadPool.runJob(QueuedThreadPool.java:671)
+	at org.eclipse.jetty.util.thread.QueuedThreadPool$2.run(QueuedThreadPool.java:589)
+	at java.lang.Thread.run(Thread.java:745)
+Caused by: java.lang.RuntimeException: Exception from createWeight for SolrFeature [name=productNameMatchQuery, params={q={!field f=name}${user_query}}] SolrFeatureWeight requires efi parameter that was not passed in request.
+	at org.apache.solr.ltr.LTRScoringQuery.createWeights(LTRScoringQuery.java:241)
+	at org.apache.solr.ltr.LTRScoringQuery.createWeight(LTRScoringQuery.java:208)
+	at org.apache.solr.ltr.LTRScoringQuery.createWeight(LTRScoringQuery.java:55)
+	at org.apache.lucene.search.IndexSearcher.createWeight(IndexSearcher.java:735)
+	at org.apache.lucene.search.IndexSearcher.createNormalizedWeight(IndexSearcher.java:725)
+	at org.apache.solr.ltr.LTRRescorer.rescore(LTRRescorer.java:117)
+	at org.apache.solr.search.ReRankCollector.topDocs(ReRankCollector.java:104)
+	... 39 more
+Caused by: org.apache.solr.ltr.feature.FeatureException: SolrFeatureWeight requires efi parameter that was not passed in request.
+	at org.apache.solr.ltr.feature.SolrFeature$SolrFeatureWeight.<init>(SolrFeature.java:145)
+	at org.apache.solr.ltr.feature.SolrFeature.createWeight(SolrFeature.java:113)
+	at org.apache.solr.ltr.LTRScoringQuery.createWeights(LTRScoringQuery.java:237)
+	... 45 more
+
+INFO  - 2017-02-01 11:24:29.245; [   x:techproducts] org.apache.solr.core.SolrCore; [techproducts]  webapp=/solr path=/select params={q=ipod&indent=on&fl=name,[features]&rows=100&wt=json&rq={!ltr+model%3Djouvemodel+reRankDocs%3D5}} status=400 QTime=3
+ERROR - 2017-02-01 11:24:38.780; [   x:techproducts] org.apache.solr.common.SolrException; org.apache.solr.common.SolrException: java.lang.RuntimeException: Exception from createWeight for SolrFeature [name=productNameMatchQuery, params={q={!field f=name}${user_query}}] SolrFeatureWeight requires efi parameter that was not passed in request.
+	at org.apache.solr.search.ReRankCollector.topDocs(ReRankCollector.java:138)
+	at org.apache.solr.search.SolrIndexSearcher.getDocListNC(SolrIndexSearcher.java:1880)
+	at org.apache.solr.search.SolrIndexSearcher.getDocListC(SolrIndexSearcher.java:1694)
+	at org.apache.solr.search.SolrIndexSearcher.search(SolrIndexSearcher.java:626)
+	at org.apache.solr.handler.component.QueryComponent.process(QueryComponent.java:548)
+	at org.apache.solr.handler.component.SearchHandler.handleRequestBody(SearchHandler.java:294)
+	at org.apache.solr.handler.RequestHandlerBase.handleRequest(RequestHandlerBase.java:166)
+	at org.apache.solr.core.SolrCore.execute(SolrCore.java:2402)
+	at org.apache.solr.servlet.HttpSolrCall.execute(HttpSolrCall.java:658)
+	at org.apache.solr.servlet.HttpSolrCall.call(HttpSolrCall.java:464)
+	at org.apache.solr.servlet.SolrDispatchFilter.doFilter(SolrDispatchFilter.java:345)
+	at org.apache.solr.servlet.SolrDispatchFilter.doFilter(SolrDispatchFilter.java:296)
+	at org.eclipse.jetty.servlet.ServletHandler$CachedChain.doFilter(ServletHandler.java:1699)
+	at org.eclipse.jetty.servlets.CrossOriginFilter.handle(CrossOriginFilter.java:308)
+	at org.eclipse.jetty.servlets.CrossOriginFilter.doFilter(CrossOriginFilter.java:262)
+	at org.eclipse.jetty.servlet.ServletHandler$CachedChain.doFilter(ServletHandler.java:1691)
+	at org.eclipse.jetty.servlet.ServletHandler.doHandle(ServletHandler.java:582)
+	at org.eclipse.jetty.server.handler.ScopedHandler.handle(ScopedHandler.java:143)
+	at org.eclipse.jetty.security.SecurityHandler.handle(SecurityHandler.java:548)
+	at org.eclipse.jetty.server.session.SessionHandler.doHandle(SessionHandler.java:226)
+	at org.eclipse.jetty.server.handler.ContextHandler.doHandle(ContextHandler.java:1180)
+	at org.eclipse.jetty.servlet.ServletHandler.doScope(ServletHandler.java:512)
+	at org.eclipse.jetty.server.session.SessionHandler.doScope(SessionHandler.java:185)
+	at org.eclipse.jetty.server.handler.ContextHandler.doScope(ContextHandler.java:1112)
+	at org.eclipse.jetty.server.handler.ScopedHandler.handle(ScopedHandler.java:141)
+	at org.eclipse.jetty.server.handler.ContextHandlerCollection.handle(ContextHandlerCollection.java:213)
+	at org.eclipse.jetty.server.handler.HandlerCollection.handle(HandlerCollection.java:119)
+	at org.eclipse.jetty.server.handler.HandlerWrapper.handle(HandlerWrapper.java:134)
+	at org.eclipse.jetty.server.Server.handle(Server.java:534)
+	at org.eclipse.jetty.server.HttpChannel.handle(HttpChannel.java:320)
+	at org.eclipse.jetty.server.HttpConnection.onFillable(HttpConnection.java:251)
+	at org.eclipse.jetty.io.AbstractConnection$ReadCallback.succeeded(AbstractConnection.java:273)
+	at org.eclipse.jetty.io.FillInterest.fillable(FillInterest.java:95)
+	at org.eclipse.jetty.io.SelectChannelEndPoint$2.run(SelectChannelEndPoint.java:93)
+	at org.eclipse.jetty.util.thread.strategy.ExecuteProduceConsume.executeProduceConsume(ExecuteProduceConsume.java:303)
+	at org.eclipse.jetty.util.thread.strategy.ExecuteProduceConsume.produceConsume(ExecuteProduceConsume.java:148)
+	at org.eclipse.jetty.util.thread.strategy.ExecuteProduceConsume.run(ExecuteProduceConsume.java:136)
+	at org.eclipse.jetty.util.thread.QueuedThreadPool.runJob(QueuedThreadPool.java:671)
+	at org.eclipse.jetty.util.thread.QueuedThreadPool$2.run(QueuedThreadPool.java:589)
+	at java.lang.Thread.run(Thread.java:745)
+Caused by: java.lang.RuntimeException: Exception from createWeight for SolrFeature [name=productNameMatchQuery, params={q={!field f=name}${user_query}}] SolrFeatureWeight requires efi parameter that was not passed in request.
+	at org.apache.solr.ltr.LTRScoringQuery.createWeights(LTRScoringQuery.java:241)
+	at org.apache.solr.ltr.LTRScoringQuery.createWeight(LTRScoringQuery.java:208)
+	at org.apache.solr.ltr.LTRScoringQuery.createWeight(LTRScoringQuery.java:55)
+	at org.apache.lucene.search.IndexSearcher.createWeight(IndexSearcher.java:735)
+	at org.apache.lucene.search.IndexSearcher.createNormalizedWeight(IndexSearcher.java:725)
+	at org.apache.solr.ltr.LTRRescorer.rescore(LTRRescorer.java:117)
+	at org.apache.solr.search.ReRankCollector.topDocs(ReRankCollector.java:104)
+	... 39 more
+Caused by: org.apache.solr.ltr.feature.FeatureException: SolrFeatureWeight requires efi parameter that was not passed in request.
+	at org.apache.solr.ltr.feature.SolrFeature$SolrFeatureWeight.<init>(SolrFeature.java:145)
+	at org.apache.solr.ltr.feature.SolrFeature.createWeight(SolrFeature.java:113)
+	at org.apache.solr.ltr.LTRScoringQuery.createWeights(LTRScoringQuery.java:237)
+	... 45 more
+
+INFO  - 2017-02-01 11:24:38.781; [   x:techproducts] org.apache.solr.core.SolrCore; [techproducts]  webapp=/solr path=/select params={q=ipod&indent=on&fl=name,[features]&rows=100&wt=json&rq={!ltr+model%3Djouvemodel+reRankDocs%3D5}} status=400 QTime=3
+ERROR - 2017-02-01 11:24:40.092; [   x:techproducts] org.apache.solr.common.SolrException; org.apache.solr.common.SolrException: java.lang.RuntimeException: Exception from createWeight for SolrFeature [name=productNameMatchQuery, params={q={!field f=name}${user_query}}] SolrFeatureWeight requires efi parameter that was not passed in request.
+	at org.apache.solr.search.ReRankCollector.topDocs(ReRankCollector.java:138)
+	at org.apache.solr.search.SolrIndexSearcher.getDocListNC(SolrIndexSearcher.java:1880)
+	at org.apache.solr.search.SolrIndexSearcher.getDocListC(SolrIndexSearcher.java:1694)
+	at org.apache.solr.search.SolrIndexSearcher.search(SolrIndexSearcher.java:626)
+	at org.apache.solr.handler.component.QueryComponent.process(QueryComponent.java:548)
+	at org.apache.solr.handler.component.SearchHandler.handleRequestBody(SearchHandler.java:294)
+	at org.apache.solr.handler.RequestHandlerBase.handleRequest(RequestHandlerBase.java:166)
+	at org.apache.solr.core.SolrCore.execute(SolrCore.java:2402)
+	at org.apache.solr.servlet.HttpSolrCall.execute(HttpSolrCall.java:658)
+	at org.apache.solr.servlet.HttpSolrCall.call(HttpSolrCall.java:464)
+	at org.apache.solr.servlet.SolrDispatchFilter.doFilter(SolrDispatchFilter.java:345)
+	at org.apache.solr.servlet.SolrDispatchFilter.doFilter(SolrDispatchFilter.java:296)
+	at org.eclipse.jetty.servlet.ServletHandler$CachedChain.doFilter(ServletHandler.java:1699)
+	at org.eclipse.jetty.servlets.CrossOriginFilter.handle(CrossOriginFilter.java:308)
+	at org.eclipse.jetty.servlets.CrossOriginFilter.doFilter(CrossOriginFilter.java:262)
+	at org.eclipse.jetty.servlet.ServletHandler$CachedChain.doFilter(ServletHandler.java:1691)
+	at org.eclipse.jetty.servlet.ServletHandler.doHandle(ServletHandler.java:582)
+	at org.eclipse.jetty.server.handler.ScopedHandler.handle(ScopedHandler.java:143)
+	at org.eclipse.jetty.security.SecurityHandler.handle(SecurityHandler.java:548)
+	at org.eclipse.jetty.server.session.SessionHandler.doHandle(SessionHandler.java:226)
+	at org.eclipse.jetty.server.handler.ContextHandler.doHandle(ContextHandler.java:1180)
+	at org.eclipse.jetty.servlet.ServletHandler.doScope(ServletHandler.java:512)
+	at org.eclipse.jetty.server.session.SessionHandler.doScope(SessionHandler.java:185)
+	at org.eclipse.jetty.server.handler.ContextHandler.doScope(ContextHandler.java:1112)
+	at org.eclipse.jetty.server.handler.ScopedHandler.handle(ScopedHandler.java:141)
+	at org.eclipse.jetty.server.handler.ContextHandlerCollection.handle(ContextHandlerCollection.java:213)
+	at org.eclipse.jetty.server.handler.HandlerCollection.handle(HandlerCollection.java:119)
+	at org.eclipse.jetty.server.handler.HandlerWrapper.handle(HandlerWrapper.java:134)
+	at org.eclipse.jetty.server.Server.handle(Server.java:534)
+	at org.eclipse.jetty.server.HttpChannel.handle(HttpChannel.java:320)
+	at org.eclipse.jetty.server.HttpConnection.onFillable(HttpConnection.java:251)
+	at org.eclipse.jetty.io.AbstractConnection$ReadCallback.succeeded(AbstractConnection.java:273)
+	at org.eclipse.jetty.io.FillInterest.fillable(FillInterest.java:95)
+	at org.eclipse.jetty.io.SelectChannelEndPoint$2.run(SelectChannelEndPoint.java:93)
+	at org.eclipse.jetty.util.thread.strategy.ExecuteProduceConsume.executeProduceConsume(ExecuteProduceConsume.java:303)
+	at org.eclipse.jetty.util.thread.strategy.ExecuteProduceConsume.produceConsume(ExecuteProduceConsume.java:148)
+	at org.eclipse.jetty.util.thread.strategy.ExecuteProduceConsume.run(ExecuteProduceConsume.java:136)
+	at org.eclipse.jetty.util.thread.QueuedThreadPool.runJob(QueuedThreadPool.java:671)
+	at org.eclipse.jetty.util.thread.QueuedThreadPool$2.run(QueuedThreadPool.java:589)
+	at java.lang.Thread.run(Thread.java:745)
+Caused by: java.lang.RuntimeException: Exception from createWeight for SolrFeature [name=productNameMatchQuery, params={q={!field f=name}${user_query}}] SolrFeatureWeight requires efi parameter that was not passed in request.
+	at org.apache.solr.ltr.LTRScoringQuery.createWeights(LTRScoringQuery.java:241)
+	at org.apache.solr.ltr.LTRScoringQuery.createWeight(LTRScoringQuery.java:208)
+	at org.apache.solr.ltr.LTRScoringQuery.createWeight(LTRScoringQuery.java:55)
+	at org.apache.lucene.search.IndexSearcher.createWeight(IndexSearcher.java:735)
+	at org.apache.lucene.search.IndexSearcher.createNormalizedWeight(IndexSearcher.java:725)
+	at org.apache.solr.ltr.LTRRescorer.rescore(LTRRescorer.java:117)
+	at org.apache.solr.search.ReRankCollector.topDocs(ReRankCollector.java:104)
+	... 39 more
+Caused by: org.apache.solr.ltr.feature.FeatureException: SolrFeatureWeight requires efi parameter that was not passed in request.
+	at org.apache.solr.ltr.feature.SolrFeature$SolrFeatureWeight.<init>(SolrFeature.java:145)
+	at org.apache.solr.ltr.feature.SolrFeature.createWeight(SolrFeature.java:113)
+	at org.apache.solr.ltr.LTRScoringQuery.createWeights(LTRScoringQuery.java:237)
+	... 45 more
+
+INFO  - 2017-02-01 11:24:40.093; [   x:techproducts] org.apache.solr.core.SolrCore; [techproducts]  webapp=/solr path=/select params={q=ipod&indent=on&fl=name,[features]&rows=100&wt=json&rq={!ltr+model%3Djouvemodel+reRankDocs%3D5}} status=400 QTime=3
+ERROR - 2017-02-01 11:24:40.275; [   x:techproducts] org.apache.solr.common.SolrException; org.apache.solr.common.SolrException: java.lang.RuntimeException: Exception from createWeight for SolrFeature [name=productNameMatchQuery, params={q={!field f=name}${user_query}}] SolrFeatureWeight requires efi parameter that was not passed in request.
+	at org.apache.solr.search.ReRankCollector.topDocs(ReRankCollector.java:138)
+	at org.apache.solr.search.SolrIndexSearcher.getDocListNC(SolrIndexSearcher.java:1880)
+	at org.apache.solr.search.SolrIndexSearcher.getDocListC(SolrIndexSearcher.java:1694)
+	at org.apache.solr.search.SolrIndexSearcher.search(SolrIndexSearcher.java:626)
+	at org.apache.solr.handler.component.QueryComponent.process(QueryComponent.java:548)
+	at org.apache.solr.handler.component.SearchHandler.handleRequestBody(SearchHandler.java:294)
+	at org.apache.solr.handler.RequestHandlerBase.handleRequest(RequestHandlerBase.java:166)
+	at org.apache.solr.core.SolrCore.execute(SolrCore.java:2402)
+	at org.apache.solr.servlet.HttpSolrCall.execute(HttpSolrCall.java:658)
+	at org.apache.solr.servlet.HttpSolrCall.call(HttpSolrCall.java:464)
+	at org.apache.solr.servlet.SolrDispatchFilter.doFilter(SolrDispatchFilter.java:345)
+	at org.apache.solr.servlet.SolrDispatchFilter.doFilter(SolrDispatchFilter.java:296)
+	at org.eclipse.jetty.servlet.ServletHandler$CachedChain.doFilter(ServletHandler.java:1699)
+	at org.eclipse.jetty.servlets.CrossOriginFilter.handle(CrossOriginFilter.java:308)
+	at org.eclipse.jetty.servlets.CrossOriginFilter.doFilter(CrossOriginFilter.java:262)
+	at org.eclipse.jetty.servlet.ServletHandler$CachedChain.doFilter(ServletHandler.java:1691)
+	at org.eclipse.jetty.servlet.ServletHandler.doHandle(ServletHandler.java:582)
+	at org.eclipse.jetty.server.handler.ScopedHandler.handle(ScopedHandler.java:143)
+	at org.eclipse.jetty.security.SecurityHandler.handle(SecurityHandler.java:548)
+	at org.eclipse.jetty.server.session.SessionHandler.doHandle(SessionHandler.java:226)
+	at org.eclipse.jetty.server.handler.ContextHandler.doHandle(ContextHandler.java:1180)
+	at org.eclipse.jetty.servlet.ServletHandler.doScope(ServletHandler.java:512)
+	at org.eclipse.jetty.server.session.SessionHandler.doScope(SessionHandler.java:185)
+	at org.eclipse.jetty.server.handler.ContextHandler.doScope(ContextHandler.java:1112)
+	at org.eclipse.jetty.server.handler.ScopedHandler.handle(ScopedHandler.java:141)
+	at org.eclipse.jetty.server.handler.ContextHandlerCollection.handle(ContextHandlerCollection.java:213)
+	at org.eclipse.jetty.server.handler.HandlerCollection.handle(HandlerCollection.java:119)
+	at org.eclipse.jetty.server.handler.HandlerWrapper.handle(HandlerWrapper.java:134)
+	at org.eclipse.jetty.server.Server.handle(Server.java:534)
+	at org.eclipse.jetty.server.HttpChannel.handle(HttpChannel.java:320)
+	at org.eclipse.jetty.server.HttpConnection.onFillable(HttpConnection.java:251)
+	at org.eclipse.jetty.io.AbstractConnection$ReadCallback.succeeded(AbstractConnection.java:273)
+	at org.eclipse.jetty.io.FillInterest.fillable(FillInterest.java:95)
+	at org.eclipse.jetty.io.SelectChannelEndPoint$2.run(SelectChannelEndPoint.java:93)
+	at org.eclipse.jetty.util.thread.strategy.ExecuteProduceConsume.executeProduceConsume(ExecuteProduceConsume.java:303)
+	at org.eclipse.jetty.util.thread.strategy.ExecuteProduceConsume.produceConsume(ExecuteProduceConsume.java:148)
+	at org.eclipse.jetty.util.thread.strategy.ExecuteProduceConsume.run(ExecuteProduceConsume.java:136)
+	at org.eclipse.jetty.util.thread.QueuedThreadPool.runJob(QueuedThreadPool.java:671)
+	at org.eclipse.jetty.util.thread.QueuedThreadPool$2.run(QueuedThreadPool.java:589)
+	at java.lang.Thread.run(Thread.java:745)
+Caused by: java.lang.RuntimeException: Exception from createWeight for SolrFeature [name=productNameMatchQuery, params={q={!field f=name}${user_query}}] SolrFeatureWeight requires efi parameter that was not passed in request.
+	at org.apache.solr.ltr.LTRScoringQuery.createWeights(LTRScoringQuery.java:241)
+	at org.apache.solr.ltr.LTRScoringQuery.createWeight(LTRScoringQuery.java:208)
+	at org.apache.solr.ltr.LTRScoringQuery.createWeight(LTRScoringQuery.java:55)
+	at org.apache.lucene.search.IndexSearcher.createWeight(IndexSearcher.java:735)
+	at org.apache.lucene.search.IndexSearcher.createNormalizedWeight(IndexSearcher.java:725)
+	at org.apache.solr.ltr.LTRRescorer.rescore(LTRRescorer.java:117)
+	at org.apache.solr.search.ReRankCollector.topDocs(ReRankCollector.java:104)
+	... 39 more
+Caused by: org.apache.solr.ltr.feature.FeatureException: SolrFeatureWeight requires efi parameter that was not passed in request.
+	at org.apache.solr.ltr.feature.SolrFeature$SolrFeatureWeight.<init>(SolrFeature.java:145)
+	at org.apache.solr.ltr.feature.SolrFeature.createWeight(SolrFeature.java:113)
+	at org.apache.solr.ltr.LTRScoringQuery.createWeights(LTRScoringQuery.java:237)
+	... 45 more
+
+INFO  - 2017-02-01 11:24:40.276; [   x:techproducts] org.apache.solr.core.SolrCore; [techproducts]  webapp=/solr path=/select params={q=ipod&indent=on&fl=name,[features]&rows=100&wt=json&rq={!ltr+model%3Djouvemodel+reRankDocs%3D5}} status=400 QTime=2
+ERROR - 2017-02-01 11:24:40.468; [   x:techproducts] org.apache.solr.common.SolrException; org.apache.solr.common.SolrException: java.lang.RuntimeException: Exception from createWeight for SolrFeature [name=productNameMatchQuery, params={q={!field f=name}${user_query}}] SolrFeatureWeight requires efi parameter that was not passed in request.
+	at org.apache.solr.search.ReRankCollector.topDocs(ReRankCollector.java:138)
+	at org.apache.solr.search.SolrIndexSearcher.getDocListNC(SolrIndexSearcher.java:1880)
+	at org.apache.solr.search.SolrIndexSearcher.getDocListC(SolrIndexSearcher.java:1694)
+	at org.apache.solr.search.SolrIndexSearcher.search(SolrIndexSearcher.java:626)
+	at org.apache.solr.handler.component.QueryComponent.process(QueryComponent.java:548)
+	at org.apache.solr.handler.component.SearchHandler.handleRequestBody(SearchHandler.java:294)
+	at org.apache.solr.handler.RequestHandlerBase.handleRequest(RequestHandlerBase.java:166)
+	at org.apache.solr.core.SolrCore.execute(SolrCore.java:2402)
+	at org.apache.solr.servlet.HttpSolrCall.execute(HttpSolrCall.java:658)
+	at org.apache.solr.servlet.HttpSolrCall.call(HttpSolrCall.java:464)
+	at org.apache.solr.servlet.SolrDispatchFilter.doFilter(SolrDispatchFilter.java:345)
+	at org.apache.solr.servlet.SolrDispatchFilter.doFilter(SolrDispatchFilter.java:296)
+	at org.eclipse.jetty.servlet.ServletHandler$CachedChain.doFilter(ServletHandler.java:1699)
+	at org.eclipse.jetty.servlets.CrossOriginFilter.handle(CrossOriginFilter.java:308)
+	at org.eclipse.jetty.servlets.CrossOriginFilter.doFilter(CrossOriginFilter.java:262)
+	at org.eclipse.jetty.servlet.ServletHandler$CachedChain.doFilter(ServletHandler.java:1691)
+	at org.eclipse.jetty.servlet.ServletHandler.doHandle(ServletHandler.java:582)
+	at org.eclipse.jetty.server.handler.ScopedHandler.handle(ScopedHandler.java:143)
+	at org.eclipse.jetty.security.SecurityHandler.handle(SecurityHandler.java:548)
+	at org.eclipse.jetty.server.session.SessionHandler.doHandle(SessionHandler.java:226)
+	at org.eclipse.jetty.server.handler.ContextHandler.doHandle(ContextHandler.java:1180)
+	at org.eclipse.jetty.servlet.ServletHandler.doScope(ServletHandler.java:512)
+	at org.eclipse.jetty.server.session.SessionHandler.doScope(SessionHandler.java:185)
+	at org.eclipse.jetty.server.handler.ContextHandler.doScope(ContextHandler.java:1112)
+	at org.eclipse.jetty.server.handler.ScopedHandler.handle(ScopedHandler.java:141)
+	at org.eclipse.jetty.server.handler.ContextHandlerCollection.handle(ContextHandlerCollection.java:213)
+	at org.eclipse.jetty.server.handler.HandlerCollection.handle(HandlerCollection.java:119)
+	at org.eclipse.jetty.server.handler.HandlerWrapper.handle(HandlerWrapper.java:134)
+	at org.eclipse.jetty.server.Server.handle(Server.java:534)
+	at org.eclipse.jetty.server.HttpChannel.handle(HttpChannel.java:320)
+	at org.eclipse.jetty.server.HttpConnection.onFillable(HttpConnection.java:251)
+	at org.eclipse.jetty.io.AbstractConnection$ReadCallback.succeeded(AbstractConnection.java:273)
+	at org.eclipse.jetty.io.FillInterest.fillable(FillInterest.java:95)
+	at org.eclipse.jetty.io.SelectChannelEndPoint$2.run(SelectChannelEndPoint.java:93)
+	at org.eclipse.jetty.util.thread.strategy.ExecuteProduceConsume.executeProduceConsume(ExecuteProduceConsume.java:303)
+	at org.eclipse.jetty.util.thread.strategy.ExecuteProduceConsume.produceConsume(ExecuteProduceConsume.java:148)
+	at org.eclipse.jetty.util.thread.strategy.ExecuteProduceConsume.run(ExecuteProduceConsume.java:136)
+	at org.eclipse.jetty.util.thread.QueuedThreadPool.runJob(QueuedThreadPool.java:671)
+	at org.eclipse.jetty.util.thread.QueuedThreadPool$2.run(QueuedThreadPool.java:589)
+	at java.lang.Thread.run(Thread.java:745)
+Caused by: java.lang.RuntimeException: Exception from createWeight for SolrFeature [name=productNameMatchQuery, params={q={!field f=name}${user_query}}] SolrFeatureWeight requires efi parameter that was not passed in request.
+	at org.apache.solr.ltr.LTRScoringQuery.createWeights(LTRScoringQuery.java:241)
+	at org.apache.solr.ltr.LTRScoringQuery.createWeight(LTRScoringQuery.java:208)
+	at org.apache.solr.ltr.LTRScoringQuery.createWeight(LTRScoringQuery.java:55)
+	at org.apache.lucene.search.IndexSearcher.createWeight(IndexSearcher.java:735)
+	at org.apache.lucene.search.IndexSearcher.createNormalizedWeight(IndexSearcher.java:725)
+	at org.apache.solr.ltr.LTRRescorer.rescore(LTRRescorer.java:117)
+	at org.apache.solr.search.ReRankCollector.topDocs(ReRankCollector.java:104)
+	... 39 more
+Caused by: org.apache.solr.ltr.feature.FeatureException: SolrFeatureWeight requires efi parameter that was not passed in request.
+	at org.apache.solr.ltr.feature.SolrFeature$SolrFeatureWeight.<init>(SolrFeature.java:145)
+	at org.apache.solr.ltr.feature.SolrFeature.createWeight(SolrFeature.java:113)
+	at org.apache.solr.ltr.LTRScoringQuery.createWeights(LTRScoringQuery.java:237)
+	... 45 more
+
+INFO  - 2017-02-01 11:24:40.468; [   x:techproducts] org.apache.solr.core.SolrCore; [techproducts]  webapp=/solr path=/select params={q=ipod&indent=on&fl=name,[features]&rows=100&wt=json&rq={!ltr+model%3Djouvemodel+reRankDocs%3D5}} status=400 QTime=3
+ERROR - 2017-02-01 11:24:40.661; [   x:techproducts] org.apache.solr.common.SolrException; org.apache.solr.common.SolrException: java.lang.RuntimeException: Exception from createWeight for SolrFeature [name=productNameMatchQuery, params={q={!field f=name}${user_query}}] SolrFeatureWeight requires efi parameter that was not passed in request.
+	at org.apache.solr.search.ReRankCollector.topDocs(ReRankCollector.java:138)
+	at org.apache.solr.search.SolrIndexSearcher.getDocListNC(SolrIndexSearcher.java:1880)
+	at org.apache.solr.search.SolrIndexSearcher.getDocListC(SolrIndexSearcher.java:1694)
+	at org.apache.solr.search.SolrIndexSearcher.search(SolrIndexSearcher.java:626)
+	at org.apache.solr.handler.component.QueryComponent.process(QueryComponent.java:548)
+	at org.apache.solr.handler.component.SearchHandler.handleRequestBody(SearchHandler.java:294)
+	at org.apache.solr.handler.RequestHandlerBase.handleRequest(RequestHandlerBase.java:166)
+	at org.apache.solr.core.SolrCore.execute(SolrCore.java:2402)
+	at org.apache.solr.servlet.HttpSolrCall.execute(HttpSolrCall.java:658)
+	at org.apache.solr.servlet.HttpSolrCall.call(HttpSolrCall.java:464)
+	at org.apache.solr.servlet.SolrDispatchFilter.doFilter(SolrDispatchFilter.java:345)
+	at org.apache.solr.servlet.SolrDispatchFilter.doFilter(SolrDispatchFilter.java:296)
+	at org.eclipse.jetty.servlet.ServletHandler$CachedChain.doFilter(ServletHandler.java:1699)
+	at org.eclipse.jetty.servlets.CrossOriginFilter.handle(CrossOriginFilter.java:308)
+	at org.eclipse.jetty.servlets.CrossOriginFilter.doFilter(CrossOriginFilter.java:262)
+	at org.eclipse.jetty.servlet.ServletHandler$CachedChain.doFilter(ServletHandler.java:1691)
+	at org.eclipse.jetty.servlet.ServletHandler.doHandle(ServletHandler.java:582)
+	at org.eclipse.jetty.server.handler.ScopedHandler.handle(ScopedHandler.java:143)
+	at org.eclipse.jetty.security.SecurityHandler.handle(SecurityHandler.java:548)
+	at org.eclipse.jetty.server.session.SessionHandler.doHandle(SessionHandler.java:226)
+	at org.eclipse.jetty.server.handler.ContextHandler.doHandle(ContextHandler.java:1180)
+	at org.eclipse.jetty.servlet.ServletHandler.doScope(ServletHandler.java:512)
+	at org.eclipse.jetty.server.session.SessionHandler.doScope(SessionHandler.java:185)
+	at org.eclipse.jetty.server.handler.ContextHandler.doScope(ContextHandler.java:1112)
+	at org.eclipse.jetty.server.handler.ScopedHandler.handle(ScopedHandler.java:141)
+	at org.eclipse.jetty.server.handler.ContextHandlerCollection.handle(ContextHandlerCollection.java:213)
+	at org.eclipse.jetty.server.handler.HandlerCollection.handle(HandlerCollection.java:119)
+	at org.eclipse.jetty.server.handler.HandlerWrapper.handle(HandlerWrapper.java:134)
+	at org.eclipse.jetty.server.Server.handle(Server.java:534)
+	at org.eclipse.jetty.server.HttpChannel.handle(HttpChannel.java:320)
+	at org.eclipse.jetty.server.HttpConnection.onFillable(HttpConnection.java:251)
+	at org.eclipse.jetty.io.AbstractConnection$ReadCallback.succeeded(AbstractConnection.java:273)
+	at org.eclipse.jetty.io.FillInterest.fillable(FillInterest.java:95)
+	at org.eclipse.jetty.io.SelectChannelEndPoint$2.run(SelectChannelEndPoint.java:93)
+	at org.eclipse.jetty.util.thread.strategy.ExecuteProduceConsume.executeProduceConsume(ExecuteProduceConsume.java:303)
+	at org.eclipse.jetty.util.thread.strategy.ExecuteProduceConsume.produceConsume(ExecuteProduceConsume.java:148)
+	at org.eclipse.jetty.util.thread.strategy.ExecuteProduceConsume.run(ExecuteProduceConsume.java:136)
+	at org.eclipse.jetty.util.thread.QueuedThreadPool.runJob(QueuedThreadPool.java:671)
+	at org.eclipse.jetty.util.thread.QueuedThreadPool$2.run(QueuedThreadPool.java:589)
+	at java.lang.Thread.run(Thread.java:745)
+Caused by: java.lang.RuntimeException: Exception from createWeight for SolrFeature [name=productNameMatchQuery, params={q={!field f=name}${user_query}}] SolrFeatureWeight requires efi parameter that was not passed in request.
+	at org.apache.solr.ltr.LTRScoringQuery.createWeights(LTRScoringQuery.java:241)
+	at org.apache.solr.ltr.LTRScoringQuery.createWeight(LTRScoringQuery.java:208)
+	at org.apache.solr.ltr.LTRScoringQuery.createWeight(LTRScoringQuery.java:55)
+	at org.apache.lucene.search.IndexSearcher.createWeight(IndexSearcher.java:735)
+	at org.apache.lucene.search.IndexSearcher.createNormalizedWeight(IndexSearcher.java:725)
+	at org.apache.solr.ltr.LTRRescorer.rescore(LTRRescorer.java:117)
+	at org.apache.solr.search.ReRankCollector.topDocs(ReRankCollector.java:104)
+	... 39 more
+Caused by: org.apache.solr.ltr.feature.FeatureException: SolrFeatureWeight requires efi parameter that was not passed in request.
+	at org.apache.solr.ltr.feature.SolrFeature$SolrFeatureWeight.<init>(SolrFeature.java:145)
+	at org.apache.solr.ltr.feature.SolrFeature.createWeight(SolrFeature.java:113)
+	at org.apache.solr.ltr.LTRScoringQuery.createWeights(LTRScoringQuery.java:237)
+	... 45 more
+
+INFO  - 2017-02-01 11:24:40.662; [   x:techproducts] org.apache.solr.core.SolrCore; [techproducts]  webapp=/solr path=/select params={q=ipod&indent=on&fl=name,[features]&rows=100&wt=json&rq={!ltr+model%3Djouvemodel+reRankDocs%3D5}} status=400 QTime=3
+ERROR - 2017-02-01 11:24:40.843; [   x:techproducts] org.apache.solr.common.SolrException; org.apache.solr.common.SolrException: java.lang.RuntimeException: Exception from createWeight for SolrFeature [name=productNameMatchQuery, params={q={!field f=name}${user_query}}] SolrFeatureWeight requires efi parameter that was not passed in request.
+	at org.apache.solr.search.ReRankCollector.topDocs(ReRankCollector.java:138)
+	at org.apache.solr.search.SolrIndexSearcher.getDocListNC(SolrIndexSearcher.java:1880)
+	at org.apache.solr.search.SolrIndexSearcher.getDocListC(SolrIndexSearcher.java:1694)
+	at org.apache.solr.search.SolrIndexSearcher.search(SolrIndexSearcher.java:626)
+	at org.apache.solr.handler.component.QueryComponent.process(QueryComponent.java:548)
+	at org.apache.solr.handler.component.SearchHandler.handleRequestBody(SearchHandler.java:294)
+	at org.apache.solr.handler.RequestHandlerBase.handleRequest(RequestHandlerBase.java:166)
+	at org.apache.solr.core.SolrCore.execute(SolrCore.java:2402)
+	at org.apache.solr.servlet.HttpSolrCall.execute(HttpSolrCall.java:658)
+	at org.apache.solr.servlet.HttpSolrCall.call(HttpSolrCall.java:464)
+	at org.apache.solr.servlet.SolrDispatchFilter.doFilter(SolrDispatchFilter.java:345)
+	at org.apache.solr.servlet.SolrDispatchFilter.doFilter(SolrDispatchFilter.java:296)
+	at org.eclipse.jetty.servlet.ServletHandler$CachedChain.doFilter(ServletHandler.java:1699)
+	at org.eclipse.jetty.servlets.CrossOriginFilter.handle(CrossOriginFilter.java:308)
+	at org.eclipse.jetty.servlets.CrossOriginFilter.doFilter(CrossOriginFilter.java:262)
+	at org.eclipse.jetty.servlet.ServletHandler$CachedChain.doFilter(ServletHandler.java:1691)
+	at org.eclipse.jetty.servlet.ServletHandler.doHandle(ServletHandler.java:582)
+	at org.eclipse.jetty.server.handler.ScopedHandler.handle(ScopedHandler.java:143)
+	at org.eclipse.jetty.security.SecurityHandler.handle(SecurityHandler.java:548)
+	at org.eclipse.jetty.server.session.SessionHandler.doHandle(SessionHandler.java:226)
+	at org.eclipse.jetty.server.handler.ContextHandler.doHandle(ContextHandler.java:1180)
+	at org.eclipse.jetty.servlet.ServletHandler.doScope(ServletHandler.java:512)
+	at org.eclipse.jetty.server.session.SessionHandler.doScope(SessionHandler.java:185)
+	at org.eclipse.jetty.server.handler.ContextHandler.doScope(ContextHandler.java:1112)
+	at org.eclipse.jetty.server.handler.ScopedHandler.handle(ScopedHandler.java:141)
+	at org.eclipse.jetty.server.handler.ContextHandlerCollection.handle(ContextHandlerCollection.java:213)
+	at org.eclipse.jetty.server.handler.HandlerCollection.handle(HandlerCollection.java:119)
+	at org.eclipse.jetty.server.handler.HandlerWrapper.handle(HandlerWrapper.java:134)
+	at org.eclipse.jetty.server.Server.handle(Server.java:534)
+	at org.eclipse.jetty.server.HttpChannel.handle(HttpChannel.java:320)
+	at org.eclipse.jetty.server.HttpConnection.onFillable(HttpConnection.java:251)
+	at org.eclipse.jetty.io.AbstractConnection$ReadCallback.succeeded(AbstractConnection.java:273)
+	at org.eclipse.jetty.io.FillInterest.fillable(FillInterest.java:95)
+	at org.eclipse.jetty.io.SelectChannelEndPoint$2.run(SelectChannelEndPoint.java:93)
+	at org.eclipse.jetty.util.thread.strategy.ExecuteProduceConsume.executeProduceConsume(ExecuteProduceConsume.java:303)
+	at org.eclipse.jetty.util.thread.strategy.ExecuteProduceConsume.produceConsume(ExecuteProduceConsume.java:148)
+	at org.eclipse.jetty.util.thread.strategy.ExecuteProduceConsume.run(ExecuteProduceConsume.java:136)
+	at org.eclipse.jetty.util.thread.QueuedThreadPool.runJob(QueuedThreadPool.java:671)
+	at org.eclipse.jetty.util.thread.QueuedThreadPool$2.run(QueuedThreadPool.java:589)
+	at java.lang.Thread.run(Thread.java:745)
+Caused by: java.lang.RuntimeException: Exception from createWeight for SolrFeature [name=productNameMatchQuery, params={q={!field f=name}${user_query}}] SolrFeatureWeight requires efi parameter that was not passed in request.
+	at org.apache.solr.ltr.LTRScoringQuery.createWeights(LTRScoringQuery.java:241)
+	at org.apache.solr.ltr.LTRScoringQuery.createWeight(LTRScoringQuery.java:208)
+	at org.apache.solr.ltr.LTRScoringQuery.createWeight(LTRScoringQuery.java:55)
+	at org.apache.lucene.search.IndexSearcher.createWeight(IndexSearcher.java:735)
+	at org.apache.lucene.search.IndexSearcher.createNormalizedWeight(IndexSearcher.java:725)
+	at org.apache.solr.ltr.LTRRescorer.rescore(LTRRescorer.java:117)
+	at org.apache.solr.search.ReRankCollector.topDocs(ReRankCollector.java:104)
+	... 39 more
+Caused by: org.apache.solr.ltr.feature.FeatureException: SolrFeatureWeight requires efi parameter that was not passed in request.
+	at org.apache.solr.ltr.feature.SolrFeature$SolrFeatureWeight.<init>(SolrFeature.java:145)
+	at org.apache.solr.ltr.feature.SolrFeature.createWeight(SolrFeature.java:113)
+	at org.apache.solr.ltr.LTRScoringQuery.createWeights(LTRScoringQuery.java:237)
+	... 45 more
+
+INFO  - 2017-02-01 11:24:40.845; [   x:techproducts] org.apache.solr.core.SolrCore; [techproducts]  webapp=/solr path=/select params={q=ipod&indent=on&fl=name,[features]&rows=100&wt=json&rq={!ltr+model%3Djouvemodel+reRankDocs%3D5}} status=400 QTime=3
+ERROR - 2017-02-01 11:24:56.312; [   x:techproducts] org.apache.solr.common.SolrException; org.apache.solr.common.SolrException: java.lang.RuntimeException: Exception from createWeight for SolrFeature [name=productNameMatchQuery, params={q={!field f=name}${user_query}}] SolrFeatureWeight requires efi parameter that was not passed in request.
+	at org.apache.solr.search.ReRankCollector.topDocs(ReRankCollector.java:138)
+	at org.apache.solr.search.SolrIndexSearcher.getDocListNC(SolrIndexSearcher.java:1880)
+	at org.apache.solr.search.SolrIndexSearcher.getDocListC(SolrIndexSearcher.java:1694)
+	at org.apache.solr.search.SolrIndexSearcher.search(SolrIndexSearcher.java:626)
+	at org.apache.solr.handler.component.QueryComponent.process(QueryComponent.java:548)
+	at org.apache.solr.handler.component.SearchHandler.handleRequestBody(SearchHandler.java:294)
+	at org.apache.solr.handler.RequestHandlerBase.handleRequest(RequestHandlerBase.java:166)
+	at org.apache.solr.core.SolrCore.execute(SolrCore.java:2402)
+	at org.apache.solr.servlet.HttpSolrCall.execute(HttpSolrCall.java:658)
+	at org.apache.solr.servlet.HttpSolrCall.call(HttpSolrCall.java:464)
+	at org.apache.solr.servlet.SolrDispatchFilter.doFilter(SolrDispatchFilter.java:345)
+	at org.apache.solr.servlet.SolrDispatchFilter.doFilter(SolrDispatchFilter.java:296)
+	at org.eclipse.jetty.servlet.ServletHandler$CachedChain.doFilter(ServletHandler.java:1699)
+	at org.eclipse.jetty.servlets.CrossOriginFilter.handle(CrossOriginFilter.java:308)
+	at org.eclipse.jetty.servlets.CrossOriginFilter.doFilter(CrossOriginFilter.java:262)
+	at org.eclipse.jetty.servlet.ServletHandler$CachedChain.doFilter(ServletHandler.java:1691)
+	at org.eclipse.jetty.servlet.ServletHandler.doHandle(ServletHandler.java:582)
+	at org.eclipse.jetty.server.handler.ScopedHandler.handle(ScopedHandler.java:143)
+	at org.eclipse.jetty.security.SecurityHandler.handle(SecurityHandler.java:548)
+	at org.eclipse.jetty.server.session.SessionHandler.doHandle(SessionHandler.java:226)
+	at org.eclipse.jetty.server.handler.ContextHandler.doHandle(ContextHandler.java:1180)
+	at org.eclipse.jetty.servlet.ServletHandler.doScope(ServletHandler.java:512)
+	at org.eclipse.jetty.server.session.SessionHandler.doScope(SessionHandler.java:185)
+	at org.eclipse.jetty.server.handler.ContextHandler.doScope(ContextHandler.java:1112)
+	at org.eclipse.jetty.server.handler.ScopedHandler.handle(ScopedHandler.java:141)
+	at org.eclipse.jetty.server.handler.ContextHandlerCollection.handle(ContextHandlerCollection.java:213)
+	at org.eclipse.jetty.server.handler.HandlerCollection.handle(HandlerCollection.java:119)
+	at org.eclipse.jetty.server.handler.HandlerWrapper.handle(HandlerWrapper.java:134)
+	at org.eclipse.jetty.server.Server.handle(Server.java:534)
+	at org.eclipse.jetty.server.HttpChannel.handle(HttpChannel.java:320)
+	at org.eclipse.jetty.server.HttpConnection.onFillable(HttpConnection.java:251)
+	at org.eclipse.jetty.io.AbstractConnection$ReadCallback.succeeded(AbstractConnection.java:273)
+	at org.eclipse.jetty.io.FillInterest.fillable(FillInterest.java:95)
+	at org.eclipse.jetty.io.SelectChannelEndPoint$2.run(SelectChannelEndPoint.java:93)
+	at org.eclipse.jetty.util.thread.strategy.ExecuteProduceConsume.executeProduceConsume(ExecuteProduceConsume.java:303)
+	at org.eclipse.jetty.util.thread.strategy.ExecuteProduceConsume.produceConsume(ExecuteProduceConsume.java:148)
+	at org.eclipse.jetty.util.thread.strategy.ExecuteProduceConsume.run(ExecuteProduceConsume.java:136)
+	at org.eclipse.jetty.util.thread.QueuedThreadPool.runJob(QueuedThreadPool.java:671)
+	at org.eclipse.jetty.util.thread.QueuedThreadPool$2.run(QueuedThreadPool.java:589)
+	at java.lang.Thread.run(Thread.java:745)
+Caused by: java.lang.RuntimeException: Exception from createWeight for SolrFeature [name=productNameMatchQuery, params={q={!field f=name}${user_query}}] SolrFeatureWeight requires efi parameter that was not passed in request.
+	at org.apache.solr.ltr.LTRScoringQuery.createWeights(LTRScoringQuery.java:241)
+	at org.apache.solr.ltr.LTRScoringQuery.createWeight(LTRScoringQuery.java:208)
+	at org.apache.solr.ltr.LTRScoringQuery.createWeight(LTRScoringQuery.java:55)
+	at org.apache.lucene.search.IndexSearcher.createWeight(IndexSearcher.java:735)
+	at org.apache.lucene.search.IndexSearcher.createNormalizedWeight(IndexSearcher.java:725)
+	at org.apache.solr.ltr.LTRRescorer.rescore(LTRRescorer.java:117)
+	at org.apache.solr.search.ReRankCollector.topDocs(ReRankCollector.java:104)
+	... 39 more
+Caused by: org.apache.solr.ltr.feature.FeatureException: SolrFeatureWeight requires efi parameter that was not passed in request.
+	at org.apache.solr.ltr.feature.SolrFeature$SolrFeatureWeight.<init>(SolrFeature.java:145)
+	at org.apache.solr.ltr.feature.SolrFeature.createWeight(SolrFeature.java:113)
+	at org.apache.solr.ltr.LTRScoringQuery.createWeights(LTRScoringQuery.java:237)
+	... 45 more
+
+INFO  - 2017-02-01 11:24:56.312; [   x:techproducts] org.apache.solr.core.SolrCore; [techproducts]  webapp=/solr path=/select params={q=ipod&indent=on&fl=name,[features]&rows=100&wt=json&rq={!ltr+model%3Djouvemodel+reRankDocs%3D5}} status=400 QTime=2
+ERROR - 2017-02-01 11:25:50.565; [   x:techproducts] org.apache.solr.common.SolrException; org.apache.solr.common.SolrException: cannot find model myModel
+	at org.apache.solr.ltr.search.LTRQParserPlugin$LTRQParser.parse(LTRQParserPlugin.java:161)
+	at org.apache.solr.search.QParser.getQuery(QParser.java:168)
+	at org.apache.solr.handler.component.QueryComponent.prepare(QueryComponent.java:171)
+	at org.apache.solr.handler.component.SearchHandler.handleRequestBody(SearchHandler.java:268)
+	at org.apache.solr.handler.RequestHandlerBase.handleRequest(RequestHandlerBase.java:166)
+	at org.apache.solr.core.SolrCore.execute(SolrCore.java:2402)
+	at org.apache.solr.servlet.HttpSolrCall.execute(HttpSolrCall.java:658)
+	at org.apache.solr.servlet.HttpSolrCall.call(HttpSolrCall.java:464)
+	at org.apache.solr.servlet.SolrDispatchFilter.doFilter(SolrDispatchFilter.java:345)
+	at org.apache.solr.servlet.SolrDispatchFilter.doFilter(SolrDispatchFilter.java:296)
+	at org.eclipse.jetty.servlet.ServletHandler$CachedChain.doFilter(ServletHandler.java:1699)
+	at org.eclipse.jetty.servlets.CrossOriginFilter.handle(CrossOriginFilter.java:308)
+	at org.eclipse.jetty.servlets.CrossOriginFilter.doFilter(CrossOriginFilter.java:262)
+	at org.eclipse.jetty.servlet.ServletHandler$CachedChain.doFilter(ServletHandler.java:1691)
+	at org.eclipse.jetty.servlet.ServletHandler.doHandle(ServletHandler.java:582)
+	at org.eclipse.jetty.server.handler.ScopedHandler.handle(ScopedHandler.java:143)
+	at org.eclipse.jetty.security.SecurityHandler.handle(SecurityHandler.java:548)
+	at org.eclipse.jetty.server.session.SessionHandler.doHandle(SessionHandler.java:226)
+	at org.eclipse.jetty.server.handler.ContextHandler.doHandle(ContextHandler.java:1180)
+	at org.eclipse.jetty.servlet.ServletHandler.doScope(ServletHandler.java:512)
+	at org.eclipse.jetty.server.session.SessionHandler.doScope(SessionHandler.java:185)
+	at org.eclipse.jetty.server.handler.ContextHandler.doScope(ContextHandler.java:1112)
+	at org.eclipse.jetty.server.handler.ScopedHandler.handle(ScopedHandler.java:141)
+	at org.eclipse.jetty.server.handler.ContextHandlerCollection.handle(ContextHandlerCollection.java:213)
+	at org.eclipse.jetty.server.handler.HandlerCollection.handle(HandlerCollection.java:119)
+	at org.eclipse.jetty.server.handler.HandlerWrapper.handle(HandlerWrapper.java:134)
+	at org.eclipse.jetty.server.Server.handle(Server.java:534)
+	at org.eclipse.jetty.server.HttpChannel.handle(HttpChannel.java:320)
+	at org.eclipse.jetty.server.HttpConnection.onFillable(HttpConnection.java:251)
+	at org.eclipse.jetty.io.AbstractConnection$ReadCallback.succeeded(AbstractConnection.java:273)
+	at org.eclipse.jetty.io.FillInterest.fillable(FillInterest.java:95)
+	at org.eclipse.jetty.io.SelectChannelEndPoint$2.run(SelectChannelEndPoint.java:93)
+	at org.eclipse.jetty.util.thread.strategy.ExecuteProduceConsume.executeProduceConsume(ExecuteProduceConsume.java:303)
+	at org.eclipse.jetty.util.thread.strategy.ExecuteProduceConsume.produceConsume(ExecuteProduceConsume.java:148)
+	at org.eclipse.jetty.util.thread.strategy.ExecuteProduceConsume.run(ExecuteProduceConsume.java:136)
+	at org.eclipse.jetty.util.thread.QueuedThreadPool.runJob(QueuedThreadPool.java:671)
+	at org.eclipse.jetty.util.thread.QueuedThreadPool$2.run(QueuedThreadPool.java:589)
+	at java.lang.Thread.run(Thread.java:745)
+
+INFO  - 2017-02-01 11:25:50.566; [   x:techproducts] org.apache.solr.core.SolrCore; [techproducts]  webapp=/solr path=/query params={q=test&fl=id,score,[features]&rq={!ltr+model%3DmyModel+reRankDocs%3D100}} status=400 QTime=1
+ERROR - 2017-02-01 11:25:58.677; [   x:techproducts] org.apache.solr.common.SolrException; org.apache.solr.common.SolrException: java.lang.RuntimeException: Exception from createWeight for SolrFeature [name=productNameMatchQuery, params={q={!field f=name}${user_query}}] SolrFeatureWeight requires efi parameter that was not passed in request.
+	at org.apache.solr.search.ReRankCollector.topDocs(ReRankCollector.java:138)
+	at org.apache.solr.search.SolrIndexSearcher.getDocListNC(SolrIndexSearcher.java:1880)
+	at org.apache.solr.search.SolrIndexSearcher.getDocListC(SolrIndexSearcher.java:1694)
+	at org.apache.solr.search.SolrIndexSearcher.search(SolrIndexSearcher.java:626)
+	at org.apache.solr.handler.component.QueryComponent.process(QueryComponent.java:548)
+	at org.apache.solr.handler.component.SearchHandler.handleRequestBody(SearchHandler.java:294)
+	at org.apache.solr.handler.RequestHandlerBase.handleRequest(RequestHandlerBase.java:166)
+	at org.apache.solr.core.SolrCore.execute(SolrCore.java:2402)
+	at org.apache.solr.servlet.HttpSolrCall.execute(HttpSolrCall.java:658)
+	at org.apache.solr.servlet.HttpSolrCall.call(HttpSolrCall.java:464)
+	at org.apache.solr.servlet.SolrDispatchFilter.doFilter(SolrDispatchFilter.java:345)
+	at org.apache.solr.servlet.SolrDispatchFilter.doFilter(SolrDispatchFilter.java:296)
+	at org.eclipse.jetty.servlet.ServletHandler$CachedChain.doFilter(ServletHandler.java:1699)
+	at org.eclipse.jetty.servlets.CrossOriginFilter.handle(CrossOriginFilter.java:308)
+	at org.eclipse.jetty.servlets.CrossOriginFilter.doFilter(CrossOriginFilter.java:262)
+	at org.eclipse.jetty.servlet.ServletHandler$CachedChain.doFilter(ServletHandler.java:1691)
+	at org.eclipse.jetty.servlet.ServletHandler.doHandle(ServletHandler.java:582)
+	at org.eclipse.jetty.server.handler.ScopedHandler.handle(ScopedHandler.java:143)
+	at org.eclipse.jetty.security.SecurityHandler.handle(SecurityHandler.java:548)
+	at org.eclipse.jetty.server.session.SessionHandler.doHandle(SessionHandler.java:226)
+	at org.eclipse.jetty.server.handler.ContextHandler.doHandle(ContextHandler.java:1180)
+	at org.eclipse.jetty.servlet.ServletHandler.doScope(ServletHandler.java:512)
+	at org.eclipse.jetty.server.session.SessionHandler.doScope(SessionHandler.java:185)
+	at org.eclipse.jetty.server.handler.ContextHandler.doScope(ContextHandler.java:1112)
+	at org.eclipse.jetty.server.handler.ScopedHandler.handle(ScopedHandler.java:141)
+	at org.eclipse.jetty.server.handler.ContextHandlerCollection.handle(ContextHandlerCollection.java:213)
+	at org.eclipse.jetty.server.handler.HandlerCollection.handle(HandlerCollection.java:119)
+	at org.eclipse.jetty.server.handler.HandlerWrapper.handle(HandlerWrapper.java:134)
+	at org.eclipse.jetty.server.Server.handle(Server.java:534)
+	at org.eclipse.jetty.server.HttpChannel.handle(HttpChannel.java:320)
+	at org.eclipse.jetty.server.HttpConnection.onFillable(HttpConnection.java:251)
+	at org.eclipse.jetty.io.AbstractConnection$ReadCallback.succeeded(AbstractConnection.java:273)
+	at org.eclipse.jetty.io.FillInterest.fillable(FillInterest.java:95)
+	at org.eclipse.jetty.io.SelectChannelEndPoint$2.run(SelectChannelEndPoint.java:93)
+	at org.eclipse.jetty.util.thread.strategy.ExecuteProduceConsume.executeProduceConsume(ExecuteProduceConsume.java:303)
+	at org.eclipse.jetty.util.thread.strategy.ExecuteProduceConsume.produceConsume(ExecuteProduceConsume.java:148)
+	at org.eclipse.jetty.util.thread.strategy.ExecuteProduceConsume.run(ExecuteProduceConsume.java:136)
+	at org.eclipse.jetty.util.thread.QueuedThreadPool.runJob(QueuedThreadPool.java:671)
+	at org.eclipse.jetty.util.thread.QueuedThreadPool$2.run(QueuedThreadPool.java:589)
+	at java.lang.Thread.run(Thread.java:745)
+Caused by: java.lang.RuntimeException: Exception from createWeight for SolrFeature [name=productNameMatchQuery, params={q={!field f=name}${user_query}}] SolrFeatureWeight requires efi parameter that was not passed in request.
+	at org.apache.solr.ltr.LTRScoringQuery.createWeights(LTRScoringQuery.java:241)
+	at org.apache.solr.ltr.LTRScoringQuery.createWeight(LTRScoringQuery.java:208)
+	at org.apache.solr.ltr.LTRScoringQuery.createWeight(LTRScoringQuery.java:55)
+	at org.apache.lucene.search.IndexSearcher.createWeight(IndexSearcher.java:735)
+	at org.apache.lucene.search.IndexSearcher.createNormalizedWeight(IndexSearcher.java:725)
+	at org.apache.solr.ltr.LTRRescorer.rescore(LTRRescorer.java:117)
+	at org.apache.solr.search.ReRankCollector.topDocs(ReRankCollector.java:104)
+	... 39 more
+Caused by: org.apache.solr.ltr.feature.FeatureException: SolrFeatureWeight requires efi parameter that was not passed in request.
+	at org.apache.solr.ltr.feature.SolrFeature$SolrFeatureWeight.<init>(SolrFeature.java:145)
+	at org.apache.solr.ltr.feature.SolrFeature.createWeight(SolrFeature.java:113)
+	at org.apache.solr.ltr.LTRScoringQuery.createWeights(LTRScoringQuery.java:237)
+	... 45 more
+
+INFO  - 2017-02-01 11:25:58.678; [   x:techproducts] org.apache.solr.core.SolrCore; [techproducts]  webapp=/solr path=/query params={q=test&fl=id,score,[features]&rq={!ltr+model%3Djouvemodel+reRankDocs%3D100}} status=400 QTime=1
+INFO  - 2017-02-01 11:26:23.775; [   x:techproducts] org.apache.solr.rest.RestManager$ManagedEndpoint; Resource not found for /schema/feature-store/jouvestore, looking for parent: /schema/feature-store
+INFO  - 2017-02-01 11:26:23.776; [   x:techproducts] org.apache.solr.rest.RestManager$ManagedEndpoint; Found parent resource /schema/feature-store for child: jouvestore
+INFO  - 2017-02-01 11:26:23.776; [   x:techproducts] org.apache.solr.rest.RestManager$ManagedEndpoint; Found ManagedResource [org.apache.solr.ltr.store.rest.ManagedFeatureStore@16ba0b34] for /schema/feature-store/jouvestore
+INFO  - 2017-02-01 11:26:23.776; [   x:techproducts] org.apache.solr.rest.ManagedResourceStorage$JsonStorage; Saved JSON object to path _schema_feature-store.json using file:dir=/Users/qfdk/GitHub/lucene-solr/solr/example/techproducts/solr/techproducts/conf
+INFO  - 2017-02-01 11:26:23.777; [   x:techproducts] org.apache.solr.rest.BaseSolrResource; [techproducts]  webapp=/solr path=/schema/feature-store/jouvestore params={} status=0 QTime=1
+INFO  - 2017-02-01 11:26:23.780; [   x:techproducts] org.apache.solr.rest.RestManager$ManagedEndpoint; Found ManagedResource [org.apache.solr.ltr.store.rest.ManagedFeatureStore@16ba0b34] for /schema/feature-store
+INFO  - 2017-02-01 11:26:23.780; [   x:techproducts] org.apache.solr.rest.ManagedResource; Processing update to /schema/feature-store: [{store=jouvestore, name=isInStock, class=org.apache.solr.ltr.feature.FieldValueFeature, params={field=inStock}}, {store=jouvestore, name=originalScore, class=org.apache.solr.ltr.feature.OriginalScoreFeature, params={}}, {store=jouvestore, name=price, class=org.apache.solr.ltr.feature.FieldValueFeature, params={field=price}}] is a java.util.ArrayList
+INFO  - 2017-02-01 11:26:23.780; [   x:techproducts] org.apache.solr.ltr.store.rest.ManagedFeatureStore; register feature based on {store=jouvestore, name=isInStock, class=org.apache.solr.ltr.feature.FieldValueFeature, params={field=inStock}}
+INFO  - 2017-02-01 11:26:23.781; [   x:techproducts] org.apache.solr.ltr.store.rest.ManagedFeatureStore; register feature based on {store=jouvestore, name=originalScore, class=org.apache.solr.ltr.feature.OriginalScoreFeature, params={}}
+INFO  - 2017-02-01 11:26:23.781; [   x:techproducts] org.apache.solr.ltr.store.rest.ManagedFeatureStore; register feature based on {store=jouvestore, name=price, class=org.apache.solr.ltr.feature.FieldValueFeature, params={field=price}}
+INFO  - 2017-02-01 11:26:23.781; [   x:techproducts] org.apache.solr.rest.ManagedResourceStorage$JsonStorage; Saved JSON object to path _schema_feature-store.json using file:dir=/Users/qfdk/GitHub/lucene-solr/solr/example/techproducts/solr/techproducts/conf
+INFO  - 2017-02-01 11:26:23.782; [   x:techproducts] org.apache.solr.rest.BaseSolrResource; [techproducts]  webapp=/solr path=/schema/feature-store params={} status=0 QTime=2
+INFO  - 2017-02-01 11:26:23.789; [   x:techproducts] org.apache.solr.core.SolrCore; [techproducts]  webapp=/solr path=/query params={q=id:"SP2514N"&fl=id,score,[features+store%3Djouvestore+efi.user_query%3D'\'hard%2Bdrive\'']} hits=1 status=0 QTime=0
+INFO  - 2017-02-01 11:26:23.792; [   x:techproducts] org.apache.solr.core.SolrCore; [techproducts]  webapp=/solr path=/query params={q=id:"6H500F0"&fl=id,score,[features+store%3Djouvestore+efi.user_query%3D'\'hard%2Bdrive\'']} hits=1 status=0 QTime=0
+INFO  - 2017-02-01 11:26:23.794; [   x:techproducts] org.apache.solr.core.SolrCore; [techproducts]  webapp=/solr path=/query params={q=id:"F8V7067-APL-KIT"&fl=id,score,[features+store%3Djouvestore+efi.user_query%3D'\'hard%2Bdrive\'']} hits=1 status=0 QTime=0
+INFO  - 2017-02-01 11:26:23.798; [   x:techproducts] org.apache.solr.core.SolrCore; [techproducts]  webapp=/solr path=/query params={q=id:"IW-02"&fl=id,score,[features+store%3Djouvestore+efi.user_query%3D'\'hard%2Bdrive\'']} hits=1 status=0 QTime=0
+INFO  - 2017-02-01 11:26:23.803; [   x:techproducts] org.apache.solr.core.SolrCore; [techproducts]  webapp=/solr path=/query params={q=id:"MA147LL/A"&fl=id,score,[features+store%3Djouvestore+efi.user_query%3D'\'ipod\'']} hits=1 status=0 QTime=0
+INFO  - 2017-02-01 11:26:23.806; [   x:techproducts] org.apache.solr.core.SolrCore; [techproducts]  webapp=/solr path=/query params={q=id:"F8V7067-APL-KIT"&fl=id,score,[features+store%3Djouvestore+efi.user_query%3D'\'ipod\'']} hits=1 status=0 QTime=0
+INFO  - 2017-02-01 11:26:23.809; [   x:techproducts] org.apache.solr.core.SolrCore; [techproducts]  webapp=/solr path=/query params={q=id:"IW-02"&fl=id,score,[features+store%3Djouvestore+efi.user_query%3D'\'ipod\'']} hits=1 status=0 QTime=0
+INFO  - 2017-02-01 11:26:23.816; [   x:techproducts] org.apache.solr.core.SolrCore; [techproducts]  webapp=/solr path=/query params={q=id:"6H500F0"&fl=id,score,[features+store%3Djouvestore+efi.user_query%3D'\'ipod\'']} hits=1 status=0 QTime=1
+INFO  - 2017-02-01 11:26:23.830; [   x:techproducts] org.apache.solr.rest.RestManager$ManagedEndpoint; Resource not found for /schema/model-store/jouvemodel, looking for parent: /schema/model-store
+INFO  - 2017-02-01 11:26:23.830; [   x:techproducts] org.apache.solr.rest.RestManager$ManagedEndpoint; Found parent resource /schema/model-store for child: jouvemodel
+INFO  - 2017-02-01 11:26:23.831; [   x:techproducts] org.apache.solr.rest.RestManager$ManagedEndpoint; Found ManagedResource [ManagedModelStore [store=ModelStore [availableModels=[jouvemodel]], featureStores=org.apache.solr.ltr.store.rest.ManagedFeatureStore@16ba0b34]] for /schema/model-store/jouvemodel
+INFO  - 2017-02-01 11:26:23.831; [   x:techproducts] org.apache.solr.rest.ManagedResourceStorage$JsonStorage; Saved JSON object to path _schema_model-store.json using file:dir=/Users/qfdk/GitHub/lucene-solr/solr/example/techproducts/solr/techproducts/conf
+INFO  - 2017-02-01 11:26:23.831; [   x:techproducts] org.apache.solr.rest.BaseSolrResource; [techproducts]  webapp=/solr path=/schema/model-store/jouvemodel params={} status=0 QTime=2
+INFO  - 2017-02-01 11:26:23.835; [   x:techproducts] org.apache.solr.rest.RestManager$ManagedEndpoint; Found ManagedResource [ManagedModelStore [store=ModelStore [availableModels=[]], featureStores=org.apache.solr.ltr.store.rest.ManagedFeatureStore@16ba0b34]] for /schema/model-store
+INFO  - 2017-02-01 11:26:23.836; [   x:techproducts] org.apache.solr.rest.ManagedResource; Processing update to /schema/model-store: {class=org.apache.solr.ltr.model.LinearModel, store=jouvestore, name=jouvemodel, features=[{name=isInStock}, {name=price}, {name=originalScore}], params={weights={isInStock=0.228430932683, originalScore=0.0, price=0.0100510354462}}} is a java.util.LinkedHashMap
+INFO  - 2017-02-01 11:26:23.837; [   x:techproducts] org.apache.solr.ltr.store.rest.ManagedModelStore; adding model jouvemodel
+INFO  - 2017-02-01 11:26:23.838; [   x:techproducts] org.apache.solr.rest.ManagedResourceStorage$JsonStorage; Saved JSON object to path _schema_model-store.json using file:dir=/Users/qfdk/GitHub/lucene-solr/solr/example/techproducts/solr/techproducts/conf
+INFO  - 2017-02-01 11:26:23.838; [   x:techproducts] org.apache.solr.rest.BaseSolrResource; [techproducts]  webapp=/solr path=/schema/model-store params={} status=0 QTime=4
+INFO  - 2017-02-01 11:26:30.796; [   x:techproducts] org.apache.solr.core.SolrCore; [techproducts]  webapp=/solr path=/query params={q=test&fl=id,score,[features]&rq={!ltr+model%3Djouvemodel+reRankDocs%3D100}} hits=2 status=0 QTime=2
+INFO  - 2017-02-01 11:26:42.961; [   x:techproducts] org.apache.solr.core.SolrCore; [techproducts]  webapp=/solr path=/select params={q=ipod&indent=on&fl=name,[features]&rows=100&wt=json&rq={!ltr+model%3Djouvemodel+reRankDocs%3D5}} hits=3 status=0 QTime=2
+INFO  - 2017-02-01 11:26:55.849; [   x:techproducts] org.apache.solr.core.SolrCore; [techproducts]  webapp=/solr path=/select params={q=ipod&indent=on&fl=name,score,[features]&rows=100&wt=json&rq={!ltr+model%3Djouvemodel+reRankDocs%3D5}} hits=3 status=0 QTime=3
+INFO  - 2017-02-01 11:27:31.277; [   x:techproducts] org.apache.solr.core.SolrCore; [techproducts]  webapp=/solr path=/select params={q=hard+drive&indent=on&fl=name,score,[features]&rows=100&wt=json&rq={!ltr+model%3Djouvemodel+reRankDocs%3D5}} hits=3 status=0 QTime=7
+INFO  - 2017-02-01 11:28:07.245; [   x:techproducts] org.apache.solr.core.SolrCore; [techproducts]  webapp=/solr path=/select params={q=hard+drive&indent=on&fl=name,score,[features]&rows=100&wt=json&rq={!ltr+model%3Djouvemodel+reRankDocs%3D7}} hits=3 status=0 QTime=2
+INFO  - 2017-02-01 11:28:08.087; [   x:techproducts] org.apache.solr.core.SolrCore; [techproducts]  webapp=/solr path=/select params={q=hard+drive&indent=on&fl=name,score,[features]&rows=100&wt=json&rq={!ltr+model%3Djouvemodel+reRankDocs%3D7}} hits=3 status=0 QTime=1
+INFO  - 2017-02-01 11:28:08.262; [   x:techproducts] org.apache.solr.core.SolrCore; [techproducts]  webapp=/solr path=/select params={q=hard+drive&indent=on&fl=name,score,[features]&rows=100&wt=json&rq={!ltr+model%3Djouvemodel+reRankDocs%3D7}} hits=3 status=0 QTime=1
+INFO  - 2017-02-01 11:28:08.479; [   x:techproducts] org.apache.solr.core.SolrCore; [techproducts]  webapp=/solr path=/select params={q=hard+drive&indent=on&fl=name,score,[features]&rows=100&wt=json&rq={!ltr+model%3Djouvemodel+reRankDocs%3D7}} hits=3 status=0 QTime=0
+INFO  - 2017-02-01 11:40:31.653; [   x:techproducts] org.apache.solr.core.SolrCore; [techproducts]  webapp=/solr path=/select params={q=hard+drive&indent=on&fl=score,name_txt_en,[features]&rows=100&wt=json&rq={!ltr+model%3Djouvemodel+reRankDocs%3D5}} hits=3 status=0 QTime=0
+INFO  - 2017-02-01 11:45:15.129; [   x:techproducts] org.apache.solr.core.SolrCore; [techproducts]  webapp=/solr path=/select params={q=skirt&indent=on&fl=score,name_txt_en,[features]&rows=100&wt=json&rq={!ltr+model%3Djouvemodel+reRankDocs%3D5}} hits=0 status=0 QTime=0
+INFO  - 2017-02-01 11:45:19.743; [   x:techproducts] org.apache.solr.core.SolrCore; [techproducts]  webapp=/solr path=/select params={q=*&indent=on&fl=score,name_txt_en,[features]&rows=100&wt=json&rq={!ltr+model%3Djouvemodel+reRankDocs%3D5}} hits=32 status=0 QTime=3
+INFO  - 2017-02-01 11:46:08.363; [   x:techproducts] org.apache.solr.core.SolrCore; [techproducts]  webapp=/solr path=/select params={q=ipod&indent=on&fl=score,name_txt_en,[features]&rows=100&wt=json&rq={!ltr+model%3Djouvemodel+reRankDocs%3D5}} hits=3 status=0 QTime=0
+INFO  - 2017-02-01 11:46:28.470; [   x:techproducts] org.apache.solr.core.SolrCore; [techproducts]  webapp=/solr path=/select params={q=ipod&indent=on&fl=score,name,[features]&rows=100&wt=json&rq={!ltr+model%3Djouvemodel+reRankDocs%3D5}} hits=3 status=0 QTime=0
+INFO  - 2017-02-01 11:46:42.110; [   x:techproducts] org.apache.solr.core.SolrCore; [techproducts]  webapp=/solr path=/select params={q=ipod&indent=on&fl=name,[features]&rows=100&wt=json&rq={!ltr+model%3Djouvemodel+reRankDocs%3D5}} hits=3 status=0 QTime=0
+INFO  - 2017-02-01 11:46:49.911; [   x:techproducts] org.apache.solr.core.SolrCore; [techproducts]  webapp=/solr path=/select params={q=ipod&indent=on&fl=name,socre,[features]&rows=100&wt=json&rq={!ltr+model%3Djouvemodel+reRankDocs%3D5}} hits=3 status=0 QTime=0
+INFO  - 2017-02-01 11:46:51.240; [   x:techproducts] org.apache.solr.core.SolrCore; [techproducts]  webapp=/solr path=/select params={q=ipod&indent=on&fl=name,socre,[features]&rows=100&wt=json&rq={!ltr+model%3Djouvemodel+reRankDocs%3D5}} hits=3 status=0 QTime=0
+INFO  - 2017-02-01 11:46:52.355; [   x:techproducts] org.apache.solr.core.SolrCore; [techproducts]  webapp=/solr path=/select params={q=ipod&indent=on&fl=name,socre,[features]&rows=100&wt=json&rq={!ltr+model%3Djouvemodel+reRankDocs%3D5}} hits=3 status=0 QTime=0
+INFO  - 2017-02-01 11:46:56.267; [   x:techproducts] org.apache.solr.core.SolrCore; [techproducts]  webapp=/solr path=/select params={q=ipod&indent=on&fl=name,score,[features]&rows=100&wt=json&rq={!ltr+model%3Djouvemodel+reRankDocs%3D5}} hits=3 status=0 QTime=0
+INFO  - 2017-02-01 11:55:06.175; [   x:techproducts] org.apache.solr.core.SolrCore; [techproducts]  webapp=/solr path=/select params={q=skirt&indent=on&fl=id,name_txt_en,description_txt_en&rows=20&wt=json} hits=0 status=0 QTime=0
+INFO  - 2017-02-01 11:55:10.957; [   x:techproducts] org.apache.solr.core.SolrCore; [techproducts]  webapp=/solr path=/select params={q=*&indent=on&fl=id,name_txt_en,description_txt_en&rows=20&wt=json} hits=32 status=0 QTime=0
+INFO  - 2017-02-01 11:55:17.082; [   x:techproducts] org.apache.solr.core.SolrCore; [techproducts]  webapp=/solr path=/select params={q=*&indent=on&fl=id,name_txt_en,description_txt_en&rows=20&wt=json} hits=32 status=0 QTime=0
+INFO  - 2017-02-01 11:55:17.601; [   x:techproducts] org.apache.solr.core.SolrCore; [techproducts]  webapp=/solr path=/select params={q=*&indent=on&fl=id,name_txt_en,description_txt_en&rows=20&wt=json} hits=32 status=0 QTime=0
+INFO  - 2017-02-01 11:55:17.783; [   x:techproducts] org.apache.solr.core.SolrCore; [techproducts]  webapp=/solr path=/select params={q=*&indent=on&fl=id,name_txt_en,description_txt_en&rows=20&wt=json} hits=32 status=0 QTime=0
+INFO  - 2017-02-01 11:55:17.957; [   x:techproducts] org.apache.solr.core.SolrCore; [techproducts]  webapp=/solr path=/select params={q=*&indent=on&fl=id,name_txt_en,description_txt_en&rows=20&wt=json} hits=32 status=0 QTime=0
+INFO  - 2017-02-01 11:55:20.887; [   x:techproducts] org.apache.solr.core.SolrCore; [techproducts]  webapp=/solr path=/select params={q=*&indent=on&fl=*&rows=20&wt=json} hits=32 status=0 QTime=0
+INFO  - 2017-02-01 11:55:21.452; [   x:techproducts] org.apache.solr.core.SolrCore; [techproducts]  webapp=/solr path=/select params={q=*&indent=on&fl=*&rows=20&wt=json} hits=32 status=0 QTime=0
+INFO  - 2017-02-01 11:55:40.452; [   x:techproducts] org.apache.solr.core.SolrCore; [techproducts]  webapp=/solr path=/select params={q=*&indent=on&fl=*&rows=20&wt=json} hits=32 status=0 QTime=0
+INFO  - 2017-02-01 11:55:40.568; [   x:techproducts] org.apache.solr.core.SolrCore; [techproducts]  webapp=/solr path=/select params={q=*&indent=on&fl=*&rows=20&wt=json} hits=32 status=0 QTime=0
+INFO  - 2017-02-01 11:55:40.753; [   x:techproducts] org.apache.solr.core.SolrCore; [techproducts]  webapp=/solr path=/select params={q=*&indent=on&fl=*&rows=20&wt=json} hits=32 status=0 QTime=0
+INFO  - 2017-02-01 11:55:40.913; [   x:techproducts] org.apache.solr.core.SolrCore; [techproducts]  webapp=/solr path=/select params={q=*&indent=on&fl=*&rows=20&wt=json} hits=32 status=0 QTime=0
+INFO  - 2017-02-01 11:55:41.081; [   x:techproducts] org.apache.solr.core.SolrCore; [techproducts]  webapp=/solr path=/select params={q=*&indent=on&fl=*&rows=20&wt=json} hits=32 status=0 QTime=0
+INFO  - 2017-02-01 11:55:41.225; [   x:techproducts] org.apache.solr.core.SolrCore; [techproducts]  webapp=/solr path=/select params={q=*&indent=on&fl=*&rows=20&wt=json} hits=32 status=0 QTime=0
+INFO  - 2017-02-01 11:55:52.844; [   x:techproducts] org.apache.solr.core.SolrCore; [techproducts]  webapp=/solr path=/select params={q=*&indent=on&fl=*&rows=20&wt=json} hits=32 status=0 QTime=0
+INFO  - 2017-02-01 11:55:55.987; [   x:techproducts] org.apache.solr.core.SolrCore; [techproducts]  webapp=/solr path=/select params={q=*&indent=on&fl=*&rows=20&wt=json} hits=32 status=0 QTime=0
+INFO  - 2017-02-01 11:55:56.346; [   x:techproducts] org.apache.solr.core.SolrCore; [techproducts]  webapp=/solr path=/select params={q=*&indent=on&fl=*&rows=20&wt=json} hits=32 status=0 QTime=0
+INFO  - 2017-02-01 11:55:56.522; [   x:techproducts] org.apache.solr.core.SolrCore; [techproducts]  webapp=/solr path=/select params={q=*&indent=on&fl=*&rows=20&wt=json} hits=32 status=0 QTime=0
+INFO  - 2017-02-01 11:55:56.714; [   x:techproducts] org.apache.solr.core.SolrCore; [techproducts]  webapp=/solr path=/select params={q=*&indent=on&fl=*&rows=20&wt=json} hits=32 status=0 QTime=0
+INFO  - 2017-02-01 11:55:56.915; [   x:techproducts] org.apache.solr.core.SolrCore; [techproducts]  webapp=/solr path=/select params={q=*&indent=on&fl=*&rows=20&wt=json} hits=32 status=0 QTime=0
+INFO  - 2017-02-01 11:55:57.082; [   x:techproducts] org.apache.solr.core.SolrCore; [techproducts]  webapp=/solr path=/select params={q=*&indent=on&fl=*&rows=20&wt=json} hits=32 status=0 QTime=0
+INFO  - 2017-02-01 11:56:01.259; [   x:techproducts] org.apache.solr.core.SolrCore; [techproducts]  webapp=/solr path=/select params={q=*&indent=on&fl=*&rows=20&wt=json} hits=32 status=0 QTime=0
+INFO  - 2017-02-01 12:00:34.607; [   x:techproducts] org.apache.solr.core.SolrCore; [techproducts]  webapp=/solr path=/select params={q=skirt&indent=on&fl=id,name_txt_en,description_txt_en&rows=20&wt=json} hits=0 status=0 QTime=0
+INFO  - 2017-02-01 12:10:01.718; [   x:techproducts] org.apache.solr.core.SolrCore; [techproducts]  webapp=/solr path=/select params={q=skirt&indent=on&fl=id,name_txt_en,description_txt_en&rows=20&wt=json} hits=0 status=0 QTime=0
+INFO  - 2017-02-01 12:28:06.697; [   x:techproducts] org.apache.solr.core.SolrCore; [techproducts]  webapp=/solr path=/select params={q=skirt&indent=on&fl=score,name_txt_en,[features]&rows=100&wt=json&rq={!ltr+model%3Djouvemodel+reRankDocs%3D5}} hits=0 status=0 QTime=0
+INFO  - 2017-02-01 12:28:08.838; [   x:techproducts] org.apache.solr.core.SolrCore; [techproducts]  webapp=/solr path=/select params={q=skirt&indent=on&fl=score,name_txt_en,[features]&rows=100&wt=json&rq={!ltr+model%3Djouvemodel+reRankDocs%3D5}} hits=0 status=0 QTime=0
+INFO  - 2017-02-01 12:28:12.624; [   x:techproducts] org.apache.solr.core.SolrCore; [techproducts]  webapp=/solr path=/select params={q=*&indent=on&fl=score,name_txt_en,[features]&rows=100&wt=json&rq={!ltr+model%3Djouvemodel+reRankDocs%3D5}} hits=32 status=0 QTime=0
+INFO  - 2017-02-01 12:28:18.385; [   x:techproducts] org.apache.solr.core.SolrCore; [techproducts]  webapp=/solr path=/select params={q=ipod&indent=on&fl=score,name_txt_en,[features]&rows=100&wt=json&rq={!ltr+model%3Djouvemodel+reRankDocs%3D5}} hits=3 status=0 QTime=0
+INFO  - 2017-02-01 12:34:48.791; [   x:techproducts] org.apache.solr.core.SolrCore; [techproducts]  webapp=/solr path=/select params={q=skirt&indent=on&fl=id,name_txt_en,description_txt_en&rows=20&wt=json} hits=0 status=0 QTime=0
+INFO  - 2017-02-01 12:34:50.850; [   x:techproducts] org.apache.solr.core.SolrCore; [techproducts]  webapp=/solr path=/select params={q=skirt&indent=on&fl=id,name_txt_en,description_txt_en&rows=20&wt=json} hits=0 status=0 QTime=0
+INFO  - 2017-02-01 12:34:53.578; [   x:techproducts] org.apache.solr.core.SolrCore; [techproducts]  webapp=/solr path=/select params={q=*&indent=on&fl=id,name_txt_en,description_txt_en&rows=20&wt=json} hits=32 status=0 QTime=0
+INFO  - 2017-02-01 12:34:58.386; [   x:techproducts] org.apache.solr.core.SolrCore; [techproducts]  webapp=/solr path=/select params={q=*&indent=on&fl=id,name,description_txt_en&rows=20&wt=json} hits=32 status=0 QTime=0
+INFO  - 2017-02-01 12:36:43.047; [   x:techproducts] org.apache.solr.core.SolrCore; [techproducts]  webapp=/solr path=/select params={q=skirt&indent=on&fl=score,name_txt_en,[features]&rows=100&wt=json&rq={!ltr+model%3Djouvemodel+reRankDocs%3D5}} hits=0 status=0 QTime=0
+INFO  - 2017-02-01 12:37:05.903; [   x:techproducts] org.apache.solr.core.SolrCore; [techproducts]  webapp=/solr path=/select params={q=*&indent=on&fl=score,name_txt_en,[features]&rows=100&wt=json&rq={!ltr+model%3Djouvemodel+reRankDocs%3D5}} hits=32 status=0 QTime=0
+INFO  - 2017-02-01 12:37:11.986; [   x:techproducts] org.apache.solr.core.SolrCore; [techproducts]  webapp=/solr path=/select params={q=ipod&indent=on&fl=score,name_txt_en,[features]&rows=100&wt=json&rq={!ltr+model%3Djouvemodel+reRankDocs%3D5}} hits=3 status=0 QTime=0
+INFO  - 2017-02-01 12:40:38.248; [   x:techproducts] org.apache.solr.core.SolrCore; [techproducts]  webapp=/solr path=/select params={q=skirt&indent=on&fl=score,name_txt_en,[features]&rows=100&wt=json&rq={!ltr+model%3Djouvemodel+reRankDocs%3D5}} hits=0 status=0 QTime=0
+INFO  - 2017-02-01 12:40:42.609; [   x:techproducts] org.apache.solr.core.SolrCore; [techproducts]  webapp=/solr path=/select params={q=skirt&indent=on&fl=score,name_txt_en,[features]&rows=100&wt=json&rq={!ltr+model%3Djouvemodel+reRankDocs%3D5}} hits=0 status=0 QTime=0
+INFO  - 2017-02-01 12:40:43.336; [   x:techproducts] org.apache.solr.core.SolrCore; [techproducts]  webapp=/solr path=/select params={q=skirt&indent=on&fl=score,name_txt_en,[features]&rows=100&wt=json&rq={!ltr+model%3Djouvemodel+reRankDocs%3D5}} hits=0 status=0 QTime=0
+INFO  - 2017-02-01 12:40:44.085; [   x:techproducts] org.apache.solr.core.SolrCore; [techproducts]  webapp=/solr path=/select params={q=skirt&indent=on&fl=score,name_txt_en,[features]&rows=100&wt=json&rq={!ltr+model%3Djouvemodel+reRankDocs%3D5}} hits=0 status=0 QTime=0
+INFO  - 2017-02-01 13:04:18.805; [   x:techproducts] org.apache.solr.core.SolrCore; [techproducts]  webapp=/solr path=/select params={q={!field+f%3Dname}${user_query}&indent=on&fl=inStock,price&rows=20&wt=json} hits=0 status=0 QTime=0
+INFO  - 2017-02-01 13:04:33.591; [   x:techproducts] org.apache.solr.core.SolrCore; [techproducts]  webapp=/solr path=/select params={q=ipod&indent=on&fl=name,[features]&rows=100&wt=json&rq={!ltr+model%3Djouvemodel+reRankDocs%3D5}} hits=3 status=0 QTime=0
+INFO  - 2017-02-01 13:07:23.228; [   x:techproducts] org.apache.solr.rest.RestManager$ManagedEndpoint; Resource not found for /schema/feature-store/jouvestore, looking for parent: /schema/feature-store
+INFO  - 2017-02-01 13:07:23.228; [   x:techproducts] org.apache.solr.rest.RestManager$ManagedEndpoint; Found parent resource /schema/feature-store for child: jouvestore
+INFO  - 2017-02-01 13:07:23.228; [   x:techproducts] org.apache.solr.rest.RestManager$ManagedEndpoint; Found ManagedResource [org.apache.solr.ltr.store.rest.ManagedFeatureStore@16ba0b34] for /schema/feature-store/jouvestore
+INFO  - 2017-02-01 13:07:23.229; [   x:techproducts] org.apache.solr.rest.ManagedResourceStorage$JsonStorage; Saved JSON object to path _schema_feature-store.json using file:dir=/Users/qfdk/GitHub/lucene-solr/solr/example/techproducts/solr/techproducts/conf
+INFO  - 2017-02-01 13:07:23.230; [   x:techproducts] org.apache.solr.rest.BaseSolrResource; [techproducts]  webapp=/solr path=/schema/feature-store/jouvestore params={} status=0 QTime=2
+INFO  - 2017-02-01 13:07:23.234; [   x:techproducts] org.apache.solr.rest.RestManager$ManagedEndpoint; Found ManagedResource [org.apache.solr.ltr.store.rest.ManagedFeatureStore@16ba0b34] for /schema/feature-store
+INFO  - 2017-02-01 13:07:23.235; [   x:techproducts] org.apache.solr.rest.ManagedResource; Processing update to /schema/feature-store: [{store=jouvestore, name=originalScore, class=org.apache.solr.ltr.feature.OriginalScoreFeature, params={}}, {store=jouvestore, name=isInStock, class=org.apache.solr.ltr.feature.FieldValueFeature, params={field=in-stock_b}}] is a java.util.ArrayList
+INFO  - 2017-02-01 13:07:23.235; [   x:techproducts] org.apache.solr.ltr.store.rest.ManagedFeatureStore; register feature based on {store=jouvestore, name=originalScore, class=org.apache.solr.ltr.feature.OriginalScoreFeature, params={}}
+INFO  - 2017-02-01 13:07:23.235; [   x:techproducts] org.apache.solr.ltr.store.rest.ManagedFeatureStore; register feature based on {store=jouvestore, name=isInStock, class=org.apache.solr.ltr.feature.FieldValueFeature, params={field=in-stock_b}}
+INFO  - 2017-02-01 13:07:23.236; [   x:techproducts] org.apache.solr.rest.ManagedResourceStorage$JsonStorage; Saved JSON object to path _schema_feature-store.json using file:dir=/Users/qfdk/GitHub/lucene-solr/solr/example/techproducts/solr/techproducts/conf
+INFO  - 2017-02-01 13:07:23.236; [   x:techproducts] org.apache.solr.rest.BaseSolrResource; [techproducts]  webapp=/solr path=/schema/feature-store params={} status=0 QTime=2
+INFO  - 2017-02-01 13:07:23.241; [   x:techproducts] org.apache.solr.core.SolrCore; [techproducts]  webapp=/solr path=/query params={q=id:"21"&fl=id,score,[features+store%3Djouvestore+efi.user_query%3D'\'skirt%2Bperfect\'']} hits=0 status=0 QTime=0
+INFO  - 2017-02-01 13:07:23.246; [   x:techproducts] org.apache.solr.core.SolrCore; [techproducts]  webapp=/solr path=/query params={q=id:"16"&fl=id,score,[features+store%3Djouvestore+efi.user_query%3D'\'skirt%2Bperfect\'']} hits=0 status=0 QTime=1
+INFO  - 2017-02-01 13:07:23.249; [   x:techproducts] org.apache.solr.core.SolrCore; [techproducts]  webapp=/solr path=/query params={q=id:"27"&fl=id,score,[features+store%3Djouvestore+efi.user_query%3D'\'skirt%2Bperfect\'']} hits=0 status=0 QTime=0
+INFO  - 2017-02-01 13:07:23.252; [   x:techproducts] org.apache.solr.core.SolrCore; [techproducts]  webapp=/solr path=/query params={q=id:"37"&fl=id,score,[features+store%3Djouvestore+efi.user_query%3D'\'skirt%2Bperfect\'']} hits=0 status=0 QTime=0
+INFO  - 2017-02-01 13:07:23.255; [   x:techproducts] org.apache.solr.core.SolrCore; [techproducts]  webapp=/solr path=/query params={q=id:"1"&fl=id,score,[features+store%3Djouvestore+efi.user_query%3D'\'skirt%2Bperfect\'']} hits=0 status=0 QTime=0
+INFO  - 2017-02-01 13:07:23.258; [   x:techproducts] org.apache.solr.core.SolrCore; [techproducts]  webapp=/solr path=/query params={q=id:"31"&fl=id,score,[features+store%3Djouvestore+efi.user_query%3D'\'skirt%2Bperfect\'']} hits=0 status=0 QTime=0
+INFO  - 2017-02-01 13:07:23.263; [   x:techproducts] org.apache.solr.core.SolrCore; [techproducts]  webapp=/solr path=/query params={q=id:"11"&fl=id,score,[features+store%3Djouvestore+efi.user_query%3D'\'skirt%2Bperfect\'']} hits=0 status=0 QTime=0
+INFO  - 2017-02-01 13:07:23.266; [   x:techproducts] org.apache.solr.core.SolrCore; [techproducts]  webapp=/solr path=/query params={q=id:"28"&fl=id,score,[features+store%3Djouvestore+efi.user_query%3D'\'skirt%2Bperfect\'']} hits=0 status=0 QTime=0
+INFO  - 2017-02-01 13:07:23.269; [   x:techproducts] org.apache.solr.core.SolrCore; [techproducts]  webapp=/solr path=/query params={q=id:"26"&fl=id,score,[features+store%3Djouvestore+efi.user_query%3D'\'skirt%2Bperfect\'']} hits=0 status=0 QTime=0
+INFO  - 2017-02-01 13:07:23.285; [   x:techproducts] org.apache.solr.rest.RestManager$ManagedEndpoint; Resource not found for /schema/model-store/jouvemodel, looking for parent: /schema/model-store
+INFO  - 2017-02-01 13:07:23.286; [   x:techproducts] org.apache.solr.rest.RestManager$ManagedEndpoint; Found parent resource /schema/model-store for child: jouvemodel
+INFO  - 2017-02-01 13:07:23.286; [   x:techproducts] org.apache.solr.rest.RestManager$ManagedEndpoint; Found ManagedResource [ManagedModelStore [store=ModelStore [availableModels=[jouvemodel]], featureStores=org.apache.solr.ltr.store.rest.ManagedFeatureStore@16ba0b34]] for /schema/model-store/jouvemodel
+INFO  - 2017-02-01 13:07:23.286; [   x:techproducts] org.apache.solr.rest.ManagedResourceStorage$JsonStorage; Saved JSON object to path _schema_model-store.json using file:dir=/Users/qfdk/GitHub/lucene-solr/solr/example/techproducts/solr/techproducts/conf
+INFO  - 2017-02-01 13:07:23.287; [   x:techproducts] org.apache.solr.rest.BaseSolrResource; [techproducts]  webapp=/solr path=/schema/model-store/jouvemodel params={} status=0 QTime=1
+INFO  - 2017-02-01 13:07:23.291; [   x:techproducts] org.apache.solr.rest.RestManager$ManagedEndpoint; Found ManagedResource [ManagedModelStore [store=ModelStore [availableModels=[]], featureStores=org.apache.solr.ltr.store.rest.ManagedFeatureStore@16ba0b34]] for /schema/model-store
+INFO  - 2017-02-01 13:07:23.292; [   x:techproducts] org.apache.solr.rest.ManagedResource; Processing update to /schema/model-store: {class=org.apache.solr.ltr.model.LinearModel, store=jouvestore, name=jouvemodel, features=[], params={weights={}}} is a java.util.LinkedHashMap
+INFO  - 2017-02-01 13:07:23.294; [   x:techproducts] org.apache.solr.rest.BaseSolrResource; [techproducts]  webapp=/solr path=/schema/model-store params={} msg={org.apache.solr.ltr.model.ModelException: no features declared for model jouvemodel} status=400 QTime=4
+INFO  - 2017-02-01 13:07:42.230; [   ] org.eclipse.jetty.server.AbstractConnector; Stopped ServerConnector@d5b810e{HTTP/1.1,[http/1.1]}{0.0.0.0:8983}
+INFO  - 2017-02-01 13:07:42.232; [   ] org.apache.solr.core.CoreContainer; Shutting down CoreContainer instance=1264213713
+INFO  - 2017-02-01 13:07:42.234; [   x:techproducts] org.apache.solr.core.SolrCore; [techproducts]  CLOSING SolrCore org.apache.solr.core.SolrCore@59af2b31
+INFO  - 2017-02-01 13:07:42.262; [   x:techproducts] org.apache.solr.metrics.SolrMetricManager; Closing metric reporters for: solr.core.techproducts
+INFO  - 2017-02-01 13:07:42.264; [   ] org.apache.solr.metrics.SolrMetricManager; Closing metric reporters for: solr.node
+INFO  - 2017-02-01 13:07:42.266; [   ] org.eclipse.jetty.server.handler.ContextHandler; Stopped o.e.j.w.WebAppContext@11438d26{/solr,null,UNAVAILABLE}{/Users/qfdk/GitHub/lucene-solr/solr/server/solr-webapp/webapp}

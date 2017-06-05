@@ -1,0 +1,25 @@
+#**
+ *  An extremely plain / debug version of hit.vm
+ *#
+
+<table>
+  ## For each field
+  #foreach( $fieldName in $doc.fieldNames )
+    ## For each value
+    #foreach( $value in $doc.getFieldValues($fieldName) )
+      <tr>
+        ## Field Name
+        <th align="right" valign="top">
+          #if( $foreach.count == 1 )
+            $fieldName:
+          #end
+        </th>
+        ## Field Value(s)
+        <td align="left" valign="top">
+          $esc.html($value) <br/>
+        </td>
+      </tr>
+    #end     ## end for each value
+  #end       ## end for each field
+</table>
+<hr/>
