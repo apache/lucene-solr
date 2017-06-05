@@ -238,7 +238,7 @@ public class TestJsonFacetRefinement extends SolrTestCaseHS {
     ModifiableSolrParams p = params("cat_s", "cat_s", "xy_s", "xy_s", "num_d", "num_d", "qw_s", "qw_s", "er_s","er_s");
     doBasicRefinement( p );
 
-    p.set("terms","method:dv,");
+    p.set("terms","method:dvhash,");
     doBasicRefinement( p );
 
     // multi-valued strings
