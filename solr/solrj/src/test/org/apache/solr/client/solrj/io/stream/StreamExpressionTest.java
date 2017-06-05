@@ -5727,9 +5727,32 @@ public class StreamExpressionTest extends SolrCloudTestCase {
     tuple = tuples.get(0);
     p = tuple.getDouble("return-value");
     assertEquals(p, 2.4, 0.001);
-
   }
 
+  @Test
+  public void testArraySort() throws Exception {
+    String cexpr = "arraySort(array(11.5, 12.3, 4, 3, 1, 0))";
+    ModifiableSolrParams paramsLoc = new ModifiableSolrParams();
+    paramsLoc.set("expr", cexpr);
+    paramsLoc.set("qt", "/stream");
+
+    String url = cluster.getJettySolrRunners().get(0).getBaseUrl().toString()+"/"+COLLECTIONORALIAS;
+    TupleStream solrStream = new SolrStream(url, paramsLoc);
+
+    StreamContext context = new StreamContext();
+    solrStream.setStreamContext(context);
+    List<Tuple> tuples = getTuples(solrStream);
+    assertTrue(tuples.size() == 1);
+    Tuple tuple = tuples.get(0);
+    List<Number> asort = (List<Number>)tuple.get("return-value");
+    assertEquals(asort.size(), 6);
+    assertEquals(asort.get(0).doubleValue(), 0, 0.0);
+    assertEquals(asort.get(1).doubleValue(), 1, 0.0);
+    assertEquals(asort.get(2).doubleValue(), 3, 0.0);
+    assertEquals(asort.get(3).doubleValue(), 4, 0.0);
+    assertEquals(asort.get(4).doubleValue(), 11.5, 0.0);
+    assertEquals(asort.get(5).doubleValue(), 12.3, 0.0);
+  }
 
   @Test
   public void testCumulativeProbability() throws Exception {
