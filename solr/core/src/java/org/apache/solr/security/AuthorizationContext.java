@@ -36,8 +36,31 @@ public abstract class AuthorizationContext {
   }
   
   public abstract SolrParams getParams() ;
-  
+
+  /**
+   * This method returns the {@linkplain Principal} corresponding to
+   * the authenticated user for the current request. Please note that
+   * the value returned by {@linkplain Principal#getName()} method depends
+   * upon the type of the authentication mechanism used (e.g. for user "foo"
+   * with BASIC authentication the result would be "foo". On the other hand
+   * with KERBEROS it would be foo@RELMNAME). Hence
+   * {@linkplain AuthorizationContext#getUserName()} method should be preferred
+   * to extract the identity of authenticated user instead of this method.
+   *
+   * @return user principal in case of an authenticated request
+   *         null in case of unauthenticated request
+   */
   public abstract Principal getUserPrincipal() ;
+
+  /**
+   * This method returns the name of the authenticated user for the current request.
+   * The return value of this method is agnostic of the underlying authentication
+   * mechanism used.
+   *
+   * @return user name in case of an authenticated user
+   *         null in case of unauthenticated request
+   */
+  public abstract String getUserName() ;
 
   public abstract String getHttpHeader(String header);
   

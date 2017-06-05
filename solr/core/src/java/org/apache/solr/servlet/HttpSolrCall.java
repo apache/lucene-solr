@@ -48,6 +48,7 @@ import org.apache.http.HttpEntity;
 import org.apache.http.HttpEntityEnclosingRequest;
 import org.apache.http.HttpResponse;
 import org.apache.http.HttpStatus;
+import org.apache.http.auth.BasicUserPrincipal;
 import org.apache.http.client.methods.HttpDelete;
 import org.apache.http.client.methods.HttpEntityEnclosingRequestBase;
 import org.apache.http.client.methods.HttpGet;
@@ -1033,7 +1034,15 @@ public class HttpSolrCall {
 
       @Override
       public Principal getUserPrincipal() {
+        if (cores.useShortUserName()) {
+          return new BasicUserPrincipal(getReq().getRemoteUser());
+        }
         return getReq().getUserPrincipal();
+      }
+
+      @Override
+      public String getUserName() {
+        return getReq().getRemoteUser();
       }
 
       @Override

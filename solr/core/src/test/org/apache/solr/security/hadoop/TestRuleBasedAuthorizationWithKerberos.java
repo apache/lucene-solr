@@ -29,7 +29,7 @@ import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
-public class TestSolrCloudWithHadoopAuthPlugin extends SolrCloudTestCase {
+public class TestRuleBasedAuthorizationWithKerberos extends SolrCloudTestCase {
   protected static final int NUM_SERVERS = 1;
   protected static final int NUM_SHARDS = 1;
   protected static final int REPLICATION_FACTOR = 1;
@@ -43,7 +43,7 @@ public class TestSolrCloudWithHadoopAuthPlugin extends SolrCloudTestCase {
     kerberosTestServices = KerberosUtils.setupMiniKdc(createTempDir());
 
     configureCluster(NUM_SERVERS)// nodes
-        .withSecurityJson(TEST_PATH().resolve("security").resolve("hadoop_kerberos_config.json"))
+        .withSecurityJson(TEST_PATH().resolve("security").resolve("hadoop_kerberos_authz_config.json"))
         .addConfig("conf1", TEST_PATH().resolve("configsets").resolve("cloud-minimal").resolve("conf"))
         .configure();
   }
@@ -55,15 +55,9 @@ public class TestSolrCloudWithHadoopAuthPlugin extends SolrCloudTestCase {
   }
 
   @Test
-  public void testBasics() throws Exception {
-    testCollectionCreateSearchDelete();
-    // sometimes run a second test e.g. to test collection create-delete-create scenario
-    if (random().nextBoolean()) testCollectionCreateSearchDelete();
-  }
-
-  protected void testCollectionCreateSearchDelete() throws Exception {
+  public void testCollectionCreateSearchDelete() throws Exception {
     CloudSolrClient solrClient = cluster.getSolrClient();
-    String collectionName = "testkerberoscollection";
+    String collectionName = "testkerberoscollection_authz";
 
     // create collection
     CollectionAdminRequest.Create create = CollectionAdminRequest.createCollection(collectionName, "conf1",
