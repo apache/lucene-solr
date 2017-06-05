@@ -86,6 +86,10 @@ The table below summarizes the functions available for function queries.
 |===
 |Function |Description |Syntax Examples
 |abs |Returns the absolute value of the specified value or function. |`abs(x)` `abs(-5)`
+|childfield(field)|Returns the value of the given field for one of the matched child docs when searching by <<other-parsers.adoc#OtherParsers-BlockJoinParentQueryParser,{!parent}>>. It can be used only in `sort` parameter|
+* `sort=childfield(name) asc` implies `$q` as a second argument and therefor it assumes `q={!parent ..}..`;
+* `sort=childfield(field,$bjq) asc` refers to a separate parameter `bjq={!parent ..}..`;
+* `sort=childfield(field,{!parent of=...}...) desc` allows to inline block join parent query 
 |concat(v,f..)|concatenates the given string fields, literals and other functions |`concat(name," ",$param,def(opt,"-"))`
 |"constant" |Specifies a floating point constant. |`1.5`
 |def |`def` is short for default. Returns the value of field "field", or if the field does not exist, returns the default value specified. and yields the first value where `exists()==true`.) |`def(rating,5):` This `def()` function returns the rating, or if no rating specified in the doc, returns 5 `def(myfield, 1.0):` equivalent to `if(exists(myfield),myfield,1.0)`
