@@ -128,7 +128,7 @@ public class QueryClient implements Runnable {
 						Util.postMessage("\r" + this.toString() + " < " + elapsedTime + " > ", MessageType.WHITE_TEXT,
 								false);
 					} else {
-						Util.postMessage("\rWaiting For Estimation to start ...", MessageType.BLUE_TEXT, false);
+						Util.postMessageOnLine("\rWaiting For Estimation to start ...");
 					}
 
 				} catch (SolrServerException | IOException e) {

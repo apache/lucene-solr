@@ -33,7 +33,6 @@ public class SolrNightlyBenchmarks {
 //		Tests.indexingTestsStandaloneConcurrent(Util.COMMIT_ID, 10000);
 
 //		Tests.runNumericQueryTestsStandalone();
-		
 
 //		Tests.indexingTestsCloudSerial(Util.COMMIT_ID, 10000);
 
@@ -44,7 +43,6 @@ public class SolrNightlyBenchmarks {
 		Tests.runNumericQueryTestsStandalone();
 		
 		BenchmarkAppConnector.publishDataForWebApp();
-		
 		
 		Util.destroy();
 	}
