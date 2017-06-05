@@ -89,6 +89,9 @@ Upgrading from Solr 6.x
 * In solrconfig.xml the deprecated <mergePolicy> and <mergeFactor> and <maxMergeDocs> elements have
   been removed in favor of the <mergePolicyFactory> element introduced by SOLR-8621 in Solr 5.5.0.
 
+* Custom SolrMetricReporter classes must implement a new, factored out doInit() method and the validate() method
+  must pass for all reporters including reporters that are not enabled, please see SOLR-10671 for details.
+
 New Features
 ----------------------
 * SOLR-9857, SOLR-9858: Collect aggregated metrics from nodes and shard leaders in overseer. (ab)
@@ -229,6 +232,9 @@ Other Changes
   to a new method (Domenico Fabio Marino via Tomás Fernández Löbbe)
 
 * SOLR-10801: Remove several deprecated methods that were exposed to plugin writers (hossman)
+
+* SOLR-10671: Add abstract doInit method to the SolrMetricReporter base class.
+  (Christine Poerschke, Anshum Gupta)
 
 ==================  6.7.0 ==================
 

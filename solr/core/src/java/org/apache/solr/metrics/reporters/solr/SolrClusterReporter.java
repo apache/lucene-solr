@@ -179,10 +179,15 @@ public class SolrClusterReporter extends SolrMetricReporter {
   }
 
   @Override
-  protected void validate() throws IllegalStateException {
+  protected void doInit() {
     if (reports.isEmpty()) { // set defaults
       reports = DEFAULT_REPORTS;
     }
+  }
+
+  @Override
+  protected void validate() throws IllegalStateException {
+    // Nothing to validate
   }
 
   @Override

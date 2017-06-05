@@ -110,11 +110,14 @@ public class SolrGangliaReporter extends SolrMetricReporter {
   }
 
   @Override
-  protected void validate() throws IllegalStateException {
-    if (!enabled) {
-      log.info("Reporter disabled for registry " + registryName);
-      return;
+  protected void doInit() {
+    if (!testing) {
+      start();
     }
+  }
+
+  @Override
+  protected void validate() throws IllegalStateException {
     if (host == null) {
       throw new IllegalStateException("Init argument 'host' must be set to a valid Ganglia server name.");
     }
@@ -123,9 +126,6 @@ public class SolrGangliaReporter extends SolrMetricReporter {
     }
     if (period < 1) {
       throw new IllegalStateException("Init argument 'period' is in time unit 'seconds' and must be at least 1.");
-    }
-    if (!testing) {
-      start();
     }
   }
 
