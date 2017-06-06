@@ -125,6 +125,9 @@ New Features
           participate in elections.
   (Tomás Fernández Löbbe)
 
+* SOLR-10278: A new DSL to set cluster-wide preferences and policies on how to allocate replicas to nodes
+  (noble, shalin)
+
 * SOLR-10373: Implement read API for autoscaling configuration at /admin/autoscaling or
   /cluster/autoscaling paths. (shalin)
 
