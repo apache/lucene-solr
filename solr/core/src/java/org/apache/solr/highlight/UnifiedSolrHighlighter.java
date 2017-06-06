@@ -26,6 +26,7 @@ import java.util.Set;
 import java.util.function.Predicate;
 
 import org.apache.lucene.document.Document;
+import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.postingshighlight.CustomSeparatorBreakIterator;
@@ -261,6 +262,12 @@ public class UnifiedSolrHighlighter extends SolrHighlighter implements PluginInf
       } else {
         return super.getOffsetSource(field);
       }
+    }
+
+    // optimization for Solr which keeps a FieldInfos on-hand
+    @Override
+    protected FieldInfo getFieldInfo(String field) {
+      return ((SolrIndexSearcher)searcher).getFieldInfos().fieldInfo(field);
     }
 
     @Override
