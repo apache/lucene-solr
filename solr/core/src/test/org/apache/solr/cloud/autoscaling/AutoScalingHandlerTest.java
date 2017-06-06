@@ -76,11 +76,11 @@ public class AutoScalingHandlerTest extends SolrCloudTestCase {
         "\t}\n" +
         "}";
     // these should be no-ops because there are no triggers, and it should succeed
-    SolrRequest req = new AutoScalingRequest(SolrRequest.METHOD.POST, path, suspendEachCommand);
+    SolrRequest req = createAutoScalingRequest(SolrRequest.METHOD.POST, suspendEachCommand);
     NamedList<Object> response = solrClient.request(req);
     assertEquals(response.get("result").toString(), "success");
     assertEquals(response.get("changed").toString(), "[]");
-    req = new AutoScalingRequest(SolrRequest.METHOD.POST, path, resumeEachCommand);
+    req = createAutoScalingRequest(SolrRequest.METHOD.POST, resumeEachCommand);
     response = solrClient.request(req);
     assertEquals(response.get("result").toString(), "success");
     assertEquals(response.get("changed").toString(), "[]");
@@ -91,7 +91,7 @@ public class AutoScalingHandlerTest extends SolrCloudTestCase {
         "'event' : 'nodeLost'," +
         "'waitFor' : '10m'," +
         "'enabled' : true}}";
-    req = new AutoScalingRequest(SolrRequest.METHOD.POST, path, setTriggerCommand);
+    req = createAutoScalingRequest(SolrRequest.METHOD.POST, setTriggerCommand);
     response = solrClient.request(req);
     assertEquals(response.get("result").toString(), "success");
 
@@ -103,7 +103,7 @@ public class AutoScalingHandlerTest extends SolrCloudTestCase {
         "'enabled' : true" +
         "}" +
         "}";
-    req = new AutoScalingRequest(SolrRequest.METHOD.POST, path, setTriggerCommand);
+    req = createAutoScalingRequest(SolrRequest.METHOD.POST, setTriggerCommand);
     response = solrClient.request(req);
     assertEquals(response.get("result").toString(), "success");
 
@@ -112,7 +112,7 @@ public class AutoScalingHandlerTest extends SolrCloudTestCase {
         "\t\t\"name\" : \"node_lost_trigger\"\n" +
         "\t}\n" +
         "}";
-    req = new AutoScalingRequest(SolrRequest.METHOD.POST, path, suspendTriggerCommand);
+    req = createAutoScalingRequest(SolrRequest.METHOD.POST, suspendTriggerCommand);
     response = solrClient.request(req);
     assertEquals(response.get("result").toString(), "success");
     assertEquals(response.get("changed").toString(), "[node_lost_trigger]");
@@ -136,7 +136,7 @@ public class AutoScalingHandlerTest extends SolrCloudTestCase {
         "'name' : '" + Policy.EACH + "'" +
         "}" +
         "}";
-    req = new AutoScalingRequest(SolrRequest.METHOD.POST, path, suspendTriggerCommand);
+    req = createAutoScalingRequest(SolrRequest.METHOD.POST, suspendTriggerCommand);
     response = solrClient.request(req);
     assertEquals(response.get("result").toString(), "success");
     List<String> changed = (List<String>)response.get("changed");
@@ -159,7 +159,7 @@ public class AutoScalingHandlerTest extends SolrCloudTestCase {
         "'name' : 'node_added_trigger'" +
         "}" +
         "}";
-    req = new AutoScalingRequest(SolrRequest.METHOD.POST, path, resumeTriggerCommand);
+    req = createAutoScalingRequest(SolrRequest.METHOD.POST, resumeTriggerCommand);
     response = solrClient.request(req);
     assertEquals(response.get("result").toString(), "success");
     changed = (List<String>)response.get("changed");
@@ -182,7 +182,7 @@ public class AutoScalingHandlerTest extends SolrCloudTestCase {
         "'name' : '" + Policy.EACH + "'" +
         "}" +
         "}";
-    req = new AutoScalingRequest(SolrRequest.METHOD.POST, path, resumeTriggerCommand);
+    req = createAutoScalingRequest(SolrRequest.METHOD.POST, resumeTriggerCommand);
     response = solrClient.request(req);
     assertEquals(response.get("result").toString(), "success");
     changed = (List<String>)response.get("changed");
@@ -206,7 +206,7 @@ public class AutoScalingHandlerTest extends SolrCloudTestCase {
         "'timeout' : '1h'" +
         "}" +
         "}";
-    req = new AutoScalingRequest(SolrRequest.METHOD.POST, path, suspendTriggerCommand);
+    req = createAutoScalingRequest(SolrRequest.METHOD.POST, suspendTriggerCommand);
     response = solrClient.request(req);
     assertEquals(response.get("result").toString(), "success");
     changed = (List<String>)response.get("changed");
@@ -242,7 +242,7 @@ public class AutoScalingHandlerTest extends SolrCloudTestCase {
         "'class' : 'solr.LogPlanAction'," +
         "'collection' : '.system'" +
         "}]}}";
-    SolrRequest req = new AutoScalingRequest(SolrRequest.METHOD.POST, path, setTriggerCommand);
+    SolrRequest req = createAutoScalingRequest(SolrRequest.METHOD.POST, setTriggerCommand);
 
     NamedList<Object> response = solrClient.request(req);
     assertEquals(response.get("result").toString(), "success");
@@ -267,7 +267,7 @@ public class AutoScalingHandlerTest extends SolrCloudTestCase {
         "'waitFor' : '20m'," +
         "'enabled' : false" +
         "}}";
-    req = new AutoScalingRequest(SolrRequest.METHOD.POST, path, setTriggerCommand);
+    req = createAutoScalingRequest(SolrRequest.METHOD.POST, setTriggerCommand);
     response = solrClient.request(req);
     assertEquals(response.get("result").toString(), "success");
     data = zkClient().getData(SOLR_AUTOSCALING_CONF_PATH, null, null, true);
@@ -295,7 +295,7 @@ public class AutoScalingHandlerTest extends SolrCloudTestCase {
         "'url' : 'http://xyz.com/on_node_lost?node={$LOST_NODE_NAME}'" +
         "}" +
         "}";
-    req = new AutoScalingRequest(SolrRequest.METHOD.POST, path, setListenerCommand);
+    req = createAutoScalingRequest(SolrRequest.METHOD.POST, setListenerCommand);
     response = solrClient.request(req);
     assertEquals(response.get("result").toString(), "success");
     data = zkClient().getData(SOLR_AUTOSCALING_CONF_PATH, null, null, true);
@@ -313,7 +313,7 @@ public class AutoScalingHandlerTest extends SolrCloudTestCase {
         "'name' : 'node_lost_trigger'" +
         "}" +
         "}";
-    req = new AutoScalingRequest(SolrRequest.METHOD.POST, path, removeTriggerCommand);
+    req = createAutoScalingRequest(SolrRequest.METHOD.POST, removeTriggerCommand);
     try {
       response = solrClient.request(req);
       fail("Trying to remove trigger which has listeners registered should have failed");
@@ -326,7 +326,7 @@ public class AutoScalingHandlerTest extends SolrCloudTestCase {
         "\t\t\"name\" : \"xyz\"\n" +
         "\t}\n" +
         "}";
-    req = new AutoScalingRequest(SolrRequest.METHOD.POST, path, removeListenerCommand);
+    req = createAutoScalingRequest(SolrRequest.METHOD.POST, removeListenerCommand);
     response = solrClient.request(req);
     assertEquals(response.get("result").toString(), "success");
     data = zkClient().getData(SOLR_AUTOSCALING_CONF_PATH, null, null, true);
@@ -340,7 +340,7 @@ public class AutoScalingHandlerTest extends SolrCloudTestCase {
         "'name' : 'node_lost_trigger'" +
         "}" +
         "}";
-    req = new AutoScalingRequest(SolrRequest.METHOD.POST, path, removeTriggerCommand);
+    req = createAutoScalingRequest(SolrRequest.METHOD.POST, removeTriggerCommand);
     response = solrClient.request(req);
     assertEquals(response.get("result").toString(), "success");
     data = zkClient().getData(SOLR_AUTOSCALING_CONF_PATH, null, null, true);
@@ -359,7 +359,7 @@ public class AutoScalingHandlerTest extends SolrCloudTestCase {
         "'url' : 'http://xyz.com/on_node_lost?node={$LOST_NODE_NAME}'" +
         "}" +
         "}";
-    req = new AutoScalingRequest(SolrRequest.METHOD.POST, path, setListenerCommand);
+    req = createAutoScalingRequest(SolrRequest.METHOD.POST, setListenerCommand);
     try {
       response = solrClient.request(req);
       fail("Adding a listener on a non-existent trigger should have failed");
@@ -504,7 +504,7 @@ public class AutoScalingHandlerTest extends SolrCloudTestCase {
         "'waitFor' : '0s'," +
         "'enabled' : true" +
         "}}";
-    SolrRequest req = new AutoScalingRequest(SolrRequest.METHOD.POST, path, setTriggerCommand);
+    SolrRequest req = createAutoScalingRequest(SolrRequest.METHOD.POST, setTriggerCommand);
     NamedList<Object> response = solrClient.request(req);
     assertEquals(response.get("result").toString(), "success");
 

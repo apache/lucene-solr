@@ -86,12 +86,6 @@ public class ShardSplitTest extends BasicDistributedZkTest {
     useFactory(null);
   }
 
-  //TODO for now, onlyLeaderIndexes do not work with ShardSplitTest
-  @Override
-  protected int getRealtimeReplicas() {
-    return -1;
-  }
-
   @Test
   public void test() throws Exception {
 
@@ -1031,4 +1025,3 @@ public class ShardSplitTest extends BasicDistributedZkTest {
     return client;
   }
 }
-

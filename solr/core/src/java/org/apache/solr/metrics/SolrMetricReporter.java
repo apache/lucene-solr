@@ -86,17 +86,6 @@ public abstract class SolrMetricReporter implements Closeable, PluginInfoInitial
   }
 
   /**
-   * Enable reporting, defaults to true. Implementations should check this flag in
-   * {@link #validate()} and accordingly enable or disable reporting.
-   * @param enabled enable, defaults to true when null or not set.
-   */
-  public void setEnabled(Boolean enabled) {
-    if (enabled != null) {
-      this.enabled = enabled;
-    }
-  }
-
-  /**
    * Get the effective {@link PluginInfo} instance that was used for
    * initialization of this plugin.
    * @return plugin info, or null if not yet initialized.
