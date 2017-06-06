@@ -23,8 +23,6 @@
 == cartesianProduct
 //TODO
 
-== cell
-//TODO
 
 == classify
 
@@ -237,7 +235,26 @@ daemonStream.close();
 ----
 
 == eval
-//todo
+
+The `eval` function allows for use cases where new streaming expressions are generated on the fly and then evaluated.
+The `eval` function wraps a streaming expression and reads a single tuple from the underlying stream.
+The `eval` function then retrieves a string Streaming Expressions from the `expr_s` field of the tuple.
+The `eval` function then compiles the string Streaming Expression and emits the tuples.
+
+=== eval Parameters
+
+* `StreamExpression`: (Mandatory) The stream which provides the streaming expression to be evaluated.
+
+=== eval Syntax
+
+[source,text]
+----
+eval(expr)
+----
+
+In the example above the `eval` expression reads the first tuple from the underlying expression. It then compiles and
+executes the string Streaming Expression in the epxr_s field.
+
 
 [[StreamingExpressions-executor]]
 == executor
