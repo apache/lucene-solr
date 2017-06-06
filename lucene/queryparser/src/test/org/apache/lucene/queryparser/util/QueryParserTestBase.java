@@ -41,6 +41,7 @@ import org.apache.lucene.index.Term;
 import org.apache.lucene.queryparser.classic.QueryParser;
 import org.apache.lucene.queryparser.classic.QueryParserBase;
 //import org.apache.lucene.queryparser.classic.QueryParserTokenManager;
+import org.apache.lucene.queryparser.classic.TestQueryParser;
 import org.apache.lucene.queryparser.flexible.standard.CommonQueryParserConfiguration;
 import org.apache.lucene.search.*;
 import org.apache.lucene.search.BooleanClause.Occur;
@@ -592,6 +593,56 @@ public abstract class QueryParserTestBase extends LuceneTestCase {
   public void testRangeWithPhrase() throws Exception {
     assertQueryEquals("[\\* TO \"*\"]",null,"[\\* TO \\*]");
     assertQueryEquals("[\"*\" TO *]",null,"[\\* TO *]");
+  }
+
+  public void testRangeQueryEndpointTO() throws Exception {
+    Analyzer a = new MockAnalyzer(random());
+    assertQueryEquals("[to TO to]", a, "[to TO to]");
+    assertQueryEquals("[to TO TO]", a, "[to TO to]");
+    assertQueryEquals("[TO TO to]", a, "[to TO to]");
+    assertQueryEquals("[TO TO TO]", a, "[to TO to]");
+
+    assertQueryEquals("[\"TO\" TO \"TO\"]", a, "[to TO to]");
+    assertQueryEquals("[\"TO\" TO TO]", a, "[to TO to]");
+    assertQueryEquals("[TO TO \"TO\"]", a, "[to TO to]");
+
+    assertQueryEquals("[to TO xx]", a, "[to TO xx]");
+    assertQueryEquals("[\"TO\" TO xx]", a, "[to TO xx]");
+    assertQueryEquals("[TO TO xx]", a, "[to TO xx]");
+
+    assertQueryEquals("[xx TO to]", a, "[xx TO to]");
+    assertQueryEquals("[xx TO \"TO\"]", a, "[xx TO to]");
+    assertQueryEquals("[xx TO TO]", a, "[xx TO to]");
+  }
+
+  public void testRangeQueryRequiresTO() throws Exception {
+    Analyzer a = new MockAnalyzer(random());
+
+    assertQueryEquals("{A TO B}", a, "{a TO b}");
+    assertQueryEquals("[A TO B}", a, "[a TO b}");
+    assertQueryEquals("{A TO B]", a, "{a TO b]");
+    assertQueryEquals("[A TO B]", a, "[a TO b]");
+
+    // " TO " is required between range endpoints
+
+    Class<? extends Throwable> exceptionClass = this instanceof TestQueryParser 
+        ? org.apache.lucene.queryparser.classic.ParseException.class
+        : org.apache.lucene.queryparser.flexible.standard.parser.ParseException.class;
+    
+    expectThrows(exceptionClass, () -> getQuery("{A B}"));
+    expectThrows(exceptionClass, () -> getQuery("[A B}"));
+    expectThrows(exceptionClass, () -> getQuery("{A B]"));
+    expectThrows(exceptionClass, () -> getQuery("[A B]"));
+
+    expectThrows(exceptionClass, () -> getQuery("{TO B}"));
+    expectThrows(exceptionClass, () -> getQuery("[TO B}"));
+    expectThrows(exceptionClass, () -> getQuery("{TO B]"));
+    expectThrows(exceptionClass, () -> getQuery("[TO B]"));
+
+    expectThrows(exceptionClass, () -> getQuery("{A TO}"));
+    expectThrows(exceptionClass, () -> getQuery("[A TO}"));
+    expectThrows(exceptionClass, () -> getQuery("{A TO]"));
+    expectThrows(exceptionClass, () -> getQuery("[A TO]"));
   }
 
   private String escapeDateString(String s) {

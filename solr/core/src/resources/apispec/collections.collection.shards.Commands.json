@@ -101,6 +101,11 @@
         "async": {
           "type": "string",
           "description": "Defines a request ID that can be used to track this action after it's submitted. The action will be processed asynchronously when this is defined."
+        },
+        "type": {
+          "type": "string",
+          "enum":["NRT", "TLOG", "PULL"],
+          "description": "The type of replica to add. NRT (default), TLOG or PULL"
         }
       },
       "required":["shard"]

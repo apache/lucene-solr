@@ -174,7 +174,7 @@ public class RandomStream extends TupleStream implements Expressible  {
     if(cache != null) {
       cloudSolrClient = cache.getCloudSolrClient(zkHost);
     } else {
-      cloudSolrClient = new CloudSolrClient(zkHost);
+      cloudSolrClient = (new CloudSolrClient.Builder()).withZkHost(zkHost).build();
     }
 
     ModifiableSolrParams params = getParams(this.props);

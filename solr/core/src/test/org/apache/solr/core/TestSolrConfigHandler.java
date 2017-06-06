@@ -414,8 +414,8 @@ public class TestSolrConfigHandler extends RestTestBase {
 
     List l = (List) Utils.getObjectByPath(map, false, Arrays.asList("config", "initParams"));
     assertNotNull("no object /config/initParams : "+ TestBlobHandler.getAsString(map) , l);
-    assertEquals( 1, l.size());
-    assertEquals( "val", ((Map)l.get(0)).get("key") );
+    assertEquals( 2, l.size());
+    assertEquals( "val", ((Map)l.get(1)).get("key") );
 
 
     payload = "{\n" +

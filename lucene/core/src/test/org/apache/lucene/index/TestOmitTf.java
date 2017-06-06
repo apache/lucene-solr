@@ -44,9 +44,7 @@ import org.apache.lucene.util.LuceneTestCase;
 public class TestOmitTf extends LuceneTestCase {
   
   public static class SimpleSimilarity extends TFIDFSimilarity {
-    @Override public float decodeNormValue(long norm) { return norm; }
-    @Override public long encodeNormValue(float f) { return (long) f; }
-    @Override public float lengthNorm(FieldInvertState state) { return 1; }
+    @Override public float lengthNorm(int length) { return 1; }
     @Override public float tf(float freq) { return freq; }
     @Override public float sloppyFreq(int distance) { return 2.0f; }
     @Override public float idf(long docFreq, long docCount) { return 1.0f; }

@@ -462,7 +462,6 @@
                 termVectors="true" termPositions="true" termOffsets="true"/>
 
 
-  <defaultSearchField>text</defaultSearchField>
   <uniqueKey>id</uniqueKey>
 
   <!-- copyField commands copy one field to another at the time a document

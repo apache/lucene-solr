@@ -83,7 +83,7 @@ public class MetricsHandler extends RequestHandlerBase implements PermissionName
       throw new SolrException(SolrException.ErrorCode.INVALID_STATE, "Core container instance not initialized");
     }
 
-    boolean compact = req.getParams().getBool(COMPACT_PARAM, false);
+    boolean compact = req.getParams().getBool(COMPACT_PARAM, true);
     MetricFilter mustMatchFilter = parseMustMatchFilter(req);
     MetricUtils.PropertyFilter propertyFilter = parsePropertyFilter(req);
     List<MetricType> metricTypes = parseMetricTypes(req);

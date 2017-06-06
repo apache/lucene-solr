@@ -39,6 +39,7 @@ import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.handler.dataimport.config.ConfigNameConstants;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.search.SolrIndexSearcher;
+import org.apache.solr.util.TestHarness;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.BeforeClass;
@@ -118,7 +119,7 @@ public class TestHierarchicalDocBuilder extends AbstractDataImportHandlerTestCas
 
     List<String> parentIds = createDataIterator("select * from PARENT", parentType, parentType, parentsNum);
     Collections.shuffle(parentIds, random());
-    String parentId1 = parentIds.get(0);
+    final String parentId1 = parentIds.get(0);
     String parentId2 = parentIds.get(1);
     
     //parent 1 children
@@ -129,21 +130,24 @@ public class TestHierarchicalDocBuilder extends AbstractDataImportHandlerTestCas
     childrenNum += childrenIds.size();
     
     // grand children of first parent first child
-    String childId = childrenIds.get(0);
+    final String childId = childrenIds.get(0);
     String description = "grandchild of first parent, child of " + childId + " child";
     select = "select * from GRANDCHILD where parent_id='" + childId + "'";
     List<String> grandChildrenIds = createDataIterator(select, grandChildType, description, atLeast(2));
     grandChildrenNum += grandChildrenIds.size();
     
     // grand children of first parent second child
-    childId = childrenIds.get(1);
-    description = "grandchild of first parent, child of " + childId + " child";
-    select = "select * from GRANDCHILD where parent_id='" + childId + "'";
-    List<String> grandChildrenIds2 = createDataIterator(select, grandChildType, description, atLeast(2));
+    {
+      String childId2 = childrenIds.get(1);
+      description = "grandchild of first parent, child of " + childId2 + " child";
+      select = "select * from GRANDCHILD where parent_id='" + childId2 + "'";
+    }
+    final List<String> grandChildrenIds2 = createDataIterator(select, grandChildType, description, atLeast(2));
     grandChildrenNum += grandChildrenIds2.size();
     
-    grandChildrenIds.addAll(grandChildrenIds2);
-    
+    List<String> allGrandChildrenIds = new ArrayList<>(grandChildrenIds);
+    allGrandChildrenIds.addAll(grandChildrenIds2);
+        
     // third children of first parent has no grand children
     
     // parent 2 children (no grand children)   
@@ -155,7 +159,14 @@ public class TestHierarchicalDocBuilder extends AbstractDataImportHandlerTestCas
     
     int totalDocsNum = parentsNum + childrenNum + grandChildrenNum;
     
-    runFullImport(THREE_LEVEL_HIERARCHY_CONFIG);
+    String resp = runFullImport(THREE_LEVEL_HIERARCHY_CONFIG);
+    String xpath = "//arr[@name='documents']/lst/arr[@name='id' and .='"+parentId1+"']/../"+
+      "arr[@name='_childDocuments_']/lst/arr[@name='id' and .='"+childId+"']/../"+
+      "arr[@name='_childDocuments_']/lst/arr[@name='id' and .='"+grandChildrenIds.get(0)+"']";
+    String results = TestHarness.validateXPath(resp, 
+           xpath);
+    assertTrue("Debug documents does not contain child documents\n"+resp+"\n"+ xpath+
+                                                        "\n"+results, results == null);
     
     assertTrue("Update request processor processAdd was not called", TestUpdateRequestProcessor.processAddCalled);
     assertTrue("Update request processor processCommit was not callled", TestUpdateRequestProcessor.processCommitCalled);
@@ -169,7 +180,7 @@ public class TestHierarchicalDocBuilder extends AbstractDataImportHandlerTestCas
 
     // let's check BlockJoin
     // get first parent by any grand children
-    String randomGrandChildId = grandChildrenIds.get(random().nextInt(grandChildrenIds.size()));
+    String randomGrandChildId = allGrandChildrenIds.get(random().nextInt(allGrandChildrenIds.size()));
     Query query = createToParentQuery(parentType, FIELD_ID, randomGrandChildId);
     assertSearch(query, FIELD_ID, parentId1);
 

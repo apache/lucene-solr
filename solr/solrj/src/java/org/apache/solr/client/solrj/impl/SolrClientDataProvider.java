@@ -50,7 +50,7 @@ import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.common.util.Utils;
-import org.apache.zookeeper.data.Stat;
+import org.apache.zookeeper.KeeperException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -60,9 +60,9 @@ import org.slf4j.LoggerFactory;
 public class SolrClientDataProvider implements ClusterDataProvider, MapWriter {
 
   private final CloudSolrClient solrClient;
+  private final Map<String, Map<String, Map<String, List<ReplicaInfo>>>> data = new HashMap<>();
   private Set<String> liveNodes;
   private Map<String, Object> snitchSession = new HashMap<>();
-  private final Map<String, Map<String, Map<String, List<ReplicaInfo>>>> data = new HashMap<>();
   private Map<String, Map> nodeVsTags = new HashMap<>();
 
   public SolrClientDataProvider(CloudSolrClient solrClient) {
@@ -111,6 +111,13 @@ public class SolrClientDataProvider implements ClusterDataProvider, MapWriter {
     return liveNodes;
   }
 
+  @Override
+  public void writeMap(EntryWriter ew) throws IOException {
+    ew.put("liveNodes", liveNodes);
+    ew.put("replicaInfo", Utils.getDeepCopy(data, 5));
+    ew.put("nodeValues", nodeVsTags);
+
+  }
 
   static class ClientSnitchCtx
       extends SnitchContext {
@@ -128,15 +135,9 @@ public class SolrClientDataProvider implements ClusterDataProvider, MapWriter {
     }
 
 
-    public Map getZkJson(String path) {
-      try {
-        byte[] data = zkClientClusterStateProvider.getZkStateReader().getZkClient().getData(path, null, new Stat(), true);
-        if (data == null) return null;
-        return (Map) Utils.fromJSON(data);
-      } catch (Exception e) {
-        log.warn("Unable to read from ZK path : " + path, e);
-        return null;
-      }
+    @Override
+    public Map getZkJson(String path) throws KeeperException, InterruptedException {
+      return Utils.getJson(zkClientClusterStateProvider.getZkStateReader().getZkClient(), path, true);
     }
 
     public void invokeRemote(String node, ModifiableSolrParams params, String klas, RemoteCallback callback) {
@@ -195,7 +196,7 @@ public class SolrClientDataProvider implements ClusterDataProvider, MapWriter {
         SimpleSolrResponse rsp = snitchContext.invoke(solrNode, CommonParams.METRICS_PATH, params);
         Map m = rsp.nl.asMap(4);
         if (requestedTags.contains(DISK)) {
-          Number n = (Number) Utils.getObjectByPath(m, true, "metrics/solr.node/CONTAINER.fs.usableSpace/value");
+          Number n = (Number) Utils.getObjectByPath(m, true, "metrics/solr.node/CONTAINER.fs.usableSpace");
           if (n != null) ctx.getTags().put(DISK, n.doubleValue() / 1024.0d / 1024.0d / 1024.0d);
         }
         if (requestedTags.contains(CORES)) {
@@ -207,11 +208,11 @@ public class SolrClientDataProvider implements ClusterDataProvider, MapWriter {
           ctx.getTags().put(CORES, count);
         }
         if (requestedTags.contains(SYSLOADAVG)) {
-          Number n = (Number) Utils.getObjectByPath(m, true, "metrics/solr.jvm/os.systemLoadAverage/value");
+          Number n = (Number) Utils.getObjectByPath(m, true, "metrics/solr.jvm/os.systemLoadAverage");
           if (n != null) ctx.getTags().put(SYSLOADAVG, n.doubleValue() * 100.0d);
         }
         if (requestedTags.contains(HEAPUSAGE)) {
-          Number n = (Number) Utils.getObjectByPath(m, true, "metrics/solr.jvm/memory.heap.usage/value");
+          Number n = (Number) Utils.getObjectByPath(m, true, "metrics/solr.jvm/memory.heap.usage");
           if (n != null) ctx.getTags().put(HEAPUSAGE, n.doubleValue() * 100.0d);
         }
       } catch (Exception e) {
@@ -242,7 +243,7 @@ public class SolrClientDataProvider implements ClusterDataProvider, MapWriter {
         Map m = rsp.nl.asMap(6);
         for (String s : sysProp) {
           Object v = Utils.getObjectByPath(m, true,
-              Arrays.asList("metrics", "solr.jvm", "system.properties", "value", s));
+              Arrays.asList("metrics", "solr.jvm", "system.properties", s));
           if (v != null) snitchContext.getTags().put("sysprop." + s, v);
         }
 
@@ -251,13 +252,5 @@ public class SolrClientDataProvider implements ClusterDataProvider, MapWriter {
 
       }
     }
-  }
-
-  @Override
-  public void writeMap(EntryWriter ew) throws IOException {
-    ew.put("liveNodes", liveNodes);
-    ew.put("replicaInfo", Utils.getDeepCopy(data, 5));
-    ew.put("nodeValues", nodeVsTags);
-
   }
 }

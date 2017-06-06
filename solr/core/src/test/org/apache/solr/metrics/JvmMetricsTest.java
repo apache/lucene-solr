@@ -124,14 +124,14 @@ public class JvmMetricsTest extends SolrJettyTestBase {
     String solrXml = FileUtils.readFileToString(Paths.get(home.toString(), "solr.xml").toFile(), "UTF-8");
     NodeConfig config = SolrXmlConfig.fromString(loader, solrXml);
     NodeConfig.NodeConfigBuilder.DEFAULT_HIDDEN_SYS_PROPS.forEach(s -> {
-      assertTrue(s, config.getHiddenSysProps().contains(s));
+      assertTrue(s, config.getMetricsConfig().getHiddenSysProps().contains(s));
     });
 
     // custom config
     solrXml = FileUtils.readFileToString(Paths.get(home.toString(), "solr-hiddensysprops.xml").toFile(), "UTF-8");
     NodeConfig config2 = SolrXmlConfig.fromString(loader, solrXml);
     Arrays.asList("foo", "bar", "baz").forEach(s -> {
-      assertTrue(s, config2.getHiddenSysProps().contains(s));
+      assertTrue(s, config2.getMetricsConfig().getHiddenSysProps().contains(s));
     });
   }
 

@@ -800,6 +800,7 @@ class SolrTable extends AbstractQueryableTable implements TranslatableTable {
                                   List<Pair<String, String>> metricPairs,
                                   List<Map.Entry<String, Class>> fields) {
 
+
     Map<String, Class> fmap = new HashMap();
     for(Map.Entry<String, Class> entry : fields) {
       fmap.put(entry.getKey(), entry.getValue());

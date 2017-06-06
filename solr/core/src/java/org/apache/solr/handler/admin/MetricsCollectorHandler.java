@@ -174,9 +174,15 @@ public class MetricsCollectorHandler extends RequestHandlerBase {
       String labelId = (String)doc.getFieldValue(SolrReporter.LABEL_ID);
       doc.remove(SolrReporter.LABEL_ID);
       doc.forEach(f -> {
-        String key = MetricRegistry.name(labelId, metricName, f.getName());
+        String key;
+        if (doc.size() == 1 && f.getName().equals(MetricUtils.VALUE)) {
+          // only one "value" field - skip the unnecessary field name
+          key = MetricRegistry.name(labelId, metricName);
+        } else {
+          key = MetricRegistry.name(labelId, metricName, f.getName());
+        }
         MetricRegistry registry = metricManager.registry(groupId);
-        AggregateMetric metric = getOrRegister(registry, key, new AggregateMetric());
+        AggregateMetric metric = getOrCreate(registry, key);
         Object o = f.getFirstValue();
         if (o != null) {
           metric.set(reporterId, o);
@@ -187,11 +193,12 @@ public class MetricsCollectorHandler extends RequestHandlerBase {
       });
     }
 
-    private AggregateMetric getOrRegister(MetricRegistry registry, String name, AggregateMetric add) {
+    private AggregateMetric getOrCreate(MetricRegistry registry, String name) {
       AggregateMetric existing = (AggregateMetric)registry.getMetrics().get(name);
       if (existing != null) {
         return existing;
       }
+      AggregateMetric add = new AggregateMetric();
       try {
         registry.register(name, add);
         return add;

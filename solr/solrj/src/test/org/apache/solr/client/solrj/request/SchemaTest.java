@@ -243,16 +243,6 @@ public class SchemaTest extends RestTestBase {
   }
 
   @Test
-  public void testGetDefaultQueryOperatorAccuracy() throws Exception {
-    SchemaRequest.DefaultQueryOperator defaultQueryOperatorRequest =
-        new SchemaRequest.DefaultQueryOperator();
-    SchemaResponse.DefaultQueryOperatorResponse defaultQueryOperatorResponse =
-        defaultQueryOperatorRequest.process(getSolrClient());
-    assertValidSchemaResponse(defaultQueryOperatorResponse);
-    assertEquals("OR", defaultQueryOperatorResponse.getDefaultOperator());
-  }
-
-  @Test
   public void testAddFieldAccuracy() throws Exception {
     SchemaRequest.Fields fieldsSchemaRequest = new SchemaRequest.Fields();
     SchemaResponse.FieldsResponse initialFieldsResponse = fieldsSchemaRequest.process(getSolrClient());

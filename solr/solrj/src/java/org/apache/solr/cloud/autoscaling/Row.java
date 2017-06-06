@@ -48,7 +48,7 @@ class Row implements MapWriter {
     Map<String, Object> vals = dataProvider.getNodeValues(node, params);
     for (int i = 0; i < params.size(); i++) {
       String s = params.get(i);
-      cells[i] = new Cell(i, s, vals.get(s));
+      cells[i] = new Cell(i, s, Clause.validate(s,vals.get(s), false));
       if (NODE.equals(s)) cells[i].val = node;
       if (cells[i].val == null) anyValueMissing = true;
     }
@@ -91,13 +91,11 @@ class Row implements MapWriter {
   // this adds a replica to the replica info
   Row addReplica(String coll, String shard) {
     Row row = copy();
-    Map<String, List<ReplicaInfo>> c = row.collectionVsShardVsReplicas.get(coll);
-    if (c == null) row.collectionVsShardVsReplicas.put(coll, c = new HashMap<>());
-    List<ReplicaInfo> replicas = c.get(shard);
-    if (replicas == null) c.put(shard, replicas = new ArrayList<>());
+    Map<String, List<ReplicaInfo>> c = row.collectionVsShardVsReplicas.computeIfAbsent(coll, k -> new HashMap<>());
+    List<ReplicaInfo> replicas = c.computeIfAbsent(shard, k -> new ArrayList<>());
     replicas.add(new ReplicaInfo("" + new Random().nextInt(1000) + 1000, coll, shard, new HashMap<>()));
     for (Cell cell : row.cells) {
-      if (cell.name.equals("cores")) cell.val = ((Number) cell.val).intValue() + 1;
+      if (cell.name.equals("cores")) cell.val = ((Number) cell.val).longValue() + 1;
     }
     return row;
 
@@ -109,6 +107,9 @@ class Row implements MapWriter {
     if (c == null) return null;
     List<ReplicaInfo> s = c.get(shard);
     if (s == null || s.isEmpty()) return null;
+    for (Cell cell : row.cells) {
+      if (cell.name.equals("cores")) cell.val = ((Number) cell.val).longValue() -1;
+    }
     return new Pair(row, s.remove(0));
 
   }

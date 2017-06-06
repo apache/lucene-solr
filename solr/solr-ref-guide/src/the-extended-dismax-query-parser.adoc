@@ -1,0 +1,264 @@
+= The Extended DisMax Query Parser
+:page-shortname: the-extended-dismax-query-parser
+:page-permalink: the-extended-dismax-query-parser.html
+// Licensed to the Apache Software Foundation (ASF) under one
+// or more contributor license agreements.  See the NOTICE file
+// distributed with this work for additional information
+// regarding copyright ownership.  The ASF licenses this file
+// to you under the Apache License, Version 2.0 (the
+// "License"); you may not use this file except in compliance
+// with the License.  You may obtain a copy of the License at
+//
+//   http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing,
+// software distributed under the License is distributed on an
+// "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+// KIND, either express or implied.  See the License for the
+// specific language governing permissions and limitations
+// under the License.
+
+The Extended DisMax (eDisMax) query parser is an improved version of the <<the-dismax-query-parser.adoc#the-dismax-query-parser,DisMax query parser>>.
+
+In addition to supporting all the DisMax query parser parameters, Extended Dismax:
+
+* supports the <<the-standard-query-parser.adoc#the-standard-query-parser,full Lucene query parser syntax>>.
+* supports queries such as AND, OR, NOT, -, and +.
+* treats "and" and "or" as "AND" and "OR" in Lucene syntax mode.
+* respects the 'magic field' names `\_val_` and `\_query_`. These are not a real fields in the Schema, but if used it helps do special things (like a function query in the case of `\_val_` or a nested query in the case of `\_query_`). If `\_val_` is used in a term or phrase query, the value is parsed as a function.
+* includes improved smart partial escaping in the case of syntax errors; fielded queries, +/-, and phrase queries are still supported in this mode.
+* improves proximity boosting by using word shingles; you do not need the query to match all words in the document before proximity boosting is applied.
+* includes advanced stopword handling: stopwords are not required in the mandatory part of the query but are still used in the proximity boosting part. If a query consists of all stopwords, such as "to be or not to be", then all words are required.
+* includes improved boost function: in Extended DisMax, the `boost` function is a multiplier rather than an addend, improving your boost results; the additive boost functions of DisMax (`bf` and `bq`) are also supported.
+* supports pure negative nested queries: queries such as `+foo (-foo)` will match all documents.
+* lets you specify which fields the end user is allowed to query, and to disallow direct fielded searches.
+
+[[TheExtendedDisMaxQueryParser-ExtendedDisMaxParameters]]
+== Extended DisMax Parameters
+
+In addition to all the <<the-dismax-query-parser.adoc#TheDisMaxQueryParser-DisMaxParameters,DisMax parameters>>, Extended DisMax includes these query parameters:
+
+[[TheExtendedDisMaxQueryParser-ThesowParameter]]
+=== The `sow` Parameter
+
+Split on whitespace: if set to `false`, whitespace-separated term sequences will be provided to text analysis in one shot, enabling proper function of analysis filters that operate over term sequences, e.g. multi-word synonyms and shingles. Defaults to `true`: text analysis is invoked separately for each individual whitespace-separated term.
+
+[[TheExtendedDisMaxQueryParser-Themm.autoRelaxParameter]]
+=== The `mm.autoRelax` Parameter
+
+If true, the number of clauses required (<<the-dismax-query-parser.adoc#TheDisMaxQueryParser-Themm_MinimumShouldMatch_Parameter,minimum should match>>) will automatically be relaxed if a clause is removed (by e.g. stopwords filter) from some but not all <<the-dismax-query-parser.adoc#TheDisMaxQueryParser-Theqf_QueryFields_Parameter,`qf`>> fields. Use this parameter as a workaround if you experience that queries return zero hits due to uneven stopword removal between the `qf` fields.
+
+Note that relaxing mm may cause undesired side effects, hurting the precision of the search, depending on the nature of your index content.
+
+[[TheExtendedDisMaxQueryParser-TheboostParameter]]
+=== The `boost` Parameter
+
+A multivalued list of strings parsed as queries with scores multiplied by the score from the main query for all matching documents. This parameter is shorthand for wrapping the query produced by eDisMax using the `BoostQParserPlugin`
+
+[[TheExtendedDisMaxQueryParser-ThelowercaseOperatorsParameter]]
+=== The `lowercaseOperators` Parameter
+
+A Boolean parameter indicating if lowercase "and" and "or" should be treated the same as operators "AND" and "OR".
+
+[[TheExtendedDisMaxQueryParser-ThepsParameter]]
+=== The `ps` Parameter
+
+Default amount of slop on phrase queries built with `pf`, `pf2` and/or `pf3` fields (affects boosting).
+
+[[TheExtendedDisMaxQueryParser-Thepf2Parameter]]
+=== The `pf2` Parameter
+
+A multivalued list of fields with optional weights, based on pairs of word shingles.
+
+[[TheExtendedDisMaxQueryParser-Theps2Parameter]]
+=== The `ps2` Parameter
+
+This is similar to `ps` but overrides the slop factor used for `pf2`. If not specified, `ps` is used.
+
+[[TheExtendedDisMaxQueryParser-Thepf3Parameter]]
+=== The `pf3` Parameter
+
+A multivalued list of fields with optional weights, based on triplets of word shingles. Similar to `pf`, except that instead of building a phrase per field out of all the words in the input, it builds a set of phrases for each field out of each triplet of word shingles.
+
+[[TheExtendedDisMaxQueryParser-Theps3Parameter]]
+=== The `ps3` Parameter
+
+This is similar to `ps` but overrides the slop factor used for `pf3`. If not specified, `ps` is used.
+
+[[TheExtendedDisMaxQueryParser-ThestopwordsParameter]]
+=== The `stopwords` Parameter
+
+A Boolean parameter indicating if the `StopFilterFactory` configured in the query analyzer should be respected when parsing the query: if it is false, then the `StopFilterFactory` in the query analyzer is ignored.
+
+[[TheExtendedDisMaxQueryParser-TheufParameter]]
+=== The `uf` Parameter
+
+Specifies which schema fields the end user is allowed to explicitly query. This parameter supports wildcards. The default is to allow all fields, equivalent to `uf=\*`. To allow only title field, use `uf=title`. To allow title and all fields ending with '_s', use `uf=title,*_s`. To allow all fields except title, use `uf=*,-title`. To disallow all fielded searches, use `uf=-*`.
+
+[[TheExtendedDisMaxQueryParser-Fieldaliasingusingper-fieldqfoverrides]]
+=== Field aliasing using per-field `qf` overrides
+
+Per-field overrides of the `qf` parameter may be specified to provide 1-to-many aliasing from field names specified in the query string, to field names used in the underlying query. By default, no aliasing is used and field names specified in the query string are treated as literal field names in the index.
+
+[[TheExtendedDisMaxQueryParser-ExamplesofQueriesSubmittedtotheExtendedDisMaxQueryParser]]
+== Examples of Queries Submitted to the Extended DisMax Query Parser
+
+All of the sample URLs in this section assume you are running Solr's "```techproducts```" example:
+
+[source,bash]
+----
+bin/solr -e techproducts
+----
+
+Boost the result of the query term "hello" based on the document's popularity:
+
+[source,text]
+----
+http://localhost:8983/solr/techproducts/select?defType=edismax&q=hello&pf=text&qf=text&boost=popularity
+----
+
+Search for iPods OR video:
+
+[source,text]
+----
+http://localhost:8983/solr/techproducts/select?defType=edismax&q=ipod+OR+video
+----
+
+Search across multiple fields, specifying (via boosts) how important each field is relative each other:
+
+[source,text]
+----
+http://localhost:8983/solr/techproducts/select?q=video&defType=edismax&qf=features^20.0+text^0.3
+----
+
+You can boost results that have a field that matches a specific value:
+
+[source,text]
+----
+http://localhost:8983/solr/techproducts/select?q=video&defType=edismax&qf=features^20.0+text^0.3&bq=cat:electronics^5.0
+----
+
+Using the "mm" param, 1 and 2 word queries require that all of the optional clauses match, but for queries with three or more clauses one missing clause is allowed:
+
+[source,text]
+----
+http://localhost:8983/solr/techproducts/select?q=belkin+ipod&defType=edismax&mm=2
+http://localhost:8983/solr/techproducts/select?q=belkin+ipod+gibberish&defType=edismax&mm=2
+http://localhost:8983/solr/techproducts/select?q=belkin+ipod+apple&defType=edismax&mm=2
+----
+
+In the example below, we see a per-field override of the `qf` parameter being used to alias "name" in the query string to either the "```last_name```" and "```first_name```" fields:
+
+[source,text]
+----
+defType=edismax
+q=sysadmin name:Mike
+qf=title text last_name first_name
+f.name.qf=last_name first_name
+----
+
+[[TheExtendedDisMaxQueryParser-Usingnegativeboost]]
+== Using negative boost
+
+Negative query boosts have been supported at the "Query" object level for a long time (resulting in negative scores for matching documents). Now the QueryParsers have been updated to handle this too.
+
+
+[[TheExtendedDisMaxQueryParser-Using_slop_]]
+== Using 'slop'
+
+`Dismax` and `Edismax` can run queries against all query fields, and also run a query in the form of a phrase against the phrase fields. (This will work only for boosting documents, not actually for matching.) However, that phrase query can have a 'slop,' which is the distance between the terms of the query while still considering it a phrase match. For example:
+
+[source,text]
+----
+q=foo bar
+qf=field1^5 field2^10
+pf=field1^50 field2^20
+defType=dismax
+----
+
+With these parameters, the Dismax Query Parser generates a query that looks something like this:
+
+[source,text]
+----
+ (+(field1:foo^5 OR field2:foo^10) AND (field1:bar^5 OR field2:bar^10))
+----
+
+But it also generates another query that will only be used for boosting results:
+
+[source,plain]
+----
+field1:"foo bar"^50 OR field2:"foo bar"^20
+----
+
+Thus, any document that has the terms "foo" and "bar" will match; however if some of those documents have both of the terms as a phrase, it will score much higher because it's more relevant.
+
+If you add the parameter `ps` (phrase slop), the second query will instead be:
+
+[source,text]
+----
+ps=10 field1:"foo bar"~10^50 OR field2:"foo bar"~10^20
+----
+
+This means that if the terms "foo" and "bar" appear in the document with less than 10 terms between each other, the phrase will match. For example the doc that says:
+
+[source,text]
+----
+*Foo* term1 term2 term3 *bar*
+----
+
+will match the phrase query.
+
+How does one use phrase slop? Usually it is configured in the request handler (in `solrconfig`).
+
+With query slop (`qs`) the concept is similar, but it applies to explicit phrase queries from the user. For example, if you want to search for a name, you could enter:
+
+[source,text]
+----
+q="Hans Anderson"
+----
+
+A document that contains "Hans Anderson" will match, but a document that contains the middle name "Christian" or where the name is written with the last name first ("Anderson, Hans") won't. For those cases one could configure the query field `qs`, so that even if the user searches for an explicit phrase query, a slop is applied.
+
+Finally, in addition to the phrase fields (`pf`) parameter, `edismax` also supports the `pf2` and `pf3` parameters, for fields over which to create bigram and trigram phrase queries. The phrase slop for these parameters' queries can be specified using the `ps2` and `ps3` parameters, respectively. If you use `pf2`/`pf3` but `ps2`/`ps3`, then the phrase slop for these parameters' queries will be taken from the `ps` parameter, if any.
+
+
+[[TheExtendedDisMaxQueryParser-Usingthe_magicfields__val_and_query_]]
+== Using the 'magic fields' `\_val_` and `\_query_`
+
+The Solr Query Parser's use of `\_val_` and `\_query_` differs from the Lucene Query Parser in the following ways:
+
+* If the magic field name `\_val_` is used in a term or phrase query, the value is parsed as a function.
+
+* It provides a hook into http://wiki.apache.org/solr/FunctionQuery[`FunctionQuery`] syntax. Quotes are necessary to encapsulate the function when it includes parentheses. For example:
++
+[source,text]
+----
+_val_:myfield
+_val_:"recip(rord(myfield),1,2,3)"
+----
+
+* The Solr Query Parser offers nested query support for any type of query parser (via QParserPlugin). Quotes are often necessary to encapsulate the nested query if it contains reserved characters. For example:
++
+[source,text]
+----
+_query_:"{!dismax qf=myfield}how now brown cow"
+----
+
+Although not technically a syntax difference, note that if you use the Solr {solr-javadocs}/solr-core/org/apache/solr/schema/TrieDateField.html[`TrieDateField`] type, any queries on those fields (typically range queries) should use either the Complete ISO 8601 Date syntax that field supports, or the {solr-javadocs}/solr-core/org/apache/solr/util/DateMathParser.html[DateMath Syntax] to get relative dates. For example:
+
+[source,text]
+----
+timestamp:[* TO NOW]
+createdate:[1976-03-06T23:59:59.999Z TO *]
+createdate:[1995-12-31T23:59:59.999Z TO 2007-03-06T00:00:00Z]
+pubdate:[NOW-1YEAR/DAY TO NOW/DAY+1DAY]
+createdate:[1976-03-06T23:59:59.999Z TO 1976-03-06T23:59:59.999Z+1YEAR]
+createdate:[1976-03-06T23:59:59.999Z/YEAR TO 1976-03-06T23:59:59.999Z]
+----
+
+[IMPORTANT]
+====
+
+`TO` must be uppercase, or Solr will report a 'Range Group' error.
+
+====

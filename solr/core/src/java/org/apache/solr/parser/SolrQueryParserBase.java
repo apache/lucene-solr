@@ -437,7 +437,7 @@ public abstract class SolrQueryParserBase extends QueryBuilder {
   }
 
   protected Query newFieldQuery(Analyzer analyzer, String field, String queryText,
-                                boolean quoted, boolean fieldAutoGenPhraseQueries, boolean fieldEnableGraphQueries)
+                                boolean quoted, boolean fieldAutoGenPhraseQueries, boolean fieldEnableGraphQueries) 
       throws SyntaxError {
     BooleanClause.Occur occur = operator == Operator.AND ? BooleanClause.Occur.MUST : BooleanClause.Occur.SHOULD;
     setEnableGraphQueries(fieldEnableGraphQueries);

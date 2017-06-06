@@ -192,9 +192,7 @@ public interface CommonParams {
       AUTHZ_PATH,
       METRICS_PATH,
       AUTOSCALING_PATH,
-      AUTOSCALING_DIAGNOSTICS_PATH,
-      "/____v2/cluster/security/authentication",
-      "/____v2/cluster/security/authorization"));
+      AUTOSCALING_DIAGNOSTICS_PATH));
 
   /** valid values for: <code>echoParams</code> */
   enum EchoParamStyle {

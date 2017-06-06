@@ -1,0 +1,49 @@
+= Indexing and Basic Data Operations
+:page-shortname: indexing-and-basic-data-operations
+:page-permalink: indexing-and-basic-data-operations.html
+:page-children: introduction-to-solr-indexing, post-tool, uploading-data-with-index-handlers, uploading-data-with-solr-cell-using-apache-tika, uploading-structured-data-store-data-with-the-data-import-handler, updating-parts-of-documents, detecting-languages-during-indexing, de-duplication, content-streams, uima-integration
+// Licensed to the Apache Software Foundation (ASF) under one
+// or more contributor license agreements.  See the NOTICE file
+// distributed with this work for additional information
+// regarding copyright ownership.  The ASF licenses this file
+// to you under the Apache License, Version 2.0 (the
+// "License"); you may not use this file except in compliance
+// with the License.  You may obtain a copy of the License at
+//
+//   http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing,
+// software distributed under the License is distributed on an
+// "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+// KIND, either express or implied.  See the License for the
+// specific language governing permissions and limitations
+// under the License.
+
+This section describes how Solr adds data to its index. It covers the following topics:
+
+* *<<introduction-to-solr-indexing.adoc#introduction-to-solr-indexing,Introduction to Solr Indexing>>*: An overview of Solr's indexing process.
+
+* *<<post-tool.adoc#post-tool,Post Tool>>*: Information about using `post.jar` to quickly upload some content to your system.
+
+* *<<uploading-data-with-index-handlers.adoc#uploading-data-with-index-handlers,Uploading Data with Index Handlers>>*: Information about using Solr's Index Handlers to upload XML/XSLT, JSON and CSV data.
+
+* *<<transforming-and-indexing-custom-json.adoc#transforming-and-indexing-custom-json,Transforming and Indexing Custom JSON>>* : Index any JSON of your choice
+
+* *<<uploading-data-with-solr-cell-using-apache-tika.adoc#uploading-data-with-solr-cell-using-apache-tika,Uploading Data with Solr Cell using Apache Tika>>*: Information about using the Solr Cell framework to upload data for indexing.
+
+* *<<uploading-structured-data-store-data-with-the-data-import-handler.adoc#uploading-structured-data-store-data-with-the-data-import-handler,Uploading Structured Data Store Data with the Data Import Handler>>*: Information about uploading and indexing data from a structured data store.
+
+* *<<updating-parts-of-documents.adoc#updating-parts-of-documents,Updating Parts of Documents>>*: Information about how to use atomic updates and optimistic concurrency with Solr.
+
+* *<<detecting-languages-during-indexing.adoc#detecting-languages-during-indexing,Detecting Languages During Indexing>>*: Information about using language identification during the indexing process.
+
+* *<<de-duplication.adoc#de-duplication,De-Duplication>>*: Information about configuring Solr to mark duplicate documents as they are indexed.
+
+* *<<content-streams.adoc#content-streams,Content Streams>>*: Information about streaming content to Solr Request Handlers.
+
+* *<<uima-integration.adoc#uima-integration,UIMA Integration>>*: Information about integrating Solr with Apache's Unstructured Information Management Architecture (UIMA). UIMA lets you define custom pipelines of Analysis Engines that incrementally add metadata to your documents as annotations.
+
+[[IndexingandBasicDataOperations-IndexingUsingClientAPIs]]
+== Indexing Using Client APIs
+
+Using client APIs, such as <<using-solrj.adoc#using-solrj,SolrJ>>, from your applications is an important option for updating Solr indexes. See the <<client-apis.adoc#client-apis,Client APIs>> section for more information.

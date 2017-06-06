@@ -31,7 +31,7 @@ import java.util.Random;
  * for the same field.
  */
 public class RandomSimilarity extends PerFieldSimilarityWrapper {
-  final ClassicSimilarity defaultSim = new ClassicSimilarity();
+  final BM25Similarity defaultSim = new BM25Similarity();
   final List<Similarity> knownSims;
   Map<String,Similarity> previousMappings = new HashMap<>();
   final int perFieldSeed;

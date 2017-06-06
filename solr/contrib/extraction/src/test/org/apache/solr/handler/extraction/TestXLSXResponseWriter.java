@@ -218,7 +218,7 @@ public class TestXLSXResponseWriter extends SolrTestCaseJ4 {
     assertEquals("1,0,hi", lines[1] );
 
     //assertions specific to multiple pseudofields functions like abs, div, exists, etc.. (SOLR-5423)
-    String funcText = getStringFromSheet(getWSResultForQuery(req("q","*", "wt","xlsx", "fl","XXX:id,YYY:exists(foo_s1)")));
+    String funcText = getStringFromSheet(getWSResultForQuery(req("df", "text", "q","*", "wt","xlsx", "fl","XXX:id,YYY:exists(foo_s1)")));
     String[] funcLines = funcText.split("\n");
     assertEquals(5, funcLines.length);
     assertEquals("XXX,YYY", funcLines[0] );

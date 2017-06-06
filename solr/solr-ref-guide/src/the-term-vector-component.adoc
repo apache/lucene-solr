@@ -1,0 +1,163 @@
+= The Term Vector Component
+:page-shortname: the-term-vector-component
+:page-permalink: the-term-vector-component.html
+// Licensed to the Apache Software Foundation (ASF) under one
+// or more contributor license agreements.  See the NOTICE file
+// distributed with this work for additional information
+// regarding copyright ownership.  The ASF licenses this file
+// to you under the Apache License, Version 2.0 (the
+// "License"); you may not use this file except in compliance
+// with the License.  You may obtain a copy of the License at
+//
+//   http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing,
+// software distributed under the License is distributed on an
+// "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+// KIND, either express or implied.  See the License for the
+// specific language governing permissions and limitations
+// under the License.
+
+The TermVectorComponent is a search component designed to return additional information about documents matching your search.
+
+For each document in the response, the TermVectorCcomponent can return the term vector, the term frequency, inverse document frequency, position, and offset information.
+
+[[TheTermVectorComponent-Configuration]]
+== Configuration
+
+The TermVectorComponent is not enabled implicitly in Solr - it must be explicitly configured in your `solrconfig.xml` file. The examples on this page show how it is configured in Solr's "```techproducts```" example:
+
+[source,bash]
+----
+bin/solr -e techproducts
+----
+
+To enable the this component, you need to configure it using a `searchComponent` element:
+
+[source,xml]
+----
+<searchComponent name="tvComponent" class="org.apache.solr.handler.component.TermVectorComponent"/>
+----
+
+A request handler must then be configured to use this component name. In the `techproducts` example, the component is associated with a special request handler named `/tvrh`, that enables term vectors by default using the `tv=true` parameter; but you can associate it with any request handler:
+
+[source,xml]
+----
+<requestHandler name="/tvrh" class="org.apache.solr.handler.component.SearchHandler">
+  <lst name="defaults">
+    <bool name="tv">true</bool>
+  </lst>
+  <arr name="last-components">
+    <str>tvComponent</str>
+  </arr>
+</requestHandler>
+----
+
+Once your handler is defined, you may use in conjunction with any schema (that has a `uniqueKeyField)` to fetch term vectors for fields configured with the `termVector` attribute, such as in the `techproducts` sample schema.  For example:
+
+[source,xml]
+----
+<field name="includes"
+       type="text_general"
+       indexed="true"
+       stored="true"
+       multiValued="true"
+       termVectors="true"
+       termPositions="true"
+       termOffsets="true" />
+----
+
+[[TheTermVectorComponent-InvokingtheTermVectorComponent]]
+== Invoking the Term Vector Component
+
+The example below shows an invocation of this component using the above configuration:
+
+`\http://localhost:8983/solr/techproducts/tvrh?q=*:*&start=0&rows=10&fl=id,includes`
+
+[source,xml]
+----
+...
+<lst name="termVectors">
+  <lst name="GB18030TEST">
+    <str name="uniqueKey">GB18030TEST</str>
+  </lst>
+  <lst name="EN7800GTX/2DHTV/256M">
+    <str name="uniqueKey">EN7800GTX/2DHTV/256M</str>
+  </lst>
+  <lst name="100-435805">
+    <str name="uniqueKey">100-435805</str>
+  </lst>
+  <lst name="3007WFP">
+    <str name="uniqueKey">3007WFP</str>
+    <lst name="includes">
+      <lst name="cable"/>
+      <lst name="usb"/>
+    </lst>
+  </lst>
+  <lst name="SOLR1000">
+    <str name="uniqueKey">SOLR1000</str>
+  </lst>
+  <lst name="0579B002">
+    <str name="uniqueKey">0579B002</str>
+  </lst>
+  <lst name="UTF8TEST">
+    <str name="uniqueKey">UTF8TEST</str>
+  </lst>
+  <lst name="9885A004">
+    <str name="uniqueKey">9885A004</str>
+    <lst name="includes">
+      <lst name="32mb"/>
+      <lst name="av"/>
+      <lst name="battery"/>
+      <lst name="cable"/>
+      <lst name="card"/>
+      <lst name="sd"/>
+      <lst name="usb"/>
+    </lst>
+  </lst>
+  <lst name="adata">
+    <str name="uniqueKey">adata</str>
+  </lst>
+  <lst name="apple">
+    <str name="uniqueKey">apple</str>
+  </lst>
+</lst>
+----
+
+[[TheTermVectorComponent-RequestParameters]]
+=== Request Parameters
+
+The example below shows the available request parameters for this component:
+
+`\http://localhost:8983/solr/techproducts/tvrh?q=includes:[* TO *]&rows=10&indent=true&tv=true&tv.tf=true&tv.df=true&tv.positions=true&tv.offsets=true&tv.payloads=true&tv.fl=includes`
+
+// TODO: Change column width to %autowidth.spread when https://github.com/asciidoctor/asciidoctor-pdf/issues/599 is fixed
+
+[cols="20,60,20",options="header"]
+|===
+|Boolean Parameters |Description |Type
+|tv |Should the component run or not |boolean
+|tv.docIds |Returns term vectors for the specified list of Lucene document IDs (not the Solr Unique Key). |comma seperated integers
+|tv.fl |Returns term vectors for the specified list of fields. If not specified, the `fl` parameter is used. |comma seperated list of field names
+|tv.all |A shortcut that invokes all the boolean parameters listed below. |boolean
+|tv.df |Returns the Document Frequency (DF) of the term in the collection. This can be computationally expensive. |boolean
+|tv.offsets |Returns offset information for each term in the document. |boolean
+|tv.positions |Returns position information. |boolean
+|tv.payloads |Returns payload information. |boolean
+|tv.tf |Returns document term frequency info per term in the document. |boolean
+|tv.tf_idf a|
+Calculates TF / DF (ie: TF * IDF) for each term. Please note that this is a _literal_ calculation of "Term Frequency multiplied by Inverse Document Frequency" and *not* a classical TF-IDF similarity measure.
+
+Requires the parameters `tv.tf` and `tv.df` to be "true". This can be computationally expensive. (The results are not shown in example output)
+
+ |boolean
+|===
+
+To learn more about TermVector component output, see the Wiki page: http://wiki.apache.org/solr/TermVectorComponentExampleOptions
+
+For schema requirements, see the Wiki page: http://wiki.apache.org/solr/FieldOptionsByUseCase
+
+[[TheTermVectorComponent-SolrJandtheTermVectorComponent]]
+== SolrJ and the Term Vector Component
+
+Neither the SolrQuery class nor the QueryResponse class offer specific method calls to set Term Vector Component parameters or get the "termVectors" output. However, there is a patch for it: https://issues.apache.org/jira/browse/SOLR-949[SOLR-949].

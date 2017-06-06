@@ -21,13 +21,13 @@ import java.util.Collection;
 import java.util.List;
 import java.util.NoSuchElementException;
 
+import org.apache.lucene.util.BytesRef;
 import org.locationtech.spatial4j.context.SpatialContext;
 import org.locationtech.spatial4j.shape.Point;
 import org.locationtech.spatial4j.shape.Rectangle;
 import org.locationtech.spatial4j.shape.Shape;
 import org.locationtech.spatial4j.shape.SpatialRelation;
 import org.locationtech.spatial4j.shape.impl.RectangleImpl;
-import org.apache.lucene.util.BytesRef;
 
 /**
  * Uses a compact binary representation of 8 bytes to encode a spatial quad trie.
@@ -161,7 +161,7 @@ public class PackedQuadPrefixTree extends QuadPrefixTree {
       super(null, 0, 0);
       this.term = term;
       this.b_off = 0;
-      this.bytes = longToByteArray(this.term);
+      this.bytes = longToByteArray(this.term, new byte[8]);
       this.b_len = 8;
       readLeafAdjust();
     }
@@ -229,30 +229,37 @@ public class PackedQuadPrefixTree extends QuadPrefixTree {
 
     @Override
     public BytesRef getTokenBytesWithLeaf(BytesRef result) {
-      if (isLeaf) {
-        term |= 0x1L;
+      result = getTokenBytesNoLeaf(result);
+      if (isLeaf()) {
+        result.bytes[8 - 1] |= 0x1L; // set leaf
       }
-      return getTokenBytesNoLeaf(result);
+      return result;
     }
 
     @Override
     public BytesRef getTokenBytesNoLeaf(BytesRef result) {
-      if (result == null)
-        return new BytesRef(bytes, b_off, b_len);
-      result.bytes = longToByteArray(this.term);
+      if (result == null) {
+        result = new BytesRef(8);
+      } else if (result.bytes.length < 8) {
+        result.bytes = new byte[8];
+      }
+      result.bytes = longToByteArray(this.term, result.bytes);
       result.offset = 0;
-      result.length = result.bytes.length;
+      result.length = 8;
+      // no leaf
+      result.bytes[8 - 1] &= ~1; // clear last bit (leaf bit)
       return result;
     }
 
     @Override
     public int compareToNoLeaf(Cell fromCell) {
       PackedQuadCell b = (PackedQuadCell) fromCell;
+      //TODO clear last bit without the condition
       final long thisTerm = (((0x1L)&term) == 0x1L) ? term-1 : term;
       final long fromTerm = (((0x1L)&b.term) == 0x1L) ? b.term-1 : b.term;
       final int result = Long.compareUnsigned(thisTerm, fromTerm);
       assert Math.signum(result)
-          == Math.signum(compare(longToByteArray(thisTerm), 0, 8, longToByteArray(fromTerm), 0, 8)); // TODO remove
+          == Math.signum(compare(longToByteArray(thisTerm, new byte[8]), 0, 8, longToByteArray(fromTerm, new byte[8]), 0, 8)); // TODO remove
       return result;
     }
 
@@ -343,8 +350,7 @@ public class PackedQuadPrefixTree extends QuadPrefixTree {
           | ((long)b7 & 255L) << 8 | (long)b8 & 255L;
     }
 
-    private byte[] longToByteArray(long value) {
-      byte[] result = new byte[8];
+    private byte[] longToByteArray(long value, byte[] result) {
       for(int i = 7; i >= 0; --i) {
         result[i] = (byte)((int)(value & 255L));
         value >>= 8;

@@ -16,6 +16,8 @@
  */
 package org.apache.solr.util;
 
+import java.io.IOException;
+import java.io.StringReader;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Iterator;
@@ -23,10 +25,13 @@ import java.util.List;
 import java.util.Map;
 
 import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.common.util.CommandOperation;
 import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.common.util.Utils;
 import org.junit.Assert;
+
+import static java.nio.charset.StandardCharsets.UTF_8;
 
 /**
  *
@@ -154,7 +159,26 @@ public class TestUtils extends SolrTestCaseJ4 {
     assertEquals( num, NumberUtils.SortableStr2long(sortable, 0, sortable.length() ) );
     assertEquals( Long.toString(num), NumberUtils.SortableStr2long(sortable) );
   }
-  
+
+  public void testNoggitFlags() throws IOException {
+    String s = "a{b:c, d [{k1:v1}{k2:v2}]}";
+    assertNoggitJsonValues((Map) Utils.fromJSON(s.getBytes(UTF_8)));
+    assertNoggitJsonValues((Map) Utils.fromJSONString(s));
+    List<CommandOperation> commands = CommandOperation.parse(new StringReader(s + s));
+    assertEquals(2, commands.size());
+    for (CommandOperation command : commands) {
+      assertEquals("a", command.name);
+      assertEquals( "v1" ,Utils.getObjectByPath(command.getDataMap(), true, "d[0]/k1"));command.getDataMap();
+      assertEquals( "v2" ,Utils.getObjectByPath(command.getDataMap(), true, "d[1]/k2"));command.getDataMap();
+    }
+  }
+
+  private void assertNoggitJsonValues(Map m) {
+    assertEquals( "c" ,Utils.getObjectByPath(m, true, "/a/b"));
+    assertEquals( "v1" ,Utils.getObjectByPath(m, true, "/a/d[0]/k1"));
+    assertEquals( "v2" ,Utils.getObjectByPath(m, true, "/a/d[1]/k2"));
+  }
+
   public void testUtilsJSPath(){
     
     String json = "{\n" +

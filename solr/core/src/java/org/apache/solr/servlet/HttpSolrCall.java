@@ -101,7 +101,7 @@ import org.apache.solr.servlet.SolrDispatchFilter.Action;
 import org.apache.solr.servlet.cache.HttpCacheHeaderUtil;
 import org.apache.solr.servlet.cache.Method;
 import org.apache.solr.update.processor.DistributingUpdateProcessorFactory;
-import org.apache.solr.util.CommandOperation;
+import org.apache.solr.common.util.CommandOperation;
 import org.apache.solr.util.JsonSchemaValidator;
 import org.apache.solr.util.RTimerTree;
 import org.apache.solr.util.TimeOut;
@@ -1028,7 +1028,7 @@ public class HttpSolrCall {
     return new AuthorizationContext() {
       @Override
       public SolrParams getParams() {
-        return solrReq.getParams();
+        return null == solrReq ? null : solrReq.getParams();
       }
 
       @Override
@@ -1081,7 +1081,7 @@ public class HttpSolrCall {
           response.delete(response.length() - 1, response.length());
         
         response.append("], Path: [").append(resource).append("]");
-        response.append(" path : ").append(path).append(" params :").append(solrReq.getParams());
+        response.append(" path : ").append(path).append(" params :").append(getParams());
         return response.toString();
       }
 

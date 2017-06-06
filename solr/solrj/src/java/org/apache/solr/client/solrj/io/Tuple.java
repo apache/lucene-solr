@@ -48,6 +48,10 @@ public class Tuple implements Cloneable, MapWriter {
   public List<String> fieldNames;
   public Map<String, String> fieldLabels;
 
+  public Tuple(){
+    // just an empty tuple
+  }
+  
   public Tuple(Map fields) {
     if(fields.containsKey("EOF")) {
       EOF = true;
@@ -86,7 +90,9 @@ public class Tuple implements Cloneable, MapWriter {
     }
 
     if(o instanceof Long) {
-      return (Long)o;
+      return (Long) o;
+    } else if (o instanceof Number) {
+      return ((Number)o).longValue();
     } else {
       //Attempt to parse the long
       return Long.parseLong(o.toString());

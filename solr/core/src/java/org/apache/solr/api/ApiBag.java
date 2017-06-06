@@ -37,13 +37,12 @@ import org.apache.solr.common.util.Utils;
 import org.apache.solr.common.util.ValidatingJsonMap;
 import org.apache.solr.core.PluginBag;
 import org.apache.solr.core.PluginInfo;
-import org.apache.solr.handler.RequestHandlerUtils;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.request.SolrRequestHandler;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.security.AuthorizationContext;
 import org.apache.solr.security.PermissionNameProvider;
-import org.apache.solr.util.CommandOperation;
+import org.apache.solr.common.util.CommandOperation;
 import org.apache.solr.util.JsonSchemaValidator;
 import org.apache.solr.util.PathTrie;
 import org.slf4j.Logger;
@@ -154,7 +153,12 @@ public class ApiBag {
         ValidatingJsonMap commands = specCopy.getMap("commands", null);
         if (commands != null) {
           ValidatingJsonMap m = commands.getMap(cmd, null);
-          specCopy.put("commands", Collections.singletonMap(cmd, m));
+          if (m == null) {
+            specCopy.put("commands", Collections.singletonMap(cmd, "Command not found!"));
+          } else {
+            specCopy.put("commands", Collections.singletonMap(cmd, m));
+          }
+
         }
         result = specCopy;
       }
@@ -172,7 +176,6 @@ public class ApiBag {
       List l = (List) rsp.getValues().get("spec");
       if (l == null) rsp.getValues().add("spec", l = new ArrayList());
       l.add(result);
-      RequestHandlerUtils.addExperimentalFormatWarning(rsp);
     }
   }
 

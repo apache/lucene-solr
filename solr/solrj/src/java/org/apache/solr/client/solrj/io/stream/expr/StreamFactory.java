@@ -90,7 +90,7 @@ public class StreamFactory implements Serializable {
   }
   
   public List<String> getValueOperands(StreamExpression expression){
-    return getOperandsOfType(expression, StreamExpressionValue.class).stream().map(item -> ((StreamExpressionValue)item).getValue()).collect(Collectors.toList());
+    return getOperandsOfType(expression, StreamExpressionValue.class).stream().map(item -> ((StreamExpressionValue) item).getValue()).collect(Collectors.toList());
   }
   
   /** Given an expression, will return the value parameter at the given index, or null if doesn't exist */
@@ -377,6 +377,29 @@ public class StreamFactory implements Serializable {
     throw new IOException(String.format(Locale.ROOT,"Invalid evaluator expression %s - function '%s' is unknown (not mapped to a valid StreamEvaluator)", expression, expression.getFunctionName()));
   }
 
+  public boolean isStream(StreamExpression expression) throws IOException{
+    String function = expression.getFunctionName();
+    if(functionNames.containsKey(function)){
+      Class<? extends Expressible> clazz = functionNames.get(function);
+      if(Expressible.class.isAssignableFrom(clazz) && TupleStream.class.isAssignableFrom(clazz)){
+        return true;
+      }
+    }
+
+    return false;
+  }
+  
+  public boolean isEvaluator(StreamExpression expression) throws IOException{
+    String function = expression.getFunctionName();
+    if(functionNames.containsKey(function)){
+      Class<? extends Expressible> clazz = functionNames.get(function);
+      if(Expressible.class.isAssignableFrom(clazz) && StreamEvaluator.class.isAssignableFrom(clazz)){
+        return true;
+      }
+    }
+
+    return false;
+  }
 
   public <T> T createInstance(Class<T> clazz, Class<?>[] paramTypes, Object[] params) throws IOException{
     Constructor<T> ctor;
@@ -410,7 +433,7 @@ public class StreamFactory implements Serializable {
     if("null".equals(lower)){ return null; }
     if("true".equals(lower) || "false".equals(lower)){ return Boolean.parseBoolean(lower); }
     try{ return Long.valueOf(original); } catch(Exception ignored){};
-    try{ if (original.matches(".{1,8}")){ return Float.valueOf(original); }} catch(Exception ignored){};
+    try{ if (original.matches(".{1,8}")){ return Double.valueOf(original); }} catch(Exception ignored){};
     try{ if (original.matches(".{1,17}")){ return Double.valueOf(original); }} catch(Exception ignored){};
     
     // is a string

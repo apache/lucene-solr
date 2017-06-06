@@ -25,6 +25,7 @@ import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.search.DoubleValues;
 import org.apache.lucene.search.DoubleValuesSource;
+import org.apache.lucene.search.Explanation;
 import org.apache.lucene.search.FieldComparator;
 import org.apache.lucene.search.FieldComparatorSource;
 import org.apache.lucene.search.IndexSearcher;
@@ -186,6 +187,16 @@ public abstract class ValueSource {
       @Override
       public boolean needsScores() {
         return true;  // be on the safe side
+      }
+
+      @Override
+      public Explanation explain(LeafReaderContext ctx, int docId, Explanation scoreExplanation) throws IOException {
+        Map context = new HashMap<>();
+        FakeScorer scorer = new FakeScorer();
+        scorer.score = scoreExplanation.getValue();
+        context.put("scorer", scorer);
+        FunctionValues fv = ValueSource.this.getValues(context, ctx);
+        return fv.explain(docId);
       }
     };
   }

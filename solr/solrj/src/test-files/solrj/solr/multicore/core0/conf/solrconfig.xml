@@ -68,5 +68,11 @@
     <defaultQuery>solr</defaultQuery>
   </admin>
 
+  <initParams path="standard">
+    <lst name="defaults">
+      <str name="df">name</str>
+    </lst>
+  </initParams>
+
 </config>
 

@@ -266,7 +266,10 @@ def checkAll(dirName):
 if __name__ == '__main__':
   if checkAll(sys.argv[1]):
     print()
-    print('Broken javadocs links were found!')
+    print('Broken javadocs links were found! Common root causes:')
+    # please feel free to add to this list
+    print('* A typo of some sort for manually created links.')
+    print('* Public methods referencing non-public classes in their signature.')
     sys.exit(1)
   sys.exit(0)
   

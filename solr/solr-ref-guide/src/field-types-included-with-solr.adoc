@@ -1,0 +1,56 @@
+= Field Types Included with Solr
+:page-shortname: field-types-included-with-solr
+:page-permalink: field-types-included-with-solr.html
+// Licensed to the Apache Software Foundation (ASF) under one
+// or more contributor license agreements.  See the NOTICE file
+// distributed with this work for additional information
+// regarding copyright ownership.  The ASF licenses this file
+// to you under the Apache License, Version 2.0 (the
+// "License"); you may not use this file except in compliance
+// with the License.  You may obtain a copy of the License at
+//
+//   http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing,
+// software distributed under the License is distributed on an
+// "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+// KIND, either express or implied.  See the License for the
+// specific language governing permissions and limitations
+// under the License.
+
+The following table lists the field types that are available in Solr. The `org.apache.solr.schema` package includes all the classes listed in this table.
+
+// TODO: Change column width to %autowidth.spread when https://github.com/asciidoctor/asciidoctor-pdf/issues/599 is fixed
+
+[cols="25,75",options="header"]
+|===
+|Class |Description
+|BinaryField |Binary data.
+|BoolField |Contains either true or false. Values of "1", "t", or "T" in the first character are interpreted as true. Any other values in the first character are interpreted as false.
+|CollationField |Supports Unicode collation for sorting and range queries. ICUCollationField is a better choice if you can use ICU4J. See the section <<language-analysis.adoc#LanguageAnalysis-UnicodeCollation,Unicode Collation>>.
+|CurrencyField |Supports currencies and exchange rates. See the section <<working-with-currencies-and-exchange-rates.adoc#working-with-currencies-and-exchange-rates,Working with Currencies and Exchange Rates>>.
+|DateRangeField |Supports indexing date ranges, to include point in time date instances as well (single-millisecond durations). See the section <<working-with-dates.adoc#working-with-dates,Working with Dates>> for more detail on using this field type. Consider using this field type even if it's just for date instances, particularly when the queries typically fall on UTC year/month/day/hour, etc., boundaries.
+|ExternalFileField |Pulls values from a file on disk. See the section <<working-with-external-files-and-processes.adoc#working-with-external-files-and-processes,Working with External Files and Processes>>.
+|EnumField |Allows defining an enumerated set of values which may not be easily sorted by either alphabetic or numeric order (such as a list of severities, for example). This field type takes a configuration file, which lists the proper order of the field values. See the section <<working-with-enum-fields.adoc#working-with-enum-fields,Working with Enum Fields>> for more information.
+|ICUCollationField |Supports Unicode collation for sorting and range queries. See the section <<language-analysis.adoc#LanguageAnalysis-UnicodeCollation,Unicode Collation>>.
+|LatLonPointSpatialField |<<spatial-search.adoc#spatial-search,Spatial Search>>: a latitude/longitude coordinate pair; possibly multi-valued for multiple points. Usually it's specified as "lat,lon" order with a comma.
+|LatLonType |(deprecated) <<spatial-search.adoc#spatial-search,Spatial Search>>: a single-valued latitude/longitude coordinate pair. Usually it's specified as "lat,lon" order with a comma.
+|PointType |<<spatial-search.adoc#spatial-search,Spatial Search>>: A single-valued n-dimensional point. It's both for sorting spatial data that is _not_ lat-lon, and for some more rare use-cases. (NOTE: this is _not_ related to the "Point" based numeric fields)
+|PreAnalyzedField |Provides a way to send to Solr serialized token streams, optionally with independent stored values of a field, and have this information stored and indexed without any additional text processing. Configuration and usage of PreAnalyzedField is documented on the <<working-with-external-files-and-processes.adoc#WorkingwithExternalFilesandProcesses-ThePreAnalyzedFieldType,Working with External Files and Processes>> page.
+|RandomSortField |Does not contain a value. Queries that sort on this field type will return results in random order. Use a dynamic field to use this feature.
+|SpatialRecursivePrefixTreeFieldType |(RPT for short) <<spatial-search.adoc#spatial-search,Spatial Search>>: Accepts latitude comma longitude strings or other shapes in WKT format.
+|StrField |String (UTF-8 encoded string or Unicode). Strings are intended for small fields and are _not_ tokenized or analyzed in any way. They have a hard limit of slightly less than 32K.
+|TextField |Text, usually multiple words or tokens.
+|TrieDateField |Date field. Represents a point in time with millisecond precision. See the section <<working-with-dates.adoc#working-with-dates,Working with Dates>>. `precisionStep="0"` minimizes index size; `precisionStep="8"` (the default) enables more efficient range queries. For single valued fields, use `docValues="true"` for efficient sorting.
+|TrieDoubleField |Double field (64-bit IEEE floating point). `precisionStep="0"` minimizes index size; `precisionStep="8"` (the default) enables more efficient range queries. For single valued fields, use `docValues="true"` for efficient sorting.
+|TrieFloatField |Floating point field (32-bit IEEE floating point) . `precisionStep="0"` enables efficient numeric sorting and minimizes index size; `precisionStep="8"` (the default) enables efficient range queries. Use `docValues="true"` for efficient sorting. For single valued fields, use `docValues="true"` for efficient sorting.
+|TrieIntField |Integer field (32-bit signed integer). `precisionStep="0"` enables efficient numeric sorting and minimizes index size; `precisionStep="8"` (the default) enables efficient range queries. For single valued fields, use `docValues="true"` for efficient sorting.
+|TrieLongField |Long field (64-bit signed integer). `precisionStep="0"` minimizes index size; `precisionStep="8"` (the default) enables more efficient range queries. For single valued fields, use `docValues="true"` for efficient sorting.
+|TrieField |If this field type is used, a "type" attribute must also be specified, valid values are: `integer`, `long`, `float`, `double`, `date`. Using this field is the same as using any of the Trie fields mentioned above
+|DatePointField |Date field. Represents a point in time with millisecond precision. See the section <<working-with-dates.adoc#working-with-dates,Working with Dates>>. This class functions similarly to TrieDateField, but using a "Dimensional Points" based data structure instead of indexed terms, and doesn't require configuration of a precision step. For single valued fields, `docValues="true"` must be used to enable sorting.
+|DoublePointField |Double field (64-bit IEEE floating point). This class functions similarly to TrieDoubleField, but using a "Dimensional Points" based data structure instead of indexed terms, and doesn't require configuration of a precision step. For single valued fields, `docValues="true"` must be used to enable sorting.
+|FloatPointField |Floating point field (32-bit IEEE floating point). This class functions similarly to TrieFloatField, but using a "Dimensional Points" based data structure instead of indexed terms, and doesn't require configuration of a precision step. For single valued fields, `docValues="true"` must be used to enable sorting.
+|IntPointField |Integer field (32-bit signed integer). This class functions similarly to TrieIntField, but using a "Dimensional Points" based data structure instead of indexed terms, and doesn't require configuration of a precision step. For single valued fields, `docValues="true"` must be used to enable sorting.
+|LongPointField |Long field (64-bit signed integer). This class functions similarly to TrieLongField, but using a "Dimensional Points" based data structure instead of indexed terms, and doesn't require configuration of a precision step. For single valued fields, `docValues="true"` must be used to enable sorting.
+|UUIDField |Universally Unique Identifier (UUID). Pass in a value of "NEW" and Solr will create a new UUID. *Note*: configuring a UUIDField instance with a default value of "NEW" is not advisable for most users when using SolrCloud (and not possible if the UUID value is configured as the unique key field) since the result will be that each replica of each document will get a unique UUID value. Using UUIDUpdateProcessorFactory to generate UUID values when documents are added is recommended instead.
+|===

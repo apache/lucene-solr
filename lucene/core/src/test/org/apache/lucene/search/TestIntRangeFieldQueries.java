@@ -23,6 +23,7 @@ import org.apache.lucene.document.IntRange;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.store.Directory;
+import org.apache.lucene.util.TestUtil;
 
 /**
  * Random testing for IntRange Queries.
@@ -31,11 +32,25 @@ public class TestIntRangeFieldQueries extends BaseRangeFieldQueryTestCase {
   private static final String FIELD_NAME = "intRangeField";
 
   private int nextIntInternal() {
-    if (rarely()) {
-      return random().nextBoolean() ? Integer.MAX_VALUE : Integer.MIN_VALUE;
+    switch (random().nextInt(5)) {
+      case 0:
+        return Integer.MIN_VALUE;
+      case 1:
+        return Integer.MAX_VALUE;
+      default:
+        int bpv = random().nextInt(32);
+        switch (bpv) {
+          case 32:
+            return random().nextInt();
+          default:
+            int v = TestUtil.nextInt(random(), 0, (1 << bpv) - 1);
+            if (bpv > 0) {
+              // negative values sometimes
+              v -= 1 << (bpv - 1);
+            }
+            return v;
+        }
     }
-    int max = Integer.MAX_VALUE / 2;
-    return (max + max) * random().nextInt() - max;
   }
 
   @Override

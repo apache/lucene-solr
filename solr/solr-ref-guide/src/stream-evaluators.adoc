@@ -1,0 +1,461 @@
+= Stream Evaluator Reference
+:page-shortname: stream-evaluators
+:page-permalink: stream-evaluators.html
+:page-tocclass: right
+:page-toclevels: 1
+// Licensed to the Apache Software Foundation (ASF) under one
+// or more contributor license agreements.  See the NOTICE file
+// distributed with this work for additional information
+// regarding copyright ownership.  The ASF licenses this file
+// to you under the Apache License, Version 2.0 (the
+// "License"); you may not use this file except in compliance
+// with the License.  You may obtain a copy of the License at
+//
+//   http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing,
+// software distributed under the License is distributed on an
+// "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+// KIND, either express or implied.  See the License for the
+// specific language governing permissions and limitations
+// under the License.
+
+== analyze
+
+// TODO
+
+== abs
+
+The `abs` function will return the absolute value of the provided single parameter. The `abs` function will fail to execute if the value is non-numeric. If a null value is found then null will be returned as the result.
+
+=== abs Parameters
+
+* `Field Name | Raw Number | Number Evaluator`
+
+=== abs Syntax
+
+The expressions below show the various ways in which you can use the `abs` evaluator. Only one parameter is accepted. Returns a numeric value.
+
+[source,text]
+----
+abs(1) // 1, not really a good use case for it
+abs(-1) // 1, not really a good use case for it
+abs(add(fieldA,fieldB)) // absolute value of fieldA + fieldB
+abs(fieldA) // absolute value of fieldA
+----
+
+== add
+
+The `add` function will take 2 or more numeric values and add them together. The `add` function will fail to execute if any of the values are non-numeric. If a null value is found then null will be returned as the result.
+
+=== add Parameters
+
+* `Field Name | Raw Number | Number Evaluator`
+* `Field Name | Raw Number | Number Evaluator`
+* `......`
+* `Field Name | Raw Number | Number Evaluator`
+
+=== add Syntax
+
+The expressions below show the various ways in which you can use the `add` evaluator. The number and order of these parameters do not matter and is not limited except that at least two parameters are required. Returns a numeric value.
+
+[source,text]
+----
+add(1,2,3,4) // 1 + 2 + 3 + 4 == 10
+add(1,fieldA) // 1 + value of fieldA
+add(fieldA,1.4) // value of fieldA + 1.4
+add(fieldA,fieldB,fieldC) // value of fieldA + value of fieldB + value of fieldC
+add(fieldA,div(fieldA,fieldB)) // value of fieldA + (value of fieldA / value of fieldB)
+add(fieldA,if(gt(fieldA,fieldB),fieldA,fieldB)) // if fieldA > fieldB then fieldA + fieldA, else fieldA + fieldB
+----
+
+== div
+
+The `div` function will take two numeric values and divide them. The function will fail to execute if any of the values are non-numeric or null, or the 2nd value is 0. Returns a numeric value.
+
+=== div Parameters
+
+* `Field Name | Raw Number | Number Evaluator`
+* `Field Name | Raw Number | Number Evaluator`
+
+=== div Syntax
+
+The expressions below show the various ways in which you can use the `div` evaluator. The first value will be divided by the second and as such the second cannot be 0.
+
+[source,text]
+----
+div(1,2) // 1 / 2
+div(1,fieldA) // 1 / fieldA
+div(fieldA,1.4) // fieldA / 1.4
+div(fieldA,add(fieldA,fieldB)) // fieldA / (fieldA + fieldB)
+----
+
+== log
+
+The `log` function will return the natural log of the provided single parameter. The `log` function will fail to execute if the value is non-numeric. If a null value is found, then null will be returned as the result.
+
+=== log Parameters
+
+* `Field Name | Raw Number | Number Evaluator`
+
+=== log Syntax
+
+The expressions below show the various ways in which you can use the `log` evaluator. Only one parameter is accepted. Returns a numeric value.
+
+[source,text]
+----
+log(100)
+log(add(fieldA,fieldB))
+log(fieldA)
+----
+
+== mult
+
+The `mult` function will take two or more numeric values and multiply them together. The `mult` function will fail to execute if any of the values are non-numeric. If a null value is found then null will be returned as the result.
+
+=== mult Parameters
+
+* `Field Name | Raw Number | Number Evaluator`
+* `Field Name | Raw Number | Number Evaluator`
+* `......`
+* `Field Name | Raw Number | Number Evaluator`
+
+=== mult Syntax
+
+The expressions below show the various ways in which you can use the `mult` evaluator. The number and order of these parameters do not matter and is not limited except that at least two parameters are required. Returns a numeric value.
+
+[source,text]
+----
+mult(1,2,3,4) // 1 * 2 * 3 * 4
+mult(1,fieldA) // 1 * value of fieldA
+mult(fieldA,1.4) // value of fieldA * 1.4
+mult(fieldA,fieldB,fieldC) // value of fieldA * value of fieldB * value of fieldC
+mult(fieldA,div(fieldA,fieldB)) // value of fieldA * (value of fieldA / value of fieldB)
+mult(fieldA,if(gt(fieldA,fieldB),fieldA,fieldB)) // if fieldA > fieldB then fieldA * fieldA, else fieldA * fieldB
+----
+
+== sub
+
+The `sub` function will take 2 or more numeric values and subtract them, from left to right. The sub function will fail to execute if any of the values are non-numeric. If a null value is found then null will be returned as the result.
+
+=== sub Parameters
+
+* `Field Name | Raw Number | Number Evaluator`
+* `Field Name | Raw Number | Number Evaluator`
+* `......`
+* `Field Name | Raw Number | Number Evaluator`
+
+=== sub Syntax
+
+The expressions below show the various ways in which you can use the `sub` evaluator. The number of these parameters does not matter and is not limited except that at least two parameters are required. Returns a numeric value.
+
+[source,text]
+----
+sub(1,2,3,4) // 1 - 2 - 3 - 4
+sub(1,fieldA) // 1 - value of fieldA
+sub(fieldA,1.4) // value of fieldA - 1.4
+sub(fieldA,fieldB,fieldC) // value of fieldA - value of fieldB - value of fieldC
+sub(fieldA,div(fieldA,fieldB)) // value of fieldA - (value of fieldA / value of fieldB)
+if(gt(fieldA,fieldB),sub(fieldA,fieldB),sub(fieldB,fieldA)) // if fieldA > fieldB then fieldA - fieldB, else fieldB - field
+----
+
+== pow
+//TODO
+
+== mod
+//TODO
+
+=== ceil
+//TODO
+
+== floor
+//TODO
+
+== sin
+//TODO
+
+== asin
+//TODO
+
+== sinh
+//TODO
+
+== cos
+//TODO
+
+== acos
+//TODO
+
+== atan
+//TODO
+
+== round
+//TODO
+
+== sqrt
+//TODO
+
+== cbrt
+
+== and
+
+The `and` function will return the logical AND of at least 2 boolean parameters. The function will fail to execute if any parameters are non-boolean or null. Returns a boolean value.
+
+=== and Parameters
+
+* `Field Name | Raw Boolean | Boolean Evaluator`
+* `Field Name | Raw Boolean | Boolean Evaluator`
+* `......`
+* `Field Name | Raw Boolean | Boolean Evaluator`
+
+=== and Syntax
+
+The expressions below show the various ways in which you can use the `and` evaluator. At least two parameters are required, but there is no limit to how many you can use.
+
+[source,text]
+----
+and(true,fieldA) // true && fieldA
+and(fieldA,fieldB) // fieldA && fieldB
+and(or(fieldA,fieldB),fieldC) // (fieldA || fieldB) && fieldC
+and(fieldA,fieldB,fieldC,or(fieldD,fieldE),fieldF)
+----
+
+== eq
+
+The `eq` function will return whether all the parameters are equal, as per Java's standard `equals(...)` function. The function accepts parameters of any type, but will fail to execute if all the parameters are not of the same type. That is, all are Boolean, all are String, all are Numeric. If any any parameters are null and there is at least one parameter that is not null then false will be returned. Returns a boolean value.
+
+=== eq Parameters
+
+* `Field Name | Raw Value | Evaluator`
+* `Field Name | Raw Value | Evaluator`
+* `......`
+* `Field Name | Raw Value | Evaluator`
+
+=== eq Syntax
+
+The expressions below show the various ways in which you can use the `eq` evaluator.
+
+[source,text]
+----
+eq(1,2) // 1 == 2
+eq(1,fieldA) // 1 == fieldA
+eq(fieldA,val(foo)) fieldA == "foo"
+eq(add(fieldA,fieldB),6) // fieldA + fieldB == 6
+----
+
+== eor
+
+The `eor` function will return the logical exclusive or of at least two boolean parameters. The function will fail to execute if any parameters are non-boolean or null. Returns a boolean value.
+
+=== eor Parameters
+
+* `Field Name | Raw Boolean | Boolean Evaluator`
+* `Field Name | Raw Boolean | Boolean Evaluator`
+* `......`
+* `Field Name | Raw Boolean | Boolean Evaluator`
+
+=== eor Syntax
+
+The expressions below show the various ways in which you can use the `eor` evaluator. At least two parameters are required, but there is no limit to how many you can use.
+
+[source,text]
+----
+eor(true,fieldA) // true iff fieldA is false
+eor(fieldA,fieldB) // true iff either fieldA or fieldB is true but not both
+eor(eq(fieldA,fieldB),eq(fieldC,fieldD)) // true iff either fieldA == fieldB or fieldC == fieldD but not both
+----
+
+== gteq
+
+The `gteq` function will return whether the first parameter is greater than or equal to the second parameter. The function accepts numeric and string parameters, but will fail to execute if all the parameters are not of the same type. That is, all are String or all are Numeric. If any any parameters are null then an error will be raised. Returns a boolean value.
+
+=== gteq Parameters
+
+* `Field Name | Raw Value | Evaluator`
+* `Field Name | Raw Value | Evaluator`
+
+=== gteq Syntax
+
+The expressions below show the various ways in which you can use the `gteq` evaluator.
+
+[source,text]
+----
+gteq(1,2) // 1 >= 2
+gteq(1,fieldA) // 1 >= fieldA
+gteq(fieldA,val(foo)) fieldA >= "foo"
+gteq(add(fieldA,fieldB),6) // fieldA + fieldB >= 6
+----
+
+== gt
+
+The `gt` function will return whether the first parameter is greater than the second parameter. The function accepts numeric or string parameters, but will fail to execute if all the parameters are not of the same type. That is, all are String or all are Numeric. If any any parameters are null then an error will be raised. Returns a boolean value.
+
+=== gt Parameters
+
+* `Field Name | Raw Value | Evaluator`
+* `Field Name | Raw Value | Evaluator`
+
+=== gt Syntax
+
+The expressions below show the various ways in which you can use the `gt` evaluator.
+
+[source,text]
+----
+gt(1,2) // 1 > 2
+gt(1,fieldA) // 1 > fieldA
+gt(fieldA,val(foo)) fieldA > "foo"
+gt(add(fieldA,fieldB),6) // fieldA + fieldB > 6
+----
+
+== if
+
+The `if` function works like a standard conditional if/then statement. If the first parameter is true, then the second parameter will be returned, else the third parameter will be returned. The function accepts a boolean as the first parameter and anything as the second and third parameters. An error will occur if the first parameter is not a boolean or is null.
+
+=== if Parameters
+
+* `Field Name | Raw Value | Boolean Evaluator`
+* `Field Name | Raw Value | Evaluator`
+* `Field Name | Raw Value | Evaluator`
+
+=== if Syntax
+
+The expressions below show the various ways in which you can use the `if` evaluator.
+
+[source,text]
+----
+if(fieldA,fieldB,fieldC) // if fieldA is true then fieldB else fieldC
+if(gt(fieldA,5), fieldA, 5) // if fieldA > 5 then fieldA else 5
+if(eq(fieldB,null), null, div(fieldA,fieldB)) // if fieldB is null then null else fieldA / fieldB
+----
+
+== lteq
+
+The `lteq` function will return whether the first parameter is less than or equal to the second parameter. The function accepts numeric and string parameters, but will fail to execute if all the parameters are not of the same type. That is, all are String or all are Numeric. If any any parameters are null then an error will be raised. Returns a boolean value.
+
+=== lteq Parameters
+
+* `Field Name | Raw Value | Evaluator`
+* `Field Name | Raw Value | Evaluator`
+
+=== lteq Syntax
+
+The expressions below show the various ways in which you can use the `lteq` evaluator.
+
+[source,text]
+----
+lteq(1,2) // 1 <= 2
+lteq(1,fieldA) // 1 <= fieldA
+lteq(fieldA,val(foo)) fieldA <= "foo"
+lteq(add(fieldA,fieldB),6) // fieldA + fieldB <= 6
+----
+
+== lt
+
+The `lt` function will return whether the first parameter is less than the second parameter. The function accepts numeric or string parameters, but will fail to execute if all the parameters are not of the same type. That is, all are String or all are Numeric. If any any parameters are null then an error will be raised. Returns a boolean value.
+
+=== lt Parameters
+
+* `Field Name | Raw Value | Evaluator`
+* `Field Name | Raw Value | Evaluator`
+
+=== lt Syntax
+
+The expressions below show the various ways in which you can use the `lt` evaluator.
+
+[source,text]
+----
+lt(1,2) // 1 < 2
+lt(1,fieldA) // 1 < fieldA
+lt(fieldA,val(foo)) fieldA < "foo"
+lt(add(fieldA,fieldB),6) // fieldA + fieldB < 6
+----
+
+== not
+
+The `not` function will return the logical NOT of a single boolean parameter. The function will fail to execute if the parameter is non-boolean or null. Returns a boolean value.
+
+=== not Parameters
+
+* `Field Name | Raw Boolean | Boolean Evaluator`
+
+=== not Syntax
+
+The expressions below show the various ways in which you can use the `not` evaluator. Only one parameter is allowed.
+
+[source,text]
+----
+not(true) // false
+not(fieldA) // true if fieldA is false else false
+not(eq(fieldA,fieldB)) // true if fieldA != fieldB
+----
+
+== or
+
+The `or` function will return the logical OR of at least 2 boolean parameters. The function will fail to execute if any parameters are non-boolean or null. Returns a boolean value.
+
+=== or Parameters
+
+* `Field Name | Raw Boolean | Boolean Evaluator`
+* `Field Name | Raw Boolean | Boolean Evaluator`
+* `......`
+* `Field Name | Raw Boolean | Boolean Evaluator`
+
+=== or Syntax
+
+The expressions below show the various ways in which you can use the `or` evaluator. At least two parameters are required, but there is no limit to how many you can use.
+
+[source,text]
+----
+or(true,fieldA) // true || fieldA
+or(fieldA,fieldB) // fieldA || fieldB
+or(and(fieldA,fieldB),fieldC) // (fieldA && fieldB) || fieldC
+or(fieldA,fieldB,fieldC,and(fieldD,fieldE),fieldF)
+----
+
+== analyze
+//TODO
+
+== second
+//TODO
+
+== minute
+//TODO
+
+== hour
+//TODO
+
+== day
+//TODO
+
+== month
+//TODO
+
+== year
+//TODO
+
+== convert
+//TODO
+
+== raw
+
+The `raw` function will return whatever raw value is the parameter. This is useful for cases where you want to use a string as part of another evaluator.
+
+=== raw Parameters
+
+* `Raw Value`
+
+=== raw Syntax
+
+The expressions below show the various ways in which you can use the `raw` evaluator. Whatever is inside will be returned as-is. Internal evaluators are considered strings and are not evaluated.
+
+[source,text]
+----
+raw(foo) // "foo"
+raw(count(*)) // "count(*)"
+raw(45) // 45
+raw(true) // "true" (note: this returns the string "true" and not the boolean true)
+eq(raw(fieldA), fieldA) // true if the value of fieldA equals the string "fieldA"
+----
+
+== UUID
+//TODO

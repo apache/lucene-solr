@@ -386,11 +386,6 @@ public class TestCoreContainer extends SolrTestCaseJ4 {
       return cores;
     }
 
-    @Override
-    public CoreDescriptor reload(CoreContainer cc, CoreDescriptor cd) {
-      return cd;
-    }
-
   }
 
   @Test

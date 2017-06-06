@@ -35,8 +35,7 @@
   <dynamicField name="*" type="string" indexed="true" stored="true" />
 
   <uniqueKey>id</uniqueKey>
-  <defaultSearchField>text</defaultSearchField>
-  
+
   <fieldType name="ignored" class="solr.StrField" indexed="false" stored="false"/>
   <fieldType name="int" class="solr.TrieIntField" precisionStep="0" omitNorms="true" positionIncrementGap="0"/>
   <fieldType name="long" class="solr.TrieLongField" precisionStep="0" omitNorms="true" positionIncrementGap="0"/>

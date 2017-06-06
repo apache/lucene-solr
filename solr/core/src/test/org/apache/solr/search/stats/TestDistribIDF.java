@@ -196,20 +196,11 @@ public class TestDistribIDF extends SolrTestCaseJ4 {
   private void createCollection(String name, String config, String router) throws Exception {
     CollectionAdminResponse response;
     if (router.equals(ImplicitDocRouter.NAME)) {
-      CollectionAdminRequest.Create create = new CollectionAdminRequest.Create();
-      create.setConfigName(config);
-      create.setCollectionName(name);
-      create.setReplicationFactor(1);
+      CollectionAdminRequest.Create create = CollectionAdminRequest.createCollectionWithImplicitRouter(name,config,"a,b,c",1);
       create.setMaxShardsPerNode(1);
-      create.setRouterName(router);
-      create.setShards("a,b,c");
       response = create.process(solrCluster.getSolrClient());
     } else {
-      CollectionAdminRequest.Create create = new CollectionAdminRequest.Create();
-      create.setConfigName(config);
-      create.setCollectionName(name);
-      create.setNumShards(2);
-      create.setReplicationFactor(1);
+      CollectionAdminRequest.Create create = CollectionAdminRequest.createCollection(name,config,2,1);
       create.setMaxShardsPerNode(1);
       response = create.process(solrCluster.getSolrClient());
     }

@@ -50,15 +50,30 @@ API Changes
 * LUCENE-7701: Grouping collectors have been refactored, such that groups are
   now defined by a GroupSelector implementation. (Alan Woodward)
 
+* LUCENE-7741: DoubleValuesSource now has an explain() method (Alan Woodward,
+  Adrien Grand)
+
+* LUCENE-7815: Removed the PostingsHighlighter; you should use the UnifiedHighlighter
+  instead, which derived from the UH.  WholeBreakIterator and
+  CustomSeparatorBreakIterator were moved to UH's package. (David Smiley)
+
+* LUCENE-7850: Removed support for legacy numerics. (Adrien Grand)
+
 Bug Fixes
 
 * LUCENE-7626: IndexWriter will no longer accept broken token offsets
   (Mike McCandless)
 
+* LUCENE-7859: Spatial-extras PackedQuadPrefixTree bug that only revealed itself
+  with the new pointsOnly optimizations in LUCENE-7845. (David Smiley)
+
 Improvements
 
 * LUCENE-7489: Better storage of sparse doc-values fields with the default
   codec. (Adrien Grand)
+
+* LUCENE-7730: More accurate encoding of the length normalization factor
+  thanks to the removal of index-time boosts. (Adrien Grand)
 
 Optimizations
 
@@ -78,6 +93,10 @@ Optimizations
   values using different numbers of bits per value if this proves to save
   storage. (Adrien Grand)
 
+* LUCENE-7845: Enhance spatial-extras RecursivePrefixTreeStrategy queries when the
+  query is a point (for 2D) or a is a simple date interval (e.g. 1 month).  When
+  the strategy is marked as pointsOnly, the results is a TermQuery. (David Smiley)
+
 Other
 
 * LUCENE-7328: Remove LegacyNumericEncoding from GeoPointField. (Nick Knize)
@@ -89,13 +108,75 @@ Other
 * LUCENE-7753: Make fields static when possible.
   (Daniel Jelinski via Adrien Grand)
 
+* LUCENE-7540: Upgrade ICU to 59.1 (Mike McCandless, Jim Ferenczi)
+
+* LUCENE-7852: Correct copyright year(s) in lucene/LICENSE.txt file.
+  (Christine Poerschke, Steve Rowe)
+
+======================= Lucene 6.7.0 =======================
+
+Other
+
+* LUCENE-7800: Remove code that potentially rethrows checked exceptions 
+  from methods that don't declare them ("sneaky throw" hack). (Robert Muir,
+  Uwe Schindler, Dawid Weiss)
+
+Improvements
+
+* LUCENE-7841: Normalize ґ to г in Ukrainian analyzer. (Andriy Rysin via Dawid Weiss)
+
 ======================= Lucene 6.6.0 =======================
+
+New Features
+
+* LUCENE-7811: Add a concurrent SortedSet facets implementation.
+  (Mike McCandless)
 
 Bug Fixes
 
 * LUCENE-7777: ByteBlockPool.readBytes sometimes throws
   ArrayIndexOutOfBoundsException when byte blocks larger than 32 KB
   were added (Mike McCandless)
+
+* LUCENE-7797: The static FSDirectory.listAll(Path) method was always
+  returning an empty array.  (Atkins Chang via Mike McCandless)
+
+* LUCENE-7481: Fixed missing rewrite methods for SpanPayloadCheckQuery
+  and PayloadScoreQuery. (Erik Hatcher)
+
+* LUCENE-7808: Fixed PayloadScoreQuery and SpanPayloadCheckQuery
+  .equals and .hashCode methods.  (Erik Hatcher)
+
+* LUCENE-7798: Add .equals and .hashCode to ToParentBlockJoinSortField 
+  (Mikhail Khludnev)
+
+* LUCENE-7814: DateRangePrefixTree (in spatial-extras) had edge-case bugs for
+  years >= 292,000,000. (David Smiley)
+
+* LUCENE-5365, LUCENE-7818: Fix incorrect condition in queryparser's
+  QueryNodeOperation#logicalAnd().  (Olivier Binda, Amrit Sarkar,
+  AppChecker via Uwe Schindler)
+  
+* LUCENE-7821: The classic and flexible query parsers, as well as Solr's
+ "lucene"/standard query parser, should require " TO " in range queries,
+  and accept "TO" as endpoints in range queries. (hossman, Steve Rowe)
+
+* LUCENE-7824: Fix graph query analysis for multi-word synonym rules with common terms (eg. new york, new york city).
+  (Jim Ferenczi)
+
+* LUCENE-7817: Pass cached query to onQueryCache instead of null.
+  (Christoph Kaser via Adrien Grand)
+
+* LUCENE-7831: CodecUtil should not seek to negative offsets. (Adrien Grand)
+
+* LUCENE-7833: ToParentBlockJoinQuery computed the min score instead of the max
+  score with ScoreMode.MAX. (Adrien Grand)
+
+* LUCENE-7847: Fixed all-docs-match optimization of range queries on range
+  fields. (Adrien Grand)
+
+* LUCENE-7810: Fix equals() and hashCode() methods of several join queries.
+  (Hossman, Adrien Grand, Martijn van Groningen)
 
 Improvements
 
@@ -105,12 +186,28 @@ Improvements
 * LUCENE-7785: Move dictionary for Ukrainian analyzer to external dependency.
   (Andriy Rysin via Steve Rowe, Dawid Weiss)
 
+* LUCENE-7801: SortedSetDocValuesReaderState now implements
+  Accountable so you can see how much RAM it's using (Robert Muir,
+  Mike McCandless)
+
+* LUCENE-7792: OfflineSorter can now run concurrently if you pass it
+  an optional ExecutorService (Dawid Weiss, Mike McCandless)
+
+* LUCENE-7811: Sorted set facets now use sparse storage when
+  collecting hits, when appropriate.  (Mike McCandless)
+
 Optimizations
 
 * LUCENE-7787: spatial-extras HeatmapFacetCounter will now short-circuit it's
   work when Bits.MatchNoBits is passed. (David Smiley)
 
 Other
+
+* LUCENE-7796: Make IOUtils.reThrow idiom declare Error return type so 
+  callers may use it in a way that compiler knows subsequent code is 
+  unreachable. reThrow is now deprecated in favor of IOUtils.rethrowAlways
+  with a slightly different semantics (see javadoc). (Hossman, Robert Muir, 
+  Dawid Weiss)
 
 * LUCENE-7754: Inner classes should be static whenever possible.
   (Daniel Jelinski via Adrien Grand)

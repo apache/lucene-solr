@@ -37,11 +37,16 @@ public class StreamContext implements Serializable{
 
   private Map entries = new HashMap();
   private Map tupleContext = new HashMap();
+  private Map<String, Object> lets = new HashMap();
   public int workerID;
   public int numWorkers;
   private SolrClientCache clientCache;
   private ModelCache modelCache;
   private StreamFactory streamFactory;
+
+  public Map<String, Object> getLets(){
+    return lets;
+  }
 
   public Object get(Object key) {
     return entries.get(key);

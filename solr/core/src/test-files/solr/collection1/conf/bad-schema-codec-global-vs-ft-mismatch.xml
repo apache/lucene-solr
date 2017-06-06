@@ -27,6 +27,5 @@
   <field name="direct1text" type="direct1" indexed="true" stored="true"/>
   <dynamicField name="*" type="direct1"/>
 
-  <defaultSearchField>direct1text</defaultSearchField>
 
 </schema>

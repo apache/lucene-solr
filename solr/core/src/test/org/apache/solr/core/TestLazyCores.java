@@ -679,7 +679,7 @@ public class TestLazyCores extends SolrTestCaseJ4 {
 
   public static void checkInCores(CoreContainer cc, String... nameCheck) {
     Collection<String> loadedNames = cc.getLoadedCoreNames();
-
+    
     assertEquals("There whould be exactly as many loaded cores as loaded names returned. ", 
         loadedNames.size(), nameCheck.length);
     

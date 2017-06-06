@@ -96,56 +96,11 @@ public class ConcurrentUpdateSolrClient extends SolrClient {
   AtomicInteger emptyQueueLoops;
   
   /**
-   * Uses an internally managed HttpClient instance.
-   * 
-   * @param solrServerUrl
-   *          The Solr server URL
-   * @param queueSize
-   *          The buffer size before the documents are sent to the server
-   * @param threadCount
-   *          The number of background threads used to empty the queue
-   *          
-   * @deprecated use {@link Builder} instead.
-   */
-  @Deprecated
-  public ConcurrentUpdateSolrClient(String solrServerUrl, int queueSize,
-                                    int threadCount) {
-    this(solrServerUrl, null, queueSize, threadCount);
-    shutdownExecutor = true;
-    internalHttpClient = true;
-  }
-  
-  /**
-   * @deprecated use {@link Builder} instead.
-   */
-  @Deprecated
-  public ConcurrentUpdateSolrClient(String solrServerUrl,
-                                    HttpClient client, int queueSize, int threadCount) {
-    this(solrServerUrl, client, queueSize, threadCount, ExecutorUtil.newMDCAwareCachedThreadPool(
-        new SolrjNamedThreadFactory("concurrentUpdateScheduler")));
-    shutdownExecutor = true;
-  }
-
-  /**
    * Uses the supplied HttpClient to send documents to the Solr server.
-   * 
-   * @deprecated use {@link Builder} instead.
    */
-  @Deprecated
-  public ConcurrentUpdateSolrClient(String solrServerUrl,
-                                    HttpClient client, int queueSize, int threadCount, ExecutorService es) {
-    this(solrServerUrl, client, queueSize, threadCount, es, false);
-  }
-  
-  /**
-   * Uses the supplied HttpClient to send documents to the Solr server.
-   * 
-   * @deprecated use {@link Builder} instead.  This will soon be a
-   * protected method, and will only be available for use in implementing subclasses.
-   */
-  @Deprecated
-  public ConcurrentUpdateSolrClient(String solrServerUrl,
-                                    HttpClient client, int queueSize, int threadCount, ExecutorService es, boolean streamDeletes) {
+  protected ConcurrentUpdateSolrClient(String solrServerUrl,
+                                       HttpClient client, int queueSize, int threadCount,
+                                       ExecutorService es, boolean streamDeletes) {
     this.internalHttpClient = (client == null);
     this.client = new HttpSolrClient.Builder(solrServerUrl)
         .withHttpClient(client)
@@ -449,9 +404,12 @@ public class ConcurrentUpdateSolrClient extends SolrClient {
     try {
       Runner r = new Runner();
       runners.add(r);
-      
-      scheduler.execute(r);  // this can throw an exception if the scheduler has been shutdown, but that should be fine.
-
+      try {
+        scheduler.execute(r);  // this can throw an exception if the scheduler has been shutdown, but that should be fine.
+      } catch (RuntimeException e) {
+        runners.remove(r);
+        throw e;
+      }
     } finally {
       MDC.remove("ConcurrentUpdateSolrClient.url");
     }
@@ -640,9 +598,15 @@ public class ConcurrentUpdateSolrClient extends SolrClient {
   }
 
   private void waitForEmptyQueue() {
+    boolean threadInterrupted = Thread.currentThread().isInterrupted();
 
     while (!queue.isEmpty()) {
       if (log.isDebugEnabled()) emptyQueueLoops.incrementAndGet();
+      if (scheduler.isTerminated()) {
+        log.warn("The task queue still has elements but the update scheduler {} is terminated. Can't process any more tasks. "
+            + "Queue size: {}, Runners: {}. Current thread Interrupted? {}", scheduler, queue.size(), runners.size(), threadInterrupted);
+        break;
+      }
 
       synchronized (runners) {
         int queueSize = queue.size();
@@ -656,9 +620,15 @@ public class ConcurrentUpdateSolrClient extends SolrClient {
         try {
           queue.wait(250);
         } catch (InterruptedException e) {
-          Thread.currentThread().interrupt();
+          // If we set the thread as interrupted again, the next time the wait it's called i t's going to return immediately
+          threadInterrupted = true;
+          log.warn("Thread interrupted while waiting for update queue to be empty. There are still {} elements in the queue.", 
+              queue.size());
         }
       }
+    }
+    if (threadInterrupted) {
+      Thread.currentThread().interrupt();
     }
   }
 

@@ -50,6 +50,7 @@ import org.apache.lucene.index.IndexOptions;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexableField;
 import org.apache.lucene.index.LeafReader;
+import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.NumericDocValues;
 import org.apache.lucene.index.PostingsEnum;
 import org.apache.lucene.index.SortedDocValues;
@@ -57,13 +58,16 @@ import org.apache.lucene.index.SortedNumericDocValues;
 import org.apache.lucene.index.SortedSetDocValues;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.index.TermsEnum;
+import org.apache.lucene.search.CollectionStatistics;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.MatchAllDocsQuery;
 import org.apache.lucene.search.PhraseQuery;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.TermQuery;
+import org.apache.lucene.search.TermStatistics;
 import org.apache.lucene.search.similarities.BM25Similarity;
 import org.apache.lucene.search.similarities.ClassicSimilarity;
+import org.apache.lucene.search.similarities.Similarity;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.TestUtil;
@@ -145,32 +149,32 @@ public class TestMemoryIndex extends LuceneTestCase {
 
     assertEquals(reader.getTermVectors(0).size(), 1);
   }
-  
+
   public void testReaderConsistency() throws IOException {
     Analyzer analyzer = new MockPayloadAnalyzer();
-    
+
     // defaults
     MemoryIndex mi = new MemoryIndex();
     mi.addField("field", "some terms be here", analyzer);
     TestUtil.checkReader(mi.createSearcher().getIndexReader());
-    
+
     // all combinations of offsets/payloads options
     mi = new MemoryIndex(true, true);
     mi.addField("field", "some terms be here", analyzer);
     TestUtil.checkReader(mi.createSearcher().getIndexReader());
-    
+
     mi = new MemoryIndex(true, false);
     mi.addField("field", "some terms be here", analyzer);
     TestUtil.checkReader(mi.createSearcher().getIndexReader());
-    
+
     mi = new MemoryIndex(false, true);
     mi.addField("field", "some terms be here", analyzer);
     TestUtil.checkReader(mi.createSearcher().getIndexReader());
-    
+
     mi = new MemoryIndex(false, false);
     mi.addField("field", "some terms be here", analyzer);
     TestUtil.checkReader(mi.createSearcher().getIndexReader());
-    
+
     analyzer.close();
   }
 
@@ -187,11 +191,23 @@ public class TestMemoryIndex extends LuceneTestCase {
     float n1 = norms.longValue();
 
     // Norms are re-computed when we change the Similarity
-    mi.setSimilarity(new ClassicSimilarity() {
+    mi.setSimilarity(new Similarity() {
+
       @Override
-      public float lengthNorm(FieldInvertState state) {
+      public long computeNorm(FieldInvertState state) {
         return 74;
       }
+
+      @Override
+      public SimWeight computeWeight(float boost, CollectionStatistics collectionStats, TermStatistics... termStats) {
+        throw new UnsupportedOperationException();
+      }
+
+      @Override
+      public SimScorer simScorer(SimWeight weight, LeafReaderContext context) throws IOException {
+        throw new UnsupportedOperationException();
+      }
+
     });
     norms = reader.getNormValues("f1");
     assertEquals(0, norms.nextDoc());

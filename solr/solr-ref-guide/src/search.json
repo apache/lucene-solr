@@ -1,0 +1,21 @@
+---
+title: search
+layout: none
+search: exclude
+---
+
+[
+{% for page in site.pages %}
+{% unless page.search == "exclude" %}
+{
+"title": "{{ page.title | escape }}",
+"tags": "{{ page.tags }}",
+"keywords": "{{page.keywords}}",
+"url": "{{ page.url | remove: "/"}}",
+"summary": "{{page.summary | strip }}"
+}
+{% unless forloop.last %},{% endunless %}
+{% endunless %}
+{% endfor %}
+
+]

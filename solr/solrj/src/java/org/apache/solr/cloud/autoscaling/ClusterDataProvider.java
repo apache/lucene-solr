@@ -22,10 +22,6 @@ import java.io.IOException;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
-
-import org.apache.solr.client.solrj.SolrServerException;
-
 
 public interface ClusterDataProvider extends Closeable {
   /**Get the value of each tag for a given node
@@ -46,6 +42,8 @@ public interface ClusterDataProvider extends Closeable {
 
   Collection<String> getNodes();
 
+  /**Get the collection-specific policy
+   */
   String getPolicyNameByCollection(String coll);
 
   @Override

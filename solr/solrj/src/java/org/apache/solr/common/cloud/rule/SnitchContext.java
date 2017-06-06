@@ -22,6 +22,7 @@ import java.util.Map;
 import java.util.Set;
 
 import org.apache.solr.common.params.ModifiableSolrParams;
+import org.apache.zookeeper.KeeperException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -58,7 +59,7 @@ public abstract class SnitchContext implements RemoteCallback {
 
   }
 
-  public abstract Map getZkJson(String path) ;
+  public abstract Map getZkJson(String path) throws KeeperException, InterruptedException;
 
   public String getNode() {
     return node;

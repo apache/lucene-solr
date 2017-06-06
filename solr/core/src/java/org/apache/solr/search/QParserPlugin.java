@@ -47,7 +47,6 @@ public abstract class QParserPlugin implements NamedListInitializedPlugin, SolrI
   static {
     HashMap<String, Class<? extends QParserPlugin>> map = new HashMap<>(30, 1);
     map.put(LuceneQParserPlugin.NAME, LuceneQParserPlugin.class);
-    map.put(OldLuceneQParserPlugin.NAME, OldLuceneQParserPlugin.class);
     map.put(FunctionQParserPlugin.NAME, FunctionQParserPlugin.class);
     map.put(PrefixQParserPlugin.NAME, PrefixQParserPlugin.class);
     map.put(BoostQParserPlugin.NAME, BoostQParserPlugin.class);
@@ -80,6 +79,8 @@ public abstract class QParserPlugin implements NamedListInitializedPlugin, SolrI
     map.put(IGainTermsQParserPlugin.NAME, IGainTermsQParserPlugin.class);
     map.put(TextLogisticRegressionQParserPlugin.NAME, TextLogisticRegressionQParserPlugin.class);
     map.put(SignificantTermsQParserPlugin.NAME, SignificantTermsQParserPlugin.class);
+    map.put(PayloadScoreQParserPlugin.NAME, PayloadScoreQParserPlugin.class);
+    map.put(PayloadCheckQParserPlugin.NAME, PayloadCheckQParserPlugin.class);
 
     standardPlugins = Collections.unmodifiableMap(map);
   }

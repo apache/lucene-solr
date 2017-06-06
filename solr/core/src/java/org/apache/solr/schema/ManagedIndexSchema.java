@@ -1357,9 +1357,6 @@ public final class ManagedIndexSchema extends IndexSchema {
     
     newSchema.name = name;
     newSchema.version = version;
-    newSchema.defaultSearchFieldName = defaultSearchFieldName;
-    newSchema.queryParserDefaultOperator = queryParserDefaultOperator;
-    newSchema.isExplicitQueryParserDefaultOperator = isExplicitQueryParserDefaultOperator;
     newSchema.similarity = similarity;
     newSchema.similarityFactory = similarityFactory;
     newSchema.isExplicitSimilarity = isExplicitSimilarity;

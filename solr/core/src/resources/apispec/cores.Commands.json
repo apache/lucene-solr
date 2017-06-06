@@ -69,7 +69,7 @@
           "description": "The replica name."
         },
         "numShards": {
-          "type":"number",
+          "type":"integer",
           "description":"The number of shards to create for this core."
         },
         "async": {

@@ -18,8 +18,6 @@ package org.apache.lucene.expressions;
 
 
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 
 import org.apache.lucene.index.LeafReaderContext;
@@ -79,15 +77,6 @@ class ExpressionRescorer extends SortRescorer {
     LeafReaderContext readerContext = leaves.get(subReader);
     int docIDInSegment = docID - readerContext.docBase;
 
-    DoubleValues scores = scores(docIDInSegment, firstPassExplanation.getValue());
-
-    List<Explanation> subs = new ArrayList<>(Arrays.asList(superExpl.getDetails()));
-    for(String variable : expression.variables) {
-      DoubleValues dv = bindings.getDoubleValuesSource(variable).getValues(readerContext, scores);
-      if (dv.advanceExact(docIDInSegment))
-        subs.add(Explanation.match((float) dv.doubleValue(), "variable \"" + variable + "\""));
-    }
-
-    return Explanation.match(superExpl.getValue(), superExpl.getDescription(), subs);
+    return expression.getDoubleValuesSource(bindings).explain(readerContext, docIDInSegment, superExpl);
   }
 }

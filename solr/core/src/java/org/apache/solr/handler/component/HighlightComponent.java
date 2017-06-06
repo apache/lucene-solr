@@ -26,7 +26,6 @@ import java.util.stream.Stream;
 import com.google.common.base.Objects;
 import org.apache.lucene.search.Query;
 import org.apache.solr.common.SolrException;
-import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.HighlightParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;
@@ -154,12 +153,8 @@ public class HighlightComponent extends SearchComponent implements PluginInfoIni
 
       SolrHighlighter highlighter = getHighlighter(params);
 
-      String[] defaultHighlightFields;  //TODO: get from builder by default?
-      if (rb.getQparser() != null) {
-        defaultHighlightFields = rb.getQparser().getDefaultHighlightFields();
-      } else {
-        defaultHighlightFields = params.getParams(CommonParams.DF);
-      }
+      //TODO: get from builder by default?
+      String[] defaultHighlightFields = rb.getQparser() != null ? rb.getQparser().getDefaultHighlightFields() : null;
       
       Query highlightQuery = rb.getHighlightQuery();
       if(highlightQuery==null) {

@@ -1,0 +1,64 @@
+= Content Streams
+:page-shortname: content-streams
+:page-permalink: content-streams.html
+// Licensed to the Apache Software Foundation (ASF) under one
+// or more contributor license agreements.  See the NOTICE file
+// distributed with this work for additional information
+// regarding copyright ownership.  The ASF licenses this file
+// to you under the Apache License, Version 2.0 (the
+// "License"); you may not use this file except in compliance
+// with the License.  You may obtain a copy of the License at
+//
+//   http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing,
+// software distributed under the License is distributed on an
+// "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+// KIND, either express or implied.  See the License for the
+// specific language governing permissions and limitations
+// under the License.
+
+Content streams are bulk data passed with a request to Solr.
+
+When Solr RequestHandlers are accessed using path based URLs, the `SolrQueryRequest` object containing the parameters of the request may also contain a list of ContentStreams containing bulk data for the request. (The name SolrQueryRequest is a bit misleading: it is involved in all requests, regardless of whether it is a query request or an update request.)
+
+[[ContentStreams-StreamSources]]
+== Stream Sources
+
+Currently request handlers can get content streams in a variety of ways:
+
+* For multipart file uploads, each file is passed as a stream.
+* For POST requests where the content-type is not `application/x-www-form-urlencoded`, the raw POST body is passed as a stream. The full POST body is parsed as parameters and included in the Solr parameters.
+* The contents of parameter `stream.body` is passed as a stream.
+* If remote streaming is enabled and URL content is called for during request handling, the contents of each `stream.url` and `stream.file` parameters are fetched and passed as a stream.
+
+By default, curl sends a `contentType="application/x-www-form-urlencoded"` header. If you need to test a SolrContentHeader content stream, you will need to set the content type with curl's `-H` flag.
+
+[[ContentStreams-RemoteStreaming]]
+== RemoteStreaming
+
+Remote streaming lets you send the contents of a URL as a stream to a given SolrRequestHandler. You could use remote streaming to send a remote or local file to an update plugin.
+
+For convenience, remote streaming is enabled in most of the example `solrconfig.xml` files included with Solr, however it is not recommended in a production situation without additional security between you and untrusted remote clients.
+
+[source,xml]
+----
+    <!-- *** WARNING ***
+         The settings below authorize Solr to fetch remote files, You
+         should make sure your system has some authentication before
+         using enableRemoteStreaming="true"
+      -->
+    <requestParsers enableRemoteStreaming="true" />
+----
+
+The default behavior, when `enableRemoteStreaming` is not specified in `solrconfig.xml` is to _not_ allow remote streaming (i.e., `enableRemoteStreaming="false"`).
+
+[IMPORTANT]
+====
+If you `enableRemoteStreaming="true"` is used, be aware that this allows _anyone_ to send a request to any URL or local file. If <<ContentStreams-DebuggingRequests,DumpRequestHandler>> is enabled, it will allow anyone to view any file on your system.
+====
+
+[[ContentStreams-DebuggingRequests]]
+== Debugging Requests
+
+The implicit "dump" RequestHandler (see <<implicit-requesthandlers.adoc#implicit-requesthandlers,Implicit RequestHandlers>>) simply outputs the contents of the SolrQueryRequest using the specified writer type `wt`. This is a useful tool to help understand what streams are available to the RequestHandlers.

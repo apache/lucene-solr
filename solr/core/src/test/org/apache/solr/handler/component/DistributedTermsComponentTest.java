@@ -34,13 +34,14 @@ public class DistributedTermsComponentTest extends BaseDistributedSearchTestCase
     index(id, 19, "b_t", "snake spider shark snail slug", "foo_i", "2");
     index(id, 20, "b_t", "snake spider shark snail", "foo_i", "3");
     index(id, 21, "b_t", "snake spider shark", "foo_i", "2");
-    index(id, 22, "b_t", "snake spider");
-    index(id, 23, "b_t", "snake");
-    index(id, 24, "b_t", "ant zebra");
-    index(id, 25, "b_t", "zebra");
+    index(id, 22, "b_t", "snake spider", "c_t", "snake spider");
+    index(id, 23, "b_t", "snake", "c_t", "snake");
+    index(id, 24, "b_t", "ant zebra", "c_t", "ant zebra");
+    index(id, 25, "b_t", "zebra", "c_t", "zebra");
     commit();
 
     handle.clear();
+    handle.put("terms", UNORDERED);
 
     query("qt", "/terms", "shards.qt", "/terms", "terms", "true", "terms.fl", "b_t");
     query("qt", "/terms", "shards.qt", "/terms", "terms.limit", 5, "terms", "true", "terms.fl", "b_t", "terms.lower", "s");
@@ -53,5 +54,6 @@ public class DistributedTermsComponentTest extends BaseDistributedSearchTestCase
     query("qt", "/terms", "shards.qt", "/terms", "terms", "true", "terms.fl", "foo_i", "terms.list", "2, 3, 1");
     query("qt", "/terms", "shards.qt", "/terms", "terms", "true", "terms.fl", "foo_i", "terms.stats", "true","terms.list", "2, 3, 1");
     query("qt", "/terms", "shards.qt", "/terms", "terms", "true", "terms.fl", "b_t", "terms.list", "snake, zebra", "terms.ttf", "true");
+    query("qt", "/terms", "shards.qt", "/terms", "terms", "true", "terms.fl", "b_t", "terms.fl", "c_t", "terms.list", "snake, ant, zebra", "terms.ttf", "true");
   }
 }

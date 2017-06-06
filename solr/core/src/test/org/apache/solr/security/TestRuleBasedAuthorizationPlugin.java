@@ -41,13 +41,13 @@ import org.apache.solr.handler.admin.CoreAdminHandler;
 import org.apache.solr.handler.component.SearchHandler;
 import org.apache.solr.security.AuthorizationContext.CollectionRequest;
 import org.apache.solr.security.AuthorizationContext.RequestType;
-import org.apache.solr.util.CommandOperation;
+import org.apache.solr.common.util.CommandOperation;
 
 import static java.util.Collections.singletonList;
 import static java.util.Collections.singletonMap;
 import static org.apache.solr.common.util.Utils.getObjectByPath;
 import static org.apache.solr.common.util.Utils.makeMap;
-import static org.apache.solr.util.CommandOperation.captureErrors;
+import static org.apache.solr.common.util.CommandOperation.captureErrors;
 
 public class TestRuleBasedAuthorizationPlugin extends SolrTestCaseJ4 {
   String permissions = "{" +

@@ -80,7 +80,12 @@ import static org.apache.solr.update.processor.DistributedUpdateProcessor.Distri
 import static org.apache.solr.update.processor.DistributingUpdateProcessorFactory.DISTRIB_UPDATE_PARAM;
 
 
-/** @lucene.experimental */
+/** 
+ * This holds references to the transaction logs and pointers for the document IDs to their
+ * exact positions in the transaction logs.
+ *
+ * @lucene.experimental
+ */
 public class UpdateLog implements PluginInfoInitialized, SolrMetricProducer {
   private static final long STATUS_TIME = TimeUnit.NANOSECONDS.convert(60, TimeUnit.SECONDS);
   public static String LOG_FILENAME_PATTERN = "%s.%019d";
@@ -143,7 +148,7 @@ public class UpdateLog implements PluginInfoInitialized, SolrMetricProducer {
   /**
    * The index of the _version_ value in an entry from the transaction log.
    */
-public static final int VERSION_IDX = 1;
+  public static final int VERSION_IDX = 1;
   
   /**
    * The index of the previous pointer in an entry from the transaction log.
@@ -204,6 +209,9 @@ public static final int VERSION_IDX = 1;
     }
   };
 
+  /**
+   * Holds the query and the version for a DeleteByQuery command
+   */
   public static class DBQ {
     public String q;     // the query string
     public long version; // positive version of the DBQ
@@ -1092,7 +1100,7 @@ public static final int VERSION_IDX = 1;
 
   /**
    * Replay current tlog, so all updates will be written to index.
-   * This is must do task for a append replica become a new leader.
+   * This is must do task for a tlog replica become a new leader.
    * @return future of this task
    */
   public Future<RecoveryInfo> recoverFromCurrentLog() {
@@ -1706,7 +1714,7 @@ public static final int VERSION_IDX = 1;
 
     public void doReplay(TransactionLog translog) {
       try {
-        loglog.warn("Starting log replay " + translog + " active=" + activeLog + " starting pos=" + recoveryInfo.positionOfStart);
+        loglog.warn("Starting log replay " + translog + " active=" + activeLog + " starting pos=" + recoveryInfo.positionOfStart + " inSortedOrder=" + inSortedOrder);
         long lastStatusTime = System.nanoTime();
         if (inSortedOrder) {
           tlogReader = translog.getSortedReader(recoveryInfo.positionOfStart);
@@ -1786,7 +1794,7 @@ public static final int VERSION_IDX = 1;
                 recoveryInfo.adds++;
                 AddUpdateCommand cmd = convertTlogEntryToAddUpdateCommand(req, entry, oper, version);
                 cmd.setFlags(UpdateCommand.REPLAY | UpdateCommand.IGNORE_AUTOCOMMIT);
-                log.debug("{} {}", oper == ADD ? "add" : "update", cmd);
+                if (debug) log.debug("{} {}", oper == ADD ? "add" : "update", cmd);
                 proc.processAdd(cmd);
                 break;
               }
@@ -1854,6 +1862,7 @@ public static final int VERSION_IDX = 1;
             // something wrong with the request?
           }
           assert TestInjection.injectUpdateLogReplayRandomPause();
+          
         }
 
         CommitUpdateCommand cmd = new CommitUpdateCommand(req, false);

@@ -1,0 +1,115 @@
+= Read and Write Side Fault Tolerance
+:page-shortname: read-and-write-side-fault-tolerance
+:page-permalink: read-and-write-side-fault-tolerance.html
+// Licensed to the Apache Software Foundation (ASF) under one
+// or more contributor license agreements.  See the NOTICE file
+// distributed with this work for additional information
+// regarding copyright ownership.  The ASF licenses this file
+// to you under the Apache License, Version 2.0 (the
+// "License"); you may not use this file except in compliance
+// with the License.  You may obtain a copy of the License at
+//
+//   http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing,
+// software distributed under the License is distributed on an
+// "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+// KIND, either express or implied.  See the License for the
+// specific language governing permissions and limitations
+// under the License.
+
+SolrCloud supports elasticity, high availability, and fault tolerance in reads and writes.
+
+What this means, basically, is that when you have a large cluster, you can always make requests to the cluster: Reads will return results whenever possible, even if some nodes are down, and Writes will be acknowledged only if they are durable; i.e., you won't lose data.
+
+[[ReadandWriteSideFaultTolerance-ReadSideFaultTolerance]]
+== Read Side Fault Tolerance
+
+In a SolrCloud cluster each individual node load balances read requests across all the replicas in collection. You still need a load balancer on the 'outside' that talks to the cluster, or you need a smart client which understands how to read and interact with Solr's metadata in ZooKeeper and only requests the ZooKeeper ensemble's address to start discovering to which nodes it should send requests. (Solr provides a smart Java SolrJ client called {solr-javadocs}/solr-solrj/org/apache/solr/client/solrj/impl/CloudSolrClient.html[CloudSolrClient].)
+
+Even if some nodes in the cluster are offline or unreachable, a Solr node will be able to correctly respond to a search request as long as it can communicate with at least one replica of every shard, or one replica of every _relevant_ shard if the user limited the search via the `shards` or `\_route_` parameters. The more replicas there are of every shard, the more likely that the Solr cluster will be able to handle search results in the event of node failures.
+
+[[ReadandWriteSideFaultTolerance-zkConnected]]
+=== `zkConnected`
+
+A Solr node will return the results of a search request as long as it can communicate with at least one replica of every shard that it knows about, even if it can _not_ communicate with ZooKeeper at the time it receives the request. This is normally the preferred behavior from a fault tolerance standpoint, but may result in stale or incorrect results if there have been major changes to the collection structure that the node has not been informed of via ZooKeeper (i.e., shards may have been added or removed, or split into sub-shards)
+
+A `zkConnected` header is included in every search response indicating if the node that processed the request was connected with ZooKeeper at the time:
+
+.Solr Response with partialResults
+[source,json]
+----
+{
+  "responseHeader": {
+    "status": 0,
+    "zkConnected": true,
+    "QTime": 20,
+    "params": {
+      "q": "*:*"
+    }
+  },
+  "response": {
+    "numFound": 107,
+    "start": 0,
+    "docs": [ "..." ]
+  }
+}
+----
+
+[[ReadandWriteSideFaultTolerance-shards.tolerant]]
+=== `shards.tolerant`
+
+In the event that one or more shards queried are completely unavailable, then Solr's default behavior is to fail the request. However, there are many use-cases where partial results are acceptable and so Solr provides a boolean `shards.tolerant` parameter (default `false`).
+
+If `shards.tolerant=true` then partial results may be returned. If the returned response does not contain results from all the appropriate shards then the response header contains a special flag called `partialResults`.
+
+The client can specify '<<distributed-search-with-index-sharding.adoc#distributed-search-with-index-sharding,`shards.info`>>' along with the `shards.tolerant` parameter to retrieve more fine-grained details.
+
+Example response with `partialResults` flag set to 'true':
+
+*Solr Response with partialResults*
+
+[source,json]
+----
+{
+  "responseHeader": {
+    "status": 0,
+    "zkConnected": true,
+    "partialResults": true,
+    "QTime": 20,
+    "params": {
+      "q": "*:*"
+    }
+  },
+  "response": {
+    "numFound": 77,
+    "start": 0,
+    "docs": [ "..." ]
+  }
+}
+----
+
+[[ReadandWriteSideFaultTolerance-WriteSideFaultTolerance]]
+== Write Side Fault Tolerance
+
+SolrCloud is designed to replicate documents to ensure redundancy for your data, and enable you to send update requests to any node in the cluster. That node will determine if it hosts the leader for the appropriate shard, and if not it will forward the request to the the leader, which will then forward it to all existing replicas, using versioning to make sure every replica has the most up-to-date version. If the leader goes down, another replica can take its place. This architecture enables you to be certain that your data can be recovered in the event of a disaster, even if you are using <<near-real-time-searching.adoc#near-real-time-searching,Near Real Time Searching>>.
+
+[[ReadandWriteSideFaultTolerance-Recovery]]
+=== Recovery
+
+A Transaction Log is created for each node so that every change to content or organization is noted. The log is used to determine which content in the node should be included in a replica. When a new replica is created, it refers to the Leader and the Transaction Log to know which content to include. If it fails, it retries.
+
+Since the Transaction Log consists of a record of updates, it allows for more robust indexing because it includes redoing the uncommitted updates if indexing is interrupted.
+
+If a leader goes down, it may have sent requests to some replicas and not others. So when a new potential leader is identified, it runs a synch process against the other replicas. If this is successful, everything should be consistent, the leader registers as active, and normal actions proceed. If a replica is too far out of sync, the system asks for a full replication/replay-based recovery.
+
+If an update fails because cores are reloading schemas and some have finished but others have not, the leader tells the nodes that the update failed and starts the recovery procedure.
+
+[[ReadandWriteSideFaultTolerance-AchievedReplicationFactor]]
+=== Achieved Replication Factor
+
+When using a replication factor greater than one, an update request may succeed on the shard leader but fail on one or more of the replicas. For instance, consider a collection with one shard and a replication factor of three. In this case, you have a shard leader and two additional replicas. If an update request succeeds on the leader but fails on both replicas, for whatever reason, the update request is still considered successful from the perspective of the client. The replicas that missed the update will sync with the leader when they recover.
+
+Behind the scenes, this means that Solr has accepted updates that are only on one of the nodes (the current leader). Solr supports the optional `min_rf` parameter on update requests that cause the server to return the achieved replication factor for an update request in the response. For the example scenario described above, if the client application included `min_rf >= 1`, then Solr would return `rf=1` in the Solr response header because the request only succeeded on the leader. The update request will still be accepted as the `min_rf` parameter only tells Solr that the client application wishes to know what the achieved replication factor was for the update request. In other words, `min_rf` does not mean Solr will enforce a minimum replication factor as Solr does not support rolling back updates that succeed on a subset of replicas.
+
+On the client side, if the achieved replication factor is less than the acceptable level, then the client application can take additional measures to handle the degraded state. For instance, a client application may want to keep a log of which update requests were sent while the state of the collection was degraded and then resend the updates once the problem has been resolved. In short, `min_rf` is an optional mechanism for a client application to be warned that an update request was accepted while the collection is in a degraded state.

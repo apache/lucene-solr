@@ -14,9 +14,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-/**
- * 
- */
 package org.apache.solr.client.solrj.io.eval;
 
 import java.util.UUID;
@@ -31,6 +28,9 @@ public abstract class SimpleEvaluator implements StreamEvaluator {
 
   public void setStreamContext(StreamContext streamContext) {
     this.streamContext = streamContext;
+  }
+  public StreamContext getStreamContext(){
+    return streamContext;
   }
 
 }

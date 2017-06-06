@@ -121,21 +121,37 @@ public class JoinQParserPlugin extends QParserPlugin {
     };
   }
 
+  /**
+   * A helper method for other plugins to create (non-scoring) JoinQueries wrapped around arbitrary queries against the same core.
+   * 
+   * @param subQuery the query to define the starting set of documents on the "left side" of the join
+   * @param fromField "left side" field name to use in the join
+   * @param toField "right side" field name to use in the join
+   */
+  public static Query createJoinQuery(Query subQuery, String fromField, String toField) {
+    return new JoinQuery(fromField, toField, null, subQuery);
+  }
+  
 }
 
 
 class JoinQuery extends Query {
   String fromField;
   String toField;
-  String fromIndex;
+  String fromIndex; // TODO: name is missleading here compared to JoinQParserPlugin usage - here it must be a core name
   Query q;
   long fromCoreOpenTime;
 
-  public JoinQuery(String fromField, String toField, String fromIndex, Query subQuery) {
+  public JoinQuery(String fromField, String toField, String coreName, Query subQuery) {
+    assert null != fromField;
+    assert null != toField;
+    assert null != subQuery;
+    
     this.fromField = fromField;
     this.toField = toField;
-    this.fromIndex = fromIndex;
     this.q = subQuery;
+    
+    this.fromIndex = coreName; // may be null
   }
 
   public Query getQuery() { return q; }

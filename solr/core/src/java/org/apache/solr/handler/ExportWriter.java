@@ -270,7 +270,6 @@ public class ExportWriter implements SolrCore.RawWriter, Closeable {
         }
       } catch(Throwable e) {
         Throwable ex = e;
-        e.printStackTrace();
         while(ex != null) {
           String m = ex.getMessage();
           if(m != null && m.contains("Broken pipe")) {

@@ -62,8 +62,8 @@ public class BasicDistributedZk2Test extends AbstractFullDistribZkTestBase {
   }
 
   @Override
-  protected int getRealtimeReplicas() {
-    return onlyLeaderIndexes? 1 : -1;
+  protected boolean useTlogReplicas() {
+    return onlyLeaderIndexes;
   }
   
   @Test

@@ -50,7 +50,7 @@ public class SolrExampleStreamingTest extends SolrExampleTests {
     public Throwable lastError = null;
 
     public ErrorTrackingConcurrentUpdateSolrClient(String solrServerUrl, int queueSize, int threadCount) {
-      super(solrServerUrl, queueSize, threadCount);
+      super(solrServerUrl, null, queueSize, threadCount, null, false);
     }
     
     @Override

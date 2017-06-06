@@ -57,7 +57,6 @@
   <field name="sort_uppercase_first" type="sort_uppercase_first_t" indexed="true" stored="false" multiValued="false"/>
 
 
-  <defaultSearchField>text</defaultSearchField>
   <uniqueKey>id</uniqueKey>
 
   <!-- copy our text to some sort fields with different orders -->

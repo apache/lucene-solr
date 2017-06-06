@@ -17,91 +17,27 @@
 package org.apache.lucene.search.similarities;
 
 
-import org.apache.lucene.index.FieldInvertState;
 import org.apache.lucene.search.CollectionStatistics;
 import org.apache.lucene.search.Explanation;
 import org.apache.lucene.search.TermStatistics;
 import org.apache.lucene.util.BytesRef;
-import org.apache.lucene.util.SmallFloat;
 
 /**
- * Expert: Default scoring implementation which {@link #encodeNormValue(float)
- * encodes} norm values as a single byte before being stored. At search time,
- * the norm byte value is read from the index
- * {@link org.apache.lucene.store.Directory directory} and
- * {@link #decodeNormValue(long) decoded} back to a float <i>norm</i> value.
- * This encoding/decoding, while reducing index size, comes with the price of
- * precision loss - it is not guaranteed that <i>decode(encode(x)) = x</i>. For
- * instance, <i>decode(encode(0.89)) = 0.875</i>.
- * <p>
- * Compression of norm values to a single byte saves memory at search time,
- * because once a field is referenced at search time, its norms - for all
- * documents - are maintained in memory.
- * <p>
- * The rationale supporting such lossy compression of norm values is that given
- * the difficulty (and inaccuracy) of users to express their true information
- * need by a query, only big differences matter. <br>
- * &nbsp;<br>
- * Last, note that search time is too late to modify this <i>norm</i> part of
- * scoring, e.g. by using a different {@link Similarity} for search.
+ * Expert: Historical scoring implementation. You might want to consider using
+ * {@link BM25Similarity} instead, which is generally considered superior to
+ * TF-IDF.
  */
 public class ClassicSimilarity extends TFIDFSimilarity {
-  
-  /** Cache of decoded bytes. */
-  private static final float[] NORM_TABLE = new float[256];
-
-  static {
-    for (int i = 0; i < 256; i++) {
-      NORM_TABLE[i] = SmallFloat.byte315ToFloat((byte)i);
-    }
-  }
 
   /** Sole constructor: parameter-free */
   public ClassicSimilarity() {}
-  
-  /**
-   * Encodes a normalization factor for storage in an index.
-   * <p>
-   * The encoding uses a three-bit mantissa, a five-bit exponent, and the
-   * zero-exponent point at 15, thus representing values from around 7x10^9 to
-   * 2x10^-9 with about one significant decimal digit of accuracy. Zero is also
-   * represented. Negative numbers are rounded up to zero. Values too large to
-   * represent are rounded down to the largest representable value. Positive
-   * values too small to represent are rounded up to the smallest positive
-   * representable value.
-   *
-   * @see org.apache.lucene.util.SmallFloat
-   */
-  @Override
-  public final long encodeNormValue(float f) {
-    return SmallFloat.floatToByte315(f);
-  }
-
-  /**
-   * Decodes the norm value, assuming it is a single byte.
-   * 
-   * @see #encodeNormValue(float)
-   */
-  @Override
-  public final float decodeNormValue(long norm) {
-    return NORM_TABLE[(int) (norm & 0xFF)];  // & 0xFF maps negative bytes to positive above 127
-  }
 
   /** Implemented as
-   *  <code>state.getBoost()*lengthNorm(numTerms)</code>, where
-   *  <code>numTerms</code> is {@link FieldInvertState#getLength()} if {@link
-   *  #setDiscountOverlaps} is false, else it's {@link
-   *  FieldInvertState#getLength()} - {@link
-   *  FieldInvertState#getNumOverlap()}.
+   *  <code>1/sqrt(length)</code>.
    *
    *  @lucene.experimental */
   @Override
-  public float lengthNorm(FieldInvertState state) {
-    final int numTerms;
-    if (discountOverlaps)
-      numTerms = state.getLength() - state.getNumOverlap();
-    else
-      numTerms = state.getLength();
+  public float lengthNorm(int numTerms) {
     return (float) (1.0 / Math.sqrt(numTerms));
   }
 
@@ -137,33 +73,6 @@ public class ClassicSimilarity extends TFIDFSimilarity {
   @Override
   public float idf(long docFreq, long docCount) {
     return (float)(Math.log((docCount+1)/(double)(docFreq+1)) + 1.0);
-  }
-    
-  /** 
-   * True if overlap tokens (tokens with a position of increment of zero) are
-   * discounted from the document's length.
-   */
-  protected boolean discountOverlaps = true;
-
-  /** Determines whether overlap tokens (Tokens with
-   *  0 position increment) are ignored when computing
-   *  norm.  By default this is true, meaning overlap
-   *  tokens do not count when computing norms.
-   *
-   *  @lucene.experimental
-   *
-   *  @see #computeNorm
-   */
-  public void setDiscountOverlaps(boolean v) {
-    discountOverlaps = v;
-  }
-
-  /**
-   * Returns true if overlap tokens are discounted from the document's length. 
-   * @see #setDiscountOverlaps 
-   */
-  public boolean getDiscountOverlaps() {
-    return discountOverlaps;
   }
 
   @Override

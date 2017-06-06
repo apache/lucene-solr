@@ -93,7 +93,6 @@
   <field name="_version_" type="long" indexed="true" stored="true" multiValued="false"/>
 
 
-  <defaultSearchField>id</defaultSearchField>
   <uniqueKey>id</uniqueKey>
 
   <copyField source="*_i" dest="*_i_dv"/>

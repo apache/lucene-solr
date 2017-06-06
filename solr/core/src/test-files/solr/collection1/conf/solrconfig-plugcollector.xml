@@ -550,5 +550,11 @@ based HashBitset. -->
     <processor class="solr.RunUpdateProcessorFactory" />
   </updateRequestProcessorChain>
 
+  <initParams path="standard,dismax,defaults,lazy,spellCheckCompRH,spellCheckWithWordbreak,spellCheckCompRH_Direct,spellCheckCompRH1,mltrh,tvrh,/terms">
+    <lst name="defaults">
+      <str name="df">text</str>
+    </lst>
+  </initParams>
+
 </config>
 

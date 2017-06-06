@@ -38,6 +38,7 @@ import org.apache.solr.common.util.ValidatingJsonMap;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.PluginBag;
 import org.apache.solr.core.SolrCore;
+import org.apache.solr.handler.RequestHandlerUtils;
 import org.apache.solr.logging.MDCLoggingContext;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.request.SolrRequestHandler;
@@ -221,6 +222,7 @@ public class V2HttpCall extends HttpSolrCall {
               }
             }
           }
+          RequestHandlerUtils.addExperimentalFormatWarning(rsp);
         }
       });
       getSubPathApi(requestHandlers,path, fullPath, (CompositeApi) api);

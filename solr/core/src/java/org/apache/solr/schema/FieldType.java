@@ -870,6 +870,7 @@ public abstract class FieldType extends FieldProperties {
       namedPropertyValues.add(getPropertyName(OMIT_POSITIONS), hasProperty(OMIT_POSITIONS));
       namedPropertyValues.add(getPropertyName(STORE_OFFSETS), hasProperty(STORE_OFFSETS));
       namedPropertyValues.add(getPropertyName(MULTIVALUED), hasProperty(MULTIVALUED));
+      namedPropertyValues.add(getPropertyName(LARGE_FIELD), hasProperty(LARGE_FIELD));
       if (hasProperty(SORT_MISSING_FIRST)) {
         namedPropertyValues.add(getPropertyName(SORT_MISSING_FIRST), true);
       } else if (hasProperty(SORT_MISSING_LAST)) {

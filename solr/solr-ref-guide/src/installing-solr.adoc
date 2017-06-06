@@ -1,0 +1,56 @@
+= Installing Solr
+:page-shortname: installing-solr
+:page-permalink: installing-solr.html
+// Licensed to the Apache Software Foundation (ASF) under one
+// or more contributor license agreements.  See the NOTICE file
+// distributed with this work for additional information
+// regarding copyright ownership.  The ASF licenses this file
+// to you under the Apache License, Version 2.0 (the
+// "License"); you may not use this file except in compliance
+// with the License.  You may obtain a copy of the License at
+//
+//   http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing,
+// software distributed under the License is distributed on an
+// "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+// KIND, either express or implied.  See the License for the
+// specific language governing permissions and limitations
+// under the License.
+
+This section describes how to install Solr.
+
+You can install Solr in any system where a suitable Java Runtime Environment (JRE) is available, as detailed below. Currently this includes Linux, OS X, and Microsoft Windows. The instructions in this section should work for any platform, with a few exceptions for Windows as noted.
+
+== Got Java?
+
+You will need the Java Runtime Environment (JRE) version 1.8 or higher. At a command line, check your Java version like this:
+
+[source,plain]
+----
+$ java -version
+java version "1.8.0_60"
+Java(TM) SE Runtime Environment (build 1.8.0_60-b27)
+Java HotSpot(TM) 64-Bit Server VM (build 25.60-b23, mixed mode)
+----
+
+The exact output will vary, but you need to make sure you meet the minimum version requirement. We also recommend choosing a version that is not end-of-life from its vendor. If you don't have the required version, or if the java command is not found, download and install the latest version from Oracle at http://www.oracle.com/technetwork/java/javase/downloads/index.html.
+
+[[install-command]]
+== Installing Solr
+
+Solr is available from the Solr website at http://lucene.apache.org/solr/.
+
+For Linux/Unix/OSX systems, download the `.tgz` file. For Microsoft Windows systems, download the `.zip` file.
+
+When getting started, all you need to do is extract the Solr distribution archive to a directory of your choosing. When you're ready to setup Solr for a production environment, please refer to the instructions provided on the <<taking-solr-to-production.adoc#taking-solr-to-production,Taking Solr to Production>> page.
+
+To keep things simple for now, extract the Solr distribution archive to your local home directory, for instance on Linux, do:
+
+[source,bash]
+----
+cd ~/
+tar zxf solr-x.y.z.tgz
+----
+
+Once extracted, you are now ready to run Solr using the instructions provided in the <<running-solr.adoc#running-solr,Running Solr>> section.

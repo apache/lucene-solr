@@ -24,7 +24,7 @@
       "description": "When set to true, enables auto addition of replicas on shared file systems (such as HDFS). See https://cwiki.apache.org/confluence/display/solr/Running+Solr+on+HDFS for more details on settings and overrides."
     },
     "replicationFactor": {
-      "type": "string",
+      "type": "integer",
       "description": "The number of replicas to be created for each shard. Replicas are physical copies of each shard, acting as failover for the shard. Note that changing this value on an existing collection does not automatically add more replicas to the collection. However, it will allow add-replica commands to succeed."
     },
     "maxShardsPerNode": {

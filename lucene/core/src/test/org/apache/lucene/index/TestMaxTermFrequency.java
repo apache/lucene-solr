@@ -17,6 +17,7 @@
 package org.apache.lucene.index;
 
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -26,7 +27,9 @@ import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.analysis.MockTokenizer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
-import org.apache.lucene.search.similarities.TFIDFSimilarity;
+import org.apache.lucene.search.CollectionStatistics;
+import org.apache.lucene.search.TermStatistics;
+import org.apache.lucene.search.similarities.Similarity;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.LuceneTestCase;
@@ -35,12 +38,12 @@ import org.apache.lucene.util.TestUtil;
 /**
  * Tests the maxTermFrequency statistic in FieldInvertState
  */
-public class TestMaxTermFrequency extends LuceneTestCase { 
+public class TestMaxTermFrequency extends LuceneTestCase {
   Directory dir;
   IndexReader reader;
   /* expected maxTermFrequency values for our documents */
   ArrayList<Integer> expected = new ArrayList<>();
-  
+
   @Override
   public void setUp() throws Exception {
     super.setUp();
@@ -59,14 +62,14 @@ public class TestMaxTermFrequency extends LuceneTestCase {
     reader = writer.getReader();
     writer.close();
   }
-  
+
   @Override
   public void tearDown() throws Exception {
     reader.close();
     dir.close();
     super.tearDown();
   }
-  
+
   public void test() throws Exception {
     NumericDocValues fooNorms = MultiDocValues.getNormValues(reader, "foo");
     for (int i = 0; i < reader.maxDoc(); i++) {
@@ -95,30 +98,42 @@ public class TestMaxTermFrequency extends LuceneTestCase {
     Collections.shuffle(terms, random());
     return Arrays.toString(terms.toArray(new String[terms.size()]));
   }
-  
+
   /**
    * Simple similarity that encodes maxTermFrequency directly as a byte
    */
-  static class TestSimilarity extends TFIDFSimilarity {
+  static class TestSimilarity extends Similarity {
 
     @Override
-    public float lengthNorm(FieldInvertState state) {
+    public long computeNorm(FieldInvertState state) {
       return state.getMaxTermFrequency();
     }
 
     @Override
-    public long encodeNormValue(float f) {
-      return (byte) f;
+    public SimWeight computeWeight(float boost, CollectionStatistics collectionStats, TermStatistics... termStats) {
+      return new SimWeight() {};
     }
 
     @Override
-    public float decodeNormValue(long norm) {
-      return norm;
+    public SimScorer simScorer(SimWeight weight, LeafReaderContext context) throws IOException {
+      return new SimScorer() {
+
+        @Override
+        public float score(int doc, float freq) throws IOException {
+          return 0;
+        }
+
+        @Override
+        public float computeSlopFactor(int distance) {
+          return 0;
+        }
+
+        @Override
+        public float computePayloadFactor(int doc, int start, int end, BytesRef payload) {
+          return 0;
+        }
+      };
     }
 
-    @Override public float tf(float freq) { return 0; }
-    @Override public float idf(long docFreq, long docCount) { return 0; }
-    @Override public float sloppyFreq(int distance) { return 0; }
-    @Override public float scorePayload(int doc, int start, int end, BytesRef payload) { return 0; }
   }
 }

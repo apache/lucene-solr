@@ -97,6 +97,8 @@ public class HttpShardHandlerFactory extends ShardHandlerFactory implements org.
   int maximumPoolSize = Integer.MAX_VALUE;
   int keepAliveTime = 5;
   int queueSize = -1;
+  int   permittedLoadBalancerRequestsMinimumAbsolute = 0;
+  float permittedLoadBalancerRequestsMaximumFraction = 1.0f;
   boolean accessPolicy = false;
 
   private String scheme = null;
@@ -121,6 +123,12 @@ public class HttpShardHandlerFactory extends ShardHandlerFactory implements org.
 
   // If the threadpool uses a backing queue, what is its maximum size (-1) to use direct handoff
   static final String INIT_SIZE_OF_QUEUE = "sizeOfQueue";
+
+  // The minimum number of replicas that may be used
+  static final String LOAD_BALANCER_REQUESTS_MIN_ABSOLUTE = "loadBalancerRequestsMinimumAbsolute";
+
+  // The maximum proportion of replicas to be used
+  static final String LOAD_BALANCER_REQUESTS_MAX_FRACTION = "loadBalancerRequestsMaximumFraction";
 
   // Configure if the threadpool favours fairness over throughput
   static final String INIT_FAIRNESS_POLICY = "fairnessPolicy";
@@ -164,6 +172,16 @@ public class HttpShardHandlerFactory extends ShardHandlerFactory implements org.
     this.maximumPoolSize = getParameter(args, INIT_MAX_POOL_SIZE, maximumPoolSize,sb);
     this.keepAliveTime = getParameter(args, MAX_THREAD_IDLE_TIME, keepAliveTime,sb);
     this.queueSize = getParameter(args, INIT_SIZE_OF_QUEUE, queueSize,sb);
+    this.permittedLoadBalancerRequestsMinimumAbsolute = getParameter(
+        args,
+        LOAD_BALANCER_REQUESTS_MIN_ABSOLUTE,
+        permittedLoadBalancerRequestsMinimumAbsolute,
+        sb);
+    this.permittedLoadBalancerRequestsMaximumFraction = getParameter(
+        args,
+        LOAD_BALANCER_REQUESTS_MAX_FRACTION,
+        permittedLoadBalancerRequestsMaximumFraction,
+        sb);
     this.accessPolicy = getParameter(args, INIT_FAIRNESS_POLICY, accessPolicy,sb);
     log.debug("created with {}",sb);
     
@@ -252,7 +270,15 @@ public class HttpShardHandlerFactory extends ShardHandlerFactory implements org.
    */
   public LBHttpSolrClient.Rsp makeLoadBalancedRequest(final QueryRequest req, List<String> urls)
     throws SolrServerException, IOException {
-    return loadbalancer.request(new LBHttpSolrClient.Req(req, urls));
+    return loadbalancer.request(newLBHttpSolrClientReq(req, urls));
+  }
+
+  protected LBHttpSolrClient.Req newLBHttpSolrClientReq(final QueryRequest req, List<String> urls) {
+    int numServersToTry = (int)Math.floor(urls.size() * this.permittedLoadBalancerRequestsMaximumFraction);
+    if (numServersToTry < this.permittedLoadBalancerRequestsMinimumAbsolute) {
+      numServersToTry = this.permittedLoadBalancerRequestsMinimumAbsolute;
+    }
+    return new LBHttpSolrClient.Req(req, urls, numServersToTry);
   }
 
   /**

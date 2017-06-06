@@ -31,7 +31,6 @@ import org.apache.calcite.config.Lex;
 import org.apache.solr.client.solrj.io.Tuple;
 import org.apache.solr.client.solrj.io.comp.StreamComparator;
 import org.apache.solr.client.solrj.io.stream.ExceptionStream;
-import org.apache.solr.client.solrj.io.stream.JDBCStream;
 import org.apache.solr.client.solrj.io.stream.TupleStream;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.CommonParams;
@@ -141,7 +140,7 @@ public class SQLHandler extends RequestHandlerBase implements SolrCoreAware, Per
   /*
    * Only necessary for SolrJ JDBC driver since metadata has to be passed back
    */
-  private static class SqlHandlerStream extends JDBCStream {
+  private static class SqlHandlerStream extends CalciteJDBCStream {
     private final boolean includeMetadata;
     private boolean firstTuple = true;
     List<String> metadataFields = new ArrayList<>();

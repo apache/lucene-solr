@@ -73,7 +73,6 @@
   <dynamicField name="*_d1" type="double" indexed="true" stored="true" multiValued="false"/>
   <dynamicField name="*_dt1" type="date" indexed="true" stored="true" multiValued="false"/>
 
-  <defaultSearchField>id</defaultSearchField>
   <uniqueKey>id</uniqueKey>
 
   <copyField source="*_i" dest="*_i_dv"/>

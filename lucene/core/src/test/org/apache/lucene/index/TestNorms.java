@@ -32,13 +32,11 @@ import org.apache.lucene.search.TermStatistics;
 import org.apache.lucene.search.similarities.ClassicSimilarity;
 import org.apache.lucene.search.similarities.PerFieldSimilarityWrapper;
 import org.apache.lucene.search.similarities.Similarity;
-import org.apache.lucene.search.similarities.TFIDFSimilarity;
 import org.apache.lucene.store.Directory;
-import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.LineFileDocs;
+import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.LuceneTestCase.Slow;
 import org.apache.lucene.util.LuceneTestCase.SuppressCodecs;
-import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.TestUtil;
 
 /**
@@ -49,67 +47,6 @@ import org.apache.lucene.util.TestUtil;
 @Slow
 public class TestNorms extends LuceneTestCase {
   static final String BYTE_TEST_FIELD = "normsTestByte";
-
-  static class CustomNormEncodingSimilarity extends TFIDFSimilarity {
-
-    @Override
-    public long encodeNormValue(float f) {
-      return (long) f;
-    }
-    
-    @Override
-    public float decodeNormValue(long norm) {
-      return norm;
-    }
-
-    @Override
-    public float lengthNorm(FieldInvertState state) {
-      return state.getLength();
-    }
-
-    @Override public float tf(float freq) { return 0; }
-    @Override public float idf(long docFreq, long docCount) { return 0; }
-    @Override public float sloppyFreq(int distance) { return 0; }
-    @Override public float scorePayload(int doc, int start, int end, BytesRef payload) { return 0; }
-  }
-  
-  // LUCENE-1260
-  public void testCustomEncoder() throws Exception {
-    Directory dir = newDirectory();
-    MockAnalyzer analyzer = new MockAnalyzer(random());
-
-    IndexWriterConfig config = newIndexWriterConfig(analyzer);
-    config.setSimilarity(new CustomNormEncodingSimilarity());
-    RandomIndexWriter writer = new RandomIndexWriter(random(), dir, config);
-    Document doc = new Document();
-    Field foo = newTextField("foo", "", Field.Store.NO);
-    Field bar = newTextField("bar", "", Field.Store.NO);
-    doc.add(foo);
-    doc.add(bar);
-    
-    for (int i = 0; i < 100; i++) {
-      bar.setStringValue("singleton");
-      writer.addDocument(doc);
-    }
-    
-    IndexReader reader = writer.getReader();
-    writer.close();
-    
-    NumericDocValues fooNorms = MultiDocValues.getNormValues(reader, "foo");
-    for (int i = 0; i < reader.maxDoc(); i++) {
-      assertEquals(i, fooNorms.nextDoc());
-      assertEquals(0, fooNorms.longValue());
-    }
-    
-    NumericDocValues barNorms = MultiDocValues.getNormValues(reader, "bar");
-    for (int i = 0; i < reader.maxDoc(); i++) {
-      assertEquals(i, barNorms.nextDoc());
-      assertEquals(1, barNorms.longValue());
-    }
-    
-    reader.close();
-    dir.close();
-  }
   
   public void testMaxByteNorms() throws IOException {
     Directory dir = newFSDirectory(createTempDir("TestNorms.testMaxByteNorms"));

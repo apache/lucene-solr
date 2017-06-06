@@ -24,9 +24,7 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
-import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
@@ -39,6 +37,7 @@ import org.apache.solr.client.solrj.impl.SolrClientDataProvider;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.cloud.ZkStateReader;
+import org.apache.solr.common.util.CommandOperation;
 import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.common.util.Utils;
 import org.apache.solr.core.CoreContainer;
@@ -49,7 +48,6 @@ import org.apache.solr.request.SolrRequestHandler;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.security.AuthorizationContext;
 import org.apache.solr.security.PermissionNameProvider;
-import org.apache.solr.util.CommandOperation;
 import org.apache.solr.util.TimeSource;
 import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.data.Stat;
@@ -115,7 +113,7 @@ public class AutoScalingHandler extends RequestHandlerBase implements Permission
         if (req.getContentStreams() == null) {
           throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "No commands specified for autoscaling");
         }
-        List<CommandOperation> ops = CommandOperation.readCommands(req.getContentStreams(), rsp, singletonCommands);
+        List<CommandOperation> ops = CommandOperation.readCommands(req.getContentStreams(), rsp.getValues(), singletonCommands);
         if (ops == null) {
           // errors have already been added to the response so there's nothing left to do
           return;
@@ -160,8 +158,7 @@ public class AutoScalingHandler extends RequestHandlerBase implements Permission
     } catch (Exception e) {
       rsp.getValues().add("result", "failure");
       throw e;
-    }
-    finally {
+    } finally {
       RequestHandlerUtils.addExperimentalFormatWarning(rsp);
     }
   }
@@ -183,7 +180,7 @@ public class AutoScalingHandler extends RequestHandlerBase implements Permission
         for (Cell cell : row.cells) {
           for (Preference clusterPreference : clusterPreferences) {
             Policy.SortParam name = clusterPreference.name;
-            if (cell.name.equalsIgnoreCase(name.name()))  {
+            if (cell.name.equalsIgnoreCase(name.name())) {
               map.put(name.name(), cell.val);
               break;
             }
@@ -236,7 +233,7 @@ public class AutoScalingHandler extends RequestHandlerBase implements Permission
 
   private void handleSetPolicies(SolrQueryRequest req, SolrQueryResponse rsp, CommandOperation op) throws KeeperException, InterruptedException, IOException {
     Map<String, Object> policies = op.getDataMap();
-    for (Map.Entry<String, Object> policy: policies.entrySet()) {
+    for (Map.Entry<String, Object> policy : policies.entrySet()) {
       String policyName = policy.getKey();
       if (policyName == null || policyName.trim().length() == 0) {
         throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "The policy name cannot be null or empty");

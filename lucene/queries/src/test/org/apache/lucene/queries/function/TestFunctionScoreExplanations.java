@@ -59,7 +59,7 @@ public class TestFunctionScoreExplanations extends BaseExplanationTestCase {
 
   public void testExplanationsIncludingScore() throws Exception {
 
-    DoubleValuesSource scores = DoubleValuesSource.function(DoubleValuesSource.SCORES, v -> v * 2);
+    DoubleValuesSource scores = DoubleValuesSource.function(DoubleValuesSource.SCORES, "v * 2", v -> v * 2);
 
     Query q = new TermQuery(new Term(FIELD, "w1"));
     FunctionScoreQuery csq = new FunctionScoreQuery(q, scores);

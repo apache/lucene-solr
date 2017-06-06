@@ -52,6 +52,5 @@
   <field name="text" type="text" indexed="true" stored="false"/>
   <field name="stext" type="text" indexed="true" stored="true"/>
 
-  <defaultSearchField>text</defaultSearchField>
   <uniqueKey>id</uniqueKey>
 </schema>

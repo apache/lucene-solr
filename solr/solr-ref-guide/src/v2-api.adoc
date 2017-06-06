@@ -1,0 +1,193 @@
+= v2 API
+:page-shortname: v2-api
+:page-permalink: v2-api.html
+// Licensed to the Apache Software Foundation (ASF) under one
+// or more contributor license agreements.  See the NOTICE file
+// distributed with this work for additional information
+// regarding copyright ownership.  The ASF licenses this file
+// to you under the Apache License, Version 2.0 (the
+// "License"); you may not use this file except in compliance
+// with the License.  You may obtain a copy of the License at
+//
+//   http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing,
+// software distributed under the License is distributed on an
+// "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+// KIND, either express or implied.  See the License for the
+// specific language governing permissions and limitations
+// under the License.
+
+// TODO: most of the sample introspection calls below include cwiki.apache.org URLs that should be replaced...
+// TODO: ...but they come directly from the API.
+// TODO: so first the core/src/resources/apispec/*.json files need updated, then update the docs to match
+// TODO: What URLs shold the apispec files even point to? version specific or something general?
+
+
+The v2 API is a modernized self-documenting API interface covering most current Solr APIs. It is anticipated that once the v2 API reaches full coverage, and Solr-internal API usages like SolrJ and the Admin UI have been converted from the old API to the v2 API, the old API will eventually be retired.
+
+For now the two API styles will coexist, and all the old APIs will continue to work without any change. You can disable all v2 API endpoints by starting your servers with this system property: `-Ddisable.v2.api=true`.
+
+The old API and the v2 API differ in three principle ways:
+
+1.  Command format: The old API commands and associated parameters are provided through URL request parameters on HTTP GET requests, while in the v2 API most API commands are provided via a JSON body POST'ed to v2 API endpoints. The v2 API also supports HTTP methods GET and DELETE where appropriate.
+2.  Endpoint structure: The v2 API endpoint structure has been rationalized and regularized.
+3.  Documentation: The v2 APIs are self-documenting: append `/_introspect` to any valid v2 API path and the API specification will be returned in JSON format.
+
+[[v2API-v2APIPathPrefixes]]
+== v2 API Path Prefixes
+
+Following are some v2 API URL paths and path prefixes, along with some of the operations that are supported at these paths and their sub-paths.
+
+[width="100%",options="header",]
+|===
+|Path prefix |Some Supported Operations
+|`/v2/collections` or equivalently: `/v2/c` |Create, alias, backup, and restore a collection.
+|`/v2/c/__collection-name__/update` |Update requests.
+|`/v2/c/__collection-name__/config` |Configuration requests.
+|`/v2/c/__collection-name__/schema` |Schema requests.
+|`/v2/c/__collection-name__/__handler-name__` |Handler-specific requests.
+|`/v2/c/__collection-name__/shards` |Split a shard, create a shard, add a replica.
+|`/v2/c/__collection-name__/shards/___shard-name___` |Delete a shard, force leader election
+|`/v2/c/__collection-name__/shards/___shard-name____/____replica-name___` |Delete a replica.
+|`/v2/cores` |Create a core.
+|`/v2/cores/__core-name__` |Reload, rename, delete, and unload a core.
+|`/v2/node` |Perform overseer operation, rejoin leader election.
+|`/v2/cluster` |Add role, remove role, set cluster property.
+|`/v2/c/.system/blob` |Upload and download blobs and metadata.
+|===
+
+[[v2API-Introspect]]
+== Introspect
+
+Append `/_introspect` to any valid v2 API path and the API specification will be returned in JSON format.
+
+`\http://localhost:8983/v2/c/_introspect`
+
+To limit the introspect output to include just one particular HTTP method, add request param `method` with value `GET`, `POST`, or `DELETE`.
+
+`\http://localhost:8983/v2/c/_introspect?method=POST`
+
+Most endpoints support commands provided in a body sent via POST. To limit the introspect output to only one command, add request param `command=__command-name__` .
+
+`\http://localhost:8983/v2/c/gettingstarted/_introspect?method=POST&command=modify`
+
+[[v2API-InterpretingtheIntrospectOutput]]
+=== Interpreting the Introspect Output
+
+Example : `\http://localhost:8983/v2/c/gettingstarted/get/_introspect`
+
+[source,json]
+----
+{
+  "spec":[{
+      "documentation":"https://cwiki.apache.org/confluence/display/solr/RealTime+Get",
+      "description":"RealTime Get allows retrieving documents by ID before the documents have been committed to the index. It is useful when you need access to documents as soon as they are indexed but your commit times are high for other reasons.",
+      "methods":["GET"],
+      "url":{
+        "paths":["/c/gettingstarted/get"],
+        "params":{
+          "id":{
+            "type":"string",
+            "description":"A single document ID to retrieve."},
+          "ids":{
+            "type":"string",
+            "description":"One or more document IDs to retrieve. Separate by commas if more than one ID is specified."},
+          "fq":{
+            "type":"string",
+            "description":"An optional filter query to add to the query. One use case for this is security filtering, in case users or groups should not be able to retrieve the document ID requested."}}}}],
+  "WARNING":"This response format is experimental.  It is likely to change in the future.",
+  "availableSubPaths":{}}
+----
+
+Description of some of the keys in the above example:
+
+* `**documentation**` : URL to the online Solr reference guide section for this API
+* `**description**` : A text description of the feature/variable/command etc.
+* `**spec/methods**` : HTTP methods supported by this API
+* `**spec/url/paths**` : URL paths supported by this API
+* `**spec/url/params**` : List of supported URL request params
+* `**availableSubPaths**` : List of valid URL subpaths and the HTTP method(s) each supports
+
+Example of introspect for a POST API: `\http://localhost:8983/v2/c/gettingstarted/_introspect?method=POST&command=modify`
+
+[source,json]
+----
+{
+  "spec":[{
+      "documentation":"https://cwiki.apache.org/confluence/display/solr/Collections+API",
+      "description":"Several collection-level operations are supported with this endpoint: modify collection attributes; reload a collection; migrate documents to a different collection; rebalance collection leaders; balance properties across shards; and add or delete a replica property.",
+      "methods":["POST"],
+      "url":{"paths":["/collections/{collection}",
+          "/c/{collection}"]},
+      "commands":{"modify":{
+          "documentation":"https://cwiki.apache.org/confluence/display/solr/Collections+API#CollectionsAPI-modifycoll",
+          "description":"Modifies specific attributes of a collection. Multiple attributes can be changed at one time.",
+          "type":"object",
+          "properties":{
+            "rule":{
+              "type":"array",
+              "documentation":"https://cwiki.apache.org/confluence/display/solr/Rule-based+Replica+Placement",
+              "description":"Modifies the rules for where replicas should be located in a cluster.",
+              "items":{"type":"string"}},
+            "snitch":{
+              "type":"array",
+              "documentation":"https://cwiki.apache.org/confluence/display/solr/Rule-based+Replica+Placement",
+              "description":"Details of the snitch provider",
+              "items":{"type":"string"}},
+            "autoAddReplicas":{
+              "type":"boolean",
+              "description":"When set to true, enables auto addition of replicas on shared file systems (such as HDFS). See https://cwiki.apache.org/confluence/display/solr/Running+Solr+on+HDFS for more details on settings and overrides."},
+            "replicationFactor":{
+              "type":"string",
+              "description":"The number of replicas to be created for each shard. Replicas are physical copies of each shard, acting as failover for the shard. Note that changing this value on an existing collection does not automatically add more replicas to the collection. However, it will allow add-replica commands to succeed."},
+            "maxShardsPerNode":{
+              "type":"integer",
+              "description":"When creating collections, the shards and/or replicas are spread across all available, live, nodes, and two replicas of the same shard will never be on the same node. If a node is not live when the collection is created, it will not get any parts of the new collection, which could lead to too many replicas being created on a single live node. Defining maxShardsPerNode sets a limit on the number of replicas can be spread to each node. If the entire collection can not be fit into the live nodes, no collection will be created at all."}}}}}],
+  "WARNING":"This response format is experimental.  It is likely to change in the future.",
+  "availableSubPaths":{
+    "/c/gettingstarted/select":["POST", "GET"],
+    "/c/gettingstarted/config":["POST", "GET"],
+    "/c/gettingstarted/schema":["POST", "GET"],
+    "/c/gettingstarted/export":["POST", "GET"],
+    "/c/gettingstarted/admin/ping":["POST", "GET"],
+    "/c/gettingstarted/update":["POST"]},
+
+[... more sub-paths ...]
+
+}
+----
+
+The `"commands"` section in the above example has one entry for each command supported at this endpoint. The key is the command name and the value is a json object describing the command structure using JSON schema (see http://json-schema.org/ for a description).
+
+[[v2API-InvocationExamples]]
+== Invocation Examples
+
+For the "gettingstarted" collection, set the replication factor and whether to automatically add replicas (see above for the introspect output for the `"modify"` command used here):
+
+[source,bash]
+----
+$ curl http://localhost:8983/v2/c/gettingstarted -H 'Content-type:application/json' -d '
+{ modify: { replicationFactor: "3", autoAddReplicas: false } }'
+
+{"responseHeader":{"status":0,"QTime":842}}
+----
+
+See the state of the cluster:
+
+[source,bash]
+----
+$ curl http://localhost:8983/v2/cluster
+
+{"responseHeader":{"status":0,"QTime":0},"collections":["gettingstarted",".system"]}
+----
+
+Set a cluster property:
+
+[source,bash]
+----
+$ curl http://localhost:8983/v2/cluster -H 'Content-type: application/json' -d '
+{ set-property: { name: autoAddReplicas, val: "false" } }'
+
+{"responseHeader":{"status":0,"QTime":4}}
+----

@@ -18,7 +18,6 @@
 package org.apache.solr.cloud;
 
 
-import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Set;
@@ -29,12 +28,9 @@ import org.apache.solr.client.solrj.response.RequestStatusState;
 import org.apache.solr.common.util.StrUtils;
 import org.junit.BeforeClass;
 import org.junit.Test;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 public class DeleteNodeTest extends SolrCloudTestCase {
-  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
-
+  
   @BeforeClass
   public static void setupCluster() throws Exception {
     configureCluster(6)
@@ -54,7 +50,10 @@ public class DeleteNodeTest extends SolrCloudTestCase {
     Set<String> liveNodes = cloudClient.getZkStateReader().getClusterState().getLiveNodes();
     ArrayList<String> l = new ArrayList<>(liveNodes);
     Collections.shuffle(l, random());
-    CollectionAdminRequest.Create create = CollectionAdminRequest.createCollection(coll, "conf1", 5, 2);
+    CollectionAdminRequest.Create create = pickRandom(
+        CollectionAdminRequest.createCollection(coll, "conf1", 5, 2, 0, 0),
+        CollectionAdminRequest.createCollection(coll, "conf1", 5, 1, 1, 0),
+        CollectionAdminRequest.createCollection(coll, "conf1", 5, 0, 1, 1));
     create.setCreateNodeSet(StrUtils.join(l, ',')).setMaxShardsPerNode(3);
     cloudClient.request(create);
     String node2bdecommissioned = l.get(0);

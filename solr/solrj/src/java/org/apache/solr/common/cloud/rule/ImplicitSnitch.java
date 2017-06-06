@@ -28,8 +28,10 @@ import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.ModifiableSolrParams;
+import org.apache.zookeeper.KeeperException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -55,21 +57,25 @@ public class ImplicitSnitch extends Snitch {
 
   @Override
   public void getTags(String solrNode, Set<String> requestedTags, SnitchContext ctx) {
-    if (requestedTags.contains(NODE)) ctx.getTags().put(NODE, solrNode);
-    if (requestedTags.contains(HOST)) {
-      Matcher hostAndPortMatcher = hostAndPortPattern.matcher(solrNode);
-      if (hostAndPortMatcher.find()) ctx.getTags().put(HOST, hostAndPortMatcher.group(1));
-    }
-    if (requestedTags.contains(PORT)) {
-      Matcher hostAndPortMatcher = hostAndPortPattern.matcher(solrNode);
-      if (hostAndPortMatcher.find()) ctx.getTags().put(PORT, hostAndPortMatcher.group(2));
-    }
-    if (requestedTags.contains(ROLE)) fillRole(solrNode, ctx, ROLE);
-    if (requestedTags.contains(NODEROLE)) fillRole(solrNode, ctx, NODEROLE);// for new policy framework
+    try {
+      if (requestedTags.contains(NODE)) ctx.getTags().put(NODE, solrNode);
+      if (requestedTags.contains(HOST)) {
+        Matcher hostAndPortMatcher = hostAndPortPattern.matcher(solrNode);
+        if (hostAndPortMatcher.find()) ctx.getTags().put(HOST, hostAndPortMatcher.group(1));
+      }
+      if (requestedTags.contains(PORT)) {
+        Matcher hostAndPortMatcher = hostAndPortPattern.matcher(solrNode);
+        if (hostAndPortMatcher.find()) ctx.getTags().put(PORT, hostAndPortMatcher.group(2));
+      }
+      if (requestedTags.contains(ROLE)) fillRole(solrNode, ctx, ROLE);
+      if (requestedTags.contains(NODEROLE)) fillRole(solrNode, ctx, NODEROLE);// for new policy framework
 
-    addIpTags(solrNode, requestedTags, ctx);
+      addIpTags(solrNode, requestedTags, ctx);
 
-    getRemoteInfo(solrNode, requestedTags, ctx);
+      getRemoteInfo(solrNode, requestedTags, ctx);
+    } catch (Exception e) {
+      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
+    }
   }
 
   protected void getRemoteInfo(String solrNode, Set<String> requestedTags, SnitchContext ctx) {
@@ -82,16 +88,24 @@ public class ImplicitSnitch extends Snitch {
     if (params.size() > 0) ctx.invokeRemote(solrNode, params, "org.apache.solr.cloud.rule.ImplicitSnitch", null);
   }
 
-  private void fillRole(String solrNode, SnitchContext ctx, String key) {
+  private void fillRole(String solrNode, SnitchContext ctx, String key) throws KeeperException, InterruptedException {
     Map roles = (Map) ctx.retrieve(ZkStateReader.ROLES); // we don't want to hit the ZK for each node
     // so cache and reuse
-    if(roles == null) roles = ctx.getZkJson(ZkStateReader.ROLES);
-    ctx.store(ZkStateReader.ROLES, roles == null ? Collections.emptyMap() : roles);
+    try {
+      if (roles == null) roles = ctx.getZkJson(ZkStateReader.ROLES);
+      cacheRoles(solrNode, ctx, key, roles);
+    } catch (KeeperException.NoNodeException e) {
+      cacheRoles(solrNode, ctx, key, Collections.emptyMap());
+    }
+  }
+
+  private void cacheRoles(String solrNode, SnitchContext ctx, String key, Map roles) {
+    ctx.store(ZkStateReader.ROLES, roles);
     if (roles != null) {
       for (Object o : roles.entrySet()) {
         Map.Entry e = (Map.Entry) o;
         if (e.getValue() instanceof List) {
-          if(((List) e.getValue()).contains(solrNode)) {
+          if (((List) e.getValue()).contains(solrNode)) {
             ctx.getTags().put(key, e.getKey());
             break;
           }

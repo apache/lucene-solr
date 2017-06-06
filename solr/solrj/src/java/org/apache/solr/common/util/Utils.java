@@ -19,6 +19,7 @@ package org.apache.solr.common.util;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.io.Reader;
 import java.io.StringReader;
 import java.lang.invoke.MethodHandles;
 import java.nio.charset.StandardCharsets;
@@ -41,6 +42,9 @@ import org.apache.http.util.EntityUtils;
 import org.apache.solr.common.IteratorWriter;
 import org.apache.solr.common.MapWriter;
 import org.apache.solr.common.SolrException;
+import org.apache.solr.common.cloud.SolrZkClient;
+import org.apache.solr.common.cloud.ZkOperation;
+import org.apache.zookeeper.KeeperException;
 import org.noggit.CharArr;
 import org.noggit.JSONParser;
 import org.noggit.JSONWriter;
@@ -142,6 +146,9 @@ public class Utils {
     CharArr chars = new CharArr();
     ByteUtils.UTF8toUTF16(utf8, 0, utf8.length, chars);
     JSONParser parser = new JSONParser(chars.getArray(), chars.getStart(), chars.length());
+    parser.setFlags(parser.getFlags() |
+        JSONParser.ALLOW_MISSING_COLON_COMMA_BEFORE_OBJECT |
+        JSONParser.OPTIONAL_OUTER_BRACES);
     try {
       return ObjectBuilder.getVal(parser);
     } catch (IOException e) {
@@ -168,7 +175,7 @@ public class Utils {
 
   public static Object fromJSON(InputStream is){
     try {
-      return new ObjectBuilder(new JSONParser(new InputStreamReader(is, StandardCharsets.UTF_8))).getObject();
+      return new ObjectBuilder(getJSONParser((new InputStreamReader(is, StandardCharsets.UTF_8)))).getObject();
     } catch (IOException e) {
       throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Parse error", e);
     }
@@ -179,11 +186,17 @@ public class Utils {
         .getContextClassLoader().getResourceAsStream(resourceName));
 
   }
+  public static JSONParser getJSONParser(Reader reader){
+    JSONParser parser = new JSONParser(reader);
+    parser.setFlags(parser.getFlags() |
+        JSONParser.ALLOW_MISSING_COLON_COMMA_BEFORE_OBJECT |
+        JSONParser.OPTIONAL_OUTER_BRACES);
+    return parser;
+  }
 
   public static Object fromJSONString(String json)  {
     try {
-      return new ObjectBuilder(new JSONParser(new StringReader(
-          json))).getObject();
+      return new ObjectBuilder(getJSONParser(new StringReader(json))).getObject();
     } catch (IOException e) {
       throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Parse error", e);
     }
@@ -265,6 +278,26 @@ public class Utils {
   private static void readFully(InputStream is) throws IOException {
     is.skip(is.available());
     while (is.read() != -1) {}
+  }
+
+  /**
+   * Assumes data in ZooKeeper is a JSON string, deserializes it and returns as a Map
+   *
+   * @param zkClient the zookeeper client
+   * @param path the path to the znode being read
+   * @param retryOnConnLoss whether to retry the operation automatically on connection loss, see {@link org.apache.solr.common.cloud.ZkCmdExecutor#retryOperation(ZkOperation)}
+   * @return a Map if the node exists and contains valid JSON or an empty map if znode does not exist or has a null data
+   */
+  public static Map<String, Object> getJson(SolrZkClient zkClient, String path, boolean retryOnConnLoss) throws KeeperException, InterruptedException {
+    try {
+      byte[] bytes = zkClient.getData(path, null, null, retryOnConnLoss);
+      if (bytes != null && bytes.length > 0) {
+        return (Map<String, Object>) Utils.fromJSON(bytes);
+      }
+    } catch (KeeperException.NoNodeException e) {
+      return Collections.emptyMap();
+    }
+    return Collections.emptyMap();
   }
 
   public static final Pattern ARRAY_ELEMENT_INDEX = Pattern

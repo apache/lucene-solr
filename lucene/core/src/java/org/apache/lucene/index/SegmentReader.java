@@ -303,7 +303,10 @@ public final class SegmentReader extends CodecReader {
           }
         }
       }
-      IOUtils.reThrow(th);
+      
+      if (th != null) {
+        IOUtils.rethrowAlways(th);
+      }
     }
   }
 

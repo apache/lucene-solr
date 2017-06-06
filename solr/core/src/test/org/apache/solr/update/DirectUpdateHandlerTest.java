@@ -62,14 +62,12 @@ public class DirectUpdateHandlerTest extends SolrTestCaseJ4 {
     savedFactory = System.getProperty("solr.DirectoryFactory");
     System.setProperty("solr.directoryFactory", "org.apache.solr.core.MockFSDirectoryFactory");
     System.setProperty("enable.update.log", "false"); // schema12 doesn't support _version_
-    systemSetPropertySolrTestsMergePolicy(TieredMergePolicy.class.getName());
     systemSetPropertySolrTestsMergePolicyFactory(TieredMergePolicyFactory.class.getName());
     initCore("solrconfig.xml", "schema12.xml");
   }
   
   @AfterClass
   public static void afterClass() {
-    systemClearPropertySolrTestsMergePolicy();
     systemClearPropertySolrTestsMergePolicyFactory();
     if (savedFactory == null) {
       System.clearProperty("solr.directoryFactory");

@@ -104,7 +104,7 @@ public final class JoinUtil {
       termsWithScoreCollector = GenericTermsCollector.createCollectorSV(svFunction, scoreMode);
     }
     
-    return createJoinQuery(multipleValuesPerDocument, toField, fromQuery, fromSearcher, scoreMode, termsWithScoreCollector);
+    return createJoinQuery(multipleValuesPerDocument, toField, fromQuery, fromField, fromSearcher, scoreMode, termsWithScoreCollector);
   }
   
   /**
@@ -362,7 +362,7 @@ public final class JoinUtil {
     encoded.length = bytesPerDim;
 
     if (needsScore) {
-      return new PointInSetIncludingScoreQuery(fromQuery, multipleValuesPerDocument, toField, bytesPerDim, stream) {
+      return new PointInSetIncludingScoreQuery(scoreMode, fromQuery, multipleValuesPerDocument, toField, bytesPerDim, stream) {
 
         @Override
         protected String toString(byte[] value) {
@@ -379,25 +379,26 @@ public final class JoinUtil {
     }
   }
 
-  private static Query createJoinQuery(boolean multipleValuesPerDocument, String toField, Query fromQuery,
-      IndexSearcher fromSearcher, ScoreMode scoreMode, final GenericTermsCollector collector)
-          throws IOException {
+  private static Query createJoinQuery(boolean multipleValuesPerDocument, String toField, Query fromQuery, String fromField,
+      IndexSearcher fromSearcher, ScoreMode scoreMode, final GenericTermsCollector collector) throws IOException {
     
     fromSearcher.search(fromQuery, collector);
-    
     switch (scoreMode) {
       case None:
-        return new TermsQuery(toField, fromQuery, collector.getCollectedTerms());
+        return new TermsQuery(toField, collector.getCollectedTerms(), fromField, fromQuery, fromSearcher.getTopReaderContext().id());
       case Total:
       case Max:
       case Min:
       case Avg:
         return new TermsIncludingScoreQuery(
+            scoreMode,
             toField,
             multipleValuesPerDocument,
             collector.getCollectedTerms(),
             collector.getScoresPerTerm(),
-            fromQuery
+            fromField,
+            fromQuery,
+            fromSearcher.getTopReaderContext().id()
         );
       default:
         throw new IllegalArgumentException(String.format(Locale.ROOT, "Score mode %s isn't supported.", scoreMode));
@@ -507,7 +508,8 @@ public final class JoinUtil {
         if (min <= 0 && max == Integer.MAX_VALUE) {
           GlobalOrdinalsCollector globalOrdinalsCollector = new GlobalOrdinalsCollector(joinField, ordinalMap, valueCount);
           searcher.search(rewrittenFromQuery, globalOrdinalsCollector);
-          return new GlobalOrdinalsQuery(globalOrdinalsCollector.getCollectorOrdinals(), joinField, ordinalMap, rewrittenToQuery, rewrittenFromQuery, searcher.getTopReaderContext());
+          return new GlobalOrdinalsQuery(globalOrdinalsCollector.getCollectorOrdinals(), joinField, ordinalMap, rewrittenToQuery,
+              rewrittenFromQuery, searcher.getTopReaderContext().id());
         } else {
           globalOrdinalsWithScoreCollector = new GlobalOrdinalsWithScoreCollector.NoScore(joinField, ordinalMap, valueCount, min, max);
           break;
@@ -516,7 +518,8 @@ public final class JoinUtil {
         throw new IllegalArgumentException(String.format(Locale.ROOT, "Score mode %s isn't supported.", scoreMode));
     }
     searcher.search(rewrittenFromQuery, globalOrdinalsWithScoreCollector);
-    return new GlobalOrdinalsWithScoreQuery(globalOrdinalsWithScoreCollector, joinField, ordinalMap, rewrittenToQuery, rewrittenFromQuery, min, max, searcher.getTopReaderContext());
+    return new GlobalOrdinalsWithScoreQuery(globalOrdinalsWithScoreCollector, scoreMode, joinField, ordinalMap, rewrittenToQuery,
+        rewrittenFromQuery, min, max, searcher.getTopReaderContext().id());
   }
 
 }

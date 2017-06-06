@@ -874,9 +874,8 @@
     
     <!-- Japanese using morphological analysis (see text_cjk for a configuration using bigramming)
 
-         NOTE: If you want to optimize search for precision, use default operator AND in your query
-         parser config with <solrQueryParser defaultOperator="AND"/> further down in this file.  Use 
-         OR if you would like to optimize for recall (default).
+         NOTE: If you want to optimize search for precision, use default operator AND in your request
+         handler config (q.op) Use OR if you would like to optimize for recall (default).
     -->
     <dynamicField name="*_txt_ja" type="text_ja"  indexed="true"  stored="true"/>
     <fieldType name="text_ja" class="solr.TextField" positionIncrementGap="100" autoGeneratePhraseQueries="false">

@@ -39,6 +39,7 @@ import java.util.stream.Collectors;
 
 import com.google.common.collect.Lists;
 import org.apache.solr.common.SolrException;
+import org.apache.solr.util.FileUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -85,13 +86,15 @@ public class CorePropertiesLocator implements CoresLocator {
   private void writePropertiesFile(CoreDescriptor cd, Path propfile)  {
     Properties p = buildCoreProperties(cd);
     try {
-      Files.createDirectories(propfile.getParent());
+      FileUtils.createDirectories(propfile.getParent()); // Handling for symlinks.
       try (Writer os = new OutputStreamWriter(Files.newOutputStream(propfile), StandardCharsets.UTF_8)) {
         p.store(os, "Written by CorePropertiesLocator");
       }
     }
     catch (IOException e) {
       logger.error("Couldn't persist core properties to {}: {}", propfile, e.getMessage());
+      throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,
+          "Couldn't persist core properties to " + propfile.toAbsolutePath().toString() + " : " + e.getMessage());
     }
   }
 
@@ -134,8 +137,10 @@ public class CorePropertiesLocator implements CoresLocator {
         public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) throws IOException {
           if (file.getFileName().toString().equals(PROPERTIES_FILENAME)) {
             CoreDescriptor cd = buildCoreDescriptor(file, cc);
-            logger.debug("Found core {} in {}", cd.getName(), cd.getInstanceDir());
-            cds.add(cd);
+            if (cd != null) {
+              logger.debug("Found core {} in {}", cd.getName(), cd.getInstanceDir());
+              cds.add(cd);
+            }
             return FileVisitResult.SKIP_SIBLINGS;
           }
           return FileVisitResult.CONTINUE;
@@ -163,14 +168,6 @@ public class CorePropertiesLocator implements CoresLocator {
     return cds;
   }
 
-  @Override
-  public CoreDescriptor reload(CoreContainer cc, CoreDescriptor cd) {
-    if (cd == null) return null;
-    
-    Path coreProps = cd.getInstanceDir().resolve(CoreDescriptor.DEFAULT_EXTERNAL_PROPERTIES_FILE);
-    return buildCoreDescriptor(coreProps, cc);
-  }
-
   protected CoreDescriptor buildCoreDescriptor(Path propertiesFile, CoreContainer cc) {
 
     Path instanceDir = propertiesFile.getParent();
@@ -182,7 +179,9 @@ public class CorePropertiesLocator implements CoresLocator {
       for (String key : coreProperties.stringPropertyNames()) {
         propMap.put(key, coreProperties.getProperty(key));
       }
-      return new CoreDescriptor(name, instanceDir, propMap, cc.getContainerProperties(), cc.isZooKeeperAware());
+      CoreDescriptor ret = new CoreDescriptor(name, instanceDir, propMap, cc.getContainerProperties(), cc.isZooKeeperAware());
+      ret.loadExtraProperties();
+      return ret;
     }
     catch (IOException e) {
       logger.error("Couldn't load core descriptor from {}:{}", propertiesFile, e.toString());

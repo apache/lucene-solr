@@ -48,9 +48,9 @@ limitations under the License.
   <div id="navigation" class="clearfix">
 
     <ul>
-        <li ng-repeat="type in types" class="{{type.lower}}">
-            <a ng-click="selectPluginType(type)" rel="{{type.name}}">{{type.name}}
-                <span ng-show="type.changes">{{type.changes}}</span>
+        <li ng-repeat="typeObj in types" class="{{typeObj.lower}}" ng-class="{active:typeObj==type}">
+            <a ng-click="selectPluginType(typeObj)" rel="{{typeObj.name}}">{{typeObj.name}}
+                <span ng-show="typeObj.changes">{{typeObj.changes}}</span>
             </a>
         </li>
         <li class="PLUGINCHANGES"><a ng-click="startRecording()">Watch Changes</a></li>

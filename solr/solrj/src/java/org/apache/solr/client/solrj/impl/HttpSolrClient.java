@@ -42,6 +42,7 @@ import org.apache.http.HttpStatus;
 import org.apache.http.NameValuePair;
 import org.apache.http.client.HttpClient;
 import org.apache.http.client.entity.UrlEncodedFormEntity;
+import org.apache.http.client.methods.HttpDelete;
 import org.apache.http.client.methods.HttpEntityEnclosingRequestBase;
 import org.apache.http.client.methods.HttpGet;
 import org.apache.http.client.methods.HttpPost;
@@ -65,6 +66,7 @@ import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.request.RequestWriter;
+import org.apache.solr.client.solrj.request.V2Request;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
@@ -156,40 +158,7 @@ public class HttpSolrClient extends SolrClient {
   private volatile Integer connectionTimeout;
   private volatile Integer soTimeout;
   
-  /**
-   * @param baseURL
-   *          The URL of the Solr server. For example, "
-   *          <code>http://localhost:8983/solr/</code>" if you are using the
-   *          standard distribution Solr webapp on your local machine.
-   * @deprecated use {@link Builder} instead.
-   */
-  @Deprecated
-  public HttpSolrClient(String baseURL) {
-    this(baseURL, null, new BinaryResponseParser());
-  }
-  
-  /**
-   * @deprecated use {@link Builder} instead.
-   */
-  @Deprecated
-  public HttpSolrClient(String baseURL, HttpClient client) {
-    this(baseURL, client, new BinaryResponseParser());
-  }
-  
-  /**
-   * @deprecated use {@link Builder} instead.
-   */
-  @Deprecated
-  public HttpSolrClient(String baseURL, HttpClient client, ResponseParser parser) {
-    this(baseURL, client, parser, false);
-  }
-  
-  /**
-   * @deprecated use {@link Builder} instead.  This will soon be a 'protected'
-   * method, and will only be available for use in implementing subclasses.
-   */
-  @Deprecated
-  public HttpSolrClient(String baseURL, HttpClient client, ResponseParser parser, boolean allowCompression) {
+  protected HttpSolrClient(String baseURL, HttpClient client, ResponseParser parser, boolean allowCompression) {
     this.baseUrl = baseURL;
     if (baseUrl.endsWith("/")) {
       baseUrl = baseUrl.substring(0, baseUrl.length() - 1);
@@ -373,12 +342,24 @@ public class HttpSolrClient extends SolrClient {
     if (collection != null)
       basePath += "/" + collection;
 
+    if (request instanceof V2Request) {
+      if (System.getProperty("solr.v2RealPath") == null) {
+        basePath = baseUrl.replace("/solr", "/v2");
+      } else {
+        basePath = baseUrl + "/____v2";
+      }
+    }
+
     if (SolrRequest.METHOD.GET == request.getMethod()) {
       if (streams != null) {
         throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "GET can't send streams!");
       }
 
       return new HttpGet(basePath + path + wparams.toQueryString());
+    }
+
+    if (SolrRequest.METHOD.DELETE == request.getMethod()) {
+      return new HttpDelete(basePath + path + wparams.toQueryString());
     }
 
     if (SolrRequest.METHOD.POST == request.getMethod() || SolrRequest.METHOD.PUT == request.getMethod()) {
@@ -530,6 +511,7 @@ public class HttpSolrClient extends SolrClient {
       // Execute the method.
       HttpClientContext httpClientRequestContext = HttpClientUtil.createNewHttpClientRequestContext();
       final HttpResponse response = httpClient.execute(method, httpClientRequestContext);
+
       int httpStatus = response.getStatusLine().getStatusCode();
       
       // Read the contents
@@ -568,6 +550,7 @@ public class HttpSolrClient extends SolrClient {
         // no processor specified, return raw stream
         NamedList<Object> rsp = new NamedList<>();
         rsp.add("stream", respBody);
+        rsp.add("closeableResponse", response);
         // Only case where stream should not be closed
         shouldClose = false;
         return rsp;
@@ -824,14 +807,6 @@ public class HttpSolrClient extends SolrClient {
      * Use a delegation token for authenticating via the KerberosPlugin
      */
     public Builder withKerberosDelegationToken(String delegationToken) {
-      return withDelegationToken(delegationToken);
-    }
-
-    @Deprecated
-    /**
-     * @deprecated use {@link withKerberosDelegationToken(String)} instead
-     */
-    public Builder withDelegationToken(String delegationToken) {
       if (this.invariantParams.get(DelegationTokenHttpSolrClient.DELEGATION_TOKEN_PARAM) != null) {
         throw new IllegalStateException(DelegationTokenHttpSolrClient.DELEGATION_TOKEN_PARAM + " is already defined!");
       }

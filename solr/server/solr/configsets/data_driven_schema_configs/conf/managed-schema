@@ -177,6 +177,11 @@
     <dynamicField name="*_tdt" type="tdate"  indexed="true"  stored="true"/>
     <dynamicField name="*_tdts" type="tdates"  indexed="true"  stored="true"/>
 
+    <!-- payloaded dynamic fields -->
+    <dynamicField name="*_dpf" type="delimited_payloads_float" indexed="true"  stored="true"/>
+    <dynamicField name="*_dpi" type="delimited_payloads_int" indexed="true"  stored="true"/>
+    <dynamicField name="*_dps" type="delimited_payloads_string" indexed="true"  stored="true"/>
+
     <dynamicField name="*_c"   type="currency" indexed="true"  stored="true"/>
 
     <dynamicField name="ignored_*" type="ignored" multiValued="true"/>
@@ -600,6 +605,26 @@
     <fieldType name="location_rpt" class="solr.SpatialRecursivePrefixTreeFieldType"
                geo="true" distErrPct="0.025" maxDistErr="0.001" distanceUnits="kilometers" />
 
+    <!-- Payloaded field types -->
+    <fieldType name="delimited_payloads_float" stored="false" indexed="true" class="solr.TextField">
+      <analyzer>
+        <tokenizer class="solr.WhitespaceTokenizerFactory"/>
+        <filter class="solr.DelimitedPayloadTokenFilterFactory" encoder="float"/>
+      </analyzer>
+    </fieldType>
+    <fieldType name="delimited_payloads_int" stored="false" indexed="true" class="solr.TextField">
+      <analyzer>
+        <tokenizer class="solr.WhitespaceTokenizerFactory"/>
+        <filter class="solr.DelimitedPayloadTokenFilterFactory" encoder="integer"/>
+      </analyzer>
+    </fieldType>
+    <fieldType name="delimited_payloads_string" stored="false" indexed="true" class="solr.TextField">
+      <analyzer>
+        <tokenizer class="solr.WhitespaceTokenizerFactory"/>
+        <filter class="solr.DelimitedPayloadTokenFilterFactory" encoder="identity"/>
+      </analyzer>
+    </fieldType>
+
     <!-- Money/currency field type. See http://wiki.apache.org/solr/MoneyFieldType
         Parameters:
           defaultCurrency: Specifies the default currency if none specified. Defaults to "USD"
@@ -873,9 +898,8 @@
     
     <!-- Japanese using morphological analysis (see text_cjk for a configuration using bigramming)
 
-         NOTE: If you want to optimize search for precision, use default operator AND in your query
-         parser config with <solrQueryParser defaultOperator="AND"/> further down in this file.  Use 
-         OR if you would like to optimize for recall (default).
+         NOTE: If you want to optimize search for precision, use default operator AND in your request
+         handler config (q.op) Use OR if you would like to optimize for recall (default).
     -->
     <dynamicField name="*_txt_ja" type="text_ja"  indexed="true"  stored="true"/>
     <fieldType name="text_ja" class="solr.TextField" positionIncrementGap="100" autoGeneratePhraseQueries="false">

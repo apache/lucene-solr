@@ -1,0 +1,149 @@
+= Collapse and Expand Results
+:page-shortname: collapse-and-expand-results
+:page-permalink: collapse-and-expand-results.html
+// Licensed to the Apache Software Foundation (ASF) under one
+// or more contributor license agreements.  See the NOTICE file
+// distributed with this work for additional information
+// regarding copyright ownership.  The ASF licenses this file
+// to you under the Apache License, Version 2.0 (the
+// "License"); you may not use this file except in compliance
+// with the License.  You may obtain a copy of the License at
+//
+//   http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing,
+// software distributed under the License is distributed on an
+// "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+// KIND, either express or implied.  See the License for the
+// specific language governing permissions and limitations
+// under the License.
+
+The Collapsing query parser and the Expand component combine to form an approach to grouping documents for field collapsing in search results.
+
+The Collapsing query parser groups documents (collapsing the result set) according to your parameters, while the Expand component provides access to documents in the collapsed group for use in results display or other processing by a client application. Collapse & Expand can together do what the older <<result-grouping.adoc#result-grouping,Result Grouping>> (`group=true`) does for _most_ use-cases but not all. Generally, you should prefer Collapse & Expand.
+
+[IMPORTANT]
+====
+In order to use these features with SolrCloud, the documents must be located on the same shard. To ensure document co-location, you can define the `router.name` parameter as `compositeId` when creating the collection. For more information on this option, see the section <<shards-and-indexing-data-in-solrcloud.adoc#ShardsandIndexingDatainSolrCloud-DocumentRouting,Document Routing>>.
+====
+
+[[CollapseandExpandResults-CollapsingQueryParser]]
+== Collapsing Query Parser
+
+The `CollapsingQParser` is really a _post filter_ that provides more performant field collapsing than Solr's standard approach when the number of distinct groups in the result set is high. This parser collapses the result set to a single document per group before it forwards the result set to the rest of the search components. So all downstream components (faceting, highlighting, etc...) will work with the collapsed result set.
+
+The CollapsingQParser accepts the following local parameters:
+
+// TODO: Change column width to %autowidth.spread when https://github.com/asciidoctor/asciidoctor-pdf/issues/599 is fixed
+
+[cols="20,60,20",options="header"]
+|===
+|Parameter |Description |Default
+|field |The field that is being collapsed on. The field must be a single valued String, Int or Float |none
+|min \| max a|
+Selects the group head document for each group based on which document has the min or max value of the specified numeric field or <<function-queries.adoc#function-queries,function query>>.
+
+At most only one of the min, max, or sort (see below) parameters may be specified.
+
+If none are specified, the group head document of each group will be selected based on the highest scoring document in that group. |none
+|sort a|
+Selects the group head document for each group based on which document comes first according to the specified <<common-query-parameters.adoc#CommonQueryParameters-ThesortParameter,sort string>>.
+
+At most only one of the min, max, (see above) or sort parameters may be specified.
+
+If none are specified, the group head document of each group will be selected based on the highest scoring document in that group. |none
+|nullPolicy a|
+There are three null policies:
+
+* *ignore*: removes documents with a null value in the collapse field. This is the default.
+* *expand*: treats each document with a null value in the collapse field as a separate group.
+* *collapse*: collapses all documents with a null value into a single group using either highest score, or minimum/maximum.
+
+ |ignore
+|hint |Currently there is only one hint available: `top_fc`, which stands for top level FieldCache. The `top_fc` hint is only available when collapsing on String fields. `top_fc` usually provides the best query time speed but takes the longest to warm on startup or following a commit. `top_fc` will also result in having the collapsed field cached in memory twice if it's used for faceting or sorting. For very high cardinality (high distinct count) fields, `top_fc` may not fare so well. |none
+|size |Sets the initial size of the collapse data structures when collapsing on a *numeric field only*. The data structures used for collapsing grow dynamically when collapsing on numeric fields. Setting the size above the number of results expected in the result set will eliminate the resizing cost. |100,000
+|===
+
+*Sample Syntax:*
+
+Collapse on `group_field` selecting the document in each group with the highest scoring document:
+
+[source,text]
+----
+fq={!collapse field=group_field}
+----
+
+Collapse on `group_field` selecting the document in each group with the minimum value of `numeric_field`:
+
+[source,text]
+----
+fq={!collapse field=group_field min=numeric_field}
+----
+
+Collapse on `group_field` selecting the document in each group with the maximum value of `numeric_field`:
+
+[source,text]
+----
+fq={!collapse field=group_field max=numeric_field}
+----
+
+Collapse on `group_field` selecting the document in each group with the maximum value of a function. Note that the *cscore()* function can be used with the min/max options to use the score of the current document being collapsed.
+
+[source,text]
+----
+fq={!collapse field=group_field max=sum(cscore(),numeric_field)}
+----
+
+Collapse on `group_field` with a null policy so that all docs that do not have a value in the `group_field` will be treated as a single group. For each group, the selected document will be based first on a `numeric_field`, but ties will be broken by score:
+
+[source,text]
+----
+fq={!collapse field=group_field nullPolicy=collapse sort='numeric_field asc, score desc'}
+----
+
+Collapse on `group_field` with a hint to use the top level field cache:
+
+[source,text]
+----
+fq={!collapse field=group_field hint=top_fc}
+----
+
+The CollapsingQParserPlugin fully supports the QueryElevationComponent.
+
+[[CollapseandExpandResults-ExpandComponent]]
+== Expand Component
+
+The ExpandComponent can be used to expand the groups that were collapsed by the http://heliosearch.org/the-collapsingqparserplugin-solrs-new-high-performance-field-collapsing-postfilter/[CollapsingQParserPlugin].
+
+Example usage with the CollapsingQParserPlugin:
+
+[source,text]
+----
+q=foo&fq={!collapse field=ISBN}
+----
+
+In the query above, the CollapsingQParserPlugin will collapse the search results on the _ISBN_ field. The main search results will contain the highest ranking document from each book.
+
+The ExpandComponent can now be used to expand the results so you can see the documents grouped by ISBN. For example:
+
+[source,text]
+----
+q=foo&fq={!collapse field=ISBN}&expand=true
+----
+
+The “expand=true” parameter turns on the ExpandComponent. The ExpandComponent adds a new section to the search output labeled “expanded”.
+
+Inside the expanded section there is a _map_ with each group head pointing to the expanded documents that are within the group. As applications iterate the main collapsed result set, they can access the _expanded_ map to retrieve the expanded groups.
+
+The ExpandComponent has the following parameters:
+
+// TODO: Change column width to %autowidth.spread when https://github.com/asciidoctor/asciidoctor-pdf/issues/599 is fixed
+
+[cols="20,60,20",options="header"]
+|===
+|Parameter |Description |Default
+|expand.sort |Orders the documents within the expanded groups |score desc
+|expand.rows |The number of rows to display in each group |5
+|expand.q |Overrides the main q parameter, determines which documents to include in the main group. |main q
+|expand.fq |Overrides main fq's, determines which documents to include in the main group. |main fq's
+|===

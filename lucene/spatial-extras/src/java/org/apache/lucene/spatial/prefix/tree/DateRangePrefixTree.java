@@ -92,7 +92,7 @@ public class DateRangePrefixTree extends NumberRangePrefixTree {
   private static final int YEAR_LEVEL = 3;
 
   //how many million years are there?
-  private static final int NUM_MYEARS = 585;// we assert how this was computed in the constructor
+  private static final int NUM_MYEARS = 586;// we assert how this was computed in the constructor
 
   /** An instanced based on {@link Calendar#getInstance(TimeZone, Locale)} with UTC and Locale.Root. This
    * will (always?) be a {@link GregorianCalendar} with a so-called "Gregorian Change Date" of 1582.
@@ -142,9 +142,9 @@ public class DateRangePrefixTree extends NumberRangePrefixTree {
     BC_YEARS = BC_FIRSTYEAR - BC_LASTYEAR + 1;
     AD_FIRSTYEAR = MAXCAL.getActualMinimum(Calendar.YEAR); // 1
     AD_LASTYEAR = MAXCAL.getActualMaximum(Calendar.YEAR);
-    AD_YEAR_BASE = (((BC_YEARS-1) / 1000_000)+1) * 1000_000;
+    AD_YEAR_BASE = (((BC_YEARS-1) / 1000_000)+1) * 1000_000; // align year 0 at an even # of million years
     assert BC_LASTYEAR == 1 && AD_FIRSTYEAR == 1;
-    assert NUM_MYEARS == (AD_YEAR_BASE + AD_LASTYEAR) / 1000_000;
+    assert NUM_MYEARS == (AD_YEAR_BASE + AD_LASTYEAR) / 1000_000 + 1;
 
     maxLV = toShape((Calendar)MAXCAL.clone());
     minLV = toShape((Calendar)MINCAL.clone());
@@ -165,7 +165,7 @@ public class DateRangePrefixTree extends NumberRangePrefixTree {
     int cmp = comparePrefix(lv, maxLV);
     assert cmp <= 0;
     if (cmp == 0)//edge case (literally!)
-      return maxLV.getValAtLevel(lv.getLevel()+1);
+      return maxLV.getValAtLevel(lv.getLevel()+1) + 1;
 
     // if using GregorianCalendar and we're after the "Gregorian change date" then we'll compute
     //  the sub-cells ourselves more efficiently without the need to construct a Calendar.

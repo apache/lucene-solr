@@ -47,5 +47,10 @@
       <maxTime>${solr.autoSoftCommit.maxTime:-1}</maxTime>
     </autoSoftCommit>
   </updateHandler>
+  <initParams path="standard">
+    <lst name="defaults">
+      <str name="df">text</str>
+    </lst>
+  </initParams>
 
 </config>

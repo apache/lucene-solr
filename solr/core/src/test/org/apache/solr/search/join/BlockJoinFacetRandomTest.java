@@ -196,6 +196,7 @@ public class BlockJoinFacetRandomTest extends SolrTestCaseJ4 {
         BlockJoinFacetComponent.NO_TO_PARENT_BJQ_MESSAGE,
         req(
             "q", "t",
+            "df", "name",
             "qt", handler,
             BlockJoinFacetComponent.CHILD_FACET_FIELD_PARAMETER, facetFields[0]
         ),

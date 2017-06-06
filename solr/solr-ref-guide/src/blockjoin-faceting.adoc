@@ -1,0 +1,115 @@
+= BlockJoin Faceting
+:page-shortname: blockjoin-faceting
+:page-permalink: blockjoin-faceting.html
+// Licensed to the Apache Software Foundation (ASF) under one
+// or more contributor license agreements.  See the NOTICE file
+// distributed with this work for additional information
+// regarding copyright ownership.  The ASF licenses this file
+// to you under the Apache License, Version 2.0 (the
+// "License"); you may not use this file except in compliance
+// with the License.  You may obtain a copy of the License at
+//
+//   http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing,
+// software distributed under the License is distributed on an
+// "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+// KIND, either express or implied.  See the License for the
+// specific language governing permissions and limitations
+// under the License.
+
+BlockJoin facets allow you to aggregate children facet counts by their parents.
+
+It is a common requirement that if a parent document has several children documents, all of them need to increment facet value count only once. This functionality is provided by `BlockJoinDocSetFacetComponent`, and `BlockJoinFacetComponent` just an alias for compatibility.
+
+CAUTION: This component is considered experimental, and must be explicitly enabled for a request handler in `solrconfig.xml`, in the same way as any other <<requesthandlers-and-searchcomponents-in-solrconfig.adoc#requesthandlers-and-searchcomponents-in-solrconfig,search component>>.
+
+This example shows how you could add this search components to `solrconfig.xml` and define it in request handler:
+
+[source,xml]
+----
+  <searchComponent name="bjqFacetComponent" class="org.apache.solr.search.join.BlockJoinDocSetFacetComponent"/>
+
+   <requestHandler name="/bjqfacet" class="org.apache.solr.handler.component.SearchHandler">
+    <lst name="defaults">
+      <str name="shards.qt">/bjqfacet</str>
+    </lst>
+    <arr name="last-components">
+      <str>bjqFacetComponent</str>
+    </arr>
+  </requestHandler>
+----
+
+This component can be added into any search request handler. This component work with distributed search in SolrCloud mode.
+
+Documents should be added in children-parent blocks as described in <<uploading-data-with-index-handlers.adoc#UploadingDatawithIndexHandlers-NestedChildDocuments,indexing nested child documents>>. Examples:
+
+.Sample document
+[source,xml]
+----
+<add>
+  <doc>
+    <field name="id">1</field>
+    <field name="type_s">parent</field>
+    <doc>
+      <field name="id">11</field>
+      <field name="COLOR_s">Red</field>
+      <field name="SIZE_s">XL</field>
+      <field name="PRICE_i">6</field>
+    </doc>
+    <doc>
+      <field name="id">12</field>
+      <field name="COLOR_s">Red</field>
+      <field name="SIZE_s">XL</field>
+      <field name="PRICE_i">7</field>
+    </doc>
+    <doc>
+      <field name="id">13</field>
+      <field name="COLOR_s">Blue</field>
+      <field name="SIZE_s">L</field>
+      <field name="PRICE_i">5</field>
+    </doc>
+  </doc>
+  <doc>
+    <field name="id">2</field>
+    <field name="type_s">parent</field>
+    <doc>
+      <field name="id">21</field>
+      <field name="COLOR_s">Blue</field>
+      <field name="SIZE_s">XL</field>
+      <field name="PRICE_i">6</field>
+    </doc>
+    <doc>
+      <field name="id">22</field>
+      <field name="COLOR_s">Blue</field>
+      <field name="SIZE_s">XL</field>
+      <field name="PRICE_i">7</field>
+    </doc>
+    <doc>
+      <field name="id">23</field>
+      <field name="COLOR_s">Red</field>
+      <field name="SIZE_s">L</field>
+      <field name="PRICE_i">5</field>
+    </doc>
+  </doc>
+</add>
+----
+
+Queries are constructed the same way as for a <<other-parsers.adoc#OtherParsers-BlockJoinQueryParsers,Parent Block Join query>>. For example:
+
+[source,text]
+----
+http://localhost:8983/solr/bjqfacet?q={!parent which=type_s:parent}SIZE_s:XL&child.facet.field=COLOR_s
+----
+
+As a result we should have facets for Red(1) and Blue(1), because matches on children `id=11` and `id=12` are aggregated into single hit into parent with `id=1`. The key components of the request are:
+
+// TODO: Change column width to %autowidth.spread when https://github.com/asciidoctor/asciidoctor-pdf/issues/599 is fixed
+
+[cols="30,70",options="header"]
+|===
+|URL Part | Meaning
+|`/bjqfacet` |The name of the request handler that has been defined with one of block join facet components enabled.
+|`q={!parent ...}..` |The mandatory parent query as a main query. The parent query could also be a subordinate clause in a more complex query.
+|`child.facet.field=...` |The child document field, which might be repeated many times with several fields, as necessary.
+|===

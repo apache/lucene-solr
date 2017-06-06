@@ -112,8 +112,7 @@
        One can force a particular implementation via solr.MMapDirectoryFactory,
        solr.NIOFSDirectoryFactory, or solr.SimpleFSDirectoryFactory.
 
-       solr.RAMDirectoryFactory is memory based, not
-       persistent, and doesn't work with replication.
+       solr.RAMDirectoryFactory is memory based and not persistent.
     -->
   <directoryFactory name="DirectoryFactory"
                     class="${solr.directoryFactory:solr.NRTCachingDirectoryFactory}"/>

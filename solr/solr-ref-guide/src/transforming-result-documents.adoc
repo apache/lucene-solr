@@ -1,0 +1,340 @@
+= Transforming Result Documents
+:page-shortname: transforming-result-documents
+:page-permalink: transforming-result-documents.html
+// Licensed to the Apache Software Foundation (ASF) under one
+// or more contributor license agreements.  See the NOTICE file
+// distributed with this work for additional information
+// regarding copyright ownership.  The ASF licenses this file
+// to you under the Apache License, Version 2.0 (the
+// "License"); you may not use this file except in compliance
+// with the License.  You may obtain a copy of the License at
+//
+//   http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing,
+// software distributed under the License is distributed on an
+// "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+// KIND, either express or implied.  See the License for the
+// specific language governing permissions and limitations
+// under the License.
+
+Document Transformers can be used to modify the information returned about each documents in the results of a query.
+
+[[TransformingResultDocuments-UsingDocumentTransformers]]
+== Using Document Transformers
+
+When executing a request, a document transformer can be used by including it in the `fl` parameter using square brackets, for example:
+
+[source,plain]
+----
+fl=id,name,score,[shard]
+----
+
+Some transformers allow, or require, local parameters which can be specified as key value pairs inside the brackets:
+
+[source,plain]
+----
+fl=id,name,score,[explain style=nl]
+----
+
+As with regular fields, you can change the key used when a Transformer adds a field to a document via a prefix:
+
+[source,plain]
+----
+fl=id,name,score,my_val_a:[value v=42 t=int],my_val_b:[value v=7 t=float]
+----
+
+The sections below discuss exactly what these various transformers do.
+
+[[TransformingResultDocuments-AvailableTransformers]]
+== Available Transformers
+
+
+[[TransformingResultDocuments-_value_-ValueAugmenterFactory]]
+=== `[value]` - ValueAugmenterFactory
+
+Modifies every document to include the exact same value, as if it were a stored field in every document:
+
+[source,plain]
+----
+q=*:*&fl=id,greeting:[value v='hello']
+----
+
+The above query would produce results like the following:
+
+[source,xml]
+----
+<result name="response" numFound="32" start="0">
+  <doc>
+    <str name="id">1</str>
+    <str name="greeting">hello</str></doc>
+  </doc>
+  ...
+----
+
+By default, values are returned as a String, but a "```t```" parameter can be specified using a value of int, float, double, or date to force a specific return type:
+
+[source,plain]
+----
+q=*:*&fl=id,my_number:[value v=42 t=int],my_string:[value v=42]
+----
+
+In addition to using these request parameters, you can configure additional named instances of ValueAugmenterFactory, or override the default behavior of the existing `[value]` transformer in your solrconfig.xml file:
+
+[source,xml]
+----
+<transformer name="mytrans2" class="org.apache.solr.response.transform.ValueAugmenterFactory" >
+  <int name="value">5</int>
+</transformer>
+<transformer name="value" class="org.apache.solr.response.transform.ValueAugmenterFactory" >
+  <double name="defaultValue">5</double>
+</transformer>
+----
+
+The "```value```" option forces an explicit value to always be used, while the "```defaultValue```" option provides a default that can still be overridden using the "```v```" and "```t```" local parameters.
+
+
+[[TransformingResultDocuments-_explain_-ExplainAugmenterFactory]]
+=== `[explain]` - ExplainAugmenterFactory
+
+Augments each document with an inline explanation of its score exactly like the information available about each document in the debug section:
+
+[source,plain]
+----
+q=features:cache&wt=json&fl=id,[explain style=nl]
+----
+
+Supported values for "```style```" are "```text```", and "```html```", and "nl" which returns the information as structured data:
+
+[source,json]
+----
+{ "response":{"numFound":2,"start":0,"docs":[
+      {
+        "id":"6H500F0",
+        "[explain]":{
+          "match":true,
+          "value":1.052226,
+          "description":"weight(features:cache in 2) [DefaultSimilarity], result of:",
+          "details":[{
+...
+----
+
+A default style can be configured by specifying an "args" parameter in your configuration:
+
+[source,xml]
+----
+<transformer name="explain" class="org.apache.solr.response.transform.ExplainAugmenterFactory" >
+  <str name="args">nl</str>
+</transformer>
+----
+
+
+[[TransformingResultDocuments-_child_-ChildDocTransformerFactory]]
+=== `[child]` - ChildDocTransformerFactory
+
+This transformer returns all <<uploading-data-with-index-handlers.adoc#UploadingDatawithIndexHandlers-NestedChildDocuments,descendant documents>> of each parent document matching your query in a flat list nested inside the matching parent document. This is useful when you have indexed nested child documents and want to retrieve the child documents for the relevant parent documents for any type of search query.
+
+[source,plain]
+----
+fl=id,[child parentFilter=doc_type:book childFilter=doc_type:chapter limit=100]
+----
+
+Note that this transformer can be used even though the query itself is not a <<other-parsers.adoc#OtherParsers-BlockJoinQueryParsers,Block Join query>>.
+
+When using this transformer, the `parentFilter` parameter must be specified, and works the same as in all Block Join Queries, additional optional parameters are:
+
+* `childFilter` - query to filter which child documents should be included, this can be particularly useful when you have multiple levels of hierarchical documents (default: all children)
+* `limit` - the maximum number of child documents to be returned per parent document (default: 10)
+
+
+[[TransformingResultDocuments-_shard_-ShardAugmenterFactory]]
+=== `[shard]` - ShardAugmenterFactory
+
+This transformer adds information about what shard each individual document came from in a distributed request.
+
+ShardAugmenterFactory does not support any request parameters, or configuration options.
+
+
+[[TransformingResultDocuments-_docid_-DocIdAugmenterFactory]]
+=== `[docid]` - DocIdAugmenterFactory
+
+This transformer adds the internal Lucene document id to each document – this is primarily only useful for debugging purposes.
+
+DocIdAugmenterFactory does not support any request parameters, or configuration options.
+
+
+[[TransformingResultDocuments-_elevated_and_excluded_]]
+=== `[elevated]` and `[excluded]`
+
+These transformers are available only when using the <<the-query-elevation-component.adoc#the-query-elevation-component,Query Elevation Component>>.
+
+* `[elevated]` annotates each document to indicate if it was elevated or not.
+* `[excluded]` annotates each document to indicate if it would have been excluded - this is only supported if you also use the `markExcludes` parameter.
+
+[source,plain]
+----
+fl=id,[elevated],[excluded]&excludeIds=GB18030TEST&elevateIds=6H500F0&markExcludes=true
+----
+
+[source,json]
+----
+{ "response":{"numFound":32,"start":0,"docs":[
+      {
+        "id":"6H500F0",
+        "[elevated]":true,
+        "[excluded]":false},
+      {
+        "id":"GB18030TEST",
+        "[elevated]":false,
+        "[excluded]":true},
+      {
+        "id":"SP2514N",
+        "[elevated]":false,
+        "[excluded]":false},
+...
+----
+
+
+[[TransformingResultDocuments-_json_xml_]]
+=== `[json]` / `[xml]`
+
+These transformers replace field value containing a string representation of a valid XML or JSON structure with the actual raw XML or JSON structure rather than just the string value. Each applies only to the specific writer, such that `[json]` only applies to `wt=json` and `[xml]` only applies to `wt=xml`.
+
+[source,plain]
+----
+fl=id,source_s:[json]&wt=json
+----
+
+
+[[TransformingResultDocuments-_subquery_]]
+=== `[subquery]`
+
+This transformer executes a separate query per transforming document passing document fields as an input for subquery parameters. It's usually used with `{!join}` and `{!parent}` query parsers, and is intended to be an improvement for `[child]`.
+
+* It must be given an unique name: `fl=*,children:[subquery]`
+* There might be a few of them, eg `fl=*,sons:[subquery],daughters:[subquery]`.
+* Every `[subquery]` occurrence adds a field into a result document with the given name, the value of this field is a document list, which is a result of executing subquery using document fields as an input.
+
+Here is how it looks like in various formats:
+
+[source,xml]
+----
+  <result name="response" numFound="2" start="0">
+      <doc>
+         <int name="id">1</int>
+         <arr name="title">
+            <str>vdczoypirs</str>
+         </arr>
+         <result name="children" numFound="1" start="0">
+            <doc>
+               <int name="id">2</int>
+               <arr name="title">
+                  <str>vdczoypirs</str>
+               </arr>
+            </doc>
+         </result>
+      </doc>
+  ...
+----
+
+[source,json]
+----
+{ "response":{
+    "numFound":2, "start":0,
+    "docs":[
+      {
+        "id":1,
+        "subject":["parentDocument"],
+        "title":["xrxvomgu"],
+        "children":{ 
+           "numFound":1, "start":0,
+           "docs":[
+              { "id":2,
+                "cat":["childDocument"]
+              }
+            ]
+      }},
+      {
+         "id":4,
+      ...
+----
+
+[source,java]
+----
+ SolrDocumentList subResults = (SolrDocumentList)doc.getFieldValue("children");
+----
+
+[[TransformingResultDocuments-Subqueryresultfields]]
+==== Subquery result fields
+
+To appear in subquery document list, a field should be specified both fl parameters, in main one fl (despite the main result documents have no this field) and in subquery's one eg `foo.fl`. Of course, you can use wildcard in any or both of these parameters. For example, if field title should appear in categories subquery, it can be done via one of these ways.
+
+[source,plain]
+----
+fl=...title,categories:[subquery]&categories.fl=title&categories.q=...
+fl=...title,categories:[subquery]&categories.fl=*&categories.q=...
+fl=...*,categories:[subquery]&categories.fl=*&categories.q=...
+fl=...*,categories:[subquery]&categories.fl=*&categories.q=...
+----
+
+[[TransformingResultDocuments-SubqueryParametersShift]]
+==== Subquery Parameters Shift
+
+If subquery is declared as `fl=*,foo:[subquery]`, subquery parameters are prefixed with the given name and period. eg
+
+`q=*:*&fl=*,**foo**:[subquery]&**foo.**q=to be continued&**foo.**rows=10&**foo.**sort=id desc`
+
+[[TransformingResultDocuments-DocumentFieldasanInputforSubqueryParameters]]
+==== Document Field as an Input for Subquery Parameters
+
+It's necessary to pass some document field values as a parameter for subquery. It's supported via implicit *`row.__fieldname__`* parameter, and can be (but might not only) referred via Local Parameters syntax: `q=namne:john&fl=name,id,depts:[subquery]&depts.q={!terms f=id **v=$row.dept_id**}&depts.rows=10`
+
+Here departmens are retrieved per every employee in search result. We can say that it's like SQL `join ON emp.dept_id=dept.id`.
+
+Note, when document field has multiple values they are concatenated with comma by default, it can be changed by local parameter `foo:[subquery separator=' ']` , this mimics *`{!terms}`* to work smoothly with it.
+
+To log substituted subquery request parameters, add the corresponding parameter names, as in `depts.logParamsList=q,fl,rows,**row.dept_id**`
+
+[[TransformingResultDocuments-CoresandCollectionsinSolrCloud]]
+==== Cores and Collections in SolrCloud
+
+Use `foo:[subquery fromIndex=departments]` to invoke subquery on another core on the same node, it's what *`{!join}`* does for non-SolrCloud mode. But in case of SolrCloud just (and only) explicitly specify its' native parameters like `collection, shards` for subquery, eg:
+
+`q=*:*&fl=*,foo:[subquery]&foo.q=cloud&**foo.collection**=departments`
+
+[IMPORTANT]
+====
+
+If subquery collection has a different unique key field name (let's say `foo_id` at contrast to `id` in primary collection), add the following parameters to accommodate this difference: `foo.fl=id:foo_id&foo.distrib.singlePass=true`. Otherwise you'll get `NullPoniterException` from `QueryComponent.mergeIds`.
+
+====
+
+
+[[TransformingResultDocuments-_geo_-Geospatialformatter]]
+=== `[geo]` - Geospatial formatter
+
+Formats spatial data from a spatial field using a designated format type name. Two inner parameters are required: `f` for the field name, and `w` for the format name. Example: `geojson:[geo f=mySpatialField w=GeoJSON]`.
+
+Normally you'll simply be consistent in choosing the format type you want by setting the `format` attribute on the spatial field type to `WKT` or `GeoJSON` – see the section <<spatial-search.adoc#spatial-search,Spatial Search>> for more information. If you are consistent, it'll come out the way you stored it. This transformer offers a convenience to transform the spatial format to something different on retrieval.
+
+In addition, this feature is very useful with the `RptWithGeometrySpatialField` to avoid double-storage of the potentially large vector geometry. This transformer will detect that field type and fetch the geometry from an internal compact binary representation on disk (in docValues), and then format it as desired. As such, you needn't mark the field as stored, which would be redundant. In a sense this double-storage between docValues and stored-value storage isn't unique to spatial but with polygonal geometry it can be a lot of data, and furthermore you'd like to avoid storing it in a verbose format (like GeoJSON or WKT).
+
+
+[[TransformingResultDocuments-_features_-LTRFeatureLoggerTransformerFactory]]
+=== `[features]` - LTRFeatureLoggerTransformerFactory
+
+The "LTR" prefix stands for <<learning-to-rank.adoc#learning-to-rank,Learning To Rank>>. This transformer returns the values of features and it can be used for feature extraction and feature logging.
+
+[source,plain]
+----
+fl=id,[features store=yourFeatureStore]
+----
+
+This will return the values of the features in the `yourFeatureStore` store.
+
+[source,plain]
+----
+fl=id,[features]&rq={!ltr model=yourModel}
+----
+
+If you use `[features]` together with an Learning-To-Rank reranking query then the values of the features in the reranking model (`yourModel`) will be returned.

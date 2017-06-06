@@ -1,0 +1,77 @@
+= Using Python
+:page-shortname: using-python
+:page-permalink: using-python.html
+// Licensed to the Apache Software Foundation (ASF) under one
+// or more contributor license agreements.  See the NOTICE file
+// distributed with this work for additional information
+// regarding copyright ownership.  The ASF licenses this file
+// to you under the Apache License, Version 2.0 (the
+// "License"); you may not use this file except in compliance
+// with the License.  You may obtain a copy of the License at
+//
+//   http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing,
+// software distributed under the License is distributed on an
+// "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+// KIND, either express or implied.  See the License for the
+// specific language governing permissions and limitations
+// under the License.
+
+Solr includes an output format specifically for <<response-writers.adoc#ResponseWriters-PythonResponseWriter,Python>>, but <<response-writers.adoc#ResponseWriters-JSONResponseWriter,JSON output>> is a little more robust.
+
+[[UsingPython-SimplePython]]
+== Simple Python
+
+Making a query is a simple matter. First, tell Python you will need to make HTTP connections.
+
+[source,python]
+----
+from urllib2 import *
+----
+
+Now open a connection to the server and get a response. The `wt` query parameter tells Solr to return results in a format that Python can understand.
+
+[source,python]
+----
+connection = urlopen('http://localhost:8983/solr/collection_name/select?q=cheese&wt=python')
+response = eval(connection.read())
+----
+
+Now interpreting the response is just a matter of pulling out the information that you need.
+
+[source,python]
+----
+print response['response']['numFound'], "documents found."
+
+# Print the name of each document.
+
+for document in response['response']['docs']:
+  print "  Name =", document['name']
+----
+
+[[UsingPython-PythonwithJSON]]
+== Python with JSON
+
+JSON is a more robust response format, but you will need to add a Python package in order to use it. At a command line, install the simplejson package like this:
+
+[source,bash]
+----
+sudo easy_install simplejson
+----
+
+Once that is done, making a query is nearly the same as before. However, notice that the wt query parameter is now json, and the response is now digested by `simplejson.load()`.
+
+[source,python]
+----
+from urllib2 import *
+import simplejson
+connection = urlopen('http://localhost:8983/solr/collection_name/select?q=cheese&wt=json')
+response = simplejson.load(connection)
+print response['response']['numFound'], "documents found."
+
+# Print the name of each document.
+
+for document in response['response']['docs']:
+  print "  Name =", document['name']
+----

@@ -1,0 +1,65 @@
+{% assign sidebar = site.data.sidebar %}
+
+<ul id="mysidebar" class="nav">
+  <li class="sidebarTitle">{{sidebar.title}}</li>
+  {% if "" != site.solr-attributes.solr-guide-draft-status %}
+  <li class="draft-notice">
+    This is an unofficial DRAFT of the Guide for {{ site.solr-attributes.solr-docs-version }}.
+    <a href="https://lucene.apache.org/solr/guide/">Official releases are available from the Solr website</a>.
+  </li>
+  {% endif %}
+  {% for level1item in sidebar.kids %}
+  <li class="sb-level1">
+    <a href="{{level1item.url | remove: "/"}}">{{ level1item.title }}</a>
+    {% if level1item.kids.size > 0 %}
+    <ul>
+      {% for level2item in level1item.kids %}
+      <li class="sb-level2">
+        <a href="{{ level2item.url | remove: "/" }}">{{ level2item.title }}</a>
+        {% if level2item.kids.size > 0 %}
+        <ul>
+          {% for level3item in level2item.kids %}
+          <li class="sb-level3">
+            <a href="{{ level3item.url | remove: "/" }}">{{ level3item.title }}</a>
+            {% if level3item.kids.size > 0 %}
+            <ul>
+              {% for level4item in level3item.kids %}
+              <li class="sb-level4">
+                <a href="{{ level4item.url | remove: "/" }}">{{ level4item.title }}</a>
+                {% comment %}
+                <!-- NOTE: adding addiional levels here will also require additional changes to
+                     ref-guide.css in order to indent them properly
+                  -->
+                {% endcomment %}
+              </li>
+              {% endfor %}
+            </ul>
+            {% endif %}
+          </li>
+          {% endfor %}
+        </ul>
+        {% endif %}
+      </li>
+      {% endfor %}
+    </ul>
+    {% endif %}
+  </li>
+  {% endfor %}
+</ul>
+{% comment %}
+<!-- if you aren't using the accordion, uncomment this block:
+     <p class="external">
+       <a href="#" id="collapseAll">Collapse All</a> | <a href="#" id="expandAll">Expand All</a>
+     </p>
+     -->
+{% endcomment %}
+
+<!-- set the 'active' class on the current page and ancestors -->
+<!-- this highlights the active parent class in the navgoco sidebar. this is critical so that the parent expands when you're viewing a page. This must appear below the sidebar code above. Otherwise, if placed inside customscripts.js, the script runs before the sidebar code runs and the class never gets inserted.-->
+<script>$("#mysidebar a[href='{{ page.shortname }}.html']").parents('li').toggleClass("active", true);</script>
+<!-- set the 'current' class on the current page and 'current-tree' on the current page + it's ancestors -->
+<!-- this can let us do css highlighting of the current page in the sidebar even if/when the user clicks around in the sidebar causing other sidebar elements to be 'active' -->
+<script>
+  $("#mysidebar a[href='{{ page.shortname }}.html']").parent('li').toggleClass("current", true);
+  $("#mysidebar a[href='{{ page.shortname }}.html']").parents('li').toggleClass("current-tree", true);
+</script>

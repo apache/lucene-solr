@@ -1,0 +1,71 @@
+= Exporting Result Sets
+:page-shortname: exporting-result-sets
+:page-permalink: exporting-result-sets.html
+// Licensed to the Apache Software Foundation (ASF) under one
+// or more contributor license agreements.  See the NOTICE file
+// distributed with this work for additional information
+// regarding copyright ownership.  The ASF licenses this file
+// to you under the Apache License, Version 2.0 (the
+// "License"); you may not use this file except in compliance
+// with the License.  You may obtain a copy of the License at
+//
+//   http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing,
+// software distributed under the License is distributed on an
+// "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+// KIND, either express or implied.  See the License for the
+// specific language governing permissions and limitations
+// under the License.
+
+
+It's possible to export fully sorted result sets using a special <<query-re-ranking.adoc#query-re-ranking,rank query parser>> and <<response-writers.adoc#response-writers,response writer>> specifically designed to work together to handle scenarios that involve sorting and exporting millions of records.
+
+This feature uses a stream sorting technique that begins to send records within milliseconds and continues to stream results until the entire result set has been sorted and exported.
+
+The cases where this functionality may be useful include: session analysis, distributed merge joins, time series roll-ups, aggregations on high cardinality fields, fully distributed field collapsing, and sort based stats.
+
+[[ExportingResultSets-FieldRequirements]]
+== Field Requirements
+
+All the fields being sorted and exported must have docValues set to true. For more information, see the section on <<docvalues.adoc#docvalues,DocValues>>.
+
+[[ExportingResultSets-The_exportRequestHandler]]
+== The `/export` RequestHandler
+
+The `/export` request handler with the appropriate configuration is one of Solr's out-of-the-box request handlers - see <<implicit-requesthandlers.adoc#implicit-requesthandlers,Implicit RequestHandlers>> for more information.
+
+Note that this request handler's properties are defined as "invariants", which means they cannot be overridden by other properties passed at another time (such as at query time).
+
+[[ExportingResultSets-RequestingResultsExport]]
+== Requesting Results Export
+
+You can use `/export` to make requests to export the result set of a query.
+
+All queries must include `sort` and `fl` parameters, or the query will return an error. Filter queries are also supported.
+
+The supported response writers are `json` and `javabin`. For backward compatibility reasons `wt=xsort` is also supported as input, but `wt=xsort` behaves same as `wt=json`. The default output format is `json`.
+
+Here is an example of an export request of some indexed log data:
+
+[source,text]
+----
+http://localhost:8983/solr/core_name/export?q=my-query&sort=severity+desc,timestamp+desc&fl=severity,timestamp,msg
+----
+
+[[ExportingResultSets-SpecifyingtheSortCriteria]]
+=== Specifying the Sort Criteria
+
+The `sort` property defines how documents will be sorted in the exported result set. Results can be sorted by any field that has a field type of int,long, float, double, string. The sort fields must be single valued fields.
+
+Up to four sort fields can be specified per request, with the 'asc' or 'desc' properties.
+
+[[ExportingResultSets-SpecifyingtheFieldList]]
+=== Specifying the Field List
+
+The `fl` property defines the fields that will be exported with the result set. Any of the field types that can be sorted (i.e., int, long, float, double, string, date, boolean) can be used in the field list. The fields can be single or multi-valued. However, returning scores and wildcards are not supported at this time.
+
+[[ExportingResultSets-DistributedSupport]]
+== Distributed Support
+
+See the section <<streaming-expressions.adoc#streaming-expressions,Streaming Expressions>> for distributed support.

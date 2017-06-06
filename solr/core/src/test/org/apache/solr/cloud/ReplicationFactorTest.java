@@ -64,10 +64,10 @@ public class ReplicationFactorTest extends AbstractFullDistribZkTestBase {
    */
   @Override
   public JettySolrRunner createJetty(File solrHome, String dataDir,
-      String shardList, String solrConfigOverride, String schemaOverride)
+      String shardList, String solrConfigOverride, String schemaOverride, Replica.Type replicaType)
       throws Exception {
 
-    return createProxiedJetty(solrHome, dataDir, shardList, solrConfigOverride, schemaOverride);
+    return createProxiedJetty(solrHome, dataDir, shardList, solrConfigOverride, schemaOverride, replicaType);
   }
   
   @Test
@@ -101,9 +101,7 @@ public class ReplicationFactorTest extends AbstractFullDistribZkTestBase {
     CollectionAdminResponse resp = createCollection(testCollectionName, numShards, replicationFactor, maxShardsPerNode);
     
     if (resp.getResponse().get("failure") != null) {
-      CollectionAdminRequest.Delete req = new CollectionAdminRequest.Delete();
-      req.setCollectionName(testCollectionName);
-      req.process(cloudClient);
+      CollectionAdminRequest.deleteCollection(testCollectionName).process(cloudClient);
       
       resp = createCollection(testCollectionName, numShards, replicationFactor, maxShardsPerNode);
       

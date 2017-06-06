@@ -31,10 +31,14 @@ import org.apache.solr.update.processor.BufferingRequestProcessor;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import org.noggit.ObjectBuilder;
+
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.function.UnaryOperator;
 
 public class JsonLoaderTest extends SolrTestCaseJ4 {
+
   @BeforeClass
   public static void beforeTests() throws Exception {
     initCore("solrconfig.xml","schema.xml");
@@ -382,51 +386,112 @@ public class JsonLoaderTest extends SolrTestCaseJ4 {
     assertEquals(d.getFieldValue("e"), "e2");
     assertEquals(d.getFieldValue("d.p"), "q");
 
-    json = "{\n" +
-        "  \"id\": \"1\",\n" +
-        "  \"name\": \"i am the parent\",\n" +
-        "  \"cat\": \"parent\",\n" +
-        "  \"children\": [\n" +
-        "    {\n" +
-        "      \"id\": \"1.1\",\n" +
-        "      \"name\": \"i am the 1st child\",\n" +
-        "      \"cat\": \"child\"\n" +
-        "    },\n" +
-        "    {\n" +
-        "      \"id\": \"1.2\",\n" +
-        "      \"name\": \"i am the 2nd child\",\n" +
-        "      \"cat\": \"child\",\n" +
-        "      \"grandchildren\": [\n" +
-        "        {\n" +
-        "          \"id\": \"1.2.1\",\n" +
-        "          \"name\": \"i am the grandchild\",\n" +
-        "          \"cat\": \"grandchild\"\n" +
-        "        }\n" +
-        "      ]\n" +
-        "    }\n" +
-        "  ]\n" +
-        "}";
-    req = req(
-        "split", "/|/children|/children/grandchildren",
-        "f","$FQN:/**",
-        "f", "id:/children/id",
-        "f", "/name",
-        "f", "/children/name",
-        "f", "cat:/children/cat",
-        "f", "id:/children/grandchildren/id",
-        "f", "name:/children/grandchildren/name",
-        "f", "cat:/children/grandchildren/cat");
+    req = req(PARENT_TWO_CHILDREN_PARAMS);
     req.getContext().put("path", "/update/json/docs");
     rsp = new SolrQueryResponse();
     p = new BufferingRequestProcessor(null);
     loader = new JsonLoader();
-    loader.load(req, rsp, new ContentStreamBase.StringStream(json), p);
+    loader.load(req, rsp, new ContentStreamBase.StringStream(PARENT_TWO_CHILDREN_JSON), p);
     assertEquals(2, p.addCommands.get(0).solrDoc.getChildDocuments().size());
     assertEquals(1, p.addCommands.get(0).solrDoc.getChildDocuments().get(1).getChildDocuments().size());
 
   }
+  
+  private static final String PARENT_TWO_CHILDREN_JSON = "{\n" +
+      "  \"id\": \"1\",\n" +
+      "  \"name\": \"i am the parent\",\n" +
+      "  \"cat\": \"parent\",\n" +
+      "  \"children\": [\n" +
+      "    {\n" +
+      "      \"id\": \"1.1\",\n" +
+      "      \"name\": \"i am the 1st child\",\n" +
+      "      \"cat\": \"child\"\n" +
+      "    },\n" +
+      "    {\n" +
+      "      \"id\": \"1.2\",\n" +
+      "      \"name\": \"i am the 2nd child\",\n" +
+      "      \"cat\": \"child\",\n" +
+      "      \"grandchildren\": [\n" +
+      "        {\n" +
+      "          \"id\": \"1.2.1\",\n" +
+      "          \"name\": \"i am the grandchild\",\n" +
+      "          \"cat\": \"grandchild\"\n" +
+      "        }\n" +
+      "      ]\n" +
+      "    }\n" +
+      "  ]\n" +
+      "}";
+  
+  private static final String[] PARENT_TWO_CHILDREN_PARAMS = new String[] {    "split", "/|/children|/children/grandchildren",
+      "f","$FQN:/**",
+      "f", "id:/children/id",
+      "f", "/name",
+      "f", "/children/name",
+      "f", "cat:/children/cat",
+      "f", "id:/children/grandchildren/id",
+      "f", "name:/children/grandchildren/name",
+      "f", "cat:/children/grandchildren/cat"};
 
-
+  public void testFewParentsJsonDoc() throws Exception {
+    String json = PARENT_TWO_CHILDREN_JSON;
+    SolrQueryRequest req;
+    SolrQueryResponse rsp;
+    BufferingRequestProcessor p;
+    JsonLoader loader;
+    { //multichild test case
+      final boolean array = random().nextBoolean();
+      StringBuilder b = new StringBuilder();
+      if (array) {
+        b.append("[");
+      }
+      final int passes = atLeast(2);
+      for (int i=1;i<=passes;i++){
+        b.append(json.replace("1",""+i));
+        if (array) {
+          b.append(i<passes ? "," :"]");
+        }
+      }
+      
+      req = req(PARENT_TWO_CHILDREN_PARAMS);
+      req.getContext().put("path", "/update/json/docs");
+      rsp = new SolrQueryResponse();
+      p = new BufferingRequestProcessor(null);
+      loader = new JsonLoader();
+      loader.load(req, rsp, new ContentStreamBase.StringStream(b.toString()), p);
+      for (int i=1; i<=passes; i++){
+        final int ii = i;
+        UnaryOperator<String> s = (v)-> v.replace("1",""+ii); 
+        final SolrInputDocument parent = p.addCommands.get(i-1).solrDoc;
+        assertOnlyValue(s.apply("1"), parent,"id");
+        assertOnlyValue("i am the parent", parent, "name");
+        assertOnlyValue("parent", parent, "cat");
+     
+        assertEquals(2, parent.getChildDocuments().size());
+        {
+          final SolrInputDocument child1 = parent.getChildDocuments().get(0);
+          assertOnlyValue(s.apply("1.1"), child1, "id");
+          assertOnlyValue(s.apply("i am the 1st child"), child1, "name");
+          assertOnlyValue("child", child1,"cat");
+        }
+        {
+          final SolrInputDocument child2 = parent.getChildDocuments().get(1);
+          assertOnlyValue(s.apply("1.2"), child2, "id");
+          assertOnlyValue("i am the 2nd child", child2, "name");
+          assertOnlyValue("child", child2, "cat");
+          
+          assertEquals(1, child2.getChildDocuments().size());
+          final SolrInputDocument grandChild = child2.getChildDocuments().get(0);
+          assertOnlyValue(s.apply("1.2.1"), grandChild,"id");
+          assertOnlyValue("i am the grandchild", grandChild, "name");
+          assertOnlyValue("grandchild", grandChild, "cat");
+        }
+      }
+    }
+  }
+  
+  private static void assertOnlyValue(String expected, SolrInputDocument doc, String field) {
+    assertEquals(Collections.singletonList(expected), doc.getFieldValues(field));
+  }
 
   public void testExtendedFieldValues() throws Exception {
     String str = "[{'id':'1', 'val_s':{'add':'foo'}}]".replace('\'', '"');

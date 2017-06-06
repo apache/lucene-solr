@@ -394,7 +394,7 @@ public class TestSolrCloudWithDelegationTokens extends SolrTestCaseJ4 {
     }
 
     ss = new HttpSolrClient.Builder(solrClientPrimary.getBaseURL().toString())
-        .withDelegationToken(token)
+        .withKerberosDelegationToken(token)
         .withResponseParser(solrClientPrimary.getParser())
         .build();
     try {

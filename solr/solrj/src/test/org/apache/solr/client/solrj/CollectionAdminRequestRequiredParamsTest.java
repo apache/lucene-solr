@@ -17,12 +17,15 @@
 package org.apache.solr.client.solrj;
 
 import static org.apache.solr.common.params.CoreAdminParams.*;
+import static org.apache.solr.common.params.CollectionAdminParams.FLUSH;
 
 import java.util.Iterator;
 import java.util.Set;
 
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
+import org.apache.solr.common.cloud.Replica;
+import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.ShardParams;
 import org.apache.solr.common.params.SolrParams;
 
@@ -35,128 +38,131 @@ import com.google.common.collect.Sets;
 public class CollectionAdminRequestRequiredParamsTest extends LuceneTestCase {
 
   public void testBalanceShardUnique() {
-    final CollectionAdminRequest.BalanceShardUnique request = new CollectionAdminRequest.BalanceShardUnique()
-            .setCollection("foo")
-            .setPropertyName("prop");
+    CollectionAdminRequest.BalanceShardUnique request = CollectionAdminRequest.balanceReplicaProperty("foo","prop");
     assertContainsParams(request.getParams(), ACTION, COLLECTION, "property");
+
+    request.setShardUnique(true);
+    assertContainsParams(request.getParams(), ACTION, COLLECTION, "property","shardUnique");
+    
+    request.setOnlyActiveNodes(false);
+    assertContainsParams(request.getParams(), ACTION, COLLECTION, "property","shardUnique","onlyactivenodes");
+    
+    request.setShardUnique(null);
+    assertContainsParams(request.getParams(), ACTION, COLLECTION, "property","onlyactivenodes");
+    
   }
   
   public void testClusterProp() {
-    final CollectionAdminRequest.ClusterProp request = new CollectionAdminRequest.ClusterProp()
-            .setPropertyName("foo")
-            .setPropertyValue("bar");
+    CollectionAdminRequest.ClusterProp request = CollectionAdminRequest.setClusterProperty("foo","bar");
     assertContainsParams(request.getParams(), ACTION, NAME, "val");
   }
   
   public void testAddRole() {
-    final CollectionAdminRequest.AddRole request = new CollectionAdminRequest.AddRole()
-            .setNode("node")
-            .setRole("role");
+    CollectionAdminRequest.AddRole request = CollectionAdminRequest.addRole("node","role");
     assertContainsParams(request.getParams(), ACTION, "node", "role");
   }
   
   public void testRemoveRole() {
-    final CollectionAdminRequest.RemoveRole request = new CollectionAdminRequest.RemoveRole()
-            .setNode("node")
-            .setRole("role");
+    CollectionAdminRequest.RemoveRole request = CollectionAdminRequest.removeRole("node","role");
     assertContainsParams(request.getParams(), ACTION, "node", "role");
   }
   
   public void testAddReplica() {
-    // with shard parameter
-    CollectionAdminRequest.AddReplica request = new CollectionAdminRequest.AddReplica()
-            .setShardName("shard")
-            .setCollectionName("collection");
+    // with shard parameter and "client side" implicit type param
+    CollectionAdminRequest.AddReplica request = CollectionAdminRequest.addReplicaToShard("collection", "shard");
+    assertContainsParams(request.getParams(), ACTION, COLLECTION, SHARD, ZkStateReader.REPLICA_TYPE);
+    
+    // with only shard parameter and "server side" implicit type, so no param
+    request = CollectionAdminRequest.addReplicaToShard("collection", "shard", null);
     assertContainsParams(request.getParams(), ACTION, COLLECTION, SHARD);
     
     // with route parameter
-    request = new CollectionAdminRequest.AddReplica()
-            .setRouteKey("route")
-            .setCollectionName("collection");
+    request = CollectionAdminRequest.addReplicaByRouteKey("collection","route");
     assertContainsParams(request.getParams(), ACTION, COLLECTION, ShardParams._ROUTE_);
+    
+    // with explicit type parameter
+    request = CollectionAdminRequest.addReplicaToShard("collection", "shard", Replica.Type.NRT);
+    assertContainsParams(request.getParams(), ACTION, COLLECTION, SHARD, ZkStateReader.REPLICA_TYPE);
   }
   
   public void testAddReplicaProp() {
-    final CollectionAdminRequest.AddReplicaProp request = new CollectionAdminRequest.AddReplicaProp()
-            .setShardName("shard")
-            .setCollectionName("collection")
-            .setReplica("replica")
-            .setPropertyName("prop")
-            .setPropertyValue("value");
+    final CollectionAdminRequest.AddReplicaProp request = CollectionAdminRequest.addReplicaProperty
+      ("collection", "shard", "replica", "prop", "value");
     assertContainsParams(request.getParams(), ACTION, COLLECTION, SHARD, REPLICA, "property", "property.value");
   }
   
   public void testClusterStatus() {
-    final CollectionAdminRequest.ClusterStatus request = new CollectionAdminRequest.ClusterStatus();
+    final CollectionAdminRequest.ClusterStatus request = CollectionAdminRequest.getClusterStatus();
     assertContainsParams(request.getParams(), ACTION);
+
+    request.setCollectionName("foo");
+    assertContainsParams(request.getParams(), ACTION, COLLECTION);
+    
+    request.setShardName("foo");
+    assertContainsParams(request.getParams(), ACTION, COLLECTION, SHARD);
+
+    request.setRouteKey("foo");
+    request.setShardName(null);
+    assertContainsParams(request.getParams(), ACTION, COLLECTION, ShardParams._ROUTE_);
+    
   }
   
   public void testCreateShard() {
-    final CollectionAdminRequest.CreateShard request = new CollectionAdminRequest.CreateShard()
-            .setCollectionName("collection")
-            .setShardName("shard");
+    final CollectionAdminRequest.CreateShard request = CollectionAdminRequest.createShard("collection","shard");
     assertContainsParams(request.getParams(), ACTION, COLLECTION, SHARD);
   }
   
   public void testDeleteReplica() {
-    final CollectionAdminRequest.DeleteReplica request = new CollectionAdminRequest.DeleteReplica()
-            .setCollectionName("collection")
-            .setShardName("shard")
-            .setReplica("replica");
+    final CollectionAdminRequest.DeleteReplica request = CollectionAdminRequest.deleteReplica("collection","shard","replica");
     assertContainsParams(request.getParams(), ACTION, COLLECTION, SHARD, REPLICA);
+
   }
   
   public void testDeleteReplicaProp() {
-    final CollectionAdminRequest.DeleteReplicaProp request = new CollectionAdminRequest.DeleteReplicaProp()
-            .setCollectionName("collection")
-            .setShardName("shard")
-            .setReplica("replica")
-            .setPropertyName("foo");
+    final CollectionAdminRequest.DeleteReplicaProp request = CollectionAdminRequest.deleteReplicaProperty
+      ("collection", "shard", "replica", "foo");
     assertContainsParams(request.getParams(), ACTION, COLLECTION, SHARD, REPLICA, "property");
   }
   
   public void testDeleteShard() {
-    final CollectionAdminRequest.DeleteShard request = new CollectionAdminRequest.DeleteShard()
-            .setCollectionName("collection")
-            .setShardName("shard");
+    final CollectionAdminRequest.DeleteShard request = CollectionAdminRequest.deleteShard("collection","shard");
     assertContainsParams(request.getParams(), ACTION, COLLECTION, SHARD);
   }
   
   public void testSplitShard() {
-    final CollectionAdminRequest.SplitShard request = new CollectionAdminRequest.SplitShard()
-            .setCollectionName("collection")
+    final CollectionAdminRequest.SplitShard request = CollectionAdminRequest.splitShard("collection")
             .setShardName("shard");
     assertContainsParams(request.getParams(), ACTION, COLLECTION, SHARD);
   }
 
   public void testCreateCollection() {
-    final CollectionAdminRequest.Create request = new CollectionAdminRequest.Create()
-            .setCollectionName("collection");
-    assertContainsParams(request.getParams(), ACTION, NAME);
+    // shortest form
+    assertContainsParams(CollectionAdminRequest.createCollection("foo", null, 1, 1).getParams(),
+                         ACTION, NAME, ZkStateReader.NUM_SHARDS_PROP,
+                         "replicationFactor", ZkStateReader.NRT_REPLICAS);
+    // shortest form w/ "explicitly" choosing "implicit" router
+    assertContainsParams(CollectionAdminRequest.createCollectionWithImplicitRouter("foo", null, "bar", 1).getParams(),
+                         ACTION, NAME, "shards", "router.name",
+                         "replicationFactor", ZkStateReader.NRT_REPLICAS);
   }
   
   public void testReloadCollection() {
-    final CollectionAdminRequest.Reload request = new CollectionAdminRequest.Reload()
-            .setCollectionName("collection");
+    final CollectionAdminRequest.Reload request = CollectionAdminRequest.reloadCollection("collection");
     assertContainsParams(request.getParams(), ACTION, NAME);
   }
   
   public void testDeleteCollection() {
-    final CollectionAdminRequest.Delete request = new CollectionAdminRequest.Delete()
-            .setCollectionName("collection");
+    final CollectionAdminRequest.Delete request = CollectionAdminRequest.deleteCollection("collection");
     assertContainsParams(request.getParams(), ACTION, NAME);
   }
   
   public void testCreateAlias() {
-    final CollectionAdminRequest.CreateAlias request = new CollectionAdminRequest.CreateAlias()
-            .setAliasName("name")
-            .setAliasedCollections("collections");
+    final CollectionAdminRequest.CreateAlias request = CollectionAdminRequest.createAlias("name","collections");
     assertContainsParams(request.getParams(), ACTION, NAME, "collections");
   }
   
   public void testDeleteAlias() {
-    final CollectionAdminRequest.DeleteAlias request = new CollectionAdminRequest.DeleteAlias()
-            .setAliasName("name");
+    final CollectionAdminRequest.DeleteAlias request = CollectionAdminRequest.deleteAlias("name");
     assertContainsParams(request.getParams(), ACTION, NAME);
   }
   
@@ -166,10 +172,7 @@ public class CollectionAdminRequestRequiredParamsTest extends LuceneTestCase {
   }
 
   public void testMigrate() {
-    final CollectionAdminRequest.Migrate request = new CollectionAdminRequest.Migrate()
-            .setCollectionName("collection")
-            .setTargetCollection("target")
-            .setSplitKey("splitKey");
+    final CollectionAdminRequest.Migrate request = CollectionAdminRequest.migrateData("collection","targer","splitKey");
     assertContainsParams(request.getParams(), ACTION, COLLECTION, "target.collection", "split.key");
   }
   
@@ -179,9 +182,20 @@ public class CollectionAdminRequestRequiredParamsTest extends LuceneTestCase {
   }
   
   public void testRequestStatus() {
-    final CollectionAdminRequest.RequestStatus request = new CollectionAdminRequest.RequestStatus()
-            .setRequestId("request");
+    final CollectionAdminRequest.RequestStatus request = CollectionAdminRequest.requestStatus("request");
     assertContainsParams(request.getParams(), ACTION, REQUESTID);
+  }
+  
+  public void testDeleteStatus() {
+    assertContainsParams(CollectionAdminRequest.deleteAsyncId("foo").getParams(),
+                         ACTION, REQUESTID);
+    assertContainsParams(CollectionAdminRequest.deleteAllAsyncIds().getParams(),
+                         ACTION, FLUSH);
+  }
+  
+  public void testForceLeader() {
+    assertContainsParams(CollectionAdminRequest.forceLeaderElection("foo","bar").getParams(),
+                         ACTION, COLLECTION, SHARD);
   }
 
   private void assertContainsParams(SolrParams solrParams, String... requiredParams) {

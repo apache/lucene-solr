@@ -17,22 +17,26 @@
 package org.apache.lucene.search.similarities;
 
 
+import java.io.IOException;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
+
+import org.apache.lucene.document.Document;
+import org.apache.lucene.document.Field.Store;
+import org.apache.lucene.document.TextField;
+import org.apache.lucene.index.DirectoryReader;
+import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.index.IndexWriter;
+import org.apache.lucene.index.SegmentInfos;
+import org.apache.lucene.index.Term;
+import org.apache.lucene.search.Explanation;
+import org.apache.lucene.search.IndexSearcher;
+import org.apache.lucene.search.TermQuery;
+import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.LuceneTestCase;
+import org.apache.lucene.util.Version;
 
 public class TestBM25Similarity extends LuceneTestCase {
-  
-  public void testSaneNormValues() {
-    BM25Similarity sim = new BM25Similarity();
-    for (int i = 0; i < 256; i++) {
-      float len = sim.decodeNormValue((byte) i);
-      assertFalse("negative len: " + len + ", byte=" + i, len < 0.0f);
-      assertFalse("inf len: " + len + ", byte=" + i, Float.isInfinite(len));
-      assertFalse("nan len for byte=" + i, Float.isNaN(len));
-      if (i > 0) {
-        assertTrue("len is not decreasing: " + len + ",byte=" + i, len < sim.decodeNormValue((byte)(i-1)));
-      }
-    }
-  }
   
   public void testIllegalK1() {
     IllegalArgumentException expected = expectThrows(IllegalArgumentException.class, () -> {
@@ -71,5 +75,45 @@ public class TestBM25Similarity extends LuceneTestCase {
       new BM25Similarity(1.2f, Float.NaN);
     });
     assertTrue(expected.getMessage().contains("illegal b value"));
+  }
+
+  public void testLengthEncodingBackwardCompatibility() throws IOException {
+    Similarity similarity = new BM25Similarity();
+    for (int indexCreatedVersionMajor : new int[] { Version.LUCENE_6_0_0.major, Version.LATEST.major}) {
+      for (int length : new int[] {1, 2, 4}) { // these length values are encoded accurately on both cases
+        Directory dir = newDirectory();
+        // set the version on the directory
+        new SegmentInfos(indexCreatedVersionMajor).commit(dir);
+        IndexWriter w = new IndexWriter(dir, newIndexWriterConfig().setSimilarity(similarity));
+        Document doc = new Document();
+        String value = IntStream.range(0, length).mapToObj(i -> "b").collect(Collectors.joining(" "));
+        doc.add(new TextField("foo", value, Store.NO));
+        w.addDocument(doc);
+        IndexReader reader = DirectoryReader.open(w);
+        IndexSearcher searcher = newSearcher(reader);
+        searcher.setSimilarity(similarity);
+        Explanation expl = searcher.explain(new TermQuery(new Term("foo", "b")), 0);
+        Explanation docLen = findExplanation(expl, "fieldLength");
+        assertNotNull(docLen);
+        assertEquals(docLen.toString(), length, (int) docLen.getValue());
+        w.close();
+        reader.close();
+        dir.close();
+      }
+    }
+  }
+
+  private static Explanation findExplanation(Explanation expl, String text) {
+    if (expl.getDescription().equals(text)) {
+      return expl;
+    } else {
+      for (Explanation sub : expl.getDetails()) {
+        Explanation match = findExplanation(sub, text);
+        if (match != null) {
+          return match;
+        }
+      }
+    }
+    return null;
   }
 }

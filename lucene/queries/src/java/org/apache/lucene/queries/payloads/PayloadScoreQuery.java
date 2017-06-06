@@ -21,12 +21,14 @@ import java.util.Map;
 import java.util.Set;
 import java.util.Objects;
 
+import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.PostingsEnum;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.index.TermContext;
 import org.apache.lucene.search.Explanation;
 import org.apache.lucene.search.IndexSearcher;
+import org.apache.lucene.search.Query;
 import org.apache.lucene.search.similarities.ClassicSimilarity;
 import org.apache.lucene.search.similarities.Similarity;
 import org.apache.lucene.search.similarities.Similarity.SimScorer;
@@ -39,8 +41,7 @@ import org.apache.lucene.search.spans.Spans;
 import org.apache.lucene.util.BytesRef;
 
 /**
- * A Query class that uses a {@link PayloadFunction} to modify the score of a
- * wrapped SpanQuery
+ * A Query class that uses a {@link PayloadFunction} to modify the score of a wrapped SpanQuery
  *
  * NOTE: In order to take advantage of this with the default scoring implementation
  * ({@link ClassicSimilarity}), you must override {@link ClassicSimilarity#scorePayload(int, int, int, BytesRef)},
@@ -81,8 +82,26 @@ public class PayloadScoreQuery extends SpanQuery {
   }
 
   @Override
+  public Query rewrite(IndexReader reader) throws IOException {
+    Query matchRewritten = wrappedQuery.rewrite(reader);
+    if (wrappedQuery != matchRewritten && matchRewritten instanceof SpanQuery) {
+      return new PayloadScoreQuery((SpanQuery)matchRewritten, function, includeSpanScore);
+    }
+    return super.rewrite(reader);
+  }
+
+
+  @Override
   public String toString(String field) {
-    return "PayloadSpanQuery[" + wrappedQuery.toString(field) + "; " + function.toString() + "]";
+    StringBuilder buffer = new StringBuilder();
+    buffer.append("PayloadScoreQuery(");
+    buffer.append(wrappedQuery.toString(field));
+    buffer.append(", function: ");
+    buffer.append(function.getClass().getSimpleName());
+    buffer.append(", includeSpanScore: ");
+    buffer.append(includeSpanScore);
+    buffer.append(")");
+    return buffer.toString();
   }
 
   @Override
@@ -101,7 +120,7 @@ public class PayloadScoreQuery extends SpanQuery {
   
   private boolean equalsTo(PayloadScoreQuery other) {
     return wrappedQuery.equals(other.wrappedQuery) && 
-           function.equals(other.function);
+           function.equals(other.function) && (includeSpanScore == other.includeSpanScore);
   }
 
   @Override
@@ -109,6 +128,7 @@ public class PayloadScoreQuery extends SpanQuery {
     int result = classHash();
     result = 31 * result + Objects.hashCode(wrappedQuery);
     result = 31 * result + Objects.hashCode(function);
+    result = 31 * result + Objects.hashCode(includeSpanScore);
     return result;
   }
 
@@ -132,7 +152,7 @@ public class PayloadScoreQuery extends SpanQuery {
     }
 
     @Override
-    public PayloadSpanScorer scorer(LeafReaderContext context) throws IOException {
+    public SpanScorer scorer(LeafReaderContext context) throws IOException {
       Spans spans = getSpans(context, Postings.PAYLOADS);
       if (spans == null)
         return null;
@@ -148,7 +168,7 @@ public class PayloadScoreQuery extends SpanQuery {
 
     @Override
     public Explanation explain(LeafReaderContext context, int doc) throws IOException {
-      PayloadSpanScorer scorer = scorer(context);
+      PayloadSpanScorer scorer = (PayloadSpanScorer)scorer(context);
       if (scorer == null || scorer.iterator().advance(doc) != doc)
         return Explanation.noMatch("No match");
 

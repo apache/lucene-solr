@@ -190,7 +190,8 @@ public abstract class SimilarityBase extends Similarity {
   }
   
   @Override
-  public SimScorer simScorer(SimWeight stats, LeafReaderContext context) throws IOException {
+  public final SimScorer simScorer(SimWeight stats, LeafReaderContext context) throws IOException {
+    int indexCreatedVersionMajor = context.reader().getMetaData().getCreatedVersionMajor();
     if (stats instanceof MultiSimilarity.MultiStats) {
       // a multi term query (e.g. phrase). return the summation, 
       // scoring almost as if it were boolean query
@@ -198,12 +199,12 @@ public abstract class SimilarityBase extends Similarity {
       SimScorer subScorers[] = new SimScorer[subStats.length];
       for (int i = 0; i < subScorers.length; i++) {
         BasicStats basicstats = (BasicStats) subStats[i];
-        subScorers[i] = new BasicSimScorer(basicstats, context.reader().getNormValues(basicstats.field));
+        subScorers[i] = new BasicSimScorer(basicstats, indexCreatedVersionMajor, context.reader().getNormValues(basicstats.field));
       }
       return new MultiSimilarity.MultiSimScorer(subScorers);
     } else {
       BasicStats basicstats = (BasicStats) stats;
-      return new BasicSimScorer(basicstats, context.reader().getNormValues(basicstats.field));
+      return new BasicSimScorer(basicstats, indexCreatedVersionMajor, context.reader().getNormValues(basicstats.field));
     }
   }
   
@@ -216,40 +217,38 @@ public abstract class SimilarityBase extends Similarity {
 
   // ------------------------------ Norm handling ------------------------------
   
-  /** Norm to document length map. */
-  private static final float[] NORM_TABLE = new float[256];
+  /** Cache of decoded bytes. */
+  private static final float[] OLD_LENGTH_TABLE = new float[256];
+  private static final float[] LENGTH_TABLE = new float[256];
 
   static {
     for (int i = 1; i < 256; i++) {
-      float floatNorm = SmallFloat.byte315ToFloat((byte)i);
-      NORM_TABLE[i] = 1.0f / (floatNorm * floatNorm);
+      float f = SmallFloat.byte315ToFloat((byte)i);
+      OLD_LENGTH_TABLE[i] = 1.0f / (f*f);
     }
-    NORM_TABLE[0] = 1.0f / NORM_TABLE[255]; // otherwise inf
+    OLD_LENGTH_TABLE[0] = 1.0f / OLD_LENGTH_TABLE[255]; // otherwise inf
+
+    for (int i = 0; i < 256; i++) {
+      LENGTH_TABLE[i] = SmallFloat.byte4ToInt((byte) i);
+    }
   }
 
-  /** Encodes the document length in the same way as {@link TFIDFSimilarity}. */
+  /** Encodes the document length in the same way as {@link BM25Similarity}. */
   @Override
-  public long computeNorm(FieldInvertState state) {
-    final float numTerms;
+  public final long computeNorm(FieldInvertState state) {
+    final int numTerms;
     if (discountOverlaps)
       numTerms = state.getLength() - state.getNumOverlap();
     else
       numTerms = state.getLength();
-    return encodeNormValue(numTerms);
+    int indexCreatedVersionMajor = state.getIndexCreatedVersionMajor();
+    if (indexCreatedVersionMajor >= 7) {
+      return SmallFloat.intToByte4(numTerms);
+    } else {
+      return SmallFloat.floatToByte315((float) (1 / Math.sqrt(numTerms)));
+    }
   }
-  
-  /** Decodes a normalization factor (document length) stored in an index.
-   * @see #encodeNormValue(float)
-   */
-  protected float decodeNormValue(byte norm) {
-    return NORM_TABLE[norm & 0xFF];  // & 0xFF maps negative bytes to positive above 127
-  }
-  
-  /** Encodes the length to a byte via SmallFloat. */
-  protected byte encodeNormValue(float length) {
-    return SmallFloat.floatToByte315((float) (1 / Math.sqrt(length)));
-  }
-  
+
   // ----------------------------- Static methods ------------------------------
   
   /** Returns the base two logarithm of {@code x}. */
@@ -266,35 +265,37 @@ public abstract class SimilarityBase extends Similarity {
    * {@link SimilarityBase#explain(BasicStats, int, Explanation, float)},
    * respectively.
    */
-  private class BasicSimScorer extends SimScorer {
+  final class BasicSimScorer extends SimScorer {
     private final BasicStats stats;
     private final NumericDocValues norms;
+    private final float[] normCache;
     
-    BasicSimScorer(BasicStats stats, NumericDocValues norms) throws IOException {
+    BasicSimScorer(BasicStats stats, int indexCreatedVersionMajor, NumericDocValues norms) throws IOException {
       this.stats = stats;
       this.norms = norms;
+      this.normCache = indexCreatedVersionMajor >= 7 ? LENGTH_TABLE : OLD_LENGTH_TABLE;
     }
 
-    private float getNormValue(int doc) throws IOException {
+    float getLengthValue(int doc) throws IOException {
       if (norms == null) {
         return 1F;
       }
       if (norms.advanceExact(doc)) {
-        return decodeNormValue((byte) norms.longValue());
+        return normCache[Byte.toUnsignedInt((byte) norms.longValue())];
       } else {
-        return decodeNormValue((byte) 0);
+        return 0;
       }
     }
     
     @Override
     public float score(int doc, float freq) throws IOException {
       // We have to supply something in case norms are omitted
-      return SimilarityBase.this.score(stats, freq, getNormValue(doc));
+      return SimilarityBase.this.score(stats, freq, getLengthValue(doc));
     }
 
     @Override
     public Explanation explain(int doc, Explanation freq) throws IOException {
-      return SimilarityBase.this.explain(stats, doc, freq, getNormValue(doc));
+      return SimilarityBase.this.explain(stats, doc, freq, getLengthValue(doc));
     }
 
     @Override

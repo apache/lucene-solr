@@ -1,0 +1,42 @@
+= Managing Solr
+:page-shortname: managing-solr
+:page-permalink: managing-solr.html
+:page-children: taking-solr-to-production, securing-solr, running-solr-on-hdfs, making-and-restoring-backups, configuring-logging, using-jmx-with-solr, mbean-request-handler, performance-statistics-reference, metrics-reporting, v2-api
+// Licensed to the Apache Software Foundation (ASF) under one
+// or more contributor license agreements.  See the NOTICE file
+// distributed with this work for additional information
+// regarding copyright ownership.  The ASF licenses this file
+// to you under the Apache License, Version 2.0 (the
+// "License"); you may not use this file except in compliance
+// with the License.  You may obtain a copy of the License at
+//
+//   http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing,
+// software distributed under the License is distributed on an
+// "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+// KIND, either express or implied.  See the License for the
+// specific language governing permissions and limitations
+// under the License.
+
+This section describes how to run Solr and how to look at Solr when it is running. It contains the following sections:
+
+<<taking-solr-to-production.adoc#taking-solr-to-production,Taking Solr to Production>>: Describes how to install Solr as a service on Linux for production environments.
+
+<<securing-solr.adoc#securing-solr,Securing Solr>>: How to use the Basic and Kerberos authentication and rule-based authorization plugins for Solr, and how to enable SSL.
+
+<<running-solr-on-hdfs.adoc#running-solr-on-hdfs,Running Solr on HDFS>>: How to use HDFS to store your Solr indexes and transaction logs.
+
+<<making-and-restoring-backups.adoc#making-and-restoring-backups,Making and Restoring Backups>>: Describes backup strategies for your Solr indexes.
+
+<<configuring-logging.adoc#configuring-logging,Configuring Logging>>: Describes how to configure logging for Solr.
+
+<<using-jmx-with-solr.adoc#using-jmx-with-solr,Using JMX with Solr>>: Describes how to use Java Management Extensions with Solr.
+
+<<mbean-request-handler.adoc#mbean-request-handler,MBean Request Handler>>: How to use Solr's MBeans for programmatic access to the system plugins and stats.
+
+<<performance-statistics-reference.adoc#performance-statistics-reference,Performance Statistics Reference>>: Additional information on statistics returned from JMX.
+
+<<metrics-reporting.adoc#metrics-reporting,Metrics Reporting>>: Details of Solr's metrics registries and Metrics API.
+
+<<v2-api.adoc#v2-api,v2 API>>: Describes a redesigned API framework covering most existing Solr APIs.

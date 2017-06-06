@@ -32,7 +32,6 @@ import com.google.common.collect.ImmutableMap;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexReaderContext;
 import org.apache.lucene.index.LeafReaderContext;
-import org.apache.lucene.index.LogDocMergePolicy;
 import org.apache.lucene.index.ReaderUtil;
 import org.apache.lucene.queries.function.FunctionValues;
 import org.apache.lucene.queries.function.ValueSource;
@@ -61,7 +60,6 @@ public class TestIndexSearcher extends SolrTestCaseJ4 {
 
     // we need a consistent segmentation because reopen test validation
     // dependso n merges not happening when it doesn't expect
-    systemSetPropertySolrTestsMergePolicy(LogDocMergePolicy.class.getName());
     systemSetPropertySolrTestsMergePolicyFactory(LogDocMergePolicyFactory.class.getName());
 
     initCore("solrconfig.xml","schema.xml");
@@ -69,7 +67,6 @@ public class TestIndexSearcher extends SolrTestCaseJ4 {
   
   @AfterClass
   public static void afterClass() {
-    systemClearPropertySolrTestsMergePolicy();
     systemClearPropertySolrTestsMergePolicyFactory();
   }
 

@@ -21,6 +21,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.Comparator;
+import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -920,6 +921,251 @@ public class TestJoinUtil extends LuceneTestCase {
 
     indexSearcher.getIndexReader().close();
     dir.close();
+  }
+
+  public void testEquals() throws Exception {
+    final int numDocs = atLeast(random(), 50);
+    try (final Directory dir = newDirectory()) {
+      try (final RandomIndexWriter w = new RandomIndexWriter(random(), dir,
+          newIndexWriterConfig(new MockAnalyzer(random()))
+              .setMergePolicy(newLogMergePolicy()))) {
+        boolean multiValued = random().nextBoolean();
+        String joinField = multiValued ? "mvField" : "svField";
+        for (int id = 0; id < numDocs; id++) {
+          Document doc = new Document();
+          doc.add(new TextField("id", "" + id, Field.Store.NO));
+          doc.add(new TextField("name", "name" + (id % 7), Field.Store.NO));
+          if (multiValued) {
+            int numValues = 1 + random().nextInt(2);
+            for (int i = 0; i < numValues; i++) {
+              doc.add(new SortedSetDocValuesField(joinField, new BytesRef("" + random().nextInt(13))));
+            }
+          } else {
+            doc.add(new SortedDocValuesField(joinField, new BytesRef("" + random().nextInt(13))));
+          }
+          w.addDocument(doc);
+        }
+
+        Set<ScoreMode> scoreModes = EnumSet.allOf(ScoreMode.class);
+        ScoreMode scoreMode1 = RandomPicks.randomFrom(random(), scoreModes);
+        scoreModes.remove(scoreMode1);
+        ScoreMode scoreMode2 = RandomPicks.randomFrom(random(), scoreModes);
+
+        final Query x;
+        try (IndexReader r = w.getReader()) {
+          IndexSearcher indexSearcher = new IndexSearcher(r);
+          x = JoinUtil.createJoinQuery(joinField, multiValued, joinField,
+              new TermQuery(new Term("name", "name5")),
+              indexSearcher, scoreMode1);
+          assertEquals("identical calls to createJoinQuery",
+              x, JoinUtil.createJoinQuery(joinField, multiValued, joinField,
+                  new TermQuery(new Term("name", "name5")),
+                  indexSearcher, scoreMode1));
+
+          assertFalse("score mode (" + scoreMode1 + " != " + scoreMode2 + "), but queries are equal",
+              x.equals(JoinUtil.createJoinQuery(joinField, multiValued, joinField,
+                  new TermQuery(new Term("name", "name5")),
+                  indexSearcher, scoreMode2)));
+
+
+          assertFalse("from fields (joinField != \"other_field\") but queries equals",
+              x.equals(JoinUtil.createJoinQuery(joinField, multiValued, "other_field",
+                  new TermQuery(new Term("name", "name5")),
+                  indexSearcher, scoreMode1)));
+
+          assertFalse("from fields (\"other_field\" != joinField) but queries equals",
+              x.equals(JoinUtil.createJoinQuery("other_field", multiValued, joinField,
+                  new TermQuery(new Term("name", "name5")),
+                  indexSearcher, scoreMode1)));
+
+          assertFalse("fromQuery (name:name5 != name:name6) but queries equals",
+              x.equals(JoinUtil.createJoinQuery("other_field", multiValued, joinField,
+                  new TermQuery(new Term("name", "name6")),
+                  indexSearcher, scoreMode1)));
+        }
+
+        for (int i = 0; i < 13; i++) {
+          Document doc = new Document();
+          doc.add(new TextField("id", "new_id" , Field.Store.NO));
+          doc.add(new TextField("name", "name5", Field.Store.NO));
+          if (multiValued) {
+            int numValues = 1 + random().nextInt(2);
+            for (int j = 0; j < numValues; j++) {
+              doc.add(new SortedSetDocValuesField(joinField, new BytesRef("" + i)));
+            }
+          } else {
+            doc.add(new SortedDocValuesField(joinField, new BytesRef("" + i)));
+          }
+          w.addDocument(doc);
+        }
+        try (IndexReader r = w.getReader()) {
+          IndexSearcher indexSearcher = new IndexSearcher(r);
+          assertFalse("Query shouldn't be equal, because different index readers ",
+              x.equals(JoinUtil.createJoinQuery(joinField, multiValued, joinField,
+                  new TermQuery(new Term("name", "name5")),
+                  indexSearcher, scoreMode1)));
+        }
+      }
+    }
+  }
+
+  public void testEquals_globalOrdinalsJoin() throws Exception {
+    final int numDocs = atLeast(random(), 50);
+    try (final Directory dir = newDirectory()) {
+      try (final RandomIndexWriter w = new RandomIndexWriter(random(), dir,
+          newIndexWriterConfig(new MockAnalyzer(random()))
+              .setMergePolicy(newLogMergePolicy()))) {
+        String joinField = "field";
+        for (int id = 0; id < numDocs; id++) {
+          Document doc = new Document();
+          doc.add(new TextField("id", "" + id, Field.Store.NO));
+          doc.add(new TextField("name", "name" + (id % 7), Field.Store.NO));
+          doc.add(new SortedDocValuesField(joinField, new BytesRef("" + random().nextInt(13))));
+          w.addDocument(doc);
+        }
+
+        Set<ScoreMode> scoreModes = EnumSet.allOf(ScoreMode.class);
+        ScoreMode scoreMode1 = RandomPicks.randomFrom(random(), scoreModes);
+        scoreModes.remove(scoreMode1);
+        ScoreMode scoreMode2 = RandomPicks.randomFrom(random(), scoreModes);
+
+        final Query x;
+        try (IndexReader r = w.getReader()) {
+          SortedDocValues[] values = new SortedDocValues[r.leaves().size()];
+          for (int i = 0; i < values.length; i++) {
+            LeafReader leafReader =  r.leaves().get(i).reader();
+            values[i] = DocValues.getSorted(leafReader, joinField);
+          }
+          MultiDocValues.OrdinalMap ordinalMap = MultiDocValues.OrdinalMap.build(
+              null, values, PackedInts.DEFAULT
+          );
+          IndexSearcher indexSearcher = new IndexSearcher(r);
+          x = JoinUtil.createJoinQuery(joinField, new TermQuery(new Term("name", "name5")), new MatchAllDocsQuery(),
+              indexSearcher, scoreMode1, ordinalMap);
+          assertEquals("identical calls to createJoinQuery",
+              x, JoinUtil.createJoinQuery(joinField, new TermQuery(new Term("name", "name5")), new MatchAllDocsQuery(),
+                  indexSearcher, scoreMode1, ordinalMap));
+
+          assertFalse("score mode (" + scoreMode1 + " != " + scoreMode2 + "), but queries are equal",
+              x.equals(JoinUtil.createJoinQuery(joinField, new TermQuery(new Term("name", "name5")), new MatchAllDocsQuery(),
+                  indexSearcher, scoreMode2, ordinalMap)));
+          assertFalse("fromQuery (name:name5 != name:name6) but queries equals",
+              x.equals(JoinUtil.createJoinQuery(joinField, new TermQuery(new Term("name", "name6")), new MatchAllDocsQuery(),
+                  indexSearcher, scoreMode1, ordinalMap)));
+        }
+
+        for (int i = 0; i < 13; i++) {
+          Document doc = new Document();
+          doc.add(new TextField("id", "new_id" , Field.Store.NO));
+          doc.add(new TextField("name", "name5", Field.Store.NO));
+          doc.add(new SortedDocValuesField(joinField, new BytesRef("" + i)));
+          w.addDocument(doc);
+        }
+        try (IndexReader r = w.getReader()) {
+          SortedDocValues[] values = new SortedDocValues[r.leaves().size()];
+          for (int i = 0; i < values.length; i++) {
+            LeafReader leafReader =  r.leaves().get(i).reader();
+            values[i] = DocValues.getSorted(leafReader, joinField);
+          }
+          MultiDocValues.OrdinalMap ordinalMap = MultiDocValues.OrdinalMap.build(
+              null, values, PackedInts.DEFAULT
+          );
+          IndexSearcher indexSearcher = new IndexSearcher(r);
+          assertFalse("Query shouldn't be equal, because different index readers ",
+              x.equals(JoinUtil.createJoinQuery(joinField, new TermQuery(new Term("name", "name5")), new MatchAllDocsQuery(),
+                  indexSearcher, scoreMode1, ordinalMap)));
+        }
+      }
+    }
+  }
+
+  public void testEquals_numericJoin() throws Exception {
+    final int numDocs = atLeast(random(), 50);
+    try (final Directory dir = newDirectory()) {
+      try (final RandomIndexWriter w = new RandomIndexWriter(random(), dir,
+          newIndexWriterConfig(new MockAnalyzer(random()))
+              .setMergePolicy(newLogMergePolicy()))) {
+        boolean multiValued = random().nextBoolean();
+        String joinField = multiValued ? "mvField" : "svField";
+        for (int id = 0; id < numDocs; id++) {
+          Document doc = new Document();
+          doc.add(new TextField("id", "" + id, Field.Store.NO));
+          doc.add(new TextField("name", "name" + (id % 7), Field.Store.NO));
+          if (multiValued) {
+            int numValues = 1 + random().nextInt(2);
+            for (int i = 0; i < numValues; i++) {
+              doc.add(new IntPoint(joinField, random().nextInt(13)));
+              doc.add(new SortedNumericDocValuesField(joinField, random().nextInt(13)));
+            }
+          } else {
+            doc.add(new IntPoint(joinField, random().nextInt(13)));
+            doc.add(new NumericDocValuesField(joinField, random().nextInt(13)));
+          }
+          w.addDocument(doc);
+        }
+
+        Set<ScoreMode> scoreModes = EnumSet.allOf(ScoreMode.class);
+        ScoreMode scoreMode1 = scoreModes.toArray(new ScoreMode[0])[random().nextInt(scoreModes.size())];
+        scoreModes.remove(scoreMode1);
+        ScoreMode scoreMode2 = scoreModes.toArray(new ScoreMode[0])[random().nextInt(scoreModes.size())];
+
+        final Query x;
+        try (IndexReader r = w.getReader()) {
+          IndexSearcher indexSearcher = new IndexSearcher(r);
+          x = JoinUtil.createJoinQuery(joinField, multiValued, joinField,
+              Integer.class, new TermQuery(new Term("name", "name5")),
+              indexSearcher, scoreMode1);
+          assertEquals("identical calls to createJoinQuery",
+              x, JoinUtil.createJoinQuery(joinField, multiValued, joinField,
+                  Integer.class, new TermQuery(new Term("name", "name5")),
+                  indexSearcher, scoreMode1));
+
+          assertFalse("score mode (" + scoreMode1 + " != " + scoreMode2 + "), but queries are equal",
+              x.equals(JoinUtil.createJoinQuery(joinField, multiValued, joinField,
+                  Integer.class, new TermQuery(new Term("name", "name5")),
+                  indexSearcher, scoreMode2)));
+
+          assertFalse("from fields (joinField != \"other_field\") but queries equals",
+              x.equals(JoinUtil.createJoinQuery(joinField, multiValued, "other_field",
+                  Integer.class, new TermQuery(new Term("name", "name5")),
+                  indexSearcher, scoreMode1)));
+
+          assertFalse("from fields (\"other_field\" != joinField) but queries equals",
+              x.equals(JoinUtil.createJoinQuery("other_field", multiValued, joinField,
+                  Integer.class, new TermQuery(new Term("name", "name5")),
+                  indexSearcher, scoreMode1)));
+
+          assertFalse("fromQuery (name:name5 != name:name6) but queries equals",
+              x.equals(JoinUtil.createJoinQuery("other_field", multiValued, joinField,
+                  Integer.class, new TermQuery(new Term("name", "name6")),
+                  indexSearcher, scoreMode1)));
+        }
+
+        for (int i = 14; i < 26; i++) {
+          Document doc = new Document();
+          doc.add(new TextField("id", "new_id" , Field.Store.NO));
+          doc.add(new TextField("name", "name5", Field.Store.NO));
+          if (multiValued) {
+            int numValues = 1 + random().nextInt(2);
+            for (int j = 0; j < numValues; j++) {
+              doc.add(new SortedNumericDocValuesField(joinField, i));
+              doc.add(new IntPoint(joinField, i));
+            }
+          } else {
+            doc.add(new NumericDocValuesField(joinField, i));
+            doc.add(new IntPoint(joinField, i));
+          }
+          w.addDocument(doc);
+        }
+        try (IndexReader r = w.getReader()) {
+          IndexSearcher indexSearcher = new IndexSearcher(r);
+          assertFalse("Query shouldn't be equal, because new join values have been indexed",
+              x.equals(JoinUtil.createJoinQuery(joinField, multiValued, joinField,
+                  Integer.class, new TermQuery(new Term("name", "name5")),
+                  indexSearcher, scoreMode1)));
+        }
+      }
+    }
   }
 
   @Test

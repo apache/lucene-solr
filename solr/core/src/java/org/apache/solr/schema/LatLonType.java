@@ -54,7 +54,10 @@ import org.locationtech.spatial4j.shape.Rectangle;
 
 /**
  * Represents a Latitude/Longitude as a 2 dimensional point.  Latitude is <b>always</b> specified first.
+ *
+ * @deprecated use {@link LatLonPointSpatialField} instead
  */
+@Deprecated
 public class LatLonType extends AbstractSubTypeFieldType implements SpatialQueryable {
   protected static final int LAT = 0;
   protected static final int LON = 1;

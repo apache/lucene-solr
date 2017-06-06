@@ -426,7 +426,6 @@
   <dynamicField name="*aaa" type="int" indexed="false" stored="true"/>
 
 
-  <defaultSearchField>text</defaultSearchField>
   <uniqueKey>id</uniqueKey>
 
   <!-- copyField commands copy one field to another at the time a document

@@ -56,6 +56,5 @@
   <field name="text-keyword0" type="text-keyword" indexed="true" stored="true"/>
   <field name="text-query0" type="text-query" indexed="true" stored="true"/>
 
-  <defaultSearchField>text0</defaultSearchField>
   <uniqueKey>id</uniqueKey>
 </schema>

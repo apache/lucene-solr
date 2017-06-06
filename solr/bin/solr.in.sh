@@ -106,6 +106,9 @@
 # Sets the port Solr binds to, default is 8983
 #SOLR_PORT=8983
 
+# Enables HTTPS. It is implictly true if you set SOLR_SSL_KEY_STORE. Use this config
+# to enable https module with custom jetty configuration.
+#SOLR_SSL_ENABLED=true
 # Uncomment to set SSL-related system properties
 # Be sure to update the paths to the correct keystore for your environment
 #SOLR_SSL_KEY_STORE=/home/shalin/work/oss/shalin-lusolr/solr/server/etc/solr-ssl.keystore.jks

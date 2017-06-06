@@ -1,0 +1,239 @@
+= Asciidoc syntax
+:toc:
+// Licensed to the Apache Software Foundation (ASF) under one
+// or more contributor license agreements.  See the NOTICE file
+// distributed with this work for additional information
+// regarding copyright ownership.  The ASF licenses this file
+// to you under the Apache License, Version 2.0 (the
+// "License"); you may not use this file except in compliance
+// with the License.  You may obtain a copy of the License at
+//
+//   http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing,
+// software distributed under the License is distributed on an
+// "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+// KIND, either express or implied.  See the License for the
+// specific language governing permissions and limitations
+// under the License.
+
+The definitive manual on Asciidoc syntax is in the http://asciidoctor.org/docs/user-manual/[Asciidoctor User Manual]. To help people get started, however, here is a simpler cheat sheet.
+
+== Basic syntax
+
+=== Bold
+
+Put asterisks around text to make it *bold*.
+
+More info: http://asciidoctor.org/docs/user-manual/#bold-and-italic
+
+=== Italics
+
+Use underlines on either side of a string to put text into _italics_.
+
+More info: http://asciidoctor.org/docs/user-manual/#bold-and-italic
+
+=== Headings
+
+Equal signs (`=`) are used for heading levels. Each equal sign is a level. Each page can *only* have one top level. Levels should be appropriately nested.
+
+Validation occurs to ensure that level 3s are preceded by level 2s, level 4s are preceded by level 3s, etc. Including out-of-sequence heading levels (such as a level 3 then a level 5) will not fail the build, but will produce an error.
+
+More info: http://asciidoctor.org/docs/user-manual/#sections
+
+=== Code Examples
+
+Use backticks ``` for text that should be monospaced, such as a code or class name in the body of a paragraph.
+
+More info: http://asciidoctor.org/docs/user-manual/#mono
+
+Longer code examples can be separated from text with `source` blocks. These allow defining the syntax being used so the code is properly highlighted.
+
+[source]
+.Example Source Block
+----
+[source,xml]
+    <field name="id" type="string" indexed="true" stored="true" required="true" multiValued="false" />
+----
+
+If your code block will include line breaks, put 4 hyphens (`----`) before and after the entire block.
+
+More info: http://asciidoctor.org/docs/user-manual/#source-code-blocks
+
+=== Block Titles
+
+Titles can be added to most blocks (images, source blocks, tables, etc.) by simply prefacing the title with a period (`.`). For example, to add a title to the source block example above:
+
+[source]
+----
+[source,xml]
+.Example ID field
+    <field name="id" type="string" indexed="true" stored="true" required="true" multiValued="false" />
+----
+
+== Links
+
+=== Link to Sites on the Internet
+When converting content to HTML or PDF, Asciidoctor will automatically render many link types (such as `http:` and `mailto:`) without any additional syntax.
+
+However, you can add a name to a link by adding the URI followed by square brackets:
+
+[source]
+http://lucene.apache.org/solr[Solr Website]
+
+=== Link to Other Pages/Sections of the Guide
+A warning up front, linking to other pages can be a little bit painful.
+
+To link to an anchor (or heading) on the _same page_, you can simply use double angle brackets (`<< >>`) around the anchor/heading/section name. Note that any heading (aka section title) that starts with equal signs is automatically an anchor.
+
+More info: http://asciidoctor.org/docs/user-manual/#internal-cross-references
+
+To link to another page or even a heading on _another page_, you use a similar syntax, but you must refer to the full filename and refer to the section title you want to link to by changing it to lower case and including hyphens between each word.
+
+For example, if I want to link from one page to the Schema API page's section "Modify the Schema", I need to create a link that looks like this:
+
+[source]
+For more information about modifying the schema with the API, see the section <<schema-api.adoc#modify-the-schema>>.
+
+You can add text to appear by adding it after the file name and section reference, as in:
+
+[source]
+<<schema-api.adoc#modify-the-schema,Modify the Schema>>
+
+More info: http://asciidoctor.org/docs/user-manual/#inter-document-cross-references
+
+== Item Lists
+
+Asciidoc supports three types of lists:
+
+* Unordered lists
+* Ordered lists
+* Labeled lists
+
+Each type of list can be mixed with the other types. So, you could have an ordered list inside a labeled list if necessary.
+
+=== Unordered Lists
+Simple bulleted lists need each line to start with an asterisk (`*`). It should be the first character of the line, and be followed by a space.
+
+More info: http://asciidoctor.org/docs/user-manual/#unordered-lists
+
+=== Ordered Lists
+Numbered lists need each line to start with a period (`.`). It should be the first character of the line, and be followed by a space.
+
+More info: http://asciidoctor.org/docs/user-manual/#ordered-lists
+
+=== Labeled Lists
+These are like question & answer lists or glossary definitions. Each line should start with the list item followed by double colons (`::`), then a space or new line.
+
+Labeled lists can be nested by adding an additional colon (such as `:::`, etc.).
+
+More info: http://asciidoctor.org/docs/user-manual/#labeled-list
+
+== Images
+
+There are two ways to include an image: inline or as a block.
+
+Inline images are those where text will flow around the image. Block images are those that appear on their own line, set off from any other text on the page.
+
+Both approaches use the `image` tag before the image filename, but the number of colons after `image` define if it is inline or a block. Inline images use one colon (`image:`), while block images use two colons (`image::`).
+
+Block images automatically include a caption label and a number (such as `Figure 1`). If a block image includes a title, it will be included as the text of the caption.
+
+Optional attributes allow you to set the alt text, the size of the image, if it should be a link, float and alignment.
+
+More info: http://asciidoctor.org/docs/user-manual/#images
+
+== Tables
+
+Tables can be complex, but it is pretty easy to make a basic table that fits most needs.
+
+=== Basic Tables
+The basic structure of a table is similar to Markdown, with pipes (`|`) delimiting columns between rows:
+
+[source]
+----
+|===
+| col 1 row 1 | col 2 row 1|
+| col 1 row 2 | col 2 row 2|
+|===
+----
+
+Note the use of `|===` at the start and end. For basic tables that's not exactly required, but it does help to delimit the start and end of the table in case you accidentally introduce (or maybe prefer) spaces between the rows.
+
+=== Header Rows
+To add a header to a table, you need only set the `header` attribute at the start of the table:
+
+[source]
+----
+[options="header"]
+|===
+| header col 1 | header col 2|
+| col 1 row 1 | col 2 row 1|
+| col 1 row 2 | col 2 row 2|
+|===
+----
+
+=== Defining Column Styles
+If you need to define specific styles to all rows in a column, you can do so with the attributes.
+
+This example will center all content in all rows:
+
+[source]
+----
+[cols="2*^" options="header"]
+|===
+| header col 1 | header col 2|
+| col 1 row 1 | col 2 row 1|
+| col 1 row 2 | col 2 row 2|
+|===
+----
+
+Alignments or any other styles can be applied only to a specific column. For example, this would only center the last column of the table:
+
+[source]
+----
+[cols="2*,^" options="header"]
+|===
+| header col 1 | header col 2|
+| col 1 row 1 | col 2 row 1|
+| col 1 row 2 | col 2 row 2|
+|===
+----
+
+Many more examples of formatting:
+
+* Columns: http://asciidoctor.org/docs/user-manual/#cols-format
+* Cells: http://asciidoctor.org/docs/user-manual/#cell
+
+=== More Options
+
+Tables can also be given footer rows, borders, and captions. CSV or DSV can be used instead of formatting the data in pipes.
+
+More info: http://asciidoctor.org/docs/user-manual/#tables
+
+== Admonitions (Notes, Warnings)
+
+Asciidoc supports several types of callout boxes, called "admonitions":
+
+* NOTE
+* TIP
+* IMPORTANT
+* CAUTION
+* WARNING
+
+It is enough to start a paragraph with one of these words followed by a colon (such as `NOTE:`). When it is converted to HTML or PDF, those sections will be formatted properly - indented from the main text and showing an icon inline.
+
+You can add titles to admonitions by making it an admonition block. The structure of an admonition block is like this:
+
+[source]
+----
+[NOTE]
+.Title of Note
+====
+Text of note
+====
+----
+
+In this example, the type of admonition is included in square brackets (`[NOTE]`), and the title is prefixed with a period. Four equal signs give the start and end points of the note text (which can include new lines, lists, etc.).
+
+More info: http://asciidoctor.org/docs/user-manual/#admonition

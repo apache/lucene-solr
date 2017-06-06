@@ -46,7 +46,6 @@
   <field name="sort_custom" type="sort_custom_t" indexed="true" stored="false" multiValued="false"/>
 
 
-  <defaultSearchField>text</defaultSearchField>
   <uniqueKey>id</uniqueKey>
 
   <!-- copy our text to some sort fields with different orders -->

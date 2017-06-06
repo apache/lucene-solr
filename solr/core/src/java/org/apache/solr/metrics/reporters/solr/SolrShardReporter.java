@@ -113,11 +113,16 @@ public class SolrShardReporter extends SolrMetricReporter {
   }
 
   @Override
-  protected void validate() throws IllegalStateException {
+  protected void doInit() {
     if (filters.isEmpty()) {
       filters = DEFAULT_FILTERS;
     }
-    // start in inform(...) only when core is available
+    // start in setCore(SolrCore) when core is available
+  }
+
+  @Override
+  protected void validate() throws IllegalStateException {
+    // Nothing to validate
   }
 
   @Override
@@ -158,6 +163,7 @@ public class SolrShardReporter extends SolrMetricReporter {
         .convertDurationsTo(TimeUnit.MILLISECONDS)
         .withHandler(handler)
         .withReporterId(id)
+        .setCompact(true)
         .cloudClient(false) // we want to send reports specifically to a selected leader instance
         .skipAggregateValues(true) // we don't want to transport details of aggregates
         .skipHistograms(true) // we don't want to transport histograms

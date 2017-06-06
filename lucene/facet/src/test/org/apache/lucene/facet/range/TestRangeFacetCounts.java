@@ -741,6 +741,11 @@ public class TestRangeFacetCounts extends FacetTestCase {
       public boolean needsScores() {
         return false;
       }
+
+      @Override
+      public Explanation explain(LeafReaderContext ctx, int docId, Explanation scoreExplanation) throws IOException {
+        return Explanation.match(docId + 1, "");
+      }
     };
 
     FacetsConfig config = new FacetsConfig();

@@ -73,17 +73,11 @@ public class TestRandomRequestDistribution extends AbstractFullDistribZkTestBase
    */
   private void testRequestTracking() throws Exception {
 
-    new CollectionAdminRequest.Create()
-        .setCollectionName("a1x2")
-        .setNumShards(1)
-        .setReplicationFactor(2)
+    CollectionAdminRequest.createCollection("a1x2",1,2)
         .setCreateNodeSet(nodeNames.get(0) + ',' + nodeNames.get(1))
         .process(cloudClient);
 
-    new CollectionAdminRequest.Create()
-        .setCollectionName("b1x1")
-        .setNumShards(1)
-        .setReplicationFactor(1)
+    CollectionAdminRequest.createCollection("b1x1",1,1)
         .setCreateNodeSet(nodeNames.get(2))
         .process(cloudClient);
 
@@ -134,10 +128,7 @@ public class TestRandomRequestDistribution extends AbstractFullDistribZkTestBase
   private void testQueryAgainstDownReplica() throws Exception {
 
     log.info("Creating collection 'football' with 1 shard and 2 replicas");
-    new CollectionAdminRequest.Create()
-        .setCollectionName("football")
-        .setNumShards(1)
-        .setReplicationFactor(2)
+    CollectionAdminRequest.createCollection("football",1,2)
         .setCreateNodeSet(nodeNames.get(0) + ',' + nodeNames.get(1))
         .process(cloudClient);
 

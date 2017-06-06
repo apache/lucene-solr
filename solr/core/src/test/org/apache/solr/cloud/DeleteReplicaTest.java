@@ -19,9 +19,11 @@ package org.apache.solr.cloud;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.EnumSet;
 
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.CoreStatus;
+import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.Slice;
@@ -101,11 +103,29 @@ public class DeleteReplicaTest extends SolrCloudTestCase {
   public void deleteReplicaByCount() throws Exception {
 
     final String collectionName = "deleteByCount";
-    CollectionAdminRequest.createCollection(collectionName, "conf", 1, 3).process(cluster.getSolrClient());
+    pickRandom(
+        CollectionAdminRequest.createCollection(collectionName, "conf", 1, 3),
+        CollectionAdminRequest.createCollection(collectionName, "conf", 1, 1, 1, 1),
+        CollectionAdminRequest.createCollection(collectionName, "conf", 1, 1, 0, 2),
+        CollectionAdminRequest.createCollection(collectionName, "conf", 1, 0, 1, 2))
+    .process(cluster.getSolrClient());
     waitForState("Expected a single shard with three replicas", collectionName, clusterShape(1, 3));
 
     CollectionAdminRequest.deleteReplicasFromShard(collectionName, "shard1", 2).process(cluster.getSolrClient());
     waitForState("Expected a single shard with a single replica", collectionName, clusterShape(1, 1));
+    
+    try {
+      CollectionAdminRequest.deleteReplicasFromShard(collectionName, "shard1", 1).process(cluster.getSolrClient());
+      fail("Expected Exception, Can't delete the last replica by count");
+    } catch (SolrException e) {
+      // expected
+      assertEquals(SolrException.ErrorCode.BAD_REQUEST.code, e.code());
+      assertTrue(e.getMessage().contains("There is only one replica available"));
+    }
+    DocCollection docCollection = getCollectionState(collectionName);
+    // We know that since leaders are preserved, PULL replicas should not be left alone in the shard
+    assertEquals(0, docCollection.getSlice("shard1").getReplicas(EnumSet.of(Replica.Type.PULL)).size());
+    
 
   }
 

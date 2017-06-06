@@ -65,9 +65,7 @@ public class NodeConfig {
 
   private final PluginInfo[] backupRepositoryPlugins;
 
-  private final PluginInfo[] metricReporterPlugins;
-
-  private final Set<String> hiddenSysProps;
+  private final MetricsConfig metricsConfig;
 
   private final PluginInfo transientCacheConfig;
 
@@ -78,7 +76,7 @@ public class NodeConfig {
                      LogWatcherConfig logWatcherConfig, CloudConfig cloudConfig, Integer coreLoadThreads,
                      int transientCacheSize, boolean useSchemaCache, String managementPath, SolrResourceLoader loader,
                      Properties solrProperties, PluginInfo[] backupRepositoryPlugins,
-                     PluginInfo[] metricReporterPlugins, Set<String> hiddenSysProps, PluginInfo transientCacheConfig) {
+                     MetricsConfig metricsConfig, PluginInfo transientCacheConfig) {
     this.nodeName = nodeName;
     this.coreRootDirectory = coreRootDirectory;
     this.configSetBaseDirectory = configSetBaseDirectory;
@@ -98,8 +96,7 @@ public class NodeConfig {
     this.loader = loader;
     this.solrProperties = solrProperties;
     this.backupRepositoryPlugins = backupRepositoryPlugins;
-    this.metricReporterPlugins = metricReporterPlugins;
-    this.hiddenSysProps = hiddenSysProps;
+    this.metricsConfig = metricsConfig;
     this.transientCacheConfig = transientCacheConfig;
 
     if (this.cloudConfig != null && this.getCoreLoadThreadCount(false) < 2) {
@@ -189,12 +186,8 @@ public class NodeConfig {
     return backupRepositoryPlugins;
   }
 
-  public PluginInfo[] getMetricReporterPlugins() {
-    return metricReporterPlugins;
-  }
-
-  public Set<String> getHiddenSysProps() {
-    return hiddenSysProps;
+  public MetricsConfig getMetricsConfig() {
+    return metricsConfig;
   }
 
   public PluginInfo getTransientCachePluginInfo() { return transientCacheConfig; }
@@ -220,8 +213,7 @@ public class NodeConfig {
     private String managementPath;
     private Properties solrProperties = new Properties();
     private PluginInfo[] backupRepositoryPlugins;
-    private PluginInfo[] metricReporterPlugins;
-    private Set<String> hiddenSysProps = new HashSet<>(DEFAULT_HIDDEN_SYS_PROPS);
+    private MetricsConfig metricsConfig;
     private PluginInfo transientCacheConfig;
 
     private final SolrResourceLoader loader;
@@ -251,6 +243,7 @@ public class NodeConfig {
       this.loader = loader;
       this.coreRootDirectory = loader.getInstancePath();
       this.configSetBaseDirectory = loader.getInstancePath().resolve("configsets");
+      this.metricsConfig = new MetricsConfig.MetricsConfigBuilder().build();
     }
 
     public NodeConfigBuilder setCoreRootDirectory(String coreRootDirectory) {
@@ -340,8 +333,8 @@ public class NodeConfig {
       return this;
     }
 
-    public NodeConfigBuilder setMetricReporterPlugins(PluginInfo[] metricReporterPlugins) {
-      this.metricReporterPlugins = metricReporterPlugins;
+    public NodeConfigBuilder setMetricsConfig(MetricsConfig metricsConfig) {
+      this.metricsConfig = metricsConfig;
       return this;
     }
     
@@ -350,16 +343,11 @@ public class NodeConfig {
       return this;
     }
 
-    public NodeConfigBuilder setHiddenSysProps(Set<String> hiddenSysProps) {
-      this.hiddenSysProps = hiddenSysProps;
-      return this;
-    }
-
     public NodeConfig build() {
       return new NodeConfig(nodeName, coreRootDirectory, configSetBaseDirectory, sharedLibDirectory, shardHandlerFactoryConfig,
                             updateShardHandlerConfig, coreAdminHandlerClass, collectionsAdminHandlerClass, infoHandlerClass, configSetsHandlerClass,
                             logWatcherConfig, cloudConfig, coreLoadThreads, transientCacheSize, useSchemaCache, managementPath, loader, solrProperties,
-                            backupRepositoryPlugins, metricReporterPlugins, hiddenSysProps, transientCacheConfig);
+                            backupRepositoryPlugins, metricsConfig, transientCacheConfig);
     }
   }
 }

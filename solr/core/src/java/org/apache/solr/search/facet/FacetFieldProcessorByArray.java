@@ -66,7 +66,7 @@ abstract class FacetFieldProcessorByArray extends FacetFieldProcessor {
       refineResult = refineFacets();
       // if we've seen this facet bucket, then refining can be done.  If we haven't, we still
       // only need to continue if we need allBuckets or numBuckets info.
-      if (skipThisFacet || (!freq.allBuckets && !freq.numBuckets)) return refineResult;
+      if (skipThisFacet || !freq.allBuckets) return refineResult;
     }
 
     String prefix = freq.prefix;

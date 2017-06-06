@@ -162,12 +162,12 @@
     "set-policy" : {
       "type":"object",
       "description": "The set-policy command allows you to add and update policies that apply to collections",
-      "patternProperties": {
+    /*  "patternProperties": {
         "^.+$": {
           "type": "array"
         }
-      },
-      "additionalProperties": false
+      },*/
+      "additionalProperties": true
     },
     "set-cluster-policy" : {
       "type" : "array",

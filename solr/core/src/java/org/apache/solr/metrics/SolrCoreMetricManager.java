@@ -82,7 +82,7 @@ public class SolrCoreMetricManager implements Closeable {
    */
   public void loadReporters() {
     NodeConfig nodeConfig = core.getCoreContainer().getConfig();
-    PluginInfo[] pluginInfos = nodeConfig.getMetricReporterPlugins();
+    PluginInfo[] pluginInfos = nodeConfig.getMetricsConfig().getMetricReporters();
     metricManager.loadReporters(pluginInfos, core.getResourceLoader(), tag,
         SolrInfoBean.Group.core, registryName);
     if (cloudMode) {

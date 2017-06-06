@@ -18,6 +18,10 @@ package org.apache.solr.util;
 
 import java.io.*;
 import java.nio.channels.FileChannel;
+import java.nio.file.Files;
+import java.nio.file.Path;
+
+import org.apache.commons.io.FileExistsException;
 
 /**
  *
@@ -95,5 +99,21 @@ public class FileUtils {
 
   public static boolean fileExists(String filePathString) {
     return new File(filePathString).exists();
+  }
+
+  // Files.createDirectories has odd behavior if the path is a symlink and it already exists
+  // _even if it's a symlink to a directory_. 
+  // 
+  // oddly, if the path to be created just contains a symlink in intermediate levels, Files.createDirectories
+  // works just fine.
+  //
+  // This works around that issue
+  public static Path createDirectories(Path path) throws IOException {
+    if (Files.exists(path) && Files.isSymbolicLink(path)) {
+      Path real = path.toRealPath();
+      if (Files.isDirectory(real)) return real;
+      throw new FileExistsException("Tried to create a directory at to an existing non-directory symlink: " + path.toString());
+    }
+    return Files.createDirectories(path);
   }
 }

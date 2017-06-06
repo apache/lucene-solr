@@ -1,0 +1,537 @@
+= Config API
+:page-shortname: config-api
+:page-permalink: config-api.html
+// Licensed to the Apache Software Foundation (ASF) under one
+// or more contributor license agreements.  See the NOTICE file
+// distributed with this work for additional information
+// regarding copyright ownership.  The ASF licenses this file
+// to you under the Apache License, Version 2.0 (the
+// "License"); you may not use this file except in compliance
+// with the License.  You may obtain a copy of the License at
+//
+//   http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing,
+// software distributed under the License is distributed on an
+// "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+// KIND, either express or implied.  See the License for the
+// specific language governing permissions and limitations
+// under the License.
+
+The Config API enables manipulating various aspects of your `solrconfig.xml` using REST-like API calls.
+
+This feature is enabled by default and works similarly in both SolrCloud and standalone mode. Many commonly edited properties (such as cache sizes and commit settings) and request handler definitions can be changed with this API.
+
+When using this API, `solrconfig.xml` is not changed. Instead, all edited configuration is stored in a file called `configoverlay.json`. The values in `configoverlay.json` override the values in `solrconfig.xml`.
+
+[[ConfigAPI-APIEntryPoints]]
+== API Entry Points
+
+* `/config`: retrieve or modify the config. GET to retrieve and POST for executing commands
+* `/config/overlay`: retrieve the details in the `configoverlay.json` alone
+* `/config/params` : allows creating parameter sets that can override or take the place of parameters defined in `solrconfig.xml`. See the <<request-parameters-api.adoc#request-parameters-api,Request Parameters API>> section for more details.
+
+[[ConfigAPI-Retrievingtheconfig]]
+== Retrieving the config
+
+All configuration items, can be retrieved by sending a GET request to the `/config` endpoint - the results will be the effective configuration resulting from merging settings in `configoverlay.json` with those in `solrconfig.xml`:
+
+[source,bash]
+----
+curl http://localhost:8983/solr/techproducts/config
+----
+
+To restrict the returned results to a top level section, e.g. `query`, `requestHandler` or `updateHandler`, append the name of the section to the `/config` endpoint following a slash. E.g. to retrieve configuration for all request handlers:
+
+[source,bash]
+----
+curl http://localhost:8983/solr/techproducts/config/requestHandler
+----
+
+To further restrict returned results to a single component within a top level section, use the `componentName` request param, e.g. to return configuration for the `/select` request handler:
+
+[source,bash]
+----
+curl http://localhost:8983/solr/techproducts/config/requestHandler?componentName=/select
+----
+
+[[ConfigAPI-Commandstomodifytheconfig]]
+== Commands to modify the config
+
+This API uses specific commands to tell Solr what property or type of property to add to `configoverlay.json`. The commands are passed as part of the data sent with the request.
+
+The config commands are categorized into 3 different sections which manipulate various data structures in `solrconfig.xml`. Each of these is described below.
+
+* <<ConfigAPI-CommandsforCommonProperties,Common Properties>>
+* <<ConfigAPI-CommandsforCustomHandlersandLocalComponents,Components>>
+* <<ConfigAPI-CommandsforUser-DefinedProperties,User-defined properties>>
+
+[[ConfigAPI-CommandsforCommonProperties]]
+=== Commands for Common Properties
+
+The common properties are those that are frequently need to be customized in a Solr instance. They are manipulated with two commands:
+
+* `set-property`: Set a well known property. The names of the properties are predefined and fixed. If the property has already been set, this command will overwrite the previous setting.
+* `unset-property`: Remove a property set using the `set-property` command.
+
+The properties that are configured with these commands are predefined and listed below. The names of these properties are derived from their XML paths as found in `solrconfig.xml`.
+
+* `updateHandler.autoCommit.maxDocs`
+* `updateHandler.autoCommit.maxTime`
+* `updateHandler.autoCommit.openSearcher`
+* `updateHandler.autoSoftCommit.maxDocs`
+* `updateHandler.autoSoftCommit.maxTime`
+* `updateHandler.commitWithin.softCommit`
+* `updateHandler.indexWriter.closeWaitsForMerges`
+* `query.filterCache.class`
+* `query.filterCache.size`
+* `query.filterCache.initialSize`
+* `query.filterCache.autowarmCount`
+* `query.filterCache.regenerator`
+* `query.queryResultCache.class`
+* `query.queryResultCache.size`
+* `query.queryResultCache.initialSize`
+* `query.queryResultCache.autowarmCount`
+* `query.queryResultCache.regenerator`
+* `query.documentCache.class`
+* `query.documentCache.size`
+* `query.documentCache.initialSize`
+* `query.documentCache.autowarmCount`
+
+* `query.documentCache.regenerator`
+* `query.fieldValueCache.class`
+* `query.fieldValueCache.size`
+* `query.fieldValueCache.initialSize`
+* `query.fieldValueCache.autowarmCount`
+* `query.fieldValueCache.regenerator`
+* `query.useFilterForSortedQuery`
+* `query.queryResultWindowSize`
+* `query.queryResultMaxDocCached`
+* `query.enableLazyFieldLoading`
+* `query.boolToFilterOptimizer`
+* `query.maxBooleanClauses`
+* `jmx.agentId`
+* `jmx.serviceUrl`
+* `jmx.rootName`
+* `requestDispatcher.handleSelect`
+* `requestDispatcher.requestParsers.multipartUploadLimitInKB`
+* `requestDispatcher.requestParsers.formdataUploadLimitInKB`
+* `requestDispatcher.requestParsers.enableRemoteStreaming`
+* `requestDispatcher.requestParsers.addHttpRequestToContext`
+
+[[ConfigAPI-CommandsforCustomHandlersandLocalComponents]]
+=== Commands for Custom Handlers and Local Components
+
+Custom request handlers, search components, and other types of localized Solr components (such as custom query parsers, update processors, etc.) can be added, updated and deleted with specific commands for the component being modified.
+
+The syntax is similar in each case: `add-<component-name>`, `update-<component-name>`, and `delete-<component-name>`. The command name is not case sensitive, so `Add-RequestHandler`, `ADD-REQUESTHANDLER` and `add-requesthandler` are all equivalent.
+
+In each case, `add-` commands add the new configuration to `configoverlay.json`, which will override any other settings for the component in `solrconfig.xml`; `update-` commands overwrite an existing setting in `configoverlay.json`; and `delete-` commands remove the setting from `configoverlay.json`.
+
+Settings removed from `configoverlay.json` are not removed from `solrconfig.xml`.
+
+The full list of available commands follows below:
+
+[[ConfigAPI-GeneralPurposeCommands]]
+==== General Purpose Commands
+
+These commands are the most commonly used:
+
+* `add-requesthandler`
+* `update-requesthandler`
+* `delete-requesthandler`
+* `add-searchcomponent`
+* `update-searchcomponent`
+* `delete-searchcomponent`
+* `add-initparams`
+* `update-initparams`
+* `delete-initparams`
+* `add-queryresponsewriter`
+* `update-queryresponsewriter`
+* `delete-queryresponsewriter`
+
+[[ConfigAPI-AdvancedCommands]]
+==== Advanced Commands
+
+These commands allow registering more advanced customizations to Solr:
+
+* `add-queryparser`
+* `update-queryparser`
+* `delete-queryparser`
+* `add-valuesourceparser`
+* `update-valuesourceparser`
+* `delete-valuesourceparser`
+* `add-transformer`
+* `update-transformer`
+* `delete-transformer`
+* `add-updateprocessor`
+* `update-updateprocessor`
+* `delete-updateprocessor`
+
+* `add-queryconverter`
+* `update-queryconverter`
+* `delete-queryconverter`
+* `add-listener`
+* `update-listener`
+* `delete-listener`
+* `add-runtimelib`
+* `update-runtimelib`
+* `delete-runtimelib`
+
+See the section <<ConfigAPI-CreatingandUpdatingRequestHandlers,Creating and Updating Request Handlers>> below for examples of using these commands.
+
+[[ConfigAPI-Whatabout_updateRequestProcessorChain_]]
+==== What about updateRequestProcessorChain?
+
+The Config API does not let you create or edit `updateRequestProcessorChain` elements. However, it is possible to create `updateProcessor` entries and can use them by name to create a chain.
+
+example:
+
+[source,bash]
+----
+curl http://localhost:8983/solr/techproducts/config -H 'Content-type:application/json' -d '{
+"add-updateprocessor" : { "name" : "firstFld",
+                          "class": "solr.FirstFieldValueUpdateProcessorFactory",
+                          "fieldName":"test_s"}}'
+----
+
+You can use this directly in your request by adding a parameter in the `updateRequestProcessorChain` for the specific update processor called `processor=firstFld`.
+
+[[ConfigAPI-CommandsforUser-DefinedProperties]]
+=== Commands for User-Defined Properties
+
+Solr lets users templatize the `solrconfig.xml` using the place holder format `${variable_name:default_val}`. You could set the values using system properties, for example, `-Dvariable_name= my_customvalue`. The same can be achieved during runtime using these commands:
+
+* `set-user-property`: Set a user-defined property. If the property has already been set, this command will overwrite the previous setting.
+* `unset-user-property`: Remove a user-defined property.
+
+The structure of the request is similar to the structure of requests using other commands, in the format of `"command":{"variable_name":"property_value"}`. You can add more than one variable at a time if necessary.
+
+For more information about user-defined properties, see the section <<configuring-solrconfig-xml.adoc#Configuringsolrconfig.xml-Userdefinedpropertiesfromcore.properties,User defined properties from core.properties>>.
+
+See also the section <<ConfigAPI-CreatingandUpdatingUser-DefinedProperties,Creating and Updating User-Defined Properties>> below for examples of how to use this type of command.
+
+[[ConfigAPI-HowtoMapsolrconfig.xmlPropertiestoJSON]]
+== How to Map `solrconfig.xml` Properties to JSON
+
+By using this API, you will be generating JSON representations of properties defined in `solrconfig.xml`. To understand how properties should be represented with the API, let's take a look at a few examples.
+
+Here is what a request handler looks like in `solrconfig.xml`:
+
+[source,xml]
+----
+<requestHandler name="/query" class="solr.SearchHandler">
+  <lst name="defaults">
+    <str name="echoParams">explicit</str>
+    <str name="wt">json</str>
+    <str name="indent">true</str>
+  </lst>
+</requestHandler>
+----
+
+The same request handler defined with the Config API would look like this:
+
+[source,json]
+----
+{
+  "add-requesthandler":{
+    "name":"/query",
+    "class":"solr.SearchHandler",
+    "defaults":{
+      "echoParams":"explicit",
+      "wt":"json",
+      "indent":true
+    }
+  }
+}
+----
+
+The QueryElevationComponent searchComponent in `solrconfig.xml` looks like this:
+
+[source,xml]
+----
+<searchComponent name="elevator" class="solr.QueryElevationComponent" >
+  <str name="queryFieldType">string</str>
+  <str name="config-file">elevate.xml</str>
+</searchComponent>
+----
+
+And the same searchComponent with the Config API:
+
+[source,json]
+----
+{
+  "add-searchcomponent":{
+    "name":"elevator",
+    "class":"QueryElevationComponent",
+    "queryFieldType":"string",
+    "config-file":"elevate.xml"
+  }
+}
+----
+
+Removing the searchComponent with the Config API:
+
+[source,json]
+----
+{
+  "delete-searchcomponent":"elevator"
+}
+----
+
+A simple highlighter looks like this in `solrconfig.xml` (example has been truncated for space):
+
+[source,xml]
+----
+<searchComponent class="solr.HighlightComponent" name="highlight">
+    <highlighting>
+      <fragmenter name="gap"
+                  default="true"
+                  class="solr.highlight.GapFragmenter">
+        <lst name="defaults">
+          <int name="hl.fragsize">100</int>
+        </lst>
+      </fragmenter>
+
+      <formatter name="html"
+                 default="true"
+                 class="solr.highlight.HtmlFormatter">
+        <lst name="defaults">
+          <str name="hl.simple.pre"><![CDATA[<em>]]></str>
+          <str name="hl.simple.post"><![CDATA[</em>]]></str>
+        </lst>
+      </formatter>
+
+      <encoder name="html" class="solr.highlight.HtmlEncoder" />
+...
+    </highlighting>
+----
+
+The same highlighter with the Config API:
+
+[source,json]
+----
+{
+    "add-searchcomponent": {
+        "name": "highlight",
+        "class": "solr.HighlightComponent",
+        "": {
+            "gap": {
+                "default": "true",
+                "name": "gap",
+                "class": "solr.highlight.GapFragmenter",
+                "defaults": {
+                    "hl.fragsize": 100
+                }
+            }
+        },
+        "html": [{
+            "default": "true",
+            "name": "html",
+            "class": "solr.highlight.HtmlFormatter",
+            "defaults": {
+                "hl.simple.pre": "before-",
+                "hl.simple.post": "-after"
+            }
+        }, {
+            "name": "html",
+            "class": "solr.highlight.HtmlEncoder"
+        }]
+    }
+}
+----
+
+Set autoCommit properties in `solrconfig.xml`:
+
+[source,xml]
+----
+<autoCommit>
+  <maxTime>15000</maxTime>
+  <openSearcher>false</openSearcher>
+</autoCommit>
+----
+
+Define the same properties with the Config API:
+
+[source,json]
+----
+{
+  "set-property": {
+    "updateHandler.autoCommit.maxTime":15000,
+    "updateHandler.autoCommit.openSearcher":false
+  }
+}
+----
+
+[[ConfigAPI-NameComponentsfortheConfigAPI]]
+=== Name Components for the Config API
+
+The Config API always allows changing the configuration of any component by name. However, some configurations such as `listener` or `initParams` do not require a name in `solrconfig.xml`. In order to be able to `update` and `delete` of the same item in `configoverlay.json`, the name attribute becomes mandatory.
+
+[[ConfigAPI-Examples]]
+== Examples
+
+[[ConfigAPI-CreatingandUpdatingCommonProperties]]
+=== Creating and Updating Common Properties
+
+This change sets the `query.filterCache.autowarmCount` to 1000 items and unsets the `query.filterCache.size`.
+
+[source,bash]
+----
+curl http://localhost:8983/solr/techproducts/config -H 'Content-type:application/json' -d'{
+    "set-property" : {"query.filterCache.autowarmCount":1000},
+    "unset-property" :"query.filterCache.size"}'
+----
+
+Using the `/config/overlay` endpoint, you can verify the changes with a request like this:
+
+[source,bash]
+----
+curl http://localhost:8983/solr/gettingstarted/config/overlay?omitHeader=true
+----
+
+And you should get a response like this:
+
+[source,json]
+----
+{
+  "overlay":{
+    "znodeVersion":1,
+    "props":{"query":{"filterCache":{
+          "autowarmCount":1000,
+          "size":25}}}}}
+----
+
+[[ConfigAPI-CreatingandUpdatingRequestHandlers]]
+=== Creating and Updating Request Handlers
+
+To create a request handler, we can use the `add-requesthandler` command:
+
+[source,bash]
+----
+curl http://localhost:8983/solr/techproducts/config -H 'Content-type:application/json'  -d '{
+  "add-requesthandler" : {
+    "name": "/mypath",
+    "class":"solr.DumpRequestHandler",
+    "defaults":{ "x":"y" ,"a":"b", "wt":"json", "indent":true },
+    "useParams":"x"
+  }
+}'
+----
+
+Make a call to the new request handler to check if it is registered:
+
+[source,bash]
+----
+curl http://localhost:8983/solr/techproducts/mypath?omitHeader=true
+----
+
+And you should see the following as output:
+
+[source,json]
+----
+{
+  "params":{
+    "indent":"true",
+    "a":"b",
+    "x":"y",
+    "wt":"json"},
+  "context":{
+    "webapp":"/solr",
+    "path":"/mypath",
+    "httpMethod":"GET"}}
+----
+
+To update a request handler, you should use the `update-requesthandler` command :
+
+[source,bash]
+----
+curl http://localhost:8983/solr/techproducts/config -H 'Content-type:application/json'  -d '{
+  "update-requesthandler": {
+    "name": "/mypath",
+    "class":"solr.DumpRequestHandler",
+    "defaults": {"x":"new value for X", "wt":"json", "indent":true},
+    "useParams":"x"
+  }
+}'
+----
+
+As another example, we'll create another request handler, this time adding the 'terms' component as part of the definition:
+
+[source,bash]
+----
+curl http://localhost:8983/solr/techproducts/config -H 'Content-type:application/json' -d '{
+  "add-requesthandler": {
+    "name": "/myterms",
+    "class":"solr.SearchHandler",
+    "defaults": {"terms":true, "distrib":false},
+    "components": [ "terms" ]
+  }
+}'
+----
+
+[[ConfigAPI-CreatingandUpdatingUser-DefinedProperties]]
+=== Creating and Updating User-Defined Properties
+
+This command sets a user property.
+
+[source,bash]
+----
+curl http://localhost:8983/solr/techproducts/config -H'Content-type:application/json' -d '{
+    "set-user-property" : {"variable_name":"some_value"}}'
+----
+
+Again, we can use the `/config/overlay` endpoint to verify the changes have been made:
+
+[source,bash]
+----
+curl http://localhost:8983/solr/techproducts/config/overlay?omitHeader=true
+----
+
+And we would expect to see output like this:
+
+[source,json]
+----
+{"overlay":{
+   "znodeVersion":5,
+   "userProps":{
+     "variable_name":"some_value"}}
+}
+----
+
+To unset the variable, issue a command like this:
+
+[source,bash]
+----
+curl http://localhost:8983/solr/techproducts/config -H'Content-type:application/json' -d '{"unset-user-property" : "variable_name"}'
+----
+
+[[ConfigAPI-HowItWorks]]
+== How It Works
+
+Every core watches the ZooKeeper directory for the configset being used with that core. In standalone mode, however, there is no watch (because ZooKeeper is not running). If there are multiple cores in the same node using the same configset, only one ZooKeeper watch is used. For instance, if the configset 'myconf' is used by a core, the node would watch `/configs/myconf`. Every write operation performed through the API would 'touch' the directory (sets an empty byte[] to trigger watches) and all watchers are notified. Every core would check if the Schema file, `solrconfig.xml` or `configoverlay.json` is modified by comparing the `znode` versions and if modified, the core is reloaded.
+
+If `params.json` is modified, the params object is just updated without a core reload (see the section <<request-parameters-api.adoc#request-parameters-api,Request Parameters API>> for more information about `params.json`).
+
+[[ConfigAPI-EmptyCommand]]
+=== Empty Command
+
+If an empty command is sent to the `/config` endpoint, the watch is triggered on all cores using this configset. For example:
+
+[source,bash]
+----
+curl http://localhost:8983/solr/techproducts/config -H'Content-type:application/json' -d '{}'
+----
+
+Directly editing any files without 'touching' the directory *will not* make it visible to all nodes.
+
+It is possible for components to watch for the configset 'touch' events by registering a listener using `SolrCore#registerConfListener()` .
+
+[[ConfigAPI-ListeningtoconfigChanges]]
+=== Listening to config Changes
+
+Any component can register a listener using:
+
+`SolrCore#addConfListener(Runnable listener)`
+
+to get notified for config changes. This is not very useful if the files modified result in core reloads (i.e., `configoverlay.xml` or Schema). Components can use this to reload the files they are interested in.

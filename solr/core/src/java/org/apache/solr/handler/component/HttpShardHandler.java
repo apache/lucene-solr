@@ -30,6 +30,7 @@ import java.util.concurrent.CompletionService;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
+import java.util.function.Predicate;
 
 import org.apache.http.client.HttpClient;
 import org.apache.solr.client.solrj.SolrClient;
@@ -60,6 +61,14 @@ import org.slf4j.LoggerFactory;
 import org.slf4j.MDC;
 
 public class HttpShardHandler extends ShardHandler {
+  
+  /**
+   * If the request context map has an entry with this key and Boolean.TRUE as value,
+   * {@link #prepDistributed(ResponseBuilder)} will only include {@link org.apache.solr.common.cloud.Replica.Type#NRT} replicas as possible
+   * destination of the distributed request (or a leader replica of type {@link org.apache.solr.common.cloud.Replica.Type#TLOG}). This is used 
+   * by the RealtimeGet handler, since other types of replicas shouldn't respond to RTG requests
+   */
+  public static String ONLY_NRT_REPLICAS = "distribOnlyRealtime";
 
   private HttpShardHandlerFactory httpShardHandlerFactory;
   private CompletionService<ShardResponse> completionService;
@@ -349,9 +358,12 @@ public class HttpShardHandler extends ShardHandler {
       // and make it a non-distributed request.
       String ourSlice = cloudDescriptor.getShardId();
       String ourCollection = cloudDescriptor.getCollectionName();
+      // Some requests may only be fulfilled by replicas of type Replica.Type.NRT
+      boolean onlyNrtReplicas = Boolean.TRUE == req.getContext().get(ONLY_NRT_REPLICAS);
       if (rb.slices.length == 1 && rb.slices[0] != null
           && ( rb.slices[0].equals(ourSlice) || rb.slices[0].equals(ourCollection + "_" + ourSlice) )  // handle the <collection>_<slice> format
-          && cloudDescriptor.getLastPublished() == Replica.State.ACTIVE) {
+          && cloudDescriptor.getLastPublished() == Replica.State.ACTIVE
+          && (!onlyNrtReplicas || cloudDescriptor.getReplicaType() == Replica.Type.NRT)) {
         boolean shortCircuit = params.getBool("shortCircuit", true);       // currently just a debugging parameter to check distrib search on a single node
 
         String targetHandler = params.get(ShardParams.SHARDS_QT);
@@ -387,16 +399,30 @@ public class HttpShardHandler extends ShardHandler {
             continue;
             // throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "no such shard: " + sliceName);
           }
+          final Predicate<Replica> isShardLeader = new Predicate<Replica>() {
+            private Replica shardLeader = null;
 
-          final Collection<Replica> allSliceReplicas = slice.getReplicasMap().values();
-          final List<Replica> eligibleSliceReplicas = new ArrayList<>(allSliceReplicas.size());
-          for (Replica replica : allSliceReplicas) {
-            if (!clusterState.liveNodesContain(replica.getNodeName())
-                || replica.getState() != Replica.State.ACTIVE) {
-              continue;
+            @Override
+            public boolean test(Replica replica) {
+              if (shardLeader == null) {
+                try {
+                  shardLeader = zkController.getZkStateReader().getLeaderRetry(cloudDescriptor.getCollectionName(), slice.getName());
+                } catch (InterruptedException e) {
+                  throw new SolrException(SolrException.ErrorCode.SERVICE_UNAVAILABLE, "Exception finding leader for shard " + slice.getName() + " in collection " 
+                      + cloudDescriptor.getCollectionName(), e);
+                } catch (SolrException e) {
+                  if (log.isDebugEnabled()) {
+                    log.debug("Exception finding leader for shard {} in collection {}. Collection State: {}", 
+                        slice.getName(), cloudDescriptor.getCollectionName(), zkController.getZkStateReader().getClusterState().getCollectionOrNull(cloudDescriptor.getCollectionName()));
+                  }
+                  throw e;
+                }
+              }
+              return replica.getName().equals(shardLeader.getName());
             }
-            eligibleSliceReplicas.add(replica);
-          }
+          };
+
+          final List<Replica> eligibleSliceReplicas = collectEligibleReplicas(slice, clusterState, onlyNrtReplicas, isShardLeader);
 
           replicaListTransformer.transform(eligibleSliceReplicas);
 
@@ -416,17 +442,7 @@ public class HttpShardHandler extends ShardHandler {
           }
         }
         // And now recreate the | delimited list of equivalent servers
-        final StringBuilder sliceShardsStr = new StringBuilder();
-        boolean first = true;
-        for (String shardUrl : shardUrls) {
-          if (first) {
-            first = false;
-          } else {
-            sliceShardsStr.append('|');
-          }
-          sliceShardsStr.append(shardUrl);
-        }
-        rb.shards[i] = sliceShardsStr.toString();
+        rb.shards[i] = createSliceShardsStr(shardUrls);
       }
     }
     String shards_rows = params.get(ShardParams.SHARDS_ROWS);
@@ -437,6 +453,40 @@ public class HttpShardHandler extends ShardHandler {
     if(shards_start != null) {
       rb.shards_start = Integer.parseInt(shards_start);
     }
+  }
+
+  private static List<Replica> collectEligibleReplicas(Slice slice, ClusterState clusterState, boolean onlyNrtReplicas, Predicate<Replica> isShardLeader) {
+    final Collection<Replica> allSliceReplicas = slice.getReplicasMap().values();
+    final List<Replica> eligibleSliceReplicas = new ArrayList<>(allSliceReplicas.size());
+    for (Replica replica : allSliceReplicas) {
+      if (!clusterState.liveNodesContain(replica.getNodeName())
+          || replica.getState() != Replica.State.ACTIVE
+          || (onlyNrtReplicas && replica.getType() == Replica.Type.PULL)) {
+        continue;
+      }
+
+      if (onlyNrtReplicas && replica.getType() == Replica.Type.TLOG) {
+        if (!isShardLeader.test(replica)) {
+          continue;
+        }
+      }
+      eligibleSliceReplicas.add(replica);
+    }
+    return eligibleSliceReplicas;
+  }
+
+  private static String createSliceShardsStr(final List<String> shardUrls) {
+    final StringBuilder sliceShardsStr = new StringBuilder();
+    boolean first = true;
+    for (String shardUrl : shardUrls) {
+      if (first) {
+        first = false;
+      } else {
+        sliceShardsStr.append('|');
+      }
+      sliceShardsStr.append(shardUrl);
+    }
+    return sliceShardsStr.toString();
   }
 
 

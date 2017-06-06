@@ -479,6 +479,14 @@ public class FieldAnalysisRequestHandlerTest extends AnalysisRequestHandlerTestB
     assertEquals(901, tokenInfoList.get(0).get("org.apache.lucene.analysis.tokenattributes.FlagsAttribute#flags"));
   }
 
+  @Test(expected = Exception.class)
+  public void testNoDefaultField() throws Exception {
+    ModifiableSolrParams params = new ModifiableSolrParams();
+    params.add(CommonParams.Q, "fox brown");
+    SolrQueryRequest req = new LocalSolrQueryRequest(h.getCore(), params);
+    handler.resolveAnalysisRequest(req);
+  }
+
   /** A custom impl of a standard attribute impl; test this instance is used. */
   public class CustomFlagsAttributeImpl extends FlagsAttributeImpl {
     @Override

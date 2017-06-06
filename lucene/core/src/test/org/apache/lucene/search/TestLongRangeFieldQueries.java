@@ -23,6 +23,7 @@ import org.apache.lucene.document.LongRange;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.store.Directory;
+import org.apache.lucene.util.TestUtil;
 
 /**
  * Random testing for LongRange Queries.
@@ -31,11 +32,25 @@ public class TestLongRangeFieldQueries extends BaseRangeFieldQueryTestCase {
   private static final String FIELD_NAME = "longRangeField";
 
   private long nextLongInternal() {
-    if (rarely()) {
-      return random().nextBoolean() ? Long.MAX_VALUE : Long.MIN_VALUE;
+    switch (random().nextInt(5)) {
+      case 0:
+        return Long.MIN_VALUE;
+      case 1:
+        return Long.MAX_VALUE;
+      default:
+        int bpv = random().nextInt(64);
+        switch (bpv) {
+          case 64:
+            return random().nextLong();
+          default:
+            long v = TestUtil.nextLong(random(), 0, (1L << bpv) - 1);
+            if (bpv > 0) {
+              // negative values sometimes
+              v -= 1L << (bpv - 1);
+            }
+            return v;
+        }
     }
-    long max = Long.MAX_VALUE / 2;
-    return (max + max) * random().nextLong() - max;
   }
 
   @Override
