@@ -32,12 +32,19 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.TreeMap;
+import java.util.TreeSet;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import org.apache.http.HttpEntity;
 import org.apache.http.util.EntityUtils;
+import org.apache.solr.common.IteratorWriter;
+import org.apache.solr.common.MapWriter;
 import org.apache.solr.common.SolrException;
+import org.apache.solr.common.cloud.SolrZkClient;
+import org.apache.solr.common.cloud.ZkOperation;
+import org.apache.zookeeper.KeeperException;
 import org.noggit.CharArr;
 import org.noggit.JSONParser;
 import org.noggit.JSONWriter;
@@ -52,31 +59,58 @@ public class Utils {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   
   public static Map getDeepCopy(Map map, int maxDepth) {
-    return getDeepCopy(map, maxDepth, true);
+    return getDeepCopy(map, maxDepth, true, false);
   }
 
   public static Map getDeepCopy(Map map, int maxDepth, boolean mutable) {
+    return getDeepCopy(map, maxDepth, mutable, false);
+  }
+
+  public static Map getDeepCopy(Map map, int maxDepth, boolean mutable, boolean sorted) {
     if(map == null) return null;
     if (maxDepth < 1) return map;
-    Map copy = new LinkedHashMap();
+    Map copy;
+    if (sorted) {
+      copy = new TreeMap();
+    } else {
+      copy = new LinkedHashMap();
+    }
     for (Object o : map.entrySet()) {
       Map.Entry e = (Map.Entry) o;
-      Object v = e.getValue();
-      if (v instanceof Map) v = getDeepCopy((Map) v, maxDepth - 1, mutable);
-      else if (v instanceof Collection) v = getDeepCopy((Collection) v, maxDepth - 1, mutable);
-      copy.put(e.getKey(), v);
+      copy.put(e.getKey(), makeDeepCopy(e.getValue(),maxDepth, mutable, sorted));
     }
     return mutable ? copy : Collections.unmodifiableMap(copy);
   }
 
-  public static Collection getDeepCopy(Collection c, int maxDepth, boolean mutable) {
-    if (c == null || maxDepth < 1) return c;
-    Collection result = c instanceof Set ? new HashSet() : new ArrayList();
-    for (Object o : c) {
-      if (o instanceof Map) {
-        o = getDeepCopy((Map) o, maxDepth - 1, mutable);
+  private static Object makeDeepCopy(Object v, int maxDepth, boolean mutable, boolean sorted) {
+    if (v instanceof MapWriter && maxDepth > 1) {
+      v = ((MapWriter) v).toMap(new LinkedHashMap<>());
+    } else if (v instanceof IteratorWriter && maxDepth > 1) {
+      v = ((IteratorWriter) v).toList(new ArrayList<>());
+      if (sorted) {
+        Collections.sort((List)v);
       }
-      result.add(o);
+    }
+
+    if (v instanceof Map) {
+      v = getDeepCopy((Map) v, maxDepth - 1, mutable, sorted);
+    } else if (v instanceof Collection) {
+      v = getDeepCopy((Collection) v, maxDepth - 1, mutable, sorted);
+    }
+    return v;
+  }
+
+  public static Collection getDeepCopy(Collection c, int maxDepth, boolean mutable) {
+    return getDeepCopy(c, maxDepth, mutable, false);
+  }
+
+  public static Collection getDeepCopy(Collection c, int maxDepth, boolean mutable, boolean sorted) {
+    if (c == null || maxDepth < 1) return c;
+    Collection result = c instanceof Set ?
+        ( sorted? new TreeSet() : new HashSet()) : new ArrayList();
+    for (Object o : c) result.add(makeDeepCopy(o, maxDepth, mutable, sorted));
+    if (sorted && (result instanceof List)) {
+      Collections.sort((List)result);
     }
     return mutable ? result : result instanceof Set ? unmodifiableSet((Set) result) : unmodifiableList((List) result);
   }
@@ -84,6 +118,13 @@ public class Utils {
   public static byte[] toJSON(Object o) {
     if(o == null) return new byte[0];
     CharArr out = new CharArr();
+    if (!(o instanceof List) && !(o instanceof Map)) {
+      if (o instanceof MapWriter)  {
+        o = ((MapWriter)o).toMap(new LinkedHashMap<>());
+      } else if(o instanceof IteratorWriter){
+        o = ((IteratorWriter)o).toList(new ArrayList<>());
+      }
+    }
     new JSONWriter(out, 2).write(o); // indentation by default
     return toUTF8(out);
   }
@@ -116,12 +157,18 @@ public class Utils {
   }
 
   public static Map<String, Object> makeMap(Object... keyVals) {
+    return makeMap(false, keyVals);
+  }
+
+  public static Map<String, Object> makeMap(boolean skipNulls, Object... keyVals) {
     if ((keyVals.length & 0x01) != 0) {
       throw new IllegalArgumentException("arguments should be key,value");
     }
     Map<String, Object> propMap = new LinkedHashMap<>(keyVals.length >> 1);
     for (int i = 0; i < keyVals.length; i += 2) {
-      propMap.put(keyVals[i].toString(), keyVals[i + 1]);
+      Object keyVal = keyVals[i + 1];
+      if (skipNulls && keyVal == null) continue;
+      propMap.put(keyVals[i].toString(), keyVal);
     }
     return propMap;
   }
@@ -162,6 +209,7 @@ public class Utils {
   }
 
   public static Object getObjectByPath(Map root, boolean onlyPrimitive, List<String> hierarchy) {
+    if(root == null) return null;
     Map obj = root;
     for (int i = 0; i < hierarchy.size(); i++) {
       int idx = -1;
@@ -230,6 +278,26 @@ public class Utils {
   private static void readFully(InputStream is) throws IOException {
     is.skip(is.available());
     while (is.read() != -1) {}
+  }
+
+  /**
+   * Assumes data in ZooKeeper is a JSON string, deserializes it and returns as a Map
+   *
+   * @param zkClient the zookeeper client
+   * @param path the path to the znode being read
+   * @param retryOnConnLoss whether to retry the operation automatically on connection loss, see {@link org.apache.solr.common.cloud.ZkCmdExecutor#retryOperation(ZkOperation)}
+   * @return a Map if the node exists and contains valid JSON or an empty map if znode does not exist or has a null data
+   */
+  public static Map<String, Object> getJson(SolrZkClient zkClient, String path, boolean retryOnConnLoss) throws KeeperException, InterruptedException {
+    try {
+      byte[] bytes = zkClient.getData(path, null, null, retryOnConnLoss);
+      if (bytes != null && bytes.length > 0) {
+        return (Map<String, Object>) Utils.fromJSON(bytes);
+      }
+    } catch (KeeperException.NoNodeException e) {
+      return Collections.emptyMap();
+    }
+    return Collections.emptyMap();
   }
 
   public static final Pattern ARRAY_ELEMENT_INDEX = Pattern

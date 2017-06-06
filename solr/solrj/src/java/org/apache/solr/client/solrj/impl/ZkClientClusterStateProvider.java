@@ -39,9 +39,15 @@ public class ZkClientClusterStateProvider implements ClusterStateProvider {
 
 
   ZkStateReader zkStateReader;
+  private boolean closeZkStateReader = true;
   String zkHost;
   int zkConnectTimeout = 10000;
   int zkClientTimeout = 10000;
+
+  public ZkClientClusterStateProvider(ZkStateReader zkStateReader) {
+    this.zkStateReader = zkStateReader;
+    this.closeZkStateReader =  false;
+  }
 
   public ZkClientClusterStateProvider(Collection<String> zkHosts, String chroot) {
     zkHost = buildZkHostString(zkHosts,chroot);
@@ -54,6 +60,9 @@ public class ZkClientClusterStateProvider implements ClusterStateProvider {
   @Override
   public ClusterState.CollectionRef getState(String collection) {
     return zkStateReader.getClusterState().getCollectionRef(collection);
+  }
+  public ZkStateReader getZkStateReader(){
+    return zkStateReader;
   }
 
   @Override
@@ -151,7 +160,7 @@ public class ZkClientClusterStateProvider implements ClusterStateProvider {
 
   @Override
   public void close() throws IOException {
-    if (zkStateReader != null) {
+    if (zkStateReader != null && closeZkStateReader) {
       synchronized (this) {
         if (zkStateReader != null)
           zkStateReader.close();

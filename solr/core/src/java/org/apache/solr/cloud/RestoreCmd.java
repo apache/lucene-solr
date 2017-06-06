@@ -214,7 +214,7 @@ public class RestoreCmd implements OverseerCollectionMessageHandler.Cmd {
     restoreCollection.getSlices().forEach(x -> sliceNames.add(x.getName()));
 
     Map<ReplicaAssigner.Position, String> positionVsNodes = ocmh.identifyNodes(clusterState, nodeList,
-        message, sliceNames, numNrtReplicas, numTlogReplicas, numPullReplicas);
+        restoreCollectionName, message, sliceNames, numNrtReplicas, numTlogReplicas, numPullReplicas);
 
     //Create one replica per shard and copy backed up data to it
     for (Slice slice : restoreCollection.getSlices()) {

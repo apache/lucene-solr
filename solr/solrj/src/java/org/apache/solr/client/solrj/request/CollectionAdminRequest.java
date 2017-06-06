@@ -16,8 +16,6 @@
  */
 package org.apache.solr.client.solrj.request;
 
-import static org.apache.solr.common.params.CollectionAdminParams.COUNT_PROP;
-
 import java.io.IOException;
 import java.util.Collection;
 import java.util.Map;
@@ -47,6 +45,8 @@ import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.ContentStream;
 import org.apache.solr.common.util.NamedList;
 
+import static org.apache.solr.cloud.autoscaling.Policy.POLICY;
+import static org.apache.solr.common.params.CollectionAdminParams.COUNT_PROP;
 import static org.apache.solr.common.params.CollectionAdminParams.CREATE_NODE_SET_PARAM;
 import static org.apache.solr.common.params.CollectionAdminParams.CREATE_NODE_SET_SHUFFLE_PARAM;
 
@@ -344,6 +344,7 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse> 
     protected String configName = null;
     protected String createNodeSet = null;
     protected String routerName;
+    protected String policy;
     protected String shards;
     protected String routerField;
     protected Integer numShards;
@@ -492,9 +493,14 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse> 
       }
       if(rule != null) params.set("rule", rule);
       if(snitch != null) params.set("snitch", snitch);
+      params.setNonNull(POLICY, policy);
       return params;
     }
 
+    public Create setPolicy(String policy) {
+      this.policy = policy;
+      return this;
+    }
   }
 
   /**

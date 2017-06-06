@@ -1,0 +1,47 @@
+{
+  "documentation": "TODO NOCOMMIT",
+  "description": "The Scaling API provides API for adding cluster level scaling rules, triggers and event listeners",
+  "methods": [
+    "GET",
+    "POST"
+  ],
+  "url": {
+    "paths": [
+      "/cluster/autoscaling",
+      "/cluster/autoscaling/diagnostics"
+    ]
+  },
+  "commands": {
+    "set-policy" : {
+      "type":"object",
+      "description": "The set-policy command allows you to add and update policies that apply to collections",
+    /*  "patternProperties": {
+        "^.+$": {
+          "type": "array"
+        }
+      },*/
+      "additionalProperties": true
+    },
+    "set-cluster-policy" : {
+      "type" : "array",
+      "description" : "The set-cluster-policy command allows you to add and update cluster-level policy that acts as the base for all collection level policies, if any"
+    },
+    "set-cluster-preferences" : {
+      "type" : "array",
+      "description" : "The set-cluster-preferences command allows you to add and update cluster-level preferences that are used to sort nodes for selection in cluster operations"
+    },
+    "remove-policy": {
+      "description": "Remove a policy",
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string",
+          "description": "The name of the policy to be removed"
+        }
+      },
+      "required": [
+        "name"
+      ]
+    }
+  }
+}

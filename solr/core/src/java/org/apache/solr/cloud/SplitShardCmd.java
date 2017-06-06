@@ -381,9 +381,9 @@ public class SplitShardCmd implements Cmd {
 
       // TODO: change this to handle sharding a slice into > 2 sub-shards.
 
-
       Map<ReplicaAssigner.Position, String> nodeMap = ocmh.identifyNodes(clusterState,
           new ArrayList<>(clusterState.getLiveNodes()),
+          collectionName,
           new ZkNodeProps(collection.getProperties()),
           subSlices, repFactor - 1, 0, 0);
 

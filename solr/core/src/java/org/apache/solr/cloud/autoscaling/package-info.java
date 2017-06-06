@@ -14,19 +14,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.solr.common.cloud.rule;
-
-import java.util.Collections;
-import java.util.Set;
 
 /**
- *
+ * Package for classes related to autoscaling
  */
-public abstract class Snitch {
-  public static final Set<Class> WELL_KNOWN_SNITCHES = Collections.singleton(ImplicitSnitch.class);
-
-  public abstract void getTags(String solrNode, Set<String> requestedTags, SnitchContext ctx);
-
-  public abstract boolean isKnownTag(String tag);
-
-}
+package org.apache.solr.cloud.autoscaling;

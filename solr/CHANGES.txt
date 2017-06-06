@@ -64,7 +64,7 @@ Upgrading from Solr 6.x
   registries as hierarchical MBeans. This behavior can be also disabled by specifying a SolrJmxReporter
   configuration with a boolean init arg "enabled" set to "false". For a more fine-grained control users
   should explicitly specify at least one SolrJmxReporter configuration.
-  
+
 * The sow (split-on-whitespace) request param now defaults to false (true in previous versions).
   This affects the edismax and standard/"lucene" query parsers: if the sow param is not specified,
   query text will not be split on whitespace before analysis. See
@@ -124,6 +124,12 @@ New Features
           updates will fail same as if there is no leaders, queries continue to work), so they don’t even 
           participate in elections.
   (Tomás Fernández Löbbe)
+
+* SOLR-10373: Implement read API for autoscaling configuration at /admin/autoscaling or
+  /cluster/autoscaling paths. (shalin)
+
+* SOLR-10677: Expose a diagnostics API to return nodes sorted by load in descending order and
+  any policy violations. (shalin)
 
 Bug Fixes
 ----------------------
@@ -238,6 +244,12 @@ Other Changes
 
 * SOLR-10713: Ignore .pid and .out files in solr working directory (Jason Gerlowski via Mike Drob)
 
+* SOLR-10764: AutoScalingHandler should validate policy and preferences before updating zookeeper. (shalin)
+
+* SOLR-10782: Improve error handling and tests for Snitch and subclasses and general cleanups. (Noble Paul, shalin)
+
+* SOLR-10419: All collection APIs should use the new Policy framework for replica placement. (Noble Paul, shalin)
+
 ==================  6.7.0 ==================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release.
@@ -321,13 +333,13 @@ Bug Fixes
 * SOLR-10723 JSON Facet API: resize() implemented incorrectly for CountSlotAcc, HllAgg.NumericAcc
   resulting in exceptions when using a hashing faceting method and sorting by hll(numeric_field).
   (yonik)
-  
+
 * SOLR-10719: Creating a core.properties fails if the parent of core.properties is a symlinked dierctory
   (Erick Erickson)
 
 * SOLR-10360: Solr HDFS snapshot export fails due to FileNotFoundException error when using MR1 instead of
   yarn. (Hrishikesh via Mark Miller)
-  
+
 * SOLR-10137: Ensure that ConfigSets created via API are mutable. (Hrishikesh via Mark Miller)
 
 Optimizations

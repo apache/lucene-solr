@@ -76,6 +76,10 @@ public class ModifiableSolrParams extends SolrParams
   }
 
 
+  public ModifiableSolrParams setNonNull(String name, Object val) {
+    if (val != null) set(name, String.valueOf(val));
+    return this;
+  }
   //----------------------------------------------------------------
   //----------------------------------------------------------------
 
