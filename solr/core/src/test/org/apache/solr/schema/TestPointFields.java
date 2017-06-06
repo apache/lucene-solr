@@ -2761,7 +2761,7 @@ public class TestPointFields extends SolrTestCaseJ4 {
     }
     assertU(commit());
     assertTrue(h.getCore().getLatestSchema().getField(field).getType() instanceof DatePointField);
-    assertQ(req("q", "*:*", "fl", "id, " + field, "sort", "product(-1,ms(" + field + ")) asc"),
+    assertQ(req("q", "*:*", "fl", "id, " + field, "sort", "product(-1,ms(" + field + "," + baseDate +")) asc"),
         "//*[@numFound='10']",
         "//result/doc[1]/date[@name='" + field + "'][.='1995-01-10T10:59:20Z']",
         "//result/doc[2]/date[@name='" + field + "'][.='1995-01-10T10:59:19Z']",
