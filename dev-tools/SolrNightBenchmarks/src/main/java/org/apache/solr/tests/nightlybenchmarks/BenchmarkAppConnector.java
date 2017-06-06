@@ -14,7 +14,7 @@ public class BenchmarkAppConnector {
 
 	public enum FileType {
 
-		MEMORY_HEAP_USED, PROCESS_CPU_LOAD, TEST_ENV_FILE, STANDALONE_INDEXING_MAIN, STANDALONE_CREATE_COLLECTION_MAIN, STANDALONE_INDEXING_THROUGHPUT, CLOUD_CREATE_COLLECTION_MAIN, CLOUD_SERIAL_INDEXING_THROUGHPUT, CLOUD_CONCURRENT_INDEXING_THROUGHPUT, CLOUD_INDEXING_SERIAL, CLOUD_INDEXING_CONCURRENT, NUMERIC_QUERY_STANDALONE, NUMERIC_QUERY_CLOUD, LAST_RUN_COMMIT, IS_RUNNING_FILE, COMMIT_INFORMATION_FILE, IS_CLONING_FILE
+		MEMORY_HEAP_USED, PROCESS_CPU_LOAD, TEST_ENV_FILE, STANDALONE_INDEXING_MAIN, STANDALONE_CREATE_COLLECTION_MAIN, STANDALONE_INDEXING_THROUGHPUT, CLOUD_CREATE_COLLECTION_MAIN, CLOUD_SERIAL_INDEXING_THROUGHPUT, CLOUD_CONCURRENT_INDEXING_THROUGHPUT, CLOUD_INDEXING_SERIAL, CLOUD_INDEXING_CONCURRENT, NUMERIC_QUERY_STANDALONE, NUMERIC_QUERY_CLOUD, LAST_RUN_COMMIT, IS_RUNNING_FILE, COMMIT_INFORMATION_FILE, IS_CLONING_FILE, COMMIT_QUEUE
 
 	}
 
@@ -45,10 +45,35 @@ public class BenchmarkAppConnector {
 		return dir.listFiles().length == 0 ? true : false;
 	}
 
-	public static void deleteFile(FileType type) {
+	public static boolean isCommitQueueEmpty() {
+		
+		File dir = new File(benchmarkAppDirectory + "data" + File.separator + "commit_queue" + File.separator);
+		
+		if (!dir.exists()) {
+			dir.mkdir();
+		}
+		
+		return dir.listFiles().length == 0 ? true : false;
+	}
+
+	public static boolean isDeleteCommitFromQueue(String commit) {
+		
+		File file = new File(benchmarkAppDirectory + "data" + File.separator + "commit_queue" + File.separator + commit);
+		return file.delete();
+	
+	}
+
+	public static boolean isCommitInQueue(String commit) {
+		
+		File file = new File(benchmarkAppDirectory + "data" + File.separator + "commit_queue" + File.separator + commit);
+		return file.exists();
+	
+	}
+	
+	public static void deleteFolder(FileType type) {
 
 		if (type == FileType.LAST_RUN_COMMIT) {
-			 File dir = new File(BenchmarkAppConnector.benchmarkAppDirectory + "data" + File.separator + "lastrun" + File.separator);
+			 File dir = new File(BenchmarkAppConnector.benchmarkAppDirectory + "data" + File.separator + type + File.separator);
 			 
 			 if (!dir.exists()) {
 				 dir.mkdir();
@@ -77,6 +102,16 @@ public class BenchmarkAppConnector {
 						        if (!file.isDirectory()) file.delete();
 						    }
 			 }
+		} else if (type == FileType.COMMIT_QUEUE) {
+			 File dir = new File(BenchmarkAppConnector.benchmarkAppDirectory + "data" + File.separator + "commit_queue" + File.separator);
+			 
+			 if (!dir.exists()) {
+				 dir.mkdir();
+			 } else {
+						 for (File file: dir.listFiles()) {
+						        if (!file.isDirectory()) file.delete();
+						    }
+			 }
 		}
 	}
 
@@ -95,6 +130,8 @@ public class BenchmarkAppConnector {
 				dataDir = new File(benchmarkAppDirectory + "data" + File.separator + "lastrun" + File.separator);
 			} else if (type == FileType.IS_CLONING_FILE) {
 				dataDir = new File(benchmarkAppDirectory + "data" + File.separator + "cloning" + File.separator);
+			} else if (type == FileType.COMMIT_QUEUE) {
+				dataDir = new File(benchmarkAppDirectory + "data" + File.separator + "commit_queue" + File.separator);
 			} else {
 				dataDir = new File(benchmarkAppDirectory + "data" + File.separator);
 			}
@@ -112,6 +149,9 @@ public class BenchmarkAppConnector {
 			} else if (type == FileType.IS_CLONING_FILE) {
 				file = new File(
 						benchmarkAppDirectory + "data" + File.separator + "cloning" + File.separator + fileName);
+			} else if (type == FileType.COMMIT_QUEUE) {
+				file = new File(
+						benchmarkAppDirectory + "data" + File.separator + "commit_queue" + File.separator + fileName);
 			} else {
 				file = new File(benchmarkAppDirectory + "data" + File.separator + fileName);
 			}
@@ -140,7 +180,7 @@ public class BenchmarkAppConnector {
 					fw.write("Date, Test_ID, Seconds, CommitID\n");
 				} else if (type == FileType.STANDALONE_INDEXING_MAIN || type == FileType.CLOUD_INDEXING_SERIAL) {
 					fw.write("Date, Test_ID, Seconds, CommitID\n");
-				} else if (type == FileType.TEST_ENV_FILE || type == FileType.COMMIT_INFORMATION_FILE) {
+				} else if (type == FileType.TEST_ENV_FILE || type == FileType.COMMIT_INFORMATION_FILE || type == FileType.COMMIT_QUEUE) {
 					// Don't add any header
 				} else if (type == FileType.STANDALONE_INDEXING_THROUGHPUT
 						|| type == FileType.CLOUD_SERIAL_INDEXING_THROUGHPUT) {

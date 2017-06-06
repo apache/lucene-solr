@@ -284,7 +284,7 @@ public class Util {
 	}
 
 	public static String getLatestCommitID(String repositoryURL) throws IOException {
-		Util.postMessage("** Getting the latest commit ID from remote repository", MessageType.BLUE_TEXT, false);
+		Util.postMessage("** Getting the latest commit ID from: " + repositoryURL, MessageType.BLUE_TEXT, false);
 		return new BufferedReader(new InputStreamReader(
 				Runtime.getRuntime().exec("git ls-remote " + repositoryURL + " HEAD").getInputStream())).readLine()
 						.split("HEAD")[0].trim();
@@ -671,16 +671,37 @@ public class Util {
 
 	public static void init(String[] args) {
 
+		Util.postMessage("", MessageType.WHITE_TEXT, false);
+		Util.postMessage("--------------------------------------------------------------------", MessageType.WHITE_TEXT, false);
+		Util.postMessage("          	*** Solr Nightly Benchmarks ***  HOLA !!!             ", MessageType.RED_TEXT, false);
+		Util.postMessage("--------------------------------------------------------------------", MessageType.WHITE_TEXT, false);
+		Util.postMessage("", MessageType.WHITE_TEXT, false);
+		
 		try {
+			argM = Util.getArgs(args);
 
 			Util.getPropertyValues();
 
+			if (argM.containsKey("-RegisterLatestCommit")) {
+				Util.postMessage("** SolrNightlyBenchmarks Commit Registry Updater ...", MessageType.WHITE_TEXT, false);
+				String commit = Util.getLatestCommitID(Util.LUCENE_SOLR_REPOSITORY_URL);
+				
+				if (!BenchmarkAppConnector.isCommitInQueue(commit)) {
+						Util.postMessage("** Registering the latest commit in the queue ...", MessageType.RED_TEXT, false);
+						BenchmarkAppConnector.writeToWebAppDataFile(commit, "", true, FileType.COMMIT_QUEUE);
+				} else {
+						Util.postMessage("** Skipping Registering the latest commit in the queue since it already exists ...", MessageType.GREEN_TEXT, false);
+				}
+				
+				Util.postMessage("** SolrNightlyBenchmarks Commit Registry Updater [COMPLETE] now EXIT...", MessageType.WHITE_TEXT, false);
+				System.exit(0);
+			}
+			
 			Util.checkWebAppFiles();
 			
 			Util.checkBaseAndTempDir();
 			
 			Util.setAliveFlag();
-			argM = Util.getArgs(args);
 
 			String commitID = "";
 			if (argM.containsKey("-commitID")) {
@@ -746,20 +767,20 @@ public class Util {
 
 	public static void createLastRunFile() {
 
-		BenchmarkAppConnector.deleteFile(FileType.LAST_RUN_COMMIT);
+		BenchmarkAppConnector.deleteFolder(FileType.LAST_RUN_COMMIT);
 		BenchmarkAppConnector.writeToWebAppDataFile(Util.COMMIT_ID, "", true, FileType.LAST_RUN_COMMIT);
 
 	}
 
 	public static void createIsRunningFile() {
 
-		BenchmarkAppConnector.deleteFile(FileType.IS_RUNNING_FILE);
+		BenchmarkAppConnector.deleteFolder(FileType.IS_RUNNING_FILE);
 		BenchmarkAppConnector.writeToWebAppDataFile(Util.COMMIT_ID, "", true, FileType.IS_RUNNING_FILE);
 
 	}
 
 	public static void deleteRunningFile() {
-		BenchmarkAppConnector.deleteFile(FileType.IS_RUNNING_FILE);
+		BenchmarkAppConnector.deleteFolder(FileType.IS_RUNNING_FILE);
 	}
 
 	public static void cleanRunDirectory() {

@@ -109,7 +109,7 @@ public class SolrNode {
 					repository = Git.cloneRepository().setURI(Util.LUCENE_SOLR_REPOSITORY_URL)
 							.setDirectory(gitDirectory).call();
 					repository.checkout().setName(commitId).call();
-			BenchmarkAppConnector.deleteFile(FileType.IS_CLONING_FILE);
+			BenchmarkAppConnector.deleteFolder(FileType.IS_CLONING_FILE);
 		}
 
 		String packageFilename = gitDirectoryPath + "/solr/package/solr-7.0.0-SNAPSHOT.zip";
