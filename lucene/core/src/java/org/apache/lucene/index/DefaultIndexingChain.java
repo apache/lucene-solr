@@ -770,10 +770,8 @@ final class DefaultIndexingChain extends DocConsumer {
           }
           invertState.lastStartOffset = startOffset;
 
-          invertState.length++;
-          if (invertState.length < 0) {
-            throw new IllegalArgumentException("too many tokens in field '" + field.name() + "'");
-          }
+          invertState.length = Math.addExact(invertState.length, invertState.termFreqAttribute.getTermFrequency());
+          
           //System.out.println("  term=" + invertState.termAttribute);
 
           // If we hit an exception in here, we abort

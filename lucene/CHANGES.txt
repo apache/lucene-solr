@@ -14,6 +14,10 @@ New Features
   well as the oldest Lucene version that contributed to the segment.
   (Adrien Grand)
 
+* LUCENE-7854: The new TermFrequencyAttribute used during analysis
+  with a custom token stream allows indexing custom term frequencies
+  (Mike McCandless)
+
 API Changes
 
 * LUCENE-2605: Classic QueryParser no longer splits on whitespace by default.
