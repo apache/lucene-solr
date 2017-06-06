@@ -278,6 +278,44 @@ New Features
 
 * SOLR-3702: concat(...) function query (Andrey Kudryavtsev via Mikhail Khludnev)
 
+* SOLR-10767: Add movingAvg Stream Evaluator (Joel Bernstein)
+
+* SOLR-10813: Add arraySort Stream Evaluator (Joel Bernstein)
+
+* SOLR-10696: Add cumulative probability function (Joel Bernstein)
+
+* SOLR-10765: Add anova Stream Evaluator (Joel Bernstein)
+
+* SOLR-10754: Add hist Stream Evaluator (Joel Bernstein)
+
+* SOLR-10753: Add array Stream Evaluator (Joel Bernstein)
+
+* SOLR-10747: Allow /stream handler to execute Stream Evaluators directly (Joel Bernstein)
+
+* SOLR-10743: Add sequence StreamEvaluator (Joel Bernstein)
+
+* SOLR-10684: Add finddelay Stream Evaluator (Joel Bernstein)
+
+* SOLR-10731: Add knn Streaming Expression (Joel Bernstein)
+
+* SOLR-10724: Add describe Stream Evaluator (Joel Bernstein)
+
+* SOLR-10693: Add copyOfRange Stream Evaluator (Joel Bernstein)
+
+* SOLR-10623: Add sql Streaming Expression (Joel Bernstein)
+
+* SOLR-10661: Add copyOf Stream Evaluator (Joel Bernstein)
+
+* SOLR-10663: Add distance Stream Evaluator (Joel Bernstein)
+
+* SOLR-10664: Add scale Stream Evaluator (Joel Bernstein)
+
+* SOLR-10666: Add rank transformation Stream Evaluator (Joel Bernstein)
+
+* SOLR-10662: Add length Stream Evaluator (Joel Bernstein)
+
+* SOLR-10660: Add reverse Stream Evaluator (Joel Bernstein)
+
 Bug Fixes
 ----------------------
 * SOLR-10723 JSON Facet API: resize() implemented incorrectly for CountSlotAcc, HllAgg.NumericAcc
