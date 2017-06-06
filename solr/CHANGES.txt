@@ -352,6 +352,8 @@ Optimizations
   so that the second phase which would normally involve calculating the domain for the bucket
   can be skipped entirely, leading to large performance improvements. (yonik)
 
+* SOLR-10722: Speed up Solr's use of the UnifiedHighlighter be re-using FieldInfos. (David Smiley)
+
 Other Changes
 ----------------------
 
