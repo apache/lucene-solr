@@ -586,7 +586,7 @@ public class TestPolicy extends SolrTestCaseJ4 {
     };
     Map<String, List<String>> locations = PolicyHelper.getReplicaLocations(
         "newColl", (Map<String, Object>) Utils.fromJSONString(autoScaleJson),
-        dataProvider, Collections.singletonMap("newColl", "c1"), Arrays.asList("shard1", "shard2"), 1);
+        dataProvider, Collections.singletonMap("newColl", "c1"), Arrays.asList("shard1", "shard2"), 1, null);
     assertTrue(locations.get("shard1").containsAll(ImmutableList.of("127.0.0.1:50096_solr")));
     assertTrue(locations.get("shard2").containsAll(ImmutableList.of("127.0.0.1:50096_solr")));
   }
@@ -643,7 +643,7 @@ public class TestPolicy extends SolrTestCaseJ4 {
     };
     Map<String, List<String>> locations = PolicyHelper.getReplicaLocations(
         "newColl", (Map<String, Object>) Utils.fromJSONString(autoScaleJson),
-        dataProvider, Collections.singletonMap("newColl", "policy1"), Arrays.asList("shard1", "shard2"), 3);
+        dataProvider, Collections.singletonMap("newColl", "policy1"), Arrays.asList("shard1", "shard2"), 3, null);
     assertTrue(locations.get("shard1").containsAll(ImmutableList.of("node2", "node1", "node3")));
     assertTrue(locations.get("shard2").containsAll(ImmutableList.of("node2", "node1", "node3")));
 

@@ -208,6 +208,8 @@ Other Changes
 
 * SOLR-10782: Improve error handling and tests for Snitch and subclasses and general cleanups. (Noble Paul, shalin)
 
+* SOLR-10419: All collection APIs should use the new Policy framework for replica placement. (Noble Paul, shalin)
+
 ==================  6.7.0 ==================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release.

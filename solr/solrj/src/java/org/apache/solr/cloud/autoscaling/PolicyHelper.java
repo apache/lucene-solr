@@ -25,10 +25,10 @@ import java.util.List;
 import java.util.Map;
 
 import org.apache.solr.client.solrj.SolrRequest;
+import org.apache.solr.cloud.autoscaling.Policy.Suggester.Hint;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.CoreAdminParams;
 import org.apache.solr.common.util.Utils;
-import org.apache.solr.cloud.autoscaling.Policy.Suggester.Hint;
 
 import static org.apache.solr.common.params.CollectionParams.CollectionAction.ADDREPLICA;
 
@@ -37,7 +37,8 @@ public class PolicyHelper {
                                                               ClusterDataProvider cdp,
                                                               Map<String, String> optionalPolicyMapping,
                                                               List<String> shardNames,
-                                                              int repFactor) {
+                                                              int repFactor,
+                                                              List<String> nodesList) {
     Map<String, List<String>> positionMapping = new HashMap<>();
     for (String shardName : shardNames) positionMapping.put(shardName, new ArrayList<>(repFactor));
     if (optionalPolicyMapping != null) {
@@ -76,6 +77,11 @@ public class PolicyHelper {
         Policy.Suggester suggester = session.getSuggester(ADDREPLICA)
             .hint(Hint.COLL, collName)
             .hint(Hint.SHARD, shardName);
+        if (nodesList != null)  {
+          for (String nodeName : nodesList) {
+            suggester = suggester.hint(Hint.TARGET_NODE, nodeName);
+          }
+        }
         SolrRequest op = suggester.getOperation();
         if (op == null) {
           throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "No node can satisfy the rules "+ Utils.toJSONString(Utils.getDeepCopy(session.expandedClauses, 4, true)));

@@ -348,7 +348,11 @@ public class Policy implements MapWriter {
     }
 
     public Suggester hint(Hint hint, Object value) {
-      hints.put(hint, value);
+      if (hint == Hint.TARGET_NODE || hint == Hint.SRC_NODE) {
+        ((Set) hints.computeIfAbsent(hint, h -> new HashSet<>())).add(value);
+      } else {
+        hints.put(hint, value);
+      }
       return this;
     }
 
@@ -461,7 +465,12 @@ public class Policy implements MapWriter {
 
     protected boolean isAllowed(Object v, Hint hint) {
       Object hintVal = hints.get(hint);
-      return hintVal == null || Objects.equals(v, hintVal);
+      if (hint == Hint.TARGET_NODE || hint == Hint.SRC_NODE) {
+        Set set = (Set) hintVal;
+        return set == null || set.contains(v);
+      } else {
+        return hintVal == null || Objects.equals(v, hintVal);
+      }
     }
 
     public enum Hint {

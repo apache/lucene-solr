@@ -706,6 +706,7 @@ public class OverseerCollectionMessageHandler implements OverseerMessageHandler 
 
   Map<Position, String> identifyNodes(ClusterState clusterState,
                                       List<String> nodeList,
+                                      String collectionName,
                                       ZkNodeProps message,
                                       List<String> shardNames,
                                       int numNrtReplicas, 
@@ -741,8 +742,8 @@ public class OverseerCollectionMessageHandler implements OverseerMessageHandler 
     }
 
     if (policyName != null || autoScalingJson.get(Policy.CLUSTER_POLICY) != null) {
-      return Assign.getPositionsUsingPolicy(message.getStr(COLLECTION_PROP, message.getStr(NAME)),
-          shardNames, numNrtReplicas, policyName, zkStateReader);
+      return Assign.getPositionsUsingPolicy(collectionName,
+          shardNames, numNrtReplicas, policyName, zkStateReader, nodeList);
 
     } else {
       List<Rule> rules = new ArrayList<>();

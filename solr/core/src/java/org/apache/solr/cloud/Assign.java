@@ -199,7 +199,7 @@ public class Assign {
     Map autoScalingJson = Utils.getJson(cc.getZkController().getZkClient(), SOLR_AUTOSCALING_CONF_PATH, true);
     if (policyName != null || autoScalingJson.get(Policy.CLUSTER_POLICY) != null) {
       positions= Assign.getPositionsUsingPolicy(collectionName, Collections.singletonList(shard), numberOfNodes,
-          policyName, cc.getZkController().getZkStateReader());
+          policyName, cc.getZkController().getZkStateReader(), createNodeList);
     }
 
     if(positions != null){
@@ -216,7 +216,8 @@ public class Assign {
 
   }
   public static Map<ReplicaAssigner.Position, String> getPositionsUsingPolicy(String collName, List<String> shardNames, int numReplicas,
-                                                                              String policyName, ZkStateReader zkStateReader) throws KeeperException, InterruptedException {
+                                                                              String policyName, ZkStateReader zkStateReader,
+                                                                              List<String> nodesList) throws KeeperException, InterruptedException {
     try (CloudSolrClient csc = new CloudSolrClient.Builder()
         .withClusterStateProvider(new ZkClientClusterStateProvider(zkStateReader))
         .build()) {
@@ -224,7 +225,7 @@ public class Assign {
       Map<String, Object> autoScalingJson = Utils.getJson(zkStateReader.getZkClient(), SOLR_AUTOSCALING_CONF_PATH, true);
       Map<String, List<String>> locations = PolicyHelper.getReplicaLocations(collName,
           autoScalingJson,
-          clientDataProvider, singletonMap(collName, policyName), shardNames, numReplicas);
+          clientDataProvider, singletonMap(collName, policyName), shardNames, numReplicas, nodesList);
       Map<ReplicaAssigner.Position, String> result = new HashMap<>();
       for (Map.Entry<String, List<String>> e : locations.entrySet()) {
         List<String> value = e.getValue();
