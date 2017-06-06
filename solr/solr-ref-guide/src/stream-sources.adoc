@@ -284,6 +284,7 @@ The `significantTerms` function queries a SolrCloud collection, but instead of r
 
 * `collection`: (Mandatory) The collection that the function is run on.
 * `q`: (Mandatory) The query that describes the foreground document set.
+* `field`: (Mandatory) The field to extract the terms from.
 * `limit`: (Optional, Default 20) The max number of terms to return.
 * `minDocFreq`: (Optional, Defaults to 5 documents) The minimum number of documents the term must appear in on a shard. This is a float value. If greater then 1.0 then it's considered the absolute number of documents. If less then 1.0 it's treated as a percentage of documents.
 * `maxDocFreq`: (Optional, Defaults to 30% of documents) The maximum number of documents the term can appear in on a shard. This is a float value. If greater then 1.0 then it's considered the absolute number of documents. If less then 1.0 it's treated as a percentage of documents.
@@ -295,12 +296,14 @@ The `significantTerms` function queries a SolrCloud collection, but instead of r
 ----
 significantTerms(collection1,
                  q="body:Solr",
+                 field="author",
+                 limit="50",
                  minDocFreq="10",
                  maxDocFreq=".20",
                  minTermLength="5")
 ----
 
-In the example above the `significantTerms` function is querying `collection1` and returning at most 50 significant terms that appear in 10 or more documents but not more then 20% of the corpus.
+In the example above the `significantTerms` function is querying `collection1` and returning at most 50 significant terms from the `authors` field that appear in 10 or more documents but not more then 20% of the corpus.
 
 == shortestPath
 
