@@ -253,6 +253,9 @@ Other Changes
 
 * SOLR-10419: All collection APIs should use the new Policy framework for replica placement. (Noble Paul, shalin)
 
+* SOLR-10800: Factor out HttpShardHandler.transformReplicasToShardUrls from HttpShardHandler.prepDistributed.
+  (Domenico Fabio Marino, Christine Poerschke)
+
 ==================  6.7.0 ==================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release.
