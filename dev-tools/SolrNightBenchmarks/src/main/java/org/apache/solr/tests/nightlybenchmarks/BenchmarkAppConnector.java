@@ -247,17 +247,6 @@ public class BenchmarkAppConnector {
 							+ BenchmarkReportData.metricMapStandalone.get("IndexingThroughput") + ", "
 							+ BenchmarkReportData.metricMapStandalone.get("CommitID"),
 					false, FileType.STANDALONE_INDEXING_THROUGHPUT);
-
-			BenchmarkAppConnector.writeToWebAppDataFile("indexing_data_standalone_regular.csv",
-					BenchmarkReportData.metricMapStandalone.get("TimeStamp") + ", " + Util.TEST_ID + ", "
-							+ BenchmarkReportData.metricMapStandalone.get("IndexingTime") + ", "
-							+ BenchmarkReportData.metricMapStandalone.get("CommitID"),
-					false, FileType.STANDALONE_INDEXING_MAIN);
-			BenchmarkAppConnector.writeToWebAppDataFile("indexing_throughput_data_standalone_regular.csv",
-					BenchmarkReportData.metricMapStandalone.get("TimeStamp") + ", " + Util.TEST_ID + ", "
-							+ BenchmarkReportData.metricMapStandalone.get("IndexingThroughput") + ", "
-							+ BenchmarkReportData.metricMapStandalone.get("CommitID"),
-					false, FileType.STANDALONE_INDEXING_THROUGHPUT);
 		}
 
 		if (BenchmarkReportData.metricMapCloudSerial != null) {

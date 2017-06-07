@@ -21,6 +21,8 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Paths;
+import java.text.SimpleDateFormat;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
@@ -204,8 +206,11 @@ public class SolrNode {
 
 		Map<String, String> returnMap = new HashMap<String, String>();
 
+		Date dNow = new Date();
+		SimpleDateFormat ft = new SimpleDateFormat("yyyy/MM/dd HH:mm:ss");
+		
 		returnMap.put("ProcessExitValue", "" + returnVal);
-		returnMap.put("TimeStamp", "" + Util.TEST_TIME);
+		returnMap.put("TimeStamp", "" + ft.format(dNow));
 		returnMap.put("CreateCollectionTime", "" + (double) ((double) (end - start) / (double) 1000000000));
 		returnMap.put("CommitID", this.commitId);
 
@@ -245,8 +250,11 @@ public class SolrNode {
 
 		Map<String, String> returnMap = new HashMap<String, String>();
 
+		Date dNow = new Date();
+		SimpleDateFormat ft = new SimpleDateFormat("yyyy/MM/dd HH:mm:ss");
+		
 		returnMap.put("ProcessExitValue", "" + returnVal);
-		returnMap.put("TimeStamp", "" + Util.TEST_TIME);
+		returnMap.put("TimeStamp", "" + ft.format(dNow));
 		returnMap.put("CreateCollectionTime", "" + (double) ((double) (end - start) / (double) 1000000000));
 		returnMap.put("CommitID", this.commitId);
 
