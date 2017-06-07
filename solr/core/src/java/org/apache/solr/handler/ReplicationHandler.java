@@ -1217,7 +1217,7 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
     NamedList master = (NamedList) initArgs.get("master");
     boolean enableMaster = isEnabled( master );
 
-    if (enableMaster || enableSlave) {
+    if (enableMaster || (enableSlave && !currentIndexFetcher.fetchFromLeader)) {
       if (core.getCoreContainer().getZkController() != null) {
         LOG.warn("SolrCloud is enabled for core " + core.getName() + " but so is old-style replication. Make sure you" +
             " intend this behavior, it usually indicates a mis-configuration. Master setting is " +
