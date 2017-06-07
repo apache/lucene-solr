@@ -20,10 +20,6 @@
 // specific language governing permissions and limitations
 // under the License.
 
-== analyze
-
-// TODO
-
 == abs
 
 The `abs` function will return the absolute value of the provided single parameter. The `abs` function will fail to execute if the value is non-numeric. If a null value is found then null will be returned as the result.
@@ -158,44 +154,6 @@ sub(fieldA,fieldB,fieldC) // value of fieldA - value of fieldB - value of fieldC
 sub(fieldA,div(fieldA,fieldB)) // value of fieldA - (value of fieldA / value of fieldB)
 if(gt(fieldA,fieldB),sub(fieldA,fieldB),sub(fieldB,fieldA)) // if fieldA > fieldB then fieldA - fieldB, else fieldB - field
 ----
-
-== pow
-//TODO
-
-== mod
-//TODO
-
-=== ceil
-//TODO
-
-== floor
-//TODO
-
-== sin
-//TODO
-
-== asin
-//TODO
-
-== sinh
-//TODO
-
-== cos
-//TODO
-
-== acos
-//TODO
-
-== atan
-//TODO
-
-== round
-//TODO
-
-== sqrt
-//TODO
-
-== cbrt
 
 == and
 
@@ -432,4 +390,3 @@ raw(45) // 45
 raw(true) // "true" (note: this returns the string "true" and not the boolean true)
 eq(raw(fieldA), fieldA) // true if the value of fieldA equals the string "fieldA"
 ----
-
