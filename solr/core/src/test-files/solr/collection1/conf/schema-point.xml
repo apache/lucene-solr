@@ -16,15 +16,16 @@
  limitations under the License.
 -->
 
-<schema name="example" version="1.6">
+<schema name="schema-point" version="1.6">
   <types>
     <fieldType name="string" class="solr.StrField" sortMissingLast="true" omitNorms="true"/>
 
-    <fieldType name="pint" class="solr.IntPointField"/>
-    <fieldType name="plong" class="solr.LongPointField"/>
-    <fieldType name="pdouble" class="solr.DoublePointField"/>
-    <fieldType name="pfloat" class="solr.FloatPointField"/>
-    <fieldType name="pdate" class="solr.DatePointField"/>
+    <!-- Override useDocValuesAsStored="true" default for schema version=1.6 -->
+    <fieldType name="pint" class="solr.IntPointField"  useDocValuesAsStored="false"/>
+    <fieldType name="plong" class="solr.LongPointField" useDocValuesAsStored="false"/>
+    <fieldType name="pdouble" class="solr.DoublePointField" useDocValuesAsStored="false"/>
+    <fieldType name="pfloat" class="solr.FloatPointField" useDocValuesAsStored="false"/>
+    <fieldType name="pdate" class="solr.DatePointField" useDocValuesAsStored="false"/>
     
     <fieldType name="int" class="solr.TrieIntField" precisionStep="0" omitNorms="true" positionIncrementGap="0"/>
     <fieldType name="float" class="solr.TrieFloatField" precisionStep="0" omitNorms="true" positionIncrementGap="0"/>
@@ -33,12 +34,12 @@
     <fieldType name="date" class="solr.TrieDateField" sortMissingLast="true" omitNorms="true"/>
  </types>
 
-
  <fields>
    <field name="id" type="string"/>
    <field name="text" type="string"/>
    <field name="_version_" type="long" indexed="true" stored="true" multiValued="false" />
    <field name="signatureField" type="string" indexed="true" stored="false"/>
+
    <dynamicField name="*_s"  type="string"  indexed="true"  stored="true"/>
    <dynamicField name="*_sS" type="string"  indexed="false" stored="true"/>
    <dynamicField name="*_i"  type="int"    indexed="true"  stored="true"/>
@@ -53,8 +54,8 @@
    <dynamicField name="*_p_i_mv_dv"  type="pint"    indexed="true"  stored="true" docValues="true" multiValued="true"/>
    <dynamicField name="*_p_i_ni"  type="pint"    indexed="false"  stored="true" docValues="false"/>
    <dynamicField name="*_p_i_ni_dv"  type="pint"    indexed="false"  stored="true" docValues="true"/>
-   <dynamicField name="*_p_i_ni_dv_ns"  type="pint"    indexed="false"  stored="false" docValues="true" useDocValuesAsStored="false"/>
-   <dynamicField name="*_p_i_ni_dv_ns_mv"  type="pint"    indexed="false"  stored="false" docValues="true" useDocValuesAsStored="false" multiValued="true"/>
+   <dynamicField name="*_p_i_ni_dv_ns"  type="pint"    indexed="false"  stored="false" docValues="true"/>
+   <dynamicField name="*_p_i_ni_dv_ns_mv"  type="pint"    indexed="false"  stored="false" docValues="true" multiValued="true"/>
    <dynamicField name="*_p_i_ni_mv"  type="pint"    indexed="false"  stored="true" docValues="false" multiValued="true"/>
    <dynamicField name="*_p_i_ni_mv_dv"  type="pint"    indexed="false"  stored="true" docValues="true" multiValued="true"/>
    <dynamicField name="*_p_i_ni_ns"  type="pint"    indexed="false"  stored="false" docValues="false" />
@@ -66,8 +67,8 @@
    <dynamicField name="*_p_l_mv_dv"  type="plong"    indexed="true"  stored="true" docValues="true" multiValued="true"/>
    <dynamicField name="*_p_l_ni"  type="plong"    indexed="false"  stored="true" docValues="false"/>
    <dynamicField name="*_p_l_ni_dv"  type="plong"    indexed="false"  stored="true" docValues="true"/>
-   <dynamicField name="*_p_l_ni_dv_ns"  type="plong"    indexed="false"  stored="false" docValues="true" useDocValuesAsStored="false"/>
-   <dynamicField name="*_p_l_ni_dv_ns_mv"  type="plong"    indexed="false"  stored="false" docValues="true" useDocValuesAsStored="false" multiValued="true"/>
+   <dynamicField name="*_p_l_ni_dv_ns"  type="plong"    indexed="false"  stored="false" docValues="true"/>
+   <dynamicField name="*_p_l_ni_dv_ns_mv"  type="plong"    indexed="false"  stored="false" docValues="true" multiValued="true"/>
    <dynamicField name="*_p_l_ni_mv"  type="plong"    indexed="false"  stored="true" docValues="false" multiValued="true"/>
    <dynamicField name="*_p_l_ni_mv_dv"  type="plong"    indexed="false"  stored="true" docValues="true" multiValued="true"/>
    <dynamicField name="*_p_l_ni_ns"  type="plong"    indexed="false"  stored="false" docValues="false" />
@@ -79,8 +80,8 @@
    <dynamicField name="*_p_d_mv_dv"  type="pdouble"    indexed="true"  stored="true" docValues="true" multiValued="true"/>
    <dynamicField name="*_p_d_ni"  type="pdouble"    indexed="false"  stored="true" docValues="false"/>
    <dynamicField name="*_p_d_ni_dv"  type="pdouble"    indexed="false"  stored="true" docValues="true"/>
-   <dynamicField name="*_p_d_ni_dv_ns"  type="pdouble"    indexed="false"  stored="false" docValues="true" useDocValuesAsStored="false"/>
-   <dynamicField name="*_p_d_ni_dv_ns_mv"  type="pdouble"    indexed="false"  stored="false" docValues="true" useDocValuesAsStored="false" multiValued="true"/>
+   <dynamicField name="*_p_d_ni_dv_ns"  type="pdouble"    indexed="false"  stored="false" docValues="true"/>
+   <dynamicField name="*_p_d_ni_dv_ns_mv"  type="pdouble"    indexed="false"  stored="false" docValues="true" multiValued="true"/>
    <dynamicField name="*_p_d_ni_mv"  type="pdouble"    indexed="false"  stored="true" docValues="false" multiValued="true"/>
    <dynamicField name="*_p_d_ni_mv_dv"  type="pdouble"    indexed="false"  stored="true" docValues="true" multiValued="true"/>
    <dynamicField name="*_p_d_ni_ns"  type="pdouble"    indexed="false"  stored="false" docValues="false"/>
@@ -92,8 +93,8 @@
    <dynamicField name="*_p_f_mv_dv"  type="pfloat"    indexed="true"  stored="true" docValues="true" multiValued="true"/>
    <dynamicField name="*_p_f_ni"  type="pfloat"    indexed="false"  stored="true" docValues="false"/>
    <dynamicField name="*_p_f_ni_dv"  type="pfloat"    indexed="false"  stored="true" docValues="true"/>
-   <dynamicField name="*_p_f_ni_dv_ns"  type="pfloat"    indexed="false"  stored="false" docValues="true" useDocValuesAsStored="false"/>
-   <dynamicField name="*_p_f_ni_dv_ns_mv"  type="pfloat"    indexed="false"  stored="false" docValues="true" useDocValuesAsStored="false" multiValued="true"/>
+   <dynamicField name="*_p_f_ni_dv_ns"  type="pfloat"    indexed="false"  stored="false" docValues="true"/>
+   <dynamicField name="*_p_f_ni_dv_ns_mv"  type="pfloat"    indexed="false"  stored="false" docValues="true" multiValued="true"/>
    <dynamicField name="*_p_f_ni_mv"  type="pfloat"    indexed="false"  stored="true" docValues="false" multiValued="true"/>
    <dynamicField name="*_p_f_ni_mv_dv"  type="pfloat"    indexed="false"  stored="true" docValues="true" multiValued="true"/>
    <dynamicField name="*_p_f_ni_ns"  type="pfloat"    indexed="false"  stored="false" docValues="false"/>
@@ -105,21 +106,14 @@
    <dynamicField name="*_p_dt_mv_dv"  type="pdate"    indexed="true"  stored="true" docValues="true" multiValued="true"/>
    <dynamicField name="*_p_dt_ni"  type="pdate"    indexed="false"  stored="true" docValues="false"/>
    <dynamicField name="*_p_dt_ni_dv"  type="pdate"    indexed="false"  stored="true" docValues="true"/>
-   <dynamicField name="*_p_dt_ni_dv_ns"  type="pdate"    indexed="false"  stored="false" docValues="true" useDocValuesAsStored="false"/>
-   <dynamicField name="*_p_dt_ni_dv_ns_mv"  type="pdate"    indexed="false"  stored="false" docValues="true" useDocValuesAsStored="false" multiValued="true"/>
+   <dynamicField name="*_p_dt_ni_dv_ns"  type="pdate"    indexed="false"  stored="false" docValues="true"/>
+   <dynamicField name="*_p_dt_ni_dv_ns_mv"  type="pdate"    indexed="false"  stored="false" docValues="true" multiValued="true"/>
    <dynamicField name="*_p_dt_ni_mv"  type="pdate"    indexed="false"  stored="true" docValues="false" multiValued="true"/>
    <dynamicField name="*_p_dt_ni_mv_dv"  type="pdate"    indexed="false"  stored="true" docValues="true" multiValued="true"/>
    <dynamicField name="*_p_dt_ni_ns"  type="pdate"    indexed="false"  stored="false" docValues="false"/>
    <dynamicField name="*_p_dt_ni_ns_mv"  type="pdate"    indexed="false"  stored="false" docValues="false" multiValued="true"/>
 
-
-   <!-- NOTE: https://issues.apache.org/jira/browse/SOLR-10438
-        
-        NOTE: because schema version=1.6, *all* DV fields default to useDocValuesAsStored="true"
-        
-        NOTE: we need to audit if this is breaking any assumptions elsewhere in the test code
-   -->
-   <!-- return DV fields as  -->
+   <!-- return DV fields as stored -->
    <dynamicField name="*_p_i_dv_ns"  type="pint"    indexed="true"  stored="false" docValues="true" useDocValuesAsStored="true"/>
    <dynamicField name="*_p_l_dv_ns"  type="plong"    indexed="true"  stored="false" docValues="true" useDocValuesAsStored="true"/>
    <dynamicField name="*_p_d_dv_ns"  type="pdouble"    indexed="true"  stored="false" docValues="true" useDocValuesAsStored="true"/>
@@ -136,11 +130,8 @@
    <dynamicField name="*_p_l_dv_ns_mv"  type="plong"    indexed="true"  stored="false" docValues="true" useDocValuesAsStored="true" multiValued="true"/>
    <dynamicField name="*_p_f_dv_ns_mv"  type="pfloat"    indexed="true"  stored="false" docValues="true" useDocValuesAsStored="true" multiValued="true"/>
    <dynamicField name="*_p_dt_dv_ns_mv"  type="pdate"    indexed="true"  stored="false" docValues="true" useDocValuesAsStored="true" multiValued="true"/>
-
-
  </fields>
 
  <uniqueKey>id</uniqueKey>
-
 
 </schema>

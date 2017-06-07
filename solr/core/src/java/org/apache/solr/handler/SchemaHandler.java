@@ -76,7 +76,7 @@ public class SchemaHandler extends RequestHandlerBase implements SolrCoreAware, 
 
   @Override
   public void handleRequestBody(SolrQueryRequest req, SolrQueryResponse rsp) throws Exception {
-    SolrConfigHandler.setWt(req, JSON);
+    RequestHandlerUtils.setWt(req, JSON);
     String httpMethod = (String) req.getContext().get("httpMethod");
     if ("POST".equals(httpMethod)) {
       if (isImmutableConfigSet) {
@@ -135,15 +135,6 @@ public class SchemaHandler extends RequestHandlerBase implements SolrCoreAware, 
             throw new SolrException(SolrException.ErrorCode.NOT_FOUND, message);
           }
           rsp.add(IndexSchema.NAME, schemaName);
-          break;
-        }
-        case "/schema/defaultsearchfield": {
-          final String defaultSearchFieldName = req.getSchema().getDefaultSearchFieldName();
-          if (null == defaultSearchFieldName) {
-            final String message = "undefined " + IndexSchema.DEFAULT_SEARCH_FIELD;
-            throw new SolrException(SolrException.ErrorCode.NOT_FOUND, message);
-          }
-          rsp.add(IndexSchema.DEFAULT_SEARCH_FIELD, defaultSearchFieldName);
           break;
         }
         case "/schema/zkversion": {

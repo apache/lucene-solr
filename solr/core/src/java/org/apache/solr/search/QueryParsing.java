@@ -17,7 +17,7 @@
 package org.apache.solr.search;
 
 import org.apache.lucene.index.Term;
-import org.apache.lucene.legacy.LegacyNumericRangeQuery;
+import org.apache.solr.legacy.LegacyNumericRangeQuery;
 import org.apache.lucene.search.BooleanClause;
 import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.BoostQuery;
@@ -56,29 +56,6 @@ public class QueryParsing {
   public static final char LOCALPARAM_END = '}';
   // true if the value was specified by the "v" param (i.e. v=myval, or v=$param)
   public static final String VAL_EXPLICIT = "__VAL_EXPLICIT__";
-
-
-  /**
-   * Returns the default operator for use by Query Parsers, parsed from the df string
-   * @param notUsed is not used, but is there for back compat with 3rd party QParsers
-   * @param df the df string from request
-   * @deprecated this method is here purely not to break code back compat in 7.x
-   */
-  @Deprecated
-  public static QueryParser.Operator getQueryParserDefaultOperator(final IndexSchema notUsed,
-                                                       final String df) {
-    return parseOP(df);
-  }
-
-  /**
-   * Returns the effective default field based on the 'df' param or
-   * hardcoded schema default.  May be null if either exists specified.
-   * @see org.apache.solr.common.params.CommonParams#DF
-   * @see org.apache.solr.schema.IndexSchema#getDefaultSearchFieldName
-   */
-  public static String getDefaultField(final IndexSchema s, final String df) {
-    return df != null ? df : s.getDefaultSearchFieldName();
-  }
 
   /**
    * @param txt Text to parse

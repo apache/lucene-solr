@@ -26,15 +26,16 @@ import java.util.Set;
 import java.util.function.Predicate;
 
 import org.apache.lucene.document.Document;
+import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.search.Query;
-import org.apache.lucene.search.postingshighlight.CustomSeparatorBreakIterator;
-import org.apache.lucene.search.postingshighlight.WholeBreakIterator;
+import org.apache.lucene.search.uhighlight.CustomSeparatorBreakIterator;
 import org.apache.lucene.search.uhighlight.DefaultPassageFormatter;
 import org.apache.lucene.search.uhighlight.LengthGoalBreakIterator;
 import org.apache.lucene.search.uhighlight.PassageFormatter;
 import org.apache.lucene.search.uhighlight.PassageScorer;
 import org.apache.lucene.search.uhighlight.UnifiedHighlighter;
+import org.apache.lucene.search.uhighlight.WholeBreakIterator;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.HighlightParams;
 import org.apache.solr.common.params.SolrParams;
@@ -261,6 +262,12 @@ public class UnifiedSolrHighlighter extends SolrHighlighter implements PluginInf
       } else {
         return super.getOffsetSource(field);
       }
+    }
+
+    // optimization for Solr which keeps a FieldInfos on-hand
+    @Override
+    protected FieldInfo getFieldInfo(String field) {
+      return ((SolrIndexSearcher)searcher).getFieldInfos().fieldInfo(field);
     }
 
     @Override

@@ -2,6 +2,22 @@
 :page-shortname: solr-glossary
 :page-permalink: solr-glossary.html
 :page-toc: false
+// Licensed to the Apache Software Foundation (ASF) under one
+// or more contributor license agreements.  See the NOTICE file
+// distributed with this work for additional information
+// regarding copyright ownership.  The ASF licenses this file
+// to you under the Apache License, Version 2.0 (the
+// "License"); you may not use this file except in compliance
+// with the License.  You may obtain a copy of the License at
+//
+//   http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing,
+// software distributed under the License is distributed on an
+// "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+// KIND, either express or implied.  See the License for the
+// specific language governing permissions and limitations
+// under the License.
 
 These are common terms used with Solr.
 
@@ -38,7 +54,7 @@ In Solr, one or more <<document,Documents>> grouped together in a single logical
 +
 In <<solrclouddef,SolrCloud>> a collection may be divided up into multiple logical shards, which may in turn be distributed across many nodes, or in a Single node Solr installation, a collection may be a single <<core,Core>>.
 
-[[commit]]Commit::
+[[defcommit]]Commit::
 To make document changes permanent in the index. In the case of added documents, they would be searchable after a _commit_.
 
 [[core]]Core::
@@ -65,7 +81,7 @@ A <<zookeeper,ZooKeeper>> term to indicate multiple ZooKeeper instances running 
 [[SolrGlossary-F]]
 === F
 
-[[facet]]Facet::
+[[deffacet]]Facet::
 The arrangement of search results into categories based on indexed terms.
 
 [[field]]Field::

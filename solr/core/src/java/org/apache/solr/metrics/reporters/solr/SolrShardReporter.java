@@ -113,11 +113,16 @@ public class SolrShardReporter extends SolrMetricReporter {
   }
 
   @Override
-  protected void validate() throws IllegalStateException {
+  protected void doInit() {
     if (filters.isEmpty()) {
       filters = DEFAULT_FILTERS;
     }
-    // start in inform(...) only when core is available
+    // start in setCore(SolrCore) when core is available
+  }
+
+  @Override
+  protected void validate() throws IllegalStateException {
+    // Nothing to validate
   }
 
   @Override

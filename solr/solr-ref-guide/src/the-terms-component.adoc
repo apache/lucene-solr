@@ -1,6 +1,22 @@
 = The Terms Component
 :page-shortname: the-terms-component
 :page-permalink: the-terms-component.html
+// Licensed to the Apache Software Foundation (ASF) under one
+// or more contributor license agreements.  See the NOTICE file
+// distributed with this work for additional information
+// regarding copyright ownership.  The ASF licenses this file
+// to you under the Apache License, Version 2.0 (the
+// "License"); you may not use this file except in compliance
+// with the License.  You may obtain a copy of the License at
+//
+//   http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing,
+// software distributed under the License is distributed on an
+// "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+// KIND, either express or implied.  See the License for the
+// specific language governing permissions and limitations
+// under the License.
 
 The Terms Component provides access to the indexed terms in a field and the number of documents that match each term. This can be useful for building an auto-suggest feature or any other feature that operates at the term level instead of the search or document level. Retrieving terms in index order is very fast since the implementation directly uses Lucene's TermEnum to iterate over the term dictionary.
 
@@ -53,7 +69,7 @@ Specifies the field from which to retrieve terms.
 Example: `terms.fl=title`
 
 |terms.list |No |null a|
-Fetches the document frequency for a comma delimited list of terms. Terms are always returned in index order. If '`terms.ttf`' is set to true, also returns their total term frequency. If multiple '`terms.fl`' are defined, these statistics will be returned for each term in each requested field.
+Fetches the document frequency for a comma delimited list of terms. Terms are always returned in index order. If `terms.ttf` is set to true, also returns their total term frequency. If multiple `terms.fl` are defined, these statistics will be returned for each term in each requested field.
 
 Example: `terms.list=termA,termB,termC`
 
@@ -113,12 +129,12 @@ Example: `terms.regex.flag=case_insensitive`
 
 |terms.stats |No |null |Include index statistics in the results. Currently returns only the *numDocs* for a collection. When combined with terms.list it provides enough information to compute idf for a list of terms.
 |terms.sort |No |count a|
-Defines how to sort the terms returned. Valid options are **count**, which sorts by the term frequency, with the highest term frequency first, or **index**, which sorts in index order.
+Defines how to sort the terms returned. Valid options are *count*, which sorts by the term frequency, with the highest term frequency first, or *index*, which sorts in index order.
 
 Example: `terms.sort=index`
 
 |terms.ttf |No |false a|
-If set to true, returns both 'df' (docFreq) and 'ttf' (totalTermFreq) statistics for each requested term in '`terms.list`'. In this case, the response format is:
+If set to true, returns both `df` (docFreq) and `ttf` (totalTermFreq) statistics for each requested term in `terms.list`. In this case, the response format is:
 
 [source,xml]
 ----

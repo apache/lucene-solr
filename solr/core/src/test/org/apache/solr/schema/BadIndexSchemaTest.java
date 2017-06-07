@@ -132,4 +132,8 @@ public class BadIndexSchemaTest extends AbstractBadConfigTestBase {
     doTest("bad-schema-default-operator.xml",
            "default operator in schema (solrQueryParser/@defaultOperator) not supported");
   }
+
+  public void testSchemaWithDefaultSearchField() throws Exception {
+    doTest("bad-schema-defaultsearchfield.xml", "Setting defaultSearchField in schema not supported since Solr 7");
+  }
 }

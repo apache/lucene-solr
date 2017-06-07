@@ -261,6 +261,7 @@ public class ZkStateWriter {
       }
     }
 
+    log.trace("New Cluster State is: {}", clusterState);
     return clusterState;
   }
 

@@ -511,6 +511,36 @@
     </analyzer>
   </fieldType>
 
+  <!-- Field type where english stopwords are managed by the REST API -->
+  <fieldType name="managed_graph_en" class="solr.TextField" autoGeneratePhraseQueries="false">
+    <analyzer type="index">
+      <tokenizer class="solr.StandardTokenizerFactory"/>
+      <filter class="solr.ManagedStopFilterFactory" managed="english"/>
+      <filter class="solr.ManagedSynonymGraphFilterFactory" managed="englishgraph"/>
+      <filter class="solr.FlattenGraphFilterFactory"/>
+    </analyzer>
+    <analyzer type="query">
+      <tokenizer class="solr.StandardTokenizerFactory"/>
+      <filter class="solr.ManagedStopFilterFactory" managed="english"/>
+      <filter class="solr.ManagedSynonymGraphFilterFactory" managed="englishgraph"/>
+    </analyzer>
+  </fieldType>
+
+  <!-- Field type where german stopwords are managed by the REST API -->
+  <fieldType name="managed_graph_de" class="solr.TextField">
+    <analyzer type="index">
+      <tokenizer class="solr.StandardTokenizerFactory"/>
+      <filter class="solr.ManagedStopFilterFactory" managed="german"/>
+      <filter class="solr.ManagedSynonymGraphFilterFactory" managed="germangraph"/>
+      <filter class="solr.FlattenGraphFilterFactory"/>
+    </analyzer>
+    <analyzer type="query">
+      <tokenizer class="solr.StandardTokenizerFactory"/>
+      <filter class="solr.ManagedStopFilterFactory" managed="german"/>
+      <filter class="solr.ManagedSynonymGraphFilterFactory" managed="germangraph"/>
+    </analyzer>
+  </fieldType>
+  
   <field name="id" type="string" indexed="true" stored="true" multiValued="false" required="true"/>
   <field name="signatureField" type="string" indexed="true" stored="false"/>
   <field name="uuid" type="uuid" stored="true"/>

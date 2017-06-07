@@ -18,7 +18,7 @@ package org.apache.solr.search;
 
 import org.apache.lucene.search.Query;
 import org.apache.lucene.util.LuceneTestCase;
-import org.apache.lucene.legacy.LegacyNumericRangeQuery;
+import org.apache.solr.legacy.LegacyNumericRangeQuery;
 import org.apache.lucene.queryparser.xml.ParserException;
 import org.w3c.dom.Document;
 import org.xml.sax.SAXException;

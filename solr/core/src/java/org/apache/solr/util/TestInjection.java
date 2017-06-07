@@ -75,7 +75,7 @@ public class TestInjection {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   
   private static final Pattern ENABLED_PERCENT = Pattern.compile("(true|false)(?:\\:(\\d+))?$", Pattern.CASE_INSENSITIVE);
-
+  
   private static final String LUCENE_TEST_CASE_FQN = "org.apache.lucene.util.LuceneTestCase";
 
   /** 
@@ -151,6 +151,7 @@ public class TestInjection {
     splitFailureBeforeReplicaCreation = null;
     prepRecoveryOpPauseForever = null;
     countPrepRecoveryOpPauseForever = new AtomicInteger(0);
+    waitForReplicasInSync = "true:60";
 
     for (Timer timer : timers) {
       timer.cancel();
@@ -387,9 +388,10 @@ public class TestInjection {
             String localVersion = searcher.get().getIndexReader().getIndexCommit().getUserData().get(SolrIndexWriter.COMMIT_TIME_MSEC_KEY);
             if (localVersion == null && leaderVersion == 0 && !core.getUpdateHandler().getUpdateLog().hasUncommittedChanges()) return true;
             if (localVersion != null && Long.parseLong(localVersion) == leaderVersion && (leaderVersion >= t || i >= 6)) {
-              log.info("Waiting time for replica in sync with leader: {}", System.currentTimeMillis()-currentTime);
+              log.info("Waiting time for tlog replica to be in sync with leader: {}", System.currentTimeMillis()-currentTime);
               return true;
             } else {
+              log.debug("Tlog replica not in sync with leader yet. Attempt: {}. Local Version={}, leader Version={}", i, localVersion, leaderVersion);
               Thread.sleep(500);
             }
           } finally {

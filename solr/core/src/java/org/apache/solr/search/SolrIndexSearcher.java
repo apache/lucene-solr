@@ -2033,6 +2033,9 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
    *           If there is a low-level I/O error.
    */
   public int numDocs(Query a, DocSet b) throws IOException {
+    if (b.size() == 0) {
+      return 0;
+    }
     if (filterCache != null) {
       // Negative query if absolute value different from original
       Query absQ = QueryUtils.getAbs(a);

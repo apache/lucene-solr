@@ -164,4 +164,12 @@
     </lst>
   </initParams>
 
+
+  <valueSourceParser name="nvl" class="org.apache.solr.search.function.NvlValueSourceParser">
+    <float name="nvlFloatValue">0.0</float>
+  </valueSourceParser>
+  <valueSourceParser name="agg_debug" class="org.apache.solr.search.facet.DebugAgg$Parser">
+  </valueSourceParser>
+
+
 </config>

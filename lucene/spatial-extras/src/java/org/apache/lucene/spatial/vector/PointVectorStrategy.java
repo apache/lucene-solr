@@ -22,11 +22,6 @@ import org.apache.lucene.document.Field;
 import org.apache.lucene.document.FieldType;
 import org.apache.lucene.document.StoredField;
 import org.apache.lucene.index.DocValuesType;
-import org.apache.lucene.index.IndexOptions;
-import org.apache.lucene.legacy.LegacyDoubleField;
-import org.apache.lucene.legacy.LegacyFieldType;
-import org.apache.lucene.legacy.LegacyNumericRangeQuery;
-import org.apache.lucene.legacy.LegacyNumericType;
 import org.apache.lucene.queries.function.FunctionRangeQuery;
 import org.apache.lucene.queries.function.ValueSource;
 import org.apache.lucene.search.BooleanClause;
@@ -86,8 +81,6 @@ public class PointVectorStrategy extends SpatialStrategy {
    */
   public static FieldType DEFAULT_FIELDTYPE;
 
-  @Deprecated
-  public static LegacyFieldType LEGACY_FIELDTYPE;
   static {
     // Default: pointValues + docValues
     FieldType type = new FieldType();
@@ -96,15 +89,6 @@ public class PointVectorStrategy extends SpatialStrategy {
     type.setStored(false);
     type.freeze();
     DEFAULT_FIELDTYPE = type;
-    // Legacy default: legacyNumerics
-    LegacyFieldType legacyType = new LegacyFieldType();
-    legacyType.setIndexOptions(IndexOptions.DOCS);
-    legacyType.setNumericType(LegacyNumericType.DOUBLE);
-    legacyType.setNumericPrecisionStep(8);// same as solr default
-    legacyType.setDocValuesType(DocValuesType.NONE);//no docValues!
-    legacyType.setStored(false);
-    legacyType.freeze();
-    LEGACY_FIELDTYPE = legacyType;
   }
 
   public static final String SUFFIX_X = "__x";
@@ -117,26 +101,12 @@ public class PointVectorStrategy extends SpatialStrategy {
   private final boolean hasStored;
   private final boolean hasDocVals;
   private final boolean hasPointVals;
-  // equiv to "hasLegacyNumerics":
-  private final LegacyFieldType legacyNumericFieldType; // not stored; holds precision step.
 
   /**
    * Create a new {@link PointVectorStrategy} instance that uses {@link DoublePoint} and {@link DoublePoint#newRangeQuery}
    */
   public static PointVectorStrategy newInstance(SpatialContext ctx, String fieldNamePrefix) {
     return new PointVectorStrategy(ctx, fieldNamePrefix, DEFAULT_FIELDTYPE);
-  }
-
-  /**
-   * Create a new {@link PointVectorStrategy} instance that uses {@link LegacyDoubleField} for backwards compatibility.
-   * However, back-compat is limited; we don't support circle queries or {@link #makeDistanceValueSource(Point, double)}
-   * since that requires docValues (the legacy config didn't have that).
-   *
-   * @deprecated LegacyNumerics will be removed
-   */
-  @Deprecated
-  public static PointVectorStrategy newLegacyInstance(SpatialContext ctx, String fieldNamePrefix) {
-    return new PointVectorStrategy(ctx, fieldNamePrefix, LEGACY_FIELDTYPE);
   }
 
   /**
@@ -158,21 +128,6 @@ public class PointVectorStrategy extends SpatialStrategy {
     }
     if ((this.hasPointVals = fieldType.pointDimensionCount() > 0)) {
       numPairs++;
-    }
-    if (fieldType.indexOptions() != IndexOptions.NONE && fieldType instanceof LegacyFieldType && ((LegacyFieldType)fieldType).numericType() != null) {
-      if (hasPointVals) {
-        throw new IllegalArgumentException("pointValues and LegacyNumericType are mutually exclusive");
-      }
-      final LegacyFieldType legacyType = (LegacyFieldType) fieldType;
-      if (legacyType.numericType() != LegacyNumericType.DOUBLE) {
-        throw new IllegalArgumentException(getClass() + " does not support " + legacyType.numericType());
-      }
-      numPairs++;
-      legacyNumericFieldType = new LegacyFieldType(LegacyDoubleField.TYPE_NOT_STORED);
-      legacyNumericFieldType.setNumericPrecisionStep(legacyType.numericPrecisionStep());
-      legacyNumericFieldType.freeze();
-    } else {
-      legacyNumericFieldType = null;
     }
     this.fieldsLen = numPairs * 2;
   }
@@ -208,10 +163,6 @@ public class PointVectorStrategy extends SpatialStrategy {
     if (hasPointVals) {
       fields[++idx] = new DoublePoint(fieldNameX, point.getX());
       fields[++idx] = new DoublePoint(fieldNameY, point.getY());
-    }
-    if (legacyNumericFieldType != null) {
-      fields[++idx] = new LegacyDoubleField(fieldNameX, point.getX(), legacyNumericFieldType);
-      fields[++idx] = new LegacyDoubleField(fieldNameY, point.getY(), legacyNumericFieldType);
     }
     assert idx == fields.length - 1;
     return fields;
@@ -268,7 +219,6 @@ public class PointVectorStrategy extends SpatialStrategy {
 
   /**
    * Returns a numeric range query based on FieldType
-   * {@link LegacyNumericRangeQuery} is used for indexes created using {@code FieldType.LegacyNumericType}
    * {@link DoublePoint#newRangeQuery} is used for indexes created using {@link DoublePoint} fields
    */
   private Query rangeQuery(String fieldName, Double min, Double max) {
@@ -283,8 +233,6 @@ public class PointVectorStrategy extends SpatialStrategy {
 
       return DoublePoint.newRangeQuery(fieldName, min, max);
 
-    } else if (legacyNumericFieldType != null) {// todo remove legacy numeric support in 7.0
-      return LegacyNumericRangeQuery.newDoubleRange(fieldName, legacyNumericFieldType.numericPrecisionStep(), min, max, true, true);//inclusive
     }
     //TODO try doc-value range query?
     throw new UnsupportedOperationException("An index is required for this operation.");

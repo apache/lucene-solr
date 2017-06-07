@@ -380,7 +380,7 @@ public class TestDelegationWithHadoopAuth extends SolrCloudTestCase {
     }
 
     ss = new HttpSolrClient.Builder(primarySolrClient.getBaseURL().toString())
-        .withDelegationToken(token)
+        .withKerberosDelegationToken(token)
         .withResponseParser(primarySolrClient.getParser())
         .build();
     try {

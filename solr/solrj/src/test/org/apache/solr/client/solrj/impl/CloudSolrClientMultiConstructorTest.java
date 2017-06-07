@@ -67,7 +67,7 @@ public class CloudSolrClientMultiConstructorTest extends LuceneTestCase {
       clientChroot = "/mychroot";
     }
 
-    try (CloudSolrClient client = new CloudSolrClient(hosts, clientChroot)) {
+    try (CloudSolrClient client = (new CloudSolrClient.Builder()).withZkHost(hosts).withZkChroot(clientChroot).build()) {
       assertEquals(sb.toString(), client.getZkHost());
     }
 
@@ -77,6 +77,6 @@ public class CloudSolrClientMultiConstructorTest extends LuceneTestCase {
   public void testBadChroot() {
     hosts = new ArrayList<>();
     hosts.add("host1:2181");
-    new CloudSolrClient(hosts, "foo");
+    (new CloudSolrClient.Builder()).withZkHost(hosts).withZkChroot("foo").build();
   }
 }

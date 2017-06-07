@@ -43,7 +43,8 @@ import org.slf4j.LoggerFactory;
  * </ul>
  */
 public class SolrSlf4jReporter extends SolrMetricReporter {
-  // we need this to pass validate-source-patterns
+
+  @SuppressWarnings("unused") // we need this to pass validate-source-patterns
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   private int period = 60;
@@ -95,14 +96,7 @@ public class SolrSlf4jReporter extends SolrMetricReporter {
   }
 
   @Override
-  protected void validate() throws IllegalStateException {
-    if (!enabled) {
-      log.info("Reporter disabled for registry " + registryName);
-      return;
-    }
-    if (period < 1) {
-      throw new IllegalStateException("Init argument 'period' is in time unit 'seconds' and must be at least 1.");
-    }
+  protected void doInit() {
     if (instancePrefix == null) {
       instancePrefix = registryName;
     } else {
@@ -137,6 +131,13 @@ public class SolrSlf4jReporter extends SolrMetricReporter {
     builder = builder.outputTo(LoggerFactory.getLogger(logger));
     reporter = builder.build();
     reporter.start(period, TimeUnit.SECONDS);
+  }
+
+  @Override
+  protected void validate() throws IllegalStateException {
+    if (period < 1) {
+      throw new IllegalStateException("Init argument 'period' is in time unit 'seconds' and must be at least 1.");
+    }
   }
 
   @Override

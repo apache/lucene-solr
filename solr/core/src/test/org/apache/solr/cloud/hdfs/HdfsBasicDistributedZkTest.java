@@ -44,8 +44,8 @@ public class HdfsBasicDistributedZkTest extends BasicDistributedZkTest {
   }
 
   @Override
-  protected int getRealtimeReplicas() {
-    return -1;
+  protected boolean useTlogReplicas() {
+    return false;
   }
 
   @AfterClass

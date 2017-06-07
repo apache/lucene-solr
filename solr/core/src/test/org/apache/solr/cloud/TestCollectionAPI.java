@@ -60,8 +60,12 @@ public class TestCollectionAPI extends ReplicaPropertiesBase {
   @ShardsFixed(num = 2)
   public void test() throws Exception {
     try (CloudSolrClient client = createCloudClient(null)) {
-      CollectionAdminRequest.Create req = CollectionAdminRequest.createCollection(COLLECTION_NAME, "conf1",2,2);
-      req.setRealtimeReplicas(1);
+      CollectionAdminRequest.Create req;
+      if (useTlogReplicas()) {
+        req = CollectionAdminRequest.createCollection(COLLECTION_NAME, "conf1",2, 0, 1, 1);
+      } else {
+        req = CollectionAdminRequest.createCollection(COLLECTION_NAME, "conf1",2, 1, 0, 1);
+      }
       req.setMaxShardsPerNode(2);
       client.request(req);
       createCollection(null, COLLECTION_NAME1, 1, 1, 1, client, null, "conf1");
@@ -173,7 +177,7 @@ public class TestCollectionAPI extends ReplicaPropertiesBase {
       Map<String, Object> collection = (Map<String, Object>) collections.get(COLLECTION_NAME);
       assertNotNull(collection);
       assertEquals("conf1", collection.get("configName"));
-      assertEquals("1", collection.get("realtimeReplicas"));
+//      assertEquals("1", collection.get("nrtReplicas"));
     }
   }
 
@@ -181,13 +185,7 @@ public class TestCollectionAPI extends ReplicaPropertiesBase {
     String cname = "clusterStatusZNodeVersion";
     try (CloudSolrClient client = createCloudClient(null)) {
 
-      CollectionAdminRequest.Create create = new CollectionAdminRequest.Create()
-              .setCollectionName(cname)
-              .setMaxShardsPerNode(1)
-              .setNumShards(1)
-              .setReplicationFactor(1)
-              .setConfigName("conf1");
-      create.process(client);
+      CollectionAdminRequest.createCollection(cname,"conf1",1,1).setMaxShardsPerNode(1).process(client);
 
       waitForRecoveriesToFinish(cname, true);
 
@@ -209,9 +207,7 @@ public class TestCollectionAPI extends ReplicaPropertiesBase {
       Integer znodeVersion = (Integer) collection.get("znodeVersion");
       assertNotNull(znodeVersion);
 
-      CollectionAdminRequest.AddReplica addReplica = new CollectionAdminRequest.AddReplica()
-              .setCollectionName(cname)
-              .setShardName("shard1");
+      CollectionAdminRequest.AddReplica addReplica = CollectionAdminRequest.addReplicaToShard(cname, "shard1");
       addReplica.process(client);
 
       waitForRecoveriesToFinish(cname, true);
@@ -624,13 +620,7 @@ public class TestCollectionAPI extends ReplicaPropertiesBase {
     try (CloudSolrClient client = createCloudClient(null)) {
       client.connect();
 
-      new CollectionAdminRequest.Create()
-          .setCollectionName("testClusterStateMigration")
-          .setNumShards(1)
-          .setReplicationFactor(1)
-          .setConfigName("conf1")
-          .setStateFormat(1)
-          .process(client);
+      CollectionAdminRequest.createCollection("testClusterStateMigration","conf1",1,1).setStateFormat(1).process(client);
 
       waitForRecoveriesToFinish("testClusterStateMigration", true);
 
@@ -643,9 +633,7 @@ public class TestCollectionAPI extends ReplicaPropertiesBase {
       }
       client.commit("testClusterStateMigration");
 
-      new CollectionAdminRequest.MigrateClusterState()
-          .setCollectionName("testClusterStateMigration")
-          .process(client);
+      CollectionAdminRequest.migrateCollectionFormat("testClusterStateMigration").process(client);
 
       client.getZkStateReader().forceUpdateCollection("testClusterStateMigration");
 

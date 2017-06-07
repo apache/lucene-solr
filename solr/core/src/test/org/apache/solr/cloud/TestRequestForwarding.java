@@ -72,11 +72,7 @@ public class TestRequestForwarding extends SolrTestCaseJ4 {
 
   private void createCollection(String name, String config) throws Exception {
     CollectionAdminResponse response;
-    CollectionAdminRequest.Create create = new CollectionAdminRequest.Create();
-    create.setConfigName(config);
-    create.setCollectionName(name);
-    create.setNumShards(2);
-    create.setReplicationFactor(1);
+    CollectionAdminRequest.Create create = CollectionAdminRequest.createCollection(name,config,2,1);
     create.setMaxShardsPerNode(1);
     response = create.process(solrCluster.getSolrClient());
     

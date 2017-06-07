@@ -26,6 +26,7 @@ import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.NumericDocValuesField;
 import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.Term;
@@ -49,9 +50,14 @@ public class TestQueryRescorer extends LuceneTestCase {
     return searcher;
   }
 
+  public static IndexWriterConfig newIndexWriterConfig() {
+    // We rely on more tokens = lower score:
+    return LuceneTestCase.newIndexWriterConfig().setSimilarity(new ClassicSimilarity());
+  }
+
   public void testBasic() throws Exception {
     Directory dir = newDirectory();
-    RandomIndexWriter w = new RandomIndexWriter(random(), dir);
+    RandomIndexWriter w = new RandomIndexWriter(random(), dir, newIndexWriterConfig());
 
     Document doc = new Document();
     doc.add(newStringField("id", "0", Field.Store.YES));
@@ -106,7 +112,7 @@ public class TestQueryRescorer extends LuceneTestCase {
   // Test LUCENE-5682
   public void testNullScorerTermQuery() throws Exception {
     Directory dir = newDirectory();
-    RandomIndexWriter w = new RandomIndexWriter(random(), dir);
+    RandomIndexWriter w = new RandomIndexWriter(random(), dir, newIndexWriterConfig());
 
     Document doc = new Document();
     doc.add(newStringField("id", "0", Field.Store.YES));
@@ -145,7 +151,7 @@ public class TestQueryRescorer extends LuceneTestCase {
 
   public void testCustomCombine() throws Exception {
     Directory dir = newDirectory();
-    RandomIndexWriter w = new RandomIndexWriter(random(), dir);
+    RandomIndexWriter w = new RandomIndexWriter(random(), dir, newIndexWriterConfig());
 
     Document doc = new Document();
     doc.add(newStringField("id", "0", Field.Store.YES));
@@ -196,7 +202,7 @@ public class TestQueryRescorer extends LuceneTestCase {
 
   public void testExplain() throws Exception {
     Directory dir = newDirectory();
-    RandomIndexWriter w = new RandomIndexWriter(random(), dir);
+    RandomIndexWriter w = new RandomIndexWriter(random(), dir, newIndexWriterConfig());
 
     Document doc = new Document();
     doc.add(newStringField("id", "0", Field.Store.YES));
@@ -271,7 +277,7 @@ public class TestQueryRescorer extends LuceneTestCase {
 
   public void testMissingSecondPassScore() throws Exception {
     Directory dir = newDirectory();
-    RandomIndexWriter w = new RandomIndexWriter(random(), dir);
+    RandomIndexWriter w = new RandomIndexWriter(random(), dir, newIndexWriterConfig());
 
     Document doc = new Document();
     doc.add(newStringField("id", "0", Field.Store.YES));
@@ -325,7 +331,7 @@ public class TestQueryRescorer extends LuceneTestCase {
   public void testRandom() throws Exception {
     Directory dir = newDirectory();
     int numDocs = atLeast(1000);
-    RandomIndexWriter w = new RandomIndexWriter(random(), dir);
+    RandomIndexWriter w = new RandomIndexWriter(random(), dir, newIndexWriterConfig());
 
     final int[] idToNum = new int[numDocs];
     int maxValue = TestUtil.nextInt(random(), 10, 1000000);

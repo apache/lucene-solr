@@ -68,9 +68,6 @@ public class DistanceStrategyTest extends StrategyTestCase {
     strategy = BBoxStrategy.newInstance(ctx, "bbox");
     ctorArgs.add(new Object[]{strategy.getFieldName(), strategy});
 
-    strategy = BBoxStrategy.newLegacyInstance(ctx, "bbox_legacy");
-    ctorArgs.add(new Object[]{strategy.getFieldName(), strategy});
-
     strategy = new SerializedDVStrategy(ctx, "serialized");
     ctorArgs.add(new Object[]{strategy.getFieldName(), strategy});
 

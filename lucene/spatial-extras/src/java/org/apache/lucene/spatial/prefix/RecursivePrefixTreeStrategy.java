@@ -20,9 +20,9 @@ import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 
-import org.locationtech.spatial4j.shape.Point;
-import org.locationtech.spatial4j.shape.Shape;
+import org.apache.lucene.index.Term;
 import org.apache.lucene.search.Query;
+import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.spatial.prefix.tree.Cell;
 import org.apache.lucene.spatial.prefix.tree.CellIterator;
 import org.apache.lucene.spatial.prefix.tree.LegacyCell;
@@ -30,6 +30,7 @@ import org.apache.lucene.spatial.prefix.tree.SpatialPrefixTree;
 import org.apache.lucene.spatial.query.SpatialArgs;
 import org.apache.lucene.spatial.query.SpatialOperation;
 import org.apache.lucene.spatial.query.UnsupportedSpatialOperation;
+import org.locationtech.spatial4j.shape.Shape;
 
 /**
  * A {@link PrefixTreeStrategy} which uses {@link AbstractVisitingPrefixTreeQuery}.
@@ -121,7 +122,7 @@ public class RecursivePrefixTreeStrategy extends PrefixTreeStrategy {
 
   @Override
   protected Iterator<Cell> createCellIteratorToIndex(Shape shape, int detailLevel, Iterator<Cell> reuse) {
-    if (shape instanceof Point || !pruneLeafyBranches)
+    if (!pruneLeafyBranches || isGridAlignedShape(shape))
       return super.createCellIteratorToIndex(shape, detailLevel, reuse);
 
     List<Cell> cells = new ArrayList<>(4096);
@@ -177,6 +178,9 @@ public class RecursivePrefixTreeStrategy extends PrefixTreeStrategy {
     int detailLevel = grid.getLevelForDistance(args.resolveDistErr(ctx, distErrPct));
 
     if (op == SpatialOperation.Intersects) {
+      if (isGridAlignedShape(args.getShape())) {
+        return makeGridShapeIntersectsQuery(args.getShape());
+      }
       return new IntersectsPrefixTreeQuery(
           shape, getFieldName(), grid, detailLevel, prefixGridScanLevel);
     } else if (op == SpatialOperation.IsWithin) {
@@ -188,5 +192,37 @@ public class RecursivePrefixTreeStrategy extends PrefixTreeStrategy {
           multiOverlappingIndexedShapes);
     }
     throw new UnsupportedSpatialOperation(op);
+  }
+
+  /**
+   * A quick check of the shape to see if it is perfectly aligned to a grid.
+   * Points always are as they are indivisible.  It's okay to return false
+   * if the shape actually is aligned; this is an optimization hint.
+   */
+  protected boolean isGridAlignedShape(Shape shape) {
+    return isPointShape(shape);
+  }
+
+  /** {@link #makeQuery(SpatialArgs)} specialized for the query being a grid square. */
+  protected Query makeGridShapeIntersectsQuery(Shape gridShape) {
+    assert isGridAlignedShape(gridShape);
+    if (isPointsOnly()) {
+      // Awesome; this will be equivalent to a TermQuery.
+      Iterator<Cell> cellIterator = grid.getTreeCellIterator(gridShape, grid.getMaxLevels());
+      // get last cell
+      Cell cell = cellIterator.next();
+      while (cellIterator.hasNext()) {
+        int prevLevel = cell.getLevel();
+        cell = cellIterator.next();
+        assert prevLevel < cell.getLevel();
+      }
+      assert cell.isLeaf();
+      return new TermQuery(new Term(getFieldName(), cell.getTokenBytesWithLeaf(null)));
+    } else {
+      // Well there could be parent cells. But we can reduce the "scan level" which will be slower for a point query.
+      // TODO: AVPTQ will still scan the bottom nonetheless; file an issue to eliminate that
+      return new IntersectsPrefixTreeQuery(
+          gridShape, getFieldName(), grid, getGrid().getMaxLevels(), getGrid().getMaxLevels() + 1);
+    }
   }
 }

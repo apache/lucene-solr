@@ -154,9 +154,9 @@ public class ReplaceNodeCmd implements OverseerCollectionMessageHandler.Cmd {
                 SHARD_ID_PROP, slice.getName(),
                 ZkStateReader.CORE_NAME_PROP, replica.getCoreName(),
                 ZkStateReader.REPLICA_PROP, replica.getName(),
+                ZkStateReader.REPLICA_TYPE, replica.getType().name(),
                 CoreAdminParams.NODE, source);
-            sourceReplicas.add(props
-            );
+            sourceReplicas.add(props);
           }
         }
       }

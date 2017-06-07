@@ -1,6 +1,22 @@
 = The Extended DisMax Query Parser
 :page-shortname: the-extended-dismax-query-parser
 :page-permalink: the-extended-dismax-query-parser.html
+// Licensed to the Apache Software Foundation (ASF) under one
+// or more contributor license agreements.  See the NOTICE file
+// distributed with this work for additional information
+// regarding copyright ownership.  The ASF licenses this file
+// to you under the Apache License, Version 2.0 (the
+// "License"); you may not use this file except in compliance
+// with the License.  You may obtain a copy of the License at
+//
+//   http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing,
+// software distributed under the License is distributed on an
+// "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+// KIND, either express or implied.  See the License for the
+// specific language governing permissions and limitations
+// under the License.
 
 The Extended DisMax (eDisMax) query parser is an improved version of the <<the-dismax-query-parser.adoc#the-dismax-query-parser,DisMax query parser>>.
 
@@ -8,7 +24,8 @@ In addition to supporting all the DisMax query parser parameters, Extended Disma
 
 * supports the <<the-standard-query-parser.adoc#the-standard-query-parser,full Lucene query parser syntax>>.
 * supports queries such as AND, OR, NOT, -, and +.
-* treats "and" and "or" as "AND" and "OR" in Lucene syntax mode.respects the 'magic field' names `\_val_` and `\_query_`. These are not a real fields in the Schema, but if used it helps do special things (like a function query in the case of `\_val_` or a nested query in the case of `\_query_`). If `\_val_` is used in a term or phrase query, the value is parsed as a function.
+* treats "and" and "or" as "AND" and "OR" in Lucene syntax mode.
+* respects the 'magic field' names `\_val_` and `\_query_`. These are not a real fields in the Schema, but if used it helps do special things (like a function query in the case of `\_val_` or a nested query in the case of `\_query_`). If `\_val_` is used in a term or phrase query, the value is parsed as a function.
 * includes improved smart partial escaping in the case of syntax errors; fielded queries, +/-, and phrase queries are still supported in this mode.
 * improves proximity boosting by using word shingles; you do not need the query to match all words in the document before proximity boosting is applied.
 * includes advanced stopword handling: stopwords are not required in the mandatory part of the query but are still used in the proximity boosting part. If a query consists of all stopwords, such as "to be or not to be", then all words are required.

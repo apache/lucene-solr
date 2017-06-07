@@ -34,17 +34,17 @@
     },
     "termVectors": {
       "type": "boolean",
-      "description": "If true, term vectors will be stored to be able to compute similarity between two documents. This is required to use More Like This. If this is not defined, it will inherit the value from the fieldType. If the fieldType does not define a value, it will default to false. Do not enable this if using the PostingsHighlighter.",
+      "description": "If true, term vectors will be stored which can be used to optimize More Like This and optimizing highlighting wildcard queries. If this is not defined, it will inherit the value from the fieldType. If the fieldType does not define a value, it will default to false.",
       "default": "false"
     },
     "termPositions": {
       "type": "boolean",
-      "description": "If true, term positions will be stored for use with highlighting. If this is not defined, it will inherit the value from the fieldType. If the fieldType does not define a value, it will default to false. Do not enable this if using the PostingsHighlighter.",
+      "description": "If true, term vectors will include positions. If this is not defined, it will inherit the value from the fieldType. If the fieldType does not define a value, it will default to false.",
       "default": "false"
     },
     "termOffsets": {
       "type": "boolean",
-      "description": "If true, term offsets will be stored for use with highlighting. If this is not defined, it will inherit the value from the fieldType. If the fieldType does not define a value, it will default to false. Do not enable this if using the PostingsHighlighter.",
+      "description": "If true, term vectors will include offsets. If this is not defined, it will inherit the value from the fieldType. If the fieldType does not define a value, it will default to false.",
       "default": "false"
     },
     "multiValued": {
@@ -73,7 +73,7 @@
     },
     "storeOffsetsWithPositions": {
       "type": "boolean",
-      "description": "If true, term offsets will be stored with positions in the postings list in the index. This is required if using the PostingsHighlighter. If this is not defined, it will inherit the value from the fieldType. If the fieldType does not define a value, it will default to false.",
+      "description": "If true, term offsets will be stored with positions in the postings list in the index. This optimizes highlighting with the UnifiedHighlighter. If this is not defined, it will inherit the value from the fieldType. If the fieldType does not define a value, it will default to false.",
       "default": "false"
     },
     "docValues": {
@@ -82,7 +82,7 @@
     },
     "termPayloads": {
       "type": "boolean",
-      "description": "If true, term payloads will be stored for use with highlighting. If this is not defined, it will inherit the value from the fieldType. If the fieldType does not define a value, it will default to false. Do not enable this if using the PostingsHighlighter.",
+      "description": "If true, term vectors will include payloads. If this is not defined, it will inherit the value from the fieldType. If the fieldType does not define a value, it will default to false.",
       "default": "false"
     },
     "useDocValuesAsStored": {

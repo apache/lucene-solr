@@ -205,7 +205,7 @@ public class SplitShardCmd implements Cmd {
       for (int i = 0; i < subRanges.size(); i++) {
         String subSlice = slice + "_" + i;
         subSlices.add(subSlice);
-        String subShardName = collectionName + "_" + subSlice + "_replica1";
+        String subShardName = Assign.buildCoreName(collectionName, subSlice, Replica.Type.NRT, 1);
         subShardNames.add(subShardName);
       }
 
@@ -381,11 +381,11 @@ public class SplitShardCmd implements Cmd {
 
       // TODO: change this to handle sharding a slice into > 2 sub-shards.
 
-
       Map<ReplicaAssigner.Position, String> nodeMap = ocmh.identifyNodes(clusterState,
           new ArrayList<>(clusterState.getLiveNodes()),
+          collectionName,
           new ZkNodeProps(collection.getProperties()),
-          subSlices, repFactor - 1);
+          subSlices, repFactor - 1, 0, 0);
 
       List<Map<String, Object>> replicas = new ArrayList<>((repFactor - 1) * 2);
 

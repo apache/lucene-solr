@@ -199,13 +199,3 @@ solrAdminApp.controller('AnalysisController',
       $scope.refresh();
     }
 );
-
-/***************
-
-function(error) {
-  if (error.status == 404) {
-    $scope.isHandlerMissing = true;
-  } else {
-    $scope.analysisError = error.error.msg;
-  }
-****/

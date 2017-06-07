@@ -132,7 +132,7 @@ public class HLLAgg extends StrAggValueSource {
 
     @Override
     public void resize(Resizer resizer) {
-      resizer.resize(sets, null);
+      sets = resizer.resize(sets, null);
     }
 
     @Override

@@ -37,6 +37,8 @@ import org.apache.solr.schema.TrieField;
 import org.apache.solr.search.DocSet;
 import org.apache.solr.util.DateMathParser;
 
+import static org.apache.solr.search.facet.FacetContext.SKIP_FACET;
+
 public class FacetRange extends FacetRequestSorted {
   String field;
   Object start;
@@ -203,6 +205,10 @@ class FacetRangeProcessor extends FacetProcessor<FacetRange> {
               "Unable to range facet on field:" + sf);
     }
 
+    if (fcontext.facetInfo != null) {
+      return refineFacets();
+    }
+
     createRangeList();
     return getRangeCountsIndexed();
   }
@@ -322,7 +328,7 @@ class FacetRangeProcessor extends FacetProcessor<FacetRange> {
     }
 
     for (int idx = 0; idx<otherList.size(); idx++) {
-      // we dont' skip these buckets based on mincount
+      // we don't skip these buckets based on mincount
       Range range = otherList.get(idx);
       SimpleOrderedMap bucket = new SimpleOrderedMap();
       res.add(range.label.toString(), bucket);
@@ -583,4 +589,123 @@ class FacetRangeProcessor extends FacetProcessor<FacetRange> {
     }
   }
 
+
+  // this refineFacets method is patterned after FacetFieldProcessor.refineFacets and should
+  // probably be merged when range facet becomes more like field facet in it's ability to sort and limit
+  protected SimpleOrderedMap<Object> refineFacets() throws IOException {
+    boolean skipThisFacet = (fcontext.flags & SKIP_FACET) != 0;
+
+    List leaves = FacetFieldProcessor.asList(fcontext.facetInfo.get("_l"));        // We have not seen this bucket: do full faceting for this bucket, including all sub-facets
+    List<List> skip = FacetFieldProcessor.asList(fcontext.facetInfo.get("_s"));    // We have seen this bucket, so skip stats on it, and skip sub-facets except for the specified sub-facets that should calculate specified buckets.
+    List<List> partial = FacetFieldProcessor.asList(fcontext.facetInfo.get("_p")); // We have not seen this bucket, do full faceting for this bucket, and most sub-facets... but some sub-facets are partial and should only visit specified buckets.
+
+    // currently, only _s should be present for range facets.  In the future, range facets will
+    // be more like field facets and will have the same refinement cases.  When that happens, we should try to unify the refinement code more
+    assert leaves.size() == 0;
+    assert partial.size() == 0;
+
+    // For leaf refinements, we do full faceting for each leaf bucket.  Any sub-facets of these buckets will be fully evaluated.  Because of this, we should never
+    // encounter leaf refinements that have sub-facets that return partial results.
+
+    SimpleOrderedMap<Object> res = new SimpleOrderedMap<>();
+    List<SimpleOrderedMap> bucketList = new ArrayList<>( leaves.size() + skip.size() + partial.size() );
+    res.add("buckets", bucketList);
+
+    // TODO: an alternate implementations can fill all accs at once
+    createAccs(-1, 1);
+
+    for (Object bucketVal : leaves) {
+      bucketList.add( refineBucket(bucketVal, false, null) );
+    }
+
+    for (List bucketAndFacetInfo : skip) {
+      assert bucketAndFacetInfo.size() == 2;
+      Object bucketVal = bucketAndFacetInfo.get(0);
+      Map<String,Object> facetInfo = (Map<String, Object>) bucketAndFacetInfo.get(1);
+
+      bucketList.add( refineBucket(bucketVal, true, facetInfo ) );
+    }
+
+    // The only difference between skip and missing is the value of "skip" passed to refineBucket
+    for (List bucketAndFacetInfo : partial) {
+      assert bucketAndFacetInfo.size() == 2;
+      Object bucketVal = bucketAndFacetInfo.get(0);
+      Map<String,Object> facetInfo = (Map<String, Object>) bucketAndFacetInfo.get(1);
+
+      bucketList.add( refineBucket(bucketVal, false, facetInfo ) );
+    }
+
+    /*** special buckets
+    if (freq.missing) {
+      Map<String,Object> bucketFacetInfo = (Map<String,Object>)fcontext.facetInfo.get("missing");
+
+      if (bucketFacetInfo != null || !skipThisFacet) {
+        SimpleOrderedMap<Object> missingBucket = new SimpleOrderedMap<>();
+        fillBucket(missingBucket, getFieldMissingQuery(fcontext.searcher, freq.field), null, skipThisFacet, bucketFacetInfo);
+        res.add("missing", missingBucket);
+      }
+    }
+     **********/
+
+
+    // If there are just a couple of leaves, and if the domain is large, then
+    // going by term is likely the most efficient?
+    // If the domain is small, or if the number of leaves is large, then doing
+    // the normal collection method may be best.
+
+    return res;
+  }
+
+  private SimpleOrderedMap<Object> refineBucket(Object bucketVal, boolean skip, Map<String,Object> facetInfo) throws IOException {
+    // TODO: refactor this repeated code from above
+    Comparable start = calc.getValue(bucketVal.toString());
+    Comparable end = calc.getValue(freq.end.toString());
+    EnumSet<FacetParams.FacetRangeInclude> include = freq.include;
+
+    String gap = freq.gap.toString();
+
+    Comparable low = calc.getValue(bucketVal.toString());
+    Comparable high = calc.addGap(low, gap);
+    if (end.compareTo(high) < 0) {
+      if (freq.hardend) {
+        high = end;
+      } else {
+        end = high;
+      }
+    }
+    if (high.compareTo(low) < 0) {
+      throw new SolrException
+          (SolrException.ErrorCode.BAD_REQUEST,
+              "range facet infinite loop (is gap negative? did the math overflow?)");
+    }
+    if (high.compareTo(low) == 0) {
+      throw new SolrException
+          (SolrException.ErrorCode.BAD_REQUEST,
+              "range facet infinite loop: gap is either zero, or too small relative start/end and caused underflow: " + low + " + " + gap + " = " + high );
+    }
+
+    boolean incLower =
+        (include.contains(FacetParams.FacetRangeInclude.LOWER) ||
+            (include.contains(FacetParams.FacetRangeInclude.EDGE) &&
+                0 == low.compareTo(start)));
+    boolean incUpper =
+        (include.contains(FacetParams.FacetRangeInclude.UPPER) ||
+            (include.contains(FacetParams.FacetRangeInclude.EDGE) &&
+                0 == high.compareTo(end)));
+
+    Range range = new Range(low, low, high, incLower, incUpper);
+
+
+    // now refine this range
+
+    SimpleOrderedMap<Object> bucket = new SimpleOrderedMap<>();
+    FieldType ft = sf.getType();
+    bucket.add("val", bucketVal);
+    // String internal = ft.toInternal( tobj.toString() );  // TODO - we need a better way to get from object to query...
+
+    Query domainQ = sf.getType().getRangeQuery(null, sf, range.low == null ? null : calc.formatValue(range.low), range.high==null ? null : calc.formatValue(range.high), range.includeLower, range.includeUpper);
+    fillBucket(bucket, domainQ, null, skip, facetInfo);
+
+    return bucket;
+  }
 }

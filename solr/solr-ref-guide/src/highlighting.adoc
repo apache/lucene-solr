@@ -1,6 +1,22 @@
 = Highlighting
 :page-shortname: highlighting
 :page-permalink: highlighting.html
+// Licensed to the Apache Software Foundation (ASF) under one
+// or more contributor license agreements.  See the NOTICE file
+// distributed with this work for additional information
+// regarding copyright ownership.  The ASF licenses this file
+// to you under the Apache License, Version 2.0 (the
+// "License"); you may not use this file except in compliance
+// with the License.  You may obtain a copy of the License at
+//
+//   http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing,
+// software distributed under the License is distributed on an
+// "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+// KIND, either express or implied.  See the License for the
+// specific language governing permissions and limitations
+// under the License.
 
 Highlighting in Solr allows fragments of documents that match the user's query to be included with the query response.
 
@@ -19,7 +35,7 @@ You only need to set the `hl` and often `hl.fl` parameters to get results. The f
 |===
 |Parameter |Default |Description
 |hl |false |Use this parameter to enable or disable highlighting.
-|hl.method |original |The highlighting implementation to use. Acceptable values are: `unified`, `original`, `fastVector`, and `postings`. See the <<Highlighting-ChoosingaHighlighter,Choosing a Highlighter>> section below for more details on the differences between the available highlighters.
+|hl.method |original |The highlighting implementation to use. Acceptable values are: `unified`, `original`, `fastVector`. See the <<Highlighting-ChoosingaHighlighter,Choosing a Highlighter>> section below for more details on the differences between the available highlighters.
 |hl.fl |_(df=)_ |Specifies a list of fields to highlight. Accepts a comma- or space-delimited list of fields for which Solr should generate highlighted snippets. A wildcard of `\*` (asterisk) can be used to match field globs, such as `text_*` or even `\*` to highlight on all fields where highlighting is possible. When using `\*`, consider adding `hl.requireFieldMatch=true`.
 |hl.q |_(q=)_ |A query to use for highlighting. This parameter allows you to highlight different terms than those being used to retrieve documents.
 |hl.qparser |_(defType=)_ |The query parser to use for the `hl.q` query.
@@ -121,11 +137,7 @@ This highlighter's query-representation is less advanced than the Original or Un
 +
 Note that both the FastVector and Original Highlighters can be used in conjunction in a search request to highlight some fields with one and some the other. In contrast, the other highlighters can only be chosen exclusively.
 
-<<Highlighting-ThePostingsHighlighter,Postings Highlighter>>:: (`hl.method=postings`)
-+
-The Postings Highlighter is the ancestor of the Unified Highlighter, supporting a subset of its options and none of its index configuration flexibility - it _requires_ `storeOffsetsWithPositions` on all fields to highlight. This option is here for backwards compatibility; if you find you need it, please share your experience with the Solr community.
-
-The Unified Highlighter and Postings Highlighter from which it derives, are exclusively configured via search parameters. In contrast, some settings for the Original and FastVector Highlighters are set in `solrconfig.xml`. There's a robust example of the latter in the "```techproducts```" configset.
+The Unified Highlighter is exclusively configured via search parameters. In contrast, some settings for the Original and FastVector Highlighters are set in `solrconfig.xml`. There's a robust example of the latter in the "```techproducts```" configset.
 
 In addition to further information below, more information can be found in the {solr-javadocs}/solr-core/org/apache/solr/highlight/package-summary.html[Solr javadocs].
 
@@ -141,7 +153,7 @@ The benefit of this approach is that your index won't grow larger with any extra
 The down side is that highlighting speed is roughly linear with the amount of text to process, with a large factor being the complexity of your analysis chain.
 +
 For "short" text, this is a good choice. Or maybe it's not short but you're prioritizing a smaller index and indexing speed over highlighting performance.
-* *Postings*: Supported by the Unified and Postings Highlighters. Set `storeOffsetsWithPositions` to `true`. This adds a moderate amount of extra data to the index but it speeds up highlighting tremendously, especially compared to analysis with longer text fields.
+* *Postings*: Supported by the Unified Highlighter. Set `storeOffsetsWithPositions` to `true`. This adds a moderate amount of extra data to the index but it speeds up highlighting tremendously, especially compared to analysis with longer text fields.
 +
 However, wildcard queries will fall back to analysis unless "light" term vectors are added.
 
@@ -176,27 +188,6 @@ The Unified Highlighter supports these following additional parameters to the on
 |hl.bs.type |SENTENCE |Specifies the breakiterator type for dividing the document into passages. Can be *SEPARATOR*, *SENTENCE*, *WORD*, *CHARACTER*, *LINE*, or *WHOLE*. SEPARATOR is special value that splits text on a user-provided character in `hl.bs.separator`.
 |hl.bs.separator |_(blank)_ |Indicates which character to break the text on. Requires `hl.bs.type=SEPARATOR`. This is useful when the text has already been manipulated in advance to have a special delineation character at desired highlight passage boundaries. This character will still appear in the text as the last character of a passage.
 |===
-
-[[Highlighting-ThePostingsHighlighter]]
-=== The Postings Highlighter
-
-The Postings Highlighter is the ancestor of the Unified Highlighter, supporting a subset of it's options and sometimes with different default settings for some common parameters.
-
-Viewed from the perspective of the Unified Highlighter, these settings are effectively non-settings and fixed as-such:
-
-* `hl.offsetSource=POSTINGS`
-* `hl.requireFieldMatch=true`
-* `hl.usePhraseHighlighter=false`
-* `hl.fragsize=-1` (none).
-
-It has these different default settings:
-
-* `hl.defaultSummary=true`
-* `hl.tag.ellipsis="... "`.
-
-In addition, it has a setting `hl.multiValuedSeparatorChar=" "` (space).
-
-This highlighter never returns separate snippets as separate values; they are always joined by `hl.tag.ellipsis`.
 
 [[Highlighting-TheOriginalHighlighter]]
 == The Original Highlighter

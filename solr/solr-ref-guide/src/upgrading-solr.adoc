@@ -1,13 +1,33 @@
 = Upgrading Solr
 :page-shortname: upgrading-solr
 :page-permalink: upgrading-solr.html
+// Licensed to the Apache Software Foundation (ASF) under one
+// or more contributor license agreements.  See the NOTICE file
+// distributed with this work for additional information
+// regarding copyright ownership.  The ASF licenses this file
+// to you under the Apache License, Version 2.0 (the
+// "License"); you may not use this file except in compliance
+// with the License.  You may obtain a copy of the License at
+//
+//   http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing,
+// software distributed under the License is distributed on an
+// "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+// KIND, either express or implied.  See the License for the
+// specific language governing permissions and limitations
+// under the License.
 
 If you are already using Solr 6.5, Solr 6.6 should not present any major problems. However, you should review the {solr-javadocs}/changes/Changes.html[`CHANGES.txt`] file found in your Solr package for changes and updates that may effect your existing implementation. Detailed steps for upgrading a Solr cluster can be found in the appendix: <<upgrading-a-solr-cluster.adoc#upgrading-a-solr-cluster,Upgrading a Solr Cluster>>.
 
 [[UpgradingSolr-Upgradingfrom6.5.x]]
 == Upgrading from 6.5.x
 
-* <TBD>
+* Solr contribs map-reduce, morphlines-core and morphlines-cell have been removed.
+
+* JSON Facet API now uses hyper-log-log for numBuckets cardinality calculation and calculates cardinality before filtering buckets by any mincount greater than 1.
+
+* ZooKeeper dependency has been upgraded from 3.4.6 to 3.4.10.
 
 [[UpgradingSolr-Upgradingfromearlier6.xversions]]
 == Upgrading from earlier 6.x versions

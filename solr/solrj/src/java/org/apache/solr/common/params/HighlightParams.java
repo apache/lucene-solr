@@ -24,16 +24,13 @@ public interface HighlightParams {
   // primary
   public static final String HIGHLIGHT   = "hl";
   public static final String METHOD      = HIGHLIGHT+".method"; // original|fastVector|postings|unified
-  @Deprecated // see hl.method
-  public static final String USE_FVH     = HIGHLIGHT + ".useFastVectorHighlighter";
   public static final String FIELDS      = HIGHLIGHT+".fl";
   public static final String SNIPPETS    = HIGHLIGHT+".snippets";
 
   //    KEY:
   // OH = (original) Highlighter   (AKA the standard Highlighter)
   // FVH = FastVectorHighlighter
-  // PH = PostingsHighlighter
-  // UH = UnifiedHighlighter
+  // UH = UnifiedHighlighter (evolved from PostingsHighlighter)
 
   // query interpretation
   public static final String Q           = HIGHLIGHT+".q"; // all
@@ -43,7 +40,7 @@ public interface HighlightParams {
   public static final String HIGHLIGHT_MULTI_TERM = HIGHLIGHT+".highlightMultiTerm"; // all
 
   // if no snippets...
-  public static final String DEFAULT_SUMMARY = HIGHLIGHT + ".defaultSummary"; // UH, PH
+  public static final String DEFAULT_SUMMARY = HIGHLIGHT + ".defaultSummary"; // UH
   public static final String ALTERNATE_FIELD = HIGHLIGHT+".alternateField"; // OH, FVH
   public static final String ALTERNATE_FIELD_LENGTH = HIGHLIGHT+".maxAlternateFieldLength"; // OH, FVH
   public static final String HIGHLIGHT_ALTERNATE = HIGHLIGHT+".highlightAlternate"; // OH, FVH
@@ -59,11 +56,11 @@ public interface HighlightParams {
   public static final String BOUNDARY_SCANNER = HIGHLIGHT+".boundaryScanner"; // FVH
   public static final String BS_MAX_SCAN = HIGHLIGHT+".bs.maxScan"; // FVH
   public static final String BS_CHARS    = HIGHLIGHT+".bs.chars"; // FVH
-  public static final String BS_TYPE     = HIGHLIGHT+".bs.type"; // FVH, UH, PH
-  public static final String BS_LANGUAGE = HIGHLIGHT+".bs.language"; // FVH, UH, PH
-  public static final String BS_COUNTRY  = HIGHLIGHT+".bs.country"; // FVH, UH, PH
-  public static final String BS_VARIANT  = HIGHLIGHT+".bs.variant"; // FVH, UH, PH
-  public static final String BS_SEP      = HIGHLIGHT+".bs.separator"; // UH, PH
+  public static final String BS_TYPE     = HIGHLIGHT+".bs.type"; // FVH, UH
+  public static final String BS_LANGUAGE = HIGHLIGHT+".bs.language"; // FVH, UH
+  public static final String BS_COUNTRY  = HIGHLIGHT+".bs.country"; // FVH, UH
+  public static final String BS_VARIANT  = HIGHLIGHT+".bs.variant"; // FVH, UH
+  public static final String BS_SEP      = HIGHLIGHT+".bs.separator"; // UH
 
   // formatting
   public static final String FORMATTER   = HIGHLIGHT+".formatter"; // OH
@@ -73,18 +70,18 @@ public interface HighlightParams {
   public static final String SIMPLE_PRE  = HIGHLIGHT+"."+SIMPLE+".pre"; // OH
   public static final String SIMPLE_POST = HIGHLIGHT+"."+SIMPLE+".post"; // OH
   public static final String FRAGMENTS_BUILDER = HIGHLIGHT+".fragmentsBuilder"; // FVH
-  public static final String TAG_PRE     = HIGHLIGHT + ".tag.pre"; // FVH, UH, PH
-  public static final String TAG_POST    = HIGHLIGHT + ".tag.post"; // FVH, UH, PH
-  public static final String TAG_ELLIPSIS= HIGHLIGHT + ".tag.ellipsis"; // FVH, UH, PH
-  public static final String MULTI_VALUED_SEPARATOR = HIGHLIGHT + ".multiValuedSeparatorChar"; // FVH, PH
+  public static final String TAG_PRE     = HIGHLIGHT + ".tag.pre"; // FVH, UH
+  public static final String TAG_POST    = HIGHLIGHT + ".tag.post"; // FVH, UH
+  public static final String TAG_ELLIPSIS= HIGHLIGHT + ".tag.ellipsis"; // FVH, UH
+  public static final String MULTI_VALUED_SEPARATOR = HIGHLIGHT + ".multiValuedSeparatorChar"; // FVH
 
   // ordering
   public static final String PRESERVE_MULTI = HIGHLIGHT+".preserveMulti"; // OH
   public static final String FRAG_LIST_BUILDER = HIGHLIGHT+".fragListBuilder"; // FVH
-  public static final String SCORE = "score"; // UH, PH
-  public static final String SCORE_K1 = HIGHLIGHT +"."+SCORE+".k1"; // UH, PH
-  public static final String SCORE_B = HIGHLIGHT +"."+SCORE+".b"; // UH, PH
-  public static final String SCORE_PIVOT = HIGHLIGHT +"."+SCORE+".pivot"; // UH, PH
+  public static final String SCORE = "score"; // UH
+  public static final String SCORE_K1 = HIGHLIGHT +"."+SCORE+".k1"; // UH
+  public static final String SCORE_B = HIGHLIGHT +"."+SCORE+".b"; // UH
+  public static final String SCORE_PIVOT = HIGHLIGHT +"."+SCORE+".pivot"; // UH
 
   // misc
   public static final String MAX_CHARS   = HIGHLIGHT+".maxAnalyzedChars"; // all

@@ -279,8 +279,7 @@ public class TestConfigSetsAPI extends SolrTestCaseJ4 {
 
   @Test
   public void testUploadErrors() throws Exception {
-    final SolrClient solrClient = new HttpSolrClient(
-        solrCluster.getJettySolrRunners().get(0).getBaseUrl().toString());
+    final SolrClient solrClient = getHttpSolrClient(solrCluster.getJettySolrRunners().get(0).getBaseUrl().toString());
 
     ByteBuffer emptyData = ByteBuffer.allocate(0);
 
@@ -504,7 +503,7 @@ public class TestConfigSetsAPI extends SolrTestCaseJ4 {
 
   private void xsltRequest(String collection) throws SolrServerException, IOException {
     String baseUrl = solrCluster.getJettySolrRunners().get(0).getBaseUrl().toString();
-    try (HttpSolrClient client = new HttpSolrClient(baseUrl + "/" + collection)) {
+    try (HttpSolrClient client = getHttpSolrClient(baseUrl + "/" + collection)) {
       String xml = 
           "<random>" +
               " <document>" +

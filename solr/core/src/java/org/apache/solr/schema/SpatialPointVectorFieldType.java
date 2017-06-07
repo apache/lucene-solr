@@ -20,13 +20,14 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
-import org.apache.lucene.legacy.LegacyFieldType;
-import org.apache.lucene.spatial.vector.PointVectorStrategy;
+import org.apache.solr.legacy.LegacyFieldType;
+import org.apache.solr.legacy.PointVectorStrategy;
 
 /**
  * @see PointVectorStrategy
- * @lucene.experimental
+ * @deprecated use {@link LatLonPointSpatialField} instead
  */
+@Deprecated
 public class SpatialPointVectorFieldType extends AbstractSpatialFieldType<PointVectorStrategy> implements SchemaAware {
 
   protected String numberFieldName = "tdouble";//in example schema defaults to non-zero precision step -- a good choice

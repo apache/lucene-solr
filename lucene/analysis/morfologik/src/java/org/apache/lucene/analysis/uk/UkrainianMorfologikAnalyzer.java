@@ -116,6 +116,8 @@ public final class UkrainianMorfologikAnalyzer extends StopwordAnalyzerBase {
     // ignored characters
     builder.add("\u0301", "");
     builder.add("\u00AD", "");
+    builder.add("ґ", "г");
+    builder.add("Ґ", "Г");
 
     NormalizeCharMap normMap = builder.build();
     reader = new MappingCharFilter(normMap, reader);

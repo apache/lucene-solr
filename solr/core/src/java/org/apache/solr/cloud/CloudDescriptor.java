@@ -20,11 +20,12 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Properties;
 
-import com.google.common.base.Strings;
 import org.apache.solr.common.StringUtils;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.core.CoreDescriptor;
 import org.apache.solr.util.PropertiesUtil;
+
+import com.google.common.base.Strings;
 
 public class CloudDescriptor {
 
@@ -44,6 +45,13 @@ public class CloudDescriptor {
   volatile Replica.State lastPublished = Replica.State.ACTIVE;
 
   public static final String NUM_SHARDS = "numShards";
+  
+  public static final String REPLICA_TYPE = "replicaType";
+  
+  /**
+   * The type of replica this core hosts
+   */
+  private final Replica.Type replicaType;
 
   public CloudDescriptor(String coreName, Properties props, CoreDescriptor cd) {
     this.cd = cd;
@@ -57,12 +65,21 @@ public class CloudDescriptor {
     if (Strings.isNullOrEmpty(nodeName))
       this.nodeName = null;
     this.numShards = PropertiesUtil.toInteger(props.getProperty(CloudDescriptor.NUM_SHARDS), null);
-
+    String replicaTypeStr = props.getProperty(CloudDescriptor.REPLICA_TYPE);
+    if (Strings.isNullOrEmpty(replicaTypeStr)) {
+      this.replicaType = Replica.Type.NRT;
+    } else {
+      this.replicaType = Replica.Type.valueOf(replicaTypeStr);
+    }
     for (String propName : props.stringPropertyNames()) {
       if (propName.startsWith(ZkController.COLLECTION_PARAM_PREFIX)) {
         collectionParams.put(propName.substring(ZkController.COLLECTION_PARAM_PREFIX.length()), props.getProperty(propName));
       }
     }
+  }
+  
+  public boolean requiresTransactionLog() {
+    return this.replicaType != Replica.Type.PULL;
   }
   
   public Replica.State getLastPublished() {
@@ -154,5 +171,9 @@ public class CloudDescriptor {
     for (Map.Entry<String, String> ent : reloadFrom.getParams().entrySet()) {
       collectionParams.put(ent.getKey(), ent.getValue());
     }
+  }
+
+  public Replica.Type getReplicaType() {
+    return replicaType;
   }
 }

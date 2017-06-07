@@ -110,9 +110,6 @@ public class ComplexPhraseQParserPlugin extends QParserPlugin {
       String qstr = getString();
 
       String defaultField = getParam(CommonParams.DF);
-      if (defaultField == null) {
-        defaultField = getReq().getSchema().getDefaultSearchFieldName();
-      }
 
       SolrQueryParserDelegate reverseAwareParser = new SolrQueryParserDelegate(this, defaultField);
       

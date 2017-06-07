@@ -1,5 +1,21 @@
 = Working with Jekyll
 :toc:
+// Licensed to the Apache Software Foundation (ASF) under one
+// or more contributor license agreements.  See the NOTICE file
+// distributed with this work for additional information
+// regarding copyright ownership.  The ASF licenses this file
+// to you under the Apache License, Version 2.0 (the
+// "License"); you may not use this file except in compliance
+// with the License.  You may obtain a copy of the License at
+//
+//   http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing,
+// software distributed under the License is distributed on an
+// "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+// KIND, either express or implied.  See the License for the
+// specific language governing permissions and limitations
+// under the License.
 
 The Solr Ref Guide uses Jekyll to build the HTML version of the site.
 
@@ -30,9 +46,21 @@ Front matter for Jekyll is like a header that defines the title of the page, and
 
 Every document that will be converted to HTML *must* include at least the page title at the top of the page.
 
-The Solr Ref Guide uses the front matter to define the "short name" and permanent URL of a page, and to define the children of a page. The list of children is used to build the site navigation menu that appears to the left of each page's content.
-
 Many guides to Jekyll also say that defining the layout in the front matter is required. However, since we only have one layout for all pages, we have defined this as a default.
+
+The Solr Ref Guide uses the front matter to define some custom attributes on a per page basis:
+
+* `page-shortname` - uniquely identifying the page
+* `page-permalink` - permanent URL of a page,
+* `page-children` - ordered list of child pages, this is used to build the site navigation menu that appears to the left of each page's content (and to order the pages in the PDF)
+
+There are also some optional custom attributes that can be defined in pages to affect the Table of Contents presentation in jekyll:
+
+* `page-toclevels` - changes how "deep" the TOC will be in terms of nested section/sub-section titles (default = 2)
+* `page-tocclass` - changes the CSS class applied to the TOC, default = "normal", resulting in the class name `toc-normal`. The other option is "right", to put the TOC on the right side of the page.
+* `page-toc` - if this is false, then no TOCs will be generated for the page at all.
+
+NOTE: The special macro `{section-toc}` can be used anywhere in a page to create an "In this Section" TOC covering only the sub-headings in the same section.  `:page-toc: false` will also prevent this macro from working, so if you want no "top level" TOC, but you do want section TOCs, use `:page-toclevels: 0`
 
 === Layouts
 

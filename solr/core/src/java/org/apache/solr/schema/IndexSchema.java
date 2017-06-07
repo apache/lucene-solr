@@ -95,7 +95,6 @@ public class IndexSchema {
   public static final String COPY_FIELD = "copyField";
   public static final String COPY_FIELDS = COPY_FIELD + "s";
   public static final String DEFAULT_SCHEMA_FILE = "schema.xml";
-  public static final String DEFAULT_SEARCH_FIELD = "defaultSearchField";
   public static final String DESTINATION = "dest";
   public static final String DYNAMIC_FIELD = "dynamicField";
   public static final String DYNAMIC_FIELDS = DYNAMIC_FIELD + "s";
@@ -144,8 +143,6 @@ public class IndexSchema {
   private Analyzer queryAnalyzer;
 
   protected List<SchemaAware> schemaAware = new ArrayList<>();
-
-  protected String defaultSearchFieldName=null;
 
   protected Map<String, List<CopyField>> copyFieldsMap = new HashMap<>();
   public Map<String,List<CopyField>> getCopyFieldsMap() { return Collections.unmodifiableMap(copyFieldsMap); }
@@ -298,15 +295,6 @@ public class IndexSchema {
   public Analyzer getQueryAnalyzer() { return queryAnalyzer; }
 
   
-  /**
-   * Name of the default search field specified in the schema file.
-   * <br><b>Note:</b>Avoid calling this, try to use this method so that the 'df' param is consulted as an override:
-   * {@link org.apache.solr.search.QueryParsing#getDefaultField(IndexSchema, String)}
-   */
-  public String getDefaultSearchFieldName() {
-    return defaultSearchFieldName;
-  }
-
   protected SchemaField uniqueKeyField;
 
   /**
@@ -385,7 +373,7 @@ public class IndexSchema {
   void persist(Writer writer) throws IOException {
     final SolrQueryResponse response = new SolrQueryResponse();
     response.add(IndexSchema.SCHEMA, getNamedPropertyValues());
-    final NamedList args = new NamedList(Arrays.<Object>asList("indent", "on"));
+    final SolrParams args = (new ModifiableSolrParams()).set("indent", "on");
     final LocalSolrQueryRequest req = new LocalSolrQueryRequest(null, args);
     final SchemaXmlWriter schemaXmlWriter = new SchemaXmlWriter(writer, req, response);
     schemaXmlWriter.setEmitManagedSchemaDoNotEditWarning(true);
@@ -509,22 +497,10 @@ public class IndexSchema {
       }
 
       //                      /schema/defaultSearchField/text()
-      expression = stepsToPath(SCHEMA, DEFAULT_SEARCH_FIELD, TEXT_FUNCTION);
+      expression = stepsToPath(SCHEMA, "defaultSearchField", TEXT_FUNCTION);
       node = (Node) xpath.evaluate(expression, document, XPathConstants.NODE);
-      if (node==null) {
-        log.debug("no default search field specified in schema.");
-      } else {
-        defaultSearchFieldName=node.getNodeValue().trim();
-        // throw exception if specified, but not found or not indexed
-        if (defaultSearchFieldName!=null) {
-          SchemaField defaultSearchField = getFields().get(defaultSearchFieldName);
-          if ((defaultSearchField == null) || !defaultSearchField.indexed()) {
-            String msg =  "default search field '" + defaultSearchFieldName + "' not defined or not indexed" ;
-            throw new SolrException(ErrorCode.SERVER_ERROR, msg);
-          }
-        }
-        log.warn("[{}] default search field in schema is {}. WARNING: Deprecated, please use 'df' on request instead.",
-            coreName, defaultSearchFieldName);
+      if (node != null) {
+        throw new SolrException(ErrorCode.SERVER_ERROR, "Setting defaultSearchField in schema not supported since Solr 7");
       }
 
       //                      /schema/solrQueryParser/@defaultOperator
@@ -1384,7 +1360,6 @@ public class IndexSchema {
       NAME(IndexSchema.NAME, sp -> sp.schema.getSchemaName()),
       VERSION(IndexSchema.VERSION, sp -> sp.schema.getVersion()),
       UNIQUE_KEY(IndexSchema.UNIQUE_KEY, sp -> sp.schema.uniqueKeyFieldName),
-      DEFAULT_SEARCH_FIELD(IndexSchema.DEFAULT_SEARCH_FIELD, sp -> sp.schema.defaultSearchFieldName),
       SIMILARITY(IndexSchema.SIMILARITY, sp -> sp.schema.isExplicitSimilarity ?
           sp.schema.similarityFactory.getNamedPropertyValues() :
           null),

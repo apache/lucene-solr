@@ -87,10 +87,6 @@ public class TestInPlaceUpdatesDistrib extends AbstractFullDistribZkTestBase {
     // asserting inplace updates happen by checking the internal [docid]
     systemSetPropertySolrTestsMergePolicyFactory(NoMergePolicyFactory.class.getName());
 
-    // HACK: Don't use a RandomMergePolicy, but only use the mergePolicyFactory that we've just set
-    System.setProperty(SYSTEM_PROPERTY_SOLR_TESTS_USEMERGEPOLICYFACTORY, "true");
-    System.setProperty(SYSTEM_PROPERTY_SOLR_TESTS_USEMERGEPOLICY, "false");
-
     initCore(configString, schemaString);
     
     // sanity check that autocommits are disabled
@@ -111,8 +107,8 @@ public class TestInPlaceUpdatesDistrib extends AbstractFullDistribZkTestBase {
   }
 
   @Override
-  protected int getRealtimeReplicas() {
-    return onlyLeaderIndexes? 1 : -1;
+  protected boolean useTlogReplicas() {
+    return onlyLeaderIndexes;
   }
 
   @After
@@ -270,7 +266,7 @@ public class TestInPlaceUpdatesDistrib extends AbstractFullDistribZkTestBase {
 
   private void reorderedDBQIndividualReplicaTest() throws Exception {
     if (onlyLeaderIndexes) {
-      log.info("RTG with DBQs are not working in append replicas");
+      log.info("RTG with DBQs are not working in tlog replicas");
       return;
     }
     clearIndex();
@@ -743,7 +739,7 @@ public class TestInPlaceUpdatesDistrib extends AbstractFullDistribZkTestBase {
    */
   private void reorderedDBQsResurrectionTest() throws Exception {
     if (onlyLeaderIndexes) {
-      log.info("RTG with DBQs are not working in append replicas");
+      log.info("RTG with DBQs are not working in tlog replicas");
       return;
     }
     clearIndex();
@@ -1145,7 +1141,7 @@ public class TestInPlaceUpdatesDistrib extends AbstractFullDistribZkTestBase {
    */
   private void reorderedDBQsUsingUpdatedValueFromADroppedUpdate() throws Exception {
     if (onlyLeaderIndexes) {
-      log.info("RTG with DBQs are not working in append replicas");
+      log.info("RTG with DBQs are not working in tlog replicas");
       return;
     }
     clearIndex();

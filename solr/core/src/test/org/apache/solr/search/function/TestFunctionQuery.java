@@ -25,7 +25,6 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Random;
 
-import org.apache.lucene.index.FieldInvertState;
 import org.apache.lucene.search.similarities.Similarity;
 import org.apache.lucene.search.similarities.TFIDFSimilarity;
 import org.apache.solr.SolrTestCaseJ4;
@@ -431,12 +430,8 @@ public class TestFunctionQuery extends SolrTestCaseJ4 {
     assertQ(req("fl","*,score","q", "{!func}tf(a_tfidf,cow)", "fq","id:6"),
             "//float[@name='score']='" + similarity.tf(5)  + "'");
     
-    FieldInvertState state = new FieldInvertState("a_tfidf");
-    state.setLength(4);
-    long norm = similarity.computeNorm(state);
-    float nrm = similarity.decodeNormValue((byte) norm);
     assertQ(req("fl","*,score","q", "{!func}norm(a_tfidf)", "fq","id:2"),
-        "//float[@name='score']='" + nrm  + "'");  // sqrt(4)==2 and is exactly representable when quantized to a byte
+        "//float[@name='score']='0.5'");  // 1/sqrt(4)==1/2==0.5
     
   }
   
@@ -778,6 +773,25 @@ public class TestFunctionQuery extends SolrTestCaseJ4 {
 
   }
 
+  public void testConcatFunction() {
+    clearIndex();
+  
+    assertU(adoc("id", "1", "field1_t", "buzz", "field2_t", "word"));
+    assertU(adoc("id", "2", "field1_t", "1", "field2_t", "2","field4_t", "4"));
+    assertU(commit());
+  
+    assertQ(req("q","id:1",
+        "fl","field:concat(field1_t,field2_t)"),
+        " //str[@name='field']='buzzword'");
+  
+    assertQ(req("q","id:2",
+        "fl","field:concat(field1_t,field2_t,field4_t)"),
+        " //str[@name='field']='124'");
+  
+    assertQ(req("q","id:1",
+        "fl","field:def(concat(field3_t, field4_t), 'defValue')"),
+        " //str[@name='field']='defValue'");
+   }
 
   @Test
   public void testPseudoFieldFunctions() throws Exception {

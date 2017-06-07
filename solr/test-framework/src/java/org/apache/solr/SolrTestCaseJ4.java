@@ -171,16 +171,8 @@ public abstract class SolrTestCaseJ4 extends LuceneTestCase {
   public static final String DEFAULT_TEST_CORENAME = DEFAULT_TEST_COLLECTION_NAME;
   protected static final String CORE_PROPERTIES_FILENAME = "core.properties";
 
-  // keep solr.tests.mergePolicyFactory use i.e. do not remove with SOLR-8668
   public static final String SYSTEM_PROPERTY_SOLR_TESTS_MERGEPOLICYFACTORY = "solr.tests.mergePolicyFactory";
-  @Deprecated // remove solr.tests.mergePolicy use with SOLR-8668
-  public static final String SYSTEM_PROPERTY_SOLR_TESTS_MERGEPOLICY = "solr.tests.mergePolicy";
 
-  @Deprecated // remove solr.tests.useMergePolicyFactory with SOLR-8668
-  public static final String SYSTEM_PROPERTY_SOLR_TESTS_USEMERGEPOLICYFACTORY = "solr.tests.useMergePolicyFactory";
-  @Deprecated // remove solr.tests.useMergePolicy use with SOLR-8668
-  public static final String SYSTEM_PROPERTY_SOLR_TESTS_USEMERGEPOLICY = "solr.tests.useMergePolicy";
-  
   /**
    * The system property {@code "solr.tests.preferPointFields"} can be used to make tests use PointFields when possible. 
    * PointFields will only be used if the schema used by the tests uses "${solr.tests.TYPEClass}" when defining fields. 
@@ -778,8 +770,8 @@ public abstract class SolrTestCaseJ4 extends LuceneTestCase {
    * is set.
    */
   public static void deleteCore() {
-    log.info("###deleteCore" );
     if (h != null) {
+      log.info("###deleteCore" );
       // If the test case set up Zk, it should still have it as available,
       // otherwise the core close will just be unnecessarily delayed.
       CoreContainer cc = h.getCoreContainer();
@@ -2123,9 +2115,17 @@ public abstract class SolrTestCaseJ4 extends LuceneTestCase {
     SolrDocumentList list1 = (SolrDocumentList) expected;
     SolrDocumentList list2 = (SolrDocumentList) actual;
 
-    if(Float.compare(list1.getMaxScore(), list2.getMaxScore()) != 0 || list1.getNumFound() != list2.getNumFound() ||
-        list1.getStart() != list2.getStart()) {
+    if (list1.getMaxScore() == null) {
+      if (list2.getMaxScore() != null) {
+        return false;
+      } 
+    } else if (list2.getMaxScore() == null) {
       return false;
+    } else {
+      if (Float.compare(list1.getMaxScore(), list2.getMaxScore()) != 0 || list1.getNumFound() != list2.getNumFound() ||
+          list1.getStart() != list2.getStart()) {
+        return false;
+      }
     }
     for(int i=0; i<list1.getNumFound(); i++) {
       if(!compareSolrDocument(list1.get(i), list2.get(i))) {
@@ -2214,7 +2214,14 @@ public abstract class SolrTestCaseJ4 extends LuceneTestCase {
   public static Object skewed(Object likely, Object unlikely) {
     return (0 == TestUtil.nextInt(random(), 0, 9)) ? unlikely : likely;
   }
-  
+
+  /**
+   * A variant of {@link  org.apache.solr.client.solrj.impl.CloudSolrClient.Builder} that will randomize which nodes recieve updates 
+   * unless otherwise specified by the caller.
+   *
+   * @see #sendDirectUpdatesToAnyShardReplica
+   * @see #sendDirectUpdatesToShardLeadersOnly
+   */
   public static class CloudSolrClientBuilder extends CloudSolrClient.Builder {
 
     private boolean configuredDUTflag = false;
@@ -2259,30 +2266,35 @@ public abstract class SolrTestCaseJ4 extends LuceneTestCase {
     }
   }
 
+  /**
+   * This method <i>may</i> randomize unspecified aspects of the resulting SolrClient.
+   * Tests that do not wish to have any randomized behavior should use the 
+   * {@link org.apache.solr.client.solrj.impl.CloudSolrClient.Builder} class directly
+   */ 
   public static CloudSolrClient getCloudSolrClient(String zkHost) {
-    if (random().nextBoolean()) {
-      return new CloudSolrClient(zkHost);
-    }
     return new CloudSolrClientBuilder()
         .withZkHost(zkHost)
         .build();
   }
   
+  /**
+   * This method <i>may</i> randomize unspecified aspects of the resulting SolrClient.
+   * Tests that do not wish to have any randomized behavior should use the 
+   * {@link org.apache.solr.client.solrj.impl.CloudSolrClient.Builder} class directly
+   */ 
   public static CloudSolrClient getCloudSolrClient(String zkHost, HttpClient httpClient) {
-    if (random().nextBoolean()) {
-      return new CloudSolrClient(zkHost, httpClient);
-    }
     return new CloudSolrClientBuilder()
         .withZkHost(zkHost)
         .withHttpClient(httpClient)
         .build();
   }
   
+  /**
+   * This method <i>may</i> randomize unspecified aspects of the resulting SolrClient.
+   * Tests that do not wish to have any randomized behavior should use the 
+   * {@link org.apache.solr.client.solrj.impl.CloudSolrClient.Builder} class directly
+   */ 
   public static CloudSolrClient getCloudSolrClient(String zkHost, boolean shardLeadersOnly) {
-    if (random().nextBoolean()) {
-      return new CloudSolrClient(zkHost, shardLeadersOnly);
-    }
-    
     if (shardLeadersOnly) {
       return new CloudSolrClientBuilder()
           .withZkHost(zkHost)
@@ -2295,11 +2307,12 @@ public abstract class SolrTestCaseJ4 extends LuceneTestCase {
         .build();
   }
   
+  /**
+   * This method <i>may</i> randomize unspecified aspects of the resulting SolrClient.
+   * Tests that do not wish to have any randomized behavior should use the 
+   * {@link org.apache.solr.client.solrj.impl.CloudSolrClient.Builder} class directly
+   */ 
   public static CloudSolrClient getCloudSolrClient(String zkHost, boolean shardLeadersOnly, HttpClient httpClient) {
-    if (random().nextBoolean()) {
-      return new CloudSolrClient(zkHost, shardLeadersOnly, httpClient);
-    }
-    
     if (shardLeadersOnly) {
       return new CloudSolrClientBuilder()
           .withZkHost(zkHost)
@@ -2314,20 +2327,24 @@ public abstract class SolrTestCaseJ4 extends LuceneTestCase {
         .build();
   }
   
+  /**
+   * This method <i>may</i> randomize unspecified aspects of the resulting SolrClient.
+   * Tests that do not wish to have any randomized behavior should use the 
+   * {@link org.apache.solr.client.solrj.impl.ConcurrentUpdateSolrClient.Builder} class directly
+   */ 
   public static ConcurrentUpdateSolrClient getConcurrentUpdateSolrClient(String baseSolrUrl, int queueSize, int threadCount) {
-    if (random().nextBoolean()) {
-      return new ConcurrentUpdateSolrClient(baseSolrUrl, queueSize, threadCount);
-    }
     return new ConcurrentUpdateSolrClient.Builder(baseSolrUrl)
         .withQueueSize(queueSize)
         .withThreadCount(threadCount)
         .build();
   }
   
+  /**
+   * This method <i>may</i> randomize unspecified aspects of the resulting SolrClient.
+   * Tests that do not wish to have any randomized behavior should use the 
+   * {@link org.apache.solr.client.solrj.impl.ConcurrentUpdateSolrClient.Builder} class directly
+   */ 
   public static ConcurrentUpdateSolrClient getConcurrentUpdateSolrClient(String baseSolrUrl, HttpClient httpClient, int queueSize, int threadCount) {
-    if (random().nextBoolean()) {
-      return new ConcurrentUpdateSolrClient(baseSolrUrl, httpClient, queueSize, threadCount);
-    }
     return new ConcurrentUpdateSolrClient.Builder(baseSolrUrl)
         .withHttpClient(httpClient)
         .withQueueSize(queueSize)
@@ -2335,30 +2352,35 @@ public abstract class SolrTestCaseJ4 extends LuceneTestCase {
         .build();
   }
   
+  /**
+   * This method <i>may</i> randomize unspecified aspects of the resulting SolrClient.
+   * Tests that do not wish to have any randomized behavior should use the 
+   * {@link org.apache.solr.client.solrj.impl.LBHttpSolrClient.Builder} class directly
+   */ 
   public static LBHttpSolrClient getLBHttpSolrClient(HttpClient client, String... solrUrls) {
-    if (random().nextBoolean()) {
-      return new LBHttpSolrClient(client, solrUrls);
-    }
-    
     return new LBHttpSolrClient.Builder()
         .withHttpClient(client)
         .withBaseSolrUrls(solrUrls)
         .build();
   }
   
+  /**
+   * This method <i>may</i> randomize unspecified aspects of the resulting SolrClient.
+   * Tests that do not wish to have any randomized behavior should use the 
+   * {@link org.apache.solr.client.solrj.impl.LBHttpSolrClient.Builder} class directly
+   */ 
   public static LBHttpSolrClient getLBHttpSolrClient(String... solrUrls) throws MalformedURLException {
-    if (random().nextBoolean()) {
-      return new LBHttpSolrClient(solrUrls);
-    }
     return new LBHttpSolrClient.Builder()
         .withBaseSolrUrls(solrUrls)
         .build();
   }
   
+  /**
+   * This method <i>may</i> randomize unspecified aspects of the resulting SolrClient.
+   * Tests that do not wish to have any randomized behavior should use the 
+   * {@link org.apache.solr.client.solrj.impl.HttpSolrClient.Builder} class directly
+   */ 
   public static HttpSolrClient getHttpSolrClient(String url, HttpClient httpClient, ResponseParser responseParser, boolean compression) {
-    if(random().nextBoolean()) {
-      return new HttpSolrClient(url, httpClient, responseParser, compression);
-    }
     return new Builder(url)
         .withHttpClient(httpClient)
         .withResponseParser(responseParser)
@@ -2366,29 +2388,35 @@ public abstract class SolrTestCaseJ4 extends LuceneTestCase {
         .build();
   }
   
+  /**
+   * This method <i>may</i> randomize unspecified aspects of the resulting SolrClient.
+   * Tests that do not wish to have any randomized behavior should use the 
+   * {@link org.apache.solr.client.solrj.impl.HttpSolrClient.Builder} class directly
+   */ 
   public static HttpSolrClient getHttpSolrClient(String url, HttpClient httpClient, ResponseParser responseParser) {
-    if(random().nextBoolean()) {
-      return new HttpSolrClient(url, httpClient, responseParser);
-    }
     return new Builder(url)
         .withHttpClient(httpClient)
         .withResponseParser(responseParser)
         .build();
   }
   
+  /**
+   * This method <i>may</i> randomize unspecified aspects of the resulting SolrClient.
+   * Tests that do not wish to have any randomized behavior should use the 
+   * {@link org.apache.solr.client.solrj.impl.HttpSolrClient.Builder} class directly
+   */ 
   public static HttpSolrClient getHttpSolrClient(String url, HttpClient httpClient) {
-    if(random().nextBoolean()) {
-      return new HttpSolrClient(url, httpClient);
-    }
     return new Builder(url)
         .withHttpClient(httpClient)
         .build();
   }
 
+  /**
+   * This method <i>may</i> randomize unspecified aspects of the resulting SolrClient.
+   * Tests that do not wish to have any randomized behavior should use the 
+   * {@link org.apache.solr.client.solrj.impl.HttpSolrClient.Builder} class directly
+   */ 
   public static HttpSolrClient getHttpSolrClient(String url) {
-    if(random().nextBoolean()) {
-      return new HttpSolrClient(url);
-    }
     return new Builder(url)
         .build();
   }
@@ -2425,49 +2453,25 @@ public abstract class SolrTestCaseJ4 extends LuceneTestCase {
     }
     return result;
   }
-
-  protected void waitForWarming() throws InterruptedException {
-    RefCounted<SolrIndexSearcher> registeredSearcher = h.getCore().getRegisteredSearcher();
-    RefCounted<SolrIndexSearcher> newestSearcher = h.getCore().getNewestSearcher(false);
-    ;
+  
+  protected static void waitForWarming(SolrCore core) throws InterruptedException {
+    RefCounted<SolrIndexSearcher> registeredSearcher = core.getRegisteredSearcher();
+    RefCounted<SolrIndexSearcher> newestSearcher = core.getNewestSearcher(false);
     while (registeredSearcher == null || registeredSearcher.get() != newestSearcher.get()) {
       if (registeredSearcher != null) {
         registeredSearcher.decref();
       }
       newestSearcher.decref();
       Thread.sleep(50);
-      registeredSearcher = h.getCore().getRegisteredSearcher();
-      newestSearcher = h.getCore().getNewestSearcher(false);
+      registeredSearcher = core.getRegisteredSearcher();
+      newestSearcher = core.getNewestSearcher(false);
     }
     registeredSearcher.decref();
     newestSearcher.decref();
   }
 
-  @BeforeClass
-  public static void chooseMPForMP() throws Exception {
-    if (random().nextBoolean()) {
-      System.setProperty(SYSTEM_PROPERTY_SOLR_TESTS_USEMERGEPOLICYFACTORY, "true");
-      System.setProperty(SYSTEM_PROPERTY_SOLR_TESTS_USEMERGEPOLICY, "false");
-    } else {
-      System.setProperty(SYSTEM_PROPERTY_SOLR_TESTS_USEMERGEPOLICYFACTORY, "false");
-      System.setProperty(SYSTEM_PROPERTY_SOLR_TESTS_USEMERGEPOLICY, "true");
-    }
-  }
-
-  @AfterClass
-  public static void unchooseMPForMP() {
-    System.clearProperty(SYSTEM_PROPERTY_SOLR_TESTS_USEMERGEPOLICYFACTORY);
-    System.clearProperty(SYSTEM_PROPERTY_SOLR_TESTS_USEMERGEPOLICY);
-  }
-
-  @Deprecated // remove with SOLR-8668
-  protected static void systemSetPropertySolrTestsMergePolicy(String value) {
-    System.setProperty(SYSTEM_PROPERTY_SOLR_TESTS_MERGEPOLICY, value);
-  }
-
-  @Deprecated // remove with SOLR-8668
-  protected static void systemClearPropertySolrTestsMergePolicy() {
-    System.clearProperty(SYSTEM_PROPERTY_SOLR_TESTS_MERGEPOLICY);
+  protected void waitForWarming() throws InterruptedException {
+    waitForWarming(h.getCore());
   }
 
   protected static void systemSetPropertySolrTestsMergePolicyFactory(String value) {

@@ -14,6 +14,10 @@ New Features
   well as the oldest Lucene version that contributed to the segment.
   (Adrien Grand)
 
+* LUCENE-7854: The new TermFrequencyAttribute used during analysis
+  with a custom token stream allows indexing custom term frequencies
+  (Mike McCandless)
+
 API Changes
 
 * LUCENE-2605: Classic QueryParser no longer splits on whitespace by default.
@@ -53,15 +57,27 @@ API Changes
 * LUCENE-7741: DoubleValuesSource now has an explain() method (Alan Woodward,
   Adrien Grand)
 
+* LUCENE-7815: Removed the PostingsHighlighter; you should use the UnifiedHighlighter
+  instead, which derived from the UH.  WholeBreakIterator and
+  CustomSeparatorBreakIterator were moved to UH's package. (David Smiley)
+
+* LUCENE-7850: Removed support for legacy numerics. (Adrien Grand)
+
 Bug Fixes
 
 * LUCENE-7626: IndexWriter will no longer accept broken token offsets
   (Mike McCandless)
 
+* LUCENE-7859: Spatial-extras PackedQuadPrefixTree bug that only revealed itself
+  with the new pointsOnly optimizations in LUCENE-7845. (David Smiley)
+
 Improvements
 
 * LUCENE-7489: Better storage of sparse doc-values fields with the default
   codec. (Adrien Grand)
+
+* LUCENE-7730: More accurate encoding of the length normalization factor
+  thanks to the removal of index-time boosts. (Adrien Grand)
 
 Optimizations
 
@@ -81,6 +97,10 @@ Optimizations
   values using different numbers of bits per value if this proves to save
   storage. (Adrien Grand)
 
+* LUCENE-7845: Enhance spatial-extras RecursivePrefixTreeStrategy queries when the
+  query is a point (for 2D) or a is a simple date interval (e.g. 1 month).  When
+  the strategy is marked as pointsOnly, the results is a TermQuery. (David Smiley)
+
 Other
 
 * LUCENE-7328: Remove LegacyNumericEncoding from GeoPointField. (Nick Knize)
@@ -92,7 +112,33 @@ Other
 * LUCENE-7753: Make fields static when possible.
   (Daniel Jelinski via Adrien Grand)
 
+* LUCENE-7540: Upgrade ICU to 59.1 (Mike McCandless, Jim Ferenczi)
+
+* LUCENE-7852: Correct copyright year(s) in lucene/LICENSE.txt file.
+  (Christine Poerschke, Steve Rowe)
+
 ======================= Lucene 6.7.0 =======================
+
+New Features
+
+* LUCENE-7855: Added advanced options of the Wikipedia tokenizer to its factory.
+  (Juan Pedro via Adrien Grand)
+
+Other
+
+* LUCENE-7800: Remove code that potentially rethrows checked exceptions 
+  from methods that don't declare them ("sneaky throw" hack). (Robert Muir,
+  Uwe Schindler, Dawid Weiss)
+
+Improvements
+
+* LUCENE-7841: Normalize ґ to г in Ukrainian analyzer. (Andriy Rysin via Dawid Weiss)
+
+Optimizations
+
+* LUCENE-7828: Speed up range queries on range fields by improving how we
+  compute the relation between the query and inner nodes of the BKD tree.
+  (Adrien Grand)
 
 ======================= Lucene 6.6.0 =======================
 
@@ -137,6 +183,15 @@ Bug Fixes
   (Christoph Kaser via Adrien Grand)
 
 * LUCENE-7831: CodecUtil should not seek to negative offsets. (Adrien Grand)
+
+* LUCENE-7833: ToParentBlockJoinQuery computed the min score instead of the max
+  score with ScoreMode.MAX. (Adrien Grand)
+
+* LUCENE-7847: Fixed all-docs-match optimization of range queries on range
+  fields. (Adrien Grand)
+
+* LUCENE-7810: Fix equals() and hashCode() methods of several join queries.
+  (Hossman, Adrien Grand, Martijn van Groningen)
 
 Improvements
 

@@ -27,6 +27,7 @@ import org.apache.solr.client.solrj.SolrResponse;
 import org.apache.solr.cloud.Overseer.LeaderStatus;
 import org.apache.solr.cloud.OverseerTaskQueue.QueueEvent;
 import org.apache.solr.common.cloud.ClusterState;
+import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.cloud.ZkStateReader;
@@ -346,7 +347,7 @@ public class OverseerCollectionConfigSetProcessorTest extends SolrTestCaseJ4 {
     assertEquals(numberOfSlices * numberOfReplica, coreNames.size());
     for (int i = 1; i <= numberOfSlices; i++) {
       for (int j = 1; j <= numberOfReplica; j++) {
-        String coreName = COLLECTION_NAME + "_shard" + i + "_replica" + j;
+        String coreName = Assign.buildCoreName(COLLECTION_NAME, "shard" + i, Replica.Type.NRT, j);
         assertTrue("Shard " + coreName + " was not created",
             coreNames.contains(coreName));
         

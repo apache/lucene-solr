@@ -42,7 +42,7 @@ public class TestSortRescorer extends LuceneTestCase {
   public void setUp() throws Exception {
     super.setUp();
     dir = newDirectory();
-    RandomIndexWriter iw = new RandomIndexWriter(random(), dir);
+    RandomIndexWriter iw = new RandomIndexWriter(random(), dir, newIndexWriterConfig().setSimilarity(new ClassicSimilarity()));
     
     Document doc = new Document();
     doc.add(newStringField("id", "1", Field.Store.YES));

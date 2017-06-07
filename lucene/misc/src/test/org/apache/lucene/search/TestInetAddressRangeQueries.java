@@ -18,6 +18,7 @@ package org.apache.lucene.search;
 
 import java.net.InetAddress;
 import java.net.UnknownHostException;
+import java.util.Arrays;
 
 import org.apache.lucene.document.InetAddressPoint;
 import org.apache.lucene.document.InetAddressRange;
@@ -44,8 +45,19 @@ public class TestInetAddressRangeQueries extends BaseRangeFieldQueryTestCase {
   /** return random IPv4 or IPv6 address */
   private InetAddress nextInetaddress() throws UnknownHostException {
     byte[] b = random().nextBoolean() ? new byte[4] : new byte[16];
-    random().nextBytes(b);
-    return InetAddress.getByAddress(b);
+    switch (random().nextInt(5)) {
+      case 0:
+        return InetAddress.getByAddress(b);
+      case 1:
+        Arrays.fill(b, (byte) 0xff);
+        return InetAddress.getByAddress(b);
+      case 2:
+        Arrays.fill(b, (byte) 42);
+        return InetAddress.getByAddress(b);
+      default:
+        random().nextBytes(b);
+        return InetAddress.getByAddress(b);
+    }
   }
 
   @Override
@@ -159,7 +171,7 @@ public class TestInetAddressRangeQueries extends BaseRangeFieldQueryTestCase {
     @Override
     protected boolean isEqual(Range o) {
       IpRange other = (IpRange)o;
-      return this.min.equals(other.min) && this.max.equals(other.max);
+      return Arrays.equals(min, other.min) && Arrays.equals(max, other.max);
     }
 
     @Override

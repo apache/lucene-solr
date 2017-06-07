@@ -42,7 +42,6 @@ import org.apache.lucene.search.highlight.Highlighter;
 import org.apache.lucene.search.highlight.QueryScorer;
 import org.apache.lucene.search.highlight.SimpleHTMLFormatter;
 import org.apache.lucene.search.highlight.TokenSources;
-import org.apache.lucene.search.postingshighlight.PostingsHighlighter;
 import org.apache.lucene.search.uhighlight.UnifiedHighlighter;
 import org.apache.lucene.search.vectorhighlight.BoundaryScanner;
 import org.apache.lucene.search.vectorhighlight.BreakIteratorBoundaryScanner;
@@ -133,8 +132,6 @@ public class SearchTravRetHighlightTask extends SearchTravTask {
       case "UH_P": hlImpl = new UnifiedHLImpl(UnifiedHighlighter.OffsetSource.POSTINGS); break;
       case "UH_PV": hlImpl = new UnifiedHLImpl(UnifiedHighlighter.OffsetSource.POSTINGS_WITH_TERM_VECTORS); break;
 
-      case "PH_P": hlImpl = new PostingsHLImpl(); break;
-
       default: throw new Exception("unrecognized highlighter type: " + type + " (try 'UH')");
     }
   }
@@ -222,33 +219,6 @@ public class SearchTravRetHighlightTask extends SearchTravTask {
     System.arraycopy(scoreDocs, 0, clone, 0, scoreDocs.length);
     ArrayUtil.introSort(clone, (a, b) -> Integer.compare(a.doc, b.doc));
     return clone;
-  }
-
-  private class PostingsHLImpl implements HLImpl {
-    PostingsHighlighter highlighter;
-    String[] fields = hlFields.toArray(new String[hlFields.size()]);
-    int[] maxPassages;
-    PostingsHLImpl() {
-      highlighter = new PostingsHighlighter(maxDocCharsToAnalyze) {
-        @Override
-        protected Analyzer getIndexAnalyzer(String field) { // thus support wildcards
-          return analyzer;
-        }
-
-        @Override
-        protected BreakIterator getBreakIterator(String field) {
-          return BreakIterator.getSentenceInstance(Locale.ENGLISH);
-        }
-      };
-      maxPassages = new int[hlFields.size()];
-      Arrays.fill(maxPassages, maxFrags);
-    }
-
-    @Override
-    public void withTopDocs(IndexSearcher searcher, Query q, TopDocs hits) throws Exception {
-      Map<String, String[]> result = highlighter.highlightFields(fields, q, searcher, hits, maxPassages);
-      preventOptimizeAway = result.size();
-    }
   }
 
   private class UnifiedHLImpl implements HLImpl {

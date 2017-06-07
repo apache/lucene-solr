@@ -42,10 +42,6 @@ public class TestHalfAndHalfDocValues extends SolrTestCaseJ4 {
     // segments with and without docvalues
     systemSetPropertySolrTestsMergePolicyFactory(NoMergePolicyFactory.class.getName());
 
-    // HACK: Don't use a RandomMergePolicy, but only use the mergePolicyFactory that we've just set
-    System.setProperty(SYSTEM_PROPERTY_SOLR_TESTS_USEMERGEPOLICYFACTORY, "true");
-    System.setProperty(SYSTEM_PROPERTY_SOLR_TESTS_USEMERGEPOLICY, "false");
-
     initCore("solrconfig-basic.xml", "schema-docValues.xml");
 
     // sanity check our schema meets our expectations

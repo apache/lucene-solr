@@ -23,7 +23,6 @@ import java.util.List;
 import java.util.Properties;
 
 import org.apache.commons.io.FileUtils;
-import org.apache.lucene.index.TieredMergePolicy;
 import org.apache.lucene.util.Constants;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.solr.SolrTestCaseJ4;
@@ -174,24 +173,13 @@ public class TestSolrCloudWithKerberosAlt extends LuceneTestCase {
       String configName = "solrCloudCollectionConfig";
       miniCluster.uploadConfigSet(SolrTestCaseJ4.TEST_PATH().resolve("collection1/conf"), configName);
 
-      CollectionAdminRequest.Create createRequest = new CollectionAdminRequest.Create();
-      createRequest.setCollectionName(collectionName);
-      createRequest.setNumShards(NUM_SHARDS);
-      createRequest.setReplicationFactor(REPLICATION_FACTOR);
+      CollectionAdminRequest.Create createRequest = CollectionAdminRequest.createCollection(collectionName,NUM_SHARDS,REPLICATION_FACTOR);
       Properties properties = new Properties();
       properties.put(CoreDescriptor.CORE_CONFIG, "solrconfig-tlog.xml");
       properties.put("solr.tests.maxBufferedDocs", "100000");
       properties.put("solr.tests.ramBufferSizeMB", "100");
       // use non-test classes so RandomizedRunner isn't necessary
-      if (random().nextBoolean()) {
-        properties.put(SolrTestCaseJ4.SYSTEM_PROPERTY_SOLR_TESTS_MERGEPOLICY, TieredMergePolicy.class.getName());
-        properties.put(SolrTestCaseJ4.SYSTEM_PROPERTY_SOLR_TESTS_USEMERGEPOLICY, "true");
-        properties.put(SolrTestCaseJ4.SYSTEM_PROPERTY_SOLR_TESTS_USEMERGEPOLICYFACTORY, "false");
-      } else {
-        properties.put(SolrTestCaseJ4.SYSTEM_PROPERTY_SOLR_TESTS_MERGEPOLICYFACTORY, TieredMergePolicyFactory.class.getName());
-        properties.put(SolrTestCaseJ4.SYSTEM_PROPERTY_SOLR_TESTS_USEMERGEPOLICYFACTORY, "true");
-        properties.put(SolrTestCaseJ4.SYSTEM_PROPERTY_SOLR_TESTS_USEMERGEPOLICY, "false");
-      }
+      properties.put(SolrTestCaseJ4.SYSTEM_PROPERTY_SOLR_TESTS_MERGEPOLICYFACTORY, TieredMergePolicyFactory.class.getName());
       properties.put("solr.tests.mergeScheduler", "org.apache.lucene.index.ConcurrentMergeScheduler");
       properties.put("solr.directoryFactory", "solr.RAMDirectoryFactory");
       createRequest.setProperties(properties);
@@ -216,9 +204,7 @@ public class TestSolrCloudWithKerberosAlt extends LuceneTestCase {
         assertEquals(1, rsp.getResults().getNumFound());
         
         // delete the collection we created earlier
-        CollectionAdminRequest.Delete deleteRequest = new CollectionAdminRequest.Delete();
-        deleteRequest.setCollectionName(collectionName);
-        deleteRequest.process(cloudSolrClient);
+        CollectionAdminRequest.deleteCollection(collectionName).process(cloudSolrClient);
         
         AbstractDistribZkTestBase.waitForCollectionToDisappear(collectionName, zkStateReader, true, true, 330);
       }

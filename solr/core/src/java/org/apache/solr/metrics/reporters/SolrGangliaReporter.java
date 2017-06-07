@@ -17,7 +17,6 @@
 package org.apache.solr.metrics.reporters;
 
 import java.io.IOException;
-import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
@@ -27,14 +26,11 @@ import com.codahale.metrics.ganglia.GangliaReporter;
 import info.ganglia.gmetric4j.gmetric.GMetric;
 import org.apache.solr.metrics.SolrMetricManager;
 import org.apache.solr.metrics.SolrMetricReporter;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  *
  */
 public class SolrGangliaReporter extends SolrMetricReporter {
-  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   private String host = null;
   private int port = -1;
@@ -110,11 +106,14 @@ public class SolrGangliaReporter extends SolrMetricReporter {
   }
 
   @Override
-  protected void validate() throws IllegalStateException {
-    if (!enabled) {
-      log.info("Reporter disabled for registry " + registryName);
-      return;
+  protected void doInit() {
+    if (!testing) {
+      start();
     }
+  }
+
+  @Override
+  protected void validate() throws IllegalStateException {
     if (host == null) {
       throw new IllegalStateException("Init argument 'host' must be set to a valid Ganglia server name.");
     }
@@ -123,9 +122,6 @@ public class SolrGangliaReporter extends SolrMetricReporter {
     }
     if (period < 1) {
       throw new IllegalStateException("Init argument 'period' is in time unit 'seconds' and must be at least 1.");
-    }
-    if (!testing) {
-      start();
     }
   }
 

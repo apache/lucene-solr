@@ -33,7 +33,6 @@ import com.codahale.metrics.JmxReporter;
 import com.codahale.metrics.MetricFilter;
 import com.codahale.metrics.MetricRegistry;
 import com.codahale.metrics.MetricRegistryListener;
-import org.apache.solr.core.PluginInfo;
 import org.apache.solr.metrics.MetricsMap;
 import org.apache.solr.metrics.SolrMetricManager;
 import org.apache.solr.metrics.SolrMetricReporter;
@@ -74,20 +73,7 @@ public class SolrJmxReporter extends SolrMetricReporter {
     setDomain(registryName);
   }
 
-  /**
-   * Initializes the reporter by finding an MBeanServer
-   * and registering the metricManager's metric registry.
-   *
-   * @param pluginInfo the configuration for the reporter
-   */
-  @Override
-  public synchronized void init(PluginInfo pluginInfo) {
-    super.init(pluginInfo);
-    if (!enabled) {
-      log.info("Reporter disabled for registry " + registryName);
-      return;
-    }
-    log.debug("Initializing for registry " + registryName);
+  protected synchronized void doInit() {
     if (serviceUrl != null && agentId != null) {
       mBeanServer = JmxUtil.findFirstMBeanServer();
       log.warn("No more than one of serviceUrl({}) and agentId({}) should be configured, using first MBeanServer instead of configuration.",

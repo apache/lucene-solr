@@ -42,7 +42,7 @@ public class LuceneQParserPlugin extends QParserPlugin {
   }
 }
 
-
+@Deprecated 
 class OldLuceneQParser extends LuceneQParser {
   String sortStr;
 
@@ -76,12 +76,6 @@ class OldLuceneQParser extends LuceneQParser {
     }
 
     return super.parse();
-  }
-
-  @Override
-  @Deprecated
-  public SortSpec getSort(boolean useGlobal) throws SyntaxError {
-    return getSortSpec(useGlobal);
   }
 
   @Override

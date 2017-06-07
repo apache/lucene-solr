@@ -16,7 +16,6 @@
  */
 package org.apache.solr.util;
 
-import java.io.File;
 import java.util.Random;
 import java.security.KeyManagementException;
 import java.security.KeyStore;
@@ -51,14 +50,6 @@ import org.eclipse.jetty.util.ssl.SslContextFactory;
  */
 public class SSLTestConfig extends SSLConfig {
 
-  /** @deprecated No longer used except by {@link #setSSLSystemProperties} */
-  public static File TEST_KEYSTORE = ExternalPaths.SERVER_HOME == null ? null
-    : new File(ExternalPaths.SERVER_HOME, "../etc/test/solrtest.keystore");
-  
-  /** @deprecated No longer used except by {@link #setSSLSystemProperties} */
-  private static String TEST_KEYSTORE_PATH = TEST_KEYSTORE != null
-    && TEST_KEYSTORE.exists() ? TEST_KEYSTORE.getAbsolutePath() : null;
-
   private static final String TEST_KEYSTORE_RESOURCE = "SSLTestConfig.testing.keystore";
   private static final String TEST_KEYSTORE_PASSWORD = "secret";
 
@@ -87,17 +78,6 @@ public class SSLTestConfig extends SSLConfig {
     }
   }
 
-  /** 
-   * Create an SSLTestConfig using explicit paths for files 
-   * @deprecated - use {@link SSLConfig} directly
-   */
-  @Deprecated
-  public SSLTestConfig(boolean useSSL, boolean clientAuth, String keyStore, String keyStorePassword, String trustStore, String trustStorePassword) {
-    super(useSSL, clientAuth, keyStore, keyStorePassword, trustStore, trustStorePassword);
-    this.keyStore = tryNewResource(keyStore, "KeyStore");
-    this.trustStore = tryNewResource(trustStore, "TrustStore");
-  }
-
   /**
    * Helper utility for building resources from arbitrary user input paths/urls
    * if input is null, returns null; otherwise attempts to build Resource and verifies that Resource exists.
@@ -118,19 +98,21 @@ public class SSLTestConfig extends SSLConfig {
     return result;
   }
 
-  /** NOTE: This method is meaningless unless you explicitly provide paths when constructing this instance 
-   * @see #SSLTestConfig(boolean,boolean,String,String,String,String)
+  /** 
+   * NOTE: This method is meaningless in SSLTestConfig.
+   * @return null
    */
   @Override
   public String getKeyStore() {
-    return super.getKeyStore();
+    return null;
   }
-  /** NOTE: This method is meaningless unless you explicitly provide paths when constructing this instance 
-   * @see #SSLTestConfig(boolean,boolean,String,String,String,String)
+  /** 
+   * NOTE: This method is meaningless in SSLTestConfig.
+   * @return null
    */
   @Override
   public String getTrustStore() {
-    return super.getTrustStore();
+    return null;
   }
   
   /**
@@ -299,30 +281,6 @@ public class SSLTestConfig extends SSLConfig {
     }
     // no match
     return null;
-  }
-
-  /**
-   * @deprecated this method has very little practical use, in most cases you'll want to use 
-   * {@link SSLContext#setDefault} with {@link #buildClientSSLContext} instead.
-   */
-  @Deprecated
-  public static void setSSLSystemProperties() {
-    System.setProperty("javax.net.ssl.keyStore", TEST_KEYSTORE_PATH);
-    System.setProperty("javax.net.ssl.keyStorePassword", TEST_KEYSTORE_PASSWORD);
-    System.setProperty("javax.net.ssl.trustStore", TEST_KEYSTORE_PATH);
-    System.setProperty("javax.net.ssl.trustStorePassword", TEST_KEYSTORE_PASSWORD);
-  }
-  
-  /**
-   * @deprecated this method has very little practical use, in most cases you'll want to use 
-   * {@link SSLContext#setDefault} with {@link #buildClientSSLContext} instead.
-   */
-  @Deprecated
-  public static void clearSSLSystemProperties() {
-    System.clearProperty("javax.net.ssl.keyStore");
-    System.clearProperty("javax.net.ssl.keyStorePassword");
-    System.clearProperty("javax.net.ssl.trustStore");
-    System.clearProperty("javax.net.ssl.trustStorePassword");
   }
 
   /**
