@@ -194,7 +194,7 @@ thematic_break:
   margin_top: $vertical_rhythm * 0.5
   margin_bottom: $vertical_rhythm * 1.5
 description_list:
-  term_font_style: italic
+  term_font_style: bold
   term_spacing: $vertical_rhythm / 4
   description_indent: $horizontal_rhythm * 1.25
 outline_list:
