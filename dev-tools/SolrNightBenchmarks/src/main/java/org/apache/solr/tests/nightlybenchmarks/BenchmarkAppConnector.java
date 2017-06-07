@@ -61,6 +61,7 @@ public class BenchmarkAppConnector {
 
 	public static boolean deleteCommitFromQueue(String commit) {
 		
+		Util.postMessage("** Deleting registered commit " + commit + " from the queue ...", MessageType.RED_TEXT, false);
 		File file = new File(benchmarkAppDirectory + "data" + File.separator + "commit_queue" + File.separator + commit);
 		return file.delete();
 	
@@ -78,6 +79,22 @@ public class BenchmarkAppConnector {
 		
         Arrays.sort(files, LastModifiedFileComparator.LASTMODIFIED_COMPARATOR);
         return files[0].getName();
+	}
+
+	public static File[] getRegisteredCommitsFromQueue() {
+		
+		File directory = new File(benchmarkAppDirectory + "data" + File.separator + "commit_queue" + File.separator);
+
+		File[] files = directory.listFiles();
+		
+		if (files.length == 0) {
+			return null;
+		}
+		
+        Arrays.sort(files, LastModifiedFileComparator.LASTMODIFIED_COMPARATOR);
+        Util.postMessage("** Number of registered commits in the history: " + files.length, MessageType.RED_TEXT, false);
+
+        return files;
 	}
 
 	public static boolean isCommitInQueue(String commit) {

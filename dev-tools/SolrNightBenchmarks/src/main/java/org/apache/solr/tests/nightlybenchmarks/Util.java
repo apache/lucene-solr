@@ -743,13 +743,18 @@ public class Util {
 			
 			if (argM.containsKey("-ProcessCommitsFromQueue")) {
 				Util.postMessage("** Initiating processing from commit queueu ...", MessageType.BLUE_TEXT, false);
-				while (BenchmarkAppConnector.getOldestCommitFromQueue() != null) {
-						String commitIDFromQueue = BenchmarkAppConnector.getOldestCommitFromQueue();
+				
+				File[] currentCommits = BenchmarkAppConnector.getRegisteredCommitsFromQueue();
+				
+				for (int i = 0; i < currentCommits.length; i++) {
+					
+						String commitIDFromQueue = currentCommits[i].getName();
 						Util.postMessage("** Processing benchmarks for commit: " + commitIDFromQueue, MessageType.RED_TEXT, false);
 						TestPlans.execute(commitIDFromQueue);
 						BenchmarkAppConnector.publishDataForWebApp();
 						BenchmarkReportData.reset();
 						BenchmarkAppConnector.deleteCommitFromQueue(commitIDFromQueue);
+						
 				}
 				Util.postMessage("** Processing from commit queue [COMPLETE] ...", MessageType.BLUE_TEXT, false);
 			}
