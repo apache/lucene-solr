@@ -134,6 +134,12 @@ Improvements
 
 * LUCENE-7841: Normalize ґ to г in Ukrainian analyzer. (Andriy Rysin via Dawid Weiss)
 
+Optimizations
+
+* LUCENE-7828: Speed up range queries on range fields by improving how we
+  compute the relation between the query and inner nodes of the BKD tree.
+  (Adrien Grand)
+
 ======================= Lucene 6.6.0 =======================
 
 New Features
