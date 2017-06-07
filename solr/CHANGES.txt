@@ -385,6 +385,8 @@ Other Changes
 
 * SOLR-8762: return child docs in DIH debug (Gopikannan Venugopalsamy via Mikhail Khludnev)
 
+* SOLR-10501: Test sortMissing{First,Last} with points fields.  (Steve Rowe)
+
 ==================  6.6.0 ==================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release.
