@@ -97,11 +97,11 @@ public abstract class TriggerBase implements AutoScaling.Trigger {
       LOG.warn("Exception getting trigger state '" + path + "'", e);
     }
     if (data != null) {
-      Map<String, Object> state = (Map<String, Object>)Utils.fromJSON(data);
+      Map<String, Object> restoredState = (Map<String, Object>)Utils.fromJSON(data);
       // make sure lastState is sorted
-      state = Utils.getDeepCopy(state, 10, false, true);;
-      setState(state);
-      lastState = state;
+      restoredState = Utils.getDeepCopy(restoredState, 10, false, true);
+      setState(restoredState);
+      lastState = restoredState;
     }
   }
 }

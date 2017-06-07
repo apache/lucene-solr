@@ -24,6 +24,7 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -37,6 +38,7 @@ import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.util.TimeSource;
+import org.apache.zookeeper.KeeperException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -97,6 +99,23 @@ public class NodeAddedTrigger extends TriggerBase {
         actions.get(i).init(map);
       }
     }
+    // pick up added nodes for which marker paths were created
+    try {
+      List<String> added = container.getZkController().getZkClient().getChildren(ZkStateReader.SOLR_AUTOSCALING_NODE_ADDED_PATH, null, true);
+      added.forEach(n -> {
+        // don't add nodes that have since gone away
+        if (lastLiveNodes.contains(n)) {
+          log.debug("Adding node from marker path: {}", n);
+          nodeNameVsTimeAdded.put(n, timeSource.getTime());
+        }
+        removeNodeAddedMarker(n);
+      });
+    } catch (KeeperException.NoNodeException e) {
+      // ignore
+    } catch (KeeperException | InterruptedException e) {
+      log.warn("Exception retrieving nodeLost markers", e);
+    }
+
   }
 
   @Override
@@ -223,12 +242,13 @@ public class NodeAddedTrigger extends TriggerBase {
       copyOfNew.removeAll(lastLiveNodes);
       copyOfNew.forEach(n -> {
         long eventTime = timeSource.getTime();
-        nodeNameVsTimeAdded.put(n, eventTime);
         log.debug("Tracking new node: {} at time {}", n, eventTime);
+        nodeNameVsTimeAdded.put(n, eventTime);
       });
 
       // has enough time expired to trigger events for a node?
-      for (Map.Entry<String, Long> entry : nodeNameVsTimeAdded.entrySet()) {
+      for (Iterator<Map.Entry<String, Long>> it = nodeNameVsTimeAdded.entrySet().iterator(); it.hasNext(); ) {
+        Map.Entry<String, Long> entry = it.next();
         String nodeName = entry.getKey();
         Long timeAdded = entry.getValue();
         long now = timeSource.getTime();
@@ -239,18 +259,33 @@ public class NodeAddedTrigger extends TriggerBase {
             log.debug("NodeAddedTrigger {} firing registered listener for node: {} added at time {} , now: {}", name, nodeName, timeAdded, now);
             if (listener.triggerFired(new NodeAddedEvent(getEventType(), getName(), timeAdded, nodeName))) {
               // remove from tracking set only if the fire was accepted
-              trackingKeySet.remove(nodeName);
+              it.remove();
+              removeNodeAddedMarker(nodeName);
             }
           } else  {
-            trackingKeySet.remove(nodeName);
+            it.remove();
+            removeNodeAddedMarker(nodeName);
           }
         }
       }
-
       lastLiveNodes = new HashSet(newLiveNodes);
     } catch (RuntimeException e) {
       log.error("Unexpected exception in NodeAddedTrigger", e);
     }
+  }
+
+  private void removeNodeAddedMarker(String nodeName) {
+    String path = ZkStateReader.SOLR_AUTOSCALING_NODE_ADDED_PATH + "/" + nodeName;
+    try {
+      if (container.getZkController().getZkClient().exists(path, true)) {
+        container.getZkController().getZkClient().delete(path, -1, true);
+      }
+    } catch (KeeperException.NoNodeException e) {
+      // ignore
+    } catch (KeeperException | InterruptedException e) {
+      log.debug("Exception removing nodeAdded marker " + nodeName, e);
+    }
+
   }
 
   @Override
