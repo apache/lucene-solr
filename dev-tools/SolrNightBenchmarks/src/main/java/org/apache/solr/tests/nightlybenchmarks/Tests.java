@@ -208,6 +208,10 @@ public class Tests {
 			returnMap.put("MinQTime", "" + QueryClient.minQtime);
 			returnMap.put("MaxQTime", "" + QueryClient.maxQtime);
 			returnMap.put("QueryFailureCount", "" + QueryClient.queryFailureCount);
+			returnMap.put("75thQtime", "" + QueryClient.getNthPercentileQTime(75));
+			returnMap.put("95thQtime", "" + QueryClient.getNthPercentileQTime(95));
+			returnMap.put("99thQtime", "" + QueryClient.getNthPercentileQTime(99));
+			returnMap.put("99.9thQtime", "" + QueryClient.getNthPercentileQTime(99.9));
 
 			Util.postMessage(returnMap.toString(), MessageType.RED_TEXT, false);
 			QueryClient.reset();

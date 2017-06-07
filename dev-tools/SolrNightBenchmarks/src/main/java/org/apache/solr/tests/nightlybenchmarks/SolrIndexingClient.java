@@ -107,10 +107,6 @@ public class SolrIndexingClient {
 				if (numDocuments == numberOfDocuments) {
 					break;
 				}
-				if (numberOfDocuments % 5000 == 0) {
-					Util.postMessageOnLine("|");
-				}
-				Util.postMessageOnLine("\r" + numberOfDocuments + " ");
 			}
 			solrClient.commit();
 			end = System.nanoTime();
@@ -196,10 +192,6 @@ public class SolrIndexingClient {
 				if (numDocuments == numberOfDocuments) {
 					break;
 				}
-				if (numberOfDocuments % 5000 == 0) {
-					Util.postMessageOnLine("|");
-				}
-				Util.postMessageOnLine("\r" + numberOfDocuments + " ");
 			}
 			solrClient.commit();
 			end = System.nanoTime();
@@ -282,10 +274,6 @@ public class SolrIndexingClient {
 				if (numDocuments == numberOfDocuments) {
 					break;
 				}
-				if (numberOfDocuments % 5000 == 0) {
-					Util.postMessageOnLine("|");
-				}
-				Util.postMessageOnLine("\r" + numberOfDocuments + " ");
 			}
 
 			solrClient.blockUntilFinished();

@@ -18,8 +18,10 @@ package org.apache.solr.tests.nightlybenchmarks;
  */
 
 import java.io.IOException;
+import java.util.Arrays;
 import java.util.Random;
 
+import org.apache.commons.math3.stat.descriptive.DescriptiveStatistics;
 import org.apache.solr.client.solrj.SolrResponse;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.impl.ConcurrentUpdateSolrClient;
@@ -51,6 +53,10 @@ public class QueryClient implements Runnable {
 	public static long maxQtime = Long.MIN_VALUE;
 	public static long queryFailureCount = 0;
 	public static long threadReadyCount = 0;
+	public static DescriptiveStatistics percentiles;
+	public static boolean percentilesObjectCreated = false;
+	public static long[] qTimePercentileList = new long[10000000];
+	public static int qTimePercentileListPointer = 0;
 
 	Random random = new Random();
 
@@ -63,13 +69,11 @@ public class QueryClient implements Runnable {
 		this.threadCount = threadCount;
 		this.collectionName = collectionName;
 		this.queryType = queryType;
-		minQtime = Long.MAX_VALUE;
-		maxQtime = Long.MIN_VALUE;
 		this.numberOfThreads = numberOfThreads;
 		this.delayEstimationBySeconds = delayEstimationBySeconds;
 
 		solrClient = new ConcurrentUpdateSolrClient(urlString, queueSize, threadCount);
-		Util.postMessage("\r" + this.toString() + "** CREATING CLIENT ...", MessageType.RED_TEXT, false);
+		Util.postMessage("\r" + this.toString() + "** QUERY CLIENT CREATED ...", MessageType.RED_TEXT, false);
 	}
 
 	public void run() {
@@ -117,22 +121,16 @@ public class QueryClient implements Runnable {
 					}
 
 					params = SolrParams.toSolrParams(list);
-					
+
 					response = this.fireQuery(collectionName, params);
-					
+
 					if ((System.nanoTime() - startTime) >= (delayEstimationBySeconds * 1000000000)) {
 						setQueryCounter();
 						elapsedTime = response.getElapsedTime();
 						setMinMaxQTime(elapsedTime);
-						Util.postMessage("\r" + response.toString(), MessageType.BLUE_TEXT, false);
-						Util.postMessage("\r" + this.toString() + " < " + elapsedTime + " > ", MessageType.WHITE_TEXT,
-								false);
-					} else {
-						Util.postMessageOnLine("\rWaiting For Estimation to start ...");
 					}
 
 				} catch (SolrServerException | IOException e) {
-					// e.printStackTrace();
 					setQueryFailureCount();
 				}
 
@@ -147,11 +145,12 @@ public class QueryClient implements Runnable {
 		solrClient.close();
 		return;
 	}
-	
-	private synchronized SolrResponse fireQuery(String collectionName, SolrParams params) throws SolrServerException, IOException {
-		
+
+	private synchronized SolrResponse fireQuery(String collectionName, SolrParams params)
+			throws SolrServerException, IOException {
+
 		return solrClient.query(collectionName, params);
-	
+
 	}
 
 	private synchronized void setQueryCounter() {
@@ -180,7 +179,9 @@ public class QueryClient implements Runnable {
 		if (running == false) {
 			return;
 		}
-
+		
+		qTimePercentileList[qTimePercentileListPointer++] = QTime;
+		
 		if (QTime < minQtime) {
 			minQtime = QTime;
 		}
@@ -191,6 +192,24 @@ public class QueryClient implements Runnable {
 
 	}
 
+	public static double getNthPercentileQTime(double percentile) {
+
+		if(!percentilesObjectCreated) {
+	
+			double[] finalQtime = new double[qTimePercentileListPointer];
+			System.out.println(qTimePercentileListPointer);
+			for (int i = 0; i < (finalQtime.length); i++) {
+					finalQtime[i] = qTimePercentileList[i];
+			}			
+			Arrays.sort(finalQtime);			
+			percentiles = new DescriptiveStatistics(finalQtime);
+			percentilesObjectCreated = true;
+		}
+		
+		return percentiles.getPercentile(percentile);
+
+	}
+
 	public static void reset() {
 		running = false;
 		queryCount = 0;
@@ -198,6 +217,8 @@ public class QueryClient implements Runnable {
 		maxQtime = Long.MIN_VALUE;
 		queryFailureCount = 0;
 		threadReadyCount = 0;
+		percentiles = null;
+		percentilesObjectCreated = false;
 	}
 
 }
