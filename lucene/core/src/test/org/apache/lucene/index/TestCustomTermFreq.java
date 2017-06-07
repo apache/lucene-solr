@@ -303,7 +303,7 @@ public class TestCustomTermFreq extends LuceneTestCase {
                                                 new int[] {3, Integer.MAX_VALUE}),
                             fieldType);
     doc2.add(field);
-    expectThrows(ArithmeticException.class, () -> {w.addDocument(doc2);});
+    expectThrows(IllegalArgumentException.class, () -> {w.addDocument(doc2);});
 
     IndexReader r = DirectoryReader.open(w);
     assertEquals(1, r.numDocs());
