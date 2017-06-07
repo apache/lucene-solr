@@ -197,7 +197,6 @@ public class QueryClient implements Runnable {
 		if(!percentilesObjectCreated) {
 	
 			double[] finalQtime = new double[qTimePercentileListPointer];
-			System.out.println(qTimePercentileListPointer);
 			for (int i = 0; i < (finalQtime.length); i++) {
 					finalQtime[i] = qTimePercentileList[i];
 			}			
@@ -219,6 +218,8 @@ public class QueryClient implements Runnable {
 		threadReadyCount = 0;
 		percentiles = null;
 		percentilesObjectCreated = false;
+		qTimePercentileList = new long[10000000];
+		qTimePercentileListPointer = 0;
 	}
 
 }

@@ -740,6 +740,20 @@ public class Util {
 			}
 
 			Util.createIsRunningFile();
+			
+			if (argM.containsKey("-ProcessCommitsFromQueue")) {
+				Util.postMessage("** Initiating processing from commit queueu ...", MessageType.BLUE_TEXT, false);
+				while (BenchmarkAppConnector.getOldestCommitFromQueue() != null) {
+						String commitIDFromQueue = BenchmarkAppConnector.getOldestCommitFromQueue();
+						Util.postMessage("** Processing benchmarks for commit: " + commitIDFromQueue, MessageType.RED_TEXT, false);
+						TestPlans.execute(commitIDFromQueue);
+						BenchmarkAppConnector.publishDataForWebApp();
+						BenchmarkReportData.reset();
+						BenchmarkAppConnector.deleteCommitFromQueue(commitIDFromQueue);
+				}
+				Util.postMessage("** Processing from commit queue [COMPLETE] ...", MessageType.BLUE_TEXT, false);
+			}
+			
 		
 		} catch (Exception e) {
 			e.printStackTrace();

@@ -3,6 +3,9 @@ package org.apache.solr.tests.nightlybenchmarks;
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.util.Arrays;
+
+import org.apache.commons.io.comparator.LastModifiedFileComparator;
 
 public class BenchmarkAppConnector {
 
@@ -56,11 +59,25 @@ public class BenchmarkAppConnector {
 		return dir.listFiles().length == 0 ? true : false;
 	}
 
-	public static boolean isDeleteCommitFromQueue(String commit) {
+	public static boolean deleteCommitFromQueue(String commit) {
 		
 		File file = new File(benchmarkAppDirectory + "data" + File.separator + "commit_queue" + File.separator + commit);
 		return file.delete();
 	
+	}
+	
+	public static String getOldestCommitFromQueue() {
+		
+		File directory = new File(benchmarkAppDirectory + "data" + File.separator + "commit_queue" + File.separator);
+
+		File[] files = directory.listFiles();
+		
+		if (files.length == 0) {
+			return null;
+		}
+		
+        Arrays.sort(files, LastModifiedFileComparator.LASTMODIFIED_COMPARATOR);
+        return files[0].getName();
 	}
 
 	public static boolean isCommitInQueue(String commit) {

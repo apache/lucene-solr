@@ -48,5 +48,38 @@ public class BenchmarkReportData {
 	public static Map<String, String> numericQueryRNQMetricS;
 	public static Map<String, String> numericQueryLNQMetricS;
 	public static Map<String, String> numericQueryGNQMetricS;
+	
+	
+	public static void reset() {
+		
+		returnStandaloneCreateCollectionMap = null;
+		returnCloudCreateCollectionMap = null;
+		
+		metricMapStandalone = null;
+		metricMapCloudSerial = null;
+		
+		metricMapCloudConcurrent2 = null;
+		metricMapCloudConcurrent4 = null;
+		metricMapCloudConcurrent6 = null;
+		metricMapCloudConcurrent8 = null;
+		metricMapCloudConcurrent10 = null;
+
+		metricMapStandaloneConcurrent2 = null;
+		metricMapStandaloneConcurrent4 = null;
+		metricMapStandaloneConcurrent6 = null;
+		metricMapStandaloneConcurrent8 = null;
+		metricMapStandaloneConcurrent10 = null;
+		
+		numericQueryTNQMetricC = null;
+		numericQueryRNQMetricC = null;
+		numericQueryLNQMetricC = null;
+		numericQueryGNQMetricC = null;
+
+		numericQueryTNQMetricS = null;
+		numericQueryRNQMetricS = null;
+		numericQueryLNQMetricS = null;
+		numericQueryGNQMetricS = null;
+		
+	}
 
 }

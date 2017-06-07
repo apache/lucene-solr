@@ -171,7 +171,8 @@ public class Tests {
 			int secondsToWait, long delayEstimationBySeconds, ConfigurationType confType, String baseURL, String collectionName) {
 
 		try {
-
+			QueryClient.reset();
+			
 			ExecutorService executorService = Executors.newFixedThreadPool(numberOfThreads);
 			LinkedList<QueryClient> list = new LinkedList<QueryClient>();
 
