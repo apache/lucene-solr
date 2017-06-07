@@ -20,6 +20,7 @@ package org.apache.solr.cloud.autoscaling;
 import java.io.Closeable;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
@@ -42,6 +43,7 @@ import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.common.util.IOUtils;
 import org.apache.solr.util.DefaultSolrThreadFactory;
 import org.apache.zookeeper.KeeperException;
+import org.apache.zookeeper.Op;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -208,7 +210,13 @@ public class ScheduledTriggers implements Closeable {
     }
     try {
       if (zkClient.exists(eventsPath, true)) {
-        zkClient.delete(eventsPath, -1, true);
+        List<String> events = zkClient.getChildren(eventsPath, null, true);
+        List<Op> ops = new ArrayList<>(events.size() + 1);
+        events.forEach(ev -> {
+          ops.add(Op.delete(eventsPath + "/" + ev, -1));
+        });
+        ops.add(Op.delete(eventsPath, -1));
+        zkClient.multi(ops, true);
       }
     } catch (KeeperException | InterruptedException e) {
       log.warn("Failed to remove events for removed trigger " + eventsPath, e);

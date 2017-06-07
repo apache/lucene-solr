@@ -24,6 +24,7 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -37,6 +38,7 @@ import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.util.TimeSource;
+import org.apache.zookeeper.KeeperException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -95,6 +97,22 @@ public class NodeLostTrigger extends TriggerBase {
         Map<String, String> map = o.get(i);
         actions.get(i).init(map);
       }
+    }
+    // pick up lost nodes for which marker paths were created
+    try {
+      List<String> lost = container.getZkController().getZkClient().getChildren(ZkStateReader.SOLR_AUTOSCALING_NODE_LOST_PATH, null, true);
+      lost.forEach(n -> {
+        // don't add nodes that have since came back
+        if (!lastLiveNodes.contains(n)) {
+          log.debug("Adding lost node from marker path: {}", n);
+          nodeNameVsTimeRemoved.put(n, timeSource.getTime());
+        }
+        removeNodeLostMarker(n);
+      });
+    } catch (KeeperException.NoNodeException e) {
+      // ignore
+    } catch (KeeperException | InterruptedException e) {
+      log.warn("Exception retrieving nodeLost markers", e);
     }
   }
 
@@ -226,7 +244,8 @@ public class NodeLostTrigger extends TriggerBase {
       });
 
       // has enough time expired to trigger events for a node?
-      for (Map.Entry<String, Long> entry : nodeNameVsTimeRemoved.entrySet()) {
+      for (Iterator<Map.Entry<String, Long>> it = nodeNameVsTimeRemoved.entrySet().iterator(); it.hasNext(); ) {
+        Map.Entry<String, Long> entry = it.next();
         String nodeName = entry.getKey();
         Long timeRemoved = entry.getValue();
         if (TimeUnit.SECONDS.convert(timeSource.getTime() - timeRemoved, TimeUnit.NANOSECONDS) >= getWaitForSecond()) {
@@ -235,17 +254,31 @@ public class NodeLostTrigger extends TriggerBase {
           if (listener != null) {
             log.debug("NodeLostTrigger firing registered listener");
             if (listener.triggerFired(new NodeLostEvent(getEventType(), getName(), timeRemoved, nodeName)))  {
-              trackingKeySet.remove(nodeName);
+              it.remove();
+              removeNodeLostMarker(nodeName);
             }
           } else  {
-            trackingKeySet.remove(nodeName);
+            it.remove();
+            removeNodeLostMarker(nodeName);
           }
         }
       }
-
       lastLiveNodes = new HashSet<>(newLiveNodes);
     } catch (RuntimeException e) {
       log.error("Unexpected exception in NodeLostTrigger", e);
+    }
+  }
+
+  private void removeNodeLostMarker(String nodeName) {
+    String path = ZkStateReader.SOLR_AUTOSCALING_NODE_LOST_PATH + "/" + nodeName;
+    try {
+      if (container.getZkController().getZkClient().exists(path, true)) {
+        container.getZkController().getZkClient().delete(path, -1, true);
+      }
+    } catch (KeeperException.NoNodeException e) {
+      // ignore
+    } catch (KeeperException | InterruptedException e) {
+      log.warn("Exception removing nodeLost marker " + nodeName, e);
     }
   }
 
