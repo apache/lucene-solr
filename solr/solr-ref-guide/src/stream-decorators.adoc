@@ -20,10 +20,6 @@
 // specific language governing permissions and limitations
 // under the License.
 
-== cartesianProduct
-//TODO
-
-
 == classify
 
 The `classify` function classifies tuples using a logistic regression text classification model. It was designed specifically to work with models trained using the <<stream-sources.adoc#train,train function>>. The `classify` function uses the <<stream-sources.adoc#model,model function>> to retrieve a stored model and then scores a stream of tuples using the model. The tuples read by the classifier must contain a text field that can be used for classification. The classify function uses a Lucene analyzer to extract the features from the text so the model can be applied. By default the `classify` function looks for the analyzer using the name of text field in the tuple. If the Solr schema on the worker node does not contain this field, the analyzer can be looked up in another field by specifying the `analyzerField` parameter.
@@ -533,9 +529,6 @@ merge(
              sort="fieldA asc"),
       on="fieldA asc")
 ----
-
-== list
-// TODO
 
 == null
 
