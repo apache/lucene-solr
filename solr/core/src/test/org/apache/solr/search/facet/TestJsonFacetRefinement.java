@@ -22,6 +22,7 @@ import java.util.List;
 
 import org.apache.solr.JSONTestUtil;
 import org.apache.solr.SolrTestCaseHS;
+import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.SimpleOrderedMap;
@@ -32,7 +33,7 @@ import org.junit.Test;
 import org.noggit.JSONParser;
 import org.noggit.ObjectBuilder;
 
-
+@SolrTestCaseJ4.SuppressPointFields
 public class TestJsonFacetRefinement extends SolrTestCaseHS {
 
   private static SolrInstances servers;  // for distributed testing
@@ -311,6 +312,32 @@ public class TestJsonFacetRefinement extends SolrTestCaseHS {
         )
         , "facets=={ count:8" +
             ", cat0:{ buckets:[ {val:A,count:4} ] }" +  // w/o overrequest, we need refining to get the correct count.
+            "}"
+    );
+
+    // basic refining test through/under a query facet
+    client.testJQ(params(p, "q", "*:*",
+        "json.facet", "{" +
+            "q1 : { type:query, q:'*:*', facet:{" +
+            "cat0:{${terms} type:terms, field:${cat_s}, sort:'count desc', limit:1, overrequest:0, refine:true}" +
+            "}}" +
+            "}"
+        )
+        , "facets=={ count:8" +
+            ", q1:{ count:8, cat0:{ buckets:[ {val:A,count:4} ] }   }" +
+            "}"
+    );
+
+    // basic refining test through/under a range facet
+    client.testJQ(params(p, "q", "*:*",
+        "json.facet", "{" +
+            "r1 : { type:range, field:${num_d} start:-20, end:20, gap:40   , facet:{" +
+            "cat0:{${terms} type:terms, field:${cat_s}, sort:'count desc', limit:1, overrequest:0, refine:true}" +
+            "}}" +
+            "}"
+        )
+        , "facets=={ count:8" +
+            ", r1:{ buckets:[{val:-20.0,count:8,  cat0:{buckets:[{val:A,count:4}]}  }]   }" +
             "}"
     );
 
