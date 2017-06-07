@@ -129,6 +129,10 @@ Bug Fixes
 * LUCENE-7864: IndexMergeTool is not using intermediate hard links (even 
   if possible). (Dawid Weiss)
 
+* LUCENE-7869: Changed MemoryIndex to sort 1d points. In case of 1d points, the PointInSetQuery.MergePointVisitor expects
+  that these points are visited in ascending order. The memory index doesn't do this and this can result in document
+  with multiple points that should match to not match. (Martijn van Groningen)
+
 Other
 
 * LUCENE-7800: Remove code that potentially rethrows checked exceptions 
