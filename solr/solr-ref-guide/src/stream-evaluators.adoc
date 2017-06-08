@@ -21,14 +21,13 @@
 // under the License.
 
 
-Stream evaluators are different the stream sources or stream decorators. Both
-streaming sources and stream decorators return streams of tuples.
-
-Stream evaluators are more like traditional functions that evaluates its parameters and
+Stream evaluators are different then stream sources or stream decorators. Both
+stream sources and stream decorators return streams of tuples. Stream evaluators are more like
+a traditional function that evaluates its parameters and
 returns an result. That result can be a single value, array, map or other structure.
 
-Stream evaluators can be nested to so that the output of evaluator becomes the input
-for another evaluatore.
+Stream evaluators can be nested so that the output of an evaluator becomes the input
+for another evaluator.
 
 Stream evaluators can be called in different contexts. For example a stream evaluator
 can be called on its own or it can be called within the context of a streaming expression.
@@ -43,7 +42,7 @@ emitted by the analyzer. The `analyze` function can be called on its own or with
 === analyze Parameters
 
 * `Field Name` | `Raw Text`: Either the field in a tuple or the raw text to be analyzed.
-* `Analyzer field name`: The field name of the analyzer to use to analyze the text.
+* `Analyzer Field Name`: The field name of the analyzer to use to analyze the text.
 
 === analyze Syntax
 
