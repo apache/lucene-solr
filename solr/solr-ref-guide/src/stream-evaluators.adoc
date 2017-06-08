@@ -36,7 +36,26 @@ can be called on its own or it can be called within the context of a streaming e
 
 == analyze
 
-// TODO
+The `analyze` function analyzes text using a Lucene/Solr analyzer and returns a list of tokens
+emitted by the analyzer. The `analyze` function can be called on its own or within the
+`select` and `cartasianProduct` Streaming Expressions.
+
+=== analyze Parameters
+
+* `Field Name` | `Raw Text`: Either the field in a tuple or the raw text to be analyzed.
+* `Analyzer field name`: The field name of the analyzer to use to analyze the text.
+
+=== analyze Syntax
+
+The expressions below show the various ways in which you can use the `analyze` evaluator.
+
+[source,text]
+----
+analyze("hello world", analyzerField) // Analyze the raw text
+select(expr, analyze(textField, analyzerField) as outField) // Analyze a text field within a select expression. This will annotate the tuples with output of the analyzer
+cartesianProduct(expr, analyze(textField, analyzer) as outField) // Analyze a text field with a cartesianProduct expression. This will stream each token emitted by the analyzer in its own tuple.
+----
+
 
 == abs
 
