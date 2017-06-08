@@ -26,7 +26,7 @@ This section provides guidance on how to setup Solr to run in production on *nix
 Solr includes a service installation script (`bin/install_solr_service.sh`) to help you install Solr as a service on Linux. Currently, the script only supports CentOS, Debian, Red Hat, SUSE and Ubuntu Linux distributions. Before running the script, you need to determine a few parameters about your setup. Specifically, you need to decide where to install Solr and which system user should be the owner of the Solr files and process.
 
 [[TakingSolrtoProduction-Planningyourdirectorystructure]]
-=== Planning your directory structure
+=== Planning Your Directory Structure
 
 We recommend separating your live Solr files, such as logs and index files, from the files included in the Solr distribution bundle, as that makes it easier to upgrade Solr and is considered a good practice to follow as a system administrator.
 
@@ -49,7 +49,7 @@ Using a symbolic link insulates any scripts from being dependent on the specific
 You should also separate writable Solr files into a different directory; by default, the installation script uses `/var/solr`, but you can override this location using the `-d` option. With this approach, the files in `/opt/solr` will remain untouched and all files that change while Solr is running will live under `/var/solr`.
 
 [[TakingSolrtoProduction-CreatetheSolruser]]
-=== Create the Solr user
+=== Create the Solr User
 
 Running Solr as `root` is not recommended for security reasons, and the <<solr-control-script-reference.adoc#solr-control-script-reference,control script>> start command will refuse to do so. Consequently, you should determine the username of a system user that will own all of the Solr files and the running Solr process. By default, the installation script will create the *solr* user, but you can override this setting using the -u option. If your organization has specific requirements for creating new user accounts, then you should create the user before running the script. The installation script will make the Solr user the owner of the `/opt/solr` and `/var/solr` directories.
 
@@ -103,7 +103,7 @@ We'll cover some additional configuration settings you can make to fine-tune you
 The Solr home directory (not to be confused with the Solr installation directory) is where Solr manages core directories with index files. By default, the installation script uses `/var/solr/data`. If the `-d` option is used on the install script, then this will change to the `data` subdirectory in the location given to the -d option. Take a moment to inspect the contents of the Solr home directory on your system. If you do not <<using-zookeeper-to-manage-configuration-files.adoc#using-zookeeper-to-manage-configuration-files,store `solr.xml` in ZooKeeper>>, the home directory must contain a `solr.xml` file. When Solr starts up, the Solr Control Script passes the location of the home directory using the `-Dsolr.solr.home=...` system property.
 
 [[TakingSolrtoProduction-Environmentoverridesincludefile]]
-==== Environment overrides include file
+==== Environment Overrides Include File
 
 The service installation script creates an environment specific include file that overrides defaults used by the `bin/solr` script. The main advantage of using an include file is that it provides a single location where all of your environment-specific overrides are defined. Take a moment to inspect the contents of the `/etc/default/solr.in.sh` file, which is the default path setup by the installation script. If you used the `-s` option on the install script to change the name of the service, then the first part of the filename will be different. For a service named `solr-demo`, the file will be named `/etc/default/solr-demo.in.sh`. There are many settings that you can override using this file. However, at a minimum, this script needs to define the `SOLR_PID_DIR` and `SOLR_HOME` variables, such as:
 
@@ -116,7 +116,7 @@ SOLR_HOME=/var/solr/data
 The `SOLR_PID_DIR` variable sets the directory where the <<solr-control-script-reference.adoc#solr-control-script-reference,control script>> will write out a file containing the Solr server’s process ID.
 
 [[TakingSolrtoProduction-Logsettings]]
-==== Log settings
+==== Log Settings
 
 Solr uses Apache Log4J for logging. The installation script copies `/opt/solr/server/resources/log4j.properties` to `/var/solr/log4j.properties`. Take a moment to verify that the Solr include file is configured to send logs to the correct location by checking the following settings in `/etc/default/solr.in.sh`:
 
@@ -129,7 +129,7 @@ SOLR_LOGS_DIR=/var/solr/logs
 For more information about Log4J configuration, please see: <<configuring-logging.adoc#configuring-logging,Configuring Logging>>
 
 [[TakingSolrtoProduction-init.dscript]]
-==== init.d script
+==== init.d Script
 
 When running a service like Solr on Linux, it’s common to setup an init.d script so that system administrators can control Solr using the service tool, such as: `service solr start`. The installation script creates a very basic init.d script to help you get started. Take a moment to inspect the `/etc/init.d/solr` file, which is the default script name setup by the installation script. If you used the `-s` option on the install script to change the name of the service, then the filename will be different. Notice that the following variables are setup for your environment based on the parameters passed to the installation script:
 
@@ -175,7 +175,7 @@ Solr process PID running on port 8983
 If the `status` command is not successful, look for error messages in `/var/solr/logs/solr.log`.
 
 [[TakingSolrtoProduction-Finetuneyourproductionsetup]]
-== Fine tune your production setup
+== Fine-Tune Your Production Setup
 
 [[TakingSolrtoProduction-MemoryandGCSettings]]
 === Memory and GC Settings
@@ -243,7 +243,7 @@ SOLR_HOST=solr1.example.com
 Setting the hostname of the Solr server is recommended, especially when running in SolrCloud mode, as this determines the address of the node when it registers with ZooKeeper.
 
 [[TakingSolrtoProduction-Overridesettingsinsolrconfig.xml]]
-=== Override settings in solrconfig.xml
+=== Override Settings in solrconfig.xml
 
 Solr allows configuration properties to be overridden using Java system properties passed at startup using the `-Dproperty=value` syntax. For instance, in `solrconfig.xml`, the default auto soft commit settings are set to:
 
@@ -269,14 +269,13 @@ SOLR_OPTS="$SOLR_OPTS -Dsolr.autoSoftCommit.maxTime=10000"
 ----
 
 [[TakingSolrtoProduction-RunningmultipleSolrnodesperhost]]
-== Running multiple Solr nodes per host
+== Running Multiple Solr Nodes Per Host
 
 The `bin/solr` script is capable of running multiple instances on one machine, but for a *typical* installation, this is not a recommended setup. Extra CPU and memory resources are required for each additional instance. A single instance is easily capable of handling multiple indexes.
 
 .When to ignore the recommendation
 [NOTE]
 ====
-
 For every recommendation, there are exceptions. For the recommendation above, that exception is mostly applicable when discussing extreme scalability. The best reason for running multiple Solr nodes on one host is decreasing the need for extremely large heaps.
 
 When the Java heap gets very large, it can result in extremely long garbage collection pauses, even with the GC tuning that the startup script provides by default. The exact point at which the heap is considered "very large" will vary depending on how Solr is used. This means that there is no hard number that can be given as a threshold, but if your heap is reaching the neighborhood of 16 to 32 gigabytes, it might be time to consider splitting nodes. Ideally this would mean more machines, but budget constraints might make that impossible.
@@ -284,7 +283,6 @@ When the Java heap gets very large, it can result in extremely long garbage coll
 There is another issue once the heap reaches 32GB. Below 32GB, Java is able to use compressed pointers, but above that point, larger pointers are required, which uses more memory and slows down the JVM.
 
 Because of the potential garbage collection issues and the particular issues that happen at 32GB, if a single instance would require a 64GB heap, performance is likely to improve greatly if the machine is set up with two nodes that each have a 31GB heap.
-
 ====
 
 If your use case requires multiple instances, at a minimum you will need unique Solr home directories for each node you want to run; ideally, each home should be on a different physical disk so that multiple Solr nodes don’t have to compete with each other when accessing files on disk. Having different Solr home directories implies that you’ll need a different include file for each node. Moreover, if using the `/etc/init.d/solr` script to control Solr as a service, then you’ll need a separate script for each node. The easiest approach is to use the service installation script to add multiple services on the same host, such as:

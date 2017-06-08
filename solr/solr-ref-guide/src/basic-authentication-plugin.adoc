@@ -113,7 +113,7 @@ curl --user solr:SolrRocks http://localhost:8983/solr/admin/authentication -H 'C
 ----
 
 [[BasicAuthenticationPlugin-Setaproperty]]
-=== Set a property
+=== Set a Property
 
 Set arbitrary properties for authentication plugin. The only supported property is `'blockUnknown'`
 

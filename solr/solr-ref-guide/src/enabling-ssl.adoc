@@ -74,7 +74,7 @@ openssl pkcs12 -nokeys -in solr-ssl.keystore.p12 -out solr-ssl.cacert.pem
 ----
 
 [[EnablingSSL-SetcommonSSLrelatedsystemproperties]]
-=== Set common SSL related system properties
+=== Set Common SSL-Related System Properties
 
 The Solr Control Script is already setup to pass SSL-related Java system properties to the JVM. To activate the SSL settings, uncomment and update the set of properties beginning with SOLR_SSL_* in `bin/solr.in.sh`. (or `bin\solr.in.cmd` on Windows).
 
@@ -134,7 +134,7 @@ bin\solr.cmd -p 8984
 ----
 
 [[EnablingSSL-SolrCloud]]
-== SolrCloud
+== SSL with SolrCloud
 
 This section describes how to run a two-node SolrCloud cluster with no initial collections and a single-node external ZooKeeper. The commands below assume you have already created the keystore described above.
 
@@ -167,7 +167,7 @@ If you have set up your ZooKeeper cluster to use a <<taking-solr-to-production.a
 === Run SolrCloud with SSL
 
 [[EnablingSSL-CreateSolrhomedirectoriesfortwonodes]]
-==== Create Solr home directories for two nodes
+==== Create Solr Home Directories for Two Nodes
 
 Create two copies of the `server/solr/` directory which will serve as the Solr home directories for each of your two SolrCloud nodes:
 

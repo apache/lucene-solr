@@ -96,4 +96,4 @@ The table below summarizes parameters accessible through the `MoreLikeThisHandle
 [[MoreLikeThis-MoreLikeThisQueryParser]]
 == More Like This Query Parser
 
-The `mlt` query parser provides a mechanism to retrieve documents similar to a given document, like the handler. More information on the usage of the mlt query parser can be found int the section <<other-parsers.adoc#other-parsers,Other Parsers>>.
+The `mlt` query parser provides a mechanism to retrieve documents similar to a given document, like the handler. More information on the usage of the mlt query parser can be found in the section <<other-parsers.adoc#other-parsers,Other Parsers>>.
