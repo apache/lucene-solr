@@ -31,7 +31,7 @@ import org.apache.solr.common.util.NamedList;
 public class QueryClient implements Runnable {
 
 	public enum QueryType {
-		TERM_NUMERIC_QUERY, RANGE_NUMERIC_QUERY, GREATER_THAN_NUMERIC_QUERY, LESS_THAN_NUMERIC_QUERY
+		TERM_NUMERIC_QUERY, RANGE_NUMERIC_QUERY, GREATER_THAN_NUMERIC_QUERY, LESS_THAN_NUMERIC_QUERY, AND_NUMERIC_QUERY, OR_NUMERIC_QUERY
 	}
 
 	String urlString;
@@ -118,7 +118,21 @@ public class QueryClient implements Runnable {
 						list.add("q", "RandomIntField:[* TO "
 								+ SolrIndexingClient.intList.get(random.nextInt(SolrIndexingClient.documentCount))
 								+ "]");
-					}
+					} else if (this.queryType == QueryType.AND_NUMERIC_QUERY) {
+
+						int ft_1 = SolrIndexingClient.intList.get(random.nextInt(SolrIndexingClient.documentCount));
+						int ft_2 = SolrIndexingClient.intList.get(random.nextInt(SolrIndexingClient.documentCount));
+
+						list.add("q", "RandomIntField:[" + ft_1 + " AND " + ft_2 + "]");
+
+					} else if (this.queryType == QueryType.OR_NUMERIC_QUERY) {
+
+						int ft_1 = SolrIndexingClient.intList.get(random.nextInt(SolrIndexingClient.documentCount));
+						int ft_2 = SolrIndexingClient.intList.get(random.nextInt(SolrIndexingClient.documentCount));
+
+						list.add("q", "RandomIntField:[" + ft_1 + " OR " + ft_2 + "]");
+
+					} 
 
 					params = SolrParams.toSolrParams(list);
 
