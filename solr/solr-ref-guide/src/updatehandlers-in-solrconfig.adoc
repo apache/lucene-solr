@@ -129,7 +129,7 @@ Three additional expert-level configuration settings affect indexing performance
 
 // TODO: Change column width to %autowidth.spread when https://github.com/asciidoctor/asciidoctor-pdf/issues/599 is fixed
 
-[cols="20,10,10,60",options="header"]
+[cols="25,10,10,55",options="header"]
 |===
 |Setting Name |Type |Default |Description
 |numRecordsToKeep |int |100 |The number of update records to keep per log

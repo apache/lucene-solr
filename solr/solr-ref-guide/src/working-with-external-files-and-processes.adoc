@@ -178,16 +178,16 @@ value ::= text
 
 Special characters in "text" values can be escaped using the escape character `\` . The following escape sequences are recognized:
 
-[width="30%",options="header",]
+[width="60%",options="header",]
 |===
 |EscapeSequence |Description
-|"`\` " |literal space character
-|"`\,`" |literal `,` character
-|"`\=`" |literal `=` character
-|"`\\`" |literal `\` character
-|"`\n`" |newline
-|"`\r`" |carriage return
-|"`\t`" |horizontal tab
+|`\` |literal space character
+|`\,` |literal `,` character
+|`\=` |literal `=` character
+|`\\` |literal `\` character
+|`\n` |newline
+|`\r` |carriage return
+|`\t` |horizontal tab
 |===
 
 Please note that Unicode sequences (e.g. `\u0001`) are not supported.
@@ -249,7 +249,7 @@ Token positions are tracked and implicitly added to the token stream - the start
 * stored: null
 * token: (term=`one`,positionIncrement=22,startOffset=123,endOffset=128)
 * token: (term=`two`,positionIncrement=1,startOffset=5,endOffset=8)
-* token: (term=three,positionIncrement=1,startOffset=20,endOffset=22)
+* token: (term=`three`,positionIncrement=1,startOffset=20,endOffset=22)
 
 [source,text]
 ----
@@ -260,7 +260,7 @@ Token positions are tracked and implicitly added to the token stream - the start
 
 * version: 1
 * stored: null
-* token: (term=` one ,`,positionIncrement=22,startOffset=0,endOffset=6)
+* token: (term=`one ,`,positionIncrement=22,startOffset=0,endOffset=6)
 * token: (term=`two=` ,positionIncrement=1,startOffset=7,endOffset=15)
 * token: (term=`\`,positionIncrement=1,startOffset=17,endOffset=18)
 
@@ -284,12 +284,12 @@ Note that unknown attributes and their values are ignored, so in this example, t
 ----
 
 * version: 1
-* stored: "`This is the stored part with =   \t escapes.`"
+* stored: `This is the stored part with =   \t escapes.`
 * token: (term=`one`,startOffset=0,endOffset=3)
 * token: (term=`two`,startOffset=4,endOffset=7)
 * token: (term=`three`,startOffset=8,endOffset=13)
 
-Note that the "`\t`" in the above stored value is not literal; it's shown that way to visually indicate the actual tab char that is in the stored value.
+Note that the `\t` in the above stored value is not literal; it's shown that way to visually indicate the actual tab char that is in the stored value.
 
 [source,text]
 ----
@@ -306,5 +306,5 @@ Note that the "`\t`" in the above stored value is not literal; it's shown that w
 ----
 
 * version: 1
-* stored: "this is a test."
+* stored: `this is a test.`
 * (no tokens)

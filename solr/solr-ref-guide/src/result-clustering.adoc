@@ -358,5 +358,4 @@ Some of these techniques are described in _Apache SOLR and Carrot2 integration s
 The following resources provide additional information about the clustering component in Solr and its potential applications.
 
 * Apache Solr and Carrot2 integration strategies: http://carrot2.github.io/solr-integration-strategies
-* Apache Solr Wiki (covers previous Solr versions, may be inaccurate): http://carrot2.github.io/solr-integration-strategies
 * Clustering and Visualization of Solr search results (video from Berlin BuzzWords conference, 2011): http://vimeo.com/26616444

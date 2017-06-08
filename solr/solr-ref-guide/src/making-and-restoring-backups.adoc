@@ -22,7 +22,7 @@ If you are worried about data loss, and of course you _should_ be, you need a wa
 
 Solr provides two approaches to backing up and restoring Solr cores or collections, depending on how you are running Solr. If you run in SolrCloud mode, you will use the Collections API. If you run Solr in standalone mode, you will use the replication handler.
 
-== [[cloud-backups]]SolrCloud
+== SolrCloud Backups
 
 Support for backups when running SolrCloud is provided with the <<collections-api.adoc#collections-api,Collections API>>. This allows the backups to be generated across multiple shards, and restored to the same number of shards and replicas as the original collection.
 
@@ -31,7 +31,7 @@ Two commands are available:
 * `action=BACKUP`: This command backs up Solr indexes and configurations. More information is available in the section <<collections-api.adoc#CollectionsAPI-backup,Backup Collection>>.
 * `action=RESTORE`: This command restores Solr indexes and configurations. More information is available in the section <<collections-api.adoc#CollectionsAPI-restore,Restore Collection>>.
 
-== Standalone Mode
+== Standalone Mode Backups
 
 Backups and restoration uses Solr's replication handler. Out of the box, Solr includes implicit support for replication so this API can be used. Configuration of the replication handler can, however, be customized by defining your own replication handler in `solrconfig.xml` . For details on configuring the replication handler, see the section <<index-replication.adoc#IndexReplication-ConfiguringtheReplicationHandler,Configuring the ReplicationHandler>>.
 

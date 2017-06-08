@@ -234,7 +234,7 @@ While starting up Solr, the following host-specific parameters need to be passed
 
 // TODO: Change column width to %autowidth.spread when https://github.com/asciidoctor/asciidoctor-pdf/issues/599 is fixed
 
-[cols="30,10,60",options="header"]
+[cols="35,10,55",options="header"]
 |===
 |Parameter Name |Required |Description
 |`solr.kerberos.name.rules` |No |Used to map Kerberos principals to short names. Default value is `DEFAULT`. Example of a name rule: `RULE:[1:$1@$0](.\*EXAMPLE.COM)s/@.*//`
@@ -281,7 +281,7 @@ To enable delegation tokens, several parameters must be defined. These parameter
 
 // TODO: Change column width to %autowidth.spread when https://github.com/asciidoctor/asciidoctor-pdf/issues/599 is fixed
 
-[cols="30,10,60",options="header"]
+[cols="40,10,50",options="header"]
 |===
 |Parameter Name |Required |Description
 |`solr.kerberos.delegation.token.enabled` |Yes, to enable tokens |False by default, set to true to enable delegation tokens.

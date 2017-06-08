@@ -32,7 +32,7 @@ The Collections API is used to enable you to create, remove, or reload collectio
 
 // TODO: Change column width to %autowidth.spread when https://github.com/asciidoctor/asciidoctor-pdf/issues/599 is fixed
 
-[cols="20,15,10,15,40",options="header"]
+[cols="25,10,10,15,40",options="header"]
 |===
 |Key |Type |Required |Default |Description
 |name |string |Yes | |The name of the collection to be created.
@@ -225,7 +225,7 @@ Shard splitting can be a long running process. In order to avoid timeouts, you s
 
 // TODO: Change column width to %autowidth.spread when https://github.com/asciidoctor/asciidoctor-pdf/issues/599 is fixed
 
-[cols="20,15,10,55",options="header"]
+[cols="25,15,10,50",options="header"]
 |===
 |Key |Type |Required |Description
 |collection |string |Yes |The name of the collection that includes the shard to be split.
@@ -329,7 +329,7 @@ Shards can only created with this API for collections that use the 'implicit' ro
 
 // TODO: Change column width to %autowidth.spread when https://github.com/asciidoctor/asciidoctor-pdf/issues/599 is fixed
 
-[cols="20,15,10,55",options="header"]
+[cols="25,15,10,50",options="header"]
 |===
 |Key |Type |Required |Description
 |collection |string |Yes |The name of the collection that includes the shard that will be splitted.
@@ -380,7 +380,7 @@ Deleting a shard will unload all replicas of the shard, remove them from `cluste
 
 *Query Parameters*
 
-[cols=",,,",options="header",]
+[cols="25,15,10,50",options="header",]
 |===
 |Key |Type |Required |Description
 |collection |string |Yes |The name of the collection that includes the shard to be deleted.
@@ -692,7 +692,7 @@ Add a replica to a shard in a collection. The node name can be specified if the 
 
 // TODO: Change column width to %autowidth.spread when https://github.com/asciidoctor/asciidoctor-pdf/issues/599 is fixed
 
-[cols="20,15,10,55",options="header"]
+[cols="25,15,10,50",options="header"]
 |===
 |Key |Type |Required |Description
 |collection |string |Yes |The name of the collection.
@@ -814,7 +814,7 @@ Please note that the migrate API does not perform any de-duplication on the docu
 
 // TODO: Change column width to %autowidth.spread when https://github.com/asciidoctor/asciidoctor-pdf/issues/599 is fixed
 
-[cols="20,15,10,55",options="header"]
+[cols="25,15,10,50",options="header"]
 |===
 |Key |Type |Required |Description
 |collection |string |Yes |The name of the source collection from which documents will be split.
@@ -1474,10 +1474,10 @@ The property to add. Note: this will have the literal 'property.' prepended to d
 and
 
 `property=property.special`
-
-There is one pre-defined property "preferredLeader" for which shardUnique is forced to 'true' and an error returned if shardUnique is explicitly set to 'false'. PreferredLeader is a boolean property, any value assigned that is not equal (case insensitive) to 'true' will be interpreted as 'false' for preferredLeader.
 |property.value |string |Yes |The value to assign to the property.
-|shardUnique (1) |Boolean |No |default: false. If true, then setting this property in one replica will remove the property from all other replicas in that shard.
+|shardUnique |Boolean |No |default: false. If true, then setting this property in one replica will remove the property from all other replicas in that shard.
+
+There is one pre-defined property `preferredLeader` for which `shardUnique` is forced to 'true' and an error returned if `shardUnique` is explicitly set to 'false'. `PreferredLeader` is a boolean property, any value assigned that is not equal (case insensitive) to 'true' will be interpreted as 'false' for `preferredLeader`.
 |===
 
 [[CollectionsAPI-Output.13]]
@@ -1559,7 +1559,6 @@ The property to add. Note: this will have the literal 'property.' prepended to d
 and
 
 `property=property.special`
-
 |===
 
 [[CollectionsAPI-Output.14]]
@@ -1854,7 +1853,7 @@ Additionally, there are several parameters that can be overridden:
 
 // TODO: Change column width to %autowidth.spread when https://github.com/asciidoctor/asciidoctor-pdf/issues/599 is fixed
 
-[cols="20,15,10,55",options="header"]
+[cols="25,15,10,50",options="header"]
 |===
 |Key |Type |Required |Description
 |collection.configName |String |No |Defines the name of the configurations to use for this collection. These must already be stored in ZooKeeper. If not provided, Solr will default to the collection name as the configuration name.

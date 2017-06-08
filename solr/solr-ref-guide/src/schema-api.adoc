@@ -617,7 +617,7 @@ The query parameters can be added to the API request after a '?'.
 
 // TODO: Change column width to %autowidth.spread when https://github.com/asciidoctor/asciidoctor-pdf/issues/599 is fixed
 
-[cols="15,15,10,20,40",options="header"]
+[cols="20,15,10,15,40",options="header"]
 |===
 |Key |Type |Required |Default |Description
 |wt |string |No |json |Defines the format of the response. The options are *json* or *xml*. If not specified, JSON will be returned by default.
