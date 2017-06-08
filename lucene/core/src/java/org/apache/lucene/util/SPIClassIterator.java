@@ -154,8 +154,8 @@ public final class SPIClassIterator<S> implements Iterator<Class<? extends S>> {
     assert linesIterator.hasNext();
     final String c = linesIterator.next();
     try {
-      // don't initialize the class (pass false as 2nd parameter):
-      return Class.forName(c, false, loader).asSubclass(clazz);
+      // ClassLoader.loadClass does not initialize the class:
+      return loader.loadClass(c).asSubclass(clazz);
     } catch (ClassNotFoundException cnfe) {
       throw new ServiceConfigurationError(String.format(Locale.ROOT, "An SPI class of type %s with classname %s does not exist, "+
         "please fix the file '%s%1$s' in your classpath.", clazz.getName(), c, META_INF_SERVICES));
