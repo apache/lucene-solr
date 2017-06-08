@@ -20,6 +20,8 @@ package org.apache.lucene.search.spans;
 import java.io.IOException;
 import java.util.List;
 
+import org.apache.lucene.search.similarities.Similarity;
+
 /**
  * A Spans that is formed from the ordered subspans of a SpanNearQuery
  * where the subspans do not overlap and have a maximum slop between them.
@@ -42,7 +44,7 @@ import java.util.List;
  * Expert:
  * Only public for subclassing.  Most implementations should not need this class
  */
-public class NearSpansOrdered extends ConjunctionSpans {
+public class NearSpansOrdered extends ConjunctionNearSpans {
 
   protected int matchStart = -1;
   protected int matchEnd = -1;
@@ -50,8 +52,12 @@ public class NearSpansOrdered extends ConjunctionSpans {
 
   private final int allowedSlop;
 
-  public NearSpansOrdered(int allowedSlop, List<Spans> subSpans) throws IOException {
-    super(subSpans);
+  public NearSpansOrdered(
+            int allowedSlop,
+            List<Spans> subSpans,
+            Similarity.SimScorer simScorer) throws IOException
+  {
+    super(subSpans, simScorer);
     this.atFirstInCurrentDoc = true; // -1 startPosition/endPosition also at doc -1
     this.allowedSlop = allowedSlop;
   }
@@ -140,6 +146,11 @@ public class NearSpansOrdered extends ConjunctionSpans {
 
   @Override
   public int width() {
+    return matchWidth;
+  }
+
+  @Override
+  public int currentSlop() {
     return matchWidth;
   }
 

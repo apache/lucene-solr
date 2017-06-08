@@ -48,6 +48,7 @@ public class SpanNearQuery extends SpanQuery implements Cloneable {
     private final String field;
     private final List<SpanQuery> clauses = new LinkedList<>();
     private int slop;
+    private int nonMatchSlop = -1;
 
     /**
      * Construct a new builder
@@ -88,10 +89,20 @@ public class SpanNearQuery extends SpanQuery implements Cloneable {
     }
 
     /**
+     * Set the non match slop for this query
+     */
+    public Builder setNonMatchSlop(int nonMatchSlop) {
+      this.nonMatchSlop = nonMatchSlop;
+      return this;
+    }
+
+    /**
      * Build the query
      */
     public SpanNearQuery build() {
-      return new SpanNearQuery(clauses.toArray(new SpanQuery[clauses.size()]), slop, ordered);
+      return (nonMatchSlop == -1)
+       ? new SpanNearQuery(clauses.toArray(new SpanQuery[clauses.size()]), slop, ordered)
+       : new SpanNearQuery(clauses.toArray(new SpanQuery[clauses.size()]), slop, ordered, nonMatchSlop);
     }
 
   }
@@ -113,8 +124,20 @@ public class SpanNearQuery extends SpanQuery implements Cloneable {
   protected List<SpanQuery> clauses;
   protected int slop;
   protected boolean inOrder;
+  protected int nonMatchSlop;
 
   protected String field;
+
+  /**
+   * Construct a SpanNearQuery.
+   * See {@link SpanNearQuery#SpanNearQuery(SpanQuery[], int, boolean, int)}
+   * for the first three parameters.
+   * This will use <code>Integer.MAX_VALUE-1</code> for the non matching slop.
+   */
+  public SpanNearQuery(SpanQuery[] clausesIn, int slop, boolean inOrder) {
+    // Integer.MAX_VALUE causes overflow in sloppyFreq which adds 1.
+    this(clausesIn, slop, inOrder, Integer.MAX_VALUE-1);
+  }
 
   /** Construct a SpanNearQuery.  Matches spans matching a span from each
    * clause, with up to <code>slop</code> total unmatched positions between
@@ -124,10 +147,30 @@ public class SpanNearQuery extends SpanQuery implements Cloneable {
    * <br>When <code>inOrder</code> is false, the spans from each clause
    * need not be ordered and may overlap.
    * @param clausesIn the clauses to find near each other, in the same field, at least 2.
-   * @param slop The slop value
+   * @param slop The allowed slop. This should be non negative and at most Integer.Max_VALUE-1.
    * @param inOrder true if order is important
+   * @param nonMatchSlop
+   *   The distance for determining the slop factor to be used for non matching
+   *   occurrences. This is used for scoring by {@link SpansTreeQuery}, and it
+   *   should not be smaller than <code>slop</code>.
+   *   <br>
+   *   Smaller values of <code>nonMatchSlop</code> will increase the
+   *   score contribution of non matching occurrences
+   *   via {@link org.apache.lucene.search.similarities.Similarity.SimScorer#computeSlopFactor}.
+   *   <br>
+   *   Smaller values may lead to a scoring inconsistency between two span near queries
+   *   that only differ in the allowed slop.
+   *   For example consider query A with a smaller allowed slop and query B with a larger one.
+   *   For query B there can be more matches, and these should increase the score of B
+   *   when compared to the score of A.
+   *   For each extra match at B, the non matching score for query A should be lower than
+   *   the matching score for query B.
+   *   <br>
+   *   To have consistent scoring between two such queries, choose
+   *   a non matching scoring distance that is larger than the largest allowed distance,
+   *   and provide that to both queries.
    */
-  public SpanNearQuery(SpanQuery[] clausesIn, int slop, boolean inOrder) {
+  public SpanNearQuery(SpanQuery[] clausesIn, int slop, boolean inOrder, int nonMatchSlop) {
     this.clauses = new ArrayList<>(clausesIn.length);
     for (SpanQuery clause : clausesIn) {
       if (this.field == null) {                               // check field
@@ -137,8 +180,14 @@ public class SpanNearQuery extends SpanQuery implements Cloneable {
       }
       this.clauses.add(clause);
     }
-    this.slop = slop;
+    if (nonMatchSlop != -1) {
+      if (nonMatchSlop < slop) {
+        throw new IllegalArgumentException("nonMatchSlop < slop: " + nonMatchSlop + " < " + slop);
+      }
+    }
     this.inOrder = inOrder;
+    this.slop = slop;
+    this.nonMatchSlop = nonMatchSlop;
   }
 
   /** Return the clauses whose spans are matched. */
@@ -151,6 +200,9 @@ public class SpanNearQuery extends SpanQuery implements Cloneable {
 
   /** Return true if matches are required to be in-order.*/
   public boolean isInOrder() { return inOrder; }
+
+  /** Return the slop used for scoring non matching occurrences. */
+  public int getNonMatchSlop() { return nonMatchSlop; }
 
   @Override
   public String getField() { return field; }
@@ -171,6 +223,8 @@ public class SpanNearQuery extends SpanQuery implements Cloneable {
     buffer.append(slop);
     buffer.append(", ");
     buffer.append(inOrder);
+    buffer.append(", ");
+    buffer.append(nonMatchSlop);
     buffer.append(")");
     return buffer.toString();
   }
@@ -179,7 +233,7 @@ public class SpanNearQuery extends SpanQuery implements Cloneable {
   public SpanWeight createWeight(IndexSearcher searcher, boolean needsScores, float boost) throws IOException {
     List<SpanWeight> subWeights = new ArrayList<>();
     for (SpanQuery q : clauses) {
-      subWeights.add(q.createWeight(searcher, false, boost));
+      subWeights.add(q.createWeight(searcher, needsScores, boost));
     }
     return new SpanNearWeight(subWeights, searcher, needsScores ? getTermContexts(subWeights) : null, boost);
   }
@@ -219,8 +273,8 @@ public class SpanNearQuery extends SpanQuery implements Cloneable {
       }
 
       // all NearSpans require at least two subSpans
-      return (!inOrder) ? new NearSpansUnordered(slop, subSpans)
-          : new NearSpansOrdered(slop, subSpans);
+      return (!inOrder) ? new NearSpansUnordered(slop, subSpans, getSimScorer(context))
+          : new NearSpansOrdered(slop, subSpans, getSimScorer(context));
     }
 
     @Override
@@ -258,10 +312,11 @@ public class SpanNearQuery extends SpanQuery implements Cloneable {
     return sameClassAs(other) &&
            equalsTo(getClass().cast(other));
   }
-  
+
   private boolean equalsTo(SpanNearQuery other) {
-    return inOrder == other.inOrder && 
+    return inOrder == other.inOrder &&
            slop == other.slop &&
+           nonMatchSlop == other.nonMatchSlop &&
            clauses.equals(other.clauses);
   }
 
@@ -270,6 +325,7 @@ public class SpanNearQuery extends SpanQuery implements Cloneable {
     int result = classHash();
     result ^= clauses.hashCode();
     result += slop;
+    result ^= 4 * nonMatchSlop;
     int fac = 1 + (inOrder ? 8 : 4);
     return fac * result;
   }
@@ -326,7 +382,7 @@ public class SpanNearQuery extends SpanQuery implements Cloneable {
       return sameClassAs(other) &&
              equalsTo(getClass().cast(other));
     }
-    
+
     private boolean equalsTo(SpanGapQuery other) {
       return width == other.width &&
              field.equals(other.field);

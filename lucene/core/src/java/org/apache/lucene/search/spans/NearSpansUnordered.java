@@ -20,6 +20,7 @@ import java.io.IOException;
 import java.util.List;
 
 import org.apache.lucene.util.PriorityQueue;
+import org.apache.lucene.search.similarities.Similarity;
 
 /**
  * Similar to {@link NearSpansOrdered}, but for the unordered case.
@@ -27,15 +28,17 @@ import org.apache.lucene.util.PriorityQueue;
  * Expert:
  * Only public for subclassing.  Most implementations should not need this class
  */
-public class NearSpansUnordered extends ConjunctionSpans {
+public class NearSpansUnordered extends ConjunctionNearSpans {
 
   private final int allowedSlop;
   private SpanTotalLengthEndPositionWindow spanWindow;
 
-  public NearSpansUnordered(int allowedSlop, List<Spans> subSpans)
-  throws IOException {
-    super(subSpans);
-
+  public NearSpansUnordered(
+            int allowedSlop,
+            List<Spans> subSpans,
+            Similarity.SimScorer simScorer) throws IOException
+  {
+    super(subSpans, simScorer);
     this.allowedSlop = allowedSlop;
     this.spanWindow = new SpanTotalLengthEndPositionWindow();
   }
@@ -89,13 +92,21 @@ public class NearSpansUnordered extends ConjunctionSpans {
       updateTop();
       return true;
     }
+    
+    int currentSlop() {
+      return maxEndPosition - top().startPosition() - totalSpanLength;
+    }
 
     boolean atMatch() {
-      boolean res = (maxEndPosition - top().startPosition() - totalSpanLength) <= allowedSlop;
+      boolean res = currentSlop() <= allowedSlop;
       return res;
     }
   }
 
+  @Override
+  public int currentSlop() {
+    return spanWindow.currentSlop();
+  }
 
   /** Check whether two Spans in the same document are ordered with possible overlap.
    * @return true iff spans1 starts before spans2

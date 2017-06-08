@@ -32,6 +32,7 @@ import org.apache.lucene.search.similarities.Similarity;
 public class TermSpans extends Spans {
   protected final PostingsEnum postings;
   protected final Term term;
+  protected final Similarity.SimScorer simScorer;
   protected int doc;
   protected int freq;
   protected int count;
@@ -41,6 +42,7 @@ public class TermSpans extends Spans {
 
   public TermSpans(Similarity.SimScorer scorer,
                     PostingsEnum postings, Term term, float positionsCost) {
+    this.simScorer = scorer;
     this.postings = Objects.requireNonNull(postings);
     this.term = Objects.requireNonNull(term);
     this.doc = -1;

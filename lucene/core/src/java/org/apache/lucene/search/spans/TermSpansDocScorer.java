@@ -16,29 +16,31 @@
  */
 package org.apache.lucene.search.spans;
 
-import java.util.List;
-import java.util.Iterator;
+import java.io.IOException;
 
-import org.apache.lucene.util.PriorityQueue;
+import org.apache.lucene.index.PostingsEnum;
 
-class SpanPositionQueue extends PriorityQueue<Spans> {
-  SpanPositionQueue(int maxSize) {
-    super(maxSize, false); // do not prepopulate
+
+/**
+ * For {@link SpansTreeQuery}. Public for extension.
+ *
+ * @lucene.experimental
+ */
+public class TermSpansDocScorer extends AsSingleTermSpansDocScorer<TermSpans> {
+
+  protected final PostingsEnum postings;
+
+  /**
+   * @param termSpans Provides matching term occurrences.
+   * @param nonMatchWeight The non negative weight to be used for the non matching term occurrences.
+   */
+  public TermSpansDocScorer(TermSpans termSpans, double nonMatchWeight) {
+    super(termSpans.simScorer, nonMatchWeight);
+    this.postings = termSpans.getPostings();
   }
 
-  protected boolean lessThan(Spans s1, Spans s2) {
-    int start1 = s1.startPosition();
-    int start2 = s2.startPosition();
-    return (start1 < start2) ? true
-          : (start1 == start2) ? s1.endPosition() < s2.endPosition()
-          : false;
-  }
-
-  void extractSpansList(List<Spans> spansList) {
-    Iterator<Spans> spansIter = iterator();
-    while (spansIter.hasNext()) {
-      spansList.add(spansIter.next());
-    }
+  @Override
+  public int termFreqInDoc() throws IOException {
+    return postings.freq();
   }
 }
-

@@ -17,28 +17,22 @@
 package org.apache.lucene.search.spans;
 
 import java.util.List;
-import java.util.Iterator;
 
-import org.apache.lucene.util.PriorityQueue;
+import org.apache.lucene.search.similarities.Similarity;
 
-class SpanPositionQueue extends PriorityQueue<Spans> {
-  SpanPositionQueue(int maxSize) {
-    super(maxSize, false); // do not prepopulate
+/**
+ * Spans that are all present within a given slop.
+ *
+ * @lucene.experimental
+ */
+public abstract class ConjunctionNearSpans extends ConjunctionSpans {
+  protected final Similarity.SimScorer simScorer;
+
+  public ConjunctionNearSpans(List<Spans> subSpans, Similarity.SimScorer simScorer) {
+    super(subSpans);
+    this.simScorer = simScorer;
   }
 
-  protected boolean lessThan(Spans s1, Spans s2) {
-    int start1 = s1.startPosition();
-    int start2 = s2.startPosition();
-    return (start1 < start2) ? true
-          : (start1 == start2) ? s1.endPosition() < s2.endPosition()
-          : false;
-  }
-
-  void extractSpansList(List<Spans> spansList) {
-    Iterator<Spans> spansIter = iterator();
-    while (spansIter.hasNext()) {
-      spansList.add(spansIter.next());
-    }
-  }
+  /** Compute the slop of the current match. */
+  public abstract int currentSlop();
 }
-

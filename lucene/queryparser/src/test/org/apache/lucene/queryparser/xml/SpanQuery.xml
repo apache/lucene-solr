@@ -38,6 +38,7 @@
   <SpanFirst end="10">
     <SpanOrTerms>fire burn</SpanOrTerms>
   </SpanFirst> 
+  <SpanSynonym>go goes going went gone</SpanSynonym>
   <!-- Other Span examples....
     
   <SpanNot>
