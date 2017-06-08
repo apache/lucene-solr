@@ -42,8 +42,10 @@ import org.apache.http.util.EntityUtils;
 import org.apache.solr.common.IteratorWriter;
 import org.apache.solr.common.MapWriter;
 import org.apache.solr.common.SolrException;
+import org.apache.solr.common.SpecProvider;
 import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.cloud.ZkOperation;
+import org.apache.solr.common.params.CommonParams;
 import org.apache.zookeeper.KeeperException;
 import org.noggit.CharArr;
 import org.noggit.JSONParser;
@@ -302,4 +304,10 @@ public class Utils {
 
   public static final Pattern ARRAY_ELEMENT_INDEX = Pattern
       .compile("(\\S*?)\\[(\\d+)\\]");
+
+  public static SpecProvider getSpec(final String name) {
+    return () -> {
+      return ValidatingJsonMap.parse(CommonParams.APISPEC_LOCATION + name + ".json", CommonParams.APISPEC_LOCATION);
+    };
+  }
 }

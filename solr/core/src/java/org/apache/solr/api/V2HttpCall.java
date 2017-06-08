@@ -49,7 +49,7 @@ import org.apache.solr.servlet.HttpSolrCall;
 import org.apache.solr.servlet.SolrDispatchFilter;
 import org.apache.solr.servlet.SolrRequestParsers;
 import org.apache.solr.util.JsonSchemaValidator;
-import org.apache.solr.util.PathTrie;
+import org.apache.solr.common.util.PathTrie;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -58,7 +58,7 @@ import static org.apache.solr.common.params.CommonParams.WT;
 import static org.apache.solr.servlet.SolrDispatchFilter.Action.ADMIN;
 import static org.apache.solr.servlet.SolrDispatchFilter.Action.PASSTHROUGH;
 import static org.apache.solr.servlet.SolrDispatchFilter.Action.PROCESS;
-import static org.apache.solr.util.PathTrie.getPathSegments;
+import static org.apache.solr.common.util.PathTrie.getPathSegments;
 
 // class that handle the '/v2' path
 public class V2HttpCall extends HttpSolrCall {
@@ -102,7 +102,7 @@ public class V2HttpCall extends HttpSolrCall {
         String collectionName = origCorename = corename = pieces.get(1);
         DocCollection collection = getDocCollection(collectionName);
         if (collection == null) {
-           if ( ! path.endsWith(ApiBag.INTROSPECT)) {
+           if ( ! path.endsWith(CommonParams.INTROSPECT)) {
             throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "no such collection or alias");
           }
         } else {
@@ -124,7 +124,7 @@ public class V2HttpCall extends HttpSolrCall {
       }
       if (core == null) {
         log.error(">> path: '" + path + "'");
-        if (path.endsWith(ApiBag.INTROSPECT)) {
+        if (path.endsWith(CommonParams.INTROSPECT)) {
           initAdminRequest(path);
           return;
         } else {
@@ -193,7 +193,7 @@ public class V2HttpCall extends HttpSolrCall {
                                Map<String, String> parts) {
     fullPath = fullPath == null ? path : fullPath;
     Api api = requestHandlers.v2lookup(path, method, parts);
-    if (api == null && path.endsWith(ApiBag.INTROSPECT)) {
+    if (api == null && path.endsWith(CommonParams.INTROSPECT)) {
       // the particular http method does not have any ,
       // just try if any other method has this path
       api = requestHandlers.v2lookup(path, null, parts);
@@ -234,7 +234,7 @@ public class V2HttpCall extends HttpSolrCall {
 
   private static CompositeApi getSubPathApi(PluginBag<SolrRequestHandler> requestHandlers, String path, String fullPath, CompositeApi compositeApi) {
 
-    String newPath = path.endsWith(ApiBag.INTROSPECT) ? path.substring(0, path.length() - ApiBag.INTROSPECT.length()) : path;
+    String newPath = path.endsWith(CommonParams.INTROSPECT) ? path.substring(0, path.length() - CommonParams.INTROSPECT.length()) : path;
     Map<String, Set<String>> subpaths = new LinkedHashMap<>();
 
     getSubPaths(newPath, requestHandlers.getApiBag(), subpaths);
@@ -244,12 +244,12 @@ public class V2HttpCall extends HttpSolrCall {
       @Override
       public void call(SolrQueryRequest req1, SolrQueryResponse rsp) {
         String prefix = null;
-        prefix = fullPath.endsWith(ApiBag.INTROSPECT) ?
-            fullPath.substring(0, fullPath.length() - ApiBag.INTROSPECT.length()) :
+        prefix = fullPath.endsWith(CommonParams.INTROSPECT) ?
+            fullPath.substring(0, fullPath.length() - CommonParams.INTROSPECT.length()) :
             fullPath;
         LinkedHashMap<String, Set<String>> result = new LinkedHashMap<>(subPaths.size());
         for (Map.Entry<String, Set<String>> e : subPaths.entrySet()) {
-          if (e.getKey().endsWith(ApiBag.INTROSPECT)) continue;
+          if (e.getKey().endsWith(CommonParams.INTROSPECT)) continue;
           result.put(prefix + e.getKey(), e.getValue());
         }
 

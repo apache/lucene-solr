@@ -20,6 +20,7 @@ package org.apache.solr.api;
 import java.util.Map;
 
 import com.google.common.collect.ImmutableMap;
+import org.apache.solr.common.SpecProvider;
 import org.apache.solr.common.util.ValidatingJsonMap;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
