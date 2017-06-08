@@ -125,6 +125,7 @@ The path and name of the `solrcore.properties` file can be overridden using the 
 
 Every Solr core has a `core.properties` file, automatically created when using the APIs. When you create a SolrCloud collection, you can pass through custom parameters to go into each core.properties that will be created, by prefixing the parameter name with "property." as a URL parameter. Example:
 
+[source,bash]
 http://localhost:8983/solr/admin/collections?action=CREATE&name=gettingstarted&numShards=1&property.my.custom.prop=edismax
 
 That would create a `core.properties` file that has at least the following properties (others omitted for brevity):

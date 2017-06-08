@@ -679,9 +679,9 @@ For example:
 * [1,10) -> will include values greater or equal to 1 and lower than 10
 * [1,10] -> will include values greater or equal to 1 and lower or equal to 10
 
-The initial and end values cannot be empty. If the interval needs to be unbounded, the special character `*` can be used for both, start and end limit.
+The initial and end values cannot be empty.
 
-When using `\*`, `(` and `[`, and `)` and `]` will be treated equal. `[*,*]` will include all documents with a value in the field.
+If the interval needs to be unbounded, the special character `*` can be used for both, start and end limit. When using this special character, the start syntax options (`(` anAd `[`), and end syntax options (`)` and `]`) will be treated the same. `[*,*]` will include all documents with a value in the field.
 
 The interval limits may be strings but there is no need to add quotes. All the text until the comma will be treated as the start limit, and the text after that will be the end limit. For example: `[Buenos Aires,New York]`. Keep in mind that a string-like comparison will be done to match documents in string intervals (case-sensitive). The comparator can't be changed.
 
