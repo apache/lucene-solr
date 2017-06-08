@@ -15,8 +15,13 @@
  * limitations under the License.
  */
 package org.apache.solr.spelling;
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+
 import org.apache.lucene.analysis.Analyzer;
-import org.apache.lucene.analysis.Token;
 import org.apache.lucene.analysis.core.WhitespaceAnalyzer;
 import org.apache.lucene.search.spell.LevensteinDistance;
 import org.apache.lucene.search.spell.StringDistance;
@@ -30,12 +35,6 @@ import org.apache.solr.handler.component.SpellCheckMergeData;
 import org.apache.solr.schema.FieldType;
 import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.search.SolrIndexSearcher;
-
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
 
 
 /**

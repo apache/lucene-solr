@@ -86,6 +86,9 @@ API Changes
 * LUCENE-7877: PrefixAwareTokenStream is replaced with ConcatenatingTokenStream
   (Alan Woodward, Uwe Schindler, Adrien Grand)
 
+* LUCENE-7867: The deprecated Token class is now only available in the test
+  framework (Alan Woodward, Adrien Grand)
+
 Bug Fixes
 
 * LUCENE-7626: IndexWriter will no longer accept broken token offsets

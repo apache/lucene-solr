@@ -22,7 +22,6 @@ import java.util.Comparator;
 import java.util.Date;
 import java.util.Map;
 
-import org.apache.lucene.analysis.Token;
 import org.apache.lucene.analysis.core.WhitespaceAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;

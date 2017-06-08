@@ -29,8 +29,6 @@ import java.util.NoSuchElementException;
 import java.util.PriorityQueue;
 import java.util.Set;
 
-import org.apache.lucene.analysis.Token;
-
 /**
  * <p>
  * Given a list of possible Spelling Corrections for multiple mis-spelled words

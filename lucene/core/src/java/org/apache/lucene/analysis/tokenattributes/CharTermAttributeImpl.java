@@ -253,11 +253,6 @@ public class CharTermAttributeImpl extends AttributeImpl implements CharTermAttr
   /** 
    * Returns solely the term text as specified by the
    * {@link CharSequence} interface.
-   * <p>This method changed the behavior with Lucene 3.1,
-   * before it returned a String representation of the whole
-   * term with all attributes.
-   * This affects especially the
-   * {@link org.apache.lucene.analysis.Token} subclass.
    */
   @Override
   public String toString() {

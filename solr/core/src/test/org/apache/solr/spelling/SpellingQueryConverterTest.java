@@ -16,15 +16,14 @@
  */
 package org.apache.solr.spelling;
 
-import org.apache.lucene.analysis.Token;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.List;
+
 import org.apache.lucene.analysis.core.WhitespaceAnalyzer;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.solr.common.util.NamedList;
 import org.junit.Test;
-
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.List;
 
 
 /**
