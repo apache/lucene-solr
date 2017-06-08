@@ -25,10 +25,14 @@ import java.util.List;
 import java.util.function.Function;
 import java.util.function.Supplier;
 
+import org.apache.lucene.document.Document;
+import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.DocValuesType;
 import org.apache.lucene.index.FieldInfos;
 import org.apache.lucene.index.IndexableField;
 import org.apache.lucene.index.LeafReader;
+import org.apache.lucene.index.LeafReaderContext;
+import org.apache.lucene.index.MultiFields;
 import org.apache.lucene.index.NumericDocValues;
 import org.apache.lucene.index.SortedDocValues;
 import org.apache.lucene.queries.function.FunctionValues;
@@ -149,6 +153,74 @@ public class DocValuesTest extends SolrTestCaseJ4 {
         searcherRef.decref();
       }
     }
+  }
+
+
+  public void testHalfAndHalfDocValues() throws Exception {
+    // Insert two docs without docvalues
+    String fieldname = "string_add_dv_later";
+    assertU(adoc("id", "3", fieldname, "c"));
+    assertU(commit());
+    assertU(adoc("id", "1", fieldname, "a"));
+    assertU(commit());
+    
+   
+    try (SolrCore core = h.getCoreInc()) {
+        assertFalse(core.getLatestSchema().getField(fieldname).hasDocValues());
+      // Add docvalues to the field type
+      IndexSchema schema = core.getLatestSchema();
+      SchemaField oldField = schema.getField(fieldname);
+      int newProperties = oldField.getProperties() | SchemaField.DOC_VALUES;
+      
+      SchemaField sf = new SchemaField( fieldname, oldField.getType(), newProperties, null);
+      schema.getFields().put( fieldname, sf );
+      
+      // Insert a new doc with docvalues
+      assertU(adoc("id", "2", fieldname, "b"));
+      assertU(commit());
+    
+    
+      // Check there are a mix of segments with and without docvalues
+      final RefCounted<SolrIndexSearcher> searcherRef = core.openNewSearcher(true, true);
+      final SolrIndexSearcher searcher = searcherRef.get();
+      try {
+        final DirectoryReader topReader = searcher.getRawReader();
+
+        //Assert no merges
+        
+        assertEquals(3, topReader.numDocs());
+        assertEquals(3, topReader.leaves().size());
+        
+        final FieldInfos infos = MultiFields.getMergedFieldInfos(topReader);
+        //The global field type should have docValues because a document with dvs was added
+        assertEquals(DocValuesType.SORTED, infos.fieldInfo(fieldname).getDocValuesType());
+        
+        for(LeafReaderContext ctx: topReader.leaves()) {
+          LeafReader r = ctx.reader();
+          //Make sure there were no merges
+          assertEquals(1, r.numDocs());
+          Document doc = r.document(0);
+          String id = doc.getField("id").stringValue();
+          
+          if(id.equals("1") || id.equals("3")) {
+            assertEquals(DocValuesType.NONE, r.getFieldInfos().fieldInfo(fieldname).getDocValuesType());
+          } else {
+            assertEquals(DocValuesType.SORTED, r.getFieldInfos().fieldInfo(fieldname).getDocValuesType());
+          }
+          
+        }
+      } finally {
+        searcherRef.decref();
+      }
+    }
+    
+    // Assert sort order is correct
+    assertQ(req("q", "string_add_dv_later:*", "sort", "string_add_dv_later asc"),
+        "//*[@numFound='3']",
+        "//result/doc[1]/int[@name='id'][.=1]",
+        "//result/doc[2]/int[@name='id'][.=2]",
+        "//result/doc[3]/int[@name='id'][.=3]"
+    );
   }
 
   private void tstToObj(SchemaField sf, Object o) {
