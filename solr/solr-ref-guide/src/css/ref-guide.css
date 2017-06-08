@@ -1746,7 +1746,7 @@ table.pyhltable .linenodiv
     word-spacing: .1em;
     letter-spacing: 0;
     font-style: italic;
-    font-size: 1.15rem;
+    font-size: inherit;
     line-height: 1.75;
 }
 

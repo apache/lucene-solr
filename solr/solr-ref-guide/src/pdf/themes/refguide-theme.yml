@@ -149,7 +149,8 @@ admonition:
       stroke_color: '#eeea74'
 blockquote:
   font_color: $base_font_color
-  font_size: $base_font_size_large
+  font_size: $base_font_size
+  font_style: italic
   border_color: $base_border_color
   border_width: 5
   padding: [$vertical_rhythm / 2, $horizontal_rhythm, $vertical_rhythm / -2, $horizontal_rhythm + $blockquote_border_width / 2]
