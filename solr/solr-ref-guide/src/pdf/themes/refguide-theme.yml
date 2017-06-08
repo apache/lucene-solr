@@ -144,7 +144,7 @@ admonition:
     caution:
       name: fa-fire
       stroke_color: '#bf6900'
-    information:
+    important:
       name: fa-bolt
       stroke_color: '#eeea74'
 blockquote:
