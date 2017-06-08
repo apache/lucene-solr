@@ -20,12 +20,6 @@
 // specific language governing permissions and limitations
 // under the License.
 
-== cartesianProduct
-//TODO
-
-== cell
-//TODO
-
 == classify
 
 The `classify` function classifies tuples using a logistic regression text classification model. It was designed specifically to work with models trained using the <<stream-sources.adoc#train,train function>>. The `classify` function uses the <<stream-sources.adoc#model,model function>> to retrieve a stored model and then scores a stream of tuples using the model. The tuples read by the classifier must contain a text field that can be used for classification. The classify function uses a Lucene analyzer to extract the features from the text so the model can be applied. By default the `classify` function looks for the analyzer using the name of text field in the tuple. If the Solr schema on the worker node does not contain this field, the analyzer can be looked up in another field by specifying the `analyzerField` parameter.
@@ -237,7 +231,26 @@ daemonStream.close();
 ----
 
 == eval
-//todo
+
+The `eval` function allows for use cases where new streaming expressions are generated on the fly and then evaluated.
+The `eval` function wraps a streaming expression and reads a single tuple from the underlying stream.
+The `eval` function then retrieves a string Streaming Expressions from the `expr_s` field of the tuple.
+The `eval` function then compiles the string Streaming Expression and emits the tuples.
+
+=== eval Parameters
+
+* `StreamExpression`: (Mandatory) The stream which provides the streaming expression to be evaluated.
+
+=== eval Syntax
+
+[source,text]
+----
+eval(expr)
+----
+
+In the example above the `eval` expression reads the first tuple from the underlying expression. It then compiles and
+executes the string Streaming Expression in the epxr_s field.
+
 
 [[StreamingExpressions-executor]]
 == executor
@@ -516,9 +529,6 @@ merge(
              sort="fieldA asc"),
       on="fieldA asc")
 ----
-
-== list
-// TODO
 
 == null
 

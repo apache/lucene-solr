@@ -17,7 +17,6 @@
 package org.apache.solr.metrics.reporters;
 
 import java.io.IOException;
-import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
@@ -29,14 +28,11 @@ import com.codahale.metrics.graphite.GraphiteSender;
 import com.codahale.metrics.graphite.PickledGraphite;
 import org.apache.solr.metrics.SolrMetricManager;
 import org.apache.solr.metrics.SolrMetricReporter;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  * Metrics reporter that wraps {@link com.codahale.metrics.graphite.GraphiteReporter}.
  */
 public class SolrGraphiteReporter extends SolrMetricReporter {
-  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   private String host = null;
   private int port = -1;

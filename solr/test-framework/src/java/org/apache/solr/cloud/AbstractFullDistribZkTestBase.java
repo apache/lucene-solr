@@ -2094,7 +2094,7 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
         while (true) {
           long replicaIndexVersion = getIndexVersion(pullReplica); 
           if (leaderIndexVersion == replicaIndexVersion) {
-            log.debug("Leader replica's version ({}) in sync with replica({}): {} == {}", leader.getName(), pullReplica.getName(), leaderIndexVersion, replicaIndexVersion);
+            log.info("Leader replica's version ({}) in sync with replica({}): {} == {}", leader.getName(), pullReplica.getName(), leaderIndexVersion, replicaIndexVersion);
             
             // Make sure the host is serving the correct version
             try (SolrCore core = containers.get(pullReplica.getNodeName()).getCore(pullReplica.getCoreName())) {
@@ -2105,7 +2105,7 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
                 if (Long.parseLong(servingVersion) == replicaIndexVersion) {
                   break;
                 } else {
-                  log.debug("Replica {} has the correct version replicated, but the searcher is not ready yet. Replicated version: {}, Serving version: {}", pullReplica.getName(), replicaIndexVersion, servingVersion);
+                  log.info("Replica {} has the correct version replicated, but the searcher is not ready yet. Replicated version: {}, Serving version: {}", pullReplica.getName(), replicaIndexVersion, servingVersion);
                 }
               } finally {
                 if (ref != null) ref.decref();
@@ -2117,9 +2117,9 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
               fail(String.format(Locale.ROOT, "Timed out waiting for replica %s (%d) to replicate from leader %s (%d)", pullReplica.getName(), replicaIndexVersion, leader.getName(), leaderIndexVersion));
             }
             if (leaderIndexVersion > replicaIndexVersion) {
-              log.debug("{} version is {} and leader's is {}, will wait for replication", pullReplica.getName(), replicaIndexVersion, leaderIndexVersion);
+              log.info("{} version is {} and leader's is {}, will wait for replication", pullReplica.getName(), replicaIndexVersion, leaderIndexVersion);
             } else {
-              log.debug("Leader replica's version ({}) is lower than pull replica({}): {} < {}", leader.getName(), pullReplica.getName(), leaderIndexVersion, replicaIndexVersion);
+              log.info("Leader replica's version ({}) is lower than pull replica({}): {} < {}", leader.getName(), pullReplica.getName(), leaderIndexVersion, replicaIndexVersion);
             }
           }
           Thread.sleep(1000);

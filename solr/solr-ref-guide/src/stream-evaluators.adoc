@@ -412,30 +412,6 @@ or(and(fieldA,fieldB),fieldC) // (fieldA && fieldB) || fieldC
 or(fieldA,fieldB,fieldC,and(fieldD,fieldE),fieldF)
 ----
 
-== analyze
-//TODO
-
-== second
-//TODO
-
-== minute
-//TODO
-
-== hour
-//TODO
-
-== day
-//TODO
-
-== month
-//TODO
-
-== year
-//TODO
-
-== convert
-//TODO
-
 == raw
 
 The `raw` function will return whatever raw value is the parameter. This is useful for cases where you want to use a string as part of another evaluator.
@@ -457,5 +433,3 @@ raw(true) // "true" (note: this returns the string "true" and not the boolean tr
 eq(raw(fieldA), fieldA) // true if the value of fieldA equals the string "fieldA"
 ----
 
-== UUID
-//TODO

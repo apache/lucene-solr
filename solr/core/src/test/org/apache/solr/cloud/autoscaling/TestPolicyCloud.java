@@ -23,6 +23,7 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 
+import org.apache.lucene.util.Constants;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServerException;
@@ -169,7 +170,10 @@ public class TestPolicyCloud extends SolrCloudTestCase {
     assertTrue(((Number) val.get("cores")).intValue() > 0);
     assertTrue("freedisk value is " + ((Number) val.get("freedisk")).doubleValue(),  Double.compare(((Number) val.get("freedisk")).doubleValue(), 0.0d) > 0);
     assertTrue("heapUsage value is " + ((Number) val.get("heapUsage")).doubleValue(), Double.compare(((Number) val.get("heapUsage")).doubleValue(), 0.0d) > 0);
-    assertTrue("sysLoadAvg value is " + ((Number) val.get("sysLoadAvg")).doubleValue(), Double.compare(((Number) val.get("sysLoadAvg")).doubleValue(), 0.0d) > 0);
+    if (!Constants.WINDOWS)  {
+      // the system load average metrics is not available on windows platform
+      assertTrue("sysLoadAvg value is " + ((Number) val.get("sysLoadAvg")).doubleValue(), Double.compare(((Number) val.get("sysLoadAvg")).doubleValue(), 0.0d) > 0);
+    }
     String overseerNode = OverseerTaskProcessor.getLeaderNode(cluster.getZkClient());
     cluster.getSolrClient().request(CollectionAdminRequest.addRole(overseerNode, "overseer"));
     for (int i = 0; i < 10; i++) {

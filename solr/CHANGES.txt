@@ -253,6 +253,9 @@ Other Changes
 
 * SOLR-10419: All collection APIs should use the new Policy framework for replica placement. (Noble Paul, shalin)
 
+* SOLR-10800: Factor out HttpShardHandler.transformReplicasToShardUrls from HttpShardHandler.prepDistributed.
+  (Domenico Fabio Marino, Christine Poerschke)
+
 ==================  6.7.0 ==================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release.
@@ -352,6 +355,8 @@ Optimizations
   so that the second phase which would normally involve calculating the domain for the bucket
   can be skipped entirely, leading to large performance improvements. (yonik)
 
+* SOLR-10722: Speed up Solr's use of the UnifiedHighlighter be re-using FieldInfos. (David Smiley)
+
 Other Changes
 ----------------------
 
@@ -379,6 +384,8 @@ Other Changes
 * SOLR-8437: Improve RAMDirectory details in sample solrconfig files (Mark Miller, Varun Thacker)
 
 * SOLR-8762: return child docs in DIH debug (Gopikannan Venugopalsamy via Mikhail Khludnev)
+
+* SOLR-10501: Test sortMissing{First,Last} with points fields.  (Steve Rowe)
 
 ==================  6.6.0 ==================
 

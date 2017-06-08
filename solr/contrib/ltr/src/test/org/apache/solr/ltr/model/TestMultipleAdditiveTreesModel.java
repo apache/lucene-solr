@@ -22,7 +22,6 @@ import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.ltr.TestRerankBase;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
-import org.junit.Ignore;
 import org.junit.Test;
 
 public class TestMultipleAdditiveTreesModel extends TestRerankBase {
@@ -47,9 +46,15 @@ public class TestMultipleAdditiveTreesModel extends TestRerankBase {
 
 
   @Test
-  public void testMultipleAdditiveTreesScoringWithAndWithoutEfiFeatureMatches() throws Exception {
+  public void testMultipleAdditiveTrees() throws Exception {
     loadFeatures("multipleadditivetreesmodel_features.json");
     loadModels("multipleadditivetreesmodel.json");
+
+    doTestMultipleAdditiveTreesScoringWithAndWithoutEfiFeatureMatches();
+    doTestMultipleAdditiveTreesExplain();
+  }
+
+  private void doTestMultipleAdditiveTreesScoringWithAndWithoutEfiFeatureMatches() throws Exception {
 
     final SolrQuery query = new SolrQuery();
     query.setQuery("*:*");
@@ -79,9 +84,8 @@ public class TestMultipleAdditiveTreesModel extends TestRerankBase {
     assertJQ("/query" + query.toQueryString(), "/response/docs/[2]/score==-120.0");
   }
 
-  @Ignore
-  @Test
-  public void multipleAdditiveTreesTestExplain() throws Exception {
+  private void doTestMultipleAdditiveTreesExplain() throws Exception {
+
     final SolrQuery query = new SolrQuery();
     query.setQuery("*:*");
     query.add("fl", "*,score,[fv]");
@@ -103,7 +107,7 @@ public class TestMultipleAdditiveTreesModel extends TestRerankBase {
     qryResult = qryResult.substring(qryResult.indexOf("explain"));
 
     assertThat(qryResult, containsString("multipleadditivetreesmodel"));
-    assertThat(qryResult, containsString(MultipleAdditiveTreesModel.class.getCanonicalName()));
+    assertThat(qryResult, containsString(MultipleAdditiveTreesModel.class.getSimpleName()));
 
     assertThat(qryResult, containsString("-100.0 = tree 0"));
     assertThat(qryResult, containsString("50.0 = tree 0"));
@@ -113,7 +117,6 @@ public class TestMultipleAdditiveTreesModel extends TestRerankBase {
 
     assertThat(qryResult, containsString(" Go Right "));
     assertThat(qryResult, containsString(" Go Left "));
-    assertThat(qryResult, containsString("'this_feature_doesnt_exist' does not exist in FV"));
   }
 
   @Test

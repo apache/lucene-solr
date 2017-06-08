@@ -2676,11 +2676,11 @@ public abstract class LuceneTestCase extends Assert {
       if (expectedType.isInstance(e)) {
         return expectedType.cast(e);
       }
-      AssertionFailedError assertion = new AssertionFailedError("Unexpected exception type, expected " + expectedType.getSimpleName());
+      AssertionFailedError assertion = new AssertionFailedError("Unexpected exception type, expected " + expectedType.getSimpleName() + " but got " + e);
       assertion.initCause(e);
       throw assertion;
     }
-    throw new AssertionFailedError("Expected exception " + expectedType.getSimpleName());
+    throw new AssertionFailedError("Expected exception " + expectedType.getSimpleName() + " but no exception was thrown");
   }
 
   /**

@@ -155,7 +155,7 @@ public class IndexFetcher {
 
   private boolean useExternalCompression = false;
 
-  private boolean fetchFromLeader = false;
+  boolean fetchFromLeader = false;
 
   private final HttpClient myHttpClient;
 
