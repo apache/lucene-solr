@@ -4,12 +4,7 @@ For more information on past and future Lucene versions, please see:
 http://s.apache.org/luceneversions
 
 ======================= Lucene 6.6.1 =======================
-
-Bug Fixes
-
-* LUCENE-7869: Changed MemoryIndex to sort 1d points. In case of 1d points, the PointInSetQuery.MergePointVisitor expects
-  that these points are visited in ascending order. The memory index doesn't do this and this can result in document
-  with multiple points that should match to not match. (Martijn van Groningen)
+(No Changes)
 
 ======================= Lucene 6.6.0 =======================
 
@@ -107,6 +102,9 @@ Other
 * LUCENE-7761: Fixed comment in ReqExclScorer.
   (Pablo Pita Leira via Adrien Grand)
 
+* LUCENE-7815: Deprecate the PostingsHighlighter. It evolved into the
+  UnifiedHighlighter. (David Smiley)
+
 ======================= Lucene 6.5.1 =======================
 
 Bug Fixes
@@ -119,6 +117,9 @@ Bug Fixes
 
 * LUCENE-7769: The UnifiedHighligter wasn't highlighting portions of the query
   wrapped in BoostQuery or SpanBoostQuery. (David Smiley, Dmitry Malinin)
+
+* LUCENE-7791: Fixed index sorting to work with sparse numeric and binary docvalues field.
+  (Przemyslaw Szeremiota via Jim Ferenczi)
 
 Other
 
@@ -169,14 +170,15 @@ API Changes
   instead of once all shard responses are present. (Simon Willnauer,
   Mike McCandless)
 
+* LUCENE-6819: Index-time boosts are deprecated. As a replacement, index-time
+  scoring factors should be indexed into a doc value field and combined at
+  query time using eg. FunctionScoreQuery. (Adrien Grand)
+
 * LUCENE-7700: A cleanup of merge throughput control logic. Refactored all the
   code previously scattered throughout the IndexWriter and 
   ConcurrentMergeScheduler into a more accessible set of public methods (see 
   MergePolicy.OneMergeProgress, MergeScheduler.wrapForMerge and 
   OneMerge.mergeInit). (Dawid Weiss, Mike McCandless).
-
-* LUCENE-7734: FieldType's copy constructor was widened to accept any IndexableFieldType.
-  (David Smiley)
 
 New Features
 
@@ -340,6 +342,10 @@ Other
 
 * LUCENE-7658: queryparser/xml CoreParser now implements SpanQueryBuilder interface.
   (Daniel Collins, Christine Poerschke)
+
+* LUCENE-7664: GeoPointField and its queries are deprecated in favor
+  of LatLonPoint, which offers faster indexing and searching
+  performance, smaller index, and less search-time heap usage.  (Mike McCandless)
 
 * LUCENE-7715: NearSpansUnordered simplifications.
   (Paul Elschot via Adrien Grand)
@@ -560,6 +566,11 @@ Optimizations
   (Mike McCandless)
 
 * LUCENE-7572: Doc values queries now cache their hash code. (Adrien Grand)
+
+* LUCENE-7579: Segments are now also sorted during flush, and merging
+  on a sorted index is substantially faster by using some of the same
+  bulk merge optimizations that non-sorted merging uses (Jim Ferenczi
+  via Mike McCandless)
 
 Other
 
