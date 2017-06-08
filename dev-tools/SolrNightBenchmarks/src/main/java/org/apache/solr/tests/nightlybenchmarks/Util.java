@@ -721,14 +721,14 @@ public class Util {
 			Util.getSystemEnvironmentInformation();
 
 			if (!BenchmarkAppConnector.isRunningFolderEmpty()) {
-				Util.postMessage("** It looks like the last test session failed or was aborted ..",
+				Util.postMessage("** It looks like the last test session failed or was aborted ...",
 						MessageType.RED_TEXT, false);
 
 				Util.killProcesses("zookeeper");
 				Util.killProcesses("Dsolr.jetty.https.port");
 				
 				if (!BenchmarkAppConnector.isCloningFolderEmpty()) {
-					Util.postMessage("** Looks like a broken clone exists removing it ..",
+					Util.postMessage("** Looks like a broken clone exists removing it ...",
 							MessageType.RED_TEXT, false);
 					Util.execute("rm -r -f " + Util.getLocalRepoPath(), Util.getLocalRepoPath());
 				}
@@ -749,11 +749,18 @@ public class Util {
 				for (int i = 0; i < currentCommits.length; i++) {
 					
 						String commitIDFromQueue = currentCommits[i].getName();
-						Util.postMessage("** Processing benchmarks for commit: " + commitIDFromQueue, MessageType.RED_TEXT, false);
-						TestPlans.execute(commitIDFromQueue);
-						BenchmarkAppConnector.publishDataForWebApp();
-						BenchmarkReportData.reset();
-						BenchmarkAppConnector.deleteCommitFromQueue(commitIDFromQueue);
+						String lastRun = BenchmarkAppConnector.getLastRunCommitID();
+						
+						if (commitIDFromQueue.equals(lastRun)) {
+							Util.postMessage("** The commit: " + commitIDFromQueue + " has already been processed skipping ...", MessageType.RED_TEXT, false);
+							BenchmarkAppConnector.deleteCommitFromQueue(commitIDFromQueue);
+						} else {						
+							Util.postMessage("** Processing benchmarks for commit: " + commitIDFromQueue, MessageType.GREEN_TEXT, false);
+							TestPlans.execute(commitIDFromQueue);
+							BenchmarkAppConnector.publishDataForWebApp();
+							BenchmarkReportData.reset();
+							BenchmarkAppConnector.deleteCommitFromQueue(commitIDFromQueue);
+						}
 						
 				}
 				Util.postMessage("** Processing from commit queue [COMPLETE] ...", MessageType.BLUE_TEXT, false);
