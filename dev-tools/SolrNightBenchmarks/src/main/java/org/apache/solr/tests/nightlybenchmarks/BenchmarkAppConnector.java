@@ -107,7 +107,7 @@ public class BenchmarkAppConnector {
 	public static void deleteFolder(FileType type) {
 
 		if (type == FileType.LAST_RUN_COMMIT) {
-			 File dir = new File(BenchmarkAppConnector.benchmarkAppDirectory + "data" + File.separator + type + File.separator);
+			 File dir = new File(BenchmarkAppConnector.benchmarkAppDirectory + "data" + File.separator + "lastrun" + File.separator);
 			 
 			 if (!dir.exists()) {
 				 dir.mkdir();
