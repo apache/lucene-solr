@@ -1,6 +1,10 @@
 = Apache Solr Reference Guide: For Solr {solr-docs-version}
 :toc:
 :toc-title: Table of Contents
+:toclevels: 2
+:author: Written by the Apache Lucene/Solr Project
+:email: https://lucene.apache.org/solr
+:revdate: Published {build-date}
 // Licensed to the Apache Software Foundation (ASF) under one
 // or more contributor license agreements.  See the NOTICE file
 // distributed with this work for additional information
