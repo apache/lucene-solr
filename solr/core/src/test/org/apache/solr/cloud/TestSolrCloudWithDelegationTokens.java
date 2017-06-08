@@ -137,7 +137,7 @@ public class TestSolrCloudWithDelegationTokens extends SolrTestCaseJ4 {
     DelegationTokenRequest.Cancel cancel = new DelegationTokenRequest.Cancel(token);
     try {
       cancel.process(client);
-      assertEquals(HttpStatus.SC_OK, expectedStatusCode);
+      assertEquals(expectedStatusCode, HttpStatus.SC_OK);
     } catch (HttpSolrClient.RemoteSolrException ex) {
       assertEquals(expectedStatusCode, ex.code());
     }
