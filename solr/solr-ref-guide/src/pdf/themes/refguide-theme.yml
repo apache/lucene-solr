@@ -92,8 +92,8 @@ title_page:
   align: right
   logo:
     top: 10%
-    image: image:../../images/solr-sunOnly-small.png[pdfwidth=10%]
-    align: right
+    image: image:../../images/Solr_Logo_on_white.png[pdfwidth=50%]
+    align: left
   title:
     top: 55%
     font_size: $heading_h1_font_size
@@ -105,8 +105,7 @@ title_page:
     line_height: 1
   authors:
     margin_top: $base_font_size * 1.25
-    font_size: $base_font_size_large
-    font_color: '#181818'
+    font_size: $base_font_size
   revision:
     margin_top: $base_font_size * 1.25
 block:
