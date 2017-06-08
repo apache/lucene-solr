@@ -45,6 +45,16 @@ public class TestLinearModel extends TestRerankBase {
     return model;
   }
 
+  public static Map<String,Object> makeFeatureWeights(List<Feature> features) {
+    final Map<String,Object> nameParams = new HashMap<String,Object>();
+    final HashMap<String,Double> modelWeights = new HashMap<String,Double>();
+    for (final Feature feat : features) {
+      modelWeights.put(feat.getName(), 0.1);
+    }
+    nameParams.put("weights", modelWeights);
+    return nameParams;
+  }
+
   static ManagedModelStore store = null;
   static FeatureStore fstore = null;
 
