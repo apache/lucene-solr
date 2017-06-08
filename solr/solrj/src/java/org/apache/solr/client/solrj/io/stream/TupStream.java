@@ -170,8 +170,7 @@ public class TupStream extends TupleStream implements Expressible {
       for(Entry<String,TupleStream> param : streamParams.entrySet()){
         
         try{
-          List<Tuple> streamTuples = new ArrayList<Tuple>();
-          
+          List<Tuple> streamTuples = new ArrayList();
           // open the stream, closed in finally block
           param.getValue().open();
           

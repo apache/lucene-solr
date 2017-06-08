@@ -5042,6 +5042,21 @@ public class StreamExpressionTest extends SolrCloudTestCase {
       assertTrue(t.getString("test_t").equals("c"));
       assertTrue(t.getString("id").equals("1"));
 
+
+      expr = "analyze(\"hello world\", test_t)";
+      paramsLoc = new ModifiableSolrParams();
+      paramsLoc.set("expr", expr);
+      paramsLoc.set("qt", "/stream");
+
+      solrStream = new SolrStream(url, paramsLoc);
+      context = new StreamContext();
+      solrStream.setStreamContext(context);
+      tuples = getTuples(solrStream);
+      assertEquals(tuples.size(), 1);
+      List terms = (List)tuples.get(0).get("return-value");
+      assertTrue(terms.get(0).equals("hello"));
+      assertTrue(terms.get(1).equals("world"));
+
       //Try with single param
       expr = "cartesianProduct(search("+COLLECTIONORALIAS+", q=\"*:*\", fl=\"id, test_t\", sort=\"id desc\"), analyze(test_t) as test_t)";
       paramsLoc = new ModifiableSolrParams();

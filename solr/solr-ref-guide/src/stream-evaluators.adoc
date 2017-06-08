@@ -20,6 +20,20 @@
 // specific language governing permissions and limitations
 // under the License.
 
+
+Stream evaluators are different the stream sources or stream decorators. Both
+streaming sources and stream decorators return streams of tuples.
+
+Stream evaluators are more like traditional functions that evaluates its parameters and
+returns an result. That result can be a single value, array, map or other structure.
+
+Stream evaluators can be nested to so that the output of evaluator becomes the input
+for another evaluatore.
+
+Stream evaluators can be called in different contexts. For example a stream evaluator
+can be called on its own or it can be called within the context of a streaming expression.
+
+
 == analyze
 
 // TODO
