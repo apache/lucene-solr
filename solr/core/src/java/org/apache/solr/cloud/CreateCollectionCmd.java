@@ -28,7 +28,9 @@ import java.util.Map;
 import java.util.Properties;
 import java.util.concurrent.TimeUnit;
 
+import org.apache.solr.client.solrj.request.V2Request;
 import org.apache.solr.cloud.OverseerCollectionMessageHandler.Cmd;
+import org.apache.solr.cloud.autoscaling.AutoScaling;
 import org.apache.solr.cloud.overseer.ClusterStateMutator;
 import org.apache.solr.cloud.rule.ReplicaAssigner;
 import org.apache.solr.common.SolrException;
@@ -44,11 +46,15 @@ import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.cloud.ZooKeeperException;
 import org.apache.solr.common.params.CoreAdminParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
+import org.apache.solr.common.params.SolrParams;
+import org.apache.solr.common.util.ContentStreamBase;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.common.util.Utils;
 import org.apache.solr.handler.component.ShardHandler;
 import org.apache.solr.handler.component.ShardRequest;
+import org.apache.solr.request.LocalSolrQueryRequest;
+import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.util.TimeOut;
 import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.KeeperException;
@@ -98,6 +104,7 @@ public class CreateCollectionCmd implements Cmd {
       int numTlogReplicas = message.getInt(TLOG_REPLICAS, 0);
       int numNrtReplicas = message.getInt(NRT_REPLICAS, message.getInt(REPLICATION_FACTOR, numTlogReplicas>0?0:1));
       int numPullReplicas = message.getInt(PULL_REPLICAS, 0);
+      boolean autoAddReplicas = message.getBool(AUTO_ADD_REPLICAS, false);
 
       ShardHandler shardHandler = ocmh.shardHandlerFactory.getShardHandler();
       final String async = message.getStr(ASYNC);
@@ -280,6 +287,9 @@ public class CreateCollectionCmd implements Cmd {
         ocmh.cleanupCollection(collectionName, new NamedList());
         log.info("Cleaned up artifacts for failed create collection for [{}]", collectionName);
       } else {
+        if (autoAddReplicas) {
+          ocmh.forwardToAutoScaling(AutoScaling.AUTO_ADD_REPLICAS_TRIGGER_DSL);
+        }
         log.debug("Finished create command on all shards for collection: {}", collectionName);
       }
     } catch (SolrException ex) {

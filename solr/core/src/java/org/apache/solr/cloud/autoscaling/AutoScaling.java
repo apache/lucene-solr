@@ -164,4 +164,28 @@ public class AutoScaling {
       }
     }
   }
+
+  public static final String AUTO_ADD_REPLICAS_TRIGGER_DSL =
+      "{" +
+      "    'set-trigger' : {" +
+      "        'name' : '.auto_add_replicas'," +
+      "        'event' : 'nodeLost'," +
+      "        'waitFor' : '5s'," +
+      "        'enabled' : true," +
+      "        'actions' : [" +
+      "            {" +
+      "                'name':'auto_add_replicas_plan'," +
+      "                'class':'solr.AutoAddReplicasPlanAction'" +
+      "            }," +
+      "            {" +
+      "                'name':'execute_plan'," +
+      "                'class':'solr.ExecutePlanAction'" +
+      "            }," +
+      "            {" +
+      "                'name':'log_plan'," +
+      "                'class':'solr.LogPlanAction'" +
+      "            }" +
+      "        ]" +
+      "    }" +
+      "}";
 }

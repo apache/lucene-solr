@@ -139,6 +139,7 @@ public class AddReplicaCmd implements OverseerCollectionMessageHandler.Cmd {
     String configName = zkStateReader.readConfigName(collection);
     String routeKey = message.getStr(ShardParams._ROUTE_);
     String dataDir = message.getStr(CoreAdminParams.DATA_DIR);
+    String ulogDir = message.getStr(CoreAdminParams.ULOG_DIR);
     String instanceDir = message.getStr(CoreAdminParams.INSTANCE_DIR);
 
     params.set(CoreAdminParams.ACTION, CoreAdminParams.CoreAdminAction.CREATE.toString());
@@ -160,6 +161,9 @@ public class AddReplicaCmd implements OverseerCollectionMessageHandler.Cmd {
     }
     if (dataDir != null) {
       params.set(CoreAdminParams.DATA_DIR, dataDir);
+    }
+    if (ulogDir != null) {
+      params.set(CoreAdminParams.ULOG_DIR, ulogDir);
     }
     if (instanceDir != null) {
       params.set(CoreAdminParams.INSTANCE_DIR, instanceDir);

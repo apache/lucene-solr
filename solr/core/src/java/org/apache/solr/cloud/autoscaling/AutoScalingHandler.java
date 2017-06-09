@@ -86,6 +86,10 @@ public class AutoScalingHandler extends RequestHandlerBase implements Permission
     map.put(NAME, "log_plan");
     map.put(CLASS, "solr.LogPlanAction");
     DEFAULT_ACTIONS.add(map);
+    map = new HashMap<>(2);
+    map.put(NAME, "auto_add_replicas_plan");
+    map.put(CLASS, "solr.AutoAddReplicasPlanAction");
+    DEFAULT_ACTIONS.add(map);
   }
 
   @Override

@@ -32,8 +32,11 @@ import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.V2Request;
 import org.apache.solr.client.solrj.response.CollectionAdminResponse;
+import org.apache.solr.cloud.CreateCollectionCmd;
 import org.apache.solr.cloud.SolrCloudTestCase;
 import org.apache.solr.common.cloud.ZkNodeProps;
+import org.apache.solr.common.params.CollectionParams;
+import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.ContentStream;
 import org.apache.solr.common.util.ContentStreamBase;
@@ -60,6 +63,47 @@ public class AutoScalingHandlerTest extends SolrCloudTestCase {
   public void beforeTest() throws Exception {
     // clear any persisted auto scaling configuration
     zkClient().setData(SOLR_AUTOSCALING_CONF_PATH, Utils.toJSON(new ZkNodeProps()), true);
+  }
+
+  @Test
+  public void testAutoAddReplicas() throws Exception {
+    String collection = "test-collection";
+    CollectionAdminRequest
+        .createCollection(collection, 1, 1)
+        .setAutoAddReplicas(true)
+        .process(cluster.getSolrClient());
+    byte[] data = zkClient().getData(SOLR_AUTOSCALING_CONF_PATH, null, null, true);
+    ZkNodeProps loaded = ZkNodeProps.load(data);
+    assertNotNull(loaded.get("triggers"));
+    assertEquals("auto add replicas trigger did not created", ((Map)loaded.get("triggers")).size(), 1);
+
+    zkClient().setData(SOLR_AUTOSCALING_CONF_PATH, Utils.toJSON(new ZkNodeProps()), true);
+    new CollectionAdminRequest.AsyncCollectionAdminRequest(CollectionParams.CollectionAction.MODIFYCOLLECTION) {
+      @Override
+      public SolrParams getParams() {
+        ModifiableSolrParams params = (ModifiableSolrParams) super.getParams();
+        params.set("collection", collection);
+        params.set("autoAddReplicas", false);
+        return params;
+      }
+    }.process(cluster.getSolrClient());
+    data = zkClient().getData(SOLR_AUTOSCALING_CONF_PATH, null, null, true);
+    loaded = ZkNodeProps.load(data);
+    assertNull(loaded.get("triggers"));
+
+    new CollectionAdminRequest.AsyncCollectionAdminRequest(CollectionParams.CollectionAction.MODIFYCOLLECTION) {
+      @Override
+      public SolrParams getParams() {
+        ModifiableSolrParams params = (ModifiableSolrParams) super.getParams();
+        params.set("collection", collection);
+        params.set("autoAddReplicas", true);
+        return params;
+      }
+    }.process(cluster.getSolrClient());
+    data = zkClient().getData(SOLR_AUTOSCALING_CONF_PATH, null, null, true);
+    loaded = ZkNodeProps.load(data);
+    assertNotNull(loaded.get("triggers"));
+    assertEquals("auto add replicas trigger did not created", ((Map)loaded.get("triggers")).size(), 1);
   }
 
   @Test

@@ -102,14 +102,15 @@ public class MoveReplicaCmd implements Cmd{
     }
     assert slice != null;
     Object dataDir = replica.get("dataDir");
+    final String ulogDir = replica.getStr("ulogDir");
     if (dataDir != null && dataDir.toString().startsWith("hdfs:/")) {
-      moveHdfsReplica(clusterState, results, dataDir.toString(), targetNode, async, coll, replica, slice);
+      moveHdfsReplica(clusterState, results, dataDir.toString(), ulogDir, targetNode, async, coll, replica, slice);
     } else {
       moveNormalReplica(clusterState, results, targetNode, async, coll, replica, slice);
     }
   }
 
-  private void moveHdfsReplica(ClusterState clusterState, NamedList results, String dataDir, String targetNode, String async,
+  private void moveHdfsReplica(ClusterState clusterState, NamedList results, String dataDir, String ulogDir, String targetNode, String async,
                                  DocCollection coll, Replica replica, Slice slice) throws Exception {
     String newCoreName = Assign.buildCoreName(coll, slice.getName(), replica.getType());
 
@@ -136,7 +137,8 @@ public class MoveReplicaCmd implements Cmd{
         SHARD_ID_PROP, slice.getName(),
         CoreAdminParams.NODE, targetNode,
         CoreAdminParams.NAME, newCoreName,
-        CoreAdminParams.DATA_DIR, dataDir);
+        CoreAdminParams.DATA_DIR, dataDir,
+        CoreAdminParams.ULOG_DIR, ulogDir);
     if(async!=null) addReplicasProps.getProperties().put(ASYNC, async);
     NamedList addResult = new NamedList();
     ocmh.addReplica(clusterState, addReplicasProps, addResult, null);
