@@ -20,7 +20,7 @@
 
 This page explains some of the <<using-jmx-with-solr.adoc#using-jmx-with-solr,JMX>> statistics that Solr exposes.
 
-The same statistics are also exposed via the<<mbean-request-handler.adoc#mbean-request-handler,MBean Request Handler>> when statistics are requested.
+The same statistics are also exposed via the <<mbean-request-handler.adoc#mbean-request-handler,MBean Request Handler>> when statistics are requested.
 
 These statistics are per core. When you are running in SolrCloud mode these statistics would co-relate to each performance of an individual replica.
 

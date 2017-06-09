@@ -239,7 +239,7 @@ The parallel SQL interface supports and pushes down most common SQL operators, s
 |> |Greater than |`fielda > 10` | `fielda:{10 TO *]`
 |>= |Greater than or equals |`fielda >= 10` | `fielda:[10 TO *]`
 |< |Less than |`fielda < 10` | `fielda:[* TO 10}`
-|<= |Less than or equals |`fielda <= 10` | `fielda:[* TO 10]`
+|\<= |Less than or equals |`fielda \<= 10` | `fielda:[* TO 10]`
 |===
 
 Some operators that are not supported are BETWEEN, LIKE and IN. However, there are workarounds for BETWEEN and LIKE.

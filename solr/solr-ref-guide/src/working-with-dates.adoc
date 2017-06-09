@@ -53,7 +53,10 @@ As you can see, the date format includes colon characters separating the hours, 
 
 This is normally an invalid query: `datefield:1972-05-20T17:33:18.772Z`
 
-These are valid queries: `datefield:1972-05-20T17\:33\:18.772Z` `datefield:"1972-05-20T17:33:18.772Z"` `datefield:[1972-05-20T17:33:18.772Z TO *]`
+These are valid queries: + 
+`datefield:1972-05-20T17\:33\:18.772Z` + 
+`datefield:"1972-05-20T17:33:18.772Z"` +
+`datefield:[1972-05-20T17:33:18.772Z TO *]`
 
 ====
 

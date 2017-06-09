@@ -24,7 +24,7 @@ This section will describe the default `solr.xml` file included with Solr and ho
 
 == Defining solr.xml
 
-You can find `solr.xml` in your `$SOLR_HOME` directory (usually `server/solr`) in standalone mode or in Zookeeper when using SolrCloud. The default `solr.xml` file looks like this:
+You can find `solr.xml` in your `$SOLR_HOME` directory (usually `server/solr`) in standalone mode or in ZooKeeper when using SolrCloud. The default `solr.xml` file looks like this:
 
 [source,xml]
 ----
