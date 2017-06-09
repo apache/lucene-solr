@@ -112,7 +112,7 @@ http://localhost:8983/solr/admin/collections?action=CREATE&name=newCollection&nu
 
 `/admin/collections?action=MODIFYCOLLECTION&collection=_<collection-name>&<attribute-name>=<attribute-value>&<another-attribute-name>=<another-value>_`
 
-It's possible to edit multiple attributes at a time. Changing these values only updates the z-node on Zookeeper, they do not change the topology of the collection. For instance, increasing replicationFactor will _not_ automatically add more replicas to the collection but _will_ allow more ADDREPLICA commands to succeed.
+It's possible to edit multiple attributes at a time. Changing these values only updates the z-node on ZooKeeper, they do not change the topology of the collection. For instance, increasing replicationFactor will _not_ automatically add more replicas to the collection but _will_ allow more ADDREPLICA commands to succeed.
 
 *Query Parameters*
 

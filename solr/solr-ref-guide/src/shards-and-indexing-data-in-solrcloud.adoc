@@ -30,7 +30,7 @@ Before SolrCloud, Solr supported Distributed Search, which allowed one query to 
 
 SolrCloud fixes all those problems. There is support for distributing both the index process and the queries automatically, and ZooKeeper provides failover and load balancing. Additionally, every shard can also have multiple replicas for additional robustness.
 
-In SolrCloud there are no masters or slaves. Instead, every shard consists of at least one physical *replica*, exactly one of which is a *leader*. Leaders are automatically elected, initially on a first-come-first-served basis, and then based on the Zookeeper process described at http://zookeeper.apache.org/doc/trunk/recipes.html#sc_leaderElection[http://zookeeper.apache.org/doc/trunk/recipes.html#sc_leaderElection.].
+In SolrCloud there are no masters or slaves. Instead, every shard consists of at least one physical *replica*, exactly one of which is a *leader*. Leaders are automatically elected, initially on a first-come-first-served basis, and then based on the ZooKeeper process described at http://zookeeper.apache.org/doc/trunk/recipes.html#sc_leaderElection[http://zookeeper.apache.org/doc/trunk/recipes.html#sc_leaderElection.].
 
 If a leader goes down, one of the other replicas is automatically elected as the new leader.
 

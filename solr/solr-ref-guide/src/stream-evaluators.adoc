@@ -335,7 +335,7 @@ The expressions below show the various ways in which you can use the `gt` evalua
 ----
 gt(1,2) // 1 > 2
 gt(1,fieldA) // 1 > fieldA
-gt(fieldA,val(foo)) fieldA > "foo"
+gt(fieldA,val(foo)) // fieldA > "foo"
 gt(add(fieldA,fieldB),6) // fieldA + fieldB > 6
 ----
 
