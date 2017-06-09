@@ -10,7 +10,7 @@ search: exclude
   {% for page in site.pages %}
   {% unless page.search == "exclude" %}
   <url>
-    <loc>{{site.url}}{{page.url}}</loc>
+    <loc>{{site.url}}{{site.solr-attributes.solr-guide-version-path}}{{page.url}}</loc>
   </url>
   {% endunless %}
   {% endfor %}
