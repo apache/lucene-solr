@@ -227,13 +227,14 @@ use the More Like This query parser plugin.
 * `collection`: (Mandatory) The collection to perform the search in.
 * `id`: (Mandatory) The id of the source document to begin the knn search from.
 * `qf`: (Mandatory) The query field used to compare documents.
+* `k`: (Mandatory) The number of nearest neighbors to return.
 * `fl`: (Mandatory) The field list returned.
-* `mintf`: (Mandatory) The minimum numer of occurrences of the term in the source document to be inlcued in the search.
-* `maxtf`: (Mandatory) The maximum numer of occurrences of the term in the source document to be inlcued in the search.
-* `mindf`: (Mandatory) The minimum numer of occurrences in the corpus to be inlcued in the search.
-* `maxdf`: (Mandatory) The maximum numer of occurrences in the corpus to be inlcued in the search.
-* `minwl`: (Mandatory) The minimum world length of to be inlcued in the search.
-* `maxwl`: (Mandatory) The maximum world length of to be inlcued in the search.
+* `mintf`: (Optional) The minimum numer of occurrences of the term in the source document to be inlcued in the search.
+* `maxtf`: (Optional) The maximum numer of occurrences of the term in the source document to be inlcued in the search.
+* `mindf`: (Optional) The minimum numer of occurrences in the corpus to be inlcued in the search.
+* `maxdf`: (Optional) The maximum numer of occurrences in the corpus to be inlcued in the search.
+* `minwl`: (Optional) The minimum world length of to be inlcued in the search.
+* `maxwl`: (Optional) The maximum world length of to be inlcued in the search.
 
 === knn Syntax
 
