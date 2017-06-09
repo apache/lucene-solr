@@ -139,16 +139,16 @@ The UpdateRequestProcessorChain allows Solr to guess field types, and you can de
     </lst>
     <lst name="typeMapping">
       <str name="valueClass">java.util.Date</str>
-      <str name="fieldType">tdates</str>
+      <str name="fieldType">pdates</str>
     </lst>
     <lst name="typeMapping">
       <str name="valueClass">java.lang.Long</str>
       <str name="valueClass">java.lang.Integer</str>
-      <str name="fieldType">tlongs</str>
+      <str name="fieldType">plongs</str>
     </lst>
     <lst name="typeMapping">
       <str name="valueClass">java.lang.Number</str>
-      <str name="fieldType">tdoubles</str>
+      <str name="fieldType">pdoubles</str>
     </lst>
   </processor>
   <processor class="solr.LogUpdateProcessorFactory"/>
