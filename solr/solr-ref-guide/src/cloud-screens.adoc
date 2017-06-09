@@ -20,7 +20,7 @@
 
 When running in <<solrcloud.adoc#solrcloud,SolrCloud>> mode, a "Cloud" option will appear in the Admin UI between <<logging.adoc#logging,Logging>> and <<collections-core-admin.adoc#collections-core-admin,Collections/Core Admin>>.
 
-This screen provides status information about each collection & node in your cluster, as well as access to the low level data being stored in <<using-zookeeper-to-manage-configuration-files.adoc#using-zookeeper-to-manage-configuration-files,Zookeeper>>.
+This screen provides status information about each collection & node in your cluster, as well as access to the low level data being stored in <<using-zookeeper-to-manage-configuration-files.adoc#using-zookeeper-to-manage-configuration-files,ZooKeeper>>.
 
 .Only Visible When using SolrCloud
 [NOTE]

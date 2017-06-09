@@ -59,11 +59,11 @@ Since a Solr cluster requires internode communication, each node must also be ab
 [[KerberosAuthenticationPlugin-KerberizedZooKeeper]]
 === Kerberized ZooKeeper
 
-When setting up a kerberized SolrCloud cluster, it is recommended to enable Kerberos security for Zookeeper as well.
+When setting up a kerberized SolrCloud cluster, it is recommended to enable Kerberos security for ZooKeeper as well.
 
-In such a setup, the client principal used to authenticate requests with Zookeeper can be shared for internode communication as well. This has the benefit of not needing to renew the ticket granting tickets (TGTs) separately, since the Zookeeper client used by Solr takes care of this. To achieve this, a single JAAS configuration (with the app name as Client) can be used for the Kerberos plugin as well as for the Zookeeper client.
+In such a setup, the client principal used to authenticate requests with ZooKeeper can be shared for internode communication as well. This has the benefit of not needing to renew the ticket granting tickets (TGTs) separately, since the Zookeeper client used by Solr takes care of this. To achieve this, a single JAAS configuration (with the app name as Client) can be used for the Kerberos plugin as well as for the Zookeeper client.
 
-See the <<ZooKeeper Configuration>> section below for an example of starting Zookeeper in Kerberos mode.
+See the <<ZooKeeper Configuration>> section below for an example of starting ZooKeeper in Kerberos mode.
 
 [[KerberosAuthenticationPlugin-BrowserConfiguration]]
 === Browser Configuration
@@ -126,7 +126,7 @@ kadmin.local:  quit
 
 Copy the keytab file from the KDC server’s `/tmp/107.keytab` location to the Solr host at `/keytabs/107.keytab`. Repeat this step for each Solr node.
 
-You might need to take similar steps to create a Zookeeper service principal and keytab if it has not already been set up. In that case, the example below shows a different service principal for ZooKeeper, so the above might be repeated with `zookeeper/host1` as the service principal for one of the nodes
+You might need to take similar steps to create a ZooKeeper service principal and keytab if it has not already been set up. In that case, the example below shows a different service principal for ZooKeeper, so the above might be repeated with `zookeeper/host1` as the service principal for one of the nodes
 
 [[KerberosAuthenticationPlugin-ZooKeeperConfiguration]]
 === ZooKeeper Configuration
@@ -191,7 +191,7 @@ More details on how to use a `/security.json` file in Solr are available in the 
 
 [IMPORTANT]
 ====
-If you already have a `/security.json` file in Zookeeper, download the file, add or modify the authentication section and upload it back to ZooKeeper using the <<command-line-utilities.adoc#command-line-utilities,Command Line Utilities>> available in Solr.
+If you already have a `/security.json` file in ZooKeeper, download the file, add or modify the authentication section and upload it back to ZooKeeper using the <<command-line-utilities.adoc#command-line-utilities,Command Line Utilities>> available in Solr.
 ====
 
 [[KerberosAuthenticationPlugin-DefineaJAASConfigurationFile]]
@@ -201,7 +201,7 @@ The JAAS configuration file defines the properties to use for authentication, su
 
 The following example can be copied and modified slightly for your environment. The location of the file can be anywhere on the server, but it will be referenced when starting Solr so it must be readable on the filesystem. The JAAS file may contain multiple sections for different users, but each section must have a unique name so it can be uniquely referenced in each application.
 
-In the below example, we have created a JAAS configuration file with the name and path of `/home/foo/jaas-client.conf`. We will use this name and path when we define the Solr start parameters in the next section. Note that the client `principal` here is the same as the service principal. This will be used to authenticate internode requests and requests to Zookeeper. Make sure to use the correct `principal` hostname and the `keyTab` file path.
+In the below example, we have created a JAAS configuration file with the name and path of `/home/foo/jaas-client.conf`. We will use this name and path when we define the Solr start parameters in the next section. Note that the client `principal` here is the same as the service principal. This will be used to authenticate internode requests and requests to ZooKeeper. Make sure to use the correct `principal` hostname and the `keyTab` file path.
 
 [source,plain]
 ----
@@ -242,7 +242,7 @@ While starting up Solr, the following host-specific parameters need to be passed
 |`solr.kerberos.cookie.portaware` |No |When set to true, cookies are differentiated based on host and port, as opposed to standard cookies which are not port aware. This should be set if more than one Solr node is hosted on the same host. The default is false.
 |`solr.kerberos.principal` |Yes |The service principal.
 |`solr.kerberos.keytab` |Yes |Keytab file path containing service principal credentials.
-|`solr.kerberos.jaas.appname` |No |The app name (section name) within the JAAS configuration file which is required for internode communication. Default is `Client`, which is used for Zookeeper authentication as well. If different users are used for ZooKeeper and Solr, they will need to have separate sections in the JAAS configuration file.
+|`solr.kerberos.jaas.appname` |No |The app name (section name) within the JAAS configuration file which is required for internode communication. Default is `Client`, which is used for ZooKeeper authentication as well. If different users are used for ZooKeeper and Solr, they will need to have separate sections in the JAAS configuration file.
 |`java.security.auth.login.config` |Yes |Path to the JAAS configuration file for configuring a Solr client for internode communication.
 |===
 

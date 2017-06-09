@@ -96,7 +96,7 @@ Sets the solr.solr.home system property; Solr will create core directories under
 This parameter is ignored when running examples (-e), as the solr.solr.home depends on which example is run.
 
  |`bin/solr start -s newHome`
-|-v |Be more verbose. This changes the logging level of log4j from `INFO` to `DEBUG`., having the same effect as if you edited `log4j.properties` accordingly. |`bin/solr start -f -v`
+|-v |Be more verbose. This changes the logging level of log4j from `INFO` to `DEBUG`, having the same effect as if you edited `log4j.properties` accordingly. |`bin/solr start -f -v`
 |-q |Be more quiet. This changes the logging level of log4j from `INFO` to `WARN`, having the same effect as if you edited `log4j.properties` accordingly. This can be useful in a production setting where you want to limit logging to warnings and errors. |`bin/solr start -f -q`
 |-V |Start Solr with verbose messages from the start script. |`bin/solr start -V`
 |-z <zkHost> |Start Solr with the defined ZooKeeper connection string. This option is only used with the -c option, to start Solr in SolrCloud mode. If this option is not provided, Solr will start the embedded ZooKeeper instance and use that instance for SolrCloud operations. |`bin/solr start -c -z server1:2181,server2:2181`
@@ -577,7 +577,11 @@ The path to write the downloaded configuration set into. If just a name is suppl
 
 In either case, _pre-existing configurations at the destination will be overwritten!_
 
- |`-d directory_under_configsets` `-d /path/to/configset/destination`
+ a|
+`-d directory_under_configsets`
+
+`-d /path/to/configset/destination`
+
 |-z <zkHost> |The ZooKeeper connection string. Unnecessary if ZK_HOST is defined in `solr.in.sh` or `solr.in.cmd`. |`-z 123.321.23.43:2181`
 |===
 
