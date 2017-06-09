@@ -534,6 +534,14 @@ public class IndexSchema {
           log.error(msg);
           throw new SolrException(ErrorCode.SERVER_ERROR, msg);
         }
+
+        if (uniqueKeyField.getType().isPointField()) {
+          String msg = UNIQUE_KEY + " field ("+uniqueKeyFieldName+
+            ") can not be configured to use a Points based FieldType: " + uniqueKeyField.getType().getTypeName();
+          log.error(msg);
+          throw new SolrException(ErrorCode.SERVER_ERROR, msg);
+        }
+        
         uniqueKeyFieldName=uniqueKeyField.getName();
         uniqueKeyFieldType=uniqueKeyField.getType();
 

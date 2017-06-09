@@ -348,6 +348,8 @@ Bug Fixes
 
 * SOLR-10137: Ensure that ConfigSets created via API are mutable. (Hrishikesh via Mark Miller)
 
+* SOLR-10829: Fixed IndexSchema to enforce that uniqueKey can not be Points based for correctness (hossman)
+
 Optimizations
 ----------------------
 * SOLR-10634: JSON Facet API: When a field/terms facet will retrieve all buckets (i.e. limit:-1)
