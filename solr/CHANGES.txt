@@ -389,6 +389,9 @@ Other Changes
 
 * SOLR-10501: Test sortMissing{First,Last} with points fields.  (Steve Rowe)
 
+* SOLR-10761: Switch trie numeric/date fields to points in data-driven-enabled example and test schemas.
+  (Steve Rowe)
+
 ==================  6.6.0 ==================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release.
