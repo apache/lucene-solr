@@ -1,7 +1,7 @@
 = Apache Solr Reference Guide: For Solr {solr-guide-version}
 :toc:
 :toc-title: Table of Contents
-:toclevels: 2
+:toclevels: 1
 :author: Written by the Apache Lucene/Solr Project
 :email: https://lucene.apache.org/solr
 :revdate: Published {build-date}
