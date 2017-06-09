@@ -1398,7 +1398,7 @@ http://localhost:8983/solr/admin/collections?action=DELETESTATUS&requestid=bar
 
 *Input: Clear all the stored statuses*
 
-[source
+[source,text]
 ----
 http://localhost:8983/solr/admin/collections?action=DELETESTATUS&flush=true
 ----
