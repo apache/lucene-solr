@@ -55,7 +55,7 @@ defaults:
       search: true
 
 # needed for sitemap.xml
-url: https://home.apache.org/~ctargett/RefGuidePOC/jekyll-full
+url: https://lucene.apache.org/solr/guide/
 
 # Asciidoc settings - disabled so we can use asciidoctor instead
 asciidoc: {}
@@ -71,6 +71,7 @@ asciidoc: {}
 solr-attributes: &solr-attributes-ref
   solr-guide-draft-status: "${solr-guide-draft-status}"
   solr-guide-version: "${solr-guide-version}"
+  solr-guide-version-path: "${solr-guide-version-path}"
   solr-docs-version: "${solr-docs-version}"
   solr-javadocs: "${solr-javadocs}"
   lucene-javadocs: "${lucene-javadocs}"

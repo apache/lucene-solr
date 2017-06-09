@@ -44,33 +44,44 @@
     </filterchain>
   </loadresource>
   <!-- NOTE: ${solr-guide-version} is the version of this ref-guide.
-       
+
        By default, we assume this is the same as ${solr-docs-version} with a "-DRAFT" suffix
        When releasing, specify an explicit value of this property on the command line.
-       
+
        NOTE: the ${solr-guide-version} used *may* be different from the version of Solr the guide
        covers if we decide to do a bug-fix release of the ref-guide
-       
+
        Examples: (assume branch_6_1 where version=6.1.SOMETHING)
-       
+
        Basic nightly/local build of the 6.1 guide...
-       
+
        => ant build-pdf
-       
+
        Official release build of the 6.1 guide...
-       
+
        => ant build-pdf -Dsolr-guide-version=6.1
-       
+
        Release of a "6.1.1" ref guide, correcting some serious error in the docs
        (even if there is no 6.1.1 version - or if we've alreayd released up to 6.1.5 - of Solr itself)
-       
+
        => ant build-pdf -Dsolr-guide-version=6.1.1
-       
+
   -->
   <property name="solr-guide-version" value="${solr-docs-version}-DRAFT" />
   <condition property="solr-guide-draft-status" value="" else="DRAFT">
     <matches pattern="^\d+\.\d+(|\.\d+)$" string="${solr-guide-version}" />
   </condition>
+
+  <loadresource property="solr-guide-version-path">
+    <!-- NOTE: This is the ${solr-guide-version} as a path suitable for use publishing the HTML -->
+    <propertyresource name="solr-guide-version"/>
+    <filterchain>
+      <tokenfilter>
+        <filetokenizer/>
+        <replaceregex pattern="^(\d+)\.(\d+)(-DRAFT)?.*" replace="\1_\2\3" flags="s"/>
+      </tokenfilter>
+    </filterchain>
+  </loadresource>
 
   <property name="solr-javadocs" value="https://lucene.apache.org/solr/${solr-docs-version-path}/" />
   <property name="lucene-javadocs" value="https://lucene.apache.org/core/${solr-docs-version-path}/" />
