@@ -102,7 +102,7 @@ The table below explains the various ways that mm values can be specified.
 |Percentage |75% |Sets the minimum number of matching clauses to this percentage of the total number of optional clauses. The number computed from the percentage is rounded down and used as the minimum.
 |Negative percentage |-25% |Indicates that this percent of the total number of optional clauses can be missing. The number computed from the percentage is rounded down, before being subtracted from the total to determine the minimum number.
 |An expression beginning with a positive integer followed by a > or < sign and another value |3<90% |Defines a conditional expression indicating that if the number of optional clauses is equal to (or less than) the integer, they are all required, but if it's greater than the integer, the specification applies. In this example: if there are 1 to 3 clauses they are all required, but for 4 or more clauses only 90% are required.
-|Multiple conditional expressions involving > or < signs |2<-25% 9<-3 |Defines multiple conditions, each one being valid only for numbers greater than the one before it. In the example at left, if there are 1 or 2 clauses, then both are required. If there are 3-9 clauses all but 25% are required. If there are more then 9 clauses, all but three are required.
+|Multiple conditional expressions involving > or < signs |2\<-25% 9\<-3 |Defines multiple conditions, each one being valid only for numbers greater than the one before it. In the example at left, if there are 1 or 2 clauses, then both are required. If there are 3-9 clauses all but 25% are required. If there are more then 9 clauses, all but three are required.
 |===
 
 When specifying `mm` values, keep in mind the following:
