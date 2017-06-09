@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.solr.util;
+package org.apache.solr.common.util;
 
 import java.util.Arrays;
 import java.util.HashMap;
@@ -26,9 +26,6 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 import java.util.function.Function;
-
-import org.apache.solr.common.util.Pair;
-import org.apache.solr.common.util.Utils;
 
 /**
  * A very basic and lightweight json schema parsing and data validation tool. This custom tool is created

@@ -14,21 +14,18 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.solr.util;
+package org.apache.solr.common.util;
 
 
 import java.util.List;
 import java.util.Map;
 
 import org.apache.solr.SolrTestCaseJ4;
-import org.apache.solr.common.util.ValidatingJsonMap;
-import org.apache.solr.common.util.StrUtils;
-import org.apache.solr.common.util.Utils;
 
-import static org.apache.solr.common.util.ValidatingJsonMap.NOT_NULL;
 import static org.apache.solr.common.util.Utils.toJSONString;
+import static org.apache.solr.common.util.ValidatingJsonMap.NOT_NULL;
 
-public class JsonValidatorTest extends SolrTestCaseJ4 {
+public class JsonValidatorTest extends SolrTestCaseJ4  {
 
   public void testSchema() {
     checkSchema("collections.Commands");

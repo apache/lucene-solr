@@ -46,7 +46,7 @@ import org.apache.solr.common.util.CommandOperation;
 import org.apache.solr.api.Api;
 import org.apache.solr.api.ApiBag.ReqHandlerToApi;
 import org.apache.solr.common.SpecProvider;
-import org.apache.solr.util.JsonSchemaValidator;
+import org.apache.solr.common.util.JsonSchemaValidator;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
