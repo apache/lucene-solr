@@ -54,11 +54,7 @@ defaults:
       layout: "post"
       search: true
 
-
-# the description is used in the feed.xml file
-description: "The Apache Solr Reference Guide is the official documentation for the Apache Solr project."
-
-# needed for sitemap.xml and feed.xml files
+# needed for sitemap.xml
 url: https://home.apache.org/~ctargett/RefGuidePOC/jekyll-full
 
 # Asciidoc settings - disabled so we can use asciidoctor instead
