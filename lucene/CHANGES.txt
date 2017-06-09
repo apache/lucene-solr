@@ -18,6 +18,12 @@ New Features
   with a custom token stream allows indexing custom term frequencies
   (Mike McCandless)
 
+* LUCENE-7866: Add a new DelimitedTermFrequencyTokenFilter that allows to
+  mark tokens with a custom term frequency (LUCENE-7854). It parses a numeric
+  value after a separator char ('|') at the end of each token and changes
+  the term frequency to this value.  (Uwe Schindler, Robert Muir,
+  Mike McCandless)
+
 API Changes
 
 * LUCENE-2605: Classic QueryParser no longer splits on whitespace by default.
