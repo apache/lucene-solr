@@ -217,6 +217,36 @@ features(collection1,
 
 The `gatherNodes` function provides breadth-first graph traversal. For details, see the section <<graph-traversal.adoc#graph-traversal,Graph Traversal>>.
 
+== knn
+
+The `knn` function returns the K nearest neighbors for a document based on text similarity. Under the covers the `knn` function
+use the More Like This query parser plugin.
+
+=== knn Parameters
+
+* `collection`: (Mandatory) The collection to perform the search in.
+* `id`: (Mandatory) The id of the source document to begin the knn search from.
+* `qf`: (Mandatory) The query field used to compare documents.
+* `fl`: (Mandatory) The field list returned.
+* `mintf`: (Mandatory) The minimum numer of occurrences of the term in the source document to be inlcued in the search.
+* `maxtf`: (Mandatory) The maximum numer of occurrences of the term in the source document to be inlcued in the search.
+* `mindf`: (Mandatory) The minimum numer of occurrences in the corpus to be inlcued in the search.
+* `maxdf`: (Mandatory) The maximum numer of occurrences in the corpus to be inlcued in the search.
+* `minwl`: (Mandatory) The minimum world length of to be inlcued in the search.
+* `maxwl`: (Mandatory) The maximum world length of to be inlcued in the search.
+
+=== knn Syntax
+
+[source,text]
+----
+knn(collection1,
+    id="doc1",
+    qf="text_field",
+    fl="id, title",
+    mintf="3",
+    maxdf="10000000")
+----
+
 == model
 
 The `model` function retrieves and caches logistic regression text classification models that are stored in a SolrCloud collection. The `model` function is designed to work with models that are created by the <<train,train function>>, but can also be used to retrieve text classification models trained outside of Solr, as long as they conform to the specified format. After the model is retrieved it can be used by the <<stream-decorators.adoc#classify,classify function>> to classify documents.
@@ -404,6 +434,7 @@ JSON Facet API as its high performance aggregation engine.
 * `start`: (Mandatory) The start of the time series expressed in Solr date or date math syntax.
 * `end`: (Mandatory) The end of the time series expressed in Solr date or date math syntax.
 * `gap`: (Mandatory) The time gap between time series aggregation points expressed in Solr date math syntax.
+* `format`: (Optional) Date template to format the date field in the output tuples. Formatting is performed by Java's SimpleDateFormat class.
 * `metrics`: (Mandatory) The metrics to include in the result tuple. Current supported metrics are `sum(col)`, `avg(col)`, `min(col)`, `max(col)` and `count(*)`
 
 === timeseries Syntax
@@ -416,6 +447,7 @@ timeseries(collection1,
            start="NOW-30DAYS",
            end="NOW",
            gap="+1DAY",
+           format="YYYY-MM-dd",
            sum(a_i),
            max(a_i),
            max(a_f),
