@@ -65,6 +65,8 @@ public class BadIndexSchemaTest extends AbstractBadConfigTestBase {
            "can not be configured with a default value");
     doTest("bad-schema-uniquekey-multivalued.xml", 
            "can not be configured to be multivalued");
+    doTest("bad-schema-uniquekey-uses-points.xml", 
+           "can not be configured to use a Points based FieldType");
   }
 
   public void testMultivaluedCurrency() throws Exception {
