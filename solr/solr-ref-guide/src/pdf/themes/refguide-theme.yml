@@ -45,7 +45,7 @@ base:
   border_color: '#eeeeee'
   border_radius: 4
   border_width: 0.5
-vertical_rhythm: $base_line_height_length
+vertical_rhythm: 10
 horizontal_rhythm: $base_line_height_length
 vertical_spacing: $vertical_rhythm
 link:
@@ -54,6 +54,7 @@ link:
 literal:
   font_color: '#333333'
   font_family: Inconsolata
+  font_size: 11
   background_color: '#f5f5f5'
 # code is used for source code blocks
 code:
