@@ -21,13 +21,17 @@ import java.io.IOException;
 import java.io.Reader;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
+import java.util.Arrays;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
+import java.util.Set;
 
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.BaseTokenStreamTestCase;
 import org.apache.lucene.analysis.MockTokenizer;
 import org.apache.lucene.analysis.Tokenizer;
+import org.apache.lucene.analysis.miscellaneous.DelimitedTermFrequencyTokenFilterFactory;
 import org.apache.lucene.analysis.util.AbstractAnalysisFactory;
 import org.apache.lucene.analysis.util.CharFilterFactory;
 import org.apache.lucene.analysis.util.MultiTermAwareComponent;
@@ -49,6 +53,12 @@ import org.apache.lucene.util.Version;
 
 // TODO: fix this to use CustomAnalyzer instead of its own FactoryAnalyzer
 public class TestFactories extends BaseTokenStreamTestCase {
+  
+  /** Factories that are excluded from testing it with random data */
+  private static final Set<Class<? extends AbstractAnalysisFactory>> EXCLUDE_FACTORIES_RANDOM_DATA = new HashSet<>(Arrays.asList(
+      DelimitedTermFrequencyTokenFilterFactory.class
+  ));
+  
   public void test() throws IOException {
     for (String tokenizer : TokenizerFactory.availableTokenizers()) {
       doTestTokenizer(tokenizer);
@@ -77,11 +87,13 @@ public class TestFactories extends BaseTokenStreamTestCase {
         assertFalse(mtc instanceof CharFilterFactory);
       }
       
-      // beast it just a little, it shouldnt throw exceptions:
-      // (it should have thrown them in initialize)
-      Analyzer a = new FactoryAnalyzer(factory, null, null);
-      checkRandomData(random(), a, 20, 20, false, false);
-      a.close();
+      if (!EXCLUDE_FACTORIES_RANDOM_DATA.contains(factory.getClass())) {
+        // beast it just a little, it shouldnt throw exceptions:
+        // (it should have thrown them in initialize)
+        Analyzer a = new FactoryAnalyzer(factory, null, null);
+        checkRandomData(random(), a, 20, 20, false, false);
+        a.close();
+      }
     }
   }
   
@@ -99,11 +111,13 @@ public class TestFactories extends BaseTokenStreamTestCase {
         assertTrue(mtc instanceof TokenFilterFactory);
       }
       
-      // beast it just a little, it shouldnt throw exceptions:
-      // (it should have thrown them in initialize)
-      Analyzer a = new FactoryAnalyzer(assertingTokenizer, factory, null);
-      checkRandomData(random(), a, 20, 20, false, false);
-      a.close();
+      if (!EXCLUDE_FACTORIES_RANDOM_DATA.contains(factory.getClass())) {
+        // beast it just a little, it shouldnt throw exceptions:
+        // (it should have thrown them in initialize)
+        Analyzer a = new FactoryAnalyzer(assertingTokenizer, factory, null);
+        checkRandomData(random(), a, 20, 20, false, false);
+        a.close();
+      }
     }
   }
   
@@ -121,11 +135,13 @@ public class TestFactories extends BaseTokenStreamTestCase {
         assertTrue(mtc instanceof CharFilterFactory);
       }
       
-      // beast it just a little, it shouldnt throw exceptions:
-      // (it should have thrown them in initialize)
-      Analyzer a = new FactoryAnalyzer(assertingTokenizer, null, factory);
-      checkRandomData(random(), a, 20, 20, false, false);
-      a.close();
+      if (!EXCLUDE_FACTORIES_RANDOM_DATA.contains(factory.getClass())) {
+        // beast it just a little, it shouldnt throw exceptions:
+        // (it should have thrown them in initialize)
+        Analyzer a = new FactoryAnalyzer(assertingTokenizer, null, factory);
+        checkRandomData(random(), a, 20, 20, false, false);
+        a.close();
+      }
     }
   }
   
