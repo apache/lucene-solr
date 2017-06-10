@@ -350,6 +350,11 @@ Bug Fixes
 
 * SOLR-10829: Fixed IndexSchema to enforce that uniqueKey can not be Points based for correctness (hossman)
 
+* SOLR-10836: The query parsers igain, significantTerms, and tlogit (used by streaming expressions by
+  the same name) might throw a NullPointerException if the referenced field had no indexed data in some
+  shards. The fix included an optimization to use Solr's cached AtomicReader instead of re-calculating.
+  (David Smiley)
+
 Optimizations
 ----------------------
 * SOLR-10634: JSON Facet API: When a field/terms facet will retrieve all buckets (i.e. limit:-1)
