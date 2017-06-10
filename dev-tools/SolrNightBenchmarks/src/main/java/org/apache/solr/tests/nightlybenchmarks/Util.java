@@ -679,7 +679,6 @@ public class Util {
 		
 		try {
 			argM = Util.getArgs(args);
-
 			Util.getPropertyValues();
 
 			if (argM.containsKey("-RegisterLatestCommit")) {
@@ -695,6 +694,12 @@ public class Util {
 				
 				Util.postMessage("** SolrNightlyBenchmarks Commit Registry Updater [COMPLETE] now EXIT...", MessageType.WHITE_TEXT, false);
 				System.exit(0);
+				
+			}
+			
+			if (argM.containsKey("-RunSilently")) {
+				Util.postMessage("** Running silently since -RunSilently parameter is set ...", MessageType.BLUE_TEXT, false);
+				Util.SILENT = true;
 			}
 			
 			Util.checkWebAppFiles();
@@ -702,21 +707,6 @@ public class Util {
 			Util.checkBaseAndTempDir();
 			
 			Util.setAliveFlag();
-
-			String commitID = "";
-			if (argM.containsKey("-commitID")) {
-				commitID = argM.get("-commitID");
-			} else {
-				commitID = Util.getLatestCommitID(Util.LUCENE_SOLR_REPOSITORY_URL);
-				Util.postMessage("The latest commit ID is: " + commitID, MessageType.RED_TEXT, false);
-			}
-
-			if (argM.containsKey("-RunSilently")) {
-				Util.postMessage("** Running silently since -RunSilently is set ...", MessageType.BLUE_TEXT, false);
-				Util.SILENT = true;
-			}
-
-			Util.COMMIT_ID = commitID;
 
 			Util.getSystemEnvironmentInformation();
 
@@ -740,7 +730,7 @@ public class Util {
 			}
 
 			Util.createIsRunningFile();
-			
+
 			if (argM.containsKey("-ProcessCommitsFromQueue")) {
 				Util.postMessage("** Initiating processing from commit queueu ...", MessageType.BLUE_TEXT, false);
 				
@@ -764,8 +754,21 @@ public class Util {
 						
 				}
 				Util.postMessage("** Processing from commit queue [COMPLETE] ...", MessageType.BLUE_TEXT, false);
-			}
-			
+			} else if (argM.containsKey("-ProcessLatestCommit")) {
+
+				Util.COMMIT_ID = Util.getLatestCommitID(Util.LUCENE_SOLR_REPOSITORY_URL);
+				Util.postMessage("The latest commit ID is: " + Util.COMMIT_ID, MessageType.YELLOW_TEXT, false);
+
+				TestPlans.execute(Util.COMMIT_ID);
+				BenchmarkAppConnector.publishDataForWebApp();				
+			} else if (argM.containsKey("-ProcessWithcommitID")) {
+				
+				Util.COMMIT_ID = argM.get("-ProcessWithcommitID");
+
+				TestPlans.execute(Util.COMMIT_ID);
+				BenchmarkAppConnector.publishDataForWebApp();				
+			} 
+
 		
 		} catch (Exception e) {
 			e.printStackTrace();
