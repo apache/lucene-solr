@@ -62,7 +62,7 @@ public class SolrIndexingClient {
 	}
 
 	@SuppressWarnings("deprecation")
-	public Map<String, String> indexAmazonFoodData(int numDocuments, String urlString) {
+	public Map<String, String> indexAmazonFoodData(int numDocuments, String urlString, boolean captureMetrics) {
 
 		documentCount = numDocuments;
 
@@ -77,7 +77,7 @@ public class SolrIndexingClient {
 		String cvsSplitBy = ",";
 		int value;
 
-		Thread thread = new Thread(new MetricCollector(this.commitId, TestType.STANDALONE_INDEXING, this.port));
+		Thread thread = new Thread(new MetricCollector(this.commitId, TestType.STANDALONE_INDEXING_THROUGHPUT_SERIAL, this.port));
 		thread.start();
 
 		try (BufferedReader br = new BufferedReader(new FileReader(amazonFoodDataLocation))) {
@@ -148,7 +148,7 @@ public class SolrIndexingClient {
 
 	@SuppressWarnings("deprecation")
 	public Map<String, String> indexAmazonFoodData(int numDocuments, String urlString, String zookeeperIp,
-			String zookeeperPort, String collectionName) {
+			String zookeeperPort, String collectionName, boolean captureMetrics) {
 
 		documentCount = numDocuments;
 		Util.postMessage("** Indexing documents (Amazon Food Reviews) ...", MessageType.WHITE_TEXT, false);
@@ -165,7 +165,7 @@ public class SolrIndexingClient {
 		String cvsSplitBy = ",";
 		int value;
 
-		Thread thread = new Thread(new MetricCollector(this.commitId, TestType.CLOUD_INDEXING_REGULAR, this.port));
+		Thread thread = new Thread(new MetricCollector(this.commitId, TestType.CLOUD_INDEXING_THROUGHPUT_SERIAL, this.port));
 		thread.start();
 
 		try (BufferedReader br = new BufferedReader(new FileReader(amazonFoodDataLocation))) {
@@ -235,7 +235,7 @@ public class SolrIndexingClient {
 	}
 
 	@SuppressWarnings("deprecation")
-	public Map<String, String> indexAmazonFoodData(int numDocuments, String urlString, String collectionName, int queueSize, int threadCount) {
+	public Map<String, String> indexAmazonFoodData(int numDocuments, String urlString, String collectionName, int queueSize, int threadCount, TestType type, boolean captureMetrics) {
 
 		documentCount = numDocuments;
 
@@ -250,7 +250,7 @@ public class SolrIndexingClient {
 		String cvsSplitBy = ",";
 		int value;
 
-		Thread thread = new Thread(new MetricCollector(this.commitId, TestType.CLOUD_INDEXING_CONCURRENT, this.port));
+		Thread thread = new Thread(new MetricCollector(this.commitId, type, this.port));
 		thread.start();
 
 		try (BufferedReader br = new BufferedReader(new FileReader(amazonFoodDataLocation))) {

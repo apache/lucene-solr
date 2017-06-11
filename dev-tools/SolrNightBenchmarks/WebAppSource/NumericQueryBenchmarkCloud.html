@@ -185,6 +185,7 @@
 	    var fileData;
 	    var commitID;
 	    var testID;
+	    var point;
 
 	    $(document).ready(function () {
 
@@ -235,14 +236,34 @@
 				                     				 document.getElementById("welcomeMessage").innerHTML = "";
 				                     
                                                 },
-                                     clickCallback: function (e, x, pts) {
 
+                                   pointClickCallback: function(e, p) {
+													 point = p.name;
                                                      $('#memProfile').modal();
                                                      document.getElementById('memProfileFileChangeListLink').setAttribute('href', "https://git-wip-us.apache.org/repos/asf?p=lucene-solr.git;h=" + commitID);
 
                                                      setTimeout(function () {
-                                                         g3 = new Dygraph(document.getElementById("memProfileGraph"), "data/" + testID + "_" + commitID + "_MEM_ESTIMATION_CLOUD_INDEXING_CONCURRENT_dump.csv", { visibility: [false, true], colors: ['#6B8E23','#4B0082','#FF0000','#DA70D6','#CD853F'], labelsDiv: document.getElementById('memProfileStats') });
-                                                         g4 = new Dygraph(document.getElementById("cpuProfileGraph"), "data/" + testID + "_" + commitID + "_CPU_ESTIMATION_CLOUD_INDEXING_CONCURRENT_dump.csv", { visibility: [false, true], colors: ['#6B8E23','#4B0082','#FF0000','#DA70D6','#CD853F'], labelsDiv: document.getElementById('cpuProfileStats') });
+                                                    	 
+                                                    	 if (p.name.includes("QPS(Term)")) {
+                                                             g3 = new Dygraph(document.getElementById("memProfileGraph"), "data/" + testID + "_" + commitID + "_MEM_ESTIMATION_TERM_NUMERIC_QUERY_CLOUD_dump.csv", { visibility: [false, true], colors: ['#6B8E23','#4B0082','#FF0000','#DA70D6','#CD853F'], labelsDiv: document.getElementById('memProfileStats') });
+                                                             g4 = new Dygraph(document.getElementById("cpuProfileGraph"), "data/" + testID + "_" + commitID + "_CPU_ESTIMATION_TERM_NUMERIC_QUERY_CLOUD_dump.csv", { visibility: [false, true], colors: ['#6B8E23','#4B0082','#FF0000','#DA70D6','#CD853F'], labelsDiv: document.getElementById('cpuProfileStats') });
+                                                    	 } else if (p.name.includes("QPS(Range)")) {
+                                                             g3 = new Dygraph(document.getElementById("memProfileGraph"), "data/" + testID + "_" + commitID + "_MEM_ESTIMATION_RANGE_NUMERIC_QUERY_CLOUD_dump.csv", { visibility: [false, true], colors: ['#6B8E23','#4B0082','#FF0000','#DA70D6','#CD853F'], labelsDiv: document.getElementById('memProfileStats') });
+                                                             g4 = new Dygraph(document.getElementById("cpuProfileGraph"), "data/" + testID + "_" + commitID + "_CPU_ESTIMATION_RANGE_NUMERIC_QUERY_CLOUD_dump.csv", { visibility: [false, true], colors: ['#6B8E23','#4B0082','#FF0000','#DA70D6','#CD853F'], labelsDiv: document.getElementById('cpuProfileStats') });
+                                                    	 } else if (p.name.includes("QPS(Less Than)")) {
+                                                             g3 = new Dygraph(document.getElementById("memProfileGraph"), "data/" + testID + "_" + commitID + "_MEM_ESTIMATION_LT_NUMERIC_QUERY_CLOUD_dump.csv", { visibility: [false, true], colors: ['#6B8E23','#4B0082','#FF0000','#DA70D6','#CD853F'], labelsDiv: document.getElementById('memProfileStats') });
+                                                             g4 = new Dygraph(document.getElementById("cpuProfileGraph"), "data/" + testID + "_" + commitID + "_CPU_ESTIMATION_LT_NUMERIC_QUERY_CLOUD_dump.csv", { visibility: [false, true], colors: ['#6B8E23','#4B0082','#FF0000','#DA70D6','#CD853F'], labelsDiv: document.getElementById('cpuProfileStats') });
+                                                    	 } else if (p.name.includes("QPS(Greater Than)")) {
+                                                             g3 = new Dygraph(document.getElementById("memProfileGraph"), "data/" + testID + "_" + commitID + "_MEM_ESTIMATION_GT_NUMERIC_QUERY_CLOUD_dump.csv", { visibility: [false, true], colors: ['#6B8E23','#4B0082','#FF0000','#DA70D6','#CD853F'], labelsDiv: document.getElementById('memProfileStats') });
+                                                             g4 = new Dygraph(document.getElementById("cpuProfileGraph"), "data/" + testID + "_" + commitID + "_CPU_ESTIMATION_GT_NUMERIC_QUERY_CLOUD_dump.csv", { visibility: [false, true], colors: ['#6B8E23','#4B0082','#FF0000','#DA70D6','#CD853F'], labelsDiv: document.getElementById('cpuProfileStats') });
+                                                    	 } else if (p.name.includes("QPS(AND)")) {
+                                                             g3 = new Dygraph(document.getElementById("memProfileGraph"), "data/" + testID + "_" + commitID + "_MEM_ESTIMATION_AND_NUMERIC_QUERY_CLOUD_dump.csv", { visibility: [false, true], colors: ['#6B8E23','#4B0082','#FF0000','#DA70D6','#CD853F'], labelsDiv: document.getElementById('memProfileStats') });
+                                                             g4 = new Dygraph(document.getElementById("cpuProfileGraph"), "data/" + testID + "_" + commitID + "_CPU_ESTIMATION_AND_NUMERIC_QUERY_CLOUD_dump.csv", { visibility: [false, true], colors: ['#6B8E23','#4B0082','#FF0000','#DA70D6','#CD853F'], labelsDiv: document.getElementById('cpuProfileStats') });
+                                                    	 } else if (p.name.includes("QPS(OR)")) {
+                                                             g3 = new Dygraph(document.getElementById("memProfileGraph"), "data/" + testID + "_" + commitID + "_MEM_ESTIMATION_OR_NUMERIC_QUERY_CLOUD_dump.csv", { visibility: [false, true], colors: ['#6B8E23','#4B0082','#FF0000','#DA70D6','#CD853F'], labelsDiv: document.getElementById('memProfileStats') });
+                                                             g4 = new Dygraph(document.getElementById("cpuProfileGraph"), "data/" + testID + "_" + commitID + "_CPU_ESTIMATION_OR_NUMERIC_QUERY_CLOUD_dump.csv", { visibility: [false, true], colors: ['#6B8E23','#4B0082','#FF0000','#DA70D6','#CD853F'], labelsDiv: document.getElementById('cpuProfileStats') });
+                                                    	 }
+                                                    	 
                                                      }, 250);
 
                                                 }
@@ -263,7 +284,19 @@
 
                                     $("#HeapMemoryUsageTab").addClass("active");
 
-                                    g3 = new Dygraph(document.getElementById("memProfileGraph"), "data/" + testID + "_" + commitID + "_MEM_ESTIMATION_CLOUD_INDEXING_CONCURRENT_dump.csv", { visibility: [false, true], colors: ['#6B8E23','#4B0082','#FF0000','#DA70D6','#CD853F'], labelsDiv: document.getElementById('memProfileStats') });
+                               	 if (point.includes("QPS(Term)")) {
+                                     g3 = new Dygraph(document.getElementById("memProfileGraph"), "data/" + testID + "_" + commitID + "_MEM_ESTIMATION_TERM_NUMERIC_QUERY_CLOUD_dump.csv", { visibility: [false, true], colors: ['#6B8E23','#4B0082','#FF0000','#DA70D6','#CD853F'], labelsDiv: document.getElementById('memProfileStats') });
+                            	 } else if (point.includes("QPS(Range)")) {
+                                     g3 = new Dygraph(document.getElementById("memProfileGraph"), "data/" + testID + "_" + commitID + "_MEM_ESTIMATION_RANGE_NUMERIC_QUERY_CLOUD_dump.csv", { visibility: [false, true], colors: ['#6B8E23','#4B0082','#FF0000','#DA70D6','#CD853F'], labelsDiv: document.getElementById('memProfileStats') });
+                            	 } else if (point.includes("QPS(Less Than)")) {
+                                     g3 = new Dygraph(document.getElementById("memProfileGraph"), "data/" + testID + "_" + commitID + "_MEM_ESTIMATION_LT_NUMERIC_QUERY_CLOUD_dump.csv", { visibility: [false, true], colors: ['#6B8E23','#4B0082','#FF0000','#DA70D6','#CD853F'], labelsDiv: document.getElementById('memProfileStats') });
+                            	 } else if (point.includes("QPS(Greater Than)")) {
+                                     g3 = new Dygraph(document.getElementById("memProfileGraph"), "data/" + testID + "_" + commitID + "_MEM_ESTIMATION_GT_NUMERIC_QUERY_CLOUD_dump.csv", { visibility: [false, true], colors: ['#6B8E23','#4B0082','#FF0000','#DA70D6','#CD853F'], labelsDiv: document.getElementById('memProfileStats') });
+                            	 } else if (point.includes("QPS(AND)")) {
+                                     g3 = new Dygraph(document.getElementById("memProfileGraph"), "data/" + testID + "_" + commitID + "_MEM_ESTIMATION_AND_NUMERIC_QUERY_CLOUD_dump.csv", { visibility: [false, true], colors: ['#6B8E23','#4B0082','#FF0000','#DA70D6','#CD853F'], labelsDiv: document.getElementById('memProfileStats') });
+                            	 } else if (point.includes("QPS(OR)")) {
+                                     g3 = new Dygraph(document.getElementById("memProfileGraph"), "data/" + testID + "_" + commitID + "_MEM_ESTIMATION_OR_NUMERIC_QUERY_CLOUD_dump.csv", { visibility: [false, true], colors: ['#6B8E23','#4B0082','#FF0000','#DA70D6','#CD853F'], labelsDiv: document.getElementById('memProfileStats') });
+                            	 }
 
                                 }
 
@@ -288,7 +321,19 @@
 
                                     $("#ProcessCPULoadTab").addClass("active");
 
-                                    g4 = new Dygraph(document.getElementById("cpuProfileGraph"), "data/" + testID + "_" + commitID + "_CPU_ESTIMATION_CLOUD_INDEXING_CONCURRENT_dump.csv", { visibility: [false, true], colors: ['#6B8E23','#4B0082','#FF0000','#DA70D6','#CD853F'], labelsDiv: document.getElementById('cpuProfileStats') });
+                               	 if (point.includes("QPS(Term)")) {
+                                     g4 = new Dygraph(document.getElementById("cpuProfileGraph"), "data/" + testID + "_" + commitID + "_CPU_ESTIMATION_TERM_NUMERIC_QUERY_CLOUD_dump.csv", { visibility: [false, true], colors: ['#6B8E23','#4B0082','#FF0000','#DA70D6','#CD853F'], labelsDiv: document.getElementById('cpuProfileStats') });
+                            	 } else if (point.includes("QPS(Range)")) {
+                                     g4 = new Dygraph(document.getElementById("cpuProfileGraph"), "data/" + testID + "_" + commitID + "_CPU_ESTIMATION_RANGE_NUMERIC_QUERY_CLOUD_dump.csv", { visibility: [false, true], colors: ['#6B8E23','#4B0082','#FF0000','#DA70D6','#CD853F'], labelsDiv: document.getElementById('cpuProfileStats') });
+                            	 } else if (point.includes("QPS(Less Than)")) {
+                                     g4 = new Dygraph(document.getElementById("cpuProfileGraph"), "data/" + testID + "_" + commitID + "_CPU_ESTIMATION_LT_NUMERIC_QUERY_CLOUD_dump.csv", { visibility: [false, true], colors: ['#6B8E23','#4B0082','#FF0000','#DA70D6','#CD853F'], labelsDiv: document.getElementById('cpuProfileStats') });
+                            	 } else if (point.includes("QPS(Greater Than)")) {
+                                     g4 = new Dygraph(document.getElementById("cpuProfileGraph"), "data/" + testID + "_" + commitID + "_CPU_ESTIMATION_GT_NUMERIC_QUERY_CLOUD_dump.csv", { visibility: [false, true], colors: ['#6B8E23','#4B0082','#FF0000','#DA70D6','#CD853F'], labelsDiv: document.getElementById('cpuProfileStats') });
+                            	 } else if (point.includes("QPS(AND)")) {
+                                     g4 = new Dygraph(document.getElementById("cpuProfileGraph"), "data/" + testID + "_" + commitID + "_CPU_ESTIMATION_AND_NUMERIC_QUERY_CLOUD_dump.csv", { visibility: [false, true], colors: ['#6B8E23','#4B0082','#FF0000','#DA70D6','#CD853F'], labelsDiv: document.getElementById('cpuProfileStats') });
+                            	 } else if (point.includes("QPS(OR)")) {
+                                     g4 = new Dygraph(document.getElementById("cpuProfileGraph"), "data/" + testID + "_" + commitID + "_CPU_ESTIMATION_OR_NUMERIC_QUERY_CLOUD_dump.csv", { visibility: [false, true], colors: ['#6B8E23','#4B0082','#FF0000','#DA70D6','#CD853F'], labelsDiv: document.getElementById('cpuProfileStats') });
+                            	 }
 
                                 }
 
