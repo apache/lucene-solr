@@ -397,6 +397,13 @@ Other Changes
 * SOLR-10761: Switch trie numeric/date fields to points in data-driven-enabled example and test schemas.
   (Steve Rowe)
 
+==================  6.6.1 ==================
+
+Bug Fixes
+----------------------
+
+* SOLR-10857: standalone Solr loads UNLOADed core on request (Erick Erickson, Mikhail Khludnev)
+
 ==================  6.6.0 ==================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release.
