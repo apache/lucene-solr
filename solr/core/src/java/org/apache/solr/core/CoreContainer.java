@@ -144,7 +144,7 @@ public class CoreContainer {
   private UpdateShardHandler updateShardHandler;
 
   private TransientSolrCoreCacheFactory transientCoreCache;
-  
+
   private ExecutorService coreContainerWorkExecutor = ExecutorUtil.newMDCAwareCachedThreadPool(
       new DefaultSolrThreadFactory("coreContainerWorkExecutor") );
 
@@ -623,7 +623,7 @@ public class CoreContainer {
     }
     return transientCoreCache.getTransientSolrCoreCache();
   }
-  
+
   public void securityNodeChanged() {
     log.info("Security node changed, reloading security.json");
     reloadSecurityProperties();
@@ -789,7 +789,7 @@ public class CoreContainer {
     if( core == null ) {
       throw new RuntimeException( "Can not register a null core." );
     }
-    
+
     if (isShutDown) {
       core.close();
       throw new IllegalStateException("This CoreContainer has been closed");
@@ -1071,7 +1071,7 @@ public class CoreContainer {
   /**
    * get a list of all the cores that are currently loaded
    * @return a list of al lthe available core names in either permanent or transient core lists.
-   * 
+   *
    * Note: this implies that the core is loaded
    */
   public Collection<String> getAllCoreNames() {
@@ -1120,12 +1120,12 @@ public class CoreContainer {
     if (ret == null) {
       oldDesc.loadExtraProperties(); // there may be changes to extra properties that we need to pick up.
       return oldDesc;
-      
+
     }
     // The CloudDescriptor bit here is created in a very convoluted way, requiring access to private methods
     // in ZkController. When reloading, this behavior is identical to what used to happen where a copy of the old
     // CoreDescriptor was just re-used.
-    
+
     if (ret.getCloudDescriptor() != null) {
       ret.getCloudDescriptor().reload(oldDesc.getCloudDescriptor());
     }
@@ -1143,7 +1143,7 @@ public class CoreContainer {
   public void reload(String name) {
     SolrCore core = solrCores.getCoreFromAnyList(name, false);
     if (core != null) {
-      
+
       // The underlying core properties files may have changed, we don't really know. So we have a (perhaps) stale
       // CoreDescriptor and we need to reload it from the disk files
       CoreDescriptor cd = reloadCoreDescriptor(core.getCoreDescriptor());
@@ -1224,6 +1224,8 @@ public class CoreContainer {
 
     boolean close = solrCores.isLoadedNotPendingClose(name);
     SolrCore core = solrCores.remove(name);
+
+    solrCores.removeCoreDescriptor(cd);
     coresLocator.delete(this, cd);
     if (core == null) {
       // transient core
@@ -1252,9 +1254,6 @@ public class CoreContainer {
       } catch (KeeperException e) {
         throw new SolrException(ErrorCode.SERVER_ERROR, "Error unregistering core [" + name + "] from cloud state", e);
       }
-    }
-    if (deleteInstanceDir) { // we aren't going to reload this if we delete the instance dir.
-      solrCores.removeCoreDescriptor(cd);
     }
   }
 
@@ -1325,10 +1324,10 @@ public class CoreContainer {
     // This is a bit of awkwardness where SolrCloud and transient cores don't play nice together. For transient cores,
     // we have to allow them to be created at any time there hasn't been a core load failure (use reload to cure that).
     // But for TestConfigSetsAPI.testUploadWithScriptUpdateProcessor, this needs to _not_ try to load the core if
-    // the core is null and there was an error. If you change this, be sure to run both TestConfiSetsAPI and 
+    // the core is null and there was an error. If you change this, be sure to run both TestConfiSetsAPI and
     // TestLazyCores
     if (desc == null || zkSys.getZkController() != null) return null;
-    
+
     // This will put an entry in pending core ops if the core isn't loaded
     core = solrCores.waitAddPendingCoreOps(name);
 
