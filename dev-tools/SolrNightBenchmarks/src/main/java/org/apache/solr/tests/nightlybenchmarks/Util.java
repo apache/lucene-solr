@@ -761,10 +761,10 @@ public class Util {
 
 				TestPlans.execute(Util.COMMIT_ID);
 				BenchmarkAppConnector.publishDataForWebApp();				
-			} else if (argM.containsKey("-ProcessWithcommitID")) {
+			} else if (argM.containsKey("-ProcessWithCommitID")) {
 				
-				Util.COMMIT_ID = argM.get("-ProcessWithcommitID");
-
+				Util.COMMIT_ID = argM.get("-ProcessWithCommitID");
+				Util.postMessage("** Executing benchmarks with commit: " + Util.COMMIT_ID, MessageType.BLUE_TEXT, false);
 				TestPlans.execute(Util.COMMIT_ID);
 				BenchmarkAppConnector.publishDataForWebApp();				
 			} 

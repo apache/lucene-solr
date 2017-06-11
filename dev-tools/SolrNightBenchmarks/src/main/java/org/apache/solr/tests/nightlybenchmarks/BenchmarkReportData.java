@@ -43,12 +43,15 @@ public class BenchmarkReportData {
 	public static Map<String, String> numericQueryRNQMetricC;
 	public static Map<String, String> numericQueryLNQMetricC;
 	public static Map<String, String> numericQueryGNQMetricC;
+	public static Map<String, String> numericQueryANQMetricC;
+	public static Map<String, String> numericQueryONQMetricC;
 
 	public static Map<String, String> numericQueryTNQMetricS;
 	public static Map<String, String> numericQueryRNQMetricS;
 	public static Map<String, String> numericQueryLNQMetricS;
 	public static Map<String, String> numericQueryGNQMetricS;
-	
+	public static Map<String, String> numericQueryANQMetricS;
+	public static Map<String, String> numericQueryONQMetricS;
 	
 	public static void reset() {
 		
@@ -74,11 +77,15 @@ public class BenchmarkReportData {
 		numericQueryRNQMetricC = null;
 		numericQueryLNQMetricC = null;
 		numericQueryGNQMetricC = null;
+		numericQueryANQMetricC = null;
+		numericQueryONQMetricC = null;
 
 		numericQueryTNQMetricS = null;
 		numericQueryRNQMetricS = null;
 		numericQueryLNQMetricS = null;
 		numericQueryGNQMetricS = null;
+		numericQueryANQMetricS = null;
+		numericQueryONQMetricS = null;
 		
 	}
 
