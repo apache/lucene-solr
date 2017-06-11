@@ -492,45 +492,47 @@ public class Util {
 				MediaType.APPLICATION_JSON);
 		JSONObject jsonObject = (JSONObject) JSONValue.parse(response);
 
-		String printString = "";
-		printString += "Memory Heap Committed:    <b>"
+		String printString = "<table class='table table-striped'><thead><tr><th>Metric</th><th>Details</th></tr></thead><tbody>";
+		printString += "<tr><td>Memory Heap Committed:</td><td>"
 				+ ((JSONObject) ((JSONObject) jsonObject.get("metrics")).get("solr.jvm")).get("memory.heap.committed")
-				+ " Bytes</b><br/>\n";
-		printString += "Memory Heap Init:         <b>"
+				+ " Bytes</td></tr>\n";
+		printString += "<tr><td>Memory Heap Init:</td><td>"
 				+ ((JSONObject) ((JSONObject) jsonObject.get("metrics")).get("solr.jvm")).get("memory.heap.init")
-				+ " Bytes</b><br/>\n";
-		printString += "Memory Heap Max:          <b>"
+				+ " Bytes</td></tr>\n";
+		printString += "<tr><td>Memory Heap Max:</td><td>"
 				+ ((JSONObject) ((JSONObject) jsonObject.get("metrics")).get("solr.jvm")).get("memory.heap.max")
-				+ " Bytes</b><br/>\n";
+				+ " Bytes</td></tr>\n";
 
-		printString += "Memory Non-Heap Committed:<b>"
+		printString += "<tr><td>Memory Non-Heap Committed:</td><td>"
 				+ ((JSONObject) ((JSONObject) jsonObject.get("metrics")).get("solr.jvm"))
 						.get("memory.non-heap.committed")
-				+ " Bytes</b><br/>\n";
-		printString += "Memory Non-Heap Init:     <b>"
+				+ " Bytes</td></tr>\n";
+		printString += "<tr><td>Memory Non-Heap Init:</td><td>"
 				+ ((JSONObject) ((JSONObject) jsonObject.get("metrics")).get("solr.jvm")).get("memory.non-heap.init")
-				+ " Bytes</b><br/>\n";
-		printString += "Memory Non-Heap Max:      <b>"
+				+ " Bytes</td></tr>\n";
+		printString += "<tr><td>Memory Non-Heap Max:</td><td>"
 				+ ((JSONObject) ((JSONObject) jsonObject.get("metrics")).get("solr.jvm")).get("memory.non-heap.max")
-				+ " Bytes</b><br/>\n";
+				+ " Bytes</td></tr>\n";
 
-		printString += "Memory Total Committed:   <b>"
+		printString += "<tr><td>Memory Total Committed:</td><td>"
 				+ ((JSONObject) ((JSONObject) jsonObject.get("metrics")).get("solr.jvm")).get("memory.total.committed")
-				+ " Bytes</b><br/>\n";
-		printString += "Memory Total Init:        <b>"
+				+ " Bytes</td></tr>\n";
+		printString += "<tr><td>Memory Total Init:</td><td>"
 				+ ((JSONObject) ((JSONObject) jsonObject.get("metrics")).get("solr.jvm")).get("memory.total.init")
-				+ " Bytes</b><br/>\n";
-		printString += "Memory Total Max:         <b>"
+				+ " Bytes</td></tr>\n";
+		printString += "<tr><td>Memory Total Max:</td><td>"
 				+ ((JSONObject) ((JSONObject) jsonObject.get("metrics")).get("solr.jvm")).get("memory.total.max")
-				+ " Bytes</b><br/>\n";
+				+ " Bytes</td></tr>\n";
 
-		printString += "Total Physical Memory:    <b>"
+		printString += "<tr><td>Total Physical Memory:</td><td>"
 				+ ((JSONObject) ((JSONObject) jsonObject.get("metrics")).get("solr.jvm"))
 						.get("os.totalPhysicalMemorySize")
-				+ " Bytes</b><br/>\n";
-		printString += "Total Swap Space:         <b>"
+				+ " Bytes</td></tr>\n";
+		printString += "<tr><td>Total Swap Space:</td><td>"
 				+ ((JSONObject) ((JSONObject) jsonObject.get("metrics")).get("solr.jvm")).get("os.totalSwapSpaceSize")
-				+ " Bytes</b><br/>\n";
+				+ " Bytes</td></tr>\n";
+		
+		printString += "</tbody></table>";
 
 		BenchmarkAppConnector.writeToWebAppDataFile(
 				Util.TEST_ID + "_" + commitID + "_" + FileType.TEST_ENV_FILE + "_dump.csv", printString, true,
