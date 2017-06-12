@@ -33,7 +33,7 @@ By default, the settings are commented out in the sample `solrconfig.xml` includ
 == Writing New Segments
 
 [[IndexConfiginSolrConfig-ramBufferSizeMB]]
-=== `ramBufferSizeMB`
+=== ramBufferSizeMB
 
 Once accumulated document updates exceed this much memory space (defined in megabytes), then the pending updates are flushed. This can also create new segments or trigger a merge. Using this setting is generally preferable to `maxBufferedDocs`. If both `maxBufferedDocs` and `ramBufferSizeMB` are set in `solrconfig.xml`, then a flush will occur when either limit is reached. The default is 100Mb.
 
@@ -43,7 +43,7 @@ Once accumulated document updates exceed this much memory space (defined in mega
 ----
 
 [[IndexConfiginSolrConfig-maxBufferedDocs]]
-=== `maxBufferedDocs`
+=== maxBufferedDocs
 
 Sets the number of document updates to buffer in memory before they are flushed as a new segment. This may also trigger a merge. The default Solr configuration sets to flush by RAM usage (`ramBufferSizeMB`).
 
@@ -66,7 +66,7 @@ Controls whether newly written (and not yet merged) index segments should use th
 == Merging Index Segments
 
 [[IndexConfiginSolrConfig-mergePolicyFactory]]
-=== `mergePolicyFactory`
+=== mergePolicyFactory
 
 Defines how merging segments is done.
 
@@ -118,7 +118,7 @@ If the configuration options for the built-in merge policies do not fully suit y
 The example above shows Solr's {solr-javadocs}/solr-core/org/apache/solr/index/SortingMergePolicyFactory.html[`SortingMergePolicyFactory`] being configured to sort documents in merged segments by `"timestamp desc"`, and wrapped around a `TieredMergePolicyFactory` configured to use the values `maxMergeAtOnce=10` and `segmentsPerTier=10` via the `inner` prefix defined by `SortingMergePolicyFactory`'s `wrapped.prefix` option. For more information on using `SortingMergePolicyFactory`, see <<common-query-parameters.adoc#CommonQueryParameters-ThesegmentTerminateEarlyParameter,the segmentTerminateEarly parameter>>.
 
 [[IndexConfiginSolrConfig-mergeScheduler]]
-=== `mergeScheduler`
+=== mergeScheduler
 
 The merge scheduler controls how merges are performed. The default `ConcurrentMergeScheduler` performs merges in the background using separate threads. The alternative, `SerialMergeScheduler`, does not perform merges with separate threads.
 
@@ -128,7 +128,7 @@ The merge scheduler controls how merges are performed. The default `ConcurrentMe
 ----
 
 [[IndexConfiginSolrConfig-mergedSegmentWarmer]]
-=== `mergedSegmentWarmer`
+=== mergedSegmentWarmer
 
 When using Solr in for <<near-real-time-searching.adoc#near-real-time-searching,Near Real Time Searching>> a merged segment warmer can be configured to warm the reader on the newly merged segment, before the merge commits. This is not required for near real-time search, but will reduce search latency on opening a new near real-time reader after a merge completes.
 
@@ -159,7 +159,7 @@ Many <<IndexConfiginSolrConfig-MergingIndexSegments,Merge Policy>> implementatio
 == Index Locks
 
 [[IndexConfiginSolrConfig-lockType]]
-=== `lockType`
+=== lockType
 
 The LockFactory options specify the locking implementation to use.
 
@@ -178,7 +178,7 @@ For more information on the nuances of each LockFactory, see http://wiki.apache.
 ----
 
 [[IndexConfiginSolrConfig-writeLockTimeout]]
-=== `writeLockTimeout`
+=== writeLockTimeout
 
 The maximum time to wait for a write lock on an IndexWriter. The default is 1000, expressed in milliseconds.
 

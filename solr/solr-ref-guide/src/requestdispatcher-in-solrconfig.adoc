@@ -23,7 +23,7 @@ The `requestDispatcher` element of `solrconfig.xml` controls the way the Solr HT
 Included are parameters for defining if it should handle `/select` urls (for Solr 1.1 compatibility), if it will support remote streaming, the maximum size of file uploads and how it will respond to HTTP cache headers in requests.
 
 [[RequestDispatcherinSolrConfig-handleSelectElement]]
-== `handleSelect` Element
+== handleSelect Element
 
 [IMPORTANT]
 ====
@@ -42,7 +42,7 @@ In recent versions of Solr, a `/select` requestHandler is defined by default, so
 ----
 
 [[RequestDispatcherinSolrConfig-requestParsersElement]]
-== `requestParsers` Element
+== requestParsers Element
 
 The `<requestParsers>` sub-element controls values related to parsing requests. This is an empty XML element that doesn't have any content, only attributes.
 
@@ -65,7 +65,7 @@ The attribute `addHttpRequestToContext` can be used to indicate that the origina
 ----
 
 [[RequestDispatcherinSolrConfig-httpCachingElement]]
-== `httpCaching` Element
+== httpCaching Element
 
 The `<httpCaching>` element controls HTTP cache control headers. Do not confuse these settings with Solr's internal cache configuration. This element controls caching of HTTP responses as defined by the W3C HTTP specifications.
 
@@ -91,7 +91,7 @@ This element allows for three attributes and one sub-element. The attributes of 
 ----
 
 [[RequestDispatcherinSolrConfig-cacheControlElement]]
-=== `cacheControl` Element
+=== cacheControl Element
 
 In addition to these attributes, `<httpCaching>` accepts one child element: `<cacheControl>`. The content of this element will be sent as the value of the Cache-Control header on HTTP responses. This header is used to modify the default caching behavior of the requesting client. The possible values for the Cache-Control header are defined by the HTTP 1.1 specification in http://www.w3.org/Protocols/rfc2616/rfc2616-sec14.html#sec14.9[Section 14.9].
 

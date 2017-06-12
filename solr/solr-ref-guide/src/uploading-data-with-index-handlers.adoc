@@ -148,7 +148,7 @@ When using the Join query parser in a Delete By Query, you should use the `score
 The rollback command rolls back all add and deletes made to the index since the last commit. It neither calls any event listeners nor creates a new searcher. Its syntax is simple: `<rollback/>`.
 
 [[UploadingDatawithIndexHandlers-UsingcurltoPerformUpdates]]
-=== Using `curl` to Perform Updates
+=== Using curl to Perform Updates
 
 You can use the `curl` utility to perform any of the above commands, using its `--data-binary` option to append the XML message to the `curl` command, and generating a HTTP POST request. For example:
 

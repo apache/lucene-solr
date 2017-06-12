@@ -33,7 +33,7 @@ The settings in this section are configured in the `<updateHandler>` element in 
 Data sent to Solr is not searchable until it has been _committed_ to the index. The reason for this is that in some cases commits can be slow and they should be done in isolation from other possible commit requests to avoid overwriting data. So, it's preferable to provide control over when data is committed. Several options are available to control the timing of commits.
 
 [[UpdateHandlersinSolrConfig-commitandsoftCommit]]
-=== `commit` and `softCommit`
+=== commit and softCommit
 
 In Solr, a `commit` is an action which asks Solr to "commit" those changes to the Lucene index files. By default commit actions result in a "hard commit" of all the Lucene index files to stable storage (disk). When a client includes a `commit=true` parameter with an update request, this ensures that all index segments affected by the adds & deletes on an update are written to disk as soon as index updates are completed.
 
@@ -42,7 +42,7 @@ If an additional flag `softCommit=true` is specified, then Solr performs a 'soft
 For more information about Near Real Time operations, see <<near-real-time-searching.adoc#near-real-time-searching,Near Real Time Searching>>.
 
 [[UpdateHandlersinSolrConfig-autoCommit]]
-=== `autoCommit`
+=== autoCommit
 
 These settings control how often pending updates will be automatically pushed to the index. An alternative to `autoCommit` is to use `commitWithin`, which can be defined when making the update request to Solr (i.e., when pushing documents), or in an update RequestHandler.
 
@@ -79,7 +79,7 @@ You can also specify 'soft' autoCommits in the same way that you can specify 'so
 ----
 
 [[UpdateHandlersinSolrConfig-commitWithin]]
-=== `commitWithin`
+=== commitWithin
 
 The `commitWithin` settings allow forcing document commits to happen in a defined time period. This is used most frequently with <<near-real-time-searching.adoc#near-real-time-searching,Near Real Time Searching>>, and for that reason the default is to perform a soft commit. This does not, however, replicate new documents to slave servers in a master/slave environment. If that's a requirement for your implementation, you can force a hard commit by adding a parameter, as in this example:
 

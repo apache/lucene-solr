@@ -121,7 +121,7 @@ The path and name of the `solrcore.properties` file can be overridden using the 
 ====
 
 [[Configuringsolrconfig.xml-Userdefinedpropertiesfromcore.properties]]
-=== User-Defined Properties in `core.properties`
+=== User-Defined Properties in core.properties
 
 Every Solr core has a `core.properties` file, automatically created when using the APIs. When you create a SolrCloud collection, you can pass through custom parameters to go into each core.properties that will be created, by prefixing the parameter name with "property." as a URL parameter. Example:
 

@@ -39,64 +39,64 @@ In addition to supporting all the DisMax query parser parameters, Extended Disma
 In addition to all the <<the-dismax-query-parser.adoc#TheDisMaxQueryParser-DisMaxParameters,DisMax parameters>>, Extended DisMax includes these query parameters:
 
 [[TheExtendedDisMaxQueryParser-ThesowParameter]]
-=== The `sow` Parameter
+=== The sow Parameter
 
 Split on whitespace: if set to `false`, whitespace-separated term sequences will be provided to text analysis in one shot, enabling proper function of analysis filters that operate over term sequences, e.g. multi-word synonyms and shingles. Defaults to `true`: text analysis is invoked separately for each individual whitespace-separated term.
 
 [[TheExtendedDisMaxQueryParser-Themm.autoRelaxParameter]]
-=== The `mm.autoRelax` Parameter
+=== The mm.autoRelax Parameter
 
 If true, the number of clauses required (<<the-dismax-query-parser.adoc#TheDisMaxQueryParser-Themm_MinimumShouldMatch_Parameter,minimum should match>>) will automatically be relaxed if a clause is removed (by e.g. stopwords filter) from some but not all <<the-dismax-query-parser.adoc#TheDisMaxQueryParser-Theqf_QueryFields_Parameter,`qf`>> fields. Use this parameter as a workaround if you experience that queries return zero hits due to uneven stopword removal between the `qf` fields.
 
 Note that relaxing mm may cause undesired side effects, hurting the precision of the search, depending on the nature of your index content.
 
 [[TheExtendedDisMaxQueryParser-TheboostParameter]]
-=== The `boost` Parameter
+=== The boost Parameter
 
 A multivalued list of strings parsed as queries with scores multiplied by the score from the main query for all matching documents. This parameter is shorthand for wrapping the query produced by eDisMax using the `BoostQParserPlugin`
 
 [[TheExtendedDisMaxQueryParser-ThelowercaseOperatorsParameter]]
-=== The `lowercaseOperators` Parameter
+=== The lowercaseOperators Parameter
 
 A Boolean parameter indicating if lowercase "and" and "or" should be treated the same as operators "AND" and "OR".
 
 [[TheExtendedDisMaxQueryParser-ThepsParameter]]
-=== The `ps` Parameter
+=== The ps Parameter
 
 Default amount of slop on phrase queries built with `pf`, `pf2` and/or `pf3` fields (affects boosting).
 
 [[TheExtendedDisMaxQueryParser-Thepf2Parameter]]
-=== The `pf2` Parameter
+=== The pf2 Parameter
 
 A multivalued list of fields with optional weights, based on pairs of word shingles.
 
 [[TheExtendedDisMaxQueryParser-Theps2Parameter]]
-=== The `ps2` Parameter
+=== The ps2 Parameter
 
 This is similar to `ps` but overrides the slop factor used for `pf2`. If not specified, `ps` is used.
 
 [[TheExtendedDisMaxQueryParser-Thepf3Parameter]]
-=== The `pf3` Parameter
+=== The pf3 Parameter
 
 A multivalued list of fields with optional weights, based on triplets of word shingles. Similar to `pf`, except that instead of building a phrase per field out of all the words in the input, it builds a set of phrases for each field out of each triplet of word shingles.
 
 [[TheExtendedDisMaxQueryParser-Theps3Parameter]]
-=== The `ps3` Parameter
+=== The ps3 Parameter
 
 This is similar to `ps` but overrides the slop factor used for `pf3`. If not specified, `ps` is used.
 
 [[TheExtendedDisMaxQueryParser-ThestopwordsParameter]]
-=== The `stopwords` Parameter
+=== The stopwords Parameter
 
 A Boolean parameter indicating if the `StopFilterFactory` configured in the query analyzer should be respected when parsing the query: if it is false, then the `StopFilterFactory` in the query analyzer is ignored.
 
 [[TheExtendedDisMaxQueryParser-TheufParameter]]
-=== The `uf` Parameter
+=== The uf Parameter
 
 Specifies which schema fields the end user is allowed to explicitly query. This parameter supports wildcards. The default is to allow all fields, equivalent to `uf=\*`. To allow only title field, use `uf=title`. To allow title and all fields ending with '_s', use `uf=title,*_s`. To allow all fields except title, use `uf=*,-title`. To disallow all fielded searches, use `uf=-*`.
 
 [[TheExtendedDisMaxQueryParser-Fieldaliasingusingper-fieldqfoverrides]]
-=== Field aliasing using per-field `qf` overrides
+=== Field aliasing using per-field qf overrides
 
 Per-field overrides of the `qf` parameter may be specified to provide 1-to-many aliasing from field names specified in the query string, to field names used in the underlying query. By default, no aliasing is used and field names specified in the query string are treated as literal field names in the index.
 
@@ -223,7 +223,7 @@ Finally, in addition to the phrase fields (`pf`) parameter, `edismax` also suppo
 
 
 [[TheExtendedDisMaxQueryParser-Usingthe_magicfields__val_and_query_]]
-== Using the 'magic fields' `\_val_` and `\_query_`
+== Using the "magic fields" \_val_ and \_query_
 
 The Solr Query Parser's use of `\_val_` and `\_query_` differs from the Lucene Query Parser in the following ways:
 

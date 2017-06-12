@@ -53,8 +53,8 @@ As you can see, the date format includes colon characters separating the hours, 
 
 This is normally an invalid query: `datefield:1972-05-20T17:33:18.772Z`
 
-These are valid queries: + 
-`datefield:1972-05-20T17\:33\:18.772Z` + 
+These are valid queries: +
+`datefield:1972-05-20T17\:33\:18.772Z` +
 `datefield:"1972-05-20T17:33:18.772Z"` +
 `datefield:[1972-05-20T17:33:18.772Z TO *]`
 
@@ -108,7 +108,7 @@ Note that while date math is most commonly used relative to `NOW` it can be appl
 === Request Parameters That Affect Date Math
 
 [[WorkingwithDates-NOW]]
-==== `NOW`
+==== NOW
 
 The `NOW` parameter is used internally by Solr to ensure consistent date math expression parsing across multiple nodes in a distributed request. But it can be specified to instruct Solr to use an arbitrary moment in time (past or future) to override for all situations where the the special value of "```NOW```" would impact date math expressions.
 
@@ -119,7 +119,7 @@ Example:
 `q=solr&fq=start_date:[* TO NOW]&NOW=1384387200000`
 
 [[WorkingwithDates-TZ]]
-==== `TZ`
+==== TZ
 
 By default, all date math expressions are evaluated relative to the UTC TimeZone, but the `TZ` parameter can be specified to override this behaviour, by forcing all date based addition and rounding to be relative to the specified http://docs.oracle.com/javase/8/docs/api/java/util/TimeZone.html[time zone].
 

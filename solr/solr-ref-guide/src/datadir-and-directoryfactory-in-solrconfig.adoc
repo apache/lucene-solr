@@ -20,7 +20,7 @@
 
 Where and how Solr stores its indexes are configurable options.
 
-== Specifying a Location for Index Data with the `dataDir` Parameter
+== Specifying a Location for Index Data with the dataDir Parameter
 
 By default, Solr stores its index data in a directory called `/data` under the core's instance directory (`instanceDir`). If you would like to specify a different directory for storing index data, you can configure the `dataDir` in the `core.properties` file for the core, or use the `<dataDir>` parameter in the `solrconfig.xml` file. You can specify another directory either with an absolute path or a pathname relative to the instanceDir of the SolrCore. For example:
 

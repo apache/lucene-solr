@@ -51,7 +51,7 @@ Note that the XSLT Response Writer can be used to convert the XML produced by th
 The behavior of the XML Response Writer can be driven by the following query parameters.
 
 [[ResponseWriters-TheversionParameter]]
-=== The `version` Parameter
+=== The version Parameter
 
 The `version` parameter determines the XML protocol used in the response. Clients are strongly encouraged to _always_ specify the protocol version, so as to ensure that the format of the response they receive does not change unexpectedly if the Solr server is upgraded and a new default format is introduced.
 
@@ -66,7 +66,7 @@ Currently supported version values are:
 The default value is the latest supported.
 
 [[ResponseWriters-ThestylesheetParameter]]
-=== The `stylesheet` Parameter
+=== The stylesheet Parameter
 
 The `stylesheet` parameter can be used to direct Solr to include a `<?xml-stylesheet type="text/xsl" href="..."?>` declaration in the XML response it returns.
 
@@ -78,7 +78,7 @@ Use of the `stylesheet` parameter is discouraged, as there is currently no way t
 ====
 
 [[ResponseWriters-TheindentParameter]]
-=== The `indent` Parameter
+=== The indent Parameter
 
 If the `indent` parameter is used, and has a non-blank value, then Solr will make some attempts at indenting its XML response to make it more readable by humans.
 
@@ -90,7 +90,7 @@ The default behavior is not to indent.
 The XSLT Response Writer applies an XML stylesheet to output. It can be used for tasks such as formatting results for an RSS feed.
 
 [[ResponseWriters-trParameter]]
-=== `tr` Parameter
+=== tr Parameter
 
 The XSLT Response Writer accepts one parameter: the `tr` parameter, which identifies the XML transformation to use. The transformation must be found in the Solr `conf/xslt` directory.
 

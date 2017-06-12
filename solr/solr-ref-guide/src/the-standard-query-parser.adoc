@@ -187,7 +187,7 @@ The brackets around a query determine its inclusiveness.
 
 
 [[TheStandardQueryParser-BoostingaTermwith_]]
-=== Boosting a Term with `^`
+=== Boosting a Term with "^"
 
 Lucene/Solr provides the relevance level of matching documents based on the terms found. To boost a term use the caret symbol `^` with a boost factor (a number) at the end of the term you are searching. The higher the boost factor, the more relevant the term will be.
 
@@ -205,7 +205,7 @@ By default, the boost factor is 1. Although the boost factor must be positive, i
 
 
 [[TheStandardQueryParser-ConstantScorewith_]]
-=== Constant Score with `^=`
+=== Constant Score with "^="
 
 Constant score queries are created with `<query_clause>^=<score>`, which sets the entire clause to the specified score for any documents matching that clause. This is desirable when you only care about matches for a particular clause and don't want other relevancy factors such as term frequency (the number of times the term appears in the field) or inverse document frequency (a measure across the whole index for how rare a term is in a field).
 
@@ -279,7 +279,7 @@ or
 
 
 [[TheStandardQueryParser-TheBooleanOperator_]]
-=== The Boolean Operator `+`
+=== The Boolean Operator "+"
 
 The `+` symbol (also known as the "required" operator) requires that the term after the `+` symbol exist somewhere in a field in at least one document in order for the query to return a match.
 
@@ -296,7 +296,7 @@ This operator is supported by both the standard query parser and the DisMax quer
 
 
 [[TheStandardQueryParser-TheBooleanOperatorAND_]]
-=== The Boolean Operator AND (`&&`)
+=== The Boolean Operator AND ("&&")
 
 The AND operator matches documents where both terms exist anywhere in the text of a single document. This is equivalent to an intersection using sets. The symbol `&&` can be used in place of the word AND.
 
@@ -308,7 +308,7 @@ To search for documents that contain "jakarta apache" and "Apache Lucene," use e
 
 
 [[TheStandardQueryParser-TheBooleanOperatorNOT_]]
-=== The Boolean Operator NOT (`!`)
+=== The Boolean Operator NOT ("!")
 
 The NOT operator excludes documents that contain the term after NOT. This is equivalent to a difference using sets. The symbol `!` can be used in place of the word NOT.
 
@@ -319,7 +319,7 @@ The following queries search for documents that contain the phrase "jakarta apac
 `"jakarta apache" ! "Apache Lucene"`
 
 [[TheStandardQueryParser-TheBooleanOperator-]]
-=== The Boolean Operator `-`
+=== The Boolean Operator "-"
 
 The `-` symbol or "prohibit" operator excludes documents that contain the term after the `-` symbol.
 

@@ -34,7 +34,7 @@ When not using SolrCloud, it is up to you to get all your documents indexed on e
 In the legacy distributed mode, Solr does not calculate universal term/doc frequencies. For most large-scale implementations, it is not likely to matter that Solr calculates TF/IDF at the shard level. However, if your collection is heavily skewed in its distribution across servers, you may find misleading relevancy results in your searches. In general, it is probably best to randomly distribute documents to your shards.
 
 [[DistributedSearchwithIndexSharding-ExecutingDistributedSearcheswiththeshardsParameter]]
-== Executing Distributed Searches with the `shards` Parameter
+== Executing Distributed Searches with the shards Parameter
 
 If a query request includes the `shards` parameter, the Solr server distributes the request across all the shards listed as arguments to the parameter. The `shards` parameter uses this syntax:
 

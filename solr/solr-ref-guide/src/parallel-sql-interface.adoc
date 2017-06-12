@@ -180,7 +180,7 @@ SELECT fieldA as fa, fieldB as fb, fieldC as fc FROM tableA WHERE fieldC = 'term
 
 We've covered many syntax options with this example, so let's walk through what's possible below.
 
-=== `WHERE` Clause and Boolean Predicates
+=== WHERE Clause and Boolean Predicates
 
 [IMPORTANT]
 ====
@@ -226,7 +226,7 @@ To specify NOT queries, you use the `AND NOT` syntax as follows:
 WHERE (fieldA = 'term1') AND NOT (fieldB = 'term2')
 ----
 
-==== Supported `WHERE` Operators
+==== Supported WHERE Operators
 
 The parallel SQL interface supports and pushes down most common SQL operators, specifically:
 
@@ -247,7 +247,7 @@ Some operators that are not supported are BETWEEN, LIKE and IN. However, there a
 * BETWEEN can be supported with a range query, such as `field = [50 TO 100]`.
 * A simplistic LIKE can be used with a wildcard, such as `field = 'sam*'`.
 
-=== `ORDER BY` Clause
+=== ORDER BY Clause
 
 The `ORDER BY` clause maps directly to Solr fields. Multiple `ORDER BY` fields and directions are supported.
 
@@ -257,7 +257,7 @@ If the `ORDER BY` clause contains the exact fields in the `GROUP BY` clause, the
 
 Order by fields are case sensitive.
 
-=== `LIMIT` Clause
+=== LIMIT Clause
 
 Limits the result set to the specified size. In the example above the clause `LIMIT 100` will limit the result set to 100 records.
 
@@ -267,7 +267,7 @@ There are a few differences to note between limited and unlimited queries:
 * Limited queries allow any stored field in the field list. Unlimited queries require the fields to be stored as a DocValues field.
 * Limited queries allow any indexed field in the `ORDER BY` list. Unlimited queries require the fields to be stored as a DocValues field.
 
-=== `SELECT DISTINCT` Queries
+=== SELECT DISTINCT Queries
 
 The SQL interface supports both MapReduce and Facet implementations for `SELECT DISTINCT` queries.
 
@@ -293,13 +293,13 @@ Because these functions never require data to be shuffled, the aggregations are 
 SELECT count(*) as count, sum(fieldB) as sum FROM tableA WHERE fieldC = 'Hello'
 ----
 
-=== `GROUP BY` Aggregations
+=== GROUP BY Aggregations
 
 The SQL interface also supports `GROUP BY` aggregate queries.
 
 As with `SELECT DISTINCT` queries, the SQL interface supports both a MapReduce implementation and a Facet implementation. The MapReduce implementation can build aggregations over extremely high cardinality fields. The Facet implementations provides high performance aggregation over fields with moderate levels of cardinality.
 
-==== Basic `GROUP BY` with Aggregates
+==== Basic GROUP BY with Aggregates
 
 Here is a basic example of a GROUP BY query that requests aggregations:
 
@@ -327,7 +327,7 @@ The non-function fields in the field list determine the fields to calculate the 
 
 The `GROUP BY` clause can contain up to 4 fields in the Solr index. These fields should correspond with the non-function fields in the field list.
 
-=== `HAVING` Clause
+=== HAVING Clause
 
 The `HAVING` clause may contain any function listed in the field list. Complex `HAVING` clauses such as this are supported:
 

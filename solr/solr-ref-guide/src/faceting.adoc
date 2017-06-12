@@ -29,12 +29,12 @@ Searchers are presented with the indexed terms, along with numerical counts of h
 There are two general parameters for controlling faceting.
 
 [[Faceting-ThefacetParameter]]
-=== The `facet` Parameter
+=== The facet Parameter
 
 If set to *true*, this parameter enables facet counts in the query response. If set to *false*, a blank or missing value, this parameter disables faceting. None of the other parameters listed below will have any effect unless this parameter is set to *true*. The default value is blank (false).
 
 [[Faceting-Thefacet.queryParameter]]
-=== The `facet.query` Parameter
+=== The facet.query Parameter
 
 This parameter allows you to specify an arbitrary query in the Lucene default syntax to generate a facet count.
 
@@ -83,7 +83,7 @@ The table below summarizes Solr's field value faceting parameters.
 These parameters are described in the sections below.
 
 [[Faceting-Thefacet.fieldParameter]]
-=== The `facet.field` Parameter
+=== The facet.field Parameter
 
 The `facet.field` parameter identifies a field that should be treated as a facet. It iterates over each Term in the field and generate a facet count using that Term as the constraint. This parameter can be specified multiple times in a query to select multiple facet fields.
 
@@ -93,28 +93,28 @@ If you do not set this parameter to at least one field in the schema, none of th
 ====
 
 [[Faceting-Thefacet.prefixParameter]]
-=== The `facet.prefix` Parameter
+=== The facet.prefix Parameter
 
 The `facet.prefix` parameter limits the terms on which to facet to those starting with the given string prefix. This does not limit the query in any way, only the facets that would be returned in response to the query.
 
 This parameter can be specified on a per-field basis with the syntax of `f.<fieldname>.facet.prefix`.
 
 [[Faceting-Thefacet.containsParameter]]
-=== The `facet.contains` Parameter
+=== The facet.contains Parameter
 
 The `facet.contains` parameter limits the terms on which to facet to those containing the given substring. This does not limit the query in any way, only the facets that would be returned in response to the query.
 
 This parameter can be specified on a per-field basis with the syntax of `f.<fieldname>.facet.contains`.
 
 [[Faceting-Thefacet.contains.ignoreCaseParameter]]
-=== The `facet.contains.ignoreCase` Parameter
+=== The facet.contains.ignoreCase Parameter
 
 If `facet.contains` is used, the `facet.contains.ignoreCase` parameter causes case to be ignored when matching the given substring against candidate facet terms.
 
 This parameter can be specified on a per-field basis with the syntax of `f.<fieldname>.facet.contains.ignoreCase`.
 
 [[Faceting-Thefacet.sortParameter]]
-=== The `facet.sort` Parameter
+=== The facet.sort Parameter
 
 This parameter determines the ordering of the facet field constraints.
 
@@ -128,7 +128,7 @@ The default is `count` if `facet.limit` is greater than 0, otherwise, the defaul
 This parameter can be specified on a per-field basis with the syntax of `f.<fieldname>.facet.sort`.
 
 [[Faceting-Thefacet.limitParameter]]
-=== The `facet.limit` Parameter
+=== The facet.limit Parameter
 
 This parameter specifies the maximum number of constraint counts (essentially, the number of facets for a field that are returned) that should be returned for the facet fields. A negative value means that Solr will return unlimited number of constraint counts.
 
@@ -137,7 +137,7 @@ The default value is 100.
 This parameter can be specified on a per-field basis to apply a distinct limit to each field with the syntax of `f.<fieldname>.facet.limit`.
 
 [[Faceting-Thefacet.offsetParameter]]
-=== The `facet.offset` Parameter
+=== The facet.offset Parameter
 
 The `facet.offset` parameter indicates an offset into the list of constraints to allow paging.
 
@@ -146,7 +146,7 @@ The default value is 0.
 This parameter can be specified on a per-field basis with the syntax of `f.<fieldname>.facet.offset`.
 
 [[Faceting-Thefacet.mincountParameter]]
-=== The `facet.mincount` Parameter
+=== The facet.mincount Parameter
 
 The `facet.mincount` parameter specifies the minimum counts required for a facet field to be included in the response. If a field's counts are below the minimum, the field's facet is not returned.
 
@@ -155,7 +155,7 @@ The default value is 0.
 This parameter can be specified on a per-field basis with the syntax of `f.<fieldname>.facet.mincount`.
 
 [[Faceting-Thefacet.missingParameter]]
-=== The `facet.missing` Parameter
+=== The facet.missing Parameter
 
 If set to true, this parameter indicates that, in addition to the Term-based constraints of a facet field, a count of all results that match the query but which have no facet value for the field should be computed and returned in the response.
 
@@ -164,7 +164,7 @@ The default value is false.
 This parameter can be specified on a per-field basis with the syntax of `f.<fieldname>.facet.missing`.
 
 [[Faceting-Thefacet.methodParameter]]
-=== The `facet.method` Parameter
+=== The facet.method Parameter
 
 The facet.method parameter selects the type of algorithm or method Solr should use when faceting a field.
 
@@ -189,7 +189,7 @@ The default value is `fc` (except for fields using the `BoolField` field type an
 This parameter can be specified on a per-field basis with the syntax of `f.<fieldname>.facet.method`.
 
 [[Faceting-Thefacet.enum.cache.minDfParameter]]
-=== The `facet.enum.cache.minDf` Parameter
+=== The facet.enum.cache.minDf Parameter
 
 This parameter indicates the minimum document frequency (the number of documents matching a term) for which the filterCache should be used when determining the constraint count for that term. This is only used with the `facet.method=enum` method of faceting.
 
@@ -200,14 +200,14 @@ The default value is 0, causing the filterCache to be used for all terms in the 
 This parameter can be specified on a per-field basis with the syntax of `f.<fieldname>.facet.enum.cache.minDf`.
 
 [[Faceting-Thefacet.existsParameter]]
-=== The `facet.exists` Parameter
+=== The facet.exists Parameter
 
 To cap facet counts by 1, specify `facet.exists=true`. It can be used with `facet.method=enum` or when it's omitted. It can be used only on non-trie fields (such as strings). It may speed up facet counting on large indices and/or high-cardinality facet values..
 
 This parameter can be specified on a per-field basis with the syntax of `f.<fieldname>.facet.exists` or via local parameter` facet.field={!facet.method=enum facet.exists=true}size`.
 
 [[Faceting-Thefacet.excludeTermsParameter]]
-=== The `facet.excludeTerms` Parameter
+=== The facet.excludeTerms Parameter
 
 If you want to remove terms from facet counts but keep them in the index, the `facet.excludeTerms` parameter allows you to do that.
 
@@ -219,7 +219,7 @@ In some situations, the accuracy in selecting the "top" constraints returned for
 In some situations, depending on how your docs are partitioned across your shards, and what `facet.limit` value you used, you may find it advantageous to increase or decrease the amount of over-requesting Solr does. This can be achieved by setting the `facet.overrequest.count` (defaults to 10) and `facet.overrequest.ratio` (defaults to 1.5) parameters.
 
 [[Faceting-Thefacet.threadsParameter]]
-=== The `facet.threads` Parameter
+=== The facet.threads Parameter
 
 This param will cause loading the underlying fields used in faceting to be executed in parallel with the number of threads specified. Specify as `facet.threads=N` where `N` is the maximum number of threads used. Omitting this parameter or specifying the thread count as 0 will not spawn any threads, and only the main request thread will be used. Specifying a negative number of threads will create up to Integer.MAX_VALUE threads.
 
@@ -244,7 +244,7 @@ You can use Range Faceting on any date field or any numeric field that supports 
 |===
 
 [[Faceting-Thefacet.rangeParameter]]
-=== The `facet.range` Parameter
+=== The facet.range Parameter
 
 The `facet.range` parameter defines the field for which Solr should create range facets. For example:
 
@@ -253,7 +253,7 @@ The `facet.range` parameter defines the field for which Solr should create range
 `facet.range=lastModified_dt`
 
 [[Faceting-Thefacet.range.startParameter]]
-=== The `facet.range.start` Parameter
+=== The facet.range.start Parameter
 
 The `facet.range.start` parameter specifies the lower bound of the ranges. You can specify this parameter on a per field basis with the syntax of `f.<fieldname>.facet.range.start`. For example:
 
@@ -262,7 +262,7 @@ The `facet.range.start` parameter specifies the lower bound of the ranges. You c
 `f.lastModified_dt.facet.range.start=NOW/DAY-30DAYS`
 
 [[Faceting-Thefacet.range.endParameter]]
-=== The `facet.range.end` Parameter
+=== The facet.range.end Parameter
 
 The facet.range.end specifies the upper bound of the ranges. You can specify this parameter on a per field basis with the syntax of `f.<fieldname>.facet.range.end`. For example:
 
@@ -271,7 +271,7 @@ The facet.range.end specifies the upper bound of the ranges. You can specify thi
 `f.lastModified_dt.facet.range.end=NOW/DAY+30DAYS`
 
 [[Faceting-Thefacet.range.gapParameter]]
-=== The `facet.range.gap` Parameter
+=== The facet.range.gap Parameter
 
 The span of each range expressed as a value to be added to the lower bound. For date fields, this should be expressed using the {solr-javadocs}/solr-core/org/apache/solr/util/DateMathParser.html[`DateMathParser` syntax] (such as, `facet.range.gap=%2B1DAY ... '+1DAY'`). You can specify this parameter on a per-field basis with the syntax of `f.<fieldname>.facet.range.gap`. For example:
 
@@ -280,7 +280,7 @@ The span of each range expressed as a value to be added to the lower bound. For 
 `f.lastModified_dt.facet.range.gap=+1DAY`
 
 [[Faceting-Thefacet.range.hardendParameter]]
-=== The `facet.range.hardend` Parameter
+=== The facet.range.hardend Parameter
 
 The `facet.range.hardend` parameter is a Boolean parameter that specifies how Solr should handle cases where the `facet.range.gap` does not divide evenly between `facet.range.start` and `facet.range.end`.
 
@@ -289,7 +289,7 @@ If *true*, the last range constraint will have the `facet.range.end` value as an
 This parameter can be specified on a per field basis with the syntax `f.<fieldname>.facet.range.hardend`.
 
 [[Faceting-Thefacet.range.includeParameter]]
-=== The `facet.range.include` Parameter
+=== The facet.range.include Parameter
 
 By default, the ranges used to compute range faceting between `facet.range.start` and `facet.range.end` are inclusive of their lower bounds and exclusive of the upper bounds. The "before" range defined with the `facet.range.other` parameter is exclusive and the "after" range is inclusive. This default, equivalent to "lower" below, will not result in double counting at the boundaries. You can use the `facet.range.include` parameter to modify this behavior using the following options:
 
@@ -313,7 +313,7 @@ To ensure you avoid double-counting, do not choose both `lower` and `upper`, do 
 ====
 
 [[Faceting-Thefacet.range.otherParameter]]
-=== The `facet.range.other` Parameter
+=== The facet.range.other Parameter
 
 The `facet.range.other` parameter specifies that in addition to the counts for each range constraint between `facet.range.start` and `facet.range.end`, counts should also be computed for these options:
 
@@ -332,7 +332,7 @@ The `facet.range.other` parameter specifies that in addition to the counts for e
 This parameter can be specified on a per field basis with the syntax of `f.<fieldname>.facet.range.other`. In addition to the `all` option, this parameter can be specified multiple times to indicate multiple choices, but `none` will override all other options.
 
 [[Faceting-Thefacet.range.methodParameter]]
-=== The `facet.range.method` Parameter
+=== The facet.range.method Parameter
 
 The `facet.range.method` parameter selects the type of algorithm or method Solr should use for range faceting. Both methods produce the same results, but performance may vary.
 
@@ -343,7 +343,7 @@ dv:: This method iterates the documents that match the main query, and for each 
 Default value for this parameter is "filter".
 
 [[Faceting-Thefacet.mincountParameterinRangeFaceting]]
-=== The `facet.mincount` Parameter in Range Faceting
+=== The facet.mincount Parameter in Range Faceting
 
 The `facet.mincount` parameter, the same one as used in field faceting is also applied to range faceting. When used, no ranges with a count below the minimum will be included in the response.
 
@@ -653,14 +653,14 @@ If you are concerned about the performance of your searches you should test with
 This method will use <<docvalues.adoc#docvalues,docValues>> if they are enabled for the field, will use fieldCache otherwise.
 
 [[Faceting-Thefacet.intervalparameter]]
-=== The `facet.interval` parameter
+=== The facet.interval parameter
 
 This parameter Indicates the field where interval faceting must be applied. It can be used multiple times in the same request to indicate multiple fields.
 
 `facet.interval=price&facet.interval=size`
 
 [[Faceting-Thefacet.interval.setparameter]]
-=== The `facet.interval.set` parameter
+=== The facet.interval.set parameter
 
 This parameter is used to set the intervals for the field, it can be specified multiple times to indicate multiple intervals. This parameter is global, which means that it will be used for all fields indicated with `facet.interval` unless there is an override for a specific field. To override this parameter on a specific field you can use: `f.<fieldname>.facet.interval.set`, for example:
 

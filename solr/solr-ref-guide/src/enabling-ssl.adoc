@@ -253,7 +253,7 @@ curl -E solr-ssl.keystore.p12:secret --cacert solr-ssl.cacert.pem ...
 
 NOTE: If your operating system does not include cURL, you can download binaries here: http://curl.haxx.se/download.html
 
-=== Create a SolrCloud Collection using `bin/solr`
+=== Create a SolrCloud Collection using bin/solr
 
 Create a 2-shard, replicationFactor=1 collection named mycollection using the default configset (data_driven_schema_configs):
 
@@ -318,7 +318,7 @@ You should get a response that looks like this:
 ----
 
 [[EnablingSSL-Indexdocumentsusingpost.jar]]
-=== Index Documents using `post.jar`
+=== Index Documents using post.jar
 
 Use `post.jar` to index some example documents to the SolrCloud collection created above:
 
@@ -340,7 +340,7 @@ curl -E solr-ssl.pem:secret --cacert solr-ssl.pem "https://localhost:8984/solr/m
 ----
 
 [[EnablingSSL-IndexadocumentusingCloudSolrClient]]
-=== Index a document using `CloudSolrClient`
+=== Index a document using CloudSolrClient
 
 From a java client using SolrJ, index a document. In the code below, the `javax.net.ssl.*` system properties are set programmatically, but you could instead specify them on the java command line, as in the `post.jar` example above:
 

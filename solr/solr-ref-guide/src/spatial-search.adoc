@@ -99,7 +99,7 @@ When used with `BBoxField`, additional options are supported:
 |===
 
 [[SpatialSearch-geofilt]]
-=== `geofilt`
+=== geofilt
 
 The `geofilt` filter allows you to retrieve results based on the geospatial distance (AKA the "great circle distance") from a given point. Another way of looking at it is that it creates a circular shape filter. For example, to find all documents within five kilometers of a given lat/lon point, you could enter `&q=*:*&fq={!geofilt sfield=store}&pt=45.15,-93.85&d=5`. This filter returns all results within a circle of the given radius around the initial point:
 
@@ -107,7 +107,7 @@ image::images/spatial-search/circle.png[image]
 
 
 [[SpatialSearch-bbox]]
-=== `bbox`
+=== bbox
 
 The `bbox` filter is very similar to `geofilt` except it uses the _bounding box_ of the calculated circle. See the blue box in the diagram below. It takes the same parameters as geofilt.
 
@@ -162,7 +162,7 @@ There are four distance function queries:
 For more information about these function queries, see the section on <<function-queries.adoc#function-queries,Function Queries>>.
 
 [[SpatialSearch-geodist]]
-=== `geodist`
+=== geodist
 
 `geodist` is a distance function that takes three optional parameters: `(sfield,latitude,longitude)`. You can use the `geodist` function to sort results by distance or score return results.
 

@@ -47,7 +47,7 @@ Of course the `signatureField` could be the unique field, but generally you want
 There are two places in Solr to configure de-duplication: in `solrconfig.xml` and in `schema.xml`.
 
 [[De-Duplication-Insolrconfig.xml]]
-=== In `solrconfig.xml`
+=== In solrconfig.xml
 
 The `SignatureUpdateProcessorFactory` has to be registered in `solrconfig.xml` as part of an <<update-request-processors.adoc#update-request-processors,Update Request Processor Chain>>, as in this example:
 
@@ -87,7 +87,7 @@ A Signature implementation for generating a signature hash. The full classpath o
 |===
 
 [[De-Duplication-Inschema.xml]]
-=== In `schema.xml`
+=== In schema.xml
 
 If you are using a separate field for storing the signature, you must have it indexed:
 

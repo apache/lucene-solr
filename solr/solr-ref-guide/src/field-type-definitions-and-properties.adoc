@@ -28,7 +28,7 @@ A field type definition can include four types of information:
 * Field type properties - depending on the implementation class, some properties may be mandatory.
 
 [[FieldTypeDefinitionsandProperties-FieldTypeDefinitionsinschema.xml]]
-== Field Type Definitions in `schema.xml`
+== Field Type Definitions in schema.xml
 
 Field types are defined in `schema.xml`. Each field type is defined between `fieldType` elements. They can optionally be grouped within a `types` element. Here is an example of a field type definition for a type called `text_general`:
 

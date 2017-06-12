@@ -31,7 +31,7 @@ However, pay special attention to cache and autowarm settings as they can have a
 
 A commit operation makes index changes visible to new search requests. A *hard commit* uses the transaction log to get the id of the latest document changes, and also calls `fsync` on the index files to ensure they have been flushed to stable storage and no data loss will result from a power failure. The current transaction log is closed and a new one is opened. See the "transaction log" discussion below for data loss issues.
 
-A *soft commit* is much faster since it only makes index changes visible and does not `fsync` index files, or write a new index descriptor or start a new transaction log. Search collections that have NRT requirements (that want index changes to be quickly visible to searches) will want to soft commit often but hard commit less frequently. A softCommit may be "less expensive", but it is not free, since it can slow throughput. See the "transaction log" discussion below for data loss issues. 
+A *soft commit* is much faster since it only makes index changes visible and does not `fsync` index files, or write a new index descriptor or start a new transaction log. Search collections that have NRT requirements (that want index changes to be quickly visible to searches) will want to soft commit often but hard commit less frequently. A softCommit may be "less expensive", but it is not free, since it can slow throughput. See the "transaction log" discussion below for data loss issues.
 
 An *optimize* is like a *hard commit* except that it forces all of the index segments to be merged into a single segment first. Depending on the use, this operation should be performed infrequently (e.g., nightly), if at all, since it involves reading and re-writing the entire index. Segments are normally merged over time anyway (as determined by the merge policy), and optimize just forces these merges to occur immediately.
 
@@ -52,7 +52,7 @@ Use `maxDocs` and `maxTime` judiciously to fine-tune your commit strategies.
 === Transaction Logs (tlogs)
 
 Transaction logs are a "rolling window" of at least the last `N` (default 100) documents indexed. Tlogs are configured in solrconfig.xml, including the value of `N`. The current transaction log is closed and a new one opened each time any variety of hard commit occurs. Soft commits have no effect on the transaction log.
-  
+
 When tlogs are enabled, documents being added to the index are written to the tlog before the indexing call returns to the client. In the event of an un-graceful shutdown (power loss, JVM crash, `kill -9` etc) any documents written to the tlog that was open when Solr stopped are replayed on startup.
 
 When Solr is shut down gracefully (i.e. using the `bin/solr stop` command and the like) Solr will close the tlog file and index segments so no replay will be necessary on startup.
@@ -76,7 +76,7 @@ For example:
 It's better to use `maxTime` rather than `maxDocs` to modify an `autoSoftCommit`, especially when indexing a large number of documents through the commit operation. It's also better to turn off `autoSoftCommit` for bulk indexing.
 
 [[NearRealTimeSearching-OptionalAttributesforcommitandoptimize]]
-=== Optional Attributes for `commit` and `optimize`
+=== Optional Attributes for commit and optimize
 
 // TODO: Change column width to %autowidth.spread when https://github.com/asciidoctor/asciidoctor-pdf/issues/599 is fixed
 
@@ -100,7 +100,7 @@ Example of `commit` and `optimize` with optional attributes:
 ----
 
 [[NearRealTimeSearching-PassingcommitandcommitWithinparametersaspartoftheURL]]
-=== Passing `commit` and `commitWithin` Parameters as Part of the URL
+=== Passing commit and commitWithin Parameters as Part of the URL
 
 Update handlers can also get `commit`-related parameters as part of the update URL. This example adds a small test document and causes an explicit commit to happen immediately afterwards:
 
@@ -133,7 +133,7 @@ curl http://localhost:8983/solr/my_collection/update?commitWithin=10000
 ----
 
 [[NearRealTimeSearching-ChangingdefaultcommitWithinBehavior]]
-=== Changing default `commitWithin` Behavior
+=== Changing default commitWithin Behavior
 
 The `commitWithin` settings allow forcing document commits to happen in a defined time period. This is used most frequently with <<near-real-time-searching.adoc#near-real-time-searching,Near Real Time Searching>>, and for that reason the default is to perform a soft commit. This does not, however, replicate new documents to slave servers in a master/slave environment. If that's a requirement for your implementation, you can force a hard commit by adding a parameter, as in this example:
 

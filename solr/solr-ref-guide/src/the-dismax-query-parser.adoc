@@ -58,7 +58,7 @@ In addition to the common request parameter, highlighting parameters, and simple
 The sections below explain these parameters in detail.
 
 [[TheDisMaxQueryParser-TheqParameter]]
-=== The `q` Parameter
+=== The q Parameter
 
 The `q` parameter defines the main "query" constituting the essence of the search. The parameter supports raw input strings provided by users with no special escaping. The + and - characters are treated as "mandatory" and "prohibited" modifiers for terms. Text wrapped in balanced quote characters (for example, "San Jose") is treated as a phrase. Any query containing an odd number of quote characters is evaluated as if there were no quote characters at all.
 
@@ -70,13 +70,13 @@ The `q` parameter does not support wildcard characters such as *.
 ====
 
 [[TheDisMaxQueryParser-Theq.altParameter]]
-=== The `q.alt` Parameter
+=== The q.alt Parameter
 
 If specified, the `q.alt` parameter defines a query (which by default will be parsed using standard query parsing syntax) when the main q parameter is not specified or is blank. The `q.alt` parameter comes in handy when you need something like a query to match all documents (don't forget `&rows=0` for that one!) in order to get collection-wide faceting counts.
 
 
 [[TheDisMaxQueryParser-Theqf_QueryFields_Parameter]]
-=== The `qf` (Query Fields) Parameter
+=== The qf (Query Fields) Parameter
 
 The `qf` parameter introduces a list of fields, each of which is assigned a boost factor to increase or decrease that particular field's importance in the query. For example, the query below:
 
@@ -86,7 +86,7 @@ assigns `fieldOne` a boost of 2.3, leaves `fieldTwo` with the default boost (bec
 
 
 [[TheDisMaxQueryParser-Themm_MinimumShouldMatch_Parameter]]
-=== The `mm` (Minimum Should Match) Parameter
+=== The mm (Minimum Should Match) Parameter
 
 When processing queries, Lucene/Solr recognizes three types of clauses: mandatory, prohibited, and "optional" (also known as "should" clauses). By default, all words or phrases specified in the `q` parameter are treated as "optional" clauses unless they are preceded by a "+" or a "-". When dealing with these "optional" clauses, the `mm` parameter makes it possible to say that a certain minimum number of those clauses must match. The DisMax query parser offers great flexibility in how the minimum number can be specified.
 
@@ -116,7 +116,7 @@ The default value of `mm` is 100% (meaning that all clauses must match).
 
 
 [[TheDisMaxQueryParser-Thepf_PhraseFields_Parameter]]
-=== The `pf` (Phrase Fields) Parameter
+=== The pf (Phrase Fields) Parameter
 
 Once the list of matching documents has been identified using the `fq` and `qf` parameters, the `pf` parameter can be used to "boost" the score of documents in cases where all of the terms in the q parameter appear in close proximity.
 
@@ -124,19 +124,19 @@ The format is the same as that used by the `qf` parameter: a list of fields and 
 
 
 [[TheDisMaxQueryParser-Theps_PhraseSlop_Parameter]]
-=== The `ps` (Phrase Slop) Parameter
+=== The ps (Phrase Slop) Parameter
 
 The `ps` parameter specifies the amount of "phrase slop" to apply to queries specified with the pf parameter. Phrase slop is the number of positions one token needs to be moved in relation to another token in order to match a phrase specified in a query.
 
 
 [[TheDisMaxQueryParser-Theqs_QueryPhraseSlop_Parameter]]
-=== The `qs` (Query Phrase Slop) Parameter
+=== The qs (Query Phrase Slop) Parameter
 
 The `qs` parameter specifies the amount of slop permitted on phrase queries explicitly included in the user's query string with the `qf` parameter. As explained above, slop refers to the number of positions one token needs to be moved in relation to another token in order to match a phrase specified in a query.
 
 
 [[TheDisMaxQueryParser-Thetie_TieBreaker_Parameter]]
-=== The `tie` (Tie Breaker) Parameter
+=== The tie (Tie Breaker) Parameter
 
 The `tie` parameter specifies a float value (which should be something much less than 1) to use as tiebreaker in DisMax queries.
 
@@ -146,7 +146,7 @@ A value of "0.0" - the default - makes the query a pure "disjunction max query":
 
 
 [[TheDisMaxQueryParser-Thebq_BoostQuery_Parameter]]
-=== The `bq` (Boost Query) Parameter
+=== The bq (Boost Query) Parameter
 
 The `bq` parameter specifies an additional, optional, query clause that will be added to the user's main query to influence the score. For example, if you wanted to add a relevancy boost for recent documents:
 
@@ -160,7 +160,7 @@ You can specify multiple `bq` parameters. If you want your query to be parsed as
 
 
 [[TheDisMaxQueryParser-Thebf_BoostFunctions_Parameter]]
-=== The `bf` (Boost Functions) Parameter
+=== The bf (Boost Functions) Parameter
 
 The `bf` parameter specifies functions (with optional boosts) that will be used to construct FunctionQueries which will be added to the user's main query as optional clauses that will influence the score. Any function supported natively by Solr can be used, along with a boost value. For example:
 

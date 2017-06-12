@@ -48,7 +48,7 @@ While Apache Tika is quite powerful, it is not perfect and fails on some files. 
 ====
 
 [[UploadingDatawithSolrCellusingApacheTika-TryingoutTikawiththeSolrtechproductsExample]]
-== Trying out Tika with the Solr `techproducts` Example
+== Trying out Tika with the Solr techproducts Example
 
 You can try out the Tika framework using the `techproducts` example included in Solr.
 
@@ -138,7 +138,7 @@ Here is the order in which the Solr Cell framework, using the Extracting Request
 4.  If `uprefix` is specified, any unknown field names are prefixed with that value, else if `defaultField` is specified, any unknown fields are copied to the default field.
 
 [[UploadingDatawithSolrCellusingApacheTika-ConfiguringtheSolrExtractingRequestHandler]]
-== Configuring the Solr `ExtractingRequestHandler`
+== Configuring the Solr ExtractingRequestHandler
 
 If you are not working with the supplied `sample_techproducts_configs `or` data_driven_schema_configs` <<config-sets.adoc#config-sets,config set>>, you must configure your own `solrconfig.xml` to know about the Jar's containing the `ExtractingRequestHandler` and its dependencies:
 

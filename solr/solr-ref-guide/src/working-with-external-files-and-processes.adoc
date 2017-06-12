@@ -19,7 +19,7 @@
 // under the License.
 
 [[WorkingwithExternalFilesandProcesses-TheExternalFileFieldType]]
-== The `ExternalFileField` Type
+== The ExternalFileField Type
 
 The `ExternalFileField` type makes it possible to specify the values for a field in a file outside the Solr index. For such a field, the file contains mappings from a key field to the field value. Another way to think of this is that, instead of specifying the field in documents as they are indexed, Solr finds values for this field in the external file.
 
@@ -74,7 +74,7 @@ It's possible to define an event listener to reload an external file when either
 ----
 
 [[WorkingwithExternalFilesandProcesses-ThePreAnalyzedFieldType]]
-== The `PreAnalyzedField` Type
+== The PreAnalyzedField Type
 
 The `PreAnalyzedField` type provides a way to send to Solr serialized token streams, optionally with independent stored values of a field, and have this information stored and indexed without any additional text processing applied in Solr. This is useful if user wants to submit field content that was already processed by some existing external text processing pipeline (e.g., it has been tokenized, annotated, stemmed, synonyms inserted, etc.), while using all the rich attributes that Lucene's TokenStream provides (per-token attributes).
 
