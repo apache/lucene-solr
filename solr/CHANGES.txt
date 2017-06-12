@@ -360,6 +360,8 @@ Bug Fixes
 
 * SOLR-10715: /v2/ should not be an alias for /v2/collections (Cao Manh Dat)
 
+* SOLR-10835: Add support for point fields in Export Handler (Tomás Fernández Löbbe)
+
 Optimizations
 ----------------------
 * SOLR-10634: JSON Facet API: When a field/terms facet will retrieve all buckets (i.e. limit:-1)
