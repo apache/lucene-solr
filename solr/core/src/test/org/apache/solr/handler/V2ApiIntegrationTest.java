@@ -57,6 +57,10 @@ public class V2ApiIntegrationTest extends SolrCloudTestCase {
         new V2Request.Builder("").build());
     NamedList header = (NamedList) res.get("responseHeader");
     assertEquals(0, header.get("status"));
+
+    res = cluster.getSolrClient().request(new V2Request.Builder("/_introspect").build());
+    header = (NamedList) res.get("responseHeader");
+    assertEquals(0, header.get("status"));
   }
 
   @Test

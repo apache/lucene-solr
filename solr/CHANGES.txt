@@ -156,6 +156,8 @@ Bug Fixes
 
 * SOLR-10223: Allow running examples as root on Linux with -force option (janhoy)
 
+* SOLR-10715: /v2/ should not be an alias for /v2/collections (Cao Manh Dat)
+
 Optimizations
 ----------------------
 

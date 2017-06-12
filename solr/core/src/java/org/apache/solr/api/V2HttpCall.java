@@ -79,7 +79,7 @@ public class V2HttpCall extends HttpSolrCall {
     String fullPath = path = path.substring(7);//strip off '/____v2'
     try {
       pieces = getPathSegments(path);
-      if (pieces.size() == 0) {
+      if (pieces.size() == 0 || (pieces.size() == 1 && path.endsWith(CommonParams.INTROSPECT))) {
         api = new Api(null) {
           @Override
           public void call(SolrQueryRequest req, SolrQueryResponse rsp) {
