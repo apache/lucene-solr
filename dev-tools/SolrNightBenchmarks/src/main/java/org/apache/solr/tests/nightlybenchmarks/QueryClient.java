@@ -31,7 +31,14 @@ import org.apache.solr.common.util.NamedList;
 public class QueryClient implements Runnable {
 
 	public enum QueryType {
-		TERM_NUMERIC_QUERY, RANGE_NUMERIC_QUERY, GREATER_THAN_NUMERIC_QUERY, LESS_THAN_NUMERIC_QUERY, AND_NUMERIC_QUERY, OR_NUMERIC_QUERY
+		
+		TERM_NUMERIC_QUERY, 
+		RANGE_NUMERIC_QUERY, 
+		GREATER_THAN_NUMERIC_QUERY, 
+		LESS_THAN_NUMERIC_QUERY, 
+		AND_NUMERIC_QUERY, 
+		OR_NUMERIC_QUERY
+		
 	}
 
 	String urlString;
