@@ -138,11 +138,7 @@ public class SchemaHandler extends RequestHandlerBase implements SolrCoreAware, 
           break;
         }
         case "/schema/zkversion": {
-          int refreshIfBelowVersion = -1;
-          Object refreshParam = req.getParams().get("refreshIfBelowVersion");
-          if (refreshParam != null)
-            refreshIfBelowVersion = (refreshParam instanceof Number) ? ((Number) refreshParam).intValue()
-                : Integer.parseInt(refreshParam.toString());
+          int refreshIfBelowVersion = req.getParams().getInt("refreshIfBelowVersion", -1);
           int zkVersion = -1;
           IndexSchema schema = req.getSchema();
           if (schema instanceof ManagedIndexSchema) {

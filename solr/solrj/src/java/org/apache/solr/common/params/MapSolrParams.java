@@ -20,7 +20,7 @@ import java.util.Iterator;
 import java.util.Map;
 
 /**
- *
+ * {@link SolrParams} implementation that can be built from and is backed by a {@link Map}.
  */
 public class MapSolrParams extends SolrParams {
   protected final Map<String,String> map;
@@ -31,22 +31,13 @@ public class MapSolrParams extends SolrParams {
 
   @Override
   public String get(String name) {
-    Object  o = map.get(name);
-    if(o == null) return null;
-    if (o instanceof String) return  (String) o;
-    if (o instanceof String[]) {
-      String[] strings = (String[]) o;
-      if(strings.length == 0) return null;
-      return strings[0];
-    }
-    return String.valueOf(o);
+    return map.get(name);
   }
 
   @Override
   public String[] getParams(String name) {
-    Object val = map.get(name);
-    if (val instanceof String[]) return (String[]) val;
-    return val==null ? null : new String[]{String.valueOf(val)};
+    String val = map.get(name);
+    return val==null ? null : new String[]{val};
   }
 
   @Override

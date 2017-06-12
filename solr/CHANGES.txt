@@ -256,6 +256,8 @@ Other Changes
 * SOLR-10800: Factor out HttpShardHandler.transformReplicasToShardUrls from HttpShardHandler.prepDistributed.
   (Domenico Fabio Marino, Christine Poerschke)
 
+* SOLR-8392: Remove instanceof checks on return value of SolrParam::get (Mike Drob, Varun Thacker)
+
 ==================  6.7.0 ==================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release.
