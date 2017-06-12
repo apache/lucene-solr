@@ -89,6 +89,15 @@ public class V2ApiIntegrationTest extends SolrCloudTestCase {
     serverProvider.baseurl = serverProvider.jettySolrRunner.getBaseUrl()+"/____v2/c/"+ COLL_NAME;
     Map result = TestSolrConfigHandler.getRespMap("/get/_introspect", restHarness);
     assertEquals("/c/collection1/get", Utils.getObjectByPath(result, true, "/spec[0]/url/paths[0]"));
+
+    serverProvider.baseurl = serverProvider.jettySolrRunner.getBaseUrl()+"/____v2";
+    result = TestSolrConfigHandler.getRespMap("", restHarness);
+    assertEquals(0l, Utils.getObjectByPath(result, true, "/responseHeader/status"));
+
+    serverProvider.baseurl = serverProvider.jettySolrRunner.getBaseUrl()+"/____v2";
+    result = TestSolrConfigHandler.getRespMap("/_introspect", restHarness);
+    assertEquals(0l, Utils.getObjectByPath(result, true, "/responseHeader/status"));
+
     serverProvider.baseurl = serverProvider.jettySolrRunner.getBaseUrl()+"/____v2/collections/"+ COLL_NAME;
     result = TestSolrConfigHandler.getRespMap("/get/_introspect", restHarness);
     assertEquals("/collections/collection1/get", Utils.getObjectByPath(result, true, "/spec[0]/url/paths[0]"));
