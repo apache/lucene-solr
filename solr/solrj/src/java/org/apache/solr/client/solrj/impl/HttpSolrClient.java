@@ -83,24 +83,6 @@ import org.slf4j.MDC;
 
 /**
  * A SolrClient implementation that talks directly to a Solr server via HTTP
- *
- * There are two ways to use an HttpSolrClient:
- *
- * 1) Pass a URL to the constructor that points directly at a particular core
- * <pre>
- *   SolrClient client = new HttpSolrClient("http://my-solr-server:8983/solr/core1");
- *   QueryResponse resp = client.query(new SolrQuery("*:*"));
- * </pre>
- * In this case, you can query the given core directly, but you cannot query any other
- * cores or issue CoreAdmin requests with this client.
- *
- * 2) Pass the base URL of the node to the constructor
- * <pre>
- *   SolrClient client = new HttpSolrClient("http://my-solr-server:8983/solr");
- *   QueryResponse resp = client.query("core1", new SolrQuery("*:*"));
- * </pre>
- * In this case, you must pass the name of the required core for all queries and updates,
- * but you may use the same client for all cores, and for CoreAdmin requests.
  */
 public class HttpSolrClient extends SolrClient {
 
@@ -646,6 +628,27 @@ public class HttpSolrClient extends SolrClient {
     return baseUrl;
   }
   
+  /**
+   * Change the base-url used when sending requests to Solr.
+   * 
+   * Two different paths can be specified as a part of this URL:
+   * 
+   * 1) A path pointing directly at a particular core
+   * <pre>
+   *   httpSolrClient.setBaseURL("http://my-solr-server:8983/solr/core1");
+   *   QueryResponse resp = httpSolrClient.query(new SolrQuery("*:*"));
+   * </pre>
+   * Note that when a core is provided in the base URL, queries and other requests can be made without mentioning the
+   * core explicitly.  However, the client can only send requests to that core.
+   * 
+   * 2) The path of the root Solr path ("/solr")
+   * <pre>
+   *   httpSolrClient.setBaseURL("http://my-solr-server:8983/solr");
+   *   QueryResponse resp = httpSolrClient.query("core1", new SolrQuery("*:*"));
+   * </pre>
+   * In this case the client is more flexible and can be used to send requests to any cores.  The cost of this is that
+   * the core must be specified on each request.
+   */
   public void setBaseURL(String baseURL) {
     this.baseUrl = baseURL;
   }
@@ -762,6 +765,27 @@ public class HttpSolrClient extends SolrClient {
       this.responseParser = new BinaryResponseParser();
     }
 
+    /**
+     * Specify the base-url for the created client to use when sending requests to Solr.
+     * 
+     * Two different paths can be specified as a part of this URL:
+     * 
+     * 1) A path pointing directly at a particular core
+     * <pre>
+     *   SolrClient client = builder.withBaseSolrUrl("http://my-solr-server:8983/solr/core1").build();
+     *   QueryResponse resp = client.query(new SolrQuery("*:*"));
+     * </pre>
+     * Note that when a core is provided in the base URL, queries and other requests can be made without mentioning the
+     * core explicitly.  However, the client can only send requests to that core.
+     * 
+     * 2) The path of the root Solr path ("/solr")
+     * <pre>
+     *   SolrClient client = builder.withBaseSolrUrl("http://my-solr-server:8983/solr").build();
+     *   QueryResponse resp = client.query("core1", new SolrQuery("*:*"));
+     * </pre>
+     * In this case the client is more flexible and can be used to send requests to any cores.  This flexibility though
+     * requires that the core is specified on all requests.
+     */
     public Builder withBaseSolrUrl(String baseSolrUrl) {
       this.baseSolrUrl = baseSolrUrl;
       return this;
@@ -770,9 +794,25 @@ public class HttpSolrClient extends SolrClient {
     /**
      * Create a Builder object, based on the provided Solr URL.
      * 
-     * By default, compression is not enabled in created HttpSolrClient objects.
+     * Two different paths can be specified as a part of this URL:
      * 
-     * @param baseSolrUrl the base URL of the Solr server that will be targeted by any created clients.
+     * 1) A path pointing directly at a particular core
+     * <pre>
+     *   SolrClient client = new HttpSolrClient.Builder("http://my-solr-server:8983/solr/core1").build();
+     *   QueryResponse resp = client.query(new SolrQuery("*:*"));
+     * </pre>
+     * Note that when a core is provided in the base URL, queries and other requests can be made without mentioning the
+     * core explicitly.  However, the client can only send requests to that core.
+     * 
+     * 2) The path of the root Solr path ("/solr")
+     * <pre>
+     *   SolrClient client = new HttpSolrClient.Builder("http://my-solr-server:8983/solr").build();
+     *   QueryResponse resp = client.query("core1", new SolrQuery("*:*"));
+     * </pre>
+     * In this case the client is more flexible and can be used to send requests to any cores.  This flexibility though
+     * requires that the core be specified on all requests.
+     * 
+     * By default, compression is not enabled on created HttpSolrClient objects.
      */
     public Builder(String baseSolrUrl) {
       this.baseSolrUrl = baseSolrUrl;

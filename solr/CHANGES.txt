@@ -406,6 +406,9 @@ Other Changes
 * SOLR-10761: Switch trie numeric/date fields to points in data-driven-enabled example and test schemas.
   (Steve Rowe)
 
+* SOLR-10851: SolrClients should clarify expectations for solrServerUrl parameter (Jason Gerlowski 
+  via Tomás Fernández Löbbe)
+
 ==================  6.6.1 ==================
 
 Bug Fixes

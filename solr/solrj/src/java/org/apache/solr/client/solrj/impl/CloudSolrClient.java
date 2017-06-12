@@ -250,8 +250,8 @@ public class CloudSolrClient extends SolrClient {
    *          chroot is required, use null.
    * @param solrUrls
    *          A list of Solr URLs to configure the underlying {@link HttpClusterStateProvider}, which will
-   *          use of the these URLs to fetch the list of live nodes for this Solr cluster. Provide only
-   *          one of solrUrls or zkHosts.
+   *          use of the these URLs to fetch the list of live nodes for this Solr cluster.  URL's must point to the
+   *          root Solr path ("/solr"). Provide only one of solrUrls or zkHosts.
    * @param httpClient
    *          the {@link HttpClient} instance to be used for all requests. The provided httpClient should use a
    *          multi-threaded connection manager.  If null, a default HttpClient will be used.
@@ -1403,6 +1403,9 @@ public class CloudSolrClient extends SolrClient {
      *
      * Method may be called multiple times. One of the provided values will be used to fetch
      * the list of live Solr nodes that the underlying {@link HttpClusterStateProvider} would be maintaining.
+     * 
+     * Provided Solr URL is expected to point to the root Solr path ("http://hostname:8983/solr"); it should not
+     * include any collections, cores, or other path components.
      */
     public Builder withSolrUrl(String solrUrl) {
       this.solrUrls.add(solrUrl);
@@ -1413,6 +1416,9 @@ public class CloudSolrClient extends SolrClient {
      * Provide a list of Solr URL to be used when configuring {@link CloudSolrClient} instances.
      * One of the provided values will be used to fetch the list of live Solr
      * nodes that the underlying {@link HttpClusterStateProvider} would be maintaining.
+     * 
+     * Provided Solr URLs are expected to point to the root Solr path ("http://hostname:8983/solr"); they should not
+     * include any collections, cores, or other path components.
      */
     public Builder withSolrUrl(Collection<String> solrUrls) {
       this.solrUrls.addAll(solrUrls);
