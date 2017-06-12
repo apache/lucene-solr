@@ -156,8 +156,6 @@ Bug Fixes
 
 * SOLR-10223: Allow running examples as root on Linux with -force option (janhoy)
 
-* SOLR-10715: /v2/ should not be an alias for /v2/collections (Cao Manh Dat)
-
 Optimizations
 ----------------------
 
@@ -356,6 +354,8 @@ Bug Fixes
   the same name) might throw a NullPointerException if the referenced field had no indexed data in some
   shards. The fix included an optimization to use Solr's cached AtomicReader instead of re-calculating.
   (David Smiley)
+
+* SOLR-10715: /v2/ should not be an alias for /v2/collections (Cao Manh Dat)
 
 Optimizations
 ----------------------
