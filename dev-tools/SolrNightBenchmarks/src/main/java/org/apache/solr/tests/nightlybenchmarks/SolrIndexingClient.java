@@ -77,9 +77,12 @@ public class SolrIndexingClient {
 		String cvsSplitBy = ",";
 		int value;
 
-		Thread thread = new Thread(new MetricCollector(this.commitId, TestType.STANDALONE_INDEXING_THROUGHPUT_SERIAL, this.port));
-		thread.start();
-
+		Thread thread = null;
+		if (captureMetrics) {
+			thread = new Thread(new MetricCollector(this.commitId, TestType.STANDALONE_INDEXING_THROUGHPUT_SERIAL, this.port));
+			thread.start();
+		}
+		
 		try (BufferedReader br = new BufferedReader(new FileReader(amazonFoodDataLocation))) {
 
 			start = System.nanoTime();
@@ -139,8 +142,10 @@ public class SolrIndexingClient {
 		returnMetricMap.put("ThroughputUnit", "doc/sec");
 		returnMetricMap.put("CommitID", this.commitId);
 
-		thread.stop();
-
+		if (captureMetrics) {
+			thread.stop();
+		}
+		
 		Util.postMessage("** Indexing documents (Amazon Food Reviews Data) COMPLETE ...", MessageType.WHITE_TEXT,
 				false);
 		return returnMetricMap;
@@ -148,7 +153,7 @@ public class SolrIndexingClient {
 
 	@SuppressWarnings("deprecation")
 	public Map<String, String> indexAmazonFoodData(int numDocuments, String urlString, String zookeeperIp,
-			String zookeeperPort, String collectionName, boolean captureMetrics) {
+			String zookeeperPort, String collectionName, boolean captureMetrics, TestType type) {
 
 		documentCount = numDocuments;
 		Util.postMessage("** Indexing documents (Amazon Food Reviews) ...", MessageType.WHITE_TEXT, false);
@@ -165,9 +170,12 @@ public class SolrIndexingClient {
 		String cvsSplitBy = ",";
 		int value;
 
-		Thread thread = new Thread(new MetricCollector(this.commitId, TestType.CLOUD_INDEXING_THROUGHPUT_SERIAL, this.port));
-		thread.start();
-
+		Thread thread = null;
+		if (captureMetrics) {
+			thread = new Thread(new MetricCollector(this.commitId, type, this.port));
+			thread.start();
+		}
+		
 		try (BufferedReader br = new BufferedReader(new FileReader(amazonFoodDataLocation))) {
 
 			start = System.nanoTime();
@@ -227,8 +235,10 @@ public class SolrIndexingClient {
 		returnMetricMap.put("ThroughputUnit", "doc/sec");
 		returnMetricMap.put("CommitID", this.commitId);
 
-		thread.stop();
-
+		if (captureMetrics) {
+			thread.stop();
+		}
+		
 		Util.postMessage("** Indexing documents (Amazon Food Reviews Data) COMPLETE ...", MessageType.WHITE_TEXT,
 				false);
 		return returnMetricMap;
@@ -250,8 +260,11 @@ public class SolrIndexingClient {
 		String cvsSplitBy = ",";
 		int value;
 
-		Thread thread = new Thread(new MetricCollector(this.commitId, type, this.port));
-		thread.start();
+		Thread thread = null;
+		if (captureMetrics) {
+			thread = new Thread(new MetricCollector(this.commitId, type, this.port));
+			thread.start();
+		}
 
 		try (BufferedReader br = new BufferedReader(new FileReader(amazonFoodDataLocation))) {
 
@@ -316,8 +329,10 @@ public class SolrIndexingClient {
 		returnMetricMap.put("ThroughputUnit", "doc/sec");
 		returnMetricMap.put("CommitID", this.commitId);
 
-		thread.stop();
-
+		if (captureMetrics) {
+			thread.stop();
+		}
+		
 		Util.postMessage("** Indexing documents (Amazon Food Reviews Data) COMPLETE ...", MessageType.WHITE_TEXT,
 				false);
 		return returnMetricMap;

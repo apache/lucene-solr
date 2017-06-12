@@ -56,8 +56,17 @@
                     <li class="dropdown">
                         <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" aria-haspopup="true" aria-expanded="false">Cloud Metrics<span class="caret"></span></a>
                         <ul class="dropdown-menu">
-                            <li><a href="IndexingThroughputBenchmarkCloud.html">Indexing Throughput - Serial</a></li>
-                            <li><a href="IndexingThroughputBenchmarkCloudConcurrent.html">Indexing Throughput - Concurrent</a></li>
+
+                            <li><a href="IndexingThroughputBenchmarkCloudSerial_2N1S2R.html">Indexing Throughput - Serial: 2 Nodes, 1 Shards, 2 Replicas</a></li>
+                            <li><a href="IndexingThroughputBenchmarkCloudSerial_2N2S1R.html">Indexing Throughput - Serial: 2 Nodes, 2 Shards, 1 Replicas</a></li>
+                            <li><a href="IndexingThroughputBenchmarkCloudSerial_3N1S3R.html">Indexing Throughput - Serial: 3 Nodes, 1 Shards, 3 Replicas</a></li>
+                            <li><a href="IndexingThroughputBenchmarkCloudSerial_4N2S2R.html">Indexing Throughput - Serial: 4 Nodes, 2 Shards, 2 Replicas</a></li>
+
+                            <li><a href="IndexingThroughputBenchmarkCloudConcurrent_2N1S2R.html">Indexing Throughput - Concurrent: 2 Nodes, 1 Shards, 2 Replicas</a></li>
+                            <li><a href="IndexingThroughputBenchmarkCloudConcurrent_2N2S1R.html">Indexing Throughput - Concurrent: 2 Nodes, 2 Shards, 1 Replicas</a></li>
+                            <li><a href="IndexingThroughputBenchmarkCloudConcurrent_3N1S3R.html">Indexing Throughput - Concurrent: 3 Nodes, 1 Shards, 3 Replicas</a></li>
+                            <li><a href="IndexingThroughputBenchmarkCloudConcurrent_4N2S2R.html">Indexing Throughput - Concurrent: 4 Nodes, 2 Shards, 2 Replicas</a></li>
+
                             <li><a href="CreateCollectionBenchmarkCloud.html">Create Collection</a></li>
                         </ul>
                     </li>
@@ -193,7 +202,7 @@
                             $.ajax({
 
                                     type: "GET",
-                                    url: "data/indexing_throughput_data_cloud_serial.csv",
+                                    url: "data/indexing_throughput_data_cloud_serial_3n1s3r.csv",
                                     dataType: "text",
                                     success: function(data) {
 	                                    fileData = data.split("\n");
@@ -214,7 +223,7 @@
                             });
 
 
-                            g2 = new Dygraph(document.getElementById("graphdiv2"), "data/indexing_throughput_data_cloud_serial.csv", {
+                            g2 = new Dygraph(document.getElementById("graphdiv2"), "data/indexing_throughput_data_cloud_serial_3n1s3r.csv", {
                                  labelsDiv: document.getElementById('pointData'), visibility: [false, true, false, true], colors: ['#6B8E23','#4B0082','#FF0000','#DA70D6','#CD853F'],
 
                                  highlightCallback: function (e, x, pts, row) {
@@ -241,8 +250,8 @@
                                                      document.getElementById('memProfileFileChangeListLink').setAttribute('href', "https://git-wip-us.apache.org/repos/asf?p=lucene-solr.git;h=" + commitID);
 
                                                      setTimeout(function () {
-                                                         g3 = new Dygraph(document.getElementById("memProfileGraph"), "data/" + testID + "_" + commitID + "_MEM_ESTIMATION_CLOUD_INDEXING_THROUGHPUT_SERIAL_dump.csv", { visibility: [false, true], colors: ['#6B8E23','#4B0082','#FF0000','#DA70D6','#CD853F'], labelsDiv: document.getElementById('memProfileStats') });
-                                                         g4 = new Dygraph(document.getElementById("cpuProfileGraph"), "data/" + testID + "_" + commitID + "_CPU_ESTIMATION_CLOUD_INDEXING_THROUGHPUT_SERIAL_dump.csv", { visibility: [false, true], colors: ['#6B8E23','#4B0082','#FF0000','#DA70D6','#CD853F'], labelsDiv: document.getElementById('cpuProfileStats') });
+                                                         g3 = new Dygraph(document.getElementById("memProfileGraph"), "data/" + testID + "_" + commitID + "_MEM_ESTIMATION_CLOUD_INDEXING_THROUGHPUT_SERIAL_3N1S3R_dump.csv", { visibility: [false, true], colors: ['#6B8E23','#4B0082','#FF0000','#DA70D6','#CD853F'], labelsDiv: document.getElementById('memProfileStats') });
+                                                         g4 = new Dygraph(document.getElementById("cpuProfileGraph"), "data/" + testID + "_" + commitID + "_CPU_ESTIMATION_CLOUD_INDEXING_THROUGHPUT_SERIAL_3N1S3R_dump.csv", { visibility: [false, true], colors: ['#6B8E23','#4B0082','#FF0000','#DA70D6','#CD853F'], labelsDiv: document.getElementById('cpuProfileStats') });
                                                      }, 250);
 
                                                 }
@@ -263,7 +272,7 @@
 
                                     $("#HeapMemoryUsageTab").addClass("active");
 
-                                    g3 = new Dygraph(document.getElementById("memProfileGraph"), "data/" + testID + "_" + commitID + "_MEM_ESTIMATION_CLOUD_INDEXING_THROUGHPUT_SERIAL_dump.csv", { visibility: [false, true], colors: ['#6B8E23','#4B0082','#FF0000','#DA70D6','#CD853F'], labelsDiv: document.getElementById('memProfileStats') });
+                                    g3 = new Dygraph(document.getElementById("memProfileGraph"), "data/" + testID + "_" + commitID + "_MEM_ESTIMATION_CLOUD_INDEXING_THROUGHPUT_SERIAL_3N1S3R_dump.csv", { visibility: [false, true], colors: ['#6B8E23','#4B0082','#FF0000','#DA70D6','#CD853F'], labelsDiv: document.getElementById('memProfileStats') });
 
                                 }
 
@@ -288,7 +297,7 @@
 
                                     $("#ProcessCPULoadTab").addClass("active");
 
-                                    g4 = new Dygraph(document.getElementById("cpuProfileGraph"), "data/" + testID + "_" + commitID + "_CPU_ESTIMATION_CLOUD_INDEXING_THROUGHPUT_SERIAL_dump.csv", { visibility: [false, true], colors: ['#6B8E23','#4B0082','#FF0000','#DA70D6','#CD853F'], labelsDiv: document.getElementById('cpuProfileStats') });
+                                    g4 = new Dygraph(document.getElementById("cpuProfileGraph"), "data/" + testID + "_" + commitID + "_CPU_ESTIMATION_CLOUD_INDEXING_THROUGHPUT_SERIAL_3N1S3R_dump.csv", { visibility: [false, true], colors: ['#6B8E23','#4B0082','#FF0000','#DA70D6','#CD853F'], labelsDiv: document.getElementById('cpuProfileStats') });
 
                                 }
 

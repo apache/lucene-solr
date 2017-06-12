@@ -194,6 +194,7 @@
 	    var fileData;
 	    var commitID;
 	    var testID;
+	    var point;
 
 	    $(document).ready(function () {
 
@@ -202,7 +203,7 @@
                             $.ajax({
 
                                     type: "GET",
-                                    url: "data/indexing_throughput_data_standalone_regular.csv",
+                                    url: "data/indexing_throughput_data_cloud_concurrent_2n1s2r.csv",
                                     dataType: "text",
                                     success: function(data) {
 	                                    fileData = data.split("\n");
@@ -223,13 +224,13 @@
                             });
 
 
-                            g2 = new Dygraph(document.getElementById("graphdiv2"), "data/indexing_throughput_data_standalone_regular.csv", {
-                                 labelsDiv: document.getElementById('pointData'), visibility: [false, true, false, true], colors: ['#6B8E23','#4B0082','#FF0000','#DA70D6','#CD853F'],
+                            g2 = new Dygraph(document.getElementById("graphdiv2"), "data/indexing_throughput_data_cloud_concurrent_2n1s2r.csv", {
+                                labelsDiv: document.getElementById('pointData'), visibility: [false, false, true, true, true, true, true], colors: ['#6B8E23','#4B0082','#FF0000','#DA70D6','#CD853F'],
 
                                  highlightCallback: function (e, x, pts, row) {
-                                     commitID = fileData[(row + 1)].split(",")[3].trim();
+                                     commitID = fileData[(row + 1)].split(",")[2].trim();
                                      testID = fileData[(row + 1)].split(",")[1].trim();
-                                     				
+				                      				
 				                                     $.ajax({
 				
 				                                         type: "GET",
@@ -241,19 +242,34 @@
 				
 					                                 });
 				                                     
-                                     				 document.getElementById("welcomeMessage").innerHTML = "";
-                                     
+				                     				 document.getElementById("welcomeMessage").innerHTML = "";
+				                     
                                                 },
-
-                                   pointClickCallback: function(e, p) {
-
+                                  pointClickCallback: function(e, p) {
+													 point = p.name;
                                                      $('#memProfile').modal();
                                                      document.getElementById('memProfileFileChangeListLink').setAttribute('href', "https://git-wip-us.apache.org/repos/asf?p=lucene-solr.git;h=" + commitID);
 
                                                      setTimeout(function () {
-                                                         g3 = new Dygraph(document.getElementById("memProfileGraph"), "data/" + testID + "_" + commitID + "_MEM_ESTIMATION_STANDALONE_INDEXING_THROUGHPUT_SERIAL_dump.csv", { visibility: [false, true], colors: ['#6B8E23','#4B0082','#FF0000','#DA70D6','#CD853F'], labelsDiv: document.getElementById('memProfileStats') });
-                                                         g4 = new Dygraph(document.getElementById("cpuProfileGraph"), "data/" + testID + "_" + commitID + "_CPU_ESTIMATION_STANDALONE_INDEXING_THROUGHPUT_SERIAL_dump.csv", { visibility: [false, true], colors: ['#6B8E23','#4B0082','#FF0000','#DA70D6','#CD853F'], labelsDiv: document.getElementById('cpuProfileStats') });
-                                                     }, 250);
+                                                    	 
+                                                    	 if (p.name.includes("Throughput (10 Threads)")) {
+		                                                         g3 = new Dygraph(document.getElementById("memProfileGraph"), "data/" + testID + "_" + commitID + "_MEM_ESTIMATION_CLOUD_INDEXING_THROUGHPUT_CONCURRENT_2N1S2R_10T_dump.csv", { visibility: [false, true], colors: ['#6B8E23','#4B0082','#FF0000','#DA70D6','#CD853F'], labelsDiv: document.getElementById('memProfileStats') });
+		                                                         g4 = new Dygraph(document.getElementById("cpuProfileGraph"), "data/" + testID + "_" + commitID + "_CPU_ESTIMATION_CLOUD_INDEXING_THROUGHPUT_CONCURRENT_2N1S2R_10T_dump.csv", { visibility: [false, true], colors: ['#6B8E23','#4B0082','#FF0000','#DA70D6','#CD853F'], labelsDiv: document.getElementById('cpuProfileStats') });
+                                                    	 } else if (p.name.includes("Throughput (8 Threads)")) {
+	                                                         g3 = new Dygraph(document.getElementById("memProfileGraph"), "data/" + testID + "_" + commitID + "_MEM_ESTIMATION_CLOUD_INDEXING_THROUGHPUT_CONCURRENT_2N1S2R_8T_dump.csv", { visibility: [false, true], colors: ['#6B8E23','#4B0082','#FF0000','#DA70D6','#CD853F'], labelsDiv: document.getElementById('memProfileStats') });
+	                                                         g4 = new Dygraph(document.getElementById("cpuProfileGraph"), "data/" + testID + "_" + commitID + "_CPU_ESTIMATION_CLOUD_INDEXING_THROUGHPUT_CONCURRENT_2N1S2R_8T_dump.csv", { visibility: [false, true], colors: ['#6B8E23','#4B0082','#FF0000','#DA70D6','#CD853F'], labelsDiv: document.getElementById('cpuProfileStats') });
+	                                                	 } else if (p.name.includes("Throughput (6 Threads)")) {
+	                                                         g3 = new Dygraph(document.getElementById("memProfileGraph"), "data/" + testID + "_" + commitID + "_MEM_ESTIMATION_CLOUD_INDEXING_THROUGHPUT_CONCURRENT_2N1S2R_6T_dump.csv", { visibility: [false, true], colors: ['#6B8E23','#4B0082','#FF0000','#DA70D6','#CD853F'], labelsDiv: document.getElementById('memProfileStats') });
+	                                                         g4 = new Dygraph(document.getElementById("cpuProfileGraph"), "data/" + testID + "_" + commitID + "_CPU_ESTIMATION_CLOUD_INDEXING_THROUGHPUT_CONCURRENT_2N1S2R_6T_dump.csv", { visibility: [false, true], colors: ['#6B8E23','#4B0082','#FF0000','#DA70D6','#CD853F'], labelsDiv: document.getElementById('cpuProfileStats') });
+	                                                	 } else if (p.name.includes("Throughput (4 Threads)")) {
+	                                                         g3 = new Dygraph(document.getElementById("memProfileGraph"), "data/" + testID + "_" + commitID + "_MEM_ESTIMATION_CLOUD_INDEXING_THROUGHPUT_CONCURRENT_2N1S2R_4T_dump.csv", { visibility: [false, true], colors: ['#6B8E23','#4B0082','#FF0000','#DA70D6','#CD853F'], labelsDiv: document.getElementById('memProfileStats') });
+	                                                         g4 = new Dygraph(document.getElementById("cpuProfileGraph"), "data/" + testID + "_" + commitID + "_CPU_ESTIMATION_CLOUD_INDEXING_THROUGHPUT_CONCURRENT_2N1S2R_4T_dump.csv", { visibility: [false, true], colors: ['#6B8E23','#4B0082','#FF0000','#DA70D6','#CD853F'], labelsDiv: document.getElementById('cpuProfileStats') });
+	                                                	 } else if (p.name.includes("Throughput (2 Threads)")) {
+	                                                         g3 = new Dygraph(document.getElementById("memProfileGraph"), "data/" + testID + "_" + commitID + "_MEM_ESTIMATION_CLOUD_INDEXING_THROUGHPUT_CONCURRENT_2N1S2R_2T_dump.csv", { visibility: [false, true], colors: ['#6B8E23','#4B0082','#FF0000','#DA70D6','#CD853F'], labelsDiv: document.getElementById('memProfileStats') });
+	                                                         g4 = new Dygraph(document.getElementById("cpuProfileGraph"), "data/" + testID + "_" + commitID + "_CPU_ESTIMATION_CLOUD_INDEXING_THROUGHPUT_CONCURRENT_2N1S2R_2T_dump.csv", { visibility: [false, true], colors: ['#6B8E23','#4B0082','#FF0000','#DA70D6','#CD853F'], labelsDiv: document.getElementById('cpuProfileStats') });
+	                                                	 }
+
+                                                      }, 250);
 
                                                 }
 
@@ -273,7 +289,17 @@
 
                                     $("#HeapMemoryUsageTab").addClass("active");
 
-                                    g3 = new Dygraph(document.getElementById("memProfileGraph"), "data/" + testID + "_" + commitID + "_MEM_ESTIMATION_STANDALONE_INDEXING_THROUGHPUT_SERIAL_dump.csv", { visibility: [false, true], colors: ['#6B8E23','#4B0082','#FF0000','#DA70D6','#CD853F'], labelsDiv: document.getElementById('memProfileStats') });
+                               	 if (point.includes("Throughput (10 Threads)")) {
+                                     g3 = new Dygraph(document.getElementById("memProfileGraph"), "data/" + testID + "_" + commitID + "_MEM_ESTIMATION_CLOUD_INDEXING_THROUGHPUT_CONCURRENT_2N1S2R_10T_dump.csv", { visibility: [false, true], colors: ['#6B8E23','#4B0082','#FF0000','#DA70D6','#CD853F'], labelsDiv: document.getElementById('memProfileStats') });
+	                        	 } else if (point.includes("Throughput (8 Threads)")) {
+	                                 g3 = new Dygraph(document.getElementById("memProfileGraph"), "data/" + testID + "_" + commitID + "_MEM_ESTIMATION_CLOUD_INDEXING_THROUGHPUT_CONCURRENT_2N1S2R_8T_dump.csv", { visibility: [false, true], colors: ['#6B8E23','#4B0082','#FF0000','#DA70D6','#CD853F'], labelsDiv: document.getElementById('memProfileStats') });
+	                        	 } else if (point.includes("Throughput (6 Threads)")) {
+	                                 g3 = new Dygraph(document.getElementById("memProfileGraph"), "data/" + testID + "_" + commitID + "_MEM_ESTIMATION_CLOUD_INDEXING_THROUGHPUT_CONCURRENT_2N1S2R_6T_dump.csv", { visibility: [false, true], colors: ['#6B8E23','#4B0082','#FF0000','#DA70D6','#CD853F'], labelsDiv: document.getElementById('memProfileStats') });
+	                        	 } else if (point.includes("Throughput (4 Threads)")) {
+	                                 g3 = new Dygraph(document.getElementById("memProfileGraph"), "data/" + testID + "_" + commitID + "_MEM_ESTIMATION_CLOUD_INDEXING_THROUGHPUT_CONCURRENT_2N1S2R_4T_dump.csv", { visibility: [false, true], colors: ['#6B8E23','#4B0082','#FF0000','#DA70D6','#CD853F'], labelsDiv: document.getElementById('memProfileStats') });
+	                        	 } else if (point.includes("Throughput (2 Threads)")) {
+	                                 g3 = new Dygraph(document.getElementById("memProfileGraph"), "data/" + testID + "_" + commitID + "_MEM_ESTIMATION_CLOUD_INDEXING_THROUGHPUT_CONCURRENT_2N1S2R_2T_dump.csv", { visibility: [false, true], colors: ['#6B8E23','#4B0082','#FF0000','#DA70D6','#CD853F'], labelsDiv: document.getElementById('memProfileStats') });
+	                        	 }
 
                                 }
 
@@ -298,7 +324,17 @@
 
                                     $("#ProcessCPULoadTab").addClass("active");
 
-                                    g4 = new Dygraph(document.getElementById("cpuProfileGraph"), "data/" + testID + "_" + commitID + "_CPU_ESTIMATION_STANDALONE_INDEXING_THROUGHPUT_SERIAL_dump.csv", { visibility: [false, true], colors: ['#6B8E23','#4B0082','#FF0000','#DA70D6','#CD853F'], labelsDiv: document.getElementById('cpuProfileStats') });
+                               	 if (point.includes("Throughput (10 Threads)")) {
+                                     g4 = new Dygraph(document.getElementById("cpuProfileGraph"), "data/" + testID + "_" + commitID + "_CPU_ESTIMATION_CLOUD_INDEXING_THROUGHPUT_CONCURRENT_2N1S2R_10T_dump.csv", { visibility: [false, true], colors: ['#6B8E23','#4B0082','#FF0000','#DA70D6','#CD853F'], labelsDiv: document.getElementById('cpuProfileStats') });
+	                        	 } else if (point.includes("Throughput (8 Threads)")) {
+	                                 g4 = new Dygraph(document.getElementById("cpuProfileGraph"), "data/" + testID + "_" + commitID + "_CPU_ESTIMATION_CLOUD_INDEXING_THROUGHPUT_CONCURRENT_2N1S2R_8T_dump.csv", { visibility: [false, true], colors: ['#6B8E23','#4B0082','#FF0000','#DA70D6','#CD853F'], labelsDiv: document.getElementById('cpuProfileStats') });
+	                        	 } else if (point.includes("Throughput (6 Threads)")) {
+	                                 g4 = new Dygraph(document.getElementById("cpuProfileGraph"), "data/" + testID + "_" + commitID + "_CPU_ESTIMATION_CLOUD_INDEXING_THROUGHPUT_CONCURRENT_2N1S2R_6T_dump.csv", { visibility: [false, true], colors: ['#6B8E23','#4B0082','#FF0000','#DA70D6','#CD853F'], labelsDiv: document.getElementById('cpuProfileStats') });
+	                        	 } else if (point.includes("Throughput (4 Threads)")) {
+	                                 g4 = new Dygraph(document.getElementById("cpuProfileGraph"), "data/" + testID + "_" + commitID + "_CPU_ESTIMATION_CLOUD_INDEXING_THROUGHPUT_CONCURRENT_2N1S2R_4T_dump.csv", { visibility: [false, true], colors: ['#6B8E23','#4B0082','#FF0000','#DA70D6','#CD853F'], labelsDiv: document.getElementById('cpuProfileStats') });
+	                        	 } else if (point.includes("Throughput (2 Threads)")) {
+	                                 g4 = new Dygraph(document.getElementById("cpuProfileGraph"), "data/" + testID + "_" + commitID + "_CPU_ESTIMATION_CLOUD_INDEXING_THROUGHPUT_CONCURRENT_2N1S2R_2T_dump.csv", { visibility: [false, true], colors: ['#6B8E23','#4B0082','#FF0000','#DA70D6','#CD853F'], labelsDiv: document.getElementById('cpuProfileStats') });
+	                        	 }
 
                                 }
 
@@ -372,7 +408,7 @@
 
                                 });
 
-        					}, 3000);
+					        }, 3000);
 
 
         });

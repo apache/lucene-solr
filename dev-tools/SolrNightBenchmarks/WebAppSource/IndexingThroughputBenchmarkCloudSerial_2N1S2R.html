@@ -56,8 +56,17 @@
                     <li class="dropdown">
                         <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" aria-haspopup="true" aria-expanded="false">Cloud Metrics<span class="caret"></span></a>
                         <ul class="dropdown-menu">
-                            <li><a href="IndexingThroughputBenchmarkCloud.html">Indexing Throughput - Serial</a></li>
-                            <li><a href="IndexingThroughputBenchmarkCloudConcurrent.html">Indexing Throughput - Concurrent</a></li>
+
+                            <li><a href="IndexingThroughputBenchmarkCloudSerial_2N1S2R.html">Indexing Throughput - Serial: 2 Nodes, 1 Shards, 2 Replicas</a></li>
+                            <li><a href="IndexingThroughputBenchmarkCloudSerial_2N2S1R.html">Indexing Throughput - Serial: 2 Nodes, 2 Shards, 1 Replicas</a></li>
+                            <li><a href="IndexingThroughputBenchmarkCloudSerial_3N1S3R.html">Indexing Throughput - Serial: 3 Nodes, 1 Shards, 3 Replicas</a></li>
+                            <li><a href="IndexingThroughputBenchmarkCloudSerial_4N2S2R.html">Indexing Throughput - Serial: 4 Nodes, 2 Shards, 2 Replicas</a></li>
+
+                            <li><a href="IndexingThroughputBenchmarkCloudConcurrent_2N1S2R.html">Indexing Throughput - Concurrent: 2 Nodes, 1 Shards, 2 Replicas</a></li>
+                            <li><a href="IndexingThroughputBenchmarkCloudConcurrent_2N2S1R.html">Indexing Throughput - Concurrent: 2 Nodes, 2 Shards, 1 Replicas</a></li>
+                            <li><a href="IndexingThroughputBenchmarkCloudConcurrent_3N1S3R.html">Indexing Throughput - Concurrent: 3 Nodes, 1 Shards, 3 Replicas</a></li>
+                            <li><a href="IndexingThroughputBenchmarkCloudConcurrent_4N2S2R.html">Indexing Throughput - Concurrent: 4 Nodes, 2 Shards, 2 Replicas</a></li>
+
                             <li><a href="CreateCollectionBenchmarkCloud.html">Create Collection</a></li>
                         </ul>
                     </li>
@@ -146,7 +155,7 @@
                             <div class="col-xs-9 cols-md-9 col-lg-9">
 
                                 <div class="panel panel-info" style="height:87%">
-                                    <div class="panel-heading">Indexing Performance - Cloud Concurrent</div>
+                                    <div class="panel-heading">Indexing Throughput (doc/sec)</div>
                                     <div class="panel-body" id="graphdiv2" style="width:95%; height:85%;">                                                              
                                     </div>
                                 </div>
@@ -166,7 +175,7 @@
                                 <div class="panel panel-danger" style="height:34%">
                                     <div class="panel-heading">Graph Information</div>
                                     <div class="panel-body">
-                                        <span class="text-muted">X-Axis: Date/Time | Y-Axis: Seconds</span><br/><br/>
+                                        <span class="text-muted">X-Axis: Date/Time | Y-Axis: Documents/Second</span><br/><br/>
                                         <div id="pointData"></div>
                                         <div id="welcomeMessage">Please hover on the graph and click on a specific point on the graph to get more details ...</div>                                       
                                     </div>
@@ -193,7 +202,7 @@
                             $.ajax({
 
                                     type: "GET",
-                                    url: "data/indexing_data_cloud_concurrent.csv",
+                                    url: "data/indexing_throughput_data_cloud_serial_2n1s2r.csv",
                                     dataType: "text",
                                     success: function(data) {
 	                                    fileData = data.split("\n");
@@ -214,11 +223,11 @@
                             });
 
 
-                            g2 = new Dygraph(document.getElementById("graphdiv2"), "data/indexing_data_cloud_concurrent.csv", {
-                                labelsDiv: document.getElementById('pointData'), visibility: [false, false, true, true, true, true, true], colors: ['#6B8E23','#4B0082','#FF0000','#DA70D6','#CD853F'],
+                            g2 = new Dygraph(document.getElementById("graphdiv2"), "data/indexing_throughput_data_cloud_serial_2n1s2r.csv", {
+                                 labelsDiv: document.getElementById('pointData'), visibility: [false, true, false, true], colors: ['#6B8E23','#4B0082','#FF0000','#DA70D6','#CD853F'],
 
                                  highlightCallback: function (e, x, pts, row) {
-                                     commitID = fileData[(row + 1)].split(",")[2].trim();
+                                     commitID = fileData[(row + 1)].split(",")[3].trim();
                                      testID = fileData[(row + 1)].split(",")[1].trim();
 				                      				
 				                                     $.ajax({
@@ -235,14 +244,14 @@
 				                     				 document.getElementById("welcomeMessage").innerHTML = "";
 				                     
                                                 },
-                                  pointClickCallback: function(e, p) {
+                                   pointClickCallback: function(e, p) {
 
                                                      $('#memProfile').modal();
                                                      document.getElementById('memProfileFileChangeListLink').setAttribute('href', "https://git-wip-us.apache.org/repos/asf?p=lucene-solr.git;h=" + commitID);
 
                                                      setTimeout(function () {
-                                                         g3 = new Dygraph(document.getElementById("memProfileGraph"), "data/" + testID + "_" + commitID + "_MEM_ESTIMATION_CLOUD_INDEXING_CONCURRENT_dump.csv", { visibility: [false, true], colors: ['#6B8E23','#4B0082','#FF0000','#DA70D6','#CD853F'], labelsDiv: document.getElementById('memProfileStats') });
-                                                         g4 = new Dygraph(document.getElementById("cpuProfileGraph"), "data/" + testID + "_" + commitID + "_CPU_ESTIMATION_CLOUD_INDEXING_CONCURRENT_dump.csv", { visibility: [false, true], colors: ['#6B8E23','#4B0082','#FF0000','#DA70D6','#CD853F'], labelsDiv: document.getElementById('cpuProfileStats') });
+                                                         g3 = new Dygraph(document.getElementById("memProfileGraph"), "data/" + testID + "_" + commitID + "_MEM_ESTIMATION_CLOUD_INDEXING_THROUGHPUT_SERIAL_2N1S2R_dump.csv", { visibility: [false, true], colors: ['#6B8E23','#4B0082','#FF0000','#DA70D6','#CD853F'], labelsDiv: document.getElementById('memProfileStats') });
+                                                         g4 = new Dygraph(document.getElementById("cpuProfileGraph"), "data/" + testID + "_" + commitID + "_CPU_ESTIMATION_CLOUD_INDEXING_THROUGHPUT_SERIAL_2N1S2R_dump.csv", { visibility: [false, true], colors: ['#6B8E23','#4B0082','#FF0000','#DA70D6','#CD853F'], labelsDiv: document.getElementById('cpuProfileStats') });
                                                      }, 250);
 
                                                 }
@@ -263,7 +272,7 @@
 
                                     $("#HeapMemoryUsageTab").addClass("active");
 
-                                    g3 = new Dygraph(document.getElementById("memProfileGraph"), "data/" + testID + "_" + commitID + "_MEM_ESTIMATION_CLOUD_INDEXING_CONCURRENT_dump.csv", { visibility: [false, true], colors: ['#6B8E23','#4B0082','#FF0000','#DA70D6','#CD853F'], labelsDiv: document.getElementById('memProfileStats') });
+                                    g3 = new Dygraph(document.getElementById("memProfileGraph"), "data/" + testID + "_" + commitID + "_MEM_ESTIMATION_CLOUD_INDEXING_THROUGHPUT_SERIAL_2N1S2R_dump.csv", { visibility: [false, true], colors: ['#6B8E23','#4B0082','#FF0000','#DA70D6','#CD853F'], labelsDiv: document.getElementById('memProfileStats') });
 
                                 }
 
@@ -288,7 +297,7 @@
 
                                     $("#ProcessCPULoadTab").addClass("active");
 
-                                    g4 = new Dygraph(document.getElementById("cpuProfileGraph"), "data/" + testID + "_" + commitID + "_CPU_ESTIMATION_CLOUD_INDEXING_CONCURRENT_dump.csv", { visibility: [false, true], colors: ['#6B8E23','#4B0082','#FF0000','#DA70D6','#CD853F'], labelsDiv: document.getElementById('cpuProfileStats') });
+                                    g4 = new Dygraph(document.getElementById("cpuProfileGraph"), "data/" + testID + "_" + commitID + "_CPU_ESTIMATION_CLOUD_INDEXING_THROUGHPUT_SERIAL_2N1S2R_dump.csv", { visibility: [false, true], colors: ['#6B8E23','#4B0082','#FF0000','#DA70D6','#CD853F'], labelsDiv: document.getElementById('cpuProfileStats') });
 
                                 }
 

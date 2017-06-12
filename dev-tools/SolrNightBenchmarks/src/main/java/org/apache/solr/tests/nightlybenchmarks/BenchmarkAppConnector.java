@@ -254,11 +254,6 @@ public class BenchmarkAppConnector {
 		Util.postMessage("** Publishing data for webapp ..", MessageType.WHITE_TEXT, false);
 
 		if (BenchmarkReportData.metricMapStandalone != null) {
-			BenchmarkAppConnector.writeToWebAppDataFile("indexing_data_standalone_regular.csv",
-					BenchmarkReportData.metricMapStandalone.get("TimeStamp") + ", " + Util.TEST_ID + ", "
-							+ BenchmarkReportData.metricMapStandalone.get("IndexingTime") + ", "
-							+ BenchmarkReportData.metricMapStandalone.get("CommitID"),
-					false, FileType.STANDALONE_INDEXING_MAIN);
 			BenchmarkAppConnector.writeToWebAppDataFile("indexing_throughput_data_standalone_regular.csv",
 					BenchmarkReportData.metricMapStandalone.get("TimeStamp") + ", " + Util.TEST_ID + ", "
 							+ BenchmarkReportData.metricMapStandalone.get("IndexingThroughput") + ", "
@@ -266,50 +261,81 @@ public class BenchmarkAppConnector {
 					false, FileType.STANDALONE_INDEXING_THROUGHPUT);
 		}
 
-		if (BenchmarkReportData.metricMapCloudSerial != null) {
-			BenchmarkAppConnector.writeToWebAppDataFile("indexing_data_cloud_regular.csv",
-					BenchmarkReportData.metricMapCloudSerial.get("TimeStamp") + ", " + Util.TEST_ID + ", "
-							+ BenchmarkReportData.metricMapCloudSerial.get("IndexingTime") + ", "
-							+ BenchmarkReportData.metricMapCloudSerial.get("CommitID"),
-					false, FileType.CLOUD_INDEXING_SERIAL);
-			BenchmarkAppConnector.writeToWebAppDataFile("indexing_throughput_data_cloud_serial.csv",
-					BenchmarkReportData.metricMapCloudSerial.get("TimeStamp") + ", " + Util.TEST_ID + ", "
-							+ BenchmarkReportData.metricMapCloudSerial.get("IndexingThroughput") + ", "
-							+ BenchmarkReportData.metricMapCloudSerial.get("CommitID"),
+		if (BenchmarkReportData.metricMapCloudSerial_2N1S2R != null) {
+			BenchmarkAppConnector.writeToWebAppDataFile("indexing_throughput_data_cloud_serial_2n1s2r.csv",
+					BenchmarkReportData.metricMapCloudSerial_2N1S2R.get("TimeStamp") + ", " + Util.TEST_ID + ", "
+							+ BenchmarkReportData.metricMapCloudSerial_2N1S2R.get("IndexingThroughput") + ", "
+							+ BenchmarkReportData.metricMapCloudSerial_2N1S2R.get("CommitID"),
+					false, FileType.CLOUD_SERIAL_INDEXING_THROUGHPUT);
+		}
+		if (BenchmarkReportData.metricMapCloudSerial_2N2S1R != null) {
+			BenchmarkAppConnector.writeToWebAppDataFile("indexing_throughput_data_cloud_serial_2n2s1r.csv",
+					BenchmarkReportData.metricMapCloudSerial_2N2S1R.get("TimeStamp") + ", " + Util.TEST_ID + ", "
+							+ BenchmarkReportData.metricMapCloudSerial_2N2S1R.get("IndexingThroughput") + ", "
+							+ BenchmarkReportData.metricMapCloudSerial_2N2S1R.get("CommitID"),
+					false, FileType.CLOUD_SERIAL_INDEXING_THROUGHPUT);
+		}
+		if (BenchmarkReportData.metricMapCloudSerial_3N1S3R != null) {
+			BenchmarkAppConnector.writeToWebAppDataFile("indexing_throughput_data_cloud_serial_3n1s3r.csv",
+					BenchmarkReportData.metricMapCloudSerial_3N1S3R.get("TimeStamp") + ", " + Util.TEST_ID + ", "
+							+ BenchmarkReportData.metricMapCloudSerial_3N1S3R.get("IndexingThroughput") + ", "
+							+ BenchmarkReportData.metricMapCloudSerial_3N1S3R.get("CommitID"),
+					false, FileType.CLOUD_SERIAL_INDEXING_THROUGHPUT);
+		}
+		if (BenchmarkReportData.metricMapCloudSerial_4N2S2R != null) {
+			BenchmarkAppConnector.writeToWebAppDataFile("indexing_throughput_data_cloud_serial_4n2s2r.csv",
+					BenchmarkReportData.metricMapCloudSerial_4N2S2R.get("TimeStamp") + ", " + Util.TEST_ID + ", "
+							+ BenchmarkReportData.metricMapCloudSerial_4N2S2R.get("IndexingThroughput") + ", "
+							+ BenchmarkReportData.metricMapCloudSerial_4N2S2R.get("CommitID"),
 					false, FileType.CLOUD_SERIAL_INDEXING_THROUGHPUT);
 		}
 
-		if (BenchmarkReportData.metricMapCloudConcurrent2 != null) {
-			BenchmarkAppConnector.writeToWebAppDataFile("indexing_data_cloud_concurrent.csv",
-					BenchmarkReportData.metricMapCloudConcurrent2.get("TimeStamp") + ", " + Util.TEST_ID + ", "
-							+ BenchmarkReportData.metricMapCloudConcurrent2.get("CommitID") + ", "
-							+ BenchmarkReportData.metricMapCloudConcurrent2.get("IndexingTime") + ", "
-							+ BenchmarkReportData.metricMapCloudConcurrent4.get("IndexingTime") + ", "
-							+ BenchmarkReportData.metricMapCloudConcurrent6.get("IndexingTime") + ", "
-							+ BenchmarkReportData.metricMapCloudConcurrent8.get("IndexingTime") + ", "
-							+ BenchmarkReportData.metricMapCloudConcurrent10.get("IndexingTime"),
-					false, FileType.CLOUD_INDEXING_CONCURRENT);
-			BenchmarkAppConnector.writeToWebAppDataFile("indexing_throughput_data_cloud_concurrent.csv",
-					BenchmarkReportData.metricMapCloudConcurrent2.get("TimeStamp") + ", " + Util.TEST_ID + ", "
-							+ BenchmarkReportData.metricMapCloudConcurrent2.get("CommitID") + ", "
-							+ BenchmarkReportData.metricMapCloudConcurrent2.get("IndexingThroughput") + ", "
-							+ BenchmarkReportData.metricMapCloudConcurrent4.get("IndexingThroughput") + ", "
-							+ BenchmarkReportData.metricMapCloudConcurrent6.get("IndexingThroughput") + ", "
-							+ BenchmarkReportData.metricMapCloudConcurrent8.get("IndexingThroughput") + ", "
-							+ BenchmarkReportData.metricMapCloudConcurrent10.get("IndexingThroughput"),
+		if (BenchmarkReportData.metricMapCloudConcurrent2_2N1S2R != null) {
+			BenchmarkAppConnector.writeToWebAppDataFile("indexing_throughput_data_cloud_concurrent_2n1s2r.csv",
+					BenchmarkReportData.metricMapCloudConcurrent2_2N1S2R.get("TimeStamp") + ", " + Util.TEST_ID + ", "
+							+ BenchmarkReportData.metricMapCloudConcurrent2_2N1S2R.get("CommitID") + ", "
+							+ BenchmarkReportData.metricMapCloudConcurrent2_2N1S2R.get("IndexingThroughput") + ", "
+							+ BenchmarkReportData.metricMapCloudConcurrent4_2N1S2R.get("IndexingThroughput") + ", "
+							+ BenchmarkReportData.metricMapCloudConcurrent6_2N1S2R.get("IndexingThroughput") + ", "
+							+ BenchmarkReportData.metricMapCloudConcurrent8_2N1S2R.get("IndexingThroughput") + ", "
+							+ BenchmarkReportData.metricMapCloudConcurrent10_2N1S2R.get("IndexingThroughput"),
+					false, FileType.CLOUD_CONCURRENT_INDEXING_THROUGHPUT);
+		}
+		if (BenchmarkReportData.metricMapCloudConcurrent2_2N2S1R != null) {
+			BenchmarkAppConnector.writeToWebAppDataFile("indexing_throughput_data_cloud_concurrent_2n2s1r.csv",
+					BenchmarkReportData.metricMapCloudConcurrent2_2N2S1R.get("TimeStamp") + ", " + Util.TEST_ID + ", "
+							+ BenchmarkReportData.metricMapCloudConcurrent2_2N2S1R.get("CommitID") + ", "
+							+ BenchmarkReportData.metricMapCloudConcurrent2_2N2S1R.get("IndexingThroughput") + ", "
+							+ BenchmarkReportData.metricMapCloudConcurrent4_2N2S1R.get("IndexingThroughput") + ", "
+							+ BenchmarkReportData.metricMapCloudConcurrent6_2N2S1R.get("IndexingThroughput") + ", "
+							+ BenchmarkReportData.metricMapCloudConcurrent8_2N2S1R.get("IndexingThroughput") + ", "
+							+ BenchmarkReportData.metricMapCloudConcurrent10_2N2S1R.get("IndexingThroughput"),
+					false, FileType.CLOUD_CONCURRENT_INDEXING_THROUGHPUT);
+		}
+		if (BenchmarkReportData.metricMapCloudConcurrent2_3N1S3R != null) {
+			BenchmarkAppConnector.writeToWebAppDataFile("indexing_throughput_data_cloud_concurrent_3n1s3r.csv",
+					BenchmarkReportData.metricMapCloudConcurrent2_3N1S3R.get("TimeStamp") + ", " + Util.TEST_ID + ", "
+							+ BenchmarkReportData.metricMapCloudConcurrent2_3N1S3R.get("CommitID") + ", "
+							+ BenchmarkReportData.metricMapCloudConcurrent2_3N1S3R.get("IndexingThroughput") + ", "
+							+ BenchmarkReportData.metricMapCloudConcurrent4_3N1S3R.get("IndexingThroughput") + ", "
+							+ BenchmarkReportData.metricMapCloudConcurrent6_3N1S3R.get("IndexingThroughput") + ", "
+							+ BenchmarkReportData.metricMapCloudConcurrent8_3N1S3R.get("IndexingThroughput") + ", "
+							+ BenchmarkReportData.metricMapCloudConcurrent10_3N1S3R.get("IndexingThroughput"),
+					false, FileType.CLOUD_CONCURRENT_INDEXING_THROUGHPUT);
+		}
+		if (BenchmarkReportData.metricMapCloudConcurrent2_4N2S2R != null) {
+			BenchmarkAppConnector.writeToWebAppDataFile("indexing_throughput_data_cloud_concurrent_4n2s2r.csv",
+					BenchmarkReportData.metricMapCloudConcurrent2_4N2S2R.get("TimeStamp") + ", " + Util.TEST_ID + ", "
+							+ BenchmarkReportData.metricMapCloudConcurrent2_4N2S2R.get("CommitID") + ", "
+							+ BenchmarkReportData.metricMapCloudConcurrent2_4N2S2R.get("IndexingThroughput") + ", "
+							+ BenchmarkReportData.metricMapCloudConcurrent4_4N2S2R.get("IndexingThroughput") + ", "
+							+ BenchmarkReportData.metricMapCloudConcurrent6_4N2S2R.get("IndexingThroughput") + ", "
+							+ BenchmarkReportData.metricMapCloudConcurrent8_4N2S2R.get("IndexingThroughput") + ", "
+							+ BenchmarkReportData.metricMapCloudConcurrent10_4N2S2R.get("IndexingThroughput"),
 					false, FileType.CLOUD_CONCURRENT_INDEXING_THROUGHPUT);
 		}
 
 		if (BenchmarkReportData.metricMapStandaloneConcurrent2 != null) {
-			BenchmarkAppConnector.writeToWebAppDataFile("indexing_data_standalone_concurrent.csv",
-					BenchmarkReportData.metricMapStandaloneConcurrent2.get("TimeStamp") + ", " + Util.TEST_ID + ", "
-							+ BenchmarkReportData.metricMapStandaloneConcurrent2.get("CommitID") + ", "
-							+ BenchmarkReportData.metricMapStandaloneConcurrent2.get("IndexingTime") + ", "
-							+ BenchmarkReportData.metricMapStandaloneConcurrent4.get("IndexingTime") + ", "
-							+ BenchmarkReportData.metricMapStandaloneConcurrent6.get("IndexingTime") + ", "
-							+ BenchmarkReportData.metricMapStandaloneConcurrent8.get("IndexingTime") + ", "
-							+ BenchmarkReportData.metricMapStandaloneConcurrent10.get("IndexingTime"),
-					false, FileType.CLOUD_INDEXING_CONCURRENT);
 			BenchmarkAppConnector.writeToWebAppDataFile("indexing_throughput_data_standalone_concurrent.csv",
 					BenchmarkReportData.metricMapStandaloneConcurrent2.get("TimeStamp") + ", " + Util.TEST_ID + ", "
 							+ BenchmarkReportData.metricMapStandaloneConcurrent2.get("CommitID") + ", "

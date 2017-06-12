@@ -28,8 +28,59 @@ import org.json.simple.JSONValue;
 
 enum TestType {
 
-	STANDALONE_CREATE_COLLECTION, STANDALONE_INDEXING_THROUGHPUT_SERIAL, STANDALONE_INDEXING_THROUGHPUT_CONCURRENT_2, STANDALONE_INDEXING_THROUGHPUT_CONCURRENT_4, STANDALONE_INDEXING_THROUGHPUT_CONCURRENT_6, STANDALONE_INDEXING_THROUGHPUT_CONCURRENT_8, STANDALONE_INDEXING_THROUGHPUT_CONCURRENT_10, CLOUD_CREATE_COLLECTION, CLOUD_INDEXING_THROUGHPUT_SERIAL, CLOUD_INDEXING_THROUGHPUT_CONCURRENT_2, CLOUD_INDEXING_THROUGHPUT_CONCURRENT_4, CLOUD_INDEXING_THROUGHPUT_CONCURRENT_6, CLOUD_INDEXING_THROUGHPUT_CONCURRENT_8, CLOUD_INDEXING_THROUGHPUT_CONCURRENT_10 ,TERM_NUMERIC_QUERY_CLOUD, TERM_NUMERIC_QUERY_STANDALONE, RANGE_NUMERIC_QUERY_CLOUD, RANGE_NUMERIC_QUERY_STANDALONE, GT_NUMERIC_QUERY_CLOUD, GT_NUMERIC_QUERY_STANDALONE, LT_NUMERIC_QUERY_CLOUD, LT_NUMERIC_QUERY_STANDALONE, AND_NUMERIC_QUERY_CLOUD, AND_NUMERIC_QUERY_STANDALONE, OR_NUMERIC_QUERY_CLOUD, OR_NUMERIC_QUERY_STANDALONE
-
+	STANDALONE_CREATE_COLLECTION, 
+	STANDALONE_INDEXING_THROUGHPUT_SERIAL, 
+	
+	STANDALONE_INDEXING_THROUGHPUT_CONCURRENT_2, 
+	STANDALONE_INDEXING_THROUGHPUT_CONCURRENT_4, 
+	STANDALONE_INDEXING_THROUGHPUT_CONCURRENT_6, 
+	STANDALONE_INDEXING_THROUGHPUT_CONCURRENT_8, 
+	STANDALONE_INDEXING_THROUGHPUT_CONCURRENT_10, 
+	
+	CLOUD_CREATE_COLLECTION, 
+	
+	CLOUD_INDEXING_THROUGHPUT_SERIAL_2N1S2R, 
+	CLOUD_INDEXING_THROUGHPUT_SERIAL_3N1S3R, 
+	CLOUD_INDEXING_THROUGHPUT_SERIAL_2N2S1R, 
+	CLOUD_INDEXING_THROUGHPUT_SERIAL_4N2S2R, 
+	
+	CLOUD_INDEXING_THROUGHPUT_CONCURRENT_2N1S2R_2T, 
+	CLOUD_INDEXING_THROUGHPUT_CONCURRENT_3N1S3R_2T, 
+	CLOUD_INDEXING_THROUGHPUT_CONCURRENT_2N2S1R_2T, 
+	CLOUD_INDEXING_THROUGHPUT_CONCURRENT_4N2S2R_2T, 
+	
+	CLOUD_INDEXING_THROUGHPUT_CONCURRENT_2N1S2R_4T, 
+	CLOUD_INDEXING_THROUGHPUT_CONCURRENT_3N1S3R_4T, 
+	CLOUD_INDEXING_THROUGHPUT_CONCURRENT_2N2S1R_4T, 
+	CLOUD_INDEXING_THROUGHPUT_CONCURRENT_4N2S2R_4T, 
+	
+	CLOUD_INDEXING_THROUGHPUT_CONCURRENT_2N1S2R_6T, 
+	CLOUD_INDEXING_THROUGHPUT_CONCURRENT_3N1S3R_6T, 
+	CLOUD_INDEXING_THROUGHPUT_CONCURRENT_2N2S1R_6T, 
+	CLOUD_INDEXING_THROUGHPUT_CONCURRENT_4N2S2R_6T, 
+	
+	CLOUD_INDEXING_THROUGHPUT_CONCURRENT_2N1S2R_8T, 
+	CLOUD_INDEXING_THROUGHPUT_CONCURRENT_3N1S3R_8T, 
+	CLOUD_INDEXING_THROUGHPUT_CONCURRENT_2N2S1R_8T, 
+	CLOUD_INDEXING_THROUGHPUT_CONCURRENT_4N2S2R_8T, 
+	
+	CLOUD_INDEXING_THROUGHPUT_CONCURRENT_2N1S2R_10T, 
+	CLOUD_INDEXING_THROUGHPUT_CONCURRENT_3N1S3R_10T, 
+	CLOUD_INDEXING_THROUGHPUT_CONCURRENT_2N2S1R_10T, 
+	CLOUD_INDEXING_THROUGHPUT_CONCURRENT_4N2S2R_10T, 
+	
+	TERM_NUMERIC_QUERY_CLOUD, 
+	TERM_NUMERIC_QUERY_STANDALONE, 
+	RANGE_NUMERIC_QUERY_CLOUD, 
+	RANGE_NUMERIC_QUERY_STANDALONE, 
+	GT_NUMERIC_QUERY_CLOUD, 
+	GT_NUMERIC_QUERY_STANDALONE, 
+	LT_NUMERIC_QUERY_CLOUD, 
+	LT_NUMERIC_QUERY_STANDALONE, 
+	AND_NUMERIC_QUERY_CLOUD, 
+	AND_NUMERIC_QUERY_STANDALONE, 
+	OR_NUMERIC_QUERY_CLOUD, 
+	OR_NUMERIC_QUERY_STANDALONE
 }
 
 public class MetricCollector extends Thread {
@@ -56,40 +107,40 @@ public class MetricCollector extends Thread {
 
 	public void run() {
 
-			while (true) {
-				try {
+		while (true) {
+			try {
 
-					String response = Util.getResponse(
-							"http://localhost:" + this.port + "/solr/admin/metrics?wt=json&group=jvm",
-							MediaType.APPLICATION_JSON);
-					JSONObject jsonObject = (JSONObject) JSONValue.parse(response);
+				String response = Util.getResponse(
+						"http://localhost:" + this.port + "/solr/admin/metrics?wt=json&group=jvm",
+						MediaType.APPLICATION_JSON);
+				JSONObject jsonObject = (JSONObject) JSONValue.parse(response);
 
-					Date dNow = new Date();
-					SimpleDateFormat ft = new SimpleDateFormat("yyyy/MM/dd HH:mm:ss");
-					BenchmarkAppConnector.writeToWebAppDataFile(
-							Util.TEST_ID + "_" + this.commitID + "_" + MetricType.MEM_ESTIMATION + "_" + testType
-									+ "_dump.csv",
-							ft.format(dNow) + ", " + Util.TEST_ID + ", "
-									+ (Double.parseDouble(
-											((JSONObject) ((JSONObject) jsonObject.get("metrics")).get("solr.jvm"))
-													.get("memory.heap.used").toString())
-											/ (1024 * 1024)),
-							false, FileType.MEMORY_HEAP_USED);
-					BenchmarkAppConnector.writeToWebAppDataFile(
-							Util.TEST_ID + "_" + this.commitID + "_" + MetricType.CPU_ESTIMATION + "_" + testType
-									+ "_dump.csv",
-							ft.format(dNow) + ", " + Util.TEST_ID + ", "
-									+ (Double.parseDouble(
-											((JSONObject) ((JSONObject) jsonObject.get("metrics")).get("solr.jvm"))
-													.get("os.processCpuLoad").toString())
-											* 100),
-							false, FileType.PROCESS_CPU_LOAD);
+				Date dNow = new Date();
+				SimpleDateFormat ft = new SimpleDateFormat("yyyy/MM/dd HH:mm:ss");
+				BenchmarkAppConnector.writeToWebAppDataFile(
+						Util.TEST_ID + "_" + this.commitID + "_" + MetricType.MEM_ESTIMATION + "_" + testType
+								+ "_dump.csv",
+						ft.format(dNow) + ", " + Util.TEST_ID + ", "
+								+ (Double.parseDouble(
+										((JSONObject) ((JSONObject) jsonObject.get("metrics")).get("solr.jvm"))
+												.get("memory.heap.used").toString())
+										/ (1024 * 1024)),
+						false, FileType.MEMORY_HEAP_USED);
+				BenchmarkAppConnector.writeToWebAppDataFile(
+						Util.TEST_ID + "_" + this.commitID + "_" + MetricType.CPU_ESTIMATION + "_" + testType
+								+ "_dump.csv",
+						ft.format(dNow) + ", " + Util.TEST_ID + ", "
+								+ (Double.parseDouble(
+										((JSONObject) ((JSONObject) jsonObject.get("metrics")).get("solr.jvm"))
+												.get("os.processCpuLoad").toString())
+										* 100),
+						false, FileType.PROCESS_CPU_LOAD);
 
-					Thread.sleep(Integer.parseInt(Util.METRIC_ESTIMATION_PERIOD));
-				} catch (InterruptedException e) {
-					e.printStackTrace();
-				}
+				Thread.sleep(Integer.parseInt(Util.METRIC_ESTIMATION_PERIOD));
+			} catch (InterruptedException e) {
+				e.printStackTrace();
 			}
+		}
 
 	}
 }
