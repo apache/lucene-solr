@@ -80,8 +80,15 @@ public class V2HttpCall extends HttpSolrCall {
     try {
       pieces = getPathSegments(path);
       if (pieces.size() == 0) {
-        prefix = "c";
-        path = "/c";
+        api = new Api(null) {
+          @Override
+          public void call(SolrQueryRequest req, SolrQueryResponse rsp) {
+            rsp.add("documentation", "https://cwiki.apache.org/confluence/display/solr/v2+API");
+            rsp.add("description", "V2 API root path");
+          }
+        };
+        initAdminRequest(path);
+        return;
       } else {
         prefix = pieces.get(0);
       }

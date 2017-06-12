@@ -52,6 +52,14 @@ public class V2ApiIntegrationTest extends SolrCloudTestCase {
   }
 
   @Test
+  public void testWelcomeMessage() throws Exception {
+    NamedList res = cluster.getSolrClient().request(
+        new V2Request.Builder("").build());
+    NamedList header = (NamedList) res.get("responseHeader");
+    assertEquals(0, header.get("status"));
+  }
+
+  @Test
   public void testIntrospect() throws Exception {
     ModifiableSolrParams params = new ModifiableSolrParams();
     params.set("command","XXXX");
