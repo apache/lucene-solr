@@ -320,18 +320,16 @@ public class CoreAdminHandlerTest extends SolrTestCaseJ4 {
       req.process(client);
     }
 
-    try (HttpSolrClient client = getHttpSolrClient(runner.getBaseUrl() + "/corex")) {
-      client.setConnectionTimeout(SolrTestCaseJ4.DEFAULT_CONNECTION_TIMEOUT);
-      client.setSoTimeout(SolrTestCaseJ4.DEFAULT_CONNECTION_TIMEOUT*1000);
-      QueryResponse result = client.query(new SolrQuery("id:*"));
-      //assertEquals(1,result.getResults().getNumFound());
-      fail("expect 404");
-    }catch(Exception e){
-      e.printStackTrace();
-    }
-    finally{
-      runner.stop();
-    }
+    HttpSolrClient.RemoteSolrException rse = expectThrows(HttpSolrClient.RemoteSolrException.class, () -> {
+      try (HttpSolrClient client = getHttpSolrClient(runner.getBaseUrl() + "/corex")) {
+        client.setConnectionTimeout(SolrTestCaseJ4.DEFAULT_CONNECTION_TIMEOUT);
+        client.setSoTimeout(SolrTestCaseJ4.DEFAULT_CONNECTION_TIMEOUT * 1000);
+        client.query(new SolrQuery("id:*"));
+      } finally {
+        runner.stop();
+      }
+    });
+    assertTrue(rse.getMessage().contains("Can not find: /solr/corex/select"));
   }
   
   @Test
