@@ -20,6 +20,7 @@ import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.util.AbstractSolrTestCase;
 import org.junit.BeforeClass;
+import org.junit.Test;
 
 public class TestQueryTypes extends AbstractSolrTestCase {
 
@@ -208,7 +209,6 @@ public class TestQueryTypes extends AbstractSolrTestCase {
            req("q","{!term f=v_t}hello")
            ,"//result[@numFound='2']"
            );
-
 
     //
     // test escapes in quoted strings
@@ -435,6 +435,50 @@ public class TestQueryTypes extends AbstractSolrTestCase {
             );
     assertQ("Test text field with no analysis doesn't NPE with wildcards (SOLR-4318)",
         req("q", "text_no_analyzer:should*"), "//result[@numFound='1']");
+
+    
+  }
+  
+  @Test
+  public void testNumericBadRequests() {
+    String[] suffixes = new String[50];
+    int fieldNum = 0;
+    for (String type:new String[]{"i", "l", "f", "d", "dt"}) {
+      for (String s:new String[]{"", "s"}) {
+        //Trie
+        suffixes[fieldNum++] = "t" + type + s;
+        suffixes[fieldNum++] = "t" + type + s + "_dv";
+        suffixes[fieldNum++] = "t" + type + s + "_ni_dv";
+        
+        //Points
+        suffixes[fieldNum++] = type + s + "_p";
+        suffixes[fieldNum++] = type + s + "_ni_p";
+      }
+    }
+    assertEquals(fieldNum,suffixes.length);
+    
+    String badNumber = "NOT_A_NUMBER";
+    for (String suffix:suffixes) {
+      // Numeric bad requests
+      assertQEx("Expecting exception for suffix: " + suffix, badNumber, req("q","{!term f=foo_" + suffix + "}" + badNumber), SolrException.ErrorCode.BAD_REQUEST);
+      assertQEx("Expecting exception for suffix: " + suffix, badNumber, req("q","{!terms f=foo_" + suffix + "}1 2 3 4 5 " + badNumber), SolrException.ErrorCode.BAD_REQUEST);
+      assertQEx("Expecting exception for suffix: " + suffix, badNumber, req("q","{!lucene}foo_" + suffix + ":" + badNumber), SolrException.ErrorCode.BAD_REQUEST);
+      assertQEx("Expecting exception for suffix: " + suffix, badNumber, req("q","{!field f=foo_" + suffix + "}" + badNumber), SolrException.ErrorCode.BAD_REQUEST);
+      assertQEx("Expecting exception for suffix: " + suffix, badNumber, req("q","{!maxscore}foo_" + suffix + ":" + badNumber), SolrException.ErrorCode.BAD_REQUEST);
+      assertQEx("Expecting exception for suffix: " + suffix, badNumber,
+          req("q","{!xmlparser}<PointRangeQuery fieldName=\"foo_"+ suffix  + "\" lowerTerm=\"1\" upperTerm=\"" + badNumber + "\"/>"), SolrException.ErrorCode.BAD_REQUEST);
+      if (suffix.contains("_p")) {
+        // prefix queries work in Trie fields
+        assertQEx("Expecting exception for suffix: " + suffix, "Can't run prefix queries on numeric fields",
+            req("q","{!prefix f=foo_" + suffix + "}NOT_A_NUMBER"), SolrException.ErrorCode.BAD_REQUEST);
+        assertQEx("Expecting exception for suffix: " + suffix, "Can't run prefix queries on numeric fields",
+            req("q","{!lucene}foo_" + suffix + ":123*"), SolrException.ErrorCode.BAD_REQUEST);
+      }
+      
+      // Skipping: func, boost, raw, nested, frange, spatial*, join, surround, switch, parent, child, collapsing, 
+      // complexphrase, rerank, export, mlt, hash, graph, graphTerms, igain, tlogit, sigificantTerms, payload*
+      // Maybe add: raw, join, parent, child, collapsing, graphTerms, igain, sigificantTerms, simple
+    }
 
   }
 }
