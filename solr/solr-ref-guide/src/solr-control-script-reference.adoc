@@ -605,7 +605,7 @@ Use the `zk cp` command for transferring files and directories between ZooKeeper
 |===
 |Parameter |Description |Example
 |-r |Optional. Do a recursive copy. The command will fail if the <src> has children unless '-r' is specified. |`-r`
-|<src> |The file or path to copy from. If prefixed with `zk:` then the source is presumed to be ZooKeeper. If no prefix or the prefix is 'file:' this is the local drive. At least one of <src> or <dest> must be prefixed by '`zk:`' or the command will fail. a|
+|<src> |The file or path to copy from. If prefixed with `zk:` then the source is presumed to be ZooKeeper. If no prefix or the prefix is 'file:' this is the local drive. At least one of <src> or <dest> must be prefixed by `'zk:'` or the command will fail. a|
 `zk:/configs/myconfigs/solrconfig.xml`
 
 `file:/Users/apache/configs/src`

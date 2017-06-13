@@ -226,7 +226,7 @@ bin/solr zk mkroot /solr -z <ZK_node>:<ZK_PORT>
 [NOTE]
 ====
 
-If you also want to bootstrap ZooKeeper with existing `solr_home`, you can instead use use `zkcli.sh` / `zkcli.bat`'s `bootstrap` command, which will also create the chroot path if it does not exist. See <<command-line-utilities.adoc#command-line-utilities,Command Line Utilities>> for more info.
+If you also want to bootstrap ZooKeeper with existing `solr_home`, you can instead use the `zkcli.sh` / `zkcli.bat` `bootstrap` command, which will also create the chroot path if it does not exist. See <<command-line-utilities.adoc#command-line-utilities,Command Line Utilities>> for more info.
 
 ====
 

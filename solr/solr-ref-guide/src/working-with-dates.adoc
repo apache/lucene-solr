@@ -43,7 +43,7 @@ You can optionally include fractional seconds if you wish, although any precisio
 * `1972-05-20T17:33:18.77Z`
 * `1972-05-20T17:33:18.7Z`
 
-There must be a leading '`-`' for dates prior to year 0000, and Solr will format dates with a leading '`+`' for years after 9999. Year 0000 is considered year 1 BC; there is no such thing as year 0 AD or BC.
+There must be a leading `'-'` for dates prior to year 0000, and Solr will format dates with a leading `'+'` for years after 9999. Year 0000 is considered year 1 BC; there is no such thing as year 0 AD or BC.
 
 .Query escaping may be required
 [WARNING]
