@@ -255,7 +255,7 @@ public class DocBasedVersionConstraintsProcessorFactory extends UpdateRequestPro
       assert null != newUserVersion;
 
       oldSolrVersion = -1;
-      // log.info("!!!!!!!!! isVersionNewEnough being called for " + indexedDocId.utf8ToString() + " newVersion=" + newUserVersion);
+      // log.info("!!!!!!!!! isVersionNewEnough being called for " + indexedDocId.utf8ToString() + " newUserVersion=" + newUserVersion);
       newUserVersion = convertFieldValueUsingType(userVersionField, newUserVersion);
       Object oldUserVersion = null;
       SolrInputDocument oldDoc = null;
@@ -289,7 +289,8 @@ public class DocBasedVersionConstraintsProcessorFactory extends UpdateRequestPro
             oldUserVersion = fv.objectVal((int)lookup);
 
           } catch (IOException e) {
-            throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Error reading version from index", e);
+            throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,
+                        "Error reading version from index for id=" + indexedDocId + ", newUserVersion="+newUserVersion, e);
           } finally {
             if (newestSearcher != null) {
               newestSearcher.decref();
@@ -326,15 +327,16 @@ public class DocBasedVersionConstraintsProcessorFactory extends UpdateRequestPro
         // could happen if they turn this feature on after building an index
         // w/o the versionField
         throw new SolrException(SERVER_ERROR,
-            "Doc exists in index, but has null versionField: "
+            "Doc with id=" + indexedDocId + ", newUserVersion="+newUserVersion + " exists in index, but has null versionField: "
                 + versionFieldName);
       }
 
 
       if (! (oldUserVersion instanceof Comparable && newUserVersion instanceof Comparable) ) {
         throw new SolrException(BAD_REQUEST,
-            "old version and new version are not comparable: " +
-                oldUserVersion.getClass()+" vs "+newUserVersion.getClass());
+            "Either old version (" + oldUserVersion + ", type=" + oldUserVersion.getClass() + ")" +
+               " or new version (" + newUserVersion + ", type=" + newUserVersion.getClass() + ") is not comparable" +
+               " for doc with id=" + indexedDocId);
       }
 
       try {
@@ -351,14 +353,14 @@ public class DocBasedVersionConstraintsProcessorFactory extends UpdateRequestPro
         } else {
           // log.info("VERSION will throw conflict" );
           throw new SolrException(CONFLICT,
-              "user version is not high enough: " + newUserVersion);
+              "newUserVersion: " + newUserVersion + " is not high enough as compared to the oldUserVersion: " + oldUserVersion
+               " for doc with id=" + indexedDocId);
         }
       } catch (ClassCastException e) {
         throw new SolrException(BAD_REQUEST,
-            "old version and new version are not comparable: " +
-                oldUserVersion.getClass()+" vs "+newUserVersion.getClass() +
-                ": " + e.getMessage(), e);
-
+            "Either old version (" + oldUserVersion + ", type=" + oldUserVersion.getClass() + ")" +
+               " or new version (" + newUserVersion + ", type=" + newUserVersion.getClass() + ") cannot be cast to Comparable" +
+               " for doc with id=" + indexedDocId + ": " + e.getMessage(), e);
       }
     }
 
