@@ -36,11 +36,11 @@ public class ArrayEvaluator extends ComplexEvaluator implements Expressible {
     super(expression, factory);
   }
 
-  public List<Number> evaluate(Tuple tuple) throws IOException {
-    List<Number> list = new ArrayList();
+  public List<Object> evaluate(Tuple tuple) throws IOException {
+    List<Object> list = new ArrayList<>();
     for(StreamEvaluator subEvaluator : subEvaluators) {
-      Number num = (Number)subEvaluator.evaluate(tuple);
-      list.add(num);
+      Object value = (Number)subEvaluator.evaluate(tuple);
+      list.add(value);
     }
 
     return list;
