@@ -200,7 +200,7 @@ curl --user solr:SolrRocks -H 'Content-type:application/json' -d '{
 
 Permissions can be accessed using their index in the list. Use the `/admin/authorization` API to see the existing permissions and their indices.
 
-The following example updates the '`role`' attribute of permission at index '`3`':
+The following example updates the `'role'` attribute of permission at index `3`:
 
 [source,bash]
 ----
@@ -210,7 +210,7 @@ curl --user solr:SolrRocks -H 'Content-type:application/json' -d '{
 }' http://localhost:8983/solr/admin/authorization
 ----
 
-The following example deletes permission at index '`3`':
+The following example deletes permission at index `3`:
 
 [source,bash]
 ----

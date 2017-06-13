@@ -1419,9 +1419,9 @@ Case-sensitive matching, capitalized words not stopped. Token positions skip sto
 
 Like <<FilterDescriptions-StopFilter,Stop Filter>>, this filter discards, or _stops_ analysis of, tokens that are on the given stop words list.
 
-Suggest Stop Filter differs from Stop Filter in that it will not remove the last token unless it is followed by a token separator. For example, a query "`find the`" would preserve the '`the`' since it was not followed by a space, punctuation etc., and mark it as a `KEYWORD` so that following filters will not change or remove it.
+Suggest Stop Filter differs from Stop Filter in that it will not remove the last token unless it is followed by a token separator. For example, a query `"find the"` would preserve the `'the'` since it was not followed by a space, punctuation etc., and mark it as a `KEYWORD` so that following filters will not change or remove it.
 
-By contrast, a query like "`find the popsicle`" would remove "```the```" as a stopword, since it's followed by a space. When using one of the analyzing suggesters, you would normally use the ordinary `StopFilterFactory` in your index analyzer and then SuggestStopFilter in your query analyzer.
+By contrast, a query like "`find the popsicle`" would remove '`the`' as a stopword, since it's followed by a space. When using one of the analyzing suggesters, you would normally use the ordinary `StopFilterFactory` in your index analyzer and then SuggestStopFilter in your query analyzer.
 
 *Factory class:* `solr.SuggestStopFilterFactory`
 

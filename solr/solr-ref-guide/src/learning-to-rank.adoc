@@ -509,7 +509,7 @@ To inspect the content of the `commonFeatureStore` feature store:
 * A model need not use all the features defined in a feature store.
 * Multiple models can use the same feature store.
 
-To extract features for `currentFeatureStore`'s features:
+To extract features for `currentFeatureStore` 's features:
 
 `\http://localhost:8983/solr/techproducts/query?q=test&fl=id,score,[features store=currentFeatureStore]`
 
