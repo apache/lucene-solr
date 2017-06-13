@@ -20,6 +20,370 @@
 // specific language governing permissions and limitations
 // under the License.
 
+== cartesianProduct
+
+The `cartesianProduct` function turns a single tuple with a multi-valued field (ie. an array) into multiple tuples, one for each value in the array field. That is, given a single tuple containing an array of N values for fieldA, the `cartesianProduct` function will output N tuples, each with one value from the original tuple's array. In essence, you can flatten arrays for further processing.
+
+For example, using `cartesianProduct` you can turn this tuple
+[source,text]
+----
+{
+  "fieldA": "foo",
+  "fieldB": ["bar","baz","bat"]
+}
+----
+
+into the following 3 tuples
+[source,text]
+----
+{
+  "fieldA": "foo",
+  "fieldB": "bar"
+}
+{
+  "fieldA": "foo",
+  "fieldB": "baz"
+}
+{
+  "fieldA": "foo",
+  "fieldB": "bat"
+}
+----
+
+=== cartesianProduct Parameters
+
+* `incoming stream`: (Mandatory) A single incoming stream.
+* `fieldName or evaluator`: (Mandatory) Name of field to flatten values for, or evaluator whose result should be flattened.
+* `productSort='fieldName ASC|DESC'`: (Optional) Sort order of the newly generated tuples.
+
+=== cartesianProduct Syntax
+
+[source,text]
+----
+cartesianProduct(
+  <stream>,
+  <fieldName | evaluator> [as newFieldName],
+  productSort='fieldName ASC|DESC'
+)
+----
+
+=== cartesianProduct Examples
+
+The following examples show different outputs for this source tuple
+
+[source,text]
+----
+{
+  "fieldA": "valueA",
+  "fieldB": ["valueB1","valueB2"],
+  "fieldC": [1,2,3]
+}
+----
+
+==== Single Field, No Sorting
+
+[source,text]
+----
+cartesianProduct(
+  search(collection1, q='*:*', fl='fieldA, fieldB, fieldC', sort='fieldA ASC'),
+  fieldB
+)
+
+{
+  "fieldA": "valueA",
+  "fieldB": "valueB1",
+  "fieldC": [1,2,3]
+}
+{
+  "fieldA": "valueA",
+  "fieldB": "valueB2",
+  "fieldC": [1,2,3]
+}
+----
+
+==== Single Evaluator, No Sorting
+
+[source,text]
+----
+cartesianProduct(
+  search(collection1, q='*:*', fl='fieldA, fieldB, fieldC', sort='fieldA ASC'),
+  sequence(3,4,5) as fieldE
+)
+
+{
+  "fieldA": "valueA",
+  "fieldB": ["valueB1","valueB2"],
+  "fieldC": [1,2,3],
+  "fieldE": 4
+}
+{
+  "fieldA": "valueA",
+  "fieldB": ["valueB1","valueB2"],
+  "fieldC": [1,2,3],
+  "fieldE": 9
+}
+{
+  "fieldA": "valueA",
+  "fieldB": ["valueB1","valueB2"],
+  "fieldC": [1,2,3],
+  "fieldE": 14
+}
+----
+
+==== Single Field, Sorted by Value
+
+[source,text]
+----
+cartesianProduct(
+  search(collection1, q='*:*', fl='fieldA, fieldB, fieldC', sort='fieldA ASC'),
+  fieldB,
+  productSort="fieldB DESC"
+)
+
+{
+  "fieldA": "valueA",
+  "fieldB": "valueB2",
+  "fieldC": [1,2,3]
+}
+{
+  "fieldA": "valueA",
+  "fieldB": "valueB1",
+  "fieldC": [1,2,3]
+}
+----
+
+==== Single Evaluator, Sorted by Evaluator Values
+
+[source,text]
+----
+cartesianProduct(
+  search(collection1, q='*:*', fl='fieldA, fieldB, fieldC', sort='fieldA ASC'),
+  sequence(3,4,5) as fieldE,
+  productSort='newFieldE DESC'
+)
+
+{
+  "fieldA": "valueA",
+  "fieldB": ["valueB1","valueB2"],
+  "fieldC": [1,2,3],
+  "fieldE": 14
+}
+{
+  "fieldA": "valueA",
+  "fieldB": ["valueB1","valueB2"],
+  "fieldC": [1,2,3],
+  "fieldE": 9
+}
+{
+  "fieldA": "valueA",
+  "fieldB": ["valueB1","valueB2"],
+  "fieldC": [1,2,3],
+  "fieldE": 4
+}
+----
+
+==== Renamed Single Field, Sorted by Value
+
+[source,text]
+----
+cartesianProduct(
+  search(collection1, q='*:*', fl='fieldA, fieldB, fieldC', sort='fieldA ASC'),
+  fieldB as newFieldB,
+  productSort="fieldB DESC"
+)
+
+{
+  "fieldA": "valueA",
+  "fieldB": ["valueB1","valueB2"],
+  "fieldC": [1,2,3]
+  "newFieldB": "valueB2",
+}
+{
+  "fieldA": "valueA",
+  "fieldB": ["valueB1","valueB2"],
+  "fieldC": [1,2,3]
+  "newFieldB": "valueB1",
+}
+----
+
+==== Multiple Fields, No Sorting
+
+[source,text]
+----
+cartesianProduct(
+  search(collection1, q='*:*', fl='fieldA, fieldB, fieldC', sort='fieldA ASC'),
+  fieldB,
+  fieldC
+)
+
+{
+  "fieldA": "valueA",
+  "fieldB": "valueB1",
+  "fieldC": 1
+}
+{
+  "fieldA": "valueA",
+  "fieldB": "valueB1",
+  "fieldC": 2
+}
+{
+  "fieldA": "valueA",
+  "fieldB": "valueB1",
+  "fieldC": 3
+}
+{
+  "fieldA": "valueA",
+  "fieldB": "valueB2",
+  "fieldC": 1
+}
+{
+  "fieldA": "valueA",
+  "fieldB": "valueB2",
+  "fieldC": 2
+}
+{
+  "fieldA": "valueA",
+  "fieldB": "valueB2",
+  "fieldC": 3
+}
+----
+
+==== Multiple Fields, Sorted by Single Field
+
+[source,text]
+----
+cartesianProduct(
+  search(collection1, q='*:*', fl='fieldA, fieldB, fieldC', sort='fieldA ASC'),
+  fieldB,
+  fieldC,
+  productSort="fieldC ASC"
+)
+
+{
+  "fieldA": "valueA",
+  "fieldB": "valueB1",
+  "fieldC": 1
+}
+{
+  "fieldA": "valueA",
+  "fieldB": "valueB2",
+  "fieldC": 1
+}
+{
+  "fieldA": "valueA",
+  "fieldB": "valueB1",
+  "fieldC": 2
+}
+{
+  "fieldA": "valueA",
+  "fieldB": "valueB2",
+  "fieldC": 2
+}
+{
+  "fieldA": "valueA",
+  "fieldB": "valueB1",
+  "fieldC": 3
+}
+{
+  "fieldA": "valueA",
+  "fieldB": "valueB2",
+  "fieldC": 3
+}
+----
+
+==== Multiple Fields, Sorted by Multiple Fields
+
+[source,text]
+----
+cartesianProduct(
+  search(collection1, q='*:*', fl='fieldA, fieldB, fieldC', sort='fieldA ASC'),
+  fieldB,
+  fieldC,
+  productSort="fieldC ASC, fieldB DESC"
+)
+
+{
+  "fieldA": "valueA",
+  "fieldB": "valueB2",
+  "fieldC": 1
+}
+{
+  "fieldA": "valueA",
+  "fieldB": "valueB1",
+  "fieldC": 1
+}
+{
+  "fieldA": "valueA",
+  "fieldB": "valueB2",
+  "fieldC": 2
+}
+{
+  "fieldA": "valueA",
+  "fieldB": "valueB1",
+  "fieldC": 2
+}
+{
+  "fieldA": "valueA",
+  "fieldB": "valueB2",
+  "fieldC": 3
+}
+{
+  "fieldA": "valueA",
+  "fieldB": "valueB1",
+  "fieldC": 3
+}
+----
+
+==== Field and Evaluator, No Sorting
+
+[source,text]
+----
+cartesianProduct(
+  search(collection1, q='*:*', fl='fieldA, fieldB, fieldC', sort='fieldA ASC'),
+  sequence(3,4,5) as fieldE,
+  fieldB
+)
+
+{
+  "fieldA": "valueA",
+  "fieldB": valueB1,
+  "fieldC": [1,2,3],
+  "fieldE": 4
+}
+{
+  "fieldA": "valueA",
+  "fieldB": valueB2,
+  "fieldC": [1,2,3],
+  "fieldE": 4
+}
+{
+  "fieldA": "valueA",
+  "fieldB": valueB1,
+  "fieldC": [1,2,3],
+  "fieldE": 9
+}
+{
+  "fieldA": "valueA",
+  "fieldB": valueB2,
+  "fieldC": [1,2,3],
+  "fieldE": 9
+}
+{
+  "fieldA": "valueA",
+  "fieldB": valueB1,
+  "fieldC": [1,2,3],
+  "fieldE": 14
+}
+{
+  "fieldA": "valueA",
+  "fieldB": valueB2,
+  "fieldC": [1,2,3],
+  "fieldE": 14
+}
+----
+
+As you can see in the examples above, the `cartesianProduct` function does support flattening tuples across multiple fields and/or evaluators. 
+
 == classify
 
 The `classify` function classifies tuples using a logistic regression text classification model. It was designed specifically to work with models trained using the <<stream-sources.adoc#train,train function>>. The `classify` function uses the <<stream-sources.adoc#model,model function>> to retrieve a stored model and then scores a stream of tuples using the model. The tuples read by the classifier must contain a text field that can be used for classification. The classify function uses a Lucene analyzer to extract the features from the text so the model can be applied. By default the `classify` function looks for the analyzer using the name of text field in the tuple. If the Solr schema on the worker node does not contain this field, the analyzer can be looked up in another field by specifying the `analyzerField` parameter.
