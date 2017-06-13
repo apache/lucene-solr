@@ -507,6 +507,12 @@ public class TestJsonFacets extends SolrTestCaseHS {
     if (terms_method != null) {
       terms=terms+terms_method;
     }
+    String refine_method = p.get("refine_method");
+    if (refine_method == null && random().nextBoolean()) {
+      refine_method = "refine:true,";
+    }
+    if (refine_method != null) terms = terms + refine_method;
+
     p.set("terms", terms);
     // "${terms}" should be put at the beginning of generic terms facets.
     // It may specify "method=..." or "limit:-1", so should not be used if the facet explicitly specifies.

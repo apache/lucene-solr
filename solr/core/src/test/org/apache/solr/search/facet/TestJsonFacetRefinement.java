@@ -236,18 +236,18 @@ public class TestJsonFacetRefinement extends SolrTestCaseHS {
 
   @Test
   public void testBasicRefinement() throws Exception {
-    ModifiableSolrParams p = params("cat_s", "cat_s", "xy_s", "xy_s", "num_d", "num_d", "qw_s", "qw_s", "er_s","er_s");
+    ModifiableSolrParams p = params("cat_s", "cat_s", "cat_i", "cat_i", "xy_s", "xy_s", "num_d", "num_d", "qw_s", "qw_s", "er_s","er_s");
     doBasicRefinement( p );
 
     p.set("terms","method:dvhash,");
     doBasicRefinement( p );
 
-    // multi-valued strings
-    p = params("cat_s", "cat_ss", "xy_s", "xy_ss", "num_d", "num_d", "qw_s", "qw_ss", "er_s","er_ss");
+    // multi-valued
+    p = params("cat_s", "cat_ss", "cat_i", "cat_is", "xy_s", "xy_ss", "num_d", "num_d", "qw_s", "qw_ss", "er_s","er_ss");
     doBasicRefinement( p );
 
     // single valued docvalues
-    p = params("cat_s", "cat_sd", "xy_s", "xy_sd", "num_d", "num_dd", "qw_s", "qw_sd", "er_s","er_sd");
+    p = params("cat_s", "cat_sd", "cat_i", "cat_id", "xy_s", "xy_sd", "num_d", "num_dd", "qw_s", "qw_sd", "er_s","er_sd");
     doBasicRefinement( p );
   }
 
@@ -262,21 +262,22 @@ public class TestJsonFacetRefinement extends SolrTestCaseHS {
     client.deleteByQuery("*:*", null);
 
     String cat_s = p.get("cat_s");
+    String cat_i = p.get("cat_i"); // just like cat_s, but a number
     String xy_s = p.get("xy_s");
     String qw_s = p.get("qw_s");
     String er_s = p.get("er_s");  // this field is designed to test numBuckets refinement... the first phase will only have a single bucket returned for the top count bucket of cat_s
     String num_d = p.get("num_d");
 
-    clients.get(0).add( sdoc("id", "01", "all_s","all", cat_s, "A", xy_s, "X" ,num_d, -1,  qw_s, "Q", er_s,"E") ); // A wins count tie
-    clients.get(0).add( sdoc("id", "02", "all_s","all", cat_s, "B", xy_s, "Y", num_d, 3                       ) );
+    clients.get(0).add( sdoc("id", "01", "all_s","all", cat_s, "A", cat_i,1, xy_s, "X" ,num_d, -1,  qw_s, "Q", er_s,"E") ); // A wins count tie
+    clients.get(0).add( sdoc("id", "02", "all_s","all", cat_s, "B", cat_i,2, xy_s, "Y", num_d, 3                       ) );
 
-    clients.get(1).add( sdoc("id", "11", "all_s","all", cat_s, "B", xy_s, "X", num_d, -5            , er_s,"E") ); // B highest count
-    clients.get(1).add( sdoc("id", "12", "all_s","all", cat_s, "B", xy_s, "Y", num_d, -11, qw_s, "W"          ) );
-    clients.get(1).add( sdoc("id", "13", "all_s","all", cat_s, "A", xy_s, "X", num_d, 7             , er_s,"R") );       // "R" will only be picked up via refinement when parent facet is cat_s
+    clients.get(1).add( sdoc("id", "11", "all_s","all", cat_s, "B", cat_i,2, xy_s, "X", num_d, -5            , er_s,"E") ); // B highest count
+    clients.get(1).add( sdoc("id", "12", "all_s","all", cat_s, "B", cat_i,2, xy_s, "Y", num_d, -11, qw_s, "W"          ) );
+    clients.get(1).add( sdoc("id", "13", "all_s","all", cat_s, "A", cat_i,1, xy_s, "X", num_d, 7             , er_s,"R") );       // "R" will only be picked up via refinement when parent facet is cat_s
 
-    clients.get(2).add( sdoc("id", "21", "all_s","all", cat_s, "A", xy_s, "X", num_d, 17,  qw_s, "W", er_s,"E") ); // A highest count
-    clients.get(2).add( sdoc("id", "22", "all_s","all", cat_s, "A", xy_s, "Y", num_d, -19                     ) );
-    clients.get(2).add( sdoc("id", "23", "all_s","all", cat_s, "B", xy_s, "X", num_d, 11                      ) );
+    clients.get(2).add( sdoc("id", "21", "all_s","all", cat_s, "A", cat_i,1, xy_s, "X", num_d, 17,  qw_s, "W", er_s,"E") ); // A highest count
+    clients.get(2).add( sdoc("id", "22", "all_s","all", cat_s, "A", cat_i,1, xy_s, "Y", num_d, -19                     ) );
+    clients.get(2).add( sdoc("id", "23", "all_s","all", cat_s, "B", cat_i,2, xy_s, "X", num_d, 11                      ) );
 
     client.commit();
 
@@ -312,6 +313,17 @@ public class TestJsonFacetRefinement extends SolrTestCaseHS {
         )
         , "facets=={ count:8" +
             ", cat0:{ buckets:[ {val:A,count:4} ] }" +  // w/o overrequest, we need refining to get the correct count.
+            "}"
+    );
+
+    // same as above, but with an integer field instead of a string
+    client.testJQ(params(p, "q", "*:*",
+        "json.facet", "{" +
+            "cat0:{${terms} type:terms, field:${cat_i}, sort:'count desc', limit:1, overrequest:0, refine:true}" +
+            "}"
+        )
+        , "facets=={ count:8" +
+            ", cat0:{ buckets:[ {val:1,count:4} ] }" +  // w/o overrequest, we need refining to get the correct count.
             "}"
     );
 

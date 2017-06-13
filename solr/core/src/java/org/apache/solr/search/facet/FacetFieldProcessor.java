@@ -680,6 +680,7 @@ abstract class FacetFieldProcessor extends FacetProcessor<FacetField> {
   private SimpleOrderedMap<Object> refineBucket(Object bucketVal, boolean skip, Map<String,Object> facetInfo) throws IOException {
     SimpleOrderedMap<Object> bucket = new SimpleOrderedMap<>();
     FieldType ft = sf.getType();
+    bucketVal = ft.toNativeType(bucketVal);  // refinement info passed in as JSON will cause int->long and float->double
     bucket.add("val", bucketVal);
     // String internal = ft.toInternal( tobj.toString() );  // TODO - we need a better way to get from object to query...
 
