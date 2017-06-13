@@ -130,14 +130,14 @@ public class QueryClient implements Runnable {
 						int ft_1 = SolrIndexingClient.intList.get(random.nextInt(SolrIndexingClient.documentCount));
 						int ft_2 = SolrIndexingClient.intList.get(random.nextInt(SolrIndexingClient.documentCount));
 
-						list.add("q", "RandomIntField:[" + ft_1 + " AND " + ft_2 + "]");
+						list.add("q", "RandomIntField:" + ft_1 + " AND RandomIntField:" + ft_2);
 
 					} else if (this.queryType == QueryType.OR_NUMERIC_QUERY) {
 
 						int ft_1 = SolrIndexingClient.intList.get(random.nextInt(SolrIndexingClient.documentCount));
 						int ft_2 = SolrIndexingClient.intList.get(random.nextInt(SolrIndexingClient.documentCount));
 
-						list.add("q", "RandomIntField:[" + ft_1 + " OR " + ft_2 + "]");
+						list.add("q", "RandomIntField:" + ft_1 + " OR RandomIntField:" + ft_2);
 
 					} 
 
