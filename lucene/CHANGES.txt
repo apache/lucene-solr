@@ -92,6 +92,11 @@ API Changes
 * LUCENE-7723: DoubleValuesSource enforces implementation of equals() and
   hashCode() (Alan Woodward)
 
+* LUCENE-7737: The spatial-extras module no longer has a dependency on the
+  queries module.  All uses of ValueSource are either replaced with core
+  DoubleValuesSource extensions, or with the new ShapeValuesSource and
+  ShapeValuesPredicate classes (Alan Woodward, David Smiley)
+
 Bug Fixes
 
 * LUCENE-7626: IndexWriter will no longer accept broken token offsets

@@ -14,11 +14,11 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package org.apache.lucene.spatial.util;
 
 import java.io.IOException;
-import java.util.HashMap;
-import java.util.Map;
+import java.util.Objects;
 
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.search.DoubleValues;
@@ -26,77 +26,71 @@ import org.apache.lucene.search.DoubleValuesSource;
 import org.apache.lucene.search.Explanation;
 
 /**
- * Caches the doubleVal of another value source in a HashMap
- * so that it is computed only once.
- * @lucene.internal
+ * Transforms a DoubleValuesSource using the formula v = k / (v + k)
  */
-public class CachingDoubleValueSource extends DoubleValuesSource {
+public class ReciprocalDoubleValuesSource extends DoubleValuesSource {
 
-  final DoubleValuesSource source;
-  final Map<Integer, Double> cache;
+  private final double distToEdge;
+  private final DoubleValuesSource input;
 
-  public CachingDoubleValueSource(DoubleValuesSource source) {
-    this.source = source;
-    cache = new HashMap<>();
+  /**
+   * Creates a ReciprocalDoubleValuesSource
+   * @param distToEdge  the value k in v = k / (v + k)
+   * @param input       the input DoubleValuesSource to transform
+   */
+  public ReciprocalDoubleValuesSource(double distToEdge, DoubleValuesSource input) {
+    this.distToEdge = distToEdge;
+    this.input = input;
   }
 
   @Override
-  public String toString() {
-    return "Cached["+source.toString()+"]";
-  }
-
-  @Override
-  public DoubleValues getValues(LeafReaderContext readerContext, DoubleValues scores) throws IOException {
-    final int base = readerContext.docBase;
-    final DoubleValues vals = source.getValues(readerContext, scores);
+  public DoubleValues getValues(LeafReaderContext ctx, DoubleValues scores) throws IOException {
+    DoubleValues in = input.getValues(ctx, scores);
     return new DoubleValues() {
-
       @Override
       public double doubleValue() throws IOException {
-        int key = base + doc;
-        Double v = cache.get(key);
-        if (v == null) {
-          v = vals.doubleValue();
-          cache.put(key, v);
-        }
-        return v;
+        return recip(in.doubleValue());
       }
 
       @Override
       public boolean advanceExact(int doc) throws IOException {
-        this.doc = doc;
-        return vals.advanceExact(doc);
+        return in.advanceExact(doc);
       }
-
-      int doc = -1;
-
     };
+  }
+
+  private double recip(double in) {
+    return distToEdge / (in + distToEdge);
   }
 
   @Override
   public boolean needsScores() {
-    return false;
+    return input.needsScores();
   }
 
   @Override
   public Explanation explain(LeafReaderContext ctx, int docId, Explanation scoreExplanation) throws IOException {
-    return source.explain(ctx, docId, scoreExplanation);
+    Explanation expl = input.explain(ctx, docId, scoreExplanation);
+    return Explanation.match((float)recip(expl.getValue()),
+        distToEdge + " / (v + " + distToEdge + "), computed from:", expl);
   }
 
   @Override
   public boolean equals(Object o) {
     if (this == o) return true;
     if (o == null || getClass() != o.getClass()) return false;
-
-    CachingDoubleValueSource that = (CachingDoubleValueSource) o;
-
-    if (source != null ? !source.equals(that.source) : that.source != null) return false;
-
-    return true;
+    ReciprocalDoubleValuesSource that = (ReciprocalDoubleValuesSource) o;
+    return Double.compare(that.distToEdge, distToEdge) == 0 &&
+        Objects.equals(input, that.input);
   }
 
   @Override
   public int hashCode() {
-    return source != null ? source.hashCode() : 0;
+    return Objects.hash(distToEdge, input);
+  }
+
+  @Override
+  public String toString() {
+    return "recip(" + distToEdge + ", " + input.toString() + ")";
   }
 }

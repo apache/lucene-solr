@@ -23,7 +23,7 @@ import java.util.SortedMap;
 import java.util.TreeMap;
 
 import org.apache.lucene.index.IndexReaderContext;
-import org.apache.lucene.queries.function.ValueSource;
+import org.apache.lucene.search.DoubleValuesSource;
 import org.apache.lucene.spatial.prefix.tree.Cell;
 import org.apache.lucene.spatial.prefix.tree.NumberRangePrefixTree;
 import org.apache.lucene.util.Bits;
@@ -76,7 +76,7 @@ public class NumberRangePrefixTreeStrategy extends RecursivePrefixTreeStrategy {
 
   /** Unsupported. */
   @Override
-  public ValueSource makeDistanceValueSource(Point queryPoint, double multiplier) {
+  public DoubleValuesSource makeDistanceValueSource(Point queryPoint, double multiplier) {
     throw new UnsupportedOperationException();
   }
 

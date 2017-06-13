@@ -64,7 +64,12 @@ public abstract class DoubleValuesSource {
    * @return an Explanation for the value
    * @throws IOException if an {@link IOException} occurs
    */
-  public abstract Explanation explain(LeafReaderContext ctx, int docId, Explanation scoreExplanation) throws IOException;
+  public Explanation explain(LeafReaderContext ctx, int docId, Explanation scoreExplanation) throws IOException {
+    DoubleValues dv = getValues(ctx, DoubleValuesSource.constant(scoreExplanation.getValue()).getValues(ctx, null));
+    if (dv.advanceExact(docId))
+      return Explanation.match((float) dv.doubleValue(), this.toString());
+    return Explanation.noMatch(this.toString());
+  }
 
   /**
    * Create a sort field based on the value of this producer

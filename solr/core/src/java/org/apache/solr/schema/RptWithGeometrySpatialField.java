@@ -24,9 +24,8 @@ import java.util.Map;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.LeafReaderContext;
-import org.apache.lucene.queries.function.FunctionValues;
-import org.apache.lucene.queries.function.ValueSource;
-import org.apache.lucene.search.Explanation;
+import org.apache.lucene.spatial.ShapeValues;
+import org.apache.lucene.spatial.ShapeValuesSource;
 import org.apache.lucene.spatial.composite.CompositeSpatialStrategy;
 import org.apache.lucene.spatial.prefix.RecursivePrefixTreeStrategy;
 import org.apache.lucene.spatial.query.SpatialArgsParser;
@@ -103,24 +102,24 @@ public class RptWithGeometrySpatialField extends AbstractSpatialFieldType<Compos
     }
 
     @Override
-    public ValueSource makeShapeValueSource() {
+    public ShapeValuesSource makeShapeValueSource() {
       return new CachingShapeValuesource(super.makeShapeValueSource(), getFieldName());
     }
   }
 
-  private static class CachingShapeValuesource extends ValueSource {
+  private static class CachingShapeValuesource extends ShapeValuesSource {
 
-    private final ValueSource targetValueSource;
+    private final ShapeValuesSource targetValueSource;
     private final String fieldName;
 
-    private CachingShapeValuesource(ValueSource targetValueSource, String fieldName) {
+    private CachingShapeValuesource(ShapeValuesSource targetValueSource, String fieldName) {
       this.targetValueSource = targetValueSource;
       this.fieldName = fieldName;
     }
 
     @Override
-    public String description() {
-      return "cache(" + targetValueSource.description() + ")";
+    public String toString() {
+      return "cache(" + targetValueSource.toString() + ")";
     }
 
     @Override
@@ -142,10 +141,9 @@ public class RptWithGeometrySpatialField extends AbstractSpatialFieldType<Compos
       return result;
     }
 
-    @SuppressWarnings("unchecked")
     @Override
-    public FunctionValues getValues(Map context, LeafReaderContext readerContext) throws IOException {
-      final FunctionValues targetFuncValues = targetValueSource.getValues(context, readerContext);
+    public ShapeValues getValues(LeafReaderContext readerContext) throws IOException {
+      final ShapeValues targetFuncValues = targetValueSource.getValues(readerContext);
       // The key is a pair of leaf reader with a docId relative to that reader. The value is a Map from field to Shape.
       final SolrCache<PerSegCacheKey,Shape> cache =
           SolrRequestInfo.getRequestInfo().getReq().getSearcher().getCache(CACHE_KEY_PREFIX + fieldName);
@@ -153,24 +151,20 @@ public class RptWithGeometrySpatialField extends AbstractSpatialFieldType<Compos
         return targetFuncValues; // no caching; no configured cache
       }
 
-      return new FunctionValues() {
+      return new ShapeValues() {
         int docId = -1;
-        Shape shape = null;
 
-        private void setShapeFromDoc(int doc) throws IOException {
-          if (docId == doc) {
-            return;
-          }
-          docId = doc;
+        @Override
+        public Shape value() throws IOException {
           //lookup in cache
           IndexReader.CacheHelper cacheHelper = readerContext.reader().getCoreCacheHelper();
           if (cacheHelper == null) {
             throw new IllegalStateException("Leaf " + readerContext.reader() + " is not suited for caching");
           }
-          PerSegCacheKey key = new PerSegCacheKey(cacheHelper.getKey(), doc);
-          shape = cache.get(key);
+          PerSegCacheKey key = new PerSegCacheKey(cacheHelper.getKey(), docId);
+          Shape shape = cache.get(key);
           if (shape == null) {
-            shape = (Shape) targetFuncValues.objectVal(doc);
+            shape = targetFuncValues.value();
             if (shape != null) {
               cache.put(key, shape);
             }
@@ -180,31 +174,15 @@ public class RptWithGeometrySpatialField extends AbstractSpatialFieldType<Compos
               ((JtsGeometry) shape).index(); // TODO would be nice if some day we didn't have to cast
             }
           }
-        }
-
-        // Use the cache for exists & objectVal;
-
-        @Override
-        public boolean exists(int doc) throws IOException {
-          setShapeFromDoc(doc);
-          return shape != null;
-        }
-
-        @Override
-        public Object objectVal(int doc) throws IOException {
-          setShapeFromDoc(doc);
           return shape;
         }
 
         @Override
-        public Explanation explain(int doc) throws IOException {
-          return targetFuncValues.explain(doc);
+        public boolean advanceExact(int doc) throws IOException {
+          this.docId = doc;
+          return targetFuncValues.advanceExact(doc);
         }
 
-        @Override
-        public String toString(int doc) throws IOException {
-          return targetFuncValues.toString(doc);
-        }
       };
 
     }

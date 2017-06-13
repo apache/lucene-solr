@@ -258,6 +258,69 @@ public abstract class ValueSource {
 
   }
 
+  public static ValueSource fromDoubleValuesSource(DoubleValuesSource in) {
+    return new FromDoubleValuesSource(in);
+  }
+
+  private static class FromDoubleValuesSource extends ValueSource {
+
+    final DoubleValuesSource in;
+
+    private FromDoubleValuesSource(DoubleValuesSource in) {
+      this.in = in;
+    }
+
+    @Override
+    public FunctionValues getValues(Map context, LeafReaderContext readerContext) throws IOException {
+      Scorer scorer = (Scorer) context.get("scorer");
+      DoubleValues scores = scorer == null ? null : DoubleValuesSource.fromScorer(scorer);
+      DoubleValues inner = in.getValues(readerContext, scores);
+      return new FunctionValues() {
+        @Override
+        public String toString(int doc) throws IOException {
+          return in.toString();
+        }
+
+        @Override
+        public float floatVal(int doc) throws IOException {
+          if (inner.advanceExact(doc) == false)
+            return 0;
+          return (float) inner.doubleValue();
+        }
+
+        @Override
+        public double doubleVal(int doc) throws IOException {
+          if (inner.advanceExact(doc) == false)
+            return 0;
+          return inner.doubleValue();
+        }
+
+        @Override
+        public boolean exists(int doc) throws IOException {
+          return inner.advanceExact(doc);
+        }
+      };
+    }
+
+    @Override
+    public boolean equals(Object o) {
+      if (this == o) return true;
+      if (o == null || getClass() != o.getClass()) return false;
+      FromDoubleValuesSource that = (FromDoubleValuesSource) o;
+      return Objects.equals(in, that.in);
+    }
+
+    @Override
+    public int hashCode() {
+      return Objects.hash(in);
+    }
+
+    @Override
+    public String description() {
+      return in.toString();
+    }
+  }
+
   //
   // Sorting by function
   //

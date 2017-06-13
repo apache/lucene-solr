@@ -18,9 +18,8 @@ package org.apache.lucene.spatial.bbox;
 
 import java.util.concurrent.atomic.AtomicReference;
 
-import org.apache.lucene.queries.function.ValueSource;
 import org.apache.lucene.search.Explanation;
-
+import org.apache.lucene.spatial.ShapeValuesSource;
 import org.locationtech.spatial4j.shape.Rectangle;
 
 /**
@@ -79,7 +78,7 @@ public class BBoxOverlapRatioValueSource extends BBoxSimilarityValueSource {
    * @param queryTargetProportion see class javadocs. Between 0 and 1.
    * @param minSideLength see class javadocs. 0.0 will effectively disable.
    */
-  public BBoxOverlapRatioValueSource(ValueSource rectValueSource, boolean isGeo, Rectangle queryExtent,
+  public BBoxOverlapRatioValueSource(ShapeValuesSource rectValueSource, boolean isGeo, Rectangle queryExtent,
                                      double queryTargetProportion, double minSideLength) {
     super(rectValueSource);
     this.isGeo = isGeo;
@@ -94,7 +93,7 @@ public class BBoxOverlapRatioValueSource extends BBoxSimilarityValueSource {
 
   /** Construct with 75% weighting towards target (roughly GeoPortal's default), geo degrees assumed, no
    * minimum side length. */
-  public BBoxOverlapRatioValueSource(ValueSource rectValueSource, Rectangle queryExtent) {
+  public BBoxOverlapRatioValueSource(ShapeValuesSource rectValueSource, Rectangle queryExtent) {
     this(rectValueSource, true, queryExtent, 0.25, 0.0);
   }
 

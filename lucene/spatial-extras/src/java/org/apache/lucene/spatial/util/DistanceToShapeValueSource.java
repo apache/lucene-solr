@@ -17,81 +17,67 @@
 package org.apache.lucene.spatial.util;
 
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Map;
 
 import org.apache.lucene.index.LeafReaderContext;
-import org.apache.lucene.queries.function.FunctionValues;
-import org.apache.lucene.queries.function.ValueSource;
-import org.apache.lucene.queries.function.docvalues.DoubleDocValues;
-import org.apache.lucene.search.Explanation;
-import org.apache.lucene.search.IndexSearcher;
-
+import org.apache.lucene.search.DoubleValues;
+import org.apache.lucene.search.DoubleValuesSource;
+import org.apache.lucene.spatial.ShapeValues;
+import org.apache.lucene.spatial.ShapeValuesSource;
 import org.locationtech.spatial4j.context.SpatialContext;
 import org.locationtech.spatial4j.distance.DistanceCalculator;
 import org.locationtech.spatial4j.shape.Point;
-import org.locationtech.spatial4j.shape.Shape;
 
 /**
- * The distance from a provided Point to a Point retrieved from a ValueSource via
- * {@link org.apache.lucene.queries.function.FunctionValues#objectVal(int)}. The distance
+ * The distance from a provided Point to a Point retrieved from an ShapeValuesSource. The distance
  * is calculated via a {@link org.locationtech.spatial4j.distance.DistanceCalculator}.
  *
  * @lucene.experimental
  */
-public class DistanceToShapeValueSource extends ValueSource {
-  private final ValueSource shapeValueSource;
+public class DistanceToShapeValueSource extends DoubleValuesSource {
+
+  private final ShapeValuesSource shapeValueSource;
   private final Point queryPoint;
   private final double multiplier;
   private final DistanceCalculator distCalc;
 
-  //TODO if FunctionValues returns NaN; will things be ok?
-  private final double nullValue;//computed
+  //TODO if DoubleValues returns NaN; will things be ok?
+  private final double nullValue;
 
-  public DistanceToShapeValueSource(ValueSource shapeValueSource, Point queryPoint,
+  public DistanceToShapeValueSource(ShapeValuesSource shapeValueSource, Point queryPoint,
                                     double multiplier, SpatialContext ctx) {
     this.shapeValueSource = shapeValueSource;
     this.queryPoint = queryPoint;
     this.multiplier = multiplier;
     this.distCalc = ctx.getDistCalc();
-    this.nullValue =
-        (ctx.isGeo() ? 180 * multiplier : Double.MAX_VALUE);
+    this.nullValue = (ctx.isGeo() ? 180 * multiplier : Double.MAX_VALUE);
   }
 
   @Override
-  public String description() {
-    return "distance(" + queryPoint + " to " + shapeValueSource.description() + ")*" + multiplier + ")";
+  public String toString() {
+    return "distance(" + queryPoint + " to " + shapeValueSource.toString() + ")*" + multiplier + ")";
   }
 
   @Override
-  public void createWeight(Map context, IndexSearcher searcher) throws IOException {
-    shapeValueSource.createWeight(context, searcher);
-  }
+  public DoubleValues getValues(LeafReaderContext readerContext, DoubleValues scores) throws IOException {
 
-  @Override
-  public FunctionValues getValues(Map context, LeafReaderContext readerContext) throws IOException {
-    final FunctionValues shapeValues = shapeValueSource.getValues(context, readerContext);
+    final ShapeValues shapeValues = shapeValueSource.getValues(readerContext);
 
-    return new DoubleDocValues(this) {
+    return DoubleValues.withDefault(new DoubleValues() {
       @Override
-      public double doubleVal(int doc) throws IOException {
-        Shape shape = (Shape) shapeValues.objectVal(doc);
-        if (shape == null || shape.isEmpty())
-          return nullValue;
-        Point pt = shape.getCenter();
-        return distCalc.distance(queryPoint, pt) * multiplier;
+      public double doubleValue() throws IOException {
+        return distCalc.distance(queryPoint, shapeValues.value().getCenter()) * multiplier;
       }
 
       @Override
-      public Explanation explain(int doc) throws IOException {
-        Explanation exp = super.explain(doc);
-        List<Explanation> details = new ArrayList<>(Arrays.asList(exp.getDetails()));
-        details.add(shapeValues.explain(doc));
-        return Explanation.match(exp.getValue(), exp.getDescription(), details);
+      public boolean advanceExact(int doc) throws IOException {
+        return shapeValues.advanceExact(doc);
       }
-    };
+    }, nullValue);
+  }
+
+  @Override
+  public boolean needsScores() {
+    return false;
   }
 
   @Override

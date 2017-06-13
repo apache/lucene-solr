@@ -15,45 +15,27 @@
  * limitations under the License.
  */
 
-package org.apache.lucene.search;
+package org.apache.lucene.spatial;
 
 import java.io.IOException;
 
+import org.locationtech.spatial4j.shape.Shape;
+
 /**
- * Per-segment, per-document double values, which can be calculated at search-time
+ * Iterator over {@link Shape} objects for an index segment
  */
-public abstract class DoubleValues {
+public abstract class ShapeValues {
 
   /**
-   * Get the double value for the current document
-   */
-  public abstract double doubleValue() throws IOException;
-
-  /**
-   * Advance this instance to the given document id
-   * @return true if there is a value for this document
+   * Advance the iterator to the given document
+   * @param doc the document to advance to
+   * @return {@code true} if there is a value for this document
    */
   public abstract boolean advanceExact(int doc) throws IOException;
 
   /**
-   * Wrap a DoubleValues instance, returning a default if the wrapped instance has no value
+   * Returns a {@link Shape} for the current document
    */
-  public static DoubleValues withDefault(DoubleValues in, double missingValue) {
-    return new DoubleValues() {
-
-      boolean hasValue = false;
-
-      @Override
-      public double doubleValue() throws IOException {
-        return hasValue ? in.doubleValue() : missingValue;
-      }
-
-      @Override
-      public boolean advanceExact(int doc) throws IOException {
-        hasValue = in.advanceExact(doc);
-        return true;
-      }
-    };
-  }
+  public abstract Shape value() throws IOException;
 
 }
