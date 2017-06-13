@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="UTF-8" ?>
+<?xml version="1.0" ?>
 <!--
  Licensed to the Apache Software Foundation (ASF) under one or more
  contributor license agreements.  See the NOTICE file distributed with
@@ -15,13 +15,22 @@
  See the License for the specific language governing permissions and
  limitations under the License.
 -->
-<schema name="minimal" version="1.1">
-  <fieldType name="string" class="solr.StrField"/>
-  <fieldType name="int" class="solr.TrieIntField" precisionStep="0" omitNorms="true" positionIncrementGap="0"/>
-  <fieldType name="long" class="solr.TrieLongField" precisionStep="0" omitNorms="true" positionIncrementGap="0"/>
-  <!-- for versioning -->
-  <field name="_version_" type="long" indexed="true" stored="true"/>
-  <field name="_root_" type="string" indexed="true" stored="true" multiValued="false" required="false"/>
-  <field name="id" type="string" indexed="true" stored="true"/>
+
+<schema name="bad-schema-uniquekey-diff-type-dynamic-root" version="1.4">
+  <!-- NOTE: these fieldTypes are defined with same class, and same props, but schema should
+       still error because the type *names* used not identical.
+       this is risky, because it means the types could diverge over time, and we wnat to
+       protect the user fromthat.
+  -->
+  <fieldType name="string1" class="solr.StrField"/>
+  <fieldType name="string2" class="solr.StrField"/>
+
   <uniqueKey>id</uniqueKey>
+  <field name="id" type="string1" indexed="true" stored="true" />
+
+  <!-- BEGIN BAD STUFF -->
+  <!-- matches '_root_' -->
+  <dynamicField name="*" type="string2" indexed="true" stored="true" />
+  <!-- END BAD STUFF -->
+
 </schema>

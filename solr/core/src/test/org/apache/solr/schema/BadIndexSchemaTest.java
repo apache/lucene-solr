@@ -101,6 +101,21 @@ public class BadIndexSchemaTest extends AbstractBadConfigTestBase {
   public void testDocValuesUnsupported() throws Exception {
     doTest("bad-schema-unsupported-docValues.xml", "does not support doc values");
   }
+  
+  public void testRootTypeMissmatchWithUniqueKey() throws Exception {
+    doTest("bad-schema-uniquekey-diff-type-root.xml",
+           "using the exact same fieldType as the uniqueKey field (id) uses: string1");
+  }
+  
+  public void testRootTypeDynamicMissmatchWithUniqueKey() throws Exception {
+    // in this case, the core should load fine -- but we should get an error adding docs
+    try {
+      initCore("solrconfig.xml","bad-schema-uniquekey-diff-type-dynamic-root.xml");
+      assertFailedU("Unable to index docs with children", adoc(sdocWithChildren("1","-1")));
+    } finally {
+      deleteCore();
+    }
+  }
 
   public void testSweetSpotSimBadConfig() throws Exception {
     doTest("bad-schema-sweetspot-both-tf.xml", "Can not mix");

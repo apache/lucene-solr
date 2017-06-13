@@ -156,6 +156,10 @@ Bug Fixes
 
 * SOLR-10223: Allow running examples as root on Linux with -force option (janhoy)
 
+* SOLR-10830: Solr now correctly enforces that the '_root_' field has the same fieldType as the
+  uniqueKey field.  With out this enforcement, child document updating was unreliable. (hossman)
+
+
 Optimizations
 ----------------------
 

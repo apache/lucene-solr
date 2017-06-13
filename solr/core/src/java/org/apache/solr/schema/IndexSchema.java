@@ -113,6 +113,7 @@ public class IndexSchema {
   public static final String SOURCE = "source";
   public static final String TYPE = "type";
   public static final String TYPES = "types";
+  public static final String ROOT_FIELD_NAME = "_root_";
   public static final String UNIQUE_KEY = "uniqueKey";
   public static final String VERSION = "version";
 
@@ -517,6 +518,20 @@ public class IndexSchema {
         log.warn("no " + UNIQUE_KEY + " specified in schema.");
       } else {
         uniqueKeyField=getIndexedField(node.getNodeValue().trim());
+        uniqueKeyFieldName=uniqueKeyField.getName();
+        uniqueKeyFieldType=uniqueKeyField.getType();
+        
+        // we fail on init if the ROOT field is *explicitly* defined as incompatible with uniqueKey
+        // we don't want ot fail if there happens to be a dynamicField matching ROOT, (ie: "*")
+        // because the user may not care about child docs at all.  The run time code
+        // related to child docs can catch that if it happens
+        if (fields.containsKey(ROOT_FIELD_NAME) && ! isUsableForChildDocs()) {
+          String msg = ROOT_FIELD_NAME + " field must be defined using the exact same fieldType as the " +
+            UNIQUE_KEY + " field ("+uniqueKeyFieldName+") uses: " + uniqueKeyFieldType.getTypeName();
+          log.error(msg);
+          throw new SolrException(ErrorCode.SERVER_ERROR, msg);
+        }
+        
         if (null != uniqueKeyField.getDefaultValue()) {
           String msg = UNIQUE_KEY + " field ("+uniqueKeyFieldName+
               ") can not be configured with a default value ("+
@@ -542,9 +557,6 @@ public class IndexSchema {
           throw new SolrException(ErrorCode.SERVER_ERROR, msg);
         }
         
-        uniqueKeyFieldName=uniqueKeyField.getName();
-        uniqueKeyFieldType=uniqueKeyField.getType();
-
         // Unless the uniqueKeyField is marked 'required=false' then make sure it exists
         if( Boolean.FALSE != explicitRequiredProp.get( uniqueKeyFieldName ) ) {
           uniqueKeyField.required = true;
@@ -1913,5 +1925,18 @@ public class IndexSchema {
         + XPATH_OR + stepsToPath(SCHEMA, TYPES, FIELD_TYPE.toLowerCase(Locale.ROOT))
         + XPATH_OR + stepsToPath(SCHEMA, TYPES, FIELD_TYPE);
     return expression;
+  }
+
+  /**
+   * Helper method that returns <code>true</code> if the {@link #ROOT_FIELD_NAME} uses the exact 
+   * same 'type' as the {@link #getUniqueKeyField()}
+   *
+   * @lucene.internal
+   */
+  public boolean isUsableForChildDocs() {
+    FieldType rootType = getFieldType(ROOT_FIELD_NAME);
+    return (null != uniqueKeyFieldType &&
+            null != rootType &&
+            rootType.getTypeName().equals(uniqueKeyFieldType.getTypeName()));
   }
 }

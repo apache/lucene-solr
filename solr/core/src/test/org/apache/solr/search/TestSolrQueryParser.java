@@ -33,6 +33,7 @@ import org.apache.lucene.search.Query;
 import org.apache.lucene.search.TermInSetQuery;
 import org.apache.lucene.search.TermQuery;
 import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.MapSolrParams;
 import org.apache.solr.metrics.MetricsMap;
 import org.apache.solr.common.params.ModifiableSolrParams;
@@ -1037,5 +1038,40 @@ public class TestSolrQueryParser extends SolrTestCaseJ4 {
     assertJQ(req("df", "shingle23", "q", "A B C", "sow", "false")
         , "/response/numFound==1"
     );
+  }
+  
+  @Test
+  public void testBadRequestInSetQuery() throws SyntaxError {
+    SolrQueryRequest req = req();
+    QParser qParser;
+    String[] fieldSuffix = new String[] {
+        "ti", "tf", "td", "tl",
+        "i", "f", "d", "l",
+        "is", "fs", "ds", "ls",
+        "i_dv", "f_dv", "d_dv", "l_dv",
+        "is_dv", "fs_dv", "ds_dv", "ls_dv",
+        "i_dvo", "f_dvo", "d_dvo", "l_dvo",
+    };
+    
+    for (String suffix:fieldSuffix) {
+      //Good queries
+      qParser = QParser.getParser("foo_" + suffix + ":(1 2 3 4 5 6 7 8 9 10 20 19 18 17 16 15 14 13 12 25)", req);
+      qParser.setIsFilter(true);
+      qParser.getQuery();
+    }
+    
+    for (String suffix:fieldSuffix) {
+      qParser = QParser.getParser("foo_" + suffix + ":(1 2 3 4 5 6 7 8 9 10 20 19 18 17 16 15 14 13 12 NOT_A_NUMBER)", req);
+      qParser.setIsFilter(true); // this may change in the future
+      try {
+        qParser.getQuery();
+        fail("Expecting exception");
+      } catch (SolrException e) {
+        assertEquals(SolrException.ErrorCode.BAD_REQUEST.code, e.code());
+        assertTrue("Unexpected exception: " + e.getMessage(), e.getMessage().contains("Invalid Number: NOT_A_NUMBER"));
+      }
+    }
+    
+    
   }
 }

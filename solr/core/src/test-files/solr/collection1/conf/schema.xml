@@ -734,11 +734,25 @@
                 useDocValuesAsStored="true"/>
   <dynamicField name="*_s_dvo" multiValued="false" type="string" docValues="true" indexed="false" stored="false"
                 useDocValuesAsStored="true"/>
-
+  <dynamicField name="*_l_dvo" multiValued="false" type="${solr.tests.longClass:plong}" docValues="true" indexed="false" stored="false"
+                useDocValuesAsStored="true"/>
+  <dynamicField name="*_f_dvo" multiValued="false" type="${solr.tests.floatClass:pfloat}" docValues="true" indexed="false" stored="false"
+                useDocValuesAsStored="true"/>
+  <dynamicField name="*_dt_dvo" multiValued="false" type="${solr.tests.dateClass:pdate}" docValues="true" indexed="false" stored="false"
+                useDocValuesAsStored="true"/>
+                
   <dynamicField name="*_ii_dvo" multiValued="true" type="${solr.tests.intClass:pint}" docValues="true" indexed="false" stored="false"
                 useDocValuesAsStored="true"/>
   <dynamicField name="*_dd_dvo" multiValued="true" type="${solr.tests.doubleClass:pdouble}" docValues="true" indexed="false" stored="false"
                 useDocValuesAsStored="true"/>
+                
+                
+  <!-- Only Stored numerics -->
+  <dynamicField name="*_i_os" type="${solr.tests.intClass:pint}" indexed="false" stored="true" docValues="false"/>
+  <dynamicField name="*_l_os" type="${solr.tests.longClass:plong}" indexed="false" stored="true" docValues="false"/>
+  <dynamicField name="*_f_os" type="${solr.tests.floatClass:pfloat}" indexed="false" stored="true" docValues="false"/>
+  <dynamicField name="*_d_os" type="${solr.tests.doubleClass:pdouble}" indexed="false" stored="true" docValues="false"/>
+  <dynamicField name="*_dt_os" type="${solr.tests.dateClass:pdate}" indexed="false" stored="true" docValues="false"/>
 
   <!--  Non-stored, DocValues=true, useDocValuesAsStored=false -->
   <field name="single_i_dvn" multiValued="false" type="${solr.tests.intClass:pint}" indexed="true" stored="true"/>

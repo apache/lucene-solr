@@ -63,7 +63,7 @@ public class LongPointField extends PointField implements LongValueFieldType {
     if (min == null) {
       actualMin = Long.MIN_VALUE;
     } else {
-      actualMin = Long.parseLong(min);
+      actualMin = parseLongFromUser(field.getName(), min);
       if (!minInclusive) {
         actualMin++;
       }
@@ -71,7 +71,7 @@ public class LongPointField extends PointField implements LongValueFieldType {
     if (max == null) {
       actualMax = Long.MAX_VALUE;
     } else {
-      actualMax = Long.parseLong(max);
+      actualMax = parseLongFromUser(field.getName(), max);
       if (!maxInclusive) {
         actualMax--;
       }
@@ -96,7 +96,7 @@ public class LongPointField extends PointField implements LongValueFieldType {
 
   @Override
   protected Query getExactQuery(SchemaField field, String externalVal) {
-    return LongPoint.newExactQuery(field.getName(), Long.parseLong(externalVal));
+    return LongPoint.newExactQuery(field.getName(), parseLongFromUser(field.getName(), externalVal));
   }
   
   @Override
@@ -108,7 +108,7 @@ public class LongPointField extends PointField implements LongValueFieldType {
     long[] values = new long[externalVal.size()];
     int i = 0;
     for (String val:externalVal) {
-      values[i] = Long.parseLong(val);
+      values[i] = parseLongFromUser(field.getName(), val);
       i++;
     }
     return LongPoint.newSetQuery(field.getName(), values);
@@ -123,7 +123,7 @@ public class LongPointField extends PointField implements LongValueFieldType {
   public void readableToIndexed(CharSequence val, BytesRefBuilder result) {
     result.grow(Long.BYTES);
     result.setLength(Long.BYTES);
-    LongPoint.encodeDimension(Long.parseLong(val.toString()), result.bytes(), 0);
+    LongPoint.encodeDimension(parseLongFromUser(null, val.toString()), result.bytes(), 0);
   }
 
   @Override
