@@ -17,7 +17,8 @@
 package org.apache.solr.client.solrj.io.eval;
 
 import java.io.IOException;
-import java.util.List;
+import java.util.Collection;
+import java.util.Locale;
 
 import org.apache.solr.client.solrj.io.Tuple;
 import org.apache.solr.client.solrj.io.stream.expr.Explanation;
@@ -33,12 +34,26 @@ public class LengthEvaluator extends ComplexEvaluator implements Expressible {
 
   public LengthEvaluator(StreamExpression expression, StreamFactory factory) throws IOException {
     super(expression, factory);
+    
+    if(1 != subEvaluators.size()){
+      throw new IOException(String.format(Locale.ROOT,"Invalid expression %s - expecting one value but found %d",expression,subEvaluators.size()));
+    }
   }
 
   public Number evaluate(Tuple tuple) throws IOException {
-    StreamEvaluator colEval1 = subEvaluators.get(0);
-    List<Number> numbers = (List<Number>)colEval1.evaluate(tuple);
-    return numbers.size();
+    
+    Object result = subEvaluators.get(0).evaluate(tuple);
+    
+    if(null == result){
+      throw new IOException(String.format(Locale.ROOT, "Unable to find %s(...) because the value is null", constructingFactory.getFunctionName(getClass())));
+    }
+    
+    if(result instanceof Collection<?>){
+      // Cause other evaluators expect Long instead of Integer
+      return new Long(((Collection<?>)result).size());
+    }
+    
+    throw new IOException(String.format(Locale.ROOT, "Unable to find %s(...) because the value is not a collection, instead a %s was found", constructingFactory.getFunctionName(getClass()), result.getClass().getSimpleName()));
   }
 
   @Override
