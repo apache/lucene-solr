@@ -343,6 +343,9 @@ New Features
 
 * SOLR-10660: Add reverse Stream Evaluator (Joel Bernstein)
 
+* SOLR-9910: Add solr/solr.cmd parameter to append jetty parameters to the start script.
+  (Mano Kovacs via Mark Miller)
+
 Bug Fixes
 ----------------------
 * SOLR-10723 JSON Facet API: resize() implemented incorrectly for CountSlotAcc, HllAgg.NumericAcc
