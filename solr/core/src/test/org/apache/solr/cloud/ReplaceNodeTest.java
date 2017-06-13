@@ -60,7 +60,14 @@ public class ReplaceNodeTest extends SolrCloudTestCase {
     Collections.shuffle(l, random());
     String emptyNode = l.remove(0);
     String node2bdecommissioned = l.get(0);
-    CollectionAdminRequest.Create create = CollectionAdminRequest.createCollection(coll, "conf1", 5, 2);
+    CollectionAdminRequest.Create create;
+    // NOTE: always using the createCollection that takes in 'int' for all types of replicas, so we never
+    // have to worry about null checking when comparing the Create command with the final Slices
+    create = pickRandom(
+                        CollectionAdminRequest.createCollection(coll, "conf1", 5, 2),
+                        // check also replicationFactor 1
+                        CollectionAdminRequest.createCollection(coll, "conf1", 5, 1)
+    );
     create.setCreateNodeSet(StrUtils.join(l, ',')).setMaxShardsPerNode(3);
     cloudClient.request(create);
     log.info("excluded_node : {}  ", emptyNode);
