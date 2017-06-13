@@ -36,26 +36,26 @@ An example `security.json` showing both sections is shown below to show how thes
 [source,json]
 ----
 {
-"authentication":{
-   "blockUnknown": true,
+"authentication":{ <1>
+   "blockUnknown": true, <2>
    "class":"solr.BasicAuthPlugin",
-   "credentials":{"solr":"IV0EHq1OnNrj6gvRCwvFwTrZ1+z1oBbnQdiVC3otuq0= Ndd7LKvVBAaZIF0QAVi1ekCfAJXr1GGfLtRUXhgrF8c="}
+   "credentials":{"solr":"IV0EHq1OnNrj6gvRCwvFwTrZ1+z1oBbnQdiVC3otuq0= Ndd7LKvVBAaZIF0QAVi1ekCfAJXr1GGfLtRUXhgrF8c="} <3>
 },
 "authorization":{
    "class":"solr.RuleBasedAuthorizationPlugin",
    "permissions":[{"name":"security-edit",
-      "role":"admin"}],
-   "user-role":{"solr":"admin"}
+      "role":"admin"}], <4>
+   "user-role":{"solr":"admin"} <5>
 }}
 ----
 
 There are several things defined in this file:
 
-* Basic authentication and rule-based authorization plugins are enabled.
-* A user called 'solr', with a password `'SolrRocks'` has been defined.
-* The parameter `"blockUnknown": true` means that unauthenticated requests are not allowed to pass through.
-* The 'admin' role has been defined, and it has permission to edit security settings.
-* The 'solr' user has been defined to the 'admin' role.
+<1> Basic authentication and rule-based authorization plugins are enabled.
+<2> A user called 'solr', with a password `'SolrRocks'` has been defined.
+<3> The parameter `"blockUnknown":true` means that unauthenticated requests are not allowed to pass through.
+<4> The 'admin' role has been defined, and it has permission to edit security settings.
+<5> The 'solr' user has been defined to the 'admin' role.
 
 Save your settings to a file called `security.json` locally. If you are using Solr in standalone mode, you should put this file in `$SOLR_HOME`.
 
