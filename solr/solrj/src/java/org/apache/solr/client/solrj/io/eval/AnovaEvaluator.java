@@ -37,13 +37,13 @@ public class AnovaEvaluator extends ComplexEvaluator implements Expressible {
 
   public AnovaEvaluator(StreamExpression expression, StreamFactory factory) throws IOException {
     super(expression, factory);
-  }
-
-  public Tuple evaluate(Tuple tuple) throws IOException {
-
+    
     if(subEvaluators.size() < 2) {
       throw new IOException("ANOVA evaluator expects atleast 2 parameters found: "+subEvaluators.size());
     }
+  }
+
+  public Tuple evaluate(Tuple tuple) throws IOException {
 
     List<double[]> list = new ArrayList();
     for(StreamEvaluator subEvaluator : subEvaluators) {
