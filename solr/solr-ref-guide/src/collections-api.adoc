@@ -1887,7 +1887,7 @@ Deletes all replicas of all collections in that node. Please note that the node 
 [[CollectionsAPI-replacenode]]
 == REPLACENODE: Move All Replicas in a Node to Another
 
-This command recreates replicas in the source node to the target node. After each replica is copied, the replicas in the source node are deleted.
+This command recreates replicas in the source node to the target node. After each replica is copied, the replicas in the source node are deleted. For source replicas that are also shard leaders the operation will wait for "timeout" seconds to make sure there's an active replica that can become a leader (either an existing replica becoming a leader or the new replica completing the recovery and becoming a leader).
 
 `/admin/collections?action=REPLACENODE&source=_source-node_&target=_target-node_`
 
@@ -1905,6 +1905,7 @@ This command recreates replicas in the source node to the target node. After eac
 |target |string |Yes |The target node
 |parallel |boolean |No |default=false. if this flag is set to true, all replicas are created inseparatee threads. Keep in mind that this can lead to very high network and disk I/O if the replicas have very large indices.
 |async |string |No |Request ID to track this action which will be <<CollectionsAPI-async,processed asynchronously>>.
+|timeout |int |No |default is 300. Timeout in seconds to wait until new replicas are created, and until leader replicas are fully recovered.
 |===
 
 [IMPORTANT]
