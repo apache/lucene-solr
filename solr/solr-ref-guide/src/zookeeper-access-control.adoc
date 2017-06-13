@@ -58,7 +58,7 @@ Solr nodes, clients and tools (e.g. ZkCLI) always use a java class called {solr-
 [[ZooKeeperAccessControl-ControllingCredentials]]
 === Controlling Credentials
 
-You control which credentials provider will be used by configuring the `zkCredentialsProvider` property in `solr.xml`'s `<solrcloud>` section to the name of a class (on the classpath) implementing the {solr-javadocs}/solr-solrj/org/apache/solr/common/cloud/ZkCredentialsProvider[`ZkCredentialsProvider`] interface. `server/solr/solr.xml` in the Solr distribution defines the `zkCredentialsProvider` such that it will take on the value of the same-named `zkCredentialsProvider` system property if it is defined (e.g. by uncommenting the `SOLR_ZK_CREDS_AND_ACLS` environment variable definition in `solr.in.sh/.cmd` - see below), or if not, default to the `DefaultZkCredentialsProvider` implementation.
+You control which credentials provider will be used by configuring the `zkCredentialsProvider` property in `solr.xml` 's `<solrcloud>` section to the name of a class (on the classpath) implementing the {solr-javadocs}/solr-solrj/org/apache/solr/common/cloud/ZkCredentialsProvider[`ZkCredentialsProvider`] interface. `server/solr/solr.xml` in the Solr distribution defines the `zkCredentialsProvider` such that it will take on the value of the same-named `zkCredentialsProvider` system property if it is defined (e.g. by uncommenting the `SOLR_ZK_CREDS_AND_ACLS` environment variable definition in `solr.in.sh/.cmd` - see below), or if not, default to the `DefaultZkCredentialsProvider` implementation.
 
 ==== Out of the Box Credential Implementations
 
@@ -72,7 +72,7 @@ You can always make you own implementation, but Solr comes with two implementati
 [[ZooKeeperAccessControl-ControllingACLs]]
 === Controlling ACLs
 
-You control which ACLs will be added by configuring `zkACLProvider` property in `solr.xml`'s `<solrcloud>` section to the name of a class (on the classpath) implementing the {solr-javadocs}//solr-solrj/org/apache/solr/common/cloud/ZkACLProvider[`ZkACLProvider`] interface. `server/solr/solr.xml` in the Solr distribution defines the `zkACLProvider` such that it will take on the value of the same-named `zkACLProvider` system property if it is defined (e.g. by uncommenting the `SOLR_ZK_CREDS_AND_ACLS` environment variable definition in `solr.in.sh/.cmd` - see below), or if not, default to the `DefaultZkACLProvider` implementation.
+You control which ACLs will be added by configuring `zkACLProvider` property in `solr.xml` 's `<solrcloud>` section to the name of a class (on the classpath) implementing the {solr-javadocs}//solr-solrj/org/apache/solr/common/cloud/ZkACLProvider[`ZkACLProvider`] interface. `server/solr/solr.xml` in the Solr distribution defines the `zkACLProvider` such that it will take on the value of the same-named `zkACLProvider` system property if it is defined (e.g. by uncommenting the `SOLR_ZK_CREDS_AND_ACLS` environment variable definition in `solr.in.sh/.cmd` - see below), or if not, default to the `DefaultZkACLProvider` implementation.
 
 [[ZooKeeperAccessControl-OutoftheBoxImplementations]]
 ==== Out of the Box ACL Implementations

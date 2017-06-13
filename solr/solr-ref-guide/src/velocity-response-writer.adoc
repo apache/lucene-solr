@@ -57,7 +57,7 @@ The "params" resource loader allows templates to be specified in Solr request pa
 
 `\http://localhost:8983/solr/gettingstarted/select?q=\*:*&wt=velocity&v.template=custom&v.template.custom=CUSTOM%3A%20%23core_name`
 
-where `v.template=custom` says to render a template called "custom" and `v.template.custom`'s value is the actual custom template. This is disabled by default; it'd be a niche, unusual, use case to need this enabled.
+where `v.template=custom` says to render a template called "custom" and `v.template.custom` 's value is the actual custom template. This is disabled by default; it'd be a niche, unusual, use case to need this enabled.
 
  |false
 |solr.resource.loader.enabled |The "solr" resource loader is the only template loader registered by default. Templates are served from resources visible to the SolrResourceLoader under a `velocity/` subdirectory. The VelocityResponseWriter itself has some built-in templates (in its JAR file, under velocity/) that are available automatically through this loader. These built-in templates can be overridden when the same template name is in conf/velocity/ or by using the `template.base.dir` option. |true

@@ -179,6 +179,6 @@ Here we compute some statistics for the price field. The min, max, mean, 90th, a
 [[TheStatsComponent-TheStatsComponentandFaceting]]
 == The Stats Component and Faceting
 
-Sets of `stats.field` parameters can be referenced by '`tag`' when using Pivot Faceting to compute multiple statistics at every level (i.e.: field) in the tree of pivot constraints.
+Sets of `stats.field` parameters can be referenced by `'tag'` when using Pivot Faceting to compute multiple statistics at every level (i.e.: field) in the tree of pivot constraints.
 
 For more information and a detailed example, please see <<faceting.adoc#Faceting-CombiningStatsComponentWithPivots,Combining Stats Component With Pivots>>.

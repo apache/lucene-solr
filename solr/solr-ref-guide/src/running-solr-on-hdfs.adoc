@@ -38,7 +38,7 @@ For standalone Solr instances, there are a few parameters you should be sure to 
 
 * You need to use an `HdfsDirectoryFactory` and a data dir of the form `hdfs://host:port/path`
 * You need to specify an UpdateLog location of the form `hdfs://host:port/path`
-* You should specify a lock factory type of '`hdfs`' or none.
+* You should specify a lock factory type of `'hdfs'` or none.
 
 If you do not modify `solrconfig.xml`, you can instead start Solr on HDFS with the following command:
 
@@ -58,7 +58,7 @@ This example will start Solr in standalone mode, using the defined JVM propertie
 In SolrCloud mode, it's best to leave the data and update log directories as the defaults Solr comes with and simply specify the `solr.hdfs.home`. All dynamically created collections will create the appropriate directories automatically under the `solr.hdfs.home` root directory.
 
 * Set `solr.hdfs.home` in the form `hdfs://host:port/path`
-* You should specify a lock factory type of '`hdfs`' or none.
+* You should specify a lock factory type of `'hdfs'` or none.
 
 [source,bash]
 ----

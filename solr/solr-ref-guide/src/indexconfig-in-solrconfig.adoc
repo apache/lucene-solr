@@ -115,7 +115,7 @@ If the configuration options for the built-in merge policies do not fully suit y
 </mergePolicyFactory>
 ----
 
-The example above shows Solr's {solr-javadocs}/solr-core/org/apache/solr/index/SortingMergePolicyFactory.html[`SortingMergePolicyFactory`] being configured to sort documents in merged segments by `"timestamp desc"`, and wrapped around a `TieredMergePolicyFactory` configured to use the values `maxMergeAtOnce=10` and `segmentsPerTier=10` via the `inner` prefix defined by `SortingMergePolicyFactory`'s `wrapped.prefix` option. For more information on using `SortingMergePolicyFactory`, see <<common-query-parameters.adoc#CommonQueryParameters-ThesegmentTerminateEarlyParameter,the segmentTerminateEarly parameter>>.
+The example above shows Solr's {solr-javadocs}/solr-core/org/apache/solr/index/SortingMergePolicyFactory.html[`SortingMergePolicyFactory`] being configured to sort documents in merged segments by `"timestamp desc"`, and wrapped around a `TieredMergePolicyFactory` configured to use the values `maxMergeAtOnce=10` and `segmentsPerTier=10` via the `inner` prefix defined by `SortingMergePolicyFactory` 's `wrapped.prefix` option. For more information on using `SortingMergePolicyFactory`, see <<common-query-parameters.adoc#CommonQueryParameters-ThesegmentTerminateEarlyParameter,the segmentTerminateEarly parameter>>.
 
 [[IndexConfiginSolrConfig-mergeScheduler]]
 === mergeScheduler
