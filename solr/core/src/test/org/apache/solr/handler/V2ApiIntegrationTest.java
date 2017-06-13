@@ -18,6 +18,7 @@
 package org.apache.solr.handler;
 
 
+import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
@@ -37,8 +38,6 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 
 public class V2ApiIntegrationTest extends SolrCloudTestCase {
-  private List<RestTestHarness> restTestHarnesses = new ArrayList<>();
-
   private static String COLL_NAME = "collection1";
 
   @BeforeClass
@@ -99,6 +98,11 @@ public class V2ApiIntegrationTest extends SolrCloudTestCase {
     assertEquals("/c/collection1/get", Utils.getObjectByPath(result, true, "/spec[0]/url/paths[0]"));
     result = resAsMap(client, new V2Request.Builder("/collections/"+COLL_NAME+"/get/_introspect").build());
     assertEquals("/collections/collection1/get", Utils.getObjectByPath(result, true, "/spec[0]/url/paths[0]"));
+    String tempDir = createTempDir().toFile().getPath();
+    client.request(new V2Request.Builder("/c")
+        .withMethod(SolrRequest.METHOD.POST)
+        .withPayload("{backup-collection:{name: backup_test, collection: "+COLL_NAME+" , location: '"+tempDir+"' }}")
+        .build());
   }
 
   private Map resAsMap(CloudSolrClient client, V2Request request) throws SolrServerException, IOException {
