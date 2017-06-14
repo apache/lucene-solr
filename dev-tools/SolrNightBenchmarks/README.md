@@ -29,11 +29,20 @@ A comprehensive Solr performance benchmark framework.
      
      * -ProcessCommitsFromQueue true           Use this parameter if you want the system to work on the commit hash present in the queue.
      * -RegisterLatestCommit true              This parameter is used in conjunction with the last parameter. 
+     * -Housekeeping true                      Use this parameter to instruct the system to clean up at the end of the work cycle.
      
 ## A commit queue sub-utility
 
      There is a light-weight utility in this framework which is used to look for commits in a specified time periods. 
+     The steps to use this utility is mentioned below.
      
+     Configure jenkins to run the following in specified time periods (example every 15 minutes) 
+     * java -jar target/org.apache.solr.tests.nightlybenchmarks-0.0.1-SNAPSHOT-jar-with-dependencies.jar -RegisterLatestCommit true
+     
+     USE this with the following to run the benchmark in queue mode. 
+     
+     Configure jenkins to run the benchmark utility by running the following (say every midnight)
+     * java -jar target/org.apache.solr.tests.nightlybenchmarks-0.0.1-SNAPSHOT-jar-with-dependencies.jar -ProcessCommitsFromQueue true -Housekeeping true 
      
 
      
