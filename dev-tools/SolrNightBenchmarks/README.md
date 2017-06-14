@@ -8,6 +8,7 @@ A comprehensive Solr performance benchmark framework.
       * Linux OS
       * Apache Maven 3.0.5 and above
       * git version 2.11.1 and above
+      * Apache HTTP webserver (If you want this framwork's output to be accessible over a network through a browser)
 
 ## Steps to run
 
