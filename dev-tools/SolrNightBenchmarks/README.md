@@ -57,7 +57,7 @@ A comprehensive Solr performance benchmark framework.
 
 ![Alt text](http://www.viveknarang.com/gsoc/snb_screenshot.PNG)
 
-## Notable features.
+## Notable Additionl features.
 
      * The framework has the ability to recover from a failed attempt.
          - Example if during execution the benchmark process is killed, the next time when executed the framework will clean up the corrupt files/zombie processes from the last failed run to free the machine from resource wastages.
