@@ -23,7 +23,7 @@ A comprehensive Solr performance benchmark framework.
      
 ## Possible parameters
 
-     * -RunSilently true                       Use this if you do not want any output on console.
+     * -RunSilently true                       Use this parameter if you do not want any output on console.
      * -ProcessLatestCommit true               Use this parameter if you want the system to look for the latest commit to work on.
      * -ProcessWithCommitID XXXXXXXXXXXX       Use this parameter if you want the system to use the commit hash to work on.
      
@@ -31,10 +31,11 @@ A comprehensive Solr performance benchmark framework.
      * -RegisterLatestCommit true              This parameter is used in conjunction with the last parameter. 
      * -Housekeeping true                      Use this parameter to instruct the system to clean up at the end of the work cycle.
      
-## A commit queue sub-utility
+## Running benchmarks in queue mode
 
-     There is a light-weight utility in this framework which is used to look for commits in a specified time periods. 
-     The steps to use this utility is mentioned below.
+     There is an option to run this framework in queue mode where it tries to capture almost all commits and runs on each. 
+     
+     The steps to run in this mode is mentioned below.
      
      Configure jenkins to run the following in specified time periods (example every 15 minutes) 
      * java -jar target/org.apache.solr.tests.nightlybenchmarks-0.0.1-SNAPSHOT-jar-with-dependencies.jar -RegisterLatestCommit true
@@ -43,6 +44,22 @@ A comprehensive Solr performance benchmark framework.
      
      Configure jenkins to run the benchmark utility by running the following (say every midnight)
      * java -jar target/org.apache.solr.tests.nightlybenchmarks-0.0.1-SNAPSHOT-jar-with-dependencies.jar -ProcessCommitsFromQueue true -Housekeeping true 
+     
+## Where and how to access the output.
+
+     As soon as the system is up and running, A folder is created as directed by "SolrNightlyBenchmarks.benchmarkAppDirectory" in the properties file.
+     If this folder is mapped to the HTTP server home you can simply open the localhost and you should land on the page where you will have options to view results.
+     If this folder is a local folder, please locate it and click on "index.html" to open the page for viewing the output. 
+     
+## Notable features.
+
+     * The framework has the ability to recover from a failed attempt.
+         - Example if during execution the benchmark process is killed, the next time when executed the framework will clean up the corrupt files/zombie processes from the last failed run to free the machine from resource wastages.
+     * The framework has the ability to notify the end user that a benchmark cycle is running. (A green indicator on top right hand will light up telling the user that currently a fresh benchmark cycle is running.)
+     
+          
+   
+     
      
 
      
