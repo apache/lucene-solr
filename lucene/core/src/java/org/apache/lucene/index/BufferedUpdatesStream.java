@@ -501,9 +501,8 @@ class BufferedUpdatesStream implements Accountable {
         queue = new SegmentQueue(numReaders);
 
         long segTermCount = 0;
-        for(int i=0;i<numReaders;i++) {
-          SegmentState state = segStates[i];
-          Terms terms = state.reader.fields().terms(field);
+        for (SegmentState state : segStates) {
+          Terms terms = state.reader.terms(field);
           if (terms != null) {
             segTermCount += terms.size();
             state.termsEnum = terms.iterator();
@@ -617,7 +616,6 @@ class BufferedUpdatesStream implements Accountable {
   // DocValues updates
   private synchronized void applyDocValuesUpdates(List<DocValuesUpdate> updates, 
       SegmentState segState, DocValuesFieldUpdates.Container dvUpdatesContainer) throws IOException {
-    Fields fields = segState.reader.fields();
 
     // TODO: we can process the updates per DV field, from last to first so that
     // if multiple terms affect same document for the same field, we add an update
@@ -651,7 +649,7 @@ class BufferedUpdatesStream implements Accountable {
         // if we change the code to process updates in terms order, enable this assert
 //        assert currentField == null || currentField.compareTo(term.field()) < 0;
         currentField = term.field();
-        Terms terms = fields.terms(currentField);
+        Terms terms = segState.reader.terms(currentField);
         if (terms != null) {
           termsEnum = terms.iterator();
         } else {

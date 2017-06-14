@@ -18,7 +18,14 @@ package org.apache.lucene.index;
 
 import java.io.IOException;
 import java.nio.file.Path;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Random;
+import java.util.Set;
+import java.util.WeakHashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
@@ -349,8 +356,7 @@ public abstract class ThreadedIndexingAndSearchingTestCase extends LuceneTestCas
                   }
                   if (s.getIndexReader().numDocs() > 0) {
                     smokeTestSearcher(s);
-                    Fields fields = MultiFields.getFields(s.getIndexReader());
-                    Terms terms = fields.terms("body");
+                    Terms terms = MultiFields.getTerms(s.getIndexReader(), "body");
                     if (terms == null) {
                       continue;
                     }

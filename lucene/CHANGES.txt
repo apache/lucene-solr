@@ -145,6 +145,10 @@ Other
   from methods that don't declare them ("sneaky throw" hack). (Robert Muir,
   Uwe Schindler, Dawid Weiss)
 
+* LUCENE-7876: Avoid calls to LeafReader.fields() and MultiFields.getFields()
+  that are trivially replaced by LeafReader.terms() and MultiFields.getTerms()
+  (David Smiley)
+
 Improvements
 
 * LUCENE-7841: Normalize ґ to г in Ukrainian analyzer. (Andriy Rysin via Dawid Weiss)

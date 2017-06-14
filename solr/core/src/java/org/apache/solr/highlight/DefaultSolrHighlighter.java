@@ -245,7 +245,7 @@ public class DefaultSolrHighlighter extends SolrHighlighter implements PluginInf
     try {
       // It'd be nice to know if payloads are on the tokenStream but the presence of the attribute isn't a good
       // indicator.
-      final Terms terms = request.getSearcher().getSlowAtomicReader().fields().terms(fieldName);
+      final Terms terms = request.getSearcher().getSlowAtomicReader().terms(fieldName);
       if (terms != null) {
         defaultPayloads = terms.hasPayloads();
       }

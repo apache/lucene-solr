@@ -15,22 +15,6 @@
  * limitations under the License.
  */
 package org.apache.solr.handler.component;
-import org.apache.lucene.index.*;
-import org.apache.lucene.util.BytesRef;
-import org.apache.lucene.util.BytesRefBuilder;
-import org.apache.lucene.util.CharsRefBuilder;
-import org.apache.lucene.util.StringHelper;
-import org.apache.solr.common.SolrException;
-import org.apache.solr.common.params.*;
-import org.apache.solr.common.util.NamedList;
-import org.apache.solr.common.util.SimpleOrderedMap;
-import org.apache.solr.common.util.StrUtils;
-import org.apache.solr.schema.FieldType;
-import org.apache.solr.schema.StrField;
-import org.apache.solr.request.SimpleFacets.CountPair;
-import org.apache.solr.search.SolrIndexSearcher;
-import org.apache.solr.util.BoundedTreeSet;
-import org.apache.solr.client.solrj.response.TermsResponse;
 
 import java.io.IOException;
 import java.util.Arrays;
@@ -38,6 +22,32 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.regex.Pattern;
+
+import org.apache.lucene.index.IndexReaderContext;
+import org.apache.lucene.index.LeafReader;
+import org.apache.lucene.index.LeafReaderContext;
+import org.apache.lucene.index.Term;
+import org.apache.lucene.index.TermContext;
+import org.apache.lucene.index.Terms;
+import org.apache.lucene.index.TermsEnum;
+import org.apache.lucene.util.BytesRef;
+import org.apache.lucene.util.BytesRefBuilder;
+import org.apache.lucene.util.CharsRefBuilder;
+import org.apache.lucene.util.StringHelper;
+import org.apache.solr.client.solrj.response.TermsResponse;
+import org.apache.solr.common.SolrException;
+import org.apache.solr.common.params.ModifiableSolrParams;
+import org.apache.solr.common.params.ShardParams;
+import org.apache.solr.common.params.SolrParams;
+import org.apache.solr.common.params.TermsParams;
+import org.apache.solr.common.util.NamedList;
+import org.apache.solr.common.util.SimpleOrderedMap;
+import org.apache.solr.common.util.StrUtils;
+import org.apache.solr.request.SimpleFacets.CountPair;
+import org.apache.solr.schema.FieldType;
+import org.apache.solr.schema.StrField;
+import org.apache.solr.search.SolrIndexSearcher;
+import org.apache.solr.util.BoundedTreeSet;
 
 /**
  * Return TermEnum information, useful for things like auto suggest.
@@ -138,13 +148,12 @@ public class TermsComponent extends SearchComponent {
 
 
     final LeafReader indexReader = rb.req.getSearcher().getSlowAtomicReader();
-    Fields lfields = indexReader.fields();
 
     for (String field : fields) {
       NamedList<Integer> fieldTerms = new NamedList<>();
       termsResult.add(field, fieldTerms);
 
-      Terms terms = lfields.terms(field);
+      Terms terms = indexReader.terms(field);
       if (terms == null) {
         // field does not exist
         continue;
@@ -562,10 +571,9 @@ public class TermsComponent extends SearchComponent {
       Term[] queryTerms) throws IOException {
     TermsEnum termsEnum = null;
     for (LeafReaderContext context : topReaderContext.leaves()) {
-      final Fields fields = context.reader().fields();
       for (int i = 0; i < queryTerms.length; i++) {
         Term term = queryTerms[i];
-        final Terms terms = fields.terms(term.field());
+        final Terms terms = context.reader().terms(term.field());
         if (terms == null) {
           // field does not exist
           continue;
