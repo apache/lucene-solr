@@ -69,7 +69,7 @@ public abstract class Filter extends Query {
    *         represent the whole underlying index i.e. if the index has more than
    *         one segment the given reader only represents a single segment.
    *         The provided context is always an atomic context, so you can call
-   *         {@link org.apache.lucene.index.LeafReader#fields()}
+   *         {@link org.apache.lucene.index.LeafReader#terms(String)}
    *         on the context's reader, for example.
    *
    * @param acceptDocs

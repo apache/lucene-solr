@@ -40,7 +40,6 @@ import com.carrotsearch.hppc.IntIntHashMap;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
-import org.apache.lucene.index.Fields;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.LeafReader;
 import org.apache.lucene.index.LeafReaderContext;
@@ -678,9 +677,7 @@ public class QueryElevationComponent extends SearchComponent implements SolrCore
       protected void doSetNextReader(LeafReaderContext context) throws IOException {
         //convert the ids to Lucene doc ids, the ordSet and termValues needs to be the same size as the number of elevation docs we have
         ordSet.clear();
-        Fields fields = context.reader().fields();
-        if (fields == null) return;
-        Terms terms = fields.terms(idField);
+        Terms terms = context.reader().terms(idField);
         if (terms == null) return;
         TermsEnum termsEnum = terms.iterator();
         BytesRefBuilder term = new BytesRefBuilder();

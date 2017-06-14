@@ -190,7 +190,7 @@ public class TestMemoryIndexAgainstRAMDir extends BaseTokenStreamTestCase {
 
   private void duellReaders(CompositeReader other, LeafReader memIndexReader)
       throws IOException {
-    Fields memFields = memIndexReader.fields();
+    Fields memFields = memIndexReader.getTermVectors(0);
     for (String field : MultiFields.getFields(other)) {
       Terms memTerms = memFields.terms(field);
       Terms iwTerms = memIndexReader.terms(field);
