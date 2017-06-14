@@ -29,6 +29,7 @@ A comprehensive Solr performance benchmark framework.
      
      * -ProcessCommitsFromQueue true           Use this parameter if you want the system to work on the commit hash present in the queue.
      * -RegisterLatestCommit true              This parameter is used in conjunction with the last parameter. 
+     
      * -Housekeeping true                      Use this parameter to instruct the system to clean up at the end of the work cycle.
      
 ## Running benchmarks in queue mode
