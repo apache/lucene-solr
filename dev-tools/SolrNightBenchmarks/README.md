@@ -20,5 +20,21 @@ A comprehensive Solr performance benchmark framework.
      6. pwd to check that you are in SolrNightlyBenchmarks folder. 
      7. mvn clean compile assembly:single
      8. java -jar target/org.apache.solr.tests.nightlybenchmarks-0.0.1-SNAPSHOT-jar-with-dependencies.jar -ProcessLatestCommit true -Housekeeping true 
+     
+## Possible parameters
 
+     * -RunSilently true                       Use this if you do not want any output on console.
+     * -ProcessLatestCommit true               Use this parameter if you want the system to look for the latest commit to work on.
+     * -ProcessWithCommitID XXXXXXXXXXXX       Use this parameter if you want the system to use the commit hash to work on.
+     
+     * -ProcessCommitsFromQueue true           Use this parameter if you want the system to work on the commit hash present in the queue.
+     * -RegisterLatestCommit true              This parameter is used in conjunction with the last parameter. 
+     
+## A commit queue sub-utility
+
+     There is a light-weight utility in this framework which is used to look for commits in a specified time periods. 
+     
+     
+
+     
       
