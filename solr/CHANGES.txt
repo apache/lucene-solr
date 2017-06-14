@@ -159,6 +159,8 @@ Bug Fixes
 * SOLR-10830: Solr now correctly enforces that the '_root_' field has the same fieldType as the
   uniqueKey field.  With out this enforcement, child document updating was unreliable. (hossman)
 
+* SOLR-10876: Regression in loading runtime UpdateRequestProcessors like TemplateUpdateProcessorFactory (noble)
+
 
 Optimizations
 ----------------------

@@ -29,7 +29,6 @@ import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.common.util.Utils;
-import org.apache.solr.core.PluginBag;
 import org.apache.solr.core.PluginInfo;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.request.SolrQueryRequest;
@@ -272,16 +271,12 @@ public final class UpdateRequestProcessorChain implements PluginInfoInitialized
       if (s.isEmpty()) continue;
       UpdateRequestProcessorFactory p = core.getUpdateProcessors().get(s);
       if (p == null) {
-        try {
-          PluginInfo pluginInfo = new PluginInfo("updateProcessor",
-              Utils.makeMap("name", s,
-                  "class", s + "UpdateProcessorFactory",
-                  "runtimeLib", "true"));
+        PluginInfo pluginInfo = new PluginInfo("updateProcessor",
+            Utils.makeMap("name", s,
+                "class", s + "UpdateProcessorFactory",
+                "runtimeLib", "true"));
 
-          PluginBag.PluginHolder<UpdateRequestProcessorFactory> pluginHolder = core.getUpdateProcessors().createPlugin(pluginInfo);
-          core.getUpdateProcessors().put(s, p = pluginHolder.get());
-        } catch (SolrException e) {
-        }
+        core.getUpdateProcessors().put(s, p = core.getUpdateProcessors().createPlugin(pluginInfo).get());
         if (p == null)
           throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "No such processor " + s);
       }

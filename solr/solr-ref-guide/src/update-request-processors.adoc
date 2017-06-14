@@ -392,7 +392,7 @@ For example:
 
 [source,bash]
 ----
-processor=Template&Template.field=fullName:Mr. ${firstName} ${lastName}
+processor=Template&Template.field=fullName:Mr. {firstName} {lastName}
 ----
 
 The above example would add a new field to the document called `fullName`. The fields `firstName and` `lastName` are supplied from the document fields. If either of them is missing, that part is replaced with an empty string. If those fields are multi-valued, only the first value is used.
