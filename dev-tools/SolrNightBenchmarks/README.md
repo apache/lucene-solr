@@ -1,4 +1,4 @@
-# SolrNightlyBenchmarks  [![Travis](https://img.shields.io/travis/rust-lang/rust.svg?style=plastic)]()
+# SolrNightlyBenchmarks  [![Travis branch](https://img.shields.io/travis/rust-lang/rust/master.svg)]()
 
 A comprehensive Solr performance benchmark framework.
 
