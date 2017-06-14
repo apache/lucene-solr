@@ -47,9 +47,9 @@ A comprehensive Solr performance benchmark framework.
      
 ## Where and how to access the output.
 
-     As soon as the system is up and running, A folder is created as directed by "SolrNightlyBenchmarks.benchmarkAppDirectory" in the properties file.
-     If this folder is mapped to the HTTP server home you can simply open the localhost and you should land on the page where you will have options to view results.
-     If this folder is a local folder, please locate it and click on "index.html" to open the page for viewing the output. 
+     * As soon as the system is up and running, A folder is created as directed by "SolrNightlyBenchmarks.benchmarkAppDirectory" in the properties file.
+     * If this folder is mapped to the HTTP server home you can simply open the localhost and you should land on the page where you will have options to view results.
+     * If this folder is a local folder, please locate it and click on "index.html" to open the page for viewing the output. 
      
 ## Notable features.
 
