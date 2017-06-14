@@ -63,7 +63,7 @@ A comprehensive Solr performance benchmark framework.
          - Example if during execution the benchmark process is killed, the next time when executed the framework will clean up the corrupt files/zombie processes from the last failed run to free the machine from resource wastages.
      * The framework has the ability to notify the end user that a benchmark cycle is running. (A green indicator on top right hand will light up telling the user that currently a fresh benchmark cycle is running.)
      
-          
+    
    
      
      
