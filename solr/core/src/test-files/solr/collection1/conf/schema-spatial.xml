@@ -56,6 +56,9 @@
   <fieldType name="bbox" class="solr.BBoxField"
              numberType="tdoubleDV" distanceUnits="degrees" storeSubFields="false"/>
 
+  <fieldType name="bbox_ndv" class="solr.BBoxField"
+             numberType="tdouble" distanceUnits="degrees" storeSubFields="false" docValues="false"/>
+
   <fieldType name="pbbox" class="solr.BBoxField"
              numberType="pdouble" distanceUnits="degrees" storeSubFields="false"/>
 
@@ -71,6 +74,7 @@
   <field name="srptgeom" type="srptgeom"/>
   <field name="bbox" type="bbox"/>
   <field name="pbbox" type="pbbox"/>
+  <field name="bbox_ndv" type="bbox_ndv"/>
   <field name="llp" type="llp" indexed="true" docValues="true" />
   <field name="llp_idx" type="llp" indexed="true" docValues="false" />
   <field name="llp_dv" type="llp" indexed="false" docValues="true" />
