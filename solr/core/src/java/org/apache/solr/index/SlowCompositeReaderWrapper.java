@@ -98,9 +98,9 @@ public final class SlowCompositeReaderWrapper extends LeafReader {
   }
 
   @Override
-  public Fields fields() {
+  public Terms terms(String field) throws IOException {
     ensureOpen();
-    return fields;
+    return fields.terms(field);
   }
 
   @Override

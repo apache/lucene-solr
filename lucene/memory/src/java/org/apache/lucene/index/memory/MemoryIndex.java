@@ -1134,7 +1134,7 @@ public class MemoryIndex {
    */
   private final class MemoryIndexReader extends LeafReader {
 
-    private Fields memoryFields = new MemoryFields(fields);
+    private final MemoryFields memoryFields = new MemoryFields(fields);
 
     private MemoryIndexReader() {
       super(); // avoid as much superclass baggage as possible
@@ -1236,8 +1236,8 @@ public class MemoryIndex {
     }
 
     @Override
-    public Fields fields() {
-      return memoryFields;
+    public Terms terms(String field) throws IOException {
+      return memoryFields.terms(field);
     }
 
     private class MemoryFields extends Fields {
@@ -1589,7 +1589,7 @@ public class MemoryIndex {
     @Override
     public Fields getTermVectors(int docID) {
       if (docID == 0) {
-        return fields();
+        return memoryFields;
       } else {
         return null;
       }

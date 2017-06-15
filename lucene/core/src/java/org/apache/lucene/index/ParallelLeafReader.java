@@ -19,6 +19,7 @@ package org.apache.lucene.index;
 
 import java.io.IOException;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.IdentityHashMap;
 import java.util.Iterator;
 import java.util.Map;
@@ -50,7 +51,6 @@ import org.apache.lucene.util.Version;
  */
 public class ParallelLeafReader extends LeafReader {
   private final FieldInfos fieldInfos;
-  private final ParallelFields fields = new ParallelFields();
   private final LeafReader[] parallelReaders, storedFieldsReaders;
   private final Set<LeafReader> completeReaderSet =
     Collections.newSetFromMap(new IdentityHashMap<LeafReader,Boolean>());
@@ -58,9 +58,10 @@ public class ParallelLeafReader extends LeafReader {
   private final int maxDoc, numDocs;
   private final boolean hasDeletions;
   private final LeafMetaData metaData;
-  private final SortedMap<String,LeafReader> fieldToReader = new TreeMap<>();
   private final SortedMap<String,LeafReader> tvFieldToReader = new TreeMap<>();
-  
+  private final SortedMap<String,LeafReader> fieldToReader = new TreeMap<>();//TODO needn't sort?
+  private final Map<String,LeafReader> termsFieldToReader = new HashMap<>();
+
   /** Create a ParallelLeafReader based on the provided
    *  readers; auto-closes the given readers on {@link #close()}. */
   public ParallelLeafReader(LeafReader... readers) throws IOException {
@@ -130,8 +131,14 @@ public class ParallelLeafReader extends LeafReader {
         if (!fieldToReader.containsKey(fieldInfo.name)) {
           builder.add(fieldInfo);
           fieldToReader.put(fieldInfo.name, reader);
+          // only add these if the reader responsible for that field name is the current:
+          // TODO consider populating 1st leaf with vectors even if the field name has been seen on a previous leaf
           if (fieldInfo.hasVectors()) {
             tvFieldToReader.put(fieldInfo.name, reader);
+          }
+          // TODO consider populating 1st leaf with terms even if the field name has been seen on a previous leaf
+          if (fieldInfo.getIndexOptions() != IndexOptions.NONE) {
+            termsFieldToReader.put(fieldInfo.name, reader);
           }
         }
       }
@@ -154,17 +161,6 @@ public class ParallelLeafReader extends LeafReader {
 
     fieldInfos = builder.finish();
     this.metaData = new LeafMetaData(createdVersionMajor, minVersion, indexSort);
-    
-    // build Fields instance
-    for (final LeafReader reader : this.parallelReaders) {
-      final Fields readerFields = reader.fields();
-      for (String field : readerFields) {
-        // only add if the reader responsible for that field name is the current:
-        if (fieldToReader.get(field) == reader) {
-          this.fields.addField(field, readerFields.terms(field));
-        }
-      }
-    }
 
     // do this finally so any Exceptions occurred before don't affect refcounts:
     for (LeafReader reader : completeReaderSet) {
@@ -230,13 +226,14 @@ public class ParallelLeafReader extends LeafReader {
     ensureOpen();
     return hasDeletions ? parallelReaders[0].getLiveDocs() : null;
   }
-  
+
   @Override
-  public Fields fields() {
+  public Terms terms(String field) throws IOException {
     ensureOpen();
-    return fields;
+    LeafReader leafReader = termsFieldToReader.get(field);
+    return leafReader == null ? null : leafReader.terms(field);
   }
-  
+
   @Override
   public int numDocs() {
     // Don't call ensureOpen() here (it could affect performance)

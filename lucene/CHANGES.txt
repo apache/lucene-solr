@@ -69,6 +69,11 @@ API Changes
 
 * LUCENE-7850: Removed support for legacy numerics. (Adrien Grand)
 
+* LUCENE-7500: Removed abstract LeafReader.fields(); instead terms(fieldName)
+  has been made abstract, fomerly was final.  Also, MultiFields.getTerms
+  was optimized to work directly instead of being implemented on getFields.
+  (David Smiley)
+
 Bug Fixes
 
 * LUCENE-7626: IndexWriter will no longer accept broken token offsets

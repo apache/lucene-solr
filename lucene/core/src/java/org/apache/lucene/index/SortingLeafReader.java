@@ -49,6 +49,7 @@ import static org.apache.lucene.search.DocIdSetIterator.NO_MORE_DOCS;
  */
 class SortingLeafReader extends FilterLeafReader {
 
+  //TODO remove from here; move to FreqProxTermsWriter or FreqProxFields?
   static class SortingFields extends FilterFields {
 
     private final Sorter.DocMap docMap;
@@ -1042,8 +1043,9 @@ class SortingLeafReader extends FilterLeafReader {
   }
 
   @Override
-  public Fields fields() throws IOException {
-    return new SortingFields(in.fields(), in.getFieldInfos(), docMap);
+  public Terms terms(String field) throws IOException {
+    Terms terms = super.terms(field);
+    return terms==null ? null : new SortingTerms(terms, in.getFieldInfos().fieldInfo(field).getIndexOptions(), docMap);
   }
 
   @Override
