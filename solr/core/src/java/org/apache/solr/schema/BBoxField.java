@@ -92,9 +92,6 @@ public class BBoxField extends AbstractSpatialFieldType<BBoxStrategy> implements
     if (numberType.getNumberType() != NumberType.DOUBLE) {
       throw new RuntimeException("Must be Double number type: " + numberType);
     }
-    if ( ! numberType.hasProperty(DOC_VALUES)) {
-      throw new RuntimeException("Must have doc values: " + numberType);
-    }
 
     //note: this only works for explicit fields, not dynamic fields
     List<SchemaField> fields = new ArrayList<>(schema.getFields().values());//copy, because we modify during iteration
