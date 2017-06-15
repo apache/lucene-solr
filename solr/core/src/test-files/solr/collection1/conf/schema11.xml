@@ -365,7 +365,8 @@ valued. -->
    <dynamicField name="*_l"    type="${solr.tests.longClass:plong}"   indexed="true"  stored="true"/>
    <dynamicField name="*_f"    type="${solr.tests.floatClass:pfloat}"  indexed="true"  stored="true"/>
    <dynamicField name="*_d"    type="${solr.tests.doubleClass:pdouble}" indexed="true"  stored="true"/>
-
+   
+    <!-- Test trie fields explicitly -->
    <dynamicField name="*_ti"      type="tint"    indexed="true"  stored="true"/>
    <dynamicField name="*_ti_dv"   type="tint"    indexed="true"  stored="true" docValues="true"/>
    <dynamicField name="*_ti_ni_dv"   type="tint"    indexed="false"  stored="true" docValues="true"/>
@@ -419,6 +420,8 @@ valued. -->
    <dynamicField name="*_dts_p"      type="pdate"    indexed="true"  stored="true" docValues="true" multiValued="true"/>
    <dynamicField name="*_dt_ni_p"   type="pdate"    indexed="false"  stored="true" docValues="true"/>
    <dynamicField name="*_dts_ni_p"   type="pdate"    indexed="false"  stored="true" docValues="true" multiValued="true"/>
+
+   <dynamicField name="*_is_ndv_p"   type="pint"    indexed="true"  stored="true" docValues="false" multiValued="true"/>
 
    <dynamicField name="*_t"  type="text"    indexed="true"  stored="true"/>
    <dynamicField name="*_b"  type="boolean" indexed="true"  stored="true"/>
