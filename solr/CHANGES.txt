@@ -136,6 +136,13 @@ New Features
 * SOLR-10677: Expose a diagnostics API to return nodes sorted by load in descending order and
   any policy violations. (shalin)
 
+* SOLR-7452: Refinement for JSON Facet API: Adding refine:true to any terms facet will cause an
+  additional distributed search phase (overlapped with field retrieval) that requests additional info
+  for top facet buckets from shards that did not previously contribute to that bucket.
+  This will correct counts (and other statistics) for those top buckets collected in the first
+  phase. (yonik)
+
+
 Bug Fixes
 ----------------------
 * SOLR-9262: Connection and read timeouts are being ignored by UpdateShardHandler after SOLR-4509.
