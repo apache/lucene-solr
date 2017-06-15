@@ -53,7 +53,7 @@ public class TestSolr4Spatial extends SolrTestCaseJ4 {
   @ParametersFactory
   public static Iterable<Object[]> parameters() {
     return Arrays.asList(new Object[][]{
-        {"llp"}, {"llp_idx"}, {"llp_dv"}, {"srpt_geohash"}, {"srpt_quad"}, {"srpt_packedquad"}, {"stqpt_geohash"}, {"pointvector"}, {"bbox"}
+        {"llp"}, {"llp_idx"}, {"llp_dv"}, {"srpt_geohash"}, {"srpt_quad"}, {"srpt_packedquad"}, {"stqpt_geohash"}, {"pointvector"}, {"bbox"}, {"pbbox"}
     });
   }
 
@@ -179,7 +179,7 @@ public class TestSolr4Spatial extends SolrTestCaseJ4 {
   }
 
   private void checkHits(String fieldName, boolean exact, String ptStr, double distKM, double sphereRadius, int count, int ... docIds) throws ParseException {
-    if (exact && fieldName.equalsIgnoreCase("bbox")) {
+    if (exact && fieldName.equalsIgnoreCase("bbox") | fieldName.equalsIgnoreCase("pbbox")) {
       return; // bbox field only supports rectangular query
     }
     String [] tests = new String[docIds != null && docIds.length > 0 ? docIds.length + 1 : 1];
@@ -369,9 +369,9 @@ public class TestSolr4Spatial extends SolrTestCaseJ4 {
 
   private String radiusQuery(double lat, double lon, double dDEG, String score, String filter) {
     //Choose between the Solr/Geofilt syntax, and the Lucene spatial module syntax
-    if (fieldName.equals("bbox") || random().nextBoolean()) {
+    if (fieldName.equals("bbox") || fieldName.equals("pbbox") || random().nextBoolean()) {
       //we cheat for bbox strategy which doesn't do radius, only rect.
-      final String qparser = fieldName.equals("bbox") ? "bbox" : "geofilt";
+      final String qparser = (fieldName.equals("bbox") || fieldName.equals("pbbox")) ? "bbox" : "geofilt";
       return "{!" + qparser + " " +
           "sfield=" + fieldName + " "
           + (score != null ? "score="+score : "") + " "
@@ -389,7 +389,7 @@ public class TestSolr4Spatial extends SolrTestCaseJ4 {
   public void testSortMultiVal() throws Exception {
     assumeTrue("dist sorting not supported on field " + fieldName, canCalcDistance);
     assumeFalse("Multivalue not supported for this field",
-        fieldName.equals("pointvector") || fieldName.equals("bbox"));
+        fieldName.equals("pointvector") || fieldName.equals("bbox") || fieldName.equals("pbbox"));
 
     assertU(adoc("id", "100", fieldName, "1,2"));//1 point
     assertU(adoc("id", "101", fieldName, "4,-1", fieldName, "3,5"));//2 points, 2nd is pretty close to query point
