@@ -20,7 +20,7 @@
 
 <schema name="test" version="1.0">
 
-  <fieldType name="int" class="solr.TrieIntField" precisionStep="0" omitNorms="true" positionIncrementGap="0"/>
+  <fieldType name="string" class="solr.StrField" omitNorms="true" positionIncrementGap="0"/>
 
   <!-- basic text field -->
   <fieldType name="text" class="solr.TextField">
@@ -37,7 +37,7 @@
   <fieldType name="sort_da_t" class="solr.ICUCollationField" locale="da" strength="primary"/>
   <fieldType name="sort_custom_t" class="solr.ICUCollationField" custom="customrules.dat" strength="primary"/>
 
-  <field name="id" type="int" indexed="true" stored="true" multiValued="false" required="false"/>
+  <field name="id" type="string" indexed="true" stored="true" multiValued="false" required="false"/>
   <field name="text" type="text" indexed="true" stored="false"/>
   <field name="sort_ar" type="sort_ar_t" indexed="false" stored="false" multiValued="false" docValues="true"/>
   <field name="sort_de" type="sort_de_t" indexed="false" stored="false" multiValued="false" docValues="true"/>

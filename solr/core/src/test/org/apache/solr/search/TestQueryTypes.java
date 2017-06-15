@@ -45,7 +45,7 @@ public class TestQueryTypes extends AbstractSolrTestCase {
     assertU(adoc("id","10","text_no_analyzer","should just work"));
 
     Object[] arr = new Object[] {
-    "id",999.0
+    "id",999
     ,"v_s","wow dude"
     ,"v_t","wow"
     ,"v_ti",-1
@@ -75,7 +75,7 @@ public class TestQueryTypes extends AbstractSolrTestCase {
       // normal lucene fielded query
       assertQ(req( "q",f+":\""+v+'"')
               ,"//result[@numFound='1']"
-              ,"//*[@name='id'][.='999.0']"
+              ,"//*[@name='id'][.='999']"
               ,"//*[@name='" + f + "'][.='" + v + "']"
               );
 
@@ -116,7 +116,7 @@ public class TestQueryTypes extends AbstractSolrTestCase {
 
     // frange and function query only work on single valued field types
     Object[] fc_vals = new Object[] {
-      "id",999.0
+      "id_i",999
       ,"v_s","wow dude"
       ,"v_ti",-1
       ,"v_tl",-1234567891234567890L
@@ -154,7 +154,7 @@ public class TestQueryTypes extends AbstractSolrTestCase {
               ,"//result[@numFound='1']"
               );
 
-      if (!"id".equals(f)) {
+      if (!"id_i".equals(f)) {
         assertQ(req( "fq","id:1", "q", "{!frange l=1 u=1}if(exists("+f+"),1,0)" )
             ,"//result[@numFound='0']"
         );
@@ -352,40 +352,40 @@ public class TestQueryTypes extends AbstractSolrTestCase {
             req("df", "v_t",
                 "q", "{!switch case.x=Dude case.z=Yonik} x ")
             ,"//result[@numFound='1']"
-            ,"//*[@name='id'][.='1.0']");
+            ,"//*[@name='id'][.='1']");
     assertQ("test empty matching switch query",
             req("df", "v_t",
                 "q", "{!switch case.x=Dude case=Yonik}  ")
             ,"//result[@numFound='1']"
-            ,"//*[@name='id'][.='2.0']");
+            ,"//*[@name='id'][.='2']");
     assertQ("test empty matching switch query",
             req("df", "v_t",
                 "q", "{!switch case.x=Dude case=Yonik v=''}")
             ,"//result[@numFound='1']"
-            ,"//*[@name='id'][.='2.0']");
+            ,"//*[@name='id'][.='2']");
     assertQ("test empty matching switch query",
             req("df", "v_t",
                 "q", "{!switch case.x=Dude case=Yonik v=$qq}")
             ,"//result[@numFound='1']"
-            ,"//*[@name='id'][.='2.0']");
+            ,"//*[@name='id'][.='2']");
     assertQ("test matching switch query w/deref",
             req("q", "{!switch case.x=$d case.z=Yonik} x ",
                 "df", "v_t",
                 "d", "Dude")
             ,"//result[@numFound='1']"
-            ,"//*[@name='id'][.='1.0']");
+            ,"//*[@name='id'][.='1']");
     assertQ("test default switch query",
             req("q", "{!switch default=$d case.x=$d case.z=Yonik}asdf",
                 "df", "v_t",
                 "d", "Dude")
             ,"//result[@numFound='1']"
-            ,"//*[@name='id'][.='1.0']");
+            ,"//*[@name='id'][.='1']");
     assertQ("test empty default switch query",
             req("q", "{!switch default=$d case.x=$d case.z=Yonik v=$qq}",
                 "df", "v_t",
                 "d", "Dude")
             ,"//result[@numFound='1']"
-            ,"//*[@name='id'][.='1.0']");
+            ,"//*[@name='id'][.='1']");
 
     try {
       ignoreException("No\\ default\\, and no switch case");

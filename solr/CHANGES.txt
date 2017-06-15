@@ -178,6 +178,8 @@ Other Changes
   
 * SOLR-10891: BBoxField should support point-based number sub-fields. (Steve Rowe)
 
+* SOLR-10834: Fixed tests and test configs to stop using numeric uniqueKey fields (hossman)
+
 ==================  6.6.1 ==================
 
 Bug Fixes

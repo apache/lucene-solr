@@ -91,7 +91,7 @@ public class TestHashQParserPlugin extends SolrTestCaseJ4 {
 
     while(it.hasNext()) {
       String s = it.next();
-      String results = h.validateXPath(response, "*[count(//int[@name='id'][.='"+s+"'])=1]");
+      String results = h.validateXPath(response, "*[count(//str[@name='id'][.='"+s+"'])=1]");
       if(results == null) {
         set1.add(s);
       }
@@ -109,7 +109,7 @@ public class TestHashQParserPlugin extends SolrTestCaseJ4 {
 
     while(it.hasNext()) {
       String s = it.next();
-      String results = h.validateXPath(response, "*[count(//int[@name='id'][.='"+s+"'])=1]");
+      String results = h.validateXPath(response, "*[count(//str[@name='id'][.='"+s+"'])=1]");
       if(results == null) {
         set2.add(s);
       }
@@ -128,7 +128,7 @@ public class TestHashQParserPlugin extends SolrTestCaseJ4 {
 
     while(it.hasNext()) {
       String s = it.next();
-      String results = h.validateXPath(response, "*[count(//int[@name='id'][.='"+s+"'])=1]");
+      String results = h.validateXPath(response, "*[count(//str[@name='id'][.='"+s+"'])=1]");
       if(results == null) {
         set3.add(s);
       }
@@ -158,7 +158,7 @@ public class TestHashQParserPlugin extends SolrTestCaseJ4 {
 
     while(it.hasNext()) {
       String s = it.next();
-      String results = h.validateXPath(response, "*[count(//int[@name='id'][.='"+s+"'])=1]");
+      String results = h.validateXPath(response, "*[count(//str[@name='id'][.='"+s+"'])=1]");
       if(results == null) {
         set1.add(s);
       }
@@ -176,7 +176,7 @@ public class TestHashQParserPlugin extends SolrTestCaseJ4 {
 
     while(it.hasNext()) {
       String s = it.next();
-      String results = h.validateXPath(response, "*[count(//int[@name='id'][.='"+s+"'])=1]");
+      String results = h.validateXPath(response, "*[count(//str[@name='id'][.='"+s+"'])=1]");
       if(results == null) {
         set2.add(s);
       }
@@ -203,7 +203,7 @@ public class TestHashQParserPlugin extends SolrTestCaseJ4 {
 
     while(it.hasNext()) {
       String s = it.next();
-      String results = h.validateXPath(response, "*[count(//int[@name='id'][.='"+s+"'])=1]");
+      String results = h.validateXPath(response, "*[count(//str[@name='id'][.='"+s+"'])=1]");
       if(results == null) {
         set1.add(s);
       }
@@ -221,7 +221,7 @@ public class TestHashQParserPlugin extends SolrTestCaseJ4 {
 
     while(it.hasNext()) {
       String s = it.next();
-      String results = h.validateXPath(response, "*[count(//int[@name='id'][.='"+s+"'])=1]");
+      String results = h.validateXPath(response, "*[count(//str[@name='id'][.='"+s+"'])=1]");
       if(results == null) {
         set2.add(s);
       }

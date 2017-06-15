@@ -85,9 +85,9 @@ public class DisMaxRequestHandlerTest extends SolrTestCaseJ4 {
     assertQ("basic cross field matching, boost on same field matching",
             req("cool stuff")
             ,"//*[@numFound='3']"
-            ,"//result/doc[1]/int[@name='id'][.='42']"
-            ,"//result/doc[2]/int[@name='id'][.='666']"
-            ,"//result/doc[3]/int[@name='id'][.='8675309']"
+            ,"//result/doc[1]/str[@name='id'][.='42']"
+            ,"//result/doc[2]/str[@name='id'][.='666']"
+            ,"//result/doc[3]/str[@name='id'][.='8675309']"
             );
 
     assertQ("multi qf",
@@ -112,9 +112,9 @@ public class DisMaxRequestHandlerTest extends SolrTestCaseJ4 {
                 ,"bq", "subject:hell^400"
                 )
             ,"//*[@numFound='3']"
-            ,"//result/doc[1]/int[@name='id'][.='666']"
-            ,"//result/doc[2]/int[@name='id'][.='42']"
-            ,"//result/doc[3]/int[@name='id'][.='8675309']"
+            ,"//result/doc[1]/str[@name='id'][.='666']"
+            ,"//result/doc[2]/str[@name='id'][.='42']"
+            ,"//result/doc[3]/str[@name='id'][.='8675309']"
             );
 
     assertQ("multi boost query",
@@ -126,16 +126,16 @@ public class DisMaxRequestHandlerTest extends SolrTestCaseJ4 {
                 , CommonParams.DEBUG_QUERY, "true"
                 )
             ,"//*[@numFound='3']"
-            ,"//result/doc[1]/int[@name='id'][.='666']"
-            ,"//result/doc[2]/int[@name='id'][.='8675309']"
-            ,"//result/doc[3]/int[@name='id'][.='42']"
+            ,"//result/doc[1]/str[@name='id'][.='666']"
+            ,"//result/doc[2]/str[@name='id'][.='8675309']"
+            ,"//result/doc[3]/str[@name='id'][.='42']"
             );
     
     assertQ("minimum mm is three",
             req("cool stuff traveling")
             ,"//*[@numFound='2']"
-            ,"//result/doc[1]/int[@name='id'][. ='42']"
-            ,"//result/doc[2]/int[@name='id'][. ='666']"
+            ,"//result/doc[1]/str[@name='id'][. ='42']"
+            ,"//result/doc[2]/str[@name='id'][. ='666']"
             );
     
     assertQ("at 4 mm allows one missing ",

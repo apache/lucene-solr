@@ -20,7 +20,7 @@
 <!-- Test schema file for SimpleQParserPlugin. -->
 
 <schema name="simpleqp" version="1.0">
-  <fieldType name="int" class="solr.TrieIntField" precisionStep="0" omitNorms="true" positionIncrementGap="0"/>
+  <fieldType name="string" class="solr.StrField" omitNorms="true" positionIncrementGap="0"/>
 
   <!-- basic text field: no offsets -->
   <fieldType name="text" class="solr.TextField">
@@ -50,7 +50,7 @@
     </analyzer>
   </fieldType>
 
-  <field name="id" type="int" indexed="true" stored="true" multiValued="false" required="false"/>
+  <field name="id" type="string" indexed="true" stored="true" multiValued="false" required="false"/>
   <field name="text0" type="text" indexed="true" stored="true"/>
   <field name="text1" type="text" indexed="true" stored="true"/>
   <field name="text-keyword0" type="text-keyword" indexed="true" stored="true"/>

@@ -172,7 +172,7 @@ public class TestSQLHandler extends AbstractFullDistribZkTestBase {
       assert(tuple.get("str_s").equals("a"));
 
       //Assert field order
-      assertResponseContains(clients.get(0), sParams, "{\"docs\":[{\"id\":8,\"field_i\":60,\"str_s\":\"c\"}");
+      assertResponseContains(clients.get(0), sParams, "{\"docs\":[{\"id\":\"8\",\"field_i\":60,\"str_s\":\"c\"}");
 
       //Test unlimited unsorted result. Should sort on _version_ desc
       sParams = mapParams(CommonParams.QT, "/sql", "stmt", "select id, field_i, str_s from collection1 where text='XXXX'");
@@ -375,7 +375,7 @@ public class TestSQLHandler extends AbstractFullDistribZkTestBase {
       assertEquals(1, tuples.size());
 
       Tuple tuple = tuples.get(0);
-      assertEquals(1L, tuple.get("id"));
+      assertEquals("1", tuple.get("id"));
 
       // Not Equals <>
       sParams = mapParams(CommonParams.QT, "/sql",
@@ -387,19 +387,19 @@ public class TestSQLHandler extends AbstractFullDistribZkTestBase {
       assertEquals(7, tuples.size());
 
       tuple = tuples.get(0);
-      assertEquals(2L, tuple.get("id"));
+      assertEquals("2", tuple.get("id"));
       tuple = tuples.get(1);
-      assertEquals(3L, tuple.get("id"));
+      assertEquals("3", tuple.get("id"));
       tuple = tuples.get(2);
-      assertEquals(4L, tuple.get("id"));
+      assertEquals("4", tuple.get("id"));
       tuple = tuples.get(3);
-      assertEquals(5L, tuple.get("id"));
+      assertEquals("5", tuple.get("id"));
       tuple = tuples.get(4);
-      assertEquals(6L, tuple.get("id"));
+      assertEquals("6", tuple.get("id"));
       tuple = tuples.get(5);
-      assertEquals(7L, tuple.get("id"));
+      assertEquals("7", tuple.get("id"));
       tuple = tuples.get(6);
-      assertEquals(8L, tuple.get("id"));
+      assertEquals("8", tuple.get("id"));
 
       // TODO requires different Calcite SQL conformance level
       // Not Equals !=
@@ -436,7 +436,7 @@ public class TestSQLHandler extends AbstractFullDistribZkTestBase {
       assertEquals(1, tuples.size());
 
       tuple = tuples.get(0);
-      assertEquals(1L, tuple.get("id"));
+      assertEquals("1", tuple.get("id"));
 
       // Less than equal
       sParams = mapParams(CommonParams.QT, "/sql",
@@ -448,9 +448,9 @@ public class TestSQLHandler extends AbstractFullDistribZkTestBase {
       assertEquals(2, tuples.size());
 
       tuple = tuples.get(0);
-      assertEquals(1L, tuple.get("id"));
+      assertEquals("1", tuple.get("id"));
       tuple = tuples.get(1);
-      assertEquals(2L, tuple.get("id"));
+      assertEquals("2", tuple.get("id"));
 
       // Greater than
       sParams = mapParams(CommonParams.QT, "/sql",
@@ -462,7 +462,7 @@ public class TestSQLHandler extends AbstractFullDistribZkTestBase {
       assertEquals(1, tuples.size());
 
       tuple = tuples.get(0);
-      assertEquals(8L, tuple.get("id"));
+      assertEquals("8", tuple.get("id"));
 
       // Greater than equal
       sParams = mapParams(CommonParams.QT, "/sql",
@@ -474,9 +474,9 @@ public class TestSQLHandler extends AbstractFullDistribZkTestBase {
       assertEquals(2, tuples.size());
 
       tuple = tuples.get(0);
-      assertEquals(7L, tuple.get("id"));
+      assertEquals("7", tuple.get("id"));
       tuple = tuples.get(1);
-      assertEquals(8L, tuple.get("id"));
+      assertEquals("8", tuple.get("id"));
 
     } finally {
       delete();
@@ -511,7 +511,7 @@ public class TestSQLHandler extends AbstractFullDistribZkTestBase {
       assert(tuples.size() == 8);
 
       Tuple tuple;
-
+      
       tuple = tuples.get(0);
       assert(tuple.getLong("id") == 8);
       assert(tuple.getLong("Field_i") == 60);

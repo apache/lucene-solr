@@ -60,10 +60,10 @@ public class TestFunctionQuery extends SolrTestCaseJ4 {
   }
 
 
-  void createIndex(String field, float... values) {
+  void createIndex(String field, int... values) {
     // lrf.args.put("version","2.0");
-    for (float val : values) {
-      String s = Float.toString(val);
+    for (int val : values) {
+      String s = Integer.toString(val);
 
       if (field!=null) assertU(adoc("id", s, field, s));
       else assertU(adoc("id", s));
@@ -99,6 +99,10 @@ public class TestFunctionQuery extends SolrTestCaseJ4 {
   }
 
   protected void singleTest(String field, String funcTemplate, List<String> args, float... results) {
+    // NOTE: we're abusing the "results" float[] here ...
+    // - even elements are ids which must be valid 'ints'
+    // - odd elements are the expected score values
+    
     String parseableQuery = func(field, funcTemplate);
 
     List<String> nargs = new ArrayList<>(Arrays.asList("q", parseableQuery
@@ -114,13 +118,12 @@ public class TestFunctionQuery extends SolrTestCaseJ4 {
 
     List<String> tests = new ArrayList<>();
 
-    // Construct xpaths like the following:
-    // "//doc[./float[@name='foo_f']='10.0' and ./float[@name='score']='10.0']"
-
     for (int i=0; i<results.length; i+=2) {
-      String xpath = "//doc[./float[@name='" + "id" + "']='"
-              + results[i] + "' and ./float[@name='score']='"
-              + results[i+1] + "']";
+      final int id = (int) results[i];
+      assert ((float) id) == results[i];
+        
+      String xpath = "//doc[./str[@name='id']='" + id + "' " 
+        + " and ./float[@name='score']='" + results[i+1] + "']";
       tests.add(xpath);
     }
 
@@ -135,9 +138,7 @@ public class TestFunctionQuery extends SolrTestCaseJ4 {
 
   void doTest(String field) {
     // lrf.args.put("version","2.0");
-    float[] vals = new float[] {
-      100,-4,0,10,25,5
-    };
+    int[] vals = { 100,-4,0,10,25,5 };
     createIndex(field,vals);
     createIndex(null, 88);  // id with no value
 
@@ -209,7 +210,7 @@ public class TestFunctionQuery extends SolrTestCaseJ4 {
   public void testExternalField() throws Exception {
     String field = "foo_extf";
 
-    float[] ids = {100,-4,0,10,25,5,77,23,55,-78,-45,-24,63,78,94,22,34,54321,261,-627};
+    int[] ids = {100,-4,0,10,25,5,77,23,55,-78,-45,-24,63,78,94,22,34,54321,261,-627};
 
     createIndex(null,ids);
 
@@ -237,7 +238,7 @@ public class TestFunctionQuery extends SolrTestCaseJ4 {
       // shuffle ids
       for (int j=0; j<ids.length; j++) {
         int other=r.nextInt(ids.length);
-        float v=ids[0];
+        int v=ids[0];
         ids[0] = ids[other];
         ids[other] = v;
       }
@@ -392,8 +393,8 @@ public class TestFunctionQuery extends SolrTestCaseJ4 {
     // test that sorting by function query weights correctly.  superman should sort higher than batman due to idf of the whole index
 
     assertQ(req("q", "*:*", "fq","id:120 OR id:121", "sort","{!func v=$sortfunc} desc", "sortfunc","query($qq)", "qq","text:(batman OR superman)")
-           ,"*//doc[1]/float[.='120.0']"
-           ,"*//doc[2]/float[.='121.0']"
+           ,"*//doc[1]/str[.='120']"
+           ,"*//doc[2]/str[.='121']"
     );
   }
 
@@ -509,7 +510,7 @@ public class TestFunctionQuery extends SolrTestCaseJ4 {
 
     String threeonetwo =  "/response/docs==[{'x_i':200},{'x_i':100},{'x_i':300}]";
 
-    String q = "id:[1 TO 3]";
+    String q = "id_i:[1 TO 3]";
     assertJQ(req("q",q,  "fl","x_i", "sort","add(x_i,x_i) desc")
       ,desc
     );
@@ -687,7 +688,7 @@ public class TestFunctionQuery extends SolrTestCaseJ4 {
     String field = "CoMpleX fieldName _extf";
     String fieldAsFunc = "field(\"CoMpleX fieldName _extf\")";
 
-    float[] ids = {100,-4,0,10,25,5,77,23,55,-78,-45,-24,63,78,94,22,34,54321,261,-627};
+    int[] ids = {100,-4,0,10,25,5,77,23,55,-78,-45,-24,63,78,94,22,34,54321,261,-627};
 
     createIndex(null,ids);
 
@@ -722,7 +723,7 @@ public class TestFunctionQuery extends SolrTestCaseJ4 {
     String field = "CoMpleX \" fieldName _f";
     String fieldAsFunc = "field(\"CoMpleX \\\" fieldName _f\")";
 
-    float[] ids = {100,-4,0,10,25,5,77,1};
+    int[] ids = {100,-4,0,10,25,5,77,1};
 
     createIndex(field, ids);
 
@@ -768,8 +769,8 @@ public class TestFunctionQuery extends SolrTestCaseJ4 {
 
 
     // def(), the default function that returns the first value that exists
-    assertJQ(req("q", "id:1", "fl", "x:def(id,testfunc(123.0)), y:def(foo_f,234.0)")
-        , "/response/docs/[0]=={'x':1.0, 'y':234.0}");
+    assertJQ(req("q", "id:1", "fl", "x:def(id,testfunc(123)), y:def(foo_f,234.0)")
+        , "/response/docs/[0]=={'x':'1', 'y':234.0}");
     assertJQ(req("q", "id:1", "fl", "x:def(foo_s,'Q'), y:def(missing_s,'W')")
         , "/response/docs/[0]=={'x':'A', 'y':'W'}");
 

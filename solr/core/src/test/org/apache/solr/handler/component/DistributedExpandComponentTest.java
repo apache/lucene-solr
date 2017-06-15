@@ -102,10 +102,10 @@ public class DistributedExpandComponentTest extends BaseDistributedSearchTestCas
     QueryResponse rsp = queryServer(params);
     Map<String, SolrDocumentList> results = rsp.getExpandedResults();
     assertExpandGroups(results, "group1","group2", "group3", "group4");
-    assertExpandGroupCountAndOrder("group1", 2, results, "1.0", "7.0");
-    assertExpandGroupCountAndOrder("group2", 2, results, "5.0", "8.0");
-    assertExpandGroupCountAndOrder("group3", 2, results, "11.0", "9.0");
-    assertExpandGroupCountAndOrder("group4", 2, results, "12.0", "14.0");
+    assertExpandGroupCountAndOrder("group1", 2, results, "1", "7");
+    assertExpandGroupCountAndOrder("group2", 2, results, "5", "8");
+    assertExpandGroupCountAndOrder("group3", 2, results, "11", "9");
+    assertExpandGroupCountAndOrder("group4", 2, results, "12", "14");
 
 
     //Test expand.sort
@@ -121,10 +121,10 @@ public class DistributedExpandComponentTest extends BaseDistributedSearchTestCas
     rsp = queryServer(params);
     results = rsp.getExpandedResults();
     assertExpandGroups(results, "group1","group2", "group3", "group4");
-    assertExpandGroupCountAndOrder("group1", 2, results, "7.0", "1.0");
-    assertExpandGroupCountAndOrder("group2", 2, results, "8.0", "5.0");
-    assertExpandGroupCountAndOrder("group3", 2, results, "9.0", "11.0");
-    assertExpandGroupCountAndOrder("group4", 2, results, "14.0", "12.0");
+    assertExpandGroupCountAndOrder("group1", 2, results, "7", "1");
+    assertExpandGroupCountAndOrder("group2", 2, results, "8", "5");
+    assertExpandGroupCountAndOrder("group3", 2, results, "9", "11");
+    assertExpandGroupCountAndOrder("group4", 2, results, "14", "12");
 
 
     //Test expand.rows
@@ -141,10 +141,10 @@ public class DistributedExpandComponentTest extends BaseDistributedSearchTestCas
     rsp = queryServer(params);
     results = rsp.getExpandedResults();
     assertExpandGroups(results, "group1","group2", "group3", "group4");
-    assertExpandGroupCountAndOrder("group1", 1, results, "7.0");
-    assertExpandGroupCountAndOrder("group2", 1, results, "8.0");
-    assertExpandGroupCountAndOrder("group3", 1, results, "9.0");
-    assertExpandGroupCountAndOrder("group4", 1, results, "14.0");
+    assertExpandGroupCountAndOrder("group1", 1, results, "7");
+    assertExpandGroupCountAndOrder("group2", 1, results, "8");
+    assertExpandGroupCountAndOrder("group3", 1, results, "9");
+    assertExpandGroupCountAndOrder("group4", 1, results, "14");
 
 
     //Test key-only fl
@@ -161,10 +161,10 @@ public class DistributedExpandComponentTest extends BaseDistributedSearchTestCas
     rsp = queryServer(params);
     results = rsp.getExpandedResults();
     assertExpandGroups(results, "group1","group2", "group3", "group4");
-    assertExpandGroupCountAndOrder("group1", 2, results, "1.0", "7.0");
-    assertExpandGroupCountAndOrder("group2", 2, results, "5.0", "8.0");
-    assertExpandGroupCountAndOrder("group3", 2, results, "11.0", "9.0");
-    assertExpandGroupCountAndOrder("group4", 2, results, "12.0", "14.0");
+    assertExpandGroupCountAndOrder("group1", 2, results, "1", "7");
+    assertExpandGroupCountAndOrder("group2", 2, results, "5", "8");
+    assertExpandGroupCountAndOrder("group3", 2, results, "11", "9");
+    assertExpandGroupCountAndOrder("group4", 2, results, "12", "14");
 
     //Test distrib.singlePass true
 
@@ -180,10 +180,10 @@ public class DistributedExpandComponentTest extends BaseDistributedSearchTestCas
     rsp = queryServer(params);
     results = rsp.getExpandedResults();
     assertExpandGroups(results, "group1","group2", "group3", "group4");
-    assertExpandGroupCountAndOrder("group1", 2, results, "1.0", "7.0");
-    assertExpandGroupCountAndOrder("group2", 2, results, "5.0", "8.0");
-    assertExpandGroupCountAndOrder("group3", 2, results, "11.0", "9.0");
-    assertExpandGroupCountAndOrder("group4", 2, results, "12.0", "14.0");
+    assertExpandGroupCountAndOrder("group1", 2, results, "1", "7");
+    assertExpandGroupCountAndOrder("group2", 2, results, "5", "8");
+    assertExpandGroupCountAndOrder("group3", 2, results, "11", "9");
+    assertExpandGroupCountAndOrder("group4", 2, results, "12", "14");
 
   }
 

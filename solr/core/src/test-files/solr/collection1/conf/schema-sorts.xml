@@ -25,7 +25,7 @@ NOTE: Tests expect every field in this schema to be sortable.
 <schema name="sortable" version="1.6">
   <uniqueKey>id</uniqueKey>
 
-  <field name="id" type="int"/>
+  <field name="id" type="str"/>
   <field name="_version_" type="long"/>
 
   <field name="str" type="str"/>

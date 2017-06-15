@@ -92,12 +92,12 @@ public class TestReRankQParserPlugin extends SolrTestCaseJ4 {
     params.add("rows", "6");
     params.add("df", "text");
     assertQ(req(params), "*[count(//doc)=6]",
-        "//result/doc[1]/float[@name='id'][.='3.0']",
-        "//result/doc[2]/float[@name='id'][.='4.0']",
-        "//result/doc[3]/float[@name='id'][.='2.0']",
-        "//result/doc[4]/float[@name='id'][.='6.0']",
-        "//result/doc[5]/float[@name='id'][.='1.0']",
-        "//result/doc[6]/float[@name='id'][.='5.0']"
+        "//result/doc[1]/str[@name='id'][.='3']",
+        "//result/doc[2]/str[@name='id'][.='4']",
+        "//result/doc[3]/str[@name='id'][.='2']",
+        "//result/doc[4]/str[@name='id'][.='6']",
+        "//result/doc[5]/str[@name='id'][.='1']",
+        "//result/doc[6]/str[@name='id'][.='5']"
     );
 
     params = new ModifiableSolrParams();
@@ -112,12 +112,12 @@ public class TestReRankQParserPlugin extends SolrTestCaseJ4 {
     params.add("df", "text");
 
     assertQ(req(params), "*[count(//doc)=6]",
-        "//result/doc[1]/float[@name='id'][.='2.0']",
-        "//result/doc[2]/float[@name='id'][.='6.0']",
-        "//result/doc[3]/float[@name='id'][.='5.0']",
-        "//result/doc[4]/float[@name='id'][.='4.0']",
-        "//result/doc[5]/float[@name='id'][.='3.0']",
-        "//result/doc[6]/float[@name='id'][.='1.0']"
+        "//result/doc[1]/str[@name='id'][.='2']",
+        "//result/doc[2]/str[@name='id'][.='6']",
+        "//result/doc[3]/str[@name='id'][.='5']",
+        "//result/doc[4]/str[@name='id'][.='4']",
+        "//result/doc[5]/str[@name='id'][.='3']",
+        "//result/doc[6]/str[@name='id'][.='1']"
     );
 
     //Test with sort by score.
@@ -133,12 +133,12 @@ public class TestReRankQParserPlugin extends SolrTestCaseJ4 {
     params.add("sort", "score desc");
     params.add("df", "text");
     assertQ(req(params), "*[count(//doc)=6]",
-        "//result/doc[1]/float[@name='id'][.='2.0']",
-        "//result/doc[2]/float[@name='id'][.='6.0']",
-        "//result/doc[3]/float[@name='id'][.='5.0']",
-        "//result/doc[4]/float[@name='id'][.='4.0']",
-        "//result/doc[5]/float[@name='id'][.='3.0']",
-        "//result/doc[6]/float[@name='id'][.='1.0']"
+        "//result/doc[1]/str[@name='id'][.='2']",
+        "//result/doc[2]/str[@name='id'][.='6']",
+        "//result/doc[3]/str[@name='id'][.='5']",
+        "//result/doc[4]/str[@name='id'][.='4']",
+        "//result/doc[5]/str[@name='id'][.='3']",
+        "//result/doc[6]/str[@name='id'][.='1']"
     );
 
 
@@ -156,12 +156,12 @@ public class TestReRankQParserPlugin extends SolrTestCaseJ4 {
     params.add("df", "text");
 
     assertQ(req(params), "*[count(//doc)=6]",
-        "//result/doc[1]/float[@name='id'][.='2.0']",
-        "//result/doc[2]/float[@name='id'][.='6.0']",
-        "//result/doc[3]/float[@name='id'][.='5.0']",
-        "//result/doc[4]/float[@name='id'][.='4.0']",
-        "//result/doc[5]/float[@name='id'][.='3.0']",
-        "//result/doc[6]/float[@name='id'][.='1.0']"
+        "//result/doc[1]/str[@name='id'][.='2']",
+        "//result/doc[2]/str[@name='id'][.='6']",
+        "//result/doc[3]/str[@name='id'][.='5']",
+        "//result/doc[4]/str[@name='id'][.='4']",
+        "//result/doc[5]/str[@name='id'][.='3']",
+        "//result/doc[6]/str[@name='id'][.='1']"
     );
 
 
@@ -178,12 +178,12 @@ public class TestReRankQParserPlugin extends SolrTestCaseJ4 {
     params.add("qt", "/elevate");
     params.add("elevateIds", "1");
     assertQ(req(params), "*[count(//doc)=6]",
-        "//result/doc[1]/float[@name='id'][.='1.0']",
-        "//result/doc[2]/float[@name='id'][.='2.0']",
-        "//result/doc[3]/float[@name='id'][.='6.0']",
-        "//result/doc[4]/float[@name='id'][.='5.0']",
-        "//result/doc[5]/float[@name='id'][.='4.0']",
-        "//result/doc[6]/float[@name='id'][.='3.0']"
+        "//result/doc[1]/str[@name='id'][.='1']",
+        "//result/doc[2]/str[@name='id'][.='2']",
+        "//result/doc[3]/str[@name='id'][.='6']",
+        "//result/doc[4]/str[@name='id'][.='5']",
+        "//result/doc[5]/str[@name='id'][.='4']",
+        "//result/doc[6]/str[@name='id'][.='3']"
 
     );
 
@@ -200,12 +200,12 @@ public class TestReRankQParserPlugin extends SolrTestCaseJ4 {
     params.add("df", "text");
 
     assertQ(req(params), "*[count(//doc)=6]",
-        "//result/doc[1]/float[@name='id'][.='2.0']",
-        "//result/doc[2]/float[@name='id'][.='6.0']",
-        "//result/doc[3]/float[@name='id'][.='5.0']",
-        "//result/doc[4]/float[@name='id'][.='4.0']",
-        "//result/doc[5]/float[@name='id'][.='3.0']",
-        "//result/doc[6]/float[@name='id'][.='1.0']"
+        "//result/doc[1]/str[@name='id'][.='2']",
+        "//result/doc[2]/str[@name='id'][.='6']",
+        "//result/doc[3]/str[@name='id'][.='5']",
+        "//result/doc[4]/str[@name='id'][.='4']",
+        "//result/doc[5]/str[@name='id'][.='3']",
+        "//result/doc[6]/str[@name='id'][.='1']"
     );
 
 
@@ -222,12 +222,12 @@ public class TestReRankQParserPlugin extends SolrTestCaseJ4 {
     params.add("elevateIds", "1,4");
 
     assertQ(req(params), "*[count(//doc)=6]",
-        "//result/doc[1]/float[@name='id'][.='1.0']", //Elevated
-        "//result/doc[2]/float[@name='id'][.='4.0']", //Elevated
-        "//result/doc[3]/float[@name='id'][.='2.0']", //Boosted during rerank.
-        "//result/doc[4]/float[@name='id'][.='6.0']",
-        "//result/doc[5]/float[@name='id'][.='5.0']",
-        "//result/doc[6]/float[@name='id'][.='3.0']"
+        "//result/doc[1]/str[@name='id'][.='1']", //Elevated
+        "//result/doc[2]/str[@name='id'][.='4']", //Elevated
+        "//result/doc[3]/str[@name='id'][.='2']", //Boosted during rerank.
+        "//result/doc[4]/str[@name='id'][.='6']",
+        "//result/doc[5]/str[@name='id'][.='5']",
+        "//result/doc[6]/str[@name='id'][.='3']"
     );
 
 
@@ -244,12 +244,12 @@ public class TestReRankQParserPlugin extends SolrTestCaseJ4 {
     params.add("elevateIds", "4,1");
 
     assertQ(req(params), "*[count(//doc)=6]",
-        "//result/doc[1]/float[@name='id'][.='4.0']", //Elevated
-        "//result/doc[2]/float[@name='id'][.='1.0']", //Elevated
-        "//result/doc[3]/float[@name='id'][.='2.0']", //Boosted during rerank.
-        "//result/doc[4]/float[@name='id'][.='6.0']",
-        "//result/doc[5]/float[@name='id'][.='5.0']",
-        "//result/doc[6]/float[@name='id'][.='3.0']"
+        "//result/doc[1]/str[@name='id'][.='4']", //Elevated
+        "//result/doc[2]/str[@name='id'][.='1']", //Elevated
+        "//result/doc[3]/str[@name='id'][.='2']", //Boosted during rerank.
+        "//result/doc[4]/str[@name='id'][.='6']",
+        "//result/doc[5]/str[@name='id'][.='5']",
+        "//result/doc[6]/str[@name='id'][.='3']"
     );
 
 
@@ -267,12 +267,12 @@ public class TestReRankQParserPlugin extends SolrTestCaseJ4 {
     params.add("elevateIds", "4,1");
 
     assertQ(req(params), "*[count(//doc)=6]",
-        "//result/doc[1]/float[@name='id'][.='4.0']", //Elevated
-        "//result/doc[2]/float[@name='id'][.='1.0']", //Elevated
-        "//result/doc[3]/float[@name='id'][.='6.0']",
-        "//result/doc[4]/float[@name='id'][.='5.0']",
-        "//result/doc[5]/float[@name='id'][.='3.0']",
-        "//result/doc[6]/float[@name='id'][.='2.0']"  //Not in reRankeDocs
+        "//result/doc[1]/str[@name='id'][.='4']", //Elevated
+        "//result/doc[2]/str[@name='id'][.='1']", //Elevated
+        "//result/doc[3]/str[@name='id'][.='6']",
+        "//result/doc[4]/str[@name='id'][.='5']",
+        "//result/doc[5]/str[@name='id'][.='3']",
+        "//result/doc[6]/str[@name='id'][.='2']"  //Not in reRankeDocs
     );
 
     //Test Elevation with start beyond the rerank docs
@@ -288,8 +288,8 @@ public class TestReRankQParserPlugin extends SolrTestCaseJ4 {
     params.add("elevateIds", "4,1");
 
     assertQ(req(params), "*[count(//doc)=2]",
-        "//result/doc[1]/float[@name='id'][.='3.0']",
-        "//result/doc[2]/float[@name='id'][.='2.0']"  //Was not in reRankDocs
+        "//result/doc[1]/str[@name='id'][.='3']",
+        "//result/doc[2]/str[@name='id'][.='2']"  //Was not in reRankDocs
     );
 
     //Test Elevation with zero results
@@ -319,12 +319,12 @@ public class TestReRankQParserPlugin extends SolrTestCaseJ4 {
     params.add("rows", "10");
 
     assertQ(req(params), "*[count(//doc)=6]",
-        "//result/doc[1]/float[@name='id'][.='6.0']",
-        "//result/doc[2]/float[@name='id'][.='5.0']",
-        "//result/doc[3]/float[@name='id'][.='4.0']",
-        "//result/doc[4]/float[@name='id'][.='3.0']",
-        "//result/doc[5]/float[@name='id'][.='2.0']",
-        "//result/doc[6]/float[@name='id'][.='1.0']"
+        "//result/doc[1]/str[@name='id'][.='6']",
+        "//result/doc[2]/str[@name='id'][.='5']",
+        "//result/doc[3]/str[@name='id'][.='4']",
+        "//result/doc[4]/str[@name='id'][.='3']",
+        "//result/doc[5]/str[@name='id'][.='2']",
+        "//result/doc[6]/str[@name='id'][.='1']"
     );
 
     params = new ModifiableSolrParams();
@@ -337,12 +337,12 @@ public class TestReRankQParserPlugin extends SolrTestCaseJ4 {
     params.add("rows", "10");
 
     assertQ(req(params), "*[count(//doc)=6]",
-        "//result/doc[1]/float[@name='id'][.='6.0']",
-        "//result/doc[2]/float[@name='id'][.='5.0']",
-        "//result/doc[3]/float[@name='id'][.='4.0']",
-        "//result/doc[4]/float[@name='id'][.='3.0']",
-        "//result/doc[5]/float[@name='id'][.='2.0']",
-        "//result/doc[6]/float[@name='id'][.='1.0']"
+        "//result/doc[1]/str[@name='id'][.='6']",
+        "//result/doc[2]/str[@name='id'][.='5']",
+        "//result/doc[3]/str[@name='id'][.='4']",
+        "//result/doc[4]/str[@name='id'][.='3']",
+        "//result/doc[5]/str[@name='id'][.='2']",
+        "//result/doc[6]/str[@name='id'][.='1']"
     );
 
     params = new ModifiableSolrParams();
@@ -355,12 +355,12 @@ public class TestReRankQParserPlugin extends SolrTestCaseJ4 {
     params.add("rows", "10");
 
     assertQ(req(params), "*[count(//doc)=6]",
-        "//result/doc[1]/float[@name='id'][.='5.0']",
-        "//result/doc[2]/float[@name='id'][.='6.0']",
-        "//result/doc[3]/float[@name='id'][.='4.0']",
-        "//result/doc[4]/float[@name='id'][.='3.0']",
-        "//result/doc[5]/float[@name='id'][.='2.0']",
-        "//result/doc[6]/float[@name='id'][.='1.0']"
+        "//result/doc[1]/str[@name='id'][.='5']",
+        "//result/doc[2]/str[@name='id'][.='6']",
+        "//result/doc[3]/str[@name='id'][.='4']",
+        "//result/doc[4]/str[@name='id'][.='3']",
+        "//result/doc[5]/str[@name='id'][.='2']",
+        "//result/doc[6]/str[@name='id'][.='1']"
     );
 
     //Test reRankWeight of 0, reranking will have no effect.
@@ -374,11 +374,11 @@ public class TestReRankQParserPlugin extends SolrTestCaseJ4 {
     params.add("rows", "5");
 
     assertQ(req(params), "*[count(//doc)=5]",
-        "//result/doc[1]/float[@name='id'][.='6.0']",
-        "//result/doc[2]/float[@name='id'][.='5.0']",
-        "//result/doc[3]/float[@name='id'][.='4.0']",
-        "//result/doc[4]/float[@name='id'][.='3.0']",
-        "//result/doc[5]/float[@name='id'][.='2.0']"
+        "//result/doc[1]/str[@name='id'][.='6']",
+        "//result/doc[2]/str[@name='id'][.='5']",
+        "//result/doc[3]/str[@name='id'][.='4']",
+        "//result/doc[4]/str[@name='id'][.='3']",
+        "//result/doc[5]/str[@name='id'][.='2']"
     );
 
     SolrInfoMBean info  = h.getCore().getInfoRegistry().get("queryResultCache");
@@ -398,11 +398,11 @@ public class TestReRankQParserPlugin extends SolrTestCaseJ4 {
     params.add("rows", "6");
 
     assertQ(req(params), "*[count(//doc)=5]",
-        "//result/doc[1]/float[@name='id'][.='6.0']",
-        "//result/doc[2]/float[@name='id'][.='5.0']",
-        "//result/doc[3]/float[@name='id'][.='4.0']",
-        "//result/doc[4]/float[@name='id'][.='2.0']",
-        "//result/doc[5]/float[@name='id'][.='1.0']"
+        "//result/doc[1]/str[@name='id'][.='6']",
+        "//result/doc[2]/str[@name='id'][.='5']",
+        "//result/doc[3]/str[@name='id'][.='4']",
+        "//result/doc[4]/str[@name='id'][.='2']",
+        "//result/doc[5]/str[@name='id'][.='1']"
     );
 
 
@@ -424,11 +424,11 @@ public class TestReRankQParserPlugin extends SolrTestCaseJ4 {
     params.add("rows", "6");
 
     assertQ(req(params), "*[count(//doc)=5]",
-        "//result/doc[1]/float[@name='id'][.='6.0']",
-        "//result/doc[2]/float[@name='id'][.='5.0']",
-        "//result/doc[3]/float[@name='id'][.='4.0']",
-        "//result/doc[4]/float[@name='id'][.='2.0']",
-        "//result/doc[5]/float[@name='id'][.='1.0']"
+        "//result/doc[1]/str[@name='id'][.='6']",
+        "//result/doc[2]/str[@name='id'][.='5']",
+        "//result/doc[3]/str[@name='id'][.='4']",
+        "//result/doc[4]/str[@name='id'][.='2']",
+        "//result/doc[5]/str[@name='id'][.='1']"
     );
 
     info  = h.getCore().getInfoRegistry().get("queryResultCache");
@@ -442,7 +442,7 @@ public class TestReRankQParserPlugin extends SolrTestCaseJ4 {
     params = new ModifiableSolrParams();
     params.add("rq", "{!"+ReRankQParserPlugin.NAME+" "+ReRankQParserPlugin.RERANK_QUERY+"=$rqq "+ReRankQParserPlugin.RERANK_DOCS+"=6}");
     // function query for predictible scores (relative to id) independent of similarity
-    params.add("q", "{!func}id");
+    params.add("q", "{!func}id_i");
     // constant score for each clause (unique per doc) for predictible scores independent of similarity
     // NOTE: biased in favor of doc id == 2
     params.add("rqq", "id:1^=10 id:2^=40 id:3^=30 id:4^=40 id:5^=50 id:6^=60");
@@ -451,12 +451,12 @@ public class TestReRankQParserPlugin extends SolrTestCaseJ4 {
     params.add("rows", "6");
 
     assertQ(req(params), "*[count(//doc)=6]",
-        "//result/doc[1]/float[@name='id'][.='6.0']",
-        "//result/doc[2]/float[@name='id'][.='5.0']",
-        "//result/doc[3]/float[@name='id'][.='4.0']",
-        "//result/doc[4]/float[@name='id'][.='2.0']", // reranked out of orig order
-        "//result/doc[5]/float[@name='id'][.='3.0']",
-        "//result/doc[6]/float[@name='id'][.='1.0']"
+        "//result/doc[1]/str[@name='id'][.='6']",
+        "//result/doc[2]/str[@name='id'][.='5']",
+        "//result/doc[3]/str[@name='id'][.='4']",
+        "//result/doc[4]/str[@name='id'][.='2']", // reranked out of orig order
+        "//result/doc[5]/str[@name='id'][.='3']",
+        "//result/doc[6]/str[@name='id'][.='1']"
     );
 
 
@@ -470,8 +470,8 @@ public class TestReRankQParserPlugin extends SolrTestCaseJ4 {
     params.add("rows", "5");
 
     assertQ(req(params), "*[count(//doc)=2]",
-        "//result/doc[1]/float[@name='id'][.='2.0']",
-        "//result/doc[2]/float[@name='id'][.='1.0']"
+        "//result/doc[1]/str[@name='id'][.='2']",
+        "//result/doc[2]/str[@name='id'][.='1']"
     );
 
 
@@ -486,7 +486,7 @@ public class TestReRankQParserPlugin extends SolrTestCaseJ4 {
     params.add("rows", "1");
 
     assertQ(req(params), "*[count(//doc)=1]",
-        "//result/doc[1]/float[@name='id'][.='1.0']"
+        "//result/doc[1]/str[@name='id'][.='1']"
     );
 
 
@@ -557,8 +557,8 @@ public class TestReRankQParserPlugin extends SolrTestCaseJ4 {
     params.add("df", "text");
 
     assertQ(req(params), "*[count(//doc)=2]",
-        "//result/doc[1]/float[@name='id'][.='8.0']",
-        "//result/doc[2]/float[@name='id'][.='2.0']"
+        "//result/doc[1]/str[@name='id'][.='8']",
+        "//result/doc[2]/str[@name='id'][.='2']"
     );
 
     //Test Elevation
@@ -574,9 +574,9 @@ public class TestReRankQParserPlugin extends SolrTestCaseJ4 {
     params.add("elevateIds", "1,4");
 
     assertQ(req(params), "*[count(//doc)=3]",
-        "//result/doc[1]/float[@name='id'][.='1.0']", //Elevated
-        "//result/doc[2]/float[@name='id'][.='4.0']", //Elevated
-        "//result/doc[3]/float[@name='id'][.='8.0']"); //Boosted during rerank.
+        "//result/doc[1]/str[@name='id'][.='1']", //Elevated
+        "//result/doc[2]/str[@name='id'][.='4']", //Elevated
+        "//result/doc[3]/str[@name='id'][.='8']"); //Boosted during rerank.
   }
 
   @Test

@@ -32,6 +32,7 @@
        attribute and any other attributes determine the real type and
        behavior of the fieldType.
     -->
+  <fieldType name="string" class="solr.StrField"/>
 
   <!--
     Default numeric field types. For faster range queries, consider the tint/tfloat/tlong/tdouble types.
@@ -65,7 +66,7 @@
 
   <fieldType name="customtrieintfield" class="org.apache.solr.schema.TrieIntPrefixActsAsRangeQueryFieldType"/>
 
-  <field name="id" type="int" indexed="true" stored="true" multiValued="false" required="true"/>
+  <field name="id" type="string" indexed="true" stored="true" multiValued="false" required="true"/>
   <field name="intfield" type="int" indexed="true" stored="true"/>
   <field name="swap_foo_bar_in_prefix_query" type="customfield" indexed="true" stored="true" multiValued="true"/>
   <field name="int_prefix_as_range" type="customtrieintfield" indexed="true" stored="true"/>

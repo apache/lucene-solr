@@ -61,7 +61,7 @@ public class SampleTest extends SolrTestCaseJ4 {
     assertQ("couldn't find subject hoss",
             req("subject:Hoss")
             ,"//result[@numFound=1]"
-            ,"//int[@name='id'][.='4055']"
+            ,"//str[@name='id'][.='4055']"
             );
   }
 
@@ -94,7 +94,7 @@ public class SampleTest extends SolrTestCaseJ4 {
     assertQ("couldn't find subject hoss",
             req
             ,"//result[@numFound=1]"
-            ,"//int[@name='id'][.='4055']"
+            ,"//str[@name='id'][.='4055']"
             );
 
     /* make your own LocalRequestFactory to build a request

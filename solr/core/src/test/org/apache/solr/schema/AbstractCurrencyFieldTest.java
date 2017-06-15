@@ -230,11 +230,11 @@ public abstract class AbstractCurrencyFieldTest extends SolrTestCaseJ4 {
     assertU(adoc("id", "" + 1, field(), "10.00,USD"));
     assertU(adoc("id", "" + 2, field(), "15.00,MXN"));
     assertU(commit());
-    assertQ(req("fl", "*,score", "q", field()+":10.00,USD"), "//int[@name='id']='1'");
+    assertQ(req("fl", "*,score", "q", field()+":10.00,USD"), "//str[@name='id']='1'");
     assertQ(req("fl", "*,score", "q", field()+":9.99,USD"), "//*[@numFound='0']");
     assertQ(req("fl", "*,score", "q", field()+":10.01,USD"), "//*[@numFound='0']");
-    assertQ(req("fl", "*,score", "q", field()+":15.00,MXN"), "//int[@name='id']='2'");
-    assertQ(req("fl", "*,score", "q", field()+":7.50,USD"), "//int[@name='id']='2'");
+    assertQ(req("fl", "*,score", "q", field()+":15.00,MXN"), "//str[@name='id']='2'");
+    assertQ(req("fl", "*,score", "q", field()+":7.50,USD"), "//str[@name='id']='2'");
     assertQ(req("fl", "*,score", "q", field()+":7.49,USD"), "//*[@numFound='0']");
     assertQ(req("fl", "*,score", "q", field()+":7.51,USD"), "//*[@numFound='0']");
   }
@@ -293,8 +293,8 @@ public abstract class AbstractCurrencyFieldTest extends SolrTestCaseJ4 {
     assertU(adoc("id", "" + 5, field(), "2.00,GBP"));
     assertU(commit());
 
-    assertQ(req("fl", "*,score", "q", "*:*", "sort", field()+" desc", "limit", "1"), "//int[@name='id']='4'");
-    assertQ(req("fl", "*,score", "q", "*:*", "sort", field()+" asc", "limit", "1"), "//int[@name='id']='3'");
+    assertQ(req("fl", "*,score", "q", "*:*", "sort", field()+" desc", "limit", "1"), "//str[@name='id']='4'");
+    assertQ(req("fl", "*,score", "q", "*:*", "sort", field()+" asc", "limit", "1"), "//str[@name='id']='3'");
   }
 
   public void testFunctionUsage() throws Exception {
@@ -324,21 +324,21 @@ public abstract class AbstractCurrencyFieldTest extends SolrTestCaseJ4 {
     assertQ(req("fl", "id,score,"+field(), 
                 "q", "{!frange u=500}"+field())
             ,"//*[@numFound='5']"
-            ,"//int[@name='id']='1'"
-            ,"//int[@name='id']='2'"
-            ,"//int[@name='id']='3'"
-            ,"//int[@name='id']='4'"
-            ,"//int[@name='id']='5'"
+            ,"//str[@name='id']='1'"
+            ,"//str[@name='id']='2'"
+            ,"//str[@name='id']='3'"
+            ,"//str[@name='id']='4'"
+            ,"//str[@name='id']='5'"
             );
     assertQ(req("fl", "id,score,"+field(), 
                 "q", "{!frange l=500 u=1000}"+field())
             ,"//*[@numFound='6']"
-            ,"//int[@name='id']='5'"
-            ,"//int[@name='id']='6'"
-            ,"//int[@name='id']='7'"
-            ,"//int[@name='id']='8'"
-            ,"//int[@name='id']='9'"
-            ,"//int[@name='id']='10'"
+            ,"//str[@name='id']='5'"
+            ,"//str[@name='id']='6'"
+            ,"//str[@name='id']='7'"
+            ,"//str[@name='id']='8'"
+            ,"//str[@name='id']='9'"
+            ,"//str[@name='id']='10'"
             );
 
     // use the currency function to convert to default (USD)
@@ -356,22 +356,22 @@ public abstract class AbstractCurrencyFieldTest extends SolrTestCaseJ4 {
                 "f", field(),
                 "q", "{!frange u=5}currency($f)")
             ,"//*[@numFound='5']"
-            ,"//int[@name='id']='1'"
-            ,"//int[@name='id']='2'"
-            ,"//int[@name='id']='3'"
-            ,"//int[@name='id']='4'"
-            ,"//int[@name='id']='5'"
+            ,"//str[@name='id']='1'"
+            ,"//str[@name='id']='2'"
+            ,"//str[@name='id']='3'"
+            ,"//str[@name='id']='4'"
+            ,"//str[@name='id']='5'"
             );
     assertQ(req("fl", "id,score"+field(), 
                 "f", field(),
                 "q", "{!frange l=5 u=10}currency($f)")
             ,"//*[@numFound='6']"
-            ,"//int[@name='id']='5'"
-            ,"//int[@name='id']='6'"
-            ,"//int[@name='id']='7'"
-            ,"//int[@name='id']='8'"
-            ,"//int[@name='id']='9'"
-            ,"//int[@name='id']='10'"
+            ,"//str[@name='id']='5'"
+            ,"//str[@name='id']='6'"
+            ,"//str[@name='id']='7'"
+            ,"//str[@name='id']='8'"
+            ,"//str[@name='id']='9'"
+            ,"//str[@name='id']='10'"
             );
     
     // use the currency function to convert to MXN
@@ -389,22 +389,22 @@ public abstract class AbstractCurrencyFieldTest extends SolrTestCaseJ4 {
                 "f", field(),
                 "q", "{!frange u=10}currency($f,MXN)")
             ,"//*[@numFound='5']"
-            ,"//int[@name='id']='1'"
-            ,"//int[@name='id']='2'"
-            ,"//int[@name='id']='3'"
-            ,"//int[@name='id']='4'"
-            ,"//int[@name='id']='5'"
+            ,"//str[@name='id']='1'"
+            ,"//str[@name='id']='2'"
+            ,"//str[@name='id']='3'"
+            ,"//str[@name='id']='4'"
+            ,"//str[@name='id']='5'"
             );
     assertQ(req("fl", "*,score,"+field(), 
                 "f", field(),
                 "q", "{!frange l=10 u=20}currency($f,MXN)")
             ,"//*[@numFound='6']"
-            ,"//int[@name='id']='5'"
-            ,"//int[@name='id']='6'"
-            ,"//int[@name='id']='7'"
-            ,"//int[@name='id']='8'"
-            ,"//int[@name='id']='9'"
-            ,"//int[@name='id']='10'"
+            ,"//str[@name='id']='5'"
+            ,"//str[@name='id']='6'"
+            ,"//str[@name='id']='7'"
+            ,"//str[@name='id']='8'"
+            ,"//str[@name='id']='9'"
+            ,"//str[@name='id']='10'"
             );
 
   }
@@ -418,9 +418,9 @@ public abstract class AbstractCurrencyFieldTest extends SolrTestCaseJ4 {
     assertU(adoc("id", "3", "mock_amount", "1.00,NOK"));
     assertU(commit());
 
-    assertQ(req("fl", "*,score", "q", "mock_amount:5.0,NOK"),   "//*[@numFound='1']", "//int[@name='id']='1'");
-    assertQ(req("fl", "*,score", "q", "mock_amount:1.2,USD"), "//*[@numFound='1']",   "//int[@name='id']='2'");
-    assertQ(req("fl", "*,score", "q", "mock_amount:0.2,USD"), "//*[@numFound='1']",   "//int[@name='id']='3'");
+    assertQ(req("fl", "*,score", "q", "mock_amount:5.0,NOK"),   "//*[@numFound='1']", "//str[@name='id']='1'");
+    assertQ(req("fl", "*,score", "q", "mock_amount:1.2,USD"), "//*[@numFound='1']",   "//str[@name='id']='2'");
+    assertQ(req("fl", "*,score", "q", "mock_amount:0.2,USD"), "//*[@numFound='1']",   "//str[@name='id']='3'");
     assertQ(req("fl", "*,score", "q", "mock_amount:99,USD"),  "//*[@numFound='0']");
   }
 }

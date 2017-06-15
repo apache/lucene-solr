@@ -16,8 +16,6 @@
  */
 package org.apache.solr.spelling.suggest;
 
-import java.io.File;
-
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.params.SpellingParams;
 import org.apache.solr.common.util.NamedList;
@@ -76,25 +74,18 @@ public class SuggesterTest extends SolrTestCaseJ4 {
   
   @Test
   public void testReload() throws Exception {
-    String leaveData = System.getProperty("solr.test.leavedatadir");
-    if (leaveData == null) leaveData = "";
-    System.setProperty("solr.test.leavedatadir", "true");
     addDocs();
     assertU(commit());
-    File data = initCoreDataDir;
-    String config = configString;
-    deleteCore();
-    initCoreDataDir = data;
-    configString = config;
-    initCore();
+
+    h.reload();
+    // wait until the new searcher is registered
+    waitForWarming();
+    
     assertQ(req("qt", requestUri, "q", "ac", SpellingParams.SPELLCHECK_COUNT, "2", SpellingParams.SPELLCHECK_ONLY_MORE_POPULAR, "true"),
             "//lst[@name='spellcheck']/lst[@name='suggestions']/lst[@name='ac']/int[@name='numFound'][.='2']",
             "//lst[@name='spellcheck']/lst[@name='suggestions']/lst[@name='ac']/arr[@name='suggestion']/str[1][.='acquire']",
             "//lst[@name='spellcheck']/lst[@name='suggestions']/lst[@name='ac']/arr[@name='suggestion']/str[2][.='accommodate']"
         );
-
-    // restore the property
-    System.setProperty("solr.test.leavedatadir", leaveData);
   }
   
   @Test

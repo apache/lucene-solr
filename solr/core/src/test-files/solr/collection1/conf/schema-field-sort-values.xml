@@ -26,7 +26,7 @@
     </analyzer>
   </fieldType>
   <fieldType class="org.apache.solr.schema.WrappedIntField" name="wrapped_int"/>
-  <field name="id" type="int" indexed="true" stored="true" multiValued="false" required="false"/>
+  <field name="id" type="string" indexed="true" stored="true" multiValued="false" required="false"/>
   <field name="_version_" type="long" indexed="true" stored="true" multiValued="false"/>
   <field name="text" type="text" indexed="true" stored="false"/>
   <field name="payload" type="wrapped_int" indexed="false"

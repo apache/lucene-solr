@@ -1043,19 +1043,19 @@ public class AtomicUpdatesTest extends SolrTestCaseJ4 {
     assertU(commit());
 
     assertJQ(req("q", "id:2"),
-        "/response/docs/[0]/id==2",
+        "/response/docs/[0]/id=='2'",
         "/response/docs/[0]/title/[0]=='newtitle2'",
         "/response/docs/[0]/single_i_dvo==101");
 
     assertJQ(req("q", "id:3"),
         1e-4,
-        "/response/docs/[0]/id==3",
+        "/response/docs/[0]/id=='3'",
         "/response/docs/[0]/title/[0]=='newtitle3'",
         "/response/docs/[0]/single_d_dvo==4.14");
 
     assertJQ(req("q", "id:4"),
         1e-4,
-        "/response/docs/[0]/id==4",
+        "/response/docs/[0]/id=='4'",
         "/response/docs/[0]/single_s_dvo=='abc'",
         "/response/docs/[0]/single_i_dvo==2");
 
@@ -1064,7 +1064,7 @@ public class AtomicUpdatesTest extends SolrTestCaseJ4 {
     assertU(commit());
     assertJQ(req("q", "id:3"),
         1e-4,
-        "/response/docs/[0]/id==3",
+        "/response/docs/[0]/id=='3'",
         "/response/docs/[0]/title/[0]=='newertitle3'",
         "/response/docs/[0]/single_d_dvo==4.14");
   }
@@ -1079,7 +1079,7 @@ public class AtomicUpdatesTest extends SolrTestCaseJ4 {
 
     // test that non stored multivalued docvalues was carried forward for a non docvalues update
     assertJQ(req("q", "id:1"),
-        "/response/docs/[0]/id==1",
+        "/response/docs/[0]/id=='1'",
         "/response/docs/[0]/title/[0]=='newtitle1'",
         "/response/docs/[0]/multi_ii_dvo/[0]==100",
         "/response/docs/[0]/multi_ii_dvo/[1]==" + Integer.MAX_VALUE);
@@ -1103,18 +1103,18 @@ public class AtomicUpdatesTest extends SolrTestCaseJ4 {
     assertU(commit());
 
     assertJQ(req("q", "id:101"),
-        "/response/docs/[0]/id==101",
+        "/response/docs/[0]/id=='101'",
         "/response/docs/[0]/title/[0]=='newtitle2'",
         "/response/docs/[0]/single_i_dvn==102");
 
     assertJQ(req("q", "id:102"),
         1e-4,
-        "/response/docs/[0]/id==102",
+        "/response/docs/[0]/id=='102'",
         "/response/docs/[0]/title/[0]=='newtitle3'",
         "/response/docs/[0]/single_d_dvn==5.14");
 
     assertJQ(req("q", "id:103"),
-        "/response/docs/[0]/id==103",
+        "/response/docs/[0]/id=='103'",
         "/response/docs/[0]/single_s_dvn=='abc'",
         "/response/docs/[0]/single_i_dvn==3");
 
@@ -1123,7 +1123,7 @@ public class AtomicUpdatesTest extends SolrTestCaseJ4 {
         "single_i_dvn", ImmutableMap.of("set", 5))));
     assertU(commit());
     assertJQ(req("q", "id:103"),
-        "/response/docs/[0]/id==103",
+        "/response/docs/[0]/id=='103'",
         "/response/docs/[0]/single_s_dvn=='abcupdate'",
         "/response/docs/[0]/single_i_dvn==5");
   }
@@ -1162,7 +1162,7 @@ public class AtomicUpdatesTest extends SolrTestCaseJ4 {
       assertQ(fieldToUpdate + ": initial RTG"
               , req("qt", "/get", "id", "7")
               , "count(//doc)=1"
-              , "//doc/int[@name='id'][.='7']"
+              , "//doc/str[@name='id'][.='7']"
               , "//doc/int[@name='"+fieldToUpdate+"'][.='666']"
               , "//doc/int[@name='intDefault'][.='42']"
               , "//doc/int[@name='intDvoDefault'][.='42']"
@@ -1177,7 +1177,7 @@ public class AtomicUpdatesTest extends SolrTestCaseJ4 {
       assertQ(fieldToUpdate + ": RTG after atomic update"
               , req("qt", "/get", "id", "7")
               , "count(//doc)=1"
-              , "//doc/int[@name='id'][.='7']"
+              , "//doc/str[@name='id'][.='7']"
               , "//doc/int[@name='"+fieldToUpdate+"'][.='111']"
               , "//doc/int[@name='intDefault'][.='42']"
               , "//doc/int[@name='intDvoDefault'][.='42']"
@@ -1191,7 +1191,7 @@ public class AtomicUpdatesTest extends SolrTestCaseJ4 {
       assertQ(fieldToUpdate + ": post commit RTG"
               , req("qt", "/get", "id", "7")
               , "count(//doc)=1"
-              , "//doc/int[@name='id'][.='7']"
+              , "//doc/str[@name='id'][.='7']"
               , "//doc/int[@name='"+fieldToUpdate+"'][.='111']"
               , "//doc/int[@name='intDefault'][.='42']"
               , "//doc/int[@name='intDvoDefault'][.='42']"
@@ -1214,7 +1214,7 @@ public class AtomicUpdatesTest extends SolrTestCaseJ4 {
       assertQ(fieldToUpdate + ": initial RTG#7"
               , req("qt", "/get", "id", "7")
               , "count(//doc)=1"
-              , "//doc/int[@name='id'][.='7']"
+              , "//doc/str[@name='id'][.='7']"
               , "//doc/int[@name='"+fieldToUpdate+"'][.='708']"
               // whichever field we did *NOT* update
               , "//doc/int[@name!='"+fieldToUpdate+"'][.='42']"
@@ -1228,7 +1228,7 @@ public class AtomicUpdatesTest extends SolrTestCaseJ4 {
       assertQ(fieldToUpdate + ": RTG#7 after atomic update"
               , req("qt", "/get", "id", "7")
               , "count(//doc)=1"
-              , "//doc/int[@name='id'][.='7']"
+              , "//doc/str[@name='id'][.='7']"
               , "//doc/int[@name='"+fieldToUpdate+"'][.='153']"
               // whichever field we did *NOT* update
               , "//doc/int[@name!='"+fieldToUpdate+"'][.='42']"
@@ -1243,7 +1243,7 @@ public class AtomicUpdatesTest extends SolrTestCaseJ4 {
       assertQ(fieldToUpdate + ": initial RTG#8"
               , req("qt", "/get", "id", "8")
               , "count(//doc)=1"
-              , "//doc/int[@name='id'][.='8']"
+              , "//doc/str[@name='id'][.='8']"
               , "//doc/int[@name='"+fieldToUpdate+"'][.='666']"
               // whichever field we did *NOT* update
               , "//doc/int[@name!='"+fieldToUpdate+"'][.='42']"
@@ -1257,7 +1257,7 @@ public class AtomicUpdatesTest extends SolrTestCaseJ4 {
       assertQ(fieldToUpdate + ": RTG after atomic update"
               , req("qt", "/get", "id", "8")
               , "count(//doc)=1"
-              , "//doc/int[@name='id'][.='8']"
+              , "//doc/str[@name='id'][.='8']"
               , "//doc/int[@name='"+fieldToUpdate+"'][.='111']"
               // whichever field we did *NOT* update
               , "//doc/int[@name!='"+fieldToUpdate+"'][.='42']"
@@ -1272,7 +1272,7 @@ public class AtomicUpdatesTest extends SolrTestCaseJ4 {
       assertQ(fieldToUpdate + ": doc7 post commit RTG"
               , req("qt", "/get", "id", "7")
               , "count(//doc)=1"
-              , "//doc/int[@name='id'][.='7']"
+              , "//doc/str[@name='id'][.='7']"
               , "//doc/int[@name='"+fieldToUpdate+"'][.='153']"
               // whichever field we did *NOT* update
               , "//doc/int[@name!='"+fieldToUpdate+"'][.='42']"
@@ -1284,7 +1284,7 @@ public class AtomicUpdatesTest extends SolrTestCaseJ4 {
       assertQ(fieldToUpdate + ": doc8 post commit RTG"
               , req("qt", "/get", "id", "8")
               , "count(//doc)=1"
-              , "//doc/int[@name='id'][.='8']"
+              , "//doc/str[@name='id'][.='8']"
               , "//doc/int[@name='"+fieldToUpdate+"'][.='111']"
               // whichever field we did *NOT* update
               , "//doc/int[@name!='"+fieldToUpdate+"'][.='42']"
