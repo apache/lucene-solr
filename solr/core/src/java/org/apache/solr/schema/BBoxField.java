@@ -89,8 +89,11 @@ public class BBoxField extends AbstractSpatialFieldType<BBoxStrategy> implements
     if (!(booleanType instanceof BoolField)) {
       throw new RuntimeException("Must be a BoolField: " + booleanType);
     }
-    if (!(numberType instanceof TrieDoubleField)) { // TODO support TrieField (any trie) once BBoxStrategy does
-      throw new RuntimeException("Must be TrieDoubleField: " + numberType);
+    if (numberType.getNumberType() != NumberType.DOUBLE) {
+      throw new RuntimeException("Must be Double number type: " + numberType);
+    }
+    if ( ! numberType.hasProperty(DOC_VALUES)) {
+      throw new RuntimeException("Must have doc values: " + numberType);
     }
 
     //note: this only works for explicit fields, not dynamic fields
@@ -138,6 +141,9 @@ public class BBoxField extends AbstractSpatialFieldType<BBoxStrategy> implements
     final SchemaField solrNumField = new SchemaField("_", numberType);//dummy temp
     org.apache.lucene.document.FieldType luceneType =
         (org.apache.lucene.document.FieldType) solrNumField.createField(0.0).fieldType();
+    if ( ! (luceneType instanceof LegacyFieldType)) {
+      luceneType = new org.apache.lucene.document.FieldType(luceneType);
+    }
     luceneType.setStored(storeSubFields);
     
     //and annoyingly this Field isn't going to have a docValues format because Solr uses a separate Field for that

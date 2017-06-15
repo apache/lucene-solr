@@ -430,6 +430,8 @@ Other Changes
 
 * SOLR-10851: SolrClients should clarify expectations for solrServerUrl parameter (Jason Gerlowski 
   via Tomás Fernández Löbbe)
+  
+* SOLR-10891: BBoxField should support point-based number sub-fields. (Steve Rowe)
 
 * SOLR-10834: Fixed tests and test configs to stop using numeric uniqueKey fields (hossman)
 
