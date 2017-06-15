@@ -105,7 +105,7 @@ public class DistributedQueryElevationComponentTest extends BaseDistributedSearc
 
     assertTrue(response.getResults().getNumFound() > 0);
     SolrDocument document = response.getResults().get(0);
-    assertEquals(6.0f, document.getFieldValue("id"));
+    assertEquals("6", document.getFieldValue("id"));
     assertEquals(true, document.getFieldValue("[elevated]"));
 
     // Force javabin format
@@ -121,7 +121,7 @@ public class DistributedQueryElevationComponentTest extends BaseDistributedSearc
 
     assertTrue(response.getResults().getNumFound() > 0);
     document = response.getResults().get(0);
-    assertEquals(6.0f, document.getFieldValue("id"));
+    assertEquals("6", document.getFieldValue("id"));
     assertEquals(true, document.getFieldValue("[elevated]"));
   }
   

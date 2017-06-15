@@ -38,7 +38,7 @@
     </similarity>
   </fieldType>
 
-  <field name="id" type="int" indexed="true" stored="true" multiValued="false" required="false"/>
-  <fieldType name="int" class="solr.TrieIntField" precisionStep="0" omitNorms="true" positionIncrementGap="0"/>
+  <field name="id" type="string" indexed="true" stored="true" multiValued="false" required="false"/>
+  <fieldType name="string" class="solr.StrField" omitNorms="true" positionIncrementGap="0"/>
   <uniqueKey>id</uniqueKey>
 </schema>

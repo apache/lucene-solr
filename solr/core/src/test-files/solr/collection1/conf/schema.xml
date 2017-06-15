@@ -497,8 +497,8 @@
   </fieldType>
   <fieldType name="severityType" class="solr.EnumField" enumsConfig="enumsConfig.xml" enumName="severity"/>
 
-  <field name="id" type="int" indexed="true" stored="true" multiValued="false" required="false"/>
-  <field name="_root_" type="int" indexed="true" stored="true" multiValued="false" required="false"/>
+  <field name="id" type="string" indexed="true" stored="true" multiValued="false" required="false"/>
+  <field name="_root_" type="string" indexed="true" stored="true" multiValued="false" required="false"/>
 
   <field name="signatureField" type="string" indexed="true" stored="false"/>
   <field name="uuid" type="uuid" stored="true"/>
@@ -806,6 +806,7 @@
   <copyField source="*_t" dest="text"/>
 
   <copyField source="id" dest="range_facet_l"/>
+  <copyField source="id" dest="id_i1"/>
   <copyField source="range_facet_f" dest="range_facet_d"/>
   <copyField source="range_facet_f1" dest="range_facet_f1_dv"/>
 

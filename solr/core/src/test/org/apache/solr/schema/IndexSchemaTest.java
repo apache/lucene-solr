@@ -58,7 +58,7 @@ public class IndexSchemaTest extends SolrTestCaseJ4 {
 
     assertQ("Make sure they got in", req
             ,"//*[@numFound='1']"
-            ,"//result/doc[1]/int[@name='id'][.='10']"
+            ,"//result/doc[1]/str[@name='id'][.='10']"
             );
 
     args = new HashMap<>();
@@ -67,7 +67,7 @@ public class IndexSchemaTest extends SolrTestCaseJ4 {
     req = new LocalSolrQueryRequest( core, new MapSolrParams( args) );
     assertQ("dynamic source", req
             ,"//*[@numFound='1']"
-            ,"//result/doc[1]/int[@name='id'][.='10']"
+            ,"//result/doc[1]/str[@name='id'][.='10']"
             );
 
     args = new HashMap<>();
@@ -76,7 +76,7 @@ public class IndexSchemaTest extends SolrTestCaseJ4 {
     req = new LocalSolrQueryRequest( core, new MapSolrParams( args) );
     assertQ("dynamic destination", req
             ,"//*[@numFound='1']"
-            ,"//result/doc[1]/int[@name='id'][.='10']"
+            ,"//result/doc[1]/str[@name='id'][.='10']"
             );
     clearIndex();
   }

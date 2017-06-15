@@ -111,7 +111,7 @@ public class BasicFunctionalityTest extends SolrTestCaseJ4 {
     assertQ("query with ignored field",
             req("bar_ignored:yo id:42")
             ,"//*[@numFound='1']"
-            ,"//int[@name='id'][.='42']"
+            ,"//str[@name='id'][.='42']"
             );
   }
   
@@ -150,13 +150,13 @@ public class BasicFunctionalityTest extends SolrTestCaseJ4 {
     assertQ("backslash escaping semicolon",
             req("id:42 AND val_s:aa\\;bb")
             ,"//*[@numFound='1']"
-            ,"//int[@name='id'][.='42']"
+            ,"//str[@name='id'][.='42']"
             );
 
     assertQ("quote escaping semicolon",
             req("id:42 AND val_s:\"aa;bb\"")
             ,"//*[@numFound='1']"
-            ,"//int[@name='id'][.='42']"
+            ,"//str[@name='id'][.='42']"
             );
 
     assertQ("no escaping semicolon",
@@ -275,15 +275,15 @@ public class BasicFunctionalityTest extends SolrTestCaseJ4 {
             );
     assertQ(req("{!lucene q.op=AND df=text}grape green")
             ,"//*[@numFound='1']"
-            ,"//int[@name='id'][.='103']"
+            ,"//str[@name='id'][.='103']"
              );
     assertQ(req("-_val_:\"{!lucene q.op=AND df=text}grape green\"")
             ,"//*[@numFound='5']"
-            ,"//int[@name='id'][.='101']"
-            ,"//int[@name='id'][.='102']"
-            ,"//int[@name='id'][.='104']"
-            ,"//int[@name='id'][.='105']"
-            ,"//int[@name='id'][.='106']"
+            ,"//str[@name='id'][.='101']"
+            ,"//str[@name='id'][.='102']"
+            ,"//str[@name='id'][.='104']"
+            ,"//str[@name='id'][.='105']"
+            ,"//str[@name='id'][.='106']"
             );
 
     // tests
@@ -298,26 +298,26 @@ public class BasicFunctionalityTest extends SolrTestCaseJ4 {
     assertU(commit());
     assertQ(req("*:*")
             ,"//*[@numFound='4']"
-            ,"//int[@name='id'][.='101']"
-            ,"//int[@name='id'][.='102']"
-            ,"//int[@name='id'][.='103']"
-            ,"//int[@name='id'][.='106']"
+            ,"//str[@name='id'][.='101']"
+            ,"//str[@name='id'][.='102']"
+            ,"//str[@name='id'][.='103']"
+            ,"//str[@name='id'][.='106']"
             );
 
     assertU(delQ("{!term f=id}106"));
     assertU(commit());
     assertQ(req("*:*")
             ,"//*[@numFound='3']"
-            ,"//int[@name='id'][.='101']"
-            ,"//int[@name='id'][.='102']"
-            ,"//int[@name='id'][.='103']"
+            ,"//str[@name='id'][.='101']"
+            ,"//str[@name='id'][.='102']"
+            ,"//str[@name='id'][.='103']"
             );
 
     assertU(delQ("-_val_:\"{!lucene q.op=AND df=text}grape green\""));
     assertU(commit());
     assertQ(req("*:*")
             ,"//*[@numFound='1']"
-            ,"//int[@name='id'][.='103']"
+            ,"//str[@name='id'][.='103']"
             );
 
     assertU(delQ("-text:doesnotexist"));
@@ -907,7 +907,7 @@ public class BasicFunctionalityTest extends SolrTestCaseJ4 {
       assertQ("check math on field query: " + q,
               req("q", q),
               "*[count(//doc)=1]",
-              "//int[@name='id'][.='1']");
+              "//str[@name='id'][.='1']");
     }
 
     // range queries using date math

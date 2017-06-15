@@ -26,13 +26,17 @@
     </analyzer>
   </fieldType>
   <fieldType class="org.apache.solr.schema.SortableBinaryField" name="sortable_binary"/>
-  <field name="id" type="int" indexed="true" stored="true" multiValued="false" required="false"/>
+  <field name="id" type="string" indexed="true" stored="true" multiValued="false" required="false"/>
   <field name="_version_" type="long" indexed="true" stored="true" multiValued="false"/>
   <field name="signatureField" type="string" indexed="true" stored="false"/>
   <field name="text" type="text" indexed="true" stored="false"/>
   <field name="payload" type="sortable_binary" indexed="false"
          stored="true" multiValued="false" docValues="true" required="true"/>
   <dynamicField name="*_sS" type="string" indexed="false" stored="true"/>
+
+  <!-- int varient of id, adding this here simplifies some indexing to do numeric sorting -->
+  <field name="id_i" type="int" indexed="true" stored="true" multiValued="false" />
+  <copyField source="id" dest="id_i" />
 
   <!-- catchall wildcard to help ensure we aren't breaking function sorting -->
   <dynamicField name="*" type="string" indexed="true" stored="true"/>

@@ -264,23 +264,23 @@ public class TestDistributedGrouping extends BaseDistributedSearchTestCase {
     // We validate distributed grouping with scoring as first sort.
     // note: this 'q' matches all docs and returns the 'id' as the score, which is unique and so our results should be deterministic.
     handle.put("maxScore", SKIP);// TODO see SOLR-6612
-    query("q", "{!func}id", "rows", 100, "fl", "score,id," + i1, "group", "true", "group.field", i1, "group.limit", -1, "sort", i1 + " desc", "group.sort", "score desc"); // SOLR-2955
-    query("q", "{!func}id", "rows", 100, "fl", "score,id," + i1, "group", "true", "group.field", i1, "group.limit", -1, "sort", "score desc, _docid_ asc, id asc");
-    query("q", "{!func}id", "rows", 100, "fl", "score,id," + i1, "group", "true", "group.field", i1, "group.limit", -1);
+    query("q", "{!func}id_i1", "rows", 100, "fl", "score,id," + i1, "group", "true", "group.field", i1, "group.limit", -1, "sort", i1 + " desc", "group.sort", "score desc"); // SOLR-2955
+    query("q", "{!func}id_i1", "rows", 100, "fl", "score,id," + i1, "group", "true", "group.field", i1, "group.limit", -1, "sort", "score desc, _docid_ asc, id asc");
+    query("q", "{!func}id_i1", "rows", 100, "fl", "score,id," + i1, "group", "true", "group.field", i1, "group.limit", -1);
 
     // some explicit checks of non default sorting, and sort/group.sort with diff clauses
-    query("q", "{!func}id", "rows", 100, "fl", tlong + ",id," + i1, "group", "true",
+    query("q", "{!func}id_i1", "rows", 100, "fl", tlong + ",id," + i1, "group", "true",
           "group.field", i1, "group.limit", -1,
           "sort", tlong+" asc, id desc");
-    query("q", "{!func}id", "rows", 100, "fl", tlong + ",id," + i1, "group", "true",
+    query("q", "{!func}id_i1", "rows", 100, "fl", tlong + ",id," + i1, "group", "true",
           "group.field", i1, "group.limit", -1,
           "sort", "id asc",
           "group.sort", tlong+" asc, id desc");
-    query("q", "{!func}id", "rows", 100, "fl", tlong + ",id," + i1, "group", "true",
+    query("q", "{!func}id_i1", "rows", 100, "fl", tlong + ",id," + i1, "group", "true",
           "group.field", i1, "group.limit", -1,
           "sort", tlong+" asc, id desc",
           "group.sort", "id asc");
-    rsp = query("q", "{!func}id", "fq", oddField+":[* TO *]",
+    rsp = query("q", "{!func}id_i1", "fq", oddField+":[* TO *]",
                 "rows", 100, "fl", tlong + ",id," + i1, "group", "true",
                 "group.field", i1, "group.limit", -1,
                 "sort", tlong+" asc",
@@ -293,8 +293,8 @@ public class TestDistributedGrouping extends BaseDistributedSearchTestCase {
     assertEquals(rsp.toString(), 232, nl.get("groupValue"));
     SolrDocumentList docs = (SolrDocumentList) nl.get("doclist");
     assertEquals(docs.toString(), 5, docs.getNumFound());
-    assertEquals(docs.toString(), 22, docs.get(0).getFirstValue("id"));
-    assertEquals(docs.toString(), 21, docs.get(4).getFirstValue("id"));
+    assertEquals(docs.toString(), "22", docs.get(0).getFirstValue("id"));
+    assertEquals(docs.toString(), "21", docs.get(4).getFirstValue("id"));
 
     
 

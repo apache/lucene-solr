@@ -67,7 +67,7 @@
   <fieldType name="date" class="solr.TrieDateField" sortMissingLast="true"/>
 
 
-  <field name="id" type="int" indexed="true" stored="true" multiValued="false" required="true"/>
+  <field name="id" type="string" indexed="true" stored="true" multiValued="false" required="true"/>
   <field name="data" type="binary" stored="true"/>
 
 

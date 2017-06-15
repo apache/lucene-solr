@@ -463,10 +463,10 @@ public class BasicDistributedZk2Test extends AbstractFullDistribZkTestBase {
     handle.put("track", SKIP);
     query("q", "now their fox sat had put", "fl", "*,score",
         CommonParams.DEBUG_QUERY, "true");
-    query("q", "id:[1 TO 5]", CommonParams.DEBUG_QUERY, "true");
-    query("q", "id:[1 TO 5]", CommonParams.DEBUG, CommonParams.TIMING);
-    query("q", "id:[1 TO 5]", CommonParams.DEBUG, CommonParams.RESULTS);
-    query("q", "id:[1 TO 5]", CommonParams.DEBUG, CommonParams.QUERY);
+    query("q", "id_i1:[1 TO 5]", CommonParams.DEBUG_QUERY, "true");
+    query("q", "id_i1:[1 TO 5]", CommonParams.DEBUG, CommonParams.TIMING);
+    query("q", "id_i1:[1 TO 5]", CommonParams.DEBUG, CommonParams.RESULTS);
+    query("q", "id_i1:[1 TO 5]", CommonParams.DEBUG, CommonParams.QUERY);
   }
   
 }

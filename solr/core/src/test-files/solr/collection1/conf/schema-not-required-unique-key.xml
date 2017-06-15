@@ -31,7 +31,7 @@
     </analyzer>
   </fieldType>
 
-  <field name="id" type="int" multiValued="false" indexed="true" stored="true" required="false"/>
+  <field name="id" type="string" multiValued="false" indexed="true" stored="true" required="false"/>
   <field name="subject" type="text" indexed="true" stored="true"/>
   <field name="signatureField" type="string" indexed="true" stored="false"/>
   <dynamicField name="*_sS" type="string" indexed="false" stored="true"/>

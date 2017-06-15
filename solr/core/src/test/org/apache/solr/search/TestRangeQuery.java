@@ -135,8 +135,8 @@ public class TestRangeQuery extends SolrTestCaseJ4 {
 
     // simple test of a function rather than just the field
     assertQ(req("{!frange l=0 u=2}id"), "*[count(//doc)=3]");
-    assertQ(req("{!frange l=0 u=2}product(id,2)"), "*[count(//doc)=2]");
-    assertQ(req("{!frange l=100 u=102}sum(id,100)"), "*[count(//doc)=3]");
+    assertQ(req("{!frange l=0 u=2}product(id_i,2)"), "*[count(//doc)=2]");
+    assertQ(req("{!frange l=100 u=102}sum(id_i,100)"), "*[count(//doc)=3]");
 
 
     for (Map.Entry<String,String[]> entry : norm_fields.entrySet()) {

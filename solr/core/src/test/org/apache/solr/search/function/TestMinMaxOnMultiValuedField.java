@@ -372,8 +372,8 @@ public class TestMinMaxOnMultiValuedField extends SolrTestCaseJ4 {
                       "sort", func + " " + dir)
                   ,"//*[@numFound='2']"
                   // no assumptions about order for now, see bug: SOLR-8005
-                  ,"//float[@name='id']='1.0'"
-                  ,"//float[@name='id']='2.0'"
+                  ,"//str[@name='id']='1'"
+                  ,"//str[@name='id']='2'"
                   );
         }
       }
@@ -430,7 +430,7 @@ public class TestMinMaxOnMultiValuedField extends SolrTestCaseJ4 {
     assertQ(sort,
             req("q","*:*", "rows", ""+numDocs, "sort", sort)
             ,"//result[@numFound='"+numDocs+"']"
-            ,"//result/doc[1]/float[@name='id']='0.0'"
+            ,"//result/doc[1]/str[@name='id']='0'"
             );
   }
   /** helper for testSimpleSort */
@@ -438,7 +438,7 @@ public class TestMinMaxOnMultiValuedField extends SolrTestCaseJ4 {
     assertQ(sort,
             req("q","*:*", "rows", ""+numDocs, "sort", sort)
             ,"//result[@numFound='"+numDocs+"']"
-            ,"//result/doc["+numDocs+"]/float[@name='id']='0.0'"
+            ,"//result/doc["+numDocs+"]/str[@name='id']='0'"
             );
   }
   

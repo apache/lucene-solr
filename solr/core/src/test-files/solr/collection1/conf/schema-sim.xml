@@ -19,7 +19,7 @@
 <!-- Per-field similarity example for testing -->
 
 <schema name="test" version="1.0">
-  <fieldType name="int" class="solr.TrieIntField" precisionStep="0" omitNorms="true" positionIncrementGap="0"/>
+  <fieldType name="string" class="solr.StrField" omitNorms="true" positionIncrementGap="0"/>
   <!--  some per-field similarity examples -->
   <!--  specify a Similarity classname directly -->
   <fieldType name="sim1" class="solr.TextField">
@@ -46,7 +46,7 @@
     </analyzer>
   </fieldType>
 
-  <field name="id" type="int" indexed="true" stored="true" multiValued="false" required="false"/>
+  <field name="id" type="string" indexed="true" stored="true" multiValued="false" required="false"/>
   <field name="sim1text" type="sim1" indexed="true" stored="true"/>
   <field name="sim2text" type="sim2" indexed="true" stored="true"/>
   <field name="sim3text" type="sim3" indexed="true" stored="true"/>

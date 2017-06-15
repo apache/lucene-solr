@@ -319,8 +319,10 @@ valued. -->
        best performance.
    -->
 
-   <!-- for testing, a type that does a transform to see if it's correctly done everywhere -->
-   <field name="id" type="float" indexed="true" stored="true" required="true" />
+   <field name="id" type="string" indexed="true" stored="true" required="true" />
+   <!-- int varient of id, adding this here simplifies some indexing to do numeric sorting -->
+   <field name="id_i" type="int" indexed="true" stored="true" multiValued="false" />
+   <copyField source="id" dest="id_i" />
    <field name="text" type="text" indexed="true" stored="false" />
 
    <!-- Test a point field for distances -->
