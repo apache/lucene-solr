@@ -1999,19 +1999,17 @@ public class UpdateLog implements PluginInfoInitialized, SolrMetricProducer {
 
   // this method is primarily used for unit testing and is not part of the public API for this class
   Long getMaxVersionFromIndex() {
-    if (maxVersionFromIndex == null && versionInfo != null) {
-      RefCounted<SolrIndexSearcher> newestSearcher = (uhandler != null && uhandler.core != null)
-          ? uhandler.core.getRealtimeSearcher() : null;
-      if (newestSearcher == null)
-        throw new IllegalStateException("No searcher available to lookup max version from index!");
-
-      try {
-        maxVersionFromIndex = seedBucketsWithHighestVersion(newestSearcher.get(), versionInfo);
-      } finally {
-        newestSearcher.decref();
-      }
+    RefCounted<SolrIndexSearcher> newestSearcher = (uhandler != null && uhandler.core != null)
+      ? uhandler.core.getRealtimeSearcher() : null;
+    if (newestSearcher == null)
+      throw new IllegalStateException("No searcher available to lookup max version from index!");
+    
+    try {
+      seedBucketsWithHighestVersion(newestSearcher.get());
+      return getCurrentMaxVersion();
+    } finally {
+      newestSearcher.decref();
     }
-    return maxVersionFromIndex;
   }
 
   /**
