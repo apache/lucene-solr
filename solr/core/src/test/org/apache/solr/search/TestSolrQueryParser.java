@@ -1007,7 +1007,7 @@ public class TestSolrQueryParser extends SolrTestCaseJ4 {
         QParser qParser = QParser.getParser("text:grackle", req); // "text" has autoGeneratePhraseQueries="true"
         qParser.setParams(sowFalseParams);
         Query q = qParser.getQuery();
-        assertEquals("text:\"crow blackbird\" text:grackl", q.toString());
+        assertEquals("(text:\"crow blackbird\" text:grackl)", q.toString());
       }
 
       QParser qParser = QParser.getParser("text:grackle", req);
@@ -1019,7 +1019,7 @@ public class TestSolrQueryParser extends SolrTestCaseJ4 {
         qParser = QParser.getParser("text_sw:grackle", req); // "text_sw" doesn't specify autoGeneratePhraseQueries => default false
         qParser.setParams(params);
         q = qParser.getQuery();
-        assertEquals("(+text_sw:crow +text_sw:blackbird) text_sw:grackl", q.toString());
+        assertEquals("((+text_sw:crow +text_sw:blackbird) text_sw:grackl)", q.toString());
       }
     }
   }

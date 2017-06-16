@@ -144,6 +144,8 @@ Bug Fixes
   that these points are visited in ascending order. The memory index doesn't do this and this can result in document
   with multiple points that should match to not match. (Martijn van Groningen)
 
+* LUCENE-7878: Fix query builder to keep the SHOULD clause that wraps multi-word synonyms. (Jim Ferenczi)
+
 Other
 
 * LUCENE-7800: Remove code that potentially rethrows checked exceptions 
