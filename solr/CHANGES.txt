@@ -175,6 +175,7 @@ Bug Fixes
 
 * SOLR-10876: Regression in loading runtime UpdateRequestProcessors like TemplateUpdateProcessorFactory (noble)
 
+* SOLR-10886: Using V2Request.process(solrClient) method throws NPE if the API returns an error (Cao Manh Dat)
 
 Optimizations
 ----------------------
