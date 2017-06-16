@@ -386,27 +386,27 @@ These Update processors do not need any configuration is your `solrconfig.xml` .
 
 The `TemplateUpdateProcessorFactory` can be used to add new fields to documents based on a template pattern.
 
-Use the parameter `processor=Template` to use it. The template parameter `Template.field` (multivalued) defines the field to add and the pattern. Templates may contain placeholders which refer to other fields in the document. You can have multiple `Template.field` parameters in a single request.
+Use the parameter `processor=template` to use it. The template parameter `template.field` (multivalued) define the field to add and the pattern. Templates may contain placeholders which refer to other fields in the document. You can have multiple `Template.field` parameters in a single request.
 
 For example:
 
 [source,bash]
 ----
-processor=Template&Template.field=fullName:Mr. {firstName} {lastName}
+processor=template&template.field=fullName:Mr. {firstName} {lastName}
 ----
 
-The above example would add a new field to the document called `fullName`. The fields `firstName` and `lastName` are supplied from the document fields. If either of them is missing, that part is replaced with an empty string. If those fields are multi-valued, only the first value is used.
+The above example would add a new field to the document called `fullName`. The fields `firstName and` `lastName` are supplied from the document fields. If either of them is missing, that part is replaced with an empty string. If those fields are multi-valued, only the first value is used.
 
 ==== AtomicUpdateProcessorFactory
 
 
-Use it to convert your normal `update` operations to atomic update operations. This is particularly useful when you use endpoints such as `/update/csv` or `/update/json/docs` which does not support syntax for atomic operations.
+Name of the processor is `atomic` . Use it to convert your normal `update` operations to atomic update operations. This is particularly useful when you use endpoints such as `/update/csv` or `/update/json/docs` which does not support syntax for atomic operations.
 
 example:
 
 [source,bash]
 ----
-processor=Atomic&Atomic.field1=add&Atomic.field2=set&Atomic.field3=inc&Atomic.field4=remove&Atomic.field4=remove
+processor=atomic&atomic.field1=add&atomic.field2=set&atomic.field3=inc&atomic.field4=remove&atomic.field4=remove
 ----
 
 The above parameters convert a normal `update` operation on

@@ -94,6 +94,9 @@ Upgrading from Solr 6.x
 
 * TemplateUpdateRequestProcessorFactory uses {} instead of ${} for template
 
+* SOLR-9565: The name of TemplateUpdateRequestProcessorFactory' is changed to 'template' from 'Template' and the
+  name of 'AtomicUpdateProcessorFactory' is changed to 'atomic' from 'Atomic'
+
 New Features
 ----------------------
 * SOLR-9857, SOLR-9858: Collect aggregated metrics from nodes and shard leaders in overseer. (ab)

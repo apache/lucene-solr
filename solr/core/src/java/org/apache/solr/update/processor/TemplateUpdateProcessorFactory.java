@@ -41,6 +41,7 @@ import org.apache.solr.util.ConcurrentLRUCache;
 */
 public class TemplateUpdateProcessorFactory extends SimpleUpdateProcessorFactory {
   private Cache<String, Resolved> templateCache = new ConcurrentLRUCache<>(1000, 800, 900, 10, false, false, null);
+  public static final String NAME = "template";
   @Override
   protected void process(AddUpdateCommand cmd, SolrQueryRequest req, SolrQueryResponse rsp) {
     String[] vals = getParams("field");
@@ -63,6 +64,10 @@ public class TemplateUpdateProcessorFactory extends SimpleUpdateProcessorFactory
 
   }
 
+  @Override
+  protected String getMyName() {
+    return NAME;
+  }
 
   public static Resolved getResolved(String template, Cache<String, Resolved> cache, Pattern pattern) {
     Resolved r = cache == null ? null : cache.get(template);
