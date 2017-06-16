@@ -46,15 +46,13 @@ Create a ConfigSet, based on an existing ConfigSet.
 [[ConfigSetsAPI-Input]]
 === Input
 
-// TODO: Change column width to %autowidth.spread when https://github.com/asciidoctor/asciidoctor-pdf/issues/599 is fixed
+The following parameters are supported when creating a ConfigSet.
 
-[cols="25,10,10,10,45",options="header"]
-|===
-|Key |Type |Required |Default |Description
-|name |String |Yes | |ConfigSet to be created
-|baseConfigSet |String |Yes | |ConfigSet to copy as a base
-|configSetProp._name=value_ |String |No | |ConfigSet property from base to override
-|===
+name:: The ConfigSet to be created. This parameter is required.
+
+baseConfigSet::  The ConfigSet to copy as a base. This parameter is required.
+
+configSetProp._name_=_value_:: Any ConfigSet property from base to override.
 
 [[ConfigSetsAPI-Output]]
 === Output
@@ -101,13 +99,7 @@ Delete a ConfigSet
 
 *Query Parameters*
 
-// TODO: Change column width to %autowidth.spread when https://github.com/asciidoctor/asciidoctor-pdf/issues/599 is fixed
-
-[cols="20,15,10,15,40",options="header"]
-|===
-|Key |Type |Required |Default |Description
-|name |String |Yes | |ConfigSet to be deleted
-|===
+name:: The ConfigSet to be deleted. This parameter is required.
 
 [[ConfigSetsAPI-Output.1]]
 === Output
@@ -184,13 +176,7 @@ Upload a ConfigSet, sent in as a zipped file. Please note that a ConfigSet is up
 [[ConfigSetsAPI-Input.3]]
 === Input
 
-// TODO: Change column width to %autowidth.spread when https://github.com/asciidoctor/asciidoctor-pdf/issues/599 is fixed
-
-[cols="20,15,10,15,40",options="header"]
-|===
-|Key |Type |Required |Default |Description
-|name |String |Yes | |ConfigSet to be created
-|===
+name:: The ConfigSet to be created when the upload is complete. This parameter is required.
 
 The body of the request should contain a zipped config set.
 

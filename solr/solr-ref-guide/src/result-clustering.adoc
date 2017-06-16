@@ -209,31 +209,34 @@ An example configuration could look as shown below.
 [[ResultClustering-ConfigurationParametersoftheClusteringComponent]]
 === Configuration Parameters of the Clustering Component
 
-The table below summarizes parameters of each clustering engine or the entire clustering component (depending where they are declared).
+The following parameters of each clustering engine or the entire clustering component (depending where they are declared) are available.
 
-// TODO: Change column width to %autowidth.spread when https://github.com/asciidoctor/asciidoctor-pdf/issues/599 is fixed
+`clustering`::
+When `true`, clustering component is enabled.
 
-[cols="30,70",options="header"]
-|===
-|Parameter |Description
-|`clustering` |When `true`, clustering component is enabled.
-|`clustering.engine` |Declares which clustering engine to use. If not present, the first declared engine will become the default one.
-|`clustering.results` |When `true`, the component will perform clustering of search results (this should be enabled).
-|`clustering.collection` |When `true`, the component will perform clustering of the whole document index (this section does not cover full-index clustering).
-|===
+`clustering.engine`::
+Declares which clustering engine to use. If not present, the first declared engine will become the default one.
+
+`clustering.results`::
+When `true`, the component will perform clustering of search results (this should be enabled).
+
+`clustering.collection`::
+When `true`, the component will perform clustering of the whole document index (this section does not cover full-index clustering).
 
 At the engine declaration level, the following parameters are supported.
 
-// TODO: Change column width to %autowidth.spread when https://github.com/asciidoctor/asciidoctor-pdf/issues/599 is fixed
+`carrot.algorithm`::
+The algorithm class.
 
-[cols="30,70",options="header"]
-|===
-|Parameter |Description
-|`carrot.algorithm` |The algorithm class.
-|`carrot.resourcesDir` |Algorithm-specific resources and configuration files (stop words, other lexical resources, default settings). By default points to `conf/clustering/carrot2/`
-|`carrot.outputSubClusters` |If `true` and the algorithm supports hierarchical clustering, sub-clusters will also be emitted. Default value: true.
-|`carrot.numDescriptions` |Maximum number of per-cluster labels to return (if the algorithm assigns more than one label to a cluster).
-|===
+`carrot.resourcesDir`::
+Algorithm-specific resources and configuration files (stop words, other lexical resources, default settings). By default points to `conf/clustering/carrot2/`
+
+`carrot.outputSubClusters`::
+If `true` and the algorithm supports hierarchical clustering, sub-clusters will also be emitted. Default value: true.
+
+`carrot.numDescriptions`::
+Maximum number of per-cluster labels to return (if the algorithm assigns more than one label to a cluster).
+
 
 The `carrot.algorithm` parameter should contain a fully qualified class name of an algorithm supported by the http://project.carrot2.org[Carrot2] framework. Currently, the following algorithms are available:
 
@@ -255,30 +258,27 @@ The question of which algorithm to choose depends on the amount of traffic (STC 
 
 The clustering engine can apply clustering to the full content of (stored) fields or it can run an internal highlighter pass to extract context-snippets before clustering. Highlighting is recommended when the logical snippet field contains a lot of content (this would affect clustering performance). Highlighting can also increase the quality of clustering because the content passed to the algorithm will be more focused around the query (it will be query-specific context). The following parameters control the internal highlighter.
 
-// TODO: Change column width to %autowidth.spread when https://github.com/asciidoctor/asciidoctor-pdf/issues/599 is fixed
+`carrot.produceSummary`::
+When `true` the clustering component will run a highlighter pass on the content of logical fields pointed to by `carrot.title` and `carrot.snippet`. Otherwise full content of those fields will be clustered.
 
-[cols="30,70",options="header"]
-|===
-|Parameter |Description
-|`carrot.produceSummary` |When `true` the clustering component will run a highlighter pass on the content of logical fields pointed to by `carrot.title` and `carrot.snippet`. Otherwise full content of those fields will be clustered.
-|`carrot.fragSize` |The size, in characters, of the snippets (aka fragments) created by the highlighter. If not specified, the default highlighting fragsize (`hl.fragsize`) will be used.
-|`carrot.summarySnippets` |The number of summary snippets to generate for clustering. If not specified, the default highlighting snippet count (`hl.snippets`) will be used.
-|===
+`carrot.fragSize`::
+The size, in characters, of the snippets (aka fragments) created by the highlighter. If not specified, the default highlighting fragsize (`hl.fragsize`) will be used.
+
+`carrot.summarySnippets`:: The number of summary snippets to generate for clustering. If not specified, the default highlighting snippet count (`hl.snippets`) will be used.
 
 [[ResultClustering-LogicaltoDocumentFieldMapping]]
 === Logical to Document Field Mapping
 
 As already mentioned in <<ResultClustering-PreliminaryConcepts,Preliminary Concepts>>, the clustering component clusters "documents" consisting of logical parts that need to be mapped onto physical schema of data stored in Solr. The field mapping attributes provide a connection between fields and logical document parts. Note that the content of title and snippet fields must be *stored* so that it can be retrieved at search time.
 
-// TODO: Change column width to %autowidth.spread when https://github.com/asciidoctor/asciidoctor-pdf/issues/599 is fixed
+`carrot.title`::
+The field (alternatively comma- or space-separated list of fields) that should be mapped to the logical document's title. The clustering algorithms typically give more weight to the content of the title field compared to the content (snippet). For best results, the field should contain concise, noise-free content. If there is no clear title in your data, you can leave this parameter blank.
 
-[cols="30,70",options="header"]
-|===
-|Parameter |Description
-|`carrot.title` |The field (alternatively comma- or space-separated list of fields) that should be mapped to the logical document's title. The clustering algorithms typically give more weight to the content of the title field compared to the content (snippet). For best results, the field should contain concise, noise-free content. If there is no clear title in your data, you can leave this parameter blank.
-|`carrot.snippet` |The field (alternatively comma- or space-separated list of fields) that should be mapped to the logical document's main content. If this mapping points to very large content fields the performance of clustering may drop significantly. An alternative then is to use query-context snippets for clustering instead of full field content. See the description of the `carrot.produceSummary` parameter for details.
-|`carrot.url` |The field that should be mapped to the logical document's content URL. Leave blank if not required.
-|===
+`carrot.snippet`::
+The field (alternatively comma- or space-separated list of fields) that should be mapped to the logical document's main content. If this mapping points to very large content fields the performance of clustering may drop significantly. An alternative then is to use query-context snippets for clustering instead of full field content. See the description of the `carrot.produceSummary` parameter for details.
+
+`carrot.url`::
+The field that should be mapped to the logical document's content URL. Leave blank if not required.
 
 [[ResultClustering-ClusteringMultilingualContent]]
 === Clustering Multilingual Content
@@ -287,14 +287,11 @@ The field mapping specification can include a `carrot.lang` parameter, which def
 
 The language hint makes it easier for clustering algorithms to separate documents from different languages on input and to pick the right language resources for clustering. If you do have multi-lingual query results (or query results in a language different than English), it is strongly advised to map the language field appropriately.
 
-// TODO: Change column width to %autowidth.spread when https://github.com/asciidoctor/asciidoctor-pdf/issues/599 is fixed
+`carrot.lang`::
+The field that stores ISO 639-1 code of the language of the document's text fields.
 
-[cols="30,70",options="header"]
-|===
-|Parameter |Description
-|`carrot.lang` |The field that stores ISO 639-1 code of the language of the document's text fields.
-|`carrot.lcmap` |A mapping of arbitrary strings into ISO 639 two-letter codes used by `carrot.lang`. The syntax of this parameter is the same as `langid.map.lcmap`, for example: `langid.map.lcmap=japanese:ja polish:pl english:en`
-|===
+`carrot.lcmap`::
+A mapping of arbitrary strings into ISO 639 two-letter codes used by `carrot.lang`. The syntax of this parameter is the same as `langid.map.lcmap`, for example: `langid.map.lcmap=japanese:ja polish:pl english:en`
 
 The default language can also be set using Carrot2-specific algorithm attributes (in this case the http://doc.carrot2.org/#section.attribute.lingo.MultilingualClustering.defaultLanguage[MultilingualClustering.defaultLanguage] attribute).
 

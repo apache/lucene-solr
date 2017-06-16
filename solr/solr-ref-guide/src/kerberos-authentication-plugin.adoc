@@ -232,19 +232,26 @@ The main properties we are concerned with are the `keyTab` and `principal` prope
 
 While starting up Solr, the following host-specific parameters need to be passed. These parameters can be passed at the command line with the `bin/solr` start command (see <<solr-control-script-reference.adoc#solr-control-script-reference,Solr Control Script Reference>> for details on how to pass system parameters) or defined in `bin/solr.in.sh` or `bin/solr.in.cmd` as appropriate for your operating system.
 
-// TODO: Change column width to %autowidth.spread when https://github.com/asciidoctor/asciidoctor-pdf/issues/599 is fixed
+`solr.kerberos.name.rules`::
+Used to map Kerberos principals to short names. Default value is `DEFAULT`. Example of a name rule: `RULE:[1:$1@$0](.\*EXAMPLE.COM)s/@.*//`.
 
-[cols="35,10,55",options="header"]
-|===
-|Parameter Name |Required |Description
-|`solr.kerberos.name.rules` |No |Used to map Kerberos principals to short names. Default value is `DEFAULT`. Example of a name rule: `RULE:[1:$1@$0](.\*EXAMPLE.COM)s/@.*//`
-|`solr.kerberos.cookie.domain` |Yes |Used to issue cookies and should have the hostname of the Solr node.
-|`solr.kerberos.cookie.portaware` |No |When set to true, cookies are differentiated based on host and port, as opposed to standard cookies which are not port aware. This should be set if more than one Solr node is hosted on the same host. The default is false.
-|`solr.kerberos.principal` |Yes |The service principal.
-|`solr.kerberos.keytab` |Yes |Keytab file path containing service principal credentials.
-|`solr.kerberos.jaas.appname` |No |The app name (section name) within the JAAS configuration file which is required for internode communication. Default is `Client`, which is used for ZooKeeper authentication as well. If different users are used for ZooKeeper and Solr, they will need to have separate sections in the JAAS configuration file.
-|`java.security.auth.login.config` |Yes |Path to the JAAS configuration file for configuring a Solr client for internode communication.
-|===
+`solr.kerberos.cookie.domain`:: Used to issue cookies and should have the hostname of the Solr node. This parameter is required.
+
+`solr.kerberos.cookie.portaware`::
+When set to `true`, cookies are differentiated based on host and port, as opposed to standard cookies which are not port aware. This should be set if more than one Solr node is hosted on the same host. The default is `false`.
+
+`solr.kerberos.principal`::
+The service principal. This parameter is required.
+
+`solr.kerberos.keytab`::
+Keytab file path containing service principal credentials. This parameter is required.
+
+`solr.kerberos.jaas.appname`::
+The app name (section name) within the JAAS configuration file which is required for internode communication. Default is `Client`, which is used for ZooKeeper authentication as well. If different users are used for ZooKeeper and Solr, they will need to have separate sections in the JAAS configuration file.
+
+`java.security.auth.login.config`::
+Path to the JAAS configuration file for configuring a Solr client for internode communication. This parameter is required.
+
 
 Here is an example that could be added to `bin/solr.in.sh`. Make sure to change this example to use the right hostname and the keytab file path.
 
@@ -279,18 +286,23 @@ There are a few use cases for Solr where this might be helpful:
 
 To enable delegation tokens, several parameters must be defined. These parameters can be passed at the command line with the `bin/solr` start command (see <<solr-control-script-reference.adoc#solr-control-script-reference,Solr Control Script Reference>> for details on how to pass system parameters) or defined in `bin/solr.in.sh` or `bin/solr.in.cmd` as appropriate for your operating system.
 
-// TODO: Change column width to %autowidth.spread when https://github.com/asciidoctor/asciidoctor-pdf/issues/599 is fixed
+`solr.kerberos.delegation.token.enabled`::
+This is `false` by default, set to `true` to enable delegation tokens. This parameter is required if you want to enable tokens.
 
-[cols="40,10,50",options="header"]
-|===
-|Parameter Name |Required |Description
-|`solr.kerberos.delegation.token.enabled` |Yes, to enable tokens |False by default, set to true to enable delegation tokens.
-|`solr.kerberos.delegation.token.kind` |No |Type of delegation tokens. By default this is `solr-dt`. Likely this does not need to change. No other option is available at this time.
-|`solr.kerberos.delegation.token.validity` |No |Time, in seconds, for which delegation tokens are valid. The default is 36000 seconds.
-|`solr.kerberos.delegation.token.signer.secret.provider` |No |Where delegation token information is stored internally. The default is `zookeeper` which must be the location for delegation tokens to work across Solr servers (when running in SolrCloud mode). No other option is available at this time.
-|`solr.kerberos.delegation.token.signer.secret.provider.zookeper.path` |No |The ZooKeeper path where the secret provider information is stored. This is in the form of the path + /security/token. The path can include the chroot or the chroot can be omitted if you are not using it. This example includes the chroot: `server1:9983,server2:9983,server3:9983/solr/security/token`.
-|`solr.kerberos.delegation.token.secret.manager.znode.working.path` |No |The ZooKeeper path where token information is stored. This is in the form of the path + /security/zkdtsm. The path can include the chroot or the chroot can be omitted if you are not using it. This example includes the chroot: `server1:9983,server2:9983,server3:9983/solr/security/zkdtsm`.
-|===
+`solr.kerberos.delegation.token.kind`::
+The type of delegation tokens. By default this is `solr-dt`. Likely this does not need to change. No other option is available at this time.
+
+`solr.kerberos.delegation.token.validity`::
+Time, in seconds, for which delegation tokens are valid. The default is 36000 seconds.
+
+`solr.kerberos.delegation.token.signer.secret.provider`::
+Where delegation token information is stored internally. The default is `zookeeper` which must be the location for delegation tokens to work across Solr servers (when running in SolrCloud mode). No other option is available at this time.
+
+`solr.kerberos.delegation.token.signer.secret.provider.zookeper.path`::
+The ZooKeeper path where the secret provider information is stored. This is in the form of the path + /security/token. The path can include the chroot or the chroot can be omitted if you are not using it. This example includes the chroot: `server1:9983,server2:9983,server3:9983/solr/security/token`.
+
+`solr.kerberos.delegation.token.secret.manager.znode.working.path`::
+The ZooKeeper path where token information is stored. This is in the form of the path + /security/zkdtsm. The path can include the chroot or the chroot can be omitted if you are not using it. This example includes the chroot: `server1:9983,server2:9983,server3:9983/solr/security/zkdtsm`.
 
 [[KerberosAuthenticationPlugin-StartSolr]]
 === Start Solr

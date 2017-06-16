@@ -37,14 +37,11 @@ An *optimize* is like a *hard commit* except that it forces all of the index seg
 
 Soft commit takes uses two parameters: `maxDocs` and `maxTime`.
 
-// TODO: Change column width to %autowidth.spread when https://github.com/asciidoctor/asciidoctor-pdf/issues/599 is fixed
+`maxDocs`::
+Integer. Defines the number of documents to queue before pushing them to the index. It works in conjunction with the `update_handler_autosoftcommit_max_time` parameter in that if either limit is reached, the documents will be pushed to the index.
 
-[cols="30,70",options="header"]
-|===
-|Parameter |Description
-|`maxDocs` |Integer. Defines the number of documents to queue before pushing them to the index. It works in conjunction with the `update_handler_autosoftcommit_max_time` parameter in that if either limit is reached, the documents will be pushed to the index.
-|`maxTime` |The number of milliseconds to wait before pushing documents to the index. It works in conjunction with the `update_handler_autosoftcommit_max_docs` parameter in that if either limit is reached, the documents will be pushed to the index.
-|===
+`maxTime`::
+The number of milliseconds to wait before pushing documents to the index. It works in conjunction with the `update_handler_autosoftcommit_max_docs` parameter in that if either limit is reached, the documents will be pushed to the index.
 
 Use `maxDocs` and `maxTime` judiciously to fine-tune your commit strategies.
 
@@ -78,17 +75,20 @@ It's better to use `maxTime` rather than `maxDocs` to modify an `autoSoftCommit`
 [[NearRealTimeSearching-OptionalAttributesforcommitandoptimize]]
 === Optional Attributes for commit and optimize
 
-// TODO: Change column width to %autowidth.spread when https://github.com/asciidoctor/asciidoctor-pdf/issues/599 is fixed
+`waitSearcher`::
+Block until a new searcher is opened and registered as the main query searcher, making the changes visible. Default is `true`.
 
-[cols="20,20,60",options="header"]
-|===
-|Parameter |Valid Attributes |Description
-|`waitSearcher` |true, false |Block until a new searcher is opened and registered as the main query searcher, making the changes visible. Default is true.
-|`OpenSearcher` |true, false |Open a new searcher making all documents indexed so far visible for searching. Default is true.
-|`softCommit` |true, false |Perform a soft commit. This will refresh the view of the index faster, but without guarantees that the document is stably stored. Default is false.
-|`expungeDeletes` |true, false |Valid for `commit` only. This parameter purges deleted data from segments. The default is false.
-|`maxSegments` |integer |Valid for `optimize` only. Optimize down to at most this number of segments. The default is 1.
-|===
+`OpenSearcher`::
+Open a new searcher making all documents indexed so far visible for searching. Default is `true`.
+
+`softCommit`::
+Perform a soft commit. This will refresh the view of the index faster, but without guarantees that the document is stably stored. Default is `false`.
+
+`expungeDeletes`::
+Valid for `commit` only. This parameter purges deleted data from segments. The default is `false`.
+
+`maxSegments`::
+Valid for `optimize` only. Optimize down to at most this number of segments. The default is `1`.
 
 Example of `commit` and `optimize` with optional attributes:
 

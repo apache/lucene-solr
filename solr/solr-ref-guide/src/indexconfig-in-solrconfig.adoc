@@ -192,15 +192,12 @@ The maximum time to wait for a write lock on an IndexWriter. The default is 1000
 
 There are a few other parameters that may be important to configure for your implementation. These settings affect how or when updates are made to an index.
 
-// TODO: Change column width to %autowidth.spread when https://github.com/asciidoctor/asciidoctor-pdf/issues/599 is fixed
+`reopenReaders`:: Controls if IndexReaders will be re-opened, instead of closed and then opened, which is often less efficient. The default is true.
 
-[cols="30,70",options="header"]
-|===
-|Setting |Description
-|reopenReaders |Controls if IndexReaders will be re-opened, instead of closed and then opened, which is often less efficient. The default is true.
-|deletionPolicy |Controls how commits are retained in case of rollback. The default is `SolrDeletionPolicy`, which has sub-parameters for the maximum number of commits to keep (`maxCommitsToKeep`), the maximum number of optimized commits to keep (`maxOptimizedCommitsToKeep`), and the maximum age of any commit to keep (`maxCommitAge`), which supports `DateMathParser` syntax.
-|infoStream |The InfoStream setting instructs the underlying Lucene classes to write detailed debug information from the indexing process as Solr log messages.
-|===
+`deletionPolicy`:: Controls how commits are retained in case of rollback. The default is `SolrDeletionPolicy`, which has sub-parameters for the maximum number of commits to keep (`maxCommitsToKeep`), the maximum number of optimized commits to keep (`maxOptimizedCommitsToKeep`), and the maximum age of any commit to keep (`maxCommitAge`), which supports `DateMathParser` syntax.
+
+`infoStream`:: The InfoStream setting instructs the underlying Lucene classes to write detailed debug information from the indexing process as Solr log messages.
+
 
 [source,xml]
 ----

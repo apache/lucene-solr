@@ -37,7 +37,7 @@ Backups and restoration uses Solr's replication handler. Out of the box, Solr in
 
 === Backup API
 
-The backup API requires sending a command to the `/replication` handler to back up the system.
+The `backup` API requires sending a command to the `/replication` handler to back up the system.
 
 You can trigger a back-up with an HTTP command like this (replace "gettingstarted" with the name of the core you are working with):
 
@@ -47,27 +47,28 @@ You can trigger a back-up with an HTTP command like this (replace "gettingstarte
 http://localhost:8983/solr/gettingstarted/replication?command=backup
 ----
 
-The backup command is an asynchronous call, and it will represent data from the latest index commit point. All indexing and search operations will continue to be executed against the index as usual.
+The `backup` command is an asynchronous call, and it will represent data from the latest index commit point. All indexing and search operations will continue to be executed against the index as usual.
 
 Only one backup call can be made against a core at any point in time. While an ongoing backup operation is happening subsequent calls for restoring will throw an exception.
 
 The backup request can also take the following additional parameters:
 
-// TODO: Change column width to %autowidth.spread when https://github.com/asciidoctor/asciidoctor-pdf/issues/599 is fixed
+`location`::
+The path where the backup will be created. If the path is not absolute then the backup path will be relative to Solr's instance directory.
+|name |The snapshot will be created in a directory called `snapshot.<name>`. If a name is not specified then the directory name would have the following format: `snapshot.<yyyyMMddHHmmssSSS>`.
 
-[cols="30,70",options="header"]
-|===
-|Parameter |Description
-|location |The path where the backup will be created. If the path is not absolute then the backup path will be relative to Solr's instance directory.
-|name |The snapshot will be created in a directory called `snapshot.<name>`. If a name is not specified then the directory name would have the following format: `snapshot.<yyyyMMddHHmmssSSS>`
-|numberToKeep |The number of backups to keep. If `maxNumberOfBackups` has been specified on the replication handler in `solrconfig.xml`, `maxNumberOfBackups` is always used and attempts to use `numberToKeep` will cause an error. Also, this parameter is not taken into consideration if the backup name is specified. More information about `maxNumberOfBackups` can be found in the section <<index-replication.adoc#IndexReplication-ConfiguringtheReplicationHandler,Configuring the ReplicationHandler>>.
-|repository |The name of the repository to be used for the backup. If no repository is specified then the local filesystem repository will be used automatically.
-|commitName |The name of the commit which was used while taking a snapshot using the CREATESNAPSHOT command.
-|===
+`numberToKeep`::
+The number of backups to keep. If `maxNumberOfBackups` has been specified on the replication handler in `solrconfig.xml`, `maxNumberOfBackups` is always used and attempts to use `numberToKeep` will cause an error. Also, this parameter is not taken into consideration if the backup name is specified. More information about `maxNumberOfBackups` can be found in the section <<index-replication.adoc#IndexReplication-ConfiguringtheReplicationHandler,Configuring the ReplicationHandler>>.
+
+`repository`::
+The name of the repository to be used for the backup. If no repository is specified then the local filesystem repository will be used automatically.
+
+`commitName`::
+The name of the commit which was used while taking a snapshot using the CREATESNAPSHOT command.
 
 === Backup Status
 
-The backup operation can be monitored to see if it has completed by sending the `details` command to the `/replication` handler, as in this example:
+The `backup` operation can be monitored to see if it has completed by sending the `details` command to the `/replication` handler, as in this example:
 
 .Status API Example
 [source,text]
@@ -103,25 +104,24 @@ http://localhost:8983/solr/gettingstarted/replication?command=restore&name=backu
 
 This will restore the named index snapshot into the current core. Searches will start reflecting the snapshot data once the restore is complete.
 
-The restore request can also take these additional parameters:
+The `restore` request can take these additional parameters:
 
-// TODO: Change column width to %autowidth.spread when https://github.com/asciidoctor/asciidoctor-pdf/issues/599 is fixed
+`location`::
+The location of the backup snapshot file. If not specified, it looks for backups in Solr's data directory.
 
-[cols="30,70",options="header"]
-|===
-|Parameter |Description
-|location |The location of the backup snapshot file. If not specified, it looks for backups in Solr's data directory.
-|name |The name of the backed up index snapshot to be restored. If the name is not provided it looks for backups with `snapshot.<timestamp>` format in the location directory. It picks the latest timestamp backup in that case.
-|repository |The name of the repository to be used for the backup. If no repository is specified then the local filesystem repository will be used automatically.
-|===
+`name`::
+The name of the backed up index snapshot to be restored. If the name is not provided it looks for backups with `snapshot.<timestamp>` format in the location directory. It picks the latest timestamp backup in that case.
 
-The restore command is an asynchronous call. Once the restore is complete the data reflected will be of the backed up index which was restored.
+`repository`::
+The name of the repository to be used for the backup. If no repository is specified then the local filesystem repository will be used automatically.
 
-Only one restore call can can be made against a core at one point in time. While an ongoing restore operation is happening subsequent calls for restoring will throw an exception.
+The `restore` command is an asynchronous call. Once the restore is complete the data reflected will be of the backed up index which was restored.
+
+Only one `restore` call can can be made against a core at one point in time. While an ongoing restore operation is happening subsequent calls for restoring will throw an exception.
 
 === Restore Status API
 
-You can also check the status of a restore operation by sending the `restorestatus` command to the `/replication` handler, as in this example:
+You can also check the status of a `restore` operation by sending the `restorestatus` command to the `/replication` handler, as in this example:
 
 .Status API Example
 [source,text]
@@ -158,21 +158,18 @@ You can trigger a snapshot command with an HTTP command like this (replace "tech
 http://localhost:8983/solr/admin/cores?action=CREATESNAPSHOT&core=techproducts&commitName=commit1
 ----
 
-The list snapshot request parameters are:
+The `CREATESNAPSHOT` request parameters are:
 
-// TODO: Change column width to %autowidth.spread when https://github.com/asciidoctor/asciidoctor-pdf/issues/599 is fixed
+`commitName`::
+The name to store the snapshot as.
 
-[cols="30,70",options="header"]
-|===
-|Parameter |Description
-|commitName |Specify the commit name to store the snapshot as
-|core |name of the core to perform the snapshot on
-|async |Request ID to track this action which will be processed asynchronously
-|===
+`core`:: The name of the core to perform the snapshot on.
+
+`async`:: Request ID to track this action which will be processed asynchronously.
 
 === List Snapshot API
 
-The list snapshot functionality lists all the taken snapshots for a particular core.
+The `LISTSNAPSHOTS` command lists all the taken snapshots for a particular core.
 
 You can trigger a list snapshot command with an HTTP command like this (replace "techproducts" with the name of the core you are working with):
 
@@ -184,20 +181,17 @@ http://localhost:8983/solr/admin/cores?action=LISTSNAPSHOTS&core=techproducts&co
 
 The list snapshot request parameters are:
 
-// TODO: Change column width to %autowidth.spread when https://github.com/asciidoctor/asciidoctor-pdf/issues/599 is fixed
+core::
+The name of the core to whose snapshots we want to list.
 
-[cols="30,70",options="header"]
-|===
-|Parameter |Description
-|core |name of the core to whose snapshots we want to list
-|async |Request ID to track this action which will be processed asynchronously
-|===
+async::
+Request ID to track this action which will be processed asynchronously.
 
 === Delete Snapshot API
 
-The delete snapshot functionality deletes a particular snapshot for a particular core.
+The `DELETESNAPSHOT` command deletes a snapshot for a particular core.
 
-You can trigger a delete snapshot command with an HTTP command like this (replace "techproducts" with the name of the core you are working with):
+You can trigger a delete snapshot with an HTTP command like this (replace "techproducts" with the name of the core you are working with):
 
 .Delete Snapshot API Example
 [source,text]
@@ -207,13 +201,15 @@ http://localhost:8983/solr/admin/cores?action=DELETESNAPSHOT&core=techproducts&c
 
 The delete snapshot request parameters are:
 
-[width="100%",options="header",]
-|===
-|Parameter |Description
-|commitName |Specify the commit name to be deleted
-|core |name of the core whose snapshot we want to delete
-|async |Request ID to track this action which will be processed asynchronously
-|===
+`commitName`::
+Specify the commit name to be deleted
+
+`core`::
+The name of the core whose snapshot we want to delete
+
+`async`::
+Request ID to track this action which will be processed asynchronously
+
 
 == Backup/Restore Storage Repositories
 

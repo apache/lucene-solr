@@ -51,21 +51,33 @@ When using SolrCloud, the `ReplicationHandler` must be available via the `/repli
 
 The table below defines the key terms associated with Solr replication.
 
-// TODO: Change column width to %autowidth.spread when https://github.com/asciidoctor/asciidoctor-pdf/issues/599 is fixed
+Index::
+A Lucene index is a directory of files. These files make up the searchable and returnable data of a Solr Core.
 
-[cols="30,70",options="header"]
-|===
-|Term |Definition
-|Index |A Lucene index is a directory of files. These files make up the searchable and returnable data of a Solr Core.
-|Distribution |The copying of an index from the master server to all slaves. The distribution process takes advantage of Lucene's index file structure.
-|Inserts and Deletes |As inserts and deletes occur in the index, the directory remains unchanged. Documents are always inserted into newly created files. Documents that are deleted are not removed from the files. They are flagged in the file, deletable, and are not removed from the files until the index is optimized.
-|Master and Slave |A Solr replication master is a single node which receives all updates initially and keeps everything organized. Solr replication slave nodes receive no updates directly, instead all changes (such as inserts, updates, deletes, etc.) are made against the single master node. Changes made on the master are distributed to all the slave nodes which service all query requests from the clients.
-|Update |An update is a single change request against a single Solr instance. It may be a request to delete a document, add a new document, change a document, delete all documents matching a query, etc. Updates are handled synchronously within an individual Solr instance.
-|Optimization |A process that compacts the index and merges segments in order to improve query performance. Optimization should only be run on the master nodes. An optimized index may give query performance gains compared to an index that has become fragmented over a period of time with many updates. Distributing an optimized index requires a much longer time than the distribution of new segments to an un-optimized index.
-|Segments |A self contained subset of an index consisting of some documents and data structures related to the inverted index of terms in those documents.
-|mergeFactor |A parameter that controls the number of segments in an index. For example, when mergeFactor is set to 3, Solr will fill one segment with documents until the limit maxBufferedDocs is met, then it will start a new segment. When the number of segments specified by mergeFactor is reached (in this example, 3) then Solr will merge all the segments into a single index file, then begin writing new documents to a new segment.
-|Snapshot |A directory containing hard links to the data files of an index. Snapshots are distributed from the master nodes when the slaves pull them, "smart copying" any segments the slave node does not have in snapshot directory that contains the hard links to the most recent index data files.
-|===
+Distribution::
+The copying of an index from the master server to all slaves. The distribution process takes advantage of Lucene's index file structure.
+
+Inserts and Deletes::
+As inserts and deletes occur in the index, the directory remains unchanged. Documents are always inserted into newly created files. Documents that are deleted are not removed from the files. They are flagged in the file, deletable, and are not removed from the files until the index is optimized.
+
+Master and Slave::
+A Solr replication master is a single node which receives all updates initially and keeps everything organized. Solr replication slave nodes receive no updates directly, instead all changes (such as inserts, updates, deletes, etc.) are made against the single master node. Changes made on the master are distributed to all the slave nodes which service all query requests from the clients.
+
+Update::
+An update is a single change request against a single Solr instance. It may be a request to delete a document, add a new document, change a document, delete all documents matching a query, etc. Updates are handled synchronously within an individual Solr instance.
+
+Optimization::
+A process that compacts the index and merges segments in order to improve query performance. Optimization should only be run on the master nodes. An optimized index may give query performance gains compared to an index that has become fragmented over a period of time with many updates. Distributing an optimized index requires a much longer time than the distribution of new segments to an un-optimized index.
+
+Segments::
+A self contained subset of an index consisting of some documents and data structures related to the inverted index of terms in those documents.
+
+mergeFactor::
+A parameter that controls the number of segments in an index. For example, when mergeFactor is set to 3, Solr will fill one segment with documents until the limit maxBufferedDocs is met, then it will start a new segment. When the number of segments specified by mergeFactor is reached (in this example, 3) then Solr will merge all the segments into a single index file, then begin writing new documents to a new segment.
+
+Snapshot::
+A directory containing hard links to the data files of an index. Snapshots are distributed from the master nodes when the slaves pull them, "smart copying" any segments the slave node does not have in snapshot directory that contains the hard links to the most recent index data files.
+
 
 [[IndexReplication-ConfiguringtheReplicationHandler]]
 == Configuring the ReplicationHandler
@@ -80,17 +92,20 @@ In addition to `ReplicationHandler` configuration options specific to the master
 
 Before running a replication, you should set the following parameters on initialization of the handler:
 
-// TODO: Change column width to %autowidth.spread when https://github.com/asciidoctor/asciidoctor-pdf/issues/599 is fixed
+`replicateAfter`::
+String specifying action after which replication should occur. Valid values are commit, optimize, or startup. There can be multiple values for this parameter. If you use "startup", you need to have a "commit" and/or "optimize" entry also if you want to trigger replication on future commits or optimizes.
 
-[cols="30,70",options="header"]
-|===
-|Name |Description
-|replicateAfter |String specifying action after which replication should occur. Valid values are commit, optimize, or startup. There can be multiple values for this parameter. If you use "startup", you need to have a "commit" and/or "optimize" entry also if you want to trigger replication on future commits or optimizes.
-|backupAfter |String specifying action after which a backup should occur. Valid values are commit, optimize, or startup. There can be multiple values for this parameter. It is not required for replication, it just makes a backup.
-|maxNumberOfBackups |Integer specifying how many backups to keep. This can be used to delete all but the most recent N backups.
-|confFiles |The configuration files to replicate, separated by a comma.
-|commitReserveDuration |If your commits are very frequent and your network is slow, you can tweak this parameter to increase the amount of time taken to download 5Mb from the master to a slave. The default is 10 seconds.
-|===
+`backupAfter`
+String specifying action after which a backup should occur. Valid values are commit, optimize, or startup. There can be multiple values for this parameter. It is not required for replication, it just makes a backup.
+
+`maxNumberOfBackups`
+Integer specifying how many backups to keep. This can be used to delete all but the most recent N backups.
+
+`confFiles`::
+The configuration files to replicate, separated by a comma.
+
+`commitReserveDuration`::
+If your commits are very frequent and your network is slow, you can tweak this parameter to increase the amount of time taken to download 5Mb from the master to a slave. The default is 10 seconds.
 
 The example below shows a possible 'master' configuration for the `ReplicationHandler`, including a fixed number of backups and an invariant setting for the `maxWriteMBPerSec` request parameter to prevent slaves from saturating its network interface
 
@@ -203,17 +218,13 @@ Here is an example of a ReplicationHandler configuration for a repeater:
 
 When a commit or optimize operation is performed on the master, the RequestHandler reads the list of file names which are associated with each commit point. This relies on the `replicateAfter` parameter in the configuration to decide which types of events should trigger replication.
 
-// TODO: Change column width to %autowidth.spread when https://github.com/asciidoctor/asciidoctor-pdf/issues/599 is fixed
+These operations are supported:
 
-[cols="30,70",options="header"]
-|===
-|Setting on the Master |Description
-|commit |Triggers replication whenever a commit is performed on the master index.
-|optimize |Triggers replication whenever the master index is optimized.
-|startup |Triggers replication whenever the master index starts up.
-|===
+* `commit`: Triggers replication whenever a commit is performed on the master index.
+* `optimize`: Triggers replication whenever the master index is optimized.
+* `startup`: Triggers replication whenever the master index starts up.
 
-The replicateAfter parameter can accept multiple arguments. For example:
+The `replicateAfter` parameter can accept multiple arguments. For example:
 
 [source,xml]
 ----
@@ -262,36 +273,87 @@ To correct this problem, the slave then copies all the index files from master t
 
 You can use the HTTP commands below to control the ReplicationHandler's operations.
 
-[width="100%",options="header",]
-|===
-|Command |Description
-|http://_master_host:port_/solr/_core_name_/replication?command=enablereplication |Enables replication on the master for all its slaves.
-|http://_master_host:port_/solr/_core_name_/replication?command=disablereplication |Disables replication on the master for all its slaves.
-|http://_host:port_/solr/_core_name_/replication?command=indexversion |Returns the version of the latest replicatable index on the specified master or slave.
-|http://_slave_host:port_/solr/_core_name_/replication?command=fetchindex |Forces the specified slave to fetch a copy of the index from its master. If you like, you can pass an extra attribute such as masterUrl or compression (or any other parameter which is specified in the `<lst name="slave">` tag) to do a one time replication from a master. This obviates the need for hard-coding the master in the slave.
-|http://_slave_host:port_/solr/_core_name_/replication?command=abortfetch |Aborts copying an index from a master to the specified slave.
-|http://_slave_host:port_/solr/_core_name_/replication?command=enablepoll |Enables the specified slave to poll for changes on the master.
-|http://_slave_host:port_/solr/_core_name_/replication?command=disablepoll |Disables the specified slave from polling for changes on the master.
-|http://_slave_host:port_/solr/_core_name_/replication?command=details |Retrieves configuration details and current status.
-|http://_host:port_/solr/_core_name_/replication?command=filelist&generation=<_generation-number_> |Retrieves a list of Lucene files present in the specified host's index. You can discover the generation number of the index by running the `indexversion` command.
-|http://_master_host:port_/solr/_core_name_/replication?command=backup a|
-Creates a backup on master if there are committed index data in the server; otherwise, does nothing. This command is useful for making periodic backups.
+`enablereplication`::
+Enable replication on the "master" for all its slaves.
++
+[source,bash]
+http://_master_host:port_/solr/_core_name_/replication?command=enablereplication
 
-supported request parameters:
+`disablereplication`::
+Disable replication on the master for all its slaves.
++
+[source,bash]
+http://_master_host:port_/solr/_core_name_/replication?command=disablereplication
 
-* `numberToKeep:` request parameter can be used with the backup command unless the `maxNumberOfBackups` initialization parameter has been specified on the handler – in which case `maxNumberOfBackups` is always used and attempts to use the `numberToKeep` request parameter will cause an error.
-* `name` : (optional) Backup name . The snapshot will be created in a directory called snapshot.<name> within the data directory of the core . By default the name is generated using date in `yyyyMMddHHmmssSSS` format. If `location` parameter is passed , that would be used instead of the data directory
-* `location`: Backup location
+`indexversion`::
+Return the version of the latest replicatable index on the specified master or slave.
++
+[source,bash]
+http://_host:port_/solr/_core_name_/replication?command=indexversion
 
-|http://_master_host:port_ /solr/_core_name_/replication?command=deletebackup a|
-Delete any backup created using the `backup` command .
+`fetchindex`::
+Force the specified slave to fetch a copy of the index from its master.
++
+[source.bash]
+http://_slave_host:port_/solr/_core_name_/replication?command=fetchindex
++
+If you like, you can pass an extra attribute such as `masterUrl` or `compression` (or any other parameter which is specified in the `<lst name="slave">` tag) to do a one time replication from a master. This obviates the need for hard-coding the master in the slave.
 
-Request parameters:
+`abortfetch`::
+Abort copying an index from a master to the specified slave.
++
+[source,bash]
+http://_slave_host:port_/solr/_core_name_/replication?command=abortfetch
 
-* name: The name of the snapshot . A snapshot with the name snapshot.<name> must exist .If not, an error is thrown
-* location: Location where the snapshot is created
+`enablepoll`::
+Enable the specified slave to poll for changes on the master.
++
+[source,bash]
+http://_slave_host:port_/solr/_core_name_/replication?command=enablepoll
 
-|===
+`disablepoll`::
+Disable the specified slave from polling for changes on the master.
++
+[source,bash]
+http://_slave_host:port_/solr/_core_name_/replication?command=disablepoll
+
+`details`::
+Retrieve configuration details and current status.
++
+[source,bash]
+http://_slave_host:port_/solr/_core_name_/replication?command=details
+
+`filelist`::
+Retrieve a list of Lucene files present in the specified host's index.
++
+[source,bash]
+http://_host:port_/solr/_core_name_/replication?command=filelist&generation=<_generation-number_>
++
+You can discover the generation number of the index by running the `indexversion` command.
+
+`backup`::
+Create a backup on master if there are committed index data in the server; otherwise, does nothing.
++
+[source,bash]
+http://_master_host:port_/solr/_core_name_/replication?command=backup
++
+This command is useful for making periodic backups. There are several supported request parameters:
++
+* `numberToKeep:`: This can be used with the backup command unless the `maxNumberOfBackups` initialization parameter has been specified on the handler – in which case `maxNumberOfBackups` is always used and attempts to use the `numberToKeep` request parameter will cause an error.
+* `name`: (optional) Backup name. The snapshot will be created in a directory called `snapshot.<name>` within the data directory of the core. By default the name is generated using date in `yyyyMMddHHmmssSSS` format. If `location` parameter is passed, that would be used instead of the data directory
+* `location`: Backup location.
+
+`deletebackup`::
+Delete any backup created using the `backup` command.
++
+[source,bash]
+http://_master_host:port_ /solr/_core_name_/replication?command=deletebackup
++
+There are two supported parameters:
+
+* `name`: The name of the snapshot. A snapshot with the name `snapshot._name_` must exist. If not, an error is thrown.
+* `location`: Location where the snapshot is created.
+
 
 [[IndexReplication-DistributionandOptimization]]
 == Distribution and Optimization
@@ -302,7 +364,9 @@ The time required to optimize a master index can vary dramatically. A small inde
 
 Distributing a newly optimized index may take only a few minutes or up to an hour or more, again depending on the size of the index and the performance capabilities of network connections and disks. During optimization the machine is under load and does not process queries very well. Given a schedule of updates being driven a few times an hour to the slaves, we cannot run an optimize with every committed snapshot.
 
-Copying an optimized index means that the *entire* index will need to be transferred during the next snappull. This is a large expense, but not nearly as huge as running the optimize everywhere. Consider this example: on a three-slave one-master configuration, distributing a newly-optimized index takes approximately 80 seconds _total_. Rolling the change across a tier would require approximately ten minutes per machine (or machine group). If this optimize were rolled across the query tier, and if each slave node being optimized were disabled and not receiving queries, a rollout would take at least twenty minutes and potentially as long as an hour and a half. Additionally, the files would need to be synchronized so that the _following_ the optimize, snappull would not think that the independently optimized files were different in any way. This would also leave the door open to independent corruption of indexes instead of each being a perfect copy of the master.
+Copying an optimized index means that the *entire* index will need to be transferred during the next `snappull`. This is a large expense, but not nearly as huge as running the optimize everywhere.
+
+Consider this example: on a three-slave one-master configuration, distributing a newly-optimized index takes approximately 80 seconds _total_. Rolling the change across a tier would require approximately ten minutes per machine (or machine group). If this optimize were rolled across the query tier, and if each slave node being optimized were disabled and not receiving queries, a rollout would take at least twenty minutes and potentially as long as an hour and a half. Additionally, the files would need to be synchronized so that the _following_ the optimize, `snappull` would not think that the independently optimized files were different in any way. This would also leave the door open to independent corruption of indexes instead of each being a perfect copy of the master.
 
 Optimizing on the master allows for a straight-forward optimization operation. No query slaves need to be taken out of service. The optimized index can be distributed in the background as queries are being normally serviced. The optimization can occur at any time convenient to the application providing index updates.
 

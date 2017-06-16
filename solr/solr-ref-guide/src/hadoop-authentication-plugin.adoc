@@ -41,21 +41,35 @@ For most SolrCloud or standalone Solr setups, the `HadoopAuthPlugin` should suff
 [[HadoopAuthenticationPlugin-PluginConfiguration]]
 == Plugin Configuration
 
-// TODO: Change column width to %autowidth.spread when https://github.com/asciidoctor/asciidoctor-pdf/issues/599 is fixed
+`class`::
+Should be either `solr.HadoopAuthPlugin` or `solr.ConfigurableInternodeAuthHadoopPlugin`. This parameter is required.
 
-[cols="20,15,65",options="header"]
-|===
-|Parameter Name |Required |Description
-|class |Yes |Should be either `solr.HadoopAuthPlugin` or `solr.ConfigurableInternodeAuthHadoopPlugin`.
-|type |Yes |The type of authentication scheme to be configured. See https://hadoop.apache.org/docs/stable/hadoop-auth/Configuration.html[configuration] options.
-|sysPropPrefix |Yes |The prefix to be used to define the Java system property for configuring the authentication mechanism. The name of the Java system property is defined by appending the configuration parameter name to this prefix value. For example, if the prefix is 'solr' then the Java system property 'solr.kerberos.principal' defines the value of configuration parameter 'kerberos.principal'.
-|authConfigs |Yes |Configuration parameters required by the authentication scheme defined by the type property. For more details, see https://hadoop.apache.org/docs/stable/hadoop-auth/Configuration.html[Hadoop configuration] options.
-|defaultConfigs |No |Default values for the configuration parameters specified by the `authConfigs` property. The default values are specified as a collection of key-value pairs (i.e., `property-name:default_value`).
-|enableDelegationToken |No |Enable (or disable) the delegation tokens functionality.
-|initKerberosZk |No |For enabling initialization of kerberos before connecting to ZooKeeper (if applicable).
-|proxyUserConfigs |No |Configures proxy users for the underlying Hadoop authentication mechanism. This configuration is expressed as a collection of key-value pairs (i.e., `property-name:value`).
-|clientBuilderFactory |No |The `HttpClientBuilderFactory` implementation used for the Solr internal communication. Only applicable for `ConfigurableInternodeAuthHadoopPlugin`.
-|===
+`type`::
+The type of authentication scheme to be configured. See https://hadoop.apache.org/docs/stable/hadoop-auth/Configuration.html[configuration] options. This parameter is required.
+
+`sysPropPrefix`::
+The prefix to be used to define the Java system property for configuring the authentication mechanism. This property is required.
++
+The name of the Java system property is defined by appending the configuration parameter name to this prefix value. For example, if the prefix is `solr` then the Java system property `solr.kerberos.principal` defines the value of configuration parameter `kerberos.principal`.
+
+`authConfigs`::
+Configuration parameters required by the authentication scheme defined by the type property. This property is required. For more details, see https://hadoop.apache.org/docs/stable/hadoop-auth/Configuration.html[Hadoop configuration] options.
+
+`defaultConfigs`::
+Default values for the configuration parameters specified by the `authConfigs` property. The default values are specified as a collection of key-value pairs (i.e., `"property-name": "default_value"`).
+
+`enableDelegationToken`::
+If `true`, the delegation tokens functionality will be enabled.
+
+`initKerberosZk`::
+For enabling initialization of kerberos before connecting to ZooKeeper (if applicable).
+
+`proxyUserConfigs`::
+Configures proxy users for the underlying Hadoop authentication mechanism. This configuration is expressed as a collection of key-value pairs (i.e., `"property-name": "default_value"`).
+
+`clientBuilderFactory`:: No |
+The `HttpClientBuilderFactory` implementation used for the Solr internal communication. Only applicable for `ConfigurableInternodeAuthHadoopPlugin`.
+
 
 [[HadoopAuthenticationPlugin-ExampleConfigurations]]
 == Example Configurations

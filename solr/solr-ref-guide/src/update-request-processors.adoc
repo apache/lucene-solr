@@ -386,7 +386,7 @@ These Update processors do not need any configuration is your `solrconfig.xml` .
 
 The `TemplateUpdateProcessorFactory` can be used to add new fields to documents based on a template pattern.
 
-Use the parameter `processor=Template` to use it. The template parameter `Template.field` (multivalued) define the field to add and the pattern. Templates may contain placeholders which refer to other fields in the document. You can have multiple `Template.field` parameters in a single request.
+Use the parameter `processor=Template` to use it. The template parameter `Template.field` (multivalued) defines the field to add and the pattern. Templates may contain placeholders which refer to other fields in the document. You can have multiple `Template.field` parameters in a single request.
 
 For example:
 
@@ -395,7 +395,7 @@ For example:
 processor=Template&Template.field=fullName:Mr. {firstName} {lastName}
 ----
 
-The above example would add a new field to the document called `fullName`. The fields `firstName and` `lastName` are supplied from the document fields. If either of them is missing, that part is replaced with an empty string. If those fields are multi-valued, only the first value is used.
+The above example would add a new field to the document called `fullName`. The fields `firstName` and `lastName` are supplied from the document fields. If either of them is missing, that part is replaced with an empty string. If those fields are multi-valued, only the first value is used.
 
 ==== AtomicUpdateProcessorFactory
 

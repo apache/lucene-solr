@@ -33,15 +33,16 @@ The following example defines a field named `price` with a type named `float` an
 [[DefiningFields-FieldProperties]]
 == Field Properties
 
-// TODO: Change column width to %autowidth.spread when https://github.com/asciidoctor/asciidoctor-pdf/issues/599 is fixed
+Field definitions can have the following properties:
 
-[cols="30,70",options="header"]
-|===
-|Property |Description
-|name |The name of the field. Field names should consist of alphanumeric or underscore characters only and not start with a digit. This is not currently strictly enforced, but other field names will not have first class support from all components and back compatibility is not guaranteed. Names with both leading and trailing underscores (e.g., `\_version_`) are reserved. Every field must have a `name`.
-|type |The name of the `fieldType` for this field. This will be found in the `name` attribute on the `fieldType` definition. Every field must have a `type`.
-|default |A default value that will be added automatically to any document that does not have a value in this field when it is indexed. If this property is not specified, there is no default.
-|===
+`name`::
+The name of the field. Field names should consist of alphanumeric or underscore characters only and not start with a digit. This is not currently strictly enforced, but other field names will not have first class support from all components and back compatibility is not guaranteed. Names with both leading and trailing underscores (e.g., `\_version_`) are reserved. Every field must have a `name`.
+
+`type`::
+The name of the `fieldType` for this field. This will be found in the `name` attribute on the `fieldType` definition. Every field must have a `type`.
+
+`default`::
+A default value that will be added automatically to any document that does not have a value in this field when it is indexed. If this property is not specified, there is no default.
 
 [[DefiningFields-OptionalFieldTypeOverrideProperties]]
 == Optional Field Type Override Properties
@@ -70,4 +71,3 @@ Fields can have many of the same properties as field types. Properties from the 
 |===
 
 // TODO: SOLR-10655 END
-

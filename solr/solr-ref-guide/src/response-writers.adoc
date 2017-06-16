@@ -19,27 +19,26 @@
 // specific language governing permissions and limitations
 // under the License.
 
-A Response Writer generates the formatted response of a search. Solr supports a variety of Response Writers to ensure that query responses can be parsed by the appropriate language or application.
+A Response Writer generates the formatted response of a search.
 
-The `wt` parameter selects the Response Writer to be used. The table below lists the most common settings for the `wt` parameter.
+Solr supports a variety of Response Writers to ensure that query responses can be parsed by the appropriate language or application.
 
-[width="100%",options="header",]
-|===
-|`wt` Parameter Setting |Response Writer Selected
-|csv |<<ResponseWriters-CSVResponseWriter,CSVResponseWriter>>
-|geojson |<<ResponseWriters-GeoJSONResponseWriter,GeoJSONResponseWriter>>
-|javabin |<<ResponseWriters-BinaryResponseWriter,BinaryResponseWriter>>
-|json |<<ResponseWriters-JSONResponseWriter,JSONResponseWriter>>
-|php |<<ResponseWriters-PHPResponseWriterandPHPSerializedResponseWriter,PHPResponseWriter>>
-|phps |<<ResponseWriters-PHPResponseWriterandPHPSerializedResponseWriter,PHPSerializedResponseWriter>>
-|python |<<ResponseWriters-PythonResponseWriter,PythonResponseWriter>>
-|ruby |<<ResponseWriters-RubyResponseWriter,RubyResponseWriter>>
-|smile |<<ResponseWriters-SmileResponseWriter,SmileResponseWriter>>
-|velocity |<<ResponseWriters-VelocityResponseWriter,VelocityResponseWriter>>
-|xlsx |<<ResponseWriters-XLSXResponseWriter,XLSXResponseWriter>>
-|xml |<<ResponseWriters-TheStandardXMLResponseWriter,XMLResponseWriter>>
-|xslt |<<ResponseWriters-TheXSLTResponseWriter,XSLTResponseWriter>>
-|===
+The `wt` parameter selects the Response Writer to be used. The list below describe shows the most common settings for the `wt` parameter, with links to further sections that discuss them in more detail.
+
+* <<ResponseWriters-CSVResponseWriter,csv>>
+* <<ResponseWriters-GeoJSONResponseWriter,geojson>>
+* <<ResponseWriters-BinaryResponseWriter,javabin>>
+* <<ResponseWriters-JSONResponseWriter,json>>
+* <<ResponseWriters-PHPResponseWriterandPHPSerializedResponseWriter,php>>
+* <<ResponseWriters-PHPResponseWriterandPHPSerializedResponseWriter,phps>>
+* <<ResponseWriters-PythonResponseWriter,python>>
+* <<ResponseWriters-RubyResponseWriter,ruby>>
+* <<ResponseWriters-SmileResponseWriter,smile>>
+* <<ResponseWriters-VelocityResponseWriter,velocity>>
+* <<ResponseWriters-XLSXResponseWriter,xlsx>>
+* <<ResponseWriters-TheStandardXMLResponseWriter,xml>>
+* <<ResponseWriters-TheXSLTResponseWriter,xslt>>
+
 
 [[ResponseWriters-TheStandardXMLResponseWriter]]
 == The Standard XML Response Writer
@@ -55,13 +54,7 @@ The behavior of the XML Response Writer can be driven by the following query par
 
 The `version` parameter determines the XML protocol used in the response. Clients are strongly encouraged to _always_ specify the protocol version, so as to ensure that the format of the response they receive does not change unexpectedly if the Solr server is upgraded and a new default format is introduced.
 
-Currently supported version values are:
-
-[width="100%",options="header",]
-|===
-|XML Version |Notes
-|2.2 |The format of the responseHeader changed to use the same `<lst>` structure as the rest of the response.
-|===
+The only currently supported version value is `2.2`. The format of the `responseHeader` changed to use the same `<lst>` structure as the rest of the response.
 
 The default value is the latest supported.
 
@@ -173,17 +166,35 @@ The default mime type for the JSON writer is `application/json`, however this ca
 
 This parameter controls the output format of NamedLists, where order is more important than access by name. NamedList is currently used for field faceting data.
 
-// TODO: Change column width to %autowidth.spread when https://github.com/asciidoctor/asciidoctor-pdf/issues/599 is fixed
+The `json.nl` parameter takes the following values:
 
-[cols="20,40,40",options="header"]
-|===
+
 |json.nl Parameter setting |Example output for `NamedList("a"=1, "bar"="foo", null=3, null=null)` |Description
-|flat _(the default)_ |`["a",1, "bar","foo", null,3, null,null]` |NamedList is represented as a flat array, alternating names and values.
-|map |`{"a":1, "bar":"foo", "":3, "":null}` |NamedList is represented as a JSON object. Although this is the simplest mapping, a NamedList can have optional keys, repeated keys, and preserves order. Using a JSON object (essentially a map or hash) for a NamedList results in the loss of some information.
-|arrarr |`[["a",1], ["bar","foo"], [null,3], [null,null]]` |NamedList is represented as an array of two element arrays.
-|arrmap |[`{"a":1}, {"b":2}, 3, null]` |NamedList is represented as an array of JSON objects.
-|arrntv |`[{"name":"a","type":"int","value":1}, {"name":"bar","type":"str","value":"foo"}, {"name":null,"type":"int","value":3}, {"name":null,"type":"null","value":null}]` |NamedList is represented as an array of Name Type Value JSON objects.
-|===
+
+`flat`::
+The default. NamedList is represented as a flat array, alternating names and values.
++
+With input of `NamedList("a"=1, "bar"="foo", null=3, null=null)`, the output would be `["a",1, "bar","foo", null,3, null,null]`.
+
+`map`::
+NamedList is represented as a JSON object. Although this is the simplest mapping, a NamedList can have optional keys, repeated keys, and preserves order. Using a JSON object (essentially a map or hash) for a NamedList results in the loss of some information.
++
+With input of `NamedList("a"=1, "bar"="foo", null=3, null=null)`, the output would be `{"a":1, "bar":"foo", "":3, "":null}`.
+
+arrarr::
+NamedList is represented as an array of two element arrays.
++
+With input of `NamedList("a"=1, "bar"="foo", null=3, null=null)`, the output would be `[["a",1], ["bar","foo"], [null,3], [null,null]]`.
+
+arrmap::
+NamedList is represented as an array of JSON objects.
++
+With input of `NamedList("a"=1, "bar"="foo", null=3, null=null)`, the output would be `[{"a":1}, {"b":2}, 3, null]`.
+
+arrntv::
+NamedList is represented as an array of Name Type Value JSON objects.
++
+With input of `NamedList("a"=1, "bar"="foo", null=3, null=null)`, the output would be `[{"name":"a","type":"int","value":1}, {"name":"bar","type":"str","value":"foo"}, {"name":null,"type":"int","value":3}, {"name":null,"type":"null","value":null}]`.
 
 [[ResponseWriters-json.wrf]]
 ==== json.wrf
@@ -278,11 +289,11 @@ These parameters specify the CSV format that will be returned. You can accept th
 [width="50%",options="header",]
 |===
 |Parameter |Default Value
-|csv.encapsulator |"
+|csv.encapsulator |`"`
 |csv.escape |None
-|csv.separator |,
-|csv.header |Defaults to true. If false, Solr does not print the column headers
-|csv.newline |\n
+|csv.separator |`,`
+|csv.header |Defaults to `true`. If `false`, Solr does not print the column headers.
+|csv.newline |`\n`
 |csv.null |Defaults to a zero length string. Use this parameter when a document has no value for a particular field.
 |===
 
@@ -295,8 +306,8 @@ These parameters specify how multi-valued fields are encoded. Per-field override
 |===
 |Parameter |Default Value
 |csv.mv.encapsulator |None
-|csv.mv.escape |\
-|csv.mv.separator |Defaults to the `csv.separator` value
+|csv.mv.escape |`\`
+|csv.mv.separator |Defaults to the `csv.separator` value.
 |===
 
 [[ResponseWriters-Example]]

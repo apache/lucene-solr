@@ -22,16 +22,17 @@ The MBean Request Handler offers programmatic access to the information provided
 
 The MBean Request Handler accepts the following parameters:
 
-// TODO: Change column width to %autowidth.spread when https://github.com/asciidoctor/asciidoctor-pdf/issues/599 is fixed
+`key`::
+Restricts results by object key.
 
-[cols="10,20,10,60",options="header"]
-|===
-|Parameter |Type |Default |Description
-|key |multivalued |all |Restricts results by object key.
-|cat |multivalued |all |Restricts results by category name.
-|stats |boolean |false |Specifies whether statistics are returned with results. You can override the `stats` parameter on a per-field basis.
-|wt |multivalued |xml |The output format. This operates the same as the <<response-writers.adoc#response-writers,`wt` parameter in a query>>.
-|===
+`cat`::
+Restricts results by category name.
+
+`stats`::
+Specifies whether statistics are returned with results. You can override the `stats` parameter on a per-field basis. The default is `false`.
+
+`wt`::
+The output format. This operates the same as the <<response-writers.adoc#response-writers,`wt` parameter in a query>>. The default is `xml`.
 
 [[MBeanRequestHandler-Examples]]
 == Examples

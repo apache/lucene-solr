@@ -75,19 +75,33 @@ The properties that can be specified for a given field type fall into three majo
 
 === General Properties
 
-// TODO: Change column width to %autowidth.spread when https://github.com/asciidoctor/asciidoctor-pdf/issues/599 is fixed
+These are the general properties for fields
 
-[cols="30,40,30",options="header"]
-|===
-|Property |Description |Values
-|name |The name of the fieldType. This value gets used in field definitions, in the "type" attribute. It is strongly recommended that names consist of alphanumeric or underscore characters only and not start with a digit. This is not currently strictly enforced. |
-|class |The class name that gets used to store and index the data for this type. Note that you may prefix included class names with "solr." and Solr will automatically figure out which packages to search for the class - so `solr.TextField` will work. If you are using a third-party class, you will probably need to have a fully qualified class name. The fully qualified equivalent for `solr.TextField` is `org.apache.solr.schema.TextField`. |
-|positionIncrementGap |For multivalued fields, specifies a distance between multiple values, which prevents spurious phrase matches |integer
-|autoGeneratePhraseQueries |For text fields. If true, Solr automatically generates phrase queries for adjacent terms. If false, terms must be enclosed in double-quotes to be treated as phrases. |true or false
-|enableGraphQueries |For text fields, applicable when querying with <<the-standard-query-parser.adoc#TheStandardQueryParser-StandardQueryParserParameters,`sow=false`>>. Use `true` (the default) for field types with query analyzers including graph-aware filters, e.g. <<filter-descriptions.adoc#FilterDescriptions-SynonymGraphFilter,Synonym Graph Filter>> and <<filter-descriptions.adoc#FilterDescriptions-WordDelimiterGraphFilter,Word Delimiter Graph Filter>>. Use `false` for field types with query analyzers including filters that can match docs when some tokens are missing, e.g., <<filter-descriptions.adoc#FilterDescriptions-ShingleFilter,Shingle Filter>>. |true or false
-|[[FieldTypeDefinitionsandProperties-docValuesFormat]]docValuesFormat |Defines a custom `DocValuesFormat` to use for fields of this type. This requires that a schema-aware codec, such as the `SchemaCodecFactory` has been configured in solrconfig.xml. |n/a
-|postingsFormat |Defines a custom `PostingsFormat` to use for fields of this type. This requires that a schema-aware codec, such as the `SchemaCodecFactory` has been configured in solrconfig.xml. |n/a
-|===
+`name`::
+The name of the fieldType. This value gets used in field definitions, in the "type" attribute. It is strongly recommended that names consist of alphanumeric or underscore characters only and not start with a digit. This is not currently strictly enforced.
+
+`class`::
+The class name that gets used to store and index the data for this type. Note that you may prefix included class names with "solr." and Solr will automatically figure out which packages to search for the class - so `solr.TextField` will work.
++
+If you are using a third-party class, you will probably need to have a fully qualified class name. The fully qualified equivalent for `solr.TextField` is `org.apache.solr.schema.TextField`.
+
+`positionIncrementGap`::
+For multivalued fields, specifies a distance between multiple values, which prevents spurious phrase matches.
+
+`autoGeneratePhraseQueries`:: For text fields. If `true`, Solr automatically generates phrase queries for adjacent terms. If `false`, terms must be enclosed in double-quotes to be treated as phrases.
+
+`enableGraphQueries`::
+For text fields, applicable when querying with <<the-standard-query-parser.adoc#TheStandardQueryParser-StandardQueryParserParameters,`sow=false`>>. Use `true` (the default) for field types with query analyzers including graph-aware filters, e.g., <<filter-descriptions.adoc#FilterDescriptions-SynonymGraphFilter,Synonym Graph Filter>> and <<filter-descriptions.adoc#FilterDescriptions-WordDelimiterGraphFilter,Word Delimiter Graph Filter>>.
++
+Use `false` for field types with query analyzers including filters that can match docs when some tokens are missing, e.g., <<filter-descriptions.adoc#FilterDescriptions-ShingleFilter,Shingle Filter>>.
+
+[[FieldTypeDefinitionsandProperties-docValuesFormat]]
+`docValuesFormat`::
+Defines a custom `DocValuesFormat` to use for fields of this type. This requires that a schema-aware codec, such as the `SchemaCodecFactory` has been configured in solrconfig.xml.
+
+`postingsFormat`::
+Defines a custom `PostingsFormat` to use for fields of this type. This requires that a schema-aware codec, such as the `SchemaCodecFactory` has been configured in solrconfig.xml.
+
 
 [NOTE]
 ====

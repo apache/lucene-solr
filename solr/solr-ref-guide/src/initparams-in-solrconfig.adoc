@@ -44,22 +44,16 @@ This sets the default search field ("df") to be "_text_" for all of the request 
 
 The syntax and semantics are similar to that of a `<requestHandler>` . The following are the attributes
 
-// TODO: Change column width to %autowidth.spread when https://github.com/asciidoctor/asciidoctor-pdf/issues/599 is fixed
+`path`::
+A comma-separated list of paths which will use the parameters. Wildcards can be used in paths to define nested paths, as described below.
 
-[cols="30,70",options="header"]
-|===
-|Property |Description
-|path |A comma-separated list of paths which will use the parameters. Wildcards can be used in paths to define nested paths, as described below.
-|name a|
+`name`::
 The name of this set of parameters. The name can be used directly in a requestHandler definition if a path is not explicitly named. If you give your `<initParams>` a name, you can refer to the params in a `<requestHandler>` that is not defined as a path.
-
++
 For example, if an `<initParams>` section has the name "myParams", you can call the name when defining your request handler:
-
++
 [source,xml]
-----
 <requestHandler name="/dump1" class="DumpRequestHandler" initParams="myParams"/>
-----
-|===
 
 [[InitParamsinSolrConfig-Wildcards]]
 == Wildcards

@@ -66,44 +66,46 @@ If you'd rather use a standard industry format, Solr supports WKT and GeoJSON. H
 
 There are two spatial Solr "query parsers" for geospatial search: `geofilt` and `bbox`. They take the following parameters:
 
-// TODO: Change column width to %autowidth.spread when https://github.com/asciidoctor/asciidoctor-pdf/issues/599 is fixed
+`d`::
+The radial distance, usually in kilometers. RPT & BBoxField can set other units via the setting `distanceUnits`.
 
-[cols="30,70",options="header"]
-|===
-|Parameter |Description
-|d |the radial distance, usually in kilometers. (RPT & BBoxField can set other units via the setting `distanceUnits`)
-|pt |the center point using the format "lat,lon" if latitude & longitude. Otherwise, "x,y" for PointType or "x y" for RPT field types.
-|sfield |a spatial indexed field
-|score a|
+`pt`::
+The center point using the format "lat,lon" if latitude & longitude. Otherwise, "x,y" for PointType or "x y" for RPT field types.
+
+`sfield`::
+A spatial indexed field.
+
+`score`::
 (Advanced option; not supported by LatLonType (deprecated) or PointType) If the query is used in a scoring context (e.g. as the main query in `q`), this _<<local-parameters-in-queries.adoc#local-parameters-in-queries,local parameter>>_ determines what scores will be produced. Valid values are:
 
-* `none` - A fixed score of 1.0. (the default)
-* `kilometers` - distance in kilometers between the field value and the specified center point
-* `miles` - distance in miles between the field value and the specified center point
-* `degrees` - distance in degrees between the field value and the specified center point
-* `distance` - distance between the field value and the specified center point in the `distanceUnits` configured for this field
-* `recipDistance` - 1 / the distance
-
+* `none`: A fixed score of 1.0. (the default)
+* `kilometers`: distance in kilometers between the field value and the specified center point
+* `miles`: distance in miles between the field value and the specified center point
+* `degrees`: distance in degrees between the field value and the specified center point
+* `distance`: distance between the field value and the specified center point in the `distanceUnits` configured for this field
+* `recipDistance`: 1 / the distance
++
 [WARNING]
 ====
 Don't use this for indexed non-point shapes (e.g. polygons). The results will be erroneous. And with RPT, it's only recommended for multi-valued point data, as the implementation doesn't scale very well and for single-valued fields, you should instead use a separate non-RPT field purely for distance sorting.
 ====
-
++
 When used with `BBoxField`, additional options are supported:
++
+* `overlapRatio`: The relative overlap between the indexed shape & query shape.
+* `area`: haversine based area of the overlapping shapes expressed in terms of the `distanceUnits` configured for this field
+* `area2D`: cartesian coordinates based area of the overlapping shapes expressed in terms of the `distanceUnits` configured for this field
 
-* `overlapRatio` - The relative overlap between the indexed shape & query shape.
-* `area` - haversine based area of the overlapping shapes expressed in terms of the `distanceUnits` configured for this field
-* `area2D` - cartesian coordinates based area of the overlapping shapes expressed in terms of the `distanceUnits` configured for this field
+`filter`::
+(Advanced option; not supported by LatLonType (deprecated) or PointType). If you only want the query to score (with the above `score` local parameter), not filter, then set this local parameter to false.
 
-|filter |(Advanced option; not supported by LatLonType (deprecated) or PointType). If you only want the query to score (with the above `score` local parameter), not filter, then set this local parameter to false.
-|===
 
 [[SpatialSearch-geofilt]]
 === geofilt
 
 The `geofilt` filter allows you to retrieve results based on the geospatial distance (AKA the "great circle distance") from a given point. Another way of looking at it is that it creates a circular shape filter. For example, to find all documents within five kilometers of a given lat/lon point, you could enter `&q=*:*&fq={!geofilt sfield=store}&pt=45.15,-93.85&d=5`. This filter returns all results within a circle of the given radius around the initial point:
 
-image::images/spatial-search/circle.png[image]
+image::images/spatial-search/circle.png[5KM radius]
 
 
 [[SpatialSearch-bbox]]
@@ -117,8 +119,7 @@ Here's a sample query:
 
 The rectangular shape is faster to compute and so it's sometimes used as an alternative to `geofilt` when it's acceptable to return points outside of the radius. However, if the ideal goal is a circle but you want it to run faster, then instead consider using the RPT field and try a large `distErrPct` value like `0.1` (10% radius). This will return results outside the radius but it will do so somewhat uniformly around the shape.
 
-image::images/spatial-search/bbox.png[image]
-
+image::images/spatial-search/bbox.png[Bounding box]
 
 [IMPORTANT]
 ====
@@ -147,7 +148,6 @@ If you know the filter query (be it spatial or not) is fairly unique and not lik
 `&q=...mykeywords...&fq=...someotherfilters...&fq={!geofilt cache=false}&sfield=store&pt=45.15,-93.85&d=5`
 
 LLPSF does not support Solr's "PostFilter".
-
 
 [[SpatialSearch-DistanceSortingorBoosting_FunctionQueries_]]
 == Distance Sorting or Boosting (Function Queries)
@@ -220,32 +220,51 @@ RPT _shares_ various features in common with `LatLonPointSpatialField`. Some are
 
 To use RPT, the field type must be registered and configured in `schema.xml`. There are many options for this field type.
 
-// TODO: Change column width to %autowidth.spread when https://github.com/asciidoctor/asciidoctor-pdf/issues/599 is fixed
+`name`::
+The name of the field type.
 
-[cols="30,70",options="header"]
-|===
-|Setting |Description
-|name |The name of the field type.
-|class |This should be `solr.SpatialRecursivePrefixTreeFieldType`. But be aware that the Lucene spatial module includes some other so-called "spatial strategies" other than RPT, notably TermQueryPT*, BBox, PointVector*, and SerializedDV. Solr requires a field type to parallel these in order to use them. The asterisked ones have them.
-|spatialContextFactory |This is a Java class name to an internal extension point governing support for shape definitions & parsing. If you require polygon support, set this to `JTS` – an alias for `org.locationtech.spatial4j.context.jts.JtsSpatialContextFactory`; otherwise it can be omitted. See important info below about JTS. (note: prior to Solr 6, the "org.locationtech.spatial4j" part was "com.spatial4j.core" and there used to be no convenience JTS alias)
-|geo |If **true**, the default, latitude and longitude coordinates will be used and the mathematical model will generally be a sphere. If false, the coordinates will be generic X & Y on a 2D plane using Euclidean/Cartesian geometry.
-|format |Defines the shape syntax/format to be used. Defaults to `WKT` but `GeoJSON` is another popular format. Spatial4j governs this feature and supports https://locationtech.github.io/spatial4j/apidocs/org/locationtech/spatial4j/io/package-frame.html[other formats]. If a given shape is parseable as "lat,lon" or "x y" then that is always supported.
-|distanceUnits a|
-This is used to specify the units for distance measurements used throughout the use of this field. This can be `degrees`, `kilometers` or `miles`. It is applied to nearly all distance measurements involving the field: `maxDistErr`, `distErr`, `d`, `geodist` and the `score` when score is `distance`, `area`, or `area2d`. However, it doesn't affect distances embedded in WKT strings, (eg: "`BUFFER(POINT(200 10),0.2)`"), which are still in degrees.
+`class`::
+This should be `solr.SpatialRecursivePrefixTreeFieldType`. But be aware that the Lucene spatial module includes some other so-called "spatial strategies" other than RPT, notably TermQueryPT*, BBox, PointVector*, and SerializedDV. Solr requires a field type to parallel these in order to use them. The asterisked ones have them.
 
-`distanceUnits` defaults to either "```kilometers```" if `geo` is "```true```", or "```degrees```" if `geo` is "```false```".
+`spatialContextFactory`::
+This is a Java class name to an internal extension point governing support for shape definitions & parsing. If you require polygon support, set this to `JTS` – an alias for `org.locationtech.spatial4j.context.jts.JtsSpatialContextFactory`; otherwise it can be omitted. See important info below about JTS. (note: prior to Solr 6, the "org.locationtech.spatial4j" part was "com.spatial4j.core" and there used to be no convenience JTS alias)
 
+`geo`::
+If `true`, the default, latitude and longitude coordinates will be used and the mathematical model will generally be a sphere. If `false`, the coordinates will be generic X & Y on a 2D plane using Euclidean/Cartesian geometry.
+
+`format`:: Defines the shape syntax/format to be used. Defaults to `WKT` but `GeoJSON` is another popular format. Spatial4j governs this feature and supports https://locationtech.github.io/spatial4j/apidocs/org/locationtech/spatial4j/io/package-frame.html[other formats]. If a given shape is parseable as "lat,lon" or "x y" then that is always supported.
+
+`distanceUnits`:: a|
+This is used to specify the units for distance measurements used throughout the use of this field. This can be `degrees`, `kilometers` or `miles`. It is applied to nearly all distance measurements involving the field: `maxDistErr`, `distErr`, `d`, `geodist` and the `score` when score is `distance`, `area`, or `area2d`. However, it doesn't affect distances embedded in WKT strings, (e.g., `BUFFER(POINT(200 10),0.2)`), which are still in degrees.
++
+`distanceUnits` defaults to either `kilometers` if `geo` is true`, or `degrees` if `geo` is `false`.
++
 `distanceUnits` replaces the `units` attribute; which is now deprecated and mutually exclusive with this attribute.
 
-|distErrPct |Defines the default precision of non-point shapes (both index & query), as a fraction between 0.0 (fully precise) to 0.5. The closer this number is to zero, the more accurate the shape will be. However, more precise indexed shapes use more disk space and take longer to index. Bigger distErrPct values will make queries faster but less accurate. At query time this can be overridden in the query syntax, such as to 0.0 so as to not approximate the search shape. The default for the RPT field is 0.025. Note: For RPTWithGeometrySpatialField (see below), there's always complete accuracy with the serialized geometry and so this doesn't control accuracy so much as it controls the trade-off of how big the index should be. distErrPct defaults to 0.15 for that field.
-|maxDistErr |Defines the highest level of detail required for indexed data. If left blank, the default is one meter – just a bit less than 0.000009 degrees. This setting is used internally to compute an appropriate maxLevels (see below).
-|worldBounds |Defines the valid numerical ranges for x and y, in the format of `ENVELOPE(minX, maxX, maxY, minY)`. If `geo="true"`, the standard lat-lon world boundaries are assumed. If `geo=false`, you should define your boundaries.
-|distCalculator |Defines the distance calculation algorithm. If `geo=true`, "haversine" is the default. If `geo=false`, "cartesian" will be the default. Other possible values are "lawOfCosines", "vincentySphere" and "cartesian^2".
-|prefixTree |Defines the spatial grid implementation. Since a PrefixTree (such as RecursivePrefixTree) maps the world as a grid, each grid cell is decomposed to another set of grid cells at the next level. If `geo=true` then the default prefix tree is "```geohash```", otherwise it's "```quad```". Geohash has 32 children at each level, quad has 4. Geohash can only be used for `geo=true` as it's strictly geospatial. A third choice is "```packedQuad```", which is generally more efficient than plain "quad", provided there are many levels -- perhaps 20 or more.
-|maxLevels |Sets the maximum grid depth for indexed data. Instead, it's usually more intuitive to compute an appropriate maxLevels by specifying `maxDistErr` .
-|===
+`distErrPct`::
+Defines the default precision of non-point shapes (both index & query), as a fraction between `0.0` (fully precise) to `0.5`. The closer this number is to zero, the more accurate the shape will be. However, more precise indexed shapes use more disk space and take longer to index.
++
+Bigger `distErrPct` values will make queries faster but less accurate. At query time this can be overridden in the query syntax, such as to `0.0` so as to not approximate the search shape. The default for the RPT field is `0.025`.
++
+NOTE: For RPTWithGeometrySpatialField (see below), there's always complete accuracy with the serialized geometry and so this doesn't control accuracy so much as it controls the trade-off of how big the index should be. distErrPct defaults to 0.15 for that field.
 
-*_And there are others:_* `normWrapLongitude` _,_ `datelineRule`, `validationRule`, `autoIndex`, `allowMultiOverlap`, `precisionModel`. For further info, see notes below about `spatialContextFactory` implementations referenced above, especially the link to the JTS based one.
+`maxDistErr`:: Defines the highest level of detail required for indexed data. If left blank, the default is one meter – just a bit less than 0.000009 degrees. This setting is used internally to compute an appropriate maxLevels (see below).
+
+`worldBounds`::
+Defines the valid numerical ranges for x and y, in the format of `ENVELOPE(minX, maxX, maxY, minY)`. If `geo="true"`, the standard lat-lon world boundaries are assumed. If `geo=false`, you should define your boundaries.
+
+`distCalculator`::
+Defines the distance calculation algorithm. If `geo=true`, "haversine" is the default. If `geo=false`, "cartesian" will be the default. Other possible values are "lawOfCosines", "vincentySphere" and "cartesian^2".
+
+`prefixTree`:: Defines the spatial grid implementation. Since a PrefixTree (such as RecursivePrefixTree) maps the world as a grid, each grid cell is decomposed to another set of grid cells at the next level.
++
+If `geo=true` then the default prefix tree is `geohash`, otherwise it's `quad`. Geohash has 32 children at each level, quad has 4. Geohash can only be used for `geo=true` as it's strictly geospatial.
++
+A third choice is `packedQuad`, which is generally more efficient than `quad`, provided there are many levels -- perhaps 20 or more.
+
+`maxLevels`:: Sets the maximum grid depth for indexed data. Instead, it's usually more intuitive to compute an appropriate maxLevels by specifying `maxDistErr` .
+
+*_And there are others:_* `normWrapLongitude`, `datelineRule`, `validationRule`, `autoIndex`, `allowMultiOverlap`, `precisionModel`. For further info, see notes below about `spatialContextFactory` implementations referenced above, especially the link to the JTS based one.
 
 [[SpatialSearch-JTSandPolygons]]
 === JTS and Polygons
@@ -304,23 +323,30 @@ The RPT field supports generating a 2D grid of facet counts for documents having
 
 The heatmap feature is accessed from Solr's faceting feature. As a part of faceting, it supports the `key` local parameter as well as excluding tagged filter queries, just like other types of faceting do. This allows multiple heatmaps to be returned on the same field with different filters.
 
-// TODO: Change column width to %autowidth.spread when https://github.com/asciidoctor/asciidoctor-pdf/issues/599 is fixed
+`facet`::
+Set to `true` to enable faceting.
 
-[cols="30,70",options="header"]
-|===
-|Parameter |Description
-|facet |Set to `true` to enable faceting
-|facet.heatmap |The field name of type RPT
-|facet.heatmap.geom |The region to compute the heatmap on, specified using the rectangle-range syntax or WKT. It defaults to the world. ex: `["-180 -90" TO "180 90"]`
-|facet.heatmap.gridLevel |A specific grid level, which determines how big each grid cell is. Defaults to being computed via distErrPct (or distErr)
-|facet.heatmap.distErrPct |A fraction of the size of geom used to compute gridLevel. Defaults to 0.15. It's computed the same as a similarly named parameter for RPT.
-|facet.heatmap.distErr |A cell error distance used to pick the grid level indirectly. It's computed the same as a similarly named parameter for RPT.
-|facet.heatmap.format |The format, either `ints2D` (default) or `png`.
-|===
+`facet.heatmap`::
+The field name of type RPT.
+
+`facet.heatmap.geom`::
+The region to compute the heatmap on, specified using the rectangle-range syntax or WKT. It defaults to the world. ex: `["-180 -90" TO "180 90"]`.
+
+`facet.heatmap.gridLevel`::
+A specific grid level, which determines how big each grid cell is. Defaults to being computed via `distErrPct` (or `distErr`).
+
+`facet.heatmap.distErrPct`::
+A fraction of the size of geom used to compute gridLevel. Defaults to 0.15. It's computed the same as a similarly named parameter for RPT.
+
+`facet.heatmap.distErr`::
+A cell error distance used to pick the grid level indirectly. It's computed the same as a similarly named parameter for RPT.
+
+`facet.heatmap.format`::
+The format, either `ints2D` (default) or `png`.
 
 [TIP]
 ====
-You'll experiment with different distErrPct values (probably 0.10 - 0.20) with various input geometries till the default size is what you're looking for. The specific details of how it's computed isn't important. For high-detail grids used in point-plotting (loosely one cell per pixel), set distErr to be the number of decimal-degrees of several pixels or so of the map being displayed. Also, you probably don't want to use a geohash based grid because the cell orientation between grid levels flip-flops between being square and rectangle. Quad is consistent and has more levels, albeit at the expense of a larger index.
+You'll experiment with different `distErrPct` values (probably 0.10 - 0.20) with various input geometries till the default size is what you're looking for. The specific details of how it's computed isn't important. For high-detail grids used in point-plotting (loosely one cell per pixel), set `distErr` to be the number of decimal-degrees of several pixels or so of the map being displayed. Also, you probably don't want to use a geohash-based grid because the cell orientation between grid levels flip-flops between being square and rectangle. Quad is consistent and has more levels, albeit at the expense of a larger index.
 ====
 
 Here's some sample output in JSON (with "..." inserted for brevity):

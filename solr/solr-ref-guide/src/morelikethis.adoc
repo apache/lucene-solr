@@ -47,51 +47,63 @@ The next phase filters terms from the original document using thresholds defined
 
 The table below summarizes the `MoreLikeThis` parameters supported by Lucene/Solr. These parameters can be used with any of the three possible MoreLikeThis approaches.
 
-// TODO: Change column width to %autowidth.spread when https://github.com/asciidoctor/asciidoctor-pdf/issues/599 is fixed
+`mlt.fl`::
+Specifies the fields to use for similarity. If possible, these should have stored `termVectors`.
 
-[cols="30,70",options="header"]
-|===
-|Parameter |Description
-|mlt.fl |Specifies the fields to use for similarity. If possible, these should have stored `termVectors`.
-|mlt.mintf |Specifies the Minimum Term Frequency, the frequency below which terms will be ignored in the source document.
-|mlt.mindf |Specifies the Minimum Document Frequency, the frequency at which words will be ignored which do not occur in at least this many documents.
-|mlt.maxdf |Specifies the Maximum Document Frequency, the frequency at which words will be ignored which occur in more than this many documents.
-|mlt.minwl |Sets the minimum word length below which words will be ignored.
-|mlt.maxwl |Sets the maximum word length above which words will be ignored.
-|mlt.maxqt |Sets the maximum number of query terms that will be included in any generated query.
-|mlt.maxntp |Sets the maximum number of tokens to parse in each example document field that is not stored with TermVector support.
-|mlt.boost |Specifies if the query will be boosted by the interesting term relevance. It can be either "true" or "false".
-|mlt.qf |Query fields and their boosts using the same format as that used by the <<the-dismax-query-parser.adoc#the-dismax-query-parser,DisMax Query Parser>>. These fields must also be specified in `mlt.fl`.
-|===
+`mlt.mintf`::
+Specifies the Minimum Term Frequency, the frequency below which terms will be ignored in the source document.
+
+`mlt.mindf`::
+Specifies the Minimum Document Frequency, the frequency at which words will be ignored which do not occur in at least this many documents.
+
+`mlt.maxdf`::
+Specifies the Maximum Document Frequency, the frequency at which words will be ignored which occur in more than this many documents.
+
+`mlt.minwl`::
+Sets the minimum word length below which words will be ignored.
+
+`mlt.maxwl`::
+Sets the maximum word length above which words will be ignored.
+
+`mlt.maxqt`::
+Sets the maximum number of query terms that will be included in any generated query.
+
+`mlt.maxntp`::
+Sets the maximum number of tokens to parse in each example document field that is not stored with TermVector support.
+
+`mlt.boost`::
+Specifies if the query will be boosted by the interesting term relevance. It can be either "true" or "false".
+
+`mlt.qf`::
+Query fields and their boosts using the same format as that used by the <<the-dismax-query-parser.adoc#the-dismax-query-parser,DisMax Query Parser>>. These fields must also be specified in `mlt.fl`.
+
 
 [[MoreLikeThis-ParametersfortheMoreLikeThisComponent]]
 == Parameters for the MoreLikeThisComponent
 
 Using MoreLikeThis as a search component returns similar documents for each document in the response set. In addition to the common parameters, these additional options are available:
 
-// TODO: Change column width to %autowidth.spread when https://github.com/asciidoctor/asciidoctor-pdf/issues/599 is fixed
+`mlt`::
+If set to `true`, activates the `MoreLikeThis` component and enables Solr to return `MoreLikeThis` results.
 
-[cols="30,70",options="header"]
-|===
-|Parameter |Description
-|mlt |If set to true, activates the `MoreLikeThis` component and enables Solr to return `MoreLikeThis` results.
-|mlt.count |Specifies the number of similar documents to be returned for each result. The default value is 5.
-|===
+`mlt.count`::
+Specifies the number of similar documents to be returned for each result. The default value is 5.
+
 
 [[MoreLikeThis-ParametersfortheMoreLikeThisHandler]]
 == Parameters for the MoreLikeThisHandler
 
 The table below summarizes parameters accessible through the `MoreLikeThisHandler`. It supports faceting, paging, and filtering using common query parameters, but does not work well with alternate query parsers.
 
-// TODO: Change column width to %autowidth.spread when https://github.com/asciidoctor/asciidoctor-pdf/issues/599 is fixed
+`mlt.match.include`::
+Specifies whether or not the response should include the matched document. If set to false, the response will look like a normal select response.
 
-[cols="30,70",options="header"]
-|===
-|Parameter |Description
-|mlt.match.include |Specifies whether or not the response should include the matched document. If set to false, the response will look like a normal select response.
-|mlt.match.offset |Specifies an offset into the main query search results to locate the document on which the `MoreLikeThis` query should operate. By default, the query operates on the first result for the q parameter.
-|mlt.interestingTerms |Controls how the `MoreLikeThis` component presents the "interesting" terms (the top TF/IDF terms) for the query. Supports three settings. The setting list lists the terms. The setting none lists no terms. The setting details lists the terms along with the boost value used for each term. Unless `mlt.boost=true`, all terms will have `boost=1.0`.
-|===
+`mlt.match.offset`::
+Specifies an offset into the main query search results to locate the document on which the `MoreLikeThis` query should operate. By default, the query operates on the first result for the q parameter.
+
+`mlt.interestingTerms`::
+Controls how the `MoreLikeThis` component presents the "interesting" terms (the top TF/IDF terms) for the query. Supports three settings. The setting list lists the terms. The setting none lists no terms. The setting details lists the terms along with the boost value used for each term. Unless `mlt.boost=true`, all terms will have `boost=1.0`.
+
 
 [[MoreLikeThis-MoreLikeThisQueryParser]]
 == More Like This Query Parser

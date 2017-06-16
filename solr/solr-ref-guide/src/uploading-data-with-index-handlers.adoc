@@ -74,18 +74,15 @@ For example:
 
 The add command supports some optional attributes which may be specified.
 
-// TODO: Change column width to %autowidth.spread when https://github.com/asciidoctor/asciidoctor-pdf/issues/599 is fixed
+`commitWithin`::
+Add the document within the specified number of milliseconds.
 
-[cols="30,70",options="header"]
-|===
-|Optional Parameter |Parameter Description
-|commitWithin=_number_ |Add the document within the specified number of milliseconds
-|overwrite=_boolean_ |Default is true. Indicates if the unique key constraints should be checked to overwrite previous versions of the same document (see below)
-|===
+`overwrite`::
+Default is `true`. Indicates if the unique key constraints should be checked to overwrite previous versions of the same document (see below).
 
-If the document schema defines a unique key, then by default an `/update` operation to add a document will overwrite (ie: replace) any document in the index with the same unique key. If no unique key has been defined, indexing performance is somewhat faster, as no check has to be made for an existing documents to replace.
+If the document schema defines a unique key, then by default an `/update` operation to add a document will overwrite (i.e., replace) any document in the index with the same unique key. If no unique key has been defined, indexing performance is somewhat faster, as no check has to be made for an existing documents to replace.
 
-If you have a unique key field, but you feel confident that you can safely bypass the uniqueness check (eg: you build your indexes in batch, and your indexing code guarantees it never adds the same document more than once) you can specify the `overwrite="false"` option when adding your documents.
+If you have a unique key field, but you feel confident that you can safely bypass the uniqueness check (e.g., you build your indexes in batch, and your indexing code guarantees it never adds the same document more than once) you can specify the `overwrite="false"` option when adding your documents.
 
 [[UploadingDatawithIndexHandlers-XMLUpdateCommands]]
 === XML Update Commands
@@ -101,15 +98,12 @@ The `<optimize>` operation requests Solr to merge internal data structures in or
 
 The `<commit>` and `<optimize>` elements accept these optional attributes:
 
-// TODO: Change column width to %autowidth.spread when https://github.com/asciidoctor/asciidoctor-pdf/issues/599 is fixed
+`waitSearcher`::
+Default is `true`. Blocks until a new searcher is opened and registered as the main query searcher, making the changes visible.
 
-[cols="30,70",options="header"]
-|===
-|Optional Attribute |Description
-|waitSearcher |Default is true. Blocks until a new searcher is opened and registered as the main query searcher, making the changes visible.
-|expungeDeletes |(commit only) Default is false. Merges segments that have more than 10% deleted docs, expunging them in the process.
-|maxSegments |(optimize only) Default is 1. Merges the segments down to no more than this number of segments.
-|===
+`expungeDeletes`:: (commit only) Default is `false`. Merges segments that have more than 10% deleted docs, expunging them in the process.
+
+`maxSegments`:: (optimize only) Default is `1`. Merges the segments down to no more than this number of segments.
 
 Here are examples of <commit> and <optimize> using optional attributes:
 
@@ -426,29 +420,83 @@ The CSV handler allows the specification of many parameters in the URL in the fo
 
 The table below describes the parameters for the update handler.
 
-// TODO: Change column width to %autowidth.spread when https://github.com/asciidoctor/asciidoctor-pdf/issues/599 is fixed
+`separator`::
+Character used as field separator; default is ",". This parameter is global; for per-field usage, see the `split` parameter.
++
+Example:  `separator=%09`
 
-[cols="20,40,20,20",options="header"]
-|===
-|Parameter |Usage |Global (g) or Per Field (f) |Example
-|separator |Character used as field separator; default is "," |g,(f: see split) |separator=%09
-|trim |If true, remove leading and trailing whitespace from values. Default=false. |g,f |f.isbn.trim=true trim=false
-|header |Set to true if first line of input contains field names. These will be used if the *fieldnames* parameter is absent. |g |
-|fieldnames |Comma separated list of field names to use when adding documents. |g |fieldnames=isbn,price,title
-|literal.<field_name> |A literal value for a specified field name. |g |literal.color=red
-|skip |Comma separated list of field names to skip. |g |skip=uninteresting,shoesize
-|skipLines |Number of lines to discard in the input stream before the CSV data starts, including the header, if present. Default=0. |g |skipLines=5
-|encapsulator |The character optionally used to surround values to preserve characters such as the CSV separator or whitespace. This standard CSV format handles the encapsulator itself appearing in an encapsulated value by doubling the encapsulator. |g,(f: see split) |encapsulator="
-|escape |The character used for escaping CSV separators or other reserved characters. If an escape is specified, the encapsulator is not used unless also explicitly specified since most formats use either encapsulation or escaping, not both |g |escape=\
-|keepEmpty |Keep and index zero length (empty) fields. Default=false. |g,f |f.price.keepEmpty=true
-|map |Map one value to another. Format is value:replacement (which can be empty.) |g,f |map=left:right f.subject.map=history:bunk
-|split |If true, split a field into multiple values by a separate parser. |f |
-|overwrite |If true (the default), check for and overwrite duplicate documents, based on the uniqueKey field declared in the Solr schema. If you know the documents you are indexing do not contain any duplicates then you may see a considerable speed up setting this to false. |g |
-|commit |Issues a commit after the data has been ingested. |g |
-|commitWithin |Add the document within the specified number of milliseconds. |g |commitWithin=10000
-|rowid |Map the rowid (line number) to a field specified by the value of the parameter, for instance if your CSV doesn't have a unique key and you want to use the row id as such. |g |rowid=id
-|rowidOffset |Add the given offset (as an int) to the rowid before adding it to the document. Default is 0 |g |rowidOffset=10
-|===
+`trim`::
+If `true`, remove leading and trailing whitespace from values. The default is `false`. This parameter can be either global or per-field.
++
+Examples: `f.isbn.trim=true` or `trim=false`
+
+`header`::
+Set to `true` if first line of input contains field names. These will be used if the `fieldnames` parameter is absent. This parameter is global.
+
+`fieldnames`::
+Comma-separated list of field names to use when adding documents. This parameter is global.
++
+Example: `fieldnames=isbn,price,title`
+
+`literal._field_name_`::
+A literal value for a specified field name. This parameter is global.
++
+Example: `literal.color=red`
+
+`skip`::
+Comma separated list of field names to skip. This parameter is global.
++
+Example: `skip=uninteresting,shoesize`
+
+`skipLines`::
+Number of lines to discard in the input stream before the CSV data starts, including the header, if present. Default=`0`. This parameter is global.
++
+Example: `skipLines=5`
+
+`encapsulator`:: The character optionally used to surround values to preserve characters such as the CSV separator or whitespace. This standard CSV format handles the encapsulator itself appearing in an encapsulated value by doubling the encapsulator.
++
+This parameter is global; for per-field usage, see `split`.
++
+Example: `encapsulator="`
+
+`escape`:: The character used for escaping CSV separators or other reserved characters. If an escape is specified, the encapsulator is not used unless also explicitly specified since most formats use either encapsulation or escaping, not both. |g |
+
+Example: `escape=\`
+
+`keepEmpty`::
+Keep and index zero length (empty) fields. The default is `false`. This parameter can be global or per-field.
++
+Example: `f.price.keepEmpty=true`
+
+`map`:: Map one value to another. Format is value:replacement (which can be empty). This parameter can be global or per-field.
++
+Example: `map=left:right` or `f.subject.map=history:bunk`
+
+`split`::
+If `true`, split a field into multiple values by a separate parser. This parameter is used on a per-field basis.
+
+`overwrite`::
+If `true` (the default), check for and overwrite duplicate documents, based on the uniqueKey field declared in the Solr schema. If you know the documents you are indexing do not contain any duplicates then you may see a considerable speed up setting this to `false`.
++
+This parameter is global.
+
+`commit`::
+Issues a commit after the data has been ingested. This parameter is global.
+
+`commitWithin`::
+Add the document within the specified number of milliseconds. This parameter is global.
++
+Example: `commitWithin=10000`
+
+`rowid`::
+Map the `rowid` (line number) to a field specified by the value of the parameter, for instance if your CSV doesn't have a unique key and you want to use the row id as such. This parameter is global.
++
+Example: `rowid=id`
+
+`rowidOffset`::
+Add the given offset (as an integer) to the `rowid` before adding it to the document. Default is `0`. This parameter is global.
++
+Example: `rowidOffset=10`
 
 [[UploadingDatawithIndexHandlers-IndexingTab-Delimitedfiles]]
 === Indexing Tab-Delimited files
