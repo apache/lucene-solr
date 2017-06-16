@@ -212,7 +212,23 @@ if(gt(fieldA,fieldB),pow(fieldA,fieldB),pow(fieldB,fieldA)) // if fieldA > field
 ----
 
 == mod
-//TODO
+The `mod` function returns the remainder (modulo) of the first parameter divided by the second parameter.
+
+=== mod Parameters
+
+* `Field Name | Raw Number | Number Evaluator`: Parameter 1
+* `Field Name | Raw Number | Number Evaluator`: Parameter 2
+
+=== mod Syntax
+
+The expressions below show the various ways in which you can use the `mod` evaluator.
+
+[source,text]
+----
+mod(100,3) // returns the remainder of 100 / 3 .
+mod(100,fieldA) // returns the remainder of 100 divided by the value of fieldA.
+mod(fieldA,1.4) // returns the remainder of fieldA divided by 1.4.
+if(gt(fieldA,fieldB),mod(fieldA,fieldB),mod(fieldB,fieldA)) // if fieldA > fieldB then return the remainder of fieldA/fieldB, else return the remainder of fieldB/fieldA.
 
 === ceil
 //TODO
