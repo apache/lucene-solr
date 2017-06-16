@@ -112,6 +112,8 @@ Optimizations
   query is a point (for 2D) or a is a simple date interval (e.g. 1 month).  When
   the strategy is marked as pointsOnly, the results is a TermQuery. (David Smiley)
 
+* LUCENE-7874: DisjunctionMaxQuery rewrites to a BooleanQuery when tiebreaker is set to 1. (Jim Ferenczi)
+
 Other
 
 * LUCENE-7328: Remove LegacyNumericEncoding from GeoPointField. (Nick Knize)
