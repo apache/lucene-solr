@@ -28,14 +28,14 @@ import java.util.regex.Pattern;
 
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrRequest;
-import org.apache.solr.client.solrj.SolrResponse;
+import org.apache.solr.client.solrj.response.V2Response;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.ContentStream;
 import org.apache.solr.common.util.ContentStreamBase;
 import org.apache.solr.common.util.Utils;
 
-public class V2Request extends SolrRequest {
+public class V2Request extends SolrRequest<V2Response> {
   //only for debugging purposes
   public static final ThreadLocal<AtomicLong> v2Calls = new ThreadLocal<>();
   static final Pattern COLL_REQ_PATTERN = Pattern.compile("/(c|collections)/[^/]+/(?!shards)");
@@ -77,8 +77,8 @@ public class V2Request extends SolrRequest {
   }
 
   @Override
-  protected SolrResponse createResponse(SolrClient client) {
-    return null;
+  protected V2Response createResponse(SolrClient client) {
+    return new V2Response();
   }
 
   public static class Builder {

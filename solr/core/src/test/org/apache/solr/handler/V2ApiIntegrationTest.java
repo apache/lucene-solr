@@ -27,6 +27,7 @@ import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.V2Request;
+import org.apache.solr.client.solrj.response.V2Response;
 import org.apache.solr.cloud.SolrCloudTestCase;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.NamedList;
@@ -49,14 +50,11 @@ public class V2ApiIntegrationTest extends SolrCloudTestCase {
 
   @Test
   public void testWelcomeMessage() throws Exception {
-    NamedList res = cluster.getSolrClient().request(
-        new V2Request.Builder("").build());
-    NamedList header = (NamedList) res.get("responseHeader");
-    assertEquals(0, header.get("status"));
+    V2Response res = new V2Request.Builder("").build().process(cluster.getSolrClient());
+    assertEquals(0, res.getStatus());
 
-    res = cluster.getSolrClient().request(new V2Request.Builder("/_introspect").build());
-    header = (NamedList) res.get("responseHeader");
-    assertEquals(0, header.get("status"));
+    res = new V2Request.Builder("/_introspect").build().process(cluster.getSolrClient());
+    assertEquals(0, res.getStatus());
   }
 
   @Test
