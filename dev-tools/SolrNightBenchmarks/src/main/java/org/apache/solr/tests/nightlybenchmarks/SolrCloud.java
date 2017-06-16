@@ -117,6 +117,10 @@ public class SolrCloud {
 	public String getuRL() {
 			return "http://" + this.host + ":" + this.port + "/solr/";
 	}
+	
+	public String getZookeeperUrl() {
+			return this.zookeeperIp + ":" + this.zookeeperPort;
+	}
 
 	public void shutdown() throws IOException, InterruptedException {
 		for (SolrNode node : nodes) {

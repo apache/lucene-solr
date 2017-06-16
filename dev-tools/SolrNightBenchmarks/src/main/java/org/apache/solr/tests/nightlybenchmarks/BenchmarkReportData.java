@@ -103,22 +103,10 @@ public class BenchmarkReportData {
 		metricMapCloudConcurrent3_2N2S1R = null;
 		metricMapCloudConcurrent3_3N1S3R = null;
 		metricMapCloudConcurrent3_4N2S2R = null;
-
-		metricMapCloudConcurrent8_2N1S2R = null;
-		metricMapCloudConcurrent8_2N2S1R = null;
-		metricMapCloudConcurrent8_3N1S3R = null;
-		metricMapCloudConcurrent8_4N2S2R = null;
-
-		metricMapCloudConcurrent10_2N1S2R = null;
-		metricMapCloudConcurrent10_2N2S1R = null;
-		metricMapCloudConcurrent10_3N1S3R = null;
-		metricMapCloudConcurrent10_4N2S2R = null;
 		
 		metricMapStandaloneConcurrent1 = null;
 		metricMapStandaloneConcurrent2 = null;
 		metricMapStandaloneConcurrent3 = null;
-		metricMapStandaloneConcurrent8 = null;
-		metricMapStandaloneConcurrent10 = null;
 		
 		numericQueryTNQMetricC = null;
 		numericQueryRNQMetricC = null;
