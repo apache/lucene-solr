@@ -18,7 +18,6 @@
 package org.apache.solr.api;
 
 import java.io.IOException;
-import java.io.Reader;
 import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
 import java.util.Collections;
