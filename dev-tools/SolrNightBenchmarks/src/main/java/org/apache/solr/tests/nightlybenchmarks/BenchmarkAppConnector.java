@@ -240,10 +240,10 @@ public class BenchmarkAppConnector {
 					fw.write("Date, Test_ID, Throughput (doc/sec), CommitID\n");
 				} else if (type == FileType.CLOUD_INDEXING_CONCURRENT) {
 					fw.write(
-							"Date, Test_ID, CommitID, Seconds (2 Threads), Seconds (4 Threads), Seconds (6 Threads), Seconds (8 Threads), Seconds (10 Threads)\n");
+							"Date, Test_ID, CommitID, Seconds (1 Threads), Seconds (2 Threads), Seconds (3 Threads)\n");
 				} else if (type == FileType.CLOUD_CONCURRENT_INDEXING_THROUGHPUT) {
 					fw.write(
-							"Date, Test_ID, CommitID, Throughput (2 Threads), Throughput (4 Threads), Throughput (6 Threads), Throughput (8 Threads), Throughput (10 Threads) \n");
+							"Date, Test_ID, CommitID, Throughput (1 Threads), Throughput (2 Threads), Throughput (3 Threads)\n");
 				} else if (type == FileType.NUMERIC_QUERY_CLOUD || type == FileType.NUMERIC_QUERY_STANDALONE) {
 					fw.write(
 							"Date, Test_ID, CommitID, QPS(Term), QTime-Min(Term), QTime-Max(Term), QTime-75th-Percentile(Term), QTime-95th-Percentile(Term), QTime-99th-Percentile(Term), QTime-99.9th-Percentile(Term), QPS(Range), QTime-Min(Range), QTime-Max(Range), QTime-75th-Percentile(Range), QTime-95th-Percentile(Range), QTime-99th-Percentile(Range), QTime-99.9th-Percentile(Range), QPS(Less Than), QTime-Min(Less Than), QTime-Max(Less Than), QTime-75th-Percentile(Less Than), QTime-95th-Percentile(Less Than), QTime-99th-Percentile(Less Than), QTime-99.9th-Percentile(Less Than), QPS(Greater Than), QTime-Min(Greater Than), QTime-Max(Greater Than), QTime-75th-Percentile(Greater Than), QTime-95th-Percentile(Greater Than), QTime-99th-Percentile(Greater Than), QTime-99.9th-Percentile(Greater Than), QPS(AND), QTime-Min(AND), QTime-Max(AND), QTime-75th-Percentile(And), QTime-95th-Percentile(And), QTime-99th-Percentile(And), QTime-99.9th-Percentile(And), QPS(OR), QTime-Min(OR), QTime-Max(OR), QTime-75th-Percentile(OR), QTime-95th-Percentile(OR), QTime-99th-Percentile(OR), QTime-99.9th-Percentile(OR)\n");
@@ -309,60 +309,50 @@ public class BenchmarkAppConnector {
 					false, FileType.CLOUD_SERIAL_INDEXING_THROUGHPUT);
 		}
 
-		if (BenchmarkReportData.metricMapCloudConcurrent2_2N1S2R != null) {
+		if (BenchmarkReportData.metricMapCloudConcurrent1_2N1S2R != null) {
 			BenchmarkAppConnector.writeToWebAppDataFile("indexing_throughput_data_cloud_concurrent_2n1s2r.csv",
-					BenchmarkReportData.metricMapCloudConcurrent2_2N1S2R.get("TimeStamp") + ", " + Util.TEST_ID + ", "
-							+ BenchmarkReportData.metricMapCloudConcurrent2_2N1S2R.get("CommitID") + ", "
+					BenchmarkReportData.metricMapCloudConcurrent1_2N1S2R.get("TimeStamp") + ", " + Util.TEST_ID + ", "
+							+ BenchmarkReportData.metricMapCloudConcurrent1_2N1S2R.get("CommitID") + ", "
+							+ BenchmarkReportData.metricMapCloudConcurrent1_2N1S2R.get("IndexingThroughput") + ", "
 							+ BenchmarkReportData.metricMapCloudConcurrent2_2N1S2R.get("IndexingThroughput") + ", "
-							+ BenchmarkReportData.metricMapCloudConcurrent4_2N1S2R.get("IndexingThroughput") + ", "
-							+ BenchmarkReportData.metricMapCloudConcurrent6_2N1S2R.get("IndexingThroughput") + ", "
-							+ BenchmarkReportData.metricMapCloudConcurrent8_2N1S2R.get("IndexingThroughput") + ", "
-							+ BenchmarkReportData.metricMapCloudConcurrent10_2N1S2R.get("IndexingThroughput"),
+							+ BenchmarkReportData.metricMapCloudConcurrent3_2N1S2R.get("IndexingThroughput"), 
 					false, FileType.CLOUD_CONCURRENT_INDEXING_THROUGHPUT);
 		}
-		if (BenchmarkReportData.metricMapCloudConcurrent2_2N2S1R != null) {
+		if (BenchmarkReportData.metricMapCloudConcurrent1_2N2S1R != null) {
 			BenchmarkAppConnector.writeToWebAppDataFile("indexing_throughput_data_cloud_concurrent_2n2s1r.csv",
-					BenchmarkReportData.metricMapCloudConcurrent2_2N2S1R.get("TimeStamp") + ", " + Util.TEST_ID + ", "
-							+ BenchmarkReportData.metricMapCloudConcurrent2_2N2S1R.get("CommitID") + ", "
+					BenchmarkReportData.metricMapCloudConcurrent1_2N2S1R.get("TimeStamp") + ", " + Util.TEST_ID + ", "
+							+ BenchmarkReportData.metricMapCloudConcurrent1_2N2S1R.get("CommitID") + ", "
+							+ BenchmarkReportData.metricMapCloudConcurrent1_2N2S1R.get("IndexingThroughput") + ", "
 							+ BenchmarkReportData.metricMapCloudConcurrent2_2N2S1R.get("IndexingThroughput") + ", "
-							+ BenchmarkReportData.metricMapCloudConcurrent4_2N2S1R.get("IndexingThroughput") + ", "
-							+ BenchmarkReportData.metricMapCloudConcurrent6_2N2S1R.get("IndexingThroughput") + ", "
-							+ BenchmarkReportData.metricMapCloudConcurrent8_2N2S1R.get("IndexingThroughput") + ", "
-							+ BenchmarkReportData.metricMapCloudConcurrent10_2N2S1R.get("IndexingThroughput"),
+							+ BenchmarkReportData.metricMapCloudConcurrent3_2N2S1R.get("IndexingThroughput"),
 					false, FileType.CLOUD_CONCURRENT_INDEXING_THROUGHPUT);
 		}
-		if (BenchmarkReportData.metricMapCloudConcurrent2_3N1S3R != null) {
+		if (BenchmarkReportData.metricMapCloudConcurrent1_3N1S3R != null) {
 			BenchmarkAppConnector.writeToWebAppDataFile("indexing_throughput_data_cloud_concurrent_3n1s3r.csv",
-					BenchmarkReportData.metricMapCloudConcurrent2_3N1S3R.get("TimeStamp") + ", " + Util.TEST_ID + ", "
-							+ BenchmarkReportData.metricMapCloudConcurrent2_3N1S3R.get("CommitID") + ", "
+					BenchmarkReportData.metricMapCloudConcurrent1_3N1S3R.get("TimeStamp") + ", " + Util.TEST_ID + ", "
+							+ BenchmarkReportData.metricMapCloudConcurrent1_3N1S3R.get("CommitID") + ", "
+							+ BenchmarkReportData.metricMapCloudConcurrent1_3N1S3R.get("IndexingThroughput") + ", "
 							+ BenchmarkReportData.metricMapCloudConcurrent2_3N1S3R.get("IndexingThroughput") + ", "
-							+ BenchmarkReportData.metricMapCloudConcurrent4_3N1S3R.get("IndexingThroughput") + ", "
-							+ BenchmarkReportData.metricMapCloudConcurrent6_3N1S3R.get("IndexingThroughput") + ", "
-							+ BenchmarkReportData.metricMapCloudConcurrent8_3N1S3R.get("IndexingThroughput") + ", "
-							+ BenchmarkReportData.metricMapCloudConcurrent10_3N1S3R.get("IndexingThroughput"),
+							+ BenchmarkReportData.metricMapCloudConcurrent3_3N1S3R.get("IndexingThroughput"),
 					false, FileType.CLOUD_CONCURRENT_INDEXING_THROUGHPUT);
 		}
-		if (BenchmarkReportData.metricMapCloudConcurrent2_4N2S2R != null) {
+		if (BenchmarkReportData.metricMapCloudConcurrent1_4N2S2R != null) {
 			BenchmarkAppConnector.writeToWebAppDataFile("indexing_throughput_data_cloud_concurrent_4n2s2r.csv",
-					BenchmarkReportData.metricMapCloudConcurrent2_4N2S2R.get("TimeStamp") + ", " + Util.TEST_ID + ", "
-							+ BenchmarkReportData.metricMapCloudConcurrent2_4N2S2R.get("CommitID") + ", "
+					BenchmarkReportData.metricMapCloudConcurrent1_4N2S2R.get("TimeStamp") + ", " + Util.TEST_ID + ", "
+							+ BenchmarkReportData.metricMapCloudConcurrent1_4N2S2R.get("CommitID") + ", "
+							+ BenchmarkReportData.metricMapCloudConcurrent1_4N2S2R.get("IndexingThroughput") + ", "
 							+ BenchmarkReportData.metricMapCloudConcurrent2_4N2S2R.get("IndexingThroughput") + ", "
-							+ BenchmarkReportData.metricMapCloudConcurrent4_4N2S2R.get("IndexingThroughput") + ", "
-							+ BenchmarkReportData.metricMapCloudConcurrent6_4N2S2R.get("IndexingThroughput") + ", "
-							+ BenchmarkReportData.metricMapCloudConcurrent8_4N2S2R.get("IndexingThroughput") + ", "
-							+ BenchmarkReportData.metricMapCloudConcurrent10_4N2S2R.get("IndexingThroughput"),
+							+ BenchmarkReportData.metricMapCloudConcurrent3_4N2S2R.get("IndexingThroughput"),
 					false, FileType.CLOUD_CONCURRENT_INDEXING_THROUGHPUT);
 		}
 
-		if (BenchmarkReportData.metricMapStandaloneConcurrent2 != null) {
+		if (BenchmarkReportData.metricMapStandaloneConcurrent1 != null) {
 			BenchmarkAppConnector.writeToWebAppDataFile("indexing_throughput_data_standalone_concurrent.csv",
-					BenchmarkReportData.metricMapStandaloneConcurrent2.get("TimeStamp") + ", " + Util.TEST_ID + ", "
-							+ BenchmarkReportData.metricMapStandaloneConcurrent2.get("CommitID") + ", "
+					BenchmarkReportData.metricMapStandaloneConcurrent1.get("TimeStamp") + ", " + Util.TEST_ID + ", "
+							+ BenchmarkReportData.metricMapStandaloneConcurrent1.get("CommitID") + ", "
+							+ BenchmarkReportData.metricMapStandaloneConcurrent1.get("IndexingThroughput") + ", "
 							+ BenchmarkReportData.metricMapStandaloneConcurrent2.get("IndexingThroughput") + ", "
-							+ BenchmarkReportData.metricMapStandaloneConcurrent4.get("IndexingThroughput") + ", "
-							+ BenchmarkReportData.metricMapStandaloneConcurrent6.get("IndexingThroughput") + ", "
-							+ BenchmarkReportData.metricMapStandaloneConcurrent8.get("IndexingThroughput") + ", "
-							+ BenchmarkReportData.metricMapStandaloneConcurrent10.get("IndexingThroughput"),
+							+ BenchmarkReportData.metricMapStandaloneConcurrent3.get("IndexingThroughput"),
 					false, FileType.CLOUD_CONCURRENT_INDEXING_THROUGHPUT);
 		}
 		

@@ -71,7 +71,7 @@ public class Tests {
 			node.createCollection("Core-" + UUID.randomUUID(),
 					"Collection-" + UUID.randomUUID());
 
-			SolrIndexingClient client = new SolrIndexingClient("localhost", node.port, node.collectionName, commitID);
+			SolrIndexingClient client = new SolrIndexingClient("localhost", node.port, commitID);
 			BenchmarkReportData.metricMapStandalone = client.indexAmazonFoodData(numDocuments,
 					node.getBaseUrl() + node.collectionName, true);
 
@@ -91,20 +91,23 @@ public class Tests {
 			SolrNode node = new SolrNode(commitID, "", "", false);
 			node.doAction(SolrNodeAction.NODE_START);
 			node.createCollection("Core-" + UUID.randomUUID(),"Collection-" + UUID.randomUUID());
-			SolrIndexingClient client = new SolrIndexingClient("localhost", node.port, node.collectionName, commitID);
+			SolrIndexingClient client = new SolrIndexingClient("localhost", node.port, commitID);
 			
-
+			String collectionName1 = "" + UUID.randomUUID();
+			node.createCollection("Core-" + UUID.randomUUID(),collectionName1);
+			BenchmarkReportData.metricMapStandaloneConcurrent1 = client.indexAmazonFoodData(numDocuments,
+					node.getBaseUrl(), collectionName1, 1, 1, TestType.STANDALONE_INDEXING_THROUGHPUT_CONCURRENT_1, true);
+			node.deleteCollection(collectionName1);
+			String collectionName2 = "" + UUID.randomUUID();
+			node.createCollection("Core-" + UUID.randomUUID(),collectionName2);
 			BenchmarkReportData.metricMapStandaloneConcurrent2 = client.indexAmazonFoodData(numDocuments,
-					node.getBaseUrlC(), node.collectionName, 10000, 2, TestType.STANDALONE_INDEXING_THROUGHPUT_CONCURRENT_2, true);
-			BenchmarkReportData.metricMapStandaloneConcurrent4 = client.indexAmazonFoodData(numDocuments,
-					node.getBaseUrlC(), node.collectionName, 10000, 4, TestType.STANDALONE_INDEXING_THROUGHPUT_CONCURRENT_4, true);
-			BenchmarkReportData.metricMapStandaloneConcurrent6 = client.indexAmazonFoodData(numDocuments,
-					node.getBaseUrlC(), node.collectionName, 10000, 6, TestType.STANDALONE_INDEXING_THROUGHPUT_CONCURRENT_6, true);
-			BenchmarkReportData.metricMapStandaloneConcurrent8 = client.indexAmazonFoodData(numDocuments,
-					node.getBaseUrlC(), node.collectionName, 10000, 8, TestType.STANDALONE_INDEXING_THROUGHPUT_CONCURRENT_8, true);
-			BenchmarkReportData.metricMapStandaloneConcurrent10 = client.indexAmazonFoodData(numDocuments,
-					node.getBaseUrlC(), node.collectionName, 10000, 10, TestType.STANDALONE_INDEXING_THROUGHPUT_CONCURRENT_10, true);
-
+					node.getBaseUrl(), collectionName2, 1, 2, TestType.STANDALONE_INDEXING_THROUGHPUT_CONCURRENT_2, true);
+			node.deleteCollection(collectionName2);
+			String collectionName3 = "" + UUID.randomUUID();
+			node.createCollection("Core-" + UUID.randomUUID(),collectionName3);
+			BenchmarkReportData.metricMapStandaloneConcurrent3 = client.indexAmazonFoodData(numDocuments,
+					node.getBaseUrl(), collectionName3, 1, 3, TestType.STANDALONE_INDEXING_THROUGHPUT_CONCURRENT_3, true);
+			node.deleteCollection(collectionName3);
 			
 			node.doAction(SolrNodeAction.NODE_STOP);
 			node.cleanup();
@@ -125,8 +128,7 @@ public class Tests {
 
 			SolrCloud cloud = new SolrCloud(nodes, shards, replicas, commitID, null, "localhost", true);
 			Tests.cloud = cloud;
-			SolrIndexingClient cloudClient = new SolrIndexingClient("localhost", cloud.port, cloud.collectionName,
-					commitID);
+			SolrIndexingClient cloudClient = new SolrIndexingClient("localhost", cloud.port, commitID);
 			
 			if (nodes == 2 && shards == "1" && replicas == "2") {
 			BenchmarkReportData.metricMapCloudSerial_2N1S2R = cloudClient.indexAmazonFoodData(numDocuments, cloud.getuRL(),
@@ -162,58 +164,93 @@ public class Tests {
 
 			SolrCloud cloud = new SolrCloud(nodes, shards, replicas, commitID, null, "localhost", true);
 			Tests.cloud = cloud;
-			SolrIndexingClient cloudClient = new SolrIndexingClient("localhost", cloud.port, cloud.collectionName,
-					commitID);
-			
+			SolrIndexingClient cloudClient = new SolrIndexingClient("localhost", cloud.port,commitID);
+
 			if (nodes == 2 && shards == "1" && replicas == "2") {
+
+				String collectionName1 = "" + UUID.randomUUID();
+				cloud.createCollection(collectionName1, null, shards, replicas);
+				BenchmarkReportData.metricMapCloudConcurrent1_2N1S2R = cloudClient.indexAmazonFoodData(numDocuments,
+						cloud.getuRL(), collectionName1, 1, 1, TestType.CLOUD_INDEXING_THROUGHPUT_CONCURRENT_2N1S2R_1T, true);
+				cloud.deleteCollection(collectionName1);
+				
+				String collectionName2 = "" + UUID.randomUUID();
+				cloud.createCollection(collectionName2, null, shards, replicas);
 				BenchmarkReportData.metricMapCloudConcurrent2_2N1S2R = cloudClient.indexAmazonFoodData(numDocuments,
-						cloud.getuRL(), cloud.collectionName, 10000, 2, TestType.CLOUD_INDEXING_THROUGHPUT_CONCURRENT_2N1S2R_2T, true);
-				BenchmarkReportData.metricMapCloudConcurrent4_2N1S2R = cloudClient.indexAmazonFoodData(numDocuments,
-						cloud.getuRL(), cloud.collectionName, 10000, 4, TestType.CLOUD_INDEXING_THROUGHPUT_CONCURRENT_2N1S2R_4T, true);
-				BenchmarkReportData.metricMapCloudConcurrent6_2N1S2R = cloudClient.indexAmazonFoodData(numDocuments,
-						cloud.getuRL(), cloud.collectionName, 10000, 6, TestType.CLOUD_INDEXING_THROUGHPUT_CONCURRENT_2N1S2R_6T, true);
-				BenchmarkReportData.metricMapCloudConcurrent8_2N1S2R = cloudClient.indexAmazonFoodData(numDocuments,
-						cloud.getuRL(), cloud.collectionName, 10000, 8, TestType.CLOUD_INDEXING_THROUGHPUT_CONCURRENT_2N1S2R_8T, true);
-				BenchmarkReportData.metricMapCloudConcurrent10_2N1S2R = cloudClient.indexAmazonFoodData(numDocuments,
-						cloud.getuRL(), cloud.collectionName, 10000, 10, TestType.CLOUD_INDEXING_THROUGHPUT_CONCURRENT_2N1S2R_10T, true);
+						cloud.getuRL(), collectionName2, 1, 2, TestType.CLOUD_INDEXING_THROUGHPUT_CONCURRENT_2N1S2R_2T, true);
+				cloud.deleteCollection(collectionName2);
+
+				String collectionName3 = "" + UUID.randomUUID();
+				cloud.createCollection(collectionName3, null, shards, replicas);
+				BenchmarkReportData.metricMapCloudConcurrent3_2N1S2R = cloudClient.indexAmazonFoodData(numDocuments,
+						cloud.getuRL(), collectionName3, 1, 3, TestType.CLOUD_INDEXING_THROUGHPUT_CONCURRENT_2N1S2R_3T, true);
+				cloud.deleteCollection(collectionName3);
+				
 			} else if (nodes == 2 && shards == "2" && replicas == "1") {
+				
+				String collectionName1 = "" + UUID.randomUUID();
+				cloud.createCollection(collectionName1, null, shards, replicas);
+				BenchmarkReportData.metricMapCloudConcurrent1_2N2S1R = cloudClient.indexAmazonFoodData(numDocuments,
+						cloud.getuRL(), collectionName1, 1, 2, TestType.CLOUD_INDEXING_THROUGHPUT_CONCURRENT_2N2S1R_1T, true);
+				cloud.deleteCollection(collectionName1);
+				
+				String collectionName2 = "" + UUID.randomUUID();
+				cloud.createCollection(collectionName2, null, shards, replicas);
 				BenchmarkReportData.metricMapCloudConcurrent2_2N2S1R = cloudClient.indexAmazonFoodData(numDocuments,
-						cloud.getuRL(), cloud.collectionName, 10000, 2, TestType.CLOUD_INDEXING_THROUGHPUT_CONCURRENT_2N2S1R_2T, true);
-				BenchmarkReportData.metricMapCloudConcurrent4_2N2S1R = cloudClient.indexAmazonFoodData(numDocuments,
-						cloud.getuRL(), cloud.collectionName, 10000, 4, TestType.CLOUD_INDEXING_THROUGHPUT_CONCURRENT_2N2S1R_4T, true);
-				BenchmarkReportData.metricMapCloudConcurrent6_2N2S1R = cloudClient.indexAmazonFoodData(numDocuments,
-						cloud.getuRL(), cloud.collectionName, 10000, 6, TestType.CLOUD_INDEXING_THROUGHPUT_CONCURRENT_2N2S1R_6T, true);
-				BenchmarkReportData.metricMapCloudConcurrent8_2N2S1R = cloudClient.indexAmazonFoodData(numDocuments,
-						cloud.getuRL(), cloud.collectionName, 10000, 8, TestType.CLOUD_INDEXING_THROUGHPUT_CONCURRENT_2N2S1R_8T, true);
-				BenchmarkReportData.metricMapCloudConcurrent10_2N2S1R = cloudClient.indexAmazonFoodData(numDocuments,
-						cloud.getuRL(), cloud.collectionName, 10000, 10, TestType.CLOUD_INDEXING_THROUGHPUT_CONCURRENT_2N2S1R_10T, true);
+						cloud.getuRL(), collectionName2, 1, 4, TestType.CLOUD_INDEXING_THROUGHPUT_CONCURRENT_2N2S1R_2T, true);
+				cloud.deleteCollection(collectionName2);
+				
+				String collectionName3 = "" + UUID.randomUUID();
+				cloud.createCollection(collectionName3, null, shards, replicas);
+				BenchmarkReportData.metricMapCloudConcurrent3_2N2S1R = cloudClient.indexAmazonFoodData(numDocuments,
+						cloud.getuRL(), collectionName3, 1, 6, TestType.CLOUD_INDEXING_THROUGHPUT_CONCURRENT_2N2S1R_3T, true);
+				cloud.deleteCollection(collectionName3);
+
 			} else if (nodes == 3 && shards == "1" && replicas == "3") {
+				
+				String collectionName1 = "" + UUID.randomUUID();
+				cloud.createCollection(collectionName1, null, shards, replicas);
+				BenchmarkReportData.metricMapCloudConcurrent1_3N1S3R = cloudClient.indexAmazonFoodData(numDocuments,
+						cloud.getuRL(), collectionName1, 1, 2, TestType.CLOUD_INDEXING_THROUGHPUT_CONCURRENT_3N1S3R_1T, true);
+				cloud.deleteCollection(collectionName1);
+
+				String collectionName2 = "" + UUID.randomUUID();
+				cloud.createCollection(collectionName2, null, shards, replicas);
 				BenchmarkReportData.metricMapCloudConcurrent2_3N1S3R = cloudClient.indexAmazonFoodData(numDocuments,
-						cloud.getuRL(), cloud.collectionName, 10000, 2, TestType.CLOUD_INDEXING_THROUGHPUT_CONCURRENT_3N1S3R_2T, true);
-				BenchmarkReportData.metricMapCloudConcurrent4_3N1S3R = cloudClient.indexAmazonFoodData(numDocuments,
-						cloud.getuRL(), cloud.collectionName, 10000, 4, TestType.CLOUD_INDEXING_THROUGHPUT_CONCURRENT_3N1S3R_4T, true);
-				BenchmarkReportData.metricMapCloudConcurrent6_3N1S3R = cloudClient.indexAmazonFoodData(numDocuments,
-						cloud.getuRL(), cloud.collectionName, 10000, 6, TestType.CLOUD_INDEXING_THROUGHPUT_CONCURRENT_3N1S3R_6T, true);
-				BenchmarkReportData.metricMapCloudConcurrent8_3N1S3R = cloudClient.indexAmazonFoodData(numDocuments,
-						cloud.getuRL(), cloud.collectionName, 10000, 8, TestType.CLOUD_INDEXING_THROUGHPUT_CONCURRENT_3N1S3R_8T, true);
-				BenchmarkReportData.metricMapCloudConcurrent10_3N1S3R = cloudClient.indexAmazonFoodData(numDocuments,
-						cloud.getuRL(), cloud.collectionName, 10000, 10, TestType.CLOUD_INDEXING_THROUGHPUT_CONCURRENT_3N1S3R_10T, true);
+						cloud.getuRL(), collectionName2, 1, 4, TestType.CLOUD_INDEXING_THROUGHPUT_CONCURRENT_3N1S3R_2T, true);
+				cloud.deleteCollection(collectionName2);
+
+				String collectionName3 = "" + UUID.randomUUID();
+				cloud.createCollection(collectionName3, null, shards, replicas);
+				BenchmarkReportData.metricMapCloudConcurrent3_3N1S3R = cloudClient.indexAmazonFoodData(numDocuments,
+						cloud.getuRL(), collectionName3, 1, 6, TestType.CLOUD_INDEXING_THROUGHPUT_CONCURRENT_3N1S3R_3T, true);
+				cloud.deleteCollection(collectionName3);
+
 			} else if(nodes == 4 && shards == "2" && replicas == "2") {
+				
+				String collectionName1 = "" + UUID.randomUUID();
+				cloud.createCollection(collectionName1, null, shards, replicas);
+				BenchmarkReportData.metricMapCloudConcurrent1_4N2S2R = cloudClient.indexAmazonFoodData(numDocuments,
+						cloud.getuRL(), collectionName1, 1, 2, TestType.CLOUD_INDEXING_THROUGHPUT_CONCURRENT_4N2S2R_1T, true);
+				cloud.deleteCollection(collectionName1);
+				
+				String collectionName2 = "" + UUID.randomUUID();
+				cloud.createCollection(collectionName2, null, shards, replicas);
 				BenchmarkReportData.metricMapCloudConcurrent2_4N2S2R = cloudClient.indexAmazonFoodData(numDocuments,
-						cloud.getuRL(), cloud.collectionName, 10000, 2, TestType.CLOUD_INDEXING_THROUGHPUT_CONCURRENT_4N2S2R_2T, true);
-				BenchmarkReportData.metricMapCloudConcurrent4_4N2S2R = cloudClient.indexAmazonFoodData(numDocuments,
-						cloud.getuRL(), cloud.collectionName, 10000, 4, TestType.CLOUD_INDEXING_THROUGHPUT_CONCURRENT_4N2S2R_4T, true);
-				BenchmarkReportData.metricMapCloudConcurrent6_4N2S2R = cloudClient.indexAmazonFoodData(numDocuments,
-						cloud.getuRL(), cloud.collectionName, 10000, 6, TestType.CLOUD_INDEXING_THROUGHPUT_CONCURRENT_4N2S2R_6T, true);
-				BenchmarkReportData.metricMapCloudConcurrent8_4N2S2R = cloudClient.indexAmazonFoodData(numDocuments,
-						cloud.getuRL(), cloud.collectionName, 10000, 8, TestType.CLOUD_INDEXING_THROUGHPUT_CONCURRENT_4N2S2R_8T, true);
-				BenchmarkReportData.metricMapCloudConcurrent10_4N2S2R = cloudClient.indexAmazonFoodData(numDocuments,
-						cloud.getuRL(), cloud.collectionName, 10000, 10, TestType.CLOUD_INDEXING_THROUGHPUT_CONCURRENT_4N2S2R_10T, true);
+						cloud.getuRL(), collectionName2, 1, 4, TestType.CLOUD_INDEXING_THROUGHPUT_CONCURRENT_4N2S2R_2T, true);
+				cloud.deleteCollection(collectionName2);
+
+				String collectionName3 = "" + UUID.randomUUID();
+				cloud.createCollection(collectionName3, null, shards, replicas);
+				BenchmarkReportData.metricMapCloudConcurrent3_4N2S2R = cloudClient.indexAmazonFoodData(numDocuments,
+						cloud.getuRL(), collectionName3, 1, 6, TestType.CLOUD_INDEXING_THROUGHPUT_CONCURRENT_4N2S2R_3T, true);
+				cloud.deleteCollection(collectionName3);
+
 			}
 			
 			cloud.shutdown();
 
-		} catch (Exception e) {
+			} catch (Exception e) {
 			e.printStackTrace();
 		}
 
@@ -232,7 +269,7 @@ public class Tests {
 			LinkedList<QueryClient> list = new LinkedList<QueryClient>();
 
 			for (int i = 0; i < numberOfThreads; i++) {
-				QueryClient client = new QueryClient(baseURL, 10000, 10, collectionName, queryType,
+				QueryClient client = new QueryClient(baseURL, collectionName, queryType,
 						numberOfThreads, delayEstimationBySeconds);
 				list.add(client);
 			}
@@ -282,13 +319,12 @@ public class Tests {
 	}
 
 	private static String setUpCloudForFeatureTests(String commitID, int documentCount, int solrNodes, String shards,
-			String replicas, int numDocuments) {
+			String replicas, int queueSize) {
 
 		SolrCloud cloud = new SolrCloud(solrNodes, shards, replicas, commitID, null, "localhost", true);
 		Tests.cloud = cloud;
-		SolrIndexingClient cloudClient = new SolrIndexingClient("localhost", cloud.port, cloud.collectionName,
-				commitID);
-		cloudClient.indexAmazonFoodData(documentCount, cloud.getuRL(), cloud.collectionName, numDocuments, 10, null, false);
+		SolrIndexingClient cloudClient = new SolrIndexingClient("localhost", cloud.port, commitID);
+		cloudClient.indexAmazonFoodData(documentCount, cloud.getuRL(), cloud.collectionName, queueSize, 2, null, false);
 		
 		return cloud.port;
 	}
@@ -300,7 +336,7 @@ public class Tests {
 			snode.doAction(SolrNodeAction.NODE_START);
 			snode.createCollection("Core-" + UUID.randomUUID(),"Collection-" + UUID.randomUUID());
 			
-			SolrIndexingClient client = new SolrIndexingClient("localhost", snode.port, snode.collectionName, commitID);
+			SolrIndexingClient client = new SolrIndexingClient("localhost", snode.port, commitID);
 			client.indexAmazonFoodData(numDocuments, snode.getBaseUrl() + snode.collectionName, false);
 			
 			node = snode;
@@ -326,13 +362,13 @@ public class Tests {
 	@SuppressWarnings("deprecation")
 	public static void runNumericTestsCloud() throws IOException, InterruptedException {
 		
-		String port = Tests.setUpCloudForFeatureTests(Util.COMMIT_ID, 50000, 1, "2", "2", 10000);
+		String port = Tests.setUpCloudForFeatureTests(Util.COMMIT_ID, 10000, 2, "2", "1", 5000);
 
 		Thread numericQueryTNQMetricC = new Thread(new MetricCollector(Util.COMMIT_ID, TestType.TERM_NUMERIC_QUERY_CLOUD, port));
 		numericQueryTNQMetricC.start();
 		
 			BenchmarkReportData.numericQueryTNQMetricC = Tests.numericQueryTests(Util.COMMIT_ID,
-					QueryType.TERM_NUMERIC_QUERY, queryThreadCount, 180, 120, ConfigurationType.CLOUD, Tests.cloud.getBaseURL(),
+					QueryType.TERM_NUMERIC_QUERY, queryThreadCount, 180, 120, ConfigurationType.CLOUD, Tests.cloud.getuRL(),
 					Tests.cloud.collectionName);
 		
 			numericQueryTNQMetricC.stop();
@@ -341,7 +377,7 @@ public class Tests {
 		numericQueryRNQMetricC.start();
 		
 			BenchmarkReportData.numericQueryRNQMetricC = Tests.numericQueryTests(Util.COMMIT_ID,
-					QueryType.RANGE_NUMERIC_QUERY, queryThreadCount, 180, 120, ConfigurationType.CLOUD, Tests.cloud.getBaseURL(),
+					QueryType.RANGE_NUMERIC_QUERY, queryThreadCount, 180, 120, ConfigurationType.CLOUD, Tests.cloud.getuRL(),
 					Tests.cloud.collectionName);
 
 			numericQueryRNQMetricC.stop();
@@ -351,7 +387,7 @@ public class Tests {
 
 		
 			BenchmarkReportData.numericQueryLNQMetricC = Tests.numericQueryTests(Util.COMMIT_ID,
-					QueryType.LESS_THAN_NUMERIC_QUERY, queryThreadCount, 180, 120, ConfigurationType.CLOUD, Tests.cloud.getBaseURL(),
+					QueryType.LESS_THAN_NUMERIC_QUERY, queryThreadCount, 180, 120, ConfigurationType.CLOUD, Tests.cloud.getuRL(),
 					Tests.cloud.collectionName);
 
 		
@@ -362,7 +398,7 @@ public class Tests {
 	
 		
 			BenchmarkReportData.numericQueryGNQMetricC = Tests.numericQueryTests(Util.COMMIT_ID,
-					QueryType.GREATER_THAN_NUMERIC_QUERY, queryThreadCount, 180, 120, ConfigurationType.CLOUD, Tests.cloud.getBaseURL(),
+					QueryType.GREATER_THAN_NUMERIC_QUERY, queryThreadCount, 180, 120, ConfigurationType.CLOUD, Tests.cloud.getuRL(),
 					Tests.cloud.collectionName);
 		
 		numericQueryGNQMetricC.stop();
@@ -372,7 +408,7 @@ public class Tests {
 		
 		
 			BenchmarkReportData.numericQueryANQMetricC = Tests.numericQueryTests(Util.COMMIT_ID,
-					QueryType.AND_NUMERIC_QUERY, queryThreadCount, 180, 120, ConfigurationType.CLOUD, Tests.cloud.getBaseURL(),
+					QueryType.AND_NUMERIC_QUERY, queryThreadCount, 180, 120, ConfigurationType.CLOUD, Tests.cloud.getuRL(),
 					Tests.cloud.collectionName);
 
 		numericQueryANQMetricC.stop();
@@ -382,7 +418,7 @@ public class Tests {
 		
 		
 			BenchmarkReportData.numericQueryONQMetricC = Tests.numericQueryTests(Util.COMMIT_ID,
-					QueryType.OR_NUMERIC_QUERY, queryThreadCount, 180, 120, ConfigurationType.CLOUD, Tests.cloud.getBaseURL(),
+					QueryType.OR_NUMERIC_QUERY, queryThreadCount, 180, 120, ConfigurationType.CLOUD, Tests.cloud.getuRL(),
 					Tests.cloud.collectionName);		
 		
 		numericQueryONQMetricC.stop();
@@ -396,7 +432,7 @@ public class Tests {
 	public static void runNumericQueryTestsStandalone() throws IOException, InterruptedException {
 
 		
-		String port = Tests.setUpStandaloneNodeForFeatureTests(Util.COMMIT_ID, 10000);
+		String port = Tests.setUpStandaloneNodeForFeatureTests(Util.COMMIT_ID, 1000);
 
 		Thread numericQueryTNQMetricS = new Thread(new MetricCollector(Util.COMMIT_ID, TestType.TERM_NUMERIC_QUERY_STANDALONE, port));
 		numericQueryTNQMetricS.start();

@@ -24,7 +24,7 @@ import java.util.Random;
 import org.apache.commons.math3.stat.descriptive.DescriptiveStatistics;
 import org.apache.solr.client.solrj.SolrResponse;
 import org.apache.solr.client.solrj.SolrServerException;
-import org.apache.solr.client.solrj.impl.ConcurrentUpdateSolrClient;
+import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;
 
@@ -42,11 +42,9 @@ public class QueryClient implements Runnable {
 	}
 
 	String urlString;
-	int queueSize;
-	int threadCount;
 	String collectionName;
 	SolrParams params;
-	ConcurrentUpdateSolrClient solrClient;
+	HttpSolrClient solrClient;
 	QueryType queryType;
 	int threadID;
 	boolean setThreadReadyFlag = false;
@@ -68,18 +66,16 @@ public class QueryClient implements Runnable {
 	Random random = new Random();
 
 	@SuppressWarnings("deprecation")
-	public QueryClient(String urlString, int queueSize, int threadCount, String collectionName, QueryType queryType,
+	public QueryClient(String urlString, String collectionName, QueryType queryType,
 			long numberOfThreads, long delayEstimationBySeconds) {
 		super();
 		this.urlString = urlString;
-		this.queueSize = queueSize;
-		this.threadCount = threadCount;
 		this.collectionName = collectionName;
 		this.queryType = queryType;
 		this.numberOfThreads = numberOfThreads;
 		this.delayEstimationBySeconds = delayEstimationBySeconds;
 
-		solrClient = new ConcurrentUpdateSolrClient(urlString, queueSize, threadCount);
+		solrClient = new HttpSolrClient(urlString);
 		Util.postMessage("\r" + this.toString() + "** QUERY CLIENT CREATED ...", MessageType.RED_TEXT, false);
 	}
 
@@ -87,7 +83,7 @@ public class QueryClient implements Runnable {
 
 		long elapsedTime;
 
-		startTime = System.nanoTime();
+		startTime = System.currentTimeMillis();
 		while (true) {
 
 			if (!setThreadReadyFlag) {
@@ -145,7 +141,7 @@ public class QueryClient implements Runnable {
 
 					response = this.fireQuery(collectionName, params);
 
-					if ((System.nanoTime() - startTime) >= (delayEstimationBySeconds * 1000000000)) {
+					if ((System.currentTimeMillis() - startTime) >= (delayEstimationBySeconds * 1000)) {
 						setQueryCounter();
 						elapsedTime = response.getElapsedTime();
 						setMinMaxQTime(elapsedTime);
@@ -163,7 +159,7 @@ public class QueryClient implements Runnable {
 			}
 		}
 
-		solrClient.close();
+		
 		return;
 	}
 

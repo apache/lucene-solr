@@ -682,7 +682,7 @@ public class Util {
 		try {
 			argM = Util.getArgs(args);
 			Util.getPropertyValues();
-
+			
 			if (argM.containsKey("-RegisterLatestCommit")) {
 				Util.postMessage("** SolrNightlyBenchmarks Commit Registry Updater ...", MessageType.WHITE_TEXT, false);
 				String commit = Util.getLatestCommitID(Util.LUCENE_SOLR_REPOSITORY_URL);
@@ -816,6 +816,13 @@ public class Util {
 
 	public static void cleanRunDirectory() {
 		Util.execute("rm -r -f " + Util.RUN_DIR, Util.RUN_DIR);
+	}
+	
+	public static void create4KDocuments(String fileName, int numberOfDocuments) {
+		Util.postMessage("** Preparing 2k text documents" , MessageType.WHITE_TEXT, false);
+		for (int i = 0 ; i < numberOfDocuments; i++) {
+				BenchmarkAppConnector.writeToWebAppDataFile(fileName, Util.getResponse("http://loripsum.net/api/1/plaintext/verylong",javax.ws.rs.core.MediaType.TEXT_PLAIN).trim(), false, FileType.TEST_ENV_FILE);
+		}		
 	}
 
 	public static void killProcesses(String lookFor) {

@@ -148,7 +148,7 @@ public class SolrNode {
 		long end = 0;
 		int returnValue = 0;
 
-		start = System.nanoTime();
+		start = System.currentTimeMillis();
 		new File(nodeDirectory + "solr").setExecutable(true);
 		if (action == SolrNodeAction.NODE_START) {
 
@@ -171,8 +171,8 @@ public class SolrNode {
 			}
 
 		}
-		end = System.nanoTime();
-		Util.postMessage("** Time taken for the node " + action + " activity is: " + (end - start) + " nanosecond(s)",
+		end = System.currentTimeMillis();
+		Util.postMessage("** Time taken for the node " + action + " activity is: " + (end - start) + " millisecond(s)",
 				MessageType.RED_TEXT, false);
 
 		return returnValue;
@@ -193,13 +193,14 @@ public class SolrNode {
 		long end;
 		int returnVal;
 
-		start = System.nanoTime();
+		start = System.currentTimeMillis();
 		returnVal = Util.execute(
 				"./solr create_core -c " + coreName + " -p " + port + " -collection " + collectionName + " -force",
 				nodeDirectory);
-		end = System.nanoTime();
+		end = System.currentTimeMillis();
 
-		Util.postMessage("** Time for creating the core is: " + (end - start) + " nanosecond(s)", MessageType.RED_TEXT,
+
+		Util.postMessage("** Time for creating the core is: " + (end - start) + " millisecond(s)", MessageType.RED_TEXT,
 				false);
 
 		thread.stop();
@@ -211,7 +212,7 @@ public class SolrNode {
 		
 		returnMap.put("ProcessExitValue", "" + returnVal);
 		returnMap.put("TimeStamp", "" + ft.format(dNow));
-		returnMap.put("CreateCollectionTime", "" + (double) ((double) (end - start) / (double) 1000000000));
+		returnMap.put("CreateCollectionTime", "" + ((double) (end - start)));
 		returnMap.put("CommitID", this.commitId);
 
 		return returnMap;
@@ -232,18 +233,18 @@ public class SolrNode {
 		int returnVal;
 
 		if (configName != null) {
-			start = System.nanoTime();
+			start = System.currentTimeMillis();
 			returnVal = Util.execute("./solr create_collection -collection " + collectionName + " -shards " + shards
 					+ " -n " + configName + " -replicationFactor " + replicationFactor + " -force", nodeDirectory);
-			end = System.nanoTime();
+			end = System.currentTimeMillis();
 		} else {
-			start = System.nanoTime();
+			start = System.currentTimeMillis();
 			returnVal = Util.execute("./solr create_collection -collection " + collectionName + " -shards " + shards
 					+ " -replicationFactor " + replicationFactor + " -force", nodeDirectory);
-			end = System.nanoTime();
+			end = System.currentTimeMillis();
 		}
 
-		Util.postMessage("** Time for creating the collection is: " + (end - start) + " nanosecond(s)",
+		Util.postMessage("** Time for creating the collection is: " + (end - start) + " millisecond(s)",
 				MessageType.RED_TEXT, false);
 
 		thread.stop();
@@ -255,11 +256,22 @@ public class SolrNode {
 		
 		returnMap.put("ProcessExitValue", "" + returnVal);
 		returnMap.put("TimeStamp", "" + ft.format(dNow));
-		returnMap.put("CreateCollectionTime", "" + (double) ((double) (end - start) / (double) 1000000000));
+		returnMap.put("CreateCollectionTime", "" + ((double) (end - start)));
 		returnMap.put("CommitID", this.commitId);
 
 		return returnMap;
 	}
+	
+	
+	public int deleteCollection(String collectionName) throws IOException, InterruptedException {
+
+		this.collectionName = collectionName;
+		Util.postMessage("** Deleting collection ... ", MessageType.RED_TEXT, true);
+		
+		return Util.execute("./solr delete -c " + collectionName + " -deleteConfig true", nodeDirectory);
+
+	}
+
 
 	public String getNodeDirectory() {
 		return nodeDirectory;

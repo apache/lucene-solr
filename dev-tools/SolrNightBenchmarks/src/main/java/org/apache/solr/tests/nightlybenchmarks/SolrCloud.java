@@ -106,16 +106,16 @@ public class SolrCloud {
 		}
 	}
 
-	public String getuRL() {
-		if (createADefaultCollection) {
-			return "http://" + this.host + ":" + this.port + "/solr/" + this.collectionName;
-		} else {
-			return "http://" + this.host + ":" + this.port + "/solr/";
+	public void deleteCollection(String collectionName) {
+		try {
+			nodes.get(0).deleteCollection(collectionName);
+		} catch (IOException | InterruptedException e) {
+			e.printStackTrace();
 		}
 	}
-
-	public String getBaseURL() {
-		return "http://" + this.host + ":" + this.port + "/solr/";
+	
+	public String getuRL() {
+			return "http://" + this.host + ":" + this.port + "/solr/";
 	}
 
 	public void shutdown() throws IOException, InterruptedException {
