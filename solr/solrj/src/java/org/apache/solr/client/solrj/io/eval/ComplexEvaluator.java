@@ -20,7 +20,9 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
+import java.util.Set;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 import org.apache.solr.client.solrj.io.stream.StreamContext;
 import org.apache.solr.client.solrj.io.stream.expr.Explanation;
@@ -40,6 +42,10 @@ public abstract class ComplexEvaluator implements StreamEvaluator {
   protected List<StreamEvaluator> subEvaluators = new ArrayList<StreamEvaluator>();
   
   public ComplexEvaluator(StreamExpression expression, StreamFactory factory) throws IOException{
+    this(expression, factory, new ArrayList<>());
+  }
+  
+  public ComplexEvaluator(StreamExpression expression, StreamFactory factory, List<String> ignoredNamedParameters) throws IOException{
     constructingFactory = factory;
     
     // We have to do this because order of the parameters matter
@@ -75,8 +81,16 @@ public abstract class ComplexEvaluator implements StreamEvaluator {
       }
     }
     
-    if(expression.getParameters().size() != subEvaluators.size()){
-      throw new IOException(String.format(Locale.ROOT,"Invalid expression %s - unknown operands found - expecting only StreamEvaluators or field names", expression));
+    Set<String> namedParameters = factory.getNamedOperands(expression).stream().map(param -> param.getName()).collect(Collectors.toSet());
+    long ignorableCount = ignoredNamedParameters.stream().filter(name -> namedParameters.contains(name)).count();
+    
+    if(0 != expression.getParameters().size() - subEvaluators.size() - ignorableCount){
+      if(namedParameters.isEmpty()){
+        throw new IOException(String.format(Locale.ROOT,"Invalid expression %s - unknown operands found - expecting only StreamEvaluators or field names", expression));
+      }
+      else{
+        throw new IOException(String.format(Locale.ROOT,"Invalid expression %s - unknown operands found - expecting only StreamEvaluators, field names, or named parameters [%s]", expression, namedParameters.stream().collect(Collectors.joining(","))));
+      }
     }
   }
 
