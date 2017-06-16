@@ -61,7 +61,7 @@ public class SolrIndexingClient {
 	}
 
 	@SuppressWarnings("deprecation")
-	public Map<String, String> indexAmazonFoodData(int numDocuments, String urlString, boolean captureMetrics) {
+	public Map<String, String> indexAmazonFoodData(int numDocuments, String urlString, boolean captureMetrics, boolean deleteData) {
 
 		documentCount = numDocuments;
 
@@ -116,9 +116,15 @@ public class SolrIndexingClient {
 			end = System.currentTimeMillis();
 
 			solrClient.commit();
-			Util.postMessage("", MessageType.BLUE_TEXT, false);
 			Util.postMessage("** Committing the documents ...", MessageType.WHITE_TEXT, false);
 
+			if (deleteData) {
+			Util.postMessage("** DELETE ...", MessageType.WHITE_TEXT, false);
+			solrClient.deleteByQuery("*:*");
+			solrClient.commit();
+			Util.postMessage("** DELETE COMPLETE ...", MessageType.WHITE_TEXT, false);
+			}
+			
 			Util.postMessage("** Closing the Solr connection ...", MessageType.GREEN_TEXT, false);
 			solrClient.close();
 			Util.postMessage("** Time taken to index " + numberOfDocuments + " documents is: " + (double) (end - start)
@@ -157,7 +163,7 @@ public class SolrIndexingClient {
 
 	@SuppressWarnings("deprecation")
 	public Map<String, String> indexAmazonFoodData(int numDocuments, String urlString, String zookeeperIp,
-			String zookeeperPort, String collectionName, boolean captureMetrics, TestType type) {
+			String zookeeperPort, String collectionName, boolean captureMetrics, TestType type, boolean deleteData) {
 
 		documentCount = numDocuments;
 		Util.postMessage("** Indexing documents (Amazon Food Reviews) ...", MessageType.WHITE_TEXT, false);
@@ -214,9 +220,15 @@ public class SolrIndexingClient {
 			end = System.currentTimeMillis();
 			
 			solrClient.commit();
-			Util.postMessage("", MessageType.BLUE_TEXT, false);
 			Util.postMessage("** Committing the documents ...", MessageType.WHITE_TEXT, false);
 
+			if (deleteData) {
+			Util.postMessage("** DELETE ...", MessageType.WHITE_TEXT, false);
+			solrClient.deleteByQuery(collectionName,"*:*");
+			solrClient.commit(collectionName);
+			Util.postMessage("** DELETE COMPLETE ...", MessageType.WHITE_TEXT, false);
+			}
+			
 			Util.postMessage("** Closing the Solr connection ...", MessageType.GREEN_TEXT, false);
 			solrClient.close();
 			Util.postMessage("** Time taken to index " + numberOfDocuments + " documents is: " + (double) (end - start)
@@ -253,7 +265,7 @@ public class SolrIndexingClient {
 	}
 
 	@SuppressWarnings("deprecation")
-	public Map<String, String> indexAmazonFoodData(int numDocuments, String urlString, String collectionName, int queueSize, int threadCount, TestType type, boolean captureMetrics) {
+	public Map<String, String> indexAmazonFoodData(int numDocuments, String urlString, String collectionName, int queueSize, int threadCount, TestType type, boolean captureMetrics, boolean deleteData) {
 		
 		documentCount = numDocuments;
 
@@ -312,10 +324,12 @@ public class SolrIndexingClient {
 			Util.postMessage("** Committing the documents ...", MessageType.WHITE_TEXT, false);
 			solrClient.commit(collectionName);
 
+			if (deleteData) {
 			Util.postMessage("** DELETE ...", MessageType.WHITE_TEXT, false);
 			solrClient.deleteByQuery(collectionName,"*:*");
 			solrClient.commit(collectionName);
 			Util.postMessage("** DELETE COMPLETE ...", MessageType.WHITE_TEXT, false);
+			}
 			
 			Util.postMessage("** Closing the Solr connection ...", MessageType.GREEN_TEXT, false);
 			solrClient.shutdownNow();

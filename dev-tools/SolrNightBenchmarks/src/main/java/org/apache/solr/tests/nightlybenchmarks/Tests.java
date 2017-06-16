@@ -73,7 +73,7 @@ public class Tests {
 
 			SolrIndexingClient client = new SolrIndexingClient("localhost", node.port, commitID);
 			BenchmarkReportData.metricMapStandalone = client.indexAmazonFoodData(numDocuments,
-					node.getBaseUrl() + node.collectionName, true);
+					node.getBaseUrl() + node.collectionName, true, true);
 
 			node.doAction(SolrNodeAction.NODE_STOP);
 			node.cleanup();
@@ -96,17 +96,17 @@ public class Tests {
 			String collectionName1 = "" + UUID.randomUUID();
 			node.createCollection("Core-" + UUID.randomUUID(),collectionName1);
 			BenchmarkReportData.metricMapStandaloneConcurrent1 = client.indexAmazonFoodData(numDocuments,
-					node.getBaseUrl(), collectionName1, 1, 1, TestType.STANDALONE_INDEXING_THROUGHPUT_CONCURRENT_1, true);
+					node.getBaseUrl(), collectionName1, 1, 1, TestType.STANDALONE_INDEXING_THROUGHPUT_CONCURRENT_1, true, true);
 			node.deleteCollection(collectionName1);
 			String collectionName2 = "" + UUID.randomUUID();
 			node.createCollection("Core-" + UUID.randomUUID(),collectionName2);
 			BenchmarkReportData.metricMapStandaloneConcurrent2 = client.indexAmazonFoodData(numDocuments,
-					node.getBaseUrl(), collectionName2, 1, 2, TestType.STANDALONE_INDEXING_THROUGHPUT_CONCURRENT_2, true);
+					node.getBaseUrl(), collectionName2, 1, 2, TestType.STANDALONE_INDEXING_THROUGHPUT_CONCURRENT_2, true, true);
 			node.deleteCollection(collectionName2);
 			String collectionName3 = "" + UUID.randomUUID();
 			node.createCollection("Core-" + UUID.randomUUID(),collectionName3);
 			BenchmarkReportData.metricMapStandaloneConcurrent3 = client.indexAmazonFoodData(numDocuments,
-					node.getBaseUrl(), collectionName3, 1, 3, TestType.STANDALONE_INDEXING_THROUGHPUT_CONCURRENT_3, true);
+					node.getBaseUrl(), collectionName3, 1, 3, TestType.STANDALONE_INDEXING_THROUGHPUT_CONCURRENT_3, true, true);
 			node.deleteCollection(collectionName3);
 			
 			node.doAction(SolrNodeAction.NODE_STOP);
@@ -132,16 +132,16 @@ public class Tests {
 			
 			if (nodes == 2 && shards == "1" && replicas == "2") {
 			BenchmarkReportData.metricMapCloudSerial_2N1S2R = cloudClient.indexAmazonFoodData(numDocuments, cloud.getuRL(),
-					cloud.zookeeperIp, cloud.zookeeperPort, cloud.collectionName, true, TestType.CLOUD_INDEXING_THROUGHPUT_SERIAL_2N1S2R);
+					cloud.zookeeperIp, cloud.zookeeperPort, cloud.collectionName, true, TestType.CLOUD_INDEXING_THROUGHPUT_SERIAL_2N1S2R, true);
 			} else if (nodes == 2 && shards == "2" && replicas == "1") {
 			BenchmarkReportData.metricMapCloudSerial_2N2S1R = cloudClient.indexAmazonFoodData(numDocuments, cloud.getuRL(),
-					cloud.zookeeperIp, cloud.zookeeperPort, cloud.collectionName, true, TestType.CLOUD_INDEXING_THROUGHPUT_SERIAL_2N2S1R);
+					cloud.zookeeperIp, cloud.zookeeperPort, cloud.collectionName, true, TestType.CLOUD_INDEXING_THROUGHPUT_SERIAL_2N2S1R, true);
 			} else if (nodes == 3 && shards == "1" && replicas == "3") {
 			BenchmarkReportData.metricMapCloudSerial_3N1S3R = cloudClient.indexAmazonFoodData(numDocuments, cloud.getuRL(),
-					cloud.zookeeperIp, cloud.zookeeperPort, cloud.collectionName, true, TestType.CLOUD_INDEXING_THROUGHPUT_SERIAL_3N1S3R);
+					cloud.zookeeperIp, cloud.zookeeperPort, cloud.collectionName, true, TestType.CLOUD_INDEXING_THROUGHPUT_SERIAL_3N1S3R, true);
 			} else if(nodes == 4 && shards == "2" && replicas == "2") {
 			BenchmarkReportData.metricMapCloudSerial_4N2S2R = cloudClient.indexAmazonFoodData(numDocuments, cloud.getuRL(),
-					cloud.zookeeperIp, cloud.zookeeperPort, cloud.collectionName, true, TestType.CLOUD_INDEXING_THROUGHPUT_SERIAL_4N2S2R);
+					cloud.zookeeperIp, cloud.zookeeperPort, cloud.collectionName, true, TestType.CLOUD_INDEXING_THROUGHPUT_SERIAL_4N2S2R, true);
 			}
 			
 			cloud.shutdown();
@@ -171,19 +171,19 @@ public class Tests {
 				String collectionName1 = "" + UUID.randomUUID();
 				cloud.createCollection(collectionName1, null, shards, replicas);
 				BenchmarkReportData.metricMapCloudConcurrent1_2N1S2R = cloudClient.indexAmazonFoodData(numDocuments,
-						cloud.getuRL(), collectionName1, 1, 1, TestType.CLOUD_INDEXING_THROUGHPUT_CONCURRENT_2N1S2R_1T, true);
+						cloud.getuRL(), collectionName1, 1, 1, TestType.CLOUD_INDEXING_THROUGHPUT_CONCURRENT_2N1S2R_1T, true, true);
 				cloud.deleteCollection(collectionName1);
 				
 				String collectionName2 = "" + UUID.randomUUID();
 				cloud.createCollection(collectionName2, null, shards, replicas);
 				BenchmarkReportData.metricMapCloudConcurrent2_2N1S2R = cloudClient.indexAmazonFoodData(numDocuments,
-						cloud.getuRL(), collectionName2, 1, 2, TestType.CLOUD_INDEXING_THROUGHPUT_CONCURRENT_2N1S2R_2T, true);
+						cloud.getuRL(), collectionName2, 1, 2, TestType.CLOUD_INDEXING_THROUGHPUT_CONCURRENT_2N1S2R_2T, true, true);
 				cloud.deleteCollection(collectionName2);
 
 				String collectionName3 = "" + UUID.randomUUID();
 				cloud.createCollection(collectionName3, null, shards, replicas);
 				BenchmarkReportData.metricMapCloudConcurrent3_2N1S2R = cloudClient.indexAmazonFoodData(numDocuments,
-						cloud.getuRL(), collectionName3, 1, 3, TestType.CLOUD_INDEXING_THROUGHPUT_CONCURRENT_2N1S2R_3T, true);
+						cloud.getuRL(), collectionName3, 1, 3, TestType.CLOUD_INDEXING_THROUGHPUT_CONCURRENT_2N1S2R_3T, true, true);
 				cloud.deleteCollection(collectionName3);
 				
 			} else if (nodes == 2 && shards == "2" && replicas == "1") {
@@ -191,19 +191,19 @@ public class Tests {
 				String collectionName1 = "" + UUID.randomUUID();
 				cloud.createCollection(collectionName1, null, shards, replicas);
 				BenchmarkReportData.metricMapCloudConcurrent1_2N2S1R = cloudClient.indexAmazonFoodData(numDocuments,
-						cloud.getuRL(), collectionName1, 1, 2, TestType.CLOUD_INDEXING_THROUGHPUT_CONCURRENT_2N2S1R_1T, true);
+						cloud.getuRL(), collectionName1, 1, 2, TestType.CLOUD_INDEXING_THROUGHPUT_CONCURRENT_2N2S1R_1T, true, true);
 				cloud.deleteCollection(collectionName1);
 				
 				String collectionName2 = "" + UUID.randomUUID();
 				cloud.createCollection(collectionName2, null, shards, replicas);
 				BenchmarkReportData.metricMapCloudConcurrent2_2N2S1R = cloudClient.indexAmazonFoodData(numDocuments,
-						cloud.getuRL(), collectionName2, 1, 4, TestType.CLOUD_INDEXING_THROUGHPUT_CONCURRENT_2N2S1R_2T, true);
+						cloud.getuRL(), collectionName2, 1, 4, TestType.CLOUD_INDEXING_THROUGHPUT_CONCURRENT_2N2S1R_2T, true, true);
 				cloud.deleteCollection(collectionName2);
 				
 				String collectionName3 = "" + UUID.randomUUID();
 				cloud.createCollection(collectionName3, null, shards, replicas);
 				BenchmarkReportData.metricMapCloudConcurrent3_2N2S1R = cloudClient.indexAmazonFoodData(numDocuments,
-						cloud.getuRL(), collectionName3, 1, 6, TestType.CLOUD_INDEXING_THROUGHPUT_CONCURRENT_2N2S1R_3T, true);
+						cloud.getuRL(), collectionName3, 1, 6, TestType.CLOUD_INDEXING_THROUGHPUT_CONCURRENT_2N2S1R_3T, true, true);
 				cloud.deleteCollection(collectionName3);
 
 			} else if (nodes == 3 && shards == "1" && replicas == "3") {
@@ -211,19 +211,19 @@ public class Tests {
 				String collectionName1 = "" + UUID.randomUUID();
 				cloud.createCollection(collectionName1, null, shards, replicas);
 				BenchmarkReportData.metricMapCloudConcurrent1_3N1S3R = cloudClient.indexAmazonFoodData(numDocuments,
-						cloud.getuRL(), collectionName1, 1, 2, TestType.CLOUD_INDEXING_THROUGHPUT_CONCURRENT_3N1S3R_1T, true);
+						cloud.getuRL(), collectionName1, 1, 2, TestType.CLOUD_INDEXING_THROUGHPUT_CONCURRENT_3N1S3R_1T, true, true);
 				cloud.deleteCollection(collectionName1);
 
 				String collectionName2 = "" + UUID.randomUUID();
 				cloud.createCollection(collectionName2, null, shards, replicas);
 				BenchmarkReportData.metricMapCloudConcurrent2_3N1S3R = cloudClient.indexAmazonFoodData(numDocuments,
-						cloud.getuRL(), collectionName2, 1, 4, TestType.CLOUD_INDEXING_THROUGHPUT_CONCURRENT_3N1S3R_2T, true);
+						cloud.getuRL(), collectionName2, 1, 4, TestType.CLOUD_INDEXING_THROUGHPUT_CONCURRENT_3N1S3R_2T, true, true);
 				cloud.deleteCollection(collectionName2);
 
 				String collectionName3 = "" + UUID.randomUUID();
 				cloud.createCollection(collectionName3, null, shards, replicas);
 				BenchmarkReportData.metricMapCloudConcurrent3_3N1S3R = cloudClient.indexAmazonFoodData(numDocuments,
-						cloud.getuRL(), collectionName3, 1, 6, TestType.CLOUD_INDEXING_THROUGHPUT_CONCURRENT_3N1S3R_3T, true);
+						cloud.getuRL(), collectionName3, 1, 6, TestType.CLOUD_INDEXING_THROUGHPUT_CONCURRENT_3N1S3R_3T, true, true);
 				cloud.deleteCollection(collectionName3);
 
 			} else if(nodes == 4 && shards == "2" && replicas == "2") {
@@ -231,19 +231,19 @@ public class Tests {
 				String collectionName1 = "" + UUID.randomUUID();
 				cloud.createCollection(collectionName1, null, shards, replicas);
 				BenchmarkReportData.metricMapCloudConcurrent1_4N2S2R = cloudClient.indexAmazonFoodData(numDocuments,
-						cloud.getuRL(), collectionName1, 1, 2, TestType.CLOUD_INDEXING_THROUGHPUT_CONCURRENT_4N2S2R_1T, true);
+						cloud.getuRL(), collectionName1, 1, 2, TestType.CLOUD_INDEXING_THROUGHPUT_CONCURRENT_4N2S2R_1T, true, true);
 				cloud.deleteCollection(collectionName1);
 				
 				String collectionName2 = "" + UUID.randomUUID();
 				cloud.createCollection(collectionName2, null, shards, replicas);
 				BenchmarkReportData.metricMapCloudConcurrent2_4N2S2R = cloudClient.indexAmazonFoodData(numDocuments,
-						cloud.getuRL(), collectionName2, 1, 4, TestType.CLOUD_INDEXING_THROUGHPUT_CONCURRENT_4N2S2R_2T, true);
+						cloud.getuRL(), collectionName2, 1, 4, TestType.CLOUD_INDEXING_THROUGHPUT_CONCURRENT_4N2S2R_2T, true, true);
 				cloud.deleteCollection(collectionName2);
 
 				String collectionName3 = "" + UUID.randomUUID();
 				cloud.createCollection(collectionName3, null, shards, replicas);
 				BenchmarkReportData.metricMapCloudConcurrent3_4N2S2R = cloudClient.indexAmazonFoodData(numDocuments,
-						cloud.getuRL(), collectionName3, 1, 6, TestType.CLOUD_INDEXING_THROUGHPUT_CONCURRENT_4N2S2R_3T, true);
+						cloud.getuRL(), collectionName3, 1, 6, TestType.CLOUD_INDEXING_THROUGHPUT_CONCURRENT_4N2S2R_3T, true, true);
 				cloud.deleteCollection(collectionName3);
 
 			}
@@ -324,7 +324,7 @@ public class Tests {
 		SolrCloud cloud = new SolrCloud(solrNodes, shards, replicas, commitID, null, "localhost", true);
 		Tests.cloud = cloud;
 		SolrIndexingClient cloudClient = new SolrIndexingClient("localhost", cloud.port, commitID);
-		cloudClient.indexAmazonFoodData(documentCount, cloud.getuRL(), cloud.collectionName, queueSize, 2, null, false);
+		cloudClient.indexAmazonFoodData(documentCount, cloud.getuRL(), cloud.collectionName, queueSize, 2, null, false, false);
 		
 		return cloud.port;
 	}
@@ -337,7 +337,7 @@ public class Tests {
 			snode.createCollection("Core-" + UUID.randomUUID(),"Collection-" + UUID.randomUUID());
 			
 			SolrIndexingClient client = new SolrIndexingClient("localhost", snode.port, commitID);
-			client.indexAmazonFoodData(numDocuments, snode.getBaseUrl() + snode.collectionName, false);
+			client.indexAmazonFoodData(numDocuments, snode.getBaseUrl() + snode.collectionName, false, false);
 			
 			node = snode;
 			
