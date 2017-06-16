@@ -1108,14 +1108,7 @@ public class HttpSolrCall {
       Iterable<ContentStream> contentStreams = solrReq.getContentStreams();
       if (contentStreams == null) parsedCommands = Collections.EMPTY_LIST;
       else {
-        for (ContentStream contentStream : contentStreams) {
-          try {
-            parsedCommands = ApiBag.getCommandOperations(contentStream.getReader(), getValidators(), validateInput);
-          } catch (IOException e) {
-            throw new SolrException(ErrorCode.BAD_REQUEST, "Error reading commands");
-          }
-          break;
-        }
+        parsedCommands = ApiBag.getCommandOperations(contentStreams.iterator().next(), getValidators(), validateInput);
       }
     }
     return CommandOperation.clone(parsedCommands);

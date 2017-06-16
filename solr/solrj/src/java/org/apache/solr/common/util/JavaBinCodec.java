@@ -628,7 +628,7 @@ public class JavaBinCodec implements PushWriter {
 
 
   public Map<Object, Object> readMapIter(DataInputInputStream dis) throws IOException {
-    Map<Object, Object> m = new LinkedHashMap<>();
+    Map<Object, Object> m = newMap(-1);
     for (; ; ) {
       Object key = readVal(dis);
       if (key == END_OBJ) break;
@@ -638,10 +638,18 @@ public class JavaBinCodec implements PushWriter {
     return m;
   }
 
+  /**
+   * create a new Map object
+   * @param size expected size, -1 means unknown size
+   */
+  protected Map<Object, Object> newMap(int size) {
+    return size < 0 ? new LinkedHashMap<>() : new LinkedHashMap<>(size);
+  }
+
   public Map<Object,Object> readMap(DataInputInputStream dis)
           throws IOException {
     int sz = readVInt(dis);
-    Map<Object,Object> m = new LinkedHashMap<>(sz);
+    Map<Object, Object> m = newMap(sz);
     for (int i = 0; i < sz; i++) {
       Object key = readVal(dis);
       Object val = readVal(dis);

@@ -22,6 +22,7 @@ import java.io.InputStreamReader;
 import java.io.Reader;
 import java.io.StringReader;
 import java.lang.invoke.MethodHandles;
+import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -39,6 +40,7 @@ import java.util.regex.Pattern;
 
 import org.apache.http.HttpEntity;
 import org.apache.http.util.EntityUtils;
+import org.apache.solr.client.solrj.impl.BinaryRequestWriter;
 import org.apache.solr.common.IteratorWriter;
 import org.apache.solr.common.MapWriter;
 import org.apache.solr.common.SolrException;
@@ -47,6 +49,7 @@ import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.cloud.ZkOperation;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.zookeeper.KeeperException;
+import org.apache.zookeeper.server.ByteBufferInputStream;
 import org.noggit.CharArr;
 import org.noggit.JSONParser;
 import org.noggit.JSONWriter;
@@ -100,6 +103,12 @@ public class Utils {
       v = getDeepCopy((Collection) v, maxDepth - 1, mutable, sorted);
     }
     return v;
+  }
+
+  public static InputStream toJavabin(Object o) throws IOException {
+    BinaryRequestWriter.BAOS baos = new BinaryRequestWriter.BAOS();
+    new JavaBinCodec().marshal(o,baos);
+    return new ByteBufferInputStream(ByteBuffer.wrap(baos.getbuf(),0,baos.size()));
   }
 
   public static Collection getDeepCopy(Collection c, int maxDepth, boolean mutable) {

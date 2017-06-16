@@ -94,8 +94,32 @@ enum Type {
   STRING(String.class),
   ARRAY(List.class),
   NUMBER(Number.class),
-  INTEGER(Long.class),
-  BOOLEAN(Boolean.class),
+  INTEGER(Long.class){
+    @Override
+    boolean isValid(Object o) {
+      if(super.isValid(o)) return true;
+      try {
+        Long.parseLong(String.valueOf(o));
+        return true;
+      } catch (NumberFormatException e) {
+        return false;
+
+      }
+    }
+  },
+  BOOLEAN(Boolean.class){
+    @Override
+    boolean isValid(Object o) {
+      if(super.isValid(o)) return true;
+      try {
+        Boolean.parseBoolean (String.valueOf(o));
+        return true;
+      } catch (NumberFormatException e) {
+        return false;
+      }
+
+    }
+  },
   ENUM(List.class),
   OBJECT(Map.class),
   NULL(null),

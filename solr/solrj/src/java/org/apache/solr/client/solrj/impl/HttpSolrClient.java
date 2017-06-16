@@ -65,6 +65,7 @@ import org.apache.solr.client.solrj.ResponseParser;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServerException;
+import org.apache.solr.client.solrj.V2RequestSupport;
 import org.apache.solr.client.solrj.request.RequestWriter;
 import org.apache.solr.client.solrj.request.V2Request;
 import org.apache.solr.common.SolrException;
@@ -295,8 +296,10 @@ public class HttpSolrClient extends SolrClient {
     return queryModParams;
   }
 
-  protected HttpRequestBase createMethod(final SolrRequest request, String collection) throws IOException, SolrServerException {
-
+  protected HttpRequestBase createMethod(SolrRequest request, String collection) throws IOException, SolrServerException {
+    if (request instanceof V2RequestSupport) {
+      request = ((V2RequestSupport) request).getV2Request();
+    }
     SolrParams params = request.getParams();
     Collection<ContentStream> streams = requestWriter.getContentStreams(request);
     String path = requestWriter.getPath(request);

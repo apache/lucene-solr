@@ -203,25 +203,12 @@ public abstract class SolrQueryRequestBase implements SolrQueryRequest, Closeabl
       Iterable<ContentStream> contentStreams = getContentStreams();
       if (contentStreams == null) throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "No content stream");
       for (ContentStream contentStream : contentStreams) {
-        parsedCommands = ApiBag.getCommandOperations(getInputStream(contentStream),
-            getValidators(), validateInput);
+        parsedCommands = ApiBag.getCommandOperations(contentStream, getValidators(), validateInput);
       }
 
     }
     return CommandOperation.clone(parsedCommands);
 
-  }
-
-  private InputStreamReader getInputStream(ContentStream contentStream) {
-    if(contentStream instanceof InputStream) {
-      return new InputStreamReader((InputStream)contentStream, UTF_8);
-    } else {
-      try {
-        return new InputStreamReader(contentStream.getStream(), UTF_8);
-      } catch (IOException e) {
-        throw new RuntimeException(e);
-      }
-    }
   }
 
   protected ValidatingJsonMap getSpec() {

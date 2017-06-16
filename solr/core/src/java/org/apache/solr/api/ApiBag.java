@@ -35,6 +35,8 @@ import com.google.common.collect.ImmutableSet;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SpecProvider;
 import org.apache.solr.common.util.CommandOperation;
+import org.apache.solr.common.util.ContentStream;
+import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.Utils;
 import org.apache.solr.common.util.ValidatingJsonMap;
 import org.apache.solr.core.PluginBag;
@@ -282,13 +284,14 @@ public class ApiBag {
     }
   }
 
-  public static List<CommandOperation> getCommandOperations(Reader reader, Map<String, JsonSchemaValidator> validators, boolean validate) {
+  public static List<CommandOperation> getCommandOperations(ContentStream stream, Map<String, JsonSchemaValidator> validators, boolean validate) {
     List<CommandOperation> parsedCommands = null;
     try {
-      parsedCommands = CommandOperation.parse(reader);
+      parsedCommands = CommandOperation.readCommands(Collections.singleton(stream), new NamedList());
     } catch (IOException e) {
-      throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, e);
+      throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Unable to parse commands");
     }
+
     if (validators == null || !validate) {    // no validation possible because we do not have a spec
       return parsedCommands;
     }

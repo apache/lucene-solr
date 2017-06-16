@@ -258,11 +258,14 @@ public abstract class ContentStreamBase implements ContentStream
   public static class ByteArrayStream extends ContentStreamBase
   {
     private final byte[] bytes;
-    
     public ByteArrayStream( byte[] bytes, String source ) {
+      this(bytes,source, null);
+    }
+    
+    public ByteArrayStream( byte[] bytes, String source, String contentType ) {
       this.bytes = bytes; 
       
-      this.contentType = null;
+      this.contentType = contentType;
       name = source;
       size = new Long(bytes.length);
       sourceInfo = source;

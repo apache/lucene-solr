@@ -142,6 +142,8 @@ New Features
   This will correct counts (and other statistics) for those top buckets collected in the first
   phase. (yonik)
 
+* SOLR-10433: CollectionAdmin requests in SolrJ to support V2 calls (noble)
+
 
 Bug Fixes
 ----------------------
