@@ -277,7 +277,7 @@ public class SolrIndexingClient {
 
 		Util.postMessage("** Indexing the documents ...", MessageType.WHITE_TEXT, false);
 
-		try (BufferedReader br = new BufferedReader(new FileReader("/home/vivek/data/text4k.txt"))) {
+		try (BufferedReader br = new BufferedReader(new FileReader(amazonFoodDataLocation))) {
 
 			start = System.currentTimeMillis();
 			while ((line = br.readLine()) != null) {
