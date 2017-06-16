@@ -192,7 +192,24 @@ if(gt(fieldA,fieldB),sub(fieldA,fieldB),sub(fieldB,fieldA)) // if fieldA > field
 ----
 
 == pow
-//TODO
+The `pow` function returns the value of its first parameter raised to the power of its second parameter.
+
+=== pow Parameters
+
+* `Field Name | Raw Number | Number Evaluator`: Parameter 1
+* `Field Name | Raw Number | Number Evaluator`: Parameter 2
+
+=== pow Syntax
+
+The expressions below show the various ways in which you can use the `pow` evaluator.
+
+[source,text]
+----
+pow(2,3) // returns 2 raised to the 3rd power.
+pow(4,fieldA) // returns 4 raised by the value of fieldA.
+pow(fieldA,1.4) // returns the value of fieldA raised by 1.4.
+if(gt(fieldA,fieldB),pow(fieldA,fieldB),pow(fieldB,fieldA)) // if fieldA > fieldB then raise fieldA by fieldB, else raise fieldB by fieldA.
+----
 
 == mod
 //TODO
