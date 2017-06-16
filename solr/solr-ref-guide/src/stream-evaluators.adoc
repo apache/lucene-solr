@@ -231,7 +231,7 @@ mod(fieldA,1.4) // returns the remainder of fieldA divided by 1.4.
 if(gt(fieldA,fieldB),mod(fieldA,fieldB),mod(fieldB,fieldA)) // if fieldA > fieldB then return the remainder of fieldA/fieldB, else return the remainder of fieldB/fieldA.
 ----
 
-=== ceil
+== ceil
 The `ceil` function rounds a decimal value to the next highest whole number.
 
 === ceil Parameters
