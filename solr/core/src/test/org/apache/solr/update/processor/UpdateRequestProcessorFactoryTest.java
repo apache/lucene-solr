@@ -47,10 +47,10 @@ public class UpdateRequestProcessorFactoryTest extends AbstractSolrTestCase {
   public void testRequestTimeUrp(){
     SolrCore core = h.getCore();
     ModifiableSolrParams params = new ModifiableSolrParams()
-        .add("processor", "Template")
-        .add("Template.field", "id_t:${firstName}_${lastName}")
-        .add("Template.field", "another_t:${lastName}_${firstName}")
-        .add("Template.field", "missing_t:${lastName}_${unKnown}");
+        .add("processor", "template")
+        .add("template.field", "id_t:{firstName}_{lastName}")
+        .add("template.field", "another_t:{lastName}_{firstName}")
+        .add("template.field", "missing_t:{lastName}_{unKnown}");
     UpdateRequestProcessorChain chain = core.getUpdateProcessorChain(params);
     List<UpdateRequestProcessorFactory> l = chain.getProcessors();
     assertTrue(l.get(0) instanceof TemplateUpdateProcessorFactory);
