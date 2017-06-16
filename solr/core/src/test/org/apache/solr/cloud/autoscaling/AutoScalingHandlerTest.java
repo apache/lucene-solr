@@ -32,7 +32,6 @@ import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.V2Request;
 import org.apache.solr.client.solrj.response.CollectionAdminResponse;
-import org.apache.solr.cloud.CreateCollectionCmd;
 import org.apache.solr.cloud.SolrCloudTestCase;
 import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.params.CollectionParams;
@@ -74,10 +73,19 @@ public class AutoScalingHandlerTest extends SolrCloudTestCase {
         .process(cluster.getSolrClient());
     byte[] data = zkClient().getData(SOLR_AUTOSCALING_CONF_PATH, null, null, true);
     ZkNodeProps loaded = ZkNodeProps.load(data);
-    assertNotNull(loaded.get("triggers"));
-    assertEquals("auto add replicas trigger did not created", ((Map)loaded.get("triggers")).size(), 1);
+    Map triggers = (Map) loaded.get("triggers");
+    assertNotNull(triggers);
+    assertEquals("auto add replicas trigger were not created", triggers.size(), 1);
+    Map<String, Object> autoAddReplicasTrigger = (Map<String, Object>) triggers.get(".auto_add_replicas");
+    assertNotNull(autoAddReplicasTrigger);
+    List<Map<String, Object>> actions = (List<Map<String, Object>>) autoAddReplicasTrigger.get("actions");
+    assertNotNull(actions);
+    assertEquals(3, actions.size());
+    assertEquals("auto_add_replicas_plan", actions.get(0).get("name").toString());
+    assertEquals("solr.AutoAddReplicasPlanAction", actions.get(0).get("class").toString());
 
-    zkClient().setData(SOLR_AUTOSCALING_CONF_PATH, Utils.toJSON(new ZkNodeProps()), true);
+    // lets turn of autoAddReplicas, currently it doesn't change anything in autoscaling config
+    // because AutoAddReplicasPlanAction will just ignore any collections with autoAddReplicas turned off
     new CollectionAdminRequest.AsyncCollectionAdminRequest(CollectionParams.CollectionAction.MODIFYCOLLECTION) {
       @Override
       public SolrParams getParams() {
@@ -87,10 +95,11 @@ public class AutoScalingHandlerTest extends SolrCloudTestCase {
         return params;
       }
     }.process(cluster.getSolrClient());
-    data = zkClient().getData(SOLR_AUTOSCALING_CONF_PATH, null, null, true);
-    loaded = ZkNodeProps.load(data);
-    assertNull(loaded.get("triggers"));
 
+    // lets delete all autoscaling config
+    zkClient().setData(SOLR_AUTOSCALING_CONF_PATH, Utils.toJSON(new ZkNodeProps()), true);
+
+    // now enable autoAddReplicas and assert that the trigger was re-created correctly
     new CollectionAdminRequest.AsyncCollectionAdminRequest(CollectionParams.CollectionAction.MODIFYCOLLECTION) {
       @Override
       public SolrParams getParams() {
@@ -102,8 +111,18 @@ public class AutoScalingHandlerTest extends SolrCloudTestCase {
     }.process(cluster.getSolrClient());
     data = zkClient().getData(SOLR_AUTOSCALING_CONF_PATH, null, null, true);
     loaded = ZkNodeProps.load(data);
-    assertNotNull(loaded.get("triggers"));
-    assertEquals("auto add replicas trigger did not created", ((Map)loaded.get("triggers")).size(), 1);
+    triggers = (Map) loaded.get("triggers");
+    assertNotNull(triggers);
+    assertEquals("auto add replicas trigger did not created", triggers.size(), 1);
+    autoAddReplicasTrigger = (Map<String, Object>) triggers.get(".auto_add_replicas");
+    assertNotNull(autoAddReplicasTrigger);
+    actions = (List<Map<String, Object>>) autoAddReplicasTrigger.get("actions");
+    assertNotNull(actions);
+    assertEquals(3, actions.size());
+    assertEquals("auto_add_replicas_plan", actions.get(0).get("name").toString());
+    assertEquals("solr.AutoAddReplicasPlanAction", actions.get(0).get("class").toString());
+
+    CollectionAdminRequest.deleteCollection(collection).process(cluster.getSolrClient());
   }
 
   @Test
