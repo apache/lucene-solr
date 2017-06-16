@@ -356,7 +356,7 @@ public class TestMultiFieldQueryParser extends LuceneTestCase {
     parser.setSplitOnWhitespace(false);
     q = parser.parse("guinea pig");
     assertFalse(parser.getSplitOnWhitespace());
-    assertEquals("((+b:guinea +b:pig) (+t:guinea +t:pig)) (b:cavy t:cavy)", q.toString());
+    assertEquals("((+b:guinea +b:pig) b:cavy) ((+t:guinea +t:pig) t:cavy)", q.toString());
     parser.setSplitOnWhitespace(true);
     q = parser.parse("guinea pig");
     assertEquals("(b:guinea t:guinea) (b:pig t:pig)", q.toString());
