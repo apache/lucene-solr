@@ -244,13 +244,29 @@ The expressions below show the various ways in which you can use the `ceil` eval
 
 [source,text]
 ----
-ceil(100.4) // returns the remainder of 100.
+ceil(100.4) // returns 101.
 ceil(fieldA) // returns the next highest whole number for fieldA.
 if(gt(fieldA,fieldB),ceil(fieldA),ceil(fieldB)) // if fieldA > fieldB then return the ceil of fieldA, else return the ceil of fieldB.
 ----
 
 == floor
-//TODO
+The `floor` function rounds a decimal value to the next lowest whole number.
+
+=== floor Parameters
+
+* `Field Name | Raw Number | Number Evaluator`: The decimal to round down.
+
+=== floor Syntax
+
+The expressions below show the various ways in which you can use the `floor` evaluator.
+
+[source,text]
+----
+floor(100.4) // returns 100.
+ceil(fieldA) // returns the next lowestt whole number for fieldA.
+if(gt(fieldA,fieldB),floor(fieldA),floor(fieldB)) // if fieldA > fieldB then return the floor of fieldA, else return the floor of fieldB.
+----
+
 
 == sin
 //TODO
