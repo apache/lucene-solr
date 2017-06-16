@@ -138,7 +138,7 @@ If `true`, the Term Vector Component will run.
 `tv.docIds`::
 For a given comma-separated list of Lucene document IDs (*not* the Solr Unique Key), term vectors will be returned.
 
-`tv.fl`:: 
+`tv.fl`::
 For a given comma-separated list of fields, term vectors will be returned. If not specified, the `fl` parameter is used.
 
 `tv.all`::
