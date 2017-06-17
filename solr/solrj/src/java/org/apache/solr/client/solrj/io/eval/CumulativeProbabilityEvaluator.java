@@ -18,6 +18,7 @@
 package org.apache.solr.client.solrj.io.eval;
 
 import java.io.IOException;
+import java.util.Locale;
 
 import org.apache.solr.client.solrj.io.Tuple;
 import org.apache.solr.client.solrj.io.stream.expr.Explanation;
@@ -33,13 +34,13 @@ public class CumulativeProbabilityEvaluator extends ComplexEvaluator implements 
 
   public CumulativeProbabilityEvaluator(StreamExpression expression, StreamFactory factory) throws IOException {
     super(expression, factory);
+    
+    if(2 != subEvaluators.size()){
+      throw new IOException(String.format(Locale.ROOT,"Invalid expression %s - expecting two values (emperical distribution and a number) but found %d",expression,subEvaluators.size()));
+    }
   }
 
   public Number evaluate(Tuple tuple) throws IOException {
-
-    if(subEvaluators.size() != 2) {
-      throw new IOException("Cumulative probability expects 2 parameters: an emperical distribution and a number");
-    }
 
     StreamEvaluator r = subEvaluators.get(0);
     StreamEvaluator d = subEvaluators.get(1);

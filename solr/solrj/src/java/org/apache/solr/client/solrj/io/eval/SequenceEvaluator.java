@@ -19,6 +19,7 @@ package org.apache.solr.client.solrj.io.eval;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
 
 import org.apache.commons.math3.util.MathArrays;
 import org.apache.solr.client.solrj.io.Tuple;
@@ -35,13 +36,14 @@ public class SequenceEvaluator extends ComplexEvaluator implements Expressible {
 
   public SequenceEvaluator(StreamExpression expression, StreamFactory factory) throws IOException {
     super(expression, factory);
+    
+    if(3 != subEvaluators.size()){
+      throw new IOException(String.format(Locale.ROOT,"Invalid expression %s - expecting three values but found %d",expression,subEvaluators.size()));
+    }
+
   }
 
   public List<Number> evaluate(Tuple tuple) throws IOException {
-
-    if(subEvaluators.size() != 3) {
-      throw new IOException("Sequence evaluator expects 3 parameters found: "+subEvaluators.size());
-    }
 
     StreamEvaluator sizeEval = subEvaluators.get(0);
     StreamEvaluator startEval = subEvaluators.get(1);

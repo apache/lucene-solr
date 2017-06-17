@@ -19,6 +19,7 @@ package org.apache.solr.client.solrj.io.eval;
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 
 import org.apache.commons.math3.stat.regression.SimpleRegression;
@@ -36,13 +37,14 @@ public class RegressionEvaluator extends ComplexEvaluator implements Expressible
 
   public RegressionEvaluator(StreamExpression expression, StreamFactory factory) throws IOException {
     super(expression, factory);
+    
+    if(2 != subEvaluators.size()){
+      throw new IOException(String.format(Locale.ROOT,"Invalid expression %s - expecting two columns but found %d",expression,subEvaluators.size()));
+    }
+
   }
 
   public Tuple evaluate(Tuple tuple) throws IOException {
-
-    if(subEvaluators.size() != 2) {
-      throw new IOException("Regress expects 2 columns as parameters");
-    }
 
     StreamEvaluator colEval1 = subEvaluators.get(0);
     StreamEvaluator colEval2 = subEvaluators.get(1);

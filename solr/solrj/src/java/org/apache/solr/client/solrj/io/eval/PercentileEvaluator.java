@@ -18,6 +18,7 @@
 package org.apache.solr.client.solrj.io.eval;
 
 import java.util.List;
+import java.util.Locale;
 import java.io.IOException;
 
 import org.apache.solr.client.solrj.io.Tuple;
@@ -35,13 +36,13 @@ public class PercentileEvaluator extends ComplexEvaluator implements Expressible
 
   public PercentileEvaluator(StreamExpression expression, StreamFactory factory) throws IOException {
     super(expression, factory);
+    
+    if(2 != subEvaluators.size()){
+      throw new IOException(String.format(Locale.ROOT,"Invalid expression %s - expecting two values (array and number) but found %d",expression,subEvaluators.size()));
+    }
   }
 
   public Number evaluate(Tuple tuple) throws IOException {
-    if(subEvaluators.size() != 2) {
-      throw new IOException("Percentile expects 2 parameters: an array and a number");
-    }
-
     StreamEvaluator colEval = subEvaluators.get(0);
     List<Number> column = (List<Number>)colEval.evaluate(tuple);
 
