@@ -27,10 +27,10 @@ public class TestPlans {
 		
 		Util.COMMIT_ID = commitID;
 		
-/*		Tests.indexingTestsStandalone(Util.COMMIT_ID, 10000);
+		Tests.indexingTestsStandalone(Util.COMMIT_ID, 10000);
 		Tests.createCollectionTestStandalone(Util.COMMIT_ID);
-*/		Tests.indexingTestsStandaloneConcurrent(Util.COMMIT_ID, 10000);
-/*		Tests.runNumericQueryTestsStandalone();
+		Tests.indexingTestsStandaloneConcurrent(Util.COMMIT_ID, 10000);
+		Tests.runNumericQueryTestsStandalone();
 
 		Tests.indexingTestsCloudSerial(Util.COMMIT_ID, 10000, 2, "1", "2");
 		Tests.indexingTestsCloudSerial(Util.COMMIT_ID, 10000, 2, "2", "1");
@@ -43,7 +43,7 @@ public class TestPlans {
 		Tests.indexingTestsCloudConcurrent(Util.COMMIT_ID, 10000, 4, "2", "2");
 		
 		Tests.runNumericTestsCloud();
-*/
+
 		Util.postMessage("** Executing the benchmark test plan [COMPLETE]...", MessageType.BLUE_TEXT, false);
 		
 	}
