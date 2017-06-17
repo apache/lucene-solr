@@ -788,8 +788,6 @@ public class Util {
 				Util.deleteRunningFile();
 			}
 
-			Util.createIsRunningFile();
-
 			if (argM.containsKey("-ProcessCommitsFromQueue")) {
 				Util.postMessage("** Initiating processing from commit queueu ...", MessageType.BLUE_TEXT, false);
 				
@@ -798,12 +796,14 @@ public class Util {
 				for (int i = 0; i < currentCommits.length; i++) {
 					
 						String commitIDFromQueue = currentCommits[i].getName();
+						Util.COMMIT_ID = commitIDFromQueue;
 						String lastRun = BenchmarkAppConnector.getLastRunCommitID();
 						
 						if (commitIDFromQueue.equals(lastRun)) {
 							Util.postMessage("** The commit: " + commitIDFromQueue + " has already been processed skipping ...", MessageType.RED_TEXT, false);
 							BenchmarkAppConnector.deleteCommitFromQueue(commitIDFromQueue);
 						} else {						
+							Util.createIsRunningFile();
 							Util.postMessage("** Processing benchmarks for commit: " + commitIDFromQueue, MessageType.GREEN_TEXT, false);
 							TestPlans.execute(commitIDFromQueue);
 							BenchmarkAppConnector.publishDataForWebApp();
@@ -819,15 +819,16 @@ public class Util {
 				Util.postMessage("The latest commit ID is: " + Util.COMMIT_ID, MessageType.YELLOW_TEXT, false);
 
 				TestPlans.execute(Util.COMMIT_ID);
-				BenchmarkAppConnector.publishDataForWebApp();				
+				BenchmarkAppConnector.publishDataForWebApp();	
+				BenchmarkReportData.reset();
 			} else if (argM.containsKey("-ProcessWithCommitID")) {
 				
 				Util.COMMIT_ID = argM.get("-ProcessWithCommitID");
 				Util.postMessage("** Executing benchmarks with commit: " + Util.COMMIT_ID, MessageType.BLUE_TEXT, false);
 				TestPlans.execute(Util.COMMIT_ID);
-				BenchmarkAppConnector.publishDataForWebApp();				
+				BenchmarkAppConnector.publishDataForWebApp();	
+				BenchmarkReportData.reset();
 			} 
-
 		
 		} catch (Exception e) {
 			e.printStackTrace();
