@@ -197,7 +197,7 @@ public class SolrIndexingClient {
 				
 				intList.add(Integer.parseInt(data[2].replaceAll("[^\\sa-zA-Z0-9]", "").trim()));
 				
-				solrClient.add(document);
+				solrClient.add(collectionName, document);
 				numberOfDocuments++;
 				if (numDocuments == numberOfDocuments) {
 					break;
@@ -293,7 +293,7 @@ public class SolrIndexingClient {
 				
 				intList.add(Integer.parseInt(data[2].replaceAll("[^\\sa-zA-Z0-9]", "").trim()));
 				
-				solrClient.add(document);
+				solrClient.add(collectionName, document);
 				numberOfDocuments++;
 				if (numDocuments == numberOfDocuments) {
 					break;
