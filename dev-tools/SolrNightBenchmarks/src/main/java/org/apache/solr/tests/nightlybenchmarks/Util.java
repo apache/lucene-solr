@@ -60,7 +60,7 @@ import net.lingala.zip4j.core.ZipFile;
 import net.lingala.zip4j.exception.ZipException;
 
 enum MessageType {
-	YELLOW_TEXT, WHITE_TEXT, GREEN_TEXT, RED_TEXT, BLUE_TEXT
+	YELLOW_TEXT, WHITE_TEXT, GREEN_TEXT, RED_TEXT, BLUE_TEXT, BLACK_TEXT, PURPLE_TEXT, CYAN_TEXT
 };
 
 public class Util {
@@ -95,10 +95,13 @@ public class Util {
 	public static void postMessage(String message, MessageType type, boolean printInLog) {
 
 		String ANSI_RESET = "\u001B[0m";
+		String ANSI_BLACK = "\u001B[30m";
 		String ANSI_RED = "\u001B[31m";
 		String ANSI_GREEN = "\u001B[32m";
 		String ANSI_YELLOW = "\u001B[33m";
 		String ANSI_BLUE = "\u001B[34m";
+		String ANSI_PURPLE = "\u001B[35m";
+		String ANSI_CYAN = "\u001B[36m";
 		String ANSI_WHITE = "\u001B[37m";
 
 		if (!SILENT) {
@@ -112,6 +115,12 @@ public class Util {
 				System.out.println(ANSI_RED + message + ANSI_RESET);
 			} else if (type.equals(MessageType.GREEN_TEXT)) {
 				System.out.println(ANSI_GREEN + message + ANSI_RESET);
+			} else if (type.equals(MessageType.BLACK_TEXT)) {
+				System.out.println(ANSI_BLACK + message + ANSI_RESET);
+			} else if (type.equals(MessageType.PURPLE_TEXT)) {
+				System.out.println(ANSI_PURPLE + message + ANSI_RESET);
+			} else if (type.equals(MessageType.CYAN_TEXT)) {
+				System.out.println(ANSI_CYAN + message + ANSI_RESET);
 			}
 		}
 
