@@ -33,7 +33,7 @@ A comprehensive Solr performance benchmark framework.
      
      * -ProcessCommitsFromQueue true           Use this parameter if you want the system to work on the commit hash present in the queue.
      * -RegisterLatestCommit true              This parameter is used in conjunction with the last parameter. 
-     
+     * -Generate1MDataFile true                Generates a fresh test data file with 1 million records ~4.GB size. in the webapp/data directory.     
      * -Housekeeping true                      Use this parameter to instruct the system to clean up at the end of the work cycle.
      
 ## Running benchmarks in queue mode
