@@ -31,7 +31,6 @@ public class BenchmarkReportData {
 	public static Map<String, String> metricMapCloudSerial_3N1S3R;
 	public static Map<String, String> metricMapCloudSerial_4N2S2R;
 	
-	
 	public static Map<String, String> metricMapCloudConcurrent1_2N1S2R;
 	public static Map<String, String> metricMapCloudConcurrent1_2N2S1R;
 	public static Map<String, String> metricMapCloudConcurrent1_3N1S3R;
@@ -47,21 +46,9 @@ public class BenchmarkReportData {
 	public static Map<String, String> metricMapCloudConcurrent3_3N1S3R;
 	public static Map<String, String> metricMapCloudConcurrent3_4N2S2R;
 
-	public static Map<String, String> metricMapCloudConcurrent8_2N1S2R;
-	public static Map<String, String> metricMapCloudConcurrent8_2N2S1R;
-	public static Map<String, String> metricMapCloudConcurrent8_3N1S3R;
-	public static Map<String, String> metricMapCloudConcurrent8_4N2S2R;
-
-	public static Map<String, String> metricMapCloudConcurrent10_2N1S2R;
-	public static Map<String, String> metricMapCloudConcurrent10_2N2S1R;
-	public static Map<String, String> metricMapCloudConcurrent10_3N1S3R;
-	public static Map<String, String> metricMapCloudConcurrent10_4N2S2R;
-
 	public static Map<String, String> metricMapStandaloneConcurrent1;
 	public static Map<String, String> metricMapStandaloneConcurrent2;
 	public static Map<String, String> metricMapStandaloneConcurrent3;
-	public static Map<String, String> metricMapStandaloneConcurrent8;
-	public static Map<String, String> metricMapStandaloneConcurrent10;
 	
 	public static Map<String, String> numericQueryTNQMetricC;
 	public static Map<String, String> numericQueryRNQMetricC;
