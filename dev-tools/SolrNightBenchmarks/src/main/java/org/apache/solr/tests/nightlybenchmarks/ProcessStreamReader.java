@@ -38,7 +38,7 @@ public class ProcessStreamReader extends Thread {
 			BufferedReader br = new BufferedReader(isr);
 			String line = null;
 			while ((line = br.readLine()) != null) {
-				Util.postMessage(" >> " + line, MessageType.GREEN_TEXT, false);
+				Util.postMessage(" >> " + line, MessageType.YELLOW_TEXT, false);
 			}
 
 		} catch (IOException ioe) {

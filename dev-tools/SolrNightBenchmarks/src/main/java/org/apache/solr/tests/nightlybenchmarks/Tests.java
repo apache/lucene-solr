@@ -122,7 +122,7 @@ public class Tests {
 
 	public static boolean indexingTestsCloudSerial(String commitID, int numDocuments, int nodes, String shards, String replicas) {
 
-		Util.postMessage("** INITIATING TEST: Indexing Cloud Serial Nodes:" + nodes + " Shards:" + shards + " Replicas:" + replicas, MessageType.GREEN_TEXT, false);
+		Util.postMessage("** INITIATING TEST: Indexing Cloud Serial Nodes:" + nodes + " Shards:" + shards + " Replicas:" + replicas, MessageType.PURPLE_TEXT, false);
 		
 		try {
 
@@ -158,7 +158,7 @@ public class Tests {
 
 	public static boolean indexingTestsCloudConcurrent(String commitID, int numDocuments, int nodes, String shards, String replicas) {
 
-		Util.postMessage("** INITIATING TEST: Indexing Cloud Concurrent Nodes:" + nodes + " Shards:" + shards + " Replicas:" + replicas, MessageType.GREEN_TEXT, false);
+		Util.postMessage("** INITIATING TEST: Indexing Cloud Concurrent Nodes:" + nodes + " Shards:" + shards + " Replicas:" + replicas, MessageType.PURPLE_TEXT, false);
 
 		try {
 
@@ -321,6 +321,8 @@ public class Tests {
 	private static String setUpCloudForFeatureTests(String commitID, int documentCount, int solrNodes, String shards,
 			String replicas, int queueSize) {
 
+		Util.postMessage("** Setting up cloud for feature tests ...", MessageType.PURPLE_TEXT, false);
+		
 		SolrCloud cloud = new SolrCloud(solrNodes, shards, replicas, commitID, null, "localhost", true);
 		Tests.cloud = cloud;
 		SolrIndexingClient cloudClient = new SolrIndexingClient("localhost", cloud.port, commitID);
@@ -330,7 +332,9 @@ public class Tests {
 	}
 	
 	private static String setUpStandaloneNodeForFeatureTests(String commitID, int numDocuments) {
-		
+
+		Util.postMessage("** Setting up standalone node for feature tests ...", MessageType.PURPLE_TEXT, false);
+	
 		try {
 			SolrNode snode = new SolrNode(commitID, "", "", false);
 			snode.doAction(SolrNodeAction.NODE_START);
@@ -351,10 +355,16 @@ public class Tests {
 	}
 
 	private static void shutDownCloud() throws IOException, InterruptedException {
+		
+		Util.postMessage("** Shutting down cloud for feature tests ...", MessageType.PURPLE_TEXT, false);
+
 		cloud.shutdown();
 	}
 
 	private static void shutDownStandalone() throws IOException, InterruptedException {
+		
+		Util.postMessage("** Shutting down standalone node for feature tests ...", MessageType.PURPLE_TEXT, false);
+
 		node.doAction(SolrNodeAction.NODE_STOP);
 		node.cleanup();
 	}
@@ -362,7 +372,9 @@ public class Tests {
 	@SuppressWarnings("deprecation")
 	public static void runNumericTestsCloud() throws IOException, InterruptedException {
 		
-		String port = Tests.setUpCloudForFeatureTests(Util.COMMIT_ID, 10000, 2, "2", "1", 5000);
+		Util.postMessage("** INITIATING TEST: Numeric query on cloud ...", MessageType.PURPLE_TEXT, false);
+		
+		String port = Tests.setUpCloudForFeatureTests(Util.COMMIT_ID, 50000, 2, "2", "1", 5000);
 
 		Thread numericQueryTNQMetricC = new Thread(new MetricCollector(Util.COMMIT_ID, TestType.TERM_NUMERIC_QUERY_CLOUD, port));
 		numericQueryTNQMetricC.start();
@@ -431,8 +443,9 @@ public class Tests {
 	@SuppressWarnings("deprecation")
 	public static void runNumericQueryTestsStandalone() throws IOException, InterruptedException {
 
-		
-		String port = Tests.setUpStandaloneNodeForFeatureTests(Util.COMMIT_ID, 1000);
+		Util.postMessage("** INITIATING TEST: Numeric query on standalone node ...", MessageType.PURPLE_TEXT, false);
+
+		String port = Tests.setUpStandaloneNodeForFeatureTests(Util.COMMIT_ID, 50000);
 
 		Thread numericQueryTNQMetricS = new Thread(new MetricCollector(Util.COMMIT_ID, TestType.TERM_NUMERIC_QUERY_STANDALONE, port));
 		numericQueryTNQMetricS.start();

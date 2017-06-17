@@ -270,7 +270,7 @@ public class BenchmarkAppConnector {
 
 	public static void publishDataForWebApp() {
 
-		Util.postMessage("** Publishing data for webapp ..", MessageType.WHITE_TEXT, false);
+		Util.postMessage("** Publishing data for webapp ..", MessageType.CYAN_TEXT, false);
 
 		if (BenchmarkReportData.metricMapStandalone != null) {
 			BenchmarkAppConnector.writeToWebAppDataFile("indexing_throughput_data_standalone_regular.csv",
@@ -475,7 +475,7 @@ public class BenchmarkAppConnector {
 
 		Util.getAndPublishCommitInformation();
 
-		Util.postMessage("** Publishing data for webapp [COMPLETE] ..", MessageType.WHITE_TEXT, false);
+		Util.postMessage("** Publishing data for webapp [COMPLETE] ..", MessageType.GREEN_TEXT, false);
 	}
 
 }

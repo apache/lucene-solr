@@ -43,7 +43,7 @@ public class Zookeeper {
 
 	private void install() throws IOException {
 
-		Util.postMessage("** Installing Zookeeper Node ...", MessageType.WHITE_TEXT, false);
+		Util.postMessage("** Installing Zookeeper Node ...", MessageType.CYAN_TEXT, false);
 
 		File base = new File(Util.ZOOKEEPER_DIR);
 		if (!base.exists()) {
@@ -55,7 +55,7 @@ public class Zookeeper {
 		if (!release.exists()) {
 
 			Util.postMessage("** Attempting to download zookeeper release ..." + " : " + Util.ZOOKEEPER_RELEASE,
-					MessageType.WHITE_TEXT, true);
+					MessageType.CYAN_TEXT, true);
 			String fileName = "zookeeper-" + Util.ZOOKEEPER_RELEASE + ".tar.gz";
 
 			Util.download(

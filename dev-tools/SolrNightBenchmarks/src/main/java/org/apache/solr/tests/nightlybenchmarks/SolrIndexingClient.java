@@ -65,7 +65,7 @@ public class SolrIndexingClient {
 		documentCount = numDocuments;
 		intList = new LinkedList<Integer>();
 		
-		Util.postMessage("** Indexing documents through HTTP client ..." + urlString , MessageType.WHITE_TEXT, false);
+		Util.postMessage("** Indexing documents through HTTP client ..." + urlString , MessageType.CYAN_TEXT, false);
 
 		HttpSolrClient solrClient = new HttpSolrClient.Builder(urlString).build();
 
@@ -158,9 +158,11 @@ public class SolrIndexingClient {
 	public Map<String, String> indexData(int numDocuments, String urlString, String zookeeperIp,
 			String zookeeperPort, String collectionName, boolean captureMetrics, TestType type, boolean deleteData) {
 
-		Util.postMessage("** Indexing documents through cloud client ..." + urlString + " | " + collectionName , MessageType.WHITE_TEXT, false);
+		Util.postMessage("** Indexing documents through cloud client ..." + urlString + " | " + collectionName , MessageType.CYAN_TEXT, false);
 
 		documentCount = numDocuments;
+		intList = new LinkedList<Integer>();
+
 		CloudSolrClient solrClient = new CloudSolrClient.Builder().withZkHost(zookeeperIp + ":" + zookeeperPort)
 				.build();
 		solrClient.connect();
@@ -254,8 +256,9 @@ public class SolrIndexingClient {
 	public Map<String, String> indexData(int numDocuments, String urlString, String collectionName, int queueSize, int threadCount, TestType type, boolean captureMetrics, boolean deleteData) {
 		
 		documentCount = numDocuments;
+		intList = new LinkedList<Integer>();
 
-		Util.postMessage("** Indexing documents through concurrent client ..." + urlString + " | " + collectionName + " | " + queueSize + " | " + threadCount , MessageType.WHITE_TEXT, false);
+		Util.postMessage("** Indexing documents through concurrent client ..." + urlString + " | " + collectionName + " | " + queueSize + " | " + threadCount , MessageType.CYAN_TEXT, false);
 		
 		ConcurrentUpdateSolrClient solrClient = new ConcurrentUpdateSolrClient(urlString, queueSize, threadCount);
 		

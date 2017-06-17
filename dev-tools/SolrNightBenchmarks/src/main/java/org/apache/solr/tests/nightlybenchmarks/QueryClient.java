@@ -76,7 +76,7 @@ public class QueryClient implements Runnable {
 		this.delayEstimationBySeconds = delayEstimationBySeconds;
 
 		solrClient = new HttpSolrClient(urlString);
-		Util.postMessage("\r" + this.toString() + "** QUERY CLIENT CREATED ...", MessageType.RED_TEXT, false);
+		Util.postMessage("\r" + this.toString() + "** QUERY CLIENT CREATED ...", MessageType.GREEN_TEXT, false);
 	}
 
 	public void run() {
@@ -98,9 +98,9 @@ public class QueryClient implements Runnable {
 					NamedList<String> list = new NamedList<>();
 					list.add("defType", "edismax");
 					list.add("wt", "json");
-
+					
 					if (this.queryType == QueryType.TERM_NUMERIC_QUERY) {
-						list.add("q", "RandomIntField:"
+						list.add("q", "Int1:"
 								+ SolrIndexingClient.intList.get(random.nextInt(SolrIndexingClient.documentCount)));
 					} else if (this.queryType == QueryType.RANGE_NUMERIC_QUERY) {
 
@@ -108,17 +108,17 @@ public class QueryClient implements Runnable {
 						int ft_2 = SolrIndexingClient.intList.get(random.nextInt(SolrIndexingClient.documentCount));
 
 						if (ft_2 > ft_1) {
-							list.add("q", "RandomIntField:[" + ft_1 + " TO " + ft_2 + "]");
+							list.add("q", "Int1:[" + ft_1 + " TO " + ft_2 + "]");
 						} else {
-							list.add("q", "RandomIntField:[" + ft_2 + " TO " + ft_1 + "]");
+							list.add("q", "Int1:[" + ft_2 + " TO " + ft_1 + "]");
 						}
 
 					} else if (this.queryType == QueryType.GREATER_THAN_NUMERIC_QUERY) {
-						list.add("q", "RandomIntField:["
+						list.add("q", "Int1:["
 								+ SolrIndexingClient.intList.get(random.nextInt(SolrIndexingClient.documentCount))
 								+ " TO *]");
 					} else if (this.queryType == QueryType.LESS_THAN_NUMERIC_QUERY) {
-						list.add("q", "RandomIntField:[* TO "
+						list.add("q", "Int1:[* TO "
 								+ SolrIndexingClient.intList.get(random.nextInt(SolrIndexingClient.documentCount))
 								+ "]");
 					} else if (this.queryType == QueryType.AND_NUMERIC_QUERY) {
@@ -126,14 +126,14 @@ public class QueryClient implements Runnable {
 						int ft_1 = SolrIndexingClient.intList.get(random.nextInt(SolrIndexingClient.documentCount));
 						int ft_2 = SolrIndexingClient.intList.get(random.nextInt(SolrIndexingClient.documentCount));
 
-						list.add("q", "RandomIntField:" + ft_1 + " AND RandomIntField:" + ft_2);
+						list.add("q", "Int1:" + ft_1 + " AND Int1:" + ft_2);
 
 					} else if (this.queryType == QueryType.OR_NUMERIC_QUERY) {
 
 						int ft_1 = SolrIndexingClient.intList.get(random.nextInt(SolrIndexingClient.documentCount));
 						int ft_2 = SolrIndexingClient.intList.get(random.nextInt(SolrIndexingClient.documentCount));
 
-						list.add("q", "RandomIntField:" + ft_1 + " OR RandomIntField:" + ft_2);
+						list.add("q", "Int1:" + ft_1 + " OR Int1:" + ft_2);
 
 					} 
 

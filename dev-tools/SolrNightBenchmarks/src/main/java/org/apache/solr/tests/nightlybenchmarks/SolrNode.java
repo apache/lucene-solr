@@ -66,7 +66,7 @@ public class SolrNode {
 
 	private void install() throws IOException, GitAPIException {
 
-		Util.postMessage("** Installing Solr Node ...", MessageType.WHITE_TEXT, true);
+		Util.postMessage("** Installing Solr Node ...", MessageType.CYAN_TEXT, true);
 		this.port = String.valueOf(Util.getFreePort());
 
 		this.baseDirectory = Util.SOLR_DIR + UUID.randomUUID().toString() + File.separator;
@@ -75,12 +75,12 @@ public class SolrNode {
 
 		try {
 
-			Util.postMessage("** Checking if SOLR node directory exists ...", MessageType.WHITE_TEXT, true);
+			Util.postMessage("** Checking if SOLR node directory exists ...", MessageType.CYAN_TEXT, true);
 			File node = new File(nodeDirectory);
 
 			if (!node.exists()) {
 
-				Util.postMessage("Node directory does not exist, creating it ...", MessageType.WHITE_TEXT, true);
+				Util.postMessage("Node directory does not exist, creating it ...", MessageType.RED_TEXT, true);
 				node.mkdir();
 				Util.postMessage("Directory Created: " + nodeDirectory, MessageType.GREEN_TEXT, true);
 
@@ -97,7 +97,7 @@ public class SolrNode {
 	}
 
 	void checkoutCommitAndBuild() throws IOException, GitAPIException {
-		Util.postMessage("** Checking out Solr: " + commitId + " ...", MessageType.WHITE_TEXT, true);
+		Util.postMessage("** Checking out Solr: " + commitId + " ...", MessageType.CYAN_TEXT, true);
 
 		File gitDirectory = new File(gitDirectoryPath);
 
@@ -119,7 +119,7 @@ public class SolrNode {
 
 		if (new File(tarballLocation).exists() == false) {
 			if (new File(packageFilename).exists() == false) {
-				Util.postMessage("** There were new changes, need to rebuild ...", MessageType.WHITE_TEXT, true);
+				Util.postMessage("** There were new changes, need to rebuild ...", MessageType.RED_TEXT, true);
 				Util.execute("ant ivy-bootstrap", gitDirectoryPath);
 				// Util.execute("ant compile", gitDirectoryPath);
 				Util.execute("ant package", gitDirectoryPath + File.separator + "solr");
@@ -139,7 +139,7 @@ public class SolrNode {
 
 		Util.postMessage(
 				"** Do we have packageFilename? " + (new File(tarballLocation).exists() ? "yes" : "no") + " ...",
-				MessageType.WHITE_TEXT, true);
+				MessageType.PURPLE_TEXT, true);
 	}
 
 	public int doAction(SolrNodeAction action) {
@@ -173,7 +173,7 @@ public class SolrNode {
 		}
 		end = System.currentTimeMillis();
 		Util.postMessage("** Time taken for the node " + action + " activity is: " + (end - start) + " millisecond(s)",
-				MessageType.RED_TEXT, false);
+				MessageType.GREEN_TEXT, false);
 
 		return returnValue;
 	}
@@ -187,7 +187,7 @@ public class SolrNode {
 		thread.start();
 
 		this.collectionName = collectionName;
-		Util.postMessage("** Creating core ... ", MessageType.WHITE_TEXT, true);
+		Util.postMessage("** Creating core ... ", MessageType.CYAN_TEXT, true);
 
 		long start;
 		long end;
@@ -200,7 +200,7 @@ public class SolrNode {
 		end = System.currentTimeMillis();
 
 
-		Util.postMessage("** Time for creating the core is: " + (end - start) + " millisecond(s)", MessageType.RED_TEXT,
+		Util.postMessage("** Time for creating the core is: " + (end - start) + " millisecond(s)", MessageType.GREEN_TEXT,
 				false);
 
 		thread.stop();
@@ -226,7 +226,7 @@ public class SolrNode {
 		thread.start();
 
 		this.collectionName = collectionName;
-		Util.postMessage("** Creating collection ... ", MessageType.WHITE_TEXT, true);
+		Util.postMessage("** Creating collection ... ", MessageType.CYAN_TEXT, true);
 
 		long start;
 		long end;
@@ -245,7 +245,7 @@ public class SolrNode {
 		}
 
 		Util.postMessage("** Time for creating the collection is: " + (end - start) + " millisecond(s)",
-				MessageType.RED_TEXT, false);
+				MessageType.GREEN_TEXT, false);
 
 		thread.stop();
 
@@ -266,7 +266,7 @@ public class SolrNode {
 	public int deleteCollection(String collectionName) throws IOException, InterruptedException {
 
 		this.collectionName = collectionName;
-		Util.postMessage("** Deleting collection ... ", MessageType.RED_TEXT, true);
+		Util.postMessage("** Deleting collection ... ", MessageType.CYAN_TEXT, true);
 		
 		return Util.execute("./solr delete -c " + collectionName + " -deleteConfig true", nodeDirectory);
 
