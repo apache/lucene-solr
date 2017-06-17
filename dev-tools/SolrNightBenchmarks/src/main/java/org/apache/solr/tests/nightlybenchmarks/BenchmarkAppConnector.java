@@ -22,8 +22,19 @@ public class BenchmarkAppConnector {
 	}
 
 	public static String getLastRunCommitID() {
+
+		File dir = new File(benchmarkAppDirectory + "data" + File.separator + "lastrun" + File.separator);
+		
+		if (!dir.exists()) {
+			dir.mkdirs();
+		}
+
 		File dataDir = new File(benchmarkAppDirectory + "data" + File.separator + "lastrun" + File.separator);
-		return dataDir.listFiles()[0].getName().trim();
+		if (dataDir.listFiles().length != 0) {
+			return dataDir.listFiles()[0].getName().trim();
+		} else {
+			return null;
+		}			
 	}
 
 	public static boolean isRunningFolderEmpty() {
@@ -31,7 +42,7 @@ public class BenchmarkAppConnector {
 		File dir = new File(benchmarkAppDirectory + "data" + File.separator + "running" + File.separator);
 		
 		if (!dir.exists()) {
-			dir.mkdir();
+			dir.mkdirs();
 		}
 		
 		return dir.listFiles().length == 0 ? true : false;
@@ -42,7 +53,7 @@ public class BenchmarkAppConnector {
 		File dir = new File(benchmarkAppDirectory + "data" + File.separator + "cloning" + File.separator);
 		
 		if (!dir.exists()) {
-			dir.mkdir();
+			dir.mkdirs();
 		}
 		
 		return dir.listFiles().length == 0 ? true : false;
@@ -53,7 +64,7 @@ public class BenchmarkAppConnector {
 		File dir = new File(benchmarkAppDirectory + "data" + File.separator + "commit_queue" + File.separator);
 		
 		if (!dir.exists()) {
-			dir.mkdir();
+			dir.mkdirs();
 		}
 		
 		return dir.listFiles().length == 0 ? true : false;
@@ -64,7 +75,7 @@ public class BenchmarkAppConnector {
 		File dir = new File(benchmarkAppDirectory + "data" + File.separator + "commit_queue" + File.separator);
 		
 		if (!dir.exists()) {
-			dir.mkdir();
+			dir.mkdirs();
 		}
 		
 		Util.postMessage("** Deleting registered commit " + commit + " from the queue ...", MessageType.RED_TEXT, false);
@@ -78,7 +89,7 @@ public class BenchmarkAppConnector {
 		File directory = new File(benchmarkAppDirectory + "data" + File.separator + "commit_queue" + File.separator);
 
 		if (!directory.exists()) {
-			directory.mkdir();
+			directory.mkdirs();
 		}
 		
 		File[] files = directory.listFiles();
@@ -96,7 +107,7 @@ public class BenchmarkAppConnector {
 		File directory = new File(benchmarkAppDirectory + "data" + File.separator + "commit_queue" + File.separator);
 
 		if (!directory.exists()) {
-			directory.mkdir();
+			directory.mkdirs();
 		}
 
 		File[] files = directory.listFiles();
@@ -116,7 +127,7 @@ public class BenchmarkAppConnector {
 		File file = new File(benchmarkAppDirectory + "data" + File.separator + "commit_queue" + File.separator + commit);
 
 		if (!file.exists()) {
-			file.mkdir();
+			file.mkdirs();
 		}
 		
 		return file.exists();
@@ -129,7 +140,7 @@ public class BenchmarkAppConnector {
 			 File dir = new File(BenchmarkAppConnector.benchmarkAppDirectory + "data" + File.separator + "lastrun" + File.separator);
 			 
 			 if (!dir.exists()) {
-				 dir.mkdir();
+				 dir.mkdirs();
 			 } else {
 						 for (File file: dir.listFiles()) {
 						        if (!file.isDirectory()) file.delete();
@@ -139,7 +150,7 @@ public class BenchmarkAppConnector {
 			 File dir = new File(BenchmarkAppConnector.benchmarkAppDirectory + "data" + File.separator + "running" + File.separator);
 			 
 			 if (!dir.exists()) {
-				 dir.mkdir();
+				 dir.mkdirs();
 			 } else {
 						 for (File file: dir.listFiles()) {
 						        if (!file.isDirectory()) file.delete();
@@ -149,7 +160,7 @@ public class BenchmarkAppConnector {
 			 File dir = new File(BenchmarkAppConnector.benchmarkAppDirectory + "data" + File.separator + "cloning" + File.separator);
 			 
 			 if (!dir.exists()) {
-				 dir.mkdir();
+				 dir.mkdirs();
 			 } else {
 						 for (File file: dir.listFiles()) {
 						        if (!file.isDirectory()) file.delete();
@@ -159,7 +170,7 @@ public class BenchmarkAppConnector {
 			 File dir = new File(BenchmarkAppConnector.benchmarkAppDirectory + "data" + File.separator + "commit_queue" + File.separator);
 			 
 			 if (!dir.exists()) {
-				 dir.mkdir();
+				 dir.mkdirs();
 			 } else {
 						 for (File file: dir.listFiles()) {
 						        if (!file.isDirectory()) file.delete();
@@ -190,7 +201,7 @@ public class BenchmarkAppConnector {
 			}
 
 			if (!dataDir.exists()) {
-				dataDir.mkdir();
+				dataDir.mkdirs();
 			}
 
 			if (type == FileType.IS_RUNNING_FILE) {
