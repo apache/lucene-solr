@@ -130,6 +130,9 @@ Other
 * LUCENE-7852: Correct copyright year(s) in lucene/LICENSE.txt file.
   (Christine Poerschke, Steve Rowe)
 
+* LUCENE-7719: Generalized the UnifiedHighlighter's support for AutomatonQuery
+  for character & binary automata. Added AutomatonQuery.isBinary. (David Smiley)
+
 ======================= Lucene 6.7.0 =======================
 
 New Features

@@ -24,11 +24,13 @@ import java.util.List;
 import java.util.Objects;
 
 import com.carrotsearch.randomizedtesting.annotations.ParametersFactory;
+import com.carrotsearch.randomizedtesting.generators.RandomStrings;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.analysis.MockTokenizer;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.Tokenizer;
+import org.apache.lucene.analysis.core.KeywordAnalyzer;
 import org.apache.lucene.analysis.standard.StandardAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
@@ -63,16 +65,15 @@ import org.apache.lucene.search.spans.SpanQuery;
 import org.apache.lucene.search.spans.SpanTermQuery;
 import org.apache.lucene.search.spans.SpanWeight;
 import org.apache.lucene.store.BaseDirectoryWrapper;
+import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.LuceneTestCase;
-import org.apache.lucene.util.LuceneTestCase.SuppressCodecs;
+import org.apache.lucene.util.UnicodeUtil;
 import org.junit.After;
 import org.junit.Before;
 
 /**
  * Some tests that highlight wildcard, fuzzy, etc queries.
  */
-@SuppressCodecs({"MockFixedIntBlock", "MockVariableIntBlock", "MockSep", "MockRandom", "Lucene3x"})
-@LuceneTestCase.SuppressSysoutChecks(bugUrl = "")//Gradle interferes with this Lucene test rule
 public class TestUnifiedHighlighterMTQ extends LuceneTestCase {
 
   final FieldType fieldType;
@@ -1078,5 +1079,67 @@ public class TestUnifiedHighlighterMTQ extends LuceneTestCase {
     String[] snippets = highlighter.highlight(field, query, topDocs);
     assertEquals("[<b>я</b>]", Arrays.toString(snippets));
     ir.close();
+  }
+
+  // LUCENE-7719
+  public void testMultiByteMTQ() throws IOException {
+    Analyzer analyzer = new KeywordAnalyzer();
+    try (RandomIndexWriter iw = new RandomIndexWriter(random(), dir, analyzer)) {
+      for (int attempt = 0; attempt < 20; attempt++) {
+        iw.deleteAll();
+        String field = "title";
+        String value = RandomStrings.randomUnicodeOfLength(random(), 3);
+        if (value.contains(UnifiedHighlighter.MULTIVAL_SEP_CHAR+"")) { // will throw things off
+          continue;
+        }
+        int[] valuePoints = value.codePoints().toArray();
+
+        iw.addDocument(Collections.singleton(
+            new Field(field, value, fieldType)));
+        iw.commit();
+        try (IndexReader ir = iw.getReader()) {
+          IndexSearcher searcher = newSearcher(ir);
+          UnifiedHighlighter highlighter = new UnifiedHighlighter(searcher, analyzer);
+          highlighter.setBreakIterator(WholeBreakIterator::new);
+
+          // Test PrefixQuery
+          Query query = new PrefixQuery(new Term(field,
+              UnicodeUtil.newString(valuePoints, 0, 1)));
+          highlightAndAssertMatch(searcher, highlighter, query, field, value);
+
+          // Test TermRangeQuery
+          query = new TermRangeQuery(field,
+              new BytesRef(value),
+              new BytesRef(value),
+              true, true );
+          highlightAndAssertMatch(searcher, highlighter, query, field, value);
+
+          // Test FuzzyQuery
+          query = new FuzzyQuery(new Term(field, value + "Z"), 1);
+          highlightAndAssertMatch(searcher, highlighter, query, field, value);
+
+          if (valuePoints.length != 3) {
+            continue; // even though we ask RandomStrings for a String with 3 code points, it seems sometimes it's less
+          }
+
+          // Test WildcardQuery
+          query = new WildcardQuery(new Term(field,
+              new StringBuilder()
+                  .append(WildcardQuery.WILDCARD_ESCAPE).appendCodePoint(valuePoints[0])
+                  .append(WildcardQuery.WILDCARD_CHAR)
+                  .append(WildcardQuery.WILDCARD_ESCAPE).appendCodePoint(valuePoints[2]).toString()));
+          highlightAndAssertMatch(searcher, highlighter, query, field, value);
+
+          //TODO hmmm; how to randomly generate RegexpQuery? Low priority; we've covered the others well.
+        }
+      }
+    }
+  }
+
+  private void highlightAndAssertMatch(IndexSearcher searcher, UnifiedHighlighter highlighter, Query query, String field, String fieldVal) throws IOException {
+    TopDocs topDocs = searcher.search(query, 1);
+    assertEquals(1, topDocs.totalHits);
+    String[] snippets = highlighter.highlight(field, query, topDocs);
+    assertEquals("[<b>"+fieldVal+"</b>]", Arrays.toString(snippets));
   }
 }
