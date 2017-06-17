@@ -28,7 +28,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Random;
 
-import org.apache.commons.lang.RandomStringUtils;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.impl.ConcurrentUpdateSolrClient;
@@ -45,7 +44,7 @@ public class SolrIndexingClient {
 	private String host;
 	private String port;
 	public static String solrCommitHistoryData;
-	public static String amazonFoodDataLocation;
+	public static String amazonFoodData;
 	public static String textDocumentLocation;
 	private String commitId;
 	Random r = new Random();
@@ -61,18 +60,18 @@ public class SolrIndexingClient {
 	}
 
 	@SuppressWarnings("deprecation")
-	public Map<String, String> indexAmazonFoodData(int numDocuments, String urlString, boolean captureMetrics, boolean deleteData) {
+	public Map<String, String> indexData(int numDocuments, String urlString, boolean captureMetrics, boolean deleteData) {
 
 		documentCount = numDocuments;
-
-		Util.postMessage("** Indexing documents (Amazon Food Reviews) ...", MessageType.WHITE_TEXT, false);
+		intList = new LinkedList<Integer>();
+		
+		Util.postMessage("** Indexing documents through HTTP client ..." + urlString , MessageType.WHITE_TEXT, false);
 
 		HttpSolrClient solrClient = new HttpSolrClient.Builder(urlString).build();
 
 		int numberOfDocuments = 0;
 		String line = "";
 		String cvsSplitBy = ",";
-		int value;
 
 		Thread thread = null;
 		if (captureMetrics) {
@@ -83,30 +82,24 @@ public class SolrIndexingClient {
 		long end = 0;
 		long start = System.currentTimeMillis();
 		
-		try (BufferedReader br = new BufferedReader(new FileReader(amazonFoodDataLocation))) {
+		try (BufferedReader br = new BufferedReader(new FileReader(Util.TEST_DATA_DIRECTORY + Util.ONEM_TEST_DATA))) {
 
 			while ((line = br.readLine()) != null) {
-		
-				SolrInputDocument document = new SolrInputDocument();
+	
+				SolrInputDocument document = new SolrInputDocument();				
+				line.trim();
+				
+				String[] data = line.split(cvsSplitBy);
 
-/*				String[] foodData = line.split(cvsSplitBy);
-				document.addField("Id", foodData[0]);
-				document.addField("ProductId", foodData[1]);
-				document.addField("UserId", foodData[2]);
-				document.addField("ProfileName", foodData[3].replaceAll("'", "").replaceAll("\"", ""));
-				document.addField("HelpfulnessNumerator", foodData[4]);
-				document.addField("HelpfulnessDenominator", foodData[5]);
-				document.addField("Score", foodData[6]);
-				document.addField("Time", foodData[7]);
-				document.addField("Summary", foodData[8].replaceAll("'", "").replaceAll("\"", ""));
-				document.addField("Text", foodData[9].replaceAll("'", "").replaceAll("\"", ""));
-				document.addField("RandomLongField", r.nextLong());
-*/
-				document.addField("TextField1", RandomStringUtils.random(4096));
-				value = r.nextInt(Integer.MAX_VALUE);
-				document.addField("RandomIntField", value);
-				intList.add(value);
-
+				document.addField("Id", data[0].replaceAll("[^\\sa-zA-Z0-9]", "").trim());
+				document.addField("Text1", data[1].replaceAll("[^\\sa-zA-Z0-9]", "").trim());
+				document.addField("Int1", Integer.parseInt(data[2].replaceAll("[^\\sa-zA-Z0-9]", "").trim()));
+				document.addField("Long1", Long.parseLong(data[3].replaceAll("[^\\sa-zA-Z0-9]", "").trim()));
+				document.addField("Category1", data[4].replaceAll("[^\\sa-zA-Z0-9]", "").trim());
+				document.addField("Text2", data[5].replaceAll("[^\\sa-zA-Z0-9]", "").trim());
+				
+				intList.add(Integer.parseInt(data[2].replaceAll("[^\\sa-zA-Z0-9]", "").trim()));
+				
 				solrClient.add(document);
 				numberOfDocuments++;
 				if (numDocuments == numberOfDocuments) {
@@ -148,7 +141,7 @@ public class SolrIndexingClient {
 		returnMetricMap.put("TimeFormat", "yyyy/MM/dd HH:mm:ss");
 		returnMetricMap.put("IndexingTime", "" + (end - start));
 		returnMetricMap.put("IndexingThroughput",
-				"" + (double) numberOfDocuments / ((double) ((end - start)/1000)));
+				"" + (double) numberOfDocuments / ((double) ((end - start)/1000d)));
 		returnMetricMap.put("ThroughputUnit", "doc/sec");
 		returnMetricMap.put("CommitID", this.commitId);
 
@@ -156,18 +149,18 @@ public class SolrIndexingClient {
 			thread.stop();
 		}
 		
-		Util.postMessage("** Indexing documents (Amazon Food Reviews Data) COMPLETE ...", MessageType.WHITE_TEXT,
+		Util.postMessage("** Indexing documents COMPLETE ...", MessageType.GREEN_TEXT,
 				false);
 		return returnMetricMap;
 	}
 
 	@SuppressWarnings("deprecation")
-	public Map<String, String> indexAmazonFoodData(int numDocuments, String urlString, String zookeeperIp,
+	public Map<String, String> indexData(int numDocuments, String urlString, String zookeeperIp,
 			String zookeeperPort, String collectionName, boolean captureMetrics, TestType type, boolean deleteData) {
 
-		documentCount = numDocuments;
-		Util.postMessage("** Indexing documents (Amazon Food Reviews) ...", MessageType.WHITE_TEXT, false);
+		Util.postMessage("** Indexing documents through cloud client ..." + urlString + " | " + collectionName , MessageType.WHITE_TEXT, false);
 
+		documentCount = numDocuments;
 		CloudSolrClient solrClient = new CloudSolrClient.Builder().withZkHost(zookeeperIp + ":" + zookeeperPort)
 				.build();
 		solrClient.connect();
@@ -176,7 +169,6 @@ public class SolrIndexingClient {
 		int numberOfDocuments = 0;
 		String line = "";
 		String cvsSplitBy = ",";
-		int value;
 
 		Thread thread = null;
 		if (captureMetrics) {
@@ -187,30 +179,24 @@ public class SolrIndexingClient {
 		long end = 0;
 		long start = System.currentTimeMillis();
 		
-		try (BufferedReader br = new BufferedReader(new FileReader(amazonFoodDataLocation))) {
+		try (BufferedReader br = new BufferedReader(new FileReader(Util.TEST_DATA_DIRECTORY + Util.ONEM_TEST_DATA))) {
 
 			while ((line = br.readLine()) != null) {
+				
+				SolrInputDocument document = new SolrInputDocument();				
+				line.trim();
+				
+				String[] data = line.split(cvsSplitBy);
 
-				SolrInputDocument document = new SolrInputDocument();
-
-/*				String[] foodData = line.split(cvsSplitBy);
-				document.addField("Id", foodData[0]);
-				document.addField("ProductId", foodData[1]);
-				document.addField("UserId", foodData[2]);
-				document.addField("ProfileName", foodData[3].replaceAll("'", "").replaceAll("\"", ""));
-				document.addField("HelpfulnessNumerator", foodData[4]);
-				document.addField("HelpfulnessDenominator", foodData[5]);
-				document.addField("Score", foodData[6]);
-				document.addField("Time", foodData[7]);
-				document.addField("Summary", foodData[8].replaceAll("'", "").replaceAll("\"", ""));
-				document.addField("Text", foodData[9].replaceAll("'", "").replaceAll("\"", ""));
-				document.addField("RandomLongField", r.nextLong());
-*/
-				document.addField("TextField1", RandomStringUtils.random(4096));
-				value = r.nextInt(Integer.MAX_VALUE);
-				document.addField("RandomIntField", value);
-				intList.add(value);
-
+				document.addField("Id", data[0].replaceAll("[^\\sa-zA-Z0-9]", "").trim());
+				document.addField("Text1", data[1].replaceAll("[^\\sa-zA-Z0-9]", "").trim());
+				document.addField("Int1", Integer.parseInt(data[2].replaceAll("[^\\sa-zA-Z0-9]", "").trim()));
+				document.addField("Long1", Long.parseLong(data[3].replaceAll("[^\\sa-zA-Z0-9]", "").trim()));
+				document.addField("Category1", data[4].replaceAll("[^\\sa-zA-Z0-9]", "").trim());
+				document.addField("Text2", data[5].replaceAll("[^\\sa-zA-Z0-9]", "").trim());
+				
+				intList.add(Integer.parseInt(data[2].replaceAll("[^\\sa-zA-Z0-9]", "").trim()));
+				
 				solrClient.add(document);
 				numberOfDocuments++;
 				if (numDocuments == numberOfDocuments) {
@@ -249,7 +235,7 @@ public class SolrIndexingClient {
 		returnMetricMap.put("TimeFormat", "yyyy/MM/dd HH:mm:ss");
 		returnMetricMap.put("IndexingTime", "" + (double)(end - start));
 		returnMetricMap.put("IndexingThroughput",
-				"" + (double) numberOfDocuments / ((double)((end - start)/1000)));
+				"" + (double) numberOfDocuments / ((double)((end - start)/1000d)));
 		returnMetricMap.put("ThroughputUnit", "doc/sec");
 		returnMetricMap.put("CommitID", this.commitId);
 
@@ -259,24 +245,23 @@ public class SolrIndexingClient {
 		
 		Util.postMessage(returnMetricMap.toString(), MessageType.YELLOW_TEXT, false);
 		
-		Util.postMessage("** Indexing documents (Amazon Food Reviews Data) COMPLETE ...", MessageType.WHITE_TEXT,
+		Util.postMessage("** Indexing documents COMPLETE ...", MessageType.GREEN_TEXT,
 				false);
 		return returnMetricMap;
 	}
 
 	@SuppressWarnings("deprecation")
-	public Map<String, String> indexAmazonFoodData(int numDocuments, String urlString, String collectionName, int queueSize, int threadCount, TestType type, boolean captureMetrics, boolean deleteData) {
+	public Map<String, String> indexData(int numDocuments, String urlString, String collectionName, int queueSize, int threadCount, TestType type, boolean captureMetrics, boolean deleteData) {
 		
 		documentCount = numDocuments;
 
-		Util.postMessage("** Indexing documents (Amazon Food Reviews) ..." + urlString + " | " + collectionName + " | " + queueSize + " | " + threadCount , MessageType.WHITE_TEXT, false);
+		Util.postMessage("** Indexing documents through concurrent client ..." + urlString + " | " + collectionName + " | " + queueSize + " | " + threadCount , MessageType.WHITE_TEXT, false);
 		
 		ConcurrentUpdateSolrClient solrClient = new ConcurrentUpdateSolrClient(urlString, queueSize, threadCount);
 		
 		int numberOfDocuments = 0;
 		String line = "";
 		String cvsSplitBy = ",";
-		int value;
 
 		Thread thread = null;
 		if (captureMetrics) {
@@ -289,31 +274,26 @@ public class SolrIndexingClient {
 
 		Util.postMessage("** Indexing the documents ...", MessageType.WHITE_TEXT, false);
 
-		try (BufferedReader br = new BufferedReader(new FileReader(amazonFoodDataLocation))) {
+		try (BufferedReader br = new BufferedReader(new FileReader(Util.TEST_DATA_DIRECTORY + Util.ONEM_TEST_DATA))) {
 
 			start = System.currentTimeMillis();
 			while ((line = br.readLine()) != null) {
+				
+				SolrInputDocument document = new SolrInputDocument();				
+				line.trim();
+				
+				String[] data = line.split(cvsSplitBy);
 
-				SolrInputDocument document = new SolrInputDocument();
-
-/*				String[] foodData = line.split(cvsSplitBy);
-				document.addField("Id", foodData[0].replaceAll("'", "").replaceAll("\"", ""));
-				document.addField("ProductId", foodData[1].replaceAll("'", "").replaceAll("\"", ""));
-				document.addField("UserId", foodData[2].replaceAll("'", "").replaceAll("\"", ""));
-				document.addField("ProfileName", foodData[3].replaceAll("'", "").replaceAll("\"", ""));
-				document.addField("HelpfulnessNumerator", foodData[4].replaceAll("'", "").replaceAll("\"", ""));
-				document.addField("HelpfulnessDenominator", foodData[5].replaceAll("'", "").replaceAll("\"", ""));
-				document.addField("Score", foodData[6].replaceAll("'", "").replaceAll("\"", ""));
-				document.addField("Time", foodData[7].replaceAll("'", "").replaceAll("\"", ""));
-				document.addField("Summary", foodData[8].replaceAll("'", "").replaceAll("\"", ""));
-				document.addField("Text", foodData[9].replaceAll("'", "").replaceAll("\"", ""));
-*/
-				document.addField("TextField1", RandomStringUtils.random(4096));
-				value = r.nextInt(Integer.MAX_VALUE);
-				document.addField("RandomIntField", value);
-				intList.add(value);
-
-				solrClient.add(collectionName, document);
+				document.addField("Id", data[0].replaceAll("[^\\sa-zA-Z0-9]", "").trim());
+				document.addField("Text1", data[1].replaceAll("[^\\sa-zA-Z0-9]", "").trim());
+				document.addField("Int1", Integer.parseInt(data[2].replaceAll("[^\\sa-zA-Z0-9]", "").trim()));
+				document.addField("Long1", Long.parseLong(data[3].replaceAll("[^\\sa-zA-Z0-9]", "").trim()));
+				document.addField("Category1", data[4].replaceAll("[^\\sa-zA-Z0-9]", "").trim());
+				document.addField("Text2", data[5].replaceAll("[^\\sa-zA-Z0-9]", "").trim());
+				
+				intList.add(Integer.parseInt(data[2].replaceAll("[^\\sa-zA-Z0-9]", "").trim()));
+				
+				solrClient.add(document);
 				numberOfDocuments++;
 				if (numDocuments == numberOfDocuments) {
 					break;
@@ -361,7 +341,7 @@ public class SolrIndexingClient {
 		}
 		Util.postMessage(returnMetricMap.toString(), MessageType.YELLOW_TEXT, false);
 
-		Util.postMessage("** Indexing documents (Amazon Food Reviews Data) COMPLETE ...", MessageType.WHITE_TEXT,
+		Util.postMessage("** Indexing documents COMPLETE ...", MessageType.GREEN_TEXT,
 				false);
 		return returnMetricMap;
 	}

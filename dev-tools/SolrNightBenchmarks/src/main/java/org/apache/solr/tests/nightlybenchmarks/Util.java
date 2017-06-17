@@ -38,6 +38,7 @@ import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Properties;
+import java.util.Random;
 import java.util.UUID;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.zip.ZipInputStream;
@@ -46,6 +47,7 @@ import javax.ws.rs.core.MediaType;
 
 import org.apache.log4j.BasicConfigurator;
 import org.apache.log4j.Logger;
+import org.apache.lucene.util.TestUtil;
 import org.apache.solr.tests.nightlybenchmarks.BenchmarkAppConnector.FileType;
 import org.json.simple.JSONObject;
 import org.json.simple.JSONValue;
@@ -81,6 +83,9 @@ public class Util {
 	public static String TEST_TIME = new SimpleDateFormat("yyyy/MM/dd HH:mm:ss").format(new Date());
 	public static String METRIC_ESTIMATION_PERIOD = "1000";
 	public static String QUERY_THREAD_COUNT = "1";
+	public static String TEST_DATA_DIRECTORY = "";
+	public static String ONEM_TEST_DATA = "test-data-file-1M.csv";
+	
 	public static boolean SILENT = false;
 
 	final static Logger logger = Logger.getLogger(Util.class);
@@ -405,10 +410,10 @@ public class Util {
 			Util.postMessage(
 					"Getting Property Value for solrCommitHistoryData: " + SolrIndexingClient.solrCommitHistoryData,
 					MessageType.YELLOW_TEXT, false);
-			SolrIndexingClient.amazonFoodDataLocation = prop
-					.getProperty("SolrNightlyBenchmarks.amazonFoodDataLocation");
+			SolrIndexingClient.amazonFoodData = prop
+					.getProperty("SolrNightlyBenchmarks.amazonFoodData");
 			Util.postMessage(
-					"Getting Property Value for amazonFoodDataLocation: " + SolrIndexingClient.amazonFoodDataLocation,
+					"Getting Property Value for amazonFoodData: " + SolrIndexingClient.amazonFoodData,
 					MessageType.YELLOW_TEXT, false);
 			MetricCollector.metricsURL = prop.getProperty("SolrNightlyBenchmarks.metricsURL");
 			Util.postMessage("Getting Property Value for metricsURL: " + MetricCollector.metricsURL,
@@ -434,7 +439,14 @@ public class Util {
 			Util.QUERY_THREAD_COUNT = prop.getProperty("SolrNightlyBenchmarks.queryThreadCount");
 			Util.postMessage("Getting Property Value for queryThreadCount: " + Util.QUERY_THREAD_COUNT,
 					MessageType.YELLOW_TEXT, false);
-
+			Util.TEST_DATA_DIRECTORY = prop.getProperty("SolrNightlyBenchmarks.testDataDirectory");
+			Util.postMessage("Getting Property Value for testDataDirectory: " + Util.TEST_DATA_DIRECTORY,
+					MessageType.YELLOW_TEXT, false);
+			Util.ONEM_TEST_DATA = prop.getProperty("SolrNightlyBenchmarks.1MTestData");
+			Util.postMessage("Getting Property Value for 1MTestData: " + Util.ONEM_TEST_DATA,
+					MessageType.YELLOW_TEXT, false);
+			
+			
 			if (BenchmarkAppConnector.benchmarkAppDirectory
 					.charAt(BenchmarkAppConnector.benchmarkAppDirectory.length() - 1) != File.separator.charAt(0)) {
 				Util.postMessage("Corrupt URL for BenchmarkAppConnector.benchmarkAppDirectory Property, correcting ...",
@@ -682,6 +694,11 @@ public class Util {
 		try {
 			argM = Util.getArgs(args);
 			Util.getPropertyValues();
+
+			if (argM.containsKey("-Generate1MDataFile")) {
+				createTestDataFile("test-data-file-1M.csv",1000000);
+				System.exit(0);
+			}
 			
 			if (argM.containsKey("-RegisterLatestCommit")) {
 				Util.postMessage("** SolrNightlyBenchmarks Commit Registry Updater ...", MessageType.WHITE_TEXT, false);
@@ -818,10 +835,25 @@ public class Util {
 		Util.execute("rm -r -f " + Util.RUN_DIR, Util.RUN_DIR);
 	}
 	
-	public static void create4KDocuments(String fileName, int numberOfDocuments) {
-		Util.postMessage("** Preparing 2k text documents" , MessageType.WHITE_TEXT, false);
+	public static String getSentence(Random r, int words) {
+		StringBuilder sb = new StringBuilder();
+		for (int i=0; i<words; i++) {
+			sb.append(TestUtil.randomSimpleString(r, 4 + r.nextInt(10)) + " ");
+		}
+		return sb.toString().trim();
+	}
+	
+	public static void createTestDataFile(String fileName, int numberOfDocuments) {
+		Util.postMessage("** Preparing 4k text documents" , MessageType.WHITE_TEXT, false);
 		for (int i = 0 ; i < numberOfDocuments; i++) {
-				BenchmarkAppConnector.writeToWebAppDataFile(fileName, Util.getResponse("http://loripsum.net/api/1/plaintext/verylong",javax.ws.rs.core.MediaType.TEXT_PLAIN).trim(), false, FileType.TEST_ENV_FILE);
+				if (i % 100 == 0) {
+					Util.postMessageOnLine("|");
+				}
+				
+				Random r = new Random();
+				
+				String line = UUID.randomUUID() + "," + getSentence(r, 400) + "," + (new Random().nextInt()) + "," + (new Random().nextLong()) + "," + "Category" + (new Random().nextInt(10)) + "," + getSentence(r, 350);
+				BenchmarkAppConnector.writeToWebAppDataFile(fileName, line , false, FileType.TEST_ENV_FILE);
 		}		
 	}
 
