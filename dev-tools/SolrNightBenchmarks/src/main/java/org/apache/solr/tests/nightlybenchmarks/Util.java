@@ -52,6 +52,7 @@ import org.apache.solr.tests.nightlybenchmarks.BenchmarkAppConnector.FileType;
 import org.json.simple.JSONObject;
 import org.json.simple.JSONValue;
 
+import com.google.common.io.Files;
 import com.sun.jersey.api.client.Client;
 import com.sun.jersey.api.client.ClientResponse;
 import com.sun.jersey.api.client.WebResource;
@@ -164,7 +165,38 @@ public class Util {
 		}
 	}
 
-	public static void checkBaseAndTempDir() {
+	public static void checkBaseAndTempDir() throws IOException {
+
+		File webAppDir = new File(BenchmarkAppConnector.benchmarkAppDirectory);
+		if (!webAppDir.exists()) {
+			Files.createParentDirs(webAppDir);
+		}
+		
+		File dataWebAppDir = new File(BenchmarkAppConnector.benchmarkAppDirectory + "data/");
+		if (!dataWebAppDir.exists()) {
+			Files.createParentDirs(dataWebAppDir);
+		}
+		
+		File cloningDataWebAppDir = new File(BenchmarkAppConnector.benchmarkAppDirectory + "data/cloning/");
+		if (!cloningDataWebAppDir.exists()) {
+			Files.createParentDirs(cloningDataWebAppDir);
+		}
+
+		File commitQueueDataWebAppDir = new File(BenchmarkAppConnector.benchmarkAppDirectory + "data/commit_queue/");
+		if (!commitQueueDataWebAppDir.exists()) {
+			Files.createParentDirs(commitQueueDataWebAppDir);
+		}
+		
+		File lastrunDataWebAppDir = new File(BenchmarkAppConnector.benchmarkAppDirectory + "data/lastrun/");
+		if (!lastrunDataWebAppDir.exists()) {
+			Files.createParentDirs(lastrunDataWebAppDir);
+		}
+		
+		File runningDataWebAppDir = new File(BenchmarkAppConnector.benchmarkAppDirectory + "data/running/");
+		if (!runningDataWebAppDir.exists()) {
+			Files.createParentDirs(runningDataWebAppDir);
+		}		
+		
 		BasicConfigurator.configure();
 		File baseDirectory = new File(BASE_DIR);
 		baseDirectory.mkdir();
