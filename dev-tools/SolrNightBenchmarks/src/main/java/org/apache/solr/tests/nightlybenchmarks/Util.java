@@ -809,6 +809,7 @@ public class Util {
 							BenchmarkAppConnector.publishDataForWebApp();
 							BenchmarkReportData.reset();
 							BenchmarkAppConnector.deleteCommitFromQueue(commitIDFromQueue);
+							System.gc();
 						}
 						
 				}
