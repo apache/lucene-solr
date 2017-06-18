@@ -10,6 +10,8 @@ A comprehensive Solr performance benchmark framework.
       * git version 2.11.1 and above
       * lshw utility installed on your linux machine
       * [OPTIONAL] Apache HTTP webserver (If you want this framwork's output to be accessible over a network through a browser)
+      * RAM 16 GB and above
+      * CPU as strong as possible
 
 ## Steps to run
 
@@ -71,6 +73,9 @@ A comprehensive Solr performance benchmark framework.
 ## Known Limitations
      * The current design of this framework does not allow two instances of this system running on a single machine TOGETHER. For now, please do not run two instances of this system running on the same machine at the same time (one might kill the other). 
      
+## Important Note
+     * In the event of a resource contention (CPU and RAM), due to hosting this system on a weak machine, the metrics reported will fluctuate and will NOT be reliable. Please consider hosting this system on a strong machine (free from noise by other processes running on it). 
+    
     
    
      
