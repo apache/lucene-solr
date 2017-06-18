@@ -19,9 +19,9 @@ A comprehensive Solr performance benchmark framework.
      2. git checkout 'SolrNightlyBenchmarks'
      3. cd /dev-tools/
      4. cp -r SolrNightlyBenchmarks to target location on your server
-     5. copy data files (reviews & solrcommit) from the link provided below.
-     6. Modify config.properties - point to data files correctly on your server, point your webapp directory to your apache home.
-     7. pwd to check that you are in SolrNightlyBenchmarks folder. 
+     5. copy data files (reviews & solrcommit) from the link provided below
+     6. Modify config.properties - point to data files correctly on your server, point your webapp directory to your apache HTTP server home
+     7. pwd to check that you are in SolrNightlyBenchmarks folder
      8. mvn clean compile assembly:single
      9. java -jar target/org.apache.solr.tests.nightlybenchmarks-0.0.1-SNAPSHOT-jar-with-dependencies.jar -ProcessLatestCommit true -Housekeeping true 
      
