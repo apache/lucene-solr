@@ -18,6 +18,7 @@ package org.apache.solr.client.solrj.io.eval;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Locale;
@@ -33,15 +34,13 @@ import org.apache.solr.client.solrj.io.stream.expr.StreamExpressionParameter;
 import org.apache.solr.client.solrj.io.stream.expr.StreamExpressionValue;
 import org.apache.solr.client.solrj.io.stream.expr.StreamFactory;
 
-import com.google.common.collect.Lists;
-
 public class ArrayEvaluator extends ComplexEvaluator implements Expressible {
 
   private static final long serialVersionUID = 1;
   private String sortOrder;
   
   public ArrayEvaluator(StreamExpression expression, StreamFactory factory) throws IOException {
-    super(expression, factory, Lists.newArrayList("sort"));
+    super(expression, factory, Arrays.asList("sort"));
     
     sortOrder = extractSortOrder(expression, factory);
   }
