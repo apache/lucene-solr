@@ -894,7 +894,7 @@ public class Util {
 				
 				Random r = new Random();
 				
-				String line = UUID.randomUUID() + "," + getSentence(r, 400) + "," + (new Random().nextInt()) + "," + (new Random().nextLong()) + "," + "Category" + (new Random().nextInt(10)) + "," + getSentence(r, 350);
+				String line = i + "," + getSentence(r, 400) + "," + (new Random().nextInt()) + "," + (new Random().nextLong()) + "," + "Category" + (new Random().nextInt(10)) + "," + getSentence(r, 350);
 				BenchmarkAppConnector.writeToWebAppDataFile(fileName, line , false, FileType.TEST_ENV_FILE);
 		}		
 	}

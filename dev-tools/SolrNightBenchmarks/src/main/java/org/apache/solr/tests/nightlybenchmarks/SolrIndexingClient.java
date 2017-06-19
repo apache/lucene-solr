@@ -27,6 +27,8 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
@@ -91,7 +93,7 @@ public class SolrIndexingClient {
 				
 				String[] data = line.split(cvsSplitBy);
 
-				document.addField("Id", data[0].replaceAll("[^\\sa-zA-Z0-9]", "").trim());
+				document.addField("ID", data[0].replaceAll("[^\\sa-zA-Z0-9]", "").trim());
 				document.addField("Text1", data[1].replaceAll("[^\\sa-zA-Z0-9]", "").trim());
 				document.addField("Int1", Integer.parseInt(data[2].replaceAll("[^\\sa-zA-Z0-9]", "").trim()));
 				document.addField("Long1", Long.parseLong(data[3].replaceAll("[^\\sa-zA-Z0-9]", "").trim()));
@@ -190,7 +192,7 @@ public class SolrIndexingClient {
 				
 				String[] data = line.split(cvsSplitBy);
 
-				document.addField("Id", data[0].replaceAll("[^\\sa-zA-Z0-9]", "").trim());
+				document.addField("ID", data[0].replaceAll("[^\\sa-zA-Z0-9]", "").trim());
 				document.addField("Text1", data[1].replaceAll("[^\\sa-zA-Z0-9]", "").trim());
 				document.addField("Int1", Integer.parseInt(data[2].replaceAll("[^\\sa-zA-Z0-9]", "").trim()));
 				document.addField("Long1", Long.parseLong(data[3].replaceAll("[^\\sa-zA-Z0-9]", "").trim()));
@@ -253,15 +255,16 @@ public class SolrIndexingClient {
 	}
 
 	@SuppressWarnings("deprecation")
-	public Map<String, String> indexData(int numDocuments, String urlString, String collectionName, int queueSize, int threadCount, TestType type, boolean captureMetrics, boolean deleteData) {
+	public Map<String, String> indexData(int numDocuments, String urlString, String collectionName, int queueSize, int threadCount, TestType type, boolean captureMetrics, boolean deleteData) throws InterruptedException {
 		
 		documentCount = numDocuments;
 		intList = new LinkedList<Integer>();
+		LinkedList<SolrInputDocument> docList = new LinkedList<SolrInputDocument>();
 
 		Util.postMessage("** Indexing documents through concurrent client ..." + urlString + " | " + collectionName + " | " + queueSize + " | " + threadCount , MessageType.CYAN_TEXT, false);
 		
-		ConcurrentUpdateSolrClient solrClient = new ConcurrentUpdateSolrClient(urlString, queueSize, threadCount);
-		
+		ConcurrentUpdateSolrClient solrClient = new ConcurrentUpdateSolrClient.Builder(urlString).withQueueSize(queueSize).withThreadCount(threadCount).build();
+
 		int numberOfDocuments = 0;
 		String line = "";
 		String cvsSplitBy = ",";
@@ -279,7 +282,6 @@ public class SolrIndexingClient {
 
 		try (BufferedReader br = new BufferedReader(new FileReader(Util.TEST_DATA_DIRECTORY + Util.ONEM_TEST_DATA))) {
 
-			start = System.currentTimeMillis();
 			while ((line = br.readLine()) != null) {
 				
 				SolrInputDocument document = new SolrInputDocument();				
@@ -287,7 +289,7 @@ public class SolrIndexingClient {
 				
 				String[] data = line.split(cvsSplitBy);
 
-				document.addField("Id", data[0].replaceAll("[^\\sa-zA-Z0-9]", "").trim());
+				document.addField("ID", data[0].replaceAll("[^\\sa-zA-Z0-9]", "").trim());
 				document.addField("Text1", data[1].replaceAll("[^\\sa-zA-Z0-9]", "").trim());
 				document.addField("Int1", Integer.parseInt(data[2].replaceAll("[^\\sa-zA-Z0-9]", "").trim()));
 				document.addField("Long1", Long.parseLong(data[3].replaceAll("[^\\sa-zA-Z0-9]", "").trim()));
@@ -296,17 +298,26 @@ public class SolrIndexingClient {
 				
 				intList.add(Integer.parseInt(data[2].replaceAll("[^\\sa-zA-Z0-9]", "").trim()));
 				
-				solrClient.add(collectionName, document);
+				docList.add(document);
+				Util.postMessageOnLine("\r" + numberOfDocuments);
 				numberOfDocuments++;
 				if (numDocuments == numberOfDocuments) {
 					break;
 				}
 			}
-			end =  System.currentTimeMillis();
 			
+			int length  = docList.size();
+			for (int i = 0 ; i < length; i ++) {
+				solrClient.add(collectionName, docList.get(i));
+			}
+			solrClient.blockUntilFinished();
+
+			start = System.currentTimeMillis();
 			Util.postMessage("** Committing the documents ...", MessageType.WHITE_TEXT, false);
 			solrClient.commit(collectionName);
+			end =  System.currentTimeMillis();
 
+			
 			if (deleteData) {
 			Util.postMessage("** DELETE ...", MessageType.WHITE_TEXT, false);
 			solrClient.deleteByQuery(collectionName,"*:*");
@@ -348,5 +359,69 @@ public class SolrIndexingClient {
 				false);
 		return returnMetricMap;
 	}
+	
+	@SuppressWarnings("deprecation")
+	public Map<String, String> indexData(int numDocuments, String zookeeperIp,
+			String zookeeperPort, String collectionName, int numberOfThreads, boolean captureMetrics,TestType type) throws InterruptedException {
+	
+		CloudConcurrentIndexClient.prepare(numDocuments);
+		CloudConcurrentIndexClient.running = false;
+		CloudConcurrentIndexClient.zookeeperIp = zookeeperIp;
+		CloudConcurrentIndexClient.zookeeperPort = zookeeperPort;
+		
+		ExecutorService executorService = Executors.newFixedThreadPool(numberOfThreads);
+		LinkedList<CloudConcurrentIndexClient> list = new LinkedList<CloudConcurrentIndexClient>();
+
+		for (int i = 0; i < numberOfThreads; i++) {
+			CloudConcurrentIndexClient client = new CloudConcurrentIndexClient(collectionName, zookeeperIp, zookeeperPort);
+			list.add(client);
+		}
+
+		Thread thread = null;
+		if (captureMetrics) {
+			thread = new Thread(new MetricCollector(this.commitId, type, this.port));
+			thread.start();
+		}
+		
+		CloudConcurrentIndexClient.running = true;
+
+		for (int i = 0; i < numberOfThreads; i++) {
+			executorService.execute(list.get(i));
+		}
+
+		Thread.sleep(60000);
+
+		CloudConcurrentIndexClient.running = false;
+		
+		for (int i = 0; i < numberOfThreads; i++) {
+			list.get(i).commit();
+			list.get(i).close();
+		}
+
+		if (captureMetrics) {
+			thread.stop();
+		}
+		
+		Thread.sleep(10000);
+		
+		executorService.shutdownNow();
+		Map<String, String> returnMetricMap = new HashMap<String, String>();
+
+		Date dNow = new Date();
+		SimpleDateFormat ft = new SimpleDateFormat("yyyy/MM/dd HH:mm:ss");
+		
+		returnMetricMap.put("TimeStamp", ft.format(dNow));
+		returnMetricMap.put("TimeFormat", "yyyy/MM/dd HH:mm:ss");
+		returnMetricMap.put("IndexingTime", "" + CloudConcurrentIndexClient.indexingTime);
+		returnMetricMap.put("IndexingThroughput","" + CloudConcurrentIndexClient.indexThroughput);
+		returnMetricMap.put("ThroughputUnit", "doc/sec");
+		returnMetricMap.put("CommitID", this.commitId);
+		
+		Util.postMessage(returnMetricMap.toString(), MessageType.RED_TEXT, false);
+
+		CloudConcurrentIndexClient.reset();
+		
+		return returnMetricMap;
+	}	
 
 }
