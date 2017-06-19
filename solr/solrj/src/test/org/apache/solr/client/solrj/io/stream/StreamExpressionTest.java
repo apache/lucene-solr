@@ -5825,6 +5825,7 @@ public class StreamExpressionTest extends SolrCloudTestCase {
     assertEquals(p, 2.4, 0.001);
   }
 
+  /*
   @Test
   public void testArraySort() throws Exception {
     String cexpr = "arraySort(array(11.5, 12.3, 4, 3, 1, 0))";
@@ -5850,6 +5851,7 @@ public class StreamExpressionTest extends SolrCloudTestCase {
     assertEquals(asort.get(5).doubleValue(), 12.3, 0.0);
   }
 
+*/
   @Test
   public void testCumulativeProbability() throws Exception {
     UpdateRequest updateRequest = new UpdateRequest();
