@@ -275,9 +275,6 @@ public abstract class TextResponseWriter implements PushWriter {
       writeSolrDocument(null, docsStreamer.next(), res.getReturnFields(), idx);
       idx++;
     }
-    if (docsStreamer instanceof DocsStreamer){
-      ((DocsStreamer)docsStreamer).finish();
-    }
     writeEndDocumentList();
   }
   

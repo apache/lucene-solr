@@ -60,8 +60,8 @@ public class ValueSourceAugmenter extends DocTransformer
   }
 
   @Override
-  public void prepare( ResultContext context ) {
-    super.prepare(context);
+  public void setContext( ResultContext context ) {
+    super.setContext(context);
     try {
       searcher = context.getSearcher();
       readerContexts = searcher.getIndexReader().leaves();

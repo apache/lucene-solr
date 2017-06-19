@@ -182,8 +182,9 @@ public class TestCustomDocTransformer extends SolrTestCaseJ4 {
     public CustomFinishTransformer() {
     }
 
-    public void prepare(ResultContext context){
-      super.prepare(context);
+    @Override
+    public void setContext(ResultContext context){
+      super.setContext(context);
       counter = 0;
     }
 
@@ -197,7 +198,8 @@ public class TestCustomDocTransformer extends SolrTestCaseJ4 {
       counter++;
     }
 
-    public void finish(){
+    @Override
+    public void close(){
       counter*=2;
     }
   }

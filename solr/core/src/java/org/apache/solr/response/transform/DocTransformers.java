@@ -65,9 +65,9 @@ public class DocTransformers extends DocTransformer
 
 
   @Override
-  public void prepare( ResultContext context ) {
+  public void setContext( ResultContext context ) {
     for( DocTransformer a : children ) {
-      a.prepare( context );
+      a.setContext( context );
     }
   }
 
@@ -90,9 +90,13 @@ public class DocTransformers extends DocTransformer
   }
 
   @Override
-  public void finish() {
+  public void close() {
     for( DocTransformer a : children ) {
-      a.finish();
+      try {
+        a.close();
+      } catch (Exception e){
+        //TODO report error and ignore
+      }
     }
   }
 
