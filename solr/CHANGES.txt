@@ -137,6 +137,9 @@ Bug Fixes
 
 * SOLR-10763: Admin UI replication tab sometimes empty when failed replications (janhoy, Bojan Vitnik)
 
+* SOLR-10824: fix NPE ExactSharedStatsCache, fixing maxdocs skew for terms which are absent at one of shards
+when using one of Exact*StatsCache (Mikhail Khludnev)
+
 Optimizations
 ----------------------
 * SOLR-10634: JSON Facet API: When a field/terms facet will retrieve all buckets (i.e. limit:-1)
