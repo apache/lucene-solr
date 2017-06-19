@@ -277,6 +277,9 @@ Other Changes
 * SOLR-10800: Factor out HttpShardHandler.transformReplicasToShardUrls from HttpShardHandler.prepDistributed.
   (Domenico Fabio Marino, Christine Poerschke)
 
+* SOLR-10779: JavaBinCodec should use close consistently rather than having marshal() and close() call finish()
+ (which closes the underlying stream). (Erick Erickson)
+
 ==================  6.7.0 ==================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release.

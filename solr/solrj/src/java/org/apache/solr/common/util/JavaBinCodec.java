@@ -150,11 +150,12 @@ public class JavaBinCodec implements PushWriter {
   }
   
   public void marshal(Object nl, OutputStream os) throws IOException {
-    initWrite(os);
     try {
+      initWrite(os);
       writeVal(nl);
     } finally {
-      finish();
+      alreadyMarshalled = true;
+      daos.flushBuffer();
     }
   }
 
@@ -164,11 +165,6 @@ public class JavaBinCodec implements PushWriter {
     daos.writeByte(VERSION);
   }
 
-  protected void finish() throws IOException {
-    closed = true;
-    daos.flushBuffer();
-    alreadyMarshalled = true;
-  }
 
   /** expert: sets a new output stream */
   public void init(FastOutputStream os) {
@@ -1199,11 +1195,10 @@ public class JavaBinCodec implements PushWriter {
     }
   }
 
-  private boolean closed;
-
   @Override
   public void close() throws IOException {
-    if (closed) return;
-    finish();
+    if (daos != null) {
+      daos.flushBuffer();
+    }
   }
 }

@@ -87,8 +87,9 @@ public class JavaBinUpdateRequestCodec {
       }
       nl.add("docs", docIter);
     }
-    JavaBinCodec codec = new JavaBinCodec();
-    codec.marshal(nl, os);
+    try (JavaBinCodec codec = new JavaBinCodec()) {
+      codec.marshal(nl, os);
+    }
   }
 
   /**
@@ -110,7 +111,7 @@ public class JavaBinUpdateRequestCodec {
     Map<String,Map<String,Object>> delByIdMap;
     List<String> delByQ;
     final NamedList[] namedList = new NamedList[1];
-    JavaBinCodec codec = new JavaBinCodec() {
+    try (JavaBinCodec codec = new JavaBinCodec() {
 
       // NOTE: this only works because this is an anonymous inner class 
       // which will only ever be used on a single stream -- if this class 
@@ -189,9 +190,10 @@ public class JavaBinUpdateRequestCodec {
         return Collections.EMPTY_LIST;
       }
 
-    };
+    };) {
 
-    codec.unmarshal(is);
+      codec.unmarshal(is);
+    }
     
     // NOTE: if the update request contains only delete commands the params
     // must be loaded now
