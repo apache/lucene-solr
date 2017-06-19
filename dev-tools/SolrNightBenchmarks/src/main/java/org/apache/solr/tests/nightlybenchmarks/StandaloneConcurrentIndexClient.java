@@ -8,12 +8,12 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentLinkedDeque;
 
 import org.apache.solr.client.solrj.SolrServerException;
-import org.apache.solr.client.solrj.impl.CloudSolrClient;
+import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.common.SolrInputDocument;
 
-public class CloudConcurrentIndexClient implements Runnable {
+public class StandaloneConcurrentIndexClient implements Runnable {
 	
-	CloudSolrClient solrClient;
+	HttpSolrClient solrClient;
 	String collectionName;
 	Random r;
 	
@@ -29,21 +29,20 @@ public class CloudConcurrentIndexClient implements Runnable {
 	static double indexThroughput = 0;
 	static double indexingTime = 0;
 	
-	public CloudConcurrentIndexClient(String collectionName, String zookeeperIp, String zookeeperPort) {
+	public StandaloneConcurrentIndexClient(String collectionName, String baseSolrUrl) {
 
 		this.collectionName = collectionName;
 		
-		solrClient = new CloudSolrClient.Builder().withZkHost(zookeeperIp + ":" + zookeeperPort).build();
-		solrClient.connect();
+		solrClient = new HttpSolrClient.Builder().withBaseSolrUrl(baseSolrUrl).build();
 		
 		r = new Random();
-		Util.postMessage(this.toString() + "** CloudConcurrentIndexClient CREATED ...", MessageType.GREEN_TEXT, false);
+		Util.postMessage(this.toString() + "** StandaloneConcurrentIndexClient CREATED ...", MessageType.GREEN_TEXT, false);
 	}
 	
 	public static void prepare(int numDocuments) {
 		
 		Util.postMessage("** Preparing document queue ...", MessageType.CYAN_TEXT, false);
-		
+
 		numDocs = numDocuments;
 
 		String line;
@@ -77,7 +76,7 @@ public class CloudConcurrentIndexClient implements Runnable {
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
-
+		
 		Util.postMessage("** Queue preparation COMPLETE [READY NOW] ...", MessageType.CYAN_TEXT, false);
 	}
 
@@ -113,10 +112,10 @@ public class CloudConcurrentIndexClient implements Runnable {
 					endTime = System.currentTimeMillis();
 					indexingTime = endTime - startTime;
 					indexThroughput = (numDocs - documents.size())/((endTime-startTime)/1000);
-					Util.postMessage("Ending Queue:" + documents.size(), MessageType.PURPLE_TEXT, false);
+					Util.postMessage("Items remaining in queue:" + documents.size(), MessageType.PURPLE_TEXT, false);
 					Util.postMessage("End Time: " + endTime, MessageType.PURPLE_TEXT, false);
 					Util.postMessage("Throughput: " + indexThroughput, MessageType.PURPLE_TEXT, false);
-					Util.postMessage(this.toString() + "** CloudConcurrentIndexClient Exiting critical section ...", MessageType.GREEN_TEXT, false);
+					Util.postMessage(this.toString() + "** StandaloneConcurrentIndexClient Exiting critical section ...", MessageType.GREEN_TEXT, false);
 					
 				}
 				break;
@@ -127,7 +126,7 @@ public class CloudConcurrentIndexClient implements Runnable {
 	}
 	
 	public static void setDocuments(Set<SolrInputDocument> documents) {
-		CloudConcurrentIndexClient.documents.addAll(documents);
+		StandaloneConcurrentIndexClient.documents.addAll(documents);
 	}
 
 	public void close() {

@@ -94,20 +94,48 @@ public class Tests {
 
 			String collectionName1 = "" + UUID.randomUUID();
 			node.createCollection("Core-" + UUID.randomUUID(), collectionName1);
-			BenchmarkReportData.metricMapStandaloneConcurrent1 = client.indexData(numDocuments, node.getBaseUrl(),
-					collectionName1, 1, 1, TestType.STANDALONE_INDEXING_THROUGHPUT_CONCURRENT_1, true, true);
+			BenchmarkReportData.metricMapStandaloneConcurrent1 = client.indexData(numDocuments, collectionName1, 1,
+					true, TestType.STANDALONE_INDEXING_THROUGHPUT_CONCURRENT_1, node.getBaseUrl());
 			node.deleteCollection(collectionName1);
+
 			String collectionName2 = "" + UUID.randomUUID();
 			node.createCollection("Core-" + UUID.randomUUID(), collectionName2);
-			BenchmarkReportData.metricMapStandaloneConcurrent2 = client.indexData(numDocuments, node.getBaseUrl(),
-					collectionName2, 1, 2, TestType.STANDALONE_INDEXING_THROUGHPUT_CONCURRENT_2, true, true);
+			BenchmarkReportData.metricMapStandaloneConcurrent2 = client.indexData(numDocuments, collectionName2, 2,
+					true, TestType.STANDALONE_INDEXING_THROUGHPUT_CONCURRENT_2, node.getBaseUrl());
 			node.deleteCollection(collectionName2);
+
 			String collectionName3 = "" + UUID.randomUUID();
 			node.createCollection("Core-" + UUID.randomUUID(), collectionName3);
-			BenchmarkReportData.metricMapStandaloneConcurrent3 = client.indexData(numDocuments, node.getBaseUrl(),
-					collectionName3, 1, 3, TestType.STANDALONE_INDEXING_THROUGHPUT_CONCURRENT_3, true, true);
+			BenchmarkReportData.metricMapStandaloneConcurrent3 = client.indexData(numDocuments, collectionName3, 3,
+					true, TestType.STANDALONE_INDEXING_THROUGHPUT_CONCURRENT_3, node.getBaseUrl());
 			node.deleteCollection(collectionName3);
 
+			/*
+			 * String collectionName1 = "" + UUID.randomUUID();
+			 * node.createCollection("Core-" + UUID.randomUUID(),
+			 * collectionName1);
+			 * BenchmarkReportData.metricMapStandaloneConcurrent1 =
+			 * client.indexData(numDocuments, node.getBaseUrl(),
+			 * collectionName1, 1, 1,
+			 * TestType.STANDALONE_INDEXING_THROUGHPUT_CONCURRENT_1, true,
+			 * true); node.deleteCollection(collectionName1); String
+			 * collectionName2 = "" + UUID.randomUUID();
+			 * node.createCollection("Core-" + UUID.randomUUID(),
+			 * collectionName2);
+			 * BenchmarkReportData.metricMapStandaloneConcurrent2 =
+			 * client.indexData(numDocuments, node.getBaseUrl(),
+			 * collectionName2, 1, 2,
+			 * TestType.STANDALONE_INDEXING_THROUGHPUT_CONCURRENT_2, true,
+			 * true); node.deleteCollection(collectionName2); String
+			 * collectionName3 = "" + UUID.randomUUID();
+			 * node.createCollection("Core-" + UUID.randomUUID(),
+			 * collectionName3);
+			 * BenchmarkReportData.metricMapStandaloneConcurrent3 =
+			 * client.indexData(numDocuments, node.getBaseUrl(),
+			 * collectionName3, 1, 3,
+			 * TestType.STANDALONE_INDEXING_THROUGHPUT_CONCURRENT_3, true,
+			 * true); node.deleteCollection(collectionName3);
+			 */
 			node.doAction(SolrNodeAction.NODE_STOP);
 			node.cleanup();
 

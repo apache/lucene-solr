@@ -307,15 +307,15 @@ public class SolrIndexingClient {
 			}
 			
 			int length  = docList.size();
+			start = System.currentTimeMillis();
 			for (int i = 0 ; i < length; i ++) {
 				solrClient.add(collectionName, docList.get(i));
 			}
-			solrClient.blockUntilFinished();
+			//solrClient.blockUntilFinished();
+			end =  System.currentTimeMillis();
 
-			start = System.currentTimeMillis();
 			Util.postMessage("** Committing the documents ...", MessageType.WHITE_TEXT, false);
 			solrClient.commit(collectionName);
-			end =  System.currentTimeMillis();
 
 			
 			if (deleteData) {
@@ -363,7 +363,9 @@ public class SolrIndexingClient {
 	@SuppressWarnings("deprecation")
 	public Map<String, String> indexData(int numDocuments, String zookeeperIp,
 			String zookeeperPort, String collectionName, int numberOfThreads, boolean captureMetrics,TestType type) throws InterruptedException {
-	
+
+		Util.postMessage("** Indexing documents through cloud concurrent client ..." + collectionName , MessageType.CYAN_TEXT, false);
+		
 		CloudConcurrentIndexClient.prepare(numDocuments);
 		CloudConcurrentIndexClient.running = false;
 		CloudConcurrentIndexClient.zookeeperIp = zookeeperIp;
@@ -420,8 +422,75 @@ public class SolrIndexingClient {
 		Util.postMessage(returnMetricMap.toString(), MessageType.RED_TEXT, false);
 
 		CloudConcurrentIndexClient.reset();
+
+		Util.postMessage("** Indexing documents COMPLETE ...", MessageType.GREEN_TEXT, false);
 		
 		return returnMetricMap;
 	}	
 
+	
+	@SuppressWarnings("deprecation")
+	public Map<String, String> indexData(int numDocuments, String collectionName, int numberOfThreads, boolean captureMetrics,TestType type, String baseSolrURL) throws InterruptedException {
+	
+		Util.postMessage("** Indexing documents through HTTP concurrent client ..." + collectionName , MessageType.CYAN_TEXT, false);
+		
+		StandaloneConcurrentIndexClient.prepare(numDocuments);
+		StandaloneConcurrentIndexClient.running = false;
+		
+		ExecutorService executorService = Executors.newFixedThreadPool(numberOfThreads);
+		LinkedList<StandaloneConcurrentIndexClient> list = new LinkedList<StandaloneConcurrentIndexClient>();
+
+		for (int i = 0; i < numberOfThreads; i++) {
+			StandaloneConcurrentIndexClient client = new StandaloneConcurrentIndexClient(collectionName, baseSolrURL);
+			list.add(client);
+		}
+
+		Thread thread = null;
+		if (captureMetrics) {
+			thread = new Thread(new MetricCollector(this.commitId, type, this.port));
+			thread.start();
+		}
+		
+		StandaloneConcurrentIndexClient.running = true;
+
+		for (int i = 0; i < numberOfThreads; i++) {
+			executorService.execute(list.get(i));
+		}
+
+		Thread.sleep(60000);
+
+		StandaloneConcurrentIndexClient.running = false;
+		
+		for (int i = 0; i < numberOfThreads; i++) {
+			list.get(i).commit();
+			list.get(i).close();
+		}
+
+		if (captureMetrics) {
+			thread.stop();
+		}
+		
+		Thread.sleep(10000);
+		
+		executorService.shutdownNow();
+		Map<String, String> returnMetricMap = new HashMap<String, String>();
+
+		Date dNow = new Date();
+		SimpleDateFormat ft = new SimpleDateFormat("yyyy/MM/dd HH:mm:ss");
+		
+		returnMetricMap.put("TimeStamp", ft.format(dNow));
+		returnMetricMap.put("TimeFormat", "yyyy/MM/dd HH:mm:ss");
+		returnMetricMap.put("IndexingTime", "" + StandaloneConcurrentIndexClient.indexingTime);
+		returnMetricMap.put("IndexingThroughput","" + StandaloneConcurrentIndexClient.indexThroughput);
+		returnMetricMap.put("ThroughputUnit", "doc/sec");
+		returnMetricMap.put("CommitID", this.commitId);
+		
+		Util.postMessage(returnMetricMap.toString(), MessageType.RED_TEXT, false);
+
+		StandaloneConcurrentIndexClient.reset();
+
+		Util.postMessage("** Indexing documents COMPLETE ...", MessageType.GREEN_TEXT, false);
+		
+		return returnMetricMap;
+	}	
 }
