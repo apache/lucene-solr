@@ -28,7 +28,7 @@ that just finds leaf <fieldType> and <field> nodes and there's no reason to brea
 -->
 <schema name="test" version="1.0">
   <types>  <!-- Intentionally left in. see comment above -->
-    <fieldType name="int" class="solr.TrieIntField" precisionStep="0"/>
+    <fieldType name="string" class="solr.StrField" />
     <fieldType name="text" class="solr.TextField">
       <analyzer>
         <tokenizer class="solr.StandardTokenizerFactory"/>
@@ -42,7 +42,7 @@ that just finds leaf <fieldType> and <field> nodes and there's no reason to brea
 
 
  <fields>  <!-- Intentionally left in. see comment above -->
-   <field name="id" type="int" indexed="true" stored="true" multiValued="false"/>
+   <field name="id" type="string" indexed="true" stored="true" multiValued="false"/>
    <field name="subject" type="text" indexed="true" stored="true"/>
  </fields>
 

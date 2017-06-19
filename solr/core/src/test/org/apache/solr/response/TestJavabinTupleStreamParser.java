@@ -169,15 +169,19 @@ public class TestJavabinTupleStreamParser extends SolrTestCaseJ4 {
   public void testSolrDocumentList() throws IOException {
     SolrQueryResponse response = new SolrQueryResponse();
     SolrDocumentList l = constructSolrDocList(response);
-    ByteArrayOutputStream baos = new ByteArrayOutputStream();
-    new JavaBinCodec().marshal(response.getValues(), baos);
+    try (JavaBinCodec jbc = new JavaBinCodec(); ByteArrayOutputStream baos = new ByteArrayOutputStream()) {
+      jbc.marshal(response.getValues(), baos);
+    }
     byte[] bytes = serialize(response.getValues());
-    Object o = new JavaBinCodec().unmarshal(new ByteArrayInputStream(bytes));
+    try (JavaBinCodec jbc = new JavaBinCodec()) {
+      jbc.unmarshal(new ByteArrayInputStream(bytes));
+    }
     List list = new ArrayList<>();
     Map m = null;
-    JavabinTupleStreamParser parser = new JavabinTupleStreamParser(new ByteArrayInputStream(bytes), false);
-    while ((m = parser.next()) != null) {
-      list.add(m);
+    try (JavabinTupleStreamParser parser = new JavabinTupleStreamParser(new ByteArrayInputStream(bytes), false)) {
+      while ((m = parser.next()) != null) {
+        list.add(m);
+      }
     }
     assertEquals(l.size(), list.size());
     for(int i =0;i<list.size();i++){
@@ -189,7 +193,9 @@ public class TestJavabinTupleStreamParser extends SolrTestCaseJ4 {
     SolrQueryResponse response = new SolrQueryResponse();
     response.getValues().add("results", o);
     ByteArrayOutputStream baos = new ByteArrayOutputStream();
-    new JavaBinCodec().marshal(response.getValues(), baos);
+    try (JavaBinCodec jbc = new JavaBinCodec()) {
+      jbc.marshal(response.getValues(), baos);
+    }
     return baos.toByteArray();
   }
 }

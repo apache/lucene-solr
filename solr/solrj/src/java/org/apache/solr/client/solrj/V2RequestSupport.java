@@ -1,4 +1,3 @@
-
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -15,11 +14,17 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.solr.api;
-import org.apache.solr.common.util.ValidatingJsonMap;
 
-/**A generic interface for any class that is capable of providing its specification as a json schema
+package org.apache.solr.client.solrj;
+
+/**A a request object is able to convert itself to V2 Request
+ * it should implement this interface
+ *
  */
-public interface SpecProvider {
-  ValidatingJsonMap getSpec();
+public interface V2RequestSupport {
+  /**If usev2 flag is set to true, return V2Request, if not,
+   * return V1 request object
+   *
+   */
+  SolrRequest getV2Request();
 }

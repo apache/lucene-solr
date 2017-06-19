@@ -24,7 +24,6 @@ import java.util.Locale;
 
 import org.apache.lucene.util.LuceneTestCase;
 
-@LuceneTestCase.SuppressSysoutChecks(bugUrl = "")//Gradle interferes with this Lucene test rule
 public class TestSplittingBreakIterator extends LuceneTestCase {
 
 

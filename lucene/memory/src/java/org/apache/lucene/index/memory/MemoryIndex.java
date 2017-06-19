@@ -868,20 +868,27 @@ public class MemoryIndex {
 
           final int numDimensions = fieldInfo.getPointDimensionCount();
           final int numBytesPerDimension = fieldInfo.getPointNumBytes();
-          minPackedValue = pointValues[0].bytes.clone();
-          maxPackedValue = pointValues[0].bytes.clone();
-
-          for (int i = 0; i < pointValuesCount; i++) {
-            BytesRef pointValue = pointValues[i];
-            assert pointValue.bytes.length == pointValue.length : "BytesRef should wrap a precise byte[], BytesRef.deepCopyOf() should take care of this";
-
-            for (int dim = 0; dim < numDimensions; ++dim) {
-              int offset = dim * numBytesPerDimension;
-              if (StringHelper.compare(numBytesPerDimension, pointValue.bytes, offset, minPackedValue, offset) < 0) {
-                System.arraycopy(pointValue.bytes, offset, minPackedValue, offset, numBytesPerDimension);
-              }
-              if (StringHelper.compare(numBytesPerDimension, pointValue.bytes, offset, maxPackedValue, offset) > 0) {
-                System.arraycopy(pointValue.bytes, offset, maxPackedValue, offset, numBytesPerDimension);
+          if (numDimensions == 1) {
+            // PointInSetQuery.MergePointVisitor expects values to be visited in increasing order,
+            // this is a 1d optimization which has to be done here too. Otherwise we emit values
+            // out of order which causes mismatches.
+            Arrays.sort(pointValues, 0, pointValuesCount);
+            minPackedValue = pointValues[0].bytes.clone();
+            maxPackedValue = pointValues[pointValuesCount - 1].bytes.clone();
+          } else {
+            minPackedValue = pointValues[0].bytes.clone();
+            maxPackedValue = pointValues[0].bytes.clone();
+            for (int i = 0; i < pointValuesCount; i++) {
+              BytesRef pointValue = pointValues[i];
+              assert pointValue.bytes.length == pointValue.length : "BytesRef should wrap a precise byte[], BytesRef.deepCopyOf() should take care of this";
+              for (int dim = 0; dim < numDimensions; ++dim) {
+                int offset = dim * numBytesPerDimension;
+                if (StringHelper.compare(numBytesPerDimension, pointValue.bytes, offset, minPackedValue, offset) < 0) {
+                  System.arraycopy(pointValue.bytes, offset, minPackedValue, offset, numBytesPerDimension);
+                }
+                if (StringHelper.compare(numBytesPerDimension, pointValue.bytes, offset, maxPackedValue, offset) > 0) {
+                  System.arraycopy(pointValue.bytes, offset, maxPackedValue, offset, numBytesPerDimension);
+                }
               }
             }
           }
@@ -1127,7 +1134,7 @@ public class MemoryIndex {
    */
   private final class MemoryIndexReader extends LeafReader {
 
-    private Fields memoryFields = new MemoryFields(fields);
+    private final MemoryFields memoryFields = new MemoryFields(fields);
 
     private MemoryIndexReader() {
       super(); // avoid as much superclass baggage as possible
@@ -1229,8 +1236,8 @@ public class MemoryIndex {
     }
 
     @Override
-    public Fields fields() {
-      return memoryFields;
+    public Terms terms(String field) throws IOException {
+      return memoryFields.terms(field);
     }
 
     private class MemoryFields extends Fields {
@@ -1582,7 +1589,7 @@ public class MemoryIndex {
     @Override
     public Fields getTermVectors(int docID) {
       if (docID == 0) {
-        return fields();
+        return memoryFields;
       } else {
         return null;
       }

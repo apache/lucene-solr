@@ -50,7 +50,7 @@ public class TestReqParamsAPI extends SolrCloudTestCase {
   private void setupHarnesses() {
     for (final JettySolrRunner jettySolrRunner : cluster.getJettySolrRunners()) {
       RestTestHarness harness = new RestTestHarness(() -> jettySolrRunner.getBaseUrl().toString() + "/" + COLL_NAME);
-      if (true) {
+      if (random().nextBoolean()) {
         harness.setServerProvider(() -> jettySolrRunner.getBaseUrl().toString() + "/____v2/c/" + COLL_NAME);
       }
       restTestHarnesses.add(harness);

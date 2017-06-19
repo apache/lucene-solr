@@ -74,7 +74,7 @@ openssl pkcs12 -nokeys -in solr-ssl.keystore.p12 -out solr-ssl.cacert.pem
 ----
 
 [[EnablingSSL-SetcommonSSLrelatedsystemproperties]]
-=== Set common SSL related system properties
+=== Set Common SSL-Related System Properties
 
 The Solr Control Script is already setup to pass SSL-related Java system properties to the JVM. To activate the SSL settings, uncomment and update the set of properties beginning with SOLR_SSL_* in `bin/solr.in.sh`. (or `bin\solr.in.cmd` on Windows).
 
@@ -134,7 +134,7 @@ bin\solr.cmd -p 8984
 ----
 
 [[EnablingSSL-SolrCloud]]
-== SolrCloud
+== SSL with SolrCloud
 
 This section describes how to run a two-node SolrCloud cluster with no initial collections and a single-node external ZooKeeper. The commands below assume you have already created the keystore described above.
 
@@ -167,7 +167,7 @@ If you have set up your ZooKeeper cluster to use a <<taking-solr-to-production.a
 === Run SolrCloud with SSL
 
 [[EnablingSSL-CreateSolrhomedirectoriesfortwonodes]]
-==== Create Solr home directories for two nodes
+==== Create Solr Home Directories for Two Nodes
 
 Create two copies of the `server/solr/` directory which will serve as the Solr home directories for each of your two SolrCloud nodes:
 
@@ -253,7 +253,7 @@ curl -E solr-ssl.keystore.p12:secret --cacert solr-ssl.cacert.pem ...
 
 NOTE: If your operating system does not include cURL, you can download binaries here: http://curl.haxx.se/download.html
 
-=== Create a SolrCloud Collection using `bin/solr`
+=== Create a SolrCloud Collection using bin/solr
 
 Create a 2-shard, replicationFactor=1 collection named mycollection using the default configset (data_driven_schema_configs):
 
@@ -318,7 +318,7 @@ You should get a response that looks like this:
 ----
 
 [[EnablingSSL-Indexdocumentsusingpost.jar]]
-=== Index Documents using `post.jar`
+=== Index Documents using post.jar
 
 Use `post.jar` to index some example documents to the SolrCloud collection created above:
 
@@ -340,7 +340,7 @@ curl -E solr-ssl.pem:secret --cacert solr-ssl.pem "https://localhost:8984/solr/m
 ----
 
 [[EnablingSSL-IndexadocumentusingCloudSolrClient]]
-=== Index a document using `CloudSolrClient`
+=== Index a document using CloudSolrClient
 
 From a java client using SolrJ, index a document. In the code below, the `javax.net.ssl.*` system properties are set programmatically, but you could instead specify them on the java command line, as in the `post.jar` example above:
 

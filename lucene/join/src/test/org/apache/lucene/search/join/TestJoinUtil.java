@@ -1325,7 +1325,10 @@ public class TestJoinUtil extends LuceneTestCase {
       String uniqueRandomValue;
       do {
         // the trick is to generate values which will be ordered similarly for string, ints&longs, positive nums makes it easier
-        final int nextInt = random.nextInt(Integer.MAX_VALUE);
+        //
+        // Additionally in order to avoid precision loss when joining via a float field we can't generate values higher than
+        // 0xFFFFFF, so we can't use Integer#MAX_VALUE as upper bound here:
+        final int nextInt = random.nextInt(0xFFFFFF);
         uniqueRandomValue = String.format(Locale.ROOT, "%08x", nextInt);
         assert nextInt == Integer.parseUnsignedInt(uniqueRandomValue,16);
       } while ("".equals(uniqueRandomValue) || trackSet.contains(uniqueRandomValue));

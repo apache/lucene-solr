@@ -22,7 +22,6 @@ import java.io.IOException;
 import java.util.Iterator;
 import java.util.List;
 
-import org.apache.lucene.index.Fields;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.MultiPostingsEnum;
 import org.apache.lucene.index.PostingsEnum;
@@ -156,8 +155,7 @@ class FacetFieldProcessorByEnumTermsStream extends FacetFieldProcessor implement
       }
     }
 
-    Fields fields = fcontext.searcher.getSlowAtomicReader().fields();
-    Terms terms = fields == null ? null : fields.terms(sf.getName());
+    Terms terms = fcontext.searcher.getSlowAtomicReader().terms(sf.getName());
 
     termsEnum = null;
     deState = null;

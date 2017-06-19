@@ -32,7 +32,7 @@ The Collections API is used to enable you to create, remove, or reload collectio
 
 // TODO: Change column width to %autowidth.spread when https://github.com/asciidoctor/asciidoctor-pdf/issues/599 is fixed
 
-[cols="20,15,10,15,40",options="header"]
+[cols="25,10,10,15,40",options="header"]
 |===
 |Key |Type |Required |Default |Description
 |name |string |Yes | |The name of the collection to be created.
@@ -112,7 +112,7 @@ http://localhost:8983/solr/admin/collections?action=CREATE&name=newCollection&nu
 
 `/admin/collections?action=MODIFYCOLLECTION&collection=_<collection-name>&<attribute-name>=<attribute-value>&<another-attribute-name>=<another-value>_`
 
-It's possible to edit multiple attributes at a time. Changing these values only updates the z-node on Zookeeper, they do not change the topology of the collection. For instance, increasing replicationFactor will _not_ automatically add more replicas to the collection but _will_ allow more ADDREPLICA commands to succeed.
+It's possible to edit multiple attributes at a time. Changing these values only updates the z-node on ZooKeeper, they do not change the topology of the collection. For instance, increasing replicationFactor will _not_ automatically add more replicas to the collection but _will_ allow more ADDREPLICA commands to succeed.
 
 *Query Parameters*
 
@@ -225,7 +225,7 @@ Shard splitting can be a long running process. In order to avoid timeouts, you s
 
 // TODO: Change column width to %autowidth.spread when https://github.com/asciidoctor/asciidoctor-pdf/issues/599 is fixed
 
-[cols="20,15,10,55",options="header"]
+[cols="25,15,10,50",options="header"]
 |===
 |Key |Type |Required |Description
 |collection |string |Yes |The name of the collection that includes the shard to be split.
@@ -329,7 +329,7 @@ Shards can only created with this API for collections that use the 'implicit' ro
 
 // TODO: Change column width to %autowidth.spread when https://github.com/asciidoctor/asciidoctor-pdf/issues/599 is fixed
 
-[cols="20,15,10,55",options="header"]
+[cols="25,15,10,50",options="header"]
 |===
 |Key |Type |Required |Description
 |collection |string |Yes |The name of the collection that includes the shard that will be splitted.
@@ -380,7 +380,7 @@ Deleting a shard will unload all replicas of the shard, remove them from `cluste
 
 *Query Parameters*
 
-[cols=",,,",options="header",]
+[cols="25,15,10,50",options="header",]
 |===
 |Key |Type |Required |Description
 |collection |string |Yes |The name of the collection that includes the shard to be deleted.
@@ -692,7 +692,7 @@ Add a replica to a shard in a collection. The node name can be specified if the 
 
 // TODO: Change column width to %autowidth.spread when https://github.com/asciidoctor/asciidoctor-pdf/issues/599 is fixed
 
-[cols="20,15,10,55",options="header"]
+[cols="25,15,10,50",options="header"]
 |===
 |Key |Type |Required |Description
 |collection |string |Yes |The name of the collection.
@@ -814,7 +814,7 @@ Please note that the migrate API does not perform any de-duplication on the docu
 
 // TODO: Change column width to %autowidth.spread when https://github.com/asciidoctor/asciidoctor-pdf/issues/599 is fixed
 
-[cols="20,15,10,55",options="header"]
+[cols="25,15,10,50",options="header"]
 |===
 |Key |Type |Required |Description
 |collection |string |Yes |The name of the source collection from which documents will be split.
@@ -1398,7 +1398,7 @@ http://localhost:8983/solr/admin/collections?action=DELETESTATUS&requestid=bar
 
 *Input: Clear all the stored statuses*
 
-[source
+[source,text]
 ----
 http://localhost:8983/solr/admin/collections?action=DELETESTATUS&flush=true
 ----
@@ -1474,10 +1474,10 @@ The property to add. Note: this will have the literal 'property.' prepended to d
 and
 
 `property=property.special`
-
-There is one pre-defined property "preferredLeader" for which shardUnique is forced to 'true' and an error returned if shardUnique is explicitly set to 'false'. PreferredLeader is a boolean property, any value assigned that is not equal (case insensitive) to 'true' will be interpreted as 'false' for preferredLeader.
 |property.value |string |Yes |The value to assign to the property.
-|shardUnique (1) |Boolean |No |default: false. If true, then setting this property in one replica will remove the property from all other replicas in that shard.
+|shardUnique |Boolean |No |default: false. If true, then setting this property in one replica will remove the property from all other replicas in that shard.
+
+There is one pre-defined property `preferredLeader` for which `shardUnique` is forced to 'true' and an error returned if `shardUnique` is explicitly set to 'false'. `PreferredLeader` is a boolean property, any value assigned that is not equal (case insensitive) to 'true' will be interpreted as 'false' for `preferredLeader`.
 |===
 
 [[CollectionsAPI-Output.13]]
@@ -1559,7 +1559,6 @@ The property to add. Note: this will have the literal 'property.' prepended to d
 and
 
 `property=property.special`
-
 |===
 
 [[CollectionsAPI-Output.14]]
@@ -1854,7 +1853,7 @@ Additionally, there are several parameters that can be overridden:
 
 // TODO: Change column width to %autowidth.spread when https://github.com/asciidoctor/asciidoctor-pdf/issues/599 is fixed
 
-[cols="20,15,10,55",options="header"]
+[cols="25,15,10,50",options="header"]
 |===
 |Key |Type |Required |Description
 |collection.configName |String |No |Defines the name of the configurations to use for this collection. These must already be stored in ZooKeeper. If not provided, Solr will default to the collection name as the configuration name.
@@ -1888,7 +1887,7 @@ Deletes all replicas of all collections in that node. Please note that the node 
 [[CollectionsAPI-replacenode]]
 == REPLACENODE: Move All Replicas in a Node to Another
 
-This command recreates replicas in the source node to the target node. After each replica is copied, the replicas in the source node are deleted.
+This command recreates replicas in the source node to the target node. After each replica is copied, the replicas in the source node are deleted. For source replicas that are also shard leaders the operation will wait for "timeout" seconds to make sure there's an active replica that can become a leader (either an existing replica becoming a leader or the new replica completing the recovery and becoming a leader).
 
 `/admin/collections?action=REPLACENODE&source=_source-node_&target=_target-node_`
 
@@ -1906,6 +1905,7 @@ This command recreates replicas in the source node to the target node. After eac
 |target |string |Yes |The target node
 |parallel |boolean |No |default=false. if this flag is set to true, all replicas are created inseparatee threads. Keep in mind that this can lead to very high network and disk I/O if the replicas have very large indices.
 |async |string |No |Request ID to track this action which will be <<CollectionsAPI-async,processed asynchronously>>.
+|timeout |int |No |default is 300. Timeout in seconds to wait until new replicas are created, and until leader replicas are fully recovered.
 |===
 
 [IMPORTANT]

@@ -106,8 +106,10 @@ class SegmentTerminateEarlyTestState {
     // check correctness of the first result
     if (rsp.getResults().getNumFound() > 0) {
       final SolrDocument solrDocument0 = rsp.getResults().get(0);
-      TestMiniSolrCloudCluster.assertTrue(KEY_FIELD +" of ("+solrDocument0+") is not in maxTimestampDocKeys("+maxTimestampDocKeys+")",
-          maxTimestampDocKeys.contains(solrDocument0.getFieldValue(KEY_FIELD)));
+      final Integer idAsInt = Integer.parseInt(solrDocument0.getFieldValue(KEY_FIELD).toString());
+      TestMiniSolrCloudCluster.assertTrue
+        (KEY_FIELD +"="+idAsInt+" of ("+solrDocument0+") is not in maxTimestampDocKeys("+maxTimestampDocKeys+")",
+         maxTimestampDocKeys.contains(idAsInt));
       TestMiniSolrCloudCluster.assertEquals(ODD_FIELD, oddFieldValue, solrDocument0.getFieldValue(ODD_FIELD));
     }
     // check segmentTerminatedEarly flag
@@ -136,8 +138,10 @@ class SegmentTerminateEarlyTestState {
     // check correctness of the first result
     if (rsp.getResults().getNumFound() > 0) {
       final SolrDocument solrDocument0 = rsp.getResults().get(0);
-      TestMiniSolrCloudCluster.assertTrue(KEY_FIELD +" of ("+solrDocument0+") is not in maxTimestampDocKeys("+maxTimestampDocKeys+")",
-          maxTimestampDocKeys.contains(solrDocument0.getFieldValue(KEY_FIELD)));
+      final Integer idAsInt = Integer.parseInt(solrDocument0.getFieldValue(KEY_FIELD).toString());
+      TestMiniSolrCloudCluster.assertTrue
+        (KEY_FIELD +"="+idAsInt+" of ("+solrDocument0+") is not in maxTimestampDocKeys("+maxTimestampDocKeys+")",
+         maxTimestampDocKeys.contains(idAsInt));
       TestMiniSolrCloudCluster.assertEquals(ODD_FIELD, oddFieldValue, rsp.getResults().get(0).getFieldValue(ODD_FIELD));
     }
     // check segmentTerminatedEarly flag
@@ -182,8 +186,10 @@ class SegmentTerminateEarlyTestState {
     // check correctness of the first result
     if (rsp.getResults().getNumFound() > 0) {
       final SolrDocument solrDocument0 = rsp.getResults().get(0);
-      TestMiniSolrCloudCluster.assertTrue(KEY_FIELD +" of ("+solrDocument0+") is not in maxTimestampDocKeys("+maxTimestampDocKeys+")",
-          maxTimestampDocKeys.contains(solrDocument0.getFieldValue(KEY_FIELD)));
+      final Integer idAsInt = Integer.parseInt(solrDocument0.getFieldValue(KEY_FIELD).toString());
+      TestMiniSolrCloudCluster.assertTrue
+        (KEY_FIELD +"="+idAsInt+" of ("+solrDocument0+") is not in maxTimestampDocKeys("+maxTimestampDocKeys+")",
+         maxTimestampDocKeys.contains(idAsInt));
       TestMiniSolrCloudCluster.assertEquals(ODD_FIELD, oddFieldValue, rsp.getResults().get(0).getFieldValue(ODD_FIELD));
     }
     // check segmentTerminatedEarly flag
@@ -226,8 +232,10 @@ class SegmentTerminateEarlyTestState {
     // check correctness of the first result
     if (rsp.getGroupResponse().getValues().get(0).getMatches() > 0) {
       final SolrDocument solrDocument = rsp.getGroupResponse().getValues().get(0).getValues().get(0).getResult().get(0);
-      TestMiniSolrCloudCluster.assertTrue(KEY_FIELD +" of ("+solrDocument+") is not in maxTimestampDocKeys("+maxTimestampDocKeys+")",
-          maxTimestampDocKeys.contains(solrDocument.getFieldValue(KEY_FIELD)));
+      final Integer idAsInt = Integer.parseInt(solrDocument.getFieldValue(KEY_FIELD).toString());
+      TestMiniSolrCloudCluster.assertTrue
+        (KEY_FIELD +"="+idAsInt+" of ("+solrDocument+") is not in maxTimestampDocKeys("+maxTimestampDocKeys+")",
+         maxTimestampDocKeys.contains(idAsInt));
       TestMiniSolrCloudCluster.assertEquals(ODD_FIELD, oddFieldValue, solrDocument.getFieldValue(ODD_FIELD));
     }
     // check segmentTerminatedEarly flag
@@ -251,8 +259,10 @@ class SegmentTerminateEarlyTestState {
     // check correctness of the first result
     if (rsp.getResults().getNumFound() > 0) {
       final SolrDocument solrDocument0 = rsp.getResults().get(0);
-      TestMiniSolrCloudCluster.assertTrue(KEY_FIELD +" of ("+solrDocument0+") is not in minTimestampDocKeys("+minTimestampDocKeys+")",
-          minTimestampDocKeys.contains(solrDocument0.getFieldValue(KEY_FIELD)));
+      final Integer idAsInt = Integer.parseInt(solrDocument0.getFieldValue(KEY_FIELD).toString());
+      TestMiniSolrCloudCluster.assertTrue
+        (KEY_FIELD +"="+idAsInt+" of ("+solrDocument0+") is not in minTimestampDocKeys("+minTimestampDocKeys+")",
+         minTimestampDocKeys.contains(idAsInt));
       TestMiniSolrCloudCluster.assertEquals(ODD_FIELD, oddFieldValue, solrDocument0.getFieldValue(ODD_FIELD));
     }
     // check segmentTerminatedEarly flag

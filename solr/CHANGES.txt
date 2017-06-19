@@ -92,6 +92,11 @@ Upgrading from Solr 6.x
 * Custom SolrMetricReporter classes must implement a new, factored out doInit() method and the validate() method
   must pass for all reporters including reporters that are not enabled, please see SOLR-10671 for details.
 
+* TemplateUpdateRequestProcessorFactory uses {} instead of ${} for template
+
+* SOLR-9565: The name of TemplateUpdateRequestProcessorFactory' is changed to 'template' from 'Template' and the
+  name of 'AtomicUpdateProcessorFactory' is changed to 'atomic' from 'Atomic'
+
 New Features
 ----------------------
 * SOLR-9857, SOLR-9858: Collect aggregated metrics from nodes and shard leaders in overseer. (ab)
@@ -134,6 +139,15 @@ New Features
 * SOLR-10677: Expose a diagnostics API to return nodes sorted by load in descending order and
   any policy violations. (shalin)
 
+* SOLR-7452: Refinement for JSON Facet API: Adding refine:true to any terms facet will cause an
+  additional distributed search phase (overlapped with field retrieval) that requests additional info
+  for top facet buckets from shards that did not previously contribute to that bucket.
+  This will correct counts (and other statistics) for those top buckets collected in the first
+  phase. (yonik)
+
+* SOLR-10433: CollectionAdmin requests in SolrJ to support V2 calls (noble)
+
+
 Bug Fixes
 ----------------------
 * SOLR-9262: Connection and read timeouts are being ignored by UpdateShardHandler after SOLR-4509.
@@ -155,6 +169,13 @@ Bug Fixes
 * SOLR-10413: v2 API: parsed JSON type should be coerced to expected type (Cao Manh Dat, Noble Paul)
 
 * SOLR-10223: Allow running examples as root on Linux with -force option (janhoy)
+
+* SOLR-10830: Solr now correctly enforces that the '_root_' field has the same fieldType as the
+  uniqueKey field.  With out this enforcement, child document updating was unreliable. (hossman)
+
+* SOLR-10876: Regression in loading runtime UpdateRequestProcessors like TemplateUpdateProcessorFactory (noble)
+
+* SOLR-10886: Using V2Request.process(solrClient) method throws NPE if the API returns an error (Cao Manh Dat)
 
 Optimizations
 ----------------------
@@ -256,6 +277,9 @@ Other Changes
 * SOLR-10800: Factor out HttpShardHandler.transformReplicasToShardUrls from HttpShardHandler.prepDistributed.
   (Domenico Fabio Marino, Christine Poerschke)
 
+* SOLR-10779: JavaBinCodec should use close consistently rather than having marshal() and close() call finish()
+ (which closes the underlying stream). (Erick Erickson)
+
 ==================  6.7.0 ==================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release.
@@ -283,6 +307,9 @@ Upgrade Notes
 
 New Features
 ----------------------
+
+* SOLR-10849: MoreLikeThisComponent should expose setMaxDocFreqPct (maxDoc 
+  frequency percentage). (Dawid Weiss)
 
 * SOLR-10307: Allow Passing SSL passwords through environment variables. (Mano Kovacs via Mark Miller)
 
@@ -334,6 +361,9 @@ New Features
 
 * SOLR-10660: Add reverse Stream Evaluator (Joel Bernstein)
 
+* SOLR-9910: Add solr/solr.cmd parameter to append jetty parameters to the start script.
+  (Mano Kovacs via Mark Miller)
+
 Bug Fixes
 ----------------------
 * SOLR-10723 JSON Facet API: resize() implemented incorrectly for CountSlotAcc, HllAgg.NumericAcc
@@ -347,6 +377,25 @@ Bug Fixes
   yarn. (Hrishikesh via Mark Miller)
 
 * SOLR-10137: Ensure that ConfigSets created via API are mutable. (Hrishikesh via Mark Miller)
+
+* SOLR-10829: Fixed IndexSchema to enforce that uniqueKey can not be Points based for correctness (hossman)
+
+* SOLR-10836: The query parsers igain, significantTerms, and tlogit (used by streaming expressions by
+  the same name) might throw a NullPointerException if the referenced field had no indexed data in some
+  shards. The fix included an optimization to use Solr's cached AtomicReader instead of re-calculating.
+  (David Smiley)
+
+* SOLR-10715: /v2/ should not be an alias for /v2/collections (Cao Manh Dat)
+
+* SOLR-10835: Add support for point fields in Export Handler (Tomás Fernández Löbbe)
+
+* SOLR-10704: REPLACENODE may cause data loss when replicationFactor is 1. (ab, shalin)
+
+* SOLR-10833: Point numeric fields should throw SolrException(BAD_REQUEST) for malformed numbers in queries.
+              Trie numeric fields should throw SolrException(BAD_REQUEST) for malformed docValues range queries.
+  (hossman, Tomás Fernández Löbbe)
+
+* SOLR-10832: Fixed VersionInfo.getMaxVersionFromIndex when using PointsField with indexed="true" (hossman)
 
 Optimizations
 ----------------------
@@ -384,6 +433,25 @@ Other Changes
 * SOLR-8437: Improve RAMDirectory details in sample solrconfig files (Mark Miller, Varun Thacker)
 
 * SOLR-8762: return child docs in DIH debug (Gopikannan Venugopalsamy via Mikhail Khludnev)
+
+* SOLR-10501: Test sortMissing{First,Last} with points fields.  (Steve Rowe)
+
+* SOLR-10761: Switch trie numeric/date fields to points in data-driven-enabled example and test schemas.
+  (Steve Rowe)
+
+* SOLR-10851: SolrClients should clarify expectations for solrServerUrl parameter (Jason Gerlowski 
+  via Tomás Fernández Löbbe)
+  
+* SOLR-10891: BBoxField should support point-based number sub-fields. (Steve Rowe)
+
+* SOLR-10834: Fixed tests and test configs to stop using numeric uniqueKey fields (hossman)
+
+==================  6.6.1 ==================
+
+Bug Fixes
+----------------------
+
+* SOLR-10857: standalone Solr loads UNLOADed core on request (Erick Erickson, Mikhail Khludnev)
 
 ==================  6.6.0 ==================
 

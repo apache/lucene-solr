@@ -67,7 +67,7 @@ public class AddSchemaFieldsUpdateProcessorFactoryTest extends UpdateProcessorTe
     assertNotNull(d);
     schema = h.getCore().getLatestSchema();
     assertNotNull(schema.getFieldOrNull(fieldName));
-    assertEquals("tdate", schema.getFieldType(fieldName).getTypeName());
+    assertEquals("pdates", schema.getFieldType(fieldName).getTypeName());
   }
 
   public void testSingleFieldRoundTrip() throws Exception {
@@ -79,7 +79,7 @@ public class AddSchemaFieldsUpdateProcessorFactoryTest extends UpdateProcessorTe
     assertNotNull(d);
     schema = h.getCore().getLatestSchema();
     assertNotNull(schema.getFieldOrNull(fieldName));
-    assertEquals("tfloat", schema.getFieldType(fieldName).getTypeName());
+    assertEquals("pfloats", schema.getFieldType(fieldName).getTypeName());
     assertU(commit());
     assertQ(req("id:2"), "//arr[@name='" + fieldName + "']/float[.='" + floatValue.toString() + "']");
   }
@@ -95,7 +95,7 @@ public class AddSchemaFieldsUpdateProcessorFactoryTest extends UpdateProcessorTe
     assertNotNull(d);
     schema = h.getCore().getLatestSchema();
     assertNotNull(schema.getFieldOrNull(fieldName));
-    assertEquals("tdouble", schema.getFieldType(fieldName).getTypeName());
+    assertEquals("pdoubles", schema.getFieldType(fieldName).getTypeName());
     assertU(commit());
     assertQ(req("id:3")
         ,"//arr[@name='" + fieldName + "']/double[.='" + fieldValue1.toString() + "']"
@@ -141,8 +141,8 @@ public class AddSchemaFieldsUpdateProcessorFactoryTest extends UpdateProcessorTe
     schema = h.getCore().getLatestSchema();
     assertNotNull(schema.getFieldOrNull(fieldName1));
     assertNotNull(schema.getFieldOrNull(fieldName2));
-    assertEquals("tdouble", schema.getFieldType(fieldName1).getTypeName());
-    assertEquals("tlong", schema.getFieldType(fieldName2).getTypeName());
+    assertEquals("pdoubles", schema.getFieldType(fieldName1).getTypeName());
+    assertEquals("plongs", schema.getFieldType(fieldName2).getTypeName());
     assertU(commit());
     assertQ(req("id:5")
         ,"//arr[@name='" + fieldName1 + "']/double[.='" + field1Value1.toString() + "']"
@@ -194,10 +194,10 @@ public class AddSchemaFieldsUpdateProcessorFactoryTest extends UpdateProcessorTe
     assertNotNull(schema.getFieldOrNull(fieldName2));
     assertNotNull(schema.getFieldOrNull(fieldName3));
     assertNotNull(schema.getFieldOrNull(fieldName4));
-    assertEquals("tdouble", schema.getFieldType(fieldName1).getTypeName());
-    assertEquals("tlong", schema.getFieldType(fieldName2).getTypeName());
+    assertEquals("pdoubles", schema.getFieldType(fieldName1).getTypeName());
+    assertEquals("plongs", schema.getFieldType(fieldName2).getTypeName());
     assertEquals("text", schema.getFieldType(fieldName3).getTypeName());
-    assertEquals("tdate", schema.getFieldType(fieldName4).getTypeName());
+    assertEquals("pdates", schema.getFieldType(fieldName4).getTypeName());
     assertU(commit());
     assertQ(req("id:6")
         ,"//arr[@name='" + fieldName1 + "']/double[.='" + field1Value1.toString() + "']"

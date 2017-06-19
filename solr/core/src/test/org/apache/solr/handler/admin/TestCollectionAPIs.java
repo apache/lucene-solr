@@ -17,7 +17,6 @@
 
 package org.apache.solr.handler.admin;
 
-import java.io.StringReader;
 import java.lang.invoke.MethodHandles;
 import java.util.Arrays;
 import java.util.Collection;
@@ -27,11 +26,15 @@ import java.util.List;
 import java.util.Map;
 
 import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.api.Api;
+import org.apache.solr.api.ApiBag;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.params.CollectionParams;
 import org.apache.solr.common.params.MultiMapSolrParams;
 import org.apache.solr.common.params.SolrParams;
+import org.apache.solr.common.util.CommandOperation;
+import org.apache.solr.common.util.ContentStreamBase;
 import org.apache.solr.common.util.Pair;
 import org.apache.solr.common.util.Utils;
 import org.apache.solr.core.CoreContainer;
@@ -39,9 +42,6 @@ import org.apache.solr.request.LocalSolrQueryRequest;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.servlet.SolrRequestParsers;
-import org.apache.solr.common.util.CommandOperation;
-import org.apache.solr.api.Api;
-import org.apache.solr.api.ApiBag;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -202,7 +202,7 @@ public class TestCollectionAPIs extends SolrTestCaseJ4 {
       @Override
       public List<CommandOperation> getCommands(boolean validateInput) {
         if (payload == null) return Collections.emptyList();
-        return ApiBag.getCommandOperations(new StringReader(payload), api.getCommandSchema(), true);
+        return ApiBag.getCommandOperations(new ContentStreamBase.StringStream(payload), api.getCommandSchema(), true);
       }
 
       @Override

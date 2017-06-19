@@ -18,7 +18,7 @@
 <!-- Test schema file for UnifiedHighlighter -->
 
 <schema name="unifiedhighlight" version="1.6" >
-  <fieldType name="int" class="solr.TrieIntField" precisionStep="0" omitNorms="true" positionIncrementGap="0"/>
+  <fieldType name="string" class="solr.StrField" omitNorms="true" positionIncrementGap="0"/>
 
   <!-- basic text field: no offsets! -->
   <fieldType name="text" class="solr.TextField">
@@ -36,7 +36,7 @@
     </analyzer>
   </fieldType>
 
-  <field name="id" type="int" indexed="true" stored="true" multiValued="false" required="false"/>
+  <field name="id" type="string" indexed="true" stored="true" multiValued="false" required="false"/>
   <field name="text" type="text_offsets" indexed="true" stored="true"/>
   <field name="text2" type="text" indexed="true" stored="true"/>
   <field name="text3" type="text_offsets" indexed="true" stored="true"         large="true"/>

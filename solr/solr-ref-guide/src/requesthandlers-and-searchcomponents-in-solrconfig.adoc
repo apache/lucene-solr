@@ -127,13 +127,13 @@ There are several default search components that work with all SearchHandlers wi
 [cols="20,40,40",options="header"]
 |===
 |Component Name |Class Name |More Information
-|query |solr.QueryComponent |Described in the section <<query-syntax-and-parsing.adoc#query-syntax-and-parsing,Query Syntax and Parsing>>.
-|facet |solr.FacetComponent |Described in the section <<faceting.adoc#faceting,Faceting>>.
-|mlt |solr.MoreLikeThisComponent |Described in the section <<morelikethis.adoc#morelikethis,MoreLikeThis>>.
-|highlight |solr.HighlightComponent |Described in the section <<highlighting.adoc#highlighting,Highlighting>>.
-|stats |solr.StatsComponent |Described in the section <<the-stats-component.adoc#the-stats-component,The Stats Component>>.
-|debug |solr.DebugComponent |Described in the section on <<common-query-parameters.adoc#CommonQueryParameters-ThedebugParameter,Common Query Parameters>>.
-|expand |solr.ExpandComponent |Described in the section <<collapse-and-expand-results.adoc#collapse-and-expand-results,Collapse and Expand Results>>.
+|query |`solr.QueryComponent` |Described in the section <<query-syntax-and-parsing.adoc#query-syntax-and-parsing,Query Syntax and Parsing>>.
+|facet |`solr.FacetComponent` |Described in the section <<faceting.adoc#faceting,Faceting>>.
+|mlt |`solr.MoreLikeThisComponent` |Described in the section <<morelikethis.adoc#morelikethis,MoreLikeThis>>.
+|highlight |`solr.HighlightComponent` |Described in the section <<highlighting.adoc#highlighting,Highlighting>>.
+|stats |`solr.StatsComponent` |Described in the section <<the-stats-component.adoc#the-stats-component,The Stats Component>>.
+|debug |`solr.DebugComponent` |Described in the section on <<common-query-parameters.adoc#CommonQueryParameters-ThedebugParameter,Common Query Parameters>>.
+|expand |`solr.ExpandComponent` |Described in the section <<collapse-and-expand-results.adoc#collapse-and-expand-results,Collapse and Expand Results>>.
 |===
 
 If you register a new search component with one of these default names, the newly defined component will be used instead of the default.

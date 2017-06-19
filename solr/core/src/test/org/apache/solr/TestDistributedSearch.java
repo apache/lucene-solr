@@ -242,7 +242,7 @@ public class TestDistributedSearch extends BaseDistributedSearchTestCase {
                 "facet.field", tdate_b, "facet.field", tdate_a);
     assertEquals(2, rsp.getFacetFields().size());
     
-    String facetQuery = "id:[1 TO 15]";
+    String facetQuery = "id_i1:[1 TO 15]";
 
     // simple range facet on one field
     query("q",facetQuery, "rows",100, "facet","true", 
@@ -390,7 +390,7 @@ public class TestDistributedSearch extends BaseDistributedSearchTestCase {
 
       // we want a random query and not just *:* so we'll get zero counts in facets also
       // TODO: do a better random query
-      String q = random().nextBoolean() ? "*:*" : "id:(1 3 5 7 9 11 13) OR id:[100 TO " + random().nextInt(50) + "]";
+      String q = random().nextBoolean() ? "*:*" : "id:(1 3 5 7 9 11 13) OR id_i1:[100 TO " + random().nextInt(50) + "]";
 
       int nolimit = random().nextBoolean() ? -1 : 10000;  // these should be equivalent
 
@@ -412,7 +412,7 @@ public class TestDistributedSearch extends BaseDistributedSearchTestCase {
     ,"facet.field","{!key=other ex=b}"+t1
     ,"facet.field","{!key=again ex=a,b}"+t1
     ,"facet.field",t1
-    ,"fq","{!tag=a}id:[1 TO 7]", "fq","{!tag=b}id:[3 TO 9]"
+    ,"fq","{!tag=a}id_i1:[1 TO 7]", "fq","{!tag=b}id_i1:[3 TO 9]"
     );
     queryAndCompareUIF("q", "*:*", "facet", "true", "facet.field", "{!ex=t1}SubjectTerms_mfacet", "fq", "{!tag=t1}SubjectTerms_mfacet:(test 1)", "facet.limit", "10", "facet.mincount", "1");
 
@@ -522,7 +522,7 @@ public class TestDistributedSearch extends BaseDistributedSearchTestCase {
           "stats.field", "{!key=special_key}stats_dt");
     query("q","*:*", "sort",i1+" desc", "stats", "true", 
           "f.stats_dt.stats.calcdistinct", "true",
-          "fq", "{!tag=xxx}id:[3 TO 9]",
+          "fq", "{!tag=xxx}id_i1:[3 TO 9]",
           "stats.field", "{!key=special_key}stats_dt",
           "stats.field", "{!ex=xxx}stats_dt");
 
@@ -920,20 +920,20 @@ public class TestDistributedSearch extends BaseDistributedSearchTestCase {
     handle.put("time", SKIPVAL);
     handle.put("track", SKIP); //track is not included in single node search
     query("q","now their fox sat had put","fl","*,score",CommonParams.DEBUG_QUERY, "true");
-    query("q", "id:[1 TO 5]", CommonParams.DEBUG_QUERY, "true");
-    query("q", "id:[1 TO 5]", CommonParams.DEBUG, CommonParams.TIMING);
-    query("q", "id:[1 TO 5]", CommonParams.DEBUG, CommonParams.RESULTS);
-    query("q", "id:[1 TO 5]", CommonParams.DEBUG, CommonParams.QUERY);
+    query("q", "id_i1:[1 TO 5]", CommonParams.DEBUG_QUERY, "true");
+    query("q", "id_i1:[1 TO 5]", CommonParams.DEBUG, CommonParams.TIMING);
+    query("q", "id_i1:[1 TO 5]", CommonParams.DEBUG, CommonParams.RESULTS);
+    query("q", "id_i1:[1 TO 5]", CommonParams.DEBUG, CommonParams.QUERY);
 
     // SOLR-6545, wild card field list
     indexr(id, "19", "text", "d", "cat_a_sS", "1" ,t1, "2");
     commit();
 
     rsp = query("q", "id:19", "fl", "id", "fl", "*a_sS");
-    assertFieldValues(rsp.getResults(), "id", 19);
+    assertFieldValues(rsp.getResults(), "id", "19");
 
     rsp = query("q", "id:19", "fl", "id," + t1 + ",cat*");
-    assertFieldValues(rsp.getResults(), "id", 19);
+    assertFieldValues(rsp.getResults(), "id", "19");
 
     // Check Info is added to for each shard
     ModifiableSolrParams q = new ModifiableSolrParams();

@@ -51,7 +51,7 @@ The sections below discuss exactly what these various transformers do.
 
 
 [[TransformingResultDocuments-_value_-ValueAugmenterFactory]]
-=== `[value]` - ValueAugmenterFactory
+=== [value] - ValueAugmenterFactory
 
 Modifies every document to include the exact same value, as if it were a stored field in every document:
 
@@ -95,7 +95,7 @@ The "```value```" option forces an explicit value to always be used, while the "
 
 
 [[TransformingResultDocuments-_explain_-ExplainAugmenterFactory]]
-=== `[explain]` - ExplainAugmenterFactory
+=== [explain] - ExplainAugmenterFactory
 
 Augments each document with an inline explanation of its score exactly like the information available about each document in the debug section:
 
@@ -116,7 +116,7 @@ Supported values for "```style```" are "```text```", and "```html```", and "nl" 
           "value":1.052226,
           "description":"weight(features:cache in 2) [DefaultSimilarity], result of:",
           "details":[{
-...
+}]}}]}}
 ----
 
 A default style can be configured by specifying an "args" parameter in your configuration:
@@ -130,7 +130,7 @@ A default style can be configured by specifying an "args" parameter in your conf
 
 
 [[TransformingResultDocuments-_child_-ChildDocTransformerFactory]]
-=== `[child]` - ChildDocTransformerFactory
+=== [child] - ChildDocTransformerFactory
 
 This transformer returns all <<uploading-data-with-index-handlers.adoc#UploadingDatawithIndexHandlers-NestedChildDocuments,descendant documents>> of each parent document matching your query in a flat list nested inside the matching parent document. This is useful when you have indexed nested child documents and want to retrieve the child documents for the relevant parent documents for any type of search query.
 
@@ -148,7 +148,7 @@ When using this transformer, the `parentFilter` parameter must be specified, and
 
 
 [[TransformingResultDocuments-_shard_-ShardAugmenterFactory]]
-=== `[shard]` - ShardAugmenterFactory
+=== [shard] - ShardAugmenterFactory
 
 This transformer adds information about what shard each individual document came from in a distributed request.
 
@@ -156,7 +156,7 @@ ShardAugmenterFactory does not support any request parameters, or configuration 
 
 
 [[TransformingResultDocuments-_docid_-DocIdAugmenterFactory]]
-=== `[docid]` - DocIdAugmenterFactory
+=== [docid] - DocIdAugmenterFactory
 
 This transformer adds the internal Lucene document id to each document – this is primarily only useful for debugging purposes.
 
@@ -164,7 +164,7 @@ DocIdAugmenterFactory does not support any request parameters, or configuration 
 
 
 [[TransformingResultDocuments-_elevated_and_excluded_]]
-=== `[elevated]` and `[excluded]`
+=== [elevated] and [excluded]
 
 These transformers are available only when using the <<the-query-elevation-component.adoc#the-query-elevation-component,Query Elevation Component>>.
 
@@ -191,12 +191,12 @@ fl=id,[elevated],[excluded]&excludeIds=GB18030TEST&elevateIds=6H500F0&markExclud
         "id":"SP2514N",
         "[elevated]":false,
         "[excluded]":false},
-...
+]}}
 ----
 
 
 [[TransformingResultDocuments-_json_xml_]]
-=== `[json]` / `[xml]`
+=== [json] / [xml]
 
 These transformers replace field value containing a string representation of a valid XML or JSON structure with the actual raw XML or JSON structure rather than just the string value. Each applies only to the specific writer, such that `[json]` only applies to `wt=json` and `[xml]` only applies to `wt=xml`.
 
@@ -207,7 +207,7 @@ fl=id,source_s:[json]&wt=json
 
 
 [[TransformingResultDocuments-_subquery_]]
-=== `[subquery]`
+=== [subquery]
 
 This transformer executes a separate query per transforming document passing document fields as an input for subquery parameters. It's usually used with `{!join}` and `{!parent}` query parsers, and is intended to be an improvement for `[child]`.
 
@@ -246,17 +246,14 @@ Here is how it looks like in various formats:
         "id":1,
         "subject":["parentDocument"],
         "title":["xrxvomgu"],
-        "children":{ 
+        "children":{
            "numFound":1, "start":0,
            "docs":[
               { "id":2,
                 "cat":["childDocument"]
               }
             ]
-      }},
-      {
-         "id":4,
-      ...
+      }}]}}
 ----
 
 [source,java]
@@ -311,7 +308,7 @@ If subquery collection has a different unique key field name (let's say `foo_id`
 
 
 [[TransformingResultDocuments-_geo_-Geospatialformatter]]
-=== `[geo]` - Geospatial formatter
+=== [geo] - Geospatial formatter
 
 Formats spatial data from a spatial field using a designated format type name. Two inner parameters are required: `f` for the field name, and `w` for the format name. Example: `geojson:[geo f=mySpatialField w=GeoJSON]`.
 
@@ -321,7 +318,7 @@ In addition, this feature is very useful with the `RptWithGeometrySpatialField` 
 
 
 [[TransformingResultDocuments-_features_-LTRFeatureLoggerTransformerFactory]]
-=== `[features]` - LTRFeatureLoggerTransformerFactory
+=== [features] - LTRFeatureLoggerTransformerFactory
 
 The "LTR" prefix stands for <<learning-to-rank.adoc#learning-to-rank,Learning To Rank>>. This transformer returns the values of features and it can be used for feature extraction and feature logging.
 

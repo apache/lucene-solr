@@ -53,8 +53,12 @@ public class TestPushWriter extends SolrTestCaseJ4 {
     log.info(new String(baos.toByteArray(), "UTF-8"));
     Map m = (Map) Utils.fromJSON(baos.toByteArray());
     checkValues(m);
-    writeData(new JavaBinCodec(baos= new ByteArrayOutputStream(), null));
-    m = (Map) new JavaBinCodec().unmarshal(new ByteArrayInputStream(baos.toByteArray()));
+    try (JavaBinCodec jbc = new JavaBinCodec(baos= new ByteArrayOutputStream(), null)) {
+      writeData(jbc);
+      try (JavaBinCodec jbcUn = new JavaBinCodec()) {
+        m = (Map) jbcUn.unmarshal(new ByteArrayInputStream(baos.toByteArray()));
+      }
+    }
     checkValues(m);
   }
 

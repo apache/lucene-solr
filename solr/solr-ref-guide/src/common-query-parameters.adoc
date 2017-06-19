@@ -46,7 +46,7 @@ The table below summarizes Solr's common query parameters, which are supported b
 The following sections describe these parameters in detail.
 
 [[CommonQueryParameters-ThedefTypeParameter]]
-== The `defType` Parameter
+== The defType Parameter
 
 The defType parameter selects the query parser that Solr should use to process the main query parameter (`q`) in the request. For example:
 
@@ -55,7 +55,7 @@ The defType parameter selects the query parser that Solr should use to process t
 If no defType param is specified, then by default, the <<the-standard-query-parser.adoc#the-standard-query-parser,The Standard Query Parser>> is used. (eg: `defType=lucene`)
 
 [[CommonQueryParameters-ThesortParameter]]
-== The `sort` Parameter
+== The sort Parameter
 
 The `sort` parameter arranges search results in either ascending (`asc`) or descending (`desc`) order. The parameter can be used with either numerical or alphabetical content. The directions can be entered in either all lowercase or all uppercase letters (i.e., both `asc` or `ASC`).
 
@@ -88,7 +88,7 @@ Regarding the sort parameter's arguments:
 ** When more than one sort criteria is provided, the second entry will only be used if the first entry results in a tie. If there is a third entry, it will only be used if the first AND second entries are tied. This pattern continues with further entries.
 
 [[CommonQueryParameters-ThestartParameter]]
-== The `start` Parameter
+== The start Parameter
 
 When specified, the `start` parameter specifies an offset into a query's result set and instructs Solr to begin displaying results from this offset.
 
@@ -99,14 +99,14 @@ Setting the `start` parameter to some other number, such as 3, causes Solr to sk
 You can use the `start` parameter this way for paging. For example, if the `rows` parameter is set to 10, you could display three successive pages of results by setting start to 0, then re-issuing the same query and setting start to 10, then issuing the query again and setting start to 20.
 
 [[CommonQueryParameters-TherowsParameter]]
-== The `rows` Parameter
+== The rows Parameter
 
 You can use the rows parameter to paginate results from a query. The parameter specifies the maximum number of documents from the complete result set that Solr should return to the client at one time.
 
 The default value is 10. That is, by default, Solr returns 10 documents at a time in response to a query.
 
 [[CommonQueryParameters-Thefq_FilterQuery_Parameter]]
-== The `fq` (Filter Query) Parameter
+== The fq (Filter Query) Parameter
 
 The `fq` parameter defines a query that can be used to restrict the superset of documents that can be returned, without influencing score. It can be very useful for speeding up complex queries, since the queries specified with `fq` are cached independently of the main query. When a later query uses the same filter, there's a cache hit, and filter results are returned quickly from the cache.
 
@@ -132,7 +132,7 @@ fq=+popularity:[10 TO *] +section:0
 * As with all parameters: special characters in an URL need to be properly escaped and encoded as hex values. Online tools are available to help you with URL-encoding. For example: http://meyerweb.com/eric/tools/dencoder/.
 
 [[CommonQueryParameters-Thefl_FieldList_Parameter]]
-== The `fl` (Field List) Parameter
+== The fl (Field List) Parameter
 
 The `fl` parameter limits the information included in a query response to a specified list of fields. The fields need to either be `stored="true"` or `docValues="true"``.`
 
@@ -204,7 +204,7 @@ fl=id,sales_price:price,secret_sauce:prod(price,popularity),why_score:[explain s
 ----
 
 [[CommonQueryParameters-ThedebugParameter]]
-== The `debug` Parameter
+== The debug Parameter
 
 The `debug` parameter can be specified multiple times and supports the following arguments:
 
@@ -219,7 +219,7 @@ For backwards compatibility with older versions of Solr, `debugQuery=true` may i
 The default behavior is not to include debugging information.
 
 [[CommonQueryParameters-TheexplainOtherParameter]]
-== The `explainOther` Parameter
+== The explainOther Parameter
 
 The `explainOther` parameter specifies a Lucene query in order to identify a set of documents. If this parameter is included and is set to a non-blank value, the query will return debugging information, along with the "explain info" of each document that matches the Lucene query, relative to the main query (which is specified by the q parameter). For example:
 
@@ -233,7 +233,7 @@ The query above allows you to examine the scoring explain info of the top matchi
 The default value of this parameter is blank, which causes no extra "explain info" to be returned.
 
 [[CommonQueryParameters-ThetimeAllowedParameter]]
-== The `timeAllowed` Parameter
+== The timeAllowed Parameter
 
 This parameter specifies the amount of time, in milliseconds, allowed for a search to complete. If this time expires before the search is complete, any partial results will be returned, but values such as `numFound`, <<faceting.adoc#faceting,facet>> counts, and result <<the-stats-component.adoc#the-stats-component,stats>> may not be accurate for the entire result set.
 
@@ -245,7 +245,7 @@ This value is only checked at the time of:
 As this check is periodically performed, the actual time for which a request can be processed before it is aborted would be marginally greater than or equal to the value of `timeAllowed`. If the request consumes more time in other stages, e.g., custom components, etc., this parameter is not expected to abort the request.
 
 [[CommonQueryParameters-ThesegmentTerminateEarlyParameter]]
-== The `segmentTerminateEarly` Parameter
+== The segmentTerminateEarly Parameter
 
 This parameter may be set to either true or false.
 
@@ -258,19 +258,19 @@ Similar to using <<CommonQueryParameters-ThetimeAllowedParameter,the `timeAllowe
 The default value of this parameter is false.
 
 [[CommonQueryParameters-TheomitHeaderParameter]]
-== The `omitHeader` Parameter
+== The omitHeader Parameter
 
 This parameter may be set to either true or false.
 
 If set to true, this parameter excludes the header from the returned results. The header contains information about the request, such as the time it took to complete. The default value for this parameter is false.
 
 [[CommonQueryParameters-ThewtParameter]]
-== The `wt` Parameter
+== The wt Parameter
 
 The `wt` parameter selects the Response Writer that Solr should use to format the query's response. For detailed descriptions of Response Writers, see <<response-writers.adoc#response-writers,Response Writers>>.
 
 [[CommonQueryParameters-Thecache_falseParameter]]
-== The `cache=false` Parameter
+== The cache=false Parameter
 
 Solr caches the results of all queries and filter queries by default. To disable result caching, set the `cache=false` parameter.
 
@@ -296,7 +296,7 @@ fq={!frange l=10 u=100 cache=false cost=100}mul(popularity,price)
 ----
 
 [[CommonQueryParameters-ThelogParamsListParameter]]
-== The `logParamsList` Parameter
+== The logParamsList Parameter
 
 By default, Solr logs all parameters of requests. Set this parameter to restrict which parameters of a request are logged. This may help control logging to only those parameters considered important to your organization.
 
@@ -314,7 +314,7 @@ This parameter does not only apply to query requests, but to any kind of request
 ====
 
 [[CommonQueryParameters-TheechoParamsParameter]]
-== The `echoParams` Parameter
+== The echoParams Parameter
 
 The `echoParams` parameter controls what information about request parameters is included in the response header.
 

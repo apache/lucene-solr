@@ -23,23 +23,29 @@ import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.regex.Pattern;
 
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrRequest;
-import org.apache.solr.client.solrj.SolrResponse;
+import org.apache.solr.client.solrj.response.V2Response;
+import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.ContentStream;
 import org.apache.solr.common.util.ContentStreamBase;
+import org.apache.solr.common.util.Utils;
 
-public class V2Request extends SolrRequest {
+public class V2Request extends SolrRequest<V2Response> {
+  //only for debugging purposes
+  public static final ThreadLocal<AtomicLong> v2Calls = new ThreadLocal<>();
   static final Pattern COLL_REQ_PATTERN = Pattern.compile("/(c|collections)/[^/]+/(?!shards)");
   private InputStream payload;
   private SolrParams solrParams;
+  public final boolean useBinary;
 
-  private V2Request(METHOD m, String resource, InputStream payload) {
+  private V2Request(METHOD m, String resource, boolean useBinary) {
     super(m, resource);
-    this.payload = payload;
+    this.useBinary = useBinary;
   }
 
   @Override
@@ -49,6 +55,7 @@ public class V2Request extends SolrRequest {
 
   @Override
   public Collection<ContentStream> getContentStreams() throws IOException {
+    if (v2Calls.get() != null) v2Calls.get().incrementAndGet();
     if (payload != null) {
       return Collections.singleton(new ContentStreamBase() {
         @Override
@@ -58,7 +65,7 @@ public class V2Request extends SolrRequest {
 
         @Override
         public String getContentType() {
-          return "application/json";
+          return useBinary ? "application/javabin" : "application/json";
         }
       });
     }
@@ -70,15 +77,16 @@ public class V2Request extends SolrRequest {
   }
 
   @Override
-  protected SolrResponse createResponse(SolrClient client) {
-    return null;
+  protected V2Response createResponse(SolrClient client) {
+    return new V2Response();
   }
 
   public static class Builder {
     private String resource;
     private METHOD method = METHOD.GET;
-    private InputStream payload;
+    private Object payload;
     private SolrParams params;
+    private boolean useBinary = false;
 
     /**
      * Create a Builder object based on the provided resource.
@@ -108,7 +116,12 @@ public class V2Request extends SolrRequest {
       return this;
     }
 
-    public Builder withPayLoad(InputStream payload) {
+    public Builder withPayload(Object payload) {
+      this.payload = payload;
+      return this;
+    }
+
+    public Builder withPayload(InputStream payload) {
       this.payload = payload;
       return this;
     }
@@ -118,10 +131,28 @@ public class V2Request extends SolrRequest {
       return this;
     }
 
+    public Builder useBinary(boolean flag) {
+      this.useBinary = flag;
+      return this;
+    }
+
     public V2Request build() {
-      V2Request v2Request = new V2Request(method, resource, payload);
-      v2Request.solrParams = params;
-      return v2Request;
+      try {
+        V2Request v2Request = new V2Request(method, resource, useBinary);
+        v2Request.solrParams = params;
+        InputStream is = null;
+        if (payload != null) {
+          if (payload instanceof InputStream) is = (InputStream) payload;
+          else if (useBinary) is = Utils.toJavabin(payload);
+          else is = new ByteArrayInputStream(Utils.toJSON(payload));
+        }
+        v2Request.payload = is;
+        return v2Request;
+      } catch (IOException e) {
+        throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
+      }
+
+
     }
   }
 }

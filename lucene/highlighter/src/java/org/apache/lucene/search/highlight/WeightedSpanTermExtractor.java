@@ -18,7 +18,6 @@ package org.apache.lucene.search.highlight;
 
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -30,7 +29,6 @@ import org.apache.lucene.analysis.CachingTokenFilter;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.index.BinaryDocValues;
 import org.apache.lucene.index.FieldInfos;
-import org.apache.lucene.index.Fields;
 import org.apache.lucene.index.FilterLeafReader;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.LeafReader;
@@ -429,30 +427,15 @@ public class WeightedSpanTermExtractor {
     DelegatingLeafReader(LeafReader in) {
       super(in);
     }
-    
+
     @Override
     public FieldInfos getFieldInfos() {
-      throw new UnsupportedOperationException();
+      throw new UnsupportedOperationException();//TODO merge them
     }
 
     @Override
-    public Fields fields() throws IOException {
-      return new FilterFields(super.fields()) {
-        @Override
-        public Terms terms(String field) throws IOException {
-          return super.terms(DelegatingLeafReader.FIELD_NAME);
-        }
-
-        @Override
-        public Iterator<String> iterator() {
-          return Collections.singletonList(DelegatingLeafReader.FIELD_NAME).iterator();
-        }
-
-        @Override
-        public int size() {
-          return 1;
-        }
-      };
+    public Terms terms(String field) throws IOException {
+      return super.terms(DelegatingLeafReader.FIELD_NAME);
     }
 
     @Override

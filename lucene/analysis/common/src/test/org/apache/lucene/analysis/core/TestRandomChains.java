@@ -73,6 +73,7 @@ import org.apache.lucene.analysis.compound.TestCompoundWordTokenFilter;
 import org.apache.lucene.analysis.compound.hyphenation.HyphenationTree;
 import org.apache.lucene.analysis.hunspell.Dictionary;
 import org.apache.lucene.analysis.hunspell.TestHunspellStemFilter;
+import org.apache.lucene.analysis.miscellaneous.DelimitedTermFrequencyTokenFilter;
 import org.apache.lucene.analysis.miscellaneous.HyphenatedWordsFilter;
 import org.apache.lucene.analysis.miscellaneous.LimitTokenCountFilter;
 import org.apache.lucene.analysis.miscellaneous.LimitTokenOffsetFilter;
@@ -159,6 +160,8 @@ public class TestRandomChains extends BaseTokenStreamTestCase {
           WordDelimiterFilter.class,
           // Cannot correct offsets when a char filter had changed them:
           WordDelimiterGraphFilter.class,
+          // requires a special encoded token value, so it may fail with random data:
+          DelimitedTermFrequencyTokenFilter.class,
           // clones of core's filters:
           org.apache.lucene.analysis.core.StopFilter.class,
           org.apache.lucene.analysis.core.LowerCaseFilter.class)) {

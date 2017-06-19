@@ -127,37 +127,48 @@ The example below shows an invocation of this component using the above configur
 [[TheTermVectorComponent-RequestParameters]]
 === Request Parameters
 
-The example below shows the available request parameters for this component:
+The example below shows some of the available request parameters for this component:
 
-`\http://localhost:8983/solr/techproducts/tvrh?q=includes:[* TO *]&rows=10&indent=true&tv=true&tv.tf=true&tv.df=true&tv.positions=true&tv.offsets=true&tv.payloads=true&tv.fl=includes`
+[source,bash]
+http://localhost:8983/solr/techproducts/tvrh?q=includes:[* TO *]&rows=10&indent=true&tv=true&tv.tf=true&tv.df=true&tv.positions=true&tv.offsets=true&tv.payloads=true&tv.fl=includes
 
-// TODO: Change column width to %autowidth.spread when https://github.com/asciidoctor/asciidoctor-pdf/issues/599 is fixed
+`tv`::
+If `true`, the Term Vector Component will run.
 
-[cols="20,60,20",options="header"]
-|===
-|Boolean Parameters |Description |Type
-|tv |Should the component run or not |boolean
-|tv.docIds |Returns term vectors for the specified list of Lucene document IDs (not the Solr Unique Key). |comma seperated integers
-|tv.fl |Returns term vectors for the specified list of fields. If not specified, the `fl` parameter is used. |comma seperated list of field names
-|tv.all |A shortcut that invokes all the boolean parameters listed below. |boolean
-|tv.df |Returns the Document Frequency (DF) of the term in the collection. This can be computationally expensive. |boolean
-|tv.offsets |Returns offset information for each term in the document. |boolean
-|tv.positions |Returns position information. |boolean
-|tv.payloads |Returns payload information. |boolean
-|tv.tf |Returns document term frequency info per term in the document. |boolean
-|tv.tf_idf a|
-Calculates TF / DF (ie: TF * IDF) for each term. Please note that this is a _literal_ calculation of "Term Frequency multiplied by Inverse Document Frequency" and *not* a classical TF-IDF similarity measure.
+`tv.docIds`::
+For a given comma-separated list of Lucene document IDs (*not* the Solr Unique Key), term vectors will be returned.
 
-Requires the parameters `tv.tf` and `tv.df` to be "true". This can be computationally expensive. (The results are not shown in example output)
+`tv.fl`::
+For a given comma-separated list of fields, term vectors will be returned. If not specified, the `fl` parameter is used.
 
- |boolean
-|===
+`tv.all`::
+If `true`, all the boolean parameters listed below (`tv.df`, `tv.offsets`, `tv.positions`, `tv.payloads`, `tv.tf` and `tv.tf_idf`) will be enabled.
+
+`tv.df`::
+If `true`, returns the Document Frequency (DF) of the term in the collection. This can be computationally expensive.
+
+`tv.offsets`::
+If `true`, returns offset information for each term in the document.
+
+`tv.positions`::
+If `true`, returns position information.
+
+`tv.payloads`::
+If `true`, returns payload information.
+
+`tv.tf`::
+If `true`, returns document term frequency info for each term in the document.
+
+`tv.tf_idf`:: a|
+If `true`, calculates TF / DF (ie: TF * IDF) for each term. Please note that this is a _literal_ calculation of "Term Frequency multiplied by Inverse Document Frequency" and *not* a classical TF-IDF similarity measure.
++
+This parameter requires both `tv.tf` and `tv.df` to be "true". This can be computationally expensive. (The results are not shown in example output)
 
 To learn more about TermVector component output, see the Wiki page: http://wiki.apache.org/solr/TermVectorComponentExampleOptions
 
-For schema requirements, see the Wiki page: http://wiki.apache.org/solr/FieldOptionsByUseCase
+For schema requirements, see also the section  <<field-properties-by-use-case.adoc#field-properties-by-use-case, Field Properties by Use Case>>.
 
 [[TheTermVectorComponent-SolrJandtheTermVectorComponent]]
 == SolrJ and the Term Vector Component
 
-Neither the SolrQuery class nor the QueryResponse class offer specific method calls to set Term Vector Component parameters or get the "termVectors" output. However, there is a patch for it: https://issues.apache.org/jira/browse/SOLR-949[SOLR-949].
+Neither the `SolrQuery` class nor the `QueryResponse` class offer specific method calls to set Term Vector Component parameters or get the "termVectors" output. However, there is a patch for it: https://issues.apache.org/jira/browse/SOLR-949[SOLR-949].

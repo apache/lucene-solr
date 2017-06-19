@@ -48,7 +48,9 @@ public class BinaryResponseWriter implements BinaryQueryResponseWriter {
   public void write(OutputStream out, SolrQueryRequest req, SolrQueryResponse response) throws IOException {
     Resolver resolver = new Resolver(req, response.getReturnFields());
     if (req.getParams().getBool(CommonParams.OMIT_HEADER, false)) response.removeResponseHeader();
-    new JavaBinCodec(resolver).setWritableDocFields(resolver).marshal(response.getValues(), out);
+    try (JavaBinCodec jbc = new JavaBinCodec(resolver)) {
+      jbc.setWritableDocFields(resolver).marshal(response.getValues(), out);
+    }
   }
 
   @Override
@@ -160,10 +162,14 @@ public class BinaryResponseWriter implements BinaryQueryResponseWriter {
       Resolver resolver = new Resolver(req, rsp.getReturnFields());
 
       ByteArrayOutputStream out = new ByteArrayOutputStream();
-      new JavaBinCodec(resolver).setWritableDocFields(resolver).marshal(rsp.getValues(), out);
+      try (JavaBinCodec jbc = new JavaBinCodec(resolver)) {
+        jbc.setWritableDocFields(resolver).marshal(rsp.getValues(), out);
+      }
 
       InputStream in = out.toInputStream();
-      return (NamedList<Object>) new JavaBinCodec(resolver).unmarshal(in);
+      try (JavaBinCodec jbc = new JavaBinCodec(resolver)) {
+        return (NamedList<Object>) jbc.unmarshal(in);
+      }
     }
     catch (Exception ex) {
       throw new RuntimeException(ex);

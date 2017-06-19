@@ -19,12 +19,10 @@ package org.apache.lucene.search.uhighlight;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
-import java.util.Comparator;
 import java.util.List;
 import java.util.function.Function;
 import java.util.function.Predicate;
 
-import org.apache.lucene.index.Term;
 import org.apache.lucene.search.AutomatonQuery;
 import org.apache.lucene.search.BooleanClause;
 import org.apache.lucene.search.BooleanQuery;
@@ -32,19 +30,17 @@ import org.apache.lucene.search.BoostQuery;
 import org.apache.lucene.search.ConstantScoreQuery;
 import org.apache.lucene.search.DisjunctionMaxQuery;
 import org.apache.lucene.search.FuzzyQuery;
-import org.apache.lucene.search.PrefixQuery;
 import org.apache.lucene.search.Query;
-import org.apache.lucene.search.TermRangeQuery;
 import org.apache.lucene.search.spans.SpanBoostQuery;
 import org.apache.lucene.search.spans.SpanMultiTermQueryWrapper;
 import org.apache.lucene.search.spans.SpanNearQuery;
 import org.apache.lucene.search.spans.SpanNotQuery;
 import org.apache.lucene.search.spans.SpanOrQuery;
 import org.apache.lucene.search.spans.SpanPositionCheckQuery;
-import org.apache.lucene.util.CharsRef;
 import org.apache.lucene.util.UnicodeUtil;
 import org.apache.lucene.util.automaton.Automata;
 import org.apache.lucene.util.automaton.Automaton;
+import org.apache.lucene.util.automaton.ByteRunAutomaton;
 import org.apache.lucene.util.automaton.CharacterRunAutomaton;
 import org.apache.lucene.util.automaton.LevenshteinAutomata;
 import org.apache.lucene.util.automaton.Operations;
@@ -110,18 +106,6 @@ class MultiTermHighlighting {
     } else if (lookInSpan && query instanceof SpanMultiTermQueryWrapper) {
       list.addAll(Arrays.asList(extractAutomata(((SpanMultiTermQueryWrapper<?>) query).getWrappedQuery(),
           fieldMatcher, lookInSpan, preRewriteFunc)));
-    } else if (query instanceof PrefixQuery) {
-      final PrefixQuery pq = (PrefixQuery) query;
-      Term prefix = pq.getPrefix();
-      if (fieldMatcher.test(prefix.field())) {
-        list.add(new CharacterRunAutomaton(Operations.concatenate(Automata.makeString(prefix.text()),
-            Automata.makeAnyString())) {
-          @Override
-          public String toString() {
-            return pq.toString();
-          }
-        });
-      }
     } else if (query instanceof FuzzyQuery) {
       final FuzzyQuery fq = (FuzzyQuery) query;
       if (fieldMatcher.test(fq.getField())) {
@@ -143,69 +127,63 @@ class MultiTermHighlighting {
           }
         });
       }
-    } else if (query instanceof TermRangeQuery) {
-      final TermRangeQuery tq = (TermRangeQuery) query;
-      if (fieldMatcher.test(tq.getField())) {
-        final CharsRef lowerBound;
-        if (tq.getLowerTerm() == null) {
-          lowerBound = null;
-        } else {
-          lowerBound = new CharsRef(tq.getLowerTerm().utf8ToString());
-        }
-
-        final CharsRef upperBound;
-        if (tq.getUpperTerm() == null) {
-          upperBound = null;
-        } else {
-          upperBound = new CharsRef(tq.getUpperTerm().utf8ToString());
-        }
-
-        final boolean includeLower = tq.includesLower();
-        final boolean includeUpper = tq.includesUpper();
-        final CharsRef scratch = new CharsRef();
-
-        @SuppressWarnings("deprecation")
-        final Comparator<CharsRef> comparator = CharsRef.getUTF16SortedAsUTF8Comparator();
-
-        // this is *not* an automaton, but its very simple
-        list.add(new CharacterRunAutomaton(Automata.makeEmpty()) {
-          @Override
-          public boolean run(char[] s, int offset, int length) {
-            scratch.chars = s;
-            scratch.offset = offset;
-            scratch.length = length;
-
-            if (lowerBound != null) {
-              int cmp = comparator.compare(scratch, lowerBound);
-              if (cmp < 0 || (!includeLower && cmp == 0)) {
-                return false;
-              }
-            }
-
-            if (upperBound != null) {
-              int cmp = comparator.compare(scratch, upperBound);
-              if (cmp > 0 || (!includeUpper && cmp == 0)) {
-                return false;
-              }
-            }
-            return true;
-          }
-
-          @Override
-          public String toString() {
-            return tq.toString();
-          }
-        });
-      }
     } else if (query instanceof AutomatonQuery) {
       final AutomatonQuery aq = (AutomatonQuery) query;
       if (fieldMatcher.test(aq.getField())) {
-        list.add(new CharacterRunAutomaton(aq.getAutomaton()) {
-          @Override
-          public String toString() {
-            return aq.toString();
-          }
-        });
+
+        if (aq.isAutomatonBinary() == false) { // note: is the case for WildcardQuery, RegexpQuery
+          list.add(new CharacterRunAutomaton(aq.getAutomaton()) {
+            @Override
+            public String toString() {
+              return aq.toString();
+            }
+          });
+        } else { // note: is the case for PrefixQuery, TermRangeQuery
+          // byte oriented automaton:
+          list.add(new CharacterRunAutomaton(Automata.makeEmpty()) { // empty here is bogus just to satisfy API
+            //   TODO can we get access to the aq.compiledAutomaton.runAutomaton ?
+            ByteRunAutomaton byteRunAutomaton =
+                new ByteRunAutomaton(aq.getAutomaton(), true, Operations.DEFAULT_MAX_DETERMINIZED_STATES);
+
+            @Override
+            public boolean run(char[] chars, int offset, int length) {
+              int state = 0;
+              final int maxIdx = offset + length;
+              for (int i = offset; i < maxIdx; i++) {
+                final int code = chars[i];
+                int b;
+                // UTF16 to UTF8   (inlined logic from UnicodeUtil.UTF16toUTF8 )
+                if (code < 0x80) {
+                  state = byteRunAutomaton.step(state, code);
+                  if (state == -1) return false;
+                } else if (code < 0x800) {
+                  b = (0xC0 | (code >> 6));
+                  state = byteRunAutomaton.step(state, b);
+                  if (state == -1) return false;
+                  b = (0x80 | (code & 0x3F));
+                  state = byteRunAutomaton.step(state, b);
+                  if (state == -1) return false;
+                } else {
+                  // more complex
+                  byte[] utf8Bytes = new byte[4 * (maxIdx - i)];
+                  int utf8Len = UnicodeUtil.UTF16toUTF8(chars, i, maxIdx - i, utf8Bytes);
+                  for (int utfIdx = 0; utfIdx < utf8Len; utfIdx++) {
+                    state = byteRunAutomaton.step(state, utf8Bytes[utfIdx] & 0xFF);
+                    if (state == -1) return false;
+                  }
+                  break;
+                }
+              }
+              return byteRunAutomaton.isAccept(state);
+            }
+
+            @Override
+            public String toString() {
+              return aq.toString();
+            }
+          });
+        }
+
       }
     }
     return list.toArray(new CharacterRunAutomaton[list.size()]);

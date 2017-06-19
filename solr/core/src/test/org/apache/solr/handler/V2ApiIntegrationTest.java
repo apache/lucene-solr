@@ -19,7 +19,6 @@ package org.apache.solr.handler;
 
 
 import java.io.IOException;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
@@ -28,17 +27,15 @@ import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.V2Request;
+import org.apache.solr.client.solrj.response.V2Response;
 import org.apache.solr.cloud.SolrCloudTestCase;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.Utils;
-import org.apache.solr.util.RestTestHarness;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
 public class V2ApiIntegrationTest extends SolrCloudTestCase {
-  private List<RestTestHarness> restTestHarnesses = new ArrayList<>();
-
   private static String COLL_NAME = "collection1";
 
   @BeforeClass
@@ -49,6 +46,15 @@ public class V2ApiIntegrationTest extends SolrCloudTestCase {
         .configure();
     CollectionAdminRequest.createCollection(COLL_NAME, "conf1", 1, 2)
         .process(cluster.getSolrClient());
+  }
+
+  @Test
+  public void testWelcomeMessage() throws Exception {
+    V2Response res = new V2Request.Builder("").build().process(cluster.getSolrClient());
+    assertEquals(0, res.getStatus());
+
+    res = new V2Request.Builder("/_introspect").build().process(cluster.getSolrClient());
+    assertEquals(0, res.getStatus());
   }
 
   @Test
@@ -87,6 +93,11 @@ public class V2ApiIntegrationTest extends SolrCloudTestCase {
     assertEquals("/c/collection1/get", Utils.getObjectByPath(result, true, "/spec[0]/url/paths[0]"));
     result = resAsMap(client, new V2Request.Builder("/collections/"+COLL_NAME+"/get/_introspect").build());
     assertEquals("/collections/collection1/get", Utils.getObjectByPath(result, true, "/spec[0]/url/paths[0]"));
+    String tempDir = createTempDir().toFile().getPath();
+    client.request(new V2Request.Builder("/c")
+        .withMethod(SolrRequest.METHOD.POST)
+        .withPayload("{backup-collection:{name: backup_test, collection: "+COLL_NAME+" , location: '"+tempDir+"' }}")
+        .build());
   }
 
   private Map resAsMap(CloudSolrClient client, V2Request request) throws SolrServerException, IOException {

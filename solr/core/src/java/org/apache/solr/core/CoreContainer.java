@@ -1285,6 +1285,8 @@ public class CoreContainer {
 
     boolean close = solrCores.isLoadedNotPendingClose(name);
     SolrCore core = solrCores.remove(name);
+
+    solrCores.removeCoreDescriptor(cd);
     coresLocator.delete(this, cd);
     if (core == null) {
       // transient core
@@ -1298,8 +1300,8 @@ public class CoreContainer {
     if (zkSys.getZkController() != null) {
       // cancel recovery in cloud mode
       core.getSolrCoreState().cancelRecovery();
-      if (core.getCoreDescriptor().getCloudDescriptor().getReplicaType() == Replica.Type.PULL
-          || core.getCoreDescriptor().getCloudDescriptor().getReplicaType() == Replica.Type.TLOG) {
+      if (cd.getCloudDescriptor().getReplicaType() == Replica.Type.PULL
+          || cd.getCloudDescriptor().getReplicaType() == Replica.Type.TLOG) {
         // Stop replication if this is part of a pull/tlog replica before closing the core
         zkSys.getZkController().stopReplicationFromLeader(name);
       }
@@ -1318,9 +1320,6 @@ public class CoreContainer {
       } catch (KeeperException e) {
         throw new SolrException(ErrorCode.SERVER_ERROR, "Error unregistering core [" + name + "] from cloud state", e);
       }
-    }
-    if (deleteInstanceDir) { // we aren't going to reload this if we delete the instance dir.
-      solrCores.removeCoreDescriptor(cd);
     }
   }
 

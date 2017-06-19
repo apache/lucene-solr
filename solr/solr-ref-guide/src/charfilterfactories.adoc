@@ -100,7 +100,7 @@ The table below presents examples of HTML stripping.
 |`hello<script><!-- f('<!--internal--></script>'); --></script>` |hello
 |`if a<b then print a;` |if a<b then print a;
 |`hello <td height=22 nowrap align="left">` |hello
-|`a<b &#65 Alpha&Omega Ω` |a<b A Alpha&Omega Ω
+|`a<b &#65 Alpha&Omega` Ω |a<b A Alpha&Omega Ω
 |===
 
 Example:

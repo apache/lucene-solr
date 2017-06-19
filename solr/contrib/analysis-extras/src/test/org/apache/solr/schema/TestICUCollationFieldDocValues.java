@@ -96,8 +96,8 @@ public class TestICUCollationFieldDocValues extends SolrTestCaseJ4 {
     assertQ("Collated TQ: ",
        req("fl", "id", "q", "sort_de:tone", "sort", "id asc" ),
               "//*[@numFound='2']",
-              "//result/doc[1]/int[@name='id'][.=4]",
-              "//result/doc[2]/int[@name='id'][.=7]"
+              "//result/doc[1]/str[@name='id'][.=4]",
+              "//result/doc[2]/str[@name='id'][.=7]"
     );
   }
   
@@ -110,8 +110,8 @@ public class TestICUCollationFieldDocValues extends SolrTestCaseJ4 {
     assertQ("Collated RangeQ: ",
         req("fl", "id", "q", "sort_de:[tone TO tp]", "sort", "id asc" ),
                "//*[@numFound='2']",
-               "//result/doc[1]/int[@name='id'][.=4]",
-               "//result/doc[2]/int[@name='id'][.=7]"
+               "//result/doc[1]/str[@name='id'][.=4]",
+               "//result/doc[2]/str[@name='id'][.=7]"
      );
   }
   
@@ -122,8 +122,8 @@ public class TestICUCollationFieldDocValues extends SolrTestCaseJ4 {
     assertQ("Collated Sort: ",
         req("fl", "id", "q", "sort_da:[tz TO töz]", "sort", "sort_da asc" ),
                "//*[@numFound='2']",
-               "//result/doc[1]/int[@name='id'][.=11]",
-               "//result/doc[2]/int[@name='id'][.=4]"
+               "//result/doc[1]/str[@name='id'][.=11]",
+               "//result/doc[2]/str[@name='id'][.=4]"
      );
   }
   
@@ -135,8 +135,8 @@ public class TestICUCollationFieldDocValues extends SolrTestCaseJ4 {
     assertQ("Collated Sort: ",
         req("fl", "id", "q", "sort_ar:[\u0698 TO \u0633\u0633]", "sort", "sort_ar asc" ),
                "//*[@numFound='2']",
-               "//result/doc[1]/int[@name='id'][.=12]",
-               "//result/doc[2]/int[@name='id'][.=1]"
+               "//result/doc[1]/str[@name='id'][.=12]",
+               "//result/doc[2]/str[@name='id'][.=1]"
      );
   }
 
@@ -159,9 +159,9 @@ public class TestICUCollationFieldDocValues extends SolrTestCaseJ4 {
     assertQ("Collated TQ: ",
         req("fl", "id", "q", "sort_tr_canon:\"I Will Use Turkish Casıng\"", "sort", "id asc" ),
                "//*[@numFound='3']",
-               "//result/doc[1]/int[@name='id'][.=2]",
-               "//result/doc[2]/int[@name='id'][.=3]",
-               "//result/doc[3]/int[@name='id'][.=5]"
+               "//result/doc[1]/str[@name='id'][.=2]",
+               "//result/doc[2]/str[@name='id'][.=3]",
+               "//result/doc[3]/str[@name='id'][.=5]"
      );
   }
   
@@ -171,10 +171,10 @@ public class TestICUCollationFieldDocValues extends SolrTestCaseJ4 {
    */
   public void testCustomCollation() {
     assertQ("Collated TQ: ",
-        req("fl", "id", "q", "sort_custom:toene", "sort", "id asc" ),
+        req("fl", "id", "q", "sort_custom:toene"),
                "//*[@numFound='2']",
-               "//result/doc[1]/int[@name='id'][.=4]",
-               "//result/doc[2]/int[@name='id'][.=10]"
+               "//result/doc/str[@name='id'][.=4]",
+               "//result/doc/str[@name='id'][.=10]"
      );
   }
 }

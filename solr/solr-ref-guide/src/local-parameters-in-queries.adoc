@@ -64,7 +64,7 @@ is equivilent to:
 
 `fq={!type=lucene df=summary}solr rocks`
 
-== Specifying the Parameter Value with the `v` Key
+== Specifying the Parameter Value with the v Key
 
 A special key of `v` within local parameters is an alternate way to specify the value of that parameter.
 

@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.solr.util;
+package org.apache.solr.common.util;
 
 import java.util.Arrays;
 import java.util.HashMap;
@@ -26,9 +26,6 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 import java.util.function.Function;
-
-import org.apache.solr.common.util.Pair;
-import org.apache.solr.common.util.Utils;
 
 /**
  * A very basic and lightweight json schema parsing and data validation tool. This custom tool is created
@@ -97,8 +94,32 @@ enum Type {
   STRING(String.class),
   ARRAY(List.class),
   NUMBER(Number.class),
-  INTEGER(Long.class),
-  BOOLEAN(Boolean.class),
+  INTEGER(Long.class){
+    @Override
+    boolean isValid(Object o) {
+      if(super.isValid(o)) return true;
+      try {
+        Long.parseLong(String.valueOf(o));
+        return true;
+      } catch (NumberFormatException e) {
+        return false;
+
+      }
+    }
+  },
+  BOOLEAN(Boolean.class){
+    @Override
+    boolean isValid(Object o) {
+      if(super.isValid(o)) return true;
+      try {
+        Boolean.parseBoolean (String.valueOf(o));
+        return true;
+      } catch (NumberFormatException e) {
+        return false;
+      }
+
+    }
+  },
   ENUM(List.class),
   OBJECT(Map.class),
   NULL(null),

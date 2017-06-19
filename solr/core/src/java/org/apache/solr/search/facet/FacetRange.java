@@ -533,6 +533,10 @@ class FacetRangeProcessor extends FacetProcessor<FacetRange> {
 
     public IntCalc(final SchemaField f) { super(f); }
     @Override
+    public Comparable bitsToValue(long bits) {
+      return (int)bits;
+    }
+    @Override
     protected Integer parseStr(String rawval) {
       return Integer.valueOf(rawval);
     }
@@ -700,7 +704,7 @@ class FacetRangeProcessor extends FacetProcessor<FacetRange> {
 
     SimpleOrderedMap<Object> bucket = new SimpleOrderedMap<>();
     FieldType ft = sf.getType();
-    bucket.add("val", bucketVal);
+    bucket.add("val", range.low); // use "low" instead of bucketVal because it will be the right type (we may have been passed back long instead of int for example)
     // String internal = ft.toInternal( tobj.toString() );  // TODO - we need a better way to get from object to query...
 
     Query domainQ = sf.getType().getRangeQuery(null, sf, range.low == null ? null : calc.formatValue(range.low), range.high==null ? null : calc.formatValue(range.high), range.includeLower, range.includeUpper);

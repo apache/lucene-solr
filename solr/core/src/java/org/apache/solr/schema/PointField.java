@@ -127,7 +127,7 @@ public abstract class PointField extends NumericFieldType {
       return new IndexOrDocValuesQuery(pointsQuery, dvQuery);
     } else {
       return getExactQuery(field, externalVal);
-    }
+    } 
   }
 
   protected abstract Query getExactQuery(SchemaField field, String externalVal);
@@ -190,6 +190,11 @@ public abstract class PointField extends NumericFieldType {
   }
   
   protected abstract String indexedToReadable(BytesRef indexedForm);
+  
+  @Override
+  public Query getPrefixQuery(QParser parser, SchemaField sf, String termStr) {
+    throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Can't run prefix queries on numeric fields");
+  }
   
   protected boolean isFieldUsed(SchemaField field) {
     boolean indexed = field.indexed();

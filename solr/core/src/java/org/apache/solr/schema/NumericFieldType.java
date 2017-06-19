@@ -56,8 +56,8 @@ public abstract class NumericFieldType extends PrimitiveFieldType {
     switch (getNumberType()) {
       case INTEGER:
         return numericDocValuesRangeQuery(field.getName(),
-              min == null ? null : (long) Integer.parseInt(min),
-              max == null ? null : (long) Integer.parseInt(max),
+              min == null ? null : (long) parseIntFromUser(field.getName(), min),
+              max == null ? null : (long) parseIntFromUser(field.getName(), max),
               minInclusive, maxInclusive, field.multiValued());
       case FLOAT:
         if (field.multiValued()) {
@@ -67,8 +67,8 @@ public abstract class NumericFieldType extends PrimitiveFieldType {
         }
       case LONG:
         return numericDocValuesRangeQuery(field.getName(),
-              min == null ? null : Long.parseLong(min),
-              max == null ? null : Long.parseLong(max),
+              min == null ? null : parseLongFromUser(field.getName(), min),
+              max == null ? null : parseLongFromUser(field.getName(),max),
               minInclusive, maxInclusive, field.multiValued());
       case DOUBLE:
         if (field.multiValued()) { 
@@ -90,8 +90,8 @@ public abstract class NumericFieldType extends PrimitiveFieldType {
     Query query;
     String fieldName = sf.getName();
 
-    Number minVal = min == null ? null : getNumberType() == NumberType.FLOAT ? Float.parseFloat(min): Double.parseDouble(min);
-    Number maxVal = max == null ? null : getNumberType() == NumberType.FLOAT ? Float.parseFloat(max): Double.parseDouble(max);
+    Number minVal = min == null ? null : getNumberType() == NumberType.FLOAT ? parseFloatFromUser(sf.getName(), min): parseDoubleFromUser(sf.getName(), min);
+    Number maxVal = max == null ? null : getNumberType() == NumberType.FLOAT ? parseFloatFromUser(sf.getName(), max): parseDoubleFromUser(sf.getName(), max);
     
     Long minBits = 
         min == null ? null : getNumberType() == NumberType.FLOAT ? (long) Float.floatToIntBits(minVal.floatValue()): Double.doubleToLongBits(minVal.doubleValue());
@@ -124,14 +124,14 @@ public abstract class NumericFieldType extends PrimitiveFieldType {
   }
   
   protected Query getRangeQueryForMultiValuedDoubleDocValues(SchemaField sf, String min, String max, boolean minInclusive, boolean maxInclusive) {
-    Long minBits = min == null ? NumericUtils.doubleToSortableLong(Double.NEGATIVE_INFINITY): NumericUtils.doubleToSortableLong(Double.parseDouble(min));
-    Long maxBits = max == null ? NumericUtils.doubleToSortableLong(Double.POSITIVE_INFINITY): NumericUtils.doubleToSortableLong(Double.parseDouble(max));
+    Long minBits = min == null ? NumericUtils.doubleToSortableLong(Double.NEGATIVE_INFINITY): NumericUtils.doubleToSortableLong(parseDoubleFromUser(sf.getName(), min));
+    Long maxBits = max == null ? NumericUtils.doubleToSortableLong(Double.POSITIVE_INFINITY): NumericUtils.doubleToSortableLong(parseDoubleFromUser(sf.getName(), max));
     return numericDocValuesRangeQuery(sf.getName(), minBits, maxBits, minInclusive, maxInclusive, true);
   }
   
   protected Query getRangeQueryForMultiValuedFloatDocValues(SchemaField sf, String min, String max, boolean minInclusive, boolean maxInclusive) {
-    Long minBits = (long)(min == null ? NumericUtils.floatToSortableInt(Float.NEGATIVE_INFINITY): NumericUtils.floatToSortableInt(Float.parseFloat(min)));
-    Long maxBits = (long)(max == null ? NumericUtils.floatToSortableInt(Float.POSITIVE_INFINITY): NumericUtils.floatToSortableInt(Float.parseFloat(max)));
+    Long minBits = (long)(min == null ? NumericUtils.floatToSortableInt(Float.NEGATIVE_INFINITY): NumericUtils.floatToSortableInt(parseFloatFromUser(sf.getName(), min)));
+    Long maxBits = (long)(max == null ? NumericUtils.floatToSortableInt(Float.POSITIVE_INFINITY): NumericUtils.floatToSortableInt(parseFloatFromUser(sf.getName(), max)));
     return numericDocValuesRangeQuery(sf.getName(), minBits, maxBits, minInclusive, maxInclusive, true);
   }
   
@@ -167,6 +167,74 @@ public abstract class NumericFieldType extends PrimitiveFieldType {
       return SortedNumericDocValuesField.newRangeQuery(field, actualLowerValue, actualUpperValue);
     } else {
       return NumericDocValuesField.newRangeQuery(field, actualLowerValue, actualUpperValue);
+    }
+  }
+  
+  /** 
+   * Wrapper for {@link Long#parseLong(String)} that throws a BAD_REQUEST error if the input is not valid 
+   * @param fieldName used in any exception, may be null
+   * @param val string to parse, NPE if null
+   */
+  static long parseLongFromUser(String fieldName, String val) {
+    if (val == null) {
+      throw new NullPointerException("Invalid input" + (null == fieldName ? "" : " for field " + fieldName));
+    }
+    try {
+      return Long.parseLong(val);
+    } catch (NumberFormatException e) {
+      String msg = "Invalid Number: " + val + (null == fieldName ? "" : " for field " + fieldName);
+      throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, msg);
+    }
+  }
+  
+  /** 
+   * Wrapper for {@link Integer#parseInt(String)} that throws a BAD_REQUEST error if the input is not valid 
+   * @param fieldName used in any exception, may be null
+   * @param val string to parse, NPE if null
+   */
+  static int parseIntFromUser(String fieldName, String val) {
+    if (val == null) {
+      throw new NullPointerException("Invalid input" + (null == fieldName ? "" : " for field " + fieldName));
+    }
+    try {
+      return Integer.parseInt(val);
+    } catch (NumberFormatException e) {
+      String msg = "Invalid Number: " + val + (null == fieldName ? "" : " for field " + fieldName);
+      throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, msg);
+    }
+  }
+  
+  /** 
+   * Wrapper for {@link Double#parseDouble(String)} that throws a BAD_REQUEST error if the input is not valid 
+   * @param fieldName used in any exception, may be null
+   * @param val string to parse, NPE if null
+   */
+  static double parseDoubleFromUser(String fieldName, String val) {
+    if (val == null) {
+      throw new NullPointerException("Invalid input" + (null == fieldName ? "" : " for field " + fieldName));
+    }
+    try {
+      return Double.parseDouble(val);
+    } catch (NumberFormatException e) {
+      String msg = "Invalid Number: " + val + (null == fieldName ? "" : " for field " + fieldName);
+      throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, msg);
+    }
+  }
+  
+  /** 
+   * Wrapper for {@link Float#parseFloat(String)} that throws a BAD_REQUEST error if the input is not valid 
+   * @param fieldName used in any exception, may be null
+   * @param val string to parse, NPE if null
+   */
+  static float parseFloatFromUser(String fieldName, String val) {
+    if (val == null) {
+      throw new NullPointerException("Invalid input" + (null == fieldName ? "" : " for field " + fieldName));
+    }
+    try {
+      return Float.parseFloat(val);
+    } catch (NumberFormatException e) {
+      String msg = "Invalid Number: " + val + (null == fieldName ? "" : " for field " + fieldName);
+      throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, msg);
     }
   }
 }

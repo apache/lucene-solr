@@ -41,6 +41,7 @@ import org.apache.solr.util.ConcurrentLRUCache;
 */
 public class TemplateUpdateProcessorFactory extends SimpleUpdateProcessorFactory {
   private Cache<String, Resolved> templateCache = new ConcurrentLRUCache<>(1000, 800, 900, 10, false, false, null);
+  public static final String NAME = "template";
   @Override
   protected void process(AddUpdateCommand cmd, SolrQueryRequest req, SolrQueryResponse rsp) {
     String[] vals = getParams("field");
@@ -57,18 +58,22 @@ public class TemplateUpdateProcessorFactory extends SimpleUpdateProcessorFactory
         doc.addField(fName, replaceTokens(template, templateCache, s -> {
           Object v = doc.getFieldValue(s);
           return v == null ? "" : v;
-        }));
+        }, BRACES_PLACEHOLDER_PATTERN));
       }
     }
 
   }
 
+  @Override
+  protected String getMyName() {
+    return NAME;
+  }
 
-  public static Resolved getResolved(String template, Cache<String, Resolved> cache) {
+  public static Resolved getResolved(String template, Cache<String, Resolved> cache, Pattern pattern) {
     Resolved r = cache == null ? null : cache.get(template);
     if (r == null) {
       r = new Resolved();
-      Matcher m = PLACEHOLDER_PATTERN.matcher(template);
+      Matcher m = pattern.matcher(template);
       while (m.find()) {
         String variable = m.group(1);
         r.startIndexes.add(m.start(0));
@@ -83,19 +88,19 @@ public class TemplateUpdateProcessorFactory extends SimpleUpdateProcessorFactory
   /**
    * Get a list of variables embedded in the template string.
    */
-  public static List<String> getVariables(String template, Cache<String, Resolved> cache) {
-    Resolved r = getResolved(template, cache);
+  public static List<String> getVariables(String template, Cache<String, Resolved> cache, Pattern pattern) {
+    Resolved r = getResolved(template, cache, pattern );
     if (r == null) {
       return Collections.emptyList();
     }
     return new ArrayList<>(r.variables);
   }
 
-  public static String replaceTokens(String template, Cache<String, Resolved> cache, Function<String, Object> fun) {
+  public static String replaceTokens(String template, Cache<String, Resolved> cache, Function<String, Object> fun, Pattern pattern) {
     if (template == null) {
       return null;
     }
-    Resolved r = getResolved(template, cache);
+    Resolved r = getResolved(template, cache, pattern);
     if (r.startIndexes != null) {
       StringBuilder sb = new StringBuilder(template);
       for (int i = r.startIndexes.size() - 1; i >= 0; i--) {
@@ -115,6 +120,8 @@ public class TemplateUpdateProcessorFactory extends SimpleUpdateProcessorFactory
     public List<String> variables = new ArrayList<>(2);
   }
 
-  public static final Pattern PLACEHOLDER_PATTERN = Pattern
+  public static final Pattern DOLLAR_BRACES_PLACEHOLDER_PATTERN = Pattern
       .compile("[$][{](.*?)[}]");
+  public static final Pattern BRACES_PLACEHOLDER_PATTERN = Pattern
+      .compile("[{](.*?)[}]");
 }
