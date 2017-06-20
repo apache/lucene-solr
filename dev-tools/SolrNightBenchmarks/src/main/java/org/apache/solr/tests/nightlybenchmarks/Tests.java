@@ -94,48 +94,20 @@ public class Tests {
 
 			String collectionName1 = "" + UUID.randomUUID();
 			node.createCollection("Core-" + UUID.randomUUID(), collectionName1);
-			BenchmarkReportData.metricMapStandaloneConcurrent1 = client.indexData(numDocuments, collectionName1, 1,
-					true, TestType.STANDALONE_INDEXING_THROUGHPUT_CONCURRENT_1, node.getBaseUrl());
+			BenchmarkReportData.metricMapStandaloneConcurrent1 = client.indexData(numDocuments, node.getBaseUrl(),
+					collectionName1, 1, 1, TestType.STANDALONE_INDEXING_THROUGHPUT_CONCURRENT_1, true, true);
 			node.deleteCollection(collectionName1);
-
 			String collectionName2 = "" + UUID.randomUUID();
 			node.createCollection("Core-" + UUID.randomUUID(), collectionName2);
-			BenchmarkReportData.metricMapStandaloneConcurrent2 = client.indexData(numDocuments, collectionName2, 2,
-					true, TestType.STANDALONE_INDEXING_THROUGHPUT_CONCURRENT_2, node.getBaseUrl());
+			BenchmarkReportData.metricMapStandaloneConcurrent2 = client.indexData(numDocuments, node.getBaseUrl(),
+					collectionName2, 1, 2, TestType.STANDALONE_INDEXING_THROUGHPUT_CONCURRENT_2, true, true);
 			node.deleteCollection(collectionName2);
-
 			String collectionName3 = "" + UUID.randomUUID();
 			node.createCollection("Core-" + UUID.randomUUID(), collectionName3);
-			BenchmarkReportData.metricMapStandaloneConcurrent3 = client.indexData(numDocuments, collectionName3, 3,
-					true, TestType.STANDALONE_INDEXING_THROUGHPUT_CONCURRENT_3, node.getBaseUrl());
+			BenchmarkReportData.metricMapStandaloneConcurrent3 = client.indexData(numDocuments, node.getBaseUrl(),
+					collectionName3, 1, 3, TestType.STANDALONE_INDEXING_THROUGHPUT_CONCURRENT_3, true, true);
 			node.deleteCollection(collectionName3);
 
-			/*
-			 * String collectionName1 = "" + UUID.randomUUID();
-			 * node.createCollection("Core-" + UUID.randomUUID(),
-			 * collectionName1);
-			 * BenchmarkReportData.metricMapStandaloneConcurrent1 =
-			 * client.indexData(numDocuments, node.getBaseUrl(),
-			 * collectionName1, 1, 1,
-			 * TestType.STANDALONE_INDEXING_THROUGHPUT_CONCURRENT_1, true,
-			 * true); node.deleteCollection(collectionName1); String
-			 * collectionName2 = "" + UUID.randomUUID();
-			 * node.createCollection("Core-" + UUID.randomUUID(),
-			 * collectionName2);
-			 * BenchmarkReportData.metricMapStandaloneConcurrent2 =
-			 * client.indexData(numDocuments, node.getBaseUrl(),
-			 * collectionName2, 1, 2,
-			 * TestType.STANDALONE_INDEXING_THROUGHPUT_CONCURRENT_2, true,
-			 * true); node.deleteCollection(collectionName2); String
-			 * collectionName3 = "" + UUID.randomUUID();
-			 * node.createCollection("Core-" + UUID.randomUUID(),
-			 * collectionName3);
-			 * BenchmarkReportData.metricMapStandaloneConcurrent3 =
-			 * client.indexData(numDocuments, node.getBaseUrl(),
-			 * collectionName3, 1, 3,
-			 * TestType.STANDALONE_INDEXING_THROUGHPUT_CONCURRENT_3, true,
-			 * true); node.deleteCollection(collectionName3);
-			 */
 			node.doAction(SolrNodeAction.NODE_STOP);
 			node.cleanup();
 
@@ -203,210 +175,96 @@ public class Tests {
 
 			if (nodes == 2 && shards == "1" && replicas == "2") {
 
-				String collectionName1 = "" + UUID.randomUUID();
+/*				String collectionName1 = "" + UUID.randomUUID();
 				cloud.createCollection(collectionName1, null, shards, replicas);
 				BenchmarkReportData.metricMapCloudConcurrent1_2N1S2R = cloudClient.indexData(numDocuments,
-						cloud.zookeeperIp, cloud.zookeeperPort, collectionName1, 1, true,
-						TestType.CLOUD_INDEXING_THROUGHPUT_CONCURRENT_2N1S2R_1T);
+						cloud.getuRL(), collectionName1, numDocuments, 1,
+						TestType.CLOUD_INDEXING_THROUGHPUT_CONCURRENT_2N1S2R_1T, true, true);
 				cloud.deleteCollection(collectionName1);
-
+*/
 				String collectionName2 = "" + UUID.randomUUID();
 				cloud.createCollection(collectionName2, null, shards, replicas);
 				BenchmarkReportData.metricMapCloudConcurrent2_2N1S2R = cloudClient.indexData(numDocuments,
-						cloud.zookeeperIp, cloud.zookeeperPort, collectionName2, 2, true,
-						TestType.CLOUD_INDEXING_THROUGHPUT_CONCURRENT_2N1S2R_2T);
+						cloud.getuRL(), collectionName2, 1, 1,
+						TestType.CLOUD_INDEXING_THROUGHPUT_CONCURRENT_2N1S2R_2T, true, true);
 				cloud.deleteCollection(collectionName2);
-
+/*
 				String collectionName3 = "" + UUID.randomUUID();
 				cloud.createCollection(collectionName3, null, shards, replicas);
 				BenchmarkReportData.metricMapCloudConcurrent3_2N1S2R = cloudClient.indexData(numDocuments,
-						cloud.zookeeperIp, cloud.zookeeperPort, collectionName3, 3, true,
-						TestType.CLOUD_INDEXING_THROUGHPUT_CONCURRENT_2N1S2R_3T);
+						cloud.getuRL(), collectionName3, numDocuments, 3,
+						TestType.CLOUD_INDEXING_THROUGHPUT_CONCURRENT_2N1S2R_3T, true, true);
 				cloud.deleteCollection(collectionName3);
-
-				/*
-				 * String collectionName1 = "" + UUID.randomUUID();
-				 * cloud.createCollection(collectionName1, null, shards,
-				 * replicas);
-				 * BenchmarkReportData.metricMapCloudConcurrent1_2N1S2R =
-				 * cloudClient.indexData(numDocuments, cloud.getuRL(),
-				 * collectionName1, numDocuments, 1,
-				 * TestType.CLOUD_INDEXING_THROUGHPUT_CONCURRENT_2N1S2R_1T,
-				 * true, true); cloud.deleteCollection(collectionName1);
-				 */
-				/*
-				 * String collectionName2 = "" + UUID.randomUUID();
-				 * cloud.createCollection(collectionName2, null, shards,
-				 * replicas);
-				 * BenchmarkReportData.metricMapCloudConcurrent2_2N1S2R =
-				 * cloudClient.indexData(numDocuments, cloud.getuRL(),
-				 * collectionName2, numDocuments, 2,
-				 * TestType.CLOUD_INDEXING_THROUGHPUT_CONCURRENT_2N1S2R_2T,
-				 * true, true); cloud.deleteCollection(collectionName2);
-				 */
-				/*
-				 * String collectionName3 = "" + UUID.randomUUID();
-				 * cloud.createCollection(collectionName3, null, shards,
-				 * replicas);
-				 * BenchmarkReportData.metricMapCloudConcurrent3_2N1S2R =
-				 * cloudClient.indexData(numDocuments, cloud.getuRL(),
-				 * collectionName3, numDocuments, 3,
-				 * TestType.CLOUD_INDEXING_THROUGHPUT_CONCURRENT_2N1S2R_3T,
-				 * true, true); cloud.deleteCollection(collectionName3);
-				 */
+*/
 			} else if (nodes == 2 && shards == "2" && replicas == "1") {
 
 				String collectionName1 = "" + UUID.randomUUID();
 				cloud.createCollection(collectionName1, null, shards, replicas);
 				BenchmarkReportData.metricMapCloudConcurrent1_2N2S1R = cloudClient.indexData(numDocuments,
-						cloud.zookeeperIp, cloud.zookeeperPort, collectionName1, 1, true,
-						TestType.CLOUD_INDEXING_THROUGHPUT_CONCURRENT_2N2S1R_1T);
+						cloud.getuRL(), collectionName1, 1, 1, TestType.CLOUD_INDEXING_THROUGHPUT_CONCURRENT_2N2S1R_1T,
+						true, true);
 				cloud.deleteCollection(collectionName1);
 
 				String collectionName2 = "" + UUID.randomUUID();
 				cloud.createCollection(collectionName2, null, shards, replicas);
 				BenchmarkReportData.metricMapCloudConcurrent2_2N2S1R = cloudClient.indexData(numDocuments,
-						cloud.zookeeperIp, cloud.zookeeperPort, collectionName2, 2, true,
-						TestType.CLOUD_INDEXING_THROUGHPUT_CONCURRENT_2N2S1R_2T);
+						cloud.getuRL(), collectionName2, 1, 2, TestType.CLOUD_INDEXING_THROUGHPUT_CONCURRENT_2N2S1R_2T,
+						true, true);
 				cloud.deleteCollection(collectionName2);
 
 				String collectionName3 = "" + UUID.randomUUID();
 				cloud.createCollection(collectionName3, null, shards, replicas);
 				BenchmarkReportData.metricMapCloudConcurrent3_2N2S1R = cloudClient.indexData(numDocuments,
-						cloud.zookeeperIp, cloud.zookeeperPort, collectionName3, 3, true,
-						TestType.CLOUD_INDEXING_THROUGHPUT_CONCURRENT_2N2S1R_3T);
+						cloud.getuRL(), collectionName3, 1, 3, TestType.CLOUD_INDEXING_THROUGHPUT_CONCURRENT_2N2S1R_3T,
+						true, true);
 				cloud.deleteCollection(collectionName3);
 
-				/*
-				 * String collectionName1 = "" + UUID.randomUUID();
-				 * cloud.createCollection(collectionName1, null, shards,
-				 * replicas);
-				 * BenchmarkReportData.metricMapCloudConcurrent1_2N2S1R =
-				 * cloudClient.indexData(numDocuments, cloud.getuRL(),
-				 * collectionName1, 1, 1,
-				 * TestType.CLOUD_INDEXING_THROUGHPUT_CONCURRENT_2N2S1R_1T,
-				 * true, true); cloud.deleteCollection(collectionName1);
-				 * 
-				 * String collectionName2 = "" + UUID.randomUUID();
-				 * cloud.createCollection(collectionName2, null, shards,
-				 * replicas);
-				 * BenchmarkReportData.metricMapCloudConcurrent2_2N2S1R =
-				 * cloudClient.indexData(numDocuments, cloud.getuRL(),
-				 * collectionName2, 1, 2,
-				 * TestType.CLOUD_INDEXING_THROUGHPUT_CONCURRENT_2N2S1R_2T,
-				 * true, true); cloud.deleteCollection(collectionName2);
-				 * 
-				 * String collectionName3 = "" + UUID.randomUUID();
-				 * cloud.createCollection(collectionName3, null, shards,
-				 * replicas);
-				 * BenchmarkReportData.metricMapCloudConcurrent3_2N2S1R =
-				 * cloudClient.indexData(numDocuments, cloud.getuRL(),
-				 * collectionName3, 1, 3,
-				 * TestType.CLOUD_INDEXING_THROUGHPUT_CONCURRENT_2N2S1R_3T,
-				 * true, true); cloud.deleteCollection(collectionName3);
-				 */
 			} else if (nodes == 3 && shards == "1" && replicas == "3") {
 
 				String collectionName1 = "" + UUID.randomUUID();
 				cloud.createCollection(collectionName1, null, shards, replicas);
 				BenchmarkReportData.metricMapCloudConcurrent1_3N1S3R = cloudClient.indexData(numDocuments,
-						cloud.zookeeperIp, cloud.zookeeperPort, collectionName1, 1, true,
-						TestType.CLOUD_INDEXING_THROUGHPUT_CONCURRENT_3N1S3R_1T);
+						cloud.getuRL(), collectionName1, 1, 1, TestType.CLOUD_INDEXING_THROUGHPUT_CONCURRENT_3N1S3R_1T,
+						true, true);
 				cloud.deleteCollection(collectionName1);
 
 				String collectionName2 = "" + UUID.randomUUID();
 				cloud.createCollection(collectionName2, null, shards, replicas);
 				BenchmarkReportData.metricMapCloudConcurrent2_3N1S3R = cloudClient.indexData(numDocuments,
-						cloud.zookeeperIp, cloud.zookeeperPort, collectionName2, 2, true,
-						TestType.CLOUD_INDEXING_THROUGHPUT_CONCURRENT_3N1S3R_2T);
+						cloud.getuRL(), collectionName2, 1, 2, TestType.CLOUD_INDEXING_THROUGHPUT_CONCURRENT_3N1S3R_2T,
+						true, true);
 				cloud.deleteCollection(collectionName2);
 
 				String collectionName3 = "" + UUID.randomUUID();
 				cloud.createCollection(collectionName3, null, shards, replicas);
 				BenchmarkReportData.metricMapCloudConcurrent3_3N1S3R = cloudClient.indexData(numDocuments,
-						cloud.zookeeperIp, cloud.zookeeperPort, collectionName3, 3, true,
-						TestType.CLOUD_INDEXING_THROUGHPUT_CONCURRENT_3N1S3R_3T);
+						cloud.getuRL(), collectionName3, 1, 3, TestType.CLOUD_INDEXING_THROUGHPUT_CONCURRENT_3N1S3R_3T,
+						true, true);
 				cloud.deleteCollection(collectionName3);
 
-				/*
-				 * String collectionName1 = "" + UUID.randomUUID();
-				 * cloud.createCollection(collectionName1, null, shards,
-				 * replicas);
-				 * BenchmarkReportData.metricMapCloudConcurrent1_3N1S3R =
-				 * cloudClient.indexData(numDocuments, cloud.getuRL(),
-				 * collectionName1, 1, 1,
-				 * TestType.CLOUD_INDEXING_THROUGHPUT_CONCURRENT_3N1S3R_1T,
-				 * true, true); cloud.deleteCollection(collectionName1);
-				 * 
-				 * String collectionName2 = "" + UUID.randomUUID();
-				 * cloud.createCollection(collectionName2, null, shards,
-				 * replicas);
-				 * BenchmarkReportData.metricMapCloudConcurrent2_3N1S3R =
-				 * cloudClient.indexData(numDocuments, cloud.getuRL(),
-				 * collectionName2, 1, 2,
-				 * TestType.CLOUD_INDEXING_THROUGHPUT_CONCURRENT_3N1S3R_2T,
-				 * true, true); cloud.deleteCollection(collectionName2);
-				 * 
-				 * String collectionName3 = "" + UUID.randomUUID();
-				 * cloud.createCollection(collectionName3, null, shards,
-				 * replicas);
-				 * BenchmarkReportData.metricMapCloudConcurrent3_3N1S3R =
-				 * cloudClient.indexData(numDocuments, cloud.getuRL(),
-				 * collectionName3, 1, 3,
-				 * TestType.CLOUD_INDEXING_THROUGHPUT_CONCURRENT_3N1S3R_3T,
-				 * true, true); cloud.deleteCollection(collectionName3);
-				 */
 			} else if (nodes == 4 && shards == "2" && replicas == "2") {
 
 				String collectionName1 = "" + UUID.randomUUID();
 				cloud.createCollection(collectionName1, null, shards, replicas);
 				BenchmarkReportData.metricMapCloudConcurrent1_4N2S2R = cloudClient.indexData(numDocuments,
-						cloud.zookeeperIp, cloud.zookeeperPort, collectionName1, 1, true,
-						TestType.CLOUD_INDEXING_THROUGHPUT_CONCURRENT_4N2S2R_1T);
+						cloud.getuRL(), collectionName1, 1, 1, TestType.CLOUD_INDEXING_THROUGHPUT_CONCURRENT_4N2S2R_1T,
+						true, true);
 				cloud.deleteCollection(collectionName1);
 
 				String collectionName2 = "" + UUID.randomUUID();
 				cloud.createCollection(collectionName2, null, shards, replicas);
 				BenchmarkReportData.metricMapCloudConcurrent2_4N2S2R = cloudClient.indexData(numDocuments,
-						cloud.zookeeperIp, cloud.zookeeperPort, collectionName2, 2, true,
-						TestType.CLOUD_INDEXING_THROUGHPUT_CONCURRENT_4N2S2R_2T);
+						cloud.getuRL(), collectionName2, 1, 2, TestType.CLOUD_INDEXING_THROUGHPUT_CONCURRENT_4N2S2R_2T,
+						true, true);
 				cloud.deleteCollection(collectionName2);
 
 				String collectionName3 = "" + UUID.randomUUID();
 				cloud.createCollection(collectionName3, null, shards, replicas);
 				BenchmarkReportData.metricMapCloudConcurrent3_4N2S2R = cloudClient.indexData(numDocuments,
-						cloud.zookeeperIp, cloud.zookeeperPort, collectionName3, 3, true,
-						TestType.CLOUD_INDEXING_THROUGHPUT_CONCURRENT_4N2S2R_3T);
+						cloud.getuRL(), collectionName3, 1, 3, TestType.CLOUD_INDEXING_THROUGHPUT_CONCURRENT_4N2S2R_3T,
+						true, true);
 				cloud.deleteCollection(collectionName3);
 
-				/*
-				 * String collectionName1 = "" + UUID.randomUUID();
-				 * cloud.createCollection(collectionName1, null, shards,
-				 * replicas);
-				 * BenchmarkReportData.metricMapCloudConcurrent1_4N2S2R =
-				 * cloudClient.indexData(numDocuments, cloud.getuRL(),
-				 * collectionName1, 1, 1,
-				 * TestType.CLOUD_INDEXING_THROUGHPUT_CONCURRENT_4N2S2R_1T,
-				 * true, true); cloud.deleteCollection(collectionName1);
-				 * 
-				 * String collectionName2 = "" + UUID.randomUUID();
-				 * cloud.createCollection(collectionName2, null, shards,
-				 * replicas);
-				 * BenchmarkReportData.metricMapCloudConcurrent2_4N2S2R =
-				 * cloudClient.indexData(numDocuments, cloud.getuRL(),
-				 * collectionName2, 1, 2,
-				 * TestType.CLOUD_INDEXING_THROUGHPUT_CONCURRENT_4N2S2R_2T,
-				 * true, true); cloud.deleteCollection(collectionName2);
-				 * 
-				 * String collectionName3 = "" + UUID.randomUUID();
-				 * cloud.createCollection(collectionName3, null, shards,
-				 * replicas);
-				 * BenchmarkReportData.metricMapCloudConcurrent3_4N2S2R =
-				 * cloudClient.indexData(numDocuments, cloud.getuRL(),
-				 * collectionName3, 1, 3,
-				 * TestType.CLOUD_INDEXING_THROUGHPUT_CONCURRENT_4N2S2R_3T,
-				 * true, true); cloud.deleteCollection(collectionName3);
-				 */
 			}
 
 			cloud.shutdown();
