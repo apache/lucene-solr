@@ -25,12 +25,7 @@
   <luceneMatchVersion>${tests.luceneMatchVersion:LATEST}</luceneMatchVersion>
   <requestHandler name="standard" class="solr.StandardRequestHandler"></requestHandler>
   <directoryFactory name="DirectoryFactory" class="${solr.directoryFactory:solr.RAMDirectoryFactory}"/>
-  <requestHandler name="/update" class="solr.UpdateRequestHandler">
-    <lst name="defaults">
-      <str name="update.chain">add-fields-default-mapping</str>
-    </lst>    
-  </requestHandler>
-  
+
   <schemaFactory class="ManagedIndexSchemaFactory">
     <bool name="mutable">true</bool>
     <str name="managedSchemaResourceName">managed-schema</str>
@@ -90,32 +85,30 @@
       </lst>
       <lst name="typeMapping">
         <str name="valueClass">java.lang.Integer</str>
-        <str name="fieldType">tint</str>
+        <str name="fieldType">pints</str>
       </lst>
       <lst name="typeMapping">
         <str name="valueClass">java.lang.Float</str>
-        <str name="fieldType">tfloat</str>
+        <str name="fieldType">pfloats</str>
       </lst>
       <lst name="typeMapping">
         <str name="valueClass">java.util.Date</str>
-        <str name="fieldType">tdate</str>
+        <str name="fieldType">pdates</str>
       </lst>
       <lst name="typeMapping">
         <str name="valueClass">java.lang.Long</str>
         <str name="valueClass">java.lang.Integer</str>
-        <str name="fieldType">tlong</str>
+        <str name="fieldType">plongs</str>
       </lst>
       <lst name="typeMapping">
         <str name="valueClass">java.lang.Number</str>
-        <str name="fieldType">tdouble</str>
+        <str name="fieldType">pdoubles</str>
       </lst>
     </processor>
     <processor class="solr.RunUpdateProcessorFactory" />
   </updateRequestProcessorChain>
 
   <updateRequestProcessorChain name="add-fields-maxchars">
-    <processor class="solr.LogUpdateProcessorFactory" />
-    <processor class="solr.DistributedUpdateProcessorFactory" />
     <processor class="solr.AddSchemaFieldsUpdateProcessorFactory">
       <str name="defaultFieldType">text</str>
       <lst name="typeMapping">
@@ -135,13 +128,13 @@
         </lst>
       </lst>
     </processor>
+    <processor class="solr.LogUpdateProcessorFactory" />
+    <processor class="solr.DistributedUpdateProcessorFactory" />
     <processor class="solr.RunUpdateProcessorFactory" />
   </updateRequestProcessorChain>
   
   <!-- This chain has one of the typeMappings set as default=true, instead of falling back to the defaultFieldType -->
   <updateRequestProcessorChain name="add-fields-default-mapping">
-    <processor class="solr.LogUpdateProcessorFactory" />
-    <processor class="solr.DistributedUpdateProcessorFactory" />
     <processor class="solr.AddSchemaFieldsUpdateProcessorFactory">
       <str name="defaultFieldType">text</str>
       <lst name="typeMapping">

@@ -278,7 +278,7 @@ public class AddSchemaFieldsUpdateProcessorFactoryTest extends UpdateProcessorTe
   
   public void testCopyFieldByIndexing() throws Exception {
     String content = "This is a text that should be copied to a string field and cutoff at 10 characters";
-    assertU(adoc("id", "1", "mynewfield", content));
+    SolrInputDocument d = processAdd("add-fields-default-mapping", doc(f("id", "1"), f("mynewfield", content)));
     assertU(commit());
 
     ModifiableSolrParams params = new ModifiableSolrParams();
