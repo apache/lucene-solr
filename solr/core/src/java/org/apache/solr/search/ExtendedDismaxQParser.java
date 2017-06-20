@@ -46,6 +46,7 @@ import org.apache.lucene.search.MatchAllDocsQuery;
 import org.apache.lucene.search.MultiPhraseQuery;
 import org.apache.lucene.search.PhraseQuery;
 import org.apache.lucene.search.Query;
+import org.apache.lucene.util.Version;
 import org.apache.solr.analysis.TokenizerChain;
 import org.apache.solr.common.params.DisMaxParams;
 import org.apache.solr.common.params.SolrParams;
@@ -1703,8 +1704,10 @@ public class ExtendedDismaxQParser extends QParser {
       mmAutoRelax = solrParams.getBool(DMP.MM_AUTORELAX, false);
       
       altQ = solrParams.get( DisMaxParams.ALTQ );
-      
-      lowercaseOperators = solrParams.getBool(DMP.LOWERCASE_OPS, true);
+
+      // lowercaseOperators defaults to true for luceneMatchVersion < 7.0 and to false for >= 7.0
+      lowercaseOperators = solrParams.getBool(DMP.LOWERCASE_OPS,
+          !req.getCore().getSolrConfig().luceneMatchVersion.onOrAfter(Version.LUCENE_7_0_0));
       
       /* * * Boosting Query * * */
       boostParams = solrParams.getParams(DisMaxParams.BQ);

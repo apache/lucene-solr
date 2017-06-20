@@ -102,6 +102,9 @@ Upgrading from Solr 6.x
      curl http://host:8983/solr/mycollection/config -d '{"set-user-property": {"update.autoCreateFields":"false"}}'
   Please see SOLR-10574 for details.
 
+* The default for eDismax parameter 'lowercaseOperators' now depends on the luceneMatchVersion setting in solrconfig.
+  It remains 'true' for luceneMatchVersion < 7.0.0 and changes to 'false' from 7.0.0. See also SOLR-4646
+
 New Features
 ----------------------
 * SOLR-9857, SOLR-9858: Collect aggregated metrics from nodes and shard leaders in overseer. (ab)
@@ -292,6 +295,8 @@ Other Changes
  (which closes the underlying stream). (Erick Erickson)
 
 * SOLR-9623: Disable remote streaming in example configs by default. Adjust Upload Limit defaults (janhoy, yonik)
+
+* SOLR-4646: eDismax lowercaseOperators now defaults to "false" for luceneMatchVersion >= 7.0.0 (janhoy, David Smiley)
 
 ==================  6.7.0 ==================
 

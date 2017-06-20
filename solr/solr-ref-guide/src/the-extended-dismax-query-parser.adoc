@@ -59,6 +59,7 @@ A multivalued list of strings parsed as queries with scores multiplied by the sc
 === The lowercaseOperators Parameter
 
 A Boolean parameter indicating if lowercase "and" and "or" should be treated the same as operators "AND" and "OR".
+Defaults to `false`.
 
 [[TheExtendedDisMaxQueryParser-ThepsParameter]]
 === The ps Parameter
