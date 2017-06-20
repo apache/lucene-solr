@@ -1212,7 +1212,7 @@
       <str>yyyy-MM-dd</str>
     </arr>
   </updateProcessor>
-  <processor class="solr.AddSchemaFieldsUpdateProcessorFactory">
+  <processor class="solr.AddSchemaFieldsUpdateProcessorFactory" name="add-schema-fields">
     <str name="defaultFieldType">text_general</str>
     <lst name="typeMapping">
       <str name="valueClass">java.lang.String</str>
