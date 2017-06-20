@@ -24,6 +24,8 @@ import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.nio.file.NoSuchFileException;
 import java.util.Arrays;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.Collections;
 import java.util.List;
 
@@ -52,6 +54,11 @@ public abstract class DirectoryFactory implements NamedListInitializedPlugin,
   public static final IOContext IOCONTEXT_NO_CACHE = new IOContext(new FlushInfo(10*1000*1000, 100L*1000*1000*1000));
 
   protected static final String INDEX_W_TIMESTAMP_REGEX = "index\\.[0-9]{17}"; // see SnapShooter.DATE_FMT
+
+  public static final String DATA_HOME = "solr.data.home";
+
+  // May be set by sub classes as data root, in which case getDataHome will use it as base
+  protected Path dataHomePath;
 
   // hint about what the directory contains - default is index directory
   public enum DirContext {DEFAULT, META_DATA}
@@ -315,9 +322,22 @@ public abstract class DirectoryFactory implements NamedListInitializedPlugin,
     return false;
   }
 
+  /**
+   * Get the data home folder. If solr.data.home is set, that is used, else base on instanceDir
+   * @param cd core descriptor instance
+   * @return a String with absolute path to data direcotry
+   */
   public String getDataHome(CoreDescriptor cd) throws IOException {
-    // by default, we go off the instance directory
-    return cd.getInstanceDir().resolve(cd.getDataDir()).toAbsolutePath().toString();
+    String dataDir;
+    if (dataHomePath != null) {
+      String instanceDirLastPath = cd.getInstanceDir().getName(cd.getInstanceDir().getNameCount()-1).toString();
+      dataDir = Paths.get(coreContainer.getSolrHome()).resolve(dataHomePath)
+          .resolve(instanceDirLastPath).resolve(cd.getDataDir()).toAbsolutePath().toString();
+    } else {
+      // by default, we go off the instance directory
+      dataDir = cd.getInstanceDir().resolve(cd.getDataDir()).toAbsolutePath().toString();
+    }
+    return dataDir;
   }
 
   public void cleanupOldIndexDirectories(final String dataDirPath, final String currentIndexDirPath, boolean afterCoreReload) {

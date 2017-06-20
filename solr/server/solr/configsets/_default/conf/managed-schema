@@ -45,7 +45,7 @@
     that avoids logging every request
 -->
 
-<schema name="example-data-driven-schema" version="1.6">
+<schema name="default-config" version="2.0">
     <!-- attribute "name" is the name of this schema and is only used for display purposes.
        version="x.y" is Solr's version number for the schema syntax and 
        semantics.  It should not normally be changed by applications.
@@ -125,7 +125,7 @@
 
     <!-- Only enabled in the "schemaless" data-driven example (assuming the client
          does not know what fields may be searched) because it's very expensive to index everything twice. -->
-    <copyField source="*" dest="_text_"/>
+    <!-- <copyField source="*" dest="_text_"/> -->
 
     <!-- Dynamic field definitions allow using convention over configuration
        for fields via the specification of patterns to match field names. 

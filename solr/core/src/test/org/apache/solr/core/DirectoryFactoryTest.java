@@ -16,7 +16,17 @@
  */
 package org.apache.solr.core;
 
+import java.io.IOException;
+import java.nio.file.Paths;
+import java.util.Properties;
+
 import org.apache.lucene.util.LuceneTestCase;
+import org.apache.solr.common.util.NamedList;
+import org.apache.solr.handler.admin.CoreAdminHandler;
+import org.apache.solr.handler.component.HttpShardHandlerFactory;
+import org.junit.After;
+import org.junit.Before;
+import org.junit.Test;
 
 public class DirectoryFactoryTest extends LuceneTestCase {
 
@@ -26,6 +36,57 @@ public class DirectoryFactoryTest extends LuceneTestCase {
     assertEquals("single", DirectoryFactory.LOCK_TYPE_SINGLE);
     assertEquals("none", DirectoryFactory.LOCK_TYPE_NONE);
     assertEquals("hdfs", DirectoryFactory.LOCK_TYPE_HDFS);
+  }
+
+  @After
+  @Before
+  public void clean() {
+    System.clearProperty("solr.data.home");
+    System.clearProperty("solr.solr.home");
+  }
+
+  @Test
+  public void testGetDataHome() throws Exception {
+    MockCoreContainer cc = new MockCoreContainer("/solr/home");
+    Properties cp = cc.getContainerProperties();
+    boolean zkAware = cc.isZooKeeperAware();
+    RAMDirectoryFactory rdf = new RAMDirectoryFactory();
+    rdf.initCoreContainer(cc);
+    rdf.init(new NamedList());
+
+    // No solr.data.home property set. Absolute instanceDir
+    assertEquals("/tmp/inst1/data", rdf.getDataHome(new CoreDescriptor("core_name", Paths.get("/tmp/inst1"), cp, zkAware)));
+
+    // Simulate solr.data.home set in solrconfig.xml <directoryFactory> tag
+    NamedList args = new NamedList();
+    args.add("solr.data.home", "/solrdata/");
+    rdf.init(args);
+    assertEquals("/solrdata/inst_dir/data", rdf.getDataHome(new CoreDescriptor("core_name", Paths.get("inst_dir"), cp, zkAware)));
+
+    // solr.data.home set with System property, and relative path
+    System.setProperty("solr.data.home", "solrdata");
+    rdf.init(new NamedList());
+    assertEquals("/solr/home/solrdata/inst_dir/data", rdf.getDataHome(new CoreDescriptor("core_name", Paths.get("inst_dir"), cp, zkAware)));
+    // Test parsing last component of instanceDir, and using custom dataDir
+    assertEquals("/solr/home/solrdata/myinst/mydata", rdf.getDataHome(new CoreDescriptor("core_name", Paths.get("/path/to/myinst"), cp, zkAware, "dataDir", "mydata")));
+  }
+
+
+  private static class MockCoreContainer extends CoreContainer {
+
+    private final String mockSolrHome;
+
+    public MockCoreContainer(String solrHome) throws IOException {
+      super(new Object());
+      mockSolrHome = solrHome;
+      this.shardHandlerFactory = new HttpShardHandlerFactory();
+      this.coreAdminHandler = new CoreAdminHandler();
+    }
+
+    @Override
+    public String getSolrHome() {
+      return mockSolrHome;
+    }
   }
 
 }

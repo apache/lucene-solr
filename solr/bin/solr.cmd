@@ -285,7 +285,7 @@ goto done
 
 :start_usage
 @echo.
-@echo Usage: solr %SCRIPT_CMD% [-f] [-c] [-h hostname] [-p port] [-d directory] [-z zkHost] [-m memory] [-e example] [-s solr.solr.home] [-a "additional-options"] [-V]
+@echo Usage: solr %SCRIPT_CMD% [-f] [-c] [-h hostname] [-p port] [-d directory] [-z zkHost] [-m memory] [-e example] [-s solr.solr.home] [-t solr.data.home] [-a "additional-options"] [-V]
 @echo.
 @echo   -f            Start Solr in foreground; default starts Solr in the background
 @echo                   and sends stdout / stderr to solr-PORT-console.log
@@ -311,6 +311,9 @@ goto done
 @echo                   specified directory should contain a solr.xml file, unless solr.xml exists in Zookeeper.
 @echo                   This parameter is ignored when running examples (-e), as the solr.solr.home depends
 @echo                   on which example is run. The default value is server/solr.
+@echo.
+@echo   -t dir        Sets the solr.data.home system property, used as root for ^<instance_dir^>/data directories.
+@echo                   If not set, Solr uses solr.solr.home for both config and data.
 @echo.
 @echo   -e example    Name of the example to run; available examples:
 @echo       cloud:          SolrCloud example
@@ -602,6 +605,7 @@ IF "%1"=="-cloud" goto set_cloud_mode
 IF "%1"=="-d" goto set_server_dir
 IF "%1"=="-dir" goto set_server_dir
 IF "%1"=="-s" goto set_solr_home_dir
+IF "%1"=="-t" goto set_solr_data_dir
 IF "%1"=="-solr.home" goto set_solr_home_dir
 IF "%1"=="-e" goto set_example
 IF "%1"=="-example" goto set_example
@@ -693,6 +697,24 @@ IF "%firstChar%"=="-" (
   goto invalid_cmd_line
 )
 set "SOLR_HOME=%~2"
+SHIFT
+SHIFT
+goto parse_args
+
+:set_solr_data_dir
+
+set "arg=%~2"
+IF "%arg%"=="" (
+  set SCRIPT_ERROR=Directory name is required!
+  goto invalid_cmd_line
+)
+
+set firstChar=%arg:~0,1%
+IF "%firstChar%"=="-" (
+  set SCRIPT_ERROR=Expected directory but found %2 instead!
+  goto invalid_cmd_line
+)
+set "SOLR_DATA_HOME=%~2"
 SHIFT
 SHIFT
 goto parse_args
@@ -897,6 +919,7 @@ IF [%SOLR_LOGS_DIR%] == [] (
   set SOLR_LOGS_DIR=%SOLR_LOGS_DIR:"=%
 )
 set SOLR_LOGS_DIR_QUOTED="%SOLR_LOGS_DIR%"
+set SOLR_DATA_HOME_QUOTED="%SOLR_DATA_HOME%"
 
 set "EXAMPLE_DIR=%SOLR_TIP%\example"
 set TMP=!SOLR_HOME:%EXAMPLE_DIR%=!
@@ -1139,6 +1162,10 @@ IF "%verbose%"=="1" (
     @echo     SOLR_LOG_LEVEL  = !SOLR_LOG_LEVEL!
   )
 
+  IF NOT "%SOLR_DATA_HOME%"=="" (
+    @echo     SOLR_DATA_HOME  = !SOLR_DATA_HOME!
+  )
+
   @echo.
 )
 
@@ -1155,6 +1182,7 @@ IF "%SOLR_SSL_ENABLED%"=="true" (
 )
 IF NOT "%SOLR_LOG_LEVEL%"=="" set "START_OPTS=%START_OPTS% -Dsolr.log.level=%SOLR_LOG_LEVEL%"
 set "START_OPTS=%START_OPTS% -Dsolr.log.dir=%SOLR_LOGS_DIR_QUOTED%"
+IF NOT "%SOLR_DATA_HOME%"=="" set "START_OPTS=%START_OPTS% -Dsolr.data.home=%SOLR_DATA_HOME_QUOTED%"
 IF NOT DEFINED LOG4J_CONFIG set "LOG4J_CONFIG=file:%SOLR_SERVER_DIR%\resources\log4j.properties"
 
 cd /d "%SOLR_SERVER_DIR%"
