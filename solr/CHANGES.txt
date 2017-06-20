@@ -149,6 +149,8 @@ New Features
 
 * SOLR-9989: Add support for PointFields in FacetModule (JSON Facets) (Cao Manh Dat)
 
+* SOLR-10406: v2 API error messages list the URL request path as /solr/____v2/... when the original path was /v2/... (Cao Manh Dat, noble)
+
 Bug Fixes
 ----------------------
 * SOLR-9262: Connection and read timeouts are being ignored by UpdateShardHandler after SOLR-4509.

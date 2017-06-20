@@ -228,7 +228,11 @@ public class HttpSolrClient extends SolrClient {
       throws SolrServerException, IOException {
     HttpRequestBase method = createMethod(request, collection);
     setBasicAuthHeader(request, method);
-    return executeMethod(method, processor);
+    return executeMethod(method, processor, isV2ApiRequest(request));
+  }
+
+  private boolean isV2ApiRequest(final SolrRequest request) {
+    return request instanceof V2Request || request.getPath().contains("/____v2");
   }
 
   private void setBasicAuthHeader(SolrRequest request, HttpRequestBase method) throws UnsupportedEncodingException {
@@ -268,7 +272,7 @@ public class HttpSolrClient extends SolrClient {
     ExecutorService pool = ExecutorUtil.newMDCAwareFixedThreadPool(1, new SolrjNamedThreadFactory("httpUriRequest"));
     try {
       MDC.put("HttpSolrClient.url", baseUrl);
-      mrr.future = pool.submit(() -> executeMethod(method, processor));
+      mrr.future = pool.submit(() -> executeMethod(method, processor, isV2ApiRequest(request)));
  
     } finally {
       pool.shutdown();
@@ -473,7 +477,7 @@ public class HttpSolrClient extends SolrClient {
 
   }
   
-  protected NamedList<Object> executeMethod(HttpRequestBase method, final ResponseParser processor) throws SolrServerException {
+  protected NamedList<Object> executeMethod(HttpRequestBase method, final ResponseParser processor, final boolean isV2Api) throws SolrServerException {
     method.addHeader("User-Agent", AGENT);
  
     org.apache.http.client.config.RequestConfig.Builder requestConfigBuilder = HttpClientUtil.createDefaultRequestConfigBuilder();
@@ -571,7 +575,7 @@ public class HttpSolrClient extends SolrClient {
       } catch (Exception e) {
         throw new RemoteSolrException(baseUrl, httpStatus, e.getMessage(), e);
       }
-      if (httpStatus != HttpStatus.SC_OK) {
+      if (httpStatus != HttpStatus.SC_OK && !isV2Api) {
         NamedList<String> metadata = null;
         String reason = null;
         try {

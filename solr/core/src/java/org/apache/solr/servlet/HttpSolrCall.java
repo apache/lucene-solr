@@ -687,7 +687,7 @@ public class HttpSolrCall {
         solrReq = new SolrQueryRequestBase(core, solrParams) {
         };
       }
-      QueryResponseWriter writer = core.getQueryResponseWriter(solrReq);
+      QueryResponseWriter writer = getResponseWriter();
       writeResponse(solrResp, writer, Method.GET);
     } catch (Exception e) { // This error really does not matter
       exp = e;
