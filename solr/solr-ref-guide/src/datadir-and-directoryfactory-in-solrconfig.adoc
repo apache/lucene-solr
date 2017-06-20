@@ -33,6 +33,8 @@ The `${solr.core.name}` substitution will cause the name of the current core to 
 
 If you are using replication to replicate the Solr index (as described in <<legacy-scaling-and-distribution.adoc#legacy-scaling-and-distribution,Legacy Scaling and Distribution>>), then the `<dataDir>` directory should correspond to the index directory used in the replication configuration.
 
+NOTE: If the environment variable `SOLR_DATA_HOME` if defined, or if `solr.data.home` is configured for your DirectoryFactory, the location of data directory will be `<SOLR_DATA_HOME>/<instance_name>/data`.
+
 [[DataDirandDirectoryFactoryinSolrConfig-SpecifyingtheDirectoryFactoryForYourIndex]]
 == Specifying the DirectoryFactory For Your Index
 

@@ -299,7 +299,7 @@ function print_usage() {
     echo ""
   elif [[ "$CMD" == "start" || "$CMD" == "restart" ]]; then
     echo ""
-    echo "Usage: solr $CMD [-f] [-c] [-h hostname] [-p port] [-d directory] [-z zkHost] [-m memory] [-e example] [-s solr.solr.home] [-a \"additional-options\"] [-V]"
+    echo "Usage: solr $CMD [-f] [-c] [-h hostname] [-p port] [-d directory] [-z zkHost] [-m memory] [-e example] [-s solr.solr.home] [-t solr.data.home] [-a \"additional-options\"] [-V]"
     echo ""
     echo "  -f            Start Solr in foreground; default starts Solr in the background"
     echo "                  and sends stdout / stderr to solr-PORT-console.log"
@@ -328,6 +328,9 @@ function print_usage() {
     echo "                  specified directory should contain a solr.xml file, unless solr.xml exists in Zookeeper."
     echo "                  This parameter is ignored when running examples (-e), as the solr.solr.home depends"
     echo "                  on which example is run. The default value is server/solr."
+    echo ""
+    echo "  -t <dir>      Sets the solr.data.home system property, where Solr will store data (index)."
+    echo "                  If not set, Solr uses solr.solr.home for config and data."
     echo ""
     echo "  -e <example>  Name of the example to run; available examples:"
     echo "      cloud:         SolrCloud example"
@@ -1387,6 +1390,10 @@ if [ $# -gt 0 ]; then
             SOLR_HOME="$2"
             shift 2
         ;;
+        -t|-data.home)
+            SOLR_DATA_HOME="$2"
+            shift 2
+        ;;
         -e|-example)
             if [[ -z "$2" || "${2:0:1}" == "-" ]]; then
               print_usage "$SCRIPT_CMD" "Example name is required when using the $1 option!"
@@ -1682,6 +1689,10 @@ if [ ! -e "$SOLR_HOME" ]; then
   echo -e "\nSolr home directory $SOLR_HOME not found!\n"
   exit 1
 fi
+if [[ $SOLR_DATA_HOME ]] && [ ! -e "$SOLR_DATA_HOME" ]; then
+  echo -e "\nSolr data home directory $SOLR_DATA_HOME not found!\n"
+  exit 1
+fi
 if $verbose ; then
   q=""
 else
@@ -1882,6 +1893,9 @@ function launch_solr() {
       echo -e "    SOLR_LOG_LEVEL  = $SOLR_LOG_LEVEL"
     fi
 
+    if [ "$SOLR_DATA_HOME" != "" ]; then
+      echo -e "    SOLR_DATA_HOME  = $SOLR_DATA_HOME"
+    fi
     echo -e "\n"
   fi
     
@@ -1897,7 +1911,7 @@ function launch_solr() {
     "${REMOTE_JMX_OPTS[@]}" "${CLOUD_MODE_OPTS[@]}" $SOLR_LOG_LEVEL_OPT -Dsolr.log.dir="$SOLR_LOGS_DIR" \
     "-Djetty.port=$SOLR_PORT" "-DSTOP.PORT=$stop_port" "-DSTOP.KEY=$STOP_KEY" \
     "${SOLR_HOST_ARG[@]}" "-Duser.timezone=$SOLR_TIMEZONE" \
-    "-Djetty.home=$SOLR_SERVER_DIR" "-Dsolr.solr.home=$SOLR_HOME" "-Dsolr.install.dir=$SOLR_TIP" \
+    "-Djetty.home=$SOLR_SERVER_DIR" "-Dsolr.solr.home=$SOLR_HOME" "-Dsolr.data.home=$SOLR_DATA_HOME" "-Dsolr.install.dir=$SOLR_TIP" \
     "${LOG4J_CONFIG[@]}" "${SOLR_OPTS[@]}")
 
   if [ "$SOLR_MODE" == "solrcloud" ]; then
