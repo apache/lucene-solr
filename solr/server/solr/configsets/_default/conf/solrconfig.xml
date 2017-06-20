@@ -1212,7 +1212,7 @@
       <str>yyyy-MM-dd</str>
     </arr>
   </updateProcessor>
-  <processor class="solr.AddSchemaFieldsUpdateProcessorFactory" name="add-schema-fields">
+  <updateProcessor class="solr.AddSchemaFieldsUpdateProcessorFactory" name="add-schema-fields">
     <str name="defaultFieldType">text_general</str>
     <lst name="typeMapping">
       <str name="valueClass">java.lang.String</str>
@@ -1241,7 +1241,7 @@
       <str name="valueClass">java.lang.Number</str>
       <str name="fieldType">pdoubles</str>
     </lst>
-  </processor>
+  </updateProcessor>
   <updateRequestProcessorChain name="add-unknown-fields-to-the-schema" default="${update.autoCreateFields:true}"
            processor="uuid,remove-blank,field-name-mutating,parse-boolean,parse-long,parse-double,parse-date,add-schema-fields">
     <processor class="solr.LogUpdateProcessorFactory"/>
