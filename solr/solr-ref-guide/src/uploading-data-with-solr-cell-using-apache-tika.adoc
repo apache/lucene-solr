@@ -216,15 +216,6 @@ The `tika.config` entry points to a file containing a Tika configuration. The `d
 * `EEEE, dd-MMM-yy HH:mm:ss zzz`
 * `EEE MMM d HH:mm:ss yyyy`
 
-You may also need to adjust the `multipartUploadLimitInKB` attribute as follows if you are submitting very large documents.
-
-[source,xml]
-----
-<requestDispatcher handleSelect="true" >
-  <requestParsers enableRemoteStreaming="false" multipartUploadLimitInKB="20480" />
-  ...
-----
-
 [[UploadingDatawithSolrCellusingApacheTika-Parserspecificproperties]]
 === Parser-Specific Properties
 

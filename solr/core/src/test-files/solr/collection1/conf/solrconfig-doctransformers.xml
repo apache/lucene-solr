@@ -40,7 +40,7 @@
   <requestHandler name="/select" class="solr.StandardRequestHandler"/>
 
   <requestDispatcher handleSelect="true" >
-    <requestParsers enableRemoteStreaming="false" multipartUploadLimitInKB="2048" />
+    <requestParsers enableRemoteStreaming="false" multipartUploadLimitInKB="-1" />
   </requestDispatcher>
 
   <!-- config for the admin interface -->

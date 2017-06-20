@@ -283,6 +283,8 @@ Other Changes
 * SOLR-10779: JavaBinCodec should use close consistently rather than having marshal() and close() call finish()
  (which closes the underlying stream). (Erick Erickson)
 
+* SOLR-9623: Disable remote streaming in example configs by default. Adjust Upload Limit defaults (janhoy, yonik)
+
 ==================  6.7.0 ==================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release.
