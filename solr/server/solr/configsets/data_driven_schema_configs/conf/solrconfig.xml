@@ -832,13 +832,11 @@
     </lst>
   </initParams>
 
-  <!-- This enabled schemaless mode 
   <initParams path="/update/**">
     <lst name="defaults">
       <str name="update.chain">add-unknown-fields-to-the-schema</str>
     </lst>
   </initParams>
-  -->
 
   <!-- Solr Cell Update Request Handler
 
@@ -854,6 +852,7 @@
       <str name="fmap.content">_text_</str>
     </lst>
   </requestHandler>
+
   <!-- Search Components
 
        Search components are registered to SolrCore and used by 
@@ -1171,70 +1170,69 @@
   
   <!-- Add unknown fields to the schema 
   
-       Field type guessing update processors that will
+       An example field type guessing update processor that will
        attempt to parse string-typed field values as Booleans, Longs,
        Doubles, or Dates, and then add schema fields with the guessed
        field types.  
        
-       These require that the schema is both managed and mutable, by
+       This requires that the schema is both managed and mutable, by
        declaring schemaFactory as ManagedIndexSchemaFactory, with
        mutable specified as true. 
        
        See http://wiki.apache.org/solr/GuessingFieldTypes
     -->
-  <updateProcessor class="solr.UUIDUpdateProcessorFactory" name="uuid"/>
-  <updateProcessor class="solr.RemoveBlankFieldUpdateProcessorFactory" name="remove-blank"/>
-  <updateProcessor class="solr.FieldNameMutatingUpdateProcessorFactory" name="field-name-mutating">
-    <str name="pattern">[^\w-\.]</str>
-    <str name="replacement">_</str>
-  </updateProcessor>
-  <updateProcessor class="solr.ParseBooleanFieldUpdateProcessorFactory" name="parse-boolean"/>
-  <updateProcessor class="solr.ParseLongFieldUpdateProcessorFactory" name="parse-long"/>
-  <updateProcessor class="solr.ParseDoubleFieldUpdateProcessorFactory" name="parse-double"/>
-  <updateProcessor class="solr.ParseDateFieldUpdateProcessorFactory" name="parse-date">
-    <arr name="format">
-      <str>yyyy-MM-dd'T'HH:mm:ss.SSSZ</str>
-      <str>yyyy-MM-dd'T'HH:mm:ss,SSSZ</str>
-      <str>yyyy-MM-dd'T'HH:mm:ss.SSS</str>
-      <str>yyyy-MM-dd'T'HH:mm:ss,SSS</str>
-      <str>yyyy-MM-dd'T'HH:mm:ssZ</str>
-      <str>yyyy-MM-dd'T'HH:mm:ss</str>
-      <str>yyyy-MM-dd'T'HH:mmZ</str>
-      <str>yyyy-MM-dd'T'HH:mm</str>
-      <str>yyyy-MM-dd HH:mm:ss.SSSZ</str>
-      <str>yyyy-MM-dd HH:mm:ss,SSSZ</str>
-      <str>yyyy-MM-dd HH:mm:ss.SSS</str>
-      <str>yyyy-MM-dd HH:mm:ss,SSS</str>
-      <str>yyyy-MM-dd HH:mm:ssZ</str>
-      <str>yyyy-MM-dd HH:mm:ss</str>
-      <str>yyyy-MM-dd HH:mmZ</str>
-      <str>yyyy-MM-dd HH:mm</str>
-      <str>yyyy-MM-dd</str>
-    </arr>
-  </updateProcessor>
-  <updateProcessor class="solr.AddSchemaFieldsUpdateProcessorFactory" name="add-schema-fields">
-    <str name="defaultFieldType">strings</str>
-    <lst name="typeMapping">
-      <str name="valueClass">java.lang.Boolean</str>
-      <str name="fieldType">booleans</str>
-    </lst>
-    <lst name="typeMapping">
-      <str name="valueClass">java.util.Date</str>
-      <str name="fieldType">tdates</str>
-    </lst>
-    <lst name="typeMapping">
-      <str name="valueClass">java.lang.Long</str>
-      <str name="valueClass">java.lang.Integer</str>
-      <str name="fieldType">tlongs</str>
-    </lst>
-    <lst name="typeMapping">
-      <str name="valueClass">java.lang.Number</str>
-      <str name="fieldType">tdoubles</str>
-    </lst>
-  </updateProcessor>
-
-  <updateRequestProcessorChain name="add-unknown-fields-to-the-schema" default="${update.autoCreateFields:true}"
-           processor="uuid,remove-blank,field-name-mutating,parse-boolean,parse-long,parse-double,parse-date,add-schema-fields">
+  <updateRequestProcessorChain name="add-unknown-fields-to-the-schema">
+    <!-- UUIDUpdateProcessorFactory will generate an id if none is present in the incoming document -->
+    <processor class="solr.UUIDUpdateProcessorFactory" />
+    <processor class="solr.RemoveBlankFieldUpdateProcessorFactory"/>
+    <processor class="solr.FieldNameMutatingUpdateProcessorFactory">
+      <str name="pattern">[^\w-\.]</str>
+      <str name="replacement">_</str>
+    </processor>
+    <processor class="solr.ParseBooleanFieldUpdateProcessorFactory"/>
+    <processor class="solr.ParseLongFieldUpdateProcessorFactory"/>
+    <processor class="solr.ParseDoubleFieldUpdateProcessorFactory"/>
+    <processor class="solr.ParseDateFieldUpdateProcessorFactory">
+      <arr name="format">
+        <str>yyyy-MM-dd'T'HH:mm:ss.SSSZ</str>
+        <str>yyyy-MM-dd'T'HH:mm:ss,SSSZ</str>
+        <str>yyyy-MM-dd'T'HH:mm:ss.SSS</str>
+        <str>yyyy-MM-dd'T'HH:mm:ss,SSS</str>
+        <str>yyyy-MM-dd'T'HH:mm:ssZ</str>
+        <str>yyyy-MM-dd'T'HH:mm:ss</str>
+        <str>yyyy-MM-dd'T'HH:mmZ</str>
+        <str>yyyy-MM-dd'T'HH:mm</str>
+        <str>yyyy-MM-dd HH:mm:ss.SSSZ</str>
+        <str>yyyy-MM-dd HH:mm:ss,SSSZ</str>
+        <str>yyyy-MM-dd HH:mm:ss.SSS</str>
+        <str>yyyy-MM-dd HH:mm:ss,SSS</str>
+        <str>yyyy-MM-dd HH:mm:ssZ</str>
+        <str>yyyy-MM-dd HH:mm:ss</str>
+        <str>yyyy-MM-dd HH:mmZ</str>
+        <str>yyyy-MM-dd HH:mm</str>
+        <str>yyyy-MM-dd</str>
+      </arr>
+    </processor>
+    <processor class="solr.AddSchemaFieldsUpdateProcessorFactory">
+      <str name="defaultFieldType">strings</str>
+      <lst name="typeMapping">
+        <str name="valueClass">java.lang.Boolean</str>
+        <str name="fieldType">booleans</str>
+      </lst>
+      <lst name="typeMapping">
+        <str name="valueClass">java.util.Date</str>
+        <str name="fieldType">pdates</str>
+      </lst>
+      <lst name="typeMapping">
+        <str name="valueClass">java.lang.Long</str>
+        <str name="valueClass">java.lang.Integer</str>
+        <str name="fieldType">plongs</str>
+      </lst>
+      <lst name="typeMapping">
+        <str name="valueClass">java.lang.Number</str>
+        <str name="fieldType">pdoubles</str>
+      </lst>
+    </processor>
     <processor class="solr.LogUpdateProcessorFactory"/>
     <processor class="solr.DistributedUpdateProcessorFactory"/>
     <processor class="solr.RunUpdateProcessorFactory"/>

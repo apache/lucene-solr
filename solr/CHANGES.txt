@@ -97,11 +97,6 @@ Upgrading from Solr 6.x
 * SOLR-9565: The name of TemplateUpdateRequestProcessorFactory' is changed to 'template' from 'Template' and the
   name of 'AtomicUpdateProcessorFactory' is changed to 'atomic' from 'Atomic'
 
-* SOLR-10574: basic_configs and data_driven_schema_configs have now been merged into _default. It has data driven nature
-  enabled by default, and can be turned off (after creating a collection) with:
-     curl http://host:8983/solr/mycollection/config -d '{"set-user-property": {"update.autoCreateFields":"false"}}'
-  Please see SOLR-10574 for details.
-
 * The default for eDismax parameter 'lowercaseOperators' now depends on the luceneMatchVersion setting in solrconfig.
   It remains 'true' for luceneMatchVersion < 7.0.0 and changes to 'false' from 7.0.0. See also SOLR-4646
 
@@ -158,9 +153,6 @@ New Features
 * SOLR-9989: Add support for PointFields in FacetModule (JSON Facets) (Cao Manh Dat)
 
 * SOLR-10406: v2 API error messages list the URL request path as /solr/____v2/... when the original path was /v2/... (Cao Manh Dat, noble)
-
-* SOLR-10574: New _default config set replacing basic_configs and data_driven_schema_configs.
-  (Ishan Chattopadhyaya, noble, shalin, hossman, David Smiley, Jan Hoydahl, Alexandre Rafalovich) 
 
 Bug Fixes
 ----------------------
