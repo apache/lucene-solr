@@ -122,7 +122,7 @@ public class FacetField extends FacetRequestSorted {
       method = FacetMethod.STREAM;
     }
     if (method == FacetMethod.STREAM && sf.indexed() &&
-        "index".equals(sortVariable) && sortDirection == SortDirection.asc) {
+        "index".equals(sortVariable) && sortDirection == SortDirection.asc && !ft.isPointField()) {
       return new FacetFieldProcessorByEnumTermsStream(fcontext, this, sf);
     }
 
@@ -140,6 +140,10 @@ public class FacetField extends FacetRequestSorted {
         throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,
             "Couldn't pick facet algorithm for field " + sf);
       }
+    }
+
+    if (sf.hasDocValues() && sf.getType().isPointField()) {
+      return new FacetFieldProcessorByHashDV(fcontext, this, sf);
     }
 
     // multi-valued after this point

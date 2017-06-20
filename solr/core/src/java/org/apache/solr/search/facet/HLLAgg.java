@@ -17,6 +17,9 @@
 package org.apache.solr.search.facet;
 
 import java.io.IOException;
+
+import org.apache.lucene.index.SortedNumericDocValues;
+import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.solr.util.hll.HLL;
 import org.apache.solr.util.hll.HLLType;
 import org.apache.lucene.index.DocValues;
@@ -51,7 +54,9 @@ public class HLLAgg extends StrAggValueSource {
   public SlotAcc createSlotAcc(FacetContext fcontext, int numDocs, int numSlots) throws IOException {
     SchemaField sf = fcontext.qcontext.searcher().getSchema().getField(getArg());
     if (sf.multiValued() || sf.getType().multiValuedFieldCache()) {
-      if (sf.hasDocValues()) {
+      if (sf.getType().isPointField()) {
+        return new SortedNumericAcc(fcontext, getArg(), numSlots);
+      } else if (sf.hasDocValues()) {
         return new UniqueMultiDvSlotAcc(fcontext, sf, numSlots, fcontext.isShard() ? factory : null);
       } else {
         return new UniqueMultivaluedSlotAcc(fcontext, sf, numSlots, fcontext.isShard() ? factory : null);
@@ -114,12 +119,11 @@ public class HLLAgg extends StrAggValueSource {
   // TODO: hybrid model for non-distrib numbers?
   // todo - better efficiency for sorting?
 
-  class NumericAcc extends SlotAcc {
+  abstract class BaseNumericAcc extends SlotAcc {
     SchemaField sf;
     HLL[] sets;
-    NumericDocValues values;
 
-    public NumericAcc(FacetContext fcontext, String field, int numSlots) throws IOException {
+    public BaseNumericAcc(FacetContext fcontext, String field, int numSlots) throws IOException {
       super(fcontext);
       sf = fcontext.searcher.getSchema().getField(field);
       sets = new HLL[numSlots];
@@ -136,31 +140,26 @@ public class HLLAgg extends StrAggValueSource {
     }
 
     @Override
-    public void setNextReader(LeafReaderContext readerContext) throws IOException {
-      values = DocValues.getNumeric(readerContext.reader(),  sf.getName());
-    }
-
-    @Override
     public void collect(int doc, int slot) throws IOException {
-      int valuesDocID = values.docID();
+      int valuesDocID = docIdSetIterator().docID();
       if (valuesDocID < doc) {
-        valuesDocID = values.advance(doc);
+        valuesDocID = docIdSetIterator().advance(doc);
       }
       if (valuesDocID > doc) {
         return;
       }
       assert valuesDocID == doc;
 
-      long val = values.longValue();
-
-      long hash = Hash.fmix64(val);
-
       HLL hll = sets[slot];
       if (hll == null) {
         hll = sets[slot] = factory.getHLL();
       }
-      hll.addRaw(hash);
+      collectValues(doc, hll);
     }
+
+    protected abstract DocIdSetIterator docIdSetIterator();
+
+    protected abstract void collectValues(int doc, HLL hll) throws IOException;
 
     @Override
     public Object getValue(int slot) throws IOException {
@@ -189,6 +188,58 @@ public class HLLAgg extends StrAggValueSource {
       return getCardinality(slotA) - getCardinality(slotB);
     }
 
+  }
+
+  class NumericAcc extends BaseNumericAcc {
+    NumericDocValues values;
+
+    public NumericAcc(FacetContext fcontext, String field, int numSlots) throws IOException {
+      super(fcontext, field, numSlots);
+    }
+
+    @Override
+    public void setNextReader(LeafReaderContext readerContext) throws IOException {
+      values = DocValues.getNumeric(readerContext.reader(),  sf.getName());
+    }
+
+    @Override
+    protected DocIdSetIterator docIdSetIterator() {
+      return values;
+    }
+
+    @Override
+    protected void collectValues(int doc, HLL hll) throws IOException {
+      long val = values.longValue();
+      long hash = Hash.fmix64(val);
+      hll.addRaw(hash);
+    }
+  }
+
+  class SortedNumericAcc extends BaseNumericAcc {
+    SortedNumericDocValues values;
+
+    public SortedNumericAcc(FacetContext fcontext, String field, int numSlots) throws IOException {
+      super(fcontext, field, numSlots);
+    }
+
+    @Override
+    public void setNextReader(LeafReaderContext readerContext) throws IOException {
+      values = DocValues.getSortedNumeric(readerContext.reader(),  sf.getName());
+    }
+
+    @Override
+    protected DocIdSetIterator docIdSetIterator() {
+      return values;
+    }
+
+    @Override
+    protected void collectValues(int doc, HLL hll) throws IOException {
+      for (int i = 0; i < values.docValueCount(); i++) {
+        long val = values.nextValue();
+        long hash = Hash.fmix64(val);
+        hll.addRaw(hash);
+      }
+    }
   }
 
 

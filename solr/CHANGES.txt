@@ -147,6 +147,7 @@ New Features
 
 * SOLR-10433: CollectionAdmin requests in SolrJ to support V2 calls (noble)
 
+* SOLR-9989: Add support for PointFields in FacetModule (JSON Facets) (Cao Manh Dat)
 
 Bug Fixes
 ----------------------
